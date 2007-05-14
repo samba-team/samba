@@ -893,9 +893,9 @@ BOOL blocking_lock_cancel(files_struct *fsp,
 	memcpy(msg, &blr, sizeof(blr));
 	memcpy(&msg[sizeof(blr)], &err, sizeof(NTSTATUS));
 
-	message_send_pid(pid_to_procid(sys_getpid()),
-			MSG_SMB_BLOCKING_LOCK_CANCEL,
-			&msg, sizeof(msg), True);
+	messaging_send_buf(smbd_messaging_context(), procid_self(),
+			   MSG_SMB_BLOCKING_LOCK_CANCEL,
+			   (uint8 *)&msg, sizeof(msg));
 
 	return True;
 }

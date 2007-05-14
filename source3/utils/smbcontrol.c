@@ -107,7 +107,8 @@ static void print_string_cb(int msg_type, struct server_id pid,
 
 /* Send no message.  Useful for testing. */
 
-static BOOL do_noop(const struct server_id pid,
+static BOOL do_noop(struct messaging_context *msg_ctx,
+		    const struct server_id pid,
 		    const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -122,7 +123,8 @@ static BOOL do_noop(const struct server_id pid,
 
 /* Send a debug string */
 
-static BOOL do_debug(const struct server_id pid,
+static BOOL do_debug(struct messaging_context *msg_ctx,
+		     const struct server_id pid,
 		     const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -245,7 +247,8 @@ static int stack_trace_connection(TDB_CONTEXT * tdb,
 	return 0;
 }
 
-static BOOL do_daemon_stack_trace(const struct server_id pid,
+static BOOL do_daemon_stack_trace(struct messaging_context *msg_ctx,
+				  const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	fprintf(stderr,
@@ -278,7 +281,8 @@ static BOOL do_daemon_stack_trace(const struct server_id pid,
 
 #else /* defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE) */
 
-static BOOL do_daemon_stack_trace(const struct server_id pid,
+static BOOL do_daemon_stack_trace(struct messaging_context *msg_ctx,
+				  const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	fprintf(stderr,
@@ -290,7 +294,8 @@ static BOOL do_daemon_stack_trace(const struct server_id pid,
 
 /* Inject a fault (fatal signal) into a running smbd */
 
-static BOOL do_inject_fault(const struct server_id pid,
+static BOOL do_inject_fault(struct messaging_context *msg_ctx,
+			    const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -331,7 +336,8 @@ static BOOL do_inject_fault(const struct server_id pid,
 
 /* Force a browser election */
 
-static BOOL do_election(const struct server_id pid,
+static BOOL do_election(struct messaging_context *msg_ctx,
+			const struct server_id pid,
 			const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -354,7 +360,9 @@ static void pong_cb(int msg_type, struct server_id pid, void *buf,
 	num_replies++;
 }
 
-static BOOL do_ping(const struct server_id pid, const int argc, const char **argv)
+static BOOL do_ping(struct messaging_context *msg_ctx,
+		    const struct server_id pid,
+		    const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> ping\n");
@@ -382,7 +390,8 @@ static BOOL do_ping(const struct server_id pid, const int argc, const char **arg
 
 /* Set profiling options */
 
-static BOOL do_profile(const struct server_id pid,
+static BOOL do_profile(struct messaging_context *msg_ctx,
+		       const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	int v;
@@ -458,7 +467,8 @@ static void profilelevel_rqst(int msg_type, struct server_id pid,
 	send_message(pid, MSG_PROFILELEVEL, &v, sizeof(int), False);
 }
 
-static BOOL do_profilelevel(const struct server_id pid,
+static BOOL do_profilelevel(struct messaging_context *msg_ctx,
+			    const struct server_id pid,
 			    const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -488,7 +498,8 @@ static BOOL do_profilelevel(const struct server_id pid,
 
 /* Display debug level settings */
 
-static BOOL do_debuglevel(const struct server_id pid,
+static BOOL do_debuglevel(struct messaging_context *msg_ctx,
+			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -517,7 +528,8 @@ static BOOL do_debuglevel(const struct server_id pid,
 
 /* Send a print notify message */
 
-static BOOL do_printnotify(const struct server_id pid,
+static BOOL do_printnotify(struct messaging_context *msg_ctx,
+			   const struct server_id pid,
 			   const int argc, const char **argv)
 {
 	const char *cmd;
@@ -651,13 +663,14 @@ static BOOL do_printnotify(const struct server_id pid,
 	return False;
 
 send:
-	print_notify_send_messages(0);
+	print_notify_send_messages(msg_ctx, 0);
 	return True;
 }
 
 /* Close a share */
 
-static BOOL do_closeshare(const struct server_id pid,
+static BOOL do_closeshare(struct messaging_context *msg_ctx,
+			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -672,7 +685,8 @@ static BOOL do_closeshare(const struct server_id pid,
 
 /* Force a SAM synchronisation */
 
-static BOOL do_samsync(const struct server_id pid,
+static BOOL do_samsync(struct messaging_context *msg_ctx,
+		       const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -686,7 +700,8 @@ static BOOL do_samsync(const struct server_id pid,
 
 /* Force a SAM replication */
 
-static BOOL do_samrepl(const struct server_id pid,
+static BOOL do_samrepl(struct messaging_context *msg_ctx,
+		       const struct server_id pid,
 		       const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -700,7 +715,8 @@ static BOOL do_samrepl(const struct server_id pid,
 
 /* Display talloc pool usage */
 
-static BOOL do_poolusage(const struct server_id pid,
+static BOOL do_poolusage(struct messaging_context *msg_ctx,
+			 const struct server_id pid,
 			 const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -729,7 +745,8 @@ static BOOL do_poolusage(const struct server_id pid,
 
 /* Perform a dmalloc mark */
 
-static BOOL do_dmalloc_mark(const struct server_id pid,
+static BOOL do_dmalloc_mark(struct messaging_context *msg_ctx,
+			    const struct server_id pid,
 			    const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -743,7 +760,8 @@ static BOOL do_dmalloc_mark(const struct server_id pid,
 
 /* Perform a dmalloc changed */
 
-static BOOL do_dmalloc_changed(const struct server_id pid,
+static BOOL do_dmalloc_changed(struct messaging_context *msg_ctx,
+			       const struct server_id pid,
 			       const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -758,7 +776,8 @@ static BOOL do_dmalloc_changed(const struct server_id pid,
 
 /* Shutdown a server process */
 
-static BOOL do_shutdown(const struct server_id pid,
+static BOOL do_shutdown(struct messaging_context *msg_ctx,
+			const struct server_id pid,
 			const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -771,7 +790,8 @@ static BOOL do_shutdown(const struct server_id pid,
 
 /* Notify a driver upgrade */
 
-static BOOL do_drvupgrade(const struct server_id pid,
+static BOOL do_drvupgrade(struct messaging_context *msg_ctx,
+			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	if (argc != 2) {
@@ -784,7 +804,8 @@ static BOOL do_drvupgrade(const struct server_id pid,
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
-static BOOL do_winbind_online(const struct server_id pid,
+static BOOL do_winbind_online(struct messaging_context *msg_ctx,
+			      const struct server_id pid,
 			     const int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
@@ -817,7 +838,8 @@ static BOOL do_winbind_online(const struct server_id pid,
 	return send_message(pid, MSG_WINBIND_ONLINE, NULL, 0, False);
 }
 
-static BOOL do_winbind_offline(const struct server_id pid,
+static BOOL do_winbind_offline(struct messaging_context *msg_ctx,
+			       const struct server_id pid,
 			     const int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
@@ -887,7 +909,8 @@ static BOOL do_winbind_offline(const struct server_id pid,
 	return ret;
 }
 
-static BOOL do_winbind_onlinestatus(const struct server_id pid,
+static BOOL do_winbind_onlinestatus(struct messaging_context *msg_ctx,
+				    const struct server_id pid,
 				    const int argc, const char **argv)
 {
 	struct server_id myid;
@@ -917,7 +940,8 @@ static BOOL do_winbind_onlinestatus(const struct server_id pid,
 }
 
 
-static BOOL do_reload_config(const struct server_id pid,
+static BOOL do_reload_config(struct messaging_context *msg_ctx,
+			     const struct server_id pid,
 			     const int argc, const char **argv)
 {
 	if (argc != 1) {
@@ -939,7 +963,8 @@ static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
 	push_ascii(n->scope,  global_scope(), 64, STR_TERMINATE);
 }
 
-static BOOL do_nodestatus(const struct server_id pid,
+static BOOL do_nodestatus(struct messaging_context *msg_ctx,
+			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
 	struct packet_struct p;
@@ -979,7 +1004,8 @@ static BOOL do_nodestatus(const struct server_id pid,
 
 static const struct {
 	const char *name;	/* Option name */
-	BOOL (*fn)(const struct server_id pid,
+	BOOL (*fn)(struct messaging_context *msg_ctx,
+		   const struct server_id pid,
 		   const int argc, const char **argv);
 	const char *help;	/* Short help text */
 } msg_types[] = {
@@ -1085,7 +1111,8 @@ static struct server_id parse_dest(const char *dest)
 
 /* Execute smbcontrol command */
 
-static BOOL do_command(int argc, const char **argv)
+static BOOL do_command(struct messaging_context *msg_ctx,
+		       int argc, const char **argv)
 {
 	const char *dest = argv[0], *command = argv[1];
 	struct server_id pid;
@@ -1102,7 +1129,8 @@ static BOOL do_command(int argc, const char **argv)
 
 	for (i = 0; msg_types[i].name; i++) {
 		if (strequal(command, msg_types[i].name))
-			return msg_types[i].fn(pid, argc - 1, argv + 1);
+			return msg_types[i].fn(msg_ctx, pid,
+					       argc - 1, argv + 1);
 	}
 
 	fprintf(stderr, "smbcontrol: unknown command '%s'\n", command);
@@ -1116,6 +1144,8 @@ int main(int argc, const char **argv)
 {
 	poptContext pc;
 	int opt;
+	struct event_context *evt_ctx;
+	struct messaging_context *msg_ctx;
 
 	static struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1171,5 +1201,11 @@ int main(int argc, const char **argv)
          * routines mostly return True==1 for success, but
          * shell needs 0. */ 
 	
-	return !do_command(argc, argv);
+	if (!(evt_ctx = event_context_init(NULL)) ||
+	    !(msg_ctx = messaging_init(NULL, server_id_self(), evt_ctx))) {
+		fprintf(stderr, "could not init messaging context\n");
+		exit(1);
+	}
+	
+	return !do_command(msg_ctx, argc, argv);
 }
