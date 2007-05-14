@@ -51,13 +51,16 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	struct tdb_context *tdb = h->ctdb_db->ltdb->tdb;
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
 
-	talloc_free(fde);
-
 	key.dptr = talloc_memdup(tmp_ctx, key.dptr, key.dsize);
 
 	talloc_set_destructor(h, NULL);
 	ctdb_latency(&h->ctdb->status.max_lockwait_latency, h->start_time);
 	h->ctdb->status.pending_lockwait_calls--;
+
+	/* the fde needs to go away when the context is gone - when
+	   the fde goes away this implicitly closes the pipe, which
+	   kills the child holding the lock */
+	talloc_steal(tmp_ctx, fde);
 
 	tdb_chainlock_mark(tdb, key);
 	callback(p);
