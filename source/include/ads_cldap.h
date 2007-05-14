@@ -58,4 +58,4 @@ struct cldap_netlogon_reply {
 #define ADS_GOOD_TIMESERV  0x00000200  /* DC has hardware clock (and running time) */
 #define ADS_NDNC           0x00000400  /* DomainName is non-domain NC serviced by LDAP server */
 
-#endif /* _INCLUDE_CLDAP_H_ */
+#endif /* _INCLUDE_ADS_CLDAP_H_ */
