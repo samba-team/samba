@@ -45,10 +45,12 @@ static void block_signal(int signum)
 int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
+	int interactive = 0;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
+		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -90,5 +92,5 @@ int main(int argc, const char *argv[])
 	}
 
 	/* start the protocol running (as a child) */
-	return ctdb_start_daemon(ctdb);
+	return ctdb_start_daemon(ctdb, interactive?False:True);
 }
