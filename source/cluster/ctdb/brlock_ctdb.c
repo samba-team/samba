@@ -28,6 +28,7 @@
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"
+#include "ntvfs/ntvfs.h"
 #include "ntvfs/common/brlock.h"
 #include "include/ctdb.h"
 
@@ -241,6 +242,11 @@ static NTSTATUS brl_ctdb_lock_failed(struct brl_handle *brlh, struct lock_struct
 	/*
 	 * this function is only called for non pending lock!
 	 */
+
+	/* in SMB2 mode always return NT_STATUS_LOCK_NOT_GRANTED! */
+	if (lock->ntvfs->ctx->protocol == PROTOCOL_SMB2) {
+		return NT_STATUS_LOCK_NOT_GRANTED;
+	}
 
 	/* 
 	 * if the notify_ptr is non NULL,
