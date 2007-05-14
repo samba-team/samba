@@ -395,9 +395,9 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 				const char *pass,
 				const char *domain)
 {
-	DATA_BLOB blob_in = data_blob(NULL, 0);
-	DATA_BLOB blob_out = data_blob(NULL, 0);
-	DATA_BLOB param_out = data_blob(NULL, 0);
+	DATA_BLOB blob_in = data_blob_null;
+	DATA_BLOB blob_out = data_blob_null;
+	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_NTLM);
 
@@ -477,8 +477,8 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 	gss_buffer_desc input_name;
 	gss_buffer_desc *p_tok_in;
 	gss_buffer_desc tok_out, tok_in;
-	DATA_BLOB blob_out = data_blob(NULL, 0);
-	DATA_BLOB blob_in = data_blob(NULL, 0);
+	DATA_BLOB blob_out = data_blob_null;
+	DATA_BLOB blob_in = data_blob_null;
 	char *host_princ_s = NULL;
 	OM_uint32 ret_flags = 0;
 	NTSTATUS status = NT_STATUS_OK;
@@ -569,9 +569,9 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 
 NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 {
-	DATA_BLOB blob_recv = data_blob(NULL, 0);
-	DATA_BLOB blob_send = data_blob(NULL, 0);
-	DATA_BLOB param_out = data_blob(NULL, 0);
+	DATA_BLOB blob_recv = data_blob_null;
+	DATA_BLOB blob_send = data_blob_null;
+	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	fstring fqdn;
 	const char *servicename;

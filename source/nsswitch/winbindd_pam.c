@@ -1155,7 +1155,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 						   local_lm_response, 
 						   sizeof(local_lm_response));
 		} else {
-			lm_resp = data_blob(NULL, 0);
+			lm_resp = data_blob_null;
 		}
 		SMBNTencrypt(state->request.data.auth.pass, 
 			     chal,

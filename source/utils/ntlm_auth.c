@@ -704,7 +704,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 		}
 		request = base64_decode_data_blob(buf + 3);
 	} else {
-		request = data_blob(NULL, 0);
+		request = data_blob_null;
 	}
 
 	if ((strncmp(buf, "PW ", 3) == 0)) {
@@ -832,7 +832,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		}
 		request = base64_decode_data_blob(buf + 3);
 	} else {
-		request = data_blob(NULL, 0);
+		request = data_blob_null;
 	}
 
 	if (strncmp(buf, "PW ", 3) == 0) {
@@ -854,7 +854,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 
 	if (!ntlmssp_state && use_cached_creds) {
 		/* check whether credentials are usable. */
-		DATA_BLOB empty_blob = data_blob(NULL, 0);
+		DATA_BLOB empty_blob = data_blob_null;
 
 		nt_status = do_ccache_ntlm_auth(empty_blob, empty_blob, NULL);
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -910,7 +910,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		}
 		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
 		first = True;
-		initial_message = data_blob(NULL, 0);
+		initial_message = data_blob_null;
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
@@ -1140,7 +1140,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;
 			response.negTokenTarg.supportedMech = SMB_STRDUP(OID_NTLMSSP);
-			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+			response.negTokenTarg.mechListMIC = data_blob_null;
 
 			status = ntlmssp_update(ntlmssp_state,
 						       request.negTokenInit.mechToken,
@@ -1163,8 +1163,8 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;
 			response.negTokenTarg.supportedMech = SMB_STRDUP(OID_KERBEROS5_OLD);
-			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
-			response.negTokenTarg.responseToken = data_blob(NULL, 0);
+			response.negTokenTarg.mechListMIC = data_blob_null;
+			response.negTokenTarg.responseToken = data_blob_null;
 
 			status = ads_verify_ticket(mem_ctx, lp_realm(), 0,
 						   &request.negTokenInit.mechToken,
@@ -1222,7 +1222,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 
 		response.type = SPNEGO_NEG_TOKEN_TARG;
 		response.negTokenTarg.supportedMech = SMB_STRDUP(OID_NTLMSSP);
-		response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+		response.negTokenTarg.mechListMIC = data_blob_null;
 
 		if (NT_STATUS_IS_OK(status)) {
 			user = SMB_STRDUP(ntlmssp_state->user);
@@ -1276,7 +1276,7 @@ static NTLMSSP_STATE *client_ntlmssp_state = NULL;
 static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 {
 	NTSTATUS status;
-	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB null_blob = data_blob_null;
 	DATA_BLOB to_server;
 	char *to_server_base64;
 	const char *my_mechs[] = {OID_NTLMSSP, NULL};
@@ -1337,7 +1337,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 {
 	NTSTATUS status;
-	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB null_blob = data_blob_null;
 	DATA_BLOB request;
 	DATA_BLOB to_server;
 	char *to_server_base64;
@@ -1398,7 +1398,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 {
 	char *principal;
 	DATA_BLOB tkt, to_server;
-	DATA_BLOB session_key_krb5 = data_blob(NULL, 0);
+	DATA_BLOB session_key_krb5 = data_blob_null;
 	SPNEGO_DATA reply;
 	char *reply_base64;
 	int retval;
@@ -1462,7 +1462,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 	reply.negTokenInit.mechTypes = my_mechs;
 	reply.negTokenInit.reqFlags = 0;
 	reply.negTokenInit.mechToken = tkt;
-	reply.negTokenInit.mechListMIC = data_blob(NULL, 0);
+	reply.negTokenInit.mechListMIC = data_blob_null;
 
 	len = write_spnego_data(&to_server, &reply);
 	data_blob_free(&tkt);
@@ -1751,9 +1751,9 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			}
 		}
 		/* clear out the state */
-		challenge = data_blob(NULL, 0);
-		nt_response = data_blob(NULL, 0);
-		lm_response = data_blob(NULL, 0);
+		challenge = data_blob_null;
+		nt_response = data_blob_null;
+		lm_response = data_blob_null;
 		SAFE_FREE(full_username);
 		SAFE_FREE(username);
 		SAFE_FREE(domain);
@@ -1800,7 +1800,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 8)\n.\n", 
 				  parameter,
 				  (int)challenge.length);
-			challenge = data_blob(NULL, 0);
+			challenge = data_blob_null;
 		}
 	} else if (strequal(request, "NT-Response")) {
 		nt_response = strhex_to_data_blob(NULL, parameter);
@@ -1808,7 +1808,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (only got %d bytes, needed at least 24)\n.\n", 
 				  parameter,
 				  (int)nt_response.length);
-			nt_response = data_blob(NULL, 0);
+			nt_response = data_blob_null;
 		}
 	} else if (strequal(request, "LANMAN-Response")) {
 		lm_response = strhex_to_data_blob(NULL, parameter);
@@ -1816,7 +1816,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 24)\n.\n", 
 				  parameter,
 				  (int)lm_response.length);
-			lm_response = data_blob(NULL, 0);
+			lm_response = data_blob_null;
 		}
 	} else if (strequal(request, "Password")) {
 		plaintext_password = smb_xstrdup(parameter);
@@ -1950,10 +1950,10 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_
 			SAFE_FREE(error_string);
 		}
 		/* clear out the state */
-		new_nt_pswd = data_blob(NULL, 0);
-		old_nt_hash_enc = data_blob(NULL, 0);
-		new_lm_pswd = data_blob(NULL, 0);
-		old_nt_hash_enc = data_blob(NULL, 0);
+		new_nt_pswd = data_blob_null;
+		old_nt_hash_enc = data_blob_null;
+		new_lm_pswd = data_blob_null;
+		old_nt_hash_enc = data_blob_null;
 		SAFE_FREE(full_username);
 		SAFE_FREE(username);
 		SAFE_FREE(domain);
@@ -1999,7 +1999,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_
 				  "(got %d bytes, expected 516)\n.\n", 
 				  parameter,
 				  (int)new_nt_pswd.length);
-			new_nt_pswd = data_blob(NULL, 0);
+			new_nt_pswd = data_blob_null;
 		}
 	} else if (strequal(request, "old-nt-hash-blob")) {
 		old_nt_hash_enc = strhex_to_data_blob(NULL, parameter);
@@ -2008,7 +2008,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_
 				  "(got %d bytes, expected 16)\n.\n", 
 				  parameter,
 				  (int)old_nt_hash_enc.length);
-			old_nt_hash_enc = data_blob(NULL, 0);
+			old_nt_hash_enc = data_blob_null;
 		}
 	} else if (strequal(request, "new-lm-password-blob")) {
 		new_lm_pswd = strhex_to_data_blob(NULL, parameter);
@@ -2017,7 +2017,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_
 				  "(got %d bytes, expected 516)\n.\n", 
 				  parameter,
 				  (int)new_lm_pswd.length);
-			new_lm_pswd = data_blob(NULL, 0);
+			new_lm_pswd = data_blob_null;
 		}
 	}
 	else if (strequal(request, "old-lm-hash-blob"))	{
@@ -2028,7 +2028,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_
 				  "(got %d bytes, expected 16)\n.\n", 
 				  parameter,
 				  (int)old_lm_hash_enc.length);
-			old_lm_hash_enc = data_blob(NULL, 0);
+			old_lm_hash_enc = data_blob_null;
 		}
 	} else if (strequal(request, "nt-domain")) {
 		domain = smb_xstrdup(parameter);

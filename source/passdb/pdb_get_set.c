@@ -849,7 +849,7 @@ BOOL pdb_set_nt_passwd(struct samu *sampass, const uint8 pwd[NT_HASH_LEN], enum 
                sampass->nt_pw =
 		       data_blob_talloc(sampass, pwd, NT_HASH_LEN);
        } else {
-               sampass->nt_pw = data_blob(NULL, 0);
+               sampass->nt_pw = data_blob_null;
        }
 
 	return pdb_set_init_flags(sampass, PDB_NTPASSWD, flag);
@@ -868,7 +868,7 @@ BOOL pdb_set_lanman_passwd(struct samu *sampass, const uint8 pwd[LM_HASH_LEN], e
 	if (pwd && lp_lanman_auth() ) {
 		sampass->lm_pw = data_blob_talloc(sampass, pwd, LM_HASH_LEN);
 	} else {
-		sampass->lm_pw = data_blob(NULL, 0);
+		sampass->lm_pw = data_blob_null;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_LMPASSWD, flag);

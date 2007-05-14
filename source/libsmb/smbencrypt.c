@@ -347,7 +347,7 @@ void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
 DATA_BLOB NTLMv2_generate_names_blob(const char *hostname, 
 				     const char *domain)
 {
-	DATA_BLOB names_blob = data_blob(NULL, 0);
+	DATA_BLOB names_blob = data_blob_null;
 	
 	msrpc_gen(&names_blob, "aaa", 
 		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
@@ -359,7 +359,7 @@ DATA_BLOB NTLMv2_generate_names_blob(const char *hostname,
 static DATA_BLOB NTLMv2_generate_client_data(const DATA_BLOB *names_blob) 
 {
 	uchar client_chal[8];
-	DATA_BLOB response = data_blob(NULL, 0);
+	DATA_BLOB response = data_blob_null;
 	char long_date[8];
 
 	generate_random_buffer(client_chal, sizeof(client_chal));

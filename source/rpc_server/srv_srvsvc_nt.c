@@ -2048,7 +2048,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 
 
 	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob(NULL, 0);
+	null_pw = data_blob_null;
 
 	become_root();
 	conn = make_connection(r->in.share, null_pw, "A:", p->pipe_user.vuid, &nt_status);
@@ -2153,7 +2153,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 	ZERO_STRUCT(st);
 
 	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob(NULL, 0);
+	null_pw = data_blob_null;
 
 	become_root();
 	conn = make_connection(r->in.share, null_pw, "A:", p->pipe_user.vuid, &nt_status);

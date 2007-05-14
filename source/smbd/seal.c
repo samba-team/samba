@@ -346,8 +346,8 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 	OM_uint32 flags = 0;
 	gss_buffer_desc in_buf, out_buf;
 	struct smb_tran_enc_state_gss *gss_state;
-	DATA_BLOB auth_reply = data_blob(NULL,0);
-	DATA_BLOB response = data_blob(NULL,0);
+	DATA_BLOB auth_reply = data_blob_null;
+	DATA_BLOB response = data_blob_null;
 	NTSTATUS status;
 
 	if (!partial_srv_trans_enc_ctx) {
@@ -419,8 +419,8 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 static NTSTATUS srv_enc_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob, BOOL spnego_wrap)
 {
 	NTSTATUS status;
-	DATA_BLOB chal = data_blob(NULL, 0);
-	DATA_BLOB response = data_blob(NULL, 0);
+	DATA_BLOB chal = data_blob_null;
+	DATA_BLOB response = data_blob_null;
 
 	status = make_srv_encryption_context(SMB_TRANS_ENC_NTLM, &partial_srv_trans_enc_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -459,8 +459,8 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 					size_t *p_param_size)
 {
 	NTSTATUS status;
-	DATA_BLOB blob = data_blob(NULL,0);
-	DATA_BLOB secblob = data_blob(NULL, 0);
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB secblob = data_blob_null;
 	BOOL got_kerberos_mechanism = False;
 
 	blob = data_blob_const(*ppdata, *p_data_size);
@@ -514,10 +514,10 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 					size_t *p_param_size)
 {
 	NTSTATUS status;
-	DATA_BLOB blob = data_blob(NULL,0);
-	DATA_BLOB auth = data_blob(NULL,0);
-	DATA_BLOB auth_reply = data_blob(NULL,0);
-	DATA_BLOB response = data_blob(NULL,0);
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB auth = data_blob_null;
+	DATA_BLOB auth_reply = data_blob_null;
+	DATA_BLOB response = data_blob_null;
 	struct smb_srv_trans_enc_ctx *ec = partial_srv_trans_enc_ctx;
 
 	/* We must have a partial context here. */
@@ -567,7 +567,7 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 {
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob_const(*ppdata, *p_data_size);
-	DATA_BLOB response = data_blob(NULL,0);
+	DATA_BLOB response = data_blob_null;
 	struct smb_srv_trans_enc_ctx *ec;
 
 	if (!partial_srv_trans_enc_ctx) {

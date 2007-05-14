@@ -177,7 +177,7 @@ static BOOL make_krb5_skew_error(DATA_BLOB *pblob_out)
 	char *host_princ_s = NULL;
 	BOOL ret = False;
 
-	*pblob_out = data_blob(NULL,0);
+	*pblob_out = data_blob_null;
 
 	initialize_krb5_error_table();
 	kerr = krb5_init_context(&context);
@@ -243,9 +243,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	PAC_DATA *pac_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB session_key = data_blob_null;
 	uint8 tok_id[2];
-	DATA_BLOB nullblob = data_blob(NULL, 0);
+	DATA_BLOB nullblob = data_blob_null;
 	fstring real_username;
 	BOOL map_domainuser_to_guest = False;
 	BOOL username_was_mapped;
@@ -539,7 +539,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (NT_STATUS_IS_OK(ret)) {
 		ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep, TOK_ID_KRB_AP_REP);
 	} else {
-		ap_rep_wrapped = data_blob(NULL, 0);
+		ap_rep_wrapped = data_blob_null;
 	}
 	response = spnego_gen_auth_response(&ap_rep_wrapped, ret, OID_KERBEROS5_OLD);
 	reply_sesssetup_blob(conn, inbuf, outbuf, response, ret);
@@ -582,7 +582,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		int sess_vuid;
-		DATA_BLOB nullblob = data_blob(NULL, 0);
+		DATA_BLOB nullblob = data_blob_null;
 		DATA_BLOB session_key = data_blob((*auth_ntlmssp_state)->ntlmssp_state->session_key.data, (*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
 
 		/* register_vuid keeps the server info */
@@ -748,9 +748,9 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     DATA_BLOB blob1,
 			     AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 {
-	DATA_BLOB auth = data_blob(NULL,0);
-	DATA_BLOB auth_reply = data_blob(NULL,0);
-	DATA_BLOB secblob = data_blob(NULL,0);
+	DATA_BLOB auth = data_blob_null;
+	DATA_BLOB auth_reply = data_blob_null;
+	DATA_BLOB secblob = data_blob_null;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
@@ -1089,7 +1089,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	}
 
 	if (!vuser) {
-		vuid = register_vuid(NULL, data_blob(NULL, 0), data_blob(NULL, 0), NULL);
+		vuid = register_vuid(NULL, data_blob_null, data_blob_null, NULL);
 		if (vuid == UID_FIELD_INVALID ) {
 			data_blob_free(&blob1);
 			return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
@@ -1509,7 +1509,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	if (server_info->user_session_key.data) {
 		session_key = data_blob(server_info->user_session_key.data, server_info->user_session_key.length);
 	} else {
-		session_key = data_blob(NULL, 0);
+		session_key = data_blob_null;
 	}
 
 	data_blob_clear_free(&plaintext_password);
