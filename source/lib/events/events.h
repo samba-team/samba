@@ -46,6 +46,7 @@ typedef void (*event_aio_handler_t)(struct event_context *, struct aio_event *,
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
 const char **event_backend_list(TALLOC_CTX *mem_ctx);
+void event_set_default_backend(const char *backend);
 
 struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 			      int fd, uint16_t flags, event_fd_handler_t handler,
@@ -79,6 +80,7 @@ struct event_context *event_context_find(TALLOC_CTX *mem_ctx);
 /* bits for file descriptor event flags */
 #define EVENT_FD_READ 1
 #define EVENT_FD_WRITE 2
+#define EVENT_FD_AUTOCLOSE 4
 
 #define EVENT_FD_WRITEABLE(fde) \
 	event_set_fd_flags(fde, event_get_fd_flags(fde) | EVENT_FD_WRITE)
