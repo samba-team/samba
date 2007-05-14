@@ -691,4 +691,116 @@ done:
 	}
 	return ret;
 }
+
+/**********************************************************************
+ List system keytab.
+***********************************************************************/
+
+int ads_keytab_list(void)
+{
+	krb5_error_code ret = 0;
+	krb5_context context = NULL;
+	krb5_keytab keytab = NULL;
+	krb5_kt_cursor cursor;
+	krb5_keytab_entry kt_entry;
+	char keytab_name[MAX_KEYTAB_NAME_LEN];
+
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+
+	initialize_krb5_error_table();
+	ret = krb5_init_context(&context);
+	if (ret) {
+		DEBUG(1,("ads_keytab_list: could not krb5_init_context: %s\n",error_message(ret)));
+		return ret;
+	}
+#if 0 /* HAVE_WRFILE_KEYTAB */
+	keytab_name[0] = 'W';
+	keytab_name[1] = 'R';
+	ret = krb5_kt_default_name(context, (char *) &keytab_name[2], MAX_KEYTAB_NAME_LEN - 4);
+#else
+	ret = krb5_kt_default_name(context, (char *) &keytab_name[0], MAX_KEYTAB_NAME_LEN - 2);
+#endif
+	if (ret) {
+		DEBUG(1,("ads_keytab_list: krb5_kt_default failed (%s)\n", error_message(ret)));
+		goto out;
+	}
+	DEBUG(3,("ads_keytab_list: Using default keytab: %s\n", (char *) &keytab_name));
+	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
+	if (ret) {
+		DEBUG(1,("ads_keytab_list: krb5_kt_resolve failed (%s)\n", error_message(ret)));
+		goto out;
+	}
+
+	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+	if (ret) {
+		goto out;
+	}
+
+	printf("Vno  Type        Principal\n");
+
+	while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
+	
+		char *princ_s = NULL;
+		char *etype_s = NULL;
+		krb5_enctype enctype = 0;
+
+		ret = smb_krb5_unparse_name(context, kt_entry.principal, &princ_s);
+		if (ret) {
+			goto out;
+		}
+
+		enctype = smb_get_enctype_from_kt_entry(&kt_entry);
+
+		ret = smb_krb5_enctype_to_string(context, enctype, &etype_s);
+		if (ret) {
+			SAFE_FREE(princ_s);
+			goto out;
+		}
+
+		printf("%3d  %s\t\t %s\n", kt_entry.vno, etype_s, princ_s);
+
+		SAFE_FREE(princ_s);
+		SAFE_FREE(etype_s);
+
+		ret = smb_krb5_kt_free_entry(context, &kt_entry);
+		if (ret) {
+			goto out;
+		}
+	}
+
+	ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+	if (ret) {
+		goto out;
+	}
+
+	/* Ensure we don't double free. */
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+out:
+
+	{
+		krb5_keytab_entry zero_kt_entry;
+		ZERO_STRUCT(zero_kt_entry);
+		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+			smb_krb5_kt_free_entry(context, &kt_entry);
+		}
+	}
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);	
+		}
+	}
+
+	if (keytab) {
+		krb5_kt_close(context, keytab);
+	}
+	if (context) {
+		krb5_free_context(context);
+	}
+	return ret;
+}
+
 #endif /* HAVE_KRB5 */

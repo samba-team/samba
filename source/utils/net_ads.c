@@ -2424,10 +2424,11 @@ static int net_ads_keytab_usage(int argc, const char **argv)
 	d_printf(
 		"net ads keytab <COMMAND>\n"\
 "<COMMAND> can be either:\n"\
-"  CREATE    Creates a fresh keytab\n"\
 "  ADD       Adds new service principal\n"\
+"  CREATE    Creates a fresh keytab\n"\
 "  FLUSH     Flushes out all keytab entries\n"\
 "  HELP      Prints this help message\n"\
+"  LIST      List the keytab\n"\
 "The ADD command will take arguments, the other commands\n"\
 "will not take any arguments.   The arguments given to ADD\n"\
 "should be a list of principals to add.  For example, \n"\
@@ -2482,6 +2483,12 @@ static int net_ads_keytab_create(int argc, const char **argv)
 	return ret;
 }
 
+static int net_ads_keytab_list(int argc, const char **argv)
+{
+	return ads_keytab_list();
+}
+
+
 int net_ads_keytab(int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -2489,6 +2496,7 @@ int net_ads_keytab(int argc, const char **argv)
 		{"ADD", net_ads_keytab_add},
 		{"FLUSH", net_ads_keytab_flush},
 		{"HELP", net_ads_keytab_usage},
+		{"LIST", net_ads_keytab_list},
 		{NULL, NULL}
 	};
 
