@@ -447,6 +447,7 @@ VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
 VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o modules/nfs4_acls.o
 VFS_SOLARISACL_OBJ = modules/vfs_solarisacl.o
+VFS_ZFSACL_OBJ = modules/vfs_zfsacl.o modules/nfs4_acls.o
 VFS_HPUXACL_OBJ = modules/vfs_hpuxacl.o
 VFS_IRIXACL_OBJ = modules/vfs_irixacl.o
 VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
@@ -1589,6 +1590,11 @@ bin/aixacl2.@SHLIBEXT@: $(VFS_AIXACL2_OBJ)
 bin/solarisacl.@SHLIBEXT@: $(VFS_SOLARISACL_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_SOLARISACL_OBJ)
+
+bin/zfsacl.@SHLIBEXT@: $(VFS_ZFSACL_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_ZFSACL_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
 bin/irixacl.@SHLIBEXT@: proto_exists $(VFS_IRIXACL_OBJ)
 	@echo "Building plugin $@"
