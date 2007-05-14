@@ -1507,14 +1507,6 @@ bin/ldap.@SHLIBEXT@: proto_exists nsswitch/idmap_ldap.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) nsswitch/idmap_ldap.o
 
-bin/nss.@SHLIBEXT@: proto_exists nsswitch/idmap_nss.o
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) nsswitch/idmap_nss.o
-
-bin/tdb.@SHLIBEXT@: proto_exists nsswitch/idmap_tdb.o
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) nsswitch/idmap_tdb.o
-
 bin/weird.@SHLIBEXT@: proto_exists $(DEVEL_HELP_WEIRD_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(DEVEL_HELP_WEIRD_OBJ)
