@@ -832,12 +832,30 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 /*
   Send a message to a particular server
 */
-NTSTATUS messaging_send(struct messaging_context *msg,
+NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, 
 			uint32_t msg_type, const DATA_BLOB *data)
 {
 	return message_send_pid_internal(server, msg_type, data->data,
 					 data->length, True, 0);
+}
+
+NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
+			    struct server_id server, uint32_t msg_type,
+			    const uint8 *buf, size_t len)
+{
+	DATA_BLOB blob = data_blob_const(buf, len);
+	return messaging_send(msg_ctx, server, msg_type, &blob);
+}
+
+NTSTATUS messaging_send_buf_with_timeout(struct messaging_context *msg_ctx,
+					 struct server_id server,
+					 uint32_t msg_type,
+					 const uint8 *buf, size_t len,
+					 int timeout)
+{
+	return message_send_pid_internal(server, msg_type, buf, len,
+					 True, timeout);
 }
 
 /** @} **/

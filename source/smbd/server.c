@@ -646,7 +646,8 @@ static void exit_server_common(enum server_exit_reason how,
 
 	invalidate_all_vuids();
 
-	print_notify_send_messages(3); /* 3 second timeout. */
+	/* 3 second timeout. */
+	print_notify_send_messages(smbd_messaging_context(), 3);
 
 	/* delete our entry in the connections database. */
 	yield_connection(NULL,"");
@@ -755,7 +756,8 @@ static BOOL deadtime_fn(const struct timeval *now, void *private_data)
 	if ((conn_num_open() == 0)
 	    || (conn_idle_all(now->tv_sec))) {
 		DEBUG( 2, ( "Closing idle connection\n" ) );
-		message_send_pid(procid_self(), MSG_SHUTDOWN, NULL, 0, False);
+		messaging_send(smbd_messaging_context(), procid_self(),
+			       MSG_SHUTDOWN, &data_blob_null);
 		return False;
 	}
 
@@ -1062,7 +1064,7 @@ extern void build_options(BOOL screen);
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks())
+	if (!init_oplocks(smbd_messaging_context()))
 		exit(1);
 	
 	/* Setup aio signal handler. */
