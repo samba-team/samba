@@ -131,7 +131,9 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		close(result->fd[0]);
 		tdb_chainlock(ctdb_db->ltdb->tdb, key);
 		write(result->fd[1], &c, 1);
-		pause();
+		/* this read will exit when the parent closes its end
+		   of the pipe, or the parent dies */
+		read(result->fd[1], &c, 1);
 		_exit(0);
 	}
 
