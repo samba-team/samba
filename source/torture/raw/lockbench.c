@@ -44,7 +44,9 @@ static int nprocs;
 static int lock_failed;
 
 struct benchlock_state {
+	struct event_context *ev;
 	struct smbcli_state *cli;
+	int client_num;
 	int fnum;
 	int offset;
 	int count;
@@ -77,6 +79,33 @@ static void lock_send(struct benchlock_state *state)
 }
 
 /*
+  reopen dead connections
+ */
+static void reopen_connection(struct benchlock_state *state)
+{
+	do {
+		DEBUG(0,("reopening connection %u\n", state->client_num));
+	} while (!torture_open_connection_ev(&state->cli, state->client_num, state->ev));
+	
+	state->fnum = smbcli_open(state->cli->tree, FNAME, O_RDWR|O_CREAT, DENY_NONE);
+	if (state->fnum == -1) {
+		printf("Failed to open %s on connection %d\n", FNAME, state->client_num);
+		exit(1);
+	}
+
+	state->lock[0].offset = state->offset;
+	state->io.lockx.in.ulock_cnt = 0;
+	state->req = smb_raw_lock_send(state->cli->tree, &state->io);
+	if (state->req == NULL) {
+		DEBUG(0,("Failed to setup lock\n"));
+		lock_failed++;
+	}
+	state->req->async.private = state;
+	state->req->async.fn      = lock_completion;
+	state->offset = (state->offset+1)%nprocs;
+}
+
+/*
   called when a lock completes
 */
 static void lock_completion(struct smbcli_request *req)
@@ -87,6 +116,9 @@ static void lock_completion(struct smbcli_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		lock_failed++;
 		DEBUG(0,("Lock failed - %s\n", nt_errstr(status)));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+			reopen_connection(state);
+		}
 	} else {
 		state->count++;
 		lock_send(state);
@@ -114,6 +146,8 @@ BOOL torture_bench_lock(struct torture_context *torture)
 
 	printf("Opening %d connections\n", nprocs);
 	for (i=0;i<nprocs;i++) {
+		state[i].client_num = i;
+		state[i].ev = ev;
 		if (!torture_open_connection_ev(&state[i].cli, i, ev)) {
 			return False;
 		}
@@ -171,9 +205,10 @@ BOOL torture_bench_lock(struct torture_context *torture)
 		for (i=0;i<nprocs;i++) {
 			total += state[i].count;
 		}
-
 		if (torture_setting_bool(torture, "progress", true)) {
-			printf("%.2f ops/second\r", total/timeval_elapsed(&tv));
+			printf("%.2f ops/second (remaining=%u)\r", 
+			       total/timeval_elapsed(&tv), 
+			       (unsigned)(timelimit - timeval_elapsed(&tv)));
 			fflush(stdout);
 		}
 	}
