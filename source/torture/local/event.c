@@ -82,7 +82,7 @@ static bool test_event_context(struct torture_context *test,
 	/* create a pipe */
 	pipe(fd);
 
-	fde = event_add_fd(ev_ctx, ev_ctx, fd[0], EVENT_FD_READ, 
+	fde = event_add_fd(ev_ctx, ev_ctx, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   fde_handler, fd);
 
 	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(2,0), 
@@ -105,7 +105,6 @@ static bool test_event_context(struct torture_context *test,
 	}
 
 	talloc_free(fde);
-	close(fd[0]);
 	close(fd[1]);
 
 	while (alarm_count < fde_count+1) {
