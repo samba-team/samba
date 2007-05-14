@@ -4709,7 +4709,7 @@ cacl_get(SMBCCTX *context,
                                                              ace->access_mask);
                                         }
                                 }
-                                if (n > bufsize) {
+                                if (!determine_size && n > bufsize) {
                                         errno = ERANGE;
                                         return -1;
                                 }
