@@ -31,6 +31,10 @@
 #include <sys/select.h>
 #endif
 
+#ifdef HAVE_SYS_EPOLL_H
+#include <sys/epoll.h>
+#endif
+
 #ifndef SELECT_CAST
 #define SELECT_CAST
 #endif
