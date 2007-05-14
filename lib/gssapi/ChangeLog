@@ -1,4 +1,9 @@
-2007-05-09  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/prf.c: switched MIN to min to make compile on solaris,
+	pointed out by David Love.
+	
+2007-05-09 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* krb5/inquire_cred_by_mech.c: Fill in all of the variables if
 	they are passed in. Pointed out by Phil Fisher.
