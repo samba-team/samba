@@ -195,7 +195,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 	blr->length = length;
 
 	/* Add a pending lock record for this. */
-	status = brl_lock(br_lck,
+	status = brl_lock(smbd_messaging_context(), br_lck,
 			lock_pid,
 			procid_self(),
 			offset,
@@ -355,7 +355,8 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 		 * request would never have been queued. JRA.
 		 */
 		
-		do_unlock(fsp,
+		do_unlock(smbd_messaging_context(),
+			fsp,
 			lock_pid,
 			count,
 			offset,
@@ -435,7 +436,8 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 		 * request would never have been queued. JRA.
 		 */
 		errno = 0;
-		br_lck = do_lock(fsp,
+		br_lck = do_lock(smbd_messaging_context(),
+				fsp,
 				lock_pid,
 				count,
 				offset, 
@@ -496,7 +498,8 @@ static BOOL process_trans2(blocking_lock_record *blr)
 	char *outbuf;
 	char params[2];
 	NTSTATUS status;
-	struct byte_range_lock *br_lck = do_lock(blr->fsp,
+	struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
+						blr->fsp,
 						blr->lock_pid,
 						blr->count,
 						blr->offset,
