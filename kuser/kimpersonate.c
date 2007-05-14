@@ -120,7 +120,6 @@ encode_ticket (krb5_context context,
      */
 
     ticket.tkt_vno = 5;
-    ticket.tkt_vno = skvno;
     ticket.realm = *krb5_princ_realm (context, cred->server);
     copy_PrincipalName(&cred->server->name, &ticket.sname);
     
