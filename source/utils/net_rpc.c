@@ -3118,7 +3118,7 @@ static void display_share_info_1(struct srvsvc_NetShareInfo1 *info1)
 {
 	if (opt_long_list_entries) {
 		d_printf("%-12s %-8.8s %-50s\n",
-			 info1->name, share_type[info1->type],
+			 info1->name, share_type[info1->type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
 			 info1->comment ? info1->comment : "");
 	} else {
 		d_printf("%s\n", info1->name);
