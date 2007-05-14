@@ -207,11 +207,12 @@ BOOL torture_bench_open(struct torture_context *torture)
 			goto failed;
 		}
 
-		if (loops++ % 1000 != 0) continue;
+		if (loops++ % 10 != 0) continue;
 
 		if (torture_setting_bool(torture, "progress", true)) {
-			printf("%.2f ops/second (%d retries)\r", 
-			       total/timeval_elapsed(&tv), open_retries);
+			printf("%.2f ops/second (%d retries) (%u remaining)\r", 
+			       total/timeval_elapsed(&tv), open_retries,
+			       (unsigned)(timelimit - timeval_elapsed(&tv)));
 			fflush(stdout);
 		}
 	}
