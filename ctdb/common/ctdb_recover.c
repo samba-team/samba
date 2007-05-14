@@ -91,6 +91,11 @@ ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 {
 	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
 
+	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+		DEBUG(0,("Attempt to set vnnmap when not frozen\n"));
+		return -1;
+	}
+
 	talloc_free(ctdb->vnn_map);
 
 	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
