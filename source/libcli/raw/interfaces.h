@@ -1889,11 +1889,12 @@ union smb_lock {
 			uint64_t offset;
 			uint64_t count;
 			uint32_t unknown5;
-#define SMB2_LOCK_FLAG_NONE	0x00000000
-#define SMB2_LOCK_FLAG_EXCLUSIV	0x00000002
-#define SMB2_LOCK_FLAG_UNLOCK	0x00000004
-#define SMB2_LOCK_FLAGS_MASK	0x00000006
-			uint32_t flags; 
+#define SMB2_LOCK_FLAG_NONE		0x00000000
+#define SMB2_LOCK_FLAG_SHARED		0x00000001
+#define SMB2_LOCK_FLAG_EXCLUSIV		0x00000002
+#define SMB2_LOCK_FLAG_UNLOCK		0x00000004
+#define SMB2_LOCK_FLAG_NO_PENDING	0x00000010
+			uint32_t flags;
 		} in;
 		struct {
 			/* static body buffer 4 (0x04) bytes */
