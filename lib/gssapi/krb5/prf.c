@@ -127,7 +127,7 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
 	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	    return GSS_S_FAILURE;
 	}
-	memcpy(p, output.data, MIN(desired_output_len, output.length));
+	memcpy(p, output.data, min(desired_output_len, output.length));
 	p += output.length;
 	desired_output_len -= output.length;
 	krb5_data_free(&output);
