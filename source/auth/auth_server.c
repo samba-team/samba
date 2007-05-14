@@ -226,24 +226,24 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 			   to pass that unencrypted password over */
 			*my_private_data =
 				(void *)make_server_security_state(cli);
-			return data_blob(NULL, 0);
+			return data_blob_null;
 			
 		} else if (cli->secblob.length < 8) {
 			/* We can't do much if we don't get a full challenge */
 			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
 			cli_shutdown(cli);
-			return data_blob(NULL, 0);
+			return data_blob_null;
 		}
 
 		if (!(*my_private_data = (void *)make_server_security_state(cli))) {
-			return data_blob(NULL,0);
+			return data_blob_null;
 		}
 
 		/* The return must be allocated on the caller's mem_ctx, as our own will be
 		   destoyed just after the call. */
 		return data_blob_talloc(auth_context->mem_ctx, cli->secblob.data,8);
 	} else {
-		return data_blob(NULL, 0);
+		return data_blob_null;
 	}
 }
 

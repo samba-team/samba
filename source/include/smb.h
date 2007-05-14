@@ -538,6 +538,8 @@ typedef struct data_blob_ {
 	void (*free)(struct data_blob_ *data_blob);
 } DATA_BLOB;
 
+extern const DATA_BLOB data_blob_null;
+
 /*
  * Structure used to keep directory state information around.
  * Used in NT change-notify code.

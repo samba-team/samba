@@ -1230,7 +1230,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 
 	if (strequal(service_in,HOMES_NAME)) {
 		if(lp_security() != SEC_SHARE) {
-			DATA_BLOB no_pw = data_blob(NULL, 0);
+			DATA_BLOB no_pw = data_blob_null;
 			if (vuser->homes_snum == -1) {
 				DEBUG(2, ("[homes] share not available for "
 					  "this user because it was not found "
@@ -1266,7 +1266,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	} else if ((lp_security() != SEC_SHARE) && (vuser->homes_snum != -1)
 		   && strequal(service_in,
 			       lp_servicename(vuser->homes_snum))) {
-		DATA_BLOB no_pw = data_blob(NULL, 0);
+		DATA_BLOB no_pw = data_blob_null;
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
 		return make_connection_snum(vuser->homes_snum,

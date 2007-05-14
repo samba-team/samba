@@ -333,8 +333,8 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 
 	*principal = NULL;
 	*pac_data = NULL;
-	*ap_rep = data_blob(NULL,0);
-	*session_key = data_blob(NULL,0);
+	*ap_rep = data_blob_null;
+	*session_key = data_blob_null;
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);

@@ -1429,7 +1429,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	 */
 
 	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob(NULL, 0);
+	null_pw = data_blob_null;
 	fstrcpy(res_type, "A:");
  	become_root();
 	conn = make_connection_with_chdir("print$", null_pw, res_type, user->vuid, &nt_status);
@@ -1766,7 +1766,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	 * Note we must be root to do this.
 	 */
 
-	null_pw = data_blob(NULL, 0);
+	null_pw = data_blob_null;
 	fstrcpy(res_type, "A:");
 	become_root();
 	conn = make_connection_with_chdir("print$", null_pw, res_type, user->vuid, &nt_status);
@@ -4909,7 +4909,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	 * do this.
 	 */
 	 
-	null_pw = data_blob( NULL, 0 );
+	null_pw = data_blob_null;
 	fstrcpy(res_type, "A:");
 	become_root();
         conn = make_connection_with_chdir( "print$", null_pw, res_type, user->vuid, &nt_status );

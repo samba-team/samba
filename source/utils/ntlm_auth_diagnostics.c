@@ -314,9 +314,9 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 	BOOL pass = True;
 	NTSTATUS nt_status;
 	uint32 flags = 0;
-	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
-	DATA_BLOB lmv2_response = data_blob(NULL, 0);
-	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
+	DATA_BLOB ntlmv2_response = data_blob_null;
+	DATA_BLOB lmv2_response = data_blob_null;
+	DATA_BLOB ntlmv2_session_key = data_blob_null;
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(get_winbind_netbios_name(), get_winbind_domain());
 
 	uchar user_session_key[16];
@@ -442,8 +442,8 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 {
 	NTSTATUS nt_status;
 	uint32 flags = 0;
-	DATA_BLOB nt_response = data_blob(NULL, 0);
-	DATA_BLOB lm_response = data_blob(NULL, 0);
+	DATA_BLOB nt_response = data_blob_null;
+	DATA_BLOB lm_response = data_blob_null;
 	char *password;
 	smb_ucs2_t *nt_response_ucs2;
 
