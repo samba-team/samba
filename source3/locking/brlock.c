@@ -584,8 +584,9 @@ OR
  We must cope with range splits and merges.
 ****************************************************************************/
 
-static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
-			const struct lock_struct *plock)
+static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
+			       struct byte_range_lock *br_lck,
+			       const struct lock_struct *plock)
 {
 	unsigned int i, count;
 	struct lock_struct *locks = br_lck->lock_data;
@@ -708,9 +709,8 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 				DEBUG(10,("brl_lock_posix: sending unlock message to pid %s\n",
 					procid_str_static(&pend_lock->context.pid )));
 
-				message_send_pid(pend_lock->context.pid,
-						MSG_SMB_UNLOCK,
-						NULL, 0, True);
+				messaging_send(msg_ctx, pend_lock->context.pid,
+					       MSG_SMB_UNLOCK, &data_blob_null);
 			}
 		}
 	}
@@ -722,7 +722,8 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
  Lock a range of bytes.
 ****************************************************************************/
 
-NTSTATUS brl_lock(struct byte_range_lock *br_lck,
+NTSTATUS brl_lock(struct messaging_context *msg_ctx,
+		struct byte_range_lock *br_lck,
 		uint32 smbpid,
 		struct server_id pid,
 		br_off start,
@@ -752,7 +753,7 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 	if (lock_flav == WINDOWS_LOCK) {
 		ret = brl_lock_windows(br_lck, &lock, blocking_lock);
 	} else {
-		ret = brl_lock_posix(br_lck, &lock);
+		ret = brl_lock_posix(msg_ctx, br_lck, &lock);
 	}
 
 #if ZERO_ZERO
@@ -767,7 +768,9 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
  Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
 
-static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock_struct *plock)
+static BOOL brl_unlock_windows(struct messaging_context *msg_ctx,
+			       struct byte_range_lock *br_lck,
+			       const struct lock_struct *plock)
 {
 	unsigned int i, j;
 	struct lock_struct *locks = br_lck->lock_data;
@@ -856,9 +859,8 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
-			message_send_pid(pend_lock->context.pid,
-					MSG_SMB_UNLOCK,
-					NULL, 0, True);
+			messaging_send(msg_ctx, pend_lock->context.pid,
+				       MSG_SMB_UNLOCK, &data_blob_null);
 		}
 	}
 
@@ -869,7 +871,9 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
  Unlock a range of bytes - POSIX semantics.
 ****************************************************************************/
 
-static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_struct *plock)
+static BOOL brl_unlock_posix(struct messaging_context *msg_ctx,
+			     struct byte_range_lock *br_lck,
+			     const struct lock_struct *plock)
 {
 	unsigned int i, j, count;
 	struct lock_struct *tp;
@@ -1024,9 +1028,8 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
-			message_send_pid(pend_lock->context.pid,
-					MSG_SMB_UNLOCK,
-					NULL, 0, True);
+			messaging_send(msg_ctx, pend_lock->context.pid,
+				       MSG_SMB_UNLOCK, &data_blob_null);
 		}
 	}
 
@@ -1037,7 +1040,8 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
  Unlock a range of bytes.
 ****************************************************************************/
 
-BOOL brl_unlock(struct byte_range_lock *br_lck,
+BOOL brl_unlock(struct messaging_context *msg_ctx,
+		struct byte_range_lock *br_lck,
 		uint32 smbpid,
 		struct server_id pid,
 		br_off start,
@@ -1056,9 +1060,9 @@ BOOL brl_unlock(struct byte_range_lock *br_lck,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		return brl_unlock_windows(br_lck, &lock);
+		return brl_unlock_windows(msg_ctx, br_lck, &lock);
 	} else {
-		return brl_unlock_posix(br_lck, &lock);
+		return brl_unlock_posix(msg_ctx, br_lck, &lock);
 	}
 }
 
@@ -1244,7 +1248,8 @@ BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
  fd and so we should not immediately close the fd.
 ****************************************************************************/
 
-void brl_close_fnum(struct byte_range_lock *br_lck)
+void brl_close_fnum(struct messaging_context *msg_ctx,
+		    struct byte_range_lock *br_lck)
 {
 	files_struct *fsp = br_lck->fsp;
 	uint16 tid = fsp->conn->cnum;
@@ -1299,7 +1304,8 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 
 				if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
 						(lock->fnum == fnum)) {
-					brl_unlock(br_lck,
+					brl_unlock(msg_ctx,
+						br_lck,
 						lock->context.smbpid,
 						pid,
 						lock->start,
@@ -1348,9 +1354,8 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 
 				/* We could send specific lock info here... */
 				if (brl_pending_overlap(lock, pend_lock)) {
-					message_send_pid(pend_lock->context.pid,
-							MSG_SMB_UNLOCK,
-							NULL, 0, True);
+					messaging_send(msg_ctx, pend_lock->context.pid,
+						       MSG_SMB_UNLOCK, &data_blob_null);
 				}
 			}
 

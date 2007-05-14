@@ -180,7 +180,8 @@ NTSTATUS query_lock(files_struct *fsp,
  Utility function called by locking requests.
 ****************************************************************************/
 
-struct byte_range_lock *do_lock(files_struct *fsp,
+struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
+			files_struct *fsp,
 			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
@@ -213,7 +214,8 @@ struct byte_range_lock *do_lock(files_struct *fsp,
 		return NULL;
 	}
 
-	*perr = brl_lock(br_lck,
+	*perr = brl_lock(msg_ctx,
+			br_lck,
 			lock_pid,
 			procid_self(),
 			offset,
@@ -235,7 +237,8 @@ struct byte_range_lock *do_lock(files_struct *fsp,
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-NTSTATUS do_unlock(files_struct *fsp,
+NTSTATUS do_unlock(struct messaging_context *msg_ctx,
+			files_struct *fsp,
 			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
@@ -260,7 +263,8 @@ NTSTATUS do_unlock(files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ok = brl_unlock(br_lck,
+	ok = brl_unlock(msg_ctx,
+			br_lck,
 			lock_pid,
 			procid_self(),
 			offset,
@@ -334,7 +338,8 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
  Remove any locks on this fd. Called from file_close().
 ****************************************************************************/
 
-void locking_close_file(files_struct *fsp)
+void locking_close_file(struct messaging_context *msg_ctx,
+			files_struct *fsp)
 {
 	struct byte_range_lock *br_lck;
 
@@ -354,7 +359,7 @@ void locking_close_file(files_struct *fsp)
 
 	if (br_lck) {
 		cancel_pending_lock_requests_by_fid(fsp, br_lck);
-		brl_close_fnum(br_lck);
+		brl_close_fnum(msg_ctx, br_lck);
 		TALLOC_FREE(br_lck);
 	}
 }
@@ -805,7 +810,8 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
  Based on an initial code idea from SATOH Fumiyasu <fumiya@samba.gr.jp>
 ********************************************************************/
 
-BOOL rename_share_filename(struct share_mode_lock *lck,
+BOOL rename_share_filename(struct messaging_context *msg_ctx,
+			struct share_mode_lock *lck,
 			const char *servicepath,
 			const char *newname)
 {
@@ -814,6 +820,7 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	size_t msg_len;
 	char *frm = NULL;
 	int i;
+	DATA_BLOB msg;
 
 	if (!lck) {
 		return False;
@@ -857,6 +864,8 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	safe_strcpy(&frm[16], lck->servicepath, sp_len);
 	safe_strcpy(&frm[16 + sp_len + 1], lck->filename, fn_len);
 
+	msg = data_blob_const(frm, msg_len);
+
 	/* Send the messages. */
 	for (i=0; i<lck->num_share_modes; i++) {
 		struct share_mode_entry *se = &lck->share_modes[i];
@@ -874,8 +883,7 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 			(unsigned int)lck->dev, (double)lck->ino,
 			lck->servicepath, lck->filename ));
 
-		message_send_pid(se->pid, MSG_SMB_FILE_RENAME,
-				frm, msg_len, True);
+		messaging_send(msg_ctx, se->pid, MSG_SMB_FILE_RENAME, &msg);
 	}
 
 	return True;
