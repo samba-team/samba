@@ -1428,7 +1428,8 @@ void start_background_queue(void)
 
 			/* process any pending print change notify messages */
 
-			print_notify_send_messages(0);
+			print_notify_send_messages(smbd_messaging_context(),
+						   0);
 		}
 	}
 }

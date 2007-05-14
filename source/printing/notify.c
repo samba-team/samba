@@ -116,7 +116,9 @@ again:
  Send the batched messages - on a per-printer basis.
 *******************************************************************/
 
-static void print_notify_send_messages_to_printer(const char *printer, unsigned int timeout)
+static void print_notify_send_messages_to_printer(struct messaging_context *msg_ctx,
+						  const char *printer,
+						  unsigned int timeout)
 {
 	char *buf;
 	struct notify_queue *pq, *pq_next;
@@ -182,9 +184,11 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 				printer, q_len ));
 			continue;
 		}
-		message_send_pid_with_timeout(pid_to_procid(pid_list[i]),
-					      MSG_PRINTER_NOTIFY2,
-					      buf, offset, True, timeout);
+		messaging_send_buf_with_timeout(msg_ctx,
+						pid_to_procid(pid_list[i]),
+						MSG_PRINTER_NOTIFY2,
+						(uint8 *)buf, offset,
+						timeout);
 	}
 }
 
@@ -192,7 +196,8 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
  Actually send the batched messages.
 *******************************************************************/
 
-void print_notify_send_messages(unsigned int timeout)
+void print_notify_send_messages(struct messaging_context *msg_ctx,
+				unsigned int timeout)
 {
 	if (!print_notify_messages_pending())
 		return;
@@ -201,7 +206,8 @@ void print_notify_send_messages(unsigned int timeout)
 		return;
 
 	while (print_notify_messages_pending())
-		print_notify_send_messages_to_printer(notify_queue_head->msg->printer, timeout);
+		print_notify_send_messages_to_printer(
+			msg_ctx, notify_queue_head->msg->printer, timeout);
 
 	talloc_free_children(send_ctx);
 	num_messages = 0;
