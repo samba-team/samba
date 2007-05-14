@@ -55,7 +55,7 @@ run a command being careful about uid/gid handling and putting the output in
 outfd (or discard it if outfd is NULL).
 ****************************************************************************/
 
-int smbrun(const char *cmd, int *outfd)
+static int smbrun_internal(const char *cmd, int *outfd, BOOL sanitize)
 {
 	pid_t pid;
 	uid_t uid = current_user.ut.uid;
@@ -173,13 +173,36 @@ int smbrun(const char *cmd, int *outfd)
 	}
 #endif
 
-	execl("/bin/sh","sh","-c",cmd,NULL);  
+	{
+		const char *newcmd = sanitize ? escape_shell_string(cmd) : cmd;
+		if (!newcmd) {
+			exit(82);
+		}
+		execl("/bin/sh","sh","-c",newcmd,NULL);  
+	}
 	
 	/* not reached */
-	exit(82);
+	exit(83);
 	return 1;
 }
 
+/****************************************************************************
+ Use only in known safe shell calls (printing).
+****************************************************************************/
+
+int smbrun_no_sanitize(const char *cmd, int *outfd)
+{
+	return smbrun_internal(cmd, outfd, False);
+}
+
+/****************************************************************************
+ By default this now sanitizes shell expansion.
+****************************************************************************/
+
+int smbrun(const char *cmd, int *outfd)
+{
+	return smbrun_internal(cmd, outfd, True);
+}
 
 /****************************************************************************
 run a command being careful about uid/gid handling and putting the output in
@@ -302,7 +325,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 #endif
 
 	execl("/bin/sh", "sh", "-c", cmd, NULL);  
-	
+
 	/* not reached */
 	exit(82);
 	return 1;

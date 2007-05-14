@@ -1356,12 +1356,17 @@ static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn,
 			       &trn->num_entries2))
 			return False;
 
+		if (trn->num_entries2 != trn->num_entries) {
+			/* RPC fault */
+			return False;
+		}
+
 		if (UNMARSHALLING(ps)) {
-			if ((trn->name = PRS_ALLOC_MEM(ps, LSA_TRANS_NAME, trn->num_entries)) == NULL) {
+			if ((trn->name = PRS_ALLOC_MEM(ps, LSA_TRANS_NAME, trn->num_entries2)) == NULL) {
 				return False;
 			}
 
-			if ((trn->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, trn->num_entries)) == NULL) {
+			if ((trn->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, trn->num_entries2)) == NULL) {
 				return False;
 			}
 		}
@@ -1413,12 +1418,17 @@ static BOOL lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn,
 			       &trn->num_entries2))
 			return False;
 
+		if (trn->num_entries2 != trn->num_entries) {
+			/* RPC fault */
+			return False;
+		}
+
 		if (UNMARSHALLING(ps)) {
-			if ((trn->name = PRS_ALLOC_MEM(ps, LSA_TRANS_NAME2, trn->num_entries)) == NULL) {
+			if ((trn->name = PRS_ALLOC_MEM(ps, LSA_TRANS_NAME2, trn->num_entries2)) == NULL) {
 				return False;
 			}
 
-			if ((trn->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, trn->num_entries)) == NULL) {
+			if ((trn->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, trn->num_entries2)) == NULL) {
 				return False;
 			}
 		}
@@ -2771,7 +2781,7 @@ static BOOL lsa_io_luid_attr(const char *desc, LUID_ATTR *out, prs_struct *ps, i
 
 static BOOL lsa_io_privilege_set(const char *desc, PRIVILEGE_SET *out, prs_struct *ps, int depth)
 {
-	uint32 i;
+	uint32 i, dummy;
 
 	prs_debug(ps, depth, desc, "lsa_io_privilege_set");
 	depth++;
@@ -2779,7 +2789,7 @@ static BOOL lsa_io_privilege_set(const char *desc, PRIVILEGE_SET *out, prs_struc
 	if(!prs_align(ps))
 		return False;
  
-	if(!prs_uint32("count", ps, depth, &out->count))
+	if(!prs_uint32("count", ps, depth, &dummy))
 		return False;
 	if(!prs_uint32("control", ps, depth, &out->control))
 		return False;
