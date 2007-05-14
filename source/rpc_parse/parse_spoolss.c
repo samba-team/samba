@@ -230,6 +230,10 @@ static BOOL smb_io_notify_option_type_data(const char *desc, SPOOL_NOTIFY_OPTION
 	if (type->count2 != type->count)
 		DEBUG(4,("What a mess, count was %x now is %x !\n", type->count, type->count2));
 
+	if (type->count2 > MAX_NOTIFY_TYPE_FOR_NOW) {
+		return False;
+	}
+
 	/* parse the option type data */
 	for(i=0;i<type->count2;i++)
 		if(!prs_uint16("fields",ps,depth,&type->fields[i]))

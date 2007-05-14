@@ -32,6 +32,23 @@ Major features included in the 3.0.25 code base include:
     improved read performance with Linux servers.
   o Man pages for IdMap and VFS plug-ins.
 
+Security Fixes included in the Samba 3.0.25 release are:
+
+  o CVE-2007-2444
+	Versions: Samba 3.0.23d - 3.0.25pre2
+	Local SID/Name translation bug can result in
+	user privilege elevation
+
+  o CVE-2007-2446
+	Versions: Samba 3.0.0 - 3.0.24
+	Multiple heap overflows allow remote code execution
+
+  o CVE-2007-2447
+	Versions: Samba 3.0.0 - 3.0.24
+	Unescaped user input parameters are passed as
+	arguments to /bin/sh allowing for remote command
+	execution
+
 
 Off-line Logons and AD Site Support
 ===================================
@@ -144,6 +161,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix DFS MS-RPC enumeration reply when we have no DFS shares.
     * Fix memory corruption when enumerating accounts in the 
       LsaPrivilege database.
+    * Fixes for CVE-2007-2444, CVE-2007-2446, and CVE-2007-2447.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -177,6 +195,7 @@ o   Volker Lendecke <vl@samba.org>
     * Fix memory leak in smbd's claim session code.
     * BUG 4613: Fix incorrect password expiration caused by stomping on 
       the time values in the NET_USER_INFO_3 for remote users.
+    * Fixes for CVE-2007-2446.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -194,6 +213,7 @@ o   Simo Sorce <idra@samba.org>
     * Fix socket leak in idmap_ldap.c.
     * Fix failure in "net idmap restore".
     * Fix crash bug in idmap_ldap's get_credentials() code.
+    * Fixes for CVE-2007-2446.
 
 
 o   Alison Winters <alisonw@sgi.com>
