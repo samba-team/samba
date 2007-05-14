@@ -561,3 +561,18 @@ struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c)
 
 	return smb->tree;
 }
+
+/*
+  return the SMB fnum used for a dcerpc over SMB pipe (hack for torture operations)
+*/
+uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c)
+{
+	struct smb_private *smb;
+
+	if (c->transport.transport != NCACN_NP) return 0;
+
+	smb = talloc_get_type(c->transport.private, struct smb_private);
+	if (!smb) return 0;
+
+	return smb->fnum;
+}
