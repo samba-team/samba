@@ -3113,7 +3113,7 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 
 	if (opt_long_list_entries) {
 		d_printf("%-12s %-8.8s %-50s\n",
-			 netname, share_type[info1->info_1.type], remark);
+			 netname, share_type[info1->info_1.type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)], remark);
 	} else {
 		d_printf("%s\n", netname);
 	}
