@@ -901,7 +901,7 @@ static void wcache_save_lockout_policy(struct winbindd_domain *domain, NTSTATUS 
 }
 
 static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS status, SAM_UNK_INFO_1 *policy)
- {
+{
 	struct cache_entry *centry;
 
 	centry = centry_start(domain, status);
