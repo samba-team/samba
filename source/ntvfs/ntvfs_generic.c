@@ -33,6 +33,8 @@
 
 #include "includes.h"
 #include "ntvfs/ntvfs.h"
+#include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 
 /* a second stage function converts from the out parameters of the generic
    call onto the out parameters of the specific call made */
@@ -960,27 +962,60 @@ _PUBLIC_ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_LEVEL;
 
 	case RAW_LOCK_LOCK:
+		lck2->generic.level = RAW_LOCK_GENERIC;
+		lck2->generic.in.file.ntvfs= lck->lock.in.file.ntvfs;
+		lck2->generic.in.mode = 0;
+		lck2->generic.in.timeout = 0;
 		lck2->generic.in.ulock_cnt = 0;
 		lck2->generic.in.lock_cnt = 1;
+		lck2->generic.in.locks = locks;
+		locks->pid = req->smbpid;
+		locks->offset = lck->lock.in.offset;
+		locks->count = lck->lock.in.count;
 		break;
 
 	case RAW_LOCK_UNLOCK:
+		lck2->generic.level = RAW_LOCK_GENERIC;
+		lck2->generic.in.file.ntvfs= lck->unlock.in.file.ntvfs;
+		lck2->generic.in.mode = 0;
+		lck2->generic.in.timeout = 0;
 		lck2->generic.in.ulock_cnt = 1;
 		lck2->generic.in.lock_cnt = 0;
+		lck2->generic.in.locks = locks;
+		locks->pid = req->smbpid;
+		locks->offset = lck->unlock.in.offset;
+		locks->count = lck->unlock.in.count;
 		break;
 
 	case RAW_LOCK_SMB2:
-		return NT_STATUS_INVALID_LEVEL;
-	}
+		if (lck->smb2.in.unknown1 != 1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 
-	lck2->generic.level = RAW_LOCK_GENERIC;
-	lck2->generic.in.file.ntvfs= lck->lock.in.file.ntvfs;
-	lck2->generic.in.mode = 0;
-	lck2->generic.in.timeout = 0;
-	lck2->generic.in.locks = locks;
-	locks->pid = req->smbpid;
-	locks->offset = lck->lock.in.offset;
-	locks->count = lck->lock.in.count;
+		lck2->generic.level = RAW_LOCK_GENERIC;
+		lck2->generic.in.file.ntvfs= lck->smb2.in.file.ntvfs;
+		if (lck->smb2.in.flags & SMB2_LOCK_FLAG_EXCLUSIV) {
+			lck2->generic.in.mode = 0;
+		} else {
+			lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
+		}
+		lck2->generic.in.timeout = 0;
+		if (lck->smb2.in.flags & SMB2_LOCK_FLAG_UNLOCK) {
+			lck2->generic.in.ulock_cnt = 1;
+			lck2->generic.in.lock_cnt = 0;
+		} else {
+			lck2->generic.in.ulock_cnt = 0;
+			lck2->generic.in.lock_cnt = 1;
+		}
+		lck2->generic.in.locks = locks;
+		locks->pid = 0;
+		locks->offset = lck->smb2.in.offset;
+		locks->count = lck->smb2.in.count;
+
+		/* initialize output value */
+		lck->smb2.out.unknown1 = 0;
+		break;
+	}
 
 	/* 
 	 * we don't need to call ntvfs_map_async_setup() here,
