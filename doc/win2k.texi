@@ -280,14 +280,14 @@ short list of the interesting documents that we have managed to find.
 @itemize @bullet
 
 @item Step-by-Step Guide to Kerberos 5 (krb5 1.0) Interoperability:
-@uref{http://www.microsoft.com/windows2000/library/planning/security/kerbsteps.asp}.
+@uref{http://www.microsoft.com/technet/prodtechnol/windows2000serv/howto/kerbstep.mspx}.
 Kerberos GSS-API (in Windows-eze SSPI), Windows as a client in a
 non-Windows KDC realm, adding unix clients to a Windows 2000 KDC, and
 adding cross-realm trust (@pxref{Inter-Realm keys (trust) between Windows 2000
 and a Heimdal KDC}).
 
 @item Windows 2000 Kerberos Authentication:
-@uref{http://www.microsoft.com/TechNet/win2000/win2ksrv/technote/kerberos.asp}.
+@uref{www.microsoft.com/technet/prodtechnol/windows2000serv/deploy/confeat/kerberos.mspx}.
 White paper that describes how Kerberos is used in Windows 2000.
 
 @item Overview of Kerberos:
