@@ -727,7 +727,8 @@ static void exit_server_common(enum server_exit_reason how,
 
 	invalidate_all_vuids();
 
-	print_notify_send_messages(3); /* 3 second timeout. */
+	/* 3 second timeout. */
+	print_notify_send_messages(smbd_messaging_context(), 3);
 
 	/* delete our entry in the connections database. */
 	yield_connection(NULL,"");
@@ -1108,7 +1109,7 @@ extern void build_options(BOOL screen);
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks())
+	if (!init_oplocks(smbd_messaging_context()))
 		exit(1);
 	
 	/* Setup aio signal handler. */

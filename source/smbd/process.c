@@ -293,7 +293,7 @@ static void async_processing(fd_set *pfds)
 
 	process_aio_queue();
 
-	process_kernel_oplocks(pfds);
+	process_kernel_oplocks(smbd_messaging_context(), pfds);
 
 	/* Do the aio check again after receive_local_message as it does a
 	   select and may have eaten our signal. */
@@ -566,7 +566,7 @@ void respond_to_all_remaining_local_messages(void)
 		return;
 	}
 
-	process_kernel_oplocks(NULL);
+	process_kernel_oplocks(smbd_messaging_context(), NULL);
 
 	return;
 }
@@ -1458,7 +1458,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 
 	/* Send any queued printer notify message to interested smbd's. */
 
-	print_notify_send_messages(0);
+	print_notify_send_messages(smbd_messaging_context(), 0);
 
 	/*
 	 * Modify the select timeout depending upon

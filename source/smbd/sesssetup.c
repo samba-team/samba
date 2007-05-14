@@ -1190,8 +1190,8 @@ static int shutdown_other_smbds(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 		return 0;
 	}
 
-	message_send_pid(sessionid->pid, MSG_SHUTDOWN,
-			 NULL, 0, True);
+	messaging_send(smbd_messaging_context(), sessionid->pid, MSG_SHUTDOWN,
+		       &data_blob_null);
 	return 0;
 }
 

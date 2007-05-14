@@ -135,8 +135,10 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 
 			share_mode_entry_to_message(msg, e);
 
- 			message_send_pid(e->pid, MSG_SMB_OPEN_RETRY,
- 					 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
+ 			messaging_send_buf(smbd_messaging_context(),
+					   e->pid, MSG_SMB_OPEN_RETRY,
+					   (uint8 *)msg,
+					   MSG_SMB_SHARE_MODE_ENTRY_SIZE);
  		}
  	}
 }

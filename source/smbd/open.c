@@ -741,8 +741,10 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 		SSVAL(msg,6,exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
 	}
 
-	status = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
-				  msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
+	status = messaging_send_buf(smbd_messaging_context(), exclusive->pid,
+				    MSG_SMB_BREAK_REQUEST,
+				    (uint8 *)msg,
+				    MSG_SMB_SHARE_MODE_ENTRY_SIZE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not send oplock break message: %s\n",
 			  nt_errstr(status)));
