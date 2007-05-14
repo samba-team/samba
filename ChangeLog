@@ -1,4 +1,19 @@
+2007-05-10  Dave Love  <fx@gnu.org>
+
+	* doc/win2k.texi: Update some URLs.
+
+2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kimpersonate.c: Fix version number of ticket, it should be
+	5 not the kvno.
+	
+2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: Salting is really Encryption types and salting.
+	
 2007-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* doc/setup.texi: spelling, from Ronny Blomme
 
 	* doc/win2k.texi: Fix ksetup /SetComputerPassword, from Ronny
 	Blomme
