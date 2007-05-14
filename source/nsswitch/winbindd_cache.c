@@ -224,7 +224,6 @@ static uint32 centry_uint32(struct cache_entry *centry)
 
 	if (!centry_check_bytes(centry, 4)) {
 		smb_panic_fn("centry_uint32");
-		return (uint32)-1;
 	}
 	ret = IVAL(centry->data, centry->ofs);
 	centry->ofs += 4;
@@ -239,7 +238,6 @@ static uint16 centry_uint16(struct cache_entry *centry)
 	uint16 ret;
 	if (!centry_check_bytes(centry, 2)) {
 		smb_panic_fn("centry_uint16");
-		return (uint16)-1;
 	}
 	ret = CVAL(centry->data, centry->ofs);
 	centry->ofs += 2;
@@ -254,7 +252,6 @@ static uint8 centry_uint8(struct cache_entry *centry)
 	uint8 ret;
 	if (!centry_check_bytes(centry, 1)) {
 		smb_panic_fn("centry_uint8");
-		return (uint8)-1;
 	}
 	ret = CVAL(centry->data, centry->ofs);
 	centry->ofs += 1;
@@ -269,7 +266,6 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 	NTTIME ret;
 	if (!centry_check_bytes(centry, 8)) {
 		smb_panic_fn("centry_nttime");
-		return (NTTIME)-1;
 	}
 	ret = IVAL(centry->data, centry->ofs);
 	centry->ofs += 4;
@@ -303,13 +299,11 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 
 	if (!centry_check_bytes(centry, (size_t)len)) {
 		smb_panic_fn("centry_string");
-		return NULL;
 	}
 
 	ret = TALLOC_ARRAY(mem_ctx, char, len+1);
 	if (!ret) {
 		smb_panic_fn("centry_string out of memory\n");
-		return NULL;
 	}
 	memcpy(ret,centry->data + centry->ofs, len);
 	ret[len] = 0;
@@ -340,7 +334,6 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	ret = TALLOC_ARRAY(mem_ctx, char, 16);
 	if (!ret) {
 		smb_panic_fn("centry_hash out of memory\n");
-		return NULL;
 	}
 	memcpy(ret,centry->data + centry->ofs, 16);
 	centry->ofs += 16;
@@ -1111,8 +1104,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	(*info) = TALLOC_ARRAY(mem_ctx, WINBIND_USERINFO, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("query_user_list out of memory");
-		centry_free(centry);
-		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0; i<(*num_entries); i++) {
 		(*info)[i].acct_name = centry_string(centry, mem_ctx);
@@ -1229,8 +1220,6 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("enum_dom_groups out of memory");
-		centry_free(centry);
-		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0; i<(*num_entries); i++) {
 		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
@@ -1305,8 +1294,6 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("enum_dom_groups out of memory");
-		centry_free(centry);
-		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0; i<(*num_entries); i++) {
 		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
@@ -1724,8 +1711,6 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
 	if (! (*user_gids)) {
 		smb_panic_fn("lookup_usergroups out of memory");
-		centry_free(centry);
-		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0; i<(*num_groups); i++) {
 		centry_sid(centry, mem_ctx, &(*user_gids)[i]);
@@ -1893,8 +1878,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	if (! (*sid_mem) || ! (*names) || ! (*name_types)) {
 		smb_panic_fn("lookup_groupmem out of memory");
-		centry_free(centry);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<(*num_names); i++) {
@@ -1990,8 +1973,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
  
 		if (! (*dom_sids) || ! (*names) || ! (*alt_names)) {
 			smb_panic_fn("trusted_domains out of memory");
-			centry_free(centry);
-			return NT_STATUS_NO_MEMORY;
  		}
 	} else {
 		(*names) = NULL;
