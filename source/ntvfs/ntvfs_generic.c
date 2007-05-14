@@ -999,7 +999,11 @@ _PUBLIC_ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 		} else {
 			lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
 		}
-		lck2->generic.in.timeout = 0;
+		if (lck->smb2.in.flags & SMB2_LOCK_FLAG_NO_PENDING) {
+			lck2->generic.in.timeout = 0;
+		} else {
+			lck2->generic.in.timeout = UINT32_MAX;
+		}
 		if (lck->smb2.in.flags & SMB2_LOCK_FLAG_UNLOCK) {
 			lck2->generic.in.ulock_cnt = 1;
 			lck2->generic.in.lock_cnt = 0;
