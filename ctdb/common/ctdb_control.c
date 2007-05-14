@@ -123,8 +123,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_SET_RECMASTER: {
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+			DEBUG(0,("Attempt to set recmaster when not frozen\n"));
+			return -1;
+		}
 		ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
-
 		return 0;
 	}
 
