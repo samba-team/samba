@@ -28,10 +28,10 @@
 */
 static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 {
-	DATA_BLOB msg1 = data_blob(NULL, 0);
-	DATA_BLOB blob = data_blob(NULL, 0);
-	DATA_BLOB blob_in = data_blob(NULL, 0);
-	DATA_BLOB blob_out = data_blob(NULL, 0);
+	DATA_BLOB msg1 = data_blob_null;
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB blob_in = data_blob_null;
+	DATA_BLOB blob_out = data_blob_null;
 	struct berval cred, *scred = NULL;
 	int rc;
 	NTSTATUS nt_status;
@@ -54,7 +54,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		return ADS_ERROR_NT(nt_status);
 	}
 
-	blob_in = data_blob(NULL, 0);
+	blob_in = data_blob_null;
 
 	do {
 		nt_status = ntlmssp_update(ntlmssp_state, 
@@ -90,7 +90,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 				blob = data_blob(scred->bv_val, scred->bv_len);
 				ber_bvfree(scred);
 			} else {
-				blob = data_blob(NULL, 0);
+				blob = data_blob_null;
 			}
 
 		} else {
@@ -102,7 +102,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		
 		if ((turn == 1) && 
 		    (rc == LDAP_SASL_BIND_IN_PROGRESS)) {
-			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			DATA_BLOB tmp_blob = data_blob_null;
 			/* the server might give us back two challenges */
 			if (!spnego_parse_challenge(blob, &blob_in, 
 						    &tmp_blob)) {
@@ -142,9 +142,9 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 */
 static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *principal)
 {
-	DATA_BLOB blob = data_blob(NULL, 0);
+	DATA_BLOB blob = data_blob_null;
 	struct berval cred, *scred = NULL;
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB session_key = data_blob_null;
 	int rc;
 
 	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key, 0,

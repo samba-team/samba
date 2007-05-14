@@ -265,7 +265,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 
 			b = (DATA_BLOB *)va_arg(ap, void *);
 			if (len1 == 0 && len2 == 0) {
-				*b = data_blob(NULL, 0);
+				*b = data_blob_null;
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {

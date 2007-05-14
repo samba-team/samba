@@ -6247,7 +6247,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 	if (munged_dial) {
 		munged_dial_blob = base64_decode_data_blob(munged_dial);
 	} else {
-		munged_dial_blob = data_blob(NULL, 0);
+		munged_dial_blob = data_blob_null;
 	}
 
 	/* Create NTTIME structs */
@@ -6501,7 +6501,7 @@ void init_sam_user_info20A(SAM_USER_INFO_20 *usr, struct samu *pw)
 	if (munged_dial) {
 		blob = base64_decode_data_blob(munged_dial);
 	} else {
-		blob = data_blob(NULL, 0);
+		blob = data_blob_null;
 	}
 
 	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);

@@ -94,8 +94,8 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 	   Since we have a copy of the initial message that the client sent, we could
 	   resolve any discrepancies if we had to.
 	*/
-	dummy_msg = data_blob(NULL, 0);
-	reply = data_blob(NULL, 0);
+	dummy_msg = data_blob_null;
+	reply = data_blob_null;
 	status = ntlmssp_update(ntlmssp_state, dummy_msg, &reply);
 	data_blob_free(&dummy_msg);
 	data_blob_free(&reply);

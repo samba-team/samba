@@ -79,7 +79,7 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
 
 static const uint8 *get_ntlm_challenge(struct auth_context *auth_context) 
 {
-	DATA_BLOB challenge = data_blob(NULL, 0);
+	DATA_BLOB challenge = data_blob_null;
 	const char *challenge_set_by = NULL;
 	auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;

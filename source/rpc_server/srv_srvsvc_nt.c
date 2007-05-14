@@ -1958,7 +1958,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
 	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob(NULL, 0);
+	null_pw = data_blob_null;
 
 	get_current_user(&user, p);
 
@@ -2074,7 +2074,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
 	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob(NULL, 0);
+	null_pw = data_blob_null;
 
 	get_current_user(&user, p);
 

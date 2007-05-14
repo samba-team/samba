@@ -378,11 +378,11 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		
 		/* We can't do an NT hash here, as the password needs to be
 		   case insensitive */
-		local_nt_blob = data_blob(NULL, 0); 
+		local_nt_blob = data_blob_null; 
 		
 	} else {
-		local_lm_blob = data_blob(NULL, 0); 
-		local_nt_blob = data_blob(NULL, 0); 
+		local_lm_blob = data_blob_null; 
+		local_nt_blob = data_blob_null; 
 	}
 	
 	ret = make_user_info_map(
@@ -1960,7 +1960,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* ensure we are never given NULL session keys */
 	
 	if (memcmp(info3->user_sess_key, zeros, sizeof(zeros)) == 0) {
-		result->user_session_key = data_blob(NULL, 0);
+		result->user_session_key = data_blob_null;
 	} else {
 		result->user_session_key = data_blob_talloc(
 			result, info3->user_sess_key,
@@ -1968,7 +1968,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	}
 
 	if (memcmp(info3->lm_sess_key, zeros, 8) == 0) {
-		result->lm_session_key = data_blob(NULL, 0);
+		result->lm_session_key = data_blob_null;
 	} else {
 		result->lm_session_key = data_blob_talloc(
 			result, info3->lm_sess_key,

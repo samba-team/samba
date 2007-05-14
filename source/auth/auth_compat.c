@@ -96,7 +96,7 @@ return True if the password is correct, False otherwise
 BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
 {
 
-	DATA_BLOB null_password = data_blob(NULL, 0);
+	DATA_BLOB null_password = data_blob_null;
 	BOOL encrypted = (global_encrypted_passwords_negotiated && (password_blob.length == 24 || password_blob.length > 46));
 	
 	if (encrypted) {

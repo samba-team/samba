@@ -191,13 +191,13 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 			/* However, it is still a perfectly fine connection
 			   to pass that unencrypted password over */
 			*my_private_data = (void *)cli;
-			return data_blob(NULL, 0);
+			return data_blob_null;
 			
 		} else if (cli->secblob.length < 8) {
 			/* We can't do much if we don't get a full challenge */
 			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
 			cli_shutdown(cli);
-			return data_blob(NULL, 0);
+			return data_blob_null;
 		}
 
 		*my_private_data = (void *)cli;
@@ -206,7 +206,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 		   destoyed just after the call. */
 		return data_blob_talloc(auth_context->mem_ctx, cli->secblob.data,8);
 	} else {
-		return data_blob(NULL, 0);
+		return data_blob_null;
 	}
 }
 

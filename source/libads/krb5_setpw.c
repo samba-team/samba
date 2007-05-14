@@ -88,7 +88,7 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 		realm = c;
 	} else {
 		/* We must have a realm component. */
-		return data_blob(NULL, 0);
+		return data_blob_null;
 	}
 
 	memset(&req, 0, sizeof(req));
