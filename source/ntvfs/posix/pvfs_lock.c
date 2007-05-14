@@ -69,8 +69,13 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
 				   int i,
 				   NTSTATUS status)
 {
+	/* in SMB2 mode we also try to unlock failing lock */ 
+	if (req->ctx->protocol != PROTOCOL_SMB2) {
+		i--;
+	}
+
 	/* undo the locks we just did */
-	for (i=i-1;i>=0;i--) {
+	for (;i>=0;i--) {
 		brl_unlock(pvfs->brl_context,
 			   f->brl_handle,
 			   locks[i].pid,
@@ -377,8 +382,12 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 				DLIST_ADD(f->pending_list, pending);
 				return NT_STATUS_OK;
 			}
+			/* in SMB2 mode we also try to unlock failing lock */ 
+			if (req->ctx->protocol != PROTOCOL_SMB2) {
+				i--;
+			}
 			/* undo the locks we just did */
-			for (i=i-1;i>=0;i--) {
+			for (;i>=0;i--) {
 				brl_unlock(pvfs->brl_context,
 					   f->brl_handle,
 					   locks[i].pid,
