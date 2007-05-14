@@ -4753,13 +4753,15 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 		(double)offset ));
 
 	if (lock_type == UNLOCK_LOCK) {
-		status = do_unlock(fsp,
+		status = do_unlock(smbd_messaging_context(),
+				fsp,
 				lock_pid,
 				count,
 				offset,
 				POSIX_LOCK);
 	} else {
-		struct byte_range_lock *br_lck = do_lock(fsp,
+		struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
+							fsp,
 							lock_pid,
 							count,
 							offset,
