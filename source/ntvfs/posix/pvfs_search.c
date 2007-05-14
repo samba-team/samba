@@ -683,7 +683,7 @@ static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
 	search->handle		= INVALID_SEARCH_HANDLE;
 	search->dir		= dir;
 	search->current_index	= 0;
-	search->search_attrib	= 0;
+	search->search_attrib	= 0x0000FFFF;
 	search->must_attrib	= 0;
 	search->last_used	= 0;
 	search->num_ea_names	= 0;
