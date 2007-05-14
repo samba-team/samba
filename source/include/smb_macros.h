@@ -295,7 +295,6 @@ copy an IP address from one buffer to another
 #if defined(PARANOID_MALLOC_CHECKER)
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem_((ps),sizeof(type),(count))
-#define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem_((ps),(size),1)
 
 /* Get medieval on our ass about malloc.... */
 
@@ -334,7 +333,6 @@ copy an IP address from one buffer to another
 #else
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
-#define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem((ps),(size),1)
 
 /* Regular malloc code. */
 

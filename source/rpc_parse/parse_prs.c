@@ -644,7 +644,7 @@ BOOL prs_pointer( const char *name, prs_struct *ps, int depth,
 		return True;
 
 	if (UNMARSHALLING(ps)) {
-		if ( !(*data = PRS_ALLOC_MEM_VOID(ps, data_size)) )
+		if ( !(*data = PRS_ALLOC_MEM(ps, char, data_size)) )
 			return False;
 	}
 

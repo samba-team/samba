@@ -183,13 +183,12 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		/*
-		 * Even if the num_aces is zero, allocate memory as there's a difference
-		 * between a non-present DACL (allow all access) and a DACL with no ACE's
-		 * (allow no access).
-		 */
-		if((psa->aces = PRS_ALLOC_MEM(ps, SEC_ACE, psa->num_aces+1)) == NULL)
-			return False;
+		if (psa->num_aces) {
+			if((psa->aces = PRS_ALLOC_MEM(ps, SEC_ACE, psa->num_aces)) == NULL)
+				return False;
+		} else {
+			psa->aces = NULL;
+		}
 	}
 
 	for (i = 0; i < psa->num_aces; i++) {
