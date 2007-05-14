@@ -1,5 +1,10 @@
-2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/accept_sec_context.c: Set session key only if we are
+	returned a session key. Found by David Love.
+	
+2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* krb5/prf.c: switched MIN to min to make compile on solaris,
 	pointed out by David Love.
 	
