@@ -136,7 +136,9 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct fd_even
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
-	epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
+	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event) != 0) {
+		DEBUG(0,("epoll_del_event failed! probable early close bug (%s)\n", strerror(errno)));
+	}
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 }
 
@@ -202,7 +204,7 @@ static void epoll_change_event(struct epoll_event_context *epoll_ev, struct fd_e
 static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval *tvalp)
 {
 	int ret, i;
-#define MAXEVENTS 8
+#define MAXEVENTS 32
 	struct epoll_event events[MAXEVENTS];
 	uint32_t destruction_count = ++epoll_ev->destruction_count;
 	int timeout = -1;
@@ -305,6 +307,11 @@ static int epoll_event_fd_destructor(struct fd_event *fde)
 	epoll_ev->destruction_count++;
 
 	epoll_del_event(epoll_ev, fde);
+
+	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+		close(fde->fd);
+		fde->fd = -1;
+	}
 
 	return 0;
 }

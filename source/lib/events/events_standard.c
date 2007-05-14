@@ -30,7 +30,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "system/select.h" /* needed for WITH_EPOLL */
+#include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
@@ -61,7 +61,7 @@ struct std_event_context {
 };
 
 /* use epoll if it is available */
-#if WITH_EPOLL
+#if HAVE_EVENTS_EPOLL
 /*
   called when a epoll call fails, and we should fallback
   to using select
@@ -229,15 +229,15 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
-	if (epoll_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(epoll_ev->ev)) {
+	if (std_ev->ev->num_signal_handlers && 
+	    common_event_check_signal(std_ev->ev)) {
 		return 0;
 	}
 
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
 
-	if (ret == -1 && errno == EINTR && epoll_ev->ev->num_signal_handlers) {
-		if (common_event_check_signal(epoll_ev->ev)) {
+	if (ret == -1 && errno == EINTR && std_ev->ev->num_signal_handlers) {
+		if (common_event_check_signal(std_ev->ev)) {
 			return 0;
 		}
 	}
@@ -352,6 +352,11 @@ static int std_event_fd_destructor(struct fd_event *fde)
 	std_ev->destruction_count++;
 
 	epoll_del_event(std_ev, fde);
+
+	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+		close(fde->fd);
+		fde->fd = -1;
+	}
 
 	return 0;
 }

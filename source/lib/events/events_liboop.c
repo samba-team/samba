@@ -101,6 +101,11 @@ static int oop_event_fd_destructor(struct fd_event *fde)
 	if (fde->flags & EVENT_FD_WRITE)
 		oop->cancel_fd(oop, fde->fd, OOP_WRITE);
 
+	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+		close(fde->fd);
+		fde->fd = -1;
+	}
+
 	return 0;
 }
 
