@@ -486,67 +486,62 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-_PUBLIC_ bool torture_open_connection(struct smbcli_state **c, int conn_index)
+_PUBLIC_ bool torture_get_conn_index(int conn_index,
+				     TALLOC_CTX *mem_ctx,
+				     char **host, char **share)
 {
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *share = lp_parm_string(-1, "torture", "share");
 	char **unc_list = NULL;
 	int num_unc_names = 0;
 	const char *p;
+
+	(*host) = talloc_strdup(mem_ctx, lp_parm_string(-1, "torture", "host"));
+	(*share) = talloc_strdup(mem_ctx, lp_parm_string(-1, "torture", "share"));
 	
 	p = lp_parm_string(-1, "torture", "unclist");
-	if (p) {
-		char *h, *s;
-		unc_list = file_lines_load(p, &num_unc_names, NULL);
-		if (!unc_list || num_unc_names <= 0) {
-			printf("Failed to load unc names list from '%s'\n", p);
-			exit(1);
-		}
-
-		if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
-				      NULL, &h, &s)) {
-			printf("Failed to parse UNC name %s\n",
-			       unc_list[conn_index % num_unc_names]);
-			exit(1);
-		}
-		host = h;
-		share = s;
+	if (!p) {
+		return True;
 	}
 
-	return torture_open_connection_share(NULL, c, host, share, NULL);
+	unc_list = file_lines_load(p, &num_unc_names, NULL);
+	if (!unc_list || num_unc_names <= 0) {
+		DEBUG(0,("Failed to load unc names list from '%s'\n", p));
+		return False;
+	}
+
+	if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
+			      mem_ctx, host, share)) {
+		DEBUG(0, ("Failed to parse UNC name %s\n",
+			  unc_list[conn_index % num_unc_names]));
+		return False;
+	}
+
+	talloc_free(unc_list);
+	return True;
 }
+
+
 
 _PUBLIC_ bool torture_open_connection_ev(struct smbcli_state **c,
 					 int conn_index,
 					 struct event_context *ev)
 {
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *share = lp_parm_string(-1, "torture", "share");
-	char **unc_list = NULL;
-	int num_unc_names = 0;
-	const char *p;
-	
-	p = lp_parm_string(-1, "torture", "unclist");
-	if (p) {
-		char *h, *s;
-		unc_list = file_lines_load(p, &num_unc_names, NULL);
-		if (!unc_list || num_unc_names <= 0) {
-			printf("Failed to load unc names list from '%s'\n", p);
-			exit(1);
-		}
+	char *host, *share;
+	bool ret;
 
-		if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
-				      NULL, &h, &s)) {
-			printf("Failed to parse UNC name %s\n",
-			       unc_list[conn_index % num_unc_names]);
-			exit(1);
-		}
-		host = h;
-		share = s;
+	if (!torture_get_conn_index(conn_index, ev, &host, &share)) {
+		return False;
 	}
 
+	ret = torture_open_connection_share(NULL, c, host, share, ev);
+	talloc_free(host);
+	talloc_free(share);
 
-	return torture_open_connection_share(NULL, c, host, share, ev);
+	return ret;
+}
+
+_PUBLIC_ bool torture_open_connection(struct smbcli_state **c, int conn_index)
+{
+	return torture_open_connection_ev(c, conn_index, NULL);
 }
 
 
