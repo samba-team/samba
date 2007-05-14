@@ -2616,3 +2616,166 @@ size_t utf16_len_n(const void *src, size_t n)
 
 	return len;
 }
+
+/*******************************************************************
+ Add a shell escape character '\' to any character not in a known list
+ of characters. UNIX charset format.
+*******************************************************************/
+
+#define INCLUDE_LIST "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijklmnopqrstuvwxyz_/ \t.,"
+#define INSIDE_DQUOTE_LIST "$`\n\"\\"
+
+char *escape_shell_string(const char *src)
+{
+	size_t srclen = strlen(src);
+	char *ret = SMB_MALLOC((srclen * 2) + 1);
+	char *dest = ret;
+	BOOL in_s_quote = False;
+	BOOL in_d_quote = False;
+	BOOL next_escaped = False;
+
+	if (!ret) {
+		return NULL;
+	}
+
+	while (*src) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(src, &c_size);
+
+		if (c == INVALID_CODEPOINT) {
+			SAFE_FREE(ret);
+			return NULL;
+		}
+
+		if (c_size > 1) {
+			memcpy(dest, src, c_size);
+			src += c_size;
+			dest += c_size;
+			next_escaped = False;
+			continue;
+		}
+
+		/*
+		 * Deal with backslash escaped state.
+		 * This only lasts for one character.
+		 */
+
+		if (next_escaped) {
+			*dest++ = *src++;
+			next_escaped = False;
+			continue;
+		}
+
+		/*
+		 * Deal with single quote state. The
+		 * only thing we care about is exiting
+		 * this state.
+		 */
+
+		if (in_s_quote) {
+			if (*src == '\'') {
+				in_s_quote = False;
+			}
+			*dest++ = *src++;
+			continue;
+		}
+
+		/* 
+		 * Deal with double quote state. The most
+		 * complex state. We must cope with \, meaning
+		 * possibly escape next char (depending what it
+		 * is), ", meaning exit this state, and possibly
+		 * add an \ escape to any unprotected character
+		 * (listed in INSIDE_DQUOTE_LIST).
+		 */
+
+		if (in_d_quote) {
+			if (*src == '\\') {
+				/* 
+				 * Next character might be escaped.
+				 * We have to peek. Inside double
+				 * quotes only INSIDE_DQUOTE_LIST
+				 * characters are escaped by a \.
+				 */
+
+				char nextchar;
+
+				c = next_codepoint(&src[1], &c_size);
+				if (c == INVALID_CODEPOINT) {
+					SAFE_FREE(ret);
+					return NULL;
+				}
+				if (c_size > 1) {
+					/*
+					 * Don't escape the next char.
+					 * Just copy the \.
+					 */
+					*dest++ = *src++;
+					continue;
+				}
+
+				nextchar = src[1];
+
+				if (nextchar && strchr(INSIDE_DQUOTE_LIST, (int)nextchar)) {
+					next_escaped = True;
+				}
+				*dest++ = *src++;
+				continue;
+			}
+
+			if (*src == '\"') {
+				/* Exit double quote state. */
+				in_d_quote = False;
+				*dest++ = *src++;
+				continue;
+			}
+
+			/*
+			 * We know the character isn't \ or ",
+			 * so escape it if it's any of the other
+			 * possible unprotected characters.
+			 */
+
+	       		if (strchr(INSIDE_DQUOTE_LIST, (int)*src)) {
+				*dest++ = '\\';
+			}
+			*dest++ = *src++;
+			continue;
+		}
+
+		/* 
+		 * From here to the end of the loop we're
+		 * not in the single or double quote state.
+		 */
+
+		if (*src == '\\') {
+			/* Next character must be escaped. */
+			next_escaped = True;
+			*dest++ = *src++;
+			continue;
+		}
+
+		if (*src == '\'') {
+			/* Go into single quote state. */
+			in_s_quote = True;
+			*dest++ = *src++;
+			continue;
+		}
+
+		if (*src == '\"') {
+			/* Go into double quote state. */
+			in_d_quote = True;
+			*dest++ = *src++;
+			continue;
+		}
+
+		/* Check if we need to escape the character. */
+
+	       	if (!strchr(INCLUDE_LIST, (int)*src)) {
+			*dest++ = '\\';
+		}
+		*dest++ = *src++;
+	}
+	*dest++ = '\0';
+	return ret;
+}
