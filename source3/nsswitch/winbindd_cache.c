@@ -3463,14 +3463,12 @@ int winbindd_validate_cache(void)
 	}
 	if (WIFSIGNALED(child_status)) {
 		DEBUG(10, ("winbindd_validate_cache: child terminated "
-			   "by signal %d%s\n",
-			   WTERMSIG(child_status),
-#if defined(WCOREDUMP)
-			   WCOREDUMP(child_status)?" (core dumped)":""
-#else
-			   ""
+			   "by signal %d\n", WTERMSIG(child_status)));
+#ifdef WCOREDUMP
+		if (WCOREDUMP(child_status)) {
+			DEBUGADD(10, ("core dumped\n"));
+		}
 #endif
-			   ));
 		ret = WTERMSIG(child_status);
 	}
 	if (WIFSTOPPED(child_status)) {
