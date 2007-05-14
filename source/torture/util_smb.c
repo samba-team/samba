@@ -282,7 +282,7 @@ void *shm_setup(int size)
   check that a wire string matches the flags specified 
   not 100% accurate, but close enough for testing
 */
-bool wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_state *cli)
+bool wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_transport *transport)
 {
 	bool server_unicode;
 	int len;
@@ -290,7 +290,7 @@ bool wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_state 
 	len = strlen(str->s);
 	if (flags & STR_TERMINATE) len++;
 
-	server_unicode = (cli->transport->negotiate.capabilities&CAP_UNICODE)?True:False;
+	server_unicode = (transport->negotiate.capabilities&CAP_UNICODE)?True:False;
 	if (getenv("CLI_FORCE_ASCII") || !lp_unicode()) {
 		server_unicode = False;
 	}
