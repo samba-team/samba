@@ -67,6 +67,8 @@ for lib in string.split(samba_libs):
         libraries.append(lib[2:])
     elif lib[0:8] == ("-pthread"):
         pass # Skip linker flags
+    elif lib[0:4] == ("-pie"):
+        pass # Skip linker flags
     elif lib[0:2] == "-L":
         library_dirs.append(lib[2:])
     elif lib[0:2] in ("-W","-s"):
