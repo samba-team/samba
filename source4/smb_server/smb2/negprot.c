@@ -204,18 +204,18 @@ void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 	req->in.body_size = body_fixed_size;
 	req->in.dynamic   = NULL;
 
-	SIVAL(req->in.hdr, 0,                SMB2_MAGIC);
-	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,  SMB2_HDR_BODY);
-	SSVAL(req->in.hdr, SMB2_HDR_PAD1,    0);
-	SIVAL(req->in.hdr, SMB2_HDR_STATUS,  0);
-	SSVAL(req->in.hdr, SMB2_HDR_OPCODE,  SMB2_OP_NEGPROT);
-	SSVAL(req->in.hdr, SMB2_HDR_UNKNOWN1,0);
-	SIVAL(req->in.hdr, SMB2_HDR_FLAGS,   0);
-	SIVAL(req->in.hdr, SMB2_HDR_UNKNOWN2,0);
-	SBVAL(req->in.hdr, SMB2_HDR_SEQNUM,  0);
-	SIVAL(req->in.hdr, SMB2_HDR_PID,     0);
-	SIVAL(req->in.hdr, SMB2_HDR_TID,     0);
-	SBVAL(req->in.hdr, SMB2_HDR_UID,     0);
+	SIVAL(req->in.hdr, 0,				SMB2_MAGIC);
+	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
+	SSVAL(req->in.hdr, SMB2_HDR_PAD1,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_STATUS,		0);
+	SSVAL(req->in.hdr, SMB2_HDR_OPCODE,		SMB2_OP_NEGPROT);
+	SSVAL(req->in.hdr, SMB2_HDR_UNKNOWN1,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_FLAGS,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
+	SBVAL(req->in.hdr, SMB2_HDR_SEQNUM,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_PID,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_TID,		0);
+	SBVAL(req->in.hdr, SMB2_HDR_UID,		0);
 	memset(req->in.hdr+SMB2_HDR_SIG, 0, 16);
 
 	/* this seems to be a bug, they use 0x24 but the length is 0x26 */
