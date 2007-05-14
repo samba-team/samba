@@ -255,8 +255,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	BOOL ret;
 	NTSTATUS nt_status;
 	NTSTATUS update_login_attempts_status;
-	DATA_BLOB user_sess_key = data_blob(NULL, 0);
-	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
+	DATA_BLOB user_sess_key = data_blob_null;
+	DATA_BLOB lm_sess_key = data_blob_null;
 	BOOL updated_autolock = False, updated_badpw = False;
 
 	if (!user_info || !auth_context) {

@@ -61,8 +61,8 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 					  const char *pass, size_t passlen,
 					  const char *workgroup)
 {
-	DATA_BLOB session_key = data_blob(NULL, 0);
-	DATA_BLOB lm_response = data_blob(NULL, 0);
+	DATA_BLOB session_key = data_blob_null;
+	DATA_BLOB lm_response = data_blob_null;
 	fstring pword;
 	char *p;
 
@@ -299,9 +299,9 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 				      const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
-	DATA_BLOB lm_response = data_blob(NULL, 0);
-	DATA_BLOB nt_response = data_blob(NULL, 0);
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_response = data_blob_null;
+	DATA_BLOB nt_response = data_blob_null;
+	DATA_BLOB session_key = data_blob_null;
 	NTSTATUS result;
 	char *p;
 
@@ -334,7 +334,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			E_md4hash(pass, nt_hash);
 
 #ifdef LANMAN_ONLY
-			nt_response = data_blob(NULL, 0);
+			nt_response = data_blob_null;
 #else
 			nt_response = data_blob(NULL, 24);
 			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
@@ -485,7 +485,7 @@ static BOOL cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 
 static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 {
-	DATA_BLOB blob2 = data_blob(NULL, 0);
+	DATA_BLOB blob2 = data_blob_null;
 	char *p;
 	size_t len;
 
@@ -534,9 +534,9 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 {
 	int32 remaining = blob.length;
 	int32 cur = 0;
-	DATA_BLOB send_blob = data_blob(NULL, 0);
+	DATA_BLOB send_blob = data_blob_null;
 	int32 max_blob_size = 0;
-	DATA_BLOB receive_blob = data_blob(NULL, 0);
+	DATA_BLOB receive_blob = data_blob_null;
 
 	if (cli->max_xmit < BASE_SESSSETUP_BLOB_PACKET_SIZE + 1) {
 		DEBUG(0,("cli_session_setup_blob: cli->max_xmit too small "
@@ -554,7 +554,7 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 			send_blob.length = max_blob_size;
 			remaining -= max_blob_size;
 		} else {
-			DATA_BLOB null_blob = data_blob(NULL, 0);
+			DATA_BLOB null_blob = data_blob_null;
 
 			send_blob.length = remaining; 
                         remaining = 0;
@@ -656,9 +656,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 	NTSTATUS nt_status;
 	int turn = 1;
 	DATA_BLOB msg1;
-	DATA_BLOB blob = data_blob(NULL, 0);
-	DATA_BLOB blob_in = data_blob(NULL, 0);
-	DATA_BLOB blob_out = data_blob(NULL, 0);
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB blob_in = data_blob_null;
+	DATA_BLOB blob_out = data_blob_null;
 
 	cli_temp_set_signing(cli);
 
@@ -715,7 +715,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			}
 		} else if ((turn == 1) && 
 			   NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			DATA_BLOB tmp_blob = data_blob_null;
 			/* the server might give us back two challenges */
 			if (!spnego_parse_challenge(blob, &blob_in, 
 						    &tmp_blob)) {
@@ -743,7 +743,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 
 		DATA_BLOB key = data_blob(ntlmssp_state->session_key.data,
 					  ntlmssp_state->session_key.length);
-		DATA_BLOB null_blob = data_blob(NULL, 0);
+		DATA_BLOB null_blob = data_blob_null;
 		BOOL res;
 
 		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);

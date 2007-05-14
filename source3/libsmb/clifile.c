@@ -1505,7 +1505,7 @@ NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *
 		return cli_nt_error(cli);
 	}
 
-	*blob = data_blob(NULL, 0);
+	*blob = data_blob_null;
 
 	return NT_STATUS_OK;
 }

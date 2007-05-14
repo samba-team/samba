@@ -187,10 +187,10 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 {
 	int ret;
 	ASN1_DATA data;
-	DATA_BLOB blob = data_blob(NULL, 0);
-	DATA_BLOB os1 = data_blob(NULL, 0);
-	DATA_BLOB os2 = data_blob(NULL, 0);
-	DATA_BLOB os3 = data_blob(NULL, 0);
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB os1 = data_blob_null;
+	DATA_BLOB os2 = data_blob_null;
+	DATA_BLOB os3 = data_blob_null;
 	int i1;
 	/* half the time of a regular ldap timeout, not less than 3 seconds. */
 	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
