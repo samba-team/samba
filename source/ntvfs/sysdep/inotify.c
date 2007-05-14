@@ -80,16 +80,6 @@ struct inotify_watch_context {
 
 
 /*
-  destroy the inotify private context
-*/
-static int inotify_destructor(struct inotify_private *in)
-{
-	close(in->fd);
-	return 0;
-}
-
-
-/*
   see if a particular event from inotify really does match a requested
   notify event in SMB
 */
@@ -271,10 +261,9 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 	in->watches = NULL;
 
 	ctx->private_data = in;
-	talloc_set_destructor(in, inotify_destructor);
 
 	/* add a event waiting for the inotify fd to be readable */
-	event_add_fd(ctx->ev, in, in->fd, EVENT_FD_READ, inotify_handler, in);
+	event_add_fd(ctx->ev, in, in->fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, inotify_handler, in);
 	
 	return NT_STATUS_OK;
 }
