@@ -361,6 +361,11 @@ static int aio_event_fd_destructor(struct fd_event *fde)
 
 	epoll_del_event(aio_ev, fde);
 
+	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+		close(fde->fd);
+		fde->fd = -1;
+	}
+
 	return 0;
 }
 

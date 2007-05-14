@@ -5,6 +5,7 @@ AC_CHECK_HEADERS(sys/epoll.h)
 AC_CHECK_FUNCS(epoll_create)
 if test x"$ac_cv_header_sys_epoll_h" = x"yes" -a x"$ac_cv_func_epoll_create" = x"yes";then
 	SMB_ENABLE(EVENTS_EPOLL,YES)
+	AC_DEFINE(HAVE_EVENTS_EPOLL, 1, [Whether epoll is available])
 
 	# check for native Linux AIO interface
 	AC_CHECK_HEADERS(libaio.h)

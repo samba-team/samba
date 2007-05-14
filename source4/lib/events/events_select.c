@@ -104,6 +104,11 @@ static int select_event_fd_destructor(struct fd_event *fde)
 	DLIST_REMOVE(select_ev->fd_events, fde);
 	select_ev->destruction_count++;
 
+	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+		close(fde->fd);
+		fde->fd = -1;
+	}
+
 	return 0;
 }
 
