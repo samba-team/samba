@@ -91,18 +91,18 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	req->out.body_size	= body_fixed_size;
 	req->out.dynamic	= (body_dynamic_size ? req->out.body + body_fixed_size : NULL);
 
-	SIVAL(req->out.hdr, 0,                SMB2_MAGIC);
-	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,  SMB2_HDR_BODY);
-	SSVAL(req->out.hdr, SMB2_HDR_PAD1,    0);
-	SIVAL(req->out.hdr, SMB2_HDR_STATUS,  NT_STATUS_V(req->status));
-	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,  SVAL(req->in.hdr, SMB2_HDR_OPCODE));
-	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,0x0001);
-	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,   flags);
-	SIVAL(req->out.hdr, SMB2_HDR_UNKNOWN2,0);
-	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,  req->seqnum);
-	SIVAL(req->out.hdr, SMB2_HDR_PID,     pid);
-	SIVAL(req->out.hdr, SMB2_HDR_TID,     tid);
-	SBVAL(req->out.hdr, SMB2_HDR_UID,     BVAL(req->in.hdr, SMB2_HDR_UID));
+	SIVAL(req->out.hdr, 0,				SMB2_MAGIC);
+	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
+	SSVAL(req->out.hdr, SMB2_HDR_PAD1,		0);
+	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		NT_STATUS_V(req->status));
+	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		SVAL(req->in.hdr, SMB2_HDR_OPCODE));
+	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,		0x0001);
+	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		flags);
+	SIVAL(req->out.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
+	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,		req->seqnum);
+	SIVAL(req->out.hdr, SMB2_HDR_PID,		pid);
+	SIVAL(req->out.hdr, SMB2_HDR_TID,		tid);
+	SBVAL(req->out.hdr, SMB2_HDR_UID,		BVAL(req->in.hdr, SMB2_HDR_UID));
 	memset(req->out.hdr+SMB2_HDR_SIG, 0, 16);
 
 	/* set the length of the fixed body part and +1 if there's a dynamic part also */
@@ -118,6 +118,85 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	}
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS smb2srv_reply(struct smb2srv_request *req);
+
+static void smb2srv_chain_reply(struct smb2srv_request *p_req)
+{
+	NTSTATUS status;
+	struct smb2srv_request *req;
+	uint32_t chain_offset;
+	uint32_t protocol_version;
+	uint16_t buffer_code;
+	uint32_t dynamic_size;
+
+	chain_offset = p_req->chain_offset;
+	p_req->chain_offset = 0;
+
+	if (p_req->in.size < (NBT_HDR_SIZE + chain_offset + SMB2_MIN_SIZE)) {
+		DEBUG(2,("Invalid SMB2 chained packet at offset 0x%X\n",
+			chain_offset));
+		smbsrv_terminate_connection(p_req->smb_conn, "Invalid SMB2 chained packet");
+		return;
+	}
+
+	protocol_version = IVAL(p_req->in.buffer, NBT_HDR_SIZE + chain_offset);
+	if (protocol_version != SMB2_MAGIC) {
+		DEBUG(2,("Invalid SMB chained packet: protocol prefix: 0x%08X\n",
+			 protocol_version));
+		smbsrv_terminate_connection(p_req->smb_conn, "NON-SMB2 chained packet");
+		return;
+	}
+
+	req = smb2srv_init_request(p_req->smb_conn);
+	if (!req) {
+		smbsrv_terminate_connection(p_req->smb_conn, "SMB2 chained packet - no memory");
+		return;
+	}
+
+	req->in.buffer		= talloc_steal(req, p_req->in.buffer);
+	req->in.size		= p_req->in.size;
+	req->request_time	= p_req->request_time;
+	req->in.allocated	= req->in.size;
+
+	req->in.hdr		= req->in.buffer+ NBT_HDR_SIZE + chain_offset;
+	req->in.body		= req->in.hdr	+ SMB2_HDR_BODY;
+	req->in.body_size	= req->in.size	- (NBT_HDR_SIZE+ chain_offset + SMB2_HDR_BODY);
+	req->in.dynamic 	= NULL;
+
+	buffer_code		= SVAL(req->in.body, 0);
+	req->in.body_fixed	= (buffer_code & ~1);
+	dynamic_size		= req->in.body_size - req->in.body_fixed;
+
+	if (dynamic_size != 0 && (buffer_code & 1)) {
+		req->in.dynamic = req->in.body + req->in.body_fixed;
+		if (smb2_oob(&req->in, req->in.dynamic, dynamic_size)) {
+			DEBUG(1,("SMB2 chained request invalid dynamic size 0x%x\n", 
+				 dynamic_size));
+			smb2srv_send_error(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+	}
+
+	if (p_req->chained_file_handle) {
+		memcpy(req->_chained_file_handle,
+		       p_req->_chained_file_handle,
+		       sizeof(req->_chained_file_handle));
+		req->chained_file_handle = req->_chained_file_handle;
+	}
+
+	/* 
+	 * TODO: - make sure the length field is 64
+	 *       - make sure it's a request
+	 */
+
+	status = smb2srv_reply(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+		talloc_free(req);
+		return;
+	}
 }
 
 void smb2srv_send_reply(struct smb2srv_request *req)
@@ -139,6 +218,10 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 	status = packet_send(req->smb_conn->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+	}
+	if (req->chain_offset) {
+		smb2srv_chain_reply(req);
+		return;
 	}
 	talloc_free(req);
 }
@@ -174,10 +257,11 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	uint32_t tid;
 	uint64_t uid;
 
-	opcode		= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
-	req->seqnum	= BVAL(req->in.hdr, SMB2_HDR_SEQNUM);
-	tid		= IVAL(req->in.hdr, SMB2_HDR_TID);
-	uid		= BVAL(req->in.hdr, SMB2_HDR_UID);
+	opcode			= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
+	req->chain_offset	= IVAL(req->in.hdr, SMB2_HDR_CHAIN_OFFSET);
+	req->seqnum		= BVAL(req->in.hdr, SMB2_HDR_SEQNUM);
+	tid			= IVAL(req->in.hdr, SMB2_HDR_TID);
+	uid			= BVAL(req->in.hdr, SMB2_HDR_UID);
 
 	req->session	= smbsrv_session_find(req->smb_conn, uid, req->request_time);
 	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
@@ -311,7 +395,6 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 	}
 
 	protocol_version = IVAL(blob.data, NBT_HDR_SIZE);
-
 	if (protocol_version != SMB2_MAGIC) {
 		DEBUG(2,("Invalid SMB packet: protocol prefix: 0x%08X\n",
 			 protocol_version));

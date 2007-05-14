@@ -44,8 +44,12 @@ static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 	SBVAL(req->out.body,	0x30,	io->smb2.out.size);
 	SIVAL(req->out.body,	0x38,	io->smb2.out.file_attr);
 	SIVAL(req->out.body,	0x3C,	io->smb2.out._pad);
-	smb2srv_push_handle(req->out.body, 0x40,io->smb2.out.file.ntvfs);
+	smb2srv_push_handle(req->out.body, 0x40, io->smb2.out.file.ntvfs);
 	SMB2SRV_CHECK(smb2_push_o32s32_blob(&req->out, 0x50, io->smb2.out.blob));
+
+	/* also setup the chained file handle */
+	req->chained_file_handle = req->_chained_file_handle;
+	smb2srv_push_handle(req->chained_file_handle, 0, io->smb2.out.file.ntvfs);
 
 	smb2srv_send_reply(req);
 }

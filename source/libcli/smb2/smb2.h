@@ -164,7 +164,7 @@ struct smb2_request {
 #define SMB2_HDR_OPCODE		0x0c
 #define SMB2_HDR_UNKNOWN1	0x0e
 #define SMB2_HDR_FLAGS		0x10
-#define SMB2_HDR_UNKNOWN2	0x14
+#define SMB2_HDR_CHAIN_OFFSET	0x14
 #define SMB2_HDR_SEQNUM		0x18
 #define SMB2_HDR_PID		0x20
 #define SMB2_HDR_TID		0x24

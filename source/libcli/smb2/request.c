@@ -80,18 +80,18 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	req->out.body_size = body_fixed_size;
 	req->out.dynamic   = (body_dynamic_size ? req->out.body + body_fixed_size : NULL);
 
-	SIVAL(req->out.hdr, 0,                SMB2_MAGIC);
-	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,  SMB2_HDR_BODY);
-	SSVAL(req->out.hdr, SMB2_HDR_PAD1,    0);
-	SIVAL(req->out.hdr, SMB2_HDR_STATUS,  0);
-	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,  opcode);
-	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,0);
-	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,   0);
-	SIVAL(req->out.hdr, SMB2_HDR_UNKNOWN2,0);
-	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,  req->seqnum);
-	SIVAL(req->out.hdr, SMB2_HDR_PID,     0);
-	SIVAL(req->out.hdr, SMB2_HDR_TID,     0);
-	SBVAL(req->out.hdr, SMB2_HDR_UID,     0);
+	SIVAL(req->out.hdr, 0,				SMB2_MAGIC);
+	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
+	SSVAL(req->out.hdr, SMB2_HDR_PAD1,		0);
+	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		0);
+	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		opcode);
+	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,		0);
+	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		0);
+	SIVAL(req->out.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
+	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,		req->seqnum);
+	SIVAL(req->out.hdr, SMB2_HDR_PID,		0);
+	SIVAL(req->out.hdr, SMB2_HDR_TID,		0);
+	SBVAL(req->out.hdr, SMB2_HDR_UID,		0);
 	memset(req->out.hdr+SMB2_HDR_SIG, 0, 16);
 
 	/* set the length of the fixed body part and +1 if there's a dynamic part also */
