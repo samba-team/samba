@@ -1501,7 +1501,7 @@ bin/gpfs.@SHLIBEXT@: $(VFS_GPFS_OBJ)
 bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NOTIFY_FAM_OBJ) \
-		@SONAMEFLAG@`basename $@`
+		@SONAMEFLAG@`basename $@` @SMB_FAM_LIBS@
 
 bin/readahead.@SHLIBEXT@: $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
