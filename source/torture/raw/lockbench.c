@@ -44,6 +44,7 @@
 
 static int nprocs;
 static int lock_failed;
+static int num_connected;
 
 struct benchlock_state {
 	struct event_context *ev;
@@ -115,6 +116,11 @@ static void reopen_file(struct event_context *ev, struct timed_event *te,
 	}
 	state->req->async.private = state;
 	state->req->async.fn      = lock_completion;
+
+	num_connected++;
+
+	DEBUG(0,("reconnect to %s finished (%u connected)\n", state->dest_host,
+		 num_connected));
 }
 
 /*
@@ -168,8 +174,6 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	io->in.fallback_to_anonymous = False;
 	io->in.workgroup    = lp_workgroup();
 
-	DEBUG(0,("reopening connection to //%s/%s\n", host, share));
-
 	/* kill off the remnants of the old connection */
 	talloc_free(state->tree);
 	state->tree = NULL;
@@ -195,6 +199,10 @@ static void lock_completion(struct smbcli_request *req)
 	state->req = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+			talloc_free(state->tree);
+			state->tree = NULL;
+			num_connected--;	
+			DEBUG(0,("reopening connection to %s\n", state->dest_host));
 			event_add_timed(state->ev, state->mem_ctx, 
 					timeval_current_ofs(1,0), 
 					reopen_connection, state);
@@ -246,6 +254,8 @@ BOOL torture_bench_lock(struct torture_context *torture)
 		state[i].service_type = talloc_strdup(state[i].mem_ctx,
 						      cli->tree->device);
 	}
+
+	num_connected = i;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		goto failed;
