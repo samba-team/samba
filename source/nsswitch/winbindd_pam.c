@@ -784,6 +784,9 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	NET_USER_INFO_3 *my_info3;
 	time_t kickoff_time, must_change_time;
 	BOOL password_good = False;
+#ifdef HAVE_KRB5
+	struct winbindd_tdc_domain *tdc_domain = NULL;
+#endif
 
 	*info3 = NULL;
 
@@ -894,9 +897,9 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		}
 	
 #ifdef HAVE_KRB5
-		/* FIXME: what else points out that the remote domain is AD ? */
-		if (!strequal(domain->name, domain->alt_name) &&
-		    (state->request.flags & WBFLAG_PAM_KRB5)) {
+		if ((state->request.flags & WBFLAG_PAM_KRB5) &&
+		    ((tdc_domain = wcache_tdc_fetch_domain(state->mem_ctx, name_domain)) != NULL) &&
+		    (tdc_domain->trust_type & DS_DOMAIN_TRUST_TYPE_UPLEVEL)) {
 
 			uid_t uid = -1;
 			const char *cc = NULL;
