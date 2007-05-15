@@ -44,6 +44,17 @@ struct event_context *winbind_event_context(void)
 	return ctx;
 }
 
+struct messaging_context *winbind_messaging_context(void)
+{
+	static struct messaging_context *ctx;
+
+	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
+					   winbind_event_context()))) {
+		smb_panic("Could not init winbind messaging context\n");
+	}
+	return ctx;
+}
+
 /* Reload configuration */
 
 static BOOL reload_services_file(void)

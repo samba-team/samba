@@ -1535,8 +1535,9 @@ static void print_queue_update(int snum, BOOL force)
 
 	/* finally send the message */
 	
-	message_send_pid(pid_to_procid(background_lpq_updater_pid),
-		 MSG_PRINTER_UPDATE, buffer, len, False);
+	messaging_send_buf(smbd_messaging_context(),
+			   pid_to_procid(background_lpq_updater_pid),
+			   MSG_PRINTER_UPDATE, (uint8 *)buffer, len);
 
 	SAFE_FREE( buffer );
 

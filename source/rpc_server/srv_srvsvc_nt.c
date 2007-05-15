@@ -1231,8 +1231,13 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
 
 		if ((strequal(session_list[snum].username, r->in.user) || r->in.user[0] == '\0' ) &&
 		     strequal(session_list[snum].remote_machine, machine)) {
+			NTSTATUS ntstat;
+
+			ntstat = messaging_send(smbd_messaging_context(),
+						session_list[snum].pid,
+						MSG_SHUTDOWN, &data_blob_null);
 		
-			if (NT_STATUS_IS_OK(message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False)))
+			if (NT_STATUS_IS_OK(ntstat))
 				status = WERR_OK;
 		}
 	}
