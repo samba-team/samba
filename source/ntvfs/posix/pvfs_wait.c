@@ -61,14 +61,20 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
 {
 	struct pvfs_wait *pwait = private;
 	struct ntvfs_request *req;
+	void *p = NULL;
 
 	/* we need to check that this one is for us. See
 	   messaging_send_ptr() for the other side of this.
 	 */
-	if (data->length != sizeof(void *) ||
-	    *(void **)data->data != pwait->private) {
+	if (data->length == sizeof(void *)) {
+		void **pp;
+		pp = (void **)data->data;
+		p = *pp;
+	}
+	if (p == NULL || p != pwait->private) {
 		return;
 	}
+
 	pwait->reason = PVFS_WAIT_EVENT;
 	req = pwait->req;
 
