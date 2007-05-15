@@ -4052,7 +4052,7 @@ if test x"$with_ads_support" != x"no"; then
 	AC_TRY_RUN_STRICT([
 		#include <krb5.h>
 		int main(void) {
-			krb5_context context;
+			krb5_context context = NULL;
 			char *str = NULL;
 			krb5_enctype_to_string(context, 1, &str);
 			if (str) free (str); 
