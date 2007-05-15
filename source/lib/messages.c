@@ -659,7 +659,8 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
  *
  * @retval True for success.
  **/
-BOOL message_send_all(int msg_type,
+BOOL message_send_all(struct messaging_context *msg_ctx,
+		      int msg_type,
 		      const void *buf, size_t len,
 		      BOOL duplicates_allowed,
 		      int *n_sent)

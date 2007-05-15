@@ -40,8 +40,8 @@ static void send_repl_message(uint32 low_serial)
 {
         DEBUG(3, ("sending replication message, serial = 0x%04x\n", 
                   low_serial));
-        message_send_all(MSG_SMB_SAM_REPL, &low_serial,
-                         sizeof(low_serial), False, NULL);
+        message_send_all(nmbd_messaging_context(), MSG_SMB_SAM_REPL,
+			 &low_serial, sizeof(low_serial), False, NULL);
 }
 
 /****************************************************************************

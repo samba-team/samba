@@ -60,7 +60,7 @@ static BOOL send_message(struct messaging_context *msg_ctx,
 			messaging_send_buf(msg_ctx, pid, msg_type,
 					   (uint8 *)buf, len));
 
-	ret = message_send_all(msg_type, buf, len, duplicates,
+	ret = message_send_all(msg_ctx, msg_type, buf, len, duplicates,
 			       &n_sent);
 	DEBUG(10,("smbcontrol/send_message: broadcast message to "
 		  "%d processes\n", n_sent));
