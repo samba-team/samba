@@ -732,6 +732,24 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		  "ALL_INFO",      all_info,      directory);
 	VAL_CHECK("STANDARD_INFO", standard_info, nlink, 
 		  "ALL_INFO",      all_info,      nlink);
+	s1 = fnum_find("BASIC_INFO");
+	if (s1 && is_ipc) {
+		if (s1->basic_info.out.attrib != FILE_ATTRIBUTE_NORMAL) {
+			printf("(%d) attrib basic_info/nlink incorrect - %d should be %d\n", __LINE__, s1->basic_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
+			ret = False;
+		}
+	}
+	s1 = fnum_find("STANDARD_INFO");
+	if (s1 && is_ipc) {
+		if (s1->standard_info.out.nlink != 1) {
+			printf("(%d) nlinks standard_info/nlink incorrect - %d should be 1\n", __LINE__, s1->standard_info.out.nlink);
+			ret = False;
+		}
+		if (s1->standard_info.out.delete_pending != 1) {
+			printf("(%d) nlinks standard_info/delete_pending incorrect - %d should be 1\n", __LINE__, s1->standard_info.out.delete_pending);
+			ret = False;
+		}
+	}
 	VAL_CHECK("EA_INFO",       ea_info,       ea_size, 
 		  "ALL_INFO",      all_info,      ea_size);
 	if (!is_ipc) {
