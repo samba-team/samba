@@ -524,8 +524,11 @@ void winbind_msg_offline(int msg_type, struct server_id src,
 		DEBUG(10,("winbind_msg_offline: sending message to pid %u for domain %s.\n",
 			(unsigned int)child->pid, domain->name ));
 
-		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_OFFLINE, child->domain->name,
-			strlen(child->domain->name)+1, False);
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(child->pid),
+				   MSG_WINBIND_OFFLINE,
+				   (uint8 *)child->domain->name,
+				   strlen(child->domain->name)+1);
 	}
 }
 
@@ -567,11 +570,11 @@ void winbind_msg_online(int msg_type, struct server_id src,
 			struct winbindd_child *idmap = idmap_child();
 			
 			if ( idmap->pid != 0 ) {
-				message_send_pid(pid_to_procid(idmap->pid), 
-						 MSG_WINBIND_ONLINE,
-						 domain->name,
-						 strlen(domain->name)+1, 
-						 False);
+				messaging_send_buf(winbind_messaging_context(),
+						   pid_to_procid(idmap->pid), 
+						   MSG_WINBIND_ONLINE,
+						   (uint8 *)domain->name,
+						   strlen(domain->name)+1);
 			}
 			
 		}
@@ -594,8 +597,11 @@ void winbind_msg_online(int msg_type, struct server_id src,
 		DEBUG(10,("winbind_msg_online: sending message to pid %u for domain %s.\n",
 			(unsigned int)child->pid, child->domain->name ));
 
-		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_ONLINE, child->domain->name,
-			strlen(child->domain->name)+1, False);
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(child->pid),
+				   MSG_WINBIND_ONLINE,
+				   (uint8 *)child->domain->name,
+				   strlen(child->domain->name)+1);
 	}
 }
 
@@ -612,8 +618,10 @@ void winbind_msg_onlinestatus(int msg_type, struct server_id src,
 			DEBUG(10,("winbind_msg_onlinestatus: "
 				  "sending message to pid %u of primary domain.\n",
 				  (unsigned int)child->pid));
-			message_send_pid(pid_to_procid(child->pid), 
-					 MSG_WINBIND_ONLINESTATUS, buf, len, False);
+			messaging_send_buf(winbind_messaging_context(),
+					   pid_to_procid(child->pid), 
+					   MSG_WINBIND_ONLINESTATUS,
+					   (uint8 *)buf, len);
 			break;
 		}
 	}
@@ -791,8 +799,9 @@ static void child_msg_onlinestatus(int msg_type, struct server_id src,
 		return;
 	}
 
-	message_send_pid(*sender, MSG_WINBIND_ONLINESTATUS, 
-			 message, strlen(message) + 1, True);
+	messaging_send_buf(winbind_messaging_context(),
+			   *sender, MSG_WINBIND_ONLINESTATUS, 
+			   (uint8 *)message, strlen(message) + 1);
 
 	talloc_destroy(mem_ctx);
 }
