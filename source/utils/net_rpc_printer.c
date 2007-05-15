@@ -2166,7 +2166,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 		if (ctr_enum.printers_2[i].devmode != NULL) {
 
 			/* copy devmode (info level 2) */
-			ctr_dst.printers_2->devmode =
+			ctr_dst.printers_2->devmode = (struct devicemode *)
 				TALLOC_MEMDUP(mem_ctx,
 					      ctr_enum.printers_2[i].devmode,
 					      sizeof(DEVICEMODE));
@@ -2328,7 +2328,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 					value.type = REG_SZ;
 					value.size = data.uni_str_len * 2;
 					if (value.size) {
-						value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+						value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
 					} else {
 						value.data_p = NULL;
 					}
