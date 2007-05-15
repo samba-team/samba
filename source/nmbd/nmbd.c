@@ -753,7 +753,6 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
-	message_init();
 	if (nmbd_messaging_context() == NULL) {
 		return 1;
 	}
