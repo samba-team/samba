@@ -219,18 +219,22 @@ static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs)) || (num_dcs == 0)) {
 		/* Still offline ? Can't find DC's. */
-		message_send_pid(pid_to_procid(parent_pid), MSG_WINBIND_FAILED_TO_GO_ONLINE,
-				domain->name,
-				strlen(domain->name)+1, False);
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name)+1);
 		_exit(0);
 	}
 
 	/* We got a DC. Send a message to our parent to get it to
 	   try and do the same. */
 
-	message_send_pid(pid_to_procid(parent_pid), MSG_WINBIND_TRY_TO_GO_ONLINE,
-				domain->name,
-				strlen(domain->name)+1, False);
+	messaging_send_buf(winbind_messaging_context(),
+			   pid_to_procid(parent_pid),
+			   MSG_WINBIND_TRY_TO_GO_ONLINE,
+			   (uint8 *)domain->name,
+			   strlen(domain->name)+1);
 	_exit(0);
 }
 
@@ -358,11 +362,11 @@ void set_domain_offline(struct winbindd_domain *domain)
 		struct winbindd_child *idmap = idmap_child();
 		
 		if ( idmap->pid != 0 ) {
-			message_send_pid(pid_to_procid(idmap->pid), 
-					 MSG_WINBIND_OFFLINE, 
-					 domain->name, 
-					 strlen(domain->name)+1, 
-					 False);
+			messaging_send_buf(winbind_messaging_context(),
+					   pid_to_procid(idmap->pid), 
+					   MSG_WINBIND_OFFLINE, 
+					   (uint8 *)domain->name, 
+					   strlen(domain->name)+1);
 		}			
 	}
 
@@ -435,11 +439,11 @@ static void set_domain_online(struct winbindd_domain *domain)
 		struct winbindd_child *idmap = idmap_child();
 		
 		if ( idmap->pid != 0 ) {
-			message_send_pid(pid_to_procid(idmap->pid), 
-					 MSG_WINBIND_ONLINE, 
-					 domain->name, 
-					 strlen(domain->name)+1, 
-					 False);
+			messaging_send_buf(winbind_messaging_context(),
+					   pid_to_procid(idmap->pid), 
+					   MSG_WINBIND_ONLINE, 
+					   (uint8 *)domain->name, 
+					   strlen(domain->name)+1);
 		}			
 	}
 
