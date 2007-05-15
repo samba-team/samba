@@ -1,5 +1,6 @@
 dn: @INDEXLIST
 @IDXATTR: name
+@IDXATTR: userPrincipalName
 @IDXATTR: sAMAccountName
 @IDXATTR: objectSid
 @IDXATTR: objectCategory
