@@ -117,7 +117,7 @@ static void ping_message(int msg_type, struct server_id src,
  Initialise the messaging functions. 
 ****************************************************************************/
 
-BOOL message_init(void)
+static BOOL message_init(struct messaging_context *msg_ctx)
 {
 	sec_init();
 
@@ -144,6 +144,7 @@ BOOL message_init(void)
 
 	register_msg_pool_usage();
 	register_dmalloc_msgs();
+	debug_register_msgs();
 
 	return True;
 }
@@ -757,6 +758,12 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	ctx->id = server_id;
 	talloc_set_destructor(ctx, messaging_context_destructor);
+
+	if (!message_init(ctx)) {
+		DEBUG(0, ("message_init failed: %s\n", strerror(errno)));
+		TALLOC_FREE(ctx);
+	}
+
 	return ctx;
 }
 

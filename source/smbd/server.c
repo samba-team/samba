@@ -967,7 +967,7 @@ extern void build_options(BOOL screen);
 	}
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
-	if (!message_init())
+	if (smbd_messaging_context() == NULL)
 		exit(1);
 
 	/* Initialise the password backed before the global_sam_sid
