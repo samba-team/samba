@@ -99,6 +99,10 @@ static void sig_usr1(void)
 	sys_select_signal(SIGUSR1);
 }
 
+static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
+				 const void *buf, size_t len,
+				 BOOL duplicates_allowed);
+
 /****************************************************************************
  A useful function for testing the message system.
 ****************************************************************************/
@@ -142,9 +146,9 @@ static BOOL message_init(struct messaging_context *msg_ctx)
 
 	/* Register some debugging related messages */
 
-	register_msg_pool_usage();
+	register_msg_pool_usage(msg_ctx);
 	register_dmalloc_msgs();
-	debug_register_msgs();
+	debug_register_msgs(msg_ctx);
 
 	return True;
 }
@@ -366,23 +370,12 @@ static NTSTATUS message_send_pid_internal(struct server_id pid, int msg_type,
  Send a message to a particular pid - no timeout.
 ****************************************************************************/
 
-NTSTATUS message_send_pid(struct server_id pid, int msg_type, const void *buf,
-			  size_t len, BOOL duplicates_allowed)
+static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
+				 const void *buf, size_t len,
+				 BOOL duplicates_allowed)
 {
 	return message_send_pid_internal(pid, msg_type, buf, len,
 					 duplicates_allowed, 0);
-}
-
-/****************************************************************************
- Send a message to a particular pid, with timeout in seconds.
-****************************************************************************/
-
-NTSTATUS message_send_pid_with_timeout(struct server_id pid, int msg_type,
-				       const void *buf, size_t len,
-				       BOOL duplicates_allowed, unsigned int timeout)
-{
-	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed,
-					 timeout);
 }
 
 /****************************************************************************
