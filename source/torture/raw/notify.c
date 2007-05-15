@@ -137,6 +137,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, struct smbcli_state *cli2,
 	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
 	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name");
 	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
+	msleep(200);
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
