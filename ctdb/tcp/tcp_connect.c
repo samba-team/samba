@@ -49,9 +49,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 
 	/* start a new connect cycle to try to re-establish the
 	   link */
-	close(tnode->fd);
 	ctdb_queue_set_fd(tnode->queue, -1);
-	tnode->fd = -1;
 	event_add_timed(node->ctdb->ev, node, timeval_zero(), 
 			ctdb_tcp_node_connect, node);
 }
@@ -157,6 +155,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	    errno != EINPROGRESS) {
 		/* try again once a second */
 		close(tnode->fd);
+		tnode->fd = -1;
 		event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
 				ctdb_tcp_node_connect, node);
 		return;

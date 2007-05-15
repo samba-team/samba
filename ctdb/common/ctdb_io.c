@@ -170,9 +170,11 @@ static void queue_io_write(struct ctdb_queue *queue)
 		}
 
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+			talloc_free(queue->fde);
+			queue->fde = NULL;
+			queue->fd = -1;
 			event_add_timed(queue->ctdb->ev, queue, timeval_zero(), 
 					queue_dead, queue);
-			EVENT_FD_NOT_WRITEABLE(queue->fde);
 			return;
 		}
 		if (n <= 0) return;
@@ -232,6 +234,9 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	    !(queue->ctdb->flags & CTDB_FLAG_TORTURE)) {
 		ssize_t n = write(queue->fd, data, length2);
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+			talloc_free(queue->fde);
+			queue->fde = NULL;
+			queue->fd = -1;
 			event_add_timed(queue->ctdb->ev, queue, timeval_zero(), 
 					queue_dead, queue);
 			/* yes, we report success, as the dead node is 
