@@ -752,7 +752,6 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
-	message_init();
 	if (nmbd_messaging_context() == NULL) {
 		return 1;
 	}

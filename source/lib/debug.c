@@ -492,19 +492,6 @@ static void debug_message(int msg_type, struct server_id src,
 }
 
 /****************************************************************************
- Send a "set debug level" message.
-****************************************************************************/
-
-void debug_message_send(pid_t pid, const char *params_str)
-{
-	if (!params_str)
-		return;
-	message_send_pid(pid_to_procid(pid), MSG_DEBUG,
-			 params_str, strlen(params_str) + 1,
-			 False);
-}
-
-/****************************************************************************
  Return current debug level.
 ****************************************************************************/
 
@@ -539,12 +526,15 @@ void debug_init(void)
 
 	initialised = True;
 
-	message_register(MSG_DEBUG, debug_message, NULL);
-	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message, NULL);
-
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
 	}
+}
+
+void debug_register_msgs(void)
+{
+	message_register(MSG_DEBUG, debug_message, NULL);
+	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message, NULL);
 }
 
 /***************************************************************************

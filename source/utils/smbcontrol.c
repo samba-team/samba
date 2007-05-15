@@ -55,9 +55,6 @@ static BOOL send_message(struct messaging_context *msg_ctx,
 	BOOL ret;
 	int n_sent = 0;
 
-	if (!message_init())
-		return False;
-
 	if (procid_to_pid(&pid) != 0)
 		return NT_STATUS_IS_OK(
 			messaging_send_buf(msg_ctx, pid, msg_type,

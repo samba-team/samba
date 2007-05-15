@@ -45,9 +45,6 @@ BOOL cli_send_mailslot(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	if (!message_init())
-		return False;
-
 	memset((char *)&p, '\0', sizeof(p));
 
 	/*
