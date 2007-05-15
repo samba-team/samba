@@ -28,8 +28,8 @@ static BOOL tru64_ace_to_smb_ace(acl_entry_t tru64_ace,
 static acl_t smb_acl_to_tru64_acl(const SMB_ACL_T smb_acl);
 static acl_tag_t smb_tag_to_tru64(SMB_ACL_TAG_T smb_tag);
 static SMB_ACL_TAG_T tru64_tag_to_smb(acl_tag_t tru64_tag);
-static acl_perm_t smb_permset_to_tru64(smb_acl_permset_t smb_permset);
-static smb_acl_permset_t tru64_permset_to_smb(const acl_perm_t tru64_permset);
+static acl_perm_t smb_permset_to_tru64(SMB_ACL_PERM_T smb_permset);
+static SMB_ACL_PERM_T tru64_permset_to_smb(const acl_perm_t tru64_permset);
 
 
 /* public functions - the api */
@@ -201,7 +201,7 @@ static BOOL tru64_ace_to_smb_ace(acl_entry_t tru64_ace,
 	acl_tag_t tru64_tag;
 	acl_permset_t permset;
 	SMB_ACL_TAG_T smb_tag_type;
-	smb_acl_permset_t smb_permset;
+	SMB_ACL_PERM_T smb_permset;
 	void *qualifier;
 
 	if (acl_get_tag_type(tru64_ace, &tru64_tag) != 0) {
@@ -437,7 +437,7 @@ static SMB_ACL_TAG_T tru64_tag_to_smb(acl_tag_t tru64_tag)
 	return smb_tag_type;
 }
 
-static acl_perm_t smb_permset_to_tru64(smb_acl_permset_t smb_permset)
+static acl_perm_t smb_permset_to_tru64(SMB_ACL_PERM_T smb_permset)
 {
 	/* originally, I thought that acl_clear_perm was the
 	 * proper way to reset the permset to 0. but without 
@@ -456,9 +456,9 @@ static acl_perm_t smb_permset_to_tru64(smb_acl_permset_t smb_permset)
 	return tru64_permset;
 }
 
-static smb_acl_permset_t tru64_permset_to_smb(const acl_perm_t tru64_permset)
+static SMB_ACL_PERM_T tru64_permset_to_smb(const acl_perm_t tru64_permset)
 {
-	smb_acl_permset_t smb_permset  = 0;
+	SMB_ACL_PERM_T smb_permset  = 0;
 	smb_permset |= ((tru64_permset & ACL_READ) ? SMB_ACL_READ : 0);
 	smb_permset |= ((tru64_permset & ACL_WRITE) ? SMB_ACL_WRITE : 0);
 	smb_permset |= ((tru64_permset & ACL_EXECUTE) ? SMB_ACL_EXECUTE : 0);
