@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    RAW_FILEINFO_* individual test suite
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,44 +33,106 @@ static struct {
 	uint_t only_paths:1;
 	uint_t only_handles:1;
 	uint32_t capability_mask;
+	uint_t expected_ipc_access_denied:1;
+	NTSTATUS expected_ipc_fnum_status;
 	NTSTATUS fnum_status, fname_status;
 	union smb_fileinfo fnum_finfo, fname_finfo;
 } levels[] = {
-	{ "GETATTR",                   RAW_FILEINFO_GETATTR,           1, 0, },
-	{ "GETATTRE",                  RAW_FILEINFO_GETATTRE,          0, 1, },
-	{ "STANDARD",                  RAW_FILEINFO_STANDARD, },
-	{ "EA_SIZE",                   RAW_FILEINFO_EA_SIZE, },
-	{ "ALL_EAS",                   RAW_FILEINFO_ALL_EAS, },
-	{ "IS_NAME_VALID",             RAW_FILEINFO_IS_NAME_VALID,     1, 0, },
-	{ "BASIC_INFO",                RAW_FILEINFO_BASIC_INFO, },
-	{ "STANDARD_INFO",             RAW_FILEINFO_STANDARD_INFO, },
-	{ "EA_INFO",                   RAW_FILEINFO_EA_INFO, },
-	{ "NAME_INFO",                 RAW_FILEINFO_NAME_INFO, },
-	{ "ALL_INFO",                  RAW_FILEINFO_ALL_INFO, },
-	{ "ALT_NAME_INFO",             RAW_FILEINFO_ALT_NAME_INFO, },
-	{ "STREAM_INFO",               RAW_FILEINFO_STREAM_INFO, },
-	{ "COMPRESSION_INFO",          RAW_FILEINFO_COMPRESSION_INFO, },
-	{ "UNIX_BASIC_INFO",           RAW_FILEINFO_UNIX_BASIC, 0, 0, CAP_UNIX},
-	{ "UNIX_LINK_INFO",            RAW_FILEINFO_UNIX_LINK, 0, 0, CAP_UNIX},
-	{ "BASIC_INFORMATION",         RAW_FILEINFO_BASIC_INFORMATION, },
-	{ "STANDARD_INFORMATION",      RAW_FILEINFO_STANDARD_INFORMATION, },
-	{ "INTERNAL_INFORMATION",      RAW_FILEINFO_INTERNAL_INFORMATION, },
-	{ "EA_INFORMATION",            RAW_FILEINFO_EA_INFORMATION, },
-	{ "ACCESS_INFORMATION",        RAW_FILEINFO_ACCESS_INFORMATION, },
-	{ "NAME_INFORMATION",          RAW_FILEINFO_NAME_INFORMATION, },
-	{ "POSITION_INFORMATION",      RAW_FILEINFO_POSITION_INFORMATION, },
-	{ "MODE_INFORMATION",          RAW_FILEINFO_MODE_INFORMATION, },
-	{ "ALIGNMENT_INFORMATION",     RAW_FILEINFO_ALIGNMENT_INFORMATION, },
-	{ "ALL_INFORMATION",           RAW_FILEINFO_ALL_INFORMATION, },
-	{ "ALT_NAME_INFORMATION",      RAW_FILEINFO_ALT_NAME_INFORMATION, },
-	{ "STREAM_INFORMATION",        RAW_FILEINFO_STREAM_INFORMATION, },
-	{ "COMPRESSION_INFORMATION",   RAW_FILEINFO_COMPRESSION_INFORMATION, },
-	{ "NETWORK_OPEN_INFORMATION",  RAW_FILEINFO_NETWORK_OPEN_INFORMATION, },
-	{ "ATTRIBUTE_TAG_INFORMATION", RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION, },
-	{ NULL, }
+	{ .name = "GETATTR",
+	  .level = RAW_FILEINFO_GETATTR,         
+	  .only_paths = 1,
+	  .only_handles = 0,
+	  .expected_ipc_access_denied = 1},
+	{  .name ="GETATTRE",                  
+	   .level = RAW_FILEINFO_GETATTRE,         
+	   .only_paths = 0, 
+	   .only_handles = 1 },
+	{  .name ="STANDARD",                  
+	   .level = RAW_FILEINFO_STANDARD, },
+	{  .name ="EA_SIZE",                 
+	   .level = RAW_FILEINFO_EA_SIZE },
+	{  .name ="ALL_EAS",                 
+	   .level = RAW_FILEINFO_ALL_EAS,
+	   .expected_ipc_fnum_status = NT_STATUS_ACCESS_DENIED,
+	},
+	{  .name ="IS_NAME_VALID",          
+	   .level =  RAW_FILEINFO_IS_NAME_VALID,
+	   .only_paths =  1,
+	   .only_handles =  0 },
+	{  .name ="BASIC_INFO",            
+	   .level =  RAW_FILEINFO_BASIC_INFO },
+	{  .name ="STANDARD_INFO",         
+	   .level =  RAW_FILEINFO_STANDARD_INFO },
+	{  .name ="EA_INFO",               
+	   .level =  RAW_FILEINFO_EA_INFO },
+	{  .name ="NAME_INFO",           
+	   .level =  RAW_FILEINFO_NAME_INFO },
+	{  .name ="ALL_INFO",              
+	   .level =  RAW_FILEINFO_ALL_INFO },
+	{  .name ="ALT_NAME_INFO",        
+	   .level =  RAW_FILEINFO_ALT_NAME_INFO,
+	   .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{  .name ="STREAM_INFO",           
+	   .level =  RAW_FILEINFO_STREAM_INFO,
+	   .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{  .name ="COMPRESSION_INFO",        
+	   .level =  RAW_FILEINFO_COMPRESSION_INFO,
+	   .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{  .name ="UNIX_BASIC_INFO",         
+	   .level =  RAW_FILEINFO_UNIX_BASIC,
+	   .only_paths =  0, 
+	   .only_handles = 0, 
+	   .capability_mask = CAP_UNIX},
+	{  .name ="UNIX_LINK_INFO",          
+	   .level =  RAW_FILEINFO_UNIX_LINK, 
+	   .only_paths = 0, 
+	   .only_handles = 0, 
+	   .capability_mask = CAP_UNIX},
+	{  .name ="BASIC_INFORMATION",      
+	   .level =  RAW_FILEINFO_BASIC_INFORMATION },
+	{  .name ="STANDARD_INFORMATION",   
+	   .level =  RAW_FILEINFO_STANDARD_INFORMATION },
+	{  .name ="INTERNAL_INFORMATION",   
+	   .level =  RAW_FILEINFO_INTERNAL_INFORMATION },
+	{  .name ="EA_INFORMATION",        
+	   .level =  RAW_FILEINFO_EA_INFORMATION },
+	{ .name = "ACCESS_INFORMATION",    
+	  .level =  RAW_FILEINFO_ACCESS_INFORMATION },
+	{ .name = "NAME_INFORMATION",      
+	  .level =  RAW_FILEINFO_NAME_INFORMATION },
+	{  .name ="POSITION_INFORMATION",  
+	   .level =  RAW_FILEINFO_POSITION_INFORMATION },
+	{  .name ="MODE_INFORMATION",       
+	   .level =  RAW_FILEINFO_MODE_INFORMATION },
+	{  .name ="ALIGNMENT_INFORMATION",  
+	   .level =  RAW_FILEINFO_ALIGNMENT_INFORMATION },
+	{  .name ="ALL_INFORMATION",       
+	   .level =  RAW_FILEINFO_ALL_INFORMATION },
+	{  .name ="ALT_NAME_INFORMATION",  
+	   .level =  RAW_FILEINFO_ALT_NAME_INFORMATION,
+	   .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{  .name ="STREAM_INFORMATION",    
+	   .level =  RAW_FILEINFO_STREAM_INFORMATION,
+	   .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{ .name = "COMPRESSION_INFORMATION", 
+	  .level =  RAW_FILEINFO_COMPRESSION_INFORMATION,
+	  .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{  .name ="NETWORK_OPEN_INFORMATION",
+	   .level =  RAW_FILEINFO_NETWORK_OPEN_INFORMATION,
+	   .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{ .name = "ATTRIBUTE_TAG_INFORMATION",
+	  .level =  RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION,
+	  .expected_ipc_fnum_status = NT_STATUS_INVALID_PARAMETER
+	},
+	{ NULL }
 };
-
-static bool is_ipc;
 
 /*
   compare a dos time (2 second resolution) to a nt time
@@ -101,7 +164,7 @@ static union smb_fileinfo *fnum_find(const char *name)
 /*
   find a level in the levels[] table
 */
-static union smb_fileinfo *fname_find(const char *name)
+static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
 {
 	int i;
 	if (is_ipc) {
@@ -161,7 +224,8 @@ static union smb_fileinfo *fname_find(const char *name)
    for consistency between the calls. 
 */
 static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TALLOC_CTX *mem_ctx, 	
-					    struct smbcli_tree *tree, int fnum, const char *fname)
+					    struct smbcli_tree *tree, int fnum, const char *fname,
+	bool is_ipc)
 {
 	int i;
 	BOOL ret = True;
@@ -198,16 +262,32 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 			continue;
 		}
 
-		if (!levels[i].only_paths && !NT_STATUS_IS_OK(levels[i].fnum_status)) {
-			printf("ERROR: level %s failed - %s\n", 
-			       levels[i].name, nt_errstr(levels[i].fnum_status));
-			count++;
+		if (is_ipc) {
+			if (levels[i].expected_ipc_access_denied && NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, levels[i].fname_status)) {
+			} else if (!levels[i].only_handles && !NT_STATUS_EQUAL(NT_STATUS_INVALID_DEVICE_REQUEST, levels[i].fname_status)) {
+				printf("ERROR: fname level %s failed, expected NT_STATUS_INVALID_DEVICE_REQUEST - %s\n", 
+				       levels[i].name, nt_errstr(levels[i].fname_status));
+				count++;
+			}
+			if (!levels[i].only_paths && !NT_STATUS_EQUAL(levels[i].expected_ipc_fnum_status, levels[i].fnum_status)) {
+				printf("ERROR: fnum level %s failed, expected %s - %s\n", 
+				       levels[i].name, nt_errstr(levels[i].expected_ipc_fnum_status), 
+				       nt_errstr(levels[i].fnum_status));
+				count++;
+			}
+		} else {
+			if (!levels[i].only_paths && !NT_STATUS_IS_OK(levels[i].fnum_status)) {
+				printf("ERROR: fnum level %s failed - %s\n", 
+				       levels[i].name, nt_errstr(levels[i].fnum_status));
+				count++;
+			}
+			if (!levels[i].only_handles && !NT_STATUS_IS_OK(levels[i].fname_status)) {
+				printf("ERROR: fname level %s failed - %s\n", 
+				       levels[i].name, nt_errstr(levels[i].fname_status));
+				count++;
+			}
 		}
-		if (!(is_ipc || levels[i].only_handles) && !NT_STATUS_IS_OK(levels[i].fname_status)) {
-			printf("ERROR: level %s failed - %s\n", 
-			       levels[i].name, nt_errstr(levels[i].fname_status));
-			count++;
-		}
+		
 	}
 
 	if (count != 0) {
@@ -242,9 +322,9 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 	do { \
 		s1 = fnum_find(sname1);	 s2 = fnum_find(sname2); \
 		if (s1 && s2) { INFO_CHECK } \
-		s1 = fname_find(sname1); s2 = fname_find(sname2); \
+		s1 = fname_find(is_ipc, sname1); s2 = fname_find(is_ipc, sname2); \
 		if (s1 && s2) { INFO_CHECK } \
-		s1 = fnum_find(sname1);	 s2 = fname_find(sname2); \
+		s1 = fnum_find(sname1);	 s2 = fname_find(is_ipc, sname2); \
 		if (s1 && s2) { INFO_CHECK } \
 	} while (0)
 
@@ -322,7 +402,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname); \
+	s1 = fname_find(is_ipc, sname); \
 	if (s1 && memcmp(&s1->stype.out.tfield, &correct_time, sizeof(correct_time)) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       nt_time_string(mem_ctx, s1->stype.out.tfield), \
@@ -338,7 +418,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname); \
+	s1 = fname_find(is_ipc, sname); \
 	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
@@ -355,7 +435,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname); \
+	s1 = fname_find(is_ipc, sname); \
 	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
@@ -420,7 +500,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		       (uint_t)correct_size); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname); \
+	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != correct_size) { \
 		printf("(%d) path %s/%s incorrect - %u should be %u\n", __LINE__, #stype, #tfield,  \
 		       (uint_t)s1->stype.out.tfield, \
@@ -474,7 +554,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		       (uint_t)correct_attrib); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname); \
+	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != correct_attrib) { \
 		printf("(%d) path %s/%s incorrect - 0x%x should be 0x%x\n", __LINE__, #stype, #tfield,  \
 		       (uint_t)s1->stype.out.tfield, \
@@ -487,11 +567,13 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 	printf("attrib: 0x%x\n", (uint_t)correct_attrib);
 	
 	ATTRIB_CHECK("GETATTR",                   getattr,                   attrib);
-	ATTRIB_CHECK("GETATTRE",                  getattre,                  attrib);
-	ATTRIB_CHECK("STANDARD",                  standard,                  attrib);
+	if (!is_ipc) {
+		ATTRIB_CHECK("GETATTRE",                  getattre,                  attrib);
+		ATTRIB_CHECK("STANDARD",                  standard,                  attrib);
+		ATTRIB_CHECK("EA_SIZE",                   ea_size,                   attrib);
+	}
 	ATTRIB_CHECK("BASIC_INFO",                basic_info,                attrib);
 	ATTRIB_CHECK("BASIC_INFORMATION",         basic_info,                attrib);
-	ATTRIB_CHECK("EA_SIZE",                   ea_size,                   attrib);
 	ATTRIB_CHECK("ALL_INFO",                  all_info,                  attrib);
 	ATTRIB_CHECK("ALL_INFORMATION",           all_info,                  attrib);
 	ATTRIB_CHECK("NETWORK_OPEN_INFORMATION",  network_open_information,  attrib);
@@ -508,7 +590,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname); \
+	s1 = fname_find(is_ipc, sname); \
 	if (s1 && (strcmp_safe(s1->stype.out.tfield.s, correct_name) != 0 || \
 	    		wire_bad_flags(&s1->stype.out.tfield, flags, tree->session->transport))) { \
 		printf("(%d) path %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
@@ -604,7 +686,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 			}
 		}
 	}
-	s2 = fname_find("ALL_EAS");
+	s2 = fname_find(is_ipc, "ALL_EAS");
 	if (s2) {
 		VAL_EQUAL(all_eas, num_eas, all_eas, num_eas);
 		for (i=0;i<s1->all_eas.out.num_eas;i++) {
@@ -622,21 +704,21 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		       s1->stype1.out.tfield1, s2->stype2.out.tfield2); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname1); s2 = fname_find(sname2); \
+	s1 = fname_find(is_ipc, sname1); s2 = fname_find(is_ipc, sname2); \
 	if (s1 && s2 && s1->stype1.out.tfield1 != s2->stype2.out.tfield2) { \
 		printf("(%d) path %s/%s != %s/%s - 0x%x vs 0x%x\n", __LINE__, \
                        #stype1, #tfield1, #stype2, #tfield2,  \
 		       s1->stype1.out.tfield1, s2->stype2.out.tfield2); \
 		ret = False; \
 	} \
-	s1 = fnum_find(sname1); s2 = fname_find(sname2); \
+	s1 = fnum_find(sname1); s2 = fname_find(is_ipc, sname2); \
 	if (s1 && s2 && s1->stype1.out.tfield1 != s2->stype2.out.tfield2) { \
 		printf("(%d) handle %s/%s != path %s/%s - 0x%x vs 0x%x\n", __LINE__, \
                        #stype1, #tfield1, #stype2, #tfield2,  \
 		       s1->stype1.out.tfield1, s2->stype2.out.tfield2); \
 		ret = False; \
 	} \
-	s1 = fname_find(sname1); s2 = fnum_find(sname2); \
+	s1 = fname_find(is_ipc, sname1); s2 = fnum_find(sname2); \
 	if (s1 && s2 && s1->stype1.out.tfield1 != s2->stype2.out.tfield2) { \
 		printf("(%d) path %s/%s != handle %s/%s - 0x%x vs 0x%x\n", __LINE__, \
                        #stype1, #tfield1, #stype2, #tfield2,  \
@@ -652,12 +734,13 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
 		  "ALL_INFO",      all_info,      nlink);
 	VAL_CHECK("EA_INFO",       ea_info,       ea_size, 
 		  "ALL_INFO",      all_info,      ea_size);
-	VAL_CHECK("EA_SIZE",       ea_size,       ea_size, 
-		  "ALL_INFO",      all_info,      ea_size);
-
+	if (!is_ipc) {
+		VAL_CHECK("EA_SIZE",       ea_size,       ea_size, 
+			  "ALL_INFO",      all_info,      ea_size);
+	}
 
 #define NAME_PATH_CHECK(sname, stype, field) do { \
-	s1 = fname_find(sname); s2 = fnum_find(sname); \
+	s1 = fname_find(is_ipc, sname); s2 = fnum_find(sname); \
         if (s1 && s2) { \
 		VAL_EQUAL(stype, field, stype, field); \
 	} \
@@ -694,7 +777,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TAL
                        #stype, #tfield, \
 		       (uint_t)s1->stype.out.tfield); \
 	} \
-	s1 = fname_find(sname); \
+	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != 0) { \
 		printf("(%d) path %s/%s unknown != 0 (0x%x)\n", __LINE__, \
                        #stype, #tfield, \
@@ -724,8 +807,6 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 	int fnum;
 	const char *fname = "\\torture_qfileinfo.txt";
 
-	is_ipc = 0;
-
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
@@ -739,7 +820,7 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, cli->tree, fnum, fname);
+	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, cli->tree, fnum, fname, False /* is_ipc */);
 	
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
@@ -761,8 +842,6 @@ BOOL torture_raw_qfileinfo_pipe(struct torture_context *torture)
 	struct smbcli_tree *ipc_tree;
 	NTSTATUS status;
 
-	is_ipc = True;
-	
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
@@ -785,7 +864,7 @@ BOOL torture_raw_qfileinfo_pipe(struct torture_context *torture)
 	ipc_tree = dcerpc_smb_tree(p->conn);
 	fnum = dcerpc_smb_fnum(p->conn);
 
-	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, ipc_tree, fnum, fname);
+	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, ipc_tree, fnum, fname, True /* is_ipc */);
 	
 	talloc_free(p);
 	return ret;
