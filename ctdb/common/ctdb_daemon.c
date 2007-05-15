@@ -62,7 +62,10 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 	}
 
 	/* start the transport running */
-	ctdb->methods->start(ctdb);
+	if (ctdb->methods->start(ctdb) != 0) {
+		DEBUG(0,("transport failed to start!\n"));
+		ctdb_fatal(ctdb, "transport failed to start");
+	}
 
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
@@ -603,11 +606,14 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		return -1;
 	}
 
+#if 0
+	/* AIX doesn't like this :( */
 	if (fchown(ctdb->daemon.sd, geteuid(), getegid()) != 0 ||
 	    fchmod(ctdb->daemon.sd, 0700) != 0) {
 		DEBUG(0,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
 		goto failed;
 	}
+#endif
 
 	set_non_blocking(ctdb->daemon.sd);
 
@@ -701,7 +707,7 @@ int ctdb_start(struct ctdb_context *ctdb)
 /*
   start the protocol going as a daemon
 */
-int ctdb_start_daemon(struct ctdb_context *ctdb)
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 {
 	int res;
 	struct fd_event *fde;
@@ -717,13 +723,15 @@ int ctdb_start_daemon(struct ctdb_context *ctdb)
 		exit(10);
 	}
 
-	if (fork()) {
+	if (do_fork && fork()) {
 		return 0;
 	}
 
 	tdb_reopen_all(False);
 
-	setsid();
+	if (do_fork) {
+		setsid();
+	}
 	block_signal(SIGPIPE);
 	block_signal(SIGCHLD);
 

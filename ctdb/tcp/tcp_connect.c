@@ -125,6 +125,10 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 
 	set_nonblocking(tnode->fd);
 
+	ZERO_STRUCT(sock_out);
+#ifdef HAVE_SOCK_SIN_LEN
+	sock_out.sin_len = sizeof(sock_out);
+#endif
 	if (ctdb_tcp_get_address(ctdb, node->address.address, &sock_out.sin_addr) != 0) {
 		return;
 	}
@@ -138,6 +142,10 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	 * the remote side is actually routable in case CTDB traffic will run on
 	 * a dedicated non-routeable network.
 	 */
+	ZERO_STRUCT(sock_in);
+#ifdef HAVE_SOCK_SIN_LEN
+	sock_in.sin_len = sizeof(sock_in);
+#endif
 	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock_in.sin_addr) != 0) {
 		return;
 	}
@@ -239,6 +247,10 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	}
 
 	for (i=0;i<ctdb->num_nodes;i++) {
+		ZERO_STRUCT(sock);
+#ifdef HAVE_SOCK_SIN_LEN
+		sock.sin_len = sizeof(sock);
+#endif
 		sock.sin_port = htons(ctdb->nodes[i]->address.port);
 		sock.sin_family = PF_INET;
 		if (ctdb_tcp_get_address(ctdb, ctdb->nodes[i]->address.address, 
@@ -309,6 +321,10 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 		return ctdb_tcp_listen_automatic(ctdb);
 	}
 
+	ZERO_STRUCT(sock);
+#ifdef HAVE_SOCK_SIN_LEN
+	sock.sin_len = sizeof(sock);
+#endif
 	sock.sin_port = htons(ctdb->address.port);
 	sock.sin_family = PF_INET;
 	

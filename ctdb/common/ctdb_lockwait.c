@@ -57,10 +57,16 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	ctdb_latency(&h->ctdb->status.max_lockwait_latency, h->start_time);
 	h->ctdb->status.pending_lockwait_calls--;
 
-	/* the fde needs to go away when the context is gone - when
-	   the fde goes away this implicitly closes the pipe, which
+	/* the handle needs to go away when the context is gone - when
+	   the handle goes away this implicitly closes the pipe, which
 	   kills the child holding the lock */
-	talloc_steal(tmp_ctx, fde);
+	talloc_steal(tmp_ctx, h);
+
+	if (h->ctdb->flags & CTDB_FLAG_TORTURE) {
+		if (tdb_chainlock_nonblock(tdb, key) == 0) {
+			ctdb_fatal(h->ctdb, "got chain lock while lockwait child active");
+		}
+	}
 
 	tdb_chainlock_mark(tdb, key);
 	callback(p);
@@ -96,6 +102,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 {
 	struct lockwait_handle *result;
 	int ret;
+	pid_t parent = getpid();
 
 	ctdb_db->ctdb->status.lockwait_calls++;
 	ctdb_db->ctdb->status.pending_lockwait_calls++;
@@ -134,9 +141,10 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		close(result->fd[0]);
 		tdb_chainlock(ctdb_db->ltdb->tdb, key);
 		write(result->fd[1], &c, 1);
-		/* this read will exit when the parent closes its end
-		   of the pipe, or the parent dies */
-		read(result->fd[1], &c, 1);
+		/* make sure we die when our parent dies */
+		while (kill(parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+		}
 		_exit(0);
 	}
 

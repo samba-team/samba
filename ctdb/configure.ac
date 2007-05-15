@@ -30,6 +30,16 @@ m4_include(libtdb.m4)
 m4_include(libevents.m4)
 m4_include(ib/config.m4)
 
+AC_CACHE_CHECK([for sin_len in sock],ctdb_cv_HAVE_SOCK_SIN_LEN,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>],
+[struct sockaddr_in sock; sock.sin_len = sizeof(sock);],
+ctdb_cv_HAVE_SOCK_SIN_LEN=yes,ctdb_cv_HAVE_SOCK_SIN_LEN=no)])
+if test x"$ctdb_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
+    AC_DEFINE(HAVE_SOCK_SIN_LEN,1,[Whether the sockaddr_in struct has a sin_len property])
+fi
+
 AC_SUBST(EXTRA_OBJ)
 
 AC_OUTPUT(Makefile)

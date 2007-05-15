@@ -271,7 +271,9 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
 
 	header->dmaster = c->hdr.srcnode;
-	ctdb_ltdb_store(ctdb_db, *key, header, *data);
+	if (ctdb_ltdb_store(ctdb_db, *key, header, *data) != 0) {
+		ctdb_fatal(ctdb, "Failed to store record in ctdb_call_send_dmaster");
+	}
 	
 	ctdb_queue_packet(ctdb, &r->hdr);
 

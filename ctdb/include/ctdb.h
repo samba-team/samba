@@ -112,7 +112,7 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
   start the ctdb protocol
 */
 int ctdb_start(struct ctdb_context *ctdb);
-int ctdb_start_daemon(struct ctdb_context *ctdb);
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
 
 /*
   attach to a ctdb database
