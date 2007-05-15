@@ -168,16 +168,6 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 }
 
 /*
-  destroy a ctdb_incoming structure 
-*/
-static int ctdb_incoming_destructor(struct ctdb_incoming *in)
-{
-	close(in->fd);
-	in->fd = -1;
-	return 0;
-}
-
-/*
   called when we get contacted by another node
   currently makes no attempt to check if the connection is really from a ctdb
   node in our cluster
@@ -207,8 +197,6 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 
 	in->queue = ctdb_queue_setup(ctdb, in, in->fd, CTDB_TCP_ALIGNMENT, 
 				     ctdb_tcp_read_cb, in);
-
-	talloc_set_destructor(in, ctdb_incoming_destructor);
 }
 
 
