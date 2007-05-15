@@ -1421,7 +1421,8 @@ static WERROR add_share(const char *share_name, const char *path,
 
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(MSG_SMB_CONF_UPDATED,
+			message_send_all(smbd_messaging_context(),
+					 MSG_SMB_CONF_UPDATED,
 					 NULL, 0, False, NULL);
 		}
 
@@ -1517,7 +1518,8 @@ static WERROR delete_share(const char *sharename,
 
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(MSG_SMB_CONF_UPDATED,
+			message_send_all(smbd_messaging_context(),
+					 MSG_SMB_CONF_UPDATED,
 					 NULL, 0, False, NULL);
 		}
 
@@ -1575,7 +1577,8 @@ static WERROR change_share(const char *share_name, const char *path,
 			
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(MSG_SMB_CONF_UPDATED,
+			message_send_all(smbd_messaging_context(),
+					 MSG_SMB_CONF_UPDATED,
 					 NULL, 0, False, NULL);
 		}
 		
