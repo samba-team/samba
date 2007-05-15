@@ -47,7 +47,7 @@ static void profile_separator(const char * title)
 BOOL status_profile_dump(BOOL verbose)
 {
 #ifdef WITH_PROFILE
-	if (!profile_setup(True)) {
+	if (!profile_setup(NULL, True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
 		return False;
 	}
@@ -487,7 +487,7 @@ BOOL status_profile_rates(BOOL verbose)
 		    usec_to_sec(sample_interval_usec));
 	}
 
-	if (!profile_setup(True)) {
+	if (!profile_setup(NULL, True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
 		return False;
 	}

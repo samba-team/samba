@@ -93,20 +93,31 @@ void set_profile_level(int level, struct server_id src)
 /****************************************************************************
 receive a set profile level message
 ****************************************************************************/
-void profile_message(int msg_type, struct server_id src, void *buf, size_t len,
-		     void *private_data)
+static void profile_message(struct messaging_context *msg_ctx,
+			    void *private_data,
+			    uint32_t msg_type,
+			    struct server_id src,
+			    DATA_BLOB *data)
 {
         int level;
 
-	memcpy(&level, buf, sizeof(int));
+	if (data->length != sizeof(level)) {
+		DEBUG(0, ("got invalid profile message\n"));
+		return;
+	}
+
+	memcpy(&level, data->data, sizeof(level));
 	set_profile_level(level, src);
 }
 
 /****************************************************************************
 receive a request profile level message
 ****************************************************************************/
-void reqprofile_message(int msg_type, struct server_id src,
-			void *buf, size_t len, void *private_data)
+static void reqprofile_message(struct messaging_context *msg_ctx,
+			       void *private_data, 
+			       uint32_t msg_type, 
+			       struct server_id src,
+			       DATA_BLOB *data)
 {
         int level;
 
@@ -117,7 +128,8 @@ void reqprofile_message(int msg_type, struct server_id src,
 #endif
 	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %u\n",
 		 (unsigned int)procid_to_pid(&src)));
-	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int), True);
+	messaging_send_buf(msg_ctx, src, MSG_PROFILELEVEL,
+			   (uint8 *)&level, sizeof(level));
 }
 
 /*******************************************************************
@@ -184,7 +196,7 @@ static void init_clock_gettime(void)
 }
 #endif
 
-BOOL profile_setup(BOOL rdonly)
+BOOL profile_setup(struct messaging_context *msg_ctx, BOOL rdonly)
 {
 	struct shmid_ds shm_ds;
 
@@ -238,7 +250,7 @@ BOOL profile_setup(BOOL rdonly)
 	}
 
 	if (shm_ds.shm_segsz != sizeof(*profile_h)) {
-		DEBUG(0,("WARNING: profile size is %d (expected %lu). Deleting\n",
+		DEBUG(0,("WARNING: profile size is %d (expected %d). Deleting\n",
 			 (int)shm_ds.shm_segsz, sizeof(*profile_h)));
 		if (shmctl(shm_id, IPC_RMID, &shm_ds) == 0) {
 			goto again;
@@ -255,8 +267,12 @@ BOOL profile_setup(BOOL rdonly)
 	}
 
 	profile_p = &profile_h->stats;
-	message_register(MSG_PROFILE, profile_message, NULL);
-	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message, NULL);
+	if (msg_ctx != NULL) {
+		messaging_register(msg_ctx, NULL, MSG_PROFILE,
+				   profile_message);
+		messaging_register(msg_ctx, NULL, MSG_REQ_PROFILELEVEL,
+				   reqprofile_message);
+	}
 	return True;
 }
 
