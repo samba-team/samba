@@ -680,7 +680,7 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	p->pipe_user.ut.ngroups = a->server_info->n_groups;
 	if (p->pipe_user.ut.ngroups) {
-		if (!(p->pipe_user.ut.groups = memdup(a->server_info->groups,
+		if (!(p->pipe_user.ut.groups = (gid_t *)memdup(a->server_info->groups,
 						sizeof(gid_t) * p->pipe_user.ut.ngroups))) {
 			DEBUG(0,("failed to memdup group list to p->pipe_user.groups\n"));
 			return False;
@@ -2309,7 +2309,7 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	if ((DEBUGLEVEL >= 10) && 
 	    (prs_offset(&p->in_data.data) != prs_data_size(&p->in_data.data))) {
 		size_t data_len = prs_data_size(&p->in_data.data) - prs_offset(&p->in_data.data);
-		char *data = SMB_MALLOC(data_len);
+		char *data = (char *)SMB_MALLOC(data_len);
 
 		DEBUG(10, ("api_rpcTNP: rpc input buffer underflow (parse error?)\n"));
 		if (data) {
