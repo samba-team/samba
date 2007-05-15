@@ -27,6 +27,9 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
+#include "libcli/raw/libcliraw.h"
+#include "lib/events/events.h"
+
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
@@ -71,6 +74,12 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 	n.in.unknown		= 0x00000000;
 	req = smb2_notify_send(tree, &n);
 
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
+		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+			break;
+		}
+	}
+
 	status = torture_setup_complex_file(tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -87,6 +96,12 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 	n.in.buffer_size	= 0x00000000;
 	req = smb2_notify_send(tree, &n);
 
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
+		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+			break;
+		}
+	}
+
 	status = torture_setup_complex_file(tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -99,6 +114,12 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 	 */
 	n.in.buffer_size	= 0x00080000;
 	req = smb2_notify_send(tree, &n);
+
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
+		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+			break;
+		}
+	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -126,6 +147,12 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 	n.in.unknown		= 0x00000000;
 	req = smb2_notify_send(tree, &n);
 
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
+		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+			break;
+		}
+	}
+
 	status = torture_setup_complex_file(tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -134,6 +161,11 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 
 	n.in.buffer_size	= 0x00080000;
 	req = smb2_notify_send(tree, &n);
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
+		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+			break;
+		}
+	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
