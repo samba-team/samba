@@ -1,7 +1,6 @@
 #!/bin/sh
 
 killall -q ctdbd
-killall -q ctdb_recoverd
 
 echo "Starting 4 ctdb daemons"
 bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt

@@ -51,8 +51,6 @@ struct ctdb_call_info {
 */
 #define CTDB_FLAG_SELF_CONNECT (1<<0)
 #define CTDB_FLAG_TORTURE      (1<<1)
-#define CTDB_FLAG_RECOVERY     (1<<2)
-
 
 /* 
    a message handler ID meaning "give me all messages"
