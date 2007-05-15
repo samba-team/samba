@@ -6,6 +6,12 @@ AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
 AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h])
 
+case "$PATH" in
+    */usr/ucb*)
+	AC_MSG_WARN([\$PATH contains /usr/ucb - build errors may follow])
+	;;
+esac 
+
 SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
