@@ -366,7 +366,7 @@ sub run_test($$$$$$)
 					$statistics->{TESTS_EXPECTED_FAIL}++;
 					$expected_ret = 0;
 				} else {
-					print "n:$name/$2l\n";
+					print "n:$name/$2\n";
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
 				}
 			} elsif ($1 eq "skip") {
