@@ -26,7 +26,8 @@
  * cli_send_mailslot, send a mailslot for client code ...
  */
 
-BOOL cli_send_mailslot(BOOL unique, const char *mailslot,
+BOOL cli_send_mailslot(struct messaging_context *msg_ctx,
+		       BOOL unique, const char *mailslot,
 		       uint16 priority,
 		       char *buf, int len,
 		       const char *srcname, int src_type, 
@@ -104,9 +105,10 @@ BOOL cli_send_mailslot(BOOL unique, const char *mailslot,
 	DEBUGADD(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name),
 		    inet_ntoa(dest_ip)));
 
-	return NT_STATUS_IS_OK(message_send_pid(pid_to_procid(nmbd_pid),
-						MSG_SEND_PACKET, &p, sizeof(p),
-						False));
+	return NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
+						  pid_to_procid(nmbd_pid),
+						  MSG_SEND_PACKET,
+						  (uint8 *)&p, sizeof(p)));
 }
 
 /*
@@ -133,7 +135,8 @@ BOOL cli_get_response(const char *mailslot, char *buf, int bufsiz)
 
 static char cli_backup_list[1024];
 
-int cli_get_backup_list(const char *myname, const char *send_to_name)
+int cli_get_backup_list(struct messaging_context *msg_ctx,
+			const char *myname, const char *send_to_name)
 {
 	pstring outbuf;
 	char *p;
@@ -160,7 +163,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 	SIVAL(p, 0, 1); /* The sender's token ... */
 	p += 4;
 
-	cli_send_mailslot(True, "\\MAILSLOT\\BROWSE", 1, outbuf, 
+	cli_send_mailslot(msg_ctx, True, "\\MAILSLOT\\BROWSE", 1, outbuf, 
 			  PTR_DIFF(p, outbuf), myname, 0, send_to_name, 
 			  0x1d, sendto_ip);
 
@@ -179,16 +182,18 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
  * cli_get_backup_server: Get the backup list and retrieve a server from it
  */
 
-int cli_get_backup_server(char *my_name, char *target, char *servername, int namesize)
+int cli_get_backup_server(struct messaging_context *msg_ctx,
+			  char *my_name, char *target, char *servername,
+			  int namesize)
 {
 
   /* Get the backup list first. We could pull this from the cache later */
 
-  cli_get_backup_list(my_name, target);  /* FIXME: Check the response */
+  cli_get_backup_list(msg_ctx, my_name, target);  /* FIXME: Check the response */
 
   if (!cli_backup_list[0]) { /* Empty list ... try again */
 
-    cli_get_backup_list(my_name, target);
+    cli_get_backup_list(msg_ctx, my_name, target);
 
   }
 
