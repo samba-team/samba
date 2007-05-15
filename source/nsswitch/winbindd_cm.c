@@ -975,7 +975,8 @@ static BOOL send_getdc_request(struct in_addr dc_ip,
 	SSVAL(p, 6, 0xffff);
 	p+=8;
 
-	return cli_send_mailslot(False, "\\MAILSLOT\\NET\\NTLOGON", 0,
+	return cli_send_mailslot(winbind_messaging_context(),
+				 False, "\\MAILSLOT\\NET\\NTLOGON", 0,
 				 outbuf, PTR_DIFF(p, outbuf),
 				 global_myname(), 0, domain_name, 0x1c,
 				 dc_ip);
