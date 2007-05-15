@@ -132,15 +132,19 @@ FLAGS4 =
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
 FLAGS  = $(ISA) $(FLAGS5) -I$(srcdir)/lib -D_SAMBA_BUILD_=3
 
-PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
-PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
-PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\"
-PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"
-PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
-PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
-	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
-PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGDIR)\"
-PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
+PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
+	-DPRIVATE_DIR=\"$(PRIVATE_DIR)\" \
+	-DCONFIGFILE=\"$(CONFIGFILE)\" \
+	-DSBINDIR=\"$(SBINDIR)\" \
+	-DBINDIR=\"$(BINDIR)\" \
+	-DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
+	-DSWATDIR=\"$(SWATDIR)\" \
+	-DLOCKDIR=\"$(LOCKDIR)\" \
+	-DPIDDIR=\"$(PIDDIR)\" \
+	-DLIBDIR=\"$(LIBDIR)\" \
+      	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
+	-DSHLIBEXT=\"@SHLIBEXT@\" \
+	-DCONFIGDIR=\"$(CONFIGDIR)\"
 
 # Note that all executable programs now provide for an optional executable suffix.
 
@@ -909,6 +913,9 @@ MAKEDIR = || exec false; \
 	  mkdir "$$dir" || \
 	  exec false; fi || exec false
 
+# Compile a source file with the installation paths defined.
+COMPILE_CC_PATH = $(CC) -I. -I$(srcdir) $(PATH_FLAGS) $(FLAGS) $(PICFLAG) -c $< -o $@
+
 .c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
@@ -937,22 +944,31 @@ pch: proto_exists
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
-	@$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@ && exit 0;\
+	@$(COMPILE_CC_PATH) && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@" 1>&2;\
-		$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@ >/dev/null 2>&1
+		echo "$(COMPILE_CC_PATH)" 1>&2;\
+		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
 lib/pidfile.o: lib/pidfile.c
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/lib/pidfile.c -o $@
+	@$(COMPILE_CC_PATH) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC_PATH)" 1>&2;\
+		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/lib/version.c -o $@
+	@$(COMPILE_CC_PATH) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC_PATH)" 1>&2;\
+		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
 smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/build_env.h include/proto.h
 	@echo Compiling $*.c
-	@$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c smbd/build_options.c -o $@
+	@$(COMPILE_CC_PATH) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC_PATH)" 1>&2;\
+		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
 smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
