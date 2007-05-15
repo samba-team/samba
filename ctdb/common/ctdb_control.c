@@ -132,13 +132,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_GET_RECMASTER: {
+	case CTDB_CONTROL_GET_RECMASTER:
 		return ctdb->recovery_master;
-	}
 
-	case CTDB_CONTROL_GET_PID: {
+	case CTDB_CONTROL_GET_PID:
 		return getpid();
-	}
+
+	case CTDB_CONTROL_GET_VNN:
+		return ctdb->vnn;
 
 	case CTDB_CONTROL_CONFIG: {
 		CHECK_CONTROL_DATA_SIZE(0);
