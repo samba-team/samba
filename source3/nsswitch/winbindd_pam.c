@@ -566,6 +566,14 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		http_timestring(ticket_lifetime), (int)ticket_lifetime, 
 		http_timestring(renewal_until), (int)renewal_until));
 
+	/* we cannot continue with krb5 when UF_DONT_REQUIRE_PREAUTH is set,
+	 * in that case fallback to NTLM - gd */ 
+
+	if ((ticket_lifetime == 0) && (renewal_until == 0)) {
+		result = NT_STATUS_INVALID_LOGON_TYPE;
+		goto failed;
+	}
+
 	client_princ = talloc_strdup(state->mem_ctx, global_myname());
 	if (client_princ == NULL) {
 		result = NT_STATUS_NO_MEMORY;
