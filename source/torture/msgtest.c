@@ -29,14 +29,19 @@ static int pong_count;
 /****************************************************************************
 a useful function for testing the message system
 ****************************************************************************/
-static void pong_message(int msg_type, struct server_id src,
-			 void *buf, size_t len, void *private_data)
+static void pong_message(struct messaging_context *msg_ctx,
+			 void *private_data, 
+			 uint32_t msg_type, 
+			 struct server_id pid,
+			 DATA_BLOB *data)
 {
 	pong_count++;
 }
 
  int main(int argc, char *argv[])
 {
+	struct event_context *evt_ctx;
+	struct messaging_context *msg_ctx;
 	pid_t pid;
 	int i, n;
 	char buf[12];
@@ -49,6 +54,12 @@ static void pong_message(int msg_type, struct server_id src,
 
 	message_init();
 
+	if (!(evt_ctx = event_context_init(NULL)) ||
+	    !(msg_ctx = messaging_init(NULL, server_id_self(), evt_ctx))) {
+		fprintf(stderr, "could not init messaging context\n");
+		exit(1);
+	}
+	
 	if (argc != 3) {
 		fprintf(stderr, "%s: Usage - %s pid count\n", argv[0],
 			argv[0]);
@@ -58,10 +69,11 @@ static void pong_message(int msg_type, struct server_id src,
 	pid = atoi(argv[1]);
 	n = atoi(argv[2]);
 
-	message_register(MSG_PONG, pong_message, NULL);
+	messaging_register(msg_ctx, NULL, MSG_PONG, pong_message);
 
 	for (i=0;i<n;i++) {
-		message_send_pid(pid_to_procid(pid), MSG_PING, NULL, 0, True);
+		messaging_send(msg_ctx, pid_to_procid(pid), MSG_PING,
+			       &data_blob_null);
 	}
 
 	while (pong_count < i) {
@@ -75,10 +87,10 @@ static void pong_message(int msg_type, struct server_id src,
 	safe_strcpy(buf, "1234567890", sizeof(buf)-1);
 
 	for (i=0;i<n;i++) {
-		message_send_pid(pid_to_procid(getpid()), MSG_PING,
-				 NULL, 0, False);
-		message_send_pid(pid_to_procid(getpid()), MSG_PING,
-				 buf, 11, False);
+		messaging_send(msg_ctx, pid_to_procid(getpid()), MSG_PING,
+			       &data_blob_null);
+		messaging_send_buf(msg_ctx, pid_to_procid(getpid()), MSG_PING,
+				   (uint8 *)buf, 11);
 	}
 
 	for (i=0;i<n;i++) {
@@ -101,13 +113,14 @@ static void pong_message(int msg_type, struct server_id src,
 
 		printf("Sending pings for %d seconds\n", (int)timelimit);
 		while (timeval_elapsed(&tv) < timelimit) {		
-			if(NT_STATUS_IS_OK(message_send_pid(pid_to_procid(pid),
-							    MSG_PING,
-							    buf, 11, False)))
+			if(NT_STATUS_IS_OK(messaging_send_buf(
+						   msg_ctx, pid_to_procid(pid),
+						   MSG_PING,
+						   (uint8 *)buf, 11)))
 			   ping_count++;
-			if(NT_STATUS_IS_OK(message_send_pid(pid_to_procid(pid),
-							    MSG_PING,
-							    NULL, 0, False)))
+			if(NT_STATUS_IS_OK(messaging_send(
+						   msg_ctx, pid_to_procid(pid),
+						   MSG_PING, &data_blob_null)))
 			   ping_count++;
 
 			while (ping_count > pong_count + 20) {
