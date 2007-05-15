@@ -471,13 +471,16 @@ BOOL debug_parse_levels(const char *params_str)
  Receive a "set debug level" message.
 ****************************************************************************/
 
-static void debug_message(int msg_type, struct server_id src,
-			  void *buf, size_t len, void *private_data)
+static void debug_message(struct messaging_context *msg_ctx,
+			  void *private_data, 
+			  uint32_t msg_type, 
+			  struct server_id src,
+			  DATA_BLOB *data)
 {
-	const char *params_str = (const char *)buf;
+	const char *params_str = (const char *)data->data;
 
 	/* Check, it's a proper string! */
-	if (params_str[len-1] != '\0') {
+	if (params_str[(data->length)-1] != '\0') {
 		DEBUG(1, ("Invalid debug message from pid %u to pid %u\n",
 			  (unsigned int)procid_to_pid(&src),
 			  (unsigned int)getpid()));
@@ -495,8 +498,11 @@ static void debug_message(int msg_type, struct server_id src,
  Return current debug level.
 ****************************************************************************/
 
-static void debuglevel_message(int msg_type, struct server_id src,
-			       void *buf, size_t len, void *private_data)
+static void debuglevel_message(struct messaging_context *msg_ctx,
+			       void *private_data, 
+			       uint32_t msg_type, 
+			       struct server_id src,
+			       DATA_BLOB *data)
 {
 	char *message = debug_list_class_names_and_levels();
 
@@ -505,9 +511,10 @@ static void debuglevel_message(int msg_type, struct server_id src,
 		return;
 	}
 
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",
-		 (unsigned int)procid_to_pid(&src)));
-	message_send_pid(src, MSG_DEBUGLEVEL, message, strlen(message) + 1, True);
+	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %s\n",
+		 procid_str_static(&src)));
+	messaging_send_buf(msg_ctx, src, MSG_DEBUGLEVEL,
+			   (uint8 *)message, strlen(message) + 1);
 
 	SAFE_FREE(message);
 }
@@ -531,10 +538,11 @@ void debug_init(void)
 	}
 }
 
-void debug_register_msgs(void)
+void debug_register_msgs(struct messaging_context *msg_ctx)
 {
-	message_register(MSG_DEBUG, debug_message, NULL);
-	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message, NULL);
+	messaging_register(msg_ctx, NULL, MSG_DEBUG, debug_message);
+	messaging_register(msg_ctx, NULL, MSG_REQ_DEBUGLEVEL,
+			   debuglevel_message);
 }
 
 /***************************************************************************

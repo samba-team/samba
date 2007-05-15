@@ -65,9 +65,11 @@ static void msg_pool_usage_helper(const void *ptr, int depth, int max_depth, int
  * Respond to a POOL_USAGE message by sending back string form of memory
  * usage stats.
  **/
-void msg_pool_usage(int msg_type, struct server_id src_pid,
-		    void *UNUSED(buf), size_t UNUSED(len),
-		    void *private_data)
+static void msg_pool_usage(struct messaging_context *msg_ctx,
+			   void *private_data, 
+			   uint32_t msg_type, 
+			   struct server_id src,
+			   DATA_BLOB *data)
 {
 	struct msg_pool_usage_state state;
 
@@ -90,8 +92,8 @@ void msg_pool_usage(int msg_type, struct server_id src_pid,
 		return;
 	}
 	
-	message_send_pid(src_pid, MSG_POOL_USAGE,
-			 state.s, strlen(state.s)+1, True);
+	messaging_send_buf(msg_ctx, src, MSG_POOL_USAGE,
+			   (uint8 *)state.s, strlen(state.s)+1);
 
 	talloc_destroy(state.mem_ctx);
 }
@@ -99,8 +101,8 @@ void msg_pool_usage(int msg_type, struct server_id src_pid,
 /**
  * Register handler for MSG_REQ_POOL_USAGE
  **/
-void register_msg_pool_usage(void)
+void register_msg_pool_usage(struct messaging_context *msg_ctx)
 {
-	message_register(MSG_REQ_POOL_USAGE, msg_pool_usage, NULL);
+	messaging_register(msg_ctx, NULL, MSG_REQ_POOL_USAGE, msg_pool_usage);
 	DEBUG(2, ("Registered MSG_REQ_POOL_USAGE\n"));
 }	
