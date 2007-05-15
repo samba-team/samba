@@ -127,7 +127,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				SSVAL(q, 0, token);
 				q += 2;
 
-				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
+				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
 
 				send_mailslot(True, getdc_str, 
 						outbuf,PTR_DIFF(q,outbuf),
@@ -243,7 +243,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					QUERYFORPDC_R, (uint32)ntversion, (uint32)lmnttoken,
 					(uint32)lm20token ));
 
-				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
+				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
 				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
@@ -487,7 +487,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				SSVAL(q, 6, 0xffff); /* our lm20token */
 				q += 8;
 
-				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
+				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
 				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);

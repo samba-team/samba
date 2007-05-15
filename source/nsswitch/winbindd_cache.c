@@ -1016,9 +1016,9 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	}
 
 #if DEBUG_PASSWORD
-	dump_data(100, (const char *)*cached_nt_pass, NT_HASH_LEN);
+	dump_data(100, *cached_nt_pass, NT_HASH_LEN);
 	if (*cached_salt) {
-		dump_data(100, (const char *)*cached_salt, NT_HASH_LEN);
+		dump_data(100, *cached_salt, NT_HASH_LEN);
 	}
 #endif
 	status = centry->status;
@@ -1057,7 +1057,7 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 	}
 
 #if DEBUG_PASSWORD
-	dump_data(100, (const char *)nt_pass, NT_HASH_LEN);
+	dump_data(100, nt_pass, NT_HASH_LEN);
 #endif
 
 	centry_put_time(centry, time(NULL));
@@ -2356,7 +2356,7 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 		return False;
 	}
 
-	dump_data(11, data.dptr, data.dsize);
+	dump_data(11, (uint8 *)data.dptr, data.dsize);
 
 	response->extra_data.data = data.dptr;
 	return True;
@@ -2822,7 +2822,7 @@ static TDB_DATA make_tdc_key( const char *domain_name )
 	       
 		
 	asprintf( &keystr, "TRUSTDOMCACHE/%s", domain_name );
-	key.dptr = (unsigned char*)keystr;
+	key.dptr = keystr;
 	key.dsize = strlen_m(keystr) + 1;
 	
 	return key;	
@@ -2849,7 +2849,7 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
 	len = 0;
 	
 	/* Store the number of array items first */
-	len += tdb_pack( buffer+len, buflen-len, "d", 
+	len += tdb_pack( (char *)buffer+len, buflen-len, "d", 
 			 num_domains );
 
 	/* now pack each domain trust record */
@@ -2861,7 +2861,7 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
 				  domains[i].dns_name ? domains[i].dns_name : "UNKNOWN" ));
 		}
 		
-		len += tdb_pack( buffer+len, buflen-len, "fffddd",
+		len += tdb_pack( (char *)buffer+len, buflen-len, "fffddd",
 				 domains[i].domain_name,
 				 domains[i].dns_name,
 				 sid_string_static(&domains[i].sid),
@@ -2900,7 +2900,7 @@ static size_t unpack_tdc_domains( unsigned char *buf, int buflen,
 	struct winbindd_tdc_domain *list = NULL;
 
 	/* get the number of domains */
-	len += tdb_unpack( buf+len, buflen-len, "d", &num_domains);
+	len += tdb_unpack( (char *)buf+len, buflen-len, "d", &num_domains);
 	if ( len == -1 ) {
 		DEBUG(5,("unpack_tdc_domains: Failed to unpack domain array\n"));		
 		return 0;
@@ -2913,7 +2913,7 @@ static size_t unpack_tdc_domains( unsigned char *buf, int buflen,
 	}
 	
 	for ( i=0; i<num_domains; i++ ) {
-		len += tdb_unpack( buf+len, buflen-len, "fffddd",
+		len += tdb_unpack( (char *)buf+len, buflen-len, "fffddd",
 				   domain_name,
 				   dns_name,
 				   sid_string,
@@ -3004,7 +3004,7 @@ BOOL wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_do
 	if ( !data.dptr ) 
 		return False;
 	
-	*num_domains = unpack_tdc_domains( data.dptr, data.dsize, domains );
+	*num_domains = unpack_tdc_domains( (unsigned char *)data.dptr, data.dsize, domains );
 
 	SAFE_FREE( data.dptr );
 	

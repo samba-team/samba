@@ -1092,7 +1092,7 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
 		DEBUG(3, ("notify2_unpack_msg: value1 = %d, value2 = %d\n", msg->notify.value[0],
 			  msg->notify.value[1]));
 	else
-		dump_data(3, msg->notify.data, msg->len);
+		dump_data(3, (uint8 *)msg->notify.data, msg->len);
 
 	return True;
 }
@@ -9147,7 +9147,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 			 */
 		 
 			set_printer_dataex( printer, keyname, valuename, 
-			                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
+			                    REG_SZ, (uint8 *)oid_string, strlen(oid_string)+1 );		
 		}
 	
 		status = mod_a_printer(printer, 2);

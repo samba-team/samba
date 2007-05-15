@@ -116,9 +116,9 @@ static BOOL test_lm_ntlm_broken(enum ntlm_break break_which)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, (const char *)lm_key, 8);
+		dump_data(1, lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, (const char *)lm_hash, 8);
+		dump_data(1, lm_hash, 8);
 		pass = False;
 	}
 
@@ -127,9 +127,9 @@ static BOOL test_lm_ntlm_broken(enum ntlm_break break_which)
 			   8) != 0) {
 			DEBUG(1, ("NT Session Key does not match expectations (should be LM hash)!\n"));
 			DEBUG(1, ("user_session_key:\n"));
-			dump_data(1, (const char *)user_session_key, sizeof(user_session_key));
+			dump_data(1, user_session_key, sizeof(user_session_key));
 			DEBUG(1, ("expected:\n"));
-			dump_data(1, (const char *)lm_hash, sizeof(lm_hash));
+			dump_data(1, lm_hash, sizeof(lm_hash));
 			pass = False;
 		}
 	} else {		
@@ -137,9 +137,9 @@ static BOOL test_lm_ntlm_broken(enum ntlm_break break_which)
 			   sizeof(user_session_key)) != 0) {
 			DEBUG(1, ("NT Session Key does not match expectations!\n"));
 			DEBUG(1, ("user_session_key:\n"));
-			dump_data(1, (const char *)user_session_key, 16);
+			dump_data(1, user_session_key, 16);
 			DEBUG(1, ("expected:\n"));
-			dump_data(1, (const char *)session_key.data, session_key.length);
+			dump_data(1, session_key.data, session_key.length);
 			pass = False;
 		}
 	}
@@ -215,17 +215,17 @@ static BOOL test_ntlm_in_lm(void)
 		   sizeof(lm_key)) != 0) {
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, (const char *)lm_key, 8);
+		dump_data(1, lm_key, 8);
 		DEBUG(1, ("expected:\n"));
-		dump_data(1, (const char *)lm_hash, 8);
+		dump_data(1, lm_hash, 8);
 		pass = False;
 	}
 	if (memcmp(lm_hash, user_session_key, 8) != 0) {
 		DEBUG(1, ("Session Key (first 8 lm hash) does not match expectations!\n"));
  		DEBUG(1, ("user_session_key:\n"));
-		dump_data(1, (const char *)user_session_key, 16);
+		dump_data(1, user_session_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, (const char *)lm_hash, 8);
+		dump_data(1, lm_hash, 8);
 		pass = False;
 	}
         return pass;
@@ -243,10 +243,10 @@ static BOOL test_ntlm_in_both(void)
 	DATA_BLOB nt_response = data_blob(NULL, 24);
 	DATA_BLOB session_key = data_blob(NULL, 16);
 
-	char lm_key[8];
-	char lm_hash[16];
-	char user_session_key[16];
-	char nt_hash[16];
+	uint8 lm_key[8];
+	uint8 lm_hash[16];
+	uint8 user_session_key[16];
+	uint8 nt_hash[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 	
@@ -257,10 +257,10 @@ static BOOL test_ntlm_in_both(void)
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
-	E_md4hash(opt_password, (unsigned char *)nt_hash);
-	SMBsesskeygen_ntv1((const unsigned char *)nt_hash, NULL, session_key.data);
+	E_md4hash(opt_password, nt_hash);
+	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 
-	E_deshash(opt_password, (unsigned char *)lm_hash); 
+	E_deshash(opt_password, lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -268,8 +268,8 @@ static BOOL test_ntlm_in_both(void)
 					      &nt_response,
 					      &nt_response,
 					      flags,
-					      (unsigned char *)lm_key,
-					      (unsigned char *)user_session_key,
+					      lm_key,
+					      user_session_key,
 					      &error_string, NULL);
 	
 	data_blob_free(&nt_response);
@@ -297,7 +297,7 @@ static BOOL test_ntlm_in_both(void)
  		DEBUG(1, ("user_session_key:\n"));
 		dump_data(1, user_session_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, (const char *)session_key.data, session_key.length);
+		dump_data(1, session_key.data, session_key.length);
 		pass = False;
 	}
 
@@ -378,9 +378,9 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 		   sizeof(user_session_key)) != 0) {
 		DEBUG(1, ("USER (NTLMv2) Session Key does not match expectations!\n"));
  		DEBUG(1, ("user_session_key:\n"));
-		dump_data(1, (const char *)user_session_key, 16);
+		dump_data(1, user_session_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, (const char *)ntlmv2_session_key.data, ntlmv2_session_key.length);
+		dump_data(1, ntlmv2_session_key.data, ntlmv2_session_key.length);
 		pass = False;
 	}
         return pass;

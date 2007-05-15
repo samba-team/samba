@@ -939,7 +939,7 @@ ssize_t write_to_pipe(smb_np_struct *p, char *data, size_t n)
 	DEBUG(6,(" name: %s open: %s len: %d\n",
 		 p->name, BOOLSTR(p->open), (int)n));
 
-	dump_data(50, data, n);
+	dump_data(50, (uint8 *)data, n);
 
 	return p->namedpipe_write(p->np_state, data, n);
 }

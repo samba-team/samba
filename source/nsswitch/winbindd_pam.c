@@ -164,7 +164,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	if (num_require_membership_of_sid > 1) {
 
 		/* Allocate the maximum possible size */
-		single_group_sid = TALLOC(mem_ctx, group_sid_length);
+		single_group_sid = TALLOC_ARRAY(mem_ctx, char, group_sid_length);
 		if (!single_group_sid)
 			return NT_STATUS_NO_MEMORY;
 
@@ -857,10 +857,10 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	E_md4hash(state->request.data.auth.pass, new_nt_pass);
 
 #if DEBUG_PASSWORD
-	dump_data(100, (const char *)new_nt_pass, NT_HASH_LEN);
-	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
+	dump_data(100, new_nt_pass, NT_HASH_LEN);
+	dump_data(100, cached_nt_pass, NT_HASH_LEN);
 	if (cached_salt) {
-		dump_data(100, (const char *)cached_salt, NT_HASH_LEN);
+		dump_data(100, cached_salt, NT_HASH_LEN);
 	}
 #endif
 

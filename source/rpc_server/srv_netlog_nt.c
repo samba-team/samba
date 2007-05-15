@@ -282,7 +282,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	}
 
 	memcpy(md4pw, pass, 16);
-	dump_data(5, md4pw, 16);
+	dump_data(5, (uint8 *)md4pw, 16);
 
 	TALLOC_FREE(sampass);
 	

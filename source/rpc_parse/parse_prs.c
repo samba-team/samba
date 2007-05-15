@@ -1332,7 +1332,7 @@ BOOL prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_
 
 	ps->data_offset += len+1;
 
-	dump_data(5+depth, q, len);
+	dump_data(5+depth, (uint8 *)q, len);
 
 	return True;
 }
@@ -1495,13 +1495,13 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, int len)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("prs_hash1\n"));
-	dump_data(100, ps->sess_key, 16);
-	dump_data(100, q, len);
+	dump_data(100, (uint8 *)ps->sess_key, 16);
+	dump_data(100, (uint8 *)q, len);
 #endif
 	SamOEMhash((uchar *) q, (const unsigned char *)ps->sess_key, len);
 
 #ifdef DEBUG_PASSWORD
-	dump_data(100, q, len);
+	dump_data(100, (uint8 *)q, len);
 #endif
 
 	return True;
@@ -1746,9 +1746,9 @@ BOOL schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 		   checksum after the decode, below
 		*/
 		DEBUG(2, ("schannel_decode: FAILED: packet sequence number:\n"));
-		dump_data(2, (const char*)verf->seq_num, sizeof(verf->seq_num));
+		dump_data(2, verf->seq_num, sizeof(verf->seq_num));
 		DEBUG(2, ("should be:\n"));
-		dump_data(2, (const char*)seq_num, sizeof(seq_num));
+		dump_data(2, seq_num, sizeof(seq_num));
 
 		return False;
 	}
@@ -1756,9 +1756,9 @@ BOOL schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	if (memcmp(verf->sig, schannel_sig, sizeof(verf->sig))) {
 		/* Validate that the other end sent the expected header */
 		DEBUG(2, ("schannel_decode: FAILED: packet header:\n"));
-		dump_data(2, (const char*)verf->sig, sizeof(verf->sig));
+		dump_data(2, verf->sig, sizeof(verf->sig));
 		DEBUG(2, ("should be:\n"));
-		dump_data(2, (const char*)schannel_sig, sizeof(schannel_sig));
+		dump_data(2, schannel_sig, sizeof(schannel_sig));
 		return False;
 	}
 

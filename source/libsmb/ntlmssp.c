@@ -325,7 +325,7 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
 				 "NTLMSSP",
 				 &ntlmssp_command)) {
 			DEBUG(1, ("Failed to parse NTLMSSP packet, could not extract NTLMSSP command\n"));
-			dump_data(2, (const char *)input.data, input.length);
+			dump_data(2, input.data, input.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
@@ -531,7 +531,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 							&neg_flags)) {
 			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP Negotiate of length %u\n",
 				(unsigned int)request.length));
-			dump_data(2, (const char *)request.data, request.length);
+			dump_data(2, request.data, request.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		debug_ntlmssp_flags(neg_flags);
@@ -695,7 +695,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				 &user, 
 				 &workstation)) {
 			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP (tried both formats):\n"));
-			dump_data(2, (const char *)request.data, request.length);
+			dump_data(2, request.data, request.length);
 			SAFE_FREE(domain);
 			SAFE_FREE(user);
 			SAFE_FREE(workstation);
@@ -1008,7 +1008,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 			 &server_domain_blob,
 			 &chal_flags)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#1)\n"));
-		dump_data(2, (const char *)reply.data, reply.length);
+		dump_data(2, reply.data, reply.length);
 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1049,7 +1049,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 			 &unkn1, &unkn2,
 			 &struct_blob)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#2)\n"));
-		dump_data(2, (const char *)reply.data, reply.length);
+		dump_data(2, reply.data, reply.length);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1111,7 +1111,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		DEBUG(5, ("NTLMSSP challenge set by NTLM2\n"));
 		DEBUG(5, ("challenge is: \n"));
-		dump_data(5, (const char *)session_nonce_hash, 8);
+		dump_data(5, session_nonce_hash, 8);
 		
 		nt_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
 		SMBNTencrypt_hash(ntlmssp_state->nt_hash,

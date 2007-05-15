@@ -347,7 +347,7 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 				data->send_seq_num, calc_md5_mac);
 
 	DEBUG(10, ("client_sign_outgoing_message: sent SMB signature of\n"));
-	dump_data(10, (const char *)calc_md5_mac, 8);
+	dump_data(10, calc_md5_mac, 8);
 
 	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
 
@@ -408,10 +408,10 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 	
 	if (!good) {
 		DEBUG(5, ("client_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
-		dump_data(5, (const char *)calc_md5_mac, 8);
+		dump_data(5, calc_md5_mac, 8);
 		
 		DEBUG(5, ("client_check_incoming_message: BAD SIG: got SMB signature of\n"));
-		dump_data(5, (const char *)server_sent_mac, 8);
+		dump_data(5, server_sent_mac, 8);
 #if 1 /* JRATEST */
 		{
 			int i;
@@ -428,7 +428,7 @@ We were expecting seq %u\n", reply_seq_number+i, reply_seq_number ));
 
 	} else {
 		DEBUG(10, ("client_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
-		dump_data(10, (const char *)server_sent_mac, 8);
+		dump_data(10, server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good, reply_seq_number, must_be_ok);
 }
@@ -488,12 +488,12 @@ BOOL cli_simple_set_signing(struct cli_state *cli,
 	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
 
 	DEBUG(10, ("cli_simple_set_signing: user_session_key\n"));
-	dump_data(10, (const char *)user_session_key.data, user_session_key.length);
+	dump_data(10, user_session_key.data, user_session_key.length);
 
 	if (response.length) {
 		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
 		DEBUG(10, ("cli_simple_set_signing: response_data\n"));
-		dump_data(10, (const char *)response.data, response.length);
+		dump_data(10, response.data, response.length);
 	} else {
 		DEBUG(10, ("cli_simple_set_signing: NULL response_data\n"));
 	}
@@ -691,7 +691,7 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	simple_packet_signature(data, (const unsigned char *)outbuf, send_seq_number, calc_md5_mac);
 
 	DEBUG(10, ("srv_sign_outgoing_message: seq %u: sent SMB signature of\n", (unsigned int)send_seq_number));
-	dump_data(10, (const char *)calc_md5_mac, 8);
+	dump_data(10, calc_md5_mac, 8);
 
 	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
 
@@ -735,11 +735,11 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BO
 		if (saved_seq) {
 			DEBUG(0, ("srv_check_incoming_message: BAD SIG: seq %u wanted SMB signature of\n",
 					(unsigned int)saved_seq));
-			dump_data(5, (const char *)calc_md5_mac, 8);
+			dump_data(5, calc_md5_mac, 8);
 
 			DEBUG(0, ("srv_check_incoming_message: BAD SIG: seq %u got SMB signature of\n",
 						(unsigned int)reply_seq_number));
-			dump_data(5, (const char *)server_sent_mac, 8);
+			dump_data(5, server_sent_mac, 8);
 		}
 		
 #if 1 /* JRATEST */
@@ -759,7 +759,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 
 	} else {
 		DEBUG(10, ("srv_check_incoming_message: seq %u: (current is %u) got good SMB signature of\n", (unsigned int)reply_seq_number, (unsigned int)data->send_seq_num));
-		dump_data(10, (const char *)server_sent_mac, 8);
+		dump_data(10, server_sent_mac, 8);
 	}
 
 	return (signing_good(inbuf, si, good, saved_seq, must_be_ok));

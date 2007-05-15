@@ -2616,7 +2616,7 @@ static BOOL new_trans(struct cli_state *pcli, int fnum, int level)
 		correct = False;
 	} else {
 		printf("qfileinfo: level %d, len = %u\n", level, len);
-		dump_data(0, buf, len);
+		dump_data(0, (uint8 *)buf, len);
 		printf("\n");
 	}
 	SAFE_FREE(buf);
@@ -4538,7 +4538,7 @@ static BOOL run_eatest(int dummy)
 
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
-		dump_data(0, (char *)ea_list[i].value.data,
+		dump_data(0, ea_list[i].value.data,
 			  ea_list[i].value.length);
 	}
 
@@ -4567,7 +4567,7 @@ static BOOL run_eatest(int dummy)
 	printf("num_eas = %d\n", (int)num_eas);
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
-		dump_data(0, (char *)ea_list[i].value.data,
+		dump_data(0, ea_list[i].value.data,
 			  ea_list[i].value.length);
 	}
 

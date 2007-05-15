@@ -147,7 +147,7 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 	}
 
 	DEBUG(10,("get_ea_value: EA %s is of length %u: ", ea_name, (unsigned int)sizeret));
-	dump_data(10, val, sizeret);
+	dump_data(10, (uint8 *)val, sizeret);
 
 	pea->flags = 0;
 	if (strnequal(ea_name, "user.", 5)) {
@@ -487,7 +487,7 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 	}
 
 	DEBUG(10,("read_ea_list_entry: read ea name %s\n", eal->ea.name));
-	dump_data(10, (const char *)eal->ea.value.data, eal->ea.value.length);
+	dump_data(10, eal->ea.value.data, eal->ea.value.length);
 
 	return eal;
 }

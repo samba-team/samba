@@ -146,7 +146,7 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 	*hnd = pol->pol_hnd;
 	
 	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
-	dump_data(4, (char *)hnd, sizeof(*hnd));
+	dump_data(4, (uint8 *)hnd, sizeof(*hnd));
 
 	return True;
 }
@@ -166,7 +166,7 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
 	for (i = 0, pol=p->pipe_handles->Policy;pol;pol=pol->next, i++) {
 		if (memcmp(&pol->pol_hnd, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%d] ", (int)i));
-			dump_data(4, (char *)hnd, sizeof(*hnd));
+			dump_data(4, (uint8 *)hnd, sizeof(*hnd));
 			if (data_p)
 				*data_p = pol->data_ptr;
 			return pol;
@@ -174,7 +174,7 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, (char *)hnd, sizeof(*hnd));
+	dump_data(4, (uint8 *)hnd, sizeof(*hnd));
 
 	p->bad_handle_fault_state = True;
 

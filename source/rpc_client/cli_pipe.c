@@ -953,7 +953,7 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 	}
 
 	DEBUG(5, ("create_krb5_auth_bind_req: Created krb5 GSS blob :\n"));
-	dump_data(5, (const char *)tkt_wrapped.data, tkt_wrapped.length);
+	dump_data(5, tkt_wrapped.data, tkt_wrapped.length);
 
 	data_blob_free(&tkt_wrapped);
 	return NT_STATUS_OK;
@@ -1003,7 +1003,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client 
 	}
 
 	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
-	dump_data(5, (const char *)spnego_msg.data, spnego_msg.length);
+	dump_data(5, spnego_msg.data, spnego_msg.length);
 
 	data_blob_free(&spnego_msg);
 	return NT_STATUS_OK;
@@ -1044,7 +1044,7 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 	}
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
-	dump_data(5, (const char *)request.data, request.length);
+	dump_data(5, request.data, request.length);
 
 	data_blob_free(&request);
 	return NT_STATUS_OK;
@@ -1645,10 +1645,10 @@ static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *
 	}
 
 	DEBUG(5,("Bind Abstract Syntax: "));	
-	dump_data(5, (char*)&pipe_names[pipe_idx].abstr_syntax, 
+	dump_data(5, (uint8*)&pipe_names[pipe_idx].abstr_syntax, 
 	          sizeof(pipe_names[pipe_idx].abstr_syntax));
 	DEBUG(5,("Bind Transfer Syntax: "));
-	dump_data(5, (char*)&pipe_names[pipe_idx].trans_syntax,
+	dump_data(5, (uint8*)&pipe_names[pipe_idx].trans_syntax,
 	          sizeof(pipe_names[pipe_idx].trans_syntax));
 
 	/* copy the required syntaxes out so we can do the right bind */

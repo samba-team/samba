@@ -334,7 +334,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("make_oem_passwd_hash\n"));
-	dump_data(100, (char *)data, 516);
+	dump_data(100, data, 516);
 #endif
 	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 

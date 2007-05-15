@@ -258,13 +258,13 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("key:"));
-	dump_data(100, (char *)key, sizeof(key));
+	dump_data(100, key, sizeof(key));
 	
 	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_pwd, sizeof(lm_pwd));
+	dump_data(100, (uint8 *)lm_pwd, sizeof(lm_pwd));
 	
 	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_pwd, sizeof(nt_pwd));
+	dump_data(100, (uint8 *)nt_pwd, sizeof(nt_pwd));
 #endif
 	
 	if (lm_interactive_pwd)
@@ -275,10 +275,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_pwd, sizeof(lm_pwd));
+	dump_data(100, (uint8 *)lm_pwd, sizeof(lm_pwd));
 	
 	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_pwd, sizeof(nt_pwd));
+	dump_data(100, (uint8 *)nt_pwd, sizeof(nt_pwd));
 #endif
 	
 	if (lm_interactive_pwd)
@@ -368,7 +368,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 #ifdef DEBUG_PASSWORD
 		DEBUG(10,("Unencrypted password (len %d):\n",
 			  (int)plaintext_password.length));
-		dump_data(100, (const char *)plaintext_password.data,
+		dump_data(100, plaintext_password.data,
 			  plaintext_password.length);
 #endif
 
