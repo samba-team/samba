@@ -610,14 +610,13 @@ static NTSTATUS ipc_qfileinfo(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	struct ipc_private *private = ntvfs->private_data;
+	struct pipe_state *p = pipe_state_find(private, info->generic.in.file.ntvfs);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 	switch (info->generic.level) {
 	case RAW_FILEINFO_GENERIC: 
 	{
-		struct pipe_state *p;
-		p = pipe_state_find(private, info->generic.in.file.ntvfs);
-		if (!p) {
-			return NT_STATUS_INVALID_HANDLE;
-		}
 		ZERO_STRUCT(info->generic.out);
 		info->generic.out.attrib = FILE_ATTRIBUTE_NORMAL;
 		info->generic.out.fname.s = strrchr(p->pipe_name, '\\');
