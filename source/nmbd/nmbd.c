@@ -40,6 +40,27 @@ BOOL found_lm_clients = False;
 
 time_t StartupTime = 0;
 
+struct event_context *nmbd_event_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init nmbd event context\n");
+	}
+	return ctx;
+}
+
+struct messaging_context *nmbd_messaging_context(void)
+{
+	static struct messaging_context *ctx;
+
+	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
+					   nmbd_event_context()))) {
+		smb_panic("Could not init nmbd messaging context\n");
+	}
+	return ctx;
+}
+
 /**************************************************************************** **
  Handle a SIGTERM in band.
  **************************************************************************** */
@@ -732,6 +753,11 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
+	message_init();
+	if (nmbd_messaging_context() == NULL) {
+		return 1;
+	}
+
 #ifndef SYNC_DNS
 	/* Setup the async dns. We do it here so it doesn't have all the other
 		stuff initialised and thus chewing memory and sockets */
@@ -745,7 +771,6 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	}
 
 	pidfile_create("nmbd");
-	message_init();
 	message_register(MSG_FORCE_ELECTION, nmbd_message_election, NULL);
 #if 0
 	/* Until winsrepl is done. */
