@@ -917,7 +917,7 @@ extern void build_options(BOOL screen);
 	init_structs();
 
 #ifdef WITH_PROFILE
-	if (!profile_setup(False)) {
+	if (!profile_setup(smbd_messaging_context(), False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
 		return -1;
 	}
