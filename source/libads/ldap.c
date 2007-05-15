@@ -1754,7 +1754,8 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 		goto done;
 	}
 
-	ldap_status = ldap_rename2_s(ads->ld, computer_dn, computer_rdn, org_unit, 1);
+	ldap_status = ldap_rename_s(ads->ld, computer_dn, computer_rdn, 
+				    org_unit, 1, NULL, NULL);
 	rc = ADS_ERROR(ldap_status);
 
 done:
