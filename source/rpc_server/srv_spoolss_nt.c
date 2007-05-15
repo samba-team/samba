@@ -311,7 +311,8 @@ WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
 		
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(smbd_messaging_context(),
+				 MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	}
 		
 	if ( is_print_op )
@@ -6117,7 +6118,8 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	
 	if ( (ret = smbrun(command, &fd)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(smbd_messaging_context(),
+				 MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	}
 
 	if ( is_print_op )

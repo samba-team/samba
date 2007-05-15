@@ -1609,7 +1609,9 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 			
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+			message_send_all(smbd_messaging_context(),
+					 MSG_SMB_CONF_UPDATED, NULL, 0,
+					 False, NULL);
 		}
 		
 		if ( is_disk_op )
@@ -1771,7 +1773,8 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(smbd_messaging_context(),
+				 MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	}
 
 	if ( is_disk_op )
@@ -1862,7 +1865,8 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(smbd_messaging_context(),
+				 MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	}
 
 	if ( is_disk_op )
