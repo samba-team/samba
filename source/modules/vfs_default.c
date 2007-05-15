@@ -781,10 +781,11 @@ static BOOL vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, i
 {
 	BOOL result;
 
+	START_PROFILE(syscall_fcntl_lock);
+
 	/* SMB_VFS_GETLOCK should be used to query lock status. */
 	SMB_ASSERT(op != SMB_F_GETLK);
 
-	START_PROFILE(syscall_fcntl_lock);
 	result =  fcntl_lock(fd, op, offset, count, type);
 	END_PROFILE(syscall_fcntl_lock);
 	return result;
