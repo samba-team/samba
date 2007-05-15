@@ -269,7 +269,7 @@ struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state,
 		} else {
 			return domain;
 		} 
-		}
+	}
 
 	return find_our_domain();
 }
