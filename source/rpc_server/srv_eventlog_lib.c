@@ -90,7 +90,7 @@ struct trav_size_struct {
 static int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 			  void *state )
 {
-	struct trav_size_struct	 *tsize = state;
+	struct trav_size_struct	 *tsize = (struct trav_size_struct *)state;
 	
 	tsize->size += data.dsize;
 	tsize->rec_count++;
