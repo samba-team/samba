@@ -1339,13 +1339,19 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
 		    strequal(session_list[snum].remote_machine, machine)) {
+
+			NTSTATUS ntstat;
 		
 			if (user.ut.uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
 			}
 
-			if (NT_STATUS_IS_OK(message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False)))
+			ntstat = messaging_send(smbd_messaging_context(),
+						session_list[snum].pid,
+						MSG_SHUTDOWN, &data_blob_null);
+			
+			if (NT_STATUS_IS_OK(ntstat))
 				r_u->status = WERR_OK;
 
 			if (not_root) 
