@@ -149,7 +149,14 @@ static NTSTATUS ipc_chkpath(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_qpathinfo(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req, union smb_fileinfo *info)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	switch (info->generic.level) {
+	case  RAW_FILEINFO_GENERIC:
+		return NT_STATUS_INVALID_DEVICE_REQUEST;
+	case RAW_FILEINFO_GETATTR:
+		return NT_STATUS_ACCESS_DENIED;
+	default:
+		return ntvfs_map_qpathinfo(ntvfs, req, info);
+	}
 }
 
 /*
@@ -602,6 +609,39 @@ static NTSTATUS ipc_setfileinfo(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_qfileinfo(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req, union smb_fileinfo *info)
 {
+	struct ipc_private *private = ntvfs->private_data;
+	switch (info->generic.level) {
+	case RAW_FILEINFO_GENERIC: 
+	{
+		struct pipe_state *p;
+		p = pipe_state_find(private, info->generic.in.file.ntvfs);
+		if (!p) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+		ZERO_STRUCT(info->generic.out);
+		info->generic.out.attrib = FILE_ATTRIBUTE_NORMAL;
+		info->generic.out.fname.s = strrchr(p->pipe_name, '\\');
+		info->generic.out.alloc_size = 4096;
+		info->generic.out.nlink = 1;
+		/* What the heck?  Match Win2k3: IPC$ pipes are delete pending */
+		info->generic.out.delete_pending = 1;
+		return NT_STATUS_OK;
+	}
+	case RAW_FILEINFO_ALT_NAME_INFO:
+	case RAW_FILEINFO_ALT_NAME_INFORMATION:
+	case RAW_FILEINFO_STREAM_INFO:
+	case RAW_FILEINFO_STREAM_INFORMATION:
+	case RAW_FILEINFO_COMPRESSION_INFO:
+	case RAW_FILEINFO_COMPRESSION_INFORMATION:
+	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
+	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
+		return NT_STATUS_INVALID_PARAMETER;
+	case  RAW_FILEINFO_ALL_EAS:
+		return NT_STATUS_ACCESS_DENIED;
+	default:
+		return ntvfs_map_qfileinfo(ntvfs, req, info);
+	}
+	
 	return NT_STATUS_ACCESS_DENIED;
 }
 
