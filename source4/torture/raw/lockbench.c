@@ -88,7 +88,8 @@ static void lock_send(struct benchlock_state *state)
 	state->offset = (state->offset+1)%nprocs;
 }
 
-static void reopen_connection(struct benchlock_state *state);
+static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data);
 
 
 static void reopen_file(struct event_context *ev, struct timed_event *te, 
@@ -114,7 +115,6 @@ static void reopen_file(struct event_context *ev, struct timed_event *te,
 	}
 	state->req->async.private = state;
 	state->req->async.fn      = lock_completion;
-	state->offset = (state->offset+1)%nprocs;
 }
 
 /*
@@ -128,7 +128,9 @@ static void reopen_connection_complete(struct composite_context *ctx)
 
 	status = smb_composite_connect_recv(ctx, state->mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		reopen_connection(state);
+		event_add_timed(state->ev, state->mem_ctx, 
+				timeval_current_ofs(1,0), 
+				reopen_connection, state);
 		return;
 	}
 
@@ -142,10 +144,12 @@ static void reopen_connection_complete(struct composite_context *ctx)
 	
 
 /*
-  reopen dead connections
+  reopen a connection
  */
-static void reopen_connection(struct benchlock_state *state)
+static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data)
 {
+	struct benchlock_state *state = (struct benchlock_state *)private_data;
 	struct composite_context *ctx;
 	struct smb_composite_connect *io = &state->reconnect;
 	char *host, *share;
@@ -191,7 +195,9 @@ static void lock_completion(struct smbcli_request *req)
 	state->req = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-			reopen_connection(state);
+			event_add_timed(state->ev, state->mem_ctx, 
+					timeval_current_ofs(1,0), 
+					reopen_connection, state);
 		} else {
 			DEBUG(0,("Lock failed - %s\n", nt_errstr(status)));
 			lock_failed++;
