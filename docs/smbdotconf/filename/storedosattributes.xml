@@ -16,5 +16,5 @@
 	extended attributes to work, also extended attributes must be compiled into the Linux kernel.
 	</para>
 </description>
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
