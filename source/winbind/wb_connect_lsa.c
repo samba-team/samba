@@ -178,7 +178,7 @@ static void init_lsa_recv_auth_bind(struct composite_context *ctx)
 static void init_lsa_recv_openpol(struct rpc_request *req)
 {
 	struct init_lsa_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct init_lsa_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);

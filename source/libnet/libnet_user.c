@@ -949,7 +949,7 @@ static void continue_domain_queried(struct rpc_request *req)
 	struct rpc_request *enum_req;
 	BOOL prereq_met = False;
 	
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
 	/* receive result of rpc request */
@@ -1020,7 +1020,7 @@ static void continue_users_enumerated(struct rpc_request *req)
 	struct userlist_state *s;
 	int i;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
 	/* receive result of rpc request */

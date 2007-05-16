@@ -124,7 +124,7 @@ static void cmd_list_trustdoms_recv_lsa(struct composite_context *ctx)
 static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 {
 	struct cmd_list_trustdom_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct cmd_list_trustdom_state);
 	int i, old_num_domains;
 

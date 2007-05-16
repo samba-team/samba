@@ -180,7 +180,7 @@ static void pam_auth_crap_recv_domain(struct composite_context *ctx)
 static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
 {
 	struct pam_auth_crap_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct pam_auth_crap_state);
 	struct netr_SamBaseInfo *base;
 	DATA_BLOB tmp_blob;
