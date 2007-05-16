@@ -178,7 +178,7 @@ static int get_queue_status(const char* sharename, print_status_struct *);
  Initialise the printing backend. Called once at startup before the fork().
 ****************************************************************************/
 
-BOOL print_backend_init(void)
+BOOL print_backend_init(struct messaging_context *msg_ctx)
 {
 	const char *sversion = "INFO/version";
 	pstring printing_path;
@@ -215,7 +215,7 @@ BOOL print_backend_init(void)
 	close_all_print_db(); /* Don't leave any open. */
 
 	/* do NT print initialization... */
-	return nt_printing_init();
+	return nt_printing_init(msg_ctx);
 }
 
 /****************************************************************************
@@ -1348,16 +1348,18 @@ static void print_queue_update_with_lock( const char *sharename,
 /****************************************************************************
 this is the receive function of the background lpq updater
 ****************************************************************************/
-static void print_queue_receive(int msg_type, struct server_id src,
-				void *buf, size_t msglen,
-				void *private_data)
+static void print_queue_receive(struct messaging_context *msg,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data)
 {
 	fstring sharename;
 	pstring lpqcommand, lprmcommand;
 	int printing_type;
 	size_t len;
 
-	len = tdb_unpack( (uint8 *)buf, msglen, "fdPP",
+	len = tdb_unpack( (uint8 *)data->data, data->length, "fdPP",
 		sharename,
 		&printing_type,
 		lpqcommand,
@@ -1401,8 +1403,8 @@ void start_background_queue(void)
 			exit(1);
 		}
 
-		message_register(MSG_PRINTER_UPDATE, print_queue_receive,
-				 NULL);
+		messaging_register(smbd_messaging_context(), NULL,
+				   MSG_PRINTER_UPDATE, print_queue_receive);
 		
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {

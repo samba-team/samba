@@ -542,7 +542,7 @@ static BOOL upgrade_to_version_5(void)
  Open the NT printing tdbs. Done once before fork().
 ****************************************************************************/
 
-BOOL nt_printing_init(void)
+BOOL nt_printing_init(struct messaging_context *msg_ctx)
 {
 	const char *vstring = "INFO/version";
 	WERROR win_rc;
@@ -631,15 +631,16 @@ BOOL nt_printing_init(void)
 	 * drivers are installed
 	 */
 
-	message_register(MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer, NULL);
+	messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
+			   do_drv_upgrade_printer);
 
 	/*
 	 * register callback to handle updating printer data
 	 * when a driver is initialized
 	 */
 
-	message_register(MSG_PRINTERDATA_INIT_RESET, reset_all_printerdata,
-			 NULL);
+	messaging_register(msg_ctx, NULL, MSG_PRINTERDATA_INIT_RESET,
+			   reset_all_printerdata);
 
 	/* of course, none of the message callbacks matter if you don't
 	   tell messages.c that you interested in receiving PRINT_GENERAL 
