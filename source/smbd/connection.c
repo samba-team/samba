@@ -259,11 +259,10 @@ static TDB_DATA* make_pipe_rec_key( struct pipe_open_rec *prec )
 	snprintf( key_string, sizeof(key_string), "%s/%d/%d",
 		prec->name, procid_to_pid(&prec->pid), prec->pnum );
 		
-	if ( (kbuf->dptr = talloc_strdup(prec, key_string)) == NULL )
+	*kbuf = string_term_tdb_data(talloc_strdup(prec, key_string));
+	if (kbuf->dptr == NULL )
 		return NULL;
-		
-	kbuf->dsize = strlen(key_string)+1;
-	
+
 	return kbuf;
 }
 

@@ -53,12 +53,12 @@ TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 
 TDB_DATA string_tdb_data(const char *string)
 {
-	return make_tdb_data(string, strlen(string));
+	return make_tdb_data(string, string ? strlen(string) : 0 );
 }
 
 TDB_DATA string_term_tdb_data(const char *string)
 {
-	return make_tdb_data(string, strlen(string) + 1);
+	return make_tdb_data(string, string ? strlen(string) + 1 : 0);
 }
 
 /****************************************************************************
