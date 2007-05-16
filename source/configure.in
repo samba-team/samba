@@ -624,6 +624,12 @@ fi
 AM_DEP_TRACK()
 _AM_DEPENDENCIES(CC)
 
+# As per vl, disable dependency tracking by default until we don't need
+# to use "make proto' -- jpeach
+if test "x$enable_dependency_tracking" != xyes; then
+    ifGNUmake='#'
+fi
+
 ############################################
 # Figure out the flags to support named structure initializers
 
