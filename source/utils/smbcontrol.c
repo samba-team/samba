@@ -70,7 +70,8 @@ static BOOL send_message(struct messaging_context *msg_ctx,
 
 /* Wait for one or more reply messages */
 
-static void wait_replies(BOOL multiple_replies)
+static void wait_replies(struct messaging_context *msg_ctx,
+			 BOOL multiple_replies)
 {
 	time_t start_time = time(NULL);
 
@@ -79,6 +80,7 @@ static void wait_replies(BOOL multiple_replies)
 
 	do {
 		message_dispatch();
+		event_loop_once(messaging_event_context(msg_ctx));
 		if (num_replies > 0 && !multiple_replies)
 			break;
 		sleep(1);
@@ -87,20 +89,26 @@ static void wait_replies(BOOL multiple_replies)
 
 /* Message handler callback that displays the PID and a string on stdout */
 
-static void print_pid_string_cb(int msg_type, struct server_id pid, void *buf,
-				size_t len, void *private_data)
+static void print_pid_string_cb(struct messaging_context *msg,
+				void *private_data, 
+				uint32_t msg_type, 
+				struct server_id pid,
+				DATA_BLOB *data)
 {
 	printf("PID %u: %.*s", (unsigned int)procid_to_pid(&pid),
-	       (int)len, (const char *)buf);
+	       (int)data->length, (const char *)data->data);
 	num_replies++;
 }
 
 /* Message handler callback that displays a string on stdout */
 
-static void print_string_cb(int msg_type, struct server_id pid,
-			    void *buf, size_t len, void *private_data)
+static void print_string_cb(struct messaging_context *msg,
+			    void *private_data, 
+			    uint32_t msg_type, 
+			    struct server_id pid,
+			    DATA_BLOB *data)
 {
-	printf("%.*s", (int)len, (const char *)buf);
+	printf("%.*s", (int)data->length, (const char *)data->data);
 	num_replies++;
 }
 
@@ -350,8 +358,11 @@ static BOOL do_election(struct messaging_context *msg_ctx,
 
 /* Ping a samba daemon process */
 
-static void pong_cb(int msg_type, struct server_id pid, void *buf,
-		    size_t len, void *private_data)
+static void pong_cb(struct messaging_context *msg,
+		    void *private_data, 
+		    uint32_t msg_type, 
+		    struct server_id pid,
+		    DATA_BLOB *data)
 {
 	char *src_string = procid_str(NULL, &pid);
 	printf("PONG from pid %s\n", src_string);
@@ -373,16 +384,16 @@ static BOOL do_ping(struct messaging_context *msg_ctx,
 	if (!send_message(msg_ctx, pid, MSG_PING, NULL, 0, False))
 		return False;
 
-	message_register(MSG_PONG, pong_cb, NULL);
+	messaging_register(msg_ctx, NULL, MSG_PONG, pong_cb);
 
-	wait_replies(procid_to_pid(&pid) == 0);
+	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
 	if (num_replies == 0)
 		printf("No replies received\n");
 
-	message_deregister(MSG_PONG);
+	messaging_deregister(msg_ctx, MSG_PONG, NULL);
 
 	return num_replies;
 }
@@ -490,14 +501,14 @@ static BOOL do_profilelevel(struct messaging_context *msg_ctx,
 	messaging_register(msg_ctx, NULL, MSG_REQ_PROFILELEVEL,
 			   profilelevel_rqst);
 
-	wait_replies(procid_to_pid(&pid) == 0);
+	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
 	if (num_replies == 0)
 		printf("No replies received\n");
 
-	message_deregister(MSG_PROFILE);
+	messaging_deregister(msg_ctx, MSG_PROFILE, NULL);
 
 	return num_replies;
 }
@@ -518,16 +529,16 @@ static BOOL do_debuglevel(struct messaging_context *msg_ctx,
 	if (!send_message(msg_ctx, pid, MSG_REQ_DEBUGLEVEL, NULL, 0, False))
 		return False;
 
-	message_register(MSG_DEBUGLEVEL, print_pid_string_cb, NULL);
+	messaging_register(msg_ctx, NULL, MSG_DEBUGLEVEL, print_pid_string_cb);
 
-	wait_replies(procid_to_pid(&pid) == 0);
+	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
 	if (num_replies == 0)
 		printf("No replies received\n");
 
-	message_deregister(MSG_DEBUGLEVEL);
+	messaging_deregister(msg_ctx, MSG_DEBUGLEVEL, NULL);
 
 	return num_replies;
 }
@@ -730,21 +741,21 @@ static BOOL do_poolusage(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	message_register(MSG_POOL_USAGE, print_string_cb, NULL);
+	messaging_register(msg_ctx, NULL, MSG_POOL_USAGE, print_string_cb);
 
 	/* Send a message and register our interest in a reply */
 
 	if (!send_message(msg_ctx, pid, MSG_REQ_POOL_USAGE, NULL, 0, False))
 		return False;
 
-	wait_replies(procid_to_pid(&pid) == 0);
+	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
 	if (num_replies == 0)
 		printf("No replies received\n");
 
-	message_deregister(MSG_POOL_USAGE);
+	messaging_deregister(msg_ctx, MSG_POOL_USAGE, NULL);
 
 	return num_replies;
 }
@@ -929,20 +940,21 @@ static BOOL do_winbind_onlinestatus(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	message_register(MSG_WINBIND_ONLINESTATUS, print_pid_string_cb, NULL);
+	messaging_register(msg_ctx, NULL, MSG_WINBIND_ONLINESTATUS,
+			   print_pid_string_cb);
 
 	if (!send_message(msg_ctx, pid, MSG_WINBIND_ONLINESTATUS, &myid,
 			  sizeof(myid), False))
 		return False;
 
-	wait_replies(procid_to_pid(&pid) == 0);
+	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
 	if (num_replies == 0)
 		printf("No replies received\n");
 
-	message_deregister(MSG_WINBIND_ONLINESTATUS);
+	messaging_deregister(msg_ctx, MSG_WINBIND_ONLINESTATUS, NULL);
 
 	return num_replies;
 }

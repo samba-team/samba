@@ -723,6 +723,7 @@ struct messaging_callback {
 
 struct messaging_context {
 	struct server_id id;
+	struct event_context *event_ctx;
 	struct messaging_callback *callbacks;
 };
 
@@ -740,6 +741,11 @@ static int messaging_context_destructor(struct messaging_context *ctx)
 	return 0;
 }
 
+struct event_context *messaging_event_context(struct messaging_context *msg_ctx)
+{
+	return msg_ctx->event_ctx;
+}
+
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct server_id server_id, 
 					 struct event_context *ev)
@@ -751,6 +757,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	ctx->id = server_id;
+	ctx->event_ctx = ev;
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (!message_init(ctx)) {
