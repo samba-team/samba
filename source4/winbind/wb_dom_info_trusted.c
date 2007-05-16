@@ -117,7 +117,7 @@ static void trusted_dom_info_recv_domain(struct composite_context *ctx)
 static void trusted_dom_info_recv_dsr(struct rpc_request *req)
 {
 	struct trusted_dom_info_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct trusted_dom_info_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
@@ -171,7 +171,7 @@ static void trusted_dom_info_recv_dsr(struct rpc_request *req)
 static void trusted_dom_info_recv_dcname(struct rpc_request *req)
 {
 	struct trusted_dom_info_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct trusted_dom_info_state);
 	struct composite_context *ctx;
 	struct nbt_name name;

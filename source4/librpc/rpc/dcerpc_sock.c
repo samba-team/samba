@@ -46,7 +46,7 @@ struct sock_private {
 */
 static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 {
-	struct sock_private *sock = p->transport.private;
+	struct sock_private *sock = p->transport.private_data;
 
 	if (!sock) return;
 
@@ -112,7 +112,7 @@ static NTSTATUS sock_process_recv(void *private, DATA_BLOB blob)
 {
 	struct dcerpc_connection *p = talloc_get_type(private, 
 						      struct dcerpc_connection);
-	struct sock_private *sock = p->transport.private;
+	struct sock_private *sock = p->transport.private_data;
 	sock->pending_reads--;
 	if (sock->pending_reads == 0) {
 		packet_recv_disable(sock->packet);
@@ -129,7 +129,7 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 {
 	struct dcerpc_connection *p = talloc_get_type(private, 
 						      struct dcerpc_connection);
-	struct sock_private *sock = p->transport.private;
+	struct sock_private *sock = p->transport.private_data;
 
 	if (flags & EVENT_FD_WRITE) {
 		packet_queue_run(sock->packet);
@@ -150,7 +150,7 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 */
 static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 {
-	struct sock_private *sock = p->transport.private;
+	struct sock_private *sock = p->transport.private_data;
 	sock->pending_reads++;
 	if (sock->pending_reads == 1) {
 		packet_recv_enable(sock->packet);
@@ -164,7 +164,7 @@ static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, 
 				  BOOL trigger_read)
 {
-	struct sock_private *sock = p->transport.private;
+	struct sock_private *sock = p->transport.private_data;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -194,7 +194,7 @@ static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data,
 */
 static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p, NTSTATUS status)
 {
-	struct sock_private *sock = p->transport.private;
+	struct sock_private *sock = p->transport.private_data;
 
 	if (sock && sock->sock) {
 		sock_dead(p, status);
@@ -208,7 +208,7 @@ static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p, NTSTATUS status)
 */
 static const char *sock_peer_name(struct dcerpc_connection *p)
 {
-	struct sock_private *sock = talloc_get_type(p->transport.private, struct sock_private);
+	struct sock_private *sock = talloc_get_type(p->transport.private_data, struct sock_private);
 	return sock->server_name;
 }
 
@@ -217,7 +217,7 @@ static const char *sock_peer_name(struct dcerpc_connection *p)
 */
 static const char *sock_target_hostname(struct dcerpc_connection *p)
 {
-	struct sock_private *sock = talloc_get_type(p->transport.private, struct sock_private);
+	struct sock_private *sock = talloc_get_type(p->transport.private_data, struct sock_private);
 	return sock->server_name;
 }
 
@@ -258,7 +258,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 	  fill in the transport methods
 	*/
 	conn->transport.transport       = s->transport;
-	conn->transport.private         = NULL;
+	conn->transport.private_data    = NULL;
 
 	conn->transport.send_request    = sock_send_request;
 	conn->transport.send_read       = sock_send_read;
@@ -275,7 +275,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 	sock->fde = event_add_fd(conn->event_ctx, sock->sock, socket_get_fd(sock->sock),
 				 EVENT_FD_READ, sock_io_handler, conn);
 	
-	conn->transport.private = sock;
+	conn->transport.private_data = sock;
 
 	sock->packet = packet_init(sock);
 	if (sock->packet == NULL) {

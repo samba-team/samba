@@ -1372,7 +1372,7 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 static void async_callback(struct rpc_request *req)
 {
-	int *counter = req->async.private;
+	int *counter = req->async.private_data;
 	if (NT_STATUS_IS_OK(req->status)) {
 		(*counter)++;
 	}
@@ -1431,7 +1431,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, mem_ctx, &r);
 
 		req[i]->async.callback = async_callback;
-		req[i]->async.private = async_counter;
+		req[i]->async.private_data = async_counter;
 
 		/* even with this flush per request a w2k3 server seems to 
 		   clag with multiple outstanding requests. bleergh. */

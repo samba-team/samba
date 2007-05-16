@@ -156,7 +156,7 @@ static void continue_srv_challenge(struct rpc_request *req)
 	struct schannel_key_state *s;
 	struct rpc_request *srv_auth2_req;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
 	/* receive rpc request result - netlogon challenge */
@@ -199,7 +199,7 @@ static void continue_srv_auth2(struct rpc_request *req)
 	struct composite_context *c;
 	struct schannel_key_state *s;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
 	/* receive rpc request result - auth2 credentials */ 

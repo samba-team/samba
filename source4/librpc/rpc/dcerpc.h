@@ -62,7 +62,7 @@ struct dcerpc_connection {
 
 	struct dcerpc_transport {
 		enum dcerpc_transport_t transport;
-		void *private;
+		void *private_data;
 
 		NTSTATUS (*shutdown_pipe)(struct dcerpc_connection *, NTSTATUS status);
 
@@ -258,7 +258,7 @@ struct rpc_request {
 
 	struct {
 		void (*callback)(struct rpc_request *);
-		void *private;
+		void *private_data;
 	} async;
 };
 

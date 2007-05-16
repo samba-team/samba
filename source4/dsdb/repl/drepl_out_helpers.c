@@ -123,7 +123,7 @@ static void dreplsrv_out_drsuapi_bind_send(struct dreplsrv_out_drsuapi_state *st
 
 static void dreplsrv_out_drsuapi_bind_recv(struct rpc_request *req)
 {
-	struct dreplsrv_out_drsuapi_state *st = talloc_get_type(req->async.private,
+	struct dreplsrv_out_drsuapi_state *st = talloc_get_type(req->async.private_data,
 						struct dreplsrv_out_drsuapi_state);
 	struct composite_context *c = st->creq;
 
@@ -286,7 +286,7 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 
 static void dreplsrv_op_pull_source_get_changes_recv(struct rpc_request *req)
 {
-	struct dreplsrv_op_pull_source_state *st = talloc_get_type(req->async.private,
+	struct dreplsrv_op_pull_source_state *st = talloc_get_type(req->async.private_data,
 						   struct dreplsrv_op_pull_source_state);
 	struct composite_context *c = st->creq;
 	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,

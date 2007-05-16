@@ -588,7 +588,7 @@ static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_st
 
 static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req)
 {
-	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private,
+	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private_data,
 					    struct libnet_UnbecomeDC_state);
 	struct composite_context *c = s->creq;
 
@@ -641,7 +641,7 @@ static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_st
 
 static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req)
 {
-	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private,
+	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private_data,
 					    struct libnet_UnbecomeDC_state);
 	struct composite_context *c = s->creq;
 	struct drsuapi_DsRemoveDSServer *r = &s->drsuapi.rm_ds_srv_r;

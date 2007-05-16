@@ -830,7 +830,7 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 */
 static void continue_epm_map(struct rpc_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private,
+	struct composite_context *c = talloc_get_type(req->async.private_data,
 						      struct composite_context);
 	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
 							  struct epm_map_binding_state);
