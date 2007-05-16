@@ -111,7 +111,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	}
 
 	/* If the server is not responding, note that now */
-	if (len <= 0) {
+	if (len < 0) {
                 DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
 		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
@@ -192,7 +192,8 @@ BOOL cli_receive_smb_readX_header(struct cli_state *cli)
 			}
 
 			/* Read the rest of the data. */
-			if (!cli_receive_smb_data(cli,cli->inbuf+len,total_len - len)) {
+			if ((total_len - len > 0) &&
+			    !cli_receive_smb_data(cli,cli->inbuf+len,total_len - len)) {
 				goto read_err;
 			}
 
