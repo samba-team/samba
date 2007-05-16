@@ -2640,9 +2640,9 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		return -1;
 	}
 
-  normal_read:
-
 #endif
+
+  normal_read:
 
 	if ((smb_maxcnt && 0xFF0000) > 0x10000) {
 		int sendlen = setup_readX_header(inbuf,outbuf,smb_maxcnt) - smb_maxcnt;
