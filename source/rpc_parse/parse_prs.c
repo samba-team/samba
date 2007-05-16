@@ -1457,7 +1457,7 @@ BOOL prs_uint32_post(const char *name, prs_struct *ps, int depth, uint32 *data32
 int tdb_prs_store(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps)
 {
 	TDB_DATA dbuf;
-	dbuf.dptr = ps->data_p;
+	dbuf.dptr = (uint8 *)ps->data_p;
 	dbuf.dsize = prs_offset(ps);
 	return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
@@ -1479,7 +1479,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *m
 	if (!dbuf.dptr)
 		return -1;
 
-	prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
+	prs_give_memory(ps, (char *)dbuf.dptr, dbuf.dsize, True);
 
 	return 0;
 }

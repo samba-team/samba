@@ -58,7 +58,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	}
 
 	result->key.dsize = key.dsize;
-	result->key.dptr = (char *)talloc_memdup(result, key.dptr, key.dsize);
+	result->key.dptr = talloc_memdup(result, key.dptr, key.dsize);
 	if (result->key.dptr == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
@@ -72,8 +72,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	result->delete_rec = db_tdb_delete;
 
 	{
-		char *keystr = hex_encode(NULL, (unsigned char *)key.dptr,
-					  key.dsize);
+		char *keystr = hex_encode(NULL, key.dptr, key.dsize);
 		DEBUG(10, ("Locking key %s\n", keystr));
 		TALLOC_FREE(keystr);
 	}
@@ -93,8 +92,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	}
 
 	result->value.dsize = value.dsize;
-	result->value.dptr = (char *)talloc_memdup(result, value.dptr,
-						    value.dsize);
+	result->value.dptr = talloc_memdup(result, value.dptr, value.dsize);
 	if (result->value.dptr == NULL) {
 		DEBUG(3, ("talloc failed\n"));
 		TALLOC_FREE(result);

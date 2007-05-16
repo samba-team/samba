@@ -179,8 +179,7 @@ BOOL set_share_security(const char *share_name, SEC_DESC *psd)
 out:
  
 	prs_mem_free(&ps);
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -195,8 +194,7 @@ BOOL delete_share_security(const struct share_params *params)
 
 	slprintf(key, sizeof(key)-1, "SECDESC/%s",
 		 lp_servicename(params->service));
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
+	kbuf = string_term_tdb_data(key);
 
 	if (tdb_trans_delete(share_tdb, kbuf) != 0) {
 		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",

@@ -115,7 +115,7 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 /* TDB_FORMAT_STRING_V0       "ddddddBBBBBBBBBBBBddBBwdwdBwwd" */
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V0,
+	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING_V0,
 		&logon_time,						/* d */
 		&logoff_time,						/* d */
 		&kickoff_time,						/* d */
@@ -301,7 +301,7 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 /* TDB_FORMAT_STRING_V1       "dddddddBBBBBBBBBBBBddBBwdwdBwwd" */
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V1,
+	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING_V1,
 		&logon_time,						/* d */
 		&logoff_time,						/* d */
 		&kickoff_time,						/* d */
@@ -493,7 +493,7 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 /* TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd" */
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V2,
+	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING_V2,
 		&logon_time,						/* d */
 		&logoff_time,						/* d */
 		&kickoff_time,						/* d */
@@ -715,7 +715,7 @@ static BOOL tdbsam_convert(int32 from)
 	while (key.dptr) {
 	
 		/* skip all non-USER entries (eg. RIDs) */
-		while ((key.dsize != 0) && (strncmp(key.dptr, prefix, strlen (prefix)))) {
+		while ((key.dsize != 0) && (strncmp((const char *)key.dptr, prefix, strlen (prefix)))) {
 			old_key = key;
 			/* increment to next in line */
 			key = tdb_nextkey(tdbsam, key);
@@ -768,7 +768,8 @@ static BOOL tdbsam_convert(int32 from)
 
 			/* pack from the buffer into the new format */
 			
-			DEBUG(10,("tdbsam_convert: Try packing a record (key:%s) (version:%d)\n", key.dptr, from));
+			DEBUG(10,("tdbsam_convert: Try packing a record (key:%s) (version:%d)\n",
+				  (const char *)key.dptr, from));
 			data.dsize = init_buffer_from_sam (&buf, user, False);
 			TALLOC_FREE(user );
 			
@@ -776,7 +777,7 @@ static BOOL tdbsam_convert(int32 from)
 				DEBUG(0,("tdbsam_convert: cannot pack the struct samu into the new format\n"));
 				return False;
 			}
-			data.dptr = (char *)buf;
+			data.dptr = buf;
 			
 			/* Store the buffer inside the TDBSAM */
 			if (tdb_store(tdbsam, key, data, TDB_MODIFY) != TDB_SUCCESS) {
@@ -901,7 +902,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 	int  prefixlen = strlen (prefix);
 	struct pwent_list *ptr;
 	
-	if ( strncmp(key.dptr, prefix, prefixlen) == 0 ) {
+	if ( strncmp((const char *)key.dptr, prefix, prefixlen) == 0 ) {
 		if ( !(ptr=SMB_MALLOC_P(struct pwent_list)) ) {
 			DEBUG(0,("tdbsam_traverse_setpwent: Failed to malloc new entry for list\n"));
 			
@@ -912,7 +913,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 		
 		/* save a copy of the key */
 		
-		ptr->key.dptr = (char *)memdup( key.dptr, key.dsize );
+		ptr->key.dptr = (uint8 *)memdup( key.dptr, key.dsize );
 		if (!ptr->key.dptr) {
 			DEBUG(0,("tdbsam_traverse_setpwent: memdup failed\n"));
 			/* just return 0 and let the traversal continue */
@@ -1061,7 +1062,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu 
   
   	/* unpack the buffer */
 	
-	if (!init_sam_from_buffer(user, (unsigned char *)data.dptr, data.dsize)) {
+	if (!init_sam_from_buffer(user, data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad struct samu entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
 		tdbsam_close();
@@ -1113,7 +1114,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, struct samu 
 		goto done;
 	}
 
-	fstrcpy(name, data.dptr);
+	fstrcpy(name, (const char *)data.dptr);
 	SAFE_FREE(data.dptr);
 	
 	nt_status = tdbsam_getsampwnam (my_methods, user, name);
@@ -1237,7 +1238,7 @@ static BOOL tdb_update_samacct_only( struct samu* newpwd, int flag )
 		ret = False;
 		goto done;
 	}
-	data.dptr = (char *)buf;
+	data.dptr = buf;
 
 	fstrcpy(name, pdb_get_username(newpwd));
 	strlower_m(name);

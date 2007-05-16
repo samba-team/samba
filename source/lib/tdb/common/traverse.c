@@ -279,7 +279,7 @@ TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA oldkey)
 	u32 oldhash;
 	TDB_DATA key = tdb_null;
 	struct list_struct rec;
-	char *k = NULL;
+	unsigned char *k = NULL;
 
 	/* Is locked key the old key?  If so, traverse will be reliable. */
 	if (tdb->travlocks.off) {

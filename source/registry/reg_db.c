@@ -327,7 +327,7 @@ int regdb_close( void )
 static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA dbuf;
-	char *buffer;
+	uint8 *buffer;
 	int i = 0;
 	uint32 len, buflen;
 	BOOL ret = True;
@@ -342,7 +342,7 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 
 	/* allocate some initial memory */
 		
-	if (!(buffer = (char *)SMB_MALLOC(sizeof(pstring)))) {
+	if (!(buffer = (uint8 *)SMB_MALLOC(sizeof(pstring)))) {
 		return False;
 	}
 	buflen = sizeof(pstring);
@@ -358,7 +358,7 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
-			if ((buffer = (char *)SMB_REALLOC( buffer, len*2 )) == NULL) {
+			if ((buffer = (uint8 *)SMB_REALLOC( buffer, len*2 )) == NULL) {
 				DEBUG(0,("regdb_store_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;
@@ -463,7 +463,7 @@ int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
 	pstring path;
 	uint32 num_items;
 	TDB_DATA dbuf;
-	char *buf;
+	uint8 *buf;
 	uint32 buflen, len;
 	int i;
 	fstring subkeyname;
@@ -504,7 +504,7 @@ int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
  Unpack a list of registry values frem the TDB
  ***************************************************************************/
  
-static int regdb_unpack_values(REGVAL_CTR *values, char *buf, int buflen)
+static int regdb_unpack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	uint32		type;
@@ -549,7 +549,7 @@ static int regdb_unpack_values(REGVAL_CTR *values, char *buf, int buflen)
  Pack all values in all printer keys
  ***************************************************************************/
  
-static int regdb_pack_values(REGVAL_CTR *values, char *buf, int buflen)
+static int regdb_pack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	int 		i;
@@ -629,7 +629,7 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 		return False;
 	}
 	
-	data.dptr = SMB_MALLOC_ARRAY( char, len );
+	data.dptr = SMB_MALLOC_ARRAY( uint8, len );
 	data.dsize = len;
 	
 	len = regdb_pack_values( values, data.dptr, data.dsize );

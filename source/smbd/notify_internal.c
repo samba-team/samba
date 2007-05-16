@@ -231,7 +231,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
 		NDR_PRINT_DEBUG(notify_array, notify->array);
 	}
 
-	dbuf.dptr = (char *)blob.data;
+	dbuf.dptr = blob.data;
 	dbuf.dsize = blob.length;
 		
 	ret = tdb_store_bystring(notify->w->tdb, NOTIFY_KEY, dbuf, TDB_REPLACE);

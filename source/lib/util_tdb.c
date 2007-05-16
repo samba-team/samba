@@ -43,22 +43,22 @@ static void gotalarm_sig(void)
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
 
-TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
+TDB_DATA make_tdb_data(const uint8 *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = CONST_DISCARD(char *, dptr);
+	ret.dptr = CONST_DISCARD(uint8 *, dptr);
 	ret.dsize = dsize;
 	return ret;
 }
 
 TDB_DATA string_tdb_data(const char *string)
 {
-	return make_tdb_data(string, string ? strlen(string) : 0 );
+	return make_tdb_data((const uint8 *)string, string ? strlen(string) : 0 );
 }
 
 TDB_DATA string_term_tdb_data(const char *string)
 {
-	return make_tdb_data(string, string ? strlen(string) + 1 : 0);
+	return make_tdb_data((const uint8 *)string, string ? strlen(string) + 1 : 0);
 }
 
 /****************************************************************************
@@ -204,7 +204,7 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v)
 	int32 v_store;
 
 	SIVAL(&v_store,0,v);
-	data.dptr = (char *)&v_store;
+	data.dptr = (uint8 *)&v_store;
 	data.dsize = sizeof(int32);
 
 	return tdb_store(tdb, key, data, TDB_REPLACE);
@@ -266,7 +266,7 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
 	BOOL ret = True;
 
 	SIVAL(&v_store, 0, value);
-	data.dptr = (char *)&v_store;
+	data.dptr = (uint8 *)&v_store;
 	data.dsize = sizeof(uint32);
 
 	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
@@ -417,7 +417,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldv
  integers and strings.
 ****************************************************************************/
 
-size_t tdb_pack_va(char *buf, int bufsize, const char *fmt, va_list ap)
+size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
 {
 	uint8 bt;
 	uint16 w;
@@ -427,7 +427,7 @@ size_t tdb_pack_va(char *buf, int bufsize, const char *fmt, va_list ap)
 	int len;
 	char *s;
 	char c;
-	char *buf0 = buf;
+	uint8 *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
@@ -501,7 +501,7 @@ size_t tdb_pack_va(char *buf, int bufsize, const char *fmt, va_list ap)
 	return PTR_DIFF(buf, buf0);
 }
 
-size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
+size_t tdb_pack(uint8 *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	size_t result;
@@ -534,7 +534,7 @@ BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 	}
 
 	va_start(ap, fmt);
-	len2 = tdb_pack_va((char *)(*buf)+(*len), len1, fmt, ap);
+	len2 = tdb_pack_va((*buf)+(*len), len1, fmt, ap);
 	va_end(ap);
 
 	if (len1 != len2) {
@@ -551,7 +551,7 @@ BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
  integers and strings.
 ****************************************************************************/
 
-int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
+int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint8 *bt;
@@ -562,7 +562,7 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 	void **p;
 	char *s, **b;
 	char c;
-	char *buf0 = buf;
+	const uint8 *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
@@ -605,14 +605,14 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 			break;
 		case 'P':
 			s = va_arg(ap,char *);
-			len = strlen(buf) + 1;
+			len = strlen((const char *)buf) + 1;
 			if (bufsize < len || len > sizeof(pstring))
 				goto no_space;
 			memcpy(s, buf, len);
 			break;
 		case 'f':
 			s = va_arg(ap,char *);
-			len = strlen(buf) + 1;
+			len = strlen((const char *)buf) + 1;
 			if (bufsize < len || len > sizeof(fstring))
 				goto no_space;
 			memcpy(s, buf, len);
@@ -734,7 +734,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
 		/* duplicate key string to ensure null-termination */
-		char *key_str = SMB_STRNDUP(key.dptr, key.dsize);
+		char *key_str = SMB_STRNDUP((const char *)key.dptr, key.dsize);
 		if (!key_str) {
 			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
 			smb_panic("strndup failed!\n");

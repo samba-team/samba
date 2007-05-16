@@ -502,7 +502,7 @@ static BOOL check_cache( char *s, size_t maxlen, const struct share_params *p )
 	}
 
 	/* If we *did* find it, we need to copy it into the string buffer. */
-	(void)safe_strcpy( s, data_val.dptr, maxlen );
+	(void)safe_strcpy( s, (const char *)data_val.dptr, maxlen );
 	if( saved_ext ) {
 		/* Replace the saved_ext as it was truncated. */
 		(void)safe_strcat( s, saved_ext, maxlen );

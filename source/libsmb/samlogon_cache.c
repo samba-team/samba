@@ -155,7 +155,7 @@ BOOL netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 	if ( net_io_user_info3("", user, &ps, 0, 3, 0) ) 
 	{
 		data.dsize = prs_offset( &ps );
-		data.dptr = prs_data_p( &ps );
+		data.dptr = (uint8 *)prs_data_p( &ps );
 
 		if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) != -1)
 			result = True;
@@ -199,7 +199,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 		}
 
 		prs_init( &ps, 0, mem_ctx, UNMARSHALL );
-		prs_give_memory( &ps, data.dptr, data.dsize, True );
+		prs_give_memory( &ps, (char *)data.dptr, data.dsize, True );
 		
 		if ( !prs_uint32( "timestamp", &ps, 0, &t ) ) {
 			prs_mem_free( &ps );

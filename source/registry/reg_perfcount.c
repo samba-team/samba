@@ -182,7 +182,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 		buffer_size = 0;
 		return buffer_size;
 	}
-	init_unistr2(&name_index, kbuf.dptr, UNI_STR_TERMINATE);
+	init_unistr2(&name_index, (const char *)kbuf.dptr, UNI_STR_TERMINATE);
 	memcpy(buf1+buffer_size, (char *)name_index.buffer, working_size);
 	buffer_size += working_size;
 	/* Now encode the actual name */

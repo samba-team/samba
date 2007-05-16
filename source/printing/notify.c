@@ -31,7 +31,7 @@ static struct notify_queue {
 	struct notify_queue *next, *prev;
 	struct spoolss_notify_msg *msg;
 	struct timeval tv;
-	char *buf;
+	uint8 *buf;
 	size_t buflen;
 } *notify_queue_head = NULL;
 
@@ -75,7 +75,7 @@ BOOL print_notify_messages_pending(void)
 static BOOL flatten_message(struct notify_queue *q)
 {
 	struct spoolss_notify_msg *msg = q->msg;
-	char *buf = NULL;
+	uint8 *buf = NULL;
 	size_t buflen = 0, len;
 
 again:
@@ -99,7 +99,7 @@ again:
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {
-		buf = (char *)TALLOC_REALLOC(send_ctx, buf, len);
+		buf = (uint8 *)TALLOC_REALLOC(send_ctx, buf, len);
 		if (!buf)
 			return False;
 		buflen = len;

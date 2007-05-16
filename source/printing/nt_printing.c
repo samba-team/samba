@@ -279,7 +279,7 @@ static BOOL upgrade_to_version_3(void)
 
 		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
-		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
+		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving form\n"));
 			if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) {
 				SAFE_FREE(dbuf.dptr);
@@ -293,7 +293,7 @@ static BOOL upgrade_to_version_3(void)
 			}
 		}
  
-		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
+		if (strncmp((const char *)kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving printer\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
 				SAFE_FREE(dbuf.dptr);
@@ -307,7 +307,7 @@ static BOOL upgrade_to_version_3(void)
 			}
 		}
  
-		if (strncmp(kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
+		if (strncmp((const char *)kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving secdesc\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
 				SAFE_FREE(dbuf.dptr);
@@ -352,7 +352,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 		return 0;
 	}
 
-	if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) != 0 ) {
+	if ( strncmp((const char *) key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) != 0 ) {
 		return 0;
 	}
 
@@ -361,11 +361,12 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	ZERO_STRUCT( ps );
 
 	prs_init( &ps, 0, ctx, UNMARSHALL );
-	prs_give_memory( &ps, data.dptr, data.dsize, False );
+	prs_give_memory( &ps, (char *)data.dptr, data.dsize, False );
 
 	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_orig, &ps, 1 ) ) {
 		/* delete bad entries */
-		DEBUG(0,("sec_desc_upg_fn: Failed to parse original sec_desc for %si.  Deleting....\n", key.dptr ));
+		DEBUG(0,("sec_desc_upg_fn: Failed to parse original sec_desc for %si.  Deleting....\n",
+			(const char *)key.dptr ));
 		tdb_delete( tdb_printers, key );
 		prs_mem_free( &ps );
 		return 0;
@@ -439,7 +440,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 		return 0;
 	}
 
-	data.dptr = prs_data_p( &ps );
+	data.dptr = (uint8 *)prs_data_p( &ps );
 	data.dsize = sd_size;
 	
 	result = tdb_store( tdb_printers, key, data, TDB_REPLACE );
@@ -489,11 +490,11 @@ static int normalize_printers_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* upgrade printer records and security descriptors */
 	
-	if ( strncmp( key.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX) ) == 0 ) {
-		new_key = make_printer_tdbkey( key.dptr+strlen(PRINTERS_PREFIX) );
+	if ( strncmp((const char *) key.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX) ) == 0 ) {
+		new_key = make_printer_tdbkey( (const char *)key.dptr+strlen(PRINTERS_PREFIX) );
 	}
-	else if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) == 0 ) {
-		new_key = make_printers_secdesc_tdbkey( key.dptr+strlen(SECDESC_PREFIX) );
+	else if ( strncmp((const char *) key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) == 0 ) {
+		new_key = make_printers_secdesc_tdbkey( (const char *)key.dptr+strlen(SECDESC_PREFIX) );
 	}
 	else {
 		/* ignore this record */
@@ -786,14 +787,14 @@ int get_ntforms(nt_forms_struct **list)
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
 	{
-		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) 
+		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) 
 			continue;
 		
 		dbuf = tdb_fetch(tdb_forms, kbuf);
 		if (!dbuf.dptr) 
 			continue;
 
-		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
+		fstrcpy(form.name, (const char *)kbuf.dptr+strlen(FORMS_PREFIX));
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddd",
 				 &i, &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
@@ -826,14 +827,14 @@ int write_ntforms(nt_forms_struct **list, int number)
 
 	for (i=0;i<number;i++) {
 		/* save index, so list is rebuilt in correct order */
-		len = tdb_pack(buf, sizeof(buf), "dddddddd",
+		len = tdb_pack((uint8 *)buf, sizeof(buf), "dddddddd",
 			       i, (*list)[i].flag, (*list)[i].width, (*list)[i].length,
 			       (*list)[i].left, (*list)[i].top, (*list)[i].right,
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
 		slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[i].name);
 		dbuf.dsize = len;
-		dbuf.dptr = buf;
+		dbuf.dptr = (uint8 *)buf;
 		if (tdb_store_bystring(tdb_forms, key, dbuf, TDB_REPLACE) != 0) break;
        }
 
@@ -974,7 +975,7 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
-		if (strncmp(kbuf.dptr, key, strlen(key)) != 0)
+		if (strncmp((const char *)kbuf.dptr, key, strlen(key)) != 0)
 			continue;
 		
 		if((*list = SMB_REALLOC_ARRAY(*list, fstring, total+1)) == NULL) {
@@ -982,7 +983,7 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 			return -1;
 		}
 
-		fstrcpy((*list)[total], kbuf.dptr+strlen(key));
+		fstrcpy((*list)[total], (const char *)kbuf.dptr+strlen(key));
 		total++;
 	}
 
@@ -1929,7 +1930,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	pstring directory;
 	fstring temp_name;
 	pstring key;
-	char *buf;
+	uint8 *buf;
 	int i, ret;
 	TDB_DATA dbuf;
 
@@ -2006,7 +2007,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	}
 
 	if (len != buflen) {
-		buf = (char *)SMB_REALLOC(buf, len);
+		buf = (uint8 *)SMB_REALLOC(buf, len);
 		if (!buf) {
 			DEBUG(0,("add_a_printer_driver_3: failed to enlarge buffer\n!"));
 			ret = -1;
@@ -2208,7 +2209,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 
 /****************************************************************************
 ****************************************************************************/
-int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
+int pack_devicemode(NT_DEVICEMODE *nt_devmode, uint8 *buf, int buflen)
 {
 	int len = 0;
 
@@ -2272,7 +2273,7 @@ int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
  Pack all values in all printer keys
  ***************************************************************************/
  
-static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
+static int pack_values(NT_PRINTER_DATA *data, uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	int 		i, j;
@@ -2362,7 +2363,7 @@ uint32 del_a_printer(const char *sharename)
 ****************************************************************************/
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
-	char *buf;
+	uint8 *buf;
 	int buflen, len;
 	WERROR ret;
 	TDB_DATA kbuf, dbuf;
@@ -2429,7 +2430,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen != len) {
-		buf = (char *)SMB_REALLOC(buf, len);
+		buf = (uint8 *)SMB_REALLOC(buf, len);
 		if (!buf) {
 			DEBUG(0,("update_a_printer_2: failed to enlarge buffer!\n"));
 			ret = WERR_NOMEM;
@@ -2587,7 +2588,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 
 /****************************************************************************
 ****************************************************************************/
-int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
+int unpack_devicemode(NT_DEVICEMODE **nt_devmode, const uint8 *buf, int buflen)
 {
 	int len = 0;
 	int extra_len = 0;
@@ -3526,7 +3527,7 @@ REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, 
  Unpack a list of registry values frem the TDB
  ***************************************************************************/
  
-static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
+static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	uint32		type;
@@ -4208,7 +4209,7 @@ BOOL del_driver_init(char *drivername)
 static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
 	pstring key;
-	char *buf;
+	uint8 *buf;
 	int buflen, len, ret;
 	TDB_DATA dbuf;
 
@@ -4222,7 +4223,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen < len) {
-		buf = (char *)SMB_REALLOC(buf, len);
+		buf = (uint8 *)SMB_REALLOC(buf, len);
 		if (!buf) {
 			DEBUG(0, ("update_driver_init_2: failed to enlarge buffer!\n"));
 			ret = -1;
