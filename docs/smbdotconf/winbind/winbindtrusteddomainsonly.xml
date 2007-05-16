@@ -13,7 +13,7 @@
 	</para>
 
 	<para>
-	This parameter is not deprecated in favor of the newer idmap_nss backend.
+	This parameter is now deprecated in favor of the newer idmap_nss backend.
 	Refer to the <smbconfoption name="idmap domains"/> smb.conf option and
 	the <citerefentry><refentrytitle>idmap_nss</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> man page for more information.
