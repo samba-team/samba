@@ -98,8 +98,7 @@ uint32 reg_perfcount_get_base_index(void)
 	   even_num+1 perf_counter<even_num>_help
 	   and so on.
 	   So last_counter becomes num_counters*2, and last_help will be last_counter+1 */
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key);
+	kbuf = string_tdb_data(key);
 	dbuf = tdb_fetch(names, kbuf);
 	if(dbuf.dptr == NULL)
 	{
@@ -166,8 +165,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 
 	memset(temp, 0, sizeof(temp));
 	snprintf(temp, sizeof(temp), "%d", keyval);
-	kbuf.dptr = temp;
-	kbuf.dsize = strlen(temp);
+	kbuf = string_tdb_data(temp);
 	dbuf = tdb_fetch(tdb, kbuf);
 	if(dbuf.dptr == NULL)
 	{
@@ -309,8 +307,7 @@ static void _reg_perfcount_make_key(TDB_DATA *key,
 	else 
 		snprintf(buf, buflen, "%d", key_part1);
 
-	key->dptr = buf;
-	key->dsize = strlen(buf);
+	*key = string_tdb_data(buf);
 
 	return;
 }

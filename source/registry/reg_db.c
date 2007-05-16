@@ -326,7 +326,7 @@ int regdb_close( void )
  
 static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 {
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	char *buffer;
 	int i = 0;
 	uint32 len, buflen;
@@ -371,11 +371,9 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 	
 	/* finally write out the data */
 	
-	kbuf.dptr = keyname;
-	kbuf.dsize = strlen(keyname)+1;
 	dbuf.dptr = buffer;
 	dbuf.dsize = len;
-	if ( tdb_store( tdb_reg, kbuf, dbuf, TDB_REPLACE ) == -1) {
+	if ( tdb_store_bystring( tdb_reg, keyname, dbuf, TDB_REPLACE ) == -1) {
 		ret = False;
 		goto done;
 	}
@@ -647,7 +645,6 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 	
 	return ret != -1 ;
 }
-
 
 /* 
  * Table of function pointers for default access

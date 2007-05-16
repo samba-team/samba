@@ -87,7 +87,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 ****************************************************************************/
  BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 {
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	pstring key, buf;
 	fstring string_sid="";
 	int len;
@@ -107,11 +107,9 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
 
-	kbuf.dsize = strlen(key)+1;
-	kbuf.dptr = key;
 	dbuf.dsize = len;
 	dbuf.dptr = buf;
-	if (tdb_store(tdb, kbuf, dbuf, flag) != 0) return False;
+	if (tdb_store_bystring(tdb, key, dbuf, flag) != 0) return False;
 
 	return True;
 }
@@ -123,7 +121,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
  BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	pstring key;
 	fstring string_sid;
 	int ret = 0;
@@ -138,10 +136,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 	sid_to_string(string_sid, &sid);
 	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
 
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-		
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch_bystring(tdb, key);
 	if (!dbuf.dptr)
 		return False;
 
@@ -266,7 +261,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 BOOL group_map_remove(const DOM_SID *sid)
 {
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	pstring key;
 	fstring string_sid;
 	
@@ -280,16 +275,13 @@ BOOL group_map_remove(const DOM_SID *sid)
 	sid_to_string(string_sid, sid);
 	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
 
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-		
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch_bystring(tdb, key);
 	if (!dbuf.dptr)
 		return False;
 	
 	SAFE_FREE(dbuf.dptr);
 
-	if(tdb_delete(tdb, kbuf) != TDB_SUCCESS)
+	if(tdb_delete_bystring(tdb, key) != TDB_SUCCESS)
 		return False;
 
 	return True;
@@ -400,7 +392,7 @@ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GR
 			       DOM_SID **sids, size_t *num)
 {
 	fstring key, string_sid;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	const char *p;
 
 	if (!init_group_mapping()) {
@@ -411,10 +403,7 @@ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GR
 	sid_to_string(string_sid, member);
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, string_sid);
 
-	kbuf.dsize = strlen(key)+1;
-	kbuf.dptr = key;
-
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch_bystring(tdb, key);
 
 	if (dbuf.dptr == NULL) {
 		return NT_STATUS_OK;
@@ -478,7 +467,7 @@ static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
  NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	GROUP_MAP map;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	pstring key;
 	fstring string_sid;
 	char *new_memberstring;
@@ -502,10 +491,7 @@ static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	sid_to_string(string_sid, member);
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, string_sid);
 
-	kbuf.dsize = strlen(key)+1;
-	kbuf.dptr = key;
-
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch_bystring(tdb, key);
 
 	sid_to_string(string_sid, alias);
 
@@ -520,10 +506,9 @@ static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		return NT_STATUS_NO_MEMORY;
 
 	SAFE_FREE(dbuf.dptr);
-	dbuf.dsize = strlen(new_memberstring)+1;
-	dbuf.dptr = new_memberstring;
+	dbuf = string_term_tdb_data(new_memberstring);
 
-	result = tdb_store(tdb, kbuf, dbuf, 0);
+	result = tdb_store_bystring(tdb, key, dbuf, 0);
 
 	SAFE_FREE(new_memberstring);
 
@@ -620,7 +605,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	size_t i, num;
 	BOOL found = False;
 	char *member_string;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA dbuf;
 	pstring key;
 	fstring sid_string;
 
@@ -649,11 +634,8 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	sid_to_string(sid_string, member);
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, sid_string);
 
-	kbuf.dsize = strlen(key)+1;
-	kbuf.dptr = key;
-
 	if (num == 0)
-		return tdb_delete(tdb, kbuf) == 0 ?
+		return tdb_delete_bystring(tdb, key) == 0 ?
 			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 
 	member_string = SMB_STRDUP("");
@@ -676,10 +658,9 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 		}
 	}
 
-	dbuf.dsize = strlen(member_string)+1;
-	dbuf.dptr = member_string;
+	dbuf = string_term_tdb_data(member_string);
 
-	result = tdb_store(tdb, kbuf, dbuf, 0) == 0 ?
+	result = tdb_store_bystring(tdb, key, dbuf, 0) == 0 ?
 		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 
 	TALLOC_FREE(sids);

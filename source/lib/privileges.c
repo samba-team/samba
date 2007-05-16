@@ -237,7 +237,7 @@ static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
-	TDB_DATA key, data;
+	TDB_DATA data;
 
 	/* Fail if the admin has not enable privileges */
 	
@@ -251,10 +251,8 @@ static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
 	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
 
-	data = tdb_fetch( tdb, key );
+	data = tdb_fetch_bystring( tdb, keystr );
 	
 	if ( !data.dptr ) {
 		DEBUG(3,("get_privileges: No privileges assigned to SID [%s]\n",
@@ -278,7 +276,7 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
-	TDB_DATA key, data;
+	TDB_DATA data;
 	
 	if ( !lp_enable_privileges() )
 		return False;
@@ -294,15 +292,13 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
 	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
 	
 	/* no packing.  static size structure, just write it out */
 	
 	data.dptr  = (char*)mask;
 	data.dsize = sizeof(SE_PRIV);
 
-	return ( tdb_store(tdb, key, data, TDB_REPLACE) != -1 );
+	return ( tdb_store_bystring(tdb, keystr, data, TDB_REPLACE) != -1 );
 }
 
 /****************************************************************************

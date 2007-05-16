@@ -176,7 +176,7 @@ BOOL netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user_sid)
 {
 	NET_USER_INFO_3	*user = NULL;
-	TDB_DATA 	data, key;
+	TDB_DATA 	data;
 	prs_struct	ps;
         fstring 	keystr;
 	uint32		t;
@@ -189,9 +189,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 	/* Prepare key as DOMAIN-SID/USER-RID string */
 	slprintf(keystr, sizeof(keystr), "%s", sid_string_static(user_sid));
 	DEBUG(10,("netsamlogon_cache_get: SID [%s]\n", keystr));
-	key.dptr = keystr;
-	key.dsize = strlen(keystr)+1;
-	data = tdb_fetch( netsamlogon_tdb, key );
+	data = tdb_fetch_bystring( netsamlogon_tdb, keystr );
 	
 	if ( data.dptr ) {
 

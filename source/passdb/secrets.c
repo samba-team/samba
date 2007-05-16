@@ -117,7 +117,7 @@ BOOL secrets_delete(const char *key)
 	secrets_init();
 	if (!tdb)
 		return False;
-	return tdb_delete(tdb, string_tdb_data(key)) == 0;
+	return tdb_trans_delete(tdb, string_tdb_data(key)) == 0;
 }
 
 BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
