@@ -658,10 +658,12 @@ ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout)
  BUFFER_SIZE+SAFETY_MARGIN.
  The timeout is in milliseconds. 
  This function will return on receipt of a session keepalive packet.
+ maxlen is the max number of bytes to return, not including the 4 byte
+ length. If zero it means BUFFER_SIZE+SAFETY_MARGIN limit.
  Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
+ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxlen)
 {
 	ssize_t len,ret;
 
@@ -679,7 +681,7 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 
 		if (smb_read_error == 0)
 			smb_read_error = READ_ERROR;
-		return False;
+		return -1;
 	}
 
 	/*
@@ -699,11 +701,15 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 
 			if (smb_read_error == 0)
 				smb_read_error = READ_ERROR;
-			return False;
+			return -1;
 		}
 	}
 
 	if(len > 0) {
+		if (maxlen) {
+			len = MIN(len,maxlen);
+		}
+
 		if (timeout > 0) {
 			ret = read_socket_with_timeout(fd,buffer+4,len,len,timeout);
 		} else {
@@ -714,7 +720,7 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 			if (smb_read_error == 0) {
 				smb_read_error = READ_ERROR;
 			}
-			return False;
+			return -1;
 		}
 		
 		/* not all of samba3 properly checks for packet-termination of strings. This
@@ -722,7 +728,7 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 		SSVAL(buffer+4,len, 0);
 	}
 
-	return True;
+	return len;
 }
 
 /****************************************************************************
@@ -732,7 +738,7 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 
 BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 {
-	if (!receive_smb_raw(fd, buffer, timeout)) {
+	if (!receive_smb_raw(fd, buffer, timeout, 0)) {
 		return False;
 	}
 
