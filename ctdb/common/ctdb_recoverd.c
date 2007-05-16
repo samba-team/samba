@@ -29,17 +29,6 @@
 
 static int timed_out = 0;
 
-/*
-  show usage message
- */
-static void usage(void)
-{
-	printf(
-		"Usage: recoverd\n"
-		);
-	exit(1);
-}
-
 static void timeout_func(struct event_context *ev, struct timed_event *te, 
 	struct timeval t, void *private_data)
 {
@@ -320,7 +309,7 @@ static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_nod
 }
 
 
-static int do_recovery(struct ctdb_context *ctdb, struct event_context *ev,
+static int do_recovery(struct ctdb_context *ctdb, 
 	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
 {
@@ -572,7 +561,7 @@ static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint3
 }
 
 
-void monitor_cluster(struct ctdb_context *ctdb, struct event_context *ev)
+void monitor_cluster(struct ctdb_context *ctdb)
 {
 	uint32_t vnn, num_active, recmode, recmaster;
 	TALLOC_CTX *mem_ctx=NULL;
@@ -597,7 +586,7 @@ again:
 	timed_out = 0;
 	event_add_timed(ctdb->ev, mem_ctx, timeval_current_ofs(1, 0), timeout_func, ctdb);
 	while (!timed_out) {
-		event_loop_once(ev);
+		event_loop_once(ctdb->ev);
 	}
 
 
@@ -696,7 +685,7 @@ again:
 		}
 		if (recmode!=CTDB_RECOVERY_NORMAL) {
 			DEBUG(0, (__location__ " Node:%d was in recovery mode. Restart recovery process\n", nodemap->nodes[j].vnn));
-			do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
 	}
@@ -724,7 +713,7 @@ again:
 		 */
 		if (remote_nodemap->num != nodemap->num) {
 			DEBUG(0, (__location__ " Remote node:%d has different node count. %d vs %d of the local node\n", nodemap->nodes[j].vnn, remote_nodemap->num, nodemap->num));
-			do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
 
@@ -735,7 +724,7 @@ again:
 			if ((remote_nodemap->nodes[i].vnn != nodemap->nodes[i].vnn)
 			||  (remote_nodemap->nodes[i].flags != nodemap->nodes[i].flags)) {
 				DEBUG(0, (__location__ " Remote node:%d has different nodemap.\n", nodemap->nodes[j].vnn));
-				do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+				do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 				goto again;
 			}
 		}
@@ -748,7 +737,7 @@ again:
 	 */
 	if (vnnmap->size != num_active) {
 		DEBUG(0, (__location__ " The vnnmap count is different from the number of active nodes. %d vs %d\n", vnnmap->size, num_active));
-		do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+		do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 		goto again;
 	}
 
@@ -770,7 +759,7 @@ again:
 		}
 		if (i==vnnmap->size) {
 			DEBUG(0, (__location__ " Node %d is active in the nodemap but did not exist in the vnnmap\n", nodemap->nodes[j].vnn));
-			do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
 	}
@@ -796,14 +785,14 @@ again:
 		/* verify the vnnmap generation is the same */
 		if (vnnmap->generation != remote_vnnmap->generation) {
 			DEBUG(0, (__location__ " Remote node %d has different generation of vnnmap. %d vs %d (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->generation, vnnmap->generation));
-			do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
 
 		/* verify the vnnmap size is the same */
 		if (vnnmap->size != remote_vnnmap->size) {
 			DEBUG(0, (__location__ " Remote node %d has different size of vnnmap. %d vs %d (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->size, vnnmap->size));
-			do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
 
@@ -811,7 +800,7 @@ again:
 		for (i=0;i<vnnmap->size;i++) {
 			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
 				DEBUG(0, (__location__ " Remote node %d has different vnnmap.\n", nodemap->nodes[j].vnn));
-				do_recovery(ctdb, ev, mem_ctx, vnn, num_active, nodemap, vnnmap);
+				do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 				goto again;
 			}
 		}
@@ -821,68 +810,58 @@ again:
 
 }
 
-/*
-  main program
-*/
-int main(int argc, const char *argv[])
+static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde, 
+				 uint16_t flags, void *private_data)
 {
-	struct ctdb_context *ctdb;
-	struct poptOption popt_options[] = {
-		POPT_AUTOHELP
-		POPT_CTDB_CMDLINE
-		POPT_TABLEEND
-	};
-	int opt;
-	const char **extra_argv;
-	int extra_argc = 0;
+	DEBUG(0,("recovery daemon parent died - exiting\n"));
+	_exit(1);
+}
+
+int ctdb_start_recoverd(struct ctdb_context *ctdb)
+{
 	int ret;
-	poptContext pc;
-	struct event_context *ev;
 	uint64_t srvid;
+	int fd[2];
+	pid_t child;
 
-	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
-
-	while ((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt) {
-		default:
-			fprintf(stderr, "Invalid option %s: %s\n", 
-				poptBadOption(pc, 0), poptStrerror(opt));
-			exit(1);
-		}
+	if (pipe(fd) != 0) {
+		return -1;
 	}
 
-	/* setup the remaining options for the main program to use */
-	extra_argv = poptGetArgs(pc);
-	if (extra_argv) {
-		extra_argv++;
-		while (extra_argv[extra_argc]) extra_argc++;
+	child = fork();
+	if (child == -1) {
+		return -1;
+	}
+	
+	if (child != 0) {
+		close(fd[0]);
+		return 0;
 	}
 
-#if 0
-	if (extra_argc < 1) {
-		usage();
-	}
-#endif
+	close(fd[1]);
+
+	event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+		     ctdb_recoverd_parent, &fd[0]);	
+
+	close(ctdb->daemon.sd);
+	ctdb->daemon.sd = -1;
 
 	srandom(getpid() ^ time(NULL));
 
-	ev = event_context_init(NULL);
-
 	/* initialise ctdb */
-	ctdb = ctdb_cmdline_client(ev);
-	if (ctdb == NULL) {
+	ret = ctdb_socket_connect(ctdb);
+	if (ret != 0) {
 		DEBUG(0, (__location__ " Failed to init ctdb\n"));
 		exit(1);
 	}
-
 
 	/* register a message port for recovery elections */
 	srvid = CTDB_SRVTYPE_RECOVERY;
 	srvid <<= 32;
 	ctdb_set_message_handler(ctdb, srvid, election_handler, NULL);
 
+	monitor_cluster(ctdb);
 
-	monitor_cluster(ctdb, ev);
-
-	return ret;
+	DEBUG(0,("ERROR: ctdb_recoverd finished!?\n"));
+	return -1;
 }

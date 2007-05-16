@@ -735,6 +735,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	block_signal(SIGPIPE);
 	block_signal(SIGCHLD);
 
+	/* start the recovery daemon process */
+	if (ctdb_start_recoverd(ctdb) != 0) {
+		DEBUG(0,("Failed to start recovery daemon\n"));
+		exit(11);
+	}
+
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
@@ -742,14 +748,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	ctdb->ev = event_context_init(NULL);
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_accept_client, ctdb);
-
-	/* start the recovery daemon */
-	if (ctdb->flags & CTDB_FLAG_RECOVERY) {
-		char cmdstr[256];
-
-		sprintf(cmdstr, "ctdb_recoverd --socket=%s &",domain_socket_name); 
-		system(cmdstr);
-	}
 
 	ctdb_main_loop(ctdb);
 

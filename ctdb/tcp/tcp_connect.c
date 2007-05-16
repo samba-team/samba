@@ -49,9 +49,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 
 	/* start a new connect cycle to try to re-establish the
 	   link */
-	close(tnode->fd);
 	ctdb_queue_set_fd(tnode->queue, -1);
-	tnode->fd = -1;
 	event_add_timed(node->ctdb->ev, node, timeval_zero(), 
 			ctdb_tcp_node_connect, node);
 }
@@ -84,6 +82,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	talloc_free(fde);
 	
         setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
+        setsockopt(tnode->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 
 	ctdb_queue_set_fd(tnode->queue, tnode->fd);
 
@@ -157,6 +156,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	    errno != EINPROGRESS) {
 		/* try again once a second */
 		close(tnode->fd);
+		tnode->fd = -1;
 		event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
 				ctdb_tcp_node_connect, node);
 		return;
@@ -181,6 +181,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	socklen_t len;
 	int fd;
 	struct ctdb_incoming *in;
+	int one = 1;
 
 	ctdb = talloc_get_type(private_data, struct ctdb_context);
 	ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
@@ -194,6 +195,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	in->ctdb = ctdb;
 
 	set_nonblocking(in->fd);
+
+        setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 
 	in->queue = ctdb_queue_setup(ctdb, in, in->fd, CTDB_TCP_ALIGNMENT, 
 				     ctdb_tcp_read_cb, in);

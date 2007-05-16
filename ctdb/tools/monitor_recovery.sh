@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CTDB_CONTROL=./bin/ctdb_control
+CTDB_CONTROL="./bin/ctdb_control"
 export CTDB_CONTROL
 
 $CTDB_CONTROL getnodemap 0 | egrep "^vnn:" | sed -e "s/^vnn://" -e "s/ .*$//" | while read NODE; do
