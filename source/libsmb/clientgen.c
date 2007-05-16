@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB client generic functions
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Jeremy Allison 2007.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,17 +55,17 @@ int cli_set_port(struct cli_state *cli, int port)
  should never go into a blocking read.
 ****************************************************************************/
 
-static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
+static ssize_t client_receive_smb(int fd,char *buffer, unsigned int timeout, size_t maxlen)
 {
-	BOOL ret;
+	ssize_t len;
 
 	for(;;) {
-		ret = receive_smb_raw(fd, buffer, timeout);
+		len = receive_smb_raw(fd, buffer, timeout, maxlen);
 
-		if (!ret) {
+		if (len < 0) {
 			DEBUG(10,("client_receive_smb failed\n"));
 			show_msg(buffer);
-			return ret;
+			return len;
 		}
 
 		/* Ignore session keepalive packets. */
@@ -72,7 +73,7 @@ static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 			break;
 	}
 	show_msg(buffer);
-	return ret;
+	return len;
 }
 
 /****************************************************************************
@@ -81,16 +82,16 @@ static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 
 BOOL cli_receive_smb(struct cli_state *cli)
 {
-	BOOL ret;
+	ssize_t len;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1)
 		return False; 
 
  again:
-	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	len = client_receive_smb(cli->fd,cli->inbuf,cli->timeout, 0);
 	
-	if (ret) {
+	if (len > 0) {
 		/* it might be an oplock break request */
 		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) &&
 		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
@@ -99,7 +100,9 @@ BOOL cli_receive_smb(struct cli_state *cli)
 			if (cli->oplock_handler) {
 				int fnum = SVAL(cli->inbuf,smb_vwv2);
 				unsigned char level = CVAL(cli->inbuf,smb_vwv3+1);
-				if (!cli->oplock_handler(cli, fnum, level)) return False;
+				if (!cli->oplock_handler(cli, fnum, level)) {
+					return False;
+				}
 			}
 			/* try to prevent loops */
 			SCVAL(cli->inbuf,smb_com,0xFF);
@@ -108,12 +111,12 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	}
 
 	/* If the server is not responding, note that now */
-	if (!ret) {
+	if (len <= 0) {
                 DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
 		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
 		cli->fd = -1;
-		return ret;
+		return False;
 	}
 
 	if (!cli_check_sign_mac(cli)) {
@@ -144,6 +147,101 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return False;
 	};
 	return True;
+}
+
+/****************************************************************************
+ Read the data portion of a readX smb.
+ The timeout is in milliseconds
+****************************************************************************/
+
+ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
+{
+	if (cli->timeout > 0) {
+		return read_socket_with_timeout(cli->fd, buffer, len, len, cli->timeout);
+	} else {
+		return read_data(cli->fd, buffer, len);
+	}
+}
+
+/****************************************************************************
+ Read a smb readX header.
+****************************************************************************/
+
+BOOL cli_receive_smb_readX_header(struct cli_state *cli)
+{
+	ssize_t len, offset;
+
+	if (cli->fd == -1)
+		return False; 
+
+ again:
+
+	/* Read up to the size of a readX header reply. */
+	len = client_receive_smb(cli->fd, cli->inbuf, cli->timeout, (smb_size - 4) + 24);
+	
+	if (len > 0) {
+		/* it might be an oplock break request */
+		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) &&
+		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
+		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
+		    SVAL(cli->inbuf,smb_vwv7) == 0) {
+			ssize_t total_len = smb_len(cli->inbuf);
+
+			if (total_len > CLI_SAMBA_MAX_LARGE_READX_SIZE+SAFETY_MARGIN) {
+				goto read_err;
+			}
+
+			/* Read the rest of the data. */
+			if (!cli_receive_smb_data(cli,cli->inbuf+len,total_len - len)) {
+				goto read_err;
+			}
+
+			if (cli->oplock_handler) {
+				int fnum = SVAL(cli->inbuf,smb_vwv2);
+				unsigned char level = CVAL(cli->inbuf,smb_vwv3+1);
+				if (!cli->oplock_handler(cli, fnum, level)) return False;
+			}
+			/* try to prevent loops */
+			SCVAL(cli->inbuf,smb_com,0xFF);
+			goto again;
+		}
+	}
+
+	/* Check it's a non-chained readX reply. */
+	if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) ||
+		(CVAL(cli->inbuf,smb_vwv0) != 0xFF) ||
+		(CVAL(cli->inbuf,smb_com) != SMBreadX)) {
+		/* 
+		 * We're not coping here with asnyc replies to
+		 * other calls. Punt here - we need async client
+		 * libs for this.
+		 */
+		goto read_err;
+	}
+
+	/* 
+	 * We know it's a readX reply - ensure we've read the
+	 * padding bytes also.
+	 */
+
+	offset = SVAL(cli->inbuf,smb_vwv6);
+	if (offset > len) {
+		ssize_t ret;
+		size_t padbytes = offset - len;
+		ret = cli_receive_smb_data(cli,smb_buf(cli->inbuf),padbytes);
+                if (ret != padbytes) {
+			goto read_err;
+		}
+	}
+
+	return True;
+
+  read_err:
+
+	cli->smb_rw_error = smb_read_error = READ_ERROR;
+	close(cli->fd);
+	cli->fd = -1;
+	return False;
 }
 
 static ssize_t write_socket(int fd, const char *buf, size_t len)

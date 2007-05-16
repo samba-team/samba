@@ -65,7 +65,7 @@ BOOL cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *
 
 	*pmajor = SVAL(rdata,0);
 	*pminor = SVAL(rdata,2);
-	*pcaplow = IVAL(rdata,4);
+	cli->posix_capabilities = *pcaplow = IVAL(rdata,4);
 	*pcaphigh = IVAL(rdata,8);
 
 	/* todo: but not yet needed 

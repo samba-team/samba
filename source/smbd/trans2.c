@@ -2540,7 +2540,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
 					CIFS_UNIX_FCNTL_LOCKS_CAP|
 					CIFS_UNIX_EXTATTR_CAP|
-					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)));
+					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
+					CIFS_UNIX_LARGE_READ_CAP)));
 			break;
 
 		case SMB_QUERY_POSIX_FS_INFO:

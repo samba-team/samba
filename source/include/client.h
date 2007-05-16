@@ -29,6 +29,7 @@
 #define CLI_BUFFER_SIZE (0xFFFF)
 #define CLI_SAMBA_MAX_LARGE_READX_SIZE (127*1024) /* Works for Samba servers */
 #define CLI_WINDOWS_MAX_LARGE_READX_SIZE ((64*1024)-2) /* Windows servers are broken.... */
+#define CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE (0xFFFF00) /* 24-bit len. */
 
 /*
  * These definitions depend on smb.h
@@ -131,6 +132,7 @@ struct cli_state {
 	int win95;
 	BOOL is_samba;
 	uint32 capabilities;
+	uint32 posix_capabilities;
 	BOOL dfsroot;
 
 	TALLOC_CTX *mem_ctx;

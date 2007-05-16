@@ -2148,39 +2148,42 @@ static void fail_readraw(void)
 	exit_server_cleanly(errstr);
 }
 
-#if defined(WITH_SENDFILE)
 /****************************************************************************
  Fake (read/write) sendfile. Returns -1 on read or write fail.
 ****************************************************************************/
 
-static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread, char *buf, int bufsize)
+static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread, char *buf, size_t bufsize)
 {
-	ssize_t ret=0;
+	size_t tosend = nread;
 
-	/* Paranioa check... */
-	if (nread > bufsize) {
-		fail_readraw();
-	}
+	while (tosend > 0) {
+		ssize_t ret;
+		size_t cur_read;
 
-	if (nread > 0) {
-		ret = read_file(fsp,buf,startpos,nread);
+		if (tosend > bufsize) {
+			cur_read = bufsize;
+		} else {
+			cur_read = tosend;
+		}
+		ret = read_file(fsp,buf,startpos,cur_read);
 		if (ret == -1) {
 			return -1;
 		}
-	}
 
-	/* If we had a short read, fill with zeros. */
-	if (ret < nread) {
-		memset(buf, '\0', nread - ret);
-	}
+		/* If we had a short read, fill with zeros. */
+		if (ret < cur_read) {
+			memset(buf, '\0', cur_read - ret);
+		}
 
-	if (write_data(smbd_server_fd(),buf,nread) != nread) {
-		return -1;
-	}	
+		if (write_data(smbd_server_fd(),buf,cur_read) != cur_read) {
+			return -1;
+		}
+		tosend -= cur_read;
+		startpos += cur_read;
+	}
 
 	return (ssize_t)nread;
 }
-#endif
 
 /****************************************************************************
  Use sendfile in readbraw.
@@ -2525,15 +2528,53 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 }
 
 /****************************************************************************
+ Setup readX header.
+****************************************************************************/
+
+static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
+{
+	int outsize;
+	char *data = smb_buf(outbuf);
+
+	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
+	SSVAL(outbuf,smb_vwv5,smb_maxcnt);
+	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+	SSVAL(outbuf,smb_vwv7,(smb_maxcnt >> 16));
+	SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
+	SCVAL(outbuf,smb_vwv0,0xFF);
+	outsize = set_message(outbuf,12,smb_maxcnt,False);
+	/* Reset the outgoing length, set_message truncates at 0x1FFFF. */
+	_smb_setlen_large(outbuf,(smb_size + 12*2 + smb_maxcnt - 4));
+	return outsize;
+}
+
+/****************************************************************************
  Reply to a read and X - possibly using sendfile.
 ****************************************************************************/
 
 int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
 		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
 {
+	SMB_STRUCT_STAT sbuf;
 	int outsize = 0;
 	ssize_t nread = -1;
 	char *data = smb_buf(outbuf);
+
+	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+
+	if (startpos > sbuf.st_size) {
+		smb_maxcnt = 0;
+	}
+
+	if (smb_maxcnt > (sbuf.st_size - startpos)) {
+		smb_maxcnt = (sbuf.st_size - startpos);
+	}
+
+	if (smb_maxcnt == 0) {
+		goto normal_read;
+	}
 
 #if defined(WITH_SENDFILE)
 	/*
@@ -2544,20 +2585,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 	if ((chain_size == 0) && (CVAL(inbuf,smb_vwv0) == 0xFF) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
-		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
-
-		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1)
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
-
-		if (startpos > sbuf.st_size)
-			goto normal_read;
-
-		if (smb_maxcnt > (sbuf.st_size - startpos))
-			smb_maxcnt = (sbuf.st_size - startpos);
-
-		if (smb_maxcnt == 0)
-			goto normal_read;
 
 		/* 
 		 * Set up the packet header before send. We
@@ -2565,13 +2593,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		 * correct amount of data).
 		 */
 
-		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
-		SSVAL(outbuf,smb_vwv5,smb_maxcnt);
-		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
-		SSVAL(outbuf,smb_vwv7,((smb_maxcnt >> 16) & 1));
-		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
-		SCVAL(outbuf,smb_vwv0,0xFF);
-		set_message(outbuf,12,smb_maxcnt,False);
+		setup_readX_header(outbuf,smb_maxcnt);
 		header.data = (uint8 *)outbuf;
 		header.length = data - outbuf;
 		header.free = NULL;
@@ -2620,24 +2642,36 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 #endif
 
-	nread = read_file(fsp,data,startpos,smb_maxcnt);
+	if ((smb_maxcnt && 0xFF0000) > 0x10000) {
+		int sendlen = setup_readX_header(outbuf,smb_maxcnt) - smb_maxcnt;
+		/* Send out the header. */
+		if (write_data(smbd_server_fd(),outbuf,sendlen) != sendlen) {
+			DEBUG(0,("send_file_readX: write_data failed for file %s (%s). Terminating\n",
+				fsp->fsp_name, strerror(errno) ));
+			exit_server_cleanly("send_file_readX sendfile failed");
+		}
+		if ((nread = fake_sendfile(fsp, startpos, smb_maxcnt, data,
+					len_outbuf - (data-outbuf))) == -1) {
+			DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
+				fsp->fsp_name, strerror(errno) ));
+			exit_server_cleanly("send_file_readX: fake_sendfile failed");
+		}
+		return -1;
+	} else {
+		nread = read_file(fsp,data,startpos,smb_maxcnt);
   
-	if (nread < 0) {
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		if (nread < 0) {
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
+
+		outsize = setup_readX_header(outbuf,nread);
+  
+		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
+			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+
+		/* Returning the number of bytes we want to send back - including header. */
+		return outsize;
 	}
-
-	outsize = set_message(outbuf,12,nread,False);
-	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
-	SSVAL(outbuf,smb_vwv5,nread);
-	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
-	SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
-	SSVAL(smb_buf(outbuf),-2,nread);
-  
-	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
-		fsp->fnum, (int)smb_maxcnt, (int)nread ) );
-
-	/* Returning the number of bytes we want to send back - including header. */
-	return outsize;
 }
 
 /****************************************************************************
@@ -2650,6 +2684,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	SMB_OFF_T startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 	ssize_t nread = -1;
 	size_t smb_maxcnt = SVAL(inbuf,smb_vwv5);
+	BOOL big_readX = False;
 #if 0
 	size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
 #endif
@@ -2670,14 +2705,18 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	set_message(outbuf,12,0,True);
 
 	if (global_client_caps & CAP_LARGE_READX) {
-		if (SVAL(inbuf,smb_vwv7) == 1) {
-			smb_maxcnt |= (1<<16);
-		}
-		if (smb_maxcnt > BUFFER_SIZE) {
-			DEBUG(0,("reply_read_and_X - read too large (%u) for reply buffer %u\n",
-				(unsigned int)smb_maxcnt, (unsigned int)BUFFER_SIZE));
-			END_PROFILE(SMBreadX);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		size_t upper_size = SVAL(inbuf,smb_vwv7);
+		smb_maxcnt |= (upper_size<<16);
+		if (upper_size > 1) {
+			/* Can't do this on a chained packet. */
+			if ((CVAL(inbuf,smb_vwv0) != 0xFF)) {
+				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+			}
+			/* We currently don't do this on signed data. */
+			if (srv_is_signing_active()) {
+				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+			}
+			big_readX = True;
 		}
 	}
 
@@ -2710,7 +2749,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
 
-	if (schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt)) {
+	if (!big_readX && schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt)) {
 		END_PROFILE(SMBreadX);
 		return -1;
 	}
