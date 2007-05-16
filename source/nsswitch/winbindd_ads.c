@@ -681,7 +681,6 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	LDAPMessage *res = NULL;
 	ADS_STRUCT *ads;
 	const char *attrs[] = {"memberOf", NULL};
 	size_t num_groups = 0;
@@ -771,8 +770,6 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	DEBUG(3,("ads lookup_usergroups (memberof) succeeded for dn=%s\n", user_dn));
 done:
 	TALLOC_FREE(group_sids);
-	if (res) 
-		ads_msgfree(ads, res);
 
 	return status;
 }
