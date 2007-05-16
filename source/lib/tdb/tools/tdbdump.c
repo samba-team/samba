@@ -18,18 +18,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <time.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <ctype.h>
-#include <signal.h>
+#include "replace.h"
+#include "system/locale.h"
+#include "system/time.h"
+#include "system/filesys.h"
 #include "tdb.h"
 
 static void print_data(TDB_DATA d)
@@ -73,7 +65,7 @@ static int dump_tdb(const char *fname, const char *keyname)
 	if (!keyname) {
 		tdb_traverse(tdb, traverse_fn, NULL);
 	} else {
-		key.dptr = (unsigned char *)keyname;
+		key.dptr = discard_const_p(uint8_t,keyname);
 		key.dsize = strlen( keyname);
 		value = tdb_fetch(tdb, key);
 		if (!value.dptr) {

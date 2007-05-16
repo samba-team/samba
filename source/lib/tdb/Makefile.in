@@ -12,18 +12,18 @@ libdir = @libdir@
 VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
-CPPFLAGS = @CPPFLAGS@ -I$(srcdir)/include -Iinclude -I../include -I@libreplacedir@
+CPPFLAGS = @CPPFLAGS@ -I$(srcdir)/include -Iinclude -I@libreplacedir@
 CFLAGS = $(CPPFLAGS) @CFLAGS@
 LDFLAGS = @LDFLAGS@
 EXEEXT = @EXEEXT@
 
 .PHONY: test
 
-PROGS = bin/tdbtool$(EXEEXT) bin/tdbtorture$(EXEEXT)
-PROGS_NOINSTALL = bin/tdbtest$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
+PROGS = bin/tdbtool$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
+PROGS_NOINSTALL = bin/tdbtest$(EXEEXT) bin/tdbtorture$(EXEEXT)
 ALL_PROGS = $(PROGS) $(PROGS_NOINSTALL)
 
-TDB_OBJ = @TDBOBJ@
+TDB_OBJ = @TDBOBJ@ @LIBREPLACEOBJ@
 
 DIRS = bin common tools
 

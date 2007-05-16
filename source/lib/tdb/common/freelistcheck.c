@@ -88,7 +88,7 @@ int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries)
 			goto fail;
 		}
 
-		if (rec_free_read(tdb, rec_ptr, &rec) == -1) {
+		if (tdb_rec_free_read(tdb, rec_ptr, &rec) == -1) {
 			goto fail;
 		}
 

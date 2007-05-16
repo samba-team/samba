@@ -88,9 +88,6 @@
 
 */
 
-int transaction_brlock(struct tdb_context *tdb, tdb_off_t offset, 
-		       int rw_type, int lck_type, int probe, size_t len);
-
 struct tdb_transaction_el {
 	struct tdb_transaction_el *next, *prev;
 	tdb_off_t offset;
@@ -361,8 +358,8 @@ static int transaction_expand_file(struct tdb_context *tdb, tdb_off_t size,
 /*
   brlock during a transaction - ignore them
 */
-int transaction_brlock(struct tdb_context *tdb, tdb_off_t offset, 
-		       int rw_type, int lck_type, int probe, size_t len)
+static int transaction_brlock(struct tdb_context *tdb, tdb_off_t offset, 
+			      int rw_type, int lck_type, int probe, size_t len)
 {
 	return 0;
 }
