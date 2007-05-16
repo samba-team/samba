@@ -478,8 +478,11 @@ void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 
 /* Set our domains as offline and forward the offline message to our children. */
 
-void winbind_msg_offline(int msg_type, struct server_id src,
-			 void *buf, size_t len, void *private_data)
+void winbind_msg_offline(struct messaging_context *msg_ctx,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id server_id,
+			 DATA_BLOB *data)
 {
 	struct winbindd_child *child;
 	struct winbindd_domain *domain;
@@ -524,8 +527,7 @@ void winbind_msg_offline(int msg_type, struct server_id src,
 		DEBUG(10,("winbind_msg_offline: sending message to pid %u for domain %s.\n",
 			(unsigned int)child->pid, domain->name ));
 
-		messaging_send_buf(winbind_messaging_context(),
-				   pid_to_procid(child->pid),
+		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
 				   MSG_WINBIND_OFFLINE,
 				   (uint8 *)child->domain->name,
 				   strlen(child->domain->name)+1);
@@ -534,8 +536,11 @@ void winbind_msg_offline(int msg_type, struct server_id src,
 
 /* Set our domains as online and forward the online message to our children. */
 
-void winbind_msg_online(int msg_type, struct server_id src,
-			void *buf, size_t len, void *private_data)
+void winbind_msg_online(struct messaging_context *msg_ctx,
+			void *private_data,
+			uint32_t msg_type,
+			struct server_id server_id,
+			DATA_BLOB *data)
 {
 	struct winbindd_child *child;
 	struct winbindd_domain *domain;
@@ -570,7 +575,7 @@ void winbind_msg_online(int msg_type, struct server_id src,
 			struct winbindd_child *idmap = idmap_child();
 			
 			if ( idmap->pid != 0 ) {
-				messaging_send_buf(winbind_messaging_context(),
+				messaging_send_buf(msg_ctx,
 						   pid_to_procid(idmap->pid), 
 						   MSG_WINBIND_ONLINE,
 						   (uint8 *)domain->name,
@@ -597,8 +602,7 @@ void winbind_msg_online(int msg_type, struct server_id src,
 		DEBUG(10,("winbind_msg_online: sending message to pid %u for domain %s.\n",
 			(unsigned int)child->pid, child->domain->name ));
 
-		messaging_send_buf(winbind_messaging_context(),
-				   pid_to_procid(child->pid),
+		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
 				   MSG_WINBIND_ONLINE,
 				   (uint8 *)child->domain->name,
 				   strlen(child->domain->name)+1);
@@ -606,8 +610,11 @@ void winbind_msg_online(int msg_type, struct server_id src,
 }
 
 /* Forward the online/offline messages to our children. */
-void winbind_msg_onlinestatus(int msg_type, struct server_id src,
-			      void *buf, size_t len, void *private_data)
+void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
+			      void *private_data,
+			      uint32_t msg_type,
+			      struct server_id server_id,
+			      DATA_BLOB *data)
 {
 	struct winbindd_child *child;
 
@@ -618,10 +625,10 @@ void winbind_msg_onlinestatus(int msg_type, struct server_id src,
 			DEBUG(10,("winbind_msg_onlinestatus: "
 				  "sending message to pid %u of primary domain.\n",
 				  (unsigned int)child->pid));
-			messaging_send_buf(winbind_messaging_context(),
-					   pid_to_procid(child->pid), 
+			messaging_send_buf(msg_ctx, pid_to_procid(child->pid), 
 					   MSG_WINBIND_ONLINESTATUS,
-					   (uint8 *)buf, len);
+					   (uint8 *)data->data,
+					   data->length);
 			break;
 		}
 	}
@@ -679,13 +686,16 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 
 /* Deal with a request to go offline. */
 
-static void child_msg_offline(int msg_type, struct server_id src,
-			      void *buf, size_t len, void *private_data)
+static void child_msg_offline(struct messaging_context *msg,
+			      void *private_data,
+			      uint32_t msg_type,
+			      struct server_id server_id,
+			      DATA_BLOB *data)
 {
 	struct winbindd_domain *domain;
-	const char *domainname = (const char *)buf;
+	const char *domainname = (const char *)data->data;
 
-	if (buf == NULL || len == 0) {
+	if (data->data == NULL || data->length == 0) {
 		return;
 	}
 
@@ -711,13 +721,16 @@ static void child_msg_offline(int msg_type, struct server_id src,
 
 /* Deal with a request to go online. */
 
-static void child_msg_online(int msg_type, struct server_id src,
-			     void *buf, size_t len, void *private_data)
+static void child_msg_online(struct messaging_context *msg,
+			     void *private_data,
+			     uint32_t msg_type,
+			     struct server_id server_id,
+			     DATA_BLOB *data)
 {
 	struct winbindd_domain *domain;
-	const char *domainname = (const char *)buf;
+	const char *domainname = (const char *)data->data;
 
-	if (buf == NULL || len == 0) {
+	if (data->data == NULL || data->length == 0) {
 		return;
 	}
 
@@ -773,8 +786,11 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	return buf;
 }
 
-static void child_msg_onlinestatus(int msg_type, struct server_id src,
-				   void *buf, size_t len, void *private_data)
+static void child_msg_onlinestatus(struct messaging_context *msg_ctx,
+				   void *private_data,
+				   uint32_t msg_type,
+				   struct server_id server_id,
+				   DATA_BLOB *data)
 {
 	TALLOC_CTX *mem_ctx;
 	const char *message;
@@ -782,11 +798,11 @@ static void child_msg_onlinestatus(int msg_type, struct server_id src,
 	
 	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
 
-	if (!buf) {
+	if (!data->data) {
 		return;
 	}
 
-	sender = (struct server_id *)buf;
+	sender = (struct server_id *)data->data;
 
 	mem_ctx = talloc_init("winbind_msg_onlinestatus");
 	if (mem_ctx == NULL) {
@@ -799,8 +815,7 @@ static void child_msg_onlinestatus(int msg_type, struct server_id src,
 		return;
 	}
 
-	messaging_send_buf(winbind_messaging_context(),
-			   *sender, MSG_WINBIND_ONLINESTATUS, 
+	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
 			   (uint8 *)message, strlen(message) + 1);
 
 	talloc_destroy(mem_ctx);
@@ -869,20 +884,27 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	}
 
 	/* Don't handle the same messages as our parent. */
-	message_deregister(MSG_SMB_CONF_UPDATED);
-	message_deregister(MSG_SHUTDOWN);
-	message_deregister(MSG_WINBIND_OFFLINE);
-	message_deregister(MSG_WINBIND_ONLINE);
-	message_deregister(MSG_WINBIND_ONLINESTATUS);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_SMB_CONF_UPDATED, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_SHUTDOWN, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_OFFLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_ONLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_ONLINESTATUS, NULL);
 
 	/* The child is ok with online/offline messages now. */
 	message_unblock();
 
 	/* Handle online/offline messages. */
-	message_register(MSG_WINBIND_OFFLINE, child_msg_offline, NULL);
-	message_register(MSG_WINBIND_ONLINE, child_msg_online, NULL);
-	message_register(MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus,
-			 NULL);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_OFFLINE, child_msg_offline);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_ONLINE, child_msg_online);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
 
 	if ( child->domain ) {
 		child->domain->startup = True;
