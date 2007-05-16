@@ -39,6 +39,7 @@
 .Nm krb5_crypto_getconfoundersize
 .Nm krb5_crypto_getenctype ,
 .Nm krb5_crypto_getpadsize ,
+.Nm krb5_crypto_overhead ,
 .Nm krb5_decrypt ,
 .Nm krb5_decrypt_EncryptedData ,
 .Nm krb5_decrypt_ivec ,
@@ -150,6 +151,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "size_t *keysize"
 .Fc
 .Ft krb5_error_code
+.Fo krb5_crypto_overhead
+.Fa "krb5_context context"
+.Fa size_t *padsize"
+.Fc
+.Ft krb5_error_code
 .Fo krb5_string_to_enctype
 .Fa "krb5_context context"
 .Fa "const char *string"
@@ -235,8 +241,13 @@ haven't verified the transited path, the transit path.
 .Fn krb5_crypto_getconfoundersize ,
 .Fn krb5_crypto_getblocksize ,
 .Fn krb5_crypto_getenctype ,
-.Fn krb5_crypto_getpadsize
+.Fn krb5_crypto_getpadsize ,
+.Fn krb5_crypto_overhead
 all returns various (sometimes) useful information from a crypto context.
+.Fn krb5_crypto_overhead
+is the combination of krb5_crypto_getconfoundersize,
+krb5_crypto_getblocksize and krb5_crypto_getpadsize and return the
+maximum overhead size.
 .Pp
 .Fn krb5_enctype_to_string
 converts a encryption type number to a string that can be printable
