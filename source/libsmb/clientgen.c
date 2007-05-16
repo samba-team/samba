@@ -260,7 +260,8 @@ BOOL cli_receive_smb_readX_header(struct cli_state *cli)
 			}
 
 			/* Read the rest of the data. */
-			if (!cli_receive_smb_data(cli,cli->inbuf+len,total_len - len)) {
+			if ((total_len - len > 0) &&
+			    !cli_receive_smb_data(cli,cli->inbuf+len,total_len - len)) {
 				goto read_err;
 			}
 
