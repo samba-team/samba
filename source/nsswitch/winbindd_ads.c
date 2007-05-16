@@ -681,13 +681,15 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int count;
 	LDAPMessage *res = NULL;
 	ADS_STRUCT *ads;
 	const char *attrs[] = {"memberOf", NULL};
 	size_t num_groups = 0;
 	DOM_SID *group_sids = NULL;
 	int i;
+	char **strings;
+	size_t num_strings = 0;
+
 
 	DEBUG(3,("ads: lookup_usergroups_memberof\n"));
 
@@ -704,20 +706,14 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_search_retry_extended_dn(ads, &res, user_dn, attrs, 
-					  ADS_EXTENDED_DN_HEX_STRING);
-	
-	if (!ADS_ERR_OK(rc) || !res) {
+	rc = ads_search_retry_extended_dn_ranged(ads, mem_ctx, user_dn, attrs, 
+						 ADS_EXTENDED_DN_HEX_STRING, 
+						 &strings, &num_strings);
+
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("lookup_usergroups_memberof ads_search member=%s: %s\n", 
 			user_dn, ads_errstr(rc)));
 		return ads_ntstatus(rc);
-	}
-	
-	count = ads_count_replies(ads, res);
-
-	if (count == 0) {
-		status = NT_STATUS_NO_SUCH_USER;
-		goto done;
 	}
 	
 	*user_sids = NULL;
@@ -729,16 +725,32 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	count = ads_pull_sids_from_extendeddn(ads, mem_ctx, res, "memberOf", 
-					      ADS_EXTENDED_DN_HEX_STRING, 
-					      &group_sids);
-	if (count == 0) {
+	group_sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_strings + 1);
+	if (!group_sids) {
+		TALLOC_FREE(strings);
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<num_strings; i++) {
+
+		if (!ads_get_sid_from_extended_dn(mem_ctx, strings[i], 
+						  ADS_EXTENDED_DN_HEX_STRING, 
+						  &(group_sids)[i])) {
+			TALLOC_FREE(group_sids);
+			TALLOC_FREE(strings);
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
+	if (i == 0) {
 		DEBUG(1,("No memberOf for this user?!?\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	for (i=0; i<count; i++) {
+	for (i=0; i<num_strings; i++) {
 
 		/* ignore Builtin groups from ADS - Guenther */
 		if (sid_check_is_in_builtin(&group_sids[i])) {
@@ -928,7 +940,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **name_types)
 {
 	ADS_STATUS rc;
-	int count;
 	LDAPMessage *res=NULL;
 	ADS_STRUCT *ads = NULL;
 	char *ldap_exp;
@@ -938,11 +949,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	int i;
 	size_t num_members;
 	fstring sid_string;
-	BOOL more_values;
-	const char **attrs;
-	uint32 first_usn;
-	uint32 current_usn;
-	int num_retries = 0;
+	ads_control args;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, 
 		  sid_string_static(group_sid)));
@@ -979,77 +986,19 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	members = NULL;
 	num_members = 0;
 
-	if ((attrs = TALLOC_ARRAY(mem_ctx, const char *, 3)) == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+	args.control = ADS_EXTENDED_DN_OID;
+	args.val = ADS_EXTENDED_DN_HEX_STRING;
+	args.critical = True;
+
+	rc = ads_ranged_search(ads, mem_ctx, LDAP_SCOPE_SUBTREE, ads->config.bind_path, 
+			       ldap_exp, &args, "member", &members, &num_members);
+
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(0,("ads_ranged_search failed with: %s\n", ads_errstr(rc)));
+		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
-	}
-		
-	attrs[1] = talloc_strdup(mem_ctx, "usnChanged");
-	attrs[2] = NULL;
-		
-	do {
-		if (num_members == 0) 
-			attrs[0] = talloc_strdup(mem_ctx, "member");
-
-		DEBUG(10, ("Searching for attrs[0] = %s, attrs[1] = %s\n", attrs[0], attrs[1]));
-
-		rc = ads_search_retry(ads, &res, ldap_exp, attrs);
-
-		if (!ADS_ERR_OK(rc) || !res) {
-			DEBUG(1,("ads: lookup_groupmem ads_search: %s\n",
-				 ads_errstr(rc)));
-			status = ads_ntstatus(rc);
-			goto done;
-		}
-
-		count = ads_count_replies(ads, res);
-		if (count == 0)
-			break;
-
-		if (num_members == 0) {
-			if (!ads_pull_uint32(ads, res, "usnChanged", &first_usn)) {
-				DEBUG(1, ("ads: lookup_groupmem could not pull usnChanged!\n"));
-				goto done;
-			}
-		}
-
-		if (!ads_pull_uint32(ads, res, "usnChanged", &current_usn)) {
-			DEBUG(1, ("ads: lookup_groupmem could not pull usnChanged!\n"));
-			goto done;
-		}
-
-		if (first_usn != current_usn) {
-			DEBUG(5, ("ads: lookup_groupmem USN on this record changed"
-				  " - restarting search\n"));
-			if (num_retries < 5) {
-				num_retries++;
-				num_members = 0;
-				ads_msgfree(ads, res);
-				res = NULL;
-				continue;
-			} else {
-				DEBUG(5, ("ads: lookup_groupmem USN on this record changed"
-					  " - restarted search too many times, aborting!\n"));
-				status = NT_STATUS_UNSUCCESSFUL;
-				goto done;
-			}
-		}
-
-		members = ads_pull_strings_range(ads, mem_ctx, res,
-						 "member",
-						 members,
-						 &attrs[0],
-						 &num_members,
-						 &more_values);
-
-		ads_msgfree(ads, res);
-		res = NULL;
-
-		if ((members == NULL) || (num_members == 0))
-			break;
-
-	} while (more_values);
-		
+	} 
+	
 	/* now we need to turn a list of members into rids, names and name types 
 	   the problem is that the members are in the form of distinguised names
 	*/
@@ -1073,19 +1022,46 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
  
 	for (i=0;i<num_members;i++) {
 		uint32 name_type;
-		char *name;
+		char *name, *domain_name, *dn;
 		DOM_SID sid;
 
-		if (dn_lookup(ads, mem_ctx, members[i], &name, &name_type, &sid)) {
-		    (*names)[*num_names] = name;
-		    (*name_types)[*num_names] = name_type;
-		    sid_copy(&(*sid_mem)[*num_names], &sid);
-		    (*num_names)++;
+		if ((!ads_get_sid_from_extended_dn(mem_ctx, members[i], ADS_EXTENDED_DN_HEX_STRING, &sid)) ||
+		    (!ads_get_dn_from_extended_dn(mem_ctx, members[i], &dn)))
+		{
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
+
+		if (lookup_cached_sid(mem_ctx, &sid, &domain_name, &name, &name_type)) {
+
+			DEBUG(10,("ads: lookup_groupmem: got sid %s from cache\n", 
+				sid_string_static(&sid)));
+
+			(*names)[*num_names] = CONST_DISCARD(char *,name);
+			(*name_types)[*num_names] = name_type;
+			sid_copy(&(*sid_mem)[*num_names], &sid);
+
+			(*num_names)++;
+
+			continue;
+		}
+
+		if (dn_lookup(ads, mem_ctx, dn, &name, &name_type, &sid)) {
+
+			DEBUG(10,("ads: lookup_groupmem: got sid %s from dn_lookup\n", 
+				sid_string_static(&sid)));
+			
+			(*names)[*num_names] = name;
+			(*name_types)[*num_names] = name_type;
+			sid_copy(&(*sid_mem)[*num_names], &sid);
+			
+			(*num_names)++;
+
 		}
 	}	
 
 	status = NT_STATUS_OK;
-	DEBUG(3,("ads lookup_groupmem for sid=%s\n", sid_to_string(sid_string, group_sid)));
+	DEBUG(3,("ads lookup_groupmem for sid=%s succeeded\n", sid_to_string(sid_string, group_sid)));
 done:
 
 	if (res) 
