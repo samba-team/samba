@@ -249,30 +249,34 @@ BOOL cli_receive_smb_readX_header(struct cli_state *cli)
 		}
 	}
 
-	/* Check it's a non-chained readX reply. */
-	if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) ||
-		(CVAL(cli->inbuf,smb_vwv0) != 0xFF) ||
-		(CVAL(cli->inbuf,smb_com) != SMBreadX)) {
-		/* 
-		 * We're not coping here with asnyc replies to
-		 * other calls. Punt here - we need async client
-		 * libs for this.
-		 */
-		goto read_err;
-	}
+	/* If it's not the above size it probably was an error packet. */
 
-	/* 
-	 * We know it's a readX reply - ensure we've read the
-	 * padding bytes also.
-	 */
-
-	offset = SVAL(cli->inbuf,smb_vwv6);
-	if (offset > len) {
-		ssize_t ret;
-		size_t padbytes = offset - len;
-		ret = cli_receive_smb_data(cli,smb_buf(cli->inbuf),padbytes);
-                if (ret != padbytes) {
+	if ((len == (smb_size - 4) + 24) && !cli_is_error(cli)) {
+		/* Check it's a non-chained readX reply. */
+		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) ||
+			(CVAL(cli->inbuf,smb_vwv0) != 0xFF) ||
+			(CVAL(cli->inbuf,smb_com) != SMBreadX)) {
+			/* 
+			 * We're not coping here with asnyc replies to
+			 * other calls. Punt here - we need async client
+			 * libs for this.
+			 */
 			goto read_err;
+		}
+
+		/* 
+		 * We know it's a readX reply - ensure we've read the
+		 * padding bytes also.
+		 */
+
+		offset = SVAL(cli->inbuf,smb_vwv6);
+		if (offset > len) {
+			ssize_t ret;
+			size_t padbytes = offset - len;
+			ret = cli_receive_smb_data(cli,smb_buf(cli->inbuf),padbytes);
+			if (ret != padbytes) {
+				goto read_err;
+			}
 		}
 	}
 
