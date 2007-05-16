@@ -529,8 +529,10 @@ findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
 						(chflags) and lsattr */
 #define CIFS_UNIX_POSIX_PATHNAMES_CAP	   0x10 /* Use POSIX pathnames on the wire. */
 #define CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP	   0x20 /* We can cope with POSIX open/mkdir/unlink etc. */
-#define CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP	0x40 /* We can do SPNEGO negotiations for encryption. */
-#define CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP	0x80 /* We *must* SPNEGO negotiations for encryption. */
+#define CIFS_UNIX_LARGE_READ_CAP           0x40 /* We can cope with 24 bit reads in readX. */
+#define CIFS_UNIX_LARGE_WRITE_CAP          0x80 /* We can cope with 24 bit writes in writeX. */
+#define CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP	0x100 /* We can do SPNEGO negotiations for encryption. */
+#define CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP	0x200 /* We *must* SPNEGO negotiations for encryption. */
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
 
