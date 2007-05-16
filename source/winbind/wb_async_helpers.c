@@ -148,7 +148,7 @@ static void get_schannel_creds_recv_anonbind(struct composite_context *creq)
 static void get_schannel_creds_recv_chal(struct rpc_request *req)
 {
 	struct composite_context *c =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct composite_context);
 	struct get_schannel_creds_state *state =
 		talloc_get_type(c->private_data,
@@ -192,7 +192,7 @@ static void get_schannel_creds_recv_chal(struct rpc_request *req)
 static void get_schannel_creds_recv_auth(struct rpc_request *req)
 {
 	struct composite_context *c =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct composite_context);
 	struct get_schannel_creds_state *state =
 		talloc_get_type(c->private_data,
@@ -301,7 +301,7 @@ struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) goto failed;
 
 	req->async.callback = lsa_lookupsids_recv_names;
-	req->async.private = state;
+	req->async.private_data = state;
 	return result;
 
  failed:
@@ -312,7 +312,7 @@ struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 static void lsa_lookupsids_recv_names(struct rpc_request *req)
 {
 	struct lsa_lookupsids_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct lsa_lookupsids_state);
 	int i;
 
@@ -456,7 +456,7 @@ struct composite_context *wb_lsa_lookupnames_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) goto failed;
 
 	req->async.callback = lsa_lookupnames_recv_sids;
-	req->async.private = state;
+	req->async.private_data = state;
 	return result;
 
  failed:
@@ -467,7 +467,7 @@ struct composite_context *wb_lsa_lookupnames_send(TALLOC_CTX *mem_ctx,
 static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 {
 	struct lsa_lookupnames_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct lsa_lookupnames_state);
 	int i;
 
@@ -652,7 +652,7 @@ struct composite_context *wb_samr_userdomgroups_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) goto failed;
 
 	req->async.callback = samr_usergroups_recv_open;
-	req->async.private = state;
+	req->async.private_data = state;
 	return result;
 
  failed:
@@ -663,7 +663,7 @@ struct composite_context *wb_samr_userdomgroups_send(TALLOC_CTX *mem_ctx,
 static void samr_usergroups_recv_open(struct rpc_request *req)
 {
 	struct samr_getuserdomgroups_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct samr_getuserdomgroups_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
@@ -682,7 +682,7 @@ static void samr_usergroups_recv_open(struct rpc_request *req)
 static void samr_usergroups_recv_groups(struct rpc_request *req)
 {
 	struct samr_getuserdomgroups_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct samr_getuserdomgroups_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
@@ -701,7 +701,7 @@ static void samr_usergroups_recv_groups(struct rpc_request *req)
 static void samr_usergroups_recv_close(struct rpc_request *req)
 {
         struct samr_getuserdomgroups_state *state =
-                talloc_get_type(req->async.private,
+                talloc_get_type(req->async.private_data,
                                 struct samr_getuserdomgroups_state);
 
         state->ctx->status = dcerpc_ndr_request_recv(req);

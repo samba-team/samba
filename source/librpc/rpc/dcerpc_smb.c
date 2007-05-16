@@ -40,7 +40,7 @@ struct smb_private {
 */
 static void pipe_dead(struct dcerpc_connection *c, NTSTATUS status)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb = c->transport.private_data;
 
 	if (smb->dead) {
 		return;
@@ -85,7 +85,7 @@ static void smb_read_callback(struct smbcli_request *req)
 	NTSTATUS status;
 
 	state = talloc_get_type(req->async.private, struct smb_read_state);
-	smb = talloc_get_type(state->c->transport.private, struct smb_private);
+	smb = talloc_get_type(state->c->transport.private_data, struct smb_private);
 	io = state->io;
 
 	status = smb_raw_read_recv(state->req, io);
@@ -142,7 +142,7 @@ static void smb_read_callback(struct smbcli_request *req)
 */
 static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLOB *blob)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb = c->transport.private_data;
 	union smb_read *io;
 	struct smb_read_state *state;
 	struct smbcli_request *req;
@@ -198,7 +198,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 */
 static NTSTATUS send_read_request(struct dcerpc_connection *c)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb = c->transport.private_data;
 
 	if (smb->dead) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -250,7 +250,7 @@ static void smb_trans_callback(struct smbcli_request *req)
 */
 static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *blob)
 {
-        struct smb_private *smb = c->transport.private;
+        struct smb_private *smb = c->transport.private_data;
         struct smb_trans2 *trans;
         uint16_t setup[2];
 	struct smb_trans_state *state;
@@ -313,7 +313,7 @@ static void smb_write_callback(struct smbcli_request *req)
 */
 static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, BOOL trigger_read)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb = c->transport.private_data;
 	union smb_write io;
 	struct smbcli_request *req;
 
@@ -357,7 +357,7 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, B
 */
 static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb = c->transport.private_data;
 	union smb_close io;
 	struct smbcli_request *req;
 
@@ -383,7 +383,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 */
 static const char *smb_peer_name(struct dcerpc_connection *c)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb = c->transport.private_data;
 	return smb->server_name;
 }
 
@@ -392,7 +392,7 @@ static const char *smb_peer_name(struct dcerpc_connection *c)
 */
 static const char *smb_target_hostname(struct dcerpc_connection *c)
 {
-	struct smb_private *smb = talloc_get_type(c->transport.private, struct smb_private);
+	struct smb_private *smb = talloc_get_type(c->transport.private_data, struct smb_private);
 	return smb->tree->session->transport->socket->hostname;
 }
 
@@ -401,7 +401,7 @@ static const char *smb_target_hostname(struct dcerpc_connection *c)
 */
 static NTSTATUS smb_session_key(struct dcerpc_connection *c, DATA_BLOB *session_key)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb = c->transport.private_data;
 
 	if (smb->tree->session->user_session_key.data) {
 		*session_key = smb->tree->session->user_session_key;
@@ -504,7 +504,7 @@ static void pipe_open_recv(struct smbcli_request *req)
 	  fill in the transport methods
 	*/
 	c->transport.transport       = NCACN_NP;
-	c->transport.private         = NULL;
+	c->transport.private_data    = NULL;
 	c->transport.shutdown_pipe   = smb_shutdown_pipe;
 	c->transport.peer_name       = smb_peer_name;
 	c->transport.target_hostname = smb_target_hostname;
@@ -526,7 +526,7 @@ static void pipe_open_recv(struct smbcli_request *req)
 	if (composite_nomem(smb->server_name, ctx)) return;
 	smb->dead	= false;
 
-	c->transport.private = smb;
+	c->transport.private_data = smb;
 
 	composite_done(ctx);
 }
@@ -556,7 +556,7 @@ struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c)
 
 	if (c->transport.transport != NCACN_NP) return NULL;
 
-	smb = talloc_get_type(c->transport.private, struct smb_private);
+	smb = talloc_get_type(c->transport.private_data, struct smb_private);
 	if (!smb) return NULL;
 
 	return smb->tree;
@@ -571,7 +571,7 @@ uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c)
 
 	if (c->transport.transport != NCACN_NP) return 0;
 
-	smb = talloc_get_type(c->transport.private, struct smb_private);
+	smb = talloc_get_type(c->transport.private_data, struct smb_private);
 	if (!smb) return 0;
 
 	return smb->fnum;

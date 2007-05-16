@@ -516,7 +516,7 @@ static void continue_lsa_policy(struct rpc_request *req)
 	struct rpc_connect_dci_state *s;
 	struct rpc_request *query_info_req;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	c->status = dcerpc_ndr_request_recv(req);
@@ -559,7 +559,7 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 	struct rpc_connect_dci_state *s;
 	struct rpc_request *query_info_req;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	c->status = dcerpc_ndr_request_recv(req);
@@ -620,7 +620,7 @@ static void continue_lsa_query_info(struct rpc_request *req)
 	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	c->status = dcerpc_ndr_request_recv(req);

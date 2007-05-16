@@ -259,7 +259,7 @@ static void init_domain_recv_lsa(struct composite_context *ctx)
 static void init_domain_recv_queryinfo(struct rpc_request *req)
 {
 	struct init_domain_state *state =
-		talloc_get_type(req->async.private, struct init_domain_state);
+		talloc_get_type(req->async.private_data, struct init_domain_state);
 	struct lsa_DomainInfo *dominfo;
 	struct composite_context *ctx;
 	const char *ldap_url;

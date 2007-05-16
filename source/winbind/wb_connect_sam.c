@@ -180,7 +180,7 @@ static void connect_samr_recv_auth_bind(struct composite_context *ctx)
 static void connect_samr_recv_conn(struct rpc_request *req)
 {
 	struct connect_samr_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct connect_samr_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
@@ -204,7 +204,7 @@ static void connect_samr_recv_conn(struct rpc_request *req)
 static void connect_samr_recv_open(struct rpc_request *req)
 {
 	struct connect_samr_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct connect_samr_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);

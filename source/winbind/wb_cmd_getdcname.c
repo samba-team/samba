@@ -93,7 +93,7 @@ static void getdcname_recv_domain(struct composite_context *ctx)
 static void getdcname_recv_dcname(struct rpc_request *req)
 {
 	struct cmd_getdcname_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct cmd_getdcname_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);

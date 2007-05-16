@@ -76,7 +76,7 @@ static NTSTATUS useradd_create(struct composite_context *c,
  */
 static void useradd_handler(struct rpc_request *req)
 {
-	struct composite_context *c = req->async.private;
+	struct composite_context *c = req->async.private_data;
 	struct useradd_state *s = talloc_get_type(c->private_data, struct useradd_state);
 	struct monitor_msg msg;
 	struct msg_rpc_create_user *rpc_create;
@@ -161,7 +161,7 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 
 	/* callback handler for continuation */
 	s->req->async.callback = useradd_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 	s->stage = USERADD_CREATE;
 
 	return c;
@@ -271,7 +271,7 @@ static NTSTATUS userdel_lookup(struct composite_context *c,
 
 	/* callback handler setup */
 	s->req->async.callback = userdel_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 	s->stage = USERDEL_OPEN;
 	
 	return NT_STATUS_OK;
@@ -298,7 +298,7 @@ static NTSTATUS userdel_open(struct composite_context *c,
 
 	/* callback handler setup */
 	s->req->async.callback = userdel_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 	s->stage = USERDEL_DELETE;
 	
 	return NT_STATUS_OK;
@@ -338,7 +338,7 @@ static void userdel_handler(struct rpc_request *req)
 	struct msg_rpc_lookup_name *msg_lookup;
 	struct msg_rpc_open_user *msg_open;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userdel_state);
 	
 	switch (s->stage) {
@@ -438,7 +438,7 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 
 	/* callback handler setup */
 	s->req->async.callback = userdel_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 	s->stage = USERDEL_LOOKUP;
 
 	return c;
@@ -550,7 +550,7 @@ static NTSTATUS usermod_lookup(struct composite_context *c,
 
 	/* callback handler setup */
 	s->req->async.callback = usermod_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 	s->stage = USERMOD_OPEN;
 	
 	return NT_STATUS_OK;
@@ -722,7 +722,7 @@ static NTSTATUS usermod_change(struct composite_context *c,
 
 	/* callback handler setup */
 	s->req->async.callback = usermod_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 
 	return NT_STATUS_OK;
 }
@@ -770,7 +770,7 @@ static NTSTATUS usermod_query(struct composite_context *c,
 
 	/* callback handler setup */
 	s->req->async.callback = usermod_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 
 	return NT_STATUS_OK;
 }
@@ -816,7 +816,7 @@ static void usermod_handler(struct rpc_request *req)
 	struct msg_rpc_lookup_name *msg_lookup;
 	struct msg_rpc_open_user *msg_open;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
 	switch (s->stage) {
@@ -934,7 +934,7 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	
 	/* callback handler setup */
 	s->req->async.callback = usermod_handler;
-	s->req->async.private  = c;
+	s->req->async.private_data  = c;
 	s->stage = USERMOD_LOOKUP;
 
 	return c;

@@ -121,7 +121,7 @@ static void wb_sam_logon_recv_domain(struct composite_context *creq)
 */
 static void wb_sam_logon_recv_samlogon(struct rpc_request *req)
 {
-	struct wb_sam_logon_state *s = talloc_get_type(req->async.private,
+	struct wb_sam_logon_state *s = talloc_get_type(req->async.private_data,
 				       struct wb_sam_logon_state);
 
 	s->ctx->status = dcerpc_ndr_request_recv(req);

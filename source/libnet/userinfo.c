@@ -65,7 +65,7 @@ static void continue_userinfo_lookup(struct rpc_request *req)
 	struct monitor_msg msg;
 	struct msg_rpc_lookup_name *msg_lookup;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_Lookup reply */
@@ -124,7 +124,7 @@ static void continue_userinfo_openuser(struct rpc_request *req)
 	struct monitor_msg msg;
 	struct msg_rpc_open_user *msg_open;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_OpenUser reply */
@@ -171,7 +171,7 @@ static void continue_userinfo_getuser(struct rpc_request *req)
 	struct monitor_msg msg;
 	struct msg_rpc_query_user *msg_query;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_QueryUserInfo reply */
@@ -219,7 +219,7 @@ static void continue_userinfo_closeuser(struct rpc_request *req)
 	struct monitor_msg msg;
 	struct msg_rpc_close_user *msg_close;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_Close reply */

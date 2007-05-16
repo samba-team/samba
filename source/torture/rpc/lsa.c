@@ -516,7 +516,7 @@ BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 
 static void lookupsids_cb(struct rpc_request *req)
 {
-	int *replies = (int *)req->async.private;
+	int *replies = (int *)req->async.private_data;
 	NTSTATUS status;
 
 	status = dcerpc_ndr_request_recv(req);
@@ -578,7 +578,7 @@ static BOOL test_LookupSids_async(struct dcerpc_pipe *p,
 		}
 
 		req[i]->async.callback = lookupsids_cb;
-		req[i]->async.private = &replies;
+		req[i]->async.private_data = &replies;
 	}
 
 	while (replies >= 0 && replies < num_async_requests) {

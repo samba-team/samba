@@ -527,7 +527,7 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 */
 static void dcerpc_composite_fail(struct rpc_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data, 
 						      struct composite_context);
 	composite_error(c, req->status);
 }
@@ -629,7 +629,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 	struct composite_context *c;
 	struct dcerpc_connection *conn;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 
 	if (pkt->ptype == DCERPC_PKT_BIND_NAK) {
 		DEBUG(2,("dcerpc: bind_nak reason %d\n",
@@ -747,7 +747,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 
 	req->state = RPC_REQUEST_PENDING;
 	req->call_id = pkt.call_id;
-	req->async.private = c;
+	req->async.private_data = c;
 	req->async.callback = dcerpc_composite_fail;
 	req->p = p;
 	req->recv_handler = dcerpc_bind_recv_handler;
@@ -958,7 +958,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->async_call = async;
 	req->ignore_timeout = False;
 	req->async.callback = NULL;
-	req->async.private = NULL;
+	req->async.private_data = NULL;
 	req->recv_handler = NULL;
 
 	if (object != NULL) {
@@ -1526,7 +1526,7 @@ static void dcerpc_alter_recv_handler(struct rpc_request *req,
 	struct composite_context *c;
 	struct dcerpc_pipe *recv_pipe;
 
-	c = talloc_get_type(req->async.private, struct composite_context);
+	c = talloc_get_type(req->async.private_data, struct composite_context);
 	recv_pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
 
 	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
@@ -1618,7 +1618,7 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 
 	req->state = RPC_REQUEST_PENDING;
 	req->call_id = pkt.call_id;
-	req->async.private = c;
+	req->async.private_data = c;
 	req->async.callback = dcerpc_composite_fail;
 	req->p = p;
 	req->recv_handler = dcerpc_alter_recv_handler;
