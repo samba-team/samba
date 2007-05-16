@@ -254,7 +254,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 ****************************************************************************/
 
 static NTSTATUS check_smbserver_security(const struct auth_context *auth_context,
-					 void *my_private_data, 
+					 void *private_data, 
 					 TALLOC_CTX *mem_ctx,
 					 const auth_usersupplied_info *user_info, 
 					 auth_serversupplied_info **server_info)
@@ -266,6 +266,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	static BOOL bad_password_server = False;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	BOOL locally_made_cli = False;
+	struct server_security_state *state;
 
 	/* 
 	 * Check that the requested domain is not our own machine name.
@@ -273,12 +274,10 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 * password file.
 	 */
 
-	if(is_myname(user_info->domain)) {
-		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
-		return nt_status;
-	}
+	state = talloc_get_type_abort(
+		private_data, struct server_security_state);
 
-	cli = (struct cli_state *)my_private_data;
+	cli = state->cli;
 	
 	if (cli) {
 	} else {
