@@ -1347,7 +1347,7 @@ BOOL cli_session_request(struct cli_state *cli,
 	cli_send_smb(cli);
 	DEBUG(5,("Sent session request\n"));
 
-	if (!cli_receive_smb(cli))
+	if (!cli_receive_sessionreply(cli))
 		return False;
 
 	if (CVAL(cli->inbuf,0) == 0x84) {
