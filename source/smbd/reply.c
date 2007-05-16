@@ -2666,12 +2666,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
 
-		outsize = set_message(inbuf, outbuf,12,nread,False);
-		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
-		SSVAL(outbuf,smb_vwv5,nread);
-		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
-		SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
-		SSVAL(smb_buf(outbuf),-2,nread);
+		outsize = setup_readX_header(inbuf, outbuf,nread);
 
 		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
