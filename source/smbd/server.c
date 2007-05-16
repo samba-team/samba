@@ -1077,7 +1077,7 @@ extern void build_options(BOOL screen);
                 exit(1);
 #endif
 
-	if (!print_backend_init())
+	if (!print_backend_init(smbd_messaging_context()))
 		exit(1);
 
 	if (!init_guest_info()) {
