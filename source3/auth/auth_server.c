@@ -268,12 +268,6 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	BOOL locally_made_cli = False;
 	struct server_security_state *state;
 
-	/* 
-	 * Check that the requested domain is not our own machine name.
-	 * If it is, we should never check the PDC here, we use our own local
-	 * password file.
-	 */
-
 	state = talloc_get_type_abort(
 		private_data, struct server_security_state);
 
