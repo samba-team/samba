@@ -2249,19 +2249,24 @@ NTSTATUS open_file_stat(connection_struct *conn, const char *fname,
  smbd process.
 ****************************************************************************/
 
-void msg_file_was_renamed(int msg_type, struct server_id src,
-			  void *buf, size_t len, void *private_data)
+void msg_file_was_renamed(struct messaging_context *msg,
+			  void *private_data,
+			  uint32_t msg_type,
+			  struct server_id server_id,
+			  DATA_BLOB *data)
 {
 	files_struct *fsp;
-	char *frm = (char *)buf;
+	char *frm = (char *)data->data;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	const char *sharepath;
 	const char *newname;
 	size_t sp_len;
 
-	if (buf == NULL || len < MSG_FILE_RENAMED_MIN_SIZE + 2) {
-                DEBUG(0, ("msg_file_was_renamed: Got invalid msg len %d\n", (int)len));
+	if (data->data == NULL
+	    || data->length < MSG_FILE_RENAMED_MIN_SIZE + 2) {
+                DEBUG(0, ("msg_file_was_renamed: Got invalid msg len %d\n",
+			  data->length));
                 return;
         }
 
