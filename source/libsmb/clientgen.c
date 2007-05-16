@@ -191,6 +191,32 @@ BOOL cli_receive_smb_return_keepalive(struct cli_state *cli)
 }
 
 /****************************************************************************
+ Recv an smb session reply
+****************************************************************************/
+
+BOOL cli_receive_sessionreply(struct cli_state *cli)
+{
+	ssize_t len;
+
+	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
+	if (cli->fd == -1)
+		return False; 
+
+	len = client_receive_smb(cli, False, 0);
+
+	/* If the server is not responding, note that now */
+	if (len < 0) {
+                DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
+		cli->smb_rw_error = smb_read_error;
+		close(cli->fd);
+		cli->fd = -1;
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
  Read the data portion of a readX smb.
  The timeout is in milliseconds
 ****************************************************************************/
