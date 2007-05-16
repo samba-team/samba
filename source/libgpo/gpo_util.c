@@ -345,7 +345,7 @@ ADS_STATUS process_extension_with_snapin(ADS_STRUCT *ads,
 	DEBUG(10,("process_extension_with_snapin: no snapin handler for extension %s (%s) found\n", 
 		extension_guid, snapin_guid));
 
-	return ADS_ERROR(LDAP_SUCCESS);
+	return ADS_SUCCESS;
 }
 
 ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
@@ -370,7 +370,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 
 		} else {
 			/* nothing to apply */
-			return ADS_ERROR(LDAP_SUCCESS);
+			return ADS_SUCCESS;
 		}
 	
 	} else {
@@ -384,7 +384,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			}
 		} else {
 			/* nothing to apply */
-			return ADS_ERROR(LDAP_SUCCESS);
+			return ADS_SUCCESS;
 		}
 	}
 
@@ -401,7 +401,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 		}
 	}
 
-	return ADS_ERROR(LDAP_SUCCESS);
+	return ADS_SUCCESS;
 }
 
 ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
@@ -424,7 +424,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 
 	}
 
-	return ADS_ERROR(LDAP_SUCCESS);
+	return ADS_SUCCESS;
 }
 
 ADS_STATUS gpo_snapin_handler_none(ADS_STRUCT *ads, 
@@ -434,7 +434,7 @@ ADS_STATUS gpo_snapin_handler_none(ADS_STRUCT *ads,
 {
 	DEBUG(10,("gpo_snapin_handler_none\n"));
 
-	return ADS_ERROR(LDAP_SUCCESS);
+	return ADS_SUCCESS;
 }
 
 ADS_STATUS gpo_snapin_handler_security_settings(ADS_STRUCT *ads, 
@@ -444,7 +444,7 @@ ADS_STATUS gpo_snapin_handler_security_settings(ADS_STRUCT *ads,
 {
 	DEBUG(10,("gpo_snapin_handler_security_settings\n"));
 
-	return ADS_ERROR(LDAP_SUCCESS);
+	return ADS_SUCCESS;
 }
 
 ADS_STATUS gpo_lockout_policy(ADS_STRUCT *ads,
@@ -519,7 +519,7 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 		return status;
 	}
 
-	return ADS_ERROR(LDAP_SUCCESS);
+	return ADS_SUCCESS;
 }
 
 /****************************************************************
