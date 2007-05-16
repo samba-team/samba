@@ -658,6 +658,16 @@ BOOL client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
 }
 
 /***********************************************************
+ Is client signing on ?
+************************************************************/
+
+BOOL client_is_signing_on(struct cli_state *cli)
+{
+	struct smb_sign_info *si = &cli->sign_info;
+	return si->doing_signing;
+}
+
+/***********************************************************
  SMB signing - Server implementation - send the MAC.
 ************************************************************/
 
