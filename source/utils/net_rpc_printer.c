@@ -2166,7 +2166,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 		if (ctr_enum.printers_2[i].devmode != NULL) {
 
 			/* copy devmode (info level 2) */
-			ctr_dst.printers_2->devmode = (struct devicemode *)
+			ctr_dst.printers_2->devmode = (DEVICEMODE *)
 				TALLOC_MEMDUP(mem_ctx,
 					      ctr_enum.printers_2[i].devmode,
 					      sizeof(DEVICEMODE));
