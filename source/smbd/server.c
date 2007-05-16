@@ -86,10 +86,14 @@ struct messaging_context *smbd_messaging_context(void)
  What to do when smb.conf is updated.
  ********************************************************************/
 
-static void smb_conf_updated(int msg_type, struct server_id src,
-			     void *buf, size_t len, void *private_data)
+static void smb_conf_updated(struct messaging_context *msg,
+			     void *private_data,
+			     uint32_t msg_type,
+			     struct server_id server_id,
+			     DATA_BLOB *data)
 {
-	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
+	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
+		  "updated. Reloading.\n"));
 	reload_services(False);
 }
 
@@ -98,10 +102,13 @@ static void smb_conf_updated(int msg_type, struct server_id src,
  Delete a statcache entry.
  ********************************************************************/
 
-static void smb_stat_cache_delete(int msg_type, struct server_id src,
-				  void *buf, size_t len, void *private_data)
+static void smb_stat_cache_delete(struct messaging_context *msg,
+				  void *private_data,
+				  uint32_t msg_tnype,
+				  struct server_id server_id,
+				  DATA_BLOB *data)
 {
-	const char *name = (const char *)buf;
+	const char *name = (const char *)data->data;
 	DEBUG(10,("smb_stat_cache_delete: delete name %s\n", name));
 	stat_cache_delete(name);
 }
@@ -149,9 +156,11 @@ static void  killkids(void)
  somewhere else.
 ****************************************************************************/
 
-static void msg_sam_sync(int UNUSED(msg_type), struct server_id UNUSED(pid),
-			 void *UNUSED(buf), size_t UNUSED(len),
-			 void *private_data)
+static void msg_sam_sync(struct messaging_context *msg,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id server_id,
+			 DATA_BLOB *data)
 {
         DEBUG(10, ("** sam sync message received, ignoring\n"));
 }
@@ -161,15 +170,18 @@ static void msg_sam_sync(int UNUSED(msg_type), struct server_id UNUSED(pid),
  somewhere else.
 ****************************************************************************/
 
-static void msg_sam_repl(int msg_type, struct server_id pid,
-			 void *buf, size_t len, void *private_data)
+static void msg_sam_repl(struct messaging_context *msg,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id server_id,
+			 DATA_BLOB *data)
 {
         uint32 low_serial;
 
-        if (len != sizeof(uint32))
+        if (data->length != sizeof(low_serial))
                 return;
 
-        low_serial = *((uint32 *)buf);
+        low_serial = *((uint32 *)data->data);
 
         DEBUG(3, ("received sam replication message, serial = 0x%04x\n",
                   low_serial));
@@ -195,38 +207,44 @@ static BOOL open_sockets_inetd(void)
 	return True;
 }
 
-static void msg_exit_server(int msg_type, struct server_id src,
-			    void *buf, size_t len, void *private_data)
+static void msg_exit_server(struct messaging_context *msg,
+			    void *private_data,
+			    uint32_t msg_type,
+			    struct server_id server_id,
+			    DATA_BLOB *data)
 {
 	DEBUG(3, ("got a SHUTDOWN message\n"));
 	exit_server_cleanly(NULL);
 }
 
 #ifdef DEVELOPER
-static void msg_inject_fault(int msg_type, struct server_id src,
-			    void *buf, size_t len, void *private_data)
+static void msg_inject_fault(struct messaging_context *msg,
+			     void *private_data,
+			     uint32_t msg_type,
+			     struct server_id src,
+			     DATA_BLOB *data)
 {
 	int sig;
 
-	if (len != sizeof(int)) {
+	if (data->length != sizeof(sig)) {
 		
-		DEBUG(0, ("Process %llu sent bogus signal injection request\n",
-			(unsigned long long)src.pid));
+		DEBUG(0, ("Process %s sent bogus signal injection request\n",
+			  procid_str_static(&src)));
 		return;
 	}
 
-	sig = *(int *)buf;
+	sig = *(int *)data->data;
 	if (sig == -1) {
 		exit_server("internal error injected");
 		return;
 	}
 
 #if HAVE_STRSIGNAL
-	DEBUG(0, ("Process %llu requested injection of signal %d (%s)\n",
-		    (unsigned long long)src.pid, sig, strsignal(sig)));
+	DEBUG(0, ("Process %s requested injection of signal %d (%s)\n",
+		  procid_str_static(&src), sig, strsignal(sig)));
 #else
-	DEBUG(0, ("Process %llu requested injection of signal %d\n",
-		    (unsigned long long)src.pid, sig));
+	DEBUG(0, ("Process %s requested injection of signal %d\n",
+		  procid_str_static(&src), sig));
 #endif
 
 	kill(sys_getpid(), sig);
@@ -441,16 +459,22 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
         /* Listen to messages */
 
-        message_register(MSG_SMB_SAM_SYNC, msg_sam_sync, NULL);
-        message_register(MSG_SMB_SAM_REPL, msg_sam_repl, NULL);
-        message_register(MSG_SHUTDOWN, msg_exit_server, NULL);
-        message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed, NULL);
-	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated, NULL); 
-	message_register(MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete,
-			 NULL);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_SAM_SYNC, msg_sam_sync);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_SAM_REPL, msg_sam_repl);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SHUTDOWN, msg_exit_server);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_FILE_RENAME, msg_file_was_renamed);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_CONF_UPDATED, smb_conf_updated); 
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
 
 #ifdef DEVELOPER
-	message_register(MSG_SMB_INJECT_FAULT, msg_inject_fault, NULL); 
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_INJECT_FAULT, msg_inject_fault);
 #endif
 
 	/* now accept incoming connections - forking a new process
@@ -1116,7 +1140,8 @@ extern void build_options(BOOL screen);
 	initialize_async_io_handler();
 
 	/* register our message handlers */
-	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis, NULL);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
 
 	smbd_process();
 
