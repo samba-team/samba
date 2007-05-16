@@ -400,6 +400,7 @@ static int do_recovery(struct ctdb_context *ctdb,
 
 
 	/* build a new vnn map with all the currently active nodes */
+	generation = random();
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
@@ -437,7 +438,6 @@ static int do_recovery(struct ctdb_context *ctdb,
 		DEBUG(0, (__location__ " Unable to update dmaster on all databases\n"));
 		return -1;
 	}
-
 
 
 	/* disable recovery mode */

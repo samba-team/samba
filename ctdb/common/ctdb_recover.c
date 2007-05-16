@@ -449,3 +449,4 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA indata,
 	ctdb->recovery_mode = recmode;
 	return 0;
 }
+

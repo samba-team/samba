@@ -264,8 +264,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 	state->call = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, data, ctdb->vnn);
-	talloc_steal(state, state->call.reply_data.dptr);
+	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->vnn);
 
 	return state;
 }
@@ -704,6 +703,13 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
 		ctdb_socket_connect(ctdb);
+	}
+
+	/* if the caller specified a timeout it makes no sense for the
+	   daemon to requeue the packet if the destination is unavailable
+	 */
+	if (timeout) {
+		flags |= CTDB_CTRL_FLAG_NOREQUEUE;
 	}
 
 	state = talloc_zero(ctdb, struct ctdb_client_control_state);

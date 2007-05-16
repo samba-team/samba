@@ -277,6 +277,11 @@ int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb,
 int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
 
 /*
+  bump the rsn number for al records
+ */
+int ctdb_ctrl_bumprsn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
+
+/*
   write a record on a specific db (this implicitely updates dmaster of the record to locally be the vnn of the node where the control is executed on)
  */
 int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, TDB_DATA key, TDB_DATA data);

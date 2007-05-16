@@ -518,7 +518,8 @@ struct ctdb_req_control {
 	uint32_t opcode;
 	uint64_t srvid;
 	uint32_t client_id;
-#define CTDB_CTRL_FLAG_NOREPLY 1
+#define CTDB_CTRL_FLAG_NOREPLY   1
+#define CTDB_CTRL_FLAG_NOREQUEUE 2
 	uint32_t flags;
 	uint32_t datalen;
 	uint8_t data[1];
@@ -680,7 +681,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
-		    struct ctdb_ltdb_header *header, TDB_DATA *data,
+		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx, TDB_DATA *data,
 		    uint32_t caller);
 
 #define ctdb_reqid_find(ctdb, reqid, type)	(type *)_ctdb_reqid_find(ctdb, reqid, #type, __location__)

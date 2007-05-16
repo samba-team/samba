@@ -48,8 +48,8 @@
   local version of ctdb_call
 */
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
-		    struct ctdb_ltdb_header *header, TDB_DATA *data,
-		    uint32_t caller)
+		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
+		    TDB_DATA *data, uint32_t caller)
 {
 	struct ctdb_call_info *c;
 	struct ctdb_registered_call *fn;
@@ -322,11 +322,9 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
-	ctdb_call_local(ctdb_db, &state->call, &header, &data, ctdb->vnn);
+	ctdb_call_local(ctdb_db, &state->call, &header, state, &data, ctdb->vnn);
 
 	ctdb_ltdb_unlock(ctdb_db, state->call.key);
-
-	talloc_steal(state, state->call.reply_data.dptr);
 
 	state->state = CTDB_CALL_DONE;
 	if (state->async.fn) {
@@ -477,7 +475,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	ctdb_call_local(ctdb_db, &call, &header, &data, c->hdr.srcnode);
+	ctdb_call_local(ctdb_db, &call, &header, hdr, &data, c->hdr.srcnode);
 
 	ctdb_ltdb_unlock(ctdb_db, call.key);
 
@@ -491,7 +489,6 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	r->datalen       = call.reply_data.dsize;
 	if (call.reply_data.dsize) {
 		memcpy(&r->data[0], call.reply_data.dptr, call.reply_data.dsize);
-		talloc_free(call.reply_data.dptr);
 	}
 
 	ctdb_queue_packet(ctdb, &r->hdr);
@@ -694,8 +691,7 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	state->call = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, data, ctdb->vnn);
-	talloc_steal(state, state->call.reply_data.dptr);
+	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->vnn);
 
 	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
 
