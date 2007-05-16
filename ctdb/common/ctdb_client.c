@@ -264,8 +264,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 	state->call = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, data, ctdb->vnn);
-	talloc_steal(state, state->call.reply_data.dptr);
+	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->vnn);
 
 	return state;
 }
