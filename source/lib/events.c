@@ -185,20 +185,27 @@ void event_fd_set_not_readable(struct fd_event *fde)
 	fde->flags &= ~EVENT_FD_READ;
 }
 
-void event_add_to_select_args(struct event_context *event_ctx,
+/*
+ * Return if there's something in the queue
+ */
+
+BOOL event_add_to_select_args(struct event_context *event_ctx,
 			      const struct timeval *now,
 			      fd_set *read_fds, fd_set *write_fds,
 			      struct timeval *timeout, int *maxfd)
 {
 	struct fd_event *fde;
 	struct timeval diff;
+	BOOL ret = False;
 
 	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
 		if (fde->flags & EVENT_FD_READ) {
 			FD_SET(fde->fd, read_fds);
+			ret = True;
 		}
 		if (fde->flags & EVENT_FD_WRITE) {
 			FD_SET(fde->fd, write_fds);
+			ret = True;
 		}
 
 		if ((fde->flags & (EVENT_FD_READ|EVENT_FD_WRITE))
@@ -208,11 +215,13 @@ void event_add_to_select_args(struct event_context *event_ctx,
 	}
 
 	if (event_ctx->timed_events == NULL) {
-		return;
+		return ret;
 	}
 
 	diff = timeval_until(now, &event_ctx->timed_events->when);
 	*timeout = timeval_min(timeout, &diff);
+
+	return True;
 }
 
 BOOL run_events(struct event_context *event_ctx,
@@ -295,6 +304,40 @@ struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
 		(int)to_ret->tv_usec));
 
 	return to_ret;
+}
+
+int event_loop_once(struct event_context *ev)
+{
+	struct timeval now, to;
+	fd_set r_fds, w_fds;
+	int maxfd = 0;
+	int ret;
+
+	FD_ZERO(&r_fds);
+	FD_ZERO(&w_fds);
+
+	to.tv_sec = 9999;	/* Max timeout */
+	to.tv_usec = 0;
+
+	GetTimeOfDay(&now);
+
+	if (!event_add_to_select_args(ev, &now, &r_fds, &w_fds, &to, &maxfd)) {
+		return -1;
+	}
+
+	if (timeval_is_zero(&to)) {
+		run_events(ev, 0, NULL, NULL);
+		return 0;
+	}
+
+	ret = sys_select(maxfd, &r_fds, &w_fds, NULL, &to);
+
+	if (ret == -1 && errno != EINTR) {
+		return -1;
+	}
+
+	run_events(ev, ret, &r_fds, &w_fds);
+	return 0;
 }
 
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
