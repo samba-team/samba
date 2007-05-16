@@ -3171,8 +3171,8 @@ decrypt_internal_derived(krb5_context context,
     
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
     if (len < checksum_sz) {
-	krb5_clear_error_string (context);
-	return EINVAL;		/* XXX - better error code? */
+	krb5_set_error_string(context, "Encrypted data shorter then checksum");
+	return KRB5_BAD_MSIZE;
     }
 
     if (((len - checksum_sz) % et->padsize) != 0) {
@@ -3889,6 +3889,50 @@ krb5_get_wrapped_length (krb5_context context,
 	return wrapped_length_dervied (context, crypto, data_len);
     else
 	return wrapped_length (context, crypto, data_len);
+}
+
+/*
+ * Return the size of an encrypted packet of length `data_len'
+ */
+
+static size_t
+crypto_overhead (krb5_context context,
+		 krb5_crypto  crypto)
+{
+    struct encryption_type *et = crypto->et;
+    size_t res;
+
+    res = CHECKSUMSIZE(et->checksum);
+    res += et->confoundersize;
+    if (et->padsize > 1)
+	res += et->padsize;
+    return res;
+}
+
+static size_t
+crypto_overhead_dervied (krb5_context context,
+			 krb5_crypto  crypto)
+{
+    struct encryption_type *et = crypto->et;
+    size_t res;
+
+    if (et->keyed_checksum)
+	res = CHECKSUMSIZE(et->keyed_checksum);
+    else
+	res = CHECKSUMSIZE(et->checksum);
+    res += et->confoundersize;
+    if (et->padsize > 1)
+	res += et->padsize;
+    return res;
+}
+
+size_t
+krb5_crypto_overhead (krb5_context context, krb5_crypto crypto)
+{
+    if (derived_crypto (context, crypto))
+	return crypto_overhead_dervied (context, crypto);
+    else
+	return crypto_overhead (context, crypto);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
