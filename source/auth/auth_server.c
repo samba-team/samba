@@ -230,17 +230,6 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	BOOL locally_made_cli = False;
 
-	/* 
-	 * Check that the requested domain is not our own machine name.
-	 * If it is, we should never check the PDC here, we use our own local
-	 * password file.
-	 */
-
-	if(is_myname(user_info->domain)) {
-		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
-		return nt_status;
-	}
-
 	cli = (struct cli_state *)my_private_data;
 	
 	if (cli) {
