@@ -738,7 +738,7 @@ ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxle
 
 BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 {
-	if (!receive_smb_raw(fd, buffer, timeout, 0)) {
+	if (receive_smb_raw(fd, buffer, timeout, 0) <= 0) {
 		return False;
 	}
 
