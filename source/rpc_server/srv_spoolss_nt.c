@@ -1225,15 +1225,19 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
  over all printers, upgrading ones as necessary 
  **********************************************************************/
  
-void do_drv_upgrade_printer(int msg_type, struct server_id src,
-			    void *buf, size_t len, void *private_data)
+void do_drv_upgrade_printer(struct messaging_context *msg,
+			    void *private_data,
+			    uint32_t msg_type,
+			    struct server_id server_id,
+			    DATA_BLOB *data)
 {
 	fstring drivername;
 	int snum;
 	int n_services = lp_numservices();
+	size_t len;
 	
-	len = MIN(len,sizeof(drivername)-1);
-	strncpy(drivername, (const char *)buf, len);
+	len = MIN(data->length,sizeof(drivername)-1);
+	strncpy(drivername, (const char *)data->data, len);
 	
 	DEBUG(10,("do_drv_upgrade_printer: Got message for new driver [%s]\n", drivername ));
 
@@ -1324,15 +1328,19 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
  over all printers, resetting printer data as neessary 
  **********************************************************************/
  
-void reset_all_printerdata(int msg_type, struct server_id src,
-			   void *buf, size_t len, void *private_data)
+void reset_all_printerdata(struct messaging_context *msg,
+			   void *private_data,
+			   uint32_t msg_type,
+			   struct server_id server_id,
+			   DATA_BLOB *data)
 {
 	fstring drivername;
 	int snum;
 	int n_services = lp_numservices();
+	size_t len;
 	
-	len = MIN( len, sizeof(drivername)-1 );
-	strncpy( drivername, (const char *)buf, len );
+	len = MIN( data->length, sizeof(drivername)-1 );
+	strncpy( drivername, (const char *)data->data, len );
 	
 	DEBUG(10,("reset_all_printerdata: Got message for new driver [%s]\n", drivername ));
 
