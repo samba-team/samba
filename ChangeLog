@@ -1,5 +1,10 @@
-2007-05-10  Dave Love  <fx@gnu.org>
+2007-05-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c (krb5_crypto_overhead): return static overhead
+	of encryption.
+	
+2007-05-10  Dave Love  <fx@gnu.org>
+	
 	* doc/win2k.texi: Update some URLs.
 
 2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
