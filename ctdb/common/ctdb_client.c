@@ -1109,7 +1109,6 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 	
 	keys->keys     = talloc_array(mem_ctx, TDB_DATA, keys->num);
 	keys->headers  = talloc_array(mem_ctx, struct ctdb_ltdb_header, keys->num);
-	keys->lmasters = talloc_array(mem_ctx, uint32_t, keys->num);
 	keys->data     = talloc_array(mem_ctx, TDB_DATA, keys->num);
 
 	rec = (struct ctdb_rec_data *)&reply->data[0];
@@ -1117,7 +1116,7 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 	for (i=0;i<reply->count;i++) {
 		keys->keys[i].dptr = talloc_memdup(mem_ctx, &rec->data[0], rec->keylen);
 		keys->keys[i].dsize = rec->keylen;
-
+		
 		keys->data[i].dptr = talloc_memdup(mem_ctx, &rec->data[keys->keys[i].dsize], rec->datalen);
 		keys->data[i].dsize = rec->datalen;
 
