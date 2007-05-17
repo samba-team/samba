@@ -109,6 +109,7 @@ static void epoll_reopen(struct epoll_event_context *epoll_ev)
 	close(epoll_ev->epoll_fd);
 	epoll_ev->epoll_fd = epoll_create(64);
 	if (epoll_ev->epoll_fd == -1) {
+		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
 		return;
 	}
 	epoll_ev->pid = getpid();
