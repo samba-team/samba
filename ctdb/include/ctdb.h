@@ -203,6 +203,8 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev);
 struct ctdb_status;
 int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status);
 
+int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+
 struct ctdb_vnn_map;
 int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, 
 		struct timeval timeout, uint32_t destnode, 
@@ -275,11 +277,6 @@ int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb,
   delete all records from a tdb
  */
 int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
-
-/*
-  bump the rsn number for al records
- */
-int ctdb_ctrl_bumprsn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
 
 /*
   write a record on a specific db (this implicitely updates dmaster of the record to locally be the vnn of the node where the control is executed on)
