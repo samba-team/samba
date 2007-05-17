@@ -26,6 +26,7 @@
 #include "heimdal/lib/krb5/krb5_locl.h"
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"
+#include "lib/stream/packet.h"
 #include "system/network.h"
 #include "lib/events/events.h"
 #include "roken.h"
@@ -39,9 +40,10 @@ struct smb_krb5_socket {
 	/* the fd event */
 	struct fd_event *fde;
 
-	BOOL timeout;
 	NTSTATUS status;
-	DATA_BLOB request, reply, partial;
+	DATA_BLOB request, reply;
+	
+	struct packet_context *packet;
 
 	size_t partial_read;
 
@@ -82,98 +84,48 @@ static void smb_krb5_socket_recv(struct smb_krb5_socket *smb_krb5)
 	DATA_BLOB blob;
 	size_t nread, dsize;
 
-	switch (smb_krb5->hi->proto) {
-	case KRB5_KRBHST_UDP:
-		smb_krb5->status = socket_pending(smb_krb5->sock, &dsize);
-		if (!NT_STATUS_IS_OK(smb_krb5->status)) {
-			talloc_free(tmp_ctx);
-			return;
-		}
-
-		blob = data_blob_talloc(tmp_ctx, NULL, dsize);
-		if (blob.data == NULL && dsize != 0) {
-			smb_krb5->status = NT_STATUS_NO_MEMORY;
-			talloc_free(tmp_ctx);
-			return;
-		}
-		
-		smb_krb5->status = socket_recv(smb_krb5->sock, blob.data, blob.length, &nread);
-		if (!NT_STATUS_IS_OK(smb_krb5->status)) {
-			talloc_free(tmp_ctx);
-			return;
-		}
-		blob.length = nread;
-
-		if (nread == 0) {
-			smb_krb5->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-			talloc_free(tmp_ctx);
-			return;
-		}
-		
-		DEBUG(2,("Received smb_krb5 packet of length %d\n", 
-			 (int)blob.length));
-		
-		talloc_steal(smb_krb5, blob.data);
-		smb_krb5->reply = blob;
+	smb_krb5->status = socket_pending(smb_krb5->sock, &dsize);
+	if (!NT_STATUS_IS_OK(smb_krb5->status)) {
 		talloc_free(tmp_ctx);
-		break;
-	case KRB5_KRBHST_TCP:
-		if (smb_krb5->partial.length == 0) {
-			smb_krb5->partial = data_blob_talloc(smb_krb5, NULL, 4);
-			if (!smb_krb5->partial.data) {
-				smb_krb5->status = NT_STATUS_NO_MEMORY;
-				return;
-			}
-			
-			smb_krb5->partial_read = 0;
-		}
-		
-		/* read in the packet length */
-		if (smb_krb5->partial_read < 4) {
-			uint32_t packet_length;
-			
-			smb_krb5->status = socket_recv(smb_krb5->sock, 
-					     smb_krb5->partial.data + smb_krb5->partial_read,
-					     4 - smb_krb5->partial_read,
-					     &nread);
-			/* todo: this should be converted to the packet_*() routines */
-			if (!NT_STATUS_IS_OK(smb_krb5->status)) {
-				return;
-			}
-			
-			smb_krb5->partial_read += nread;
-			if (smb_krb5->partial_read != 4) {
-				return;
-			}
-			
-			packet_length = RIVAL(smb_krb5->partial.data, 0);
-			
-			smb_krb5->partial.data = talloc_realloc(smb_krb5, smb_krb5->partial.data, 
-								uint8_t, packet_length + 4);
-			if (!smb_krb5->partial.data)  {
-				smb_krb5->status = NT_STATUS_NO_MEMORY;
-				return;
-			}
-			
-			smb_krb5->partial.length = packet_length + 4;
-		}
-		
-		/* read in the body */
-		smb_krb5->status = socket_recv(smb_krb5->sock, 
-				     smb_krb5->partial.data + smb_krb5->partial_read,
-				     smb_krb5->partial.length - smb_krb5->partial_read,
-				     &nread);
-		if (!NT_STATUS_IS_OK(smb_krb5->status)) return;
-		
-		smb_krb5->partial_read += nread;
-
-		if (smb_krb5->partial_read != smb_krb5->partial.length) return;
-
-		smb_krb5->reply = data_blob_talloc(smb_krb5, smb_krb5->partial.data + 4, smb_krb5->partial.length - 4);
-		break;
-	case KRB5_KRBHST_HTTP:
 		return;
 	}
+	
+	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
+	if (blob.data == NULL && dsize != 0) {
+		smb_krb5->status = NT_STATUS_NO_MEMORY;
+		talloc_free(tmp_ctx);
+		return;
+	}
+	
+	smb_krb5->status = socket_recv(smb_krb5->sock, blob.data, blob.length, &nread);
+	if (!NT_STATUS_IS_OK(smb_krb5->status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+	blob.length = nread;
+	
+	if (nread == 0) {
+		smb_krb5->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		talloc_free(tmp_ctx);
+		return;
+	}
+	
+	DEBUG(2,("Received smb_krb5 packet of length %d\n", 
+		 (int)blob.length));
+	
+	talloc_steal(smb_krb5, blob.data);
+	smb_krb5->reply = blob;
+	talloc_free(tmp_ctx);
+}
+
+static NTSTATUS smb_krb5_full_packet(void *private, DATA_BLOB data) 
+{
+	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
+	talloc_steal(smb_krb5, data.data);
+	smb_krb5->reply = data;
+	smb_krb5->reply.length -= 4;
+	smb_krb5->reply.data += 4;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -185,7 +137,13 @@ static void smb_krb5_request_timeout(struct event_context *event_ctx,
 {
 	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
 	DEBUG(5,("Timed out smb_krb5 packet\n"));
-	smb_krb5->timeout = True;
+	smb_krb5->status = NT_STATUS_IO_TIMEOUT;
+}
+
+static void smb_krb5_error_handler(void *private, NTSTATUS status) 
+{
+	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
+	smb_krb5->status = status;
 }
 
 /*
@@ -216,11 +174,26 @@ static void smb_krb5_socket_handler(struct event_context *ev, struct fd_event *f
 				 uint16_t flags, void *private)
 {
 	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
-	if (flags & EVENT_FD_WRITE) {
-		smb_krb5_socket_send(smb_krb5);
-	} 
-	if (flags & EVENT_FD_READ) {
-		smb_krb5_socket_recv(smb_krb5);
+	switch (smb_krb5->hi->proto) {
+	case KRB5_KRBHST_UDP:
+		if (flags & EVENT_FD_WRITE) {
+			smb_krb5_socket_send(smb_krb5);
+		} 
+		if (flags & EVENT_FD_READ) {
+			smb_krb5_socket_recv(smb_krb5);
+		}
+		break;
+	case KRB5_KRBHST_TCP:
+		if (flags & EVENT_FD_READ) {
+			packet_recv(smb_krb5->packet);
+		}
+		if (flags & EVENT_FD_WRITE) {
+			packet_queue_run(smb_krb5->packet);
+		}
+		break;
+	case KRB5_KRBHST_HTTP:
+		/* can't happen */
+		break;
 	}
 }
 
@@ -304,7 +277,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		}
 		talloc_free(remote_addr);
 
-		smb_krb5->fde = event_add_fd(ev, smb_krb5, 
+		smb_krb5->fde = event_add_fd(ev, smb_krb5->sock, 
 					     socket_get_fd(smb_krb5->sock), 
 					     EVENT_FD_AUTOCLOSE,
 					     smb_krb5_socket_handler, smb_krb5);
@@ -315,39 +288,53 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 				timeval_current_ofs(context->kdc_timeout, 0),
 				smb_krb5_request_timeout, smb_krb5);
 
-		EVENT_FD_WRITEABLE(smb_krb5->fde);
 		
+		smb_krb5->status = NT_STATUS_OK;
+		smb_krb5->reply = data_blob(NULL, 0);
+
 		switch (hi->proto) {
 		case KRB5_KRBHST_UDP:
+			EVENT_FD_WRITEABLE(smb_krb5->fde);
 			smb_krb5->request = send_blob;
 			break;
 		case KRB5_KRBHST_TCP:
+
+			smb_krb5->packet = packet_init(smb_krb5);
+			if (smb_krb5->packet == NULL) {
+				talloc_free(smb_krb5);
+				return ENOMEM;
+			}
+			packet_set_private(smb_krb5->packet, smb_krb5);
+			packet_set_socket(smb_krb5->packet, smb_krb5->sock);
+			packet_set_callback(smb_krb5->packet, smb_krb5_full_packet);
+			packet_set_full_request(smb_krb5->packet, packet_full_request_u32);
+			packet_set_error_handler(smb_krb5->packet, smb_krb5_error_handler);
+			packet_set_event_context(smb_krb5->packet, ev);
+			packet_set_fde(smb_krb5->packet, smb_krb5->fde);
+
 			smb_krb5->request = data_blob_talloc(smb_krb5, NULL, send_blob.length + 4);
 			RSIVAL(smb_krb5->request.data, 0, send_blob.length);
 			memcpy(smb_krb5->request.data+4, send_blob.data, send_blob.length);
+			packet_send(smb_krb5->packet, smb_krb5->request);
+			EVENT_FD_READABLE(smb_krb5->fde);
 			break;
 		case KRB5_KRBHST_HTTP:
 			talloc_free(smb_krb5);
 			return EINVAL;
 		}
-		smb_krb5->timeout = False;
-		smb_krb5->status = NT_STATUS_OK;
-		smb_krb5->reply = data_blob(NULL, 0);
-		smb_krb5->partial = data_blob(NULL, 0);
-
-		while (!smb_krb5->timeout && (NT_STATUS_IS_OK(smb_krb5->status)) && !smb_krb5->reply.length) {
+		while ((NT_STATUS_IS_OK(smb_krb5->status)) && !smb_krb5->reply.length) {
 			if (event_loop_once(ev) != 0) {
 				talloc_free(smb_krb5);
 				return EINVAL;
 			}
 		}
-		if (!NT_STATUS_IS_OK(smb_krb5->status)) {
-			DEBUG(2,("Error reading smb_krb5 reply packet: %s\n", nt_errstr(smb_krb5->status)));
+		if (NT_STATUS_EQUAL(smb_krb5->status, NT_STATUS_IO_TIMEOUT)) {
 			talloc_free(smb_krb5);
 			continue;
 		}
 
-		if (smb_krb5->timeout) {
+		if (!NT_STATUS_IS_OK(smb_krb5->status)) {
+			DEBUG(2,("Error reading smb_krb5 reply packet: %s\n", nt_errstr(smb_krb5->status)));
 			talloc_free(smb_krb5);
 			continue;
 		}
