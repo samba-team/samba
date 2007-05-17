@@ -1328,7 +1328,6 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 
 	if (!winbind_uid_to_sid(psid, uid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			legacy_uid_to_sid(psid, uid);
 			return;
 		}
@@ -1358,7 +1357,6 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 
 	if (!winbind_gid_to_sid(psid, gid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			legacy_gid_to_sid(psid, gid);
 			return;
 		}
@@ -1392,7 +1390,6 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 	if (!winbind_sid_to_uid(puid, psid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			return legacy_sid_to_uid(psid, puid);
 		}
 
@@ -1431,7 +1428,6 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	if ( !winbind_sid_to_gid(pgid, psid) ) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			return legacy_sid_to_gid(psid, pgid);
 		}
 
