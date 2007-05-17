@@ -30,7 +30,8 @@
 */
 static int socket_destructor(struct socket_context *sock)
 {
-	if (sock->ops->fn_close) {
+	if (sock->ops->fn_close && 
+	    !(sock->flags & SOCKET_FLAG_NOCLOSE)) {
 		sock->ops->fn_close(sock);
 	}
 	return 0;
@@ -547,3 +548,10 @@ _PUBLIC_ void set_socket_options(int fd, const char *options)
 	talloc_free(options_list);
 }
 
+/*
+  set some flags on a socket 
+ */
+void socket_set_flags(struct socket_context *sock, unsigned flags)
+{
+	sock->flags |= flags;
+}
