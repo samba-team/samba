@@ -347,6 +347,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	switch (ret) {
 	case 0:
 		break;
+	case KRB5KDC_ERR_PREAUTH_FAILED:
+		return NT_STATUS_LOGON_FAILURE;
 	case KRB5_KDC_UNREACH:
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s\n", principal));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */

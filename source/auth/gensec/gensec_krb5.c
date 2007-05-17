@@ -244,16 +244,23 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	gensec_krb5_state = gensec_security->private_data;
 	gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_START;
 
+	principal = gensec_get_target_principal(gensec_security);
+
 	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), &ccache_container);
-	if (ret) {
-		DEBUG(1,("gensec_krb5_start: cli_credentials_get_ccache failed: %s\n", 
-			 error_message(ret)));
+	switch (ret) {
+	case 0:
+		break;
+	case KRB5KDC_ERR_PREAUTH_FAILED:
+		return NT_STATUS_LOGON_FAILURE;
+	case KRB5_KDC_UNREACH:
+		DEBUG(3, ("Cannot reach a KDC we require to contact %s\n", principal));
+		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+	default:
+		DEBUG(1, ("gensec_krb5_start: Aquiring initiator credentails failed: %s\n", error_message(ret)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
 	in_data.length = 0;
 	
-	principal = gensec_get_target_principal(gensec_security);
 	if (principal && lp_client_use_spnego_principal()) {
 		krb5_principal target_principal;
 		ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,

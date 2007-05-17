@@ -528,7 +528,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	 * support the first time.  Lets keep this code to
 	 * reality */
 
-	return NT_STATUS_INVALID_PARAMETER;
+	return nt_status;
 }
 
 /** create a negTokenInit 
