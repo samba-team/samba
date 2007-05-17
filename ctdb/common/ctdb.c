@@ -217,6 +217,21 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
 	return ctdb->num_nodes;
 }
 
+/*
+  return the number of connected nodes
+*/
+uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb)
+{
+	int i;
+	uint32_t count=0;
+	for (i=0;i<ctdb->vnn_map->size;i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_CONNECTED) {
+			count++;
+		}
+	}
+	return count;
+}
+
 
 /*
   called by the transport layer when a packet comes in

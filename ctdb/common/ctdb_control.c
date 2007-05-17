@@ -395,6 +395,15 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 		return -1;
 	}
 
+	if (destnode != CTDB_BROADCAST_VNNMAP && destnode != CTDB_BROADCAST_VNNMAP && 
+	    (!ctdb_validate_vnn(ctdb, destnode) || 
+	     !(ctdb->nodes[destnode]->flags & NODE_FLAGS_CONNECTED))) {
+		if (!(flags & CTDB_CTRL_FLAG_NOREPLY)) {
+			callback(ctdb, -1, tdb_null, "ctdb_control to disconnected node", private_data);
+		}
+		return 0;
+	}
+
 	/* the state is made a child of private_data if possible. This means any reply
 	   will be discarded if the private_data goes away */
 	state = talloc(private_data?private_data:ctdb, struct ctdb_control_state);

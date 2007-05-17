@@ -802,4 +802,6 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb);
 
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 
+uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb);
+
 #endif
