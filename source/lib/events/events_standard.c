@@ -58,6 +58,9 @@ struct std_event_context {
 
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
+
+	/* our pid at the time the epoll_fd was created */
+	pid_t pid;
 };
 
 /* use epoll if it is available */
@@ -68,7 +71,9 @@ struct std_event_context {
 */
 static void epoll_fallback_to_select(struct std_event_context *std_ev, const char *reason)
 {
+	const char *cmd = talloc_asprintf(std_ev, "xterm -e gdb --pid %u", getpid());
 	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
+	system(cmd);
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = -1;
 	talloc_set_destructor(std_ev, NULL);
@@ -90,7 +95,9 @@ static uint32_t epoll_map_flags(uint16_t flags)
 */
 static int epoll_ctx_destructor(struct std_event_context *std_ev)
 {
-	close(std_ev->epoll_fd);
+	if (std_ev->epoll_fd != -1) {
+		close(std_ev->epoll_fd);
+	}
 	std_ev->epoll_fd = -1;
 	return 0;
 }
@@ -101,7 +108,30 @@ static int epoll_ctx_destructor(struct std_event_context *std_ev)
 static void epoll_init_ctx(struct std_event_context *std_ev)
 {
 	std_ev->epoll_fd = epoll_create(64);
+	std_ev->pid = getpid();
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
+}
+
+static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *fde);
+
+/*
+  reopen the epoll handle when our pid changes
+  see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an 
+  demonstration of why this is needed
+ */
+static void epoll_reopen(struct std_event_context *std_ev)
+{
+	struct fd_event *fde;
+
+	close(std_ev->epoll_fd);
+	std_ev->epoll_fd = epoll_create(64);
+	if (std_ev->epoll_fd == -1) {
+		return;
+	}
+	std_ev->pid = getpid();
+	for (fde=std_ev->fd_events;fde;fde=fde->next) {
+		epoll_add_event(std_ev, fde);
+	}
 }
 
 #define EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT	(1<<0)
@@ -115,6 +145,16 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
+
+	/* during an add event we need to check if our pid has changed
+	   and re-open the epoll socket. Note that we don't need to do this 
+	   for other epoll changes */
+	if (std_ev->pid != getpid()) {
+		epoll_reopen(std_ev);
+		/* the current event gets added in epoll_reopen(), so
+		   we can return here */
+		return;
+	}
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
