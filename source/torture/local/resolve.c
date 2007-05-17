@@ -35,7 +35,7 @@ static bool test_async_resolve(struct torture_context *tctx)
 	struct timeval tv = timeval_current();
 	TALLOC_CTX *mem_ctx = tctx;
 
-	ev = event_context_init(mem_ctx);
+	ev = tctx->ev;
 
 	ZERO_STRUCT(n);
 	n.name = host;

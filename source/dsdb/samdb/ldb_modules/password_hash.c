@@ -1430,7 +1430,9 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 	}
 
 	/* Some operations below require kerberos contexts */
-	if (smb_krb5_init_context(ac->down_req, &smb_krb5_context) != 0) {
+	if (smb_krb5_init_context(ac->down_req, 
+				  ldb_get_opaque(h->module->ldb, "EventContext"), 
+				  &smb_krb5_context) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1760,7 +1762,9 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 	msg->dn = ac->orig_req->op.mod.message->dn;
 
 	/* Some operations below require kerberos contexts */
-	if (smb_krb5_init_context(ac->mod_req, &smb_krb5_context) != 0) {
+	if (smb_krb5_init_context(ac->mod_req, 
+				  ldb_get_opaque(h->module->ldb, "EventContext"), 
+				  &smb_krb5_context) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

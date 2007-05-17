@@ -582,7 +582,7 @@ static void kdc_task_init(struct task_server *task)
 
 	initialize_krb5_error_table();
 
-	ret = smb_krb5_init_context(kdc, &kdc->smb_krb5_context);
+	ret = smb_krb5_init_context(kdc, task->event_ctx, &kdc->smb_krb5_context);
 	if (ret) {
 		DEBUG(1,("kdc_task_init: krb5_init_context failed (%s)\n", 
 			 error_message(ret)));
