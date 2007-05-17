@@ -109,6 +109,8 @@ enum socket_state {
 					     * is encrypting data.
 					     * This modifies the
 					     * TESTNONBLOCK case */
+#define SOCKET_FLAG_NOCLOSE      0x00000010 /* don't auto-close on free */
+
 
 struct socket_context {
 	enum socket_type type;
@@ -196,5 +198,6 @@ NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx, const char *server_address,
 			      struct socket_context **result,
 			      uint16_t *port);
 void set_socket_options(int fd, const char *options);
+void socket_set_flags(struct socket_context *socket, unsigned flags);
 
 #endif /* _SAMBA_SOCKET_H */
