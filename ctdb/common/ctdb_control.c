@@ -32,6 +32,7 @@ struct ctdb_control_state {
 	uint32_t reqid;
 	ctdb_control_callback_fn_t callback;
 	void *private_data;
+	unsigned flags;
 };
 
 /*
@@ -362,19 +363,15 @@ static void ctdb_control_timeout(struct event_context *ev, struct timed_event *t
 		       struct timeval t, void *private_data)
 {
 	struct ctdb_control_state *state = talloc_get_type(private_data, struct ctdb_control_state);
-	struct ctdb_req_control *c = (struct ctdb_req_control *)state->private_data;
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
 
 	state->ctdb->status.timeouts.control++;
 
 	talloc_steal(tmp_ctx, state);
 
-	/* Dont retry the control if the caller asked for NOREQUEUE */
-	if (!(c->flags & CTDB_CTRL_FLAG_NOREQUEUE)) {
-		state->callback(state->ctdb, -1, tdb_null,
-				"ctdb_control timed out", 
-				state->private_data);
-	}
+	state->callback(state->ctdb, -1, tdb_null,
+			"ctdb_control timed out", 
+			state->private_data);
 	talloc_free(tmp_ctx);
 }
 
@@ -407,6 +404,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	state->callback = callback;
 	state->private_data = private_data;
 	state->ctdb = ctdb;
+	state->flags = flags;
 
 	talloc_set_destructor(state, ctdb_control_destructor);
 

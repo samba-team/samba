@@ -295,8 +295,8 @@ struct ctdb_db_context {
    re-issue the call */
 #define CTDB_CALL_TIMEOUT 2
 
-/* timeout for ctdb control calls */
-#define CTDB_CONTROL_TIMEOUT 10
+/* maximum timeout for ctdb control calls */
+#define CTDB_CONTROL_TIMEOUT 60
 
 /* timeout for ctdb traverse calls. When this is reached we cut short
    the traverse */
@@ -520,7 +520,6 @@ struct ctdb_req_control {
 	uint64_t srvid;
 	uint32_t client_id;
 #define CTDB_CTRL_FLAG_NOREPLY   1
-#define CTDB_CTRL_FLAG_NOREQUEUE 2
 	uint32_t flags;
 	uint32_t datalen;
 	uint8_t data[1];
