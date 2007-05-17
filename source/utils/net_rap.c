@@ -435,10 +435,14 @@ int net_rap_server(int argc, const char **argv)
 	int ret;
 
 	if (argc > 0) {
-		if (!strequal(argv[0], "name")) {
+		if (strequal(argv[0], "name")) {
+			return net_rap_server_name(argc, argv);
+		}
+		/* smb4k uses 'net [rap|rpc] server domain' to query servers in a domain */
+		/* Fall through for 'domain', any other forms will cause to show usage message */
+		if (!strequal(argv[0], "domain")) {
 			return net_rap_server_usage(argc-1, argv+1);
 		}
-		return net_rap_server_name(argc, argv);
 	}
 
 	if (!(cli = net_make_ipc_connection(0))) 
