@@ -54,6 +54,7 @@ struct benchlock_state {
 	int fnum;
 	int offset;
 	int count;
+	int lastcount;
 	union smb_lock io;
 	struct smb_lock_entry lock[2];
 	struct smbcli_request *req;
@@ -216,6 +217,22 @@ static void lock_completion(struct smbcli_request *req)
 	}
 }
 
+
+static void report_rate(struct event_context *ev, struct timed_event *te, 
+			struct timeval t, void *private_data)
+{
+	struct benchlock_state *state = talloc_get_type(private_data, 
+							struct benchlock_state);
+	int i;
+	for (i=0;i<nprocs;i++) {
+		printf("%5u ", (unsigned)(state[i].count - state[i].lastcount));
+		state[i].lastcount = state[i].count;
+	}
+	printf("\r");
+	fflush(stdout);
+	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+}
+
 /* 
    benchmark locking calls
 */
@@ -228,10 +245,13 @@ BOOL torture_bench_lock(struct torture_context *torture)
 	struct timeval tv;
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchlock_state *state;
-	int total = 0, loops=0, minops=0;
+	int total = 0, minops=0;
 	NTSTATUS status;
 	struct smbcli_state *cli;
-	
+	bool progress;
+
+	progress = torture_setting_bool(torture, "progress", true);
+
 	nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
 
 	state = talloc_zero_array(mem_ctx, struct benchlock_state, nprocs);
@@ -293,6 +313,10 @@ BOOL torture_bench_lock(struct torture_context *torture)
 
 	tv = timeval_current();	
 
+	if (progress) {
+		event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+	}
+
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		event_loop_once(ev);
@@ -300,19 +324,6 @@ BOOL torture_bench_lock(struct torture_context *torture)
 		if (lock_failed) {
 			DEBUG(0,("locking failed\n"));
 			goto failed;
-		}
-
-		if (loops++ % 10 != 0) continue;
-
-		total = 0;
-		for (i=0;i<nprocs;i++) {
-			total += state[i].count;
-		}
-		if (torture_setting_bool(torture, "progress", true)) {
-			printf("%.2f ops/second (remaining=%u)\r", 
-			       total/timeval_elapsed(&tv), 
-			       (unsigned)(timelimit - timeval_elapsed(&tv)));
-			fflush(stdout);
 		}
 	}
 
