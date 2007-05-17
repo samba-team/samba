@@ -23,7 +23,8 @@ struct smb_krb5_context {
 	krb5_log_facility *logf;
 };
 	
-krb5_error_code smb_krb5_init_context(void *parent_ctx, 
+struct event_context;
+krb5_error_code smb_krb5_init_context(void *parent_ctx, struct event_context *ev,
 				      struct smb_krb5_context **smb_krb5_context); 
 void smb_krb5_free_context(struct smb_krb5_context *smb_krb5_context);
 

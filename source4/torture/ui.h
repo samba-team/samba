@@ -90,6 +90,7 @@ struct torture_context
 
 	char *outputdir;
 	int level;
+	struct event_context *ev;
 };
 
 /* 

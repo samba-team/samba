@@ -27,6 +27,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "libcli/auth/libcli_auth.h"
+#include "lib/events/events.h"
 
 /**
  * Create a new credentials structure
@@ -61,6 +62,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->tries = 3;
 	cred->callback_running = False;
+	cred->ev = NULL;
 
 	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
 	cli_credentials_set_gensec_features(cred, 0);
@@ -746,4 +748,23 @@ BOOL cli_credentials_wrong_password(struct cli_credentials *cred)
 	cred->tries--;
 
 	return (cred->tries > 0);
+}
+
+/*
+  set the common event context for this set of credentials
+ */
+void cli_credentials_set_event_context(struct cli_credentials *cred, struct event_context *ev)
+{
+	cred->ev = ev;
+}
+
+/*
+  set the common event context for this set of credentials
+ */
+struct event_context *cli_credentials_get_event_context(struct cli_credentials *cred)
+{
+	if (cred->ev == NULL) {
+		cred->ev = event_context_find(cred);
+	}
+	return cred->ev;
 }

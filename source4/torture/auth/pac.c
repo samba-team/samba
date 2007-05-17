@@ -56,7 +56,9 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 
 	TALLOC_CTX *mem_ctx = tctx;
 
-	torture_assert(tctx, 0 == smb_krb5_init_context(mem_ctx, &smb_krb5_context), 
+	torture_assert(tctx, 0 == smb_krb5_init_context(mem_ctx, 
+							NULL,
+							&smb_krb5_context), 
 		       "smb_krb5_init_context");
 
 	generate_random_buffer(server_bytes, 16);
@@ -282,7 +284,8 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	time_t authtime;
 	TALLOC_CTX *mem_ctx = tctx;
 
-	torture_assert(tctx, 0 == smb_krb5_init_context(mem_ctx, &smb_krb5_context),
+	torture_assert(tctx, 0 == smb_krb5_init_context(mem_ctx, NULL,
+							&smb_krb5_context),
 		       "smb_krb5_init_context");
 
 	pac_kdc_key = torture_setting_string(tctx, "pac_kdc_key", 

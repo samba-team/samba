@@ -355,11 +355,11 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 }
 
 krb5_error_code smb_krb5_init_context(void *parent_ctx, 
+				      struct event_context *ev,
 				       struct smb_krb5_context **smb_krb5_context) 
 {
 	krb5_error_code ret;
 	TALLOC_CTX *tmp_ctx;
-	struct event_context *ev;
 	char **config_files;
 	const char *config_file;
 	
@@ -446,7 +446,6 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	}
 	krb5_set_warn_dest((*smb_krb5_context)->krb5_context, (*smb_krb5_context)->logf);
 
-	ev = event_context_find(*smb_krb5_context);
 	/* Set use of our socket lib */
 	ret = krb5_set_send_to_kdc_func((*smb_krb5_context)->krb5_context, 
 					smb_krb5_send_and_recv_func, 

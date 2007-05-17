@@ -27,6 +27,8 @@
 #include "lib/events/events.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "auth/credentials/credentials.h"
+#include "lib/cmdline/popt_common.h"
 
 /* enum for whether reads/writes are possible on a file */
 enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};
@@ -1351,7 +1353,7 @@ static BOOL test_raw_open_multi(void)
 	int num_ok = 0;
 	int num_collision = 0;
 	
-	ev = event_context_init(mem_ctx);
+	ev = cli_credentials_get_event_context(cmdline_credentials);
 	clients = talloc_array(mem_ctx, struct smbcli_state *, num_files);
 	requests = talloc_array(mem_ctx, struct smbcli_request *, num_files);
 	ios = talloc_array(mem_ctx, union smb_open, num_files);

@@ -37,7 +37,8 @@ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = smb_krb5_init_context(cred, &cred->smb_krb5_context);
+	ret = smb_krb5_init_context(cred, cli_credentials_get_event_context(cred), 
+				    &cred->smb_krb5_context);
 	if (ret) {
 		return ret;
 	}
