@@ -119,9 +119,13 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
   see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an 
   demonstration of why this is needed
  */
-static void epoll_reopen(struct std_event_context *std_ev)
+static void epoll_check_reopen(struct std_event_context *std_ev)
 {
 	struct fd_event *fde;
+
+	if (std_ev->pid == getpid()) {
+		return;
+	}
 
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = epoll_create(64);
@@ -146,16 +150,6 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
-
-	/* during an add event we need to check if our pid has changed
-	   and re-open the epoll socket. Note that we don't need to do this 
-	   for other epoll changes */
-	if (std_ev->pid != getpid()) {
-		epoll_reopen(std_ev);
-		/* the current event gets added in epoll_reopen(), so
-		   we can return here */
-		return;
-	}
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
@@ -415,6 +409,8 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 							   struct std_event_context);
 	struct fd_event *fde;
 
+	epoll_check_reopen(std_ev);
+
 	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
 	if (!fde) return NULL;
 
@@ -461,6 +457,8 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	std_ev = talloc_get_type(ev->additional_data, struct std_event_context);
 
 	fde->flags = flags;
+
+	epoll_check_reopen(std_ev);
 
 	epoll_change_event(std_ev, fde);
 }
@@ -557,6 +555,8 @@ static int std_event_loop_once(struct event_context *ev)
 	if (timeval_is_zero(&tval)) {
 		return 0;
 	}
+
+	epoll_check_reopen(std_ev);
 
 	if (epoll_event_loop(std_ev, &tval) == 0) {
 		return 0;
