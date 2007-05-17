@@ -156,7 +156,9 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	char group_c;
 	BOOL must_free_token = False;
 	NT_USER_TOKEN *token = NULL;
-
+	int num_groups = 0;
+	gid_t *group_list = NULL;
+	
 	if (!conn) {
 		DEBUG(2,("change_to_user: Connection not open\n"));
 		return(False);
@@ -195,14 +197,14 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	if (conn->force_user) /* security = share sets this too */ {
 		uid = conn->uid;
 		gid = conn->gid;
-		current_user.ut.groups = conn->groups;
-		current_user.ut.ngroups = conn->ngroups;
+	        group_list = conn->groups;
+		num_groups = conn->ngroups;
 		token = conn->nt_user_token;
 	} else if (vuser) {
 		uid = conn->admin_user ? 0 : vuser->uid;
 		gid = vuser->gid;
-		current_user.ut.ngroups = vuser->n_groups;
-		current_user.ut.groups  = vuser->groups;
+		num_groups = vuser->n_groups;
+		group_list  = vuser->groups;
 		token = vuser->nt_user_token;
 	} else {
 		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
@@ -235,8 +237,8 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 			 */
 
 			int i;
-			for (i = 0; i < current_user.ut.ngroups; i++) {
-				if (current_user.ut.groups[i] == conn->gid) {
+			for (i = 0; i < num_groups; i++) {
+				if (group_list[i] == conn->gid) {
 					gid = conn->gid;
 					gid_to_sid(&token->user_sids[1], gid);
 					break;
@@ -248,6 +250,12 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		}
 	}
 	
+	/* Now set current_user since we will immediately also call
+	   set_sec_ctx() */
+
+	current_user.ut.ngroups = num_groups;
+	current_user.ut.groups  = group_list;	
+
 	set_sec_ctx(uid, gid, current_user.ut.ngroups, current_user.ut.groups,
 		    token);
 
