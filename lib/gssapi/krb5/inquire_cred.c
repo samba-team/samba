@@ -152,17 +152,17 @@ OM_uint32 _gsskrb5_inquire_cred
     }
 
     if (mechanisms != NULL) {
-        ret = _gsskrb5_create_empty_oid_set(minor_status, mechanisms);
+        ret = gss_create_empty_oid_set(minor_status, mechanisms);
         if (ret)
 	    goto out;
 	if (acred)
-	    ret = _gsskrb5_add_oid_set_member(minor_status,
-					      &acred->mechanisms->elements[0],
-					      mechanisms);
+	    ret = gss_add_oid_set_member(minor_status,
+					 &acred->mechanisms->elements[0],
+					 mechanisms);
 	if (ret == GSS_S_COMPLETE && icred)
-	    ret = _gsskrb5_add_oid_set_member(minor_status,
-					      &icred->mechanisms->elements[0],
-					      mechanisms);
+	    ret = gss_add_oid_set_member(minor_status,
+					 &icred->mechanisms->elements[0],
+					 mechanisms);
         if (ret)
 	    goto out;
     }
