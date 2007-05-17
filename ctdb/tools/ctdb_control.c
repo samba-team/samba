@@ -57,6 +57,7 @@ static void usage(void)
 		"  setrecmaster <vnn> <master_vnn>    set recovery master\n"
 		"  attach <dbname>                    attach a database\n"
 		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
+		"  shutdown <vnn>                     shutdown a remote ctdb\n"
 		"  freeze <vnn|all>                   freeze a node\n"
 		"  thaw <vnn|all>                     thaw a node\n"
 	);
@@ -339,6 +340,30 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 	printf("Pid:%d\n",pid);
+
+	return 0;
+}
+
+/*
+  shutdown a daemon
+ */
+static int control_shutdown(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_shutdown(ctdb, timeval_current_ofs(1, 0), vnn);
+	if (ret != 0) {
+		printf("Unable to shutdown node %u\n", vnn);
+		return ret;
+	}
 
 	return 0;
 }
@@ -973,6 +998,7 @@ int main(int argc, const char *argv[])
 		{ "attach", control_attach },
 		{ "dumpmemory", control_dumpmemory },
 		{ "getpid", control_getpid },
+		{ "shutdown", control_shutdown },
 		{ "freeze", control_freeze },
 		{ "thaw", control_thaw },
 	};

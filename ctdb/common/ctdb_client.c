@@ -840,6 +840,27 @@ int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_s
 }
 
 /*
+  shutdown a remote ctdb node
+ */
+int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	ZERO_STRUCT(data);
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SHUTDOWN, CTDB_CTRL_FLAG_NOREPLY, data, 
+			   ctdb, &data, &res, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for shutdown failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   get vnn map from a remote node
  */
 int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap)

@@ -203,6 +203,8 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev);
 struct ctdb_status;
 int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status);
 
+int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+
 struct ctdb_vnn_map;
 int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, 
 		struct timeval timeout, uint32_t destnode, 
