@@ -108,8 +108,9 @@ static void epoll_reopen(struct aio_event_context *aio_ev)
 	struct fd_event *fde;
 
 	close(aio_ev->epoll_fd);
-	aio_ev->epoll_fd = epoll_create(64);
+	aio_ev->epoll_fd = epoll_create(MAX_AIO_QUEUE_DEPTH);
 	if (aio_ev->epoll_fd == -1) {
+		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
 		return;
 	}
 	aio_ev->pid = getpid();
