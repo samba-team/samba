@@ -30,6 +30,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/network.h"
 #include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
