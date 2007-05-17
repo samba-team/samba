@@ -305,8 +305,11 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		talloc_free(remote_addr);
 
 		smb_krb5->fde = event_add_fd(ev, smb_krb5, 
-					     socket_get_fd(smb_krb5->sock), 0,
+					     socket_get_fd(smb_krb5->sock), 
+					     EVENT_FD_AUTOCLOSE,
 					     smb_krb5_socket_handler, smb_krb5);
+		/* its now the job of the event layer to close the socket */
+		socket_set_flags(smb_krb5->sock, SOCKET_FLAG_NOCLOSE);
 
 		event_add_timed(ev, smb_krb5, 
 				timeval_current_ofs(context->kdc_timeout, 0),
