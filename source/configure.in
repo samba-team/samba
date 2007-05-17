@@ -1763,6 +1763,29 @@ EOF
 	fi
 fi
 
+#Check if we can enable relro as well
+if test x"${samba_cv_fpie}" = x"yes"
+then
+	AC_CACHE_CHECK(for relro, samba_cv_fpie_relro,
+	[
+		cat > conftest.c <<EOF
+int foo;
+main () { return 0;}
+EOF
+                if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -pie -fPIE -Wl,z,relro -o conftest conftest.c 1>&AS_MESSAGE_LOG_FD])
+		then
+			samba_cv_fpie_relro=yes
+		else
+			samba_cv_fpie_relro=no
+		fi
+		rm -f conftest*
+	])
+	if test x"${samba_cv_fpie_relro}" = x"yes"
+	then
+		PIE_LDFLAGS="-pie -Wl,z,relro"
+	fi
+fi
+
 # Assume non-shared by default and override below
 BLDSHARED="false"
 
