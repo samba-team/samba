@@ -84,16 +84,16 @@ static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN
 		
 		basic->dnsname_ptr = 1;
 		init_unistr2( &basic->dns_domain, dnsdomain, UNI_STR_TERMINATE);
+
+		/* FIXME!! We really should fill in the correct forest
+		   name.  Should get this information from winbindd.  */
 		basic->forestname_ptr = 1;
 		init_unistr2( &basic->forest_domain, dnsdomain, UNI_STR_TERMINATE);
 	} else {
-		get_mydnsdomname(dnsdomain);
-		strlower_m(dnsdomain);
-
-		basic->dnsname_ptr = 1;
-		init_unistr2( &basic->dns_domain, dnsdomain, UNI_FLAGS_NONE);
-		basic->forestname_ptr = 1;
-		init_unistr2( &basic->forest_domain, dnsdomain, UNI_FLAGS_NONE);
+		/* security = domain should not fill in the dns or
+		   forest name */
+		basic->dnsname_ptr = 0;
+		basic->forestname_ptr = 0;
 	}
 
 	*info = basic;
