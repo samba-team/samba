@@ -164,7 +164,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);
 
-	event_ctx = event_context_init(mem_ctx);
+	event_ctx = cli->transport->socket->event.ctx;
 	c = talloc_array(mem_ctx, struct composite_context *, torture_numops);
 
 	for (i=0; i<torture_numops; i++) {

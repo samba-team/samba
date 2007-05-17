@@ -68,12 +68,12 @@ BOOL torture_async_bind(struct torture_context *torture)
 	table    = talloc_array(torture, const struct dcerpc_interface_table*, torture_numasync);
 	if (table == NULL) return False;
 	
-	/* event context */
-	evt_ctx = event_context_init(mem_ctx);
-	if (evt_ctx == NULL) return False;
-
 	/* credentials */
 	creds = cmdline_credentials;
+
+	/* event context */
+	evt_ctx = cli_credentials_get_event_context(creds);
+	if (evt_ctx == NULL) return False;
 
 	/* send bind requests */
 	for (i = 0; i < torture_numasync; i++) {

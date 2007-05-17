@@ -755,7 +755,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 		return False;
 	}
 
-	s->ctx = libnet_context_init(event_context_init(s));
+	s->ctx = libnet_context_init(torture->ev);
 	s->ctx->cred = cmdline_credentials;
 
 	s->ldb = ldb_init(s);

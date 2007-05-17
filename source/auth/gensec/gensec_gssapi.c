@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi/gssapi.h"
 #include "auth/kerberos/kerberos.h"
@@ -226,6 +227,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 
 	ret = smb_krb5_init_context(gensec_gssapi_state, 
+				    gensec_security->event_ctx,
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",

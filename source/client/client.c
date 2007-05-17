@@ -2994,7 +2994,8 @@ static struct smbclient_context *do_connect(TALLOC_CTX *mem_ctx,
 	ctx->remote_cur_dir = talloc_strdup(ctx, "\\");
 	
 	status = smbcli_full_connection(ctx, &ctx->cli, server,
-					share, NULL, cred, NULL);
+					share, NULL, cred, 
+					cli_credentials_get_event_context(cred));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));

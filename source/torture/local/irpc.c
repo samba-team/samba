@@ -217,7 +217,7 @@ static BOOL irpc_setup(struct torture_context *tctx, void **_data)
 
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
-	data->ev = event_context_init(tctx);
+	data->ev = tctx->ev;
 	torture_assert(tctx, data->msg_ctx1 = 
 		       messaging_init(tctx, 
 				      cluster_id(MSG_ID1), data->ev),

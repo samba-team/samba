@@ -114,6 +114,9 @@ struct cli_credentials {
 
 	/* Whether any callback is currently running */
 	BOOL callback_running;
+
+	/* an event context for anyone wanting to use the credentials */
+	struct event_context *ev;
 };
 
 struct ldb_context;

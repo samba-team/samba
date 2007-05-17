@@ -843,7 +843,7 @@ BOOL run_benchrw(struct torture_context *tctx)
 			torture_numops, torture_nprocs);
 
 	/*init talloc context*/
-	ev = event_context_init(tctx);
+	ev = tctx->ev;
 	state = talloc_array(tctx, struct benchrw_state *, torture_nprocs);
 
 	/* init params using lp_parm_xxx */

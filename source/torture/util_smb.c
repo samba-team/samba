@@ -31,6 +31,7 @@
 #include "torture/ui.h"
 #include "torture/torture.h"
 #include "util/dlinklist.h"
+#include "auth/credentials/credentials.h"
 
 
 /**
@@ -541,7 +542,8 @@ _PUBLIC_ bool torture_open_connection_ev(struct smbcli_state **c,
 
 _PUBLIC_ bool torture_open_connection(struct smbcli_state **c, int conn_index)
 {
-	return torture_open_connection_ev(c, conn_index, NULL);
+	return torture_open_connection_ev(c, conn_index, 
+					  cli_credentials_get_event_context(cmdline_credentials));
 }
 
 

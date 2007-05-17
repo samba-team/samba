@@ -70,7 +70,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 
 	lp_set_cmdline("pid directory", "piddir.tmp");
 
-	ev = event_context_init(mem_ctx);
+	ev = tctx->ev;
 
 	msg_server_ctx = messaging_init(mem_ctx, cluster_id(1), ev);
 	
