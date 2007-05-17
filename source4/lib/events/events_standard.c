@@ -126,6 +126,7 @@ static void epoll_reopen(struct std_event_context *std_ev)
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = epoll_create(64);
 	if (std_ev->epoll_fd == -1) {
+		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
 		return;
 	}
 	std_ev->pid = getpid();
