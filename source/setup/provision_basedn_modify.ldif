@@ -85,4 +85,7 @@ masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=S
 replace: msDs-masteredBy
 msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 -
+replace: gPLink
+gPLink: [LDAP://CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN};2]
+-
 ${DOMAINGUID_MOD}
