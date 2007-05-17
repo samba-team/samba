@@ -32,13 +32,6 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		goto failed; \
-	}} while (0)
-
 #define BASEDIR "\\benchlock"
 #define FNAME BASEDIR "\\lock.dat"
 
@@ -46,17 +39,19 @@ static int nprocs;
 static int lock_failed;
 static int num_connected;
 
+enum lock_stage {LOCK_INITIAL, LOCK_LOCK, LOCK_UNLOCK};
+
 struct benchlock_state {
 	struct event_context *ev;
 	struct smbcli_tree *tree;
 	TALLOC_CTX *mem_ctx;
 	int client_num;
 	int fnum;
-	int offset;
+	enum lock_stage stage;
+	int lock_offset;
+	int unlock_offset;
 	int count;
 	int lastcount;
-	union smb_lock io;
-	struct smb_lock_entry lock[2];
 	struct smbcli_request *req;
 	struct smb_composite_connect reconnect;
 
@@ -74,20 +69,47 @@ static void lock_completion(struct smbcli_request *);
 */
 static void lock_send(struct benchlock_state *state)
 {
-	state->io.lockx.in.file.fnum = state->fnum;
-	state->io.lockx.in.ulock_cnt = 1;
-	state->lock[0].pid = state->tree->session->pid;
-	state->lock[1].pid = state->tree->session->pid;
-	state->lock[0].offset = state->offset;
-	state->lock[1].offset = (state->offset+1)%nprocs;
-	state->req = smb_raw_lock_send(state->tree, &state->io);
+	union smb_lock io;
+	struct smb_lock_entry lock;
+
+	switch (state->stage) {
+	case LOCK_INITIAL:
+		io.lockx.in.ulock_cnt = 0;
+		io.lockx.in.lock_cnt = 1;
+		state->lock_offset = 0;
+		state->unlock_offset = 0;
+		lock.offset = state->lock_offset;
+		break;
+	case LOCK_LOCK:
+		io.lockx.in.ulock_cnt = 0;
+		io.lockx.in.lock_cnt = 1;
+		state->lock_offset = (state->lock_offset+1)%(nprocs+1);
+		lock.offset = state->lock_offset;
+		break;
+	case LOCK_UNLOCK:
+		io.lockx.in.ulock_cnt = 1;
+		io.lockx.in.lock_cnt = 0;
+		lock.offset = state->unlock_offset;
+		state->unlock_offset = (state->unlock_offset+1)%(nprocs+1);
+		break;
+	}
+
+	lock.count = 1;
+	lock.pid = state->tree->session->pid;
+
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.timeout = 100000;
+	io.lockx.in.locks = &lock;
+	io.lockx.in.file.fnum = state->fnum;
+
+	state->req = smb_raw_lock_send(state->tree, &io);
 	if (state->req == NULL) {
 		DEBUG(0,("Failed to setup lock\n"));
 		lock_failed++;
 	}
 	state->req->async.private = state;
 	state->req->async.fn      = lock_completion;
-	state->offset = (state->offset+1)%nprocs;
 }
 
 static void reopen_connection(struct event_context *ev, struct timed_event *te, 
@@ -106,22 +128,13 @@ static void reopen_file(struct event_context *ev, struct timed_event *te,
 		exit(1);
 	}
 
-	/* reestablish one lock, preparing for the async lock loop */
-	state->lock[0].offset = state->offset;
-	state->io.lockx.in.ulock_cnt = 0;
-	state->io.lockx.in.file.fnum = state->fnum;
-	state->req = smb_raw_lock_send(state->tree, &state->io);
-	if (state->req == NULL) {
-		DEBUG(0,("Failed to setup lock\n"));
-		lock_failed++;
-	}
-	state->req->async.private = state;
-	state->req->async.fn      = lock_completion;
-
 	num_connected++;
 
 	DEBUG(0,("reconnect to %s finished (%u connected)\n", state->dest_host,
 		 num_connected));
+
+	state->stage = LOCK_INITIAL;
+	lock_send(state);
 }
 
 /*
@@ -211,10 +224,23 @@ static void lock_completion(struct smbcli_request *req)
 			DEBUG(0,("Lock failed - %s\n", nt_errstr(status)));
 			lock_failed++;
 		}
-	} else {
-		state->count++;
-		lock_send(state);
+		return;
 	}
+
+	switch (state->stage) {
+	case LOCK_INITIAL:
+		state->stage = LOCK_LOCK;
+		break;
+	case LOCK_LOCK:
+		state->stage = LOCK_UNLOCK;
+		break;
+	case LOCK_UNLOCK:
+		state->stage = LOCK_LOCK;
+		break;
+	}
+
+	state->count++;
+	lock_send(state);
 }
 
 
@@ -246,7 +272,6 @@ BOOL torture_bench_lock(struct torture_context *torture)
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchlock_state *state;
 	int total = 0, minops=0;
-	NTSTATUS status;
 	struct smbcli_state *cli;
 	bool progress;
 
@@ -290,24 +315,7 @@ BOOL torture_bench_lock(struct torture_context *torture)
 			goto failed;
 		}
 
-		state[i].io.lockx.level = RAW_LOCK_LOCKX;
-		state[i].io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
-		state[i].io.lockx.in.timeout = 100000;
-		state[i].io.lockx.in.ulock_cnt = 0;
-		state[i].io.lockx.in.lock_cnt = 1;
-		state[i].lock[0].count = 1;
-		state[i].lock[1].count = 1;
-		state[i].io.lockx.in.locks = &state[i].lock[0];
-
-		state[i].offset = i;
-		state[i].io.lockx.in.file.fnum = state[i].fnum;
-		state[i].lock[0].offset = state[i].offset;
-		state[i].lock[0].pid    = state[i].tree->session->pid;
-		status = smb_raw_lock(state[i].tree, &state[i].io);
-		CHECK_STATUS(status, NT_STATUS_OK);
-	}
-
-	for (i=0;i<nprocs;i++) {
+		state[i].stage = LOCK_INITIAL;
 		lock_send(&state[i]);
 	}
 
