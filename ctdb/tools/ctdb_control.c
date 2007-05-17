@@ -513,8 +513,8 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 			keystr  = hex_encode(ctdb, keys.keys[i].dptr, keys.keys[i].dsize);
 			datastr = hex_encode(ctdb, keys.data[i].dptr, keys.data[i].dsize);
 
-			printf("rsn:%llu lmaster:%d dmaster:%d key:%s data:%s\n", 
-			       (unsigned long long)keys.headers[i].rsn, keys.lmasters[i], 
+			printf("rsn:%llu dmaster:%d key:%s data:%s\n", 
+			       (unsigned long long)keys.headers[i].rsn,  
 			       keys.headers[i].dmaster, keystr, datastr); 
 			ret++;
 		}
