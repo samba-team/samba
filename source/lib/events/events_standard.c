@@ -330,6 +330,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 #define epoll_del_event(std_ev,fde)
 #define epoll_change_event(std_ev,fde)
 #define epoll_event_loop(std_ev,tvalp) (-1)
+#define epoll_check_reopen(std_ev)
 #endif
 
 /*
