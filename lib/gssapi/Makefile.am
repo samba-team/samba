@@ -17,7 +17,6 @@ krb5src = \
 	krb5/accept_sec_context.c \
 	krb5/acquire_cred.c \
 	krb5/add_cred.c \
-	krb5/add_oid_set_member.c \
 	krb5/address_to_krb5addr.c \
 	krb5/arcfour.c \
 	krb5/canonicalize_name.c \
@@ -28,7 +27,6 @@ krb5src = \
 	krb5/compat.c \
 	krb5/context_time.c \
 	krb5/copy_ccache.c \
-	krb5/create_emtpy_oid_set.c \
 	krb5/decapsulate.c \
 	krb5/delete_sec_context.c \
 	krb5/display_name.c \
@@ -58,11 +56,9 @@ krb5src = \
 	krb5/release_buffer.c \
 	krb5/release_cred.c \
 	krb5/release_name.c \
-	krb5/release_oid_set.c \
 	krb5/sequence.c \
 	krb5/set_cred_option.c \
 	krb5/set_sec_context_option.c \
-	krb5/test_oid_set_member.c \
 	krb5/ticket_flags.c \
 	krb5/unwrap.c \
 	krb5/v1.c \
