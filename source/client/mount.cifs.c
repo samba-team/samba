@@ -419,6 +419,11 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				printf("password too long\n");
 				return 1;
 			}
+		} else if (strncmp(data, "sec", 3) == 0) {
+			if (value) {
+				if (!strcmp(value, "none"))
+					got_password = 1;
+			}
 		} else if (strncmp(data, "ip", 2) == 0) {
 			if (!value || !*value) {
 				printf("target ip address argument missing");
@@ -567,8 +572,6 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 			*filesys_flags &= ~MS_NOEXEC;
 		} else if (strncmp(data, "guest", 5) == 0) {
 			got_password=1;
-                        /* remove the parm since it would otherwise be logged by kern */
-			goto nocopy;
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
