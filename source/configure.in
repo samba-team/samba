@@ -1943,6 +1943,14 @@ if test x"$samba_cv_compiler_supports_ll" = x"yes"; then
 fi
 
 
+AC_CACHE_CHECK([for 64 bit time_t],samba_cv_SIZEOF_TIME_T,[
+AC_TRY_RUN([#include <time.h>
+main() { exit((sizeof(time_t) == 8) ? 0 : 1); }],
+samba_cv_SIZEOF_TIME_T=yes,samba_cv_SIZEOF_TIME_T=no,samba_cv_SIZEOF_TIME_T=cross)])
+if test x"$samba_cv_SIZEOF_TIME_T" = x"yes"; then
+    AC_DEFINE(SIZEOF_TIME_T,8,[The size of the 'time_t' type])
+fi
+
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>

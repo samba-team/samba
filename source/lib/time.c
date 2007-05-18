@@ -554,6 +554,37 @@ NTTIME timeval_to_nttime(const struct timeval *tv)
 		  ((TIME_FIXUP_CONSTANT_INT + (uint64_t)tv->tv_sec) * 1000000));
 }
 
+/**************************************************************
+ Handle conversions between time_t and uint32, taking care to
+ preserve the "special" values.
+**************************************************************/
+
+uint32 convert_time_t_to_uint32(time_t t)
+{
+#if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
+	/* time_t is 64-bit. */
+	if (t == 0x8000000000000000LL) {
+		return 0x80000000;
+	} else if (t == 0x7FFFFFFFFFFFFFFFLL) {
+		return 0x7FFFFFFF;
+	}
+#endif
+	return (uint32)t;
+}
+
+time_t convert_uint32_to_time_t(uint32 u)
+{
+#if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
+	/* time_t is 64-bit. */
+	if (u == 0x80000000) {
+		return (time_t)0x8000000000000000LL;
+	} else if (u == 0x7FFFFFFF) {
+		return (time_t)0x7FFFFFFFFFFFFFFFLL) {
+	}
+#endif
+	return (time_t)u;
+}
+
 /*******************************************************************
  Yield the difference between *A and *B, in seconds, ignoring leap seconds.
 ********************************************************************/
