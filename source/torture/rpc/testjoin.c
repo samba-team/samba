@@ -261,7 +261,7 @@ again:
 	s.in.info = &u;
 	s.in.level = 21;
 
-	u.info21.acct_flags = acct_type;
+	u.info21.acct_flags = acct_type | ACB_PWNOEXP;
 	u.info21.fields_present = SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_DESCRIPTION | SAMR_FIELD_COMMENT | SAMR_FIELD_FULL_NAME;
 
 	u.info21.comment.string = talloc_asprintf(join, 
