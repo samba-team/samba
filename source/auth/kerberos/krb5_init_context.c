@@ -176,21 +176,27 @@ static void smb_krb5_socket_handler(struct event_context *ev, struct fd_event *f
 	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
 	switch (smb_krb5->hi->proto) {
 	case KRB5_KRBHST_UDP:
-		if (flags & EVENT_FD_WRITE) {
-			smb_krb5_socket_send(smb_krb5);
-		} 
 		if (flags & EVENT_FD_READ) {
 			smb_krb5_socket_recv(smb_krb5);
+			return;
 		}
-		break;
+		if (flags & EVENT_FD_WRITE) {
+			smb_krb5_socket_send(smb_krb5);
+			return;
+		}
+		/* not reached */
+		return;
 	case KRB5_KRBHST_TCP:
 		if (flags & EVENT_FD_READ) {
 			packet_recv(smb_krb5->packet);
+			return;
 		}
 		if (flags & EVENT_FD_WRITE) {
 			packet_queue_run(smb_krb5->packet);
+			return;
 		}
-		break;
+		/* not reached */
+		return;
 	case KRB5_KRBHST_HTTP:
 		/* can't happen */
 		break;
@@ -277,9 +283,14 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		}
 		talloc_free(remote_addr);
 
+		/* Setup the FDE, start listening for read events
+		 * from the start (otherwise we may miss a socket
+		 * drop) and mark as AUTOCLOSE along with the fde */
+
+		/* Ths is equivilant to EVENT_FD_READABLE(smb_krb5->fde) */
 		smb_krb5->fde = event_add_fd(ev, smb_krb5->sock, 
 					     socket_get_fd(smb_krb5->sock), 
-					     EVENT_FD_AUTOCLOSE,
+					     EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 					     smb_krb5_socket_handler, smb_krb5);
 		/* its now the job of the event layer to close the socket */
 		socket_set_flags(smb_krb5->sock, SOCKET_FLAG_NOCLOSE);
@@ -316,7 +327,6 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 			RSIVAL(smb_krb5->request.data, 0, send_blob.length);
 			memcpy(smb_krb5->request.data+4, send_blob.data, send_blob.length);
 			packet_send(smb_krb5->packet, smb_krb5->request);
-			EVENT_FD_READABLE(smb_krb5->fde);
 			break;
 		case KRB5_KRBHST_HTTP:
 			talloc_free(smb_krb5);
