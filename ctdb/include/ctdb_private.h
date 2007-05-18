@@ -265,6 +265,7 @@ struct ctdb_context {
 	uint32_t num_clients;
 	uint32_t seqnum_frequency;
 	uint32_t recovery_master;
+	struct ctdb_call_state *pending_calls;
 };
 
 struct ctdb_db_context {
@@ -299,11 +300,6 @@ struct ctdb_db_context {
           DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_fatal(ctdb, "Out of memory in " __location__ ); \
 	  }} while (0)
-
-/* timeout for ctdb call operations. When this timeout expires we
-   check if the generation count has changed, and if it has then
-   re-issue the call */
-#define CTDB_CALL_TIMEOUT 2
 
 /* maximum timeout for ctdb control calls */
 #define CTDB_CONTROL_TIMEOUT 60
@@ -390,6 +386,7 @@ enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
   state of a in-progress ctdb call
 */
 struct ctdb_call_state {
+	struct ctdb_call_state *next, *prev;
 	enum call_state state;
 	uint32_t reqid;
 	struct ctdb_req_call *c;
@@ -397,7 +394,6 @@ struct ctdb_call_state {
 	const char *errmsg;
 	struct ctdb_call call;
 	uint32_t generation;
-	uint32_t resend_count;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
 		void *private_data;
@@ -828,5 +824,6 @@ int ctdb_start_monitoring(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
+void ctdb_call_resend_all(struct ctdb_context *ctdb);
 
 #endif

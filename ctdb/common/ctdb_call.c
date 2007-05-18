@@ -607,37 +607,20 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 */
 static int ctdb_call_destructor(struct ctdb_call_state *state)
 {
+	DLIST_REMOVE(state->ctdb_db->ctdb->pending_calls, state);
 	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
 	return 0;
 }
 
 
 /*
-  called when a ctdb_call times out
+  called when a ctdb_call needs to be resent after a reconfigure event
 */
-static void ctdb_call_timeout(struct event_context *ev, struct timed_event *te, 
-			      struct timeval t, void *private_data)
+static void ctdb_call_resend(struct ctdb_call_state *state)
 {
-	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
 	struct ctdb_context *ctdb = state->ctdb_db->ctdb;
 
-	ctdb->status.timeouts.call++;
-
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_CALL_TIMEOUT, 0), 
-			ctdb_call_timeout, state);
-
-	if (++state->resend_count < 10 &&
-	    (ctdb->vnn_map->generation == state->generation ||
-	     ctdb->recovery_mode != CTDB_RECOVERY_NORMAL)) {
-		/* the call is just being slow, or we are curently
-		   recovering, give it more time */
-		return;
-	}
-
-	/* the generation count changed or we're timing out too much -
-	   the call must be re-issued */
 	state->generation = ctdb->vnn_map->generation;
-	state->resend_count = 0;
 
 	/* use a new reqid, in case the old reply does eventually come in */
 	ctdb_reqid_remove(ctdb, state->reqid);
@@ -651,7 +634,19 @@ static void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 	state->c->hdr.destnode = ctdb->vnn;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
-	DEBUG(0,("requeued ctdb_call after timeout\n"));
+	DEBUG(0,("resent ctdb_call\n"));
+}
+
+/*
+  resend all pending calls on recovery
+ */
+void ctdb_call_resend_all(struct ctdb_context *ctdb)
+{
+	struct ctdb_call_state *state, *next;
+	for (state=ctdb->pending_calls;state;state=next) {
+		next = state->next;
+		ctdb_call_resend(state);
+	}
 }
 
 /*
@@ -743,10 +738,10 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->state  = CTDB_CALL_WAIT;
 	state->generation = ctdb->vnn_map->generation;
 
+	DLIST_ADD(ctdb->pending_calls, state);
+
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_CALL_TIMEOUT, 0), 
-			ctdb_call_timeout, state);
 	return state;
 }
 

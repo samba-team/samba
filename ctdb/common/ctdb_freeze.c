@@ -223,5 +223,6 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb)
 {
 	talloc_free(ctdb->freeze_handle);
 	ctdb->freeze_handle = NULL;
+	ctdb_call_resend_all(ctdb);
 	return 0;
 }
