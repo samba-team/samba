@@ -311,6 +311,9 @@ struct ctdb_db_context {
 /* timeout between dead-node monitoring events */
 #define CTDB_MONITORING_TIMEOUT 5
 
+/* number of monitoring timeouts before a node is considered dead */
+#define CTDB_MONITORING_DEAD_COUNT 3
+
 
 /* number of consecutive calls from the same node before we give them
    the record */
@@ -710,7 +713,6 @@ void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *ty
 void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid);
 
 void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_request_keepalive(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
@@ -819,6 +821,6 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb);
 uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb);
 
 int ctdb_start_monitoring(struct ctdb_context *ctdb);
-void ctdb_send_keepalive(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t destnode);
+void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 
 #endif

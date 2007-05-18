@@ -785,13 +785,11 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 /* 
    send a keepalive packet to the other node
 */
-void ctdb_send_keepalive(struct ctdb_context *ctdb,
-				TALLOC_CTX *mem_ctx,
-				uint32_t destnode)
+void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 {
 	struct ctdb_req_keepalive *r;
 	
-	r = ctdb_transport_allocate(ctdb, mem_ctx, CTDB_REQ_KEEPALIVE,
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_KEEPALIVE,
 				    sizeof(struct ctdb_req_keepalive), 
 				    struct ctdb_req_keepalive);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
