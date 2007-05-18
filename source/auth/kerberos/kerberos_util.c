@@ -237,6 +237,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		talloc_free(mem_ctx);
 		return ret;
 	} 
+	talloc_free(mem_ctx);
 	return 0;
 }
 
