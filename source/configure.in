@@ -1778,10 +1778,11 @@ SHLIBEXT="so"
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 			else
-				PICFLAG="+z"
+				PICFLAG="+z +ESnolit"
 			fi
 			if test "$host_cpu" = "ia64"; then
 				SHLIBEXT="so"
+			      PICFLAG="+z"
 				DYNEXP="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 			else
 				SHLIBEXT="sl"
