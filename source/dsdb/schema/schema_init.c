@@ -368,7 +368,7 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 {
 	WERROR status;
 
-	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, True);
+	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, False);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, True);
 	if (schema->num_prefixes == 0) {
@@ -440,7 +440,7 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 {
 	WERROR status;
 
-	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, True);
+	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, False);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, True);
 	if (schema->num_prefixes == 0) {
@@ -980,4 +980,126 @@ const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 	}
 
 	return schema;
+}
+
+WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df)
+{
+	struct ldb_ldif *ldif;
+	struct ldb_message *msg;
+	TALLOC_CTX *mem_ctx;
+	WERROR status;
+	int ret;
+	struct dsdb_schema *schema;
+	const struct ldb_val *prefix_val;
+	const struct ldb_val *info_val;
+	struct ldb_val info_val_default;
+
+	mem_ctx = talloc_new(ldb);
+	if (!mem_ctx) {
+		goto nomem;
+	}
+
+	schema = talloc_zero(mem_ctx, struct dsdb_schema);
+	if (!schema) {
+		goto nomem;
+	}
+
+	/*
+	 * load the prefixMap attribute from pf
+	 */
+	ldif = ldb_ldif_read_string(ldb, &pf);
+	if (!ldif) {
+		status = WERR_INVALID_PARAM;
+		goto failed;
+	}
+	talloc_steal(mem_ctx, ldif);
+
+	msg = ldb_msg_canonicalize(ldb, ldif->msg);
+	if (!msg) {
+		goto nomem;
+	}
+
+	prefix_val = ldb_msg_find_ldb_val(msg, "prefixMap");
+	if (!prefix_val) {
+	    	status = WERR_INVALID_PARAM;
+		goto failed;
+	}
+
+	info_val = ldb_msg_find_ldb_val(msg, "schemaInfo");
+	if (!info_val) {
+		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
+		if (!info_val_default.data) {
+			goto nomem;
+		}
+		talloc_steal(mem_ctx, info_val_default.data);
+		info_val = &info_val_default;
+	}
+
+	status = dsdb_load_oid_mappings_ldb(schema, prefix_val, info_val);
+	if (!W_ERROR_IS_OK(status)) {
+		goto failed;
+	}
+
+	/*
+	 * load the attribute and class definitions outof df
+	 */
+	while ((ldif = ldb_ldif_read_string(ldb, &df))) {
+		bool is_sa;
+		bool is_sc;
+
+		talloc_steal(mem_ctx, ldif);
+
+		msg = ldb_msg_canonicalize(ldb, ldif->msg);
+		if (!msg) {
+			goto nomem;
+		}
+
+		is_sa = ldb_msg_check_string_attribute(msg, "objectClass", "attributeSchema");
+		is_sc = ldb_msg_check_string_attribute(msg, "objectClass", "classSchema");
+
+		if (is_sa) {
+			struct dsdb_attribute *sa;
+
+			sa = talloc_zero(schema, struct dsdb_attribute);
+			if (!sa) {
+				goto nomem;
+			}
+
+			status = dsdb_attribute_from_ldb(schema, msg, sa, sa);
+			if (!W_ERROR_IS_OK(status)) {
+				goto failed;
+			}
+
+			DLIST_ADD_END(schema->attributes, sa, struct dsdb_attribute *);
+		} else if (is_sc) {
+			struct dsdb_class *sc;
+
+			sc = talloc_zero(schema, struct dsdb_class);
+			if (!sc) {
+				goto nomem;
+			}
+
+			status = dsdb_class_from_ldb(schema, msg, sc, sc);
+			if (!W_ERROR_IS_OK(status)) {
+				goto failed;
+			}
+
+			DLIST_ADD_END(schema->classes, sc, struct dsdb_class *);
+		}
+	}
+
+	ret = dsdb_set_schema(ldb, schema);
+	if (ret != LDB_SUCCESS) {
+		status = WERR_FOOBAR;
+		goto failed;
+	}
+
+	goto done;
+
+nomem:
+	status = WERR_NOMEM;
+failed:
+done:
+	talloc_free(mem_ctx);
+	return status;
 }
