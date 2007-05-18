@@ -121,13 +121,14 @@ case "$host_os" in
 			BLDSHARED="true"
 			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
 			SONAMEFLAG="-Wl,+h "
-			PICFLAG="+z"
+			PICFLAG="+z +ESnolit"
 		elif test "${GCC}" = "yes"; then
 			BLDSHARED="true" # I hope this is correct
 			PICFLAG="-fPIC"
 		fi
 		if test "$host_cpu" = "ia64"; then
 			SHLIBEXT="so"
+			PICFLAG="+z"
 			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 		else
 			SHLIBEXT="sl"
