@@ -15,6 +15,7 @@ INIT_FUNCTION = smb_setup_ejs_config
 OBJ_FILES = smbcalls_ldb.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_ldb
+PRIVATE_DEPENDENCIES = LIBLDB SAMDB LIBNDR
 
 [MODULE::smbcalls_nbt]
 OBJ_FILES = smbcalls_nbt.o
