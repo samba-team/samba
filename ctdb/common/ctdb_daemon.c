@@ -749,6 +749,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_accept_client, ctdb);
 
+	/* start monitoring for dead nodes */
+	ctdb_start_monitoring(ctdb);
+
 	ctdb_main_loop(ctdb);
 
 	return 0;
