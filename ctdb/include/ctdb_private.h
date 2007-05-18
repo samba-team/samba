@@ -74,7 +74,7 @@ typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length,
 
 /* used for callbacks in ctdb_control requests */
 typedef void (*ctdb_control_callback_fn_t)(struct ctdb_context *,
-					   uint32_t status, TDB_DATA data, 
+					   int32_t status, TDB_DATA data, 
 					   const char *errormsg,
 					   void *private_data);
 
@@ -93,6 +93,10 @@ struct ctdb_node {
 	/* used by the dead node monitoring */
 	uint32_t dead_count;
 	uint32_t rx_cnt;
+
+	/* a list of controls pending to this node, so we can time them out quickly
+	   if the node becomes disconnected */
+	struct daemon_control_state *pending_controls;
 };
 
 /*
@@ -822,5 +826,7 @@ uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb);
 
 int ctdb_start_monitoring(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
+
+void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
 
 #endif

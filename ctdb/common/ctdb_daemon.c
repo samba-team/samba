@@ -836,16 +836,18 @@ void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hd
 
 
 struct daemon_control_state {
+	struct daemon_control_state *next, *prev;
 	struct ctdb_client *client;
 	struct ctdb_req_control *c;
 	uint32_t reqid;
+	struct ctdb_node *node;
 };
 
 /*
   callback when a control reply comes in
  */
 static void daemon_control_callback(struct ctdb_context *ctdb,
-				    uint32_t status, TDB_DATA data, 
+				    int32_t status, TDB_DATA data, 
 				    const char *errormsg,
 				    void *private_data)
 {
@@ -880,6 +882,30 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 }
 
 /*
+  fail all pending controls to a disconnected node
+ */
+void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node)
+{
+	struct daemon_control_state *state;
+	while ((state = node->pending_controls)) {
+		DLIST_REMOVE(node->pending_controls, state);
+		daemon_control_callback(ctdb, (uint32_t)-1, tdb_null, 
+					"node is disconnected", state);
+	}
+}
+
+/*
+  destroy a daemon_control_state
+ */
+static int daemon_control_destructor(struct daemon_control_state *state)
+{
+	if (state->node) {
+		DLIST_REMOVE(state->node->pending_controls, state);
+	}
+	return 0;
+}
+
+/*
   this is called when the ctdb daemon received a ctdb request control
   from a local client over the unix domain socket
  */
@@ -900,6 +926,14 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	state->client = client;
 	state->c = talloc_steal(state, c);
 	state->reqid = c->hdr.reqid;
+	if (ctdb_validate_vnn(client->ctdb, c->hdr.destnode)) {
+		state->node = client->ctdb->nodes[c->hdr.destnode];
+		DLIST_ADD(state->node->pending_controls, state);
+	} else {
+		state->node = NULL;
+	}
+
+	talloc_set_destructor(state, daemon_control_destructor);
 	
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
@@ -911,6 +945,10 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	if (res != 0) {
 		DEBUG(0,(__location__ " Failed to send control to remote node %u\n",
 			 c->hdr.destnode));
+	}
+
+	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {
+		talloc_free(state);
 	}
 }
 
