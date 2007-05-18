@@ -27,6 +27,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "db_wrap.h"
+#include "dsdb/samdb/samdb.h"
+#include "librpc/ndr/libndr.h"
 
 /*
   get the connected db
@@ -566,6 +568,123 @@ static int ejs_ldbTransactionCommit(MprVarHandle eid, int argc, struct MprVar **
 }
 
 /*
+  commit a ldb attach a dsdb_schema from ldif files
+  usage:
+   ok = ldb.attach_dsdb_schema_from_ldif("prefixMap ldif content", "definition ldif content")
+*/
+static int ejs_ldb_attach_dsdb_schema_from_ldif(MprVarHandle eid, int argc, char **argv)
+{
+	struct ldb_context *ldb;
+	WERROR status;
+	char *pf_name;
+	char *df_name;
+	const char *pf;
+	const char *df;
+
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "ldb.attach_dsdb_schema_from_ldif invalid arguments");
+		return -1;
+	}
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	pf = argv[0];
+	df = argv[1];
+
+	status = dsdb_attach_schema_from_ldif_file(ldb, pf, df);
+
+	mpr_Return(eid, mprWERROR(status));
+	return 0;
+}
+
+/*
+  commit a ldb attach a dsdb_schema from ldif files
+  usage:
+   ok = ldb.set_ntds_invocationId("7729aa4b-f990-41ad-b81a-8b6a14090f41");
+*/
+static int ejs_ldb_set_ntds_invocationId(MprVarHandle eid, int argc, char **argv)
+{
+	struct ldb_context *ldb;
+	NTSTATUS status;
+	struct GUID guid;
+	char *guid_str;
+	bool ok;
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "ldb.set_ntds_invocationId invalid arguments");
+		return -1;
+	}
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	guid_str = argv[0];
+
+	status = GUID_from_string(guid_str, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "ldb.set_ntds_invocationId - failed to parse GUID '%s' %s\n",
+				guid_str, nt_errstr(status));
+		return -1;
+	}
+
+	ok = samdb_set_ntds_invocation_id(ldb, &guid);
+	if (!ok) {
+		ejsSetErrorMsg(eid, "ldb.set_ntds_invocationId - failed to set cached ntds invocationId\n");
+		return -1;
+	}
+
+	mpr_Return(eid, mprCreateBoolVar(ok));
+	return 0;
+}
+
+/*
+  commit a ldb attach a dsdb_schema from ldif files
+  usage:
+   ok = ldb.get_ntds_objectGUID("7729aa4b-f990-41ad-b81a-8b6a14090f41");
+*/
+static int ejs_ldb_set_ntds_objectGUID(MprVarHandle eid, int argc, char **argv)
+{
+	struct ldb_context *ldb;
+	NTSTATUS status;
+	struct GUID guid;
+	char *guid_str;
+	bool ok;
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "ldb.set_ntds_objectGUID invalid arguments");
+		return -1;
+	}
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	guid_str = argv[0];
+
+	status = GUID_from_string(guid_str, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "ldb.set_ntds_objectGUID - failed to parse GUID '%s' %s\n",
+				guid_str, nt_errstr(status));
+		return -1;
+	}
+
+	ok = samdb_set_ntds_invocation_id(ldb, &guid);
+	if (!ok) {
+		ejsSetErrorMsg(eid, "ldb.set_ntds_objectGUID - failed to set cached ntds invocationId\n");
+		return -1;
+	}
+
+	mpr_Return(eid, mprCreateBoolVar(ok));
+	return 0;
+}
+
+/*
   initialise ldb ejs subsystem
 */
 static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -586,6 +705,12 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(ldb, "transaction_start", ejs_ldbTransactionStart);
 	mprSetCFunction(ldb, "transaction_cancel", ejs_ldbTransactionCancel);
 	mprSetCFunction(ldb, "transaction_commit", ejs_ldbTransactionCommit);
+	mprSetStringCFunction(ldb, "attach_dsdb_schema_from_ldif",
+			      ejs_ldb_attach_dsdb_schema_from_ldif);
+	mprSetStringCFunction(ldb, "set_ntds_invocationId",
+			      ejs_ldb_set_ntds_invocationId);
+	mprSetStringCFunction(ldb, "set_ntds_objectGUID",
+			      ejs_ldb_set_ntds_objectGUID);
 	mprSetVar(ldb, "SCOPE_BASE", mprCreateNumberVar(LDB_SCOPE_BASE));
 	mprSetVar(ldb, "SCOPE_ONE", mprCreateNumberVar(LDB_SCOPE_ONELEVEL));
 	mprSetVar(ldb, "SCOPE_SUBTREE", mprCreateNumberVar(LDB_SCOPE_SUBTREE));
