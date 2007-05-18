@@ -89,6 +89,10 @@ struct ctdb_node {
 	uint32_t vnn;
 #define NODE_FLAGS_CONNECTED 0x00000001
 	uint32_t flags;
+
+	/* used by the dead node monitoring */
+	uint32_t dead_count;
+	uint32_t rx_cnt;
 };
 
 /*
@@ -143,6 +147,8 @@ struct ctdb_status {
 	uint32_t client_packets_recv;
 	uint32_t node_packets_sent;
 	uint32_t node_packets_recv;
+	uint32_t keepalive_packets_sent;
+	uint32_t keepalive_packets_recv;
 	struct {
 		uint32_t req_call;
 		uint32_t reply_call;
@@ -302,6 +308,9 @@ struct ctdb_db_context {
    the traverse */
 #define CTDB_TRAVERSE_TIMEOUT 20
 
+/* timeout between dead-node monitoring events */
+#define CTDB_MONITORING_TIMEOUT 5
+
 
 /* number of consecutive calls from the same node before we give them
    the record */
@@ -410,6 +419,7 @@ enum ctdb_operation {
 	CTDB_REQ_FINISHED,
 	CTDB_REQ_CONTROL,
 	CTDB_REPLY_CONTROL,
+	CTDB_REQ_KEEPALIVE,
 	
 	/* only used on the domain socket */
 	CTDB_REQ_CONNECT_WAIT   = 1000,
@@ -533,6 +543,9 @@ struct ctdb_reply_control {
 	uint8_t data[1];
 };
 
+struct ctdb_req_keepalive {
+	struct ctdb_req_header hdr;
+};
 
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -697,6 +710,7 @@ void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *ty
 void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid);
 
 void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_request_keepalive(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
@@ -803,5 +817,8 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb);
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 
 uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb);
+
+int ctdb_start_monitoring(struct ctdb_context *ctdb);
+void ctdb_send_keepalive(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t destnode);
 
 #endif

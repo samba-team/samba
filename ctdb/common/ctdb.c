@@ -127,6 +127,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	}
 
 	ctdb->num_nodes++;
+	node->dead_count = 0;
 
 	return 0;
 }
@@ -340,6 +341,11 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 	case CTDB_REPLY_CONTROL:
 		ctdb->status.node.reply_control++;
 		ctdb_reply_control(ctdb, hdr);
+		break;
+
+	case CTDB_REQ_KEEPALIVE:
+		ctdb->status.keepalive_packets_recv++;
+		ctdb_request_keepalive(ctdb, hdr);
 		break;
 
 	default:

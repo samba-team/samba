@@ -110,6 +110,8 @@ static void show_status(struct ctdb_status *s)
 		STATUS_FIELD(client_packets_recv),
 		STATUS_FIELD(node_packets_sent),
 		STATUS_FIELD(node_packets_recv),
+		STATUS_FIELD(keepalive_packets_sent),
+		STATUS_FIELD(keepalive_packets_recv),
 		STATUS_FIELD(node.req_call),
 		STATUS_FIELD(node.reply_call),
 		STATUS_FIELD(node.req_dmaster),
