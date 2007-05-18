@@ -579,7 +579,7 @@ time_t convert_uint32_to_time_t(uint32 u)
 	if (u == 0x80000000) {
 		return (time_t)0x8000000000000000LL;
 	} else if (u == 0x7FFFFFFF) {
-		return (time_t)0x7FFFFFFFFFFFFFFFLL) {
+		return (time_t)0x7FFFFFFFFFFFFFFFLL;
 	}
 #endif
 	return (time_t)u;
