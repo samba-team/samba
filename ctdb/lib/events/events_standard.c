@@ -30,6 +30,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/network.h"
 #include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
@@ -58,6 +59,9 @@ struct std_event_context {
 
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
+
+	/* our pid at the time the epoll_fd was created */
+	pid_t pid;
 };
 
 /* use epoll if it is available */
@@ -90,7 +94,9 @@ static uint32_t epoll_map_flags(uint16_t flags)
 */
 static int epoll_ctx_destructor(struct std_event_context *std_ev)
 {
-	close(std_ev->epoll_fd);
+	if (std_ev->epoll_fd != -1) {
+		close(std_ev->epoll_fd);
+	}
 	std_ev->epoll_fd = -1;
 	return 0;
 }
@@ -101,7 +107,35 @@ static int epoll_ctx_destructor(struct std_event_context *std_ev)
 static void epoll_init_ctx(struct std_event_context *std_ev)
 {
 	std_ev->epoll_fd = epoll_create(64);
+	std_ev->pid = getpid();
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
+}
+
+static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *fde);
+
+/*
+  reopen the epoll handle when our pid changes
+  see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an 
+  demonstration of why this is needed
+ */
+static void epoll_check_reopen(struct std_event_context *std_ev)
+{
+	struct fd_event *fde;
+
+	if (std_ev->pid == getpid()) {
+		return;
+	}
+
+	close(std_ev->epoll_fd);
+	std_ev->epoll_fd = epoll_create(64);
+	if (std_ev->epoll_fd == -1) {
+		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
+		return;
+	}
+	std_ev->pid = getpid();
+	for (fde=std_ev->fd_events;fde;fde=fde->next) {
+		epoll_add_event(std_ev, fde);
+	}
 }
 
 #define EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT	(1<<0)
@@ -294,6 +328,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 #define epoll_del_event(std_ev,fde)
 #define epoll_change_event(std_ev,fde)
 #define epoll_event_loop(std_ev,tvalp) (-1)
+#define epoll_check_reopen(std_ev)
 #endif
 
 /*
@@ -374,6 +409,8 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 							   struct std_event_context);
 	struct fd_event *fde;
 
+	epoll_check_reopen(std_ev);
+
 	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
 	if (!fde) return NULL;
 
@@ -420,6 +457,8 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	std_ev = talloc_get_type(ev->additional_data, struct std_event_context);
 
 	fde->flags = flags;
+
+	epoll_check_reopen(std_ev);
 
 	epoll_change_event(std_ev, fde);
 }
@@ -516,6 +555,8 @@ static int std_event_loop_once(struct event_context *ev)
 	if (timeval_is_zero(&tval)) {
 		return 0;
 	}
+
+	epoll_check_reopen(std_ev);
 
 	if (epoll_event_loop(std_ev, &tval) == 0) {
 		return 0;

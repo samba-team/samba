@@ -447,6 +447,8 @@ static int do_recovery(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	/* send a message to all clients telling them that the cluster has been reconfigured */
+	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, CTDB_SRVID_RECONFIGURE, tdb_null);
 
 	DEBUG(0, (__location__ " Recovery complete\n"));
 	return 0;
@@ -465,7 +467,6 @@ static int send_election_request(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	uint64_t srvid;
 	
 	srvid = CTDB_SRVTYPE_RECOVERY;
-	srvid <<= 32;
 
 	emsg.vnn = vnn;
 
@@ -857,7 +858,6 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	/* register a message port for recovery elections */
 	srvid = CTDB_SRVTYPE_RECOVERY;
-	srvid <<= 32;
 	ctdb_set_message_handler(ctdb, srvid, election_handler, NULL);
 
 	monitor_cluster(ctdb);

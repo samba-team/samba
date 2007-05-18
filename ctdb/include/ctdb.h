@@ -56,10 +56,16 @@ struct ctdb_call_info {
    a message handler ID meaning "give me all messages"
  */
 #define CTDB_SRVID_ALL (~(uint64_t)0)
+
 /*
   srvid type : RECOVERY
 */
-#define CTDB_SRVTYPE_RECOVERY	0x64766372
+#define CTDB_SRVTYPE_RECOVERY	0xF100000000000000LL
+
+/* 
+   a message handler ID meaning that the cluster has been reconfigured
+ */
+#define CTDB_SRVID_RECONFIGURE 0xF200000000000000LL
 
 struct event_context;
 

@@ -33,6 +33,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/network.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
@@ -48,6 +49,9 @@ struct aio_event_context {
 	/* a pointer back to the generic event_context */
 	struct event_context *ev;
 
+	/* list of filedescriptor events */
+	struct fd_event *fd_events;
+
 	/* number of registered fd event handlers */
 	int num_fd_events;
 
@@ -61,6 +65,7 @@ struct aio_event_context {
 
 	int epoll_fd;
 	int is_epoll_set;
+	pid_t pid;
 };
 
 struct aio_event {
@@ -90,6 +95,33 @@ static int aio_ctx_destructor(struct aio_event_context *aio_ev)
 	close(aio_ev->epoll_fd);
 	aio_ev->epoll_fd = -1;
 	return 0;
+}
+
+static void epoll_add_event(struct aio_event_context *aio_ev, struct fd_event *fde);
+
+/*
+  reopen the epoll handle when our pid changes
+  see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an 
+  demonstration of why this is needed
+ */
+static void epoll_check_reopen(struct aio_event_context *aio_ev)
+{
+	struct fd_event *fde;
+
+	if (aio_ev->pid == getpid()) {
+		return;
+	}
+
+	close(aio_ev->epoll_fd);
+	aio_ev->epoll_fd = epoll_create(MAX_AIO_QUEUE_DEPTH);
+	if (aio_ev->epoll_fd == -1) {
+		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
+		return;
+	}
+	aio_ev->pid = getpid();
+	for (fde=aio_ev->fd_events;fde;fde=fde->next) {
+		epoll_add_event(aio_ev, fde);
+	}
 }
 
 #define EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT	(1<<0)
@@ -127,6 +159,9 @@ static void epoll_add_event(struct aio_event_context *aio_ev, struct fd_event *f
 static void epoll_del_event(struct aio_event_context *aio_ev, struct fd_event *fde)
 {
 	struct epoll_event event;
+
+	DLIST_REMOVE(aio_ev->fd_events, fde);
+
 	if (aio_ev->epoll_fd == -1) return;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
@@ -185,6 +220,7 @@ static void epoll_change_event(struct aio_event_context *aio_ev, struct fd_event
 
 	/* there's no aio_event attached to the fde */
 	if (want_read || (want_write && !got_error)) {
+		DLIST_ADD(aio_ev->fd_events, fde);
 		epoll_add_event(aio_ev, fde);
 		return;
 	}
@@ -334,6 +370,7 @@ static int aio_event_context_init(struct event_context *ev)
 		talloc_free(aio_ev);
 		return -1;
 	}
+	aio_ev->pid = getpid();
 
 	talloc_set_destructor(aio_ev, aio_ctx_destructor);
 
@@ -382,6 +419,8 @@ static struct fd_event *aio_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 							   struct aio_event_context);
 	struct fd_event *fde;
 
+	epoll_check_reopen(aio_ev);
+
 	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
 	if (!fde) return NULL;
 
@@ -396,6 +435,7 @@ static struct fd_event *aio_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	aio_ev->num_fd_events++;
 	talloc_set_destructor(fde, aio_event_fd_destructor);
 
+	DLIST_ADD(aio_ev->fd_events, fde);
 	epoll_add_event(aio_ev, fde);
 
 	return fde;
@@ -425,6 +465,8 @@ static void aio_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 
 	fde->flags = flags;
 
+	epoll_check_reopen(aio_ev);
+
 	epoll_change_event(aio_ev, fde);
 }
 
@@ -441,6 +483,8 @@ static int aio_event_loop_once(struct event_context *ev)
 	if (timeval_is_zero(&tval)) {
 		return 0;
 	}
+
+	epoll_check_reopen(aio_ev);
 
 	return aio_event_loop(aio_ev, &tval);
 }

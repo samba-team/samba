@@ -705,13 +705,6 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 		ctdb_socket_connect(ctdb);
 	}
 
-	/* if the caller specified a timeout it makes no sense for the
-	   daemon to requeue the packet if the destination is unavailable
-	 */
-	if (timeout) {
-		flags |= CTDB_CTRL_FLAG_NOREQUEUE;
-	}
-
 	state = talloc_zero(ctdb, struct ctdb_client_control_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
