@@ -930,13 +930,13 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 		goto done;
 	}
 
-	pdb_set_logon_time(sampass, logon_time, PDB_SET);
-	pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
-	pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
-	pdb_set_bad_password_time(sampass, bad_password_time, PDB_SET);
-	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
-	pdb_set_pass_must_change_time(sampass, pass_must_change_time, PDB_SET);
-	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
+	pdb_set_logon_time(sampass, convert_uint32_to_time_t(logon_time), PDB_SET);
+	pdb_set_logoff_time(sampass, convert_uint32_to_time_t(logoff_time), PDB_SET);
+	pdb_set_kickoff_time(sampass, convert_uint32_to_time_t(kickoff_time), PDB_SET);
+	pdb_set_bad_password_time(sampass, convert_uint32_to_time_t(bad_password_time), PDB_SET);
+	pdb_set_pass_can_change_time(sampass, convert_uint32_to_time_t(pass_can_change_time), PDB_SET);
+	pdb_set_pass_must_change_time(sampass, convert_uint32_to_time_t(pass_must_change_time), PDB_SET);
+	pdb_set_pass_last_set_time(sampass, convert_uint32_to_time_t(pass_last_set_time), PDB_SET);
 
 	pdb_set_username(sampass, username, PDB_SET); 
 	pdb_set_domain(sampass, domain, PDB_SET);
@@ -1118,13 +1118,13 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	*buf = NULL;
 	buflen = 0;
 
-	logon_time = (uint32)pdb_get_logon_time(sampass);
-	logoff_time = (uint32)pdb_get_logoff_time(sampass);
-	kickoff_time = (uint32)pdb_get_kickoff_time(sampass);
-	bad_password_time = (uint32)pdb_get_bad_password_time(sampass);
-	pass_can_change_time = (uint32)pdb_get_pass_can_change_time_noncalc(sampass);
-	pass_must_change_time = (uint32)pdb_get_pass_must_change_time(sampass);
-	pass_last_set_time = (uint32)pdb_get_pass_last_set_time(sampass);
+	logon_time = convert_time_t_to_uint32(pdb_get_logon_time(sampass));
+	logoff_time = convert_time_t_to_uint32(pdb_get_logoff_time(sampass));
+	kickoff_time = convert_time_t_to_uint32(pdb_get_kickoff_time(sampass));
+	bad_password_time = convert_time_t_to_uint32(pdb_get_bad_password_time(sampass));
+	pass_can_change_time = convert_time_t_to_uint32(pdb_get_pass_can_change_time_noncalc(sampass));
+	pass_must_change_time = convert_time_t_to_uint32(pdb_get_pass_must_change_time(sampass));
+	pass_last_set_time = convert_time_t_to_uint32(pdb_get_pass_last_set_time(sampass));
 
 	user_rid = pdb_get_user_rid(sampass);
 	group_rid = pdb_get_group_rid(sampass);
@@ -1408,7 +1408,7 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 	LastBadPassword = pdb_get_bad_password_time(sampass);
 	DEBUG(7, ("LastBadPassword=%d, resettime=%d, current time=%d.\n", 
 		   (uint32) LastBadPassword, resettime, (uint32)time(NULL)));
-	if (time(NULL) > (LastBadPassword + (time_t)resettime*60)){
+	if (time(NULL) > (LastBadPassword + convert_uint32_to_time_t(resettime)*60)){
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
 		if (updated) {
@@ -1462,7 +1462,7 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 		return True;
 	}
 
-	if ((time(NULL) > (LastBadPassword + (time_t) duration * 60))) {
+	if ((time(NULL) > (LastBadPassword + convert_uint32_to_time_t(duration) * 60))) {
 		pdb_set_acct_ctrl(sampass,
 				  pdb_get_acct_ctrl(sampass) & ~ACB_AUTOLOCK,
 				  PDB_CHANGED);
