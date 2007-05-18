@@ -483,6 +483,8 @@ static int replmd_add_originating(struct ldb_module *module,
 		struct replPropertyMetaData1 *m = &nmd.ctr.ctr1.array[ni];
 		const struct dsdb_attribute *sa;
 
+		if (e->name[0] == '@') continue;
+
 		sa = dsdb_attribute_by_lDAPDisplayName(schema, e->name);
 		if (!sa) {
 			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
