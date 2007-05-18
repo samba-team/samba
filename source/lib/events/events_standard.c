@@ -72,9 +72,7 @@ struct std_event_context {
 */
 static void epoll_fallback_to_select(struct std_event_context *std_ev, const char *reason)
 {
-	const char *cmd = talloc_asprintf(std_ev, "xterm -e gdb --pid %u", getpid());
 	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
-	system(cmd);
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = -1;
 	talloc_set_destructor(std_ev, NULL);
