@@ -2,12 +2,6 @@
 
 local_tests=`bin/smbtorture --list | grep "^LOCAL-" | xargs`
 
-if [ `uname` = "Linux" ]; then
-    # testing against the system iconv only makes sense for our 'reference' iconv
-    # behaviour
-    local_tests="$local_tests LOCAL-ICONV"
-fi
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
