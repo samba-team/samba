@@ -264,6 +264,10 @@ static enum ldb_parse_op ldb_parse_filtertype(void *mem_ctx, char **type, char *
 	/* retrieve attributetype name */
 	t = p;
 
+	if (*p == '@') { /* for internal attributes the first char can be @ */
+		p++;
+	}
+
 	while ((isascii(*p) && isalnum((unsigned char)*p)) || (*p == '-')) { /* attribute names can only be alphanums */
 		p++;
 	}
