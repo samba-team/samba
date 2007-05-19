@@ -754,6 +754,11 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	}
 	if (timed_out) {
 		talloc_free(state);
+		if (errormsg) {
+			(*errormsg) = talloc_strdup(mem_ctx, "control timed out");
+		} else {
+			DEBUG(0,("ctdb_control timed out\n"));
+		}
 		return -1;
 	}
 
