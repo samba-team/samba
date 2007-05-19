@@ -826,5 +826,7 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
 void ctdb_call_resend_all(struct ctdb_context *ctdb);
+void ctdb_node_dead(struct ctdb_node *node);
+void ctdb_node_connected(struct ctdb_node *node);
 
 #endif
