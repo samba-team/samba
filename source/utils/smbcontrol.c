@@ -1062,11 +1062,11 @@ static const struct {
 
 /* Display usage information */
 
-static void usage(poptContext *pc)
+static void usage(poptContext pc)
 {
 	int i;
 
-	poptPrintHelp(*pc, stderr, 0);
+	poptPrintHelp(pc, stderr, 0);
 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\", \"winbindd\" or a "
@@ -1160,6 +1160,29 @@ static BOOL do_command(struct messaging_context *msg_ctx,
 	return False;
 }
 
+static void smbcontrol_help(poptContext pc,
+		    enum poptCallbackReason preason,
+		    struct poptOption * poption,
+		    const char * parg,
+		    void * pdata)
+{
+	if (poption->shortName != '?') {
+		poptPrintUsage(pc, stdout, 0);
+	} else {
+		usage(pc);
+	}
+
+	exit(0);
+}
+
+struct poptOption help_options[] = {
+	{ NULL, '\0', POPT_ARG_CALLBACK, (void *)&smbcontrol_help, '\0',
+	  NULL, NULL },
+	{ "help", '?', 0, NULL, '?', "Show this help message", NULL },
+	{ "usage", '\0', 0, NULL, 'u', "Display brief usage message", NULL },
+	{ NULL }
+} ;
+
 /* Main program */
 
 int main(int argc, const char **argv)
@@ -1170,7 +1193,9 @@ int main(int argc, const char **argv)
 	struct messaging_context *msg_ctx;
 
 	static struct poptOption long_options[] = {
-		POPT_AUTOHELP
+		/* POPT_AUTOHELP */
+		{ NULL, '\0', POPT_ARG_INCLUDE_TABLE, help_options,
+		                        0, "Help options:", NULL },
 		{ "timeout", 't', POPT_ARG_INT, &timeout, 't', 
 		  "Set timeout value in seconds", "TIMEOUT" },
 
@@ -1191,7 +1216,7 @@ int main(int argc, const char **argv)
 			       "<parameters>");
 
 	if (argc == 1)
-		usage(&pc);
+		usage(pc);
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
@@ -1215,7 +1240,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (argc == 1)
-		usage(&pc);
+		usage(pc);
 
 	lp_load(dyn_CONFIGFILE,False,False,False,True);
 
