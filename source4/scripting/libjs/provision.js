@@ -781,6 +781,7 @@ function provision_guess()
 	subobj.HOSTIP       = hostip();
 	subobj.DOMAINSID    = randsid();
 	subobj.INVOCATIONID = randguid();
+	subobj.POLICYGUID   = randguid();
 	subobj.KRBTGTPASS   = randpass(12);
 	subobj.MACHINEPASS  = randpass(12);
 	subobj.ADMINPASS    = randpass(12);
