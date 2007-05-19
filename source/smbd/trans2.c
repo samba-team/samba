@@ -4815,6 +4815,8 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 				offset,
 				POSIX_LOCK);
 	} else {
+		uint32 block_smbpid;
+
 		struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
 							fsp,
 							lock_pid,
@@ -4823,7 +4825,8 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 							lock_type,
 							POSIX_LOCK,
 							blocking_lock,
-							&status);
+							&status,
+							&block_smbpid);
 
 		if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
@@ -4840,7 +4843,8 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 						lock_type,
 						POSIX_LOCK,
 						offset,
-						count)) {
+						count,
+						block_smbpid)) {
 				TALLOC_FREE(br_lck);
 				return status;
 			}

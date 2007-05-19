@@ -313,7 +313,7 @@ static int lock_compare(const struct lock_struct *lck1,
 ****************************************************************************/
 
 static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
-			const struct lock_struct *plock, BOOL blocking_lock)
+			struct lock_struct *plock, BOOL blocking_lock)
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
@@ -322,6 +322,8 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
+			/* Remember who blocked us. */
+			plock->context.smbpid = locks[i].context.smbpid;
 			return brl_lock_failed(fsp,plock,blocking_lock);
 		}
 #if ZERO_ZERO
@@ -346,6 +348,10 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 				locks,
 				br_lck->num_locks,
 				&errno_ret)) {
+
+			/* We don't know who blocked us. */
+			plock->context.smbpid = 0xFFFFFFFF;
+
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			} else {
@@ -586,7 +592,7 @@ OR
 
 static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			       struct byte_range_lock *br_lck,
-			       const struct lock_struct *plock)
+			       struct lock_struct *plock)
 {
 	unsigned int i, count;
 	struct lock_struct *locks = br_lck->lock_data;
@@ -630,6 +636,8 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			if (brl_conflict(curr_lock, plock)) {
 				/* No games with error messages. */
 				SAFE_FREE(tp);
+				/* Remember who blocked us. */
+				plock->context.smbpid = curr_lock->context.smbpid;
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			}
 			/* Just copy the Windows lock into the new array. */
@@ -641,6 +649,8 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 				/* Can't block ourselves with POSIX locks. */
 				/* No games with error messages. */
 				SAFE_FREE(tp);
+				/* Remember who blocked us. */
+				plock->context.smbpid = curr_lock->context.smbpid;
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			}
 
@@ -670,6 +680,10 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 				plock->size,
 				plock->lock_type,
 				&errno_ret)) {
+
+			/* We don't know who blocked us. */
+			plock->context.smbpid = 0xFFFFFFFF;
+
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				SAFE_FREE(tp);
 				return NT_STATUS_FILE_LOCK_CONFLICT;
@@ -730,7 +744,8 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		br_off size, 
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		BOOL blocking_lock)
+		BOOL blocking_lock,
+		uint32 *psmbpid)
 {
 	NTSTATUS ret;
 	struct lock_struct lock;
@@ -761,6 +776,10 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	qsort(br_lck->lock_data, (size_t)br_lck->num_locks, sizeof(lock), lock_compare);
 #endif
 
+	/* If we're returning an error, return who blocked us. */
+	if (!NT_STATUS_IS_OK(ret) && psmbpid) {
+		*psmbpid = lock.context.smbpid;
+	}
 	return ret;
 }
 
