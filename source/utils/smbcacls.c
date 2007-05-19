@@ -902,11 +902,8 @@ static struct cli_state *connect_one(const char *share)
 	fstrcpy(server,path+2);
 	share = strchr_m(server,'\\');
 	if (!share) {
-		share = strchr_m(server,'/');
-		if (!share) {
-			printf("Invalid argument: %s\n", share);
-			return -1;
-		}
+		printf("Invalid argument: %s\n", share);
+		return -1;
 	}
 
 	*share = 0;
