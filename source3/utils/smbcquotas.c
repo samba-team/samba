@@ -500,11 +500,8 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 	pstrcpy(server,path+2);
 	share = strchr_m(server,'\\');
 	if (!share) {
-		share = strchr_m(server,'/');
-		if (!share) {
-			printf("Invalid argument: %s\n", share);
-			exit(EXIT_PARSE_ERROR);
-		}
+		printf("Invalid argument: %s\n", share);
+		exit(EXIT_PARSE_ERROR);
 	}
 
 	*share = 0;
