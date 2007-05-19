@@ -384,6 +384,7 @@ static void ctdb_node_dead(struct ctdb_node *node)
 {
 	node->ctdb->num_connected--;
 	node->flags &= ~NODE_FLAGS_CONNECTED;
+	node->rx_cnt = 0;
 	DEBUG(1,("%s: node %s is dead: %d connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 	ctdb_daemon_cancel_controls(node->ctdb, node);
