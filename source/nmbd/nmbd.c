@@ -88,8 +88,11 @@ static void terminate(void)
  Handle a SHUTDOWN message from smbcontrol.
  **************************************************************************** */
 
-static void nmbd_terminate(int msg_type, struct server_id src,
-			   void *buf, size_t len, void *private_data)
+static void nmbd_terminate(struct messaging_context *msg,
+			   void *private_data,
+			   uint32_t msg_type,
+			   struct server_id server_id,
+			   DATA_BLOB *data)
 {
 	terminate();
 }
@@ -283,33 +286,39 @@ static BOOL reload_nmbd_services(BOOL test)
  * detects that there are no subnets.
  **************************************************************************** */
 
-static void msg_reload_nmbd_services(int msg_type, struct server_id src,
-				     void *buf, size_t len, void *private_data)
+static void msg_reload_nmbd_services(struct messaging_context *msg,
+				     void *private_data,
+				     uint32_t msg_type,
+				     struct server_id server_id,
+				     DATA_BLOB *data)
 {
 	write_browse_list( 0, True );
 	dump_all_namelists();
 	reload_nmbd_services( True );
 	reopen_logs();
 	
-	if(buf) {
+	if (data->data) {
 		/* We were called from process() */
 		/* If reload_interfaces() returned True */
 		/* we need to shutdown if there are no subnets... */
 		/* pass this info back to process() */
-		*((BOOL*)buf) = reload_interfaces(0);  
+		*((BOOL*)data->data) = reload_interfaces(0);  
 	}
 }
 
-static void msg_nmbd_send_packet(int msg_type, struct server_id src,
-				 void *buf, size_t len, void *private_data)
+static void msg_nmbd_send_packet(struct messaging_context *msg,
+				 void *private_data,
+				 uint32_t msg_type,
+				 struct server_id src,
+				 DATA_BLOB *data)
 {
-	struct packet_struct *p = (struct packet_struct *)buf;
+	struct packet_struct *p = (struct packet_struct *)data->data;
 	struct subnet_record *subrec;
 	struct in_addr *local_ip;
 
 	DEBUG(10, ("Received send_packet from %d\n", procid_to_pid(&src)));
 
-	if (len != sizeof(struct packet_struct)) {
+	if (data->length != sizeof(struct packet_struct)) {
 		DEBUG(2, ("Discarding invalid packet length from %d\n",
 			  procid_to_pid(&src)));
 		return;
@@ -568,9 +577,13 @@ static void process(void)
 		 */
 
 		if(reload_after_sighup) {
+			DATA_BLOB blob = data_blob_const(&no_subnets,
+							 sizeof(no_subnets));
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED,
-						 pid_to_procid(0), (void*) &no_subnets, 0, NULL);
+			msg_reload_nmbd_services(nmbd_messaging_context(),
+						 NULL, MSG_SMB_CONF_UPDATED,
+						 procid_self(), &blob);
+
 			if(no_subnets)
 				return;
 			reload_after_sighup = 0;
@@ -770,14 +783,19 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	}
 
 	pidfile_create("nmbd");
-	message_register(MSG_FORCE_ELECTION, nmbd_message_election, NULL);
+	messaging_register(nmbd_messaging_context(), NULL,
+			   MSG_FORCE_ELECTION, nmbd_message_election);
 #if 0
 	/* Until winsrepl is done. */
-	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry, NULL);
+	messaging_register(nmbd_messaging_context(), NULL,
+			   MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
 #endif
-	message_register(MSG_SHUTDOWN, nmbd_terminate, NULL);
-	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services, NULL);
-	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet, NULL);
+	messaging_register(nmbd_messaging_context(), NULL,
+			   MSG_SHUTDOWN, nmbd_terminate);
+	messaging_register(nmbd_messaging_context(), NULL,
+			   MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
+	messaging_register(nmbd_messaging_context(), NULL,
+			   MSG_SEND_PACKET, msg_nmbd_send_packet);
 
 	TimeInit();
 
