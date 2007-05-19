@@ -435,8 +435,10 @@ static void set_domain_online(struct winbindd_domain *domain)
 	}
 
 	/* Ensure we ignore any pending child messages. */
-	message_deregister(MSG_WINBIND_TRY_TO_GO_ONLINE);
-	message_deregister(MSG_WINBIND_FAILED_TO_GO_ONLINE);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_TRY_TO_GO_ONLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_FAILED_TO_GO_ONLINE, NULL);
 
 	domain->online = True;
 

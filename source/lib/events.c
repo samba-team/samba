@@ -224,6 +224,21 @@ BOOL event_add_to_select_args(struct event_context *event_ctx,
 	return True;
 }
 
+BOOL events_pending(struct event_context *event_ctx)
+{
+	struct fd_event *fde;
+
+	if (event_ctx->timed_events != NULL) {
+		return True;
+	}
+	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
+		if (fde->flags & (EVENT_FD_READ|EVENT_FD_WRITE)) {
+			return True;
+		}
+	}
+	return False;
+}
+
 BOOL run_events(struct event_context *event_ctx,
 		int selrtn, fd_set *read_fds, fd_set *write_fds)
 {
