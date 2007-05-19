@@ -380,7 +380,7 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 /*
   called by the transport layer when a node is dead
 */
-static void ctdb_node_dead(struct ctdb_node *node)
+void ctdb_node_dead(struct ctdb_node *node)
 {
 	node->ctdb->num_connected--;
 	node->flags &= ~NODE_FLAGS_CONNECTED;

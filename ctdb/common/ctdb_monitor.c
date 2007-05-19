@@ -57,8 +57,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 
 		if (node->dead_count >= CTDB_MONITORING_DEAD_COUNT) {
 			DEBUG(0,("Node %u is dead - marking as not connected\n", node->vnn));
-			node->flags &= ~NODE_FLAGS_CONNECTED;
-			ctdb_daemon_cancel_controls(ctdb, node);
+			ctdb_node_dead(node);
 			/* maybe tell the transport layer to kill the
 			   sockets as well?
 			*/
