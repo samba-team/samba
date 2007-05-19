@@ -93,6 +93,7 @@ struct ctdb_node {
 	/* used by the dead node monitoring */
 	uint32_t dead_count;
 	uint32_t rx_cnt;
+	uint32_t tx_cnt;
 
 	/* a list of controls pending to this node, so we can time them out quickly
 	   if the node becomes disconnected */

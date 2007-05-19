@@ -64,8 +64,12 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 			*/
 			continue;
 		}
+		
+		if (node->tx_cnt == 0) {
+			ctdb_send_keepalive(ctdb, node->vnn);
+		}
 
-		ctdb_send_keepalive(ctdb, node->vnn);
+		node->tx_cnt = 0;
 	}
 	
 	event_add_timed(ctdb->ev, ctdb, 
