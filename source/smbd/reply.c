@@ -2716,6 +2716,10 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 			if (srv_is_signing_active()) {
 				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 			}
+			/* Is there room in the reply for this data ? */
+			if (smb_maxcnt > (0xFFFFFF - (smb_size -4 + 12*2)))  {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 			big_readX = True;
 		}
 	}
