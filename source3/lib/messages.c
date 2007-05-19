@@ -71,6 +71,12 @@ static struct dispatch_fns {
 	void *private_data;
 } *dispatch_fns;
 
+static void message_register(int msg_type, 
+			     void (*fn)(int msg_type, struct server_id pid,
+					void *buf, size_t len,
+					void *private_data),
+			     void *private_data);
+
 /****************************************************************************
  Free global objects.
 ****************************************************************************/
@@ -147,7 +153,7 @@ static BOOL message_init(struct messaging_context *msg_ctx)
 	/* Register some debugging related messages */
 
 	register_msg_pool_usage(msg_ctx);
-	register_dmalloc_msgs();
+	register_dmalloc_msgs(msg_ctx);
 	debug_register_msgs(msg_ctx);
 
 	return True;
@@ -545,11 +551,11 @@ void message_dispatch(void)
  messages on an *odd* byte boundary.
 ****************************************************************************/
 
-void message_register(int msg_type, 
-		      void (*fn)(int msg_type, struct server_id pid,
-				 void *buf, size_t len,
-				 void *private_data),
-		      void *private_data)
+static void message_register(int msg_type, 
+			     void (*fn)(int msg_type, struct server_id pid,
+					void *buf, size_t len,
+					void *private_data),
+			     void *private_data)
 {
 	struct dispatch_fns *dfn;
 
@@ -582,7 +588,7 @@ void message_register(int msg_type,
  De-register the function for a particular message type.
 ****************************************************************************/
 
-void message_deregister(int msg_type)
+static void message_deregister(int msg_type)
 {
 	struct dispatch_fns *dfn, *next;
 
