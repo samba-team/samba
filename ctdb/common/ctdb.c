@@ -507,8 +507,11 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	if (hdr->destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		ctdb_defer_packet(ctdb, hdr);
-	} else if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
-		ctdb_fatal(ctdb, "Unable to queue packet\n");
+	} else {
+		node->tx_cnt++;
+		if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
+			ctdb_fatal(ctdb, "Unable to queue packet\n");
+		}
 	}
 }
 
