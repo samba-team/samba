@@ -222,7 +222,8 @@ static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 
-void smb_setup_ejs_net(void)
+NTSTATUS smb_setup_ejs_net(void)
 {
 	ejsDefineCFunction(-1, "NetContext", ejs_net_context, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }
