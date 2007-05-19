@@ -2643,7 +2643,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 #endif
 
-	if ((smb_maxcnt && 0xFF0000) > 0x10000) {
+	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
 		int sendlen = setup_readX_header(outbuf,smb_maxcnt) - smb_maxcnt;
 		/* Send out the header. */
 		if (write_data(smbd_server_fd(),outbuf,sendlen) != sendlen) {
