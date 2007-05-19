@@ -166,7 +166,8 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 		cli_shutdown( notify_cli_pipe->cli );
 		notify_cli_pipe = NULL; /* The above call shuts downn the pipe also. */
 
-		message_deregister(MSG_PRINTER_NOTIFY2);
+		messaging_deregister(smbd_messaging_context(),
+				     MSG_PRINTER_NOTIFY2, NULL);
 
         	/* Tell the connections db we're no longer interested in
 		 * printer notify messages. */
@@ -1102,19 +1103,21 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
  Receive a notify2 message list
  ********************************************************************/
 
-static void receive_notify2_message_list(int msg_type, struct server_id src,
-					 void *msg, size_t len,
-					 void *private_data)
+static void receive_notify2_message_list(struct messaging_context *msg,
+					 void *private_data,
+					 uint32_t msg_type,
+					 struct server_id server_id,
+					 DATA_BLOB *data)
 {
 	size_t 			msg_count, i;
-	char 			*buf = (char *)msg;
+	char 			*buf = (char *)data->data;
 	char 			*msg_ptr;
 	size_t 			msg_len;
 	SPOOLSS_NOTIFY_MSG	notify;
 	SPOOLSS_NOTIFY_MSG_CTR	messages;
 	int			num_groups;
 
-	if (len < 4) {
+	if (data->length < 4) {
 		DEBUG(0,("receive_notify2_message_list: bad message format (len < 4)!\n"));
 		return;
 	}
@@ -1144,7 +1147,7 @@ static void receive_notify2_message_list(int msg_type, struct server_id src,
 	for ( i=0; i<msg_count; i++ ) {
 		struct timeval msg_tv;
 
-		if (msg_ptr + 4 - buf > len) {
+		if (msg_ptr + 4 - buf > data->length) {
 			DEBUG(0,("receive_notify2_message_list: bad message format (len > buf_size) !\n"));
 			return;
 		}
@@ -1152,7 +1155,7 @@ static void receive_notify2_message_list(int msg_type, struct server_id src,
 		msg_len = IVAL(msg_ptr,0);
 		msg_ptr += 4;
 
-		if (msg_ptr + msg_len - buf > len) {
+		if (msg_ptr + msg_len - buf > data->length) {
 			DEBUG(0,("receive_notify2_message_list: bad message format (bad len) !\n"));
 			return;
 		}
@@ -2617,8 +2620,9 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ip, unix_printer ))
 			return False;
 			
-		message_register(MSG_PRINTER_NOTIFY2,
-				 receive_notify2_message_list, NULL);
+		messaging_register(smbd_messaging_context(), NULL,
+				   MSG_PRINTER_NOTIFY2,
+				   receive_notify2_message_list);
 		/* Tell the connections db we're now interested in printer
 		 * notify messages. */
 		register_message_flags( True, FLAG_MSG_PRINT_NOTIFY );

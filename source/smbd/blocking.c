@@ -71,9 +71,11 @@ static BOOL in_chained_smb(void)
 	return (chain_size != 0);
 }
 
-static void received_unlock_msg(int msg_type, struct server_id src,
-				void *buf, size_t len,
-				void *private_data);
+static void received_unlock_msg(struct messaging_context *msg,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data);
 
 /****************************************************************************
  Function to push a blocking lock request onto the lock queue.
@@ -160,8 +162,8 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!set_lock_msg) {
-		message_register(MSG_SMB_UNLOCK, received_unlock_msg,
-				 NULL);
+		messaging_register(smbd_messaging_context(), NULL,
+				   MSG_SMB_UNLOCK, received_unlock_msg);
 		set_lock_msg = True;
 	}
 
@@ -592,9 +594,11 @@ BOOL blocking_lock_was_deferred(int mid)
   Set a flag as an unlock request affects one of our pending locks.
 *****************************************************************************/
 
-static void received_unlock_msg(int msg_type, struct server_id src,
-				void *buf, size_t len,
-				void *private_data)
+static void received_unlock_msg(struct messaging_context *msg,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data)
 {
 	DEBUG(10,("received_unlock_msg\n"));
 	process_blocking_lock_queue();
@@ -797,22 +801,23 @@ void process_blocking_lock_queue(void)
 
 #define MSG_BLOCKING_LOCK_CANCEL_SIZE (sizeof(blocking_lock_record *) + sizeof(NTSTATUS))
 
-static void process_blocking_lock_cancel_message(int msg_type,
-						 struct server_id src,
-						 void *buf, size_t len,
-						 void *private_data)
+static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
+						 void *private_data,
+						 uint32_t msg_type,
+						 struct server_id server_id,
+						 DATA_BLOB *data)
 {
 	NTSTATUS err;
-	const char *msg = (const char *)buf;
+	const char *msg = (const char *)data->data;
 	blocking_lock_record *blr;
 
-	if (buf == NULL) {
+	if (data->data == NULL) {
 		smb_panic("process_blocking_lock_cancel_message: null msg\n");
 	}
 
-	if (len != MSG_BLOCKING_LOCK_CANCEL_SIZE) {
+	if (data->length != MSG_BLOCKING_LOCK_CANCEL_SIZE) {
 		DEBUG(0, ("process_blocking_lock_cancel_message: "
-			"Got invalid msg len %d\n", (int)len));
+			  "Got invalid msg len %d\n", (int)data->length));
 		smb_panic("process_blocking_lock_cancel_message: bad msg\n");
         }
 
@@ -845,9 +850,9 @@ BOOL blocking_lock_cancel(files_struct *fsp,
 
 	if (!initialized) {
 		/* Register our message. */
-		message_register(MSG_SMB_BLOCKING_LOCK_CANCEL,
-				 process_blocking_lock_cancel_message,
-				 NULL);
+		messaging_register(smbd_messaging_context(), NULL,
+				   MSG_SMB_BLOCKING_LOCK_CANCEL,
+				   process_blocking_lock_cancel_message);
 
 		initialized = True;
 	}

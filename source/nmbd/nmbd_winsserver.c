@@ -2370,8 +2370,11 @@ void wins_write_database(time_t t, BOOL background)
  Process a internal Samba message receiving a wins record.
 ***************************************************************************/
 
-void nmbd_wins_new_entry(int msg_type, struct server_id src,
-			 void *buf, size_t len, void *private_data)
+void nmbd_wins_new_entry(struct messaging_context *msg,
+                                       void *private_data,
+                                       uint32_t msg_type,
+                                       struct server_id server_id,
+                                       DATA_BLOB *data)
 {
 	WINS_RECORD *record;
 	struct name_record *namerec = NULL;
