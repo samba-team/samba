@@ -234,14 +234,12 @@ uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb)
 
 
 /*
-  called by the transport layer when a packet comes in
+  called when we need to process a packet. This can be a requeued packet
+  after a lockwait, or a real packet from another node
 */
-void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
+void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 	TALLOC_CTX *tmp_ctx;
-
-	ctdb->status.node_packets_recv++;
 
 	/* place the packet as a child of the tmp_ctx. We then use
 	   talloc_free() below to free it. If any of the calls want
@@ -250,34 +248,9 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 	tmp_ctx = talloc_new(ctdb);
 	talloc_steal(tmp_ctx, hdr);
 
-	if (length < sizeof(*hdr)) {
-		ctdb_set_error(ctdb, "Bad packet length %d\n", length);
-		goto done;
-	}
-	if (length != hdr->length) {
-		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
-			       hdr->length, length);
-		goto done;
-	}
-
-	if (hdr->ctdb_magic != CTDB_MAGIC) {
-		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
-		goto done;
-	}
-
-	if (hdr->ctdb_version != CTDB_VERSION) {
-		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
-		goto done;
-	}
-
 	DEBUG(3,(__location__ " ctdb request %d of type %d length %d from "
 		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
 		 hdr->srcnode, hdr->destnode));
-
-	/* up the counter for this source node, so we know its alive */
-	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
-		ctdb->nodes[hdr->srcnode]->rx_cnt++;
-	}
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
@@ -361,14 +334,48 @@ done:
 	talloc_free(tmp_ctx);
 }
 
+
 /*
   called by the transport layer when a packet comes in
 */
-void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length)
+static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 {
-	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
-	ctdb_recv_pkt(ctdb, data, length);
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
+
+	ctdb->status.node_packets_recv++;
+
+	if (length < sizeof(*hdr)) {
+		ctdb_set_error(ctdb, "Bad packet length %d\n", length);
+		return;
+	}
+	if (length != hdr->length) {
+		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
+			       hdr->length, length);
+		return;
+	}
+
+	if (hdr->ctdb_magic != CTDB_MAGIC) {
+		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
+		return;
+	}
+
+	if (hdr->ctdb_version != CTDB_VERSION) {
+		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
+		return;
+	}
+
+	/* up the counter for this source node, so we know its alive */
+	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
+		/* as a special case, redirected calls don't increment the rx_cnt */
+		if (hdr->operation != CTDB_REQ_CALL ||
+		    ((struct ctdb_req_call *)hdr)->hopcount == 0) {
+			ctdb->nodes[hdr->srcnode]->rx_cnt++;
+		}
+	}
+
+	ctdb_input_pkt(ctdb, hdr);
 }
+
 
 /*
   called by the transport layer when a node is dead
@@ -423,8 +430,7 @@ static void queue_next_trigger(struct event_context *ev, struct timed_event *te,
 			       struct timeval t, void *private_data)
 {
 	struct queue_next *q = talloc_get_type(private_data, struct queue_next);
-	ctdb_recv_pkt(q->ctdb, (uint8_t *)q->hdr, q->hdr->length);
-	talloc_free(q);
+	ctdb_input_pkt(q->ctdb, q->hdr);
 }	
 
 /*
@@ -447,8 +453,7 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 	}
 #if 0
 	/* use this to put packets directly into our recv function */
-	ctdb_recv_pkt(q->ctdb, (uint8_t *)q->hdr, q->hdr->length);
-	talloc_free(q);
+	ctdb_input_pkt(q->ctdb, q->hdr);
 #else
 	event_add_timed(ctdb->ev, q, timeval_zero(), queue_next_trigger, q);
 #endif

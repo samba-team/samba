@@ -45,6 +45,16 @@
 
 
 /*
+  a varient of input packet that can be used in lock requeue
+*/
+void ctdb_call_input_pkt(void *p, struct ctdb_req_header *hdr)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+	ctdb_input_pkt(ctdb, hdr);
+}
+
+
+/*
   local version of ctdb_call
 */
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
@@ -363,7 +373,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	
 	/* fetch the current record */
 	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, hdr, &data2,
-					   ctdb_recv_raw_pkt, ctdb, False);
+					   ctdb_call_input_pkt, ctdb, False);
 	if (ret == -1) {
 		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
 		return;
@@ -436,7 +446,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   if the call will be answered locally */
 
 	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call.key, &header, hdr, &data,
-					   ctdb_recv_raw_pkt, ctdb, False);
+					   ctdb_call_input_pkt, ctdb, False);
 	if (ret == -1) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
 		return;
@@ -558,7 +568,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	data.dsize = c->datalen;
 
 	ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr,
-				     ctdb_recv_raw_pkt, ctdb, False);
+				     ctdb_call_input_pkt, ctdb, False);
 	if (ret == -2) {
 		return;
 	}

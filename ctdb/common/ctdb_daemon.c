@@ -40,7 +40,7 @@ struct ctdb_client {
 };
 
 
-static void daemon_incoming_packet(void *, uint8_t *, uint32_t );
+static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
 static void ctdb_main_loop(struct ctdb_context *ctdb)
 {
@@ -438,9 +438,8 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 					       struct ctdb_req_control *c);
 
 /* data contains a packet from the client */
-static void daemon_incoming_packet(void *p, uint8_t *data, uint32_t nread)
+static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 {
-	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 	struct ctdb_client *client = talloc_get_type(p, struct ctdb_client);
 	TALLOC_CTX *tmp_ctx;
 	struct ctdb_context *ctdb = client->ctdb;
@@ -539,7 +538,7 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		 hdr->srcnode, hdr->destnode));
 
 	/* it is the responsibility of the incoming packet function to free 'data' */
-	daemon_incoming_packet(client, data, cnt);
+	daemon_incoming_packet(client, hdr);
 }
 
 static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 

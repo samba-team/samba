@@ -192,7 +192,7 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 
 struct lock_fetch_state {
 	struct ctdb_context *ctdb;
-	void (*recv_pkt)(void *, uint8_t *, uint32_t);
+	void (*recv_pkt)(void *, struct ctdb_req_header *);
 	void *recv_context;
 	struct ctdb_req_header *hdr;
 	uint32_t generation;
@@ -211,7 +211,7 @@ static void lock_fetch_callback(void *p)
 		talloc_free(state->hdr);
 		return;
 	}
-	state->recv_pkt(state->recv_context, (uint8_t *)state->hdr, state->hdr->length);
+	state->recv_pkt(state->recv_context, state->hdr);
 	DEBUG(2,(__location__ " PACKET REQUEUED\n"));
 }
 
@@ -242,7 +242,7 @@ static void lock_fetch_callback(void *p)
  */
 int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
 			   TDB_DATA key, struct ctdb_req_header *hdr,
-			   void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+			   void (*recv_pkt)(void *, struct ctdb_req_header *),
 			   void *recv_context, bool ignore_generation)
 {
 	int ret;
@@ -285,7 +285,7 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 		return -1;
 	}
 
-	/* we need to move the packet off the temporary context in ctdb_recv_pkt(),
+	/* we need to move the packet off the temporary context in ctdb_input_pkt(),
 	   so it won't be freed yet */
 	talloc_steal(state, hdr);
 	talloc_steal(state, h);
@@ -300,7 +300,7 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 
 				 struct ctdb_req_header *hdr, TDB_DATA *data,
-				 void (*recv_pkt)(void *, uint8_t *, uint32_t ),
+				 void (*recv_pkt)(void *, struct ctdb_req_header *),
 				 void *recv_context, bool ignore_generation)
 {
 	int ret;
