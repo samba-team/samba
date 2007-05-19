@@ -116,8 +116,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	node->name = talloc_asprintf(node, "%s:%u", 
 				     node->address.address, 
 				     node->address.port);
-	/* for now we just set the vnn to the line in the file - this
-	   will change! */
+	/* this assumes that the nodes are kept in sorted order, and no gaps */
 	node->vnn = ctdb->num_nodes;
 
 	if (ctdb->address.address &&
@@ -275,6 +274,11 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
 		 hdr->srcnode, hdr->destnode));
 
+	/* up the counter for this source node, so we know its alive */
+	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
+		ctdb->nodes[hdr->srcnode]->rx_cnt++;
+	}
+
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
 	case CTDB_REPLY_CALL:
@@ -345,7 +349,6 @@ void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 
 	case CTDB_REQ_KEEPALIVE:
 		ctdb->status.keepalive_packets_recv++;
-		ctdb_request_keepalive(ctdb, hdr);
 		break;
 
 	default:
@@ -376,6 +379,7 @@ static void ctdb_node_dead(struct ctdb_node *node)
 	node->flags &= ~NODE_FLAGS_CONNECTED;
 	DEBUG(1,("%s: node %s is dead: %d connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
+	ctdb_daemon_cancel_controls(node->ctdb, node);
 }
 
 /*

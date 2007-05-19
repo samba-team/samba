@@ -26,73 +26,56 @@
 #include "../include/ctdb_private.h"
 
 /*
-  called when a CTDB_REQ_KEEPALIVE packet comes in
-*/
-void ctdb_request_keepalive(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	struct ctdb_req_keepalive *r = (struct ctdb_req_keepalive *)hdr;
-	struct ctdb_node *node = NULL;
-	int i;
-
-	for (i=0;i<ctdb->num_nodes;i++) {
-		if (ctdb->nodes[i]->vnn == r->hdr.srcnode) {
-			node = ctdb->nodes[i];
-			break;
-		}
-	}
-	if (!node) {
-		DEBUG(0,(__location__ " Keepalive received from node not in ctdb->nodes : %u\n", r->hdr.srcnode));
-		return;
-	}
-
-	node->rx_cnt++;
-}
-
-
+  see if any nodes are dead
+ */
 static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_event *te, 
 			   struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int i;
-	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
 	/* send a keepalive to all other nodes, unless */
 	for (i=0;i<ctdb->num_nodes;i++) {
-		if (!(ctdb->nodes[i]->flags & NODE_FLAGS_CONNECTED)) {
+		struct ctdb_node *node = ctdb->nodes[i];
+		if (node->vnn == ctdb->vnn) {
 			continue;
 		}
-		if (ctdb->nodes[i]->vnn == ctdb_get_vnn(ctdb)) {
-			continue;
+		
+		/* it might have come alive again */
+		if (!(node->flags & NODE_FLAGS_CONNECTED) && node->rx_cnt != 0) {
+			DEBUG(0,("Node %u is alive again - marking as connected\n", node->vnn));
+			node->flags |= NODE_FLAGS_CONNECTED;
 		}
 
-		if (ctdb->nodes[i]->rx_cnt == 0) {
-			ctdb->nodes[i]->dead_count++;
+		if (node->rx_cnt == 0) {
+			node->dead_count++;
 		} else {
-			ctdb->nodes[i]->dead_count = 0;
+			node->dead_count = 0;
 		}
 
-		if (ctdb->nodes[i]->dead_count>=3) {
-			ctdb->nodes[i]->flags &= ~NODE_FLAGS_CONNECTED;
-			/* should probably tell the transport layer
-			   to kill the sockets as well 
+		node->rx_cnt = 0;
+
+		if (node->dead_count >= CTDB_MONITORING_DEAD_COUNT) {
+			DEBUG(0,("Node %u is dead - marking as not connected\n", node->vnn));
+			node->flags &= ~NODE_FLAGS_CONNECTED;
+			ctdb_daemon_cancel_controls(ctdb, node);
+			/* maybe tell the transport layer to kill the
+			   sockets as well?
 			*/
 			continue;
 		}
 
-		ctdb_send_keepalive(ctdb, mem_ctx, i);
-		ctdb->nodes[i]->rx_cnt = 0;
+		ctdb_send_keepalive(ctdb, node->vnn);
 	}
-
-
-
 	
-	talloc_free(mem_ctx);
-
 	event_add_timed(ctdb->ev, ctdb, 
 			timeval_current_ofs(CTDB_MONITORING_TIMEOUT, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 }
 
+/*
+  start watching for nodes that might be dead
+ */
 int ctdb_start_monitoring(struct ctdb_context *ctdb)
 {
 	event_add_timed(ctdb->ev, ctdb, 
