@@ -83,7 +83,7 @@ static bool test_strcsequal_w(struct torture_context *tctx)
 
 static bool test_string_replace_w(struct torture_context *tctx)
 {
-	char data[] = "bla";
+	char data[6] = "bla";
 	string_replace_w(data, 'b', 'c');
 	torture_assert_str_equal(tctx, data, "cla", "first char replaced");
 	memcpy(data, "bab", 4);
