@@ -25,17 +25,22 @@
 
 void do_debug(const char *format, ...)
 {
-	struct timeval tm;
+	struct timeval t;
 	va_list ap;
 	char *s = NULL;
+	struct tm *tm;
+	char tbuf[100];
 
 	va_start(ap, format);
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	gettimeofday(&tm, NULL);
-	printf("%-8.8d.%-6.6d [%d]: %s", (int)tm.tv_sec, (int)tm.tv_usec,
-	       (int)getpid(), s);
+	t = timeval_current();
+	tm = localtime(&t.tv_sec);
+
+	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
+
+	printf("%s.%06u [%5u]: %s", tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
 	fflush(stdout);
 	free(s);
 }
