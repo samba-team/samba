@@ -872,14 +872,4 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 	return messaging_send(msg_ctx, server, msg_type, &blob);
 }
 
-NTSTATUS messaging_send_buf_with_timeout(struct messaging_context *msg_ctx,
-					 struct server_id server,
-					 uint32_t msg_type,
-					 const uint8 *buf, size_t len,
-					 int timeout)
-{
-	return message_send_pid_internal(server, msg_type, buf, len,
-					 True, timeout);
-}
-
 /** @} **/

@@ -126,6 +126,7 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
 	size_t num_pids = 0;
 	size_t i;
 	pid_t *pid_list = NULL;
+	struct timeval end_time = timeval_zero();
 
 	/* Count the space needed to send the messages. */
 	for (pq = notify_queue_head; pq; pq = pq->next) {
@@ -177,6 +178,10 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
 	if (!print_notify_pid_list(printer, send_ctx, &num_pids, &pid_list))
 		return;
 
+	if (timeout != 0) {
+		end_time = timeval_current_ofs(timeout, 0);
+	}
+
 	for (i = 0; i < num_pids; i++) {
 		unsigned int q_len = messages_pending_for_pid(pid_to_procid(pid_list[i]));
 		if (q_len > 1000) {
@@ -184,11 +189,14 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
 				printer, q_len ));
 			continue;
 		}
-		messaging_send_buf_with_timeout(msg_ctx,
-						pid_to_procid(pid_list[i]),
-						MSG_PRINTER_NOTIFY2,
-						(uint8 *)buf, offset,
-						timeout);
+		messaging_send_buf(msg_ctx,
+				   pid_to_procid(pid_list[i]),
+				   MSG_PRINTER_NOTIFY2,
+				   (uint8 *)buf, offset);
+
+		if ((timeout != 0) && timeval_expired(&end_time)) {
+			break;
+		}
 	}
 }
 
