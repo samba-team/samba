@@ -208,32 +208,36 @@ static NTSTATUS message_notify(struct server_id procid)
 		errno = saved_errno;
 	}
 
-	if (ret == -1) {
-		if (errno == ESRCH) {
-			DEBUG(2,("pid %d doesn't exist - deleting messages record\n",
-				 (int)pid));
-			tdb_delete(tdb, message_key_pid(procid));
-
-			/*
-			 * INVALID_HANDLE is the closest I can think of -- vl
-			 */
-			return NT_STATUS_INVALID_HANDLE;
-		}
-
-		DEBUG(2,("message to process %d failed - %s\n", (int)pid,
-			 strerror(errno)));
-
-		/*
-		 * No call to map_nt_error_from_unix -- don't want to link in
-		 * errormap.o into lots of utils.
-		 */
-
-		if (errno == EINVAL) return NT_STATUS_INVALID_PARAMETER;
-		if (errno == EPERM)  return NT_STATUS_ACCESS_DENIED;
-		return NT_STATUS_UNSUCCESSFUL;
+	if (ret == 0) {
+		return NT_STATUS_OK;
 	}
 
-	return NT_STATUS_OK;
+	/*
+	 * Something has gone wrong
+	 */
+
+	if (errno == ESRCH) {
+		DEBUG(2,("pid %d doesn't exist - deleting messages record\n",
+			 (int)pid));
+		tdb_delete(tdb, message_key_pid(procid));
+
+		/*
+		 * INVALID_HANDLE is the closest I can think of -- vl
+		 */
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	DEBUG(2,("message to process %d failed - %s\n", (int)pid,
+		 strerror(errno)));
+
+	/*
+	 * No call to map_nt_error_from_unix -- don't want to link in
+	 * errormap.o into lots of utils.
+	 */
+
+	if (errno == EINVAL) return NT_STATUS_INVALID_PARAMETER;
+	if (errno == EPERM)  return NT_STATUS_ACCESS_DENIED;
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
@@ -243,7 +247,6 @@ static NTSTATUS message_notify(struct server_id procid)
 static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
 				 const void *buf, size_t len)
 {
-	TDB_DATA kbuf;
 	TDB_DATA dbuf;
 	struct message_rec rec;
 	int ret;
@@ -266,8 +269,6 @@ static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
 	rec.src = procid_self();
 	rec.len = buf ? len : 0;
 
-	kbuf = message_key_pid(pid);
-
 	dbuf.dptr = (uint8 *)SMB_MALLOC(len + sizeof(rec));
 	if (!dbuf.dptr) {
 		return NT_STATUS_NO_MEMORY;
@@ -279,7 +280,7 @@ static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
 
 	dbuf.dsize = len + sizeof(rec);
 
-	ret = tdb_append(tdb, kbuf, dbuf);
+	ret = tdb_append(tdb, message_key_pid(pid), dbuf);
 
 	SAFE_FREE(dbuf.dptr);
 
@@ -297,14 +298,11 @@ static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
 
 unsigned int messages_pending_for_pid(struct server_id pid)
 {
-	TDB_DATA kbuf;
 	TDB_DATA dbuf;
 	uint8 *buf;
 	unsigned int message_count = 0;
 
-	kbuf = message_key_pid(pid);
-
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch(tdb, message_key_pid(pid));
 	if (dbuf.dptr == NULL || dbuf.dsize == 0) {
 		SAFE_FREE(dbuf.dptr);
 		return 0;
@@ -337,7 +335,7 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 	*msgs_buf = NULL;
 	*total_len = 0;
 
-	kbuf = message_key_pid(pid_to_procid(sys_getpid()));
+	kbuf = message_key_pid(procid_self());
 
 	if (tdb_chainlock(tdb, kbuf) == -1)
 		return False;
