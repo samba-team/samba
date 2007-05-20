@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) 2001 by Martin Pool
    Copyright (C) 2002 by Jeremy Allison
+   Copyright (C) 2007 by Volker Lendecke
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -106,8 +107,7 @@ static void sig_usr1(void)
 }
 
 static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
-				 const void *buf, size_t len,
-				 BOOL duplicates_allowed);
+				 const void *buf, size_t len);
 
 /****************************************************************************
  A useful function for testing the message system.
@@ -120,7 +120,7 @@ static void ping_message(int msg_type, struct server_id src,
 
 	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
 		 procid_str_static(&src), msg));
-	message_send_pid(src, MSG_PONG, buf, len, True);
+	message_send_pid(src, MSG_PONG, buf, len);
 }
 
 /****************************************************************************
@@ -240,17 +240,13 @@ static NTSTATUS message_notify(struct server_id procid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-static NTSTATUS message_send_pid_internal(struct server_id pid, int msg_type,
-					  const void *buf, size_t len,
-					  BOOL duplicates_allowed,
-					  unsigned int timeout)
+static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
+				 const void *buf, size_t len)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
-	TDB_DATA old_dbuf;
 	struct message_rec rec;
-	uint8 *ptr;
-	struct message_rec prec;
+	int ret;
 
 	/* NULL pointer means implicit length zero. */
 	if (!buf) {
@@ -283,110 +279,16 @@ static NTSTATUS message_send_pid_internal(struct server_id pid, int msg_type,
 
 	dbuf.dsize = len + sizeof(rec);
 
-	if (duplicates_allowed) {
+	ret = tdb_append(tdb, kbuf, dbuf);
 
-		/* If duplicates are allowed we can just append the message
-		 * and return. */
-
-		/* lock the record for the destination */
-		if (timeout) {
-			if (tdb_chainlock_with_timeout(tdb, kbuf,
-						       timeout) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed "
-					 "to get chainlock with timeout "
-					 "%ul.\n", timeout));
-				return NT_STATUS_IO_TIMEOUT;
-			}
-		} else {
-			if (tdb_chainlock(tdb, kbuf) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed "
-					 "to get chainlock.\n"));
-				return NT_STATUS_LOCK_NOT_GRANTED;
-			}
-		}	
-		tdb_append(tdb, kbuf, dbuf);
-		tdb_chainunlock(tdb, kbuf);
-
-		SAFE_FREE(dbuf.dptr);
-		errno = 0;                    /* paranoia */
-		return message_notify(pid);
-	}
-
-	/* lock the record for the destination */
-	if (timeout) {
-		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get "
-				 "chainlock with timeout %ul.\n", timeout));
-			return NT_STATUS_IO_TIMEOUT;
-		}
-	} else {
-		if (tdb_chainlock(tdb, kbuf) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get "
-				 "chainlock.\n"));
-			return NT_STATUS_LOCK_NOT_GRANTED;
-		}
-	}	
-
-	old_dbuf = tdb_fetch(tdb, kbuf);
-
-	if (!old_dbuf.dptr) {
-		/* its a new record */
-
-		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-		tdb_chainunlock(tdb, kbuf);
-
-		SAFE_FREE(dbuf.dptr);
-		errno = 0;                    /* paranoia */
-		return message_notify(pid);
-	}
-
-	/* Not a new record. Check for duplicates. */
-
-	for(ptr = old_dbuf.dptr; ptr < old_dbuf.dptr + old_dbuf.dsize; ) {
-		/*
-		 * First check if the message header matches, then, if it's a
-		 * non-zero sized message, check if the data matches. If so
-		 * it's a duplicate and we can discard it. JRA.
-		 */
-
-		if (!memcmp(ptr, &rec, sizeof(rec))) {
-			if (!len
-			    || (len
-				&& !memcmp( ptr + sizeof(rec), buf, len))) {
-				tdb_chainunlock(tdb, kbuf);
-				DEBUG(10,("message_send_pid_internal: "
-					  "discarding duplicate message.\n"));
-				SAFE_FREE(dbuf.dptr);
-				SAFE_FREE(old_dbuf.dptr);
-				return NT_STATUS_OK;
-			}
-		}
-		memcpy(&prec, ptr, sizeof(prec));
-		ptr += sizeof(rec) + prec.len;
-	}
-
-	/* we're adding to an existing entry */
-
-	tdb_append(tdb, kbuf, dbuf);
-	tdb_chainunlock(tdb, kbuf);
-
-	SAFE_FREE(old_dbuf.dptr);
 	SAFE_FREE(dbuf.dptr);
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	errno = 0;                    /* paranoia */
 	return message_notify(pid);
-}
-
-/****************************************************************************
- Send a message to a particular pid - no timeout.
-****************************************************************************/
-
-static NTSTATUS message_send_pid(struct server_id pid, int msg_type,
-				 const void *buf, size_t len,
-				 BOOL duplicates_allowed)
-{
-	return message_send_pid_internal(pid, msg_type, buf, len,
-					 duplicates_allowed, 0);
 }
 
 /****************************************************************************
@@ -646,8 +548,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	 * the msg has already been deleted from the messages.tdb.*/
 
 	status = message_send_pid(crec.pid, msg_all->msg_type,
-				  msg_all->buf, msg_all->len,
-				  msg_all->duplicates);
+				  msg_all->buf, msg_all->len);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		
@@ -860,8 +761,7 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, 
 			uint32_t msg_type, const DATA_BLOB *data)
 {
-	return message_send_pid_internal(server, msg_type, data->data,
-					 data->length, True, 0);
+	return message_send_pid(server, msg_type, data->data, data->length);
 }
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
