@@ -285,19 +285,22 @@ static NTSTATUS message_send_pid_internal(struct server_id pid, int msg_type,
 
 	if (duplicates_allowed) {
 
-		/* If duplicates are allowed we can just append the message and return. */
+		/* If duplicates are allowed we can just append the message
+		 * and return. */
 
 		/* lock the record for the destination */
 		if (timeout) {
-			if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get "
-					 "chainlock with timeout %ul.\n", timeout));
+			if (tdb_chainlock_with_timeout(tdb, kbuf,
+						       timeout) == -1) {
+				DEBUG(0,("message_send_pid_internal: failed "
+					 "to get chainlock with timeout "
+					 "%ul.\n", timeout));
 				return NT_STATUS_IO_TIMEOUT;
 			}
 		} else {
 			if (tdb_chainlock(tdb, kbuf) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get "
-					 "chainlock.\n"));
+				DEBUG(0,("message_send_pid_internal: failed "
+					 "to get chainlock.\n"));
 				return NT_STATUS_LOCK_NOT_GRANTED;
 			}
 		}	
@@ -312,8 +315,8 @@ static NTSTATUS message_send_pid_internal(struct server_id pid, int msg_type,
 	/* lock the record for the destination */
 	if (timeout) {
 		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get chainlock "
-				 "with timeout %ul.\n", timeout));
+			DEBUG(0,("message_send_pid_internal: failed to get "
+				 "chainlock with timeout %ul.\n", timeout));
 			return NT_STATUS_IO_TIMEOUT;
 		}
 	} else {
@@ -341,16 +344,18 @@ static NTSTATUS message_send_pid_internal(struct server_id pid, int msg_type,
 
 	for(ptr = old_dbuf.dptr; ptr < old_dbuf.dptr + old_dbuf.dsize; ) {
 		/*
-		 * First check if the message header matches, then, if it's a non-zero
-		 * sized message, check if the data matches. If so it's a duplicate and
-		 * we can discard it. JRA.
+		 * First check if the message header matches, then, if it's a
+		 * non-zero sized message, check if the data matches. If so
+		 * it's a duplicate and we can discard it. JRA.
 		 */
 
 		if (!memcmp(ptr, &rec, sizeof(rec))) {
-			if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
+			if (!len
+			    || (len
+				&& !memcmp( ptr + sizeof(rec), buf, len))) {
 				tdb_chainunlock(tdb, kbuf);
-				DEBUG(10,("message_send_pid_internal: discarding "
-					  "duplicate message.\n"));
+				DEBUG(10,("message_send_pid_internal: "
+					  "discarding duplicate message.\n"));
 				SAFE_FREE(dbuf.dptr);
 				SAFE_FREE(old_dbuf.dptr);
 				return NT_STATUS_OK;
@@ -474,7 +479,8 @@ static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
 	ret_buf += sizeof(rec);
 
 	if (rec.msg_version != MESSAGE_VERSION) {
-		DEBUG(0,("message version %d received (expected %d)\n", rec.msg_version, MESSAGE_VERSION));
+		DEBUG(0,("message version %d received (expected %d)\n",
+			 rec.msg_version, MESSAGE_VERSION));
 		return False;
 	}
 
@@ -510,14 +516,17 @@ void message_dispatch(void)
 	if (!received_signal)
 		return;
 
-	DEBUG(10,("message_dispatch: received_signal = %d\n", received_signal));
+	DEBUG(10, ("message_dispatch: received_signal = %d\n",
+		   received_signal));
 
 	received_signal = 0;
 
 	if (!retrieve_all_messages(&msgs_buf, &total_len))
 		return;
 
-	for (buf = msgs_buf; message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len); buf += len) {
+	for (buf = msgs_buf;
+	     message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len);
+	     buf += len) {
 		struct dispatch_fns *dfn;
 
 		DEBUG(10,("message_dispatch: received msg_type=%d "
@@ -527,7 +536,8 @@ void message_dispatch(void)
 		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
-				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
+				DEBUG(10,("message_dispatch: processing "
+					  "message of type %d.\n", msg_type));
 				dfn->fn(msg_type, src,
 					len ? (void *)buf : NULL, len,
 					dfn->private_data);
@@ -536,8 +546,8 @@ void message_dispatch(void)
 			}
 		}
 		if (!n_handled) {
-			DEBUG(5,("message_dispatch: warning: no handler registed for "
-				 "msg_type %d in pid %u\n",
+			DEBUG(5,("message_dispatch: warning: no handler "
+				 "registed for msg_type %d in pid %u\n",
 				 msg_type, (unsigned int)sys_getpid()));
 		}
 	}
@@ -566,22 +576,19 @@ static void message_register(int msg_type,
 		}
 	}
 
-	dfn = SMB_MALLOC_P(struct dispatch_fns);
-
-	if (dfn != NULL) {
-
-		ZERO_STRUCTPN(dfn);
-
-		dfn->msg_type = msg_type;
-		dfn->fn = fn;
-		dfn->private_data = private_data;
-
-		DLIST_ADD(dispatch_fns, dfn);
+	if (!(dfn = SMB_MALLOC_P(struct dispatch_fns))) {
+		DEBUG(0,("message_register: Not enough memory. malloc "
+			 "failed!\n"));
+		return;
 	}
-	else {
-	
-		DEBUG(0,("message_register: Not enough memory. malloc failed!\n"));
-	}
+
+	ZERO_STRUCTPN(dfn);
+
+	dfn->msg_type = msg_type;
+	dfn->fn = fn;
+	dfn->private_data = private_data;
+
+	DLIST_ADD(dispatch_fns, dfn);
 }
 
 /****************************************************************************
@@ -615,7 +622,8 @@ struct msg_all {
  Send one of the messages for the broadcast.
 ****************************************************************************/
 
-static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+		       void *state)
 {
 	struct connections_data crec;
 	struct msg_all *msg_all = (struct msg_all *)state;
@@ -643,10 +651,12 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		
-		/* If the pid was not found delete the entry from connections.tdb */
+		/* If the pid was not found delete the entry from
+		 * connections.tdb */
 
-		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
-			 procid_str_static(&crec.pid), crec.cnum, crec.servicename));
+		DEBUG(2,("pid %s doesn't exist - deleting connections "
+			 "%d [%s]\n", procid_str_static(&crec.pid), crec.cnum,
+			 crec.servicename));
 		tdb_delete(the_tdb, kbuf);
 	}
 	msg_all->n_sent++;
