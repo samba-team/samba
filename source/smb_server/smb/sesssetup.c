@@ -49,6 +49,8 @@ static void smbsrv_sesssetup_backend_send(struct smbsrv_request *req,
 {
 	if (NT_STATUS_IS_OK(status)) {
 		req->smb_conn->negotiate.done_sesssetup = True;
+		/* we need to keep the session long term */
+		req->session = talloc_steal(req->smb_conn, req->session);
 	}
 	smbsrv_reply_sesssetup_send(req, sess, status);
 }
@@ -71,7 +73,7 @@ static void sesssetup_old_send(struct auth_check_password_request *areq,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* allocate a new session */
-	smb_sess = smbsrv_session_new(req->smb_conn, NULL);
+	smb_sess = smbsrv_session_new(req->smb_conn, req, NULL);
 	if (!smb_sess) {
 		status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		goto failed;
@@ -166,7 +168,7 @@ static void sesssetup_nt1_send(struct auth_check_password_request *areq,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* allocate a new session */
-	smb_sess = smbsrv_session_new(req->smb_conn, NULL);
+	smb_sess = smbsrv_session_new(req->smb_conn, req, NULL);
 	if (!smb_sess) {
 		status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		goto failed;
@@ -339,6 +341,10 @@ done:
 failed:
 	status = auth_nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
+	if (!NT_STATUS_IS_OK(status) && 
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		talloc_free(smb_sess);
+	}
 }
 
 /*
@@ -394,7 +400,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 		}
 
 		/* allocate a new session */
-		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
+		smb_sess = smbsrv_session_new(req->smb_conn, req->smb_conn, gensec_ctx);
 		if (!smb_sess) {
 			status = NT_STATUS_INSUFFICIENT_RESOURCES;
 			goto failed;
