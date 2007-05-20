@@ -234,10 +234,14 @@ struct ctdb_write_record {
 
 enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
 
+#define CTDB_MONITORING_ACTIVE		0
+#define CTDB_MONITORING_DISABLED	1
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
 	uint32_t recovery_mode;
+	uint32_t monitoring_mode;
 	enum ctdb_freeze_mode freeze_mode;
 	struct ctdb_freeze_handle *freeze_handle;
 	struct ctdb_address address;
@@ -367,6 +371,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_THAW,
 		    CTDB_CONTROL_GET_VNN,
 		    CTDB_CONTROL_SHUTDOWN,
+		    CTDB_CONTROL_GET_MONMODE,
+		    CTDB_CONTROL_SET_MONMODE,
 };
 
 
