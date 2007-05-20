@@ -60,7 +60,7 @@ static void sesssetup_old_send(struct auth_check_password_request *areq,
 	union smb_sesssetup *sess = talloc_get_type(req->io_ptr, union smb_sesssetup);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
-	struct smbsrv_session *smb_sess;
+	struct smbsrv_session *smb_sess = NULL;
 	NTSTATUS status;
 
 	status = auth_check_password_recv(areq, req, &server_info);
@@ -88,6 +88,10 @@ static void sesssetup_old_send(struct auth_check_password_request *areq,
 	sess->old.out.vuid = smb_sess->vuid;
 
 failed:
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(smb_sess);
+		req->session = NULL;
+	}
 	status = auth_nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
@@ -155,7 +159,7 @@ static void sesssetup_nt1_send(struct auth_check_password_request *areq,
 	union smb_sesssetup *sess = talloc_get_type(req->io_ptr, union smb_sesssetup);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
-	struct smbsrv_session *smb_sess;
+	struct smbsrv_session *smb_sess = NULL;
 	NTSTATUS status;
 
 	status = auth_check_password_recv(areq, req, &server_info);
@@ -204,6 +208,10 @@ static void sesssetup_nt1_send(struct auth_check_password_request *areq,
 done:
 	status = NT_STATUS_OK;
 failed:
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(smb_sess);
+		req->session = NULL;
+	}
 	status = auth_nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
@@ -337,6 +345,10 @@ static void sesssetup_spnego_send(struct gensec_update_request *greq, void *priv
 done:
 	sess->spnego.out.vuid = smb_sess->vuid;
 failed:
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(smb_sess);
+		req->session = NULL;
+	}
 	status = auth_nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
