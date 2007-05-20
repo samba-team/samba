@@ -136,6 +136,7 @@ static int smbsrv_session_destructor(struct smbsrv_session *sess)
  * gensec_ctx is optional, but talloc_steal'ed when present
  */
 struct smbsrv_session *smbsrv_session_new(struct smbsrv_connection *smb_conn,
+					  TALLOC_CTX *mem_ctx,
 					  struct gensec_security *gensec_ctx)
 {
 	struct smbsrv_session *sess = NULL;
@@ -144,7 +145,7 @@ struct smbsrv_session *smbsrv_session_new(struct smbsrv_connection *smb_conn,
 	/* Ensure no vuid gets registered in share level security. */
 	if (smb_conn->config.security == SEC_SHARE) return NULL;
 
-	sess = talloc_zero(smb_conn, struct smbsrv_session);
+	sess = talloc_zero(mem_ctx, struct smbsrv_session);
 	if (!sess) return NULL;
 	sess->smb_conn = smb_conn;
 

@@ -95,6 +95,10 @@ done:
 failed:
 	req->status = auth_nt_status_squash(status);
 	smb2srv_sesssetup_send(req, io);
+	if (!NT_STATUS_IS_OK(status) && !
+	    NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		talloc_free(smb_sess);
+	}
 }
 
 static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_sesssetup *io)
@@ -138,7 +142,7 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 		}
 
 		/* allocate a new session */
-		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
+		smb_sess = smbsrv_session_new(req->smb_conn, req->smb_conn, gensec_ctx);
 		if (!smb_sess) {
 			status = NT_STATUS_INSUFFICIENT_RESOURCES;
 			goto failed;
