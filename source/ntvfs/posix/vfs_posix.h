@@ -150,6 +150,9 @@ struct pvfs_file_handle {
 
 	/* have we set a sticky write time that we should remove on close */
 	BOOL sticky_write_time;
+
+	/* the open went through to completion */
+	BOOL open_completed;
 };
 
 /* open file state */

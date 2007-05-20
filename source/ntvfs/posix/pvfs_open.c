@@ -270,6 +270,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
 	f->handle->sticky_write_time = False;
+	f->handle->open_completed    = False;
 
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    pvfs_directory_empty(pvfs, f->handle->name)) {
@@ -379,6 +380,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		goto cleanup_delete;
 	}
 
+	f->handle->open_completed = True;
+
 	io->generic.out.oplock_level  = OPLOCK_NONE;
 	io->generic.out.file.ntvfs    = h;
 	io->generic.out.create_action = create_action;
@@ -437,6 +440,7 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 	}
 
 	if (h->name->stream_name == NULL && 
+	    h->open_completed &&
 	    pvfs_delete_on_close_set(h->pvfs, h, &open_count, &path) &&
 	    open_count == 1) {
 		NTSTATUS status;
@@ -701,6 +705,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->mode              = 0;
 	f->handle->have_opendb_entry = True;
 	f->handle->sticky_write_time = False;
+	f->handle->open_completed    = False;
 
 	DLIST_ADD(pvfs->files.list, f);
 
@@ -728,6 +733,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup_delete;
 	}
+
+	f->handle->open_completed = True;
 
 	notify_trigger(pvfs->notify_context, 
 		       NOTIFY_ACTION_ADDED, 
@@ -1129,6 +1136,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->mode              = 0;
 	f->handle->have_opendb_entry = False;
 	f->handle->sticky_write_time = False;
+	f->handle->open_completed    = False;
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
@@ -1263,6 +1271,10 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	status = ntvfs_handle_set_backend_data(h, ntvfs, f);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* mark the open as having completed fully, so delete on close
+	   can now be used */
+	f->handle->open_completed     = True;
 
 	io->generic.out.oplock_level  = oplock_granted;
 	io->generic.out.file.ntvfs    = h;
