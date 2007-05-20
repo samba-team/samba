@@ -26,7 +26,7 @@
 static bool torture_local_idtree_simple(struct torture_context *tctx)
 {
 	struct idr_context *idr;
-	int i;
+	int i, ret;
 	int *ids;
 	int *present;
 	extern int torture_numops;
@@ -91,6 +91,23 @@ static bool torture_local_idtree_simple(struct torture_context *tctx)
 			}
 		}
 	}
+
+	/* now test some limits */
+	for (i=0;i<25000;i++) {
+		ret = idr_get_new_above(idr, &ids[0], random() % 25000, 0x10000-3);
+		torture_assert(tctx, ret != -1, "idr_get_new_above failed");
+	}
+
+	ret = idr_get_new_above(idr, &ids[0], 0x10000-2, 0x10000);
+	torture_assert_int_equal(tctx, ret, 0x10000-2, "idr_get_new_above failed");
+	ret = idr_get_new_above(idr, &ids[0], 0x10000-1, 0x10000);
+	torture_assert_int_equal(tctx, ret, 0x10000-1, "idr_get_new_above failed");
+	ret = idr_get_new_above(idr, &ids[0], 0x10000, 0x10000);
+	torture_assert_int_equal(tctx, ret, 0x10000, "idr_get_new_above failed");
+	ret = idr_get_new_above(idr, &ids[0], 0x10000+1, 0x10000);
+	torture_assert_int_equal(tctx, ret, -1, "idr_get_new_above succeeded above limit");
+	ret = idr_get_new_above(idr, &ids[0], 0x10000+2, 0x10000);
+	torture_assert_int_equal(tctx, ret, -1, "idr_get_new_above succeeded above limit");
 
 	torture_comment(tctx, "cleaned up\n");
 	return true;
