@@ -380,7 +380,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 * messages as we need to synchronously process any messages
 	 * we may have sent to ourselves from the previous SMB.
 	 */
-	message_dispatch();
+	message_dispatch(smbd_messaging_context());
 
 	/*
 	 * Check to see if we already have a message on the deferred open queue

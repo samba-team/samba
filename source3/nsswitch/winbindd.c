@@ -744,7 +744,7 @@ static int process_loop(int listen_sock, int listen_priv_sock)
 
 	/* Handle messages */
 
-	message_dispatch();
+	message_dispatch(winbind_messaging_context());
 
 	run_events(winbind_event_context(), 0, NULL, NULL);
 

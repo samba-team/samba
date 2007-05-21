@@ -973,7 +973,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		/* Handle messages */
 
-		message_dispatch();
+		message_dispatch(winbind_messaging_context());
 
 		FD_ZERO(&read_fds);
 		FD_SET(state.sock, &read_fds);
