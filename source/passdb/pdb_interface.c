@@ -1289,7 +1289,7 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;		
 	}
 	
-	/* check for "Unix User" */
+	/* check for "Unix Group" */
 
 	if ( sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid) ) {
 		id->gid = rid;
