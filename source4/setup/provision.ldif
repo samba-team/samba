@@ -95,6 +95,10 @@ modifiedCount: 1
 objectCategory: CN=Builtin-Domain,${SCHEMADN}
 isCriticalSystemObject: TRUE
 
+dn: CN=Policies,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
 dn: CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
