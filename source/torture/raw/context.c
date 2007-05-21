@@ -235,11 +235,6 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 
-	/* flush the queue */
-	for (i=0; i < ARRAY_SIZE(sessions); i++) {
-		event_loop_once(composite_contexts[0]->event_ctx);
-	}
-
 	printf("finishing %d secondary security contexts on the same transport\n", 
 	       (int)ARRAY_SIZE(sessions));
 	for (i=0; i< ARRAY_SIZE(sessions); i++) {
