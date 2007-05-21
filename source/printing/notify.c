@@ -183,7 +183,8 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
 	}
 
 	for (i = 0; i < num_pids; i++) {
-		unsigned int q_len = messages_pending_for_pid(pid_to_procid(pid_list[i]));
+		unsigned int q_len = messages_pending_for_pid(
+			msg_ctx, pid_to_procid(pid_list[i]));
 		if (q_len > 1000) {
 			DEBUG(5, ("print_notify_send_messages_to_printer: discarding notify to printer %s as queue length = %u\n",
 				printer, q_len ));

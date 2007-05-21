@@ -1894,8 +1894,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 		} else {
 			SAFE_FREE(command);
 			message_send_all(smbd_messaging_context(),
-					 MSG_SMB_CONF_UPDATED, NULL, 0,
-					 False, NULL);
+					 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
 		}
 	} else {
 		return False;

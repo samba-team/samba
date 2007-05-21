@@ -428,7 +428,6 @@ struct fd_handle {
 	unsigned long file_id;
 };
 
-struct messaging_context;
 struct event_context;
 struct fd_event;
 struct timed_event;
@@ -536,10 +535,10 @@ typedef struct files_struct {
 #include "sysquotas.h"
 
 /* used to hold an arbitrary blob of data */
-typedef struct data_blob_ {
+typedef struct data_blob {
 	uint8 *data;
 	size_t length;
-	void (*free)(struct data_blob_ *data_blob);
+	void (*free)(struct data_blob *data_blob);
 } DATA_BLOB;
 
 extern const DATA_BLOB data_blob_null;

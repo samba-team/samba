@@ -488,7 +488,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		lp_TALLOC_FREE();
 
 		/* Ensure we respond to PING and DEBUG messages from the main smbd. */
-		message_dispatch();
+		message_dispatch(smbd_messaging_context());
 
 		if (got_sig_cld) {
 			pid_t pid;

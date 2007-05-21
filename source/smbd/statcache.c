@@ -296,7 +296,6 @@ void send_stat_cache_delete_message(const char *name)
 			MSG_SMB_STAT_CACHE_DELETE,
 			name,
 			strlen(name)+1,
-			True,
 			NULL);
 #endif
 }

@@ -142,7 +142,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DLOCKDIR=\"$(LOCKDIR)\" \
 	-DPIDDIR=\"$(PIDDIR)\" \
 	-DLIBDIR=\"$(LIBDIR)\" \
-      	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
+	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\"
 
@@ -221,8 +221,9 @@ ERRORMAP_OBJ = libsmb/errormap.o
 PASSCHANGE_OBJ = libsmb/passchange.o
 
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
-	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
-	     rpc_client/ndr.o
+	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
+
+RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_notify.o
 
@@ -240,7 +241,8 @@ SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 
 TALLOC_OBJ = lib/talloc/talloc.o
 
-LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ)
+LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ) \
+	lib/messages.o librpc/gen_ndr/ndr_messaging.o
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
@@ -254,7 +256,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/substitute.o lib/fsusage.o \
-	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
+	  lib/ms_fnmatch.o lib/select.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
@@ -262,7 +264,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
-	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o
+	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ)
 
 LIB_OBJ = $(LIB_WITHOUT_PROTO_OBJ) $(LIB_WITH_PROTO_OBJ)
 
@@ -325,7 +327,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_shutdown.o rpc_client/cli_dfs.o rpc_client/cli_echo.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_wkssvc.o \
-		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ)
+		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
@@ -750,7 +752,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
             $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) utils/passwd_util.o \
-	    $(LIBGPO_OBJ) $(NSS_INFO_OBJ)
+	    $(LIBGPO_OBJ) $(NSS_INFO_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)

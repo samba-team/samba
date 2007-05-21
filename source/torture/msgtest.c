@@ -75,7 +75,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	}
 
 	while (pong_count < i) {
-		message_dispatch();
+		message_dispatch(msg_ctx);
 		smb_msleep(1);
 	}
 
@@ -92,7 +92,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	}
 
 	for (i=0;i<n;i++) {
-		message_dispatch();
+		message_dispatch(msg_ctx);
 		smb_msleep(1);
 	}
 
@@ -122,14 +122,14 @@ static void pong_message(struct messaging_context *msg_ctx,
 			   ping_count++;
 
 			while (ping_count > pong_count + 20) {
-				message_dispatch();
+				message_dispatch(msg_ctx);
 			}
 		}
 		
 		printf("waiting for %d remaining replies (done %d)\n", 
 		       (int)(ping_count - pong_count), pong_count);
 		while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
-			message_dispatch();
+			message_dispatch(msg_ctx);
 		}
 		
 		if (ping_count != pong_count) {

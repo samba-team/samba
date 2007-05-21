@@ -758,7 +758,7 @@ static void process_loop(void)
 
 	/* Handle messages */
 
-	message_dispatch();
+	message_dispatch(winbind_messaging_context());
 
 	run_events(winbind_event_context(), 0, NULL, NULL);
 
