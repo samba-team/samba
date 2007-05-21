@@ -70,6 +70,8 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	struct ldap_message *ldap_msg;
 	struct cldap_request *req;
 
+	if (!asn1) return;
+
 	status = socket_pending(cldap->sock, &dsize);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
