@@ -33,7 +33,7 @@ case "${UNAME}" in
 esac
 
 for DB in ${DB_LIST}; do
-	DB_BIN=`which ${DB} 2>/dev/null`
+	DB_BIN=`which ${DB} 2>/dev/null | grep '^/'`
 	test x"${DB_BIN}" != x"" && {
 		break
 	}

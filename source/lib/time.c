@@ -95,7 +95,13 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	if (t == (time_t)-1) {
 		*nt = (NTTIME)-1LL;
 		return;
-	}		
+	}	
+
+	if (t == TIME_T_MAX) {
+		*nt = 0x7fffffffffffffffLL;
+		return;
+	}
+
 	if (t == 0) {
 		*nt = 0;
 		return;
@@ -301,7 +307,9 @@ char *http_timestring(time_t t)
 	static fstring buf;
 	struct tm *tm = localtime(&t);
 
-	if (!tm) {
+	if (t == TIME_T_MAX) {
+		slprintf(buf,sizeof(buf)-1,"never");
+	} else if (!tm) {
 		slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
 	} else {
 #ifndef HAVE_STRFTIME
@@ -552,6 +560,37 @@ NTTIME timeval_to_nttime(const struct timeval *tv)
 {
 	return 10*(tv->tv_usec + 
 		  ((TIME_FIXUP_CONSTANT_INT + (uint64_t)tv->tv_sec) * 1000000));
+}
+
+/**************************************************************
+ Handle conversions between time_t and uint32, taking care to
+ preserve the "special" values.
+**************************************************************/
+
+uint32 convert_time_t_to_uint32(time_t t)
+{
+#if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
+	/* time_t is 64-bit. */
+	if (t == 0x8000000000000000LL) {
+		return 0x80000000;
+	} else if (t == 0x7FFFFFFFFFFFFFFFLL) {
+		return 0x7FFFFFFF;
+	}
+#endif
+	return (uint32)t;
+}
+
+time_t convert_uint32_to_time_t(uint32 u)
+{
+#if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
+	/* time_t is 64-bit. */
+	if (u == 0x80000000) {
+		return (time_t)0x8000000000000000LL;
+	} else if (u == 0x7FFFFFFF) {
+		return (time_t)0x7FFFFFFFFFFFFFFFLL;
+	}
+#endif
+	return (time_t)u;
 }
 
 /*******************************************************************

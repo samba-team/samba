@@ -17,6 +17,7 @@ LIBSMBCLIENT = ../../source/bin/libsmbclient.a -ldl -lresolv
 TESTS=	testsmbc \
 	tree \
 	testacl \
+	testacl2 \
 	testbrowse \
 	testbrowse2 \
 	teststat \
@@ -37,6 +38,10 @@ tree: tree.o
 
 testacl: testacl.o
 	@echo Linking testacl
+	$(CC) `gtk-config --cflags` $(CFLAGS) $(LDFLAGS) -o $@ $< `gtk-config --libs` $(LIBSMBCLIENT) -lpopt
+
+testacl2: testacl2.o
+	@echo Linking testacl2
 	$(CC) `gtk-config --cflags` $(CFLAGS) $(LDFLAGS) -o $@ $< `gtk-config --libs` $(LIBSMBCLIENT) -lpopt
 
 testbrowse: testbrowse.o

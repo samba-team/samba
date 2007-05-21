@@ -39,6 +39,7 @@ typedef struct _blocking_lock_record {
 	SMB_BIG_UINT offset;
 	SMB_BIG_UINT count;
 	uint32 lock_pid;
+	uint32 blocking_pid; /* PID that blocks us. */
 	enum brl_flavour lock_flav;
 	enum brl_type lock_type;
 	char *inbuf;
@@ -86,7 +87,9 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint32 lock_pid,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		SMB_BIG_UINT offset, SMB_BIG_UINT count)
+		SMB_BIG_UINT offset,
+		SMB_BIG_UINT count,
+		uint32 blocking_pid)
 {
 	static BOOL set_lock_msg;
 	blocking_lock_record *blr;
@@ -127,6 +130,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 	}
 	blr->lock_num = lock_num;
 	blr->lock_pid = lock_pid;
+	blr->blocking_pid = blocking_pid;
 	blr->lock_flav = lock_flav;
 	blr->lock_type = lock_type;
 	blr->offset = offset;
@@ -142,7 +146,8 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 			count,
 			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
 			blr->lock_flav,
-			lock_timeout ? True : False); /* blocking_lock. */
+			lock_timeout ? True : False, /* blocking_lock. */
+			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
@@ -380,7 +385,8 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 					READ_LOCK : WRITE_LOCK),
 				WINDOWS_LOCK,
 				True,
-				&status);
+				&status,
+				&blr->blocking_pid);
 
 		TALLOC_FREE(br_lck);
 
@@ -440,7 +446,8 @@ static BOOL process_trans2(blocking_lock_record *blr)
 						blr->lock_type,
 						blr->lock_flav,
 						True,
-						&status);
+						&status,
+						&blr->blocking_pid);
 	TALLOC_FREE(br_lck);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -598,7 +605,7 @@ unsigned int blocking_locks_timeout_ms(unsigned int default_timeout_ms)
 {
 	unsigned int timeout_ms = default_timeout_ms;
 	struct timeval tv_curr;
-	SMB_BIG_INT min_tv_dif_us = 0x7FFFFFFF; /* A large +ve number. */
+	SMB_BIG_INT min_tv_dif_us = default_timeout_ms * 1000;
 	blocking_lock_record *blr = blocking_lock_queue;
 
 	/* note that we avoid the GetTimeOfDay() syscall if there are no blocking locks */
@@ -612,6 +619,15 @@ unsigned int blocking_locks_timeout_ms(unsigned int default_timeout_ms)
 		SMB_BIG_INT tv_dif_us;
 
 		if (timeval_is_zero(&blr->expire_time)) {
+			/*
+			 * If we're blocked on pid 0xFFFFFFFF this is
+			 * a POSIX lock, so calculate a timeout of
+			 * 10 seconds.
+			 */
+			if (blr->blocking_pid == 0xFFFFFFFF) {
+				tv_dif_us = 10 * 1000 * 1000;
+				min_tv_dif_us = MIN(min_tv_dif_us, tv_dif_us);
+			}
 			continue; /* Never timeout. */
 		}
 

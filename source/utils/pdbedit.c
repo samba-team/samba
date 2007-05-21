@@ -96,7 +96,7 @@ static int export_database (struct pdb_methods *in,
 				return 1;
 			}
 
-			printf("Importing accout for %s...", user->username);
+			printf("Importing account for %s...", user->username);
 			if ( !NT_STATUS_IS_OK(out->getsampwnam( out, account, user->username )) ) {
 				status = out->add_sam_account(out, user);
 			} else {
@@ -285,14 +285,14 @@ static int print_sam_info (struct samu *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		       lm_passwd,
 		       nt_passwd,
 		       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
-		       (uint32)pdb_get_pass_last_set_time(sam_pwent));
+		       (uint32)convert_time_t_to_uint32(pdb_get_pass_last_set_time(sam_pwent)));
 	} else {
 		uid = nametouid(pdb_get_username(sam_pwent));
 		printf ("%s:%lu:%s\n", pdb_get_username(sam_pwent), (unsigned long)uid,	
 			pdb_get_fullname(sam_pwent));
 	}
 
-	return 0;	
+	return 0;
 }
 
 /*********************************************************

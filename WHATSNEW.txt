@@ -1,11 +1,56 @@
+                   ===============================
+                   Release Notes for Samba 3.0.25a
+                             May XX, 2007
+                   ===============================
+
+This is the second production release of the Samba 3.0.25 code 
+base and is the version that servers should be run for for all 
+current bug fixes.  
+
+Major bug fixes included in Samba 3.0.25a are:
+
+  o Missing supplementary Unix group membership when 
+    using "force group"
+  o Premature expiration of domain user passwords when
+    using a Samba domain controller
+  o Failure to open the Windows object picker against server
+    configured to use "security = domain"
+
+
+Changes to MS-DFS Root Share Behavior
+=====================================
+
+Please be aware that the initial value for the "msdfs root" share 
+parameter was changed in the 3.0.25 release series and this option
+is now disabled by default.  Windows clients frequently require 
+a reboot in order to clear any cached information help about MS-DFS
+root shares on a server and you may experience failures access
+file services on Samba 3.0.25 servers until the client reboot 
+is performed.  Alternately, you may explicitly re-enable the 
+parameter in smb.conf.   Please refer to the smb.conf(5) man page
+for more details.
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25
+--------------------
+
+
+
+
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
                    ==============================
                    Release Notes for Samba 3.0.25
                             May 14, 2007
                    ==============================
-
-This is the first production release of the Samba 3.0.25 code 
-base and is the version that servers should be run for for all 
-current bug fixes.  
 
 The 3.0.25 release is an upgrade release over the 3.0.23/3.0.24 
 series which means that a substantial amount of development has 
@@ -142,6 +187,7 @@ smb.conf changes
     kernel change notify		Per share	Yes
     lock spin count                     Removed         n/a
     max stat cache size 		Modified 	1024KB
+    msdfs root                          Modified	no
     printjob username			New		%U
     winbind normalize names		New		no
 
@@ -706,8 +752,6 @@ o   Martin Zielinski <mz@seh.de>
     * Printing fixes for Windows Vista clients.
 
 
-Release notes for older releases follow:
-
       --------------------------------------------------
                    ==============================
                    Release Notes for Samba 3.0.24
@@ -745,9 +789,6 @@ o   Olivier Gay <ouah@ouah.org>
 o   Volker Lendecke <vl@samba.org>
     * Fix for CVE-2007-0452
 
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ===============================

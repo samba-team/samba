@@ -187,7 +187,8 @@ struct byte_range_lock *do_lock(files_struct *fsp,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			BOOL blocking_lock,
-			NTSTATUS *perr)
+			NTSTATUS *perr,
+			uint32 *plock_pid)
 {
 	struct byte_range_lock *br_lck = NULL;
 
@@ -220,7 +221,8 @@ struct byte_range_lock *do_lock(files_struct *fsp,
 			count, 
 			lock_type,
 			lock_flav,
-			blocking_lock);
+			blocking_lock,
+			plock_pid);
 
 	/* blocking ie. pending, locks also count here,
 	 * as this is an efficiency counter to avoid checking

@@ -621,6 +621,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 nocopy:
 		data = next_keyword;
 	}
+	free(*optionsp);
 	*optionsp = out;
 	return 0;
 }
@@ -882,8 +883,8 @@ int main(int argc, char ** argv)
 	char * ipaddr = NULL;
 	char * uuid = NULL;
 	char * mountpoint = NULL;
-	char * options;
-	char * resolved_path;
+	char * options = NULL;
+	char * resolved_path = NULL;
 	char * temp;
 	int rc;
 	int rsize = 0;
@@ -1079,12 +1080,15 @@ int main(int argc, char ** argv)
 		get_password_from_file(0, getenv("PASSWD_FILE"));
 	}
 
-        if (orgoptions && parse_options(&orgoptions, &flags))
-                return -1;
+        if (orgoptions && parse_options(&orgoptions, &flags)) {
+                rc = -1;
+		goto mount_exit;
+	}
 	ipaddr = parse_server(&share_name);
 	if((ipaddr == NULL) && (got_ip == 0)) {
 		printf("No ip address specified and hostname not found\n");
-		return -1;
+		rc = -1;
+		goto mount_exit;
 	}
 	
 	/* BB save off path and pop after mount returns? */
@@ -1098,17 +1102,20 @@ int main(int argc, char ** argv)
 	}
 	if(chdir(mountpoint)) {
 		printf("mount error: can not change directory into mount target %s\n",mountpoint);
-		return -1;
+		rc = -1;
+		goto mount_exit;
 	}
 
 	if(stat (".", &statbuf)) {
 		printf("mount error: mount point %s does not exist\n",mountpoint);
-		return -1;
+		rc = -1;
+		goto mount_exit;
 	}
 
 	if (S_ISDIR(statbuf.st_mode) == 0) {
 		printf("mount error: mount point %s is not a directory\n",mountpoint);
-		return -1;
+		rc = -1;
+		goto mount_exit;
 	}
 
 	if((getuid() != 0) && (geteuid() == 0)) {
@@ -1154,6 +1161,8 @@ mount_retry:
 		optlen += strlen(ipaddr) + 4;
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
+	if(options)
+		free(options);
 	options = (char *)malloc(optlen + 10 + 64 /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
 
 	if(options == NULL) {
@@ -1236,14 +1245,11 @@ mount_retry:
 				}
 			}
 		default:
-			
 			printf("mount error %d = %s\n",errno,strerror(errno));
 		}
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
-		if(mountpassword) {
-			memset(mountpassword,0,64);
-		}
-		return -1;
+		rc = -1;
+		goto mount_exit;
 	} else {
 		pmntfile = setmntent(MOUNTED, "a+");
 		if(pmntfile) {
@@ -1273,7 +1279,7 @@ mount_retry:
 						strcat(mountent.mnt_opts,",user=");
 						strcat(mountent.mnt_opts,mount_user);
 					}
-					free(mount_user);
+					/* free(mount_user); do not free static mem */
 				}
 			}
 			mountent.mnt_freq = 0;
@@ -1286,6 +1292,8 @@ mount_retry:
 		    printf("could not update mount table\n");
 		}
 	}
+	rc = 0;
+mount_exit:
 	if(mountpassword) {
 		int len = strlen(mountpassword);
 		memset(mountpassword,0,len);
@@ -1308,6 +1316,6 @@ mount_retry:
 	if(free_share_name) {
 		free(share_name);
 		}
-	return 0;
+	return rc;
 }
 

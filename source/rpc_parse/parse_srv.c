@@ -2404,7 +2404,7 @@ static BOOL srv_io_file_info3(const char *desc, FILE_INFO_3 *fl3, prs_struct *ps
 	if(!prs_uint32("num_locks    ", ps, depth, &fl3->num_locks))
 		return False;
 
-	uni_p = fl3->path ? (uint32)fl3->path : 0;
+	uni_p = fl3->path ? 1 : 0;
 	if(!prs_uint32("ptr", ps, depth, &uni_p))
 		return False;
 	if (UNMARSHALLING(ps)) {
@@ -2413,7 +2413,7 @@ static BOOL srv_io_file_info3(const char *desc, FILE_INFO_3 *fl3, prs_struct *ps
 		}
 	}
 
-	uni_p = fl3->user ? (uint32)fl3->user : 0;
+	uni_p = fl3->user ? 1 : 0;
 	if(!prs_uint32("ptr", ps, depth, &uni_p))
 		return False;
 	if (UNMARSHALLING(ps)) {

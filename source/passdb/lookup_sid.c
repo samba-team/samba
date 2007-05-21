@@ -1209,12 +1209,6 @@ static BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 	enum lsa_SidType type;
 	uint32 rid;
 
-	if (sid_peek_check_rid(&global_sid_Unix_Users, psid, &rid)) {
-		uid_t uid = rid;
-		*puid = uid;
-		goto done;
-	}
-
 	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
 		union unid_t id;
 		BOOL ret;
@@ -1259,12 +1253,6 @@ static BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	GROUP_MAP map;
 	union unid_t id;
 	enum lsa_SidType type;
-
-	if (sid_peek_check_rid(&global_sid_Unix_Groups, psid, &rid)) {
-		gid_t gid = rid;
-		*pgid = gid;
-		goto done;
-	}
 
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
@@ -1329,7 +1317,6 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 
 	if (!winbind_uid_to_sid(psid, uid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			legacy_uid_to_sid(psid, uid);
 			return;
 		}
@@ -1359,7 +1346,6 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 
 	if (!winbind_gid_to_sid(psid, gid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			legacy_gid_to_sid(psid, gid);
 			return;
 		}
@@ -1382,6 +1368,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
+	uint32 rid;
 	gid_t gid;
 
 	if (fetch_uid_from_cache(puid, psid))
@@ -1391,9 +1378,20 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		return False;
 	}
 
+	/* Optimize for the Unix Users Domain
+	 * as the conversion is straightforward */
+	if (sid_peek_check_rid(&global_sid_Unix_Users, psid, &rid)) {
+		uid_t uid = rid;
+		*puid = uid;
+
+		/* return here, don't cache */
+		DEBUG(10,("sid %s -> uid %u\n", sid_string_static(psid),
+			(unsigned int)*puid ));
+		return True;
+	}
+
 	if (!winbind_sid_to_uid(puid, psid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			return legacy_sid_to_uid(psid, puid);
 		}
 
@@ -1419,6 +1417,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
+	uint32 rid;
 	uid_t uid;
 
 	if (fetch_gid_from_cache(pgid, psid))
@@ -1427,12 +1426,23 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	if (fetch_uid_from_cache(&uid, psid))
 		return False;
 
+	/* Optimize for the Unix Groups Domain
+	 * as the conversion is straightforward */
+	if (sid_peek_check_rid(&global_sid_Unix_Groups, psid, &rid)) {
+		gid_t gid = rid;
+		*pgid = gid;
+
+		/* return here, don't cache */
+		DEBUG(10,("sid %s -> gid %u\n", sid_string_static(psid),
+			(unsigned int)*pgid ));
+		return True;
+	}
+
 	/* Ask winbindd if it can map this sid to a gid.
 	 * (Idmap will check it is a valid SID and of the right type) */
 
 	if ( !winbind_sid_to_gid(pgid, psid) ) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			return legacy_sid_to_gid(psid, pgid);
 		}
 

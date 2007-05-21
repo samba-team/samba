@@ -321,4 +321,4 @@ typedef struct {
 	int val;
 	int critical;
 } ads_control;
-#endif
+#endif	/* _INCLUDE_ADS_H_ */

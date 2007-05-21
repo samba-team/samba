@@ -1349,9 +1349,14 @@ bin/rid.@SHLIBEXT@: proto_exists nsswitch/idmap_rid.o
 	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_rid.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/ad.@SHLIBEXT@: nsswitch/idmap_ad.o
+bin/ad.@SHLIBEXT@: proto_exists nsswitch/idmap_ad.o
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ad.o \
+		@SONAMEFLAG@`basename $@`
+
+bin/ldap.@SHLIBEXT@: proto_exists nsswitch/idmap_ldap.o
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ldap.o \
 		@SONAMEFLAG@`basename $@`
 
 bin/weird.@SHLIBEXT@: proto_exists $(DEVEL_HELP_WEIRD_OBJ)
@@ -1500,7 +1505,7 @@ bin/gpfs.@SHLIBEXT@: $(VFS_GPFS_OBJ)
 bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NOTIFY_FAM_OBJ) \
-		@SONAMEFLAG@`basename $@`
+		@SONAMEFLAG@`basename $@` @SMB_FAM_LIBS@
 
 bin/readahead.@SHLIBEXT@: $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"

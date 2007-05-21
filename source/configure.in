@@ -1936,6 +1936,14 @@ if test x"$samba_cv_compiler_supports_ll" = x"yes"; then
 fi
 
 
+AC_CACHE_CHECK([for 64 bit time_t],samba_cv_SIZEOF_TIME_T,[
+AC_TRY_RUN([#include <time.h>
+main() { exit((sizeof(time_t) == 8) ? 0 : 1); }],
+samba_cv_SIZEOF_TIME_T=yes,samba_cv_SIZEOF_TIME_T=no,samba_cv_SIZEOF_TIME_T=cross)])
+if test x"$samba_cv_SIZEOF_TIME_T" = x"yes"; then
+    AC_DEFINE(SIZEOF_TIME_T,8,[The size of the 'time_t' type])
+fi
+
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
@@ -2107,13 +2115,13 @@ if test x"$samba_cv_HAVE_FUNCTION_MACRO" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([if gettimeofday takes tz argument],samba_cv_HAVE_GETTIMEOFDAY_TZ,[
-AC_TRY_RUN([
+AC_TRY_LINK([
 #include <sys/time.h>
-#include <unistd.h>
-main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}],
-           samba_cv_HAVE_GETTIMEOFDAY_TZ=yes,samba_cv_HAVE_GETTIMEOFDAY_TZ=no,samba_cv_HAVE_GETTIMEOFDAY_TZ=cross)])
+#include <unistd.h>], [struct timeval tv; return gettimeofday(&tv, NULL);],
+           samba_cv_HAVE_GETTIMEOFDAY_TZ=yes,
+	   samba_cv_HAVE_GETTIMEOFDAY_TZ=no)])
 if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
-    AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
+    AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday takes a tz argument])
 fi
 
 if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
@@ -2538,13 +2546,13 @@ if test x$enable_fam != xno; then
         # On IRIX, libfam requires libC, but other FAM implementations
 	# might not need it.
         AC_CHECK_LIB(fam, FAMOpen2,
-            [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam"],
+            [samba_cv_HAVE_LIBFAM=yes; SMB_FAM_LIBS="-lfam"],
             [samba_cv_HAVE_LIBFAM=no])
 
         if test x"$samba_cv_HAVE_LIBFAM" = x"no" ; then
             samba_fam_xtra=-lC
             AC_CHECK_LIB_EXT(fam, samba_fam_xtra, FAMOpen2,
-                [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam -lC"],
+                [samba_cv_HAVE_LIBFAM=yes; SMB_FAM_LIBS="-lfam -lC"],
                 [samba_cv_HAVE_LIBFAM=no])
             unset samba_fam_xtra
         fi
@@ -2563,6 +2571,8 @@ if test x$enable_fam != xno; then
         AC_MSG_ERROR(FAM support requested but FAM library not available )
     fi
 fi
+
+AC_SUBST(SMB_FAM_LIBS)
 
 #################################################
 # Check for DMAPI interfaces in libdm/libjfsdm/libxsdm
@@ -5140,6 +5150,7 @@ AC_ARG_WITH(acl-support,
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
 		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+		default_static_modules="$default_static_modules vfs_posixacl"
 		;;
 	*linux*)
 		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
@@ -6203,7 +6214,7 @@ AC_SUBST(builddir)
 
 # Stuff the smbd-only libraries at the end of the smbd link
 # path (if we have them).
-SMBD_LIBS="$samba_fam_libs $samba_dmapi_libs"
+SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
 
 AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)

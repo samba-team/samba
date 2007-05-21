@@ -500,7 +500,7 @@ static int
 smbc_check_server(SMBCCTX * context,
                   SMBCSRV * server) 
 {
-        size_t size;
+        socklen_t size;
         struct sockaddr addr;
 
         /*
@@ -4556,7 +4556,7 @@ cacl_get(SMBCCTX *context,
                                                 return -1;
                                         }
                                         n = strlen(p);
-                                } else {
+                                } else if (sidstr[0] != '\0') {
                                         n = snprintf(buf, bufsize,
                                                      ",OWNER:%s", sidstr);
                                 }
@@ -4601,7 +4601,7 @@ cacl_get(SMBCCTX *context,
                                                 return -1;
                                         }
                                         n = strlen(p);
-                                } else {
+                                } else if (sidstr[0] != '\0') {
                                         n = snprintf(buf, bufsize,
                                                      ",GROUP:%s", sidstr);
                                 }
@@ -4709,7 +4709,7 @@ cacl_get(SMBCCTX *context,
                                                              ace->access_mask);
                                         }
                                 }
-                                if (n > bufsize) {
+                                if (!determine_size && n > bufsize) {
                                         errno = ERANGE;
                                         return -1;
                                 }
@@ -5327,7 +5327,9 @@ smbc_setxattr_ctx(SMBCCTX *context,
                 ipc_srv = smbc_attr_server(context, server, share,
                                            workgroup, user, password,
                                            &pol);
-                srv->no_nt_session = True;
+                if (! ipc_srv) {
+                        srv->no_nt_session = True;
+                }
         } else {
                 ipc_srv = NULL;
         }
@@ -5752,7 +5754,9 @@ smbc_removexattr_ctx(SMBCCTX *context,
                 ipc_srv = smbc_attr_server(context, server, share,
                                            workgroup, user, password,
                                            &pol);
-                srv->no_nt_session = True;
+                if (! ipc_srv) {
+                        srv->no_nt_session = True;
+                }
         } else {
                 ipc_srv = NULL;
         }

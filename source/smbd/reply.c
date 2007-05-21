@@ -2421,7 +2421,8 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 			WRITE_LOCK,
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
-			&status);
+			&status,
+			NULL);
 	TALLOC_FREE(br_lck);
 
 	if (NT_STATUS_V(status)) {
@@ -3426,7 +3427,8 @@ int reply_lock(connection_struct *conn,
 			WRITE_LOCK,
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
-			&status);
+			&status,
+			NULL);
 
 	TALLOC_FREE(br_lck);
 
@@ -5524,6 +5526,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			BOOL blocking_lock = lock_timeout ? True : False;
 			BOOL defer_lock = False;
 			struct byte_range_lock *br_lck;
+			uint32 block_smbpid;
 
 			br_lck = do_lock(fsp,
 					lock_pid,
@@ -5532,7 +5535,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 					lock_type,
 					WINDOWS_LOCK,
 					blocking_lock,
-					&status);
+					&status,
+					&block_smbpid);
 
 			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 				/* Windows internal resolution for blocking locks seems
@@ -5569,7 +5573,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 							lock_type,
 							WINDOWS_LOCK,
 							offset,
-							count)) {
+							count,
+							block_smbpid)) {
 					TALLOC_FREE(br_lck);
 					END_PROFILE(SMBlockingX);
 					return -1;
