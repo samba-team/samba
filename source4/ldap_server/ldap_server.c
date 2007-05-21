@@ -134,26 +134,26 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 	NTSTATUS status;
 	struct ldapsrv_connection *conn = talloc_get_type(private, 
 							  struct ldapsrv_connection);
-	struct asn1_data asn1;
+	struct asn1_data *asn1 = asn1_init(conn);
 	struct ldap_message *msg = talloc(conn, struct ldap_message);
 
 	if (msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!asn1_load(&asn1, blob)) {
+	if (!asn1_load(asn1, blob)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ldap_decode(&asn1, msg);
+	status = ldap_decode(asn1, msg);
 	if (!NT_STATUS_IS_OK(status)) {
-		asn1_free(&asn1);
+		asn1_free(asn1);
 		return status;
 	}
 
 	data_blob_free(&blob);
 	ldapsrv_process_message(conn, msg);
-	asn1_free(&asn1);
+	asn1_free(asn1);
 	return NT_STATUS_OK;
 }
 

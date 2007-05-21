@@ -169,31 +169,30 @@ static void ldap_match_message(struct ldap_connection *conn, struct ldap_message
 */
 static NTSTATUS ldap_recv_handler(void *private_data, DATA_BLOB blob)
 {
-	int ret;
 	NTSTATUS status;
-	struct asn1_data asn1;
 	struct ldap_connection *conn = talloc_get_type(private_data, 
 						       struct ldap_connection);
 	struct ldap_message *msg = talloc(conn, struct ldap_message);
+	struct asn1_data *asn1 = asn1_init(conn);
 
 	if (msg == NULL) {
 		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 
-	if (!asn1_load(&asn1, blob)) {
+	if (!asn1_load(asn1, blob)) {
 		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 	
-	status = ldap_decode(&asn1, msg);
+	status = ldap_decode(asn1, msg);
 	if (!NT_STATUS_IS_OK(status)) {
-		asn1_free(&asn1);
+		asn1_free(asn1);
 		return status;
 	}
 
 	ldap_match_message(conn, msg);
 
 	data_blob_free(&blob);
-	asn1_free(&asn1);
+	asn1_free(asn1);
 	return NT_STATUS_OK;
 }
 

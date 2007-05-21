@@ -34,10 +34,10 @@ struct control_handler {
 static BOOL decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB attr;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sort_resp_control *lsrc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -46,17 +46,17 @@ static BOOL decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_enumerated(&data, &(lsrc->result))) {
+	if (!asn1_read_enumerated(data, &(lsrc->result))) {
 		return False;
 	}
 
 	lsrc->attr_desc = NULL;
-	if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
-		if (!asn1_read_OctetString(&data, &attr)) {
+	if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		if (!asn1_read_OctetString(data, mem_ctx, &attr)) {
 			return False;
 		}
 		lsrc->attr_desc = talloc_strndup(lsrc, (const char *)attr.data, attr.length);
@@ -65,7 +65,7 @@ static BOOL decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
 		}
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -78,21 +78,21 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB attr;
 	DATA_BLOB rule;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_server_sort_control **lssc;
 	int num;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
 	lssc = NULL;
 
-	for (num = 0; asn1_peek_tag(&data, ASN1_SEQUENCE(0)); num++) {
+	for (num = 0; asn1_peek_tag(data, ASN1_SEQUENCE(0)); num++) {
 		lssc = talloc_realloc(mem_ctx, lssc, struct ldb_server_sort_control *, num + 2);
 		if (!lssc) {
 			return False;
@@ -102,11 +102,11 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 			return False;
 		}
 
-		if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 			return False;
 		}
 
-		if (!asn1_read_OctetString(&data, &attr)) {
+		if (!asn1_read_OctetString(data, mem_ctx, &attr)) {
 			return False;
 		}
 
@@ -115,8 +115,8 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 			return False;
 		}
 	
-		if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
-			if (!asn1_read_OctetString(&data, &rule)) {
+		if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+			if (!asn1_read_OctetString(data, mem_ctx, &rule)) {
 				return False;
 			}
 			lssc[num]->orderingRule = talloc_strndup(lssc[num], (const char *)rule.data, rule.length);
@@ -125,15 +125,15 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 			}
 		}
 
-		if (asn1_peek_tag(&data, ASN1_BOOLEAN)) {
+		if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
 			BOOL reverse;
-			if (!asn1_read_BOOLEAN(&data, &reverse)) {
+			if (!asn1_read_BOOLEAN(data, &reverse)) {
 			return False;
 			}
 			lssc[num]->reverse = reverse;
 		}
 	
-		if (!asn1_end_tag(&data)) {
+		if (!asn1_end_tag(data)) {
 			return False;
 		}
 	}
@@ -142,7 +142,7 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 		lssc[num] = NULL;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -153,10 +153,10 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 
 static BOOL decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_extended_dn_control *ledc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -165,15 +165,15 @@ static BOOL decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_Integer(&data, &(ledc->type))) {
+	if (!asn1_read_Integer(data, &(ledc->type))) {
 		return False;
 	}
 	
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -184,10 +184,10 @@ static BOOL decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
 
 static BOOL decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sd_flags_control *lsdfc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -196,15 +196,15 @@ static BOOL decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_Integer(&data, &(lsdfc->secinfo_flags))) {
+	if (!asn1_read_Integer(data, &(lsdfc->secinfo_flags))) {
 		return False;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -215,10 +215,10 @@ static BOOL decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
 
 static BOOL decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_search_options_control *lsoc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -227,15 +227,15 @@ static BOOL decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **ou
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_Integer(&data, &(lsoc->search_options))) {
+	if (!asn1_read_Integer(data, &(lsoc->search_options))) {
 		return False;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -247,10 +247,10 @@ static BOOL decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **ou
 static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB cookie;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_paged_control *lprc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -259,15 +259,15 @@ static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_Integer(&data, &(lprc->size))) {
+	if (!asn1_read_Integer(data, &(lprc->size))) {
 		return False;
 	}
 	
-	if (!asn1_read_OctetString(&data, &cookie)) {
+	if (!asn1_read_OctetString(data, mem_ctx, &cookie)) {
 		return False;
 	}
 	lprc->cookie_len = cookie.length;
@@ -281,7 +281,7 @@ static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 		lprc->cookie = NULL;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -293,10 +293,10 @@ static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 static BOOL decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB cookie;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_dirsync_control *ldc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -305,19 +305,19 @@ static BOOL decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_Integer(&data, &(ldc->flags))) {
+	if (!asn1_read_Integer(data, &(ldc->flags))) {
 		return False;
 	}
 	
-	if (!asn1_read_Integer(&data, &(ldc->max_attributes))) {
+	if (!asn1_read_Integer(data, &(ldc->max_attributes))) {
 		return False;
 	}
 	
-	if (!asn1_read_OctetString(&data, &cookie)) {
+	if (!asn1_read_OctetString(data, mem_ctx, &cookie)) {
 		return False;
 	}
 	ldc->cookie_len = cookie.length;
@@ -331,7 +331,7 @@ static BOOL decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
 		ldc->cookie = NULL;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -346,10 +346,10 @@ static BOOL decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
 static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB source_attribute;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_asq_control *lac;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -358,13 +358,13 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
+	if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
 
-		if (!asn1_read_OctetString(&data, &source_attribute)) {
+		if (!asn1_read_OctetString(data, mem_ctx, &source_attribute)) {
 			return False;
 		}
 		lac->src_attr_len = source_attribute.length;
@@ -380,9 +380,9 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 
 		lac->request = 1;
 
-	} else if (asn1_peek_tag(&data, ASN1_ENUMERATED)) {
+	} else if (asn1_peek_tag(data, ASN1_ENUMERATED)) {
 
-		if (!asn1_read_enumerated(&data, &(lac->result))) {
+		if (!asn1_read_enumerated(data, &(lac->result))) {
 			return False;
 		}
 
@@ -392,7 +392,7 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -449,10 +449,10 @@ static BOOL decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void **out)
 static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB assertion_value, context_id;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_req_control *lvrc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -461,43 +461,43 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_Integer(&data, &(lvrc->beforeCount))) {
+	if (!asn1_read_Integer(data, &(lvrc->beforeCount))) {
 		return False;
 	}
 	
-	if (!asn1_read_Integer(&data, &(lvrc->afterCount))) {
+	if (!asn1_read_Integer(data, &(lvrc->afterCount))) {
 		return False;
 	}
 
-	if (asn1_peek_tag(&data, ASN1_CONTEXT(0))) {
+	if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
 
 		lvrc->type = 0;
 		
-		if (!asn1_start_tag(&data, ASN1_CONTEXT(0))) {
+		if (!asn1_start_tag(data, ASN1_CONTEXT(0))) {
 			return False;
 		}
 
-		if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 			return False;
 		}
 
-		if (!asn1_read_Integer(&data, &(lvrc->match.byOffset.offset))) {
+		if (!asn1_read_Integer(data, &(lvrc->match.byOffset.offset))) {
 			return False;
 		}
 
-		if (!asn1_read_Integer(&data, &(lvrc->match.byOffset.contentCount))) {
+		if (!asn1_read_Integer(data, &(lvrc->match.byOffset.contentCount))) {
 			return False;
 		}
 
-		if (!asn1_end_tag(&data)) { /*SEQUENCE*/
+		if (!asn1_end_tag(data)) { /*SEQUENCE*/
 			return False;
 		}
 
-		if (!asn1_end_tag(&data)) { /*CONTEXT*/
+		if (!asn1_end_tag(data)) { /*CONTEXT*/
 			return False;
 		}
 
@@ -505,11 +505,11 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 
 		lvrc->type = 1;
 
-		if (!asn1_start_tag(&data, ASN1_CONTEXT(1))) {
+		if (!asn1_start_tag(data, ASN1_CONTEXT(1))) {
 			return False;
 		}
 
-		if (!asn1_read_OctetString(&data, &assertion_value)) {
+		if (!asn1_read_OctetString(data, mem_ctx, &assertion_value)) {
 			return False;
 		}
 		lvrc->match.gtOrEq.value_len = assertion_value.length;
@@ -523,13 +523,13 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 			lvrc->match.gtOrEq.value = NULL;
 		}
 
-		if (!asn1_end_tag(&data)) { /*CONTEXT*/
+		if (!asn1_end_tag(data)) { /*CONTEXT*/
 			return False;
 		}
 	}
 
-	if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
-		if (!asn1_read_OctetString(&data, &context_id)) {
+	if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		if (!asn1_read_OctetString(data, mem_ctx, &context_id)) {
 			return False;
 		}
 		lvrc->ctxid_len = context_id.length;
@@ -547,7 +547,7 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 		lvrc->ctxid_len = 0;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -559,10 +559,10 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 static BOOL decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB context_id;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_resp_control *lvrc;
 
-	if (!asn1_load(&data, in)) {
+	if (!asn1_load(data, in)) {
 		return False;
 	}
 
@@ -571,24 +571,24 @@ static BOOL decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_read_Integer(&data, &(lvrc->targetPosition))) {
+	if (!asn1_read_Integer(data, &(lvrc->targetPosition))) {
 		return False;
 	}
 	
-	if (!asn1_read_Integer(&data, &(lvrc->contentCount))) {
+	if (!asn1_read_Integer(data, &(lvrc->contentCount))) {
 		return False;
 	}
 	
-	if (!asn1_read_enumerated(&data, &(lvrc->vlv_result))) {
+	if (!asn1_read_enumerated(data, &(lvrc->vlv_result))) {
 		return False;
 	}
 
-	if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
-		if (!asn1_read_OctetString(&data, &context_id)) {
+	if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		if (!asn1_read_OctetString(data, mem_ctx, &context_id)) {
 			return False;
 		}
 		lvrc->contextId = talloc_strndup(lvrc, (const char *)context_id.data, context_id.length);
@@ -601,7 +601,7 @@ static BOOL decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
 		lvrc->ctxid_len = 0;
 	}
 
-	if (!asn1_end_tag(&data)) {
+	if (!asn1_end_tag(data)) {
 		return False;
 	}
 
@@ -613,32 +613,31 @@ static BOOL decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
 static BOOL encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_sort_resp_control *lsrc = talloc_get_type(in, struct ldb_sort_resp_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_enumerated(&data, lsrc->result)) {
+	if (!asn1_write_enumerated(data, lsrc->result)) {
 		return False;
 	}
 
 	if (lsrc->attr_desc) {
-		if (!asn1_write_OctetString(&data, lsrc->attr_desc, strlen(lsrc->attr_desc))) {
+		if (!asn1_write_OctetString(data, lsrc->attr_desc, strlen(lsrc->attr_desc))) {
 			return False;
 		}
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -646,49 +645,48 @@ static BOOL encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 static BOOL encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_server_sort_control **lssc = talloc_get_type(in, struct ldb_server_sort_control *);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	int num;
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
 	for (num = 0; lssc[num]; num++) {
-		if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 			return False;
 		}
 		
-		if (!asn1_write_OctetString(&data, lssc[num]->attributeName, strlen(lssc[num]->attributeName))) {
+		if (!asn1_write_OctetString(data, lssc[num]->attributeName, strlen(lssc[num]->attributeName))) {
 			return False;
 		}
 
 		if (lssc[num]->orderingRule) {
-			if (!asn1_write_OctetString(&data, lssc[num]->orderingRule, strlen(lssc[num]->orderingRule))) {
+			if (!asn1_write_OctetString(data, lssc[num]->orderingRule, strlen(lssc[num]->orderingRule))) {
 				return False;
 			}
 		}
 
 		if (lssc[num]->reverse) {
-			if (!asn1_write_BOOLEAN(&data, lssc[num]->reverse)) {
+			if (!asn1_write_BOOLEAN(data, lssc[num]->reverse)) {
 				return False;
 			}
 		}
 
-		if (!asn1_pop_tag(&data)) {
+		if (!asn1_pop_tag(data)) {
 			return False;
 		}
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -696,26 +694,25 @@ static BOOL encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static BOOL encode_extended_dn_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_extended_dn_control *ledc = talloc_get_type(in, struct ldb_extended_dn_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, ledc->type)) {
+	if (!asn1_write_Integer(data, ledc->type)) {
 		return False;
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -723,26 +720,25 @@ static BOOL encode_extended_dn_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static BOOL encode_sd_flags_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_sd_flags_control *lsdfc = talloc_get_type(in, struct ldb_sd_flags_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, lsdfc->secinfo_flags)) {
+	if (!asn1_write_Integer(data, lsdfc->secinfo_flags)) {
 		return False;
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -750,26 +746,25 @@ static BOOL encode_sd_flags_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static BOOL encode_search_options_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_search_options_control *lsoc = talloc_get_type(in, struct ldb_search_options_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, lsoc->search_options)) {
+	if (!asn1_write_Integer(data, lsoc->search_options)) {
 		return False;
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -777,30 +772,29 @@ static BOOL encode_search_options_request(void *mem_ctx, void *in, DATA_BLOB *ou
 static BOOL encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_paged_control *lprc = talloc_get_type(in, struct ldb_paged_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, lprc->size)) {
+	if (!asn1_write_Integer(data, lprc->size)) {
 		return False;
 	}
 
-	if (!asn1_write_OctetString(&data, lprc->cookie, lprc->cookie_len)) {
+	if (!asn1_write_OctetString(data, lprc->cookie, lprc->cookie_len)) {
 		return False;
 	}	
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -811,33 +805,32 @@ static BOOL encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out
 static BOOL encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_asq_control *lac = talloc_get_type(in, struct ldb_asq_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
 	if (lac->request) {
 
-		if (!asn1_write_OctetString(&data, lac->source_attribute, lac->src_attr_len)) {
+		if (!asn1_write_OctetString(data, lac->source_attribute, lac->src_attr_len)) {
 			return False;
 		}
 	} else {
-		if (!asn1_write_enumerated(&data, lac->result)) {
+		if (!asn1_write_enumerated(data, lac->result)) {
 			return False;
 		}
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -845,34 +838,33 @@ static BOOL encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 static BOOL encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_dirsync_control *ldc = talloc_get_type(in, struct ldb_dirsync_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, ldc->flags)) {
+	if (!asn1_write_Integer(data, ldc->flags)) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, ldc->max_attributes)) {
+	if (!asn1_write_Integer(data, ldc->max_attributes)) {
 		return False;
 	}
 
-	if (!asn1_write_OctetString(&data, ldc->cookie, ldc->cookie_len)) {
+	if (!asn1_write_OctetString(data, ldc->cookie, ldc->cookie_len)) {
 		return False;
 	}	
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -930,74 +922,73 @@ static BOOL encode_manageDSAIT_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static BOOL encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_vlv_req_control *lvrc = talloc_get_type(in, struct ldb_vlv_req_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, lvrc->beforeCount)) {
+	if (!asn1_write_Integer(data, lvrc->beforeCount)) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, lvrc->afterCount)) {
+	if (!asn1_write_Integer(data, lvrc->afterCount)) {
 		return False;
 	}
 
 	if (lvrc->type == 0) {
-		if (!asn1_push_tag(&data, ASN1_CONTEXT(0))) {
+		if (!asn1_push_tag(data, ASN1_CONTEXT(0))) {
 			return False;
 		}
 		
-		if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 			return False;
 		}
 		
-		if (!asn1_write_Integer(&data, lvrc->match.byOffset.offset)) {
+		if (!asn1_write_Integer(data, lvrc->match.byOffset.offset)) {
 			return False;
 		}
 
-		if (!asn1_write_Integer(&data, lvrc->match.byOffset.contentCount)) {
+		if (!asn1_write_Integer(data, lvrc->match.byOffset.contentCount)) {
 			return False;
 		}
 
-		if (!asn1_pop_tag(&data)) { /*SEQUENCE*/
+		if (!asn1_pop_tag(data)) { /*SEQUENCE*/
 			return False;
 		}
 
-		if (!asn1_pop_tag(&data)) { /*CONTEXT*/
+		if (!asn1_pop_tag(data)) { /*CONTEXT*/
 			return False;
 		}
 	} else {
-		if (!asn1_push_tag(&data, ASN1_CONTEXT(1))) {
+		if (!asn1_push_tag(data, ASN1_CONTEXT(1))) {
 			return False;
 		}
 		
-		if (!asn1_write_OctetString(&data, lvrc->match.gtOrEq.value, lvrc->match.gtOrEq.value_len)) {
+		if (!asn1_write_OctetString(data, lvrc->match.gtOrEq.value, lvrc->match.gtOrEq.value_len)) {
 			return False;
 		}
 
-		if (!asn1_pop_tag(&data)) { /*CONTEXT*/
+		if (!asn1_pop_tag(data)) { /*CONTEXT*/
 			return False;
 		}
 	}
 
 	if (lvrc->ctxid_len) {
-		if (!asn1_write_OctetString(&data, lvrc->contextId, lvrc->ctxid_len)) {
+		if (!asn1_write_OctetString(data, lvrc->contextId, lvrc->ctxid_len)) {
 			return False;
 		}
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -1005,40 +996,39 @@ static BOOL encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static BOOL encode_vlv_response(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_vlv_resp_control *lvrc = talloc_get_type(in, struct ldb_vlv_resp_control);
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 
-	ZERO_STRUCT(data);
-
-	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, lvrc->targetPosition)) {
+	if (!asn1_write_Integer(data, lvrc->targetPosition)) {
 		return False;
 	}
 
-	if (!asn1_write_Integer(&data, lvrc->contentCount)) {
+	if (!asn1_write_Integer(data, lvrc->contentCount)) {
 		return False;
 	}
 
-	if (!asn1_write_enumerated(&data, lvrc->vlv_result)) {
+	if (!asn1_write_enumerated(data, lvrc->vlv_result)) {
 		return False;
 	}
 
 	if (lvrc->ctxid_len) {
-		if (!asn1_write_OctetString(&data, lvrc->contextId, lvrc->ctxid_len)) {
+		if (!asn1_write_OctetString(data, lvrc->contextId, lvrc->ctxid_len)) {
 			return False;
 		}
 	}
 
-	if (!asn1_pop_tag(&data)) {
+	if (!asn1_pop_tag(data)) {
 		return False;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
 	if (out->data == NULL) {
 		return False;
 	}
+	talloc_free(data);
 
 	return True;
 }
@@ -1093,7 +1083,7 @@ BOOL ldap_decode_control_wrapper(void *mem_ctx, struct asn1_data *data, struct l
 		return False;
 	}
 
-	if (!asn1_read_OctetString(data, &oid)) {
+	if (!asn1_read_OctetString(data, mem_ctx, &oid)) {
 		return False;
 	}
 	ctrl->oid = talloc_strndup(mem_ctx, (char *)oid.data, oid.length);
@@ -1117,7 +1107,7 @@ BOOL ldap_decode_control_wrapper(void *mem_ctx, struct asn1_data *data, struct l
 		goto end_tag;
 	}
 
-	if (!asn1_read_OctetString(data, value)) {
+	if (!asn1_read_OctetString(data, mem_ctx, value)) {
 		return False;
 	}
 
