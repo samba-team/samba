@@ -31,9 +31,56 @@
 /*
   send an oplock break request to a client
 */
-static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *ntvfs, uint8_t level)
+static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *h, uint8_t level)
 {
-	DEBUG(0,("TODO: we don't pass SMB2 oplock breaks to the Clients yet!\n"));
+	struct smbsrv_handle *handle = talloc_get_type(h->frontend_data.private_data,
+						       struct smbsrv_handle);
+	struct smb2srv_request *req;
+	NTSTATUS status;
+
+	/* setup a dummy request structure */
+	req = smb2srv_init_request(handle->tcon->smb_conn);
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	req->in.buffer		= talloc_size(req, NBT_HDR_SIZE + SMB2_MIN_SIZE);
+	NT_STATUS_HAVE_NO_MEMORY(req->in.buffer);
+	req->in.size		= NBT_HDR_SIZE + SMB2_MIN_SIZE;
+	req->in.allocated	= req->in.size;
+
+	req->in.hdr		= req->in.buffer+ NBT_HDR_SIZE;
+	req->in.body		= req->in.hdr	+ SMB2_HDR_BODY;
+	req->in.body_size	= req->in.size	- (SMB2_HDR_BODY+NBT_HDR_SIZE);
+	req->in.dynamic 	= NULL;
+
+	req->seqnum		= UINT64_MAX;
+
+	SIVAL(req->in.hdr, 0,				SMB2_MAGIC);
+	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
+	SSVAL(req->in.hdr, SMB2_HDR_PAD1,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_STATUS,		0);
+	SSVAL(req->in.hdr, SMB2_HDR_OPCODE,		SMB2_OP_BREAK);
+	SSVAL(req->in.hdr, SMB2_HDR_UNKNOWN1,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_FLAGS,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
+	SBVAL(req->in.hdr, SMB2_HDR_SEQNUM,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_PID,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_TID,		0);
+	SBVAL(req->in.hdr, SMB2_HDR_UID,		0);
+	memset(req->in.hdr+SMB2_HDR_SIG, 0, 16);
+
+	SSVAL(req->in.body, 0, 2);
+
+	status = smb2srv_setup_reply(req, 0x18, False, 0);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,	0x0000);
+
+	SSVAL(req->out.body, 0x02, 0x0001);
+	SIVAL(req->out.body, 0x04, 0x00000000);
+	smb2srv_push_handle(req->out.body, 0x08, h);
+
+	smb2srv_send_reply(req);
+
 	return NT_STATUS_OK;
 }
 

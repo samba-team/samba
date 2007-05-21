@@ -44,7 +44,7 @@ static int smb2srv_request_deny_destructor(struct smb2srv_request *req)
 	return -1;
 }
 
-static struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *smb_conn)
+struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *smb_conn)
 {
 	struct smb2srv_request *req;
 
