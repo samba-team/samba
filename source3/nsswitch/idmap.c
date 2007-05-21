@@ -821,7 +821,10 @@ static NTSTATUS idmap_can_map(const struct id_map *map, struct idmap_domain **re
 	/* Check we do not create mappings for our own local domain, or BUILTIN or special SIDs */
 	if ((sid_compare_domain(map->sid, get_global_sam_sid()) == 0) ||
 	    sid_check_is_in_builtin(map->sid) ||
-	    sid_check_is_in_wellknown_domain(map->sid)) {
+	    sid_check_is_in_wellknown_domain(map->sid) ||
+	    sid_check_is_in_unix_users(map->sid) ||
+	    sid_check_is_in_unix_groups(map->sid) ) 
+	{
 		DEBUG(10, ("We are not supposed to create mappings for our own domains (local, builtin, specials)\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
