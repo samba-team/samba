@@ -296,7 +296,7 @@ static bool deltest4(struct torture_context *tctx, struct smbcli_state *cli1, st
 				smbcli_nt_delete_on_close(cli1->tree, fnum1, True), 
 		 		talloc_asprintf(tctx, "setting delete_on_close failed (%s)", 
 		        smbcli_errstr(cli1->tree)));
-	
+
 	/* This should fail - no more opens once delete on close set. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
 				      SEC_RIGHTS_FILE_READ,
@@ -1344,8 +1344,8 @@ static bool deltest22(struct torture_context *tctx)
 struct torture_suite *torture_test_delete(void)
 {
 	struct torture_suite *suite = torture_suite_create(
-										talloc_autofree_context(),
-										"DELETE");
+		talloc_autofree_context(),
+		"DELETE");
 
 	torture_suite_add_2smb_test(suite, "deltest1", deltest1);
 	torture_suite_add_2smb_test(suite, "deltest2", deltest2);
