@@ -219,6 +219,7 @@ ldif_dir= $fedora_ds_dir/ldif
 cert_dir= $fedora_ds_dir
 
 start_server= 0
+install_full_schema= 0
 ";
 	close(CONF);
 
@@ -231,9 +232,6 @@ chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
             die("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf FAILED: $?");
         }
         chdir $dir || die;
-	foreach(<$fedora_ds_dir/schema/*>) {
-		unlink unless (/00core.*/);
-	}
 
 	open(LDIF, ">>$fedora_ds_dir/dse.ldif");
 	print LDIF "dn: cn=\"cn=Configuration,$basedn\",cn=mapping tree,cn=config
