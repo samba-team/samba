@@ -29,6 +29,8 @@
 #include "torture/util.h"
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
+#include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 
 #define BASEDIR "\\benchopen"
 
@@ -36,18 +38,107 @@ static int nprocs;
 static int open_failed;
 static int open_retries;
 static char **fnames;
+static int num_connected;
 
 struct benchopen_state {
+	TALLOC_CTX *mem_ctx;
+	struct event_context *ev;
 	struct smbcli_state *cli;
+	struct smbcli_tree *tree;
+	int client_num;
 	int fnum;
 	int file_num;
 	int count;
+	int lastcount;
 	BOOL waiting_open, waiting_close;
 	union smb_open open_parms;
 	union smb_close close_parms;
 	struct smbcli_request *req_open;
 	struct smbcli_request *req_close;
+	struct smb_composite_connect reconnect;
+
+	/* these are used for reconnections */
+	int dest_port;
+	const char *dest_host;
+	const char *called_name;
+	const char *service_type;
 };
+
+static void next_open(struct benchopen_state *state);
+static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data);
+
+
+/*
+  complete an async reconnect
+ */
+static void reopen_connection_complete(struct composite_context *ctx)
+{
+	struct benchopen_state *state = (struct benchopen_state *)ctx->async.private_data;
+	NTSTATUS status;
+	struct smb_composite_connect *io = &state->reconnect;
+
+	status = smb_composite_connect_recv(ctx, state->mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		event_add_timed(state->ev, state->mem_ctx, 
+				timeval_current_ofs(1,0), 
+				reopen_connection, state);
+		return;
+	}
+
+	state->tree = io->out.tree;
+
+	num_connected++;
+
+	DEBUG(0,("reconnect to %s finished (%u connected)\n", state->dest_host,
+		 num_connected));
+
+	next_open(state);
+}
+
+	
+
+/*
+  reopen a connection
+ */
+static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data)
+{
+	struct benchopen_state *state = (struct benchopen_state *)private_data;
+	struct composite_context *ctx;
+	struct smb_composite_connect *io = &state->reconnect;
+	char *host, *share;
+
+	if (!torture_get_conn_index(state->client_num, state->mem_ctx, &host, &share)) {
+		DEBUG(0,("Can't find host/share for reconnect?!\n"));
+		exit(1);
+	}
+
+	io->in.dest_host    = state->dest_host;
+	io->in.port         = state->dest_port;
+	io->in.called_name  = state->called_name;
+	io->in.service      = share;
+	io->in.service_type = state->service_type;
+	io->in.credentials  = cmdline_credentials;
+	io->in.fallback_to_anonymous = False;
+	io->in.workgroup    = lp_workgroup();
+
+	/* kill off the remnants of the old connection */
+	talloc_free(state->tree);
+	state->tree = NULL;
+	state->fnum = -1;
+	state->waiting_open = False;
+	state->waiting_close = False;
+
+	ctx = smb_composite_connect_send(io, state->mem_ctx, state->ev);
+	if (ctx == NULL) {
+		DEBUG(0,("Failed to setup async reconnect\n"));
+		exit(1);
+	}
+
+	ctx->async.fn = reopen_connection_complete;
+	ctx->async.private_data = state;
+}
 
 static void open_completed(struct smbcli_request *req);
 static void close_completed(struct smbcli_request *req);
@@ -71,7 +162,7 @@ static void next_open(struct benchopen_state *state)
 	state->open_parms.ntcreatex.in.security_flags = 0;
 	state->open_parms.ntcreatex.in.fname = fnames[state->file_num];
 
-	state->req_open = smb_raw_open_send(state->cli->tree, &state->open_parms);
+	state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 	state->req_open->async.fn = open_completed;
 	state->req_open->async.private = state;
 	state->waiting_open = True;
@@ -84,7 +175,7 @@ static void next_open(struct benchopen_state *state)
 	state->close_parms.close.in.file.fnum = state->fnum;
 	state->close_parms.close.in.write_time = 0;
 
-	state->req_close = smb_raw_close_send(state->cli->tree, &state->close_parms);
+	state->req_close = smb_raw_close_send(state->tree, &state->close_parms);
 	state->req_close->async.fn = close_completed;
 	state->req_close->async.private = state;
 	state->waiting_close = True;
@@ -96,7 +187,7 @@ static void next_open(struct benchopen_state *state)
 static void open_completed(struct smbcli_request *req)
 {
 	struct benchopen_state *state = (struct benchopen_state *)req->async.private;
-	TALLOC_CTX *tmp_ctx = talloc_new(state->cli);
+	TALLOC_CTX *tmp_ctx = talloc_new(state->mem_ctx);
 	NTSTATUS status;
 
 	status = smb_raw_open_recv(req, tmp_ctx, &state->open_parms);
@@ -105,9 +196,23 @@ static void open_completed(struct smbcli_request *req)
 
 	state->req_open = NULL;
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
+		talloc_free(state->tree);
+		talloc_free(state->cli);
+		state->tree = NULL;
+		state->cli = NULL;
+		num_connected--;	
+		DEBUG(0,("reopening connection to %s\n", state->dest_host));
+		event_add_timed(state->ev, state->mem_ctx, 
+				timeval_current_ofs(1,0), 
+				reopen_connection, state);
+		return;
+	}
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 		open_retries++;
-		state->req_open = smb_raw_open_send(state->cli->tree, &state->open_parms);
+		state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 		state->req_open->async.fn = open_completed;
 		state->req_open->async.private = state;
 		return;
@@ -137,6 +242,20 @@ static void close_completed(struct smbcli_request *req)
 
 	state->req_close = NULL;
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
+		talloc_free(state->tree);
+		talloc_free(state->cli);
+		state->tree = NULL;
+		state->cli = NULL;
+		num_connected--;	
+		DEBUG(0,("reopening connection to %s\n", state->dest_host));
+		event_add_timed(state->ev, state->mem_ctx, 
+				timeval_current_ofs(1,0), 
+				reopen_connection, state);
+		return;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		open_failed++;
 		DEBUG(0,("close failed - %s\n", nt_errstr(status)));
@@ -150,6 +269,22 @@ static void close_completed(struct smbcli_request *req)
 	}
 }	
 
+
+static void report_rate(struct event_context *ev, struct timed_event *te, 
+			struct timeval t, void *private_data)
+{
+	struct benchopen_state *state = talloc_get_type(private_data, 
+							struct benchopen_state);
+	int i;
+	for (i=0;i<nprocs;i++) {
+		printf("%5u ", (unsigned)(state[i].count - state[i].lastcount));
+		state[i].lastcount = state[i].count;
+	}
+	printf("\r");
+	fflush(stdout);
+	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+}
+
 /* 
    benchmark open calls
 */
@@ -162,7 +297,10 @@ BOOL torture_bench_open(struct torture_context *torture)
 	struct timeval tv;
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchopen_state *state;
-	int total = 0, loops=0, minops=0;
+	int total = 0, minops=0;
+	bool progress;
+
+	progress = torture_setting_bool(torture, "progress", true);
 	
 	nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
 
@@ -170,11 +308,24 @@ BOOL torture_bench_open(struct torture_context *torture)
 
 	printf("Opening %d connections\n", nprocs);
 	for (i=0;i<nprocs;i++) {
+		state[i].mem_ctx = talloc_new(state);
+		state[i].client_num = i;
+		state[i].ev = ev;
 		if (!torture_open_connection_ev(&state[i].cli, i, ev)) {
 			return False;
 		}
 		talloc_steal(mem_ctx, state);
+		state[i].tree = state[i].cli->tree;
+		state[i].dest_host = talloc_strdup(state[i].mem_ctx, 
+						   state[i].cli->tree->session->transport->socket->hostname);
+		state[i].dest_port = state[i].cli->tree->session->transport->socket->port;
+		state[i].called_name  = talloc_strdup(state[i].mem_ctx,
+						      state[i].cli->tree->session->transport->called.name);
+		state[i].service_type = talloc_strdup(state[i].mem_ctx,
+						      state[i].cli->tree->device);
 	}
+
+	num_connected = i;
 
 	if (!torture_setup_dir(state[0].cli, BASEDIR)) {
 		goto failed;
@@ -193,27 +344,17 @@ BOOL torture_bench_open(struct torture_context *torture)
 
 	tv = timeval_current();	
 
+	if (progress) {
+		event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+	}
+
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		event_loop_once(ev);
 
-		total = 0;
-		for (i=0;i<nprocs;i++) {
-			total += state[i].count;
-		}
-
 		if (open_failed) {
-			DEBUG(0,("open failed after %d opens\n", total));
+			DEBUG(0,("open failed\n"));
 			goto failed;
-		}
-
-		if (loops++ % 10 != 0) continue;
-
-		if (torture_setting_bool(torture, "progress", true)) {
-			printf("%.2f ops/second (%d retries) (%u remaining)\r", 
-			       total/timeval_elapsed(&tv), open_retries,
-			       (unsigned)(timelimit - timeval_elapsed(&tv)));
-			fflush(stdout);
 		}
 	}
 
@@ -232,20 +373,14 @@ BOOL torture_bench_open(struct torture_context *torture)
 	for (i=0;i<nprocs;i++) {
 		talloc_free(state[i].req_open);
 		talloc_free(state[i].req_close);
-		smb_raw_exit(state[i].cli->session);
+		smb_raw_exit(state[i].tree->session);
 	}
 
-	smbcli_deltree(state[0].cli->tree, BASEDIR);
+	smbcli_deltree(state[0].tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 
 failed:
-	for (i=0;i<nprocs;i++) {
-		talloc_free(state[i].req_open);
-		talloc_free(state[i].req_close);
-		smb_raw_exit(state[i].cli->session);
-	}
-	smbcli_deltree(state[0].cli->tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return False;
 }
