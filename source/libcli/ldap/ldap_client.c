@@ -175,11 +175,13 @@ static NTSTATUS ldap_recv_handler(void *private_data, DATA_BLOB blob)
 	struct ldap_message *msg = talloc(conn, struct ldap_message);
 	struct asn1_data *asn1 = asn1_init(conn);
 
-	if (msg == NULL) {
+	if (asn1 == NULL || msg == NULL) {
 		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 
 	if (!asn1_load(asn1, blob)) {
+		talloc_free(msg);
+		talloc_free(asn1);
 		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 	

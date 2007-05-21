@@ -31,10 +31,15 @@
 */
 DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8_t tok_id[2])
 {
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data;
 	DATA_BLOB ret;
 
 	if (!data || !ticket->data) {
+		return data_blob(NULL,0);
+	}
+
+	data = asn1_init(mem_ctx);
+	if (data == NULL) {
 		return data_blob(NULL,0);
 	}
 
@@ -65,6 +70,10 @@ BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, D
 	BOOL ret;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int data_remaining;
+
+	if (!data) {
+		return False;
+	}
 
 	asn1_load(data, *blob);
 	asn1_start_tag(data, ASN1_APPLICATION(0));
@@ -98,6 +107,8 @@ BOOL gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 {
 	BOOL ret;
 	struct asn1_data *data = asn1_init(NULL);
+
+	if (!data) return False;
 
 	asn1_load(data, *blob);
 	asn1_start_tag(data, ASN1_APPLICATION(0));

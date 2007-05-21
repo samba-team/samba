@@ -37,6 +37,8 @@ static BOOL decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sort_resp_control *lsrc;
 
+	if (!data) return False;
+
 	if (!asn1_load(data, in)) {
 		return False;
 	}
@@ -81,6 +83,8 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_server_sort_control **lssc;
 	int num;
+
+	if (!data) return False;
 
 	if (!asn1_load(data, in)) {
 		return False;
@@ -156,6 +160,8 @@ static BOOL decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_extended_dn_control *ledc;
 
+	if (!data) return False;
+
 	if (!asn1_load(data, in)) {
 		return False;
 	}
@@ -186,6 +192,8 @@ static BOOL decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sd_flags_control *lsdfc;
+
+	if (!data) return False;
 
 	if (!asn1_load(data, in)) {
 		return False;
@@ -218,6 +226,8 @@ static BOOL decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **ou
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_search_options_control *lsoc;
 
+	if (!data) return False;
+
 	if (!asn1_load(data, in)) {
 		return False;
 	}
@@ -249,6 +259,8 @@ static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 	DATA_BLOB cookie;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_paged_control *lprc;
+
+	if (!data) return False;
 
 	if (!asn1_load(data, in)) {
 		return False;
@@ -295,6 +307,8 @@ static BOOL decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
 	DATA_BLOB cookie;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_dirsync_control *ldc;
+
+	if (!data) return False;
 
 	if (!asn1_load(data, in)) {
 		return False;
@@ -348,6 +362,8 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 	DATA_BLOB source_attribute;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_asq_control *lac;
+
+	if (!data) return False;
 
 	if (!asn1_load(data, in)) {
 		return False;
@@ -451,6 +467,8 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 	DATA_BLOB assertion_value, context_id;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_req_control *lvrc;
+
+	if (!data) return False;
 
 	if (!asn1_load(data, in)) {
 		return False;
@@ -562,6 +580,8 @@ static BOOL decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_resp_control *lvrc;
 
+	if (!data) return False;
+
 	if (!asn1_load(data, in)) {
 		return False;
 	}
@@ -615,6 +635,8 @@ static BOOL encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 	struct ldb_sort_resp_control *lsrc = talloc_get_type(in, struct ldb_sort_resp_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
 
+	if (!data) return False;
+
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
@@ -647,6 +669,8 @@ static BOOL encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	struct ldb_server_sort_control **lssc = talloc_get_type(in, struct ldb_server_sort_control *);
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int num;
+
+	if (!data) return False;
 
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
@@ -696,6 +720,8 @@ static BOOL encode_extended_dn_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	struct ldb_extended_dn_control *ledc = talloc_get_type(in, struct ldb_extended_dn_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
 
+	if (!data) return False;
+
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
@@ -721,6 +747,8 @@ static BOOL encode_sd_flags_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_sd_flags_control *lsdfc = talloc_get_type(in, struct ldb_sd_flags_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
+
+	if (!data) return False;
 
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
@@ -748,6 +776,8 @@ static BOOL encode_search_options_request(void *mem_ctx, void *in, DATA_BLOB *ou
 	struct ldb_search_options_control *lsoc = talloc_get_type(in, struct ldb_search_options_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
 
+	if (!data) return False;
+
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
@@ -773,6 +803,8 @@ static BOOL encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out
 {
 	struct ldb_paged_control *lprc = talloc_get_type(in, struct ldb_paged_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
+
+	if (!data) return False;
 
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
@@ -807,6 +839,8 @@ static BOOL encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 	struct ldb_asq_control *lac = talloc_get_type(in, struct ldb_asq_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
 
+	if (!data) return False;
+
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
@@ -839,6 +873,8 @@ static BOOL encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_dirsync_control *ldc = talloc_get_type(in, struct ldb_dirsync_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
+
+	if (!data) return False;
 
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
@@ -924,6 +960,8 @@ static BOOL encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	struct ldb_vlv_req_control *lvrc = talloc_get_type(in, struct ldb_vlv_req_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
 
+	if (!data) return False;
+
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
@@ -997,6 +1035,8 @@ static BOOL encode_vlv_response(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_vlv_resp_control *lvrc = talloc_get_type(in, struct ldb_vlv_resp_control);
 	struct asn1_data *data = asn1_init(mem_ctx);
+
+	if (!data) return False;
 
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;

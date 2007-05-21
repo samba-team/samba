@@ -265,7 +265,7 @@ static BOOL write_negTokenTarg(struct asn1_data *asn1, struct spnego_negTokenTar
 
 ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data *token)
 {
-	struct asn1_data *asn1 = asn1_init(mem_ctx);
+	struct asn1_data *asn1;
 	ssize_t ret = -1;
 	uint8_t context;
 
@@ -273,6 +273,11 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 
 	if (data.length == 0) {
 		return ret;
+	}
+
+	asn1 = asn1_init(mem_ctx);
+	if (asn1 == NULL) {
+		return -1;
 	}
 
 	asn1_load(asn1, data);
@@ -310,6 +315,10 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 {
 	struct asn1_data *asn1 = asn1_init(mem_ctx);
 	ssize_t ret = -1;
+
+	if (asn1 == NULL) {
+		return -1;
+	}
 
 	switch (spnego->type) {
 	case SPNEGO_NEG_TOKEN_INIT:
