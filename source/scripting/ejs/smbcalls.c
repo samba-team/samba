@@ -120,17 +120,34 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 
 	for (i = 0; i < argc; i++) {
 		const char *script = argv[i];
+		struct MprVar result;
+		char *path, *emsg;
+		int ret;
 
+		/* First, try to include file from current working directory.
+		   This allows local includes which is handy sometimes. */
+		path = talloc_asprintf(mprMemCtx(), "%s", script);
+		if (path == NULL) {
+			return -1;
+		}
+		
+		if (file_exist(path)) {
+			ret = ejsEvalFile(eid, path, &result, &emsg);
+			talloc_free(path);
+			if (ret < 0) {
+				ejsSetErrorMsg(eid, "%s: %s", script, emsg);
+				return -1;
+			}
+			continue;
+		}
+
+		/* use specfied path to search for requested file */
 		for (j=0;js_include[j];j++) {
-			char *path;
 			path = talloc_asprintf(mprMemCtx(), "%s/%s", js_include[j], script);
 			if (path == NULL) {
 				return -1;
 			}
 			if (file_exist(path)) {
-				int ret;
-				struct MprVar result;
-				char *emsg;
 
 				ret = ejsEvalFile(eid, path, &result, &emsg);
 				talloc_free(path);
@@ -142,6 +159,7 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 			}
 			talloc_free(path);
 		}
+
 		if (js_include[j] == NULL) {
 			ejsSetErrorMsg(eid, "unable to include '%s'", script);
 			return -1;
