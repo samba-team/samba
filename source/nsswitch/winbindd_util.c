@@ -911,6 +911,16 @@ struct winbindd_domain *find_builtin_domain(void)
 
 struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
 {
+	/* SIDs in the S-1-22-{1,2} domain should be handled by our passdb */
+
+	if ( sid_check_is_in_unix_groups(sid) || 
+	     sid_check_is_unix_groups(sid) ||
+	     sid_check_is_in_unix_users(sid) ||
+	     sid_check_is_unix_users(sid) )
+	{
+		return find_domain_from_sid(get_global_sam_sid());
+	}
+
 	/* A DC can't ask the local smbd for remote SIDs, here winbindd is the
 	 * one to contact the external DC's. On member servers the internal
 	 * domains are different: These are part of the local SAM. */
@@ -921,18 +931,7 @@ struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
 	if (IS_DC || is_internal_domain(sid) || is_in_internal_domain(sid)) {
 		DEBUG(10, ("calling find_domain_from_sid\n"));
 		return find_domain_from_sid(sid);
-	}
-
-	/* SIDs in the S-1-22-{1,2} domain should be handled by our passdb */
-
-	if ( sid_check_is_in_unix_groups(sid) || 
-	     sid_check_is_unix_groups(sid) ||
-	     sid_check_is_in_unix_users(sid) ||
-	     sid_check_is_unix_users(sid) )
-	{
-		return find_domain_from_sid(get_global_sam_sid());
-	}
-	
+	}	
 
 	/* On a member server a query for SID or name can always go to our
 	 * primary DC. */
@@ -943,17 +942,17 @@ struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
 
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 {
-	if (IS_DC || strequal(domain_name, "BUILTIN") ||
-	    strequal(domain_name, get_global_sam_name()))
-		return find_domain_from_name_noinit(domain_name);
-
-	/* The "Unix User" and "Unix Group" domain our handled by passdb */
-
 	if ( strequal(domain_name, unix_users_domain_name() ) ||
 	     strequal(domain_name, unix_groups_domain_name() ) )
 	{
 		return find_domain_from_name_noinit( get_global_sam_name() );
 	}
+
+	if (IS_DC || strequal(domain_name, "BUILTIN") ||
+	    strequal(domain_name, get_global_sam_name()))
+		return find_domain_from_name_noinit(domain_name);
+
+	/* The "Unix User" and "Unix Group" domain our handled by passdb */
 
 	return find_our_domain();
 }
