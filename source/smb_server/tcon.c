@@ -147,6 +147,7 @@ static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn,
 {
 	TALLOC_CTX *mem_ctx;
 	struct smbsrv_tcons_context *tcons_ctx;
+	uint32_t handle_uint_max;
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 	int i;
@@ -154,9 +155,11 @@ static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn,
 	if (smb_sess) {
 		mem_ctx = smb_sess;
 		tcons_ctx = &smb_sess->smb2_tcons;
+		handle_uint_max = UINT32_MAX;
 	} else {
 		mem_ctx = smb_conn;
 		tcons_ctx = &smb_conn->smb_tcons;
+		handle_uint_max = UINT16_MAX;
 	}
 
 	tcon = talloc_zero(mem_ctx, struct smbsrv_tcon);
@@ -170,7 +173,7 @@ static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn,
 	 * the use -1 here, because we don't want to give away the wildcard
 	 * fnum used in SMBflush
 	 */
-	status = smbsrv_init_handles(tcon, UINT16_MAX - 1);
+	status = smbsrv_init_handles(tcon, handle_uint_max - 1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("ERROR! failed to init handles: %s\n", nt_errstr(status)));
 		goto failed;
