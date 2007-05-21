@@ -49,8 +49,7 @@ static int num_replies;		/* Used by message callback fns */
 
 static BOOL send_message(struct messaging_context *msg_ctx,
 			 struct server_id pid, int msg_type,
-			 const void *buf, int len,
-			 BOOL duplicates)
+			 const void *buf, int len)
 {
 	BOOL ret;
 	int n_sent = 0;
@@ -60,8 +59,7 @@ static BOOL send_message(struct messaging_context *msg_ctx,
 			messaging_send_buf(msg_ctx, pid, msg_type,
 					   (uint8 *)buf, len));
 
-	ret = message_send_all(msg_ctx, msg_type, buf, len, duplicates,
-			       &n_sent);
+	ret = message_send_all(msg_ctx, msg_type, buf, len, &n_sent);
 	DEBUG(10,("smbcontrol/send_message: broadcast message to "
 		  "%d processes\n", n_sent));
 	
@@ -79,7 +77,7 @@ static void wait_replies(struct messaging_context *msg_ctx,
            busy-wait here as there is no nicer way to do it. */
 
 	do {
-		message_dispatch();
+		message_dispatch(msg_ctx);
 		event_loop_once(messaging_event_context(msg_ctx));
 		if (num_replies > 0 && !multiple_replies)
 			break;
@@ -140,8 +138,8 @@ static BOOL do_debug(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
+	return send_message(msg_ctx, pid, MSG_DEBUG, argv[1],
+			    strlen(argv[1]) + 1);
 }
 
 #if defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE)
@@ -336,7 +334,7 @@ static BOOL do_inject_fault(struct messaging_context *msg_ctx,
 		}
 
 		return send_message(msg_ctx, pid, MSG_SMB_INJECT_FAULT,
-				    &sig, sizeof(int), False);
+				    &sig, sizeof(int));
 	}
 #endif /* DEVELOPER */
 }
@@ -352,8 +350,7 @@ static BOOL do_election(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_FORCE_ELECTION, NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_FORCE_ELECTION, NULL, 0);
 }
 
 /* Ping a samba daemon process */
@@ -381,7 +378,7 @@ static BOOL do_ping(struct messaging_context *msg_ctx,
 
 	/* Send a message and register our interest in a reply */
 
-	if (!send_message(msg_ctx, pid, MSG_PING, NULL, 0, False))
+	if (!send_message(msg_ctx, pid, MSG_PING, NULL, 0))
 		return False;
 
 	messaging_register(msg_ctx, NULL, MSG_PONG, pong_cb);
@@ -425,7 +422,7 @@ static BOOL do_profile(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx, pid, MSG_PROFILE, &v, sizeof(int), False);
+	return send_message(msg_ctx, pid, MSG_PROFILE, &v, sizeof(int));
 }
 
 /* Return the profiling level */
@@ -480,7 +477,7 @@ static void profilelevel_rqst(struct messaging_context *msg_ctx,
 
 	/* Send back a dummy reply */
 
-	send_message(msg_ctx, pid, MSG_PROFILELEVEL, &v, sizeof(int), False);
+	send_message(msg_ctx, pid, MSG_PROFILELEVEL, &v, sizeof(int));
 }
 
 static BOOL do_profilelevel(struct messaging_context *msg_ctx,
@@ -494,7 +491,7 @@ static BOOL do_profilelevel(struct messaging_context *msg_ctx,
 
 	/* Send a message and register our interest in a reply */
 
-	if (!send_message(msg_ctx, pid, MSG_REQ_PROFILELEVEL, NULL, 0, False))
+	if (!send_message(msg_ctx, pid, MSG_REQ_PROFILELEVEL, NULL, 0))
 		return False;
 
 	messaging_register(msg_ctx, NULL, MSG_PROFILELEVEL, profilelevel_cb);
@@ -526,7 +523,7 @@ static BOOL do_debuglevel(struct messaging_context *msg_ctx,
 
 	/* Send a message and register our interest in a reply */
 
-	if (!send_message(msg_ctx, pid, MSG_REQ_DEBUGLEVEL, NULL, 0, False))
+	if (!send_message(msg_ctx, pid, MSG_REQ_DEBUGLEVEL, NULL, 0))
 		return False;
 
 	messaging_register(msg_ctx, NULL, MSG_DEBUGLEVEL, print_pid_string_cb);
@@ -696,8 +693,8 @@ static BOOL do_closeshare(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_SMB_FORCE_TDIS, argv[1], strlen(argv[1]) + 1, False);
+	return send_message(msg_ctx, pid, MSG_SMB_FORCE_TDIS, argv[1],
+			    strlen(argv[1]) + 1);
 }
 
 /* Force a SAM synchronisation */
@@ -711,8 +708,7 @@ static BOOL do_samsync(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_SMB_SAM_SYNC, NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_SMB_SAM_SYNC, NULL, 0);
 }
 
 /* Force a SAM replication */
@@ -726,8 +722,7 @@ static BOOL do_samrepl(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_SMB_SAM_REPL, NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_SMB_SAM_REPL, NULL, 0);
 }
 
 /* Display talloc pool usage */
@@ -745,7 +740,7 @@ static BOOL do_poolusage(struct messaging_context *msg_ctx,
 
 	/* Send a message and register our interest in a reply */
 
-	if (!send_message(msg_ctx, pid, MSG_REQ_POOL_USAGE, NULL, 0, False))
+	if (!send_message(msg_ctx, pid, MSG_REQ_POOL_USAGE, NULL, 0))
 		return False;
 
 	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
@@ -771,8 +766,7 @@ static BOOL do_dmalloc_mark(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_REQ_DMALLOC_MARK, NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_REQ_DMALLOC_MARK, NULL, 0);
 }
 
 /* Perform a dmalloc changed */
@@ -787,8 +781,8 @@ static BOOL do_dmalloc_changed(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_REQ_DMALLOC_LOG_CHANGED, NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_REQ_DMALLOC_LOG_CHANGED,
+			    NULL, 0);
 }
 
 /* Shutdown a server process */
@@ -802,7 +796,7 @@ static BOOL do_shutdown(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx, pid, MSG_SHUTDOWN, NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_SHUTDOWN, NULL, 0);
 }
 
 /* Notify a driver upgrade */
@@ -817,8 +811,8 @@ static BOOL do_drvupgrade(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx,
-		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
+	return send_message(msg_ctx, pid, MSG_DEBUG, argv[1],
+			    strlen(argv[1]) + 1);
 }
 
 static BOOL do_winbind_online(struct messaging_context *msg_ctx,
@@ -852,7 +846,7 @@ static BOOL do_winbind_online(struct messaging_context *msg_ctx,
 	tdb_delete_bystring(tdb, "WINBINDD_OFFLINE");
 	tdb_close(tdb);
 
-	return send_message(msg_ctx, pid, MSG_WINBIND_ONLINE, NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_WINBIND_ONLINE, NULL, 0);
 }
 
 static BOOL do_winbind_offline(struct messaging_context *msg_ctx,
@@ -909,7 +903,7 @@ static BOOL do_winbind_offline(struct messaging_context *msg_ctx,
 		tdb_store_bystring(tdb, "WINBINDD_OFFLINE", d, TDB_INSERT);
 
 		ret = send_message(msg_ctx, pid, MSG_WINBIND_OFFLINE,
-				   NULL, 0, False);
+				   NULL, 0);
 
 		/* Check that the entry "WINBINDD_OFFLINE" still exists. */
 		d = tdb_fetch_bystring( tdb, "WINBINDD_OFFLINE" );
@@ -944,7 +938,7 @@ static BOOL do_winbind_onlinestatus(struct messaging_context *msg_ctx,
 			   print_pid_string_cb);
 
 	if (!send_message(msg_ctx, pid, MSG_WINBIND_ONLINESTATUS, &myid,
-			  sizeof(myid), False))
+			  sizeof(myid)))
 		return False;
 
 	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
@@ -969,8 +963,7 @@ static BOOL do_reload_config(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx, pid, MSG_SMB_CONF_UPDATED,
-			    NULL, 0, False);
+	return send_message(msg_ctx, pid, MSG_SMB_CONF_UPDATED, NULL, 0);
 }
 
 static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
@@ -1018,8 +1011,7 @@ static BOOL do_nodestatus(struct messaging_context *msg_ctx,
 	p.packet.nmb.question.question_type = 0x21;
 	p.packet.nmb.question.question_class = 0x1;
 
-	return send_message(msg_ctx, pid, MSG_SEND_PACKET, &p, sizeof(p),
-			    False);
+	return send_message(msg_ctx, pid, MSG_SEND_PACKET, &p, sizeof(p));
 }
 
 /* A list of message type supported */

@@ -376,7 +376,7 @@ static void process(void)
 
 		/* Check for internal messages */
 
-		message_dispatch();
+		message_dispatch(nmbd_messaging_context());
 
 		/*
 		 * Check all broadcast subnets to see if
