@@ -138,8 +138,11 @@ void smbcli_transport_dead(struct smbcli_transport *transport, NTSTATUS status)
 		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 
-	/* kill all pending receives */
-	while (transport->pending_recv) {
+	/* kill only the first pending receive - this is so that if
+	 that async function frees the connection we don't die trying
+	 to use old memory. The caller has to cope with only one
+	 network error */
+	if (transport->pending_recv) {
 		struct smbcli_request *req = transport->pending_recv;
 		req->state = SMBCLI_REQUEST_ERROR;
 		req->status = status;
