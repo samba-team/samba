@@ -900,6 +900,23 @@ systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+dn: CN=GPC-WQL-Filter,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.1694
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: GPC-WQL-Filter
+adminDescription: GPC-WQL-Filter
+oMSyntax: 64
+searchFlags: 0
+lDAPDisplayName: gPCWQLFilter
+schemaIDGUID: 7bd4c7a6-1add-4436-8c04-3999a880154c
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
 dn: CN=Server-Reference-BL,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
@@ -1363,6 +1380,24 @@ lDAPDisplayName: initialAuthOutgoing
 schemaIDGUID: 52458024-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=Version-Number,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.141
+attributeSyntax: 2.5.5.9
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Version-Number
+adminDescription: Version-Number
+oMSyntax: 2
+searchFlags: 0
+lDAPDisplayName: versionNumber
+schemaIDGUID: bf967a76-0de6-11d0-a285-00aa003049e2
+systemOnly: FALSE
+systemFlags: 16
+isMemberOfPartialAttributeSet: TRUE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Class,${SCHEMADN}
@@ -5220,6 +5255,23 @@ lDAPDisplayName: msExchAssistantName
 schemaIDGUID: a8df7394-c5ea-11d1-bbcb-0080c76670c0
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+dn: CN=GPC-User-Extension-Names,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.1349
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: GPC-User-Extension-Names
+adminDescription: GPC-User-Extension-Names
+oMSyntax: 64
+searchFlags: 0
+lDAPDisplayName: gPCUserExtensionNames
+schemaIDGUID: 42a75fc6-783f-11d2-9916-0000f87a57d4
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
 dn: CN=ms-DS-Non-Members-BL,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
@@ -5460,6 +5512,23 @@ searchFlags: 0
 lDAPDisplayName: textEncodedORAddress
 schemaIDGUID: a8df7489-c5ea-11d1-bbcb-0080c76670c0
 systemOnly: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=GPC-Functionality-Version,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.893
+attributeSyntax: 2.5.5.9
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: GPC-Functionality-Version
+adminDescription: GPC-Functionality-Version
+oMSyntax: 2
+searchFlags: 0
+lDAPDisplayName: gPCFunctionalityVersion
+schemaIDGUID: f30e3bc0-9ff0-11d1-b603-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-DSA-Last-Obj-Removed,${SCHEMADN}
@@ -7877,6 +7946,7 @@ searchFlags: 0
 lDAPDisplayName: msDRM-IdentityCertificate
 schemaIDGUID: e85e1204-3434-41ad-9b56-e2901228fff0
 systemFlags: 16
+isMemberOfPartialAttributeSet: TRUE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Logoff,${SCHEMADN}
@@ -8283,6 +8353,23 @@ lDAPDisplayName: dITContentRules
 schemaIDGUID: 9a7ad946-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=GPC-Machine-Extension-Names,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.1348
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: GPC-Machine-Extension-Names
+adminDescription: GPC-Machine-Extension-Names
+oMSyntax: 64
+searchFlags: 0
+lDAPDisplayName: gPCMachineExtensionNames
+schemaIDGUID: 32ff8ecc-783f-11d2-9916-0000f87a57d4
+systemOnly: FALSE
+systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-Created,${SCHEMADN}
@@ -8795,6 +8882,23 @@ searchFlags: 16
 lDAPDisplayName: logonHours
 schemaIDGUID: bf9679ab-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=GPC-File-Sys-Path,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.894
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: GPC-File-Sys-Path
+adminDescription: GPC-File-Sys-Path
+oMSyntax: 64
+searchFlags: 0
+lDAPDisplayName: gPCFileSysPath
+schemaIDGUID: f30e3bc1-9ff0-11d1-b603-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
@@ -10390,6 +10494,32 @@ defaultHidingValue: FALSE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Group,${SCHEMADN}
 
+dn: CN=Group-Policy-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: container
+governsID: 1.2.840.113556.1.5.157
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Group-Policy-Container
+adminDescription: Group-Policy-Container
+objectClassCategory: 1
+lDAPDisplayName: groupPolicyContainer
+schemaIDGUID: f30e3bc2-9ff0-11d1-b603-0000f80367c1
+systemOnly: FALSE
+systemMayContain: versionNumber
+systemMayContain: gPCWQLFilter
+systemMayContain: gPCUserExtensionNames
+systemMayContain: gPCMachineExtensionNames
+systemMayContain: gPCFunctionalityVersion
+systemMayContain: gPCFileSysPath
+systemMayContain: flags
+defaultSecurityDescriptor: D:P(A;CI;RPWPCCDCLCLOLORCWOWDSDDTSW;;;DA)(A;CI;RPWPCCDCLCLOLORCWOWDSDDTSW;;;EA)(A;CI;RPWPCCDCLCLOLORCWOWDSDDTSW;;;CO)(A;CI;RPWPCCDCLCLORCWOWDSDDTSW;;;SY)(A;CI;RPLCLORC;;;AU)(OA;CI;CR;edacfd8f-ffb3-11d1-b41d-00a0c968f939;;AU)(A;CI;LCRPLORC;;;ED)
+systemFlags: 16
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=Group-Policy-Container,${SCHEMADN}
+
 dn: CN=Aggregate,${SCHEMADN}
 objectClass: top
 objectClass: subSchema
@@ -10440,6 +10570,7 @@ objectClasses: ( 1.2.840.113556.1.5.76 NAME 'foreignSecurityPrincipal' SUP top S
 objectClasses: ( 1.2.840.113556.1.5.96 NAME 'subnet' SUP top STRUCTURAL MAY ( siteObject $ physicalLocationObject $ location ) )
 objectClasses: ( 1.2.840.113556.1.3.46 NAME 'mailRecipient' SUP top AUXILIARY MUST ( cn ) MAY ( userCertificate $ userCert $ textEncodedORAddress $ telephoneNumber $ showInAddressBook $ legacyExchangeDN $ garbageCollPeriod $ info $ userSMIMECertificate $ secretary $ msExchLabeledURI $ msExchAssistantName $ labeledURI ) )
 objectClasses: ( 1.2.840.113556.1.5.8 NAME 'group' SUP top STRUCTURAL MUST ( groupType ) MAY ( primaryGroupToken $ operatorCount $ nTGroupMembers $ nonSecurityMember $ msDS-NonMembers $ msDS-AzLDAPQuery $ member $ managedBy $ groupMembershipSAM $ groupAttributes $ mail $ desktopProfile $ controlAccessRights $ adminCount ) )
+objectClasses: ( 1.2.840.113556.1.5.157 NAME 'groupPolicyContainer' SUP container STRUCTURAL MAY ( versionNumber $ gPCWQLFilter $ gPCUserExtensionNames $ gPCMachineExtensionNames $ gPCFunctionalityVersion $ gPCFileSysPath $ flags ) )
 attributeTypes: ( 1.2.840.113556.1.4.1304 NAME 'sDRightsEffective' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.104 NAME 'ownerBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.2.102 NAME 'memberOf' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
@@ -10489,6 +10620,7 @@ attributeTypes: ( 1.2.840.113556.1.4.359 NAME 'netbootGUID' SYNTAX '1.3.6.1.4.1.
 attributeTypes: ( 1.2.840.113556.1.2.26 NAME 'rDNAttID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' SINGLE-VALUE NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.2.25 NAME 'mayContain' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' )
 attributeTypes: ( 1.2.840.113556.1.4.135 NAME 'trustAuthOutgoing' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.1694 NAME 'gPCWQLFilter' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.516 NAME 'serverReferenceBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
 attributeTypes: ( 2.5.18.1 NAME 'createTimeStamp' SYNTAX '1.3.6.1.4.1.1466.115.121.1.24' SINGLE-VALUE NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.748 NAME 'attributeDisplayNames' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
@@ -10515,6 +10647,7 @@ attributeTypes: ( 1.2.840.113556.1.4.1153 NAME 'msRADIUSFramedIPAddress' SYNTAX 
 attributeTypes: ( 1.2.840.113556.1.4.45 NAME 'homeDrive' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 2.5.21.5 NAME 'attributeTypes' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.540 NAME 'initialAuthOutgoing' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.141 NAME 'versionNumber' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 2.5.4.0 NAME 'objectClass' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.915 NAME 'possibleInferiors' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.1669 NAME 'msDS-Approx-Immed-Subordinates' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE NO-USER-MODIFICATION )
@@ -10725,6 +10858,7 @@ attributeTypes: ( 1.2.840.113556.1.4.662 NAME 'lockoutTime' SYNTAX '1.2.840.1135
 attributeTypes: ( 1.2.840.113556.1.4.537 NAME 'dynamicLDAPServer' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.909 NAME 'extendedAttributeInfo' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.2.444 NAME 'msExchAssistantName' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.1349 NAME 'gPCUserExtensionNames' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.1794 NAME 'msDS-NonMembersBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.2.194 NAME 'adminDisplayName' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.499 NAME 'contextMenu' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
@@ -10738,6 +10872,7 @@ attributeTypes: ( 1.2.840.113556.1.4.947 NAME 'mSMQSignCertificates' SYNTAX '1.3
 attributeTypes: ( 1.2.840.113556.1.4.539 NAME 'initialAuthIncoming' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.472 NAME 'domainCrossRef' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
 attributeTypes: ( 0.9.2342.19200300.100.1.2 NAME 'textEncodedORAddress' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.893 NAME 'gPCFunctionalityVersion' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.267 NAME 'uSNDSALastObjRemoved' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.1813 NAME 'msDS-OperationsForAzRoleBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.1361 NAME 'mS-DS-ConsistencyChildCount' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
@@ -10890,6 +11025,7 @@ attributeTypes: ( 0.9.2342.19200300.100.1.6 NAME 'roomNumber' SYNTAX '1.3.6.1.4.
 attributeTypes: ( 1.2.840.113556.1.2.613 NAME 'employeeType' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.27 NAME 'currentValue' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
 attributeTypes: ( 2.5.21.2 NAME 'dITContentRules' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' NO-USER-MODIFICATION )
+attributeTypes: ( 1.2.840.113556.1.4.1348 NAME 'gPCMachineExtensionNames' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.19 NAME 'uSNCreated' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.2.7 NAME 'subRefs' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.2.210 NAME 'proxyAddresses' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
@@ -10918,6 +11054,7 @@ attributeTypes: ( 1.2.840.113556.1.4.62 NAME 'scriptPath' SYNTAX '1.3.6.1.4.1.14
 attributeTypes: ( 1.2.840.113556.1.4.948 NAME 'mSMQDigests' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' )
 attributeTypes: ( 1.2.840.113556.1.4.1441 NAME 'msDS-Cached-Membership' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.64 NAME 'logonHours' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.894 NAME 'gPCFileSysPath' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 dITContentRules: ( 1.2.840.113556.1.5.67 NAME 'domainDNS' AUX ( samDomain ) MAY ( treeName $ rIDManagerReference $ replicaSource $ pwdProperties $ pwdHistoryLength $ privateKey $ pekList $ pekKeyChangeInterval $ nTMixedDomain $ nextRid $ nETBIOSName $ msDS-PerUserTrustTombstonesQuota $ msDS-PerUserTrustQuota $ ms-DS-MachineAccountQuota $ msDS-LogonTimeSyncInterval $ msDS-AllUsersTrustQuota $ modifiedCountAtLastProm $ minPwdLength $ minPwdAge $ maxPwdAge $ lSAModifiedCount $ lSACreationTime $ lockoutThreshold $ lockoutDuration $ lockOutObservationWindow $ gPOptions $ gPLink $ eFSPolicy $ domainPolicyObject $ desktopProfile $ description $ defaultLocalPolicyObject $ creationTime $ controlAccessRights $ cACertificate $ builtinModifiedCount $ builtinCreationTime $ auditingPolicy ) )
 dITContentRules: ( 1.2.840.113556.1.5.4 NAME 'builtinDomain' AUX ( samDomainBase ) MAY ( uASCompat $ serverState $ serverRole $ revision $ pwdProperties $ pwdHistoryLength $ oEMInformation $ objectSid $ nTSecurityDescriptor $ nextRid $ modifiedCountAtLastProm $ modifiedCount $ minPwdLength $ minPwdAge $ maxPwdAge $ lockoutThreshold $ lockoutDuration $ lockOutObservationWindow $ forceLogoff $ domainReplica $ creationTime ) )
 dITContentRules: ( 1.2.840.113556.1.5.3 NAME 'samDomain' AUX ( samDomainBase ) MAY ( uASCompat $ serverState $ serverRole $ revision $ pwdProperties $ pwdHistoryLength $ oEMInformation $ objectSid $ nTSecurityDescriptor $ nextRid $ modifiedCountAtLastProm $ modifiedCount $ minPwdLength $ minPwdAge $ maxPwdAge $ lockoutThreshold $ lockoutDuration $ lockOutObservationWindow $ forceLogoff $ domainReplica $ creationTime ) )
