@@ -247,6 +247,9 @@ int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_conta
 		*_ccc = ccc;
 	}
 
+	cred->ccache_obtained = (MAX(MAX(cred->principal_obtained, 
+					 cred->username_obtained), 
+				     cred->password_obtained));
 	return ret;
 }
 
@@ -259,8 +262,9 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		cli_credentials_set_machine_account(cred);
 	}
 
-	if (cred->ccache_obtained >= (MAX(cred->principal_obtained, 
-					  cred->username_obtained))) {
+	if (cred->ccache_obtained >=(MAX(MAX(cred->principal_obtained, 
+					     cred->username_obtained), 
+					 cred->password_obtained))) {
 		*ccc = cred->ccache;
 		return 0;
 	}
