@@ -193,6 +193,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int i, j;
 
+	if (!data) return False;
+
 	asn1_push_tag(data, ASN1_SEQUENCE(0));
 	asn1_write_Integer(data, msg->messageid);
 

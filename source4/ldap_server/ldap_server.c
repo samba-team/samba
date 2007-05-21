@@ -137,11 +137,13 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 	struct asn1_data *asn1 = asn1_init(conn);
 	struct ldap_message *msg = talloc(conn, struct ldap_message);
 
-	if (msg == NULL) {
+	if (asn1 == NULL || msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!asn1_load(asn1, blob)) {
+		talloc_free(msg);
+		talloc_free(asn1);
 		return NT_STATUS_NO_MEMORY;
 	}
 
