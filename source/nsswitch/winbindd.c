@@ -1103,7 +1103,6 @@ int main(int argc, char **argv, char **envp)
 
 	pidfile_create("winbindd");
 
-#if 0	/* not finished yet */
 	/* Ensure all cache and idmap caches are consistent
 	   before we startup. */
 
@@ -1117,7 +1116,6 @@ int main(int argc, char **argv, char **envp)
 		}
 		return execve(argv[0], argv, envp);
 	}
-#endif
 
 #if HAVE_SETPGID
 	/*
