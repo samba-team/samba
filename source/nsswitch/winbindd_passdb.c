@@ -125,7 +125,12 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	/* Paranoia check */
 	if (!sid_check_is_in_builtin(sid) &&
-	    !sid_check_is_in_our_domain(sid)) {
+	    !sid_check_is_in_our_domain(sid) &&
+	    !sid_check_is_in_unix_users(sid) &&
+	    !sid_check_is_unix_users(sid) &&
+	    !sid_check_is_in_unix_groups(sid) &&
+	    !sid_check_is_unix_groups(sid) )
+	{
 		DEBUG(0, ("Possible deadlock: Trying to lookup SID %s with "
 			  "passdb backend\n", sid_string_static(sid)));
 		return NT_STATUS_NONE_MAPPED;
