@@ -59,7 +59,7 @@ struct cldap_request {
 	DATA_BLOB encoded;
 
 	/* the reply data */
-	struct asn1_data asn1;
+	struct asn1_data *asn1;
 
 	/* information on what to do on completion */
 	struct {

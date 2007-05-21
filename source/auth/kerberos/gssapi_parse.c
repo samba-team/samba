@@ -31,30 +31,28 @@
 */
 DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8_t tok_id[2])
 {
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	DATA_BLOB ret;
 
-	if (!ticket->data) {
+	if (!data || !ticket->data) {
 		return data_blob(NULL,0);
 	}
 
-	ZERO_STRUCT(data);
+	asn1_push_tag(data, ASN1_APPLICATION(0));
+	asn1_write_OID(data, GENSEC_OID_KERBEROS5);
 
-	asn1_push_tag(&data, ASN1_APPLICATION(0));
-	asn1_write_OID(&data, GENSEC_OID_KERBEROS5);
+	asn1_write(data, tok_id, 2);
+	asn1_write(data, ticket->data, ticket->length);
+	asn1_pop_tag(data);
 
-	asn1_write(&data, tok_id, 2);
-	asn1_write(&data, ticket->data, ticket->length);
-	asn1_pop_tag(&data);
-
-	if (data.has_error) {
-		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data.ofs));
-		asn1_free(&data);
+	if (data->has_error) {
+		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data->ofs));
+		asn1_free(data);
 		return data_blob(NULL,0);
 	}
 
-	ret = data_blob_talloc(mem_ctx, data.data, data.length);
-	asn1_free(&data);
+	ret = data_blob_talloc(mem_ctx, data->data, data->length);
+	asn1_free(data);
 
 	return ret;
 }
@@ -65,29 +63,29 @@ DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *tick
 BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8_t tok_id[2])
 {
 	BOOL ret;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(mem_ctx);
 	int data_remaining;
 
-	asn1_load(&data, *blob);
-	asn1_start_tag(&data, ASN1_APPLICATION(0));
-	asn1_check_OID(&data, GENSEC_OID_KERBEROS5);
+	asn1_load(data, *blob);
+	asn1_start_tag(data, ASN1_APPLICATION(0));
+	asn1_check_OID(data, GENSEC_OID_KERBEROS5);
 
-	data_remaining = asn1_tag_remaining(&data);
+	data_remaining = asn1_tag_remaining(data);
 
 	if (data_remaining < 3) {
-		data.has_error = True;
+		data->has_error = True;
 	} else {
-		asn1_read(&data, tok_id, 2);
+		asn1_read(data, tok_id, 2);
 		data_remaining -= 2;
 		*ticket = data_blob_talloc(mem_ctx, NULL, data_remaining);
-		asn1_read(&data, ticket->data, ticket->length);
+		asn1_read(data, ticket->data, ticket->length);
 	}
 
-	asn1_end_tag(&data);
+	asn1_end_tag(data);
 
-	ret = !data.has_error;
+	ret = !data->has_error;
 
-	asn1_free(&data);
+	asn1_free(data);
 
 	return ret;
 }
@@ -99,15 +97,15 @@ BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, D
 BOOL gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 {
 	BOOL ret;
-	struct asn1_data data;
+	struct asn1_data *data = asn1_init(NULL);
 
-	asn1_load(&data, *blob);
-	asn1_start_tag(&data, ASN1_APPLICATION(0));
-	asn1_check_OID(&data, oid);
+	asn1_load(data, *blob);
+	asn1_start_tag(data, ASN1_APPLICATION(0));
+	asn1_check_OID(data, oid);
 
-	ret = !data.has_error;
+	ret = !data->has_error;
 
-	asn1_free(&data);
+	asn1_free(data);
 
 	return ret;
 }
