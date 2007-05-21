@@ -33,3 +33,4 @@ trustedDomain
 attributeSchema
 subSchema
 queryPolicy
+groupPolicyContainer
