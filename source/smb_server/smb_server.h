@@ -185,13 +185,14 @@ struct smbsrv_handle {
 	/*
 	 * the value passed over the wire
 	 * - 16 bit for smb
-	 * - 64 bit for smb2
+	 * - 32 bit for smb2
 	 *   Note: for SMB2 handles are 128 bit
-	 *         we'll fill the 2nd 64 bit with:
+	 *         we'll fill them with
+	 *	   - 32 bit HID
 	 *         - 32 bit TID
-	 *         - 32 bit 0xFFFFFFFF
+	 *	   - 64 bit VUID
 	 */
-	uint64_t hid;
+	uint32_t hid;
 
 	/*
 	 * the ntvfs handle passed to the ntvfs backend

@@ -41,9 +41,9 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 {
 	struct smbsrv_tcon *tcon;
 	struct smbsrv_handle *handle;
-	uint64_t hid;
+	uint32_t hid;
 	uint32_t tid;
-	uint32_t pad;
+	uint64_t uid;
 
 	/*
 	 * if there're chained requests used the cached handle
@@ -56,16 +56,20 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 		offset = 0;
 	}
 
-	hid = BVAL(base, offset);
-	tid = IVAL(base, offset + 8);
-	pad = IVAL(base, offset + 12);
+	hid = IVAL(base, offset);
+	tid = IVAL(base, offset + 4);
+	uid = BVAL(base, offset + 8);
 
-	if (pad != UINT32_MAX) {
+	/* if it's the wildcard handle, don't waste time to search it... */
+	if (hid == UINT32_MAX && tid == UINT32_MAX && uid == UINT64_MAX) {
 		return NULL;
 	}
 
-	/* if it's the wildcard handle, don't waste time to search it... */
-	if (hid == UINT64_MAX && tid == UINT32_MAX) {
+	/*
+	 * if the (v)uid part doesn't match the given session the handle isn't
+	 * valid
+	 */
+	if (uid != req->session->vuid) {
 		return NULL;
 	}
 
@@ -74,7 +78,7 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 	 * as that TID in the SMB2 header says, but
 	 * the request should succeed nevertheless!
 	 *
-	 * because if this we put the 32 bit TID into the
+	 * because of this we put the 32 bit TID into the
 	 * 128 bit handle, so that we can extract the tcon from the
 	 * handle
 	 */
@@ -102,6 +106,8 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 	 * as the handle may have overwritten the tcon
 	 * we need to set it on the request so that the
 	 * correct ntvfs context will be used for the ntvfs_*() request
+	 *
+	 * TODO: check if that's correct for chained requests as well!
 	 */
 	req->tcon = tcon;
 	return handle->ntvfs;
@@ -115,9 +121,9 @@ void smb2srv_push_handle(uint8_t *base, uint_t offset, struct ntvfs_handle *ntvf
 	/* 
 	 * the handle is 128 bit on the wire
 	 */
-	SBVAL(base, offset,	handle->hid);
-	SIVAL(base, offset + 8,	handle->tcon->tid);
-	SIVAL(base, offset + 12,UINT32_MAX);
+	SIVAL(base, offset,	handle->hid);
+	SIVAL(base, offset + 4,	handle->tcon->tid);
+	SBVAL(base, offset + 8,	handle->session->vuid);
 }
 
 static NTSTATUS smb2srv_handle_create_new(void *private_data, struct ntvfs_request *ntvfs, struct ntvfs_handle **_h)
