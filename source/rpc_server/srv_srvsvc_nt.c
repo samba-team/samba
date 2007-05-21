@@ -1423,7 +1423,7 @@ static WERROR add_share(const char *share_name, const char *path,
 			/* Tell everyone we updated smb.conf. */
 			message_send_all(smbd_messaging_context(),
 					 MSG_SMB_CONF_UPDATED,
-					 NULL, 0, False, NULL);
+					 NULL, 0, NULL);
 		}
 
 		if ( is_disk_op )
@@ -1520,7 +1520,7 @@ static WERROR delete_share(const char *sharename,
 			/* Tell everyone we updated smb.conf. */
 			message_send_all(smbd_messaging_context(),
 					 MSG_SMB_CONF_UPDATED,
-					 NULL, 0, False, NULL);
+					 NULL, 0, NULL);
 		}
 
 		if ( is_disk_op )
@@ -1579,7 +1579,7 @@ static WERROR change_share(const char *share_name, const char *path,
 			/* Tell everyone we updated smb.conf. */
 			message_send_all(smbd_messaging_context(),
 					 MSG_SMB_CONF_UPDATED,
-					 NULL, 0, False, NULL);
+					 NULL, 0, NULL);
 		}
 		
 		if ( is_disk_op )

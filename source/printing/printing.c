@@ -1426,7 +1426,7 @@ void start_background_queue(void)
 			/* now check for messages */
 			
 			DEBUG(10,("start_background_queue: background LPQ thread got a message\n"));
-			message_dispatch();
+			message_dispatch(smbd_messaging_context());
 
 			/* process any pending print change notify messages */
 

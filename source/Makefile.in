@@ -149,7 +149,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DLOCKDIR=\"$(LOCKDIR)\" \
 	-DPIDDIR=\"$(PIDDIR)\" \
 	-DLIBDIR=\"$(LIBDIR)\" \
-      	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
+	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\"
 
@@ -259,7 +259,9 @@ SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 
 TALLOC_OBJ = lib/talloc/talloc.o
 
-LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ)
+
+LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ) \
+	lib/messages.o librpc/gen_ndr/ndr_messaging.o
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
@@ -273,7 +275,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/substitute.o lib/fsusage.o \
-	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
+	  lib/ms_fnmatch.o lib/select.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
@@ -281,7 +283,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
-	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o
+	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ)
 
 LIB_OBJ = $(LIB_WITHOUT_PROTO_OBJ) $(LIB_WITH_PROTO_OBJ)
 
@@ -347,7 +349,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_srvsvc.o \
 		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
 		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_epmapper.o \
-		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ)
+		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
@@ -763,7 +765,7 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 		$(LIBREPLACE_OBJ)
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
-			  $(PARAM_OBJ) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
+			  $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
 			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 			  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(SECRETS_OBJ)
 
@@ -783,7 +785,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ) \
-			$(LIBNDR_GEN_OBJ) $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
+	    $(LIBNDR_GEN_OBJ) $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
 	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) \
 	    $(LIB_WITH_PROTO_OBJ) \

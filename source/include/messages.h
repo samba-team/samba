@@ -100,4 +100,37 @@ struct server_id {
 	pid_t pid;
 };
 
+struct messaging_context;
+struct data_blob;
+
+unsigned int messages_pending_for_pid(struct messaging_context *msg_ctx,
+				      struct server_id pid);
+void message_dispatch(struct messaging_context *msg_ctx);
+BOOL message_send_all(struct messaging_context *msg_ctx,
+		      int msg_type,
+		      const void *buf, size_t len,
+		      int *n_sent);
+void message_block(void);
+void message_unblock(void);
+struct event_context *messaging_event_context(struct messaging_context *msg_ctx);
+struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
+					 struct server_id server_id, 
+					 struct event_context *ev);
+NTSTATUS messaging_register(struct messaging_context *msg_ctx,
+			    void *private_data,
+			    uint32_t msg_type,
+			    void (*fn)(struct messaging_context *msg,
+				       void *private_data, 
+				       uint32_t msg_type, 
+				       struct server_id server_id,
+				       struct data_blob *data));
+void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
+			  void *private_data);
+NTSTATUS messaging_send(struct messaging_context *msg_ctx,
+			struct server_id server, 
+			uint32_t msg_type, const struct data_blob *data);
+NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
+			    struct server_id server, uint32_t msg_type,
+			    const uint8 *buf, size_t len);
+
 #endif
