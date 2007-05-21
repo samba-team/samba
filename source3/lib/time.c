@@ -95,7 +95,13 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	if (t == (time_t)-1) {
 		*nt = (NTTIME)-1LL;
 		return;
-	}		
+	}	
+
+	if (t == TIME_T_MAX) {
+		*nt = 0x7fffffffffffffffLL;
+		return;
+	}
+
 	if (t == 0) {
 		*nt = 0;
 		return;
@@ -301,7 +307,9 @@ char *http_timestring(time_t t)
 	static fstring buf;
 	struct tm *tm = localtime(&t);
 
-	if (!tm) {
+	if (t == TIME_T_MAX) {
+		slprintf(buf,sizeof(buf)-1,"never");
+	} else if (!tm) {
 		slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
 	} else {
 #ifndef HAVE_STRFTIME
