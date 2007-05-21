@@ -148,6 +148,16 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		return domain;		
 	}	
         
+	/* See if we found a match.  Check if we need to update the
+	   SID. */
+
+	if ( domain ) {
+		if ( sid_equal( &domain->sid, &global_sid_NULL ) )
+			sid_copy( &domain->sid, sid );
+
+		return domain;		
+	}	
+        
 	/* Create new domain entry */
 
 	if ((domain = SMB_MALLOC_P(struct winbindd_domain)) == NULL)
