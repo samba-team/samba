@@ -3566,8 +3566,7 @@ static TDB_DATA make_tdc_key( const char *domain_name )
 	       
 		
 	asprintf( &keystr, "TRUSTDOMCACHE/%s", domain_name );
-	key.dptr = (unsigned char*)keystr;
-	key.dsize = strlen_m(keystr) + 1;
+	key = string_term_tdb_data(keystr);
 	
 	return key;	
 }
