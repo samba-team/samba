@@ -27,7 +27,7 @@
 /****************************************************************************
 init the handle structures
 ****************************************************************************/
-NTSTATUS smbsrv_init_handles(struct smbsrv_tcon *tcon, uint64_t limit)
+NTSTATUS smbsrv_init_handles(struct smbsrv_tcon *tcon, uint32_t limit)
 {
 	/* 
 	 * the idr_* functions take 'int' as limit,
@@ -47,7 +47,7 @@ NTSTATUS smbsrv_init_handles(struct smbsrv_tcon *tcon, uint64_t limit)
 find a handle given a handle id
 ****************************************************************************/
 static struct smbsrv_handle *smbsrv_handle_find(struct smbsrv_handles_context *handles_ctx,
-						uint64_t hid, struct timeval request_time)
+						uint32_t hid, struct timeval request_time)
 {
 	void *p;
 	struct smbsrv_handle *handle;
@@ -77,7 +77,7 @@ struct smbsrv_handle *smbsrv_smb_handle_find(struct smbsrv_tcon *smb_tcon,
 }
 
 struct smbsrv_handle *smbsrv_smb2_handle_find(struct smbsrv_tcon *smb_tcon,
-					      uint64_t hid, struct timeval request_time)
+					      uint32_t hid, struct timeval request_time)
 {
 	return smbsrv_handle_find(&smb_tcon->handles, hid, request_time);
 }
