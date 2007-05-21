@@ -140,9 +140,9 @@ function hostname()
 /* the ldb is in bad shape, possibly due to being built from an
    incompatible previous version of the code, so delete it
    completely */
-function ldb_delete(ldb)
+function ldb_delete(info, ldb)
 {
-	println("Deleting " + ldb.filename);
+	info.message("Deleting " + ldb.filename + "\n");
 	var lp = loadparm_init();
 	sys.unlink(sprintf("%s/%s", lp.get("private dir"), ldb.filename));
 	ldb.transaction_cancel();
@@ -155,7 +155,7 @@ function ldb_delete(ldb)
 /*
   erase an ldb, removing all records
 */
-function ldb_erase(ldb)
+function ldb_erase(info, ldb)
 {
 	var res;
 
@@ -173,7 +173,7 @@ function ldb_erase(ldb)
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	var i;
 	if (res.error != 0) {
-		ldb_delete(ldb);
+		ldb_delete(info, ldb);
 		return;
 	}
 	for (i=0;i<res.msgs.length;i++) {
@@ -182,7 +182,7 @@ function ldb_erase(ldb)
 
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.error != 0 || res.msgs.length != 0) {
-		ldb_delete(ldb);
+		ldb_delete(info, ldb);
 		return;
 	}
 	assert(res.msgs.length == 0);
@@ -260,7 +260,7 @@ function open_ldb(info, dbname, erase)
 	ldb.transaction_start();
 
 	if (erase) {
-		ldb_erase(ldb);	
+		ldb_erase(info, ldb);	
 	}
 	return ldb;
 }
@@ -571,7 +571,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.DOMAINDN_LDB + "\n");
+			message("Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.DOMAINDN_LDB + ": " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 		};
 		assert(modify_ok);
@@ -583,7 +583,8 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_configuration_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify the configuration container\n");
+			message("Failed to both add and modify configuration dn: " + samdb.errstring() + "\n");
+			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 			assert(modify_ok);
 		}
 		assert(modify_ok);
@@ -595,7 +596,8 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify the schema container: " + samdb.errstring() + "\n");
+			message("Failed to both add and modify schema dn: + samdb.errstring() + "\n");
+			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 			assert(modify_ok);
 		}
 		message("Failed to modify the schema container: " + samdb.errstring() + "\n");
