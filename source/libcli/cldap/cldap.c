@@ -66,7 +66,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	struct socket_address *src;
 	DATA_BLOB blob;
 	size_t nread, dsize;
-	struct asn1_data asn1;
+	struct asn1_data *asn1 = asn1_init(tmp_ctx);
 	struct ldap_message *ldap_msg;
 	struct cldap_request *req;
 
@@ -93,12 +93,12 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	DEBUG(2,("Received cldap packet of length %d from %s:%d\n", 
 		 (int)blob.length, src->addr, src->port));
 
-	if (!asn1_load(&asn1, blob)) {
+	if (!asn1_load(asn1, blob)) {
 		DEBUG(2,("Failed to setup for asn.1 decode\n"));
 		talloc_free(tmp_ctx);
 		return;
 	}
-	talloc_steal(tmp_ctx, asn1.data);
+	talloc_steal(tmp_ctx, asn1->data);
 
 	ldap_msg = talloc(tmp_ctx, struct ldap_message);
 	if (ldap_msg == NULL) {
@@ -107,7 +107,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	}
 
 	/* this initial decode is used to find the message id */
-	status = ldap_decode(&asn1, ldap_msg);
+	status = ldap_decode(asn1, ldap_msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Failed to decode ldap message: %s\n", nt_errstr(status)));
 		talloc_free(tmp_ctx);
@@ -128,8 +128,8 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	}
 
 	req->asn1 = asn1;
-	talloc_steal(req, asn1.data);
-	req->asn1.ofs = 0;
+	talloc_steal(req, asn1->data);
+	req->asn1->ofs = 0;
 
 	req->state = CLDAP_REQUEST_DONE;
 	talloc_free(req->te);
@@ -456,7 +456,7 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 	ldap_msg = talloc(mem_ctx, struct ldap_message);
 	NT_STATUS_HAVE_NO_MEMORY(ldap_msg);
 
-	status = ldap_decode(&req->asn1, ldap_msg);
+	status = ldap_decode(req->asn1, ldap_msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Failed to decode cldap search reply: %s\n", nt_errstr(status)));
 		talloc_free(req);
@@ -472,7 +472,7 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 		*io->out.response = ldap_msg->r.SearchResultEntry;
 
 		/* decode the 2nd part */
-		status = ldap_decode(&req->asn1, ldap_msg);
+		status = ldap_decode(req->asn1, ldap_msg);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2,("Failed to decode cldap search result entry: %s\n", nt_errstr(status)));
 			talloc_free(req);

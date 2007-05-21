@@ -711,7 +711,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		NTSTATUS nt_status;
 		if (in.length) {
 
-			len = spnego_read_data(in, &spnego);
+			len = spnego_read_data(gensec_security, in, &spnego);
 			if (len == -1) {
 				return gensec_spnego_server_try_fallback(gensec_security, spnego_state, 
 									 out_mem_ctx, in, out);
@@ -769,7 +769,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return nt_status;
 		}
 		
-		len = spnego_read_data(in, &spnego);
+		len = spnego_read_data(gensec_security, in, &spnego);
 		
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
@@ -834,7 +834,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
-		len = spnego_read_data(in, &spnego);
+		len = spnego_read_data(gensec_security, in, &spnego);
 		
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
@@ -880,7 +880,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
-		len = spnego_read_data(in, &spnego);
+		len = spnego_read_data(gensec_security, in, &spnego);
 		
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));

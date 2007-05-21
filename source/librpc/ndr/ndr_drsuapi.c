@@ -144,7 +144,7 @@ NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, stru
 				_oid = data_blob_hex_string(ndr, &_oid_array);
 				NT_STATUS_HAVE_NO_MEMORY(_oid);
 			} else {
-				_OID_PULL_CHECK(ber_read_OID_String(_oid_array, &_oid));
+				_OID_PULL_CHECK(ber_read_OID_String(r->oid, _oid_array, &_oid));
 			}
 			data_blob_free(&_oid_array);
 			talloc_steal(r->oid, _oid);

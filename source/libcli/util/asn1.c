@@ -21,12 +21,16 @@
 #include "includes.h"
 #include "libcli/util/asn_1.h"
 
+/* allocate an asn1 structure */
+struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx)
+{
+	return talloc_zero(NULL, struct asn1_data);
+}
+
 /* free an asn1 structure */
 void asn1_free(struct asn1_data *data)
 {
-	talloc_free(data->data);
-	ZERO_STRUCTP(data);
-	data->has_error = True;
+	talloc_free(data);
 }
 
 /* write to the ASN1 buffer, advancing the buffer pointer */
@@ -35,7 +39,7 @@ BOOL asn1_write(struct asn1_data *data, const void *p, int len)
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
 		uint8_t *newp;
-		newp = talloc_realloc(NULL, data->data, uint8_t, data->ofs+len);
+		newp = talloc_realloc(data, data->data, uint8_t, data->ofs+len);
 		if (!newp) {
 			asn1_free(data);
 			data->has_error = True;
@@ -61,7 +65,7 @@ BOOL asn1_push_tag(struct asn1_data *data, uint8_t tag)
 	struct nesting *nesting;
 
 	asn1_write_uint8(data, tag);
-	nesting = talloc(NULL, struct nesting);
+	nesting = talloc(data, struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;
@@ -341,7 +345,7 @@ BOOL asn1_check_BOOLEAN(struct asn1_data *data, BOOL v)
 BOOL asn1_load(struct asn1_data *data, DATA_BLOB blob)
 {
 	ZERO_STRUCTP(data);
-	data->data = talloc_memdup(NULL, blob.data, blob.length);
+	data->data = talloc_memdup(data, blob.data, blob.length);
 	if (!data->data) {
 		data->has_error = True;
 		return False;
@@ -417,7 +421,7 @@ BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 		data->has_error = True;
 		return False;
 	}
-	nesting = talloc(NULL, struct nesting);
+	nesting = talloc(data, struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;
@@ -494,7 +498,7 @@ int asn1_tag_remaining(struct asn1_data *data)
 }
 
 /* read an object ID from a data blob */
-BOOL ber_read_OID_String(DATA_BLOB blob, const char **OID)
+BOOL ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
 {
 	int i;
 	uint8_t *b;
@@ -505,7 +509,7 @@ BOOL ber_read_OID_String(DATA_BLOB blob, const char **OID)
 
 	b = blob.data;
 
-	tmp_oid = talloc_asprintf(NULL, "%u",  b[0]/40);
+	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b[0]/40);
 	if (!tmp_oid) goto nomem;
 	tmp_oid = talloc_asprintf_append(tmp_oid, ".%u",  b[0]%40);
 	if (!tmp_oid) goto nomem;
@@ -532,7 +536,7 @@ nomem:
 }
 
 /* read an object ID from a ASN1 buffer */
-BOOL asn1_read_OID(struct asn1_data *data, const char **OID)
+BOOL asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, const char **OID)
 {
 	DATA_BLOB blob;
 	int len;
@@ -558,7 +562,7 @@ BOOL asn1_read_OID(struct asn1_data *data, const char **OID)
 		return False;
 	}
 
-	if (!ber_read_OID_String(blob, OID)) {
+	if (!ber_read_OID_String(mem_ctx, blob, OID)) {
 		data->has_error = True;
 		data_blob_free(&blob);
 		return False;
@@ -573,9 +577,10 @@ BOOL asn1_check_OID(struct asn1_data *data, const char *OID)
 {
 	const char *id;
 
-	if (!asn1_read_OID(data, &id)) return False;
+	if (!asn1_read_OID(data, data, &id)) return False;
 
 	if (strcmp(id, OID) != 0) {
+		talloc_free(discard_const(id));
 		data->has_error = True;
 		return False;
 	}
@@ -584,7 +589,7 @@ BOOL asn1_check_OID(struct asn1_data *data, const char *OID)
 }
 
 /* read a LDAPString from a ASN1 buffer */
-BOOL asn1_read_LDAPString(struct asn1_data *data, char **s)
+BOOL asn1_read_LDAPString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s)
 {
 	int len;
 	len = asn1_tag_remaining(data);
@@ -592,7 +597,7 @@ BOOL asn1_read_LDAPString(struct asn1_data *data, char **s)
 		data->has_error = True;
 		return False;
 	}
-	*s = talloc_size(NULL, len+1);
+	*s = talloc_size(mem_ctx, len+1);
 	if (! *s) {
 		data->has_error = True;
 		return False;
@@ -604,16 +609,16 @@ BOOL asn1_read_LDAPString(struct asn1_data *data, char **s)
 
 
 /* read a GeneralString from a ASN1 buffer */
-BOOL asn1_read_GeneralString(struct asn1_data *data, char **s)
+BOOL asn1_read_GeneralString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s)
 {
 	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return False;
-	if (!asn1_read_LDAPString(data, s)) return False;
+	if (!asn1_read_LDAPString(data, mem_ctx, s)) return False;
 	return asn1_end_tag(data);
 }
 
 
 /* read a octet string blob */
-BOOL asn1_read_OctetString(struct asn1_data *data, DATA_BLOB *blob)
+BOOL asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 {
 	int len;
 	ZERO_STRUCTP(blob);
@@ -623,7 +628,7 @@ BOOL asn1_read_OctetString(struct asn1_data *data, DATA_BLOB *blob)
 		data->has_error = True;
 		return False;
 	}
-	*blob = data_blob(NULL, len+1);
+	*blob = data_blob_talloc(mem_ctx, NULL, len+1);
 	if (!blob->data) {
 		data->has_error = True;
 		return False;
@@ -727,19 +732,21 @@ BOOL asn1_write_enumerated(struct asn1_data *data, uint8_t v)
 */
 NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 {
-	struct asn1_data asn1;
+	struct asn1_data *asn1 = asn1_init(NULL);
 	int size;
 
-	ZERO_STRUCT(asn1);
-	asn1.data = blob.data;
-	asn1.length = blob.length;
-	asn1_start_tag(&asn1, tag);
-	if (asn1.has_error) {
-		talloc_free(asn1.nesting);
+	NT_STATUS_HAVE_NO_MEMORY(asn1);
+
+	asn1->data = blob.data;
+	asn1->length = blob.length;
+	asn1_start_tag(asn1, tag);
+	if (asn1->has_error) {
+		talloc_free(asn1);
 		return STATUS_MORE_ENTRIES;
 	}
-	size = asn1_tag_remaining(&asn1) + asn1.ofs;
-	talloc_free(asn1.nesting);
+	size = asn1_tag_remaining(asn1) + asn1->ofs;
+
+	talloc_free(asn1);
 
 	if (size > blob.length) {
 		return STATUS_MORE_ENTRIES;
