@@ -53,6 +53,9 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->keytab_obtained = CRED_UNINITIALISED;
 	cred->principal_obtained = CRED_UNINITIALISED;
 
+	cred->ccache_threshold = CRED_UNINITIALISED;
+	cred->client_gss_creds_threshold = CRED_UNINITIALISED;
+
 	cred->old_password = NULL;
 	cred->smb_krb5_context = NULL;
 	cred->salt_principal = NULL;
@@ -125,6 +128,7 @@ const char *cli_credentials_get_username(struct cli_credentials *cred)
 		cred->username = cred->username_cb(cred);
 	    	cred->callback_running = False;
 		cred->username_obtained = CRED_SPECIFIED;
+		cli_credentials_invalidate_ccache(cred, cred->username_obtained);
 	}
 
 	return cred->username;
@@ -136,6 +140,7 @@ BOOL cli_credentials_set_username(struct cli_credentials *cred,
 	if (obtained >= cred->username_obtained) {
 		cred->username = talloc_strdup(cred, val);
 		cred->username_obtained = obtained;
+		cli_credentials_invalidate_ccache(cred, cred->username_obtained);
 		return True;
 	}
 
@@ -191,6 +196,7 @@ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_C
 		cred->principal = cred->principal_cb(cred);
 	    	cred->callback_running = False;
 		cred->principal_obtained = CRED_SPECIFIED;
+		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
 	}
 
 	if (cred->principal_obtained < cred->username_obtained) {
@@ -214,6 +220,7 @@ BOOL cli_credentials_set_principal(struct cli_credentials *cred,
 	if (obtained >= cred->principal_obtained) {
 		cred->principal = talloc_strdup(cred, val);
 		cred->principal_obtained = obtained;
+		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
 		return True;
 	}
 
@@ -280,6 +287,7 @@ const char *cli_credentials_get_password(struct cli_credentials *cred)
 		cred->password = cred->password_cb(cred);
 	    	cred->callback_running = False;
 		cred->password_obtained = CRED_CALLBACK_RESULT;
+		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
 	}
 
 	return cred->password;
@@ -295,6 +303,7 @@ BOOL cli_credentials_set_password(struct cli_credentials *cred,
 	if (obtained >= cred->password_obtained) {
 		cred->password = talloc_strdup(cred, val);
 		cred->password_obtained = obtained;
+		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
 
 		cred->nt_hash = NULL;
 		return True;
@@ -309,6 +318,7 @@ BOOL cli_credentials_set_password_callback(struct cli_credentials *cred,
 	if (cred->password_obtained < CRED_CALLBACK) {
 		cred->password_cb = password_cb;
 		cred->password_obtained = CRED_CALLBACK;
+		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
 		return True;
 	}
 
@@ -401,6 +411,7 @@ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 		cred->domain = cred->domain_cb(cred);
 	    	cred->callback_running = False;
 		cred->domain_obtained = CRED_SPECIFIED;
+		cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
 	}
 
 	return cred->domain;
@@ -417,6 +428,7 @@ BOOL cli_credentials_set_domain(struct cli_credentials *cred,
 		 * calculations */
 		cred->domain = strupper_talloc(cred, val);
 		cred->domain_obtained = obtained;
+		cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
 		return True;
 	}
 
@@ -453,6 +465,7 @@ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 		cred->realm = cred->realm_cb(cred);
 	    	cred->callback_running = False;
 		cred->realm_obtained = CRED_SPECIFIED;
+		cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
 	}
 
 	return cred->realm;
@@ -469,6 +482,7 @@ BOOL cli_credentials_set_realm(struct cli_credentials *cred,
 	if (obtained >= cred->realm_obtained) {
 		cred->realm = strupper_talloc(cred, val);
 		cred->realm_obtained = obtained;
+		cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
 		return True;
 	}
 

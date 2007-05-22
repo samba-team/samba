@@ -61,6 +61,13 @@ struct cli_credentials {
 	enum credentials_obtained keytab_obtained;
 	enum credentials_obtained server_gss_creds_obtained;
 
+	/* Threshold values (essentially a MAX() over a number of the
+	 * above) for the ccache and GSS credentials, to ensure we
+	 * regenerate/pick correctly */
+
+	enum credentials_obtained ccache_threshold;
+	enum credentials_obtained client_gss_creds_threshold;
+
 	const char *workstation;
 	const char *username;
 	const char *password;

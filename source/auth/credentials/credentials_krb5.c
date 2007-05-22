@@ -101,7 +101,9 @@ int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 
 	krb5_free_principal(cred->ccache->smb_krb5_context->krb5_context, princ);
 
+	/* set the ccache_obtained here, as it just got set to UNINITIALISED by the calls above */
 	cred->ccache_obtained = obtained;
+	cli_credentials_invalidate_client_gss_creds(cred, cred->ccache_obtained);
 
 	return 0;
 }
@@ -262,9 +264,7 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		cli_credentials_set_machine_account(cred);
 	}
 
-	if (cred->ccache_obtained >=(MAX(MAX(cred->principal_obtained, 
-					     cred->username_obtained), 
-					 cred->password_obtained))) {
+	if (cred->ccache_obtained >= cred->ccache_threshold) {
 		*ccc = cred->ccache;
 		return 0;
 	}
@@ -289,6 +289,49 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 	return ret;
 }
 
+void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred, 
+						 enum credentials_obtained obtained)
+{
+	/* If the caller just changed the username/password etc, then
+	 * any cached credentials are now invalid */
+	if (obtained >= cred->client_gss_creds_obtained) {
+		if (cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
+			talloc_free(cred->client_gss_creds);
+		}
+		cred->client_gss_creds_obtained = CRED_UNINITIALISED;
+	}
+	/* Now that we know that the data is 'this specified', then
+	 * don't allow something less 'known' to be returned as a
+	 * ccache.  Ie, if the username is on the commmand line, we
+	 * don't want to later guess to use a file-based ccache */
+	if (obtained > cred->client_gss_creds_threshold) {
+		cred->client_gss_creds_threshold = obtained;
+	}
+}
+
+void cli_credentials_invalidate_ccache(struct cli_credentials *cred, 
+				       enum credentials_obtained obtained)
+{
+	/* If the caller just changed the username/password etc, then
+	 * any cached credentials are now invalid */
+	if (obtained >= cred->ccache_obtained) {
+		if (cred->ccache_obtained > CRED_UNINITIALISED) {
+			talloc_free(cred->ccache);
+		}
+		cred->ccache_obtained = CRED_UNINITIALISED;
+	}
+	/* Now that we know that the data is 'this specified', then
+	 * don't allow something less 'known' to be returned as a
+	 * ccache.  Ie, if the username is on the commmand line, we
+	 * don't want to later guess to use a file-based ccache */
+	if (obtained > cred->ccache_threshold) {
+		cred->ccache_threshold  = obtained;
+	}
+
+	cli_credentials_invalidate_client_gss_creds(cred, 
+						    obtained);
+}
+
 static int free_gssapi_creds(struct gssapi_creds_container *gcc)
 {
 	OM_uint32 min_stat, maj_stat;
@@ -303,9 +346,7 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	OM_uint32 maj_stat, min_stat;
 	struct gssapi_creds_container *gcc;
 	struct ccache_container *ccache;
-	if (cred->client_gss_creds_obtained >= (MAX(cred->ccache_obtained, 
-					     MAX(cred->principal_obtained, 
-						 cred->username_obtained)))) {
+	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold) {
 		*_gcc = cred->client_gss_creds;
 		return 0;
 	}
@@ -389,6 +430,8 @@ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred,
 		gcc->creds = gssapi_cred;
 		talloc_set_destructor(gcc, free_gssapi_creds);
 		
+		/* set the clinet_gss_creds_obtained here, as it just 
+		   got set to UNINITIALISED by the calls above */
 		cred->client_gss_creds_obtained = obtained;
 		cred->client_gss_creds = gcc;
 	}
