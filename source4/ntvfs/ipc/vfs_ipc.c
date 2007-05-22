@@ -669,7 +669,7 @@ static NTSTATUS ipc_lpq(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_search_first(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_search_first *io,
 			  void *search_private, 
-			  BOOL (*callback)(void *, union smb_search_data *))
+			  BOOL (*callback)(void *, const union smb_search_data *))
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -680,7 +680,7 @@ static NTSTATUS ipc_search_first(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_search_next(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req, union smb_search_next *io,
 			 void *search_private, 
-			 BOOL (*callback)(void *, union smb_search_data *))
+			 BOOL (*callback)(void *, const union smb_search_data *))
 {
 	return NT_STATUS_ACCESS_DENIED;
 }

@@ -39,7 +39,7 @@ struct search_state {
   fill a single entry in a search find reply 
 */
 static BOOL find_fill_info(struct smbsrv_request *req,
-			   union smb_search_data *file)
+			   const union smb_search_data *file)
 {
 	uint8_t *p;
 
@@ -66,7 +66,7 @@ static BOOL find_fill_info(struct smbsrv_request *req,
 }
 
 /* callback function for search first/next */
-static BOOL find_callback(void *private, union smb_search_data *file)
+static BOOL find_callback(void *private, const union smb_search_data *file)
 {
 	struct search_state *state = (struct search_state *)private;
 

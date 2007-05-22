@@ -92,11 +92,11 @@ struct ntvfs_ops {
 	NTSTATUS (*search_first)(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_search_first *io, void *private,
-				 BOOL (*callback)(void *private, union smb_search_data *file));
+				 BOOL (*callback)(void *private, const union smb_search_data *file));
 	NTSTATUS (*search_next)(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
 				union smb_search_next *io, void *private,
-				BOOL (*callback)(void *private, union smb_search_data *file));
+				BOOL (*callback)(void *private, const union smb_search_data *file));
 	NTSTATUS (*search_close)(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_search_close *io);

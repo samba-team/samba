@@ -41,7 +41,7 @@ struct smb2srv_find_state {
 };
 
 /* callback function for SMB2 Find */
-static BOOL smb2srv_find_callback(void *private, union smb_search_data *file)
+static BOOL smb2srv_find_callback(void *private, const union smb_search_data *file)
 {
 	struct smb2srv_find_state *state = talloc_get_type(private, struct smb2srv_find_state);
 	struct smb2_find *info = state->info;

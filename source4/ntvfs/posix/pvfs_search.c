@@ -238,7 +238,7 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 				 enum smb_search_data_level level,
 				 uint_t *reply_count,
 				 void *search_private, 
-				 BOOL (*callback)(void *, union smb_search_data *))
+				 BOOL (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_dir *dir = search->dir;
 	NTSTATUS status;
@@ -314,7 +314,7 @@ static void pvfs_search_cleanup(struct pvfs_state *pvfs)
 static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 				      struct ntvfs_request *req, union smb_search_first *io, 
 				      void *search_private, 
-				      BOOL (*callback)(void *, union smb_search_data *))
+				      BOOL (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_dir *dir;
 	struct pvfs_state *pvfs = ntvfs->private_data;
@@ -404,7 +404,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 				     struct ntvfs_request *req, union smb_search_next *io, 
 				     void *search_private, 
-				     BOOL (*callback)(void *, union smb_search_data *))
+				     BOOL (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
@@ -453,7 +453,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_search_first_trans2(struct ntvfs_module_context *ntvfs,
 					 struct ntvfs_request *req, union smb_search_first *io, 
 					 void *search_private, 
-					 BOOL (*callback)(void *, union smb_search_data *))
+					 BOOL (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_dir *dir;
 	struct pvfs_state *pvfs = ntvfs->private_data;
@@ -549,7 +549,7 @@ static NTSTATUS pvfs_search_first_trans2(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
 					struct ntvfs_request *req, union smb_search_next *io, 
 					void *search_private, 
-					BOOL (*callback)(void *, union smb_search_data *))
+					BOOL (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
@@ -610,7 +610,7 @@ static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
 				       struct ntvfs_request *req, const struct smb2_find *io, 
 				       void *search_private, 
-				       BOOL (*callback)(void *, union smb_search_data *))
+				       BOOL (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_dir *dir;
 	struct pvfs_state *pvfs = ntvfs->private_data;
@@ -713,7 +713,7 @@ static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_search_next_smb2(struct ntvfs_module_context *ntvfs,
 				      struct ntvfs_request *req, const struct smb2_find *io, 
 				      void *search_private, 
-				      BOOL (*callback)(void *, union smb_search_data *))
+				      BOOL (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
@@ -766,7 +766,7 @@ static NTSTATUS pvfs_search_next_smb2(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req, union smb_search_first *io, 
 			   void *search_private, 
-			   BOOL (*callback)(void *, union smb_search_data *))
+			   BOOL (*callback)(void *, const union smb_search_data *))
 {
 	switch (io->generic.level) {
 	case RAW_SEARCH_SEARCH:
@@ -788,7 +788,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_search_next *io, 
 			  void *search_private, 
-			  BOOL (*callback)(void *, union smb_search_data *))
+			  BOOL (*callback)(void *, const union smb_search_data *))
 {
 	switch (io->generic.level) {
 	case RAW_SEARCH_SEARCH:
