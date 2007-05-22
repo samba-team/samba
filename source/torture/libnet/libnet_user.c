@@ -536,6 +536,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		status = libnet_UserInfo(ctx, mem_ctx, &user_req);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
+			ret = False;
 			continue;
 		}
 
