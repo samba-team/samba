@@ -4310,10 +4310,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = can_rename(conn,newname,attrs,&sbuf);
+	status = can_rename(conn,fsp->fsp_name,attrs,&sbuf);
 
 	if (dest_exists && !NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
+		DEBUG(3,("rename_internals_fsp: Error %s rename %s -> %s\n",
 			nt_errstr(status), fsp->fsp_name,newname));
 		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
 			status = NT_STATUS_ACCESS_DENIED;
