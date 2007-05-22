@@ -825,6 +825,7 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	irpc->done     = False;
 	irpc->async.fn = NULL;
 	irpc->mem_ctx  = ctx;
+	irpc->reject_free = False;
 
 	talloc_set_destructor(irpc, irpc_destructor);
 
