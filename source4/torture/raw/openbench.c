@@ -325,7 +325,6 @@ BOOL torture_bench_open(struct torture_context *torture)
 		state[i].mem_ctx = talloc_new(state);
 		state[i].client_num = i;
 		state[i].ev = ev;
-		state[i].stage = OPEN_INITIAL;
 		if (!torture_open_connection_ev(&state[i].cli, i, ev)) {
 			return False;
 		}
@@ -352,8 +351,11 @@ BOOL torture_bench_open(struct torture_context *torture)
 	}
 
 	for (i=0;i<nprocs;i++) {
-		state[i].fnum = -1;
 		state[i].file_num = i;		
+		state[i].fnum = smbcli_open(state[i].tree, 
+					    fnames[state->file_num], 
+					    O_RDWR|O_CREAT, DENY_ALL);
+		state[i].stage = OPEN_OPEN;
 		next_operation(&state[i]);
 	}
 
