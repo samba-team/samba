@@ -169,6 +169,215 @@ NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Lookup a list of sids
+ *
+ * internal version withOUT memory allocation of the target arrays.
+ * this assumes suffciently sized arrays to store domains, names and types. */
+
+static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       POLICY_HND *pol,
+					       int num_sids,
+					       const DOM_SID *sids,
+					       char **domains,
+					       char **names,
+					       uint32 *types)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_LOOKUP_SIDS q;
+	LSA_R_LOOKUP_SIDS r;
+	DOM_R_REF ref;
+	LSA_TRANS_NAME_ENUM t_names;
+	NTSTATUS result = NT_STATUS_OK;
+	TALLOC_CTX *tmp_ctx = NULL;
+	int i;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		DEBUG(0, ("rpccli_lsa_lookup_sids_noalloc: out of memory!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	init_q_lookup_sids(tmp_ctx, &q, pol, num_sids, sids, 1);
+
+	ZERO_STRUCT(ref);
+	ZERO_STRUCT(t_names);
+
+	r.dom_ref = &ref;
+	r.names = &t_names;
+
+	CLI_DO_RPC( cli, tmp_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
+			q, r,
+			qbuf, rbuf,
+			lsa_io_q_lookup_sids,
+			lsa_io_r_lookup_sids,
+			NT_STATUS_UNSUCCESSFUL );
+
+	if (!NT_STATUS_IS_OK(r.status) &&
+	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) 
+	{
+		/* An actual error occured */
+		result = r.status;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (r.mapped_count == 0) {
+		result = NT_STATUS_NONE_MAPPED;
+		goto done;
+	}
+
+	for (i = 0; i < num_sids; i++) {
+		fstring name, dom_name;
+		uint32 dom_idx = t_names.name[i].domain_idx;
+
+		/* Translate optimised name through domain index array */
+
+		if (dom_idx != 0xffffffff) {
+
+			rpcstr_pull_unistr2_fstring(
+                                dom_name, &ref.ref_dom[dom_idx].uni_dom_name);
+			rpcstr_pull_unistr2_fstring(
+                                name, &t_names.uni_name[i]);
+
+			(names)[i] = talloc_strdup(mem_ctx, name);
+			(domains)[i] = talloc_strdup(mem_ctx, dom_name);
+			(types)[i] = t_names.name[i].sid_name_use;
+			
+			if (((names)[i] == NULL) || ((domains)[i] == NULL)) {
+				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+				result = NT_STATUS_UNSUCCESSFUL;
+				goto done;
+			}
+
+		} else {
+			(names)[i] = NULL;
+			(domains)[i] = NULL;
+			(types)[i] = SID_NAME_UNKNOWN;
+		}
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+/* Lookup a list of sids 
+ *
+ * do it the right way: there is a limit (of 20480 for w2k3) entries
+ * returned by this call. when the sids list contains more entries,
+ * empty lists are returned. This version of lsa_lookup_sids passes
+ * the list of sids in hunks of LOOKUP_SIDS_HUNK_SIZE to the lsa call. */
+
+/* This constant defines the limit of how many sids to look up
+ * in one call (maximum). the limit from the server side is
+ * at 20480 for win2k3, but we keep it at a save 1000 for now. */
+#define LOOKUP_SIDS_HUNK_SIZE 1000
+
+NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    POLICY_HND *pol, 
+				    int num_sids,
+				    const DOM_SID *sids, 
+				    char ***domains,
+				    char ***names,
+				    uint32 **types)
+{
+	NTSTATUS result = NT_STATUS_OK;
+	int sids_left = 0;
+	int sids_processed = 0;
+	const DOM_SID *hunk_sids = sids;
+	char **hunk_domains = NULL;
+	char **hunk_names = NULL;
+	uint32 *hunk_types = NULL;
+
+	if (num_sids) {
+		if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
+			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
+			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
+			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	} else {
+		(*domains) = NULL;
+		(*names) = NULL;
+		(*types) = NULL;
+	}
+	
+	sids_left = num_sids;
+	hunk_domains = *domains;
+	hunk_names = *names;
+	hunk_types = *types;
+
+	while (sids_left > 0) {
+		int hunk_num_sids;
+		NTSTATUS hunk_result = NT_STATUS_OK;
+
+		hunk_num_sids = ((sids_left > LOOKUP_SIDS_HUNK_SIZE) 
+				? LOOKUP_SIDS_HUNK_SIZE 
+				: sids_left);
+
+		DEBUG(10, ("rpccli_lsa_lookup_sids_all: processing items "
+			   "%d -- %d of %d.\n", 
+			   sids_processed, 
+			   sids_processed + hunk_num_sids - 1,
+			   num_sids));
+
+		hunk_result = rpccli_lsa_lookup_sids_noalloc(cli,
+							     mem_ctx,
+							     pol,
+							     hunk_num_sids, 
+							     hunk_sids,
+							     hunk_domains,
+							     hunk_names,
+							     hunk_types);
+
+		if (!NT_STATUS_IS_OK(hunk_result) &&
+		    !NT_STATUS_EQUAL(hunk_result, STATUS_SOME_UNMAPPED) &&
+		    !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)) 
+		{
+			/* An actual error occured */
+			goto done;
+		}
+
+		/* adapt overall result */
+		if (( NT_STATUS_IS_OK(result) && 
+		     !NT_STATUS_IS_OK(hunk_result)) 
+		    ||
+		    ( NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) &&
+		     !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)))
+		{
+			result = STATUS_SOME_UNMAPPED;
+		}
+
+		sids_left -= hunk_num_sids;
+		sids_processed += hunk_num_sids; /* only used in DEBUG */
+		hunk_sids += hunk_num_sids;
+		hunk_domains += hunk_num_sids;
+		hunk_names += hunk_num_sids;
+		hunk_types += hunk_num_sids;
+	}
+
+done:
+	return result;
+}
+
 /** Lookup a list of sids */
 
 NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
