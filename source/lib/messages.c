@@ -82,10 +82,6 @@ static void sig_usr1(void)
 	sys_select_signal(SIGUSR1);
 }
 
-static NTSTATUS messaging_tdb_send(TDB_CONTEXT *msg_tdb,
-				   struct server_id pid, int msg_type,
-				   const void *buf, size_t len);
-
 /****************************************************************************
  A useful function for testing the message system.
 ****************************************************************************/
