@@ -5777,9 +5777,17 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			 * to do this call. JRA.
 			 */
 			pstrcpy(fname, fsp->fsp_name);
-			if (SMB_VFS_STAT(conn,fname,&sbuf) != 0) {
-				DEBUG(3,("call_trans2setfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-				return UNIXERROR(ERRDOS,ERRbadpath);
+			if (INFO_LEVEL_IS_UNIX(info_level)) {
+				/* Always do lstat for UNIX calls. */
+				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
+					DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
+					return UNIXERROR(ERRDOS,ERRbadpath);
+				}
+			} else {
+				if (SMB_VFS_STAT(conn,fname,&sbuf) != 0) {
+					DEBUG(3,("call_trans2setfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+					return UNIXERROR(ERRDOS,ERRbadpath);
+				}
 			}
 		} else if (fsp && fsp->print_file) {
 			/*
@@ -5838,14 +5846,18 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			return ERROR_NT(status);
 		}
 
-		/*
-		 * For CIFS UNIX extensions the target name may not exist.
-		 */
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			/*
+			 * For CIFS UNIX extensions the target name may not exist.
+			 */
 
-		if(!VALID_STAT(sbuf) && !INFO_LEVEL_IS_UNIX(info_level)) {
-			DEBUG(3,("call_trans2setfilepathinfo: stat of %s failed (%s)\n", fname, strerror(errno)));
+			/* Always do lstat for UNIX calls. */
+			SMB_VFS_LSTAT(conn,fname,&sbuf);
+
+		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf)) {
+			DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
 			return UNIXERROR(ERRDOS,ERRbadpath);
-		}    
+		}
 	}
 
 	if (!CAN_WRITE(conn)) {
