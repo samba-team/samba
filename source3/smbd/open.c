@@ -47,7 +47,12 @@ static NTSTATUS fd_open(struct connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 
 #ifdef O_NOFOLLOW
-	if (!lp_symlinks(SNUM(conn))) {
+	/* 
+	 * Never follow symlinks on a POSIX client. The
+	 * client should be doing this.
+	 */
+
+	if (fsp->posix_open || !lp_symlinks(SNUM(conn))) {
 		flags |= O_NOFOLLOW;
 	}
 #endif
