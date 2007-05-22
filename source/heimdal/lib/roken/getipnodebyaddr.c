@@ -36,7 +36,7 @@
 RCSID("$Id: getipnodebyaddr.c,v 1.3 2005/04/12 11:28:47 lha Exp $");
 #endif
 
-#include "roken.h"
+#include <roken.h>
 
 /*
  * lookup `src, len' (address family `af') in DNS and return a pointer
