@@ -150,7 +150,7 @@ _PUBLIC_ NTSTATUS ntvfs_copy(struct ntvfs_request *req, struct smb_copy *cp)
 
 /* directory search */
 _PUBLIC_ NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search_first *io, void *private,
-				     BOOL ntvfs_callback(void *private, union smb_search_data *file))
+				     BOOL ntvfs_callback(void *private, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->search_first) {
@@ -160,7 +160,7 @@ _PUBLIC_ NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search
 }
 
 _PUBLIC_ NTSTATUS ntvfs_search_next(struct ntvfs_request *req, union smb_search_next *io, void *private,
-				    BOOL ntvfs_callback(void *private, union smb_search_data *file))
+				    BOOL ntvfs_callback(void *private, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->search_next) {
@@ -470,7 +470,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_open(struct ntvfs_module_context *ntvfs,
 _PUBLIC_ NTSTATUS ntvfs_next_search_first(struct ntvfs_module_context *ntvfs, 
 					  struct ntvfs_request *req,
 					  union smb_search_first *io, void *private,
-					  BOOL (*callback)(void *private, union smb_search_data *file))
+					  BOOL (*callback)(void *private, const union smb_search_data *file))
 {
 	if (!ntvfs->next || !ntvfs->next->ops->search_first) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -481,7 +481,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_search_first(struct ntvfs_module_context *ntvfs,
 _PUBLIC_ NTSTATUS ntvfs_next_search_next(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req,
 					 union smb_search_next *io, void *private,
-					 BOOL (*callback)(void *private, union smb_search_data *file))
+					 BOOL (*callback)(void *private, const union smb_search_data *file))
 {
 	if (!ntvfs->next || !ntvfs->next->ops->search_next) {
 		return NT_STATUS_NOT_IMPLEMENTED;

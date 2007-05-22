@@ -695,7 +695,7 @@ struct find_state {
   fill a single entry in a trans2 find reply 
 */
 static NTSTATUS find_fill_info(struct find_state *state,
-			       union smb_search_data *file)
+			       const union smb_search_data *file)
 {
 	struct smbsrv_request *req = state->op->req;
 	struct smb_trans2 *trans = state->op->trans;
@@ -791,7 +791,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 }
 
 /* callback function for trans2 findfirst/findnext */
-static BOOL find_callback(void *private, union smb_search_data *file)
+static BOOL find_callback(void *private, const union smb_search_data *file)
 {
 	struct find_state *state = talloc_get_type(private, struct find_state);
 	struct smb_trans2 *trans = state->op->trans;

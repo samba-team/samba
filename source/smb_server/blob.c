@@ -604,7 +604,7 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 				     DATA_BLOB *blob,
 				     enum smb_search_data_level level,
-				     union smb_search_data *file,
+				     const union smb_search_data *file,
 				     int default_str_flags)
 {
 	uint8_t *data;

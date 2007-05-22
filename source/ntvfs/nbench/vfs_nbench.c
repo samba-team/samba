@@ -842,7 +842,7 @@ static void nbench_search_first_send(struct ntvfs_request *req)
 static NTSTATUS nbench_search_first(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req, union smb_search_first *io, 
 				    void *search_private, 
-				    BOOL (*callback)(void *, union smb_search_data *))
+				    BOOL (*callback)(void *, const union smb_search_data *))
 {
 	NTSTATUS status;
 
@@ -864,7 +864,7 @@ static void nbench_search_next_send(struct ntvfs_request *req)
 static NTSTATUS nbench_search_next(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req, union smb_search_next *io, 
 				   void *search_private, 
-				   BOOL (*callback)(void *, union smb_search_data *))
+				   BOOL (*callback)(void *, const union smb_search_data *))
 {
 	NTSTATUS status;
 
