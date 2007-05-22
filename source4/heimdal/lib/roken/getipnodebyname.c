@@ -36,7 +36,7 @@
 RCSID("$Id: getipnodebyname.c,v 1.4 2005/04/12 11:28:47 lha Exp $");
 #endif
 
-#include "roken.h"
+#include <roken.h>
 
 #ifndef HAVE_H_ERRNO
 static int h_errno = NO_RECOVERY;
