@@ -205,12 +205,10 @@ int tdb_traverse_read(struct tdb_context *tdb,
 {
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_RDLCK };
 	int ret;
-	
+
 	/* we need to get a read lock on the transaction lock here to
 	   cope with the lock ordering semantics of solaris10 */
-	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_traverse_read: failed to get transaction lock\n"));
-		tdb->ecode = TDB_ERR_LOCK;
+	if (tdb_transaction_lock(tdb, F_RDLCK)) {
 		return -1;
 	}
 
@@ -218,7 +216,7 @@ int tdb_traverse_read(struct tdb_context *tdb,
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_read--;
 
-	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	tdb_transaction_unlock(tdb);
 
 	return ret;
 }
@@ -237,15 +235,13 @@ int tdb_traverse(struct tdb_context *tdb,
 		return tdb_traverse_read(tdb, fn, private_data);
 	}
 	
-	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_traverse: failed to get transaction lock\n"));
-		tdb->ecode = TDB_ERR_LOCK;
+	if (tdb_transaction_lock(tdb, F_WRLCK)) {
 		return -1;
 	}
 
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 
-	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	tdb_transaction_unlock(tdb);
 
 	return ret;
 }

@@ -423,9 +423,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	/* get the transaction write lock. This is a blocking lock. As
 	   discussed with Volker, there are a number of ways we could
 	   make this async, which we will probably do in the future */
-	if (tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_start: failed to get transaction lock\n"));
-		tdb->ecode = TDB_ERR_LOCK;
+	if (tdb_transaction_lock(tdb, F_WRLCK) == -1) {
 		SAFE_FREE(tdb->transaction);
 		return -1;
 	}
@@ -469,6 +467,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 			      TDB_HASHTABLE_SIZE(tdb)) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_start: failed to prime hash table\n"));
 		tdb->ecode = TDB_ERR_IO;
+		tdb->methods = tdb->transaction->io_methods;
 		goto fail;
 	}
 
@@ -476,7 +475,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	
 fail:
 	tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
-	tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	tdb_transaction_unlock(tdb);
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
 	return -1;
@@ -531,7 +530,7 @@ int tdb_transaction_cancel(struct tdb_context *tdb)
 	tdb->methods = tdb->transaction->io_methods;
 
 	tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
-	tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	tdb_transaction_unlock(tdb);
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
 	
