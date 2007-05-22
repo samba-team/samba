@@ -214,8 +214,8 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 			}
 
 		} else {
-			(names)[i] = "";
-			(domains)[i] = "";
+			(names)[i] = NULL;
+			(domains)[i] = NULL;
 			(types)[i] = SID_NAME_UNKNOWN;
 		}
 	}
