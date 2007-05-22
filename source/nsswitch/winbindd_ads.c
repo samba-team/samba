@@ -1016,7 +1016,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	else if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		DEBUG(10, ("lookup_groupmem: lsa_lookup_sids could "
 			   "not map any SIDs at all.\n"));
-		goto done;
+		/* Don't handle this as an error here... */
 	}
 	else if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("lookup_groupmem: Error looking up %d "
