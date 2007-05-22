@@ -642,8 +642,12 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 		return False;
 
 	if ( UNMARSHALLING(&hbin->ps) ) {
-		if ( !(lf->hashes = PRS_ALLOC_MEM( &hbin->ps, REGF_HASH_REC, lf->num_keys )) )
-			return False;
+		if (lf->num_keys) {
+			if ( !(lf->hashes = PRS_ALLOC_MEM( &hbin->ps, REGF_HASH_REC, lf->num_keys )) )
+				return False;
+		} else {
+			lf->hashes = NULL;
+		}
 	}
 
 	for ( i=0; i<lf->num_keys; i++ ) {
