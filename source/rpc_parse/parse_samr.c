@@ -3398,7 +3398,7 @@ BOOL samr_io_r_enum_domains(const char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 		if(!prs_uint32("num_entries3", ps, depth, &r_u->num_entries3))
 			return False;
 
-		if (UNMARSHALLING(ps)) {
+		if (UNMARSHALLING(ps) && r_u->num_entries2) {
 			r_u->sam = PRS_ALLOC_MEM(ps,SAM_ENTRY,r_u->num_entries2);
 			r_u->uni_dom_name = PRS_ALLOC_MEM(ps,UNISTR2,r_u->num_entries2);
 		}
@@ -3537,7 +3537,7 @@ BOOL samr_io_r_enum_dom_groups(const char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 		if(!prs_uint32("num_entries3", ps, depth, &r_u->num_entries3))
 			return False;
 
-		if (UNMARSHALLING(ps)) {
+		if (UNMARSHALLING(ps) && r_u->num_entries2) {
 			r_u->sam = PRS_ALLOC_MEM(ps,SAM_ENTRY,r_u->num_entries2);
 			r_u->uni_grp_name = PRS_ALLOC_MEM(ps,UNISTR2,r_u->num_entries2);
 		}
@@ -5067,12 +5067,13 @@ BOOL samr_io_r_lookup_names(const char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 			return False;
 		}
 
-		if (UNMARSHALLING(ps))
+		if (UNMARSHALLING(ps) && r_u->num_rids2) {
 			r_u->rids = PRS_ALLOC_MEM(ps, uint32, r_u->num_rids2);
 
-		if (!r_u->rids) {
-			DEBUG(0, ("NULL rids in samr_io_r_lookup_names\n"));
-			return False;
+			if (!r_u->rids) {
+				DEBUG(0, ("NULL rids in samr_io_r_lookup_names\n"));
+				return False;
+			}
 		}
 
 		for (i = 0; i < r_u->num_rids2; i++) {
@@ -5096,12 +5097,13 @@ BOOL samr_io_r_lookup_names(const char *desc, SAMR_R_LOOKUP_NAMES * r_u,
 			return False;
 		}
 
-		if (UNMARSHALLING(ps))
+		if (UNMARSHALLING(ps) && r_u->num_types2) {
 			r_u->types = PRS_ALLOC_MEM(ps, uint32, r_u->num_types2);
 
-		if (!r_u->types) {
-			DEBUG(0, ("NULL types in samr_io_r_lookup_names\n"));
-			return False;
+			if (!r_u->types) {
+				DEBUG(0, ("NULL types in samr_io_r_lookup_names\n"));
+				return False;
+			}
 		}
 
 		for (i = 0; i < r_u->num_types2; i++) {
