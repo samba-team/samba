@@ -92,7 +92,6 @@ SKIP: {
 
 	my $cmd = "$cc $cflags -x c - -o $outfile $flags $ldflags";
 	$cmd =~ s/\n//g;
-print "cmd: $cmd\n";
 	open CC, "|$cmd";
 	print CC "#define uint_t unsigned int\n";
 	print CC "#define _GNU_SOURCE\n";
@@ -120,6 +119,7 @@ print "cmd: $cmd\n";
 	ok(-f $outfile, "($name) compile");
 
 	my $ret = system($outfile, ()) >> 8;
+	print "# cmd: $cmd\n" if ($ret != 0);
 	print "# return code: $ret\n" if ($ret != 0);
 
 	ok($ret == 0, "($name) run");
