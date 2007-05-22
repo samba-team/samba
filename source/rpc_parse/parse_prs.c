@@ -644,8 +644,12 @@ BOOL prs_pointer( const char *name, prs_struct *ps, int depth,
 		return True;
 
 	if (UNMARSHALLING(ps)) {
-		if ( !(*data = PRS_ALLOC_MEM(ps, char, data_size)) )
-			return False;
+		if (data_size) {
+			if ( !(*data = PRS_ALLOC_MEM(ps, char, data_size)) )
+				return False;
+		} else {
+			*data = NULL;
+		}
 	}
 
 	return prs_fn(name, ps, depth, *data);
@@ -1016,15 +1020,15 @@ BOOL prs_buffer5(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
 	if (q == NULL)
 		return False;
 
+	/* If the string is empty, we don't have anything to stream */
+	if (str->buf_len==0)
+		return True;
+
 	if (UNMARSHALLING(ps)) {
 		str->buffer = PRS_ALLOC_MEM(ps,uint16,str->buf_len);
 		if (str->buffer == NULL)
 			return False;
 	}
-
-	/* If the string is empty, we don't have anything to stream */
-	if (str->buf_len==0)
-		return True;
 
 	p = (char *)str->buffer;
 
@@ -1055,6 +1059,8 @@ BOOL prs_regval_buffer(BOOL charmode, const char *name, prs_struct *ps, int dept
 			buf->buffer = PRS_ALLOC_MEM(ps, uint16, buf->buf_max_len);
 			if ( buf->buffer == NULL )
 				return False;
+		} else {
+			buf->buffer = NULL;
 		}
 	}
 
@@ -1082,9 +1088,13 @@ BOOL prs_string2(BOOL charmode, const char *name, prs_struct *ps, int depth, STR
 		if (str->str_str_len > str->str_max_len) {
 			return False;
 		}
-		str->buffer = PRS_ALLOC_MEM(ps,unsigned char, str->str_max_len);
-		if (str->buffer == NULL)
-			return False;
+		if (str->str_max_len) {
+			str->buffer = PRS_ALLOC_MEM(ps,unsigned char, str->str_max_len);
+			if (str->buffer == NULL)
+				return False;
+		} else {
+			str->buffer = NULL;
+		}
 	}
 
 	if (UNMARSHALLING(ps)) {
@@ -1129,9 +1139,13 @@ BOOL prs_unistr2(BOOL charmode, const char *name, prs_struct *ps, int depth, UNI
 		if (str->uni_str_len > str->uni_max_len) {
 			return False;
 		}
-		str->buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_max_len);
-		if (str->buffer == NULL)
-			return False;
+		if (str->uni_max_len) {
+			str->buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_max_len);
+			if (str->buffer == NULL)
+				return False;
+		} else {
+			str->buffer = NULL;
+		}
 	}
 
 	p = (char *)str->buffer;
@@ -1156,9 +1170,13 @@ BOOL prs_unistr3(BOOL charmode, const char *name, UNISTR3 *str, prs_struct *ps, 
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->str.buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_str_len);
-		if (str->str.buffer == NULL)
-			return False;
+		if (str->uni_str_len) {
+			str->str.buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_str_len);
+			if (str->str.buffer == NULL)
+				return False;
+		} else {
+			str->str.buffer = NULL;
+		}
 	}
 
 	p = (char *)str->str.buffer;
