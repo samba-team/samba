@@ -40,17 +40,20 @@ static int open_retries;
 static char **fnames;
 static int num_connected;
 
+enum open_stage {OPEN_INITIAL, OPEN_OPEN, OPEN_CLOSE};
+
 struct benchopen_state {
 	TALLOC_CTX *mem_ctx;
 	struct event_context *ev;
 	struct smbcli_state *cli;
 	struct smbcli_tree *tree;
+	enum open_stage stage;
 	int client_num;
+	int old_fnum;
 	int fnum;
 	int file_num;
 	int count;
 	int lastcount;
-	BOOL waiting_open, waiting_close;
 	union smb_open open_parms;
 	union smb_close close_parms;
 	struct smbcli_request *req_open;
@@ -65,6 +68,7 @@ struct benchopen_state {
 };
 
 static void next_open(struct benchopen_state *state);
+static void next_operation(struct benchopen_state *state);
 static void reopen_connection(struct event_context *ev, struct timed_event *te, 
 			      struct timeval t, void *private_data);
 
@@ -93,7 +97,9 @@ static void reopen_connection_complete(struct composite_context *ctx)
 	DEBUG(0,("reconnect to %s finished (%u connected)\n", state->dest_host,
 		 num_connected));
 
-	next_open(state);
+	state->stage = OPEN_INITIAL;
+	state->fnum = -1;
+	next_operation(state);
 }
 
 	
@@ -127,8 +133,6 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	talloc_free(state->tree);
 	state->tree = NULL;
 	state->fnum = -1;
-	state->waiting_open = False;
-	state->waiting_close = False;
 
 	ctx = smb_composite_connect_send(io, state->mem_ctx, state->ev);
 	if (ctx == NULL) {
@@ -165,20 +169,18 @@ static void next_open(struct benchopen_state *state)
 	state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 	state->req_open->async.fn = open_completed;
 	state->req_open->async.private = state;
-	state->waiting_open = True;
+}
 
-	if (state->fnum == -1) {
-		return;
-	}
 
+static void next_close(struct benchopen_state *state)
+{
 	state->close_parms.close.level = RAW_CLOSE_CLOSE;
-	state->close_parms.close.in.file.fnum = state->fnum;
+	state->close_parms.close.in.file.fnum = state->old_fnum;
 	state->close_parms.close.in.write_time = 0;
 
 	state->req_close = smb_raw_close_send(state->tree, &state->close_parms);
 	state->req_close->async.fn = close_completed;
 	state->req_close->async.private = state;
-	state->waiting_close = True;
 }
 
 /*
@@ -189,6 +191,8 @@ static void open_completed(struct smbcli_request *req)
 	struct benchopen_state *state = (struct benchopen_state *)req->async.private;
 	TALLOC_CTX *tmp_ctx = talloc_new(state->mem_ctx);
 	NTSTATUS status;
+
+	state->old_fnum = state->fnum;
 
 	status = smb_raw_open_recv(req, tmp_ctx, &state->open_parms);
 
@@ -225,11 +229,8 @@ static void open_completed(struct smbcli_request *req)
 	}
 
 	state->fnum = state->open_parms.ntcreatex.out.file.fnum;
-	state->waiting_open = False;
 
-	if (!state->waiting_close) {
-		next_open(state);
-	}
+	next_operation(state);
 }	
 
 /*
@@ -262,13 +263,26 @@ static void close_completed(struct smbcli_request *req)
 		return;
 	}
 
-	state->waiting_close = False;
-
-	if (!state->waiting_open) {
-		next_open(state);
-	}
+	next_operation(state);
 }	
 
+static void next_operation(struct benchopen_state *state)
+{
+	switch (state->stage) {
+	case OPEN_INITIAL:
+		next_open(state);
+		state->stage = OPEN_OPEN;
+		break;
+	case OPEN_OPEN:
+		next_open(state);
+		state->stage = OPEN_CLOSE;
+		break;
+	case OPEN_CLOSE:
+		next_close(state);
+		state->stage = OPEN_OPEN;
+		break;
+	}
+}
 
 static void report_rate(struct event_context *ev, struct timed_event *te, 
 			struct timeval t, void *private_data)
@@ -311,6 +325,7 @@ BOOL torture_bench_open(struct torture_context *torture)
 		state[i].mem_ctx = talloc_new(state);
 		state[i].client_num = i;
 		state[i].ev = ev;
+		state[i].stage = OPEN_INITIAL;
 		if (!torture_open_connection_ev(&state[i].cli, i, ev)) {
 			return False;
 		}
@@ -339,7 +354,7 @@ BOOL torture_bench_open(struct torture_context *torture)
 	for (i=0;i<nprocs;i++) {
 		state[i].fnum = -1;
 		state[i].file_num = i;		
-		next_open(&state[i]);
+		next_operation(&state[i]);
 	}
 
 	tv = timeval_current();	
