@@ -120,10 +120,14 @@ static BOOL pac_io_krb_sid_and_attr_array(const char *desc,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		array->krb_sid_and_attrs = PRS_ALLOC_MEM(ps, KRB_SID_AND_ATTRS, num);
-		if (!array->krb_sid_and_attrs) {
-			DEBUG(3, ("No memory available\n"));
-			return False;
+		if (num) {
+			array->krb_sid_and_attrs = PRS_ALLOC_MEM(ps, KRB_SID_AND_ATTRS, num);
+			if (!array->krb_sid_and_attrs) {
+				DEBUG(3, ("No memory available\n"));
+				return False;
+			}
+		} else {
+			array->krb_sid_and_attrs = NULL;
 		}
 	}
 
@@ -184,10 +188,14 @@ static BOOL pac_io_group_membership_array(const char *desc,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		array->group_membership = PRS_ALLOC_MEM(ps, GROUP_MEMBERSHIP, num);
-		if (!array->group_membership) {
-			DEBUG(3, ("No memory available\n"));
-			return False;
+		if (num) {
+			array->group_membership = PRS_ALLOC_MEM(ps, GROUP_MEMBERSHIP, num);
+			if (!array->group_membership) {
+				DEBUG(3, ("No memory available\n"));
+				return False;
+			}
+		} else {
+			array->group_membership = NULL;
 		}
 	}
 
@@ -456,10 +464,14 @@ static BOOL pac_io_pac_signature_data(const char *desc,
 		return False;
 
 	if (UNMARSHALLING(ps) && length) {
-		data->signature.buffer = PRS_ALLOC_MEM(ps, uint8, siglen);
-		if (!data->signature.buffer) {
-			DEBUG(3, ("No memory available\n"));
-			return False;
+		if (siglen) {
+			data->signature.buffer = PRS_ALLOC_MEM(ps, uint8, siglen);
+			if (!data->signature.buffer) {
+				DEBUG(3, ("No memory available\n"));
+				return False;
+			}
+		} else {
+			data->signature.buffer = NULL;
 		}
 	}
 

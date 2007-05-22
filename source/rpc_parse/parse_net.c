@@ -1813,9 +1813,13 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	}
 
 	if (UNMARSHALLING(ps)) {
-		usr->gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_groups);
-		if (usr->gids == NULL)
-			return False;
+		if (usr->num_groups) {
+			usr->gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_groups);
+			if (usr->gids == NULL)
+				return False;
+		} else {
+			usr->gids = NULL;
+		}
 	}
 
 	for (i = 0; i < usr->num_groups; i++) {
@@ -1848,10 +1852,15 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 			return False;
 
 		if (UNMARSHALLING(ps)) {
-			usr->other_sids = PRS_ALLOC_MEM(ps, DOM_SID2, usr->num_other_sids);
-			usr->other_sids_attrib =
-				PRS_ALLOC_MEM(ps, uint32, usr->num_other_sids);
-							       
+			if (usr->num_other_sids) {
+				usr->other_sids = PRS_ALLOC_MEM(ps, DOM_SID2, usr->num_other_sids);
+				usr->other_sids_attrib =
+					PRS_ALLOC_MEM(ps, uint32, usr->num_other_sids);
+			} else {
+				usr->other_sids = NULL;
+				usr->other_sids_attrib = NULL;
+			}
+
 			if ((num_other_sids != 0) &&
 			    ((usr->other_sids == NULL) ||
 			     (usr->other_sids_attrib == NULL)))
