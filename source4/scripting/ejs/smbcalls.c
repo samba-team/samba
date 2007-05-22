@@ -124,23 +124,6 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 		char *path, *emsg;
 		int ret;
 
-		/* First, try to include file from current working directory.
-		   This allows local includes which is handy sometimes. */
-		path = talloc_asprintf(mprMemCtx(), "%s", script);
-		if (path == NULL) {
-			return -1;
-		}
-		
-		if (file_exist(path)) {
-			ret = ejsEvalFile(eid, path, &result, &emsg);
-			talloc_free(path);
-			if (ret < 0) {
-				ejsSetErrorMsg(eid, "%s: %s", script, emsg);
-				return -1;
-			}
-			continue;
-		}
-
 		/* use specfied path to search for requested file */
 		for (j=0;js_include[j];j++) {
 			path = talloc_asprintf(mprMemCtx(), "%s/%s", js_include[j], script);
