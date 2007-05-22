@@ -100,7 +100,6 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 		talloc_free(tmp_ctx);
 		return;
 	}
-	talloc_steal(tmp_ctx, asn1->data);
 
 	ldap_msg = talloc(tmp_ctx, struct ldap_message);
 	if (ldap_msg == NULL) {
@@ -129,8 +128,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 		return;
 	}
 
-	req->asn1 = asn1;
-	talloc_steal(req, asn1->data);
+	req->asn1 = talloc_steal(req, asn1);
 	req->asn1->ofs = 0;
 
 	req->state = CLDAP_REQUEST_DONE;
@@ -312,6 +310,10 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 	req->timeout     = io->in.timeout;
 	req->num_retries = io->in.retries;
 	req->is_reply    = False;
+	req->asn1        = asn1_init(req);
+	if (!req->asn1) {
+		goto failed;
+	}
 
 	req->dest = socket_address_from_strings(req, cldap->sock->backend_name,
 						io->in.dest_address, lp_cldap_port());
@@ -376,6 +378,10 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	req->cldap       = cldap;
 	req->state       = CLDAP_REQUEST_SEND;
 	req->is_reply    = True;
+	req->asn1        = asn1_init(req);
+	if (!req->asn1) {
+		goto failed;
+	}
 
 	req->dest        = io->dest;
 	if (talloc_reference(req, io->dest) == NULL) goto failed;
