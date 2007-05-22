@@ -129,9 +129,8 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 
 /* Lookup a list of sids
  *
- * internal version withOUT memory allocation.
- * this assumes suffciently sized arrays to store
- * domains, names and types */
+ * internal version withOUT memory allocation of the target arrays.
+ * this assumes suffciently sized arrays to store domains, names and types. */
 
 static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
@@ -148,12 +147,20 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 	DOM_R_REF ref;
 	LSA_TRANS_NAME_ENUM t_names;
 	NTSTATUS result = NT_STATUS_OK;
+	TALLOC_CTX *tmp_ctx = NULL;
 	int i;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		DEBUG(0, ("rpccli_lsa_lookup_sids_noalloc: out of memory!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	init_q_lookup_sids(mem_ctx, &q, pol, num_sids, sids, 1);
+	init_q_lookup_sids(tmp_ctx, &q, pol, num_sids, sids, 1);
 
 	ZERO_STRUCT(ref);
 	ZERO_STRUCT(t_names);
@@ -161,7 +168,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 	r.dom_ref = &ref;
 	r.names = &t_names;
 
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
+	CLI_DO_RPC( cli, tmp_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
 			q, r,
 			qbuf, rbuf,
 			lsa_io_q_lookup_sids,
@@ -213,8 +220,8 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 		}
 	}
 
- done:
-
+done:
+	TALLOC_FREE(tmp_ctx);
 	return result;
 }
 
@@ -401,7 +408,8 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 			   sids_processed + hunk_num_sids - 1,
 			   num_sids));
 
-		hunk_result = rpccli_lsa_lookup_sids_noalloc(cli, mem_ctx, 
+		hunk_result = rpccli_lsa_lookup_sids_noalloc(cli,
+							     mem_ctx,
 							     pol,
 							     hunk_num_sids, 
 							     hunk_sids,
