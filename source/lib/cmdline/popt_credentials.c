@@ -71,19 +71,19 @@ static void popt_common_credentials_callback(poptContext con,
 
 	switch(opt->val) {
 	case 'U':
-		{
-			char *lp;
-
-			cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED);
-			/* This breaks the abstraction, including the const above */
-			if ((lp=strchr_m(arg,'%'))) {
-				lp[0]='\0';
-				lp++;
-				/* Try to prevent this showing up in ps */
-				memset(lp,0,strlen(lp));
-			}
+	{
+		char *lp;
+		
+		cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED);
+		/* This breaks the abstraction, including the const above */
+		if ((lp=strchr_m(arg,'%'))) {
+			lp[0]='\0';
+			lp++;
+			/* Try to prevent this showing up in ps */
+			memset(lp,0,strlen(lp));
 		}
-		break;
+	}
+	break;
 
 	case OPT_PASSWORD:
 		cli_credentials_set_password(cmdline_credentials, arg, CRED_SPECIFIED);
