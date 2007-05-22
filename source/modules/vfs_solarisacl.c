@@ -66,7 +66,7 @@ SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
 {
 	SMB_ACL_T result = NULL;
 	int count;
-	SOLARIS_ACL_T solaris_acl;
+	SOLARIS_ACL_T solaris_acl = NULL;
 	
 	DEBUG(10, ("solarisacl_sys_acl_get_file called for file '%s'.\n", 
 		   path_p));
@@ -106,7 +106,7 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 {
 	SMB_ACL_T result = NULL;
 	int count;
-	SOLARIS_ACL_T solaris_acl;
+	SOLARIS_ACL_T solaris_acl = NULL;
 
 	DEBUG(10, ("entering solarisacl_sys_acl_get_fd.\n"));
 
@@ -139,7 +139,7 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 {
 	int ret = -1;
 	struct stat s;
-	SOLARIS_ACL_T solaris_acl;
+	SOLARIS_ACL_T solaris_acl = NULL;
 	int count;
 	
 	DEBUG(10, ("solarisacl_sys_acl_set_file called for file '%s'\n",
@@ -222,8 +222,8 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
 			      int fd, SMB_ACL_T theacl)
 {
-	SOLARIS_ACL_T solaris_acl;
-	SOLARIS_ACL_T default_acl;
+	SOLARIS_ACL_T solaris_acl = NULL;
+	SOLARIS_ACL_T default_acl = NULL;
 	int count, default_count;
 	int ret = -1;
 
@@ -293,7 +293,7 @@ int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 {
 	SMB_ACL_T smb_acl;
 	int ret = -1;
-	SOLARIS_ACL_T solaris_acl;
+	SOLARIS_ACL_T solaris_acl = NULL;
 	int count;
 
 	DEBUG(10, ("entering solarisacl_sys_acl_delete_def_file.\n"));

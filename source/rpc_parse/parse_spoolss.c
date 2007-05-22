@@ -256,7 +256,7 @@ static BOOL smb_io_notify_option_type_ctr(const char *desc, SPOOL_NOTIFY_OPTION_
 		return False;
 
 	/* reading */
-	if (UNMARSHALLING(ps))
+	if (UNMARSHALLING(ps) && ctr->count)
 		if((ctr->type=PRS_ALLOC_MEM(ps,SPOOL_NOTIFY_OPTION_TYPE,ctr->count)) == NULL)
 			return False;
 		
@@ -415,7 +415,7 @@ BOOL smb_io_notify_info_data_strings(const char *desc,SPOOL_NOTIFY_INFO_DATA *da
 		if(!prs_uint32("string length", ps, depth, &data->notify_data.data.length))
 			return False;
 
-		if (UNMARSHALLING(ps)) {
+		if (UNMARSHALLING(ps) && data->notify_data.data.length) {
 			data->notify_data.data.string = PRS_ALLOC_MEM(ps, uint16,
 								data->notify_data.data.length);
 
@@ -434,7 +434,7 @@ BOOL smb_io_notify_info_data_strings(const char *desc,SPOOL_NOTIFY_INFO_DATA *da
 
 	case NOTIFY_POINTER:
 
-		if (UNMARSHALLING(ps)) {
+		if (UNMARSHALLING(ps) && data->notify_data.data.length) {
 			data->notify_data.data.string = PRS_ALLOC_MEM(ps, uint16,
 								data->notify_data.data.length);
 
@@ -494,9 +494,13 @@ BOOL smb_io_notify_info_data_strings(const char *desc,SPOOL_NOTIFY_INFO_DATA *da
 
 			/* Tallocate memory for string */
 
-			data->notify_data.data.string = PRS_ALLOC_MEM(ps, uint16, x * 2);
-			if (!data->notify_data.data.string) 
-				return False;
+			if (x) {
+				data->notify_data.data.string = PRS_ALLOC_MEM(ps, uint16, x * 2);
+				if (!data->notify_data.data.string) 
+					return False;
+			} else {
+				data->notify_data.data.string = NULL;
+			}
 
 			if(!prs_uint16uni(True,"string",ps,depth,data->notify_data.data.string,x))
 				return False;
@@ -6005,14 +6009,14 @@ BOOL spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, 
 		case REG_BINARY:
 		case REG_DWORD:
 		case REG_MULTI_SZ:
-            if (q_u->max_len) {
-                if (UNMARSHALLING(ps))
-    				q_u->data=PRS_ALLOC_MEM(ps, uint8, q_u->max_len);
-    			if(q_u->data == NULL)
-    				return False;
-    			if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
-    				return False;
-            }
+			if (q_u->max_len) {
+				if (UNMARSHALLING(ps))
+					q_u->data=PRS_ALLOC_MEM(ps, uint8, q_u->max_len);
+				if(q_u->data == NULL)
+					return False;
+				if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
+					return False;
+			}
 			if(!prs_align(ps))
 				return False;
 			break;
@@ -7035,7 +7039,7 @@ static BOOL spoolss_io_printer_enum_values_ctr(const char *desc, prs_struct *ps,
 	
 	/* first loop to write basic enum_value information */
 	
-	if (UNMARSHALLING(ps)) {
+	if (UNMARSHALLING(ps) && ctr->size_of_array) {
 		ctr->values = PRS_ALLOC_MEM(ps, PRINTER_ENUM_VALUES, ctr->size_of_array);
 		if (!ctr->values)
 			return False;

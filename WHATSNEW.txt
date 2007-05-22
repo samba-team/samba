@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.25a
-                             May XX, 2007
+                             May 23, 2007
                    ===============================
 
 This is the second production release of the Samba 3.0.25 code 
@@ -53,6 +53,7 @@ o   Jeremy Allison <jra@samba.org>
     * Ensure that if we're blocked on a POSIX lock we know nothing
       about that we retry the lock every 10 seconds instead of waiting
       for the standard select timeout.
+    * BUG 4637: Fix samlogon reply regression that broke domain logons.
 
 
 o   Alexander Bokovoy <ab@samba.org>
