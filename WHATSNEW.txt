@@ -9,22 +9,23 @@ current bug fixes.
 
 Major bug fixes included in Samba 3.0.25a are:
 
-  o Missing supplementary Unix group membership when 
-    using "force group"
-  o Premature expiration of domain user passwords when
-    using a Samba domain controller
-  o Failure to open the Windows object picker against server
-    configured to use "security = domain"
+  o Missing supplementary Unix group membership when using "force 
+    group".
+  o Premature expiration of domain user passwords when using a 
+    Samba domain controller.
+  o Failure to open the Windows object picker against a server
+    configured to use "security = domain".
+  * Authentication failures when using security = server.
 
 
 Changes to MS-DFS Root Share Behavior
 =====================================
 
 Please be aware that the initial value for the "msdfs root" share 
-parameter was changed in the 3.0.25 release series and this option
-is now disabled by default.  Windows clients frequently require 
-a reboot in order to clear any cached information help about MS-DFS
-root shares on a server and you may experience failures access
+parameter was changed in the 3.0.25 release series and that this 
+option is now disabled by default.  Windows clients frequently require 
+a reboot in order to clear any cached information about MS-DFS
+root shares on a server and you may experience failures accessing
 file services on Samba 3.0.25 servers until the client reboot 
 is performed.  Alternately, you may explicitly re-enable the 
 parameter in smb.conf.   Please refer to the smb.conf(5) man page
@@ -39,9 +40,80 @@ Changes
 Changes since 3.0.25
 --------------------
 
+o   Michael Adam <obnox@samba.org>
+    * Fix logic in detection of the need to replace dlopen, et. al.
+    * Add HP-UX ACL VFS module.
+    * Fix build of Tru64 ACL VFS module.
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 4622: Fix authentication failures in security = server.
+    * Fix pointer marshalling in srvsvc parsing code.
+    * BUG 4630: Fix conversion of 8 byte time_t and NT_TIME values.
+    * Ensure that if we're blocked on a POSIX lock we know nothing
+      about that we retry the lock every 10 seconds instead of waiting
+      for the standard select timeout.
 
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Add -pie support to Python's setup.py.
+    * Strip STYPE_TEMPORARY and STYPE_HIDDEN when printing share
+      listing from 'net rap shares".
+    * Fix argument parsing in "net rap server domain".
+   
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 4616: Don't return a dns or forest name when replying to the
+      DsGetPrimaryRoleInfo() and configured for security = domain.
+    * Trim noise by removing redundant WARNING log message that would 
+      flood at log level 2. 
+    * Fix truncation of supplementary Unix groups when using "force group".
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Always fallback to NTLM authentication in pam_winbind when the 
+      user's account has UF_DONT_REQUIRE_PREAUTH set.
+
+
+o   Steve French <sfrench@us.ibm.com> 
+    * Valgrind fixes in mount.cifs.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix crash bug in the Solaria ACL VFS module caused by
+      uninitialized variables.
+
+
+o   Derrell Lipman <derrell@samba.org>
+    * BUG 4601: Fix smbc_getxattr() to properly return the required
+      size of the buffer needed to contain the extended attributes.
+    * BUG 4599: Fix failure when setting attributes.
+    * BUG 4634: Type of the size parameter to getpeername in
+      libsmbclient code was wrong.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 4630: Fix special case of unix_to_nt_time() for TIME_T_MAX
+      and the output from http_timestring().
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Merge gdb_backtrace script changes form SAMBA_4_0.
+
+
+o   Lars Mueller <lars@samba.org>
+    * Allow idmap_ldap to be built as a shared lib.
+
+
+o   James Peach <jpeach@apple.com>
+    * BUG 4426: Move FAM libraries from smbd to vfs_fam_notify.
+    * BUG 2287: Replace unnecessary AC_TRY_RUN with AC_TRY_LINK.
+    * BUG 4589: Fix typo in pdbedit output.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Short circuit Unix Users and Unix Groups Domain SID checks 
+      in smbd to avoid unnecessary calls to winbindd.
 
 
 Release notes for older releases follow:
@@ -254,7 +326,7 @@ o   Jens Nissen <jens.nissen@gmx.net>
 
 
 o   Simo Sorce <idra@samba.org>
-    * Memory allocation cleanups and sanity checks after the malloc(0) 
+    * Memory allocation cleanups and sanity checks after the malloc(0)
       == NULL crusade.
     * Fix socket leak in idmap_ldap.c.
     * Fix failure in "net idmap restore".
