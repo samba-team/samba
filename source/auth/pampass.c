@@ -41,7 +41,11 @@
  *   which determines what actions/limitations/allowances become affected.
  *********************************************************************/
 
+#if defined(HAVE_SECURITY_PAM_APPL_H)
 #include <security/pam_appl.h>
+#elif defined(HAVE_PAM_PAM_APPL_H)
+#include <pam/pam_appl.h>
+#endif
 
 /*
  * Structure used to communicate between the conversation function
