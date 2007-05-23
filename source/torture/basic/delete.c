@@ -1258,6 +1258,12 @@ static bool deltest20a(struct torture_context *tctx, struct smbcli_state *cli1, 
 }
 
 /* Test 20b ... */
+/* This is the delete semantics that the cifsfs client depends on when
+ * trying to delete an open file on a Windows server. It
+ * opens a file with initial delete on close set, renames it then closes
+ * all open handles. The file goes away on Windows.
+ */
+
 static bool deltest20b(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
 	int fnum1 = -1;
@@ -1266,7 +1272,7 @@ static bool deltest20b(struct torture_context *tctx, struct smbcli_state *cli1, 
 
 	del_clean_area(cli1, cli2);
 
-	/* Test 20a. */
+	/* Test 20b. */
 
 	/* Ensure the file doesn't already exist. */
 	smbcli_close(cli1->tree, fnum1);
