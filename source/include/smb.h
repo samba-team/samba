@@ -749,6 +749,7 @@ struct pending_message_list {
 };
 
 #define SHARE_MODE_FLAG_POSIX_OPEN	0x1
+#define SHARE_MODE_ALLOW_INITIAL_DELETE_ON_CLOSE      0x2
 
 /* struct returned by get_share_modes */
 struct share_mode_entry {
@@ -766,7 +767,7 @@ struct share_mode_entry {
 	SMB_INO_T inode;
 	unsigned long share_file_id;
 	uint32 uid;		/* uid of file opener. */
-	uint16 flags;		/* POSIX_OPEN only defined so far... */
+	uint16 flags;		/* See SHARE_MODE_XX above. */
 };
 
 /* oplock break message definition - linearization of share_mode_entry.

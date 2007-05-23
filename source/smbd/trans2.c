@@ -4596,10 +4596,11 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	pstrcpy(base_name, fname);
 	p = strrchr_m(base_name, '/');
 	if (p) {
-		*p = '\0';
+		p[1] = '\0';
+	} else {
+		pstrcpy(base_name, "./");
 	}
 	/* Append the new name. */
-	pstrcat(base_name, "/");
 	pstrcat(base_name, newname);
 
 	if (fsp) {
