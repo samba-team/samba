@@ -1257,6 +1257,109 @@ static bool deltest20a(struct torture_context *tctx, struct smbcli_state *cli1, 
 	return correct;
 }
 
+/* Test 20b ... */
+static bool deltest20b(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	bool correct = True;
+
+	del_clean_area(cli1, cli2);
+
+	/* Test 20a. */
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+	smbcli_setatr(cli1->tree, fname_new, 0, 0);
+	smbcli_unlink(cli1->tree, fname_new);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE, 
+				      0, 0);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* And close - just to create the file. */
+	smbcli_close(cli1->tree, fnum1);
+	
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 
+				      0, 0);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* Next open with all access, but add delete on close. */
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)", 
+		       fname, smbcli_errstr(cli2->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+
+	/* Rename the file by handle. */
+
+	{
+		union smb_setfileinfo sfinfo;
+		NTSTATUS status;
+
+		memset(&sfinfo, '\0', sizeof(sfinfo));
+		sfinfo.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+		sfinfo.generic.in.file.fnum = fnum2;
+		sfinfo.rename_information.in.root_fid  = 0;
+		/* Don't start the filename with '\\', we get NT_STATUS_NOT_SUPPORTED if so. */
+		sfinfo.rename_information.in.new_name  = fname_new + 1;
+		sfinfo.rename_information.in.overwrite = 1;
+
+		status = smb_raw_setfileinfo(cli2->tree, &sfinfo);
+
+		torture_assert_ntstatus_equal(tctx,status,NT_STATUS_OK,talloc_asprintf(tctx, "rename of %s to %s failed (%s)",
+			fname, fname_new, smbcli_errstr(cli2->tree)));
+	}
+
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname_new, False, __location__);
+
+	smbcli_close(cli2->tree, fnum2);
+
+	/* See if the file is deleted - should be.... */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open of %s succeeded (should fail) - %s", 
+		       fname, smbcli_errstr(cli1->tree)));
+	fnum1 = smbcli_open(cli1->tree, fname_new, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open of %s succeeded (should fail) - %s", 
+		       fname_new, smbcli_errstr(cli1->tree)));
+
+	return correct;
+}
+
+
 /* Test 21 ... */
 static bool deltest21(struct torture_context *tctx)
 {
@@ -1428,6 +1531,7 @@ struct torture_suite *torture_test_delete(void)
 	torture_suite_add_2smb_test(suite, "deltest19", deltest19);
 	torture_suite_add_2smb_test(suite, "deltest20", deltest20);
 	torture_suite_add_2smb_test(suite, "deltest20a", deltest20a);
+	torture_suite_add_2smb_test(suite, "deltest20b", deltest20b);
 	torture_suite_add_simple_test(suite, "deltest21", deltest21);
 	torture_suite_add_simple_test(suite, "deltest22", deltest22);
 
