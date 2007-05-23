@@ -745,11 +745,23 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 
 	ctdb->ev = event_context_init(NULL);
-	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
-			   ctdb_accept_client, ctdb);
 
 	/* start monitoring for dead nodes */
 	ctdb_start_monitoring(ctdb);
+
+	/* start frozen, then let the first election sort things out */
+	if (!ctdb_blocking_freeze(ctdb)) {
+		DEBUG(0,("Failed to get initial freeze\n"));
+		exit(12);
+	}
+
+	/* force initial recovery for election */
+	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+
+	/* now start accepting clients, only can do this once frozen */
+	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, 
+			   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+			   ctdb_accept_client, ctdb);
 
 	ctdb_main_loop(ctdb);
 

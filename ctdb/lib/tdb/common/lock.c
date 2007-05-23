@@ -285,6 +285,41 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 	return ret;
 }
 
+/*
+  get the transaction lock
+ */
+int tdb_transaction_lock(struct tdb_context *tdb, int ltype)
+{
+	if (tdb->have_transaction_lock || tdb->global_lock.count) {
+		return 0;
+	}
+	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, ltype, 
+				     F_SETLKW, 0, 1) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_lock: failed to get transaction lock\n"));
+		tdb->ecode = TDB_ERR_LOCK;
+		return -1;
+	}
+	tdb->have_transaction_lock = 1;
+	return 0;
+}
+
+/*
+  release the transaction lock
+ */
+int tdb_transaction_unlock(struct tdb_context *tdb)
+{
+	int ret;
+	if (!tdb->have_transaction_lock) {
+		return 0;
+	}
+	ret = tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	if (ret == 0) {
+		tdb->have_transaction_lock = 0;
+	}
+	return ret;
+}
+
+
 
 
 /* lock/unlock entire database */

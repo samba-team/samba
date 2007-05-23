@@ -1724,6 +1724,25 @@ int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t d
 }
 
 /*
+  get vnn of a node, or -1
+ */
+int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_VNN, 0, tdb_null, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getvnn failed\n"));
+		return -1;
+	}
+
+	return res;
+}
+
+/*
   set the monitoring mode of a remote node
  */
 int ctdb_ctrl_setmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t monmode)
@@ -1768,4 +1787,3 @@ int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 
 	return 0;
 }
-

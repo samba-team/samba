@@ -215,6 +215,32 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 }
 
 
+/*
+  block until we are frozen, used during daemon startup
+ */
+bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
+{
+	if (ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
+		/* we're already frozen */
+		return true;
+	}
+
+	/* if there isn't a freeze lock child then create one */
+	if (!ctdb->freeze_handle) {
+		ctdb->freeze_handle = ctdb_freeze_lock(ctdb);
+		CTDB_NO_MEMORY(ctdb, ctdb->freeze_handle);
+		ctdb->freeze_mode = CTDB_FREEZE_PENDING;
+	}
+
+	/* block until frozen */
+	while (ctdb->freeze_mode == CTDB_FREEZE_PENDING) {
+		event_loop_once(ctdb->ev);
+	}
+
+	return ctdb->freeze_mode == CTDB_FREEZE_FROZEN;
+}
+
+
 
 /*
   thaw the databases
