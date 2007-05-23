@@ -469,9 +469,6 @@ void ctdb_connect_wait(struct ctdb_context *ctdb)
 	/* now we can go into the normal wait routine, as the reply packet
 	   will update the ctdb->num_connected variable */
 	ctdb_daemon_connect_wait(ctdb);
-
-	/* get other config variables */
-	ctdb_ctrl_get_config(ctdb);
 }
 
 /*
@@ -745,7 +742,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 
 	/* semi-async operation */
 	timed_out = 0;
-	if (timeout) {
+	if (timeout && !timeval_is_zero(timeout)) {
 		event_add_timed(ctdb->ev, state, *timeout, timeout_func, &timed_out);
 	}
 	while ((state->state == CTDB_CALL_WAIT)
@@ -1233,38 +1230,6 @@ int ctdb_ctrl_ping(struct ctdb_context *ctdb, uint32_t destnode)
 		return -1;
 	}
 	return res;
-}
-
-/*
-  get ctdb config
- */
-int ctdb_ctrl_get_config(struct ctdb_context *ctdb)
-{
-	int ret;
-	int32_t res;
-	TDB_DATA data;
-	struct ctdb_context c;
-
-	ZERO_STRUCT(data);
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_CONFIG, 0,
-			   data, ctdb, &data, &res, NULL, NULL);
-	if (ret != 0 || res != 0) {
-		return -1;
-	}
-	if (data.dsize != sizeof(c)) {
-		DEBUG(0,("Bad config size %u - expected %u\n", data.dsize, sizeof(c)));
-		return -1;
-	}
-
-	c = *(struct ctdb_context *)data.dptr;
-	talloc_free(data.dptr);
-
-	ctdb->num_nodes = c.num_nodes;
-	ctdb->num_connected = c.num_connected;
-	ctdb->vnn = c.vnn;
-	ctdb->max_lacount = c.max_lacount;
-	
-	return 0;
 }
 
 /*

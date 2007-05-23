@@ -682,7 +682,11 @@ int ctdb_start(struct ctdb_context *ctdb)
 		close(fd[0]);
 		close(ctdb->daemon.sd);
 		ctdb->daemon.sd = -1;
-		ctdb_ctrl_get_config(ctdb);
+		ctdb->vnn = ctdb_ctrl_getvnn(ctdb, timeval_zero(), CTDB_CURRENT_NODE);
+		if (ctdb->vnn == (uint32_t)-1) {
+			DEBUG(0,(__location__ " Failed to get ctdb vnn\n"));
+			return -1;
+		}
 		return 0;
 	}
 

@@ -183,10 +183,10 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 		return NULL;
 	}
 
-	/* get our config */
-	ret = ctdb_ctrl_get_config(ctdb);
-	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to get ctdb config\n"));
+	/* get our vnn */
+	ctdb->vnn = ctdb_ctrl_getvnn(ctdb, timeval_zero(), CTDB_CURRENT_NODE);
+	if (ctdb->vnn == (uint32_t)-1) {
+		DEBUG(0,(__location__ " Failed to get ctdb vnn\n"));
 		talloc_free(ctdb);
 		return NULL;
 	}
