@@ -237,7 +237,8 @@ static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node
 
 
 
-static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+					   uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, ret;
 
@@ -259,8 +260,70 @@ static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctd
 	return 0;
 }
 
+/*
+  vacuum one database
+ */
+static int vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb_node_map *nodemap)
+{
+	uint64_t max_rsn;
+	int ret, i;
 
-static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+	/* find max rsn on our local node for this db */
+	ret = ctdb_ctrl_get_max_rsn(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, db_id, &max_rsn);
+	if (ret != 0) {
+		return -1;
+	}
+
+	/* set rsn on non-empty records to max_rsn+1 */
+	for (i=0;i<nodemap->num;i++) {
+		if (!nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) {
+			continue;
+		}
+		ret = ctdb_ctrl_set_rsn_nonempty(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[i].vnn,
+						 db_id, max_rsn+1);
+		if (ret != 0) {
+			DEBUG(0,(__location__ " Failed to set rsn on node %u to %llu\n",
+				 nodemap->nodes[i].vnn, max_rsn+1));
+			return -1;
+		}
+	}
+
+	/* delete records with rsn < max_rsn+1 on all nodes */
+	for (i=0;i<nodemap->num;i++) {
+		if (!nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) {
+			continue;
+		}
+		ret = ctdb_ctrl_delete_low_rsn(ctdb, timeval_current_ofs(1, 0), nodemap->nodes[i].vnn,
+						 db_id, max_rsn+1);
+		if (ret != 0) {
+			DEBUG(0,(__location__ " Failed to delete records on node %u with rsn below %llu\n",
+				 nodemap->nodes[i].vnn, max_rsn+1));
+			return -1;
+		}
+	}
+
+
+	return 0;
+}
+
+
+static int vacuum_all_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+				struct ctdb_dbid_map *dbmap)
+{
+	int i;
+
+	/* update dmaster to point to this node for all databases/nodes */
+	for (i=0;i<dbmap->num;i++) {
+		if (vacuum_db(ctdb, dbmap->dbids[i], nodemap) != 0) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+				    uint32_t vnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, ret;
 
@@ -287,7 +350,8 @@ static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_
 }
 
 
-static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn, struct ctdb_vnn_map *vnnmap, TALLOC_CTX *mem_ctx)
+static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+				      uint32_t vnn, struct ctdb_vnn_map *vnnmap, TALLOC_CTX *mem_ctx)
 {
 	int j, ret;
 
@@ -461,6 +525,15 @@ static int do_recovery(struct ctdb_context *ctdb,
 	ret = update_dmaster_on_all_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
 	if (ret != 0) {
 		DEBUG(0, (__location__ " Unable to update dmaster on all databases\n"));
+		return -1;
+	}
+
+	/*
+	  run a vacuum operation on empty records
+	 */
+	ret = vacuum_all_databases(ctdb, nodemap, dbmap);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to vacuum all databases\n"));
 		return -1;
 	}
 
