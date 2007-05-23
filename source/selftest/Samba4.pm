@@ -262,19 +262,6 @@ objectclass: nsBackendInstance
 nsslapd-suffix: cn=Schema,cn=Configuration,$basedn
 cn: schemaData
 
-dn: cn=bitwise,cn=plugins,cn=config
-objectClass: top
-objectClass: nsSlapdPlugin
-objectClass: extensibleObject
-cn: bitwise
-nsslapd-pluginPath: $ENV{FEDORA_DS_PREFIX}/lib/fedora-ds/plugins/libbitwise-plugin.so
-nsslapd-pluginInitfunc: bitwise_init
-nsslapd-pluginType: matchingRule
-nsslapd-pluginEnabled: on
-nsslapd-pluginId: bitwise
-nsslapd-pluginVersion: 1.1.0a3
-nsslapd-pluginVendor: Fedora Project
-nsslapd-pluginDescription: Allow bitwise matching rules
 ";
 	close(LDIF);
 
