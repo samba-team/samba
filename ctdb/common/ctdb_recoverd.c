@@ -438,7 +438,7 @@ static int do_recovery(struct ctdb_context *ctdb,
 	/* get a list of all databases */
 	ret = ctdb_ctrl_getdbmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &dbmap);
 	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to get dbids from node :%d\n", vnn));
+		DEBUG(0, (__location__ " Unable to get dbids from node :%u\n", vnn));
 		return -1;
 	}
 
@@ -780,7 +780,7 @@ again:
 		}
 
 		if (recmaster!=vnn) {
-			DEBUG(0, ("Node %d does not agree we are the recmaster. Force reelection\n", nodemap->nodes[j].vnn));
+			DEBUG(0, ("Node %u does not agree we are the recmaster. Force reelection\n", nodemap->nodes[j].vnn));
 			force_election(ctdb, mem_ctx, vnn, nodemap);
 			goto again;
 		}
@@ -801,7 +801,7 @@ again:
 			goto again;
 		}
 		if (recmode!=CTDB_RECOVERY_NORMAL) {
-			DEBUG(0, (__location__ " Node:%d was in recovery mode. Restart recovery process\n", nodemap->nodes[j].vnn));
+			DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", nodemap->nodes[j].vnn));
 			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
@@ -829,7 +829,7 @@ again:
 		   then this is a good reason to try recovery
 		 */
 		if (remote_nodemap->num != nodemap->num) {
-			DEBUG(0, (__location__ " Remote node:%d has different node count. %d vs %d of the local node\n", nodemap->nodes[j].vnn, remote_nodemap->num, nodemap->num));
+			DEBUG(0, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n", nodemap->nodes[j].vnn, remote_nodemap->num, nodemap->num));
 			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
@@ -840,7 +840,7 @@ again:
 		for (i=0;i<nodemap->num;i++) {
 			if ((remote_nodemap->nodes[i].vnn != nodemap->nodes[i].vnn)
 			||  (remote_nodemap->nodes[i].flags != nodemap->nodes[i].flags)) {
-				DEBUG(0, (__location__ " Remote node:%d has different nodemap.\n", nodemap->nodes[j].vnn));
+				DEBUG(0, (__location__ " Remote node:%u has different nodemap.\n", nodemap->nodes[j].vnn));
 				do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 				goto again;
 			}
@@ -853,7 +853,7 @@ again:
 	   as there are active nodes or we will have to do a recovery
 	 */
 	if (vnnmap->size != num_active) {
-		DEBUG(0, (__location__ " The vnnmap count is different from the number of active nodes. %d vs %d\n", vnnmap->size, num_active));
+		DEBUG(0, (__location__ " The vnnmap count is different from the number of active nodes. %u vs %u\n", vnnmap->size, num_active));
 		do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 		goto again;
 	}
@@ -875,7 +875,7 @@ again:
 			}
 		}
 		if (i==vnnmap->size) {
-			DEBUG(0, (__location__ " Node %d is active in the nodemap but did not exist in the vnnmap\n", nodemap->nodes[j].vnn));
+			DEBUG(0, (__location__ " Node %u is active in the nodemap but did not exist in the vnnmap\n", nodemap->nodes[j].vnn));
 			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
@@ -901,14 +901,14 @@ again:
 
 		/* verify the vnnmap generation is the same */
 		if (vnnmap->generation != remote_vnnmap->generation) {
-			DEBUG(0, (__location__ " Remote node %d has different generation of vnnmap. %d vs %d (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->generation, vnnmap->generation));
+			DEBUG(0, (__location__ " Remote node %u has different generation of vnnmap. %u vs %u (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->generation, vnnmap->generation));
 			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
 
 		/* verify the vnnmap size is the same */
 		if (vnnmap->size != remote_vnnmap->size) {
-			DEBUG(0, (__location__ " Remote node %d has different size of vnnmap. %d vs %d (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->size, vnnmap->size));
+			DEBUG(0, (__location__ " Remote node %u has different size of vnnmap. %u vs %u (ours)\n", nodemap->nodes[j].vnn, remote_vnnmap->size, vnnmap->size));
 			do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 			goto again;
 		}
@@ -916,7 +916,7 @@ again:
 		/* verify the vnnmap is the same */
 		for (i=0;i<vnnmap->size;i++) {
 			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
-				DEBUG(0, (__location__ " Remote node %d has different vnnmap.\n", nodemap->nodes[j].vnn));
+				DEBUG(0, (__location__ " Remote node %u has different vnnmap.\n", nodemap->nodes[j].vnn));
 				do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 				goto again;
 			}
