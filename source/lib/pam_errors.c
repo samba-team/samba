@@ -21,7 +21,11 @@
 #include "includes.h"
 
 #ifdef WITH_PAM
+#if defined(HAVE_SECURITY_PAM_APPL_H)
 #include <security/pam_appl.h>
+#elif defined(HAVE_PAM_PAM_APPL_H)
+#include <pam/pam_appl.h>
+#endif
 
 #if defined(PAM_AUTHTOK_RECOVERY_ERR) && !defined(PAM_AUTHTOK_RECOVER_ERR)
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR

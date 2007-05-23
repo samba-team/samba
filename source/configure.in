@@ -4399,7 +4399,11 @@ AC_ARG_WITH(cifsmount,
 
 
 #################################################
-# check for a PAM clear-text auth, accounts, password and session support
+# Check for a PAM clear-text auth, accounts, password
+# and session support. Most PAM implementations keep their
+# headers in /usr/include/security. Darwin keeps its in
+# /usr/include/pam.
+
 with_pam_for_crypt=no
 try_pam=no
 AC_MSG_CHECKING(whether to try PAM support)
@@ -4419,10 +4423,13 @@ if test x"${try_pam}" != x"no";then
 	use_pam=yes
 	create_pam_modules=yes
 
-	AC_CHECK_HEADERS(security/pam_appl.h)
-	if test x"$ac_cv_header_security_pam_appl_h" != x"yes"; then
+	# Most systems have PAM headers in /usr/include/security, but Darwin
+	# has them in /usr/include/pam.
+	AC_CHECK_HEADERS(security/pam_appl.h pam/pam_appl.h)
+	if test x"$ac_cv_header_security_pam_appl_h" != x"yes" -a \
+		x"$ac_cv_header_pam_pam_appl_h" != x"yes"; then
 		if test x"${try_pam}" = x"yes";then
-			AC_MSG_ERROR([--with-pam=yes but security/pam_appl.h not found])
+			AC_MSG_ERROR([--with-pam=yes but pam_appl.h not found])
 		fi
 		use_pam=no
 		create_pam_modules=no
@@ -4437,14 +4444,18 @@ if test x"${try_pam}" != x"no";then
 		create_pam_modules=no
 	fi
 
-	AC_CHECK_HEADERS(security/pam_modules.h,,,[[
+	AC_CHECK_HEADERS(security/pam_modules.h pam/pam_modules.h,,,[[
 		#if HAVE_SECURITY_PAM_APPL_H
 		#include <security/pam_appl.h>
 		#endif
+		#if HAVE_PAM_PAM_APPL_H
+		#include <pam/pam_appl.h>
+		#endif
 	]])
-	if test x"$ac_cv_header_security_pam_modules_h" = x"no"; then
+	if test x"$ac_cv_header_security_pam_modules_h" = x"no" -a \
+		x"$ac_cv_header_pam_pam_modules_h" = x"no" ; then
 		if test x"${try_pam}" = x"yes";then
-			AC_MSG_ERROR([--with-pam=yes but security/pam_modules.h not found])
+			AC_MSG_ERROR([--with-pam=yes but pam_modules.h not found])
 		fi
 		create_pam_modules=no
 	fi
@@ -4460,6 +4471,7 @@ if test x"${try_pam}" != x"no";then
 			# this checks are optional,
 			# we don't care about the results here
 			AC_CHECK_HEADERS(security/pam_ext.h security/_pam_macros.h)
+			AC_CHECK_HEADERS(pam/pam_ext.h pam/_pam_macros.h)
 			AC_CHECK_FUNC_EXT(pam_vsyslog,$PAM_LIBS)
 		else
 			AC_MSG_WARN([PAM support detected but PAM MODULES support is missing])		
