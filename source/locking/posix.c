@@ -195,8 +195,8 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 
 		DEBUG(0,("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
 					(double)offset,(double)count));
-		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
+		DEBUGADD(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUGADD(0,("on 32 bit NFS mounted file systems.\n"));
 
 		/*
 		 * If the offset is > 0x7FFFFFFF then this will cause problems on
@@ -240,8 +240,8 @@ static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 
 		DEBUG(0,("posix_fcntl_getlock: WARNING: lock request at offset %.0f, length %.0f returned\n",
 					(double)*poffset,(double)*pcount));
-		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
+		DEBUGADD(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUGADD(0,("on 32 bit NFS mounted file systems.\n"));
 
 		/*
 		 * If the offset is > 0x7FFFFFFF then this will cause problems on
