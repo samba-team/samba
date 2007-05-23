@@ -30,6 +30,7 @@
 #include "auth/gensec/schannel_proto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
+#include "system/filesys.h"
 
 #define TEST_MACHINE_NAME "schannel"
 
@@ -446,6 +447,8 @@ failed:
 	return False;	
 }
 
+
+
 /*
   a schannel test suite
  */
@@ -485,3 +488,95 @@ BOOL torture_rpc_schannel(struct torture_context *torture)
 
 	return ret;
 }
+
+/*
+  test two schannel connections
+ */
+BOOL torture_rpc_schannel2(struct torture_context *torture)
+{
+	BOOL ret = True;
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	struct test_join *join_ctx;
+	NTSTATUS status;
+	const char *binding = lp_parm_string(-1, "torture", "binding");
+	struct dcerpc_binding *b;
+	struct dcerpc_pipe *p1 = NULL, *p2 = NULL;
+	struct cli_credentials *credentials1, *credentials2;
+	uint16_t acct_flags = ACB_WSTRUST;
+	uint32_t dcerpc_flags = DCERPC_SCHANNEL | DCERPC_SIGN;
+	TALLOC_CTX *test_ctx = talloc_named(mem_ctx, 0, "test_schannel2 context");
+
+	join_ctx = torture_join_domain(talloc_asprintf(mem_ctx, "%s2", TEST_MACHINE_NAME), 
+				       acct_flags, &credentials1);
+	if (!join_ctx) {
+		printf("Failed to join domain with acct_flags=0x%x\n", acct_flags);
+		talloc_free(test_ctx);
+		return False;
+	}
+
+	credentials2 = talloc_memdup(mem_ctx, credentials1, sizeof(*credentials1));
+	credentials1->netlogon_creds = NULL;
+	credentials2->netlogon_creds = NULL;
+
+	status = dcerpc_parse_binding(test_ctx, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Bad binding string %s\n", binding);
+		goto failed;
+	}
+
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= dcerpc_flags;
+
+	printf("Opening first connection\n");
+	status = dcerpc_pipe_connect_b(test_ctx, &p1, b, &dcerpc_table_netlogon,
+				       credentials1, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
+		goto failed;
+	}
+
+	printf("Opening second connection\n");
+	status = dcerpc_pipe_connect_b(test_ctx, &p2, b, &dcerpc_table_netlogon,
+				       credentials2, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
+		goto failed;
+	}
+
+	credentials1->netlogon_creds = NULL;
+	credentials2->netlogon_creds = NULL;
+
+	printf("Testing logon on pipe1\n");
+	if (!test_netlogon_ex_ops(p1, test_ctx, credentials1, NULL)) {
+		printf("Failed to process schannel secured NETLOGON ops\n");
+		ret = False;
+	}
+
+	printf("Testing logon on pipe2\n");
+	if (!test_netlogon_ex_ops(p2, test_ctx, credentials2, NULL)) {
+		printf("Failed to process schannel secured NETLOGON ops\n");
+		ret = False;
+	}
+
+	printf("Again on pipe1\n");
+	if (!test_netlogon_ex_ops(p1, test_ctx, credentials1, NULL)) {
+		printf("Failed to process schannel secured NETLOGON ops\n");
+		ret = False;
+	}
+
+	printf("Again on pipe2\n");
+	if (!test_netlogon_ex_ops(p2, test_ctx, credentials2, NULL)) {
+		printf("Failed to process schannel secured NETLOGON ops\n");
+		ret = False;
+	}
+
+	torture_leave_domain(join_ctx);
+	talloc_free(test_ctx);
+	return ret;
+
+failed:
+	torture_leave_domain(join_ctx);
+	talloc_free(test_ctx);
+	return False;	
+}
+
