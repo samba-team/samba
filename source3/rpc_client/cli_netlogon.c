@@ -946,6 +946,98 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
         return result;
 }
 
+NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      uint32 logon_parameters,
+					      const char *server,
+					      const char *username,
+					      const char *domain,
+					      const char *workstation, 
+					      const uint8 chal[8], 
+					      DATA_BLOB lm_response,
+					      DATA_BLOB nt_response,
+					      NET_USER_INFO_3 *info3)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_SAM_LOGON_EX q;
+	NET_R_SAM_LOGON_EX r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NET_ID_INFO_CTR ctr;
+	int validation_level = 3;
+	const char *workstation_name_slash;
+	const char *server_name_slash;
+	static uint8 zeros[16];
+	int i;
+	
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	if (server[0] != '\\' && server[1] != '\\') {
+		server_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", server);
+	} else {
+		server_name_slash = server;
+	}
+
+	if (workstation[0] != '\\' && workstation[1] != '\\') {
+		workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
+	} else {
+		workstation_name_slash = workstation;
+	}
+
+	if (!workstation_name_slash || !server_name_slash) {
+		DEBUG(0, ("talloc_asprintf failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Initialise input parameters */
+
+	q.validation_level = validation_level;
+
+        ctr.switch_value = NET_LOGON_TYPE;
+
+	init_id_info2(&ctr.auth.id2, domain,
+		      logon_parameters, /* param_ctrl */
+		      0xdead, 0xbeef, /* LUID? */
+		      username, workstation_name_slash, (const uchar*)chal,
+		      lm_response.data, lm_response.length, nt_response.data,
+		      nt_response.length);
+ 
+        init_sam_info_ex(&q.sam_id, server_name_slash, global_myname(),
+			 NET_LOGON_TYPE, &ctr);
+
+        r.user = info3;
+
+        /* Marshall data and send request */
+
+	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_SAMLOGON_EX,
+		   q, r, qbuf, rbuf,
+		   net_io_q_sam_logon_ex,
+		   net_io_r_sam_logon_ex,
+		   NT_STATUS_UNSUCCESSFUL);
+
+	if (memcmp(zeros, info3->user_sess_key, 16) != 0) {
+		SamOEMhash(info3->user_sess_key, cli->dc->sess_key, 16);
+	} else {
+		memset(info3->user_sess_key, '\0', 16);
+	}
+
+	if (memcmp(zeros, info3->lm_sess_key, 8) != 0) {
+		SamOEMhash(info3->lm_sess_key, cli->dc->sess_key, 8);
+	} else {
+		memset(info3->lm_sess_key, '\0', 8);
+	}
+
+	for (i=0; i < 7; i++) {
+		memset(&info3->unknown[i], '\0', 4);
+	}
+
+        /* Return results */
+
+	result = r.status;
+
+        return result;
+}
+
 /***************************************************************************
 LSA Server Password Set.
 ****************************************************************************/
