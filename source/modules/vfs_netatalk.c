@@ -375,6 +375,38 @@ exit_chown:
 	return ret;
 }
 
+static int atalk_lchown(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
+{
+	int ret = 0;
+	char *adbl_path = 0;
+	char *orig_path = 0;
+	SMB_STRUCT_STAT adbl_info;
+	SMB_STRUCT_STAT orig_info;
+	TALLOC_CTX *ctx;
+
+	ret = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
+
+	if (!path) return ret;
+
+	if (!(ctx = talloc_init("lchown_file")))
+		return ret;
+
+	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
+	  &adbl_info, &orig_info) != 0)
+		goto exit_lchown;
+
+	if (!S_ISDIR(orig_info.st_mode) && !S_ISREG(orig_info.st_mode)) {
+		DEBUG(3, ("ATALK: %s has passed..\n", orig_path));		
+		goto exit_lchown;
+	}
+
+	sys_lchown(adbl_path, uid, gid);
+
+exit_lchown:	
+	talloc_destroy(ctx);
+	return ret;
+}
+
 static vfs_op_tuple atalk_ops[] = {
     
 	/* Directory operations */
@@ -388,6 +420,7 @@ static vfs_op_tuple atalk_ops[] = {
 	{SMB_VFS_OP(atalk_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(atalk_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(atalk_chown),		SMB_VFS_OP_CHOWN,	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_lchown),		SMB_VFS_OP_LCHOWN,	SMB_VFS_LAYER_TRANSPARENT},
 	
 	/* Finish VFS operations definition */
 	
