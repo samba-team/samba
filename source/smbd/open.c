@@ -1123,6 +1123,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL def_acl = False;
 	BOOL posix_open = False;
+	BOOL new_file_created = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
@@ -1763,28 +1764,31 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			fsp->oplock_type = NO_OPLOCK;
 		}
 	}
-	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type);
 
-	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
-	    info == FILE_WAS_SUPERSEDED) {
+	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED || info == FILE_WAS_SUPERSEDED) {
+		new_file_created = True;
+	}
 
-		/* Handle strange delete on close create semantics. */
-		if (create_options & FILE_DELETE_ON_CLOSE) {
-			status = can_set_delete_on_close(fsp, True, new_dos_attributes);
+	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type, new_file_created);
 
-			if (!NT_STATUS_IS_OK(status)) {
-				/* Remember to delete the mode we just added. */
-				del_share_mode(lck, fsp);
-				TALLOC_FREE(lck);
-				fd_close(conn,fsp);
-				file_free(fsp);
-				return status;
-			}
-			/* Note that here we set the *inital* delete on close flag,
-			   not the regular one. The magic gets handled in close. */
-			fsp->initial_delete_on_close = True;
+	/* Handle strange delete on close create semantics. */
+	if ((create_options & FILE_DELETE_ON_CLOSE) && can_set_initial_delete_on_close(lck)) {
+		status = can_set_delete_on_close(fsp, True, new_dos_attributes);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Remember to delete the mode we just added. */
+			del_share_mode(lck, fsp);
+			TALLOC_FREE(lck);
+			fd_close(conn,fsp);
+			file_free(fsp);
+			return status;
 		}
+		/* Note that here we set the *inital* delete on close flag,
+		   not the regular one. The magic gets handled in close. */
+		fsp->initial_delete_on_close = True;
+	}
 	
+	if (new_file_created) {
 		/* Files should be initially set as archive */
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
@@ -2142,7 +2146,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	set_share_mode(lck, fsp, current_user.ut.uid, 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, current_user.ut.uid, 0, NO_OPLOCK, True);
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */

@@ -1791,7 +1791,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Check if a user is allowed to rename a file.
 ********************************************************************/
 
-static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype, SMB_STRUCT_STAT *pst)
+static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype, SMB_STRUCT_STAT *pst, BOOL self_open)
 {
 	files_struct *fsp;
 	uint32 fmode;
@@ -1812,7 +1812,10 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 
 	status = open_file_ntcreate(conn, fname, pst,
 				DELETE_ACCESS,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				/* If we're checking our fsp don't deny for delete. */
+				self_open ?
+					FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE :
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
@@ -4242,7 +4245,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 	ZERO_STRUCT(sbuf);
 
 	status = unix_convert(conn, newname, False, newname_last_component, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
+	/* We expect this to be NT_STATUS_OBJECT_PATH_NOT_FOUND */
+	if (!NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND, status)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 		return status;
 	}
 
@@ -4310,9 +4315,20 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = can_rename(conn,fsp->fsp_name,attrs,&sbuf);
+	/* Ensure we have a valid stat struct for the source. */
+	if (fsp->fh->fd != -1) {
+		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	} else {
+		if (SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
 
-	if (dest_exists && !NT_STATUS_IS_OK(status)) {
+	status = can_rename(conn,fsp->fsp_name,attrs,&sbuf,True);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("rename_internals_fsp: Error %s rename %s -> %s\n",
 			nt_errstr(status), fsp->fsp_name,newname));
 		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
@@ -4327,9 +4343,33 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 
 	if(SMB_VFS_RENAME(conn,fsp->fsp_name, newname) == 0) {
+		uint32 create_options = fsp->fh->private_options;
+
 		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
 			fsp->fsp_name,newname));
+
 		rename_open_files(conn, lck, fsp->dev, fsp->inode, newname);
+
+		/*
+		 * A rename acts as a new file create w.r.t. allowing an initial delete
+		 * on close, probably because in Windows there is a new handle to the
+		 * new file. If initial delete on close was requested but not
+		 * originally set, we need to set it here. This is probably not 100% correct,
+		 * but will work for the CIFSFS client which in non-posix mode
+		 * depends on these semantics. JRA.
+		 */
+
+		set_allow_initial_delete_on_close(lck, fsp, True);
+
+		if (create_options & FILE_DELETE_ON_CLOSE) {
+			status = can_set_delete_on_close(fsp, True, 0);
+
+			if (NT_STATUS_IS_OK(status)) {
+				/* Note that here we set the *inital* delete on close flag,
+				 * not the regular one. The magic gets handled in close. */
+				fsp->initial_delete_on_close = True;
+			}
+		}
 		TALLOC_FREE(lck);
 		return NT_STATUS_OK;	
 	}
@@ -4580,7 +4620,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return status;
 		}
 
-		status = can_rename(conn,directory,attrs,&sbuf1);
+		status = can_rename(conn,directory,attrs,&sbuf1,False);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> "
@@ -4708,7 +4748,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 				  fname, nt_errstr(status)));
 			continue;
 		}
-		status = can_rename(conn,fname,attrs,&sbuf1);
+		status = can_rename(conn,fname,attrs,&sbuf1,False);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(6, ("rename %s refused\n", fname));
 			continue;
