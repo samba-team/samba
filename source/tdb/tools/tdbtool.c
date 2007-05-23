@@ -116,7 +116,7 @@ typedef struct connections_data {
 	int cnum;
 	uid_t uid;
 	gid_t gid;
-	char name[24];
+	char servicename[FSTRING_LEN];
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;
@@ -373,7 +373,7 @@ static int print_conn_data(TDB_DATA dbuf)
 	printf( "\ndata %d bytes\n", (int)dbuf.dsize);
 	printf( "pid    =%5d   ", ((connections_data*)dbuf.dptr)->pid);
 	printf( "cnum   =%10d  ", ((connections_data*)dbuf.dptr)->cnum);
-	printf( "name   =[%s]\n", ((connections_data*)dbuf.dptr)->name);
+	printf( "name   =[%s]\n", ((connections_data*)dbuf.dptr)->servicename);
 	
 	printf( "uid    =%5d   ",  ((connections_data*)dbuf.dptr)->uid);
 	printf( "addr   =[%s]\n", ((connections_data*)dbuf.dptr)->addr);

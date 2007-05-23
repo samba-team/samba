@@ -54,6 +54,7 @@ o   Jeremy Allison <jra@samba.org>
       about that we retry the lock every 10 seconds instead of waiting
       for the standard select timeout.
     * BUG 4637: Fix samlogon reply regression that broke domain logons.
+    * Fix rename for Linux cifs fs client.
 
 
 o   Alexander Bokovoy <ab@samba.org>
@@ -83,6 +84,11 @@ o   Steve French <sfrench@us.ibm.com>
 o   Volker Lendecke <vl@samba.org>
     * Fix crash bug in the Solaria ACL VFS module caused by
       uninitialized variables.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Update connection structure definition for tdbtool display
+      output.
 
 
 o   Derrell Lipman <derrell@samba.org>
