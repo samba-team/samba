@@ -59,6 +59,7 @@ static void usage(void)
 		"  setmonmode <vnn> <mode>            set monitoring mode\n"
 		"  attach <dbname>                    attach a database\n"
 		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
+		"  dumpmemory <vnn|all>               dump memory map to log\n"
 		"  shutdown <vnn>                     shutdown a remote ctdb\n"
 		"  freeze <vnn|all>                   freeze a node\n"
 		"  thaw <vnn|all>                     thaw a node\n"

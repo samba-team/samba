@@ -437,6 +437,7 @@ static void queue_next_trigger(struct event_context *ev, struct timed_event *te,
 {
 	struct queue_next *q = talloc_get_type(private_data, struct queue_next);
 	ctdb_input_pkt(q->ctdb, q->hdr);
+	talloc_free(q);
 }	
 
 /*

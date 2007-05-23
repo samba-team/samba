@@ -277,6 +277,7 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 	struct traverse_all_state *state = talloc_get_type(p, struct traverse_all_state);
 	int ret;
 	struct ctdb_rec_data *d;
+	TDB_DATA cdata;
 
 	d = ctdb_marshall_record(state, state->reqid, key, data);
 	if (d == NULL) {
@@ -285,13 +286,18 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 		return;
 	}
 
-	data.dptr = (uint8_t *)d;
-	data.dsize = d->length;
+	cdata.dptr = (uint8_t *)d;
+	cdata.dsize = d->length;
 
 	ret = ctdb_daemon_send_control(state->ctdb, state->srcnode, 0, CTDB_CONTROL_TRAVERSE_DATA,
-				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+				       0, CTDB_CTRL_FLAG_NOREPLY, cdata, NULL, NULL);
 	if (ret != 0) {
 		DEBUG(0,("Failed to send traverse data\n"));
+	}
+
+	if (key.dsize == 0 && data.dsize == 0) {
+		/* we're done */
+		talloc_free(state);
 	}
 }
 
@@ -397,6 +403,7 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 {
 	struct traverse_start_state *state;
 	struct ctdb_rec_data *d;
+	TDB_DATA cdata;
 
 	state = talloc_get_type(p, struct traverse_start_state);
 
@@ -405,10 +412,10 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 		return;
 	}
 
-	data.dptr = (uint8_t *)d;
-	data.dsize = d->length;
+	cdata.dptr = (uint8_t *)d;
+	cdata.dsize = d->length;
 
-	ctdb_dispatch_message(state->ctdb, state->srvid, data);
+	ctdb_dispatch_message(state->ctdb, state->srvid, cdata);
 	if (key.dsize == 0 && data.dsize == 0) {
 		/* end of traverse */
 		talloc_free(state);
