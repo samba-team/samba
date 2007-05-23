@@ -1331,7 +1331,7 @@ if test x"$ac_cv_func_execl" = x"no"; then
     EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun\$(EXEEXT)"
 fi
 
-AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror chown fchown chmod fchmod chroot link mknod mknod64)
+AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror chown fchown lchown chmod fchmod chroot link mknod mknod64)
 AC_CHECK_FUNCS(strtol strtoll strtoul strtoull strtouq __strtoull)
 AC_CHECK_FUNCS(fstat strchr utime utimes chflags)
 AC_CHECK_FUNCS(getrlimit fsync memset strlcpy strlcat setpgid)

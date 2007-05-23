@@ -200,6 +200,11 @@ static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, uid
 	return SMB_VFS_NEXT_FCHOWN(handle, fsp, fd, uid, gid);
 }
 
+static int skel_lchown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
+{
+	return SMB_VFS_NEXT_LCHOWN(handle, path, uid, gid);
+}
+
 static int skel_chdir(vfs_handle_struct *handle,  const char *path)
 {
 	return SMB_VFS_NEXT_CHDIR(handle, path);
@@ -561,6 +566,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_fchmod),			SMB_VFS_OP_FCHMOD,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_chown),			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_fchown),			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_lchown),			SMB_VFS_OP_LCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_getwd),			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_TRANSPARENT},
