@@ -552,6 +552,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->max_lacount      = CTDB_DEFAULT_MAX_LACOUNT;
 	ctdb->seqnum_frequency = CTDB_DEFAULT_SEQNUM_FREQUENCY;
 	ctdb->node_list_fd     = -1;
+	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
 
 	return ctdb;
 }

@@ -55,6 +55,8 @@ static void usage(void)
 		"  setrecmode <vnn> <mode>            set recovery mode\n"
 		"  getrecmaster <vnn>                 get recovery master\n"
 		"  setrecmaster <vnn> <master_vnn>    set recovery master\n"
+		"  getmonmode <vnn>                   get monitoring mode\n"
+		"  setmonmode <vnn> <mode>            set monitoring mode\n"
 		"  attach <dbname>                    attach a database\n"
 		"  getpid <vnn>                       get the pid of a ctdb daemon\n"
 		"  shutdown <vnn>                     shutdown a remote ctdb\n"
@@ -414,6 +416,56 @@ static int control_setrecmode(struct ctdb_context *ctdb, int argc, const char **
 	ret = ctdb_ctrl_setrecmode(ctdb, timeval_current_ofs(timelimit, 0), vnn, recmode);
 	if (ret != 0) {
 		printf("Unable to set recmode on node %u\n", vnn);
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  display monitoring mode of a remote node
+ */
+static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, monmode;
+	int ret;
+
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_getmonmode(ctdb, timeval_current_ofs(timelimit, 0), vnn, &monmode);
+	if (ret != 0) {
+		printf("Unable to get monmode from node %u\n", vnn);
+		return ret;
+	}
+	printf("Monitoring mode:%s (%d)\n",monmode==CTDB_MONITORING_ACTIVE?"ACTIVE":"DISABLED",monmode);
+
+	return 0;
+}
+
+/*
+  set the monitoring mode of a remote node
+ */
+static int control_setmonmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn, monmode;
+	int ret;
+
+
+	if (argc < 2) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+	monmode = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_ctrl_setmonmode(ctdb, timeval_current_ofs(timelimit, 0), vnn, monmode);
+	if (ret != 0) {
+		printf("Unable to set monmode on node %u\n", vnn);
 		return ret;
 	}
 
@@ -994,6 +1046,8 @@ int main(int argc, const char *argv[])
 		{ "setrecmode", control_setrecmode },
 		{ "getrecmaster", control_getrecmaster },
 		{ "setrecmaster", control_setrecmaster },
+		{ "getmonmode", control_getmonmode },
+		{ "setmonmode", control_setmonmode },
 		{ "ping", control_ping },
 		{ "debug", control_debug },
 		{ "debuglevel", control_debuglevel },

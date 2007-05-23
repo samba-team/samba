@@ -34,6 +34,13 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int i;
 
+	if (ctdb->monitoring_mode==CTDB_MONITORING_DISABLED) {
+		event_add_timed(ctdb->ev, ctdb, 
+			timeval_current_ofs(CTDB_MONITORING_TIMEOUT, 0), 
+			ctdb_check_for_dead_nodes, ctdb);
+		return;
+	}
+
 	/* send a keepalive to all other nodes, unless */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];

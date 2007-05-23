@@ -241,6 +241,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_control_set_recmode(ctdb, indata, errormsg);
 
+	case CTDB_CONTROL_SET_MONMODE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
+		ctdb->monitoring_mode = *(uint32_t *)indata.dptr;
+		return 0;
+
+	case CTDB_CONTROL_GET_MONMODE: 
+		return ctdb->monitoring_mode;
+
 	case CTDB_CONTROL_SHUTDOWN:
 		exit(10);
 
