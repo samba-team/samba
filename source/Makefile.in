@@ -148,7 +148,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 
 # Note that all executable programs now provide for an optional executable suffix.
 
-SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@
+SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
 
 ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
 
@@ -1593,7 +1593,7 @@ bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DYNEXP) script/tests/timelimit.o
 
-install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@
+install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@
 
 
 install-everything: install installmodules
