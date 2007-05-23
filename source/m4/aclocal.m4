@@ -420,22 +420,6 @@ main(){
   AC_MSG_RESULT($ICONV_CHARSET)
 ])
 
-dnl CFLAGS_ADD_DIR(CFLAGS, $INCDIR)
-dnl This function doesn't add -I/usr/include into CFLAGS
-AC_DEFUN(CFLAGS_ADD_DIR,[
-if test "$2" != "/usr/include" ; then
-    $1="$$1 -I$2"
-fi
-])
-
-dnl LIB_ADD_DIR(LDFLAGS, $LIBDIR)
-dnl This function doesn't add -L/usr/lib into LDFLAGS
-AC_DEFUN(LIB_ADD_DIR,[
-if test "$2" != "/usr/lib" ; then
-    $1="$$1 -L$2"
-fi
-])
-
 dnl AC_ENABLE_SHARED - implement the --enable-shared flag
 dnl Usage: AC_ENABLE_SHARED[(DEFAULT)]
 dnl   Where DEFAULT is either `yes' or `no'.  If omitted, it defaults to
