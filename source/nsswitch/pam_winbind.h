@@ -23,7 +23,11 @@
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
+#if defined(HAVE_SECURITY_PAM_APPL_H)
 #include <security/pam_appl.h> 
+#elif defined(HAVE_PAM_PAM_APPL_H)
+#include <pam/pam_appl.h>
+#endif
 
 #ifndef PAM_AUTHTOK_RECOVER_ERR
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
@@ -31,12 +35,16 @@
 
 #endif /* defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX) */
 
-#ifdef HAVE_SECURITY_PAM_MODULES_H
+#if defined(HAVE_SECURITY_PAM_MODULES_H)
 #include <security/pam_modules.h>
+#elif defined(HAVE_PAM_PAM_MODULES_H)
+#include <pam/pam_modules.h>
 #endif
 
-#ifdef HAVE_SECURITY__PAM_MACROS_H
+#if defined(HAVE_SECURITY__PAM_MACROS_H)
 #include <security/_pam_macros.h>
+#elif defined(HAVE_PAM__PAM_MACROS_H)
+#include <pam/_pam_macros.h>
 #else
 /* Define required macros from (Linux PAM 0.68) security/_pam_macros.h */
 #define _pam_drop_reply(/* struct pam_response * */ reply, /* int */ replies) \
