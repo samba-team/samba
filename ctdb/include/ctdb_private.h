@@ -245,6 +245,8 @@ struct ctdb_context {
 	const char *db_directory;
 	const char *transport;
 	const char *logfile;
+	char *node_list_file;
+	int node_list_fd;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;

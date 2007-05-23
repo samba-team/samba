@@ -140,6 +140,9 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	int nlines;
 	int i;
 
+	talloc_free(ctdb->node_list_file);
+	ctdb->node_list_file = talloc_strdup(ctdb, nlist);
+
 	lines = file_lines_load(nlist, &nlines, ctdb);
 	if (lines == NULL) {
 		ctdb_set_error(ctdb, "Failed to load nlist '%s'\n", nlist);
@@ -225,7 +228,7 @@ uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb)
 	int i;
 	uint32_t count=0;
 	for (i=0;i<ctdb->vnn_map->size;i++) {
-		if (ctdb->nodes[i]->flags & NODE_FLAGS_CONNECTED) {
+		if (ctdb->nodes[ctdb->vnn_map->map[i]]->flags & NODE_FLAGS_CONNECTED) {
 			count++;
 		}
 	}
@@ -543,11 +546,12 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb = talloc_zero(ev, struct ctdb_context);
 	ctdb->ev               = ev;
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
-	ctdb->recovery_master  = 0;
+	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
 	ctdb->idr              = idr_init(ctdb);
 	ctdb->max_lacount      = CTDB_DEFAULT_MAX_LACOUNT;
 	ctdb->seqnum_frequency = CTDB_DEFAULT_SEQNUM_FREQUENCY;
+	ctdb->node_list_fd     = -1;
 
 	return ctdb;
 }

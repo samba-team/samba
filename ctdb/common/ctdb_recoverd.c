@@ -316,8 +316,7 @@ static int do_recovery(struct ctdb_context *ctdb,
 	int i, j, ret;
 	uint32_t generation;
 	struct ctdb_dbid_map *dbmap;
-
-	DEBUG(0, (__location__ " Recovery initiated\n"));
+	struct flock lock;
 
 	/* set recovery mode to active on all nodes */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
@@ -325,6 +324,32 @@ static int do_recovery(struct ctdb_context *ctdb,
 		DEBUG(0, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return -1;
 	}
+
+	/* get the recmaster lock */
+	if (ctdb->node_list_fd != -1) {
+		close(ctdb->node_list_fd);
+	}
+
+	ctdb->node_list_fd = open(ctdb->node_list_file, O_RDWR);
+	if (ctdb->node_list_fd == -1) {
+		DEBUG(0,("Unable to open %s - aborting recovery (%s)\n", 
+			 ctdb->node_list_file, strerror(errno)));
+		return -1;
+	}
+
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	if (fcntl(ctdb->node_list_fd, F_SETLK, &lock) != 0) {
+		DEBUG(0,("Unable to lock %s - aborting recovery (%s)\n", 
+			 ctdb->node_list_file, strerror(errno)));
+		return -1;
+	}
+
+	DEBUG(0, (__location__ " Recovery initiated\n"));
 
 	/* pick a new generation number */
 	generation = random();
@@ -501,10 +526,6 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct election_message *em = (struct election_message *)data.dptr;
 	TALLOC_CTX *mem_ctx;
 
-	if (em->vnn==ctdb_get_vnn(ctdb)) {
-		return;
-	}
-
 	mem_ctx = talloc_new(ctdb);
 		
 	/* someone called an election. check their election data
@@ -521,6 +542,12 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		}
 		talloc_free(mem_ctx);
 		return;
+	}
+
+	/* release the recmaster lock */
+	if (ctdb->node_list_fd != -1) {
+		close(ctdb->node_list_fd);
+		ctdb->node_list_fd = -1;
 	}
 
 	/* ok, let that guy become recmaster then */
@@ -590,10 +617,13 @@ again:
 		event_loop_once(ctdb->ev);
 	}
 
+	vnn = ctdb_ctrl_getvnn(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE);
+	if (vnn == (uint32_t)-1) {
+		DEBUG(0,("Failed to get local vnn - retrying\n"));
+		goto again;
+	}
 
-	/* get our vnn number */
-	vnn = ctdb_get_vnn(ctdb);  
-
+	ctdb->vnn = vnn;
 
 	/* get the vnnmap */
 	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_current_ofs(1, 0), vnn, mem_ctx, &vnnmap);
@@ -626,6 +656,12 @@ again:
 		DEBUG(0, (__location__ " Unable to get recmaster from node %u\n", vnn));
 		goto again;
 	}
+
+	if (recmaster == (uint32_t)-1) {
+		DEBUG(0,(__location__ " Initial recovery master set - forcing election\n"));
+		force_election(ctdb, mem_ctx, vnn, nodemap);
+		goto again;
+	}
 	
 	/* verify that the recmaster node is still active */
 	for (j=0; j<nodemap->num; j++) {
@@ -633,6 +669,13 @@ again:
 			break;
 		}
 	}
+
+	if (j == nodemap->num) {
+		DEBUG(0, ("Recmaster node %u not in list. Force reelection\n", recmaster));
+		force_election(ctdb, mem_ctx, vnn, nodemap);
+		goto again;
+	}
+
 	if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
 		DEBUG(0, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].vnn));
 		force_election(ctdb, mem_ctx, vnn, nodemap);
