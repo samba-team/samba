@@ -123,6 +123,13 @@ static int cap_chown(vfs_handle_struct *handle, const char *path, uid_t uid, gid
 	return SMB_VFS_NEXT_CHOWN(handle, cappath, uid, gid);
 }
 
+static int cap_lchown(vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
+{
+        pstring cappath;
+	capencode(cappath, path);
+	return SMB_VFS_NEXT_LCHOWN(handle, cappath, uid, gid);
+}
+
 static int cap_chdir(vfs_handle_struct *handle, const char *path)
 {
         pstring cappath;
@@ -326,6 +333,7 @@ static vfs_op_tuple cap_op_tuples[] = {
 	{SMB_VFS_OP(cap_unlink),			SMB_VFS_OP_UNLINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chmod),			SMB_VFS_OP_CHMOD,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chown),			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_lchown),		SMB_VFS_OP_LCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_symlink),			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},

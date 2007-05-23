@@ -144,6 +144,10 @@ enum profile_stats_values
 #define syscall_fchown_count __profile_stats_value(PR_VALUE_SYSCALL_FCHOWN, count)
 #define syscall_fchown_time __profile_stats_value(PR_VALUE_SYSCALL_FCHOWN, time)
 
+	PR_VALUE_SYSCALL_LCHOWN,
+#define syscall_lchown_count __profile_stats_value(PR_VALUE_SYSCALL_LCHOWN, count)
+#define syscall_lchown_time __profile_stats_value(PR_VALUE_SYSCALL_LCHOWN, time)
+
 	PR_VALUE_SYSCALL_CHDIR,
 #define syscall_chdir_count __profile_stats_value(PR_VALUE_SYSCALL_CHDIR, count)
 #define syscall_chdir_time __profile_stats_value(PR_VALUE_SYSCALL_CHDIR, time)
