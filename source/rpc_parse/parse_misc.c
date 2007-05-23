@@ -1337,7 +1337,8 @@ void init_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid)
  Inits a DOM_CLNT_SRV structure.
 ********************************************************************/
 
-static void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv, const char *comp_name)
+void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv,
+		   const char *comp_name)
 {
 	DEBUG(5,("init_clnt_srv: %d\n", __LINE__));
 

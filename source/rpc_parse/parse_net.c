@@ -1376,6 +1376,21 @@ void init_sam_info(DOM_SAM_INFO *sam,
 }
 
 /*******************************************************************
+ Inits a DOM_SAM_INFO structure.
+********************************************************************/
+
+void init_sam_info_ex(DOM_SAM_INFO_EX *sam,
+		      const char *logon_srv, const char *comp_name,
+		      uint16 logon_level, NET_ID_INFO_CTR *ctr)
+{
+	DEBUG(5,("init_sam_info_ex: %d\n", __LINE__));
+
+	init_clnt_srv(&sam->client, logon_srv, comp_name);
+	sam->logon_level  = logon_level;
+	sam->ctr          = ctr;
+}
+
+/*******************************************************************
  Reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
 
@@ -1991,6 +2006,9 @@ BOOL net_io_q_sam_logon_ex(const char *desc, NET_Q_SAM_LOGON_EX *q_l, prs_struct
 		return False;
 
 	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
+		return False;
+
+	if (!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("flags  ", ps, depth, &q_l->flags))
