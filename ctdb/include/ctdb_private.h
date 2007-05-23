@@ -375,8 +375,26 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_SHUTDOWN,
 		    CTDB_CONTROL_GET_MONMODE,
 		    CTDB_CONTROL_SET_MONMODE,
+		    CTDB_CONTROL_MAX_RSN,
+		    CTDB_CONTROL_SET_RSN_NONEMPTY,
+		    CTDB_CONTROL_DELETE_LOW_RSN,
 };
 
+/*
+  structure passed in ctdb_control_set_rsn_nonempty
+ */
+struct ctdb_control_set_rsn_nonempty {
+	uint32_t db_id;
+	uint64_t rsn;
+};
+
+/*
+  structure passed in ctdb_control_delete_low_rsn
+ */
+struct ctdb_control_delete_low_rsn {
+	uint32_t db_id;
+	uint64_t rsn;
+};
 
 /*
   structure passed in set_call control
@@ -837,5 +855,14 @@ void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
+int32_t ctdb_control_max_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_set_rsn_nonempty(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_delete_low_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_ctrl_get_max_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
+			  uint32_t destnode, uint32_t db_id, uint64_t *max_rsn);
+int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout, 
+			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
+int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
+			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
 
 #endif
