@@ -183,6 +183,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SAMLOGON", torture_rpc_samlogon);
 	torture_suite_add_simple_test(suite, "SAMSYNC", torture_rpc_samsync);
 	torture_suite_add_simple_test(suite, "SCHANNEL", torture_rpc_schannel);
+	torture_suite_add_simple_test(suite, "SCHANNEL2", torture_rpc_schannel2);
 	torture_suite_add_simple_test(suite, "SRVSVC", torture_rpc_srvsvc);
 	torture_suite_add_simple_test(suite, "SVCCTL", torture_rpc_svcctl);
 	torture_suite_add_simple_test(suite, "EPMAPPER", torture_rpc_epmapper);
