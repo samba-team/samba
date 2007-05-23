@@ -828,5 +828,6 @@ void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *no
 void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
+bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
 
 #endif
