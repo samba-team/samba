@@ -2477,8 +2477,7 @@ fi
 # end utmp details
 
 
-ICONV_LOCATION=standard
-LOOK_DIRS="/usr /usr/local /sw /opt"
+ICONV_LOOK_DIRS="/usr /usr/local /sw /opt"
 AC_ARG_WITH(libiconv,
 [  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
 [
@@ -2487,62 +2486,69 @@ AC_ARG_WITH(libiconv,
   else
      if test "$withval" != "yes" ; then
 	ICONV_PATH_SPEC=yes
-        LOOK_DIRS="$withval"
+        ICONV_LOOK_DIRS="$withval"
      fi
   fi
 ])
 
-for i in $LOOK_DIRS ; do
-    save_LIBS=$LIBS
-    save_LDFLAGS=$LDFLAGS
-    save_CPPFLAGS=$CPPFLAGS
+for i in $ICONV_LOOK_DIRS ; do
+
+    save_LIBS="$LIBS"
+    save_LDFLAGS="$LDFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+
+    iconv_current_LIBS=""
+    iconv_current_LDFLAGS=""
+    iconv_current_CPPFLAGS=""
+
     ICONV_FOUND="no"
     unset libext
-    CPPFLAGS="$CPPFLAGS -I$i/include"
-dnl This is here to handle -withval stuff for --with-libiconv
-dnl Perhaps we should always add a -L
 
-dnl Check lib and lib32 library variants to cater for IRIX ABI-specific
-dnl installation paths. This gets a little tricky since we might have iconv
-dnl in both libiconv and in libc. In this case the jm_ICONV test will always
-dnl succeed when the header is found. To counter this, make sure the
-dnl library directory is there and check the ABI directory first (which
-dnl should be harmless on other systems.
-dnl For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
+    #  This is here to handle -withval stuff for --with-libiconv
+    #  Perhaps we should always add a -L
+    CPPFLAGS="$save_CPPFLAGS -I$i/include"
+
+    # Check lib and lib32 library variants to cater for IRIX ABI-specific
+    # installation paths. This gets a little tricky since we might have iconv
+    # in both libiconv and in libc. In this case the jm_ICONV test will always
+    # succeed when the header is found. To counter this, make sure the
+    # library directory is there and check the ABI directory first (which
+    # should be harmless on other systems.
+    # For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
     for l in "lib32" "lib" "lib/hpux32"; do
         if test -d "$i/$l" ; then
                 LDFLAGS="$save_LDFLAGS -L$i/$l"
-        LIBS=
-        export LDFLAGS LIBS CPPFLAGS
-dnl Try to find iconv(3)
+		LIBS=
+		export LDFLAGS LIBS CPPFLAGS
+		# Try to find iconv(3)
                 jm_ICONV($i/$l)
                 if test x"$ICONV_FOUND" = "xyes" ; then
-            libext="$l"
-            break;
-        fi
+		    libext="$l"
+		    break
+		fi
         fi
     done
 
     if test x"$ICONV_FOUND" = "xyes" ; then
-	LDFLAGS=$save_LDFLAGS
-        LIB_ADD_DIR(LDFLAGS, "$i/$libext")
-        CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-	LIBS="$save_LIBS"
-        ICONV_LOCATION=$i
-        export LDFLAGS LIBS CPPFLAGS
-dnl Now, check for a working iconv ... we want to do it here because
-dnl there might be a working iconv further down the list of LOOK_DIRS
+	iconv_current_LDFLAGS="-L$i/$libext"
+	iconv_current_CPPFLAGS="-I$i/include"
 
-        ############
-        # check for iconv in libc
-        ic_save_LIBS="$LIBS"
-        if test x"$ICONV_PATH_SPEC" = "xyes" ; then
-           LIBS="$LIBS -L$ICONV_LOCATION/$libext"
-        fi
         if test x"$jm_cv_lib_iconv" != x; then
-           LIBS="$LIBS -l$jm_cv_lib_iconv"
+	    iconv_current_LIBS="$LIBS -l$jm_cv_lib_iconv"
+	else
+	    # We found iconv in libc.
+	    iconv_current_LIBS=""
         fi
-dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
+
+    fi
+
+    if test x"$ICONV_FOUND" = "xyes" ; then
+
+        LDFLAGS="$save_LDFLAGS $iconv_current_LDFLAGS"
+        CPPFLAGS="$save_CPPFLAGS $iconv_current_CPPFLAGS"
+	LIBS="$save_LIBS $iconv_current_LIBS"
+        export LDFLAGS LIBS CPPFLAGS
+
 	default_dos_charset=no
 	default_display_charset=no
 	default_unix_charset=no
@@ -2550,28 +2556,30 @@ dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 	# check for default dos charset name
 	for j in CP850 IBM850 ; do
 	    rjs_CHARSET($j)
-	    if test x"$ICONV_CHARSET" = x"$j"; then
-		default_dos_charset="\"$j\""
+	    default_dos_charset="$ICONV_CHARSET"
+	    if test x"$default_dos_charset" = x"$j"; then
 		break
 	    fi
 	done
+
 	# check for default display charset name
 	for j in ASCII 646 ; do
 	    rjs_CHARSET($j)
-	    if test x"$ICONV_CHARSET" = x"$j"; then
-		default_display_charset="\"$j\""
+	    default_display_charset="$ICONV_CHARSET"
+	    if test x"$default_display_charset" = x"$j"; then
 		break
 	    fi
 	done
+
 	# check for default unix charset name
 	for j in UTF-8 UTF8 ; do
 	    rjs_CHARSET($j)
-	    if test x"$ICONV_CHARSET" = x"$j"; then
-		default_unix_charset="\"$j\""
+	    default_unix_charset="$ICONV_CHARSET"
+	    if test x"$default_unix_charset" = x"$j"; then
 		break
 	    fi
 	done
-	
+
 	if test "$default_dos_charset" != "no" -a \
 		"$default_dos_charset" != "cross" -a \
 		"$default_display_charset" != "no" -a \
@@ -2580,38 +2588,63 @@ dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 		"$default_unix_charset" != "cross"
 	then
 		samba_cv_HAVE_NATIVE_ICONV=yes
-	else if test "$default_dos_charset" = "cross" -o \
+	else
+	    if test "$default_dos_charset" = "cross" -o \
 		     "$default_display_charset" = "cross" -o \
 		     "$default_unix_charset" = "cross"
-	then
-		samba_cv_HAVE_NATIVE_ICONV=cross
-	else
-		samba_cv_HAVE_NATIVE_ICONV=no
+	    then
+		    samba_cv_HAVE_NATIVE_ICONV=cross
+	    else
+		    samba_cv_HAVE_NATIVE_ICONV=no
+	    fi
 	fi
-	fi
-dnl ])
 
-        LIBS="$ic_save_LIBS"
-        if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
-  	   CPPFLAGS=$save_CPPFLAGS
-	   LDFLAGS=$save_LDFLAGS
-	   LIBS=$save_LIBS
-           if test x"$jm_cv_lib_iconv" != x; then
-              LIBS="$LIBS -l$jm_cv_lib_iconv"
-           fi
-	   dnl Add the flags we need to CPPFLAGS and LDFLAGS
-	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-	   LIB_ADD_DIR(LDFLAGS, "$i/$libext")
-	   export CPPFLAGS
-           AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
-	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
-	   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
-	   AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,$default_unix_charset,[Default unix charset name])
+	# At this point, we have a libiconv candidate. We know that
+	# we have the right headers and libraries, but we don't know
+	# whether it does the conversions we want. We can't test this
+	# because we are cross-compiling. This is not necessarily a big
+	# deal, since we can't guarantee that the results we get now will
+	# match the results we get at runtime anyway.
+	if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"cross" ; then
+	    default_dos_charset="CP850"
+	    default_display_charset="ASCII"
+	    default_unix_charset="UTF-8"
+	    samba_cv_HAVE_NATIVE_ICONV=yes
+	    AC_MSG_WARN(assuming the libiconv in $iconv_current_LDFLAGS can convert)
+	    AC_MSG_WARN([$default_dos_charset, $default_display_charset and $default_unix_charset to UCS-16LE])
+	fi
+
+        if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes" ; then
+
+	    CPPFLAGS=$save_CPPFLAGS
+	    LDFLAGS=$save_LDFLAGS
+	    LIBS=$save_LIBS
+
+	    if test x"$iconv_current_LIBS" != x; then
+		LIBS="$LIBS $iconv_current_LIBS"
+	    fi
+
+	    # Add the flags we need to CPPFLAGS and LDFLAGS
+	    CPPFLAGS="$CPPFLAGS $iconv_current_CPPFLAGS"
+	    LDFLAGS="$LDFLAGS $iconv_current_LDFLAGS"
+
+	    # Turn the #defines into string literals
+	    default_dos_charset="\"$default_dos_charset\""
+	    default_display_charset="\"$default_display_charset\""
+	    default_unix_charset="\"$default_unix_charset\""
+
+	    AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
+	    AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
+	    AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
+	    AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,$default_unix_charset,[Default unix charset name])
+
            break
         fi
-dnl We didn't find a working iconv, so keep going
+
+    # We didn't find a working iconv, so keep going
     fi
-dnl We only need to clean these up here for the next pass through the loop
+
+    #  We only need to clean these up here for the next pass through the loop
     CPPFLAGS=$save_CPPFLAGS
     LDFLAGS=$save_LDFLAGS
     LIBS=$save_LIBS
