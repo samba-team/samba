@@ -642,6 +642,25 @@ int sys_chown(const char *fname,uid_t uid,gid_t gid)
 }
 
 /*******************************************************************
+ Wrapper for lchown.
+********************************************************************/
+
+int sys_lchown(const char *fname,uid_t uid,gid_t gid)
+{
+#ifndef HAVE_LCHOWN
+	static int done;
+	if (!done) {
+		DEBUG(1,("WARNING: no lchown!\n"));
+		done=1;
+	}
+	errno = ENOSYS;
+	return -1;
+#else
+	return(lchown(fname,uid,gid));
+#endif
+}
+
+/*******************************************************************
 os/2 also doesn't have chroot
 ********************************************************************/
 int sys_chroot(const char *dname)

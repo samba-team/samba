@@ -147,6 +147,8 @@ static int smb_full_audit_chown(vfs_handle_struct *handle,
 		       const char *path, uid_t uid, gid_t gid);
 static int smb_full_audit_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd,
 			uid_t uid, gid_t gid);
+static int smb_full_audit_lchown(vfs_handle_struct *handle,
+		       const char *path, uid_t uid, gid_t gid);
 static int smb_full_audit_chdir(vfs_handle_struct *handle,
 		       const char *path);
 static char *smb_full_audit_getwd(vfs_handle_struct *handle,
@@ -380,6 +382,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_fchown),	SMB_VFS_OP_FCHOWN,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lchown),	SMB_VFS_OP_LCHOWN,
+	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_chdir),	SMB_VFS_OP_CHDIR,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_getwd),	SMB_VFS_OP_GETWD,
@@ -560,6 +564,7 @@ static struct {
 	{ SMB_VFS_OP_FCHMOD,	"fchmod" },
 	{ SMB_VFS_OP_CHOWN,	"chown" },
 	{ SMB_VFS_OP_FCHOWN,	"fchown" },
+	{ SMB_VFS_OP_LCHOWN,	"lchown" },
 	{ SMB_VFS_OP_CHDIR,	"chdir" },
 	{ SMB_VFS_OP_GETWD,	"getwd" },
 	{ SMB_VFS_OP_NTIMES,	"ntimes" },
@@ -1254,6 +1259,19 @@ static int smb_full_audit_fchown(vfs_handle_struct *handle, files_struct *fsp, i
 
 	do_log(SMB_VFS_OP_FCHOWN, (result >= 0), handle, "%s|%ld|%ld",
 	       fsp->fsp_name, (long int)uid, (long int)gid);
+
+	return result;
+}
+
+static int smb_full_audit_lchown(vfs_handle_struct *handle,
+		       const char *path, uid_t uid, gid_t gid)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_LCHOWN(handle, path, uid, gid);
+
+	do_log(SMB_VFS_OP_LCHOWN, (result >= 0), handle, "%s|%ld|%ld",
+	       path, (long int)uid, (long int)gid);
 
 	return result;
 }

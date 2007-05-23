@@ -70,7 +70,8 @@
 /* Changed to version 20, use ntimes call instead of utime (greater
  * timestamp resolition. JRA. */
 /* Changed to version21 to add chflags operation -- jpeach */
-#define SMB_VFS_INTERFACE_VERSION 21
+/* Changed to version22 to add lchown operation -- jra */
+#define SMB_VFS_INTERFACE_VERSION 22
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -145,6 +146,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FCHMOD,
 	SMB_VFS_OP_CHOWN,
 	SMB_VFS_OP_FCHOWN,
+	SMB_VFS_OP_LCHOWN,
 	SMB_VFS_OP_CHDIR,
 	SMB_VFS_OP_GETWD,
 	SMB_VFS_OP_NTIMES,
@@ -271,6 +273,7 @@ struct vfs_ops {
 		int (*fchmod)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, mode_t mode);
 		int (*chown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 		int (*fchown)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uid_t uid, gid_t gid);
+		int (*lchown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 		int (*chdir)(struct vfs_handle_struct *handle, const char *path);
 		char *(*getwd)(struct vfs_handle_struct *handle, char *buf);
 		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, const struct timespec ts[2]);
@@ -395,6 +398,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *fchmod;
 		struct vfs_handle_struct *chown;
 		struct vfs_handle_struct *fchown;
+		struct vfs_handle_struct *lchown;
 		struct vfs_handle_struct *chdir;
 		struct vfs_handle_struct *getwd;
 		struct vfs_handle_struct *ntimes;
