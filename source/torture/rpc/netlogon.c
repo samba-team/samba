@@ -1224,7 +1224,7 @@ static BOOL test_netr_DsRGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.domain_name	= talloc_asprintf(mem_ctx, "%s", lp_realm());
 	r.in.domain_guid	= NULL;
 	r.in.site_guid	        = NULL;
-	r.in.flags		= 0x40000000;
+	r.in.flags		= DS_RETURN_DNS_NAME;
 
 	printf("Testing netr_DsRGetDCName\n");
 
@@ -1255,7 +1255,7 @@ static BOOL test_netr_DsRGetDCNameEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.domain_name	= talloc_asprintf(mem_ctx, "%s", lp_realm());
 	r.in.domain_guid	= NULL;
 	r.in.site_name	        = NULL;
-	r.in.flags		= 0x40000000;
+	r.in.flags		= DS_RETURN_DNS_NAME;
 
 	printf("Testing netr_DsRGetDCNameEx\n");
 
@@ -1288,7 +1288,7 @@ static BOOL test_netr_DsRGetDCNameEx2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	r.in.domain_name	= talloc_asprintf(mem_ctx, "%s", lp_realm());
 	r.in.domain_guid	= NULL;
 	r.in.site_name		= NULL;
-	r.in.flags		= 0x40000000;
+	r.in.flags		= DS_RETURN_DNS_NAME;
 
 	printf("Testing netr_DsRGetDCNameEx2 without client account\n");
 
@@ -1301,8 +1301,8 @@ static BOOL test_netr_DsRGetDCNameEx2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 
 	printf("Testing netr_DsRGetDCNameEx2 with client acount\n");
 	r.in.client_account	= TEST_MACHINE_NAME"$";
-	r.in.mask		= 0x00002000;
-	r.in.flags		= 0x80000000;
+	r.in.mask		= ACB_SVRTRUST;
+	r.in.flags		= DS_RETURN_FLAT_NAME;
 
 	status = dcerpc_netr_DsRGetDCNameEx2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
