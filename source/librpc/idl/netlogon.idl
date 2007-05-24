@@ -4,7 +4,7 @@
   who contributed!
 */
 
-import "lsa.idl", "samr.idl", "security.idl";
+import "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 
 #include "idl_types.h"
 
@@ -906,15 +906,59 @@ interface netlogon
 	WERROR netr_NETRENUMERATETRUSTEDDOMAINS() ;
 
 	/*****************/
-	/* Function 0x14 */		
+	/* Function 0x14 */
+
+	/* two unkown bits still: DS_IP_VERSION_AGNOSTIC and
+	 * DS_TRY_NEXTCLOSEST_SITE - Guenther */
+
+	typedef [bitmap32bit] bitmap {
+		DS_FORCE_REDISCOVERY		= 0x00000001,
+		DS_DIRECTORY_SERVICE_REQUIRED	= 0x00000010,
+		DS_DIRECTORY_SERVICE_PREFERRED	= 0x00000020,
+		DS_GC_SERVER_REQUIRED		= 0x00000040,
+		DS_PDC_REQUIRED			= 0x00000080,
+		DS_BACKGROUND_ONLY		= 0x00000100,
+		DS_IP_REQUIRED			= 0x00000200,
+		DS_KDC_REQUIRED			= 0x00000400,
+		DS_TIMESERV_REQUIRED		= 0x00000800,
+		DS_WRITABLE_REQUIRED		= 0x00001000,
+		DS_GOOD_TIMESERV_PREFERRED	= 0x00002000,
+		DS_AVOID_SELF			= 0x00004000,
+		DS_ONLY_LDAP_NEEDED		= 0x00008000,
+		DS_IS_FLAT_NAME			= 0x00010000,
+		DS_IS_DNS_NAME			= 0x00020000,
+		DS_RETURN_DNS_NAME		= 0x40000000,
+		DS_RETURN_FLAT_NAME		= 0x80000000
+	} netr_DsRGetDCName_flags;
+
+	typedef [v1_enum] enum {
+		DS_ADDRESS_TYPE_INET		= 1,
+		DS_ADDRESS_TYPE_NETBIOS		= 2
+	} netr_DsRGetDCNameInfo_AddressType;
+
+	typedef [bitmap32bit] bitmap {
+		DS_SERVER_PDC		 = NBT_SERVER_PDC,
+		DS_SERVER_GC		 = NBT_SERVER_GC,
+		DS_SERVER_LDAP		 = NBT_SERVER_LDAP,
+		DS_SERVER_DS		 = NBT_SERVER_DS,
+		DS_SERVER_KDC		 = NBT_SERVER_KDC,
+		DS_SERVER_TIMESERV	 = NBT_SERVER_TIMESERV,
+		DS_SERVER_CLOSEST	 = NBT_SERVER_CLOSEST,
+		DS_SERVER_WRITABLE	 = NBT_SERVER_WRITABLE,
+		DS_SERVER_GOOD_TIMESERV	 = NBT_SERVER_GOOD_TIMESERV,
+		DS_DNS_CONTROLLER	 = 0x20000000,
+		DS_DNS_DOMAIN		 = 0x40000000,
+		DS_DNS_FOREST		 = 0x80000000
+	} netr_DsR_DcFlags;
+
 	typedef struct {
 		[string,charset(UTF16)] uint16 *dc_unc;
 		[string,charset(UTF16)] uint16 *dc_address;
-		int32 dc_address_type;
+		netr_DsRGetDCNameInfo_AddressType dc_address_type;
 		GUID domain_guid;
 		[string,charset(UTF16)] uint16 *domain_name;
 		[string,charset(UTF16)] uint16 *forest_name;
-		uint32 dc_flags;
+		netr_DsR_DcFlags dc_flags;
 		[string,charset(UTF16)] uint16 *dc_site_name;
 		[string,charset(UTF16)] uint16 *client_site_name;
 	} netr_DsRGetDCNameInfo;
@@ -924,7 +968,7 @@ interface netlogon
 		[in] [string,charset(UTF16)] uint16 *domain_name,
 		[in] GUID *domain_guid,
 		[in] GUID *site_guid,
-		[in] uint32 flags,
+		[in] netr_DsRGetDCName_flags flags,
 		[out] netr_DsRGetDCNameInfo *info
 		);
 
@@ -968,7 +1012,7 @@ interface netlogon
 		[in] [string,charset(UTF16)] uint16 *domain_name,
 		[in] GUID *domain_guid,
 		[in] [string,charset(UTF16)] uint16 *site_name,
-		[in] uint32 flags,
+		[in] netr_DsRGetDCName_flags flags,
 		[out] netr_DsRGetDCNameInfo *info
 		);
 
@@ -1079,11 +1123,11 @@ interface netlogon
 	WERROR netr_DsRGetDCNameEx2(
 		[in] [string,charset(UTF16)] uint16 *server_unc,
 		[in] [string,charset(UTF16)] uint16 *client_account,
-		[in] uint32 mask,
+		[in] samr_AcctFlags mask,
 		[in] [string,charset(UTF16)] uint16 *domain_name,
 		[in] GUID *domain_guid,
 		[in] [string,charset(UTF16)] uint16 *site_name,
-		[in] uint32 flags,
+		[in] netr_DsRGetDCName_flags flags,
 		[out] netr_DsRGetDCNameInfo *info
 		);
 

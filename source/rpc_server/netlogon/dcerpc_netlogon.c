@@ -1010,11 +1010,21 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_unc);
 	r->out.info->dc_address		= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_address);
-	r->out.info->dc_address_type	= 1;
+	r->out.info->dc_address_type	= DS_ADDRESS_TYPE_INET;
 	r->out.info->domain_guid	= samdb_result_guid(res[0], "objectGUID");
 	r->out.info->domain_name	= samdb_result_string(res[0], "dnsDomain", NULL);
 	r->out.info->forest_name	= samdb_result_string(res[0], "dnsDomain", NULL);
-	r->out.info->dc_flags		= 0xE00001FD;
+	r->out.info->dc_flags		= DS_DNS_FOREST |
+					  DS_DNS_DOMAIN |
+					  DS_DNS_CONTROLLER |
+					  DS_SERVER_WRITABLE |
+					  DS_SERVER_CLOSEST |
+					  DS_SERVER_TIMESERV |
+					  DS_SERVER_KDC |
+					  DS_SERVER_DS |
+					  DS_SERVER_LDAP |
+					  DS_SERVER_GC |
+					  DS_SERVER_PDC;
 	r->out.info->dc_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_site_name);
 	r->out.info->client_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
