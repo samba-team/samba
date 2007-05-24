@@ -488,7 +488,7 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 		break;
 
 	default:
-		DEBUG(0,(__location__ " daemon: unrecognized operation %d\n",
+		DEBUG(0,(__location__ " daemon: unrecognized operation %u\n",
 			 hdr->operation));
 	}
 
@@ -533,8 +533,8 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		return;
 	}
 
-	DEBUG(3,(__location__ " client request %d of type %d length %d from "
-		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
+	DEBUG(3,(__location__ " client request %u of type %u length %u from "
+		 "node %u to %u\n", hdr->reqid, hdr->operation, hdr->length,
 		 hdr->srcnode, hdr->destnode));
 
 	/* it is the responsibility of the incoming packet function to free 'data' */
@@ -737,6 +737,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 	block_signal(SIGPIPE);
 	block_signal(SIGCHLD);
+
+	/* try to set us up as realtime */
+	ctdb_set_realtime();
 
 	/* start the recovery daemon process */
 	if (ctdb_start_recoverd(ctdb) != 0) {

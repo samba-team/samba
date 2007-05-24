@@ -864,5 +864,6 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
 int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
+void ctdb_set_realtime(void);
 
 #endif

@@ -72,13 +72,13 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_call_state);
 	if (state == NULL) {
-		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		DEBUG(0,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped client call reply with reqid:%d\n",hdr->reqid));
+		DEBUG(0, ("Dropped client call reply with reqid:%u\n",hdr->reqid));
 		return;
 	}
 
@@ -115,7 +115,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (cnt < sizeof(*hdr)) {
-		DEBUG(0,("Bad packet length %d in client\n", cnt));
+		DEBUG(0,("Bad packet length %u in client\n", cnt));
 		goto done;
 	}
 	if (cnt != hdr->length) {
@@ -152,7 +152,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		break;
 
 	default:
-		DEBUG(0,("bogus operation code:%d\n",hdr->operation));
+		DEBUG(0,("bogus operation code:%u\n",hdr->operation));
 	}
 
 done:
@@ -633,13 +633,13 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_control_state);
 	if (state == NULL) {
-		DEBUG(0,(__location__ " reqid %d not found\n", hdr->reqid));
+		DEBUG(0,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned reply control with reqid:%d\n",hdr->reqid));
+		DEBUG(0, ("Dropped orphaned reply control with reqid:%u\n",hdr->reqid));
 		return;
 	}
 

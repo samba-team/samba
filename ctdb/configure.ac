@@ -30,6 +30,9 @@ m4_include(libtdb.m4)
 m4_include(libevents.m4)
 m4_include(ib/config.m4)
 
+AC_CHECK_HEADERS(sched.h)
+AC_CHECK_FUNCS(sched_setscheduler)
+
 AC_CACHE_CHECK([for sin_len in sock],ctdb_cv_HAVE_SOCK_SIN_LEN,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/socket.h>

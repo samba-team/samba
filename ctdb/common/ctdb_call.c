@@ -327,7 +327,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 
 	if (reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphan in ctdb_become_dmaster with reqid:%d\n",reqid));
+		DEBUG(0, ("Dropped orphan in ctdb_become_dmaster with reqid:%u\n",reqid));
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return;
 	}
@@ -519,13 +519,13 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
-		DEBUG(0, (__location__ " reqid %d not found\n", hdr->reqid));
+		DEBUG(0, (__location__ " reqid %u not found\n", hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned call reply with reqid:%d\n",hdr->reqid));
+		DEBUG(0, ("Dropped orphaned call reply with reqid:%u\n",hdr->reqid));
 		return;
 	}
 
@@ -598,7 +598,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned error reply with reqid:%d\n",hdr->reqid));
+		DEBUG(0, ("Dropped orphaned error reply with reqid:%u\n",hdr->reqid));
 		return;
 	}
 

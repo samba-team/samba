@@ -251,8 +251,8 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	tmp_ctx = talloc_new(ctdb);
 	talloc_steal(tmp_ctx, hdr);
 
-	DEBUG(3,(__location__ " ctdb request %d of type %d length %d from "
-		 "node %d to %d\n", hdr->reqid, hdr->operation, hdr->length,
+	DEBUG(3,(__location__ " ctdb request %u of type %u length %u from "
+		 "node %u to %u\n", hdr->reqid, hdr->operation, hdr->length,
 		 hdr->srcnode, hdr->destnode));
 
 	switch (hdr->operation) {
@@ -265,14 +265,13 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		   same generation instance as this node
 		*/
 		if (ctdb->vnn_map->generation != hdr->generation) {
-			DEBUG(0,(__location__ " ctdb request %d"
-				" length %d from node %d to %d had an"
-				" invalid generation id:%d while our"
-				" generation id is:%d\n", 
-				hdr->reqid, hdr->length, 
-				hdr->srcnode, hdr->destnode, 
-				ctdb->vnn_map->generation, 
-				hdr->generation));
+			DEBUG(0,(__location__ " ctdb request %u"
+				" length %u from node %u to %u had an"
+				" invalid generation id:%u while our"
+				" generation id is:%u\n", 
+				 hdr->reqid, hdr->length, 
+				 hdr->srcnode, hdr->destnode, 
+				 hdr->generation, ctdb->vnn_map->generation));
 			goto done;
 		}
 	}
@@ -328,7 +327,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		break;
 
 	default:
-		DEBUG(0,("%s: Packet with unknown operation %d\n", 
+		DEBUG(0,("%s: Packet with unknown operation %u\n", 
 			 __location__, hdr->operation));
 		break;
 	}
@@ -348,11 +347,11 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 	ctdb->status.node_packets_recv++;
 
 	if (length < sizeof(*hdr)) {
-		ctdb_set_error(ctdb, "Bad packet length %d\n", length);
+		ctdb_set_error(ctdb, "Bad packet length %u\n", length);
 		return;
 	}
 	if (length != hdr->length) {
-		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
+		ctdb_set_error(ctdb, "Bad header length %u expected %u\n", 
 			       hdr->length, length);
 		return;
 	}
@@ -389,7 +388,7 @@ void ctdb_node_dead(struct ctdb_node *node)
 	node->flags &= ~NODE_FLAGS_CONNECTED;
 	node->rx_cnt = 0;
 	node->dead_count = 0;
-	DEBUG(1,("%s: node %s is dead: %d connected\n", 
+	DEBUG(1,("%s: node %s is dead: %u connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 	ctdb_daemon_cancel_controls(node->ctdb, node);
 }
@@ -402,7 +401,7 @@ void ctdb_node_connected(struct ctdb_node *node)
 	node->ctdb->num_connected++;
 	node->dead_count = 0;
 	node->flags |= NODE_FLAGS_CONNECTED;
-	DEBUG(1,("%s: connected to %s - %d connected\n", 
+	DEBUG(1,("%s: connected to %s - %u connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 
@@ -416,11 +415,11 @@ void ctdb_daemon_connect_wait(struct ctdb_context *ctdb)
 		expected++;
 	}
 	while (ctdb->num_connected != expected) {
-		DEBUG(3,("ctdb_connect_wait: waiting for %d nodes (have %d)\n", 
+		DEBUG(3,("ctdb_connect_wait: waiting for %u nodes (have %u)\n", 
 			 expected, ctdb->num_connected));
 		event_loop_once(ctdb->ev);
 	}
-	DEBUG(3,("ctdb_connect_wait: got all %d nodes\n", expected));
+	DEBUG(3,("ctdb_connect_wait: got all %u nodes\n", expected));
 }
 
 struct queue_next {

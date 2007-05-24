@@ -352,7 +352,7 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned control reply with reqid:%d\n", hdr->reqid));
+		DEBUG(0, ("Dropped orphaned control reply with reqid:%u\n", hdr->reqid));
 		return;
 	}
 
