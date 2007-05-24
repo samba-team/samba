@@ -738,6 +738,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	block_signal(SIGPIPE);
 	block_signal(SIGCHLD);
 
+	/* try to set us up as realtime */
+	ctdb_set_realtime();
+
 	/* start the recovery daemon process */
 	if (ctdb_start_recoverd(ctdb) != 0) {
 		DEBUG(0,("Failed to start recovery daemon\n"));
