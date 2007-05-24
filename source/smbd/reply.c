@@ -4195,9 +4195,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 	ZERO_STRUCT(sbuf);
 
 	status = unix_convert(conn, newname, False, newname_last_component, &sbuf);
-	/* We expect this to be NT_STATUS_OBJECT_PATH_NOT_FOUND */
-	if (!NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND, status)) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+
+	/* If an error we expect this to be NT_STATUS_OBJECT_PATH_NOT_FOUND */
+
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND, status)) {
 		return status;
 	}
 
