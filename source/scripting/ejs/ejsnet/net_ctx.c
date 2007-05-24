@@ -29,6 +29,7 @@
 
 
 int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar** argv);
+int ejs_net_hostman(MprVarHandle eid, int argc, struct MprVar** argv);
 
 static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv);
 static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv);
@@ -105,6 +106,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 	
 	/* add methods to the object */
 	mprSetCFunction(&obj, "UserMgr", ejs_net_userman);
+	mprSetCFunction(&obj, "HostMgr", ejs_net_hostman);
 	mprSetCFunction(&obj, "JoinDomain", ejs_net_join_domain);
 	mprSetCFunction(&obj, "SamSyncLdb", ejs_net_samsync_ldb);
 
