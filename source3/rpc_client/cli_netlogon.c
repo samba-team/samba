@@ -456,6 +456,91 @@ WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR pull_domain_controller_info_from_getdcname_reply(TALLOC_CTX *mem_ctx,
+							       struct DS_DOMAIN_CONTROLLER_INFO **info_out, 
+							       NET_R_DSR_GETDCNAME *r)
+{
+	struct DS_DOMAIN_CONTROLLER_INFO *info;
+
+	info = TALLOC_ZERO_P(mem_ctx, struct DS_DOMAIN_CONTROLLER_INFO);
+	if (!info) {
+		return WERR_NOMEM;
+	}
+
+	if (&r->uni_dc_unc) {
+
+		char *tmp;
+		tmp = rpcstr_pull_unistr2_talloc(mem_ctx, &r->uni_dc_unc);
+		if (tmp == NULL) {
+			return WERR_GENERAL_FAILURE;
+		}
+		if (*tmp == '\\') tmp += 1;
+		if (*tmp == '\\') tmp += 1;
+
+		info->domain_controller_name = talloc_strdup(mem_ctx, tmp);
+		if (info->domain_controller_name == NULL) {
+			return WERR_GENERAL_FAILURE;
+		}
+	}
+
+	if (&r->uni_dc_address) {
+
+		char *tmp;
+		tmp = rpcstr_pull_unistr2_talloc(mem_ctx, &r->uni_dc_address);
+		if (tmp == NULL) {
+			return WERR_GENERAL_FAILURE;
+		}
+		if (*tmp == '\\') tmp += 1;
+		if (*tmp == '\\') tmp += 1;
+
+		info->domain_controller_address = talloc_strdup(mem_ctx, tmp);
+		if (info->domain_controller_address == NULL) {
+			return WERR_GENERAL_FAILURE;
+		}
+	}
+
+	info->domain_controller_address_type = r->dc_address_type;
+
+	info->domain_guid = talloc_memdup(mem_ctx, &r->domain_guid, sizeof(struct GUID));
+	if (!info->domain_guid) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (&r->uni_domain_name) {
+		info->domain_name = rpcstr_pull_unistr2_talloc(mem_ctx, &r->uni_domain_name);
+		if (!info->domain_name) {
+			return WERR_GENERAL_FAILURE;
+		}
+	}
+
+	if (&r->uni_forest_name) {
+		info->dns_forest_name = rpcstr_pull_unistr2_talloc(mem_ctx, &r->uni_forest_name);
+		if (!info->dns_forest_name) {
+			return WERR_GENERAL_FAILURE;
+		}
+	}
+
+	info->flags = r->dc_flags;
+
+	if (&r->uni_dc_site_name) {
+		info->dc_site_name = rpcstr_pull_unistr2_talloc(mem_ctx, &r->uni_dc_site_name);
+		if (!info->dc_site_name) {
+			return WERR_GENERAL_FAILURE;
+		}
+	}
+
+	if (&r->uni_client_site_name) {
+		info->client_site_name = rpcstr_pull_unistr2_talloc(mem_ctx, &r->uni_client_site_name);
+		if (!info->client_site_name) {
+			return WERR_GENERAL_FAILURE;
+		}
+	}
+
+	*info_out = info;
+
+	return WERR_OK;
+}
+
 /* Dsr_GetDCName */
 
 WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
@@ -465,14 +550,7 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 				     struct GUID *domain_guid,
 				     struct GUID *site_guid,
 				     uint32_t flags,
-				     char **dc_unc, char **dc_address,
-				     int32 *dc_address_type,
-				     struct GUID *domain_guid_out,
-				     char **domain_name_out,
-				     char **forest_name,
-				     uint32 *dc_flags,
-				     char **dc_site_name,
-				     char **client_site_name)
+				     struct DS_DOMAIN_CONTROLLER_INFO **info_out)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_DSR_GETDCNAME q;
@@ -505,78 +583,116 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 		return r.result;
 	}
 
-	if (dc_unc != NULL) {
-		char *tmp;
-		tmp = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dc_unc);
-		if (tmp == NULL) {
-			return WERR_GENERAL_FAILURE;
-		}
-		if (*tmp == '\\') tmp += 1;
-		if (*tmp == '\\') tmp += 1;
-
-		/* We have to talloc_strdup, otherwise a talloc_steal would
-		   fail */
-		*dc_unc = talloc_strdup(mem_ctx, tmp);
-		if (*dc_unc == NULL) {
-			return WERR_NOMEM;
-		}
-	}
-
-	if (dc_address != NULL) {
-		char *tmp;
-		tmp = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dc_address);
-		if (tmp == NULL) {
-			return WERR_GENERAL_FAILURE;
-		}
-		if (*tmp == '\\') tmp += 1;
-		if (*tmp == '\\') tmp += 1;
-
-		/* We have to talloc_strdup, otherwise a talloc_steal would
-		   fail */
-		*dc_address = talloc_strdup(mem_ctx, tmp);
-		if (*dc_address == NULL) {
-			return WERR_NOMEM;
-		}
-	}
-
-	if (dc_address_type != NULL) {
-		*dc_address_type = r.dc_address_type;
-	}
-
-	if (domain_guid_out != NULL) {
-		*domain_guid_out = r.domain_guid;
-	}
-
-	if ((domain_name_out != NULL) &&
-	    ((*domain_name_out = rpcstr_pull_unistr2_talloc(
-		    mem_ctx, &r.uni_domain_name)) == NULL)) {
-		return WERR_GENERAL_FAILURE;
-	}
-
-	if ((forest_name != NULL) &&
-	    ((*forest_name = rpcstr_pull_unistr2_talloc(
-		      mem_ctx, &r.uni_forest_name)) == NULL)) {
-		return WERR_GENERAL_FAILURE;
-	}
-
-	if (dc_flags != NULL) {
-		*dc_flags = r.dc_flags;
-	}
-
-	if ((dc_site_name != NULL) &&
-	    ((*dc_site_name = rpcstr_pull_unistr2_talloc(
-		      mem_ctx, &r.uni_dc_site_name)) == NULL)) {
-		return WERR_GENERAL_FAILURE;
-	}
-
-	if ((client_site_name != NULL) &&
-	    ((*client_site_name = rpcstr_pull_unistr2_talloc(
-		      mem_ctx, &r.uni_client_site_name)) == NULL)) {
-		return WERR_GENERAL_FAILURE;
+	r.result = pull_domain_controller_info_from_getdcname_reply(mem_ctx, info_out, &r);
+	if (!W_ERROR_IS_OK(r.result)) {
+		return r.result;
 	}
 
 	return WERR_OK;
 }
+
+/* Dsr_GetDCNameEx */
+
+WERROR rpccli_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_name,
+				       const char *domain_name,
+				       struct GUID *domain_guid,
+				       const char *site_name,
+				       uint32_t flags,
+				       struct DS_DOMAIN_CONTROLLER_INFO **info_out)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_DSR_GETDCNAMEEX q;
+	NET_R_DSR_GETDCNAME r;
+	char *tmp_str;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialize input parameters */
+
+	tmp_str = talloc_asprintf(mem_ctx, "\\\\%s", server_name);
+	if (tmp_str == NULL) {
+		return WERR_NOMEM;
+	}
+
+	init_net_q_dsr_getdcnameex(&q, server_name, domain_name, domain_guid,
+				   site_name, flags);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_DSR_GETDCNAMEEX,
+			q, r,
+			qbuf, rbuf,
+			net_io_q_dsr_getdcnameex,
+			net_io_r_dsr_getdcname,
+			WERR_GENERAL_FAILURE);
+
+	if (!W_ERROR_IS_OK(r.result)) {
+		return r.result;
+	}
+
+	r.result = pull_domain_controller_info_from_getdcname_reply(mem_ctx, info_out, &r);
+	if (!W_ERROR_IS_OK(r.result)) {
+		return r.result;
+	}
+
+	return WERR_OK;
+}
+
+/* Dsr_GetDCNameEx */
+
+WERROR rpccli_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					const char *server_name,
+					const char *client_account,
+					uint32 mask,
+					const char *domain_name,
+					struct GUID *domain_guid,
+					const char *site_name,
+					uint32_t flags,
+					struct DS_DOMAIN_CONTROLLER_INFO **info_out)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_DSR_GETDCNAMEEX2 q;
+	NET_R_DSR_GETDCNAME r;
+	char *tmp_str;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialize input parameters */
+
+	tmp_str = talloc_asprintf(mem_ctx, "\\\\%s", server_name);
+	if (tmp_str == NULL) {
+		return WERR_NOMEM;
+	}
+
+	init_net_q_dsr_getdcnameex2(&q, server_name, domain_name, client_account,
+				    mask, domain_guid, site_name, flags);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_DSR_GETDCNAMEEX2,
+			q, r,
+			qbuf, rbuf,
+			net_io_q_dsr_getdcnameex2,
+			net_io_r_dsr_getdcname,
+			WERR_GENERAL_FAILURE);
+
+	if (!W_ERROR_IS_OK(r.result)) {
+		return r.result;
+	}
+
+	r.result = pull_domain_controller_info_from_getdcname_reply(mem_ctx, info_out, &r);
+	if (!W_ERROR_IS_OK(r.result)) {
+		return r.result;
+	}
+
+	return WERR_OK;
+}
+
 
 /* Dsr_GetSiteName */
 
