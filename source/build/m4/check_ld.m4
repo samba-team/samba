@@ -47,7 +47,7 @@ else
 fi
 ])
 
-AC_MSG_CHECKING([ability to build shared libraries])
+AC_MSG_CHECKING([whether to try to build shared libraries on $host_os])
 
 # and these are for particular systems
 case "$host_os" in
@@ -167,6 +167,14 @@ AC_MSG_RESULT([$STLD])
 AC_MSG_CHECKING([STLD_FLAGS])
 AC_MSG_RESULT([$STLD_FLAGS])
 
+AC_ARG_ENABLE(shared,
+[  --disable-shared        Disable testing for building shared libraries],
+[],[enable_shared=yes])
+
+if test x"$enable_shared" = x"no" -o x"$enable_shared" = x"false"; then
+	BLDSHARED=false
+fi
+
 #######################################################
 # test whether building a shared library actually works
 if test $BLDSHARED = true; then
@@ -231,7 +239,7 @@ USESHARED=false
 AC_SUBST(USESHARED)
 
 AC_ARG_ENABLE(dso,
-[  --enable-dso 		Enable using shared libraries internally (experimental)],
+[  --enable-dso 	          Enable using shared libraries internally (experimental)],
 [],[enable_dso=no])
 
 if test x"$enable_dso" = x"yes" -a x"$BLDSHARED" != x"true"; then
