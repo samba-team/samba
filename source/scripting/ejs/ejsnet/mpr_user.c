@@ -101,6 +101,7 @@ done:
   UserListCtx.ResumeIndex
   UserListCtx.Count
   UserListCtx.EndOfList
+  UserListCtx.Status
  */
 struct MprVar mprUserListCtx(TALLOC_CTX *mem_ctx, struct libnet_UserList *list, NTSTATUS result)
 {
@@ -144,6 +145,8 @@ struct MprVar mprUserListCtx(TALLOC_CTX *mem_ctx, struct libnet_UserList *list, 
 	status = mprSetVar(&mprListCtx, "ResumeIndex", mprCreateIntegerVar((int)list->out.resume_index));
 	if (!NT_STATUS_IS_OK(status)) goto done;
 	status = mprSetVar(&mprListCtx, "EndOfList", mprCreateBoolVar(endOfList));
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprListCtx, "Status", mprNTSTATUS(result));
 
 done:
 	return mprListCtx;
