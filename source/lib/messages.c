@@ -70,6 +70,8 @@ struct messaging_context {
 	struct server_id id;
 	struct event_context *event_ctx;
 	struct messaging_callback *callbacks;
+
+	
 };
 
 /****************************************************************************
@@ -103,7 +105,7 @@ static void ping_message(struct messaging_context *msg_ctx,
  Initialise the messaging functions. 
 ****************************************************************************/
 
-static BOOL message_init(struct messaging_context *msg_ctx)
+static BOOL message_tdb_init(struct messaging_context *msg_ctx)
 {
 	sec_init();
 
@@ -120,14 +122,6 @@ static BOOL message_init(struct messaging_context *msg_ctx)
 	tdb_set_max_dead(msg_ctx->tdb, 5);
 
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
-
-	messaging_register(msg_ctx, NULL, MSG_PING, ping_message);
-
-	/* Register some debugging related messages */
-
-	register_msg_pool_usage(msg_ctx);
-	register_dmalloc_msgs(msg_ctx);
-	debug_register_msgs(msg_ctx);
 
 	return True;
 }
@@ -300,9 +294,9 @@ static NTSTATUS message_notify(struct server_id procid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-static NTSTATUS messaging_tdb_send(TDB_CONTEXT *msg_tdb,
+static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 				   struct server_id pid, int msg_type,
-				   const void *buf, size_t len)
+				   const DATA_BLOB *data)
 {
 	struct messaging_array *msg_array;
 	struct messaging_rec *rec;
@@ -311,8 +305,8 @@ static NTSTATUS messaging_tdb_send(TDB_CONTEXT *msg_tdb,
 	TDB_DATA key = message_key_pid(pid);
 
 	/* NULL pointer means implicit length zero. */
-	if (!buf) {
-		SMB_ASSERT(len == 0);
+	if (!data->data) {
+		SMB_ASSERT(data->length == 0);
 	}
 
 	/*
@@ -326,42 +320,45 @@ static NTSTATUS messaging_tdb_send(TDB_CONTEXT *msg_tdb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (tdb_chainlock(msg_tdb, key) == -1) {
+	if (tdb_chainlock(msg_ctx->tdb, key) == -1) {
+		TALLOC_FREE(mem_ctx);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
-	status = messaging_tdb_fetch(msg_tdb, key, mem_ctx, &msg_array);
+	status = messaging_tdb_fetch(msg_ctx->tdb, key, mem_ctx, &msg_array);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		tdb_chainunlock(msg_tdb, key);
-		TALLOC_FREE(mem_ctx);
-		return status;
+		goto done;
+	}
+
+	if ((msg_type & MSG_FLAG_LOWPRIORITY)
+	    && (msg_array->num_messages > 1000)) {
+		DEBUG(5, ("Dropping message for PID %s\n",
+			  procid_str_static(&pid)));
+		status = NT_STATUS_INSUFFICIENT_RESOURCES;
+		goto done;
 	}
 
 	if (!(rec = TALLOC_REALLOC_ARRAY(mem_ctx, msg_array->messages,
 					 struct messaging_rec,
 					 msg_array->num_messages+1))) {
-		tdb_chainunlock(msg_tdb, key);
-		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	rec[msg_array->num_messages].msg_version = MESSAGE_VERSION;
-	rec[msg_array->num_messages].msg_type = msg_type;
+	rec[msg_array->num_messages].msg_type = msg_type & MSG_TYPE_MASK;
 	rec[msg_array->num_messages].dest = pid;
 	rec[msg_array->num_messages].src = procid_self();
-	rec[msg_array->num_messages].buf = data_blob_const(buf, len);
+	rec[msg_array->num_messages].buf = *data;
 
 	msg_array->messages = rec;
 	msg_array->num_messages += 1;
 
-	status = messaging_tdb_store(msg_tdb, key, msg_array);
-
-	tdb_chainunlock(msg_tdb, key);
-	TALLOC_FREE(mem_ctx);
+	status = messaging_tdb_store(msg_ctx->tdb, key, msg_array);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 	
 	status = message_notify(pid);
@@ -369,33 +366,14 @@ static NTSTATUS messaging_tdb_send(TDB_CONTEXT *msg_tdb,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		DEBUG(2, ("pid %s doesn't exist - deleting messages record\n",
 			  procid_str_static(&pid)));
-		tdb_delete(msg_tdb, message_key_pid(pid));
+		tdb_delete(msg_ctx->tdb, message_key_pid(pid));
 	}
 
+ done:
+	tdb_chainunlock(msg_ctx->tdb, key);
+	TALLOC_FREE(mem_ctx);
 	return status;
 }
-
-/****************************************************************************
- Count the messages pending for a particular pid. Expensive....
-****************************************************************************/
-
-unsigned int messages_pending_for_pid(struct messaging_context *msg_ctx,
-				      struct server_id pid)
-{
-	struct messaging_array *msg_array;
-	unsigned int result;
-
-	if (!NT_STATUS_IS_OK(messaging_tdb_fetch(msg_ctx->tdb,
-						 message_key_pid(pid), NULL,
-						 &msg_array))) {
-		DEBUG(10, ("messaging_tdb_fetch failed\n"));
-		return 0;
-	}
-
-	result = msg_array->num_messages;
-	TALLOC_FREE(msg_array);
-	return result;
-}	
 
 /****************************************************************************
  Retrieve all messages for the current process.
@@ -619,10 +597,18 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	ctx->id = server_id;
 	ctx->event_ctx = ev;
 
-	if (!message_init(ctx)) {
+	if (!message_tdb_init(ctx)) {
 		DEBUG(0, ("message_init failed: %s\n", strerror(errno)));
 		TALLOC_FREE(ctx);
 	}
+
+	messaging_register(ctx, NULL, MSG_PING, ping_message);
+
+	/* Register some debugging related messages */
+
+	register_msg_pool_usage(ctx);
+	register_dmalloc_msgs(ctx);
+	debug_register_msgs(ctx);
 
 	return ctx;
 }
@@ -688,11 +674,10 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
   Send a message to a particular server
 */
 NTSTATUS messaging_send(struct messaging_context *msg_ctx,
-			struct server_id server, 
-			uint32_t msg_type, const DATA_BLOB *data)
+			struct server_id server, uint32_t msg_type,
+			const DATA_BLOB *data)
 {
-	return messaging_tdb_send(msg_ctx->tdb, server, msg_type,
-				  data->data, data->length);
+	return messaging_tdb_send(msg_ctx, server, msg_type, data);
 }
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
