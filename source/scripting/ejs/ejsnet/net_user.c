@@ -43,7 +43,7 @@ int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct libnet_context *ctx;
 	const char *userman_domain = NULL;
-	struct MprVar *obj = NULL;
+	struct MprVar obj;
 
 	/* libnet context */
 	ctx = mprGetThisPtr(eid, "ctx");
@@ -74,20 +74,23 @@ int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	/* create 'net user' subcontext */
-	obj = mprInitObject(eid, "NetUsrCtx", argc, argv);
+	obj = mprObject("NetUsrCtx");
 
 	/* we need to make a copy of the string for this object */
 	userman_domain = talloc_strdup(ctx, userman_domain);
 
 	/* add properties */
-	mprSetPtrChild(obj, "ctx", ctx);
-	mprSetPtrChild(obj, "domain", userman_domain);
+	mprSetPtrChild(&obj, "ctx", ctx);
+	mprSetPtrChild(&obj, "domain", userman_domain);
 
 	/* add methods */
-	mprSetStringCFunction(obj, "Create", ejs_net_createuser);
-	mprSetStringCFunction(obj, "Delete", ejs_net_deleteuser);
-	mprSetStringCFunction(obj, "Info", ejs_net_userinfo);
-	mprSetCFunction(obj, "List", ejs_net_userlist);
+	mprSetStringCFunction(&obj, "Create", ejs_net_createuser);
+	mprSetStringCFunction(&obj, "Delete", ejs_net_deleteuser);
+	mprSetStringCFunction(&obj, "Info", ejs_net_userinfo);
+	mprSetCFunction(&obj, "List", ejs_net_userlist);
+
+	/* set the object returned by this function */
+	mpr_Return(eid, obj);
 
 	return 0;
 }
@@ -347,16 +350,6 @@ static int ejs_net_userlist(MprVarHandle eid, int argc, struct MprVar **argv)
 	req.in.page_size     = page_size;
 	
 	status = libnet_UserList(ctx, mem_ctx, &req);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-
-		ejsSetErrorMsg(eid, "%s", req.out.error_string);
-		
-		mprListCtx = mprCreateNullVar();
-		goto done;
-	}
-
 	mprListCtx = mprUserListCtx(mem_ctx, &req, status);
 
 done:
