@@ -50,12 +50,6 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/ndr_messaging.h"
 
-/* the locking database handle */
-static int received_signal;
-
-/* change the message version with any incompatible changes in the protocol */
-#define MESSAGE_VERSION 2
-
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
 	uint32 msg_type;
@@ -64,25 +58,6 @@ struct messaging_callback {
 		   struct server_id server_id, DATA_BLOB *data);
 	void *private_data;
 };
-
-struct messaging_context {
-	TDB_CONTEXT *tdb;
-	struct server_id id;
-	struct event_context *event_ctx;
-	struct messaging_callback *callbacks;
-
-	
-};
-
-/****************************************************************************
- Notifications come in as signals.
-****************************************************************************/
-
-static void sig_usr1(void)
-{
-	received_signal = 1;
-	sys_select_signal(SIGUSR1);
-}
 
 /****************************************************************************
  A useful function for testing the message system.
@@ -99,362 +74,6 @@ static void ping_message(struct messaging_context *msg_ctx,
 	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
 		 procid_str_static(&src), msg));
 	messaging_send(msg_ctx, src, MSG_PONG, data);
-}
-
-/****************************************************************************
- Initialise the messaging functions. 
-****************************************************************************/
-
-static BOOL message_tdb_init(struct messaging_context *msg_ctx)
-{
-	sec_init();
-
-	msg_ctx->tdb = tdb_open_log(lock_path("messages.tdb"), 
-				    0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-				    O_RDWR|O_CREAT,0600);
-
-	if (!msg_ctx->tdb) {
-		DEBUG(0,("ERROR: Failed to initialise messages database\n"));
-		return False;
-	}
-
-	/* Activate the per-hashchain freelist */
-	tdb_set_max_dead(msg_ctx->tdb, 5);
-
-	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
-
-	return True;
-}
-
-/*******************************************************************
- Form a static tdb key from a pid.
-******************************************************************/
-
-static TDB_DATA message_key_pid(struct server_id pid)
-{
-	static char key[20];
-	TDB_DATA kbuf;
-
-	slprintf(key, sizeof(key)-1, "PID/%s", procid_str_static(&pid));
-	
-	kbuf.dptr = (uint8 *)key;
-	kbuf.dsize = strlen(key)+1;
-	return kbuf;
-}
-
-/*
-  Fetch the messaging array for a process
- */
-
-static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
-				    TDB_DATA key,
-				    TALLOC_CTX *mem_ctx,
-				    struct messaging_array **presult)
-{
-	struct messaging_array *result;
-	TDB_DATA data;
-	DATA_BLOB blob;
-	NTSTATUS status;
-
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct messaging_array))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	data = tdb_fetch(msg_tdb, key);
-
-	if (data.dptr == NULL) {
-		*presult = result;
-		return NT_STATUS_OK;
-	}
-
-	blob = data_blob_const(data.dptr, data.dsize);
-
-	status = ndr_pull_struct_blob(
-		&blob, result, result,
-		(ndr_pull_flags_fn_t)ndr_pull_messaging_array);
-
-	SAFE_FREE(data.dptr);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(result);
-		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		DEBUG(10, ("messaging_tdb_fetch:\n"));
-		NDR_PRINT_DEBUG(messaging_array, result);
-	}
-
-	*presult = result;
-	return NT_STATUS_OK;
-}
-
-/*
-  Store a messaging array for a pid
-*/
-
-static NTSTATUS messaging_tdb_store(TDB_CONTEXT *msg_tdb,
-				    TDB_DATA key,
-				    struct messaging_array *array)
-{
-	TDB_DATA data;
-	DATA_BLOB blob;
-	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
-	int ret;
-
-	if (array->num_messages == 0) {
-		tdb_delete(msg_tdb, key);
-		return NT_STATUS_OK;
-	}
-
-	if (!(mem_ctx = talloc_new(array))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = ndr_push_struct_blob(
-		&blob, mem_ctx, array,
-		(ndr_push_flags_fn_t)ndr_push_messaging_array);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		DEBUG(10, ("messaging_tdb_store:\n"));
-		NDR_PRINT_DEBUG(messaging_array, array);
-	}
-
-	data.dptr = blob.data;
-	data.dsize = blob.length;
-
-	ret = tdb_store(msg_tdb, key, data, TDB_REPLACE);
-	TALLOC_FREE(mem_ctx);
-
-	return (ret == 0) ? NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
-}
-
-/****************************************************************************
- Notify a process that it has a message. If the process doesn't exist 
- then delete its record in the database.
-****************************************************************************/
-
-static NTSTATUS message_notify(struct server_id procid)
-{
-	pid_t pid = procid.pid;
-	int ret;
-	uid_t euid = geteuid();
-
-	/*
-	 * Doing kill with a non-positive pid causes messages to be
-	 * sent to places we don't want.
-	 */
-
-	SMB_ASSERT(pid > 0);
-
-	if (euid != 0) {
-		/* If we're not root become so to send the message. */
-		save_re_uid();
-		set_effective_uid(0);
-	}
-
-	ret = kill(pid, SIGUSR1);
-
-	if (euid != 0) {
-		/* Go back to who we were. */
-		int saved_errno = errno;
-		restore_re_uid_fromroot();
-		errno = saved_errno;
-	}
-
-	if (ret == 0) {
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * Something has gone wrong
-	 */
-
-	DEBUG(2,("message to process %d failed - %s\n", (int)pid,
-		 strerror(errno)));
-
-	/*
-	 * No call to map_nt_error_from_unix -- don't want to link in
-	 * errormap.o into lots of utils.
-	 */
-
-	if (errno == ESRCH)  return NT_STATUS_INVALID_HANDLE;
-	if (errno == EINVAL) return NT_STATUS_INVALID_PARAMETER;
-	if (errno == EPERM)  return NT_STATUS_ACCESS_DENIED;
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-/****************************************************************************
- Send a message to a particular pid.
-****************************************************************************/
-
-static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
-				   struct server_id pid, int msg_type,
-				   const DATA_BLOB *data)
-{
-	struct messaging_array *msg_array;
-	struct messaging_rec *rec;
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-	TDB_DATA key = message_key_pid(pid);
-
-	/* NULL pointer means implicit length zero. */
-	if (!data->data) {
-		SMB_ASSERT(data->length == 0);
-	}
-
-	/*
-	 * Doing kill with a non-positive pid causes messages to be
-	 * sent to places we don't want.
-	 */
-
-	SMB_ASSERT(procid_to_pid(&pid) > 0);
-
-	if (!(mem_ctx = talloc_init("message_send_pid"))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (tdb_chainlock(msg_ctx->tdb, key) == -1) {
-		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_LOCK_NOT_GRANTED;
-	}
-
-	status = messaging_tdb_fetch(msg_ctx->tdb, key, mem_ctx, &msg_array);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	if ((msg_type & MSG_FLAG_LOWPRIORITY)
-	    && (msg_array->num_messages > 1000)) {
-		DEBUG(5, ("Dropping message for PID %s\n",
-			  procid_str_static(&pid)));
-		status = NT_STATUS_INSUFFICIENT_RESOURCES;
-		goto done;
-	}
-
-	if (!(rec = TALLOC_REALLOC_ARRAY(mem_ctx, msg_array->messages,
-					 struct messaging_rec,
-					 msg_array->num_messages+1))) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	rec[msg_array->num_messages].msg_version = MESSAGE_VERSION;
-	rec[msg_array->num_messages].msg_type = msg_type & MSG_TYPE_MASK;
-	rec[msg_array->num_messages].dest = pid;
-	rec[msg_array->num_messages].src = procid_self();
-	rec[msg_array->num_messages].buf = *data;
-
-	msg_array->messages = rec;
-	msg_array->num_messages += 1;
-
-	status = messaging_tdb_store(msg_ctx->tdb, key, msg_array);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-	
-	status = message_notify(pid);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
-		DEBUG(2, ("pid %s doesn't exist - deleting messages record\n",
-			  procid_str_static(&pid)));
-		tdb_delete(msg_ctx->tdb, message_key_pid(pid));
-	}
-
- done:
-	tdb_chainunlock(msg_ctx->tdb, key);
-	TALLOC_FREE(mem_ctx);
-	return status;
-}
-
-/****************************************************************************
- Retrieve all messages for the current process.
-****************************************************************************/
-
-static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
-				      TALLOC_CTX *mem_ctx,
-				      struct messaging_array **presult)
-{
-	struct messaging_array *result;
-	TDB_DATA key = message_key_pid(procid_self());
-	NTSTATUS status;
-
-	if (tdb_chainlock(msg_tdb, key) == -1) {
-		return NT_STATUS_LOCK_NOT_GRANTED;
-	}
-
-	status = messaging_tdb_fetch(msg_tdb, key, mem_ctx, &result);
-
-	/*
-	 * We delete the record here, tdb_set_max_dead keeps it around
-	 */
-	tdb_delete(msg_tdb, key);
-	tdb_chainunlock(msg_tdb, key);
-
-	if (NT_STATUS_IS_OK(status)) {
-		*presult = result;
-	}
-
-	return status;
-}
-
-/*
-  Dispatch one messsaging_rec
-*/
-static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
-				   struct messaging_rec *rec)
-{
-	struct messaging_callback *cb, *next;
-
-	for (cb = msg_ctx->callbacks; cb != NULL; cb = next) {
-		next = cb->next;
-		if (cb->msg_type == rec->msg_type) {
-			cb->fn(msg_ctx, cb->private_data, rec->msg_type,
-			       rec->src, &rec->buf);
-			return;
-		}
-	}
-	return;
-}
-
-/****************************************************************************
- Receive and dispatch any messages pending for this process.
- JRA changed Dec 13 2006. Only one message handler now permitted per type.
- *NOTE*: Dispatch functions must be able to cope with incoming
- messages on an *odd* byte boundary.
-****************************************************************************/
-
-void message_dispatch(struct messaging_context *msg_ctx)
-{
-	struct messaging_array *msg_array = NULL;
-	uint32 i;
-
-	if (!received_signal)
-		return;
-
-	DEBUG(10, ("message_dispatch: received_signal = %d\n",
-		   received_signal));
-
-	received_signal = 0;
-
-	if (!NT_STATUS_IS_OK(retrieve_all_messages(msg_ctx->tdb, NULL,
-						   &msg_array))) {
-		return;
-	}
-
-	for (i=0; i<msg_array->num_messages; i++) {
-		messaging_dispatch_rec(msg_ctx, &msg_array->messages[i]);
-	}
-
-	TALLOC_FREE(msg_array);
 }
 
 /****************************************************************************
@@ -564,21 +183,6 @@ BOOL message_send_all(struct messaging_context *msg_ctx,
 	return True;
 }
 
-/*
- * Block and unblock receiving of messages. Allows removal of race conditions
- * when doing a fork and changing message disposition.
- */
-
-void message_block(void)
-{
-	BlockSignals(True, SIGUSR1);
-}
-
-void message_unblock(void)
-{
-	BlockSignals(False, SIGUSR1);
-}
-
 struct event_context *messaging_event_context(struct messaging_context *msg_ctx)
 {
 	return msg_ctx->event_ctx;
@@ -589,6 +193,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev)
 {
 	struct messaging_context *ctx;
+	NTSTATUS status;
 
 	if (!(ctx = TALLOC_ZERO_P(mem_ctx, struct messaging_context))) {
 		return NULL;
@@ -597,8 +202,10 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	ctx->id = server_id;
 	ctx->event_ctx = ev;
 
-	if (!message_tdb_init(ctx)) {
-		DEBUG(0, ("message_init failed: %s\n", strerror(errno)));
+	status = messaging_tdb_init(ctx, ctx, &ctx->local);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("message_init failed: %s\n", nt_errstr(status)));
 		TALLOC_FREE(ctx);
 	}
 
@@ -677,7 +284,8 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, uint32_t msg_type,
 			const DATA_BLOB *data)
 {
-	return messaging_tdb_send(msg_ctx, server, msg_type, data);
+	return msg_ctx->local->send_fn(msg_ctx, server, msg_type, data,
+				       msg_ctx->local);
 }
 
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
@@ -686,6 +294,25 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 {
 	DATA_BLOB blob = data_blob_const(buf, len);
 	return messaging_send(msg_ctx, server, msg_type, &blob);
+}
+
+/*
+  Dispatch one messsaging_rec
+*/
+void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+			    struct messaging_rec *rec)
+{
+	struct messaging_callback *cb, *next;
+
+	for (cb = msg_ctx->callbacks; cb != NULL; cb = next) {
+		next = cb->next;
+		if (cb->msg_type == rec->msg_type) {
+			cb->fn(msg_ctx, cb->private_data, rec->msg_type,
+			       rec->src, &rec->buf);
+			return;
+		}
+	}
+	return;
 }
 
 /** @} **/
