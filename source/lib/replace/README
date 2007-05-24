@@ -54,6 +54,8 @@ strtoll
 strtoull
 socketpair
 strptime
+inet_pton
+inet_ntop
 
 Types:
 bool
