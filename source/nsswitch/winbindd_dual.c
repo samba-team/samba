@@ -839,15 +839,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	/* Stop zombies */
 	CatchChild();
 
-	/* Ensure we don't process messages whilst we're
-	   changing the disposition for the child. */
-	message_block();
-
 	child->pid = sys_fork();
 
 	if (child->pid == -1) {
 		DEBUG(0, ("Could not fork: %s\n", strerror(errno)));
-		message_unblock();
 		return False;
 	}
 
@@ -860,8 +855,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		child->event.flags = 0;
 		child->requests = NULL;
 		add_fd_event(&child->event);
-		/* We're ok with online/offline messages now. */
-		message_unblock();
 		return True;
 	}
 
@@ -894,9 +887,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			     MSG_WINBIND_ONLINE, NULL);
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_WINBIND_ONLINESTATUS, NULL);
-
-	/* The child is ok with online/offline messages now. */
-	message_unblock();
 
 	/* Handle online/offline messages. */
 	messaging_register(winbind_messaging_context(), NULL,
