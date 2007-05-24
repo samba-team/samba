@@ -692,7 +692,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const _domain_attrs_display[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_display[] = { "displayName", "samAccountName", NULL};
 
-	const char * const _domain_attrs_none[] = { "ncName", "dnsRoot" };
+	const char * const _domain_attrs_none[] = { "ncName", "dnsRoot" , NULL};
 	const char * const _result_attrs_none[] = { NULL};
 
 	/* here we need to set the attrs lists for domain and result lookups */
