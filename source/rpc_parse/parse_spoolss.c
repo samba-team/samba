@@ -7022,10 +7022,10 @@ static BOOL spoolss_io_printer_enum_values_ctr(const char *desc, prs_struct *ps,
 		data_offset,
 		current_offset;
 	const uint32 basic_unit = 20; /* size of static portion of enum_values */
-	
+
 	prs_debug(ps, depth, desc, "spoolss_io_printer_enum_values_ctr");
 	depth++;	
-	
+
 	/* 
 	 * offset data begins at 20 bytes per structure * size_of_array.
 	 * Don't forget the uint32 at the beginning 
@@ -7042,8 +7042,27 @@ static BOOL spoolss_io_printer_enum_values_ctr(const char *desc, prs_struct *ps,
 	}
 
 	for (i=0; i<ctr->size_of_array; i++) {
+		uint32 base_offset, return_offset;
+
+		base_offset = prs_offset(ps);
+
 		valuename_offset = current_offset;
 		if (!prs_uint32("valuename_offset", ps, depth, &valuename_offset))
+			return False;
+
+		/* Read or write the value. */
+
+		return_offset = prs_offset(ps);
+
+		if (!prs_set_offset(ps, base_offset + valuename_offset)) {
+			return False;
+		}
+
+		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
+			return False;
+
+		/* And go back. */
+		if (!prs_set_offset(ps, return_offset))
 			return False;
 
 		if (!prs_uint32("value_len", ps, depth, &ctr->values[i].value_len))
@@ -7060,21 +7079,14 @@ static BOOL spoolss_io_printer_enum_values_ctr(const char *desc, prs_struct *ps,
 		if (!prs_uint32("data_len", ps, depth, &ctr->values[i].data_len))
 			return False;
 			
-		current_offset  = data_offset + ctr->values[i].data_len - basic_unit;
-		/* account for 2 byte alignment */
-		current_offset += (current_offset % 2);
-	}
+		/* Read or write the data. */
 
-	/* 
-	 * loop #2 for writing the dynamically size objects; pay 
-	 * attention to 2-byte alignment here....
-	 */
-	
-	for (i=0; i<ctr->size_of_array; i++) {
-	
-		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
+		return_offset = prs_offset(ps);
+
+		if (!prs_set_offset(ps, base_offset + data_offset)) {
 			return False;
-		
+		}
+
 		if ( ctr->values[i].data_len ) {
 			if ( UNMARSHALLING(ps) ) {
 				ctr->values[i].data = PRS_ALLOC_MEM(ps, uint8, ctr->values[i].data_len);
@@ -7084,10 +7096,29 @@ static BOOL spoolss_io_printer_enum_values_ctr(const char *desc, prs_struct *ps,
 			if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
 				return False;
 		}
-			
-		if ( !prs_align_uint16(ps) )
+
+		current_offset  = data_offset + ctr->values[i].data_len - basic_unit;
+		/* account for 2 byte alignment */
+		current_offset += (current_offset % 2);
+
+		/* Remember how far we got. */
+		data_offset = prs_offset(ps);
+
+		/* And go back. */
+		if (!prs_set_offset(ps, return_offset))
 			return False;
+
 	}
+
+	/* Go to the last data offset we got to. */
+
+	if (!prs_set_offset(ps, data_offset))
+		return False;
+
+	/* And ensure we're 2 byte aligned. */
+
+	if ( !prs_align_uint16(ps) )
+		return False;
 
 	return True;	
 }
