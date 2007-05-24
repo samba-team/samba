@@ -41,7 +41,7 @@ automatic_dependencies=no
 AX_CFLAGS_GCC_OPTION([-M -MT conftest.d -MF conftest.o], [], [ automatic_dependencies=$new_make ], [])
 AC_MSG_CHECKING([Whether to use automatic dependencies])
 AC_ARG_ENABLE(automatic-dependencies,
-[ --enable-automatic-dependencies 			Enable automatic dependencies],
+[  --enable-automatic-dependencies Enable automatic dependencies],
 [ automatic_dependencies=$enableval ], 
 [ automatic_dependencies=no ])
 AC_MSG_RESULT($automatic_dependencies)
