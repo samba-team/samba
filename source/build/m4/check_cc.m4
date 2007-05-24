@@ -140,7 +140,7 @@ if test -n "$DEVELOPER_CFLAGS"; then
 fi
 
 # allow for --with-hostcc=gcc
-AC_ARG_WITH(hostcc,[  --with-hostcc=compiler    choose host compiler],
+AC_ARG_WITH(hostcc,[  --with-hostcc=compiler  choose host compiler],
 [HOSTCC=$withval],
 [
 if test z"$cross_compiling" = "yes"; then 
