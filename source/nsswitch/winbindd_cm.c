@@ -178,13 +178,10 @@ static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
 	/* Stop zombies */
 	CatchChild();
 
-	message_block();
-
 	child_pid = sys_fork();
 
 	if (child_pid == -1) {
 		DEBUG(0, ("fork_child_dc_connect: Could not fork: %s\n", strerror(errno)));
-		message_unblock();
 		return False;
 	}
 
@@ -196,7 +193,6 @@ static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
 		messaging_register(winbind_messaging_context(), NULL,
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
 				   msg_failed_to_go_online);
-		message_unblock();
 		return True;
 	}
 

@@ -22,6 +22,10 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
+/* change the message version with any incompatible changes in the protocol */
+#define MESSAGE_VERSION 2
+
+
 #define MSG_TYPE_MASK			0xFFFF
 
 /* general messages */
@@ -115,15 +119,41 @@ struct server_id {
 };
 
 struct messaging_context;
+struct messaging_rec;
 struct data_blob;
 
+/*
+ * struct messaging_context belongs to messages.c, but because we still have
+ * messaging_dispatch, we need it here. Once we get rid of signals for
+ * notifying processes, this will go.
+ */
+
+struct messaging_context {
+	struct server_id id;
+	struct event_context *event_ctx;
+	struct messaging_callback *callbacks;
+
+	struct messaging_backend *local;
+};
+
+struct messaging_backend {
+	NTSTATUS (*send_fn)(struct messaging_context *msg_ctx,
+			    struct server_id pid, int msg_type,
+			    const struct data_blob *data,
+			    struct messaging_backend *backend);
+	void *private_data;
+};
+
+NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
+			    TALLOC_CTX *mem_ctx,
+			    struct messaging_backend **presult);
 void message_dispatch(struct messaging_context *msg_ctx);
+
+
 BOOL message_send_all(struct messaging_context *msg_ctx,
 		      int msg_type,
 		      const void *buf, size_t len,
 		      int *n_sent);
-void message_block(void);
-void message_unblock(void);
 struct event_context *messaging_event_context(struct messaging_context *msg_ctx);
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct server_id server_id, 
@@ -144,5 +174,7 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const uint8 *buf, size_t len);
+void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+			    struct messaging_rec *rec);
 
 #endif
