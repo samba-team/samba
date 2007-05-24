@@ -321,6 +321,12 @@ char *rep_strptime(const char *buf, const char *format, struct tm *tm);
 #ifndef RTLD_LAZY
 #define RTLD_LAZY 0
 #endif
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
 
 #ifndef HAVE_SECURE_MKSTEMP
 #define mkstemp(path) rep_mkstemp(path)
