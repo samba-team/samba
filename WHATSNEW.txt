@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.25a
-                             May 23, 2007
+                             May 25, 2007
                    ===============================
 
 This is the second production release of the Samba 3.0.25 code 
