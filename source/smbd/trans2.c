@@ -5268,9 +5268,18 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 */
 
 	if ((set_owner != (uid_t)SMB_UID_NO_CHANGE) && (psbuf->st_uid != set_owner)) {
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC changing owner %u for file %s\n",
+		int ret;
+
+		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC changing owner %u for path %s\n",
 			(unsigned int)set_owner, fname ));
-		if (SMB_VFS_CHOWN(conn, fname, set_owner, (gid_t)-1) != 0) {
+
+		if (S_ISLNK(psbuf->st_mode)) {
+			ret = SMB_VFS_LCHOWN(conn, fname, set_owner, (gid_t)-1);
+		} else {
+			ret = SMB_VFS_CHOWN(conn, fname, set_owner, (gid_t)-1);
+		}
+
+		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
 			if (delete_on_fail) {
 				SMB_VFS_UNLINK(conn,fname);
