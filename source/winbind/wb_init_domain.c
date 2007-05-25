@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "libcli/libcli.h"
 
 #include "libcli/auth/credentials.h"
 #include "libcli/security/security.h"
@@ -83,9 +84,10 @@ static struct dcerpc_binding *init_domain_binding(struct init_domain_state *stat
 {
 	struct dcerpc_binding *binding;
 	NTSTATUS status;
+
 	/* Make a binding string */
 	{
-		char *s = talloc_asprintf(state, "ncacn_np:%s", state->domain->info->dc_name);
+		char *s = talloc_asprintf(state, "ncacn_np:%s", state->domain->dc_name);
 		if (s == NULL) return NULL;
 		status = dcerpc_parse_binding(state, s, &binding);
 		talloc_free(s);
@@ -95,8 +97,8 @@ static struct dcerpc_binding *init_domain_binding(struct init_domain_state *stat
 	}
 
 	/* Alter binding to contain hostname, but also address (so we don't look it up twice) */
-	binding->target_hostname = state->domain->info->dc_name;
-	binding->host = state->domain->info->dc_address;
+	binding->target_hostname = state->domain->dc_name;
+	binding->host = state->domain->dc_address;
 
 	/* This shouldn't make a network call, as the mappings for named pipes are well known */
 	status = dcerpc_epm_map_binding(binding, binding, table, state->service->task->event_ctx);
@@ -129,6 +131,17 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 
 	state->domain->info = talloc_reference(state->domain, dom_info);
 	if (state->domain->info == NULL) goto failed;
+
+	/* Caller should check, but to be safe: */
+	if (dom_info->num_dcs < 1) {
+		goto failed;
+	}
+	
+	/* For now, we just pick the first.  The next step will be to
+	 * walk the entire list.  Also need to fix finddcs() to return
+	 * the entire list */
+	state->domain->dc_name = dom_info->dcs[0].name;
+	state->domain->dc_address = dom_info->dcs[0].address;
 
 	/* Create a credentials structure */
 	state->domain->schannel_creds = cli_credentials_init(state->domain);
@@ -377,7 +390,7 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 	composite_nomem(state->domain->ldap_conn, state->ctx);
 
 	ldap_url = talloc_asprintf(state, "ldap://%s/",
-				   state->domain->info->dc_address);
+				   state->domain->dc_address);
 	composite_nomem(ldap_url, state->ctx);
 
 	ctx = ldap_connect_send(state->domain->ldap_conn, ldap_url);
@@ -394,7 +407,7 @@ static void init_domain_recv_ldapconn(struct composite_context *ctx)
 	if (NT_STATUS_IS_OK(state->ctx->status)) {
 		state->domain->ldap_conn->host =
 			talloc_strdup(state->domain->ldap_conn,
-				      state->domain->info->dc_name);
+				      state->domain->dc_name);
 		state->ctx->status =
 			ldap_bind_sasl(state->domain->ldap_conn,
 				       state->domain->schannel_creds);

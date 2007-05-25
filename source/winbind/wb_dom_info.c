@@ -30,16 +30,14 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "librpc/gen_ndr/samr.h"
 #include "lib/messaging/irpc.h"
+#include "libcli/finddcs.h"
 
 struct get_dom_info_state {
 	struct composite_context *ctx;
-	struct wbsrv_service *service;
-	struct nbtd_getdcname r;
 	struct wb_dom_info *info;
 };
 
 static void get_dom_info_recv_addrs(struct composite_context *ctx);
-static void get_dom_info_recv_dcname(struct irpc_request *ireq);
 
 struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 					       struct wbsrv_service *service,
@@ -48,8 +46,7 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *result, *ctx;
 	struct get_dom_info_state *state;
-	struct nbt_name name;
-
+	struct dom_sid *dup_sid;
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
 
@@ -58,24 +55,18 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	state->ctx = result;
 	result->private_data = state;
 
-	state->service = service;
-
 	state->info = talloc_zero(state, struct wb_dom_info);
 	if (state->info == NULL) goto failed;
 
-	state->info->name = talloc_strdup(state->info, domain_name);
-	if (state->info->name == NULL) goto failed;
-	state->info->sid = dom_sid_dup(state->info, sid);
-	if (state->info->sid == NULL) goto failed;
+	dup_sid = dom_sid_dup(state, sid);
+	if (dup_sid == NULL) goto failed;
 
-	make_nbt_name(&name, state->info->name, NBT_NAME_LOGON);
-
-	ctx = resolve_name_send(&name, result->event_ctx,
-				lp_name_resolve_order());
+	ctx = finddcs_send(mem_ctx, domain_name, NBT_NAME_LOGON, 
+			   dup_sid, lp_name_resolve_order(), service->task->event_ctx, 
+			   service->task->msg_ctx);
 	if (ctx == NULL) goto failed;
 
-	ctx->async.fn = get_dom_info_recv_addrs;
-	ctx->async.private_data = state;
+	composite_continue(state->ctx, ctx, get_dom_info_recv_addrs, state);
 	return result;
 
  failed:
@@ -88,48 +79,12 @@ static void get_dom_info_recv_addrs(struct composite_context *ctx)
 	struct get_dom_info_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct get_dom_info_state);
-	struct server_id *nbt_servers;
-	struct irpc_request *ireq;
 
-	state->ctx->status = resolve_name_recv(ctx, state->info,
-					       &state->info->dc_address);
+	state->ctx->status = finddcs_recv(ctx, state->info,
+					  &state->info->num_dcs,
+					  &state->info->dcs);
 	if (!composite_is_ok(state->ctx)) return;
 
-	nbt_servers = irpc_servers_byname(state->service->task->msg_ctx,
-					  state, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
-		composite_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
-		return;
-	}
-
-	state->r.in.domainname = state->info->name;
-	state->r.in.ip_address = state->info->dc_address;
-	state->r.in.my_computername = lp_netbios_name();
-	state->r.in.my_accountname = talloc_asprintf(state, "%s$",
-						     lp_netbios_name());
-	if (composite_nomem(state->r.in.my_accountname, state->ctx)) return;
-	state->r.in.account_control = ACB_WSTRUST;
-	state->r.in.domain_sid = dom_sid_dup(state, state->info->sid);
-	if (composite_nomem(state->r.in.domain_sid, state->ctx)) return;
-
-	ireq = irpc_call_send(state->service->task->msg_ctx, nbt_servers[0],
-			      &dcerpc_table_irpc, DCERPC_NBTD_GETDCNAME,
-			      &state->r, state);
-	composite_continue_irpc(state->ctx, ireq, get_dom_info_recv_dcname,
-				state);
-}
-
-static void get_dom_info_recv_dcname(struct irpc_request *ireq)
-{
-	struct get_dom_info_state *state =
-		talloc_get_type(ireq->async.private,
-				struct get_dom_info_state);
-
-
-	state->ctx->status = irpc_call_recv(ireq);
-	if (!composite_is_ok(state->ctx)) return;
-
-	state->info->dc_name = talloc_steal(state->info, state->r.out.dcname);
 	composite_done(state->ctx);
 }
 
