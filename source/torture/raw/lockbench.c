@@ -244,6 +244,22 @@ static void lock_completion(struct smbcli_request *req)
 }
 
 
+static void echo_completion(struct smbcli_request *req)
+{
+	struct benchlock_state *state = talloc_get_type(req->async.private, 
+							struct benchlock_state);
+	NTSTATUS status = smbcli_request_simple_recv(req);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+		talloc_free(state->tree);
+		state->tree = NULL;
+		num_connected--;	
+		DEBUG(0,("reopening connection to %s\n", state->dest_host));
+		event_add_timed(state->ev, state->mem_ctx, 
+				timeval_current_ofs(1,0), 
+				reopen_connection, state);
+	}
+}
+
 static void report_rate(struct event_context *ev, struct timed_event *te, 
 			struct timeval t, void *private_data)
 {
@@ -258,16 +274,21 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 	fflush(stdout);
 	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
 
+	if (!state[i].tree) {
+		return;
+	}
+
 	/* send an echo on each interface to ensure it stays alive - this helps
 	   with IP takeover */
 	for (i=0;i<nprocs;i++) {
 		struct smb_echo p;
-		p.in.repeat_count = 0;
+		struct smbcli_request *req;
+		p.in.repeat_count = 1;
 		p.in.size = 0;
 		p.in.data = NULL;
-		if (state[i].tree) {
-			smb_raw_echo_send(state[i].tree->session->transport, &p);
-		}
+		req = smb_raw_echo_send(state[i].tree->session->transport, &p);
+		req->async.private = state;
+		req->async.fn      = echo_completion;
 	}
 }
 
