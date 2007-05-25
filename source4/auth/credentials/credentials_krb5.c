@@ -60,7 +60,8 @@ NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred,
 	return NT_STATUS_OK;
 }
 
-int cli_credentials_set_from_ccache(struct cli_credentials *cred, 
+static int cli_credentials_set_from_ccache(struct cli_credentials *cred, 
+				    struct ccache_container *ccache,
 				    enum credentials_obtained obtained)
 {
 	
@@ -73,37 +74,37 @@ int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = krb5_cc_get_principal(cred->ccache->smb_krb5_context->krb5_context, 
-				    cred->ccache->ccache, &princ);
+	ret = krb5_cc_get_principal(ccache->smb_krb5_context->krb5_context, 
+				    ccache->ccache, &princ);
 
 	if (ret) {
-		char *err_mess = smb_get_krb5_error_message(cred->ccache->smb_krb5_context->krb5_context, ret, cred);
+		char *err_mess = smb_get_krb5_error_message(ccache->smb_krb5_context->krb5_context, 
+							    ret, cred);
 		DEBUG(1,("failed to get principal from ccache: %s\n", 
 			 err_mess));
 		talloc_free(err_mess);
 		return ret;
 	}
 	
-	ret = krb5_unparse_name(cred->ccache->smb_krb5_context->krb5_context, princ, &name);
+	ret = krb5_unparse_name(ccache->smb_krb5_context->krb5_context, princ, &name);
 	if (ret) {
-		char *err_mess = smb_get_krb5_error_message(cred->ccache->smb_krb5_context->krb5_context, ret, cred);
+		char *err_mess = smb_get_krb5_error_message(ccache->smb_krb5_context->krb5_context, ret, cred);
 		DEBUG(1,("failed to unparse principal from ccache: %s\n", 
 			 err_mess));
 		talloc_free(err_mess);
 		return ret;
 	}
 
-	realm = krb5_princ_realm(cred->ccache->smb_krb5_context->krb5_context, princ);
+	realm = krb5_princ_realm(ccache->smb_krb5_context->krb5_context, princ);
 
 	cli_credentials_set_principal(cred, name, obtained);
 
 	free(name);
 
-	krb5_free_principal(cred->ccache->smb_krb5_context->krb5_context, princ);
+	krb5_free_principal(ccache->smb_krb5_context->krb5_context, princ);
 
 	/* set the ccache_obtained here, as it just got set to UNINITIALISED by the calls above */
 	cred->ccache_obtained = obtained;
-	cli_credentials_invalidate_client_gss_creds(cred, cred->ccache_obtained);
 
 	return 0;
 }
@@ -181,20 +182,22 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 
 	krb5_free_principal(ccc->smb_krb5_context->krb5_context, princ);
 
-	cred->ccache = ccc;
-	talloc_steal(cred, ccc);
-
-	ret = cli_credentials_set_from_ccache(cred, obtained);
+	ret = cli_credentials_set_from_ccache(cred, ccc, obtained);
 
 	if (ret) {
 		return ret;
 	}
 
+	cred->ccache = ccc;
+	cred->ccache_obtained = obtained;
+	talloc_steal(cred, ccc);
+
+	cli_credentials_invalidate_client_gss_creds(cred, cred->ccache_obtained);
 	return 0;
 }
 
 
-int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_container **_ccc)
+static int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_container **_ccc)
 {
 	krb5_error_code ret;
 	char *rand_string;
@@ -241,17 +244,10 @@ int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_conta
 
 	talloc_set_destructor(ccc, free_mccache);
 
-	cred->ccache = ccc;
-	talloc_steal(cred, ccc);
 	talloc_free(ccache_name);
 
-	if (_ccc) {
-		*_ccc = ccc;
-	}
+	*_ccc = ccc;
 
-	cred->ccache_obtained = (MAX(MAX(cred->principal_obtained, 
-					 cred->username_obtained), 
-				     cred->password_obtained));
 	return ret;
 }
 
@@ -272,20 +268,27 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	ret = cli_credentials_new_ccache(cred, NULL);
+	ret = cli_credentials_new_ccache(cred, ccc);
 	if (ret) {
 		return ret;
 	}
-	ret = kinit_to_ccache(cred, cred, cred->ccache->smb_krb5_context, cred->ccache->ccache);
-	if (ret) {
-		return ret;
-	}
-	ret = cli_credentials_set_from_ccache(cred, cred->principal_obtained);
 
+	ret = kinit_to_ccache(cred, cred, (*ccc)->smb_krb5_context, (*ccc)->ccache);
 	if (ret) {
 		return ret;
 	}
-	*ccc = cred->ccache;
+
+	ret = cli_credentials_set_from_ccache(cred, *ccc, 
+					      (MAX(MAX(cred->principal_obtained, 
+						       cred->username_obtained), 
+						   cred->password_obtained)));
+	
+	cred->ccache = *ccc;
+	cred->ccache_obtained = cred->principal_obtained;
+	if (ret) {
+		return ret;
+	}
+	cli_credentials_invalidate_client_gss_creds(cred, cred->ccache_obtained);
 	return ret;
 }
 
@@ -297,6 +300,7 @@ void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred,
 	if (obtained >= cred->client_gss_creds_obtained) {
 		if (cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
 			talloc_free(cred->client_gss_creds);
+			cred->client_gss_creds = NULL;
 		}
 		cred->client_gss_creds_obtained = CRED_UNINITIALISED;
 	}
@@ -317,6 +321,7 @@ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 	if (obtained >= cred->ccache_obtained) {
 		if (cred->ccache_obtained > CRED_UNINITIALISED) {
 			talloc_free(cred->ccache);
+			cred->ccache = NULL;
 		}
 		cred->ccache_obtained = CRED_UNINITIALISED;
 	}
@@ -424,8 +429,10 @@ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred,
 	}
 
 	if (ret == 0) {
-		ret = cli_credentials_set_from_ccache(cred, obtained);
+		ret = cli_credentials_set_from_ccache(cred, ccc, obtained);
 	}
+	cred->ccache = ccc;
+	cred->ccache_obtained = obtained;
 	if (ret == 0) {
 		gcc->creds = gssapi_cred;
 		talloc_set_destructor(gcc, free_gssapi_creds);
