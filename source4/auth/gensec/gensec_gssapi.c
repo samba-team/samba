@@ -1342,6 +1342,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		cli_credentials_set_event_context(session_info->credentials, gensec_security->event_ctx);
 		cli_credentials_set_conf(session_info->credentials);
 		/* Just so we don't segfault trying to get at a username */
 		cli_credentials_set_anonymous(session_info->credentials);
