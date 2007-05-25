@@ -2614,4 +2614,22 @@ union smb_search_close {
 	} findclose;
 };
 
+
+/*
+  struct for SMBecho call
+*/
+struct smb_echo {
+	struct {
+		uint16_t repeat_count;
+		uint16_t size;
+		uint8_t *data;
+	} in;
+	struct {
+		uint16_t count;
+		uint16_t sequence_number;
+		uint16_t size;
+		uint8_t *data;
+	} out;
+};
+
 #endif /* __LIBCLI_RAW_INTERFACES_H__ */
