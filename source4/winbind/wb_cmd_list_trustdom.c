@@ -85,8 +85,7 @@ static void cmd_list_trustdoms_recv_domain(struct composite_context *ctx)
 	tree = dcerpc_smb_tree(domain->lsa_pipe->conn);
 	if (composite_nomem(tree, state->ctx)) return;
 
-	ctx = wb_init_lsa_send(state, tree, domain->lsa_auth_type,
-			       domain->schannel_creds);
+	ctx = wb_init_lsa_send(state, domain);
 	composite_continue(state->ctx, ctx, cmd_list_trustdoms_recv_lsa,
 			   state);
 }

@@ -4,7 +4,8 @@
    A composite API for initializing a domain
 
    Copyright (C) Volker Lendecke 2005
-   
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -29,6 +30,7 @@
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 #include "libcli/auth/credentials.h"
 #include "libcli/security/security.h"
@@ -40,15 +42,15 @@
 /*
  * Initialize a domain:
  *
- * - With schannel credentials, try to open the SMB connection with the
- *   machine creds. This works against W2k3SP1 with an NTLMSSP session
- *   setup. Fall back to anonymous.
+ * - With schannel credentials, try to open the SMB connection and
+ *   NETLOGON pipe with the machine creds. This works against W2k3SP1
+ *   with an NTLMSSP session setup. Fall back to anonymous (for the CIFS level).
  *
  * - If we have schannel creds, do the auth2 and open the schannel'ed netlogon
  *   pipe.
  *
- * - Open LSA. If we have machine creds, try to open with ntlmssp. Fall back
- *   to schannel and then to anon bind.
+ * - Open LSA. If we have machine creds, try to open with SPNEGO or NTLMSSP. Fall back
+ *   to schannel.
  *
  * - With queryinfopolicy, verify that we're talking to the right domain
  *
@@ -64,19 +66,46 @@ struct init_domain_state {
 	struct wbsrv_domain *domain;
 	struct wbsrv_service *service;
 
-	struct smb_composite_connect conn;
-
+	struct lsa_ObjectAttribute objectattr;
+	struct lsa_OpenPolicy2 lsa_openpolicy;
 	struct lsa_QueryInfoPolicy queryinfo;
 };
 
-static void init_domain_recv_tree(struct composite_context *ctx);
-static void init_domain_recv_netlogoncreds(struct composite_context *ctx);
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
-static void init_domain_recv_schannel(struct composite_context *ctx);
-static void init_domain_recv_lsa(struct composite_context *ctx);
+static void init_domain_recv_lsa_pipe(struct composite_context *ctx);
+static void init_domain_recv_lsa_policy(struct rpc_request *req);
 static void init_domain_recv_queryinfo(struct rpc_request *req);
 static void init_domain_recv_ldapconn(struct composite_context *ctx);
 static void init_domain_recv_samr(struct composite_context *ctx);
+
+static struct dcerpc_binding *init_domain_binding(struct init_domain_state *state, 
+						  const struct dcerpc_interface_table *table) 
+{
+	struct dcerpc_binding *binding;
+	NTSTATUS status;
+	/* Make a binding string */
+	{
+		char *s = talloc_asprintf(state, "ncacn_np:%s", state->domain->info->dc_name);
+		if (s == NULL) return NULL;
+		status = dcerpc_parse_binding(state, s, &binding);
+		talloc_free(s);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+	}
+
+	/* Alter binding to contain hostname, but also address (so we don't look it up twice) */
+	binding->target_hostname = state->domain->info->dc_name;
+	binding->host = state->domain->info->dc_address;
+
+	/* This shouldn't make a network call, as the mappings for named pipes are well known */
+	status = dcerpc_epm_map_binding(binding, binding, table, state->service->task->event_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	return binding;
+}
 
 struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 					      struct wbsrv_service *service,
@@ -101,153 +130,178 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	state->domain->info = talloc_reference(state->domain, dom_info);
 	if (state->domain->info == NULL) goto failed;
 
+	/* Create a credentials structure */
 	state->domain->schannel_creds = cli_credentials_init(state->domain);
 	if (state->domain->schannel_creds == NULL) goto failed;
 
+	cli_credentials_set_event_context(state->domain->schannel_creds, service->task->event_ctx);
+
 	cli_credentials_set_conf(state->domain->schannel_creds);
+
+	/* Connect the machine account to the credentials */
 	state->ctx->status =
 		cli_credentials_set_machine_account(state->domain->
 						    schannel_creds);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
 
-	state->conn.in.dest_host = dom_info->dc_address;
-	state->conn.in.port = 0;
-	state->conn.in.called_name = dom_info->dc_name;
-	state->conn.in.service = "IPC$";
-	state->conn.in.service_type = "IPC";
-	state->conn.in.workgroup = dom_info->name;
-	state->conn.in.credentials = state->domain->schannel_creds;
+	state->domain->netlogon_binding = init_domain_binding(state, &dcerpc_table_netlogon);
 
-	state->conn.in.fallback_to_anonymous = True;
+	state->domain->netlogon_pipe = NULL;
 
-	ctx = smb_composite_connect_send(&state->conn, state->domain,
-					 result->event_ctx);
-	if (ctx == NULL) goto failed;
+	if ((!cli_credentials_is_anonymous(state->domain->schannel_creds)) &&
+	    ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
+	     (dom_sid_equal(state->domain->info->sid,
+			    state->service->primary_sid)))) {
+		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL;
 
-	ctx->async.fn = init_domain_recv_tree;
-	ctx->async.private_data = state;
+		/* For debugging, it can be a real pain if all the traffic is encrypted */
+		if (lp_winbind_sealed_pipes()) {
+			state->domain->netlogon_binding->flags |= (DCERPC_SIGN | DCERPC_SEAL );
+		} else {
+			state->domain->netlogon_binding->flags |= (DCERPC_SIGN);
+		}
+	}
+
+	/* No encryption on anonymous pipes */
+
+	ctx = dcerpc_pipe_connect_b_send(state, state->domain->netlogon_binding, 
+					 &dcerpc_table_netlogon,
+					 state->domain->schannel_creds,
+					 service->task->event_ctx);
+	
+	if (composite_nomem(ctx, state->ctx)) {
+		goto failed;
+	}
+	
+	composite_continue(state->ctx, ctx, init_domain_recv_netlogonpipe,
+			   state);
 	return result;
-
  failed:
 	talloc_free(result);
 	return NULL;
 }
 
-static void init_domain_recv_tree(struct composite_context *ctx)
-{
-	struct init_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct init_domain_state);
-	state->ctx->status = smb_composite_connect_recv(ctx, state);
-	if (!composite_is_ok(state->ctx)) return;
-
-	if ((state->domain->schannel_creds != NULL) &&
-	    (!cli_credentials_is_anonymous(state->domain->schannel_creds)) &&
-	    ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
-	     (dom_sid_equal(state->domain->info->sid,
-			    state->service->primary_sid)))) {
-		ctx = wb_get_schannel_creds_send(state,
-						 state->domain->schannel_creds,
-						 state->conn.out.tree,
-						 state->ctx->event_ctx);
-		composite_continue(state->ctx, ctx,
-				   init_domain_recv_netlogoncreds, state);
-		return;
-	}
-
-	ctx = wb_connect_lsa_send(state, state->conn.out.tree, NULL);
-	composite_continue(state->ctx, ctx, init_domain_recv_lsa, state);
-}
-
-static void init_domain_recv_netlogoncreds(struct composite_context *ctx)
-{
-	struct init_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct init_domain_state);
-	struct dcerpc_pipe *auth2_pipe;
-	struct smbcli_tree *tree = NULL;
-
-	state->ctx->status =
-		wb_get_schannel_creds_recv(ctx, state, &auth2_pipe);
-	if (!composite_is_ok(state->ctx)) return;
-
-	if (!lp_winbind_sealed_pipes()) {
-		state->domain->netlogon_pipe = talloc_reference(state->domain,
-								auth2_pipe);
-		ctx = wb_connect_lsa_send(state, state->conn.out.tree, NULL);
-		composite_continue(state->ctx, ctx, init_domain_recv_lsa,
-				   state);
-		return;
-	}
-
-	state->domain->netlogon_pipe =
-		dcerpc_pipe_init(state->domain, state->ctx->event_ctx);
-	if (composite_nomem(state->domain->netlogon_pipe, state->ctx)) return;
-
-	tree = dcerpc_smb_tree(auth2_pipe->conn);
-	if (tree == NULL) {
-		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
-		return;
-	}
-
-	ctx = dcerpc_pipe_open_smb_send(state->domain->netlogon_pipe,
-					tree, "\\netlogon");
-	composite_continue(state->ctx, ctx, init_domain_recv_netlogonpipe,
-			   state);
-}
-
+/* Having make a netlogon connection (possibly secured with schannel),
+ * make an LSA connection to the same DC, on the same IPC$ share */
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 {
 	struct init_domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct init_domain_state);
 
-	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
-	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = dcerpc_pipe_connect_b_recv(ctx, state, 
+						   &state->domain->netlogon_pipe);
+	
+	if (!composite_is_ok(state->ctx)) {
+		talloc_free(state->domain->netlogon_binding);
+		return;
+	}
+	talloc_steal(state->domain->netlogon_pipe, state->domain->netlogon_binding);
 
-	state->domain->netlogon_pipe->conn->flags |=
-		(DCERPC_SIGN | DCERPC_SEAL);
-	ctx = dcerpc_bind_auth_send(state, state->domain->netlogon_pipe,
-				    &dcerpc_table_netlogon,
-				    state->domain->schannel_creds,
-				    DCERPC_AUTH_TYPE_SCHANNEL,
-				    DCERPC_AUTH_LEVEL_PRIVACY,
-				    NULL);
-	composite_continue(state->ctx, ctx, init_domain_recv_schannel, state);
+	state->domain->lsa_binding = init_domain_binding(state, &dcerpc_table_lsarpc);
+
+	/* For debugging, it can be a real pain if all the traffic is encrypted */
+	if (lp_winbind_sealed_pipes()) {
+		state->domain->lsa_binding->flags |= (DCERPC_SIGN | DCERPC_SEAL );
+	} else {
+		state->domain->lsa_binding->flags |= (DCERPC_SIGN);
+	}
+
+	state->domain->lsa_pipe = NULL;
+
+	/* this will make the secondary connection on the same IPC$ share, 
+	   secured with SPNEGO or NTLMSSP */
+	ctx = dcerpc_secondary_connection_send(state->domain->netlogon_pipe,
+					       state->domain->lsa_binding);
+	composite_continue(state->ctx, ctx, init_domain_recv_lsa_pipe, state);
 }
 
-static void init_domain_recv_schannel(struct composite_context *ctx)
+static bool retry_with_schannel(struct init_domain_state *state, 
+				struct dcerpc_binding *binding,
+				void (*continuation)(struct composite_context *))
 {
-	struct init_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct init_domain_state);
+	struct composite_context *ctx;
+	if (state->domain->netlogon_binding->flags & DCERPC_SCHANNEL 
+	    && !(binding->flags & DCERPC_SCHANNEL)) {
+		/* Opening a policy handle failed, perhaps it was
+		 * because we don't get a 'wrong password' error on
+		 * NTLMSSP binds */
 
-	state->ctx->status = dcerpc_bind_auth_recv(ctx);
-	if (!composite_is_ok(state->ctx)) return;
+		/* Try again with schannel */
+		binding->flags |= DCERPC_SCHANNEL;
 
-	ctx = wb_connect_lsa_send(state, state->conn.out.tree,
-				  state->domain->schannel_creds);
-	composite_continue(state->ctx, ctx, init_domain_recv_lsa, state);
+		/* Try again, likewise on the same IPC$ share, 
+		   secured with SCHANNEL */
+		ctx = dcerpc_secondary_connection_send(state->domain->netlogon_pipe,
+						       binding);
+		composite_continue(state->ctx, ctx, continuation, state);		
+		return true;
+	} else {
+		return false;
+	}
 }
-
-static void init_domain_recv_lsa(struct composite_context *ctx)
+/* We should now have either an authenticated LSA pipe, or an error.  
+ * On success, open a policy handle
+ */	
+static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 {
-	struct init_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct init_domain_state);
-
 	struct rpc_request *req;
+	struct init_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_domain_state);
 
-	state->ctx->status = wb_connect_lsa_recv(ctx, state->domain,
-						 &state->domain->lsa_auth_type,
-						 &state->domain->lsa_pipe,
-						 &state->domain->lsa_policy);
+	state->ctx->status = dcerpc_secondary_connection_recv(ctx, 
+							      &state->domain->lsa_pipe);
+	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_LOGON_FAILURE)) {
+		if (retry_with_schannel(state, state->domain->lsa_binding, 
+					init_domain_recv_lsa_pipe)) {
+			return;
+		}
+	}
 	if (!composite_is_ok(state->ctx)) return;
 
-	/* Give the tree to the pipes. */
-	talloc_unlink(state, state->conn.out.tree);
+	talloc_steal(state->domain, state->domain->lsa_pipe);
+	talloc_steal(state->domain->lsa_pipe, state->domain->lsa_binding);
 
-	state->queryinfo.in.handle = state->domain->lsa_policy;
+	state->domain->lsa_policy_handle = talloc(state, struct policy_handle);
+	if (composite_nomem(state->domain->lsa_policy_handle, state->ctx)) return;
+
+	state->lsa_openpolicy.in.system_name =
+		talloc_asprintf(state, "\\\\%s",
+				dcerpc_server_name(state->domain->lsa_pipe));
+	ZERO_STRUCT(state->objectattr);
+	state->lsa_openpolicy.in.attr = &state->objectattr;
+	state->lsa_openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->lsa_openpolicy.out.handle = state->domain->lsa_policy_handle;
+
+	req = dcerpc_lsa_OpenPolicy2_send(state->domain->lsa_pipe, state,
+					  &state->lsa_openpolicy);
+
+	composite_continue_rpc(state->ctx, req, init_domain_recv_lsa_policy, state);
+}
+
+/* Receive a policy handle (or not, and retry the authentication) and
+ * obtain some basic information about the domain */
+
+static void init_domain_recv_lsa_policy(struct rpc_request *req)
+{
+	struct init_domain_state *state =
+		talloc_get_type(req->async.private_data,
+				struct init_domain_state);
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!(NT_STATUS_IS_OK(state->ctx->status)
+	      && NT_STATUS_IS_OK(state->lsa_openpolicy.out.result))) {
+		if (retry_with_schannel(state, state->domain->lsa_binding, 
+					init_domain_recv_lsa_pipe)) {
+			return;
+		}
+	}
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = state->lsa_openpolicy.out.result;
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->queryinfo.in.handle = state->domain->lsa_policy_handle;
 	state->queryinfo.in.level = LSA_POLICY_INFO_ACCOUNT_DOMAIN;
 
 	req = dcerpc_lsa_QueryInfoPolicy_send(state->domain->lsa_pipe, state,
@@ -262,7 +316,6 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 		talloc_get_type(req->async.private_data, struct init_domain_state);
 	struct lsa_DomainInfo *dominfo;
 	struct composite_context *ctx;
-	const char *ldap_url;
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
@@ -288,6 +341,36 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 		composite_error(state->ctx, NT_STATUS_INVALID_DOMAIN_STATE);
 		return;
 	}
+
+	state->domain->samr_binding = init_domain_binding(state, &dcerpc_table_samr);
+
+	/* We want to use the same flags as the LSA pipe did (so, if
+	 * it needed schannel, then we need that here too) */
+	state->domain->samr_binding->flags = state->domain->lsa_binding->flags;
+
+	state->domain->samr_pipe = NULL;
+
+	ctx = wb_connect_samr_send(state, state->domain);
+	composite_continue(state->ctx, ctx, init_domain_recv_samr, state);
+}
+
+/* Recv the SAMR details (SamrConnect and SamrOpenDomain handle) and
+ * open an LDAP connection */
+static void init_domain_recv_samr(struct composite_context *ctx)
+{
+	const char *ldap_url;
+	struct init_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_domain_state);
+
+	state->ctx->status = wb_connect_samr_recv(
+		ctx, state->domain,
+		&state->domain->samr_pipe,
+		&state->domain->samr_handle, 
+		&state->domain->domain_handle);
+	if (!composite_is_ok(state->ctx)) return;
+
+	talloc_steal(state->domain->samr_pipe, state->domain->samr_binding);
 
 	state->domain->ldap_conn =
 		ldap4_new_connection(state->domain, state->ctx->event_ctx);
@@ -318,28 +401,6 @@ static void init_domain_recv_ldapconn(struct composite_context *ctx)
 		DEBUG(0, ("ldap_bind returned %s\n",
 			  nt_errstr(state->ctx->status)));
 	}
-
-	state->domain->samr_pipe =
-		dcerpc_pipe_init(state->domain, state->ctx->event_ctx);
-	if (composite_nomem(state->domain->samr_pipe, state->ctx)) return;
-
-	ctx = wb_connect_sam_send(state, state->conn.out.tree,
-				  state->domain->lsa_auth_type,
-				  state->domain->schannel_creds,
-				  state->domain->info->sid);
-	composite_continue(state->ctx, ctx, init_domain_recv_samr, state);
-}
-
-static void init_domain_recv_samr(struct composite_context *ctx)
-{
-	struct init_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct init_domain_state);
-
-	state->ctx->status = wb_connect_sam_recv(
-		ctx, state->domain, &state->domain->samr_pipe,
-		&state->domain->samr_handle, &state->domain->domain_handle);
-	if (!composite_is_ok(state->ctx)) return;
 
 	composite_done(state->ctx);
 }
