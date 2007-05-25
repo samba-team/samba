@@ -29,6 +29,43 @@
 
 #define TAKEOVER_TIMEOUT() timeval_current_ofs(5,0)
 
+#define CTDB_ARP_INTERVAL 5
+#define CTDB_ARP_REPEAT  24
+
+struct ctdb_takeover_arp {
+	struct ctdb_context *ctdb;
+	uint32_t count;
+	struct sockaddr_in sin;
+};
+
+
+/*
+  send a gratuitous arp
+ */
+static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *private_data)
+{
+	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
+							struct ctdb_takeover_arp);
+	int ret;
+
+	ret = ctdb_sys_send_arp(&arp->sin, arp->ctdb->takeover.interface);
+	if (ret != 0) {
+		DEBUG(0,(__location__ "sending of arp failed (%s)\n", strerror(errno)));
+	}
+
+	arp->count++;
+
+	if (arp->count == CTDB_ARP_REPEAT) {
+		talloc_free(arp);
+		return;
+	}
+	
+	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover.last_ctx, 
+			timeval_current_ofs(CTDB_ARP_INTERVAL, 0), 
+			ctdb_control_send_arp, arp);
+}
+
 /*
   take over an ip address
  */
@@ -37,6 +74,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	int ret;
 	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
 	char *cmdstr;
+	struct ctdb_takeover_arp *arp;
 
 	cmdstr = talloc_asprintf(ctdb, "ip addr add %s/32 dev %s 2> /dev/null",
 				 inet_ntoa(sin->sin_addr), ctdb->takeover.interface);
@@ -46,10 +84,19 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	system(cmdstr);
 	talloc_free(cmdstr);
 
-	ret = ctdb_sys_send_arp(sin, ctdb->takeover.interface);
-	if (ret != 0) {
-		DEBUG(0,(__location__ "sending of arp failed (%s)\n", strerror(errno)));
+	if (!ctdb->takeover.last_ctx) {
+		ctdb->takeover.last_ctx = talloc_new(ctdb);
+		CTDB_NO_MEMORY(ctdb, ctdb->takeover.last_ctx);
 	}
+
+	arp = talloc_zero(ctdb->takeover.last_ctx, struct ctdb_takeover_arp);
+	CTDB_NO_MEMORY(ctdb, arp);
+	
+	arp->ctdb = ctdb;
+	arp->sin = *sin;
+
+	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover.last_ctx, 
+			timeval_zero(), ctdb_control_send_arp, arp);
 
 	return ret;
 }
@@ -61,6 +108,10 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
 	char *cmdstr;
+
+	/* stop any previous arps */
+	talloc_free(ctdb->takeover.last_ctx);
+	ctdb->takeover.last_ctx = NULL;
 
 	cmdstr = talloc_asprintf(ctdb, "ip addr del %s/32 dev %s 2> /dev/null",
 				 inet_ntoa(sin->sin_addr), ctdb->takeover.interface);
