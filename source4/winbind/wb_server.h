@@ -49,15 +49,18 @@ struct wb_dom_info {
 	const char *dns_name;
 	const struct dom_sid *sid;
 
-	const char *dc_name;
-	const char *dc_dns_name;
-	const char *dc_address;
+	int num_dcs;
+	struct nbt_dc_name *dcs;
 };
 
 struct wbsrv_domain {
 	struct wbsrv_domain *next, *prev;
 
 	struct wb_dom_info *info;
+
+	/* Details for the server we are currently talking to */
+	const char *dc_address;
+	const char *dc_name;
 
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy_handle;
