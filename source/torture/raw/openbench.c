@@ -314,15 +314,16 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 	fflush(stdout);
 	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
 
-	if (!state[i].tree) {
-		return;
-	}
-
 	/* send an echo on each interface to ensure it stays alive - this helps
 	   with IP takeover */
 	for (i=0;i<nprocs;i++) {
 		struct smb_echo p;
 		struct smbcli_request *req;
+
+		if (!state[i].tree) {
+			continue;
+		}
+
 		p.in.repeat_count = 1;
 		p.in.size = 0;
 		p.in.data = NULL;
