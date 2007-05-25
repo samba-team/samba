@@ -333,10 +333,10 @@ struct ctdb_db_context {
 #define CTDB_TRAVERSE_TIMEOUT 20
 
 /* timeout between dead-node monitoring events */
-#define CTDB_MONITORING_TIMEOUT 5
+#define CTDB_MONITORING_TIMEOUT 3
 
 /* number of monitoring timeouts before a node is considered dead */
-#define CTDB_MONITORING_DEAD_COUNT 3
+#define CTDB_MONITORING_DEAD_COUNT 2
 
 
 /* number of consecutive calls from the same node before we give them
