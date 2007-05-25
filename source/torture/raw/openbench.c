@@ -297,6 +297,16 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 	printf("\r");
 	fflush(stdout);
 	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+
+	/* send an echo on each interface to ensure it stays alive - this helps
+	   with IP takeover */
+	for (i=0;i<nprocs;i++) {
+		struct smb_echo p;
+		p.in.repeat_count = 0;
+		p.in.size = 0;
+		p.in.data = NULL;
+		smb_raw_echo_send(state[i].tree->session->transport, &p);
+	}
 }
 
 /* 
@@ -355,6 +365,7 @@ BOOL torture_bench_open(struct torture_context *torture)
 		state[i].fnum = smbcli_open(state[i].tree, 
 					    fnames[state->file_num], 
 					    O_RDWR|O_CREAT, DENY_ALL);
+		state[i].old_fnum = state[i].fnum;
 		state[i].stage = OPEN_OPEN;
 		next_operation(&state[i]);
 	}
