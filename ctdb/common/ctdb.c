@@ -180,6 +180,7 @@ XXX table for the daemons.
 	return 0;
 }
 
+
 /*
   setup the local node address
 */

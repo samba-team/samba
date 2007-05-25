@@ -376,8 +376,8 @@ static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_nod
 
 
 static int do_recovery(struct ctdb_context *ctdb, 
-	TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
-	struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
+		       TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
+		       struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
 {
 	int i, j, ret;
 	uint32_t generation;
@@ -499,7 +499,7 @@ static int do_recovery(struct ctdb_context *ctdb,
 	vnnmap->map = talloc_array(vnnmap, uint32_t, vnnmap->size);
 	for (i=j=0;i<nodemap->num;i++) {
 		if (nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) {
-			vnnmap->map[j++]=nodemap->nodes[i].vnn;
+			vnnmap->map[j++] = nodemap->nodes[i].vnn;
 		}
 	}
 
@@ -539,6 +539,16 @@ static int do_recovery(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	/*
+	  if enabled, tell nodes to takeover their public IPs
+	 */
+	if (ctdb->takeover.enabled) {
+		ret = ctdb_takeover_run(ctdb, nodemap);
+		if (ret != 0) {
+			DEBUG(0, (__location__, " Unable to setup public takeover addresses\n"));
+			return -1;
+		}
+	}
 
 	/* disable recovery mode */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);

@@ -1831,25 +1831,26 @@ int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout,
   sent to a node to make it take over an ip address
 */
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, struct sockaddr *sa, const char *iface)
+			  uint32_t destnode, const char *ip)
 {
 	TDB_DATA data;
 	int ret;
 	int32_t res;
-	struct ctdb_control_takeover_ip *ip;
+	struct sockaddr sa;
+	struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
-	data.dsize = offsetof(struct ctdb_control_takeover_ip, iface) + strlen(iface)+1;
-	data.dptr  = talloc_size(ctdb, data.dsize);
+	ZERO_STRUCT(sa);
+#ifdef HAVE_SOCK_SIN_LEN
+	sin->sin_len = sizeof(*sin);
+#endif
+	sin->sin_family = AF_INET;
+	inet_aton(ip, &sin->sin_addr);
 
-	ip = (struct ctdb_control_takeover_ip *)data.dptr;
-
-	memcpy(&ip->sa, sa, sizeof(struct sockaddr));
-	ip->iflen = strlen(iface);
-	memcpy(&ip->iface[0], iface, strlen(iface)+1);
+	data.dsize = sizeof(sa);
+	data.dptr  = (uint8_t *)&sa;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_TAKEOVER_IP, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);
-	talloc_free(data.dptr);
 
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for takeover_ip failed\n"));
@@ -1864,25 +1865,26 @@ int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout,
   sent to a node to make it release an ip address
 */
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, struct sockaddr *sa, const char *iface)
+			 uint32_t destnode, const char *ip)
 {
 	TDB_DATA data;
 	int ret;
 	int32_t res;
-	struct ctdb_control_takeover_ip *ip;
+	struct sockaddr sa;
+	struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
-	data.dsize = offsetof(struct ctdb_control_takeover_ip, iface) + strlen(iface)+1;
-	data.dptr  = talloc_size(ctdb, data.dsize);
+	ZERO_STRUCT(sa);
+#ifdef HAVE_SOCK_SIN_LEN
+	sin->sin_len = sizeof(*sin);
+#endif
+	sin->sin_family = AF_INET;
+	inet_aton(ip, &sin->sin_addr);
 
-	ip = (struct ctdb_control_takeover_ip *)data.dptr;
-
-	memcpy(&ip->sa, sa, sizeof(struct sockaddr));
-	ip->iflen = strlen(iface);
-	memcpy(&ip->iface[0], iface, strlen(iface)+1);
+	data.dsize = sizeof(sa);
+	data.dptr  = (uint8_t *)&sa;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_RELEASE_IP, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);
-	talloc_free(data.dptr);
 
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for release_ip failed\n"));

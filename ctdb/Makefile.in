@@ -32,9 +32,11 @@ CTDB_COMMON_OBJ = common/ctdb.o common/ctdb_daemon.o common/ctdb_client.o \
 	lib/util/debug.o common/ctdb_recover.o common/ctdb_recoverd.o \
 	common/ctdb_freeze.o common/ctdb_traverse.o common/ctdb_monitor.o
 
+CTDB_TAKEOVER_OBJ = takeover/system.o takeover/ctdb_takeover.o
+
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
-CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
+CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
 
 OBJS = @TDB_OBJ@ @TALLOC_OBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ $(CTDB_OBJ) $(UTIL_OBJ)
 

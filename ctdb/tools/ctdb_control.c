@@ -383,22 +383,19 @@ static int control_shutdown(struct ctdb_context *ctdb, int argc, const char **ar
 static int control_takeoverip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn;
-	struct sockaddr_in sin;
 	int ret;
+	const char *ip;
 
-
-	if (argc < 3) {
+	if (argc < 2) {
 		usage();
 	}
 
-	vnn     = strtoul(argv[0], NULL, 0);
+	vnn  = strtoul(argv[0], NULL, 0);
+	ip   = argv[1];
 
-	sin.sin_family = AF_INET;
-	inet_aton(argv[1], &sin.sin_addr);
-
-	ret = ctdb_ctrl_takeover_ip(ctdb, timeval_current_ofs(1, 0), vnn, (struct sockaddr *)&sin, argv[2]);
+	ret = ctdb_ctrl_takeover_ip(ctdb, timeval_current_ofs(1, 0), vnn, ip);
 	if (ret != 0) {
-		printf("Unable to takeoverip node %u ip %s iface %s\n", vnn, argv[1], argv[2]);
+		printf("Unable to takeoverip node %u ip %s\n", vnn, ip);
 		return ret;
 	}
 
@@ -411,22 +408,19 @@ static int control_takeoverip(struct ctdb_context *ctdb, int argc, const char **
 static int control_releaseip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t vnn;
-	struct sockaddr_in sin;
 	int ret;
+	const char *ip;
 
-
-	if (argc < 3) {
+	if (argc < 2) {
 		usage();
 	}
 
 	vnn     = strtoul(argv[0], NULL, 0);
+	ip      = argv[1];
 
-	sin.sin_family = AF_INET;
-	inet_aton(argv[1], &sin.sin_addr);
-
-	ret = ctdb_ctrl_release_ip(ctdb, timeval_current_ofs(1, 0), vnn, (struct sockaddr *)&sin, argv[2]);
+	ret = ctdb_ctrl_release_ip(ctdb, timeval_current_ofs(1, 0), vnn, ip);
 	if (ret != 0) {
-		printf("Unable to releaseip node %u ip %s iface %s\n", vnn, argv[1], argv[2]);
+		printf("Unable to releaseip node %u ip %s\n", vnn, ip);
 		return ret;
 	}
 

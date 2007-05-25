@@ -30,6 +30,8 @@
 
 static struct {
 	const char *nlist;
+	const char *public_address_list;
+	const char *public_interface;
 	const char *transport;
 	const char *myaddress;
 	const char *socketname;
@@ -40,6 +42,8 @@ static struct {
 	const char *events;
 } ctdb_cmdline = {
 	.nlist = NULL,
+	.public_address_list = NULL,
+	.public_interface = NULL,
 	.transport = "tcp",
 	.myaddress = NULL,
 	.socketname = CTDB_PATH,
@@ -76,6 +80,8 @@ struct poptOption popt_ctdb_cmdline[] = {
 	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
 	{ "logfile", 0, POPT_ARG_STRING, &ctdb_cmdline.logfile, 0, "log file location", "filename" },
 	{ "events", 0, POPT_ARG_STRING, NULL, OPT_EVENTSYSTEM, "event system", NULL },
+	{ "public-addresses", 0, POPT_ARG_STRING, &ctdb_cmdline.public_address_list, 0, "public address list file", "filename" },
+	{ "public-interface", 0, POPT_ARG_STRING, &ctdb_cmdline.public_interface, 0, "public interface", "interface"},
 	{ NULL }
 };
 
@@ -140,6 +146,20 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	if (ret == -1) {
 		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
+	}
+
+	if (ctdb_cmdline.public_interface) {
+		ctdb->takeover.interface = talloc_strdup(ctdb, ctdb_cmdline.public_interface);
+		CTDB_NO_MEMORY_NULL(ctdb, ctdb->takeover.interface);
+	}
+
+	if (ctdb_cmdline.public_address_list) {
+		ret = ctdb_set_public_addresses(ctdb, ctdb_cmdline.public_address_list);
+		if (ret == -1) {
+			printf("Unable to setup public address list\n");
+			exit(1);
+		}
+		ctdb->takeover.enabled = true;
 	}
 
 	if (ctdb_cmdline.db_dir) {

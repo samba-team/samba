@@ -100,6 +100,13 @@ struct ctdb_node {
 	/* a list of controls pending to this node, so we can time them out quickly
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
+
+	/* the public address of this node, if known */
+	const char *public_address;
+
+	/* the node number that has taken over this nodes public address, if any. 
+	   If not taken over, then set to -1 */
+	int32_t takeover_vnn;
 };
 
 /*
@@ -239,6 +246,13 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
+/* information about IP takeover */
+struct ctdb_takeover {
+	bool enabled;
+	const char *interface;
+};
+
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -275,6 +289,7 @@ struct ctdb_context {
 	uint32_t seqnum_frequency;
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
+	struct ctdb_takeover takeover;
 };
 
 struct ctdb_db_context {
@@ -382,15 +397,6 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_DELETE_LOW_RSN,
 		    CTDB_CONTROL_TAKEOVER_IP,
 		    CTDB_CONTROL_RELEASE_IP,
-};
-
-/* 
-  structure passed in ctdb_control_takeover_ip and ctdb_control_release_ip
- */
-struct ctdb_control_takeover_ip {
-	struct sockaddr sa;
-	uint8_t iflen;
-	char iface[1];
 };
 
 /*
@@ -878,11 +884,18 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
 void ctdb_set_realtime(void);
-int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata);
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, struct sockaddr *sa, const char *iface);
-int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+			  uint32_t destnode, const char *ip);
+int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, struct sockaddr *sa, const char *iface);
+			 uint32_t destnode, const char *ip);
+
+/* from takeover/system.c */
+int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
+
+int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
+
+int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 #endif
