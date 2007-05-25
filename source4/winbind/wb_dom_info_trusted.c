@@ -55,6 +55,12 @@ struct composite_context *wb_trusted_dom_info_send(TALLOC_CTX *mem_ctx,
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
 
+composite_error(result, NT_STATUS_FOOBAR);
+return result;
+failed:
+return NULL;
+}
+#if 0
 	state = talloc(result, struct trusted_dom_info_state);
 	if (state == NULL) goto failed;
 	state->ctx = result;
@@ -207,6 +213,7 @@ static void trusted_dom_info_recv_dcaddr(struct composite_context *ctx)
 
 	composite_done(state->ctx);
 }
+#endif
 
 NTSTATUS wb_trusted_dom_info_recv(struct composite_context *ctx,
 				  TALLOC_CTX *mem_ctx,
