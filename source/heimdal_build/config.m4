@@ -70,9 +70,7 @@ AC_CHECK_FUNCS([				\
 	atexit					\
 	cgetent					\
 	getprogname				\
-	inet_ntop				\
 	inet_aton				\
-	inet_pton				\
 	gethostname				\
 	getnameinfo				\
 	iruserok				\
@@ -240,18 +238,6 @@ SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, NO)
 if test t$ac_cv_func_inet_aton != tyes; then
 	SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, YES)
 fi
-
-if test x"$ac_cv_func_inet_pton" = x"no"; then
-    AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, inet_pton)
-    AC_CHECK_LIB_EXT(nsl, NSL_LIBS, inet_pton)
-    SMB_ENABLE(NSL,YES)
-    if test x"$ac_cv_lib_ext_nsl_s_inet_pton" != x"yes" &&
-       test x"$ac_cv_lib_ext_nsl_inet_pton" != x"yes"; then
-	AC_MSG_ERROR([no inet_pton() function available!])
-    fi
-fi
-
-SMB_EXT_LIB(NSL,[${NSL_LIBS}],[],[],[])
 
 # only add closefrom if needed
 SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM, NO)
