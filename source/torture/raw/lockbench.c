@@ -265,7 +265,9 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 		p.in.repeat_count = 0;
 		p.in.size = 0;
 		p.in.data = NULL;
-		smb_raw_echo_send(state[i].tree->session->transport, &p);
+		if (state[i].tree) {
+			smb_raw_echo_send(state[i].tree->session->transport, &p);
+		}
 	}
 }
 
