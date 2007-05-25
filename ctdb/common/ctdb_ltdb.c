@@ -318,6 +318,20 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 
 
 /*
+  paraoid check to see if the db is empty
+ */
+static void ctdb_check_db_empty(struct ctdb_db_context *ctdb_db)
+{
+	struct tdb_context *tdb = ctdb_db->ltdb->tdb;
+	int count = tdb_traverse_read(tdb, NULL, NULL);
+	if (count != 0) {
+		DEBUG(0,(__location__ " tdb '%s' not empty on attach! aborting\n",
+			 ctdb_db->db_path));
+		ctdb_fatal(ctdb_db->ctdb, "database not empty on attach");
+	}
+}
+
+/*
   a client has asked to attach a new database
  */
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
@@ -383,6 +397,8 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		talloc_free(ctdb_db);
 		return -1;
 	}
+
+	ctdb_check_db_empty(ctdb_db);
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
