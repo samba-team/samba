@@ -98,7 +98,9 @@ o   Derrell Lipman <derrell@samba.org>
     * BUG 4599: Fix failure when setting attributes.
     * BUG 4634: Type of the size parameter to getpeername in
       libsmbclient code was wrong.
-
+    * Fix libsmbclient interaction with links on Vista and properly
+      detect non-NTSTATUS errors.
+    
 
 o   Jim McDonough <jmcd@us.ibm.com>
     * BUG 4630: Fix special case of unix_to_nt_time() for TIME_T_MAX

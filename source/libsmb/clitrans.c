@@ -197,7 +197,9 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	 */
 	status = cli_nt_error(cli);
 	
-	if (NT_STATUS_IS_ERR(status) || NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES)) {
+	if (NT_STATUS_IS_ERR(status) ||
+            NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES) ||
+            NT_STATUS_EQUAL(status,STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
 		goto out;
 	}
 
