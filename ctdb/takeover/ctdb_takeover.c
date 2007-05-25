@@ -129,8 +129,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	data.dptr = (uint8_t *)ip;
 	data.dsize = strlen(ip)+1;
 
-	ctdb_send_message(ctdb, ctdb->vnn, CTDB_SRVID_RELEASE_IP, data);
-
+	ctdb_daemon_send_message(ctdb, ctdb->vnn, CTDB_SRVID_RELEASE_IP, data);
 
 	return 0;
 }
