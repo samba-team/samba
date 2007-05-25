@@ -67,6 +67,11 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_RECONFIGURE 0xF200000000000000LL
 
+/* 
+   a message handler ID meaning that an IP address has been released
+ */
+#define CTDB_SRVID_RELEASE_IP 0xF300000000000000LL
+
 struct event_context;
 
 /*

@@ -108,18 +108,29 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
 	char *cmdstr;
+	TDB_DATA data;
+	char *ip = inet_ntoa(sin->sin_addr);
 
 	/* stop any previous arps */
 	talloc_free(ctdb->takeover.last_ctx);
 	ctdb->takeover.last_ctx = NULL;
 
 	cmdstr = talloc_asprintf(ctdb, "ip addr del %s/32 dev %s 2> /dev/null",
-				 inet_ntoa(sin->sin_addr), ctdb->takeover.interface);
+				 ip, ctdb->takeover.interface);
 		
 	DEBUG(0,("Releasing IP : %s\n", cmdstr));
 	system(cmdstr);
 
 	talloc_free(cmdstr);
+
+	/* send a message to all clients of this node telling them
+	   that the cluster has been reconfigured and they should
+	   release any sockets on this IP */
+	data.dptr = (uint8_t *)ip;
+	data.dsize = strlen(ip)+1;
+
+	ctdb_send_message(ctdb, ctdb->vnn, CTDB_SRVID_RELEASE_IP, data);
+
 
 	return 0;
 }

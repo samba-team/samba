@@ -557,7 +557,8 @@ static int do_recovery(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	/* send a message to all clients telling them that the cluster has been reconfigured */
+	/* send a message to all clients telling them that the cluster 
+	   has been reconfigured */
 	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, CTDB_SRVID_RECONFIGURE, tdb_null);
 
 	DEBUG(0, (__location__ " Recovery complete\n"));
