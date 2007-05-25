@@ -441,7 +441,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		*p++ = 1;
 		SSVAL(p, 0, size); p += 2;
-		memcpy(p, buf, size); p += size;
+		memcpy(p, buf + total, size); p += size;
 
 		cli_setup_bcc(cli, p);
 		
