@@ -41,7 +41,7 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_simple_test(suite, "CLOSE", torture_raw_close);
 	torture_suite_add_simple_test(suite, "OPEN", torture_raw_open);
 	torture_suite_add_simple_test(suite, "MKDIR", torture_raw_mkdir);
-	torture_suite_add_simple_test(suite, "OPLOCK", torture_raw_oplock);
+	torture_suite_add_suite(suite, torture_raw_oplock());
 	torture_suite_add_simple_test(suite, "NOTIFY", torture_raw_notify);
 	torture_suite_add_simple_test(suite, "MUX", torture_raw_mux);
 	torture_suite_add_simple_test(suite, "IOCTL", torture_raw_ioctl);
