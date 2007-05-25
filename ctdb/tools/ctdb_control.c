@@ -25,6 +25,7 @@
 #include "cmdline.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
+#include <arpa/inet.h>
 
 static int timelimit = 3;
 
@@ -62,6 +63,8 @@ static void usage(void)
 		"  dumpmemory <vnn|all>               dump memory map to log\n"
 		"  shutdown <vnn>                     shutdown a remote ctdb\n"
 		"  recovery <vnn>                     trigger a recovery\n"
+		"  takeoverip <vnn> <ip> <iface>      take over an ip address\n"
+		"  releaseip <vnn> <ip> <iface>       release an ip address\n"
 		"  freeze <vnn|all>                   freeze a node\n"
 		"  thaw <vnn|all>                     thaw a node\n"
 	);
@@ -368,6 +371,62 @@ static int control_shutdown(struct ctdb_context *ctdb, int argc, const char **ar
 	ret = ctdb_ctrl_shutdown(ctdb, timeval_current_ofs(1, 0), vnn);
 	if (ret != 0) {
 		printf("Unable to shutdown node %u\n", vnn);
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  take over an ip address
+ */
+static int control_takeoverip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	struct sockaddr_in sin;
+	int ret;
+
+
+	if (argc < 3) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	sin.sin_family = AF_INET;
+	inet_aton(argv[1], &sin.sin_addr);
+
+	ret = ctdb_ctrl_takeover_ip(ctdb, timeval_current_ofs(1, 0), vnn, (struct sockaddr *)&sin, argv[2]);
+	if (ret != 0) {
+		printf("Unable to takeoverip node %u ip %s iface %s\n", vnn, argv[1], argv[2]);
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  release an ip address
+ */
+static int control_releaseip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t vnn;
+	struct sockaddr_in sin;
+	int ret;
+
+
+	if (argc < 3) {
+		usage();
+	}
+
+	vnn     = strtoul(argv[0], NULL, 0);
+
+	sin.sin_family = AF_INET;
+	inet_aton(argv[1], &sin.sin_addr);
+
+	ret = ctdb_ctrl_release_ip(ctdb, timeval_current_ofs(1, 0), vnn, (struct sockaddr *)&sin, argv[2]);
+	if (ret != 0) {
+		printf("Unable to releaseip node %u ip %s iface %s\n", vnn, argv[1], argv[2]);
 		return ret;
 	}
 
@@ -1080,6 +1139,8 @@ int main(int argc, const char *argv[])
 		{ "getpid", control_getpid },
 		{ "shutdown", control_shutdown },
 		{ "recovery", control_recovery },
+		{ "takeoverip", control_takeoverip },
+		{ "releaseip", control_releaseip },
 		{ "freeze", control_freeze },
 		{ "thaw", control_thaw },
 	};

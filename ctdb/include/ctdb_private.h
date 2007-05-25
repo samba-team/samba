@@ -22,6 +22,8 @@
 #define _CTDB_PRIVATE_H
 
 #include "ctdb.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 /* location of daemon socket */
 #define CTDB_PATH	"/tmp/ctdb.socket"
@@ -378,6 +380,17 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_MAX_RSN,
 		    CTDB_CONTROL_SET_RSN_NONEMPTY,
 		    CTDB_CONTROL_DELETE_LOW_RSN,
+		    CTDB_CONTROL_TAKEOVER_IP,
+		    CTDB_CONTROL_RELEASE_IP,
+};
+
+/* 
+  structure passed in ctdb_control_takeover_ip and ctdb_control_release_ip
+ */
+struct ctdb_control_takeover_ip {
+	struct sockaddr sa;
+	uint8_t iflen;
+	char iface[1];
 };
 
 /*
@@ -865,5 +878,11 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
 void ctdb_set_realtime(void);
+int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
+			  uint32_t destnode, struct sockaddr *sa, const char *iface);
+int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
+			  uint32_t destnode, struct sockaddr *sa, const char *iface);
 
 #endif
