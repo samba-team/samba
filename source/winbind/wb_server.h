@@ -60,16 +60,18 @@ struct wbsrv_domain {
 	struct wb_dom_info *info;
 
 	struct dcerpc_pipe *lsa_pipe;
-	struct policy_handle *lsa_policy;
-	uint8_t lsa_auth_type;
+	struct policy_handle *lsa_policy_handle;
+	struct dcerpc_binding *lsa_binding;
 
 	struct dcerpc_pipe *samr_pipe;
 	struct policy_handle *samr_handle;
 	struct policy_handle *domain_handle;
+	struct dcerpc_binding *samr_binding;
 
 	struct ldap_connection *ldap_conn;
 
 	struct dcerpc_pipe *netlogon_pipe;
+	struct dcerpc_binding *netlogon_binding;
 	struct cli_credentials *schannel_creds;
 };
 

@@ -78,7 +78,7 @@ static void lookupsid_recv_domain(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	ctx = wb_lsa_lookupsids_send(state, domain->lsa_pipe,
-				     domain->lsa_policy, 1, &state->sid);
+				     domain->lsa_policy_handle, 1, &state->sid);
 	composite_continue(state->ctx, ctx, lookupsid_recv_names, state);
 }
 
