@@ -39,6 +39,8 @@ struct ctdb_incoming {
 struct ctdb_tcp_node {
 	int fd;
 	struct ctdb_queue *queue;
+	struct fd_event *connect_fde;
+	struct timed_event *connect_te;
 };
 
 

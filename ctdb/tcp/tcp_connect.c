@@ -50,6 +50,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 	/* start a new connect cycle to try to re-establish the
 	   link */
 	ctdb_queue_set_fd(tnode->queue, -1);
+	tnode->fd = -1;
 	event_add_timed(node->ctdb->ev, node, timeval_zero(), 
 			ctdb_tcp_node_connect, node);
 }
@@ -68,6 +69,9 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	int error = 0;
 	socklen_t len = sizeof(error);
 	int one = 1;
+
+	talloc_free(tnode->connect_te);
+	tnode->connect_te = NULL;
 
 	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
 	    error != 0) {
@@ -120,6 +124,13 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
         struct sockaddr_in sock_in;
         struct sockaddr_in sock_out;
 
+	if (tnode->fd != -1) {
+		talloc_free(tnode->connect_fde);
+		tnode->connect_fde = NULL;
+		close(tnode->fd);
+		tnode->fd = -1;
+	}
+
 	tnode->fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	set_nonblocking(tnode->fd);
@@ -163,8 +174,15 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	}
 
 	/* non-blocking connect - wait for write event */
-	event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_WRITE|EVENT_FD_READ, 
-		     ctdb_node_connect_write, node);
+	tnode->connect_fde = event_add_fd(node->ctdb->ev, node, tnode->fd, 
+					  EVENT_FD_WRITE|EVENT_FD_READ, 
+					  ctdb_node_connect_write, node);
+
+	/* don't give it long to connect - retry in one second. This ensures
+	   that we find a node is up quickly (tcp normally backs off a syn reply
+	   delay by quite a lot) */
+	tnode->connect_te = event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
+					    ctdb_tcp_node_connect, node);
 }
 
 /*
