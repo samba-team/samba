@@ -593,3 +593,71 @@ void smbcli_transport_send(struct smbcli_request *req)
 
 	talloc_set_destructor(req, smbcli_request_destructor);
 }
+
+
+/****************************************************************************
+ Send an SMBecho (async send)
+*****************************************************************************/
+struct smbcli_request *smb_raw_echo_send(struct smbcli_transport *transport,
+					 struct smb_echo *p)
+{
+	struct smbcli_request *req;
+
+	req = smbcli_request_setup_transport(transport, SMBecho, 1, p->in.size);
+	if (!req) return NULL;
+
+	SSVAL(req->out.vwv, VWV(0), p->in.repeat_count);
+
+	memcpy(req->out.data, p->in.data, p->in.size);
+
+	ZERO_STRUCT(p->out);
+
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
+		return NULL;
+	}
+
+	return req;
+}
+
+/****************************************************************************
+ raw echo interface (async recv)
+****************************************************************************/
+NTSTATUS smb_raw_echo_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
+			   struct smb_echo *p)
+{
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		goto failed;
+	}
+
+	SMBCLI_CHECK_WCT(req, 1);
+	p->out.count++;
+	p->out.sequence_number = SVAL(req->in.vwv, VWV(0));
+	p->out.size = req->in.data_size;
+	talloc_free(p->out.data);
+	p->out.data = talloc_size(mem_ctx, p->out.size);
+	NT_STATUS_HAVE_NO_MEMORY(p->out.data);
+
+	if (!smbcli_raw_pull_data(req, req->in.data, p->out.size, p->out.data)) {
+		req->status = NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	if (p->out.count == p->in.repeat_count) {
+		return smbcli_request_destroy(req);
+	}
+
+	return NT_STATUS_OK;
+
+failed:
+	return smbcli_request_destroy(req);
+}
+
+/****************************************************************************
+ Send a echo (sync interface)
+*****************************************************************************/
+NTSTATUS smb_raw_echo(struct smbcli_transport *transport, struct smb_echo *p)
+{
+	struct smbcli_request *req = smb_raw_echo_send(transport, p);
+	return smbcli_request_simple_recv(req);
+}
