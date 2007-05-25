@@ -581,8 +581,9 @@ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx)
 	return session_info;
 }
 
-NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx, 
-				  struct auth_session_info **_session_info) 
+static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx, 
+					  BOOL anonymous_credentials, 
+					  struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info = NULL;
@@ -609,7 +610,7 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 
 	cli_credentials_set_conf(session_info->credentials);
 
-	if (lp_parm_bool(-1,"system","anonymous", False)) {
+	if (anonymous_credentials) {
 		cli_credentials_set_anonymous(session_info->credentials);
 	} else {
 		cli_credentials_set_machine_account_pending(session_info->credentials);
@@ -619,11 +620,36 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx, 
+					   struct auth_session_info **_session_info) 
+{
+	return _auth_system_session_info(parent_ctx, lp_parm_bool(-1,"system","anonymous", False), 
+					 _session_info);
+}
+
+/*
+  Create a system session, with machine account credentials
+*/
 _PUBLIC_ struct auth_session_info *system_session(TALLOC_CTX *mem_ctx) 
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = auth_system_session_info(mem_ctx, &session_info);
+	nt_status = auth_system_session_info(mem_ctx,
+					     &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return NULL;
+	}
+	return session_info;
+}
+
+/*
+  Create a system session, but with anonymous credentials (so we do not need to open secrets.ldb)
+*/
+_PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx) 
+{
+	NTSTATUS nt_status;
+	struct auth_session_info *session_info = NULL;
+	nt_status = _auth_system_session_info(mem_ctx, False, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
