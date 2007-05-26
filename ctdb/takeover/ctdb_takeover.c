@@ -73,16 +73,16 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	int ret;
 	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
-	char *cmdstr;
 	struct ctdb_takeover_arp *arp;
+	char *ip = inet_ntoa(sin->sin_addr);
 
-	cmdstr = talloc_asprintf(ctdb, "ip addr add %s/32 dev %s 2> /dev/null",
-				 inet_ntoa(sin->sin_addr), ctdb->takeover.interface);
-	CTDB_NO_MEMORY(ctdb, cmdstr);
-
-	DEBUG(0,("Taking over IP : %s\n", cmdstr));
-	system(cmdstr);
-	talloc_free(cmdstr);
+	DEBUG(0,("Takover of IP %s on interface %s\n", ip, ctdb->takeover.interface));
+	ret = ctdb_sys_take_ip(ip, ctdb->takeover.interface);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
+			 ip, ctdb->takeover.interface));
+		return -1;
+	}
 
 	if (!ctdb->takeover.last_ctx) {
 		ctdb->takeover.last_ctx = talloc_new(ctdb);
@@ -107,21 +107,22 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
-	char *cmdstr;
 	TDB_DATA data;
 	char *ip = inet_ntoa(sin->sin_addr);
+	int ret;
+
+	DEBUG(0,("Release of IP %s on interface %s\n", ip, ctdb->takeover.interface));
 
 	/* stop any previous arps */
 	talloc_free(ctdb->takeover.last_ctx);
 	ctdb->takeover.last_ctx = NULL;
 
-	cmdstr = talloc_asprintf(ctdb, "ip addr del %s/32 dev %s 2> /dev/null",
-				 ip, ctdb->takeover.interface);
-		
-	DEBUG(0,("Releasing IP : %s\n", cmdstr));
-	system(cmdstr);
-
-	talloc_free(cmdstr);
+	ret = ctdb_sys_release_ip(ip, ctdb->takeover.interface);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
+			 ip, ctdb->takeover.interface));
+		return -1;
+	}
 
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should

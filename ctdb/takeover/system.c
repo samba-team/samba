@@ -126,3 +126,35 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	close(s);
 	return 0;
 }
+
+/*
+  takeover an IP on an interface
+ */
+int ctdb_sys_take_ip(const char *ip, const char *interface)
+{
+	char *cmdstr;
+	cmdstr = talloc_asprintf(NULL, "/sbin/ip addr add %s/32 dev %s 2> /dev/null",
+				 ip, interface);
+	if (cmdstr == NULL) {
+		return -1;
+	}
+	system(cmdstr);
+	talloc_free(cmdstr);
+	return 0;
+}
+
+/*
+  release an IP on an interface
+ */
+int ctdb_sys_release_ip(const char *ip, const char *interface)
+{
+	char *cmdstr;
+	cmdstr = talloc_asprintf(NULL, "/sbin/ip addr del %s/32 dev %s 2> /dev/null",
+				 ip, interface);
+	if (cmdstr == NULL) {
+		return -1;
+	}
+	system(cmdstr);
+	talloc_free(cmdstr);
+	return 0;
+}

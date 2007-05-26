@@ -894,6 +894,8 @@ int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
+int ctdb_sys_take_ip(const char *ip, const char *interface);
+int ctdb_sys_release_ip(const char *ip, const char *interface);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 

@@ -666,9 +666,10 @@ static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint3
 		return;
 	}
 
-	/* wait for one second to collect all responses */
+	/* wait for a few seconds to collect all responses */
 	timed_out = 0;
-	event_add_timed(ctdb->ev, mem_ctx, CONTROL_TIMEOUT(), timeout_func, ctdb);
+	event_add_timed(ctdb->ev, mem_ctx, timeval_current_ofs(3, 0), 
+			timeout_func, ctdb);
 	while (!timed_out) {
 		event_loop_once(ctdb->ev);
 	}
