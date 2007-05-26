@@ -109,6 +109,11 @@ static void queue_io_read(struct ctdb_queue *queue)
 		uint8_t *d2;
 		uint32_t len;
 		len = *(uint32_t *)data;
+		if (len == 0) {
+			/* bad packet! treat as EOF */
+			DEBUG(0,("Invalid packet of length 0\n"));
+			goto failed;
+		}
 		d2 = talloc_memdup(queue, data, len);
 		if (d2 == NULL) {
 			DEBUG(0,("read error memdup failed for %u\n", len));
