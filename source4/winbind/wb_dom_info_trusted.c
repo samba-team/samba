@@ -27,6 +27,7 @@
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "libcli/libcli.h"
 
 struct trusted_dom_info_state {
 	struct composite_context *ctx;
@@ -55,12 +56,6 @@ struct composite_context *wb_trusted_dom_info_send(TALLOC_CTX *mem_ctx,
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
 
-composite_error(result, NT_STATUS_FOOBAR);
-return result;
-failed:
-return NULL;
-}
-#if 0
 	state = talloc(result, struct trusted_dom_info_state);
 	if (state == NULL) goto failed;
 	state->ctx = result;
@@ -101,14 +96,14 @@ static void trusted_dom_info_recv_domain(struct composite_context *ctx)
 
 	state->d.in.server_unc =
 		talloc_asprintf(state, "\\\\%s",
-				state->my_domain->info->dc_name);
+				dcerpc_server_name(state->my_domain->netlogon_pipe));
 	if (composite_nomem(state->d.in.server_unc,
 			    state->ctx)) return;
 
 	state->d.in.domain_name = state->info->name;
 	state->d.in.domain_guid = NULL;
 	state->d.in.site_guid = NULL;
-	state->d.in.flags = 0x40000000;
+	state->d.in.flags = DS_RETURN_DNS_NAME;
 
 	req = dcerpc_netr_DsRGetDCName_send(state->my_domain->netlogon_pipe,
 					    state, &state->d);
@@ -142,16 +137,17 @@ static void trusted_dom_info_recv_dsr(struct rpc_request *req)
 	}
 
 	/* Hey, that was easy! */
-
-	state->info->dc_name = talloc_steal(state->info,
+	state->info->num_dcs = 1;
+	state->info->dcs = talloc(state->info, struct nbt_dc_name);
+	state->info->dcs[0].name = talloc_steal(state->info,
 					    state->d.out.info->dc_unc);
-	if (*state->info->dc_name == '\\') state->info->dc_name++;
-	if (*state->info->dc_name == '\\') state->info->dc_name++;
+	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
+	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
 
-	state->info->dc_address = talloc_steal(state->info,
+	state->info->dcs[0].address = talloc_steal(state->info,
 					       state->d.out.info->dc_address);
-	if (*state->info->dc_address == '\\') state->info->dc_address++;
-	if (*state->info->dc_address == '\\') state->info->dc_address++;
+	if (*state->info->dcs[0].address == '\\') state->info->dcs[0].address++;
+	if (*state->info->dcs[0].address == '\\') state->info->dcs[0].address++;
 
 	state->info->dns_name = talloc_steal(state->info,
 					     state->d.out.info->domain_name);
@@ -187,13 +183,15 @@ static void trusted_dom_info_recv_dcname(struct rpc_request *req)
 	state->ctx->status = werror_to_ntstatus(state->g.out.result);
 	if (!composite_is_ok(state->ctx)) return;
 
-	state->info->dc_name = talloc_steal(state->info,
+	/* Hey, that was easy! */
+	state->info->num_dcs = 1;
+	state->info->dcs = talloc(state->info, struct nbt_dc_name);
+	state->info->dcs[0].name = talloc_steal(state->info,
 					    state->g.out.dcname);
-
-	if (*state->info->dc_name == '\\') state->info->dc_name++;
-	if (*state->info->dc_name == '\\') state->info->dc_name++;
+	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
+	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
 	
-	make_nbt_name(&name, state->info->dc_name, 0x20);
+	make_nbt_name(&name, state->info->dcs[0].name, 0x20);
 	ctx = resolve_name_send(&name, state->service->task->event_ctx,
 				lp_name_resolve_order());
 
@@ -208,12 +206,11 @@ static void trusted_dom_info_recv_dcaddr(struct composite_context *ctx)
 				struct trusted_dom_info_state);
 
 	state->ctx->status = resolve_name_recv(ctx, state->info,
-					       &state->info->dc_address);
+					       &state->info->dcs[0].address);
 	if (!composite_is_ok(state->ctx)) return;
 
 	composite_done(state->ctx);
 }
-#endif
 
 NTSTATUS wb_trusted_dom_info_recv(struct composite_context *ctx,
 				  TALLOC_CTX *mem_ctx,
