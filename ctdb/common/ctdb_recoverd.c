@@ -36,6 +36,7 @@ static void timeout_func(struct event_context *ev, struct timed_event *te,
 }
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(5, 0)
+#define MONITOR_TIMEOUT() timeval_current_ofs(1, 0)
 
 static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t rec_mode)
 {
@@ -699,7 +700,7 @@ again:
 
 	/* we only check for recovery once every second */
 	timed_out = 0;
-	event_add_timed(ctdb->ev, mem_ctx, CONTROL_TIMEOUT(), timeout_func, ctdb);
+	event_add_timed(ctdb->ev, mem_ctx, MONITOR_TIMEOUT(), timeout_func, ctdb);
 	while (!timed_out) {
 		event_loop_once(ctdb->ev);
 	}
