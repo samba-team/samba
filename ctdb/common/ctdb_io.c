@@ -40,6 +40,7 @@ struct ctdb_queue_pkt {
 	struct ctdb_queue_pkt *next, *prev;
 	uint8_t *data;
 	uint32_t length;
+	uint32_t full_length;
 };
 
 struct ctdb_queue {
@@ -175,6 +176,11 @@ static void queue_io_write(struct ctdb_queue *queue)
 		}
 
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+			if (pkt->length != pkt->full_length) {
+				/* partial packet sent - we have to drop it */
+				DLIST_REMOVE(queue->out_queue, pkt);
+				talloc_free(pkt);
+			}
 			talloc_free(queue->fde);
 			queue->fde = NULL;
 			queue->fd = -1;
@@ -262,6 +268,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	CTDB_NO_MEMORY(queue->ctdb, pkt->data);
 
 	pkt->length = length2;
+	pkt->full_length = length2;
 
 	if (queue->out_queue == NULL && queue->fd != -1) {
 		EVENT_FD_WRITEABLE(queue->fde);
