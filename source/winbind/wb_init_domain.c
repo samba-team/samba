@@ -303,8 +303,8 @@ static void init_domain_recv_lsa_policy(struct rpc_request *req)
 				struct init_domain_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!(NT_STATUS_IS_OK(state->ctx->status)
-	      && NT_STATUS_IS_OK(state->lsa_openpolicy.out.result))) {
+	if ((!NT_STATUS_IS_OK(state->ctx->status)
+	      || !NT_STATUS_IS_OK(state->lsa_openpolicy.out.result))) {
 		if (retry_with_schannel(state, state->domain->lsa_binding, 
 					init_domain_recv_lsa_pipe)) {
 			return;
