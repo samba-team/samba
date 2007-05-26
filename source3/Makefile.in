@@ -1789,6 +1789,7 @@ installlibsmbsharemodes: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/smb_share_modes.h $(DESTDIR)${prefix}/include
 
 installlibaddns: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
