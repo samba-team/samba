@@ -84,8 +84,9 @@ VARDIR = @localstatedir@
 MANDIR = @mandir@
 DATADIR = @datadir@
 
-# The permissions to give the executables
+# The permissions to give the executables and other data
 INSTALLPERMS = 0755
+INSTALLPERMS_DATA = 0644
 
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
@@ -1653,14 +1654,14 @@ installclientlib: installdirs libsmbclient
 	-$(INSTALLLIBCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
 
 installlibmsrpc: installdirs libmsrpc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libmsrpc.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libmsrpc.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
 
 installlibsmbsharemodes: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
