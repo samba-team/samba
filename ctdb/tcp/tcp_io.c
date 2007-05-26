@@ -85,12 +85,5 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
 						      struct ctdb_tcp_node);
-	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
-
-	if (length & (CTDB_TCP_ALIGNMENT-1)) {
-		DEBUG(0,(__location__ " Length 0x%x not multiple of alignment op %d\n", 
-			 length, hdr->operation));
-	}
-
 	return ctdb_queue_send(tnode->queue, data, length);
 }
