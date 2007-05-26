@@ -39,15 +39,13 @@ static int open_failed;
 static int open_retries;
 static char **fnames;
 static int num_connected;
-
-enum open_stage {OPEN_INITIAL, OPEN_OPEN, OPEN_CLOSE};
+static struct timed_event *report_te;
 
 struct benchopen_state {
 	TALLOC_CTX *mem_ctx;
 	struct event_context *ev;
 	struct smbcli_state *cli;
 	struct smbcli_tree *tree;
-	enum open_stage stage;
 	int client_num;
 	int old_fnum;
 	int fnum;
@@ -68,7 +66,6 @@ struct benchopen_state {
 };
 
 static void next_open(struct benchopen_state *state);
-static void next_operation(struct benchopen_state *state);
 static void reopen_connection(struct event_context *ev, struct timed_event *te, 
 			      struct timeval t, void *private_data);
 
@@ -97,9 +94,9 @@ static void reopen_connection_complete(struct composite_context *ctx)
 	DEBUG(0,("reconnect to %s finished (%u connected)\n", state->dest_host,
 		 num_connected));
 
-	state->stage = OPEN_INITIAL;
 	state->fnum = -1;
-	next_operation(state);
+	state->old_fnum = -1;
+	next_open(state);
 }
 
 	
@@ -152,7 +149,9 @@ static void next_open(struct benchopen_state *state)
 {
 	state->count++;
 
-	state->file_num = (state->file_num+1) % (nprocs+1);
+	state->file_num = (state->file_num+1) % (3*nprocs);
+
+	DEBUG(2,("[%d] opening %u\n", state->client_num, state->file_num));
 	state->open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	state->open_parms.ntcreatex.in.flags = 0;
 	state->open_parms.ntcreatex.in.root_fid = 0;
@@ -174,6 +173,10 @@ static void next_open(struct benchopen_state *state)
 
 static void next_close(struct benchopen_state *state)
 {
+	DEBUG(2,("[%d] closing %d\n", state->client_num, state->old_fnum));
+	if (state->old_fnum == -1) {
+		return;
+	}
 	state->close_parms.close.level = RAW_CLOSE_CLOSE;
 	state->close_parms.close.in.file.fnum = state->old_fnum;
 	state->close_parms.close.in.write_time = 0;
@@ -181,6 +184,7 @@ static void next_close(struct benchopen_state *state)
 	state->req_close = smb_raw_close_send(state->tree, &state->close_parms);
 	state->req_close->async.fn = close_completed;
 	state->req_close->async.private = state;
+	state->old_fnum = -1;
 }
 
 /*
@@ -191,8 +195,6 @@ static void open_completed(struct smbcli_request *req)
 	struct benchopen_state *state = (struct benchopen_state *)req->async.private;
 	TALLOC_CTX *tmp_ctx = talloc_new(state->mem_ctx);
 	NTSTATUS status;
-
-	state->old_fnum = state->fnum;
 
 	status = smb_raw_open_recv(req, tmp_ctx, &state->open_parms);
 
@@ -215,6 +217,7 @@ static void open_completed(struct smbcli_request *req)
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		DEBUG(2,("[%d] retrying open\n", state->client_num));
 		open_retries++;
 		state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 		state->req_open->async.fn = open_completed;
@@ -228,9 +231,17 @@ static void open_completed(struct smbcli_request *req)
 		return;
 	}
 
+	state->old_fnum = state->fnum;
 	state->fnum = state->open_parms.ntcreatex.out.file.fnum;
 
-	next_operation(state);
+	DEBUG(2,("[%d] open completed: fnum=%d old_fnum=%d\n", 
+		 state->client_num, state->fnum, state->old_fnum));
+
+	if (state->old_fnum != -1) {
+		next_close(state);
+	}
+
+	next_open(state);
 }	
 
 /*
@@ -263,26 +274,9 @@ static void close_completed(struct smbcli_request *req)
 		return;
 	}
 
-	next_operation(state);
+	DEBUG(2,("[%d] close completed: fnum=%d old_fnum=%d\n", 
+		 state->client_num, state->fnum, state->old_fnum));
 }	
-
-static void next_operation(struct benchopen_state *state)
-{
-	switch (state->stage) {
-	case OPEN_INITIAL:
-		next_open(state);
-		state->stage = OPEN_OPEN;
-		break;
-	case OPEN_OPEN:
-		next_open(state);
-		state->stage = OPEN_CLOSE;
-		break;
-	case OPEN_CLOSE:
-		next_close(state);
-		state->stage = OPEN_OPEN;
-		break;
-	}
-}
 
 static void echo_completion(struct smbcli_request *req)
 {
@@ -312,7 +306,8 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 	}
 	printf("\r");
 	fflush(stdout);
-	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+	report_te = event_add_timed(ev, state, timeval_current_ofs(1, 0), 
+				    report_rate, state);
 
 	/* send an echo on each interface to ensure it stays alive - this helps
 	   with IP takeover */
@@ -346,7 +341,7 @@ BOOL torture_bench_open(struct torture_context *torture)
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchopen_state *state;
 	int total = 0, minops=0;
-	bool progress;
+	bool progress=False;
 
 	progress = torture_setting_bool(torture, "progress", true);
 	
@@ -379,8 +374,8 @@ BOOL torture_bench_open(struct torture_context *torture)
 		goto failed;
 	}
 
-	fnames = talloc_array(mem_ctx, char *, nprocs+1);
-	for (i=0;i<nprocs+1;i++) {
+	fnames = talloc_array(mem_ctx, char *, 3*nprocs);
+	for (i=0;i<3*nprocs;i++) {
 		fnames[i] = talloc_asprintf(fnames, "%s\\file%d.dat", BASEDIR, i);
 	}
 
@@ -389,15 +384,15 @@ BOOL torture_bench_open(struct torture_context *torture)
 		state[i].fnum = smbcli_open(state[i].tree, 
 					    fnames[state->file_num], 
 					    O_RDWR|O_CREAT, DENY_ALL);
-		state[i].old_fnum = state[i].fnum;
-		state[i].stage = OPEN_OPEN;
-		next_operation(&state[i]);
+		state[i].old_fnum = -1;
+		next_open(&state[i]);
 	}
 
 	tv = timeval_current();	
 
 	if (progress) {
-		event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+		report_te = event_add_timed(ev, state, timeval_current_ofs(1, 0), 
+					    report_rate, state);
 	}
 
 	printf("Running for %d seconds\n", timelimit);
@@ -409,6 +404,8 @@ BOOL torture_bench_open(struct torture_context *torture)
 			goto failed;
 		}
 	}
+
+	talloc_free(report_te);
 
 	printf("%.2f ops/second (%d retries)\n", 
 	       total/timeval_elapsed(&tv), open_retries);
