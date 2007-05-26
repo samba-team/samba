@@ -347,26 +347,6 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 
 	ctdb->status.node_packets_recv++;
 
-	if (length < sizeof(*hdr)) {
-		ctdb_set_error(ctdb, "Bad packet length %u\n", length);
-		return;
-	}
-	if (length != hdr->length) {
-		ctdb_set_error(ctdb, "Bad header length %u expected %u\n", 
-			       hdr->length, length);
-		return;
-	}
-
-	if (hdr->ctdb_magic != CTDB_MAGIC) {
-		ctdb_set_error(ctdb, "Non CTDB packet rejected\n");
-		return;
-	}
-
-	if (hdr->ctdb_version != CTDB_VERSION) {
-		ctdb_set_error(ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
-		return;
-	}
-
 	/* up the counter for this source node, so we know its alive */
 	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
 		/* as a special case, redirected calls don't increment the rx_cnt */

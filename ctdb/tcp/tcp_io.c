@@ -34,38 +34,48 @@
 void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_incoming *in = talloc_get_type(args, struct ctdb_incoming);
-	struct ctdb_req_header *hdr;
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 
 	if (data == NULL) {
 		/* incoming socket has died */
-		talloc_free(in);
-		return;
+		goto failed;
 	}
 
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(in->ctdb, "Bad packet length %u\n", (unsigned)cnt);
-		return;
+		DEBUG(0,(__location__ " Bad packet length %u\n", (unsigned)cnt));
+		goto failed;
 	}
-	hdr = (struct ctdb_req_header *)data;
+
+	if (cnt & (CTDB_TCP_ALIGNMENT-1)) {
+		DEBUG(0,(__location__ " Length 0x%x not multiple of alignment\n", cnt));
+		goto failed;
+	}
+
+
 	if (cnt != hdr->length) {
-		ctdb_set_error(in->ctdb, "Bad header length %u expected %u\n", 
-			       (unsigned)hdr->length, (unsigned)cnt);
-		return;
+		DEBUG(0,(__location__ " Bad header length %u expected %u\n", 
+			 (unsigned)hdr->length, (unsigned)cnt));
+		goto failed;
 	}
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
-		ctdb_set_error(in->ctdb, "Non CTDB packet rejected\n");
-		return;
+		DEBUG(0,(__location__ " Non CTDB packet 0x%x rejected\n", 
+			 hdr->ctdb_magic));
+		goto failed;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
-		ctdb_set_error(in->ctdb, "Bad CTDB version 0x%x rejected\n", hdr->ctdb_version);
-		return;
+		DEBUG(0, (__location__ " Bad CTDB version 0x%x rejected\n", 
+			  hdr->ctdb_version));
+		goto failed;
 	}
 
-	/* most common case - we got a whole packet in one go
-	   tell the ctdb layer above that we have a packet */
+	/* tell the ctdb layer above that we have a packet */
 	in->ctdb->upcalls->recv_pkt(in->ctdb, data, cnt);
+	return;
+
+failed:
+	talloc_free(in);
 }
 
 /*
