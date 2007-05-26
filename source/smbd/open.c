@@ -1650,6 +1650,15 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
+		/* First pass - send break only on batch oplocks. */
+		if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
+			schedule_defer_open(lck, request_time);
+			TALLOC_FREE(lck);
+			fd_close(conn, fsp);
+			file_free(fsp);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
 		status = open_mode_check(conn, fname, lck,
 					 access_mask, share_access,
 					 create_options, &file_existed);
@@ -1675,6 +1684,14 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				   &state);
 			TALLOC_FREE(lck);
 			return status;
+		}
+
+		if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
+			schedule_defer_open(lck, request_time);
+			TALLOC_FREE(lck);
+			fd_close(conn, fsp);
+			file_free(fsp);
+			return NT_STATUS_SHARING_VIOLATION;
 		}
 
 		/*
