@@ -1482,8 +1482,11 @@ static int traverse_fn(struct db_record *rec, void *state)
 	}
 
 	if (orig_num_locks != num_locks) {
-		if (rec->value.dsize) {
-			rec->store(rec, rec->value, TDB_REPLACE);
+		if (num_locks) {
+			TDB_DATA data;
+			data.dptr = (uint8_t *)locks;
+			data.dsize = num_locks*sizeof(struct lock_struct);
+			rec->store(rec, data, TDB_REPLACE);
 		} else {
 			rec->delete_rec(rec);
 		}
