@@ -28,6 +28,7 @@
 #include <net/if_arp.h>
 
 
+
 /*
   send gratuitous arp reply after we have taken over an ip address
 
@@ -44,7 +45,6 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	unsigned char buffer[64]; /*minimum eth frame size */
 	char *ptr;
 
-
 	/* for now, we only handle AF_INET addresses */
 	if (saddr->sin_family != AF_INET) {
 		DEBUG(0,(__location__ " not an ipv4 address\n"));
@@ -53,7 +53,7 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 
 	s = socket(AF_INET, SOCK_PACKET, htons(ETHERTYPE_ARP));
 	if (s == -1){
-		DEBUG(0,(__location__ "failed to open raw socket\n"));
+		DEBUG(0,(__location__ " failed to open raw socket\n"));
 		return -1;
 	}
 
@@ -126,6 +126,87 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	close(s);
 	return 0;
 }
+
+/*
+  simple IP checksum - assumes data is multiple of 2 bytes long
+ */
+static uint16_t ip_checksum(uint16_t *data, size_t n)
+{
+	uint16_t sum=0;
+	while (n--) {
+		sum += ntohs(*data);
+		data++;
+	}
+	if (sum == 0) {
+		return 0xFFFF;
+	}
+	return htons(sum);
+}
+
+/*
+  send tcp ack packet from the specified IP/port to the specified
+  destination IP/port. 
+
+  This is used to trigger the receiving host into sending its own ACK,
+  which should trigger early detection of TCP reset by the client
+  after IP takeover
+ */
+int ctdb_sys_send_ack(const struct sockaddr_in *dest, 
+		      const struct sockaddr_in *src)
+{
+	int s, ret;
+	uint32_t one = 1;
+	struct {
+		struct iphdr ip;
+		struct tcphdr tcp;
+	} pkt;
+
+	/* for now, we only handle AF_INET addresses */
+	if (src->sin_family != AF_INET || dest->sin_family != AF_INET) {
+		DEBUG(0,(__location__ " not an ipv4 address\n"));
+		return -1;
+	}
+
+	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+	if (s == -1) {
+		DEBUG(0,(__location__ " failed to open raw socket (%s)\n",
+			 strerror(errno)));
+		return -1;
+	}
+
+	ret = setsockopt(s, SOL_IP, IP_HDRINCL, &one, sizeof(one));
+	if (ret != 0) {
+		DEBUG(0,(__location__ " failed to setup IP headers (%s)\n",
+			 strerror(errno)));
+		close(s);
+		return -1;
+	}
+
+	ZERO_STRUCT(pkt);
+	pkt.ip.version  = 4;
+	pkt.ip.ihl      = sizeof(pkt.ip)/4;
+	pkt.ip.tot_len  = sizeof(pkt);
+	pkt.ip.ttl      = 255;
+	pkt.ip.protocol = IPPROTO_TCP;
+	pkt.ip.saddr    = src->sin_addr.s_addr;
+	pkt.ip.daddr    = dest->sin_addr.s_addr;
+	pkt.ip.check    = ip_checksum((uint16_t *)&pkt.ip, sizeof(pkt.ip)/2);
+
+	pkt.tcp.source   = src->sin_port;
+	pkt.tcp.dest     = dest->sin_port;
+	pkt.tcp.ack      = 1;
+	pkt.tcp.check    = ip_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp)/2);
+
+	ret = sendto(3, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
+	if (ret != 0) {
+		DEBUG(0,(__location__ " failed sendto (%s)\n", strerror(errno)));
+	}
+	close(s);
+
+	return ret;
+}
+
+
 
 /*
   takeover an IP on an interface
