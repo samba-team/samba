@@ -822,7 +822,6 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 	size_t msg_len;
 	char *frm = NULL;
 	int i;
-	DATA_BLOB msg;
 
 	if (!lck) {
 		return False;
@@ -866,8 +865,6 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 	safe_strcpy(&frm[16], lck->servicepath, sp_len);
 	safe_strcpy(&frm[16 + sp_len + 1], lck->filename, fn_len);
 
-	msg = data_blob_const(frm, msg_len);
-
 	/* Send the messages. */
 	for (i=0; i<lck->num_share_modes; i++) {
 		struct share_mode_entry *se = &lck->share_modes[i];
@@ -885,7 +882,8 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 			(unsigned int)lck->dev, (double)lck->ino,
 			lck->servicepath, lck->filename ));
 
-		messaging_send(msg_ctx, se->pid, MSG_SMB_FILE_RENAME, &msg);
+		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
+				   (uint8 *)frm, msg_len);
 	}
 
 	return True;
