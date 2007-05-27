@@ -127,20 +127,42 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	return 0;
 }
 
+
 /*
-  simple IP checksum - assumes data is multiple of 2 bytes long
+  uint16 checksum for n bytes
  */
-static uint16_t ip_checksum(uint16_t *data, size_t n)
+static uint32_t uint16_checksum(uint16_t *data, size_t n)
 {
-	uint16_t sum=0;
-	while (n--) {
-		sum += ntohs(*data);
+	uint32_t sum=0;
+	while (n>=2) {
+		sum += (uint32_t)ntohs(*data);
 		data++;
+		n -= 2;
 	}
-	if (sum == 0) {
+	if (n == 1) {
+		sum += (uint32_t)ntohs(*(uint8_t *)data);
+	}
+	return sum;
+}
+
+/*
+  simple TCP checksum - assumes data is multiple of 2 bytes long
+ */
+static uint16_t tcp_checksum(uint16_t *data, size_t n, struct iphdr *ip)
+{
+	uint32_t sum = uint16_checksum(data, n);
+	uint16_t sum2;
+	sum += uint16_checksum((uint16_t *)&ip->saddr, sizeof(ip->saddr));
+	sum += uint16_checksum((uint16_t *)&ip->daddr, sizeof(ip->daddr));
+	sum += ip->protocol + n;
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum2 = htons(sum);
+	sum2 = ~sum2;
+	if (sum2 == 0) {
 		return 0xFFFF;
 	}
-	return htons(sum);
+	return sum2;
 }
 
 /*
@@ -185,20 +207,21 @@ int ctdb_sys_send_ack(const struct sockaddr_in *dest,
 	ZERO_STRUCT(pkt);
 	pkt.ip.version  = 4;
 	pkt.ip.ihl      = sizeof(pkt.ip)/4;
-	pkt.ip.tot_len  = sizeof(pkt);
+	pkt.ip.tot_len  = htons(sizeof(pkt));
 	pkt.ip.ttl      = 255;
 	pkt.ip.protocol = IPPROTO_TCP;
 	pkt.ip.saddr    = src->sin_addr.s_addr;
 	pkt.ip.daddr    = dest->sin_addr.s_addr;
-	pkt.ip.check    = ip_checksum((uint16_t *)&pkt.ip, sizeof(pkt.ip)/2);
+	pkt.ip.check    = 0;
 
 	pkt.tcp.source   = src->sin_port;
 	pkt.tcp.dest     = dest->sin_port;
 	pkt.tcp.ack      = 1;
-	pkt.tcp.check    = 0;
+	pkt.tcp.doff     = sizeof(pkt.tcp)/4;
+	pkt.tcp.check    = tcp_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp), &pkt.ip);
 
 	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
-	if (ret != 0) {
+	if (ret != sizeof(pkt)) {
 		DEBUG(0,(__location__ " failed sendto (%s)\n", strerror(errno)));
 	}
 	close(s);
