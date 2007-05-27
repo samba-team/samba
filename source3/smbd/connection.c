@@ -166,7 +166,8 @@ int count_all_current_connections(void)
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(connection_struct *conn, const char *name,int max_connections,BOOL Clear, uint32 msg_flags)
+BOOL claim_connection(connection_struct *conn, const char *name,
+		      int max_connections, uint32 msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;
