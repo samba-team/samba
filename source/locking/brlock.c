@@ -34,7 +34,7 @@
 
 /* The open brlock.tdb database. */
 
-static TDB_CONTEXT *tdb;
+static struct db_context *brlock_db;
 
 /****************************************************************************
  Debug info at level 10 for lock struct.
@@ -261,21 +261,20 @@ static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *loc
 
 void brl_init(int read_only)
 {
-	if (tdb) {
+	if (brlock_db) {
 		return;
 	}
-	tdb = tdb_open_log(lock_path("brlock.tdb"),
-			lp_open_files_db_hash_size(),
-			TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
-			read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644 );
-	if (!tdb) {
+	brlock_db = db_open(NULL, lock_path("brlock.tdb"),
+			    lp_open_files_db_hash_size(),
+			    TDB_DEFAULT
+			    |TDB_VOLATILE
+			    |(read_only?0x0:TDB_CLEAR_IF_FIRST),
+			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644 );
+	if (!brlock_db) {
 		DEBUG(0,("Failed to open byte range locking database %s\n",
 			lock_path("brlock.tdb")));
 		return;
 	}
-
-	/* Activate the per-hashchain freelist */
-	tdb_set_max_dead(tdb, 5);
 }
 
 /****************************************************************************
@@ -284,10 +283,10 @@ void brl_init(int read_only)
 
 void brl_shutdown(int read_only)
 {
-	if (!tdb) {
+	if (!brlock_db) {
 		return;
 	}
-	tdb_close(tdb);
+	TALLOC_FREE(brlock_db);
 }
 
 #if ZERO_ZERO
@@ -1453,7 +1452,7 @@ static BOOL validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
  on each lock.
 ****************************************************************************/
 
-static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int traverse_fn(struct db_record *rec, void *state)
 {
 	struct lock_struct *locks;
 	struct lock_key *key;
@@ -1466,13 +1465,14 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	/* In a traverse function we must make a copy of
 	   dbuf before modifying it. */
 
-	locks = (struct lock_struct *)memdup(dbuf.dptr, dbuf.dsize);
+	locks = (struct lock_struct *)memdup(rec->value.dptr,
+					     rec->value.dsize);
 	if (!locks) {
 		return -1; /* Terminate traversal. */
 	}
 
-	key = (struct lock_key *)kbuf.dptr;
-	orig_num_locks = num_locks = dbuf.dsize/sizeof(*locks);
+	key = (struct lock_key *)rec->key.dptr;
+	orig_num_locks = num_locks = rec->value.dsize/sizeof(*locks);
 
 	/* Ensure the lock db is clean of entries from invalid processes. */
 
@@ -1482,13 +1482,10 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	}
 
 	if (orig_num_locks != num_locks) {
-		dbuf.dptr = (uint8 *)locks;
-		dbuf.dsize = num_locks * sizeof(*locks);
-
-		if (dbuf.dsize) {
-			tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE);
+		if (rec->value.dsize) {
+			rec->store(rec, rec->value, TDB_REPLACE);
 		} else {
-			tdb_delete(ttdb, kbuf);
+			rec->delete_rec(rec);
 		}
 	}
 
@@ -1512,10 +1509,10 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 
 int brl_forall(BRLOCK_FN(fn))
 {
-	if (!tdb) {
+	if (!brlock_db) {
 		return 0;
 	}
-	return tdb_traverse(tdb, traverse_fn, (void *)fn);
+	return brlock_db->traverse(brlock_db, traverse_fn, (void *)fn);
 }
 
 /*******************************************************************
@@ -1541,25 +1538,31 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 
 	if (br_lck->num_locks == 0) {
 		/* No locks - delete this entry. */
-		if (tdb_delete(tdb, key) == -1) {
+		NTSTATUS status = br_lck->record->delete_rec(br_lck->record);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("delete_rec returned %s\n",
+				  nt_errstr(status)));
 			smb_panic("Could not delete byte range lock entry\n");
 		}
 	} else {
 		TDB_DATA data;
+		NTSTATUS status;
+
 		data.dptr = (uint8 *)br_lck->lock_data;
 		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
 
-		if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
+		status = br_lck->record->store(br_lck->record, data,
+					       TDB_REPLACE);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
 			smb_panic("Could not store byte range mode entry\n");
 		}
 	}
 
  done:
 
-	if (!br_lck->read_only) {
-		tdb_chainunlock(tdb, key);
-	}
 	SAFE_FREE(br_lck->lock_data);
+	TALLOC_FREE(br_lck->record);
 	return 0;
 }
 
@@ -1572,8 +1575,7 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 					files_struct *fsp, BOOL read_only)
 {
-	TDB_DATA key;
-	TDB_DATA data;
+	TDB_DATA key, data;
 	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
 
 	if (br_lck == NULL) {
@@ -1597,22 +1599,33 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (read_only) {
-		br_lck->read_only = True;
-	} else {
-		if (tdb_chainlock(tdb, key) != 0) {
+		if (brlock_db->fetch(brlock_db, br_lck, key, &data) == -1) {
+			DEBUG(3, ("Could not fetch byte range lock record\n"));
+			TALLOC_FREE(br_lck);
+			return NULL;
+		}
+		br_lck->record = NULL;
+	}
+	else {
+		br_lck->record = brlock_db->fetch_locked(brlock_db, br_lck, key);
+
+		if (br_lck->record == NULL) {
 			DEBUG(3, ("Could not lock byte range lock entry\n"));
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
-		br_lck->read_only = False;
+
+		data = br_lck->record->value;
 	}
+
+	br_lck->read_only = read_only;
 
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
 
-	data = tdb_fetch(tdb, key);
-	br_lck->lock_data = (struct lock_struct *)data.dptr;
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
-
+	br_lck->lock_data = SMB_MALLOC_ARRAY(struct lock_struct, br_lck->num_locks);
+	memcpy(br_lck->lock_data, data.dptr, data.dsize);
+	
 	if (!fsp->lockdb_clean) {
 
 		/* This is the first time we've accessed this. */
