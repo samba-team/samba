@@ -1139,20 +1139,6 @@ int main(int argc, const char *argv[])
 		{ "thaw", control_thaw },
 	};
 
-	{
-		struct sockaddr_in saddr, daddr;
-		inet_aton("192.168.115.128", &daddr.sin_addr);
-		inet_aton("192.168.115.1",   &saddr.sin_addr);
-		daddr.sin_port = htons(1234);
-		saddr.sin_port = htons(445);
-		daddr.sin_family = AF_INET;
-		saddr.sin_family = AF_INET;
-		ctdb_sys_send_ack(&daddr, &saddr);
-		exit(0);
-	}
-
-
-
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
