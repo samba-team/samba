@@ -1396,7 +1396,7 @@ void start_background_queue(void)
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
-		claim_connection( NULL, "smbd lpq backend", 0, 
+		claim_connection( NULL, "smbd lpq backend",
 			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
 
 		if (!locking_init(0)) {
