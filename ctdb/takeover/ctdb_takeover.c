@@ -44,8 +44,9 @@ struct ctdb_takeover_arp {
  */
 struct ctdb_tcp_list {
 	struct ctdb_tcp_list *prev, *next;
+	uint32_t vnn;
 	struct sockaddr_in saddr;
-	struct sockaddr_in daddr;	
+	struct sockaddr_in daddr;
 };
 
 
@@ -102,6 +103,10 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	char *ip = inet_ntoa(sin->sin_addr);
 	struct ctdb_tcp_list *tcp;
 
+	if (ctdb_sys_have_ip(ip)) {
+		return 0;
+	}
+
 	DEBUG(0,("Takover of IP %s on interface %s\n", ip, ctdb->takeover.interface));
 	ret = ctdb_sys_take_ip(ip, ctdb->takeover.interface);
 	if (ret != 0) {
@@ -147,6 +152,10 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	TDB_DATA data;
 	char *ip = inet_ntoa(sin->sin_addr);
 	int ret;
+
+	if (!ctdb_sys_have_ip(ip)) {
+		return 0;
+	}
 
 	DEBUG(0,("Release of IP %s on interface %s\n", ip, ctdb->takeover.interface));
 
@@ -281,26 +290,36 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
   called by a client to inform us of a TCP connection that it is managing
   that should tickled with an ACK when IP takeover is done
  */
-int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
+int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, uint32_t vnn,
 				TDB_DATA indata)
 {
 	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
 	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
 	struct ctdb_tcp_list *tcp;
+	struct ctdb_control_tcp_vnn t;
 	int ret;
+	TDB_DATA data;
 
 	tcp = talloc(client, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);
 
+	tcp->vnn   = vnn;
 	tcp->saddr = p->src;
 	tcp->daddr = p->dest;
 
 	DLIST_ADD(client->tcp_list, tcp);
 
+	t.vnn  = vnn;
+	t.src  = p->src;
+	t.dest = p->dest;
+
+	data.dptr = (uint8_t *)&t;
+	data.dsize = sizeof(t);
+
 	/* tell all nodes about this tcp connection */
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0, 
 				       CTDB_CONTROL_TCP_ADD,
-				       0, CTDB_CTRL_FLAG_NOREPLY, indata, NULL, NULL);
+				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to send CTDB_CONTROL_TCP_ADD\n"));
 		return -1;
@@ -342,12 +361,13 @@ static struct ctdb_tcp_list *ctdb_tcp_find(struct ctdb_tcp_list *list,
  */
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
+	struct ctdb_control_tcp_vnn *p = (struct ctdb_control_tcp_vnn *)indata.dptr;
 	struct ctdb_tcp_list *tcp;
 
 	tcp = talloc(ctdb, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);
 
+	tcp->vnn   = p->vnn;
 	tcp->saddr = p->src;
 	tcp->daddr = p->dest;
 
@@ -365,9 +385,10 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
  */
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
+	struct ctdb_control_tcp_vnn *p = (struct ctdb_control_tcp_vnn *)indata.dptr;
 	struct ctdb_tcp_list t, *tcp;
 
+	t.vnn   = p->vnn;
 	t.saddr = p->src;
 	t.daddr = p->dest;
 
@@ -381,6 +402,23 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 
 
 /*
+  called when a daemon restarts - wipes all tcp entries from that vnn
+ */
+int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn)
+{
+	struct ctdb_tcp_list *tcp, *next;	
+	for (tcp=ctdb->tcp_list;tcp;tcp=next) {
+		next = tcp->next;
+		if (tcp->vnn == vnn) {
+			DLIST_REMOVE(ctdb->tcp_list, tcp);
+			talloc_free(tcp);
+		}
+	}
+	return 0;
+}
+
+
+/*
   called when a client structure goes away - hook to remove
   elements from the tcp_list in all daemons
  */
@@ -388,9 +426,10 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 {
 	while (client->tcp_list) {
 		TDB_DATA data;
-		struct ctdb_control_tcp p;
+		struct ctdb_control_tcp_vnn p;
 		struct ctdb_tcp_list *tcp = client->tcp_list;
 		DLIST_REMOVE(client->tcp_list, tcp);
+		p.vnn = tcp->vnn;
 		p.src = tcp->saddr;
 		p.dest = tcp->daddr;
 		data.dptr = (uint8_t *)&p;

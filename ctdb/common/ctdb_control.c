@@ -274,14 +274,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_TCP_CLIENT: 
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
-		return ctdb_control_tcp_client(ctdb, client_id, indata);
+		return ctdb_control_tcp_client(ctdb, client_id, srcnode, indata);
+
+	case CTDB_CONTROL_STARTUP: 
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_startup(ctdb, srcnode);
 
 	case CTDB_CONTROL_TCP_ADD: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_vnn));
 		return ctdb_control_tcp_add(ctdb, indata);
 
 	case CTDB_CONTROL_TCP_REMOVE: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_vnn));
 		return ctdb_control_tcp_remove(ctdb, indata);
 
 	default:

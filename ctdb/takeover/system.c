@@ -233,6 +233,29 @@ int ctdb_sys_send_ack(const struct sockaddr_in *dest,
 }
 
 
+/*
+  see if we currently have an interface with the given IP
+
+  we try to bind to it, and if that fails then we don't have that IP
+  on an interface
+ */
+bool ctdb_sys_have_ip(const char *ip)
+{
+	struct sockaddr_in sin;
+	int s;
+	int ret;
+
+	sin.sin_port = 0;
+	inet_aton(ip, &sin.sin_addr);
+	sin.sin_family = AF_INET;
+	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (s == -1) {
+		return false;
+	}
+	ret = bind(s, (struct sockaddr *)&sin, sizeof(sin));
+	close(s);
+	return ret == 0;
+}
 
 /*
   takeover an IP on an interface

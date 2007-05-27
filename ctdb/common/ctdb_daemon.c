@@ -56,6 +56,12 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 		ctdb_fatal(ctdb, "transport failed to start");
 	}
 
+	/* tell all other nodes we've just started up */
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
+				 0, CTDB_CONTROL_STARTUP, 0,
+				 CTDB_CTRL_FLAG_NOREPLY,
+				 tdb_null, NULL, NULL);
+
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
 

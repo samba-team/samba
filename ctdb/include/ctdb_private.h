@@ -414,6 +414,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_TCP_CLIENT,
 		    CTDB_CONTROL_TCP_ADD,
 		    CTDB_CONTROL_TCP_REMOVE,
+		    CTDB_CONTROL_STARTUP,
 };
 
 /*
@@ -442,9 +443,18 @@ struct ctdb_control_set_call {
 };
 
 /*
-  struct for tcp_client, tcp_add and tcp_remove controls
+  struct for tcp_client control
  */
 struct ctdb_control_tcp {
+	struct sockaddr_in src;
+	struct sockaddr_in dest;
+};
+
+/*
+  struct for tcp_add and tcp_remove controls
+ */
+struct ctdb_control_tcp_vnn {
+	uint32_t vnn;
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
 };
@@ -918,6 +928,7 @@ int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
+bool ctdb_sys_have_ip(const char *ip);
 int ctdb_sys_take_ip(const char *ip, const char *interface);
 int ctdb_sys_release_ip(const char *ip, const char *interface);
 int ctdb_sys_send_ack(const struct sockaddr_in *dest, 
@@ -928,9 +939,10 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
-				TDB_DATA indata);
+				uint32_t srcnode, TDB_DATA indata);
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 
