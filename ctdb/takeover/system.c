@@ -197,7 +197,7 @@ int ctdb_sys_send_ack(const struct sockaddr_in *dest,
 	pkt.tcp.ack      = 1;
 	pkt.tcp.check    = 0;
 
-	ret = sendto(3, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
+	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
 	if (ret != 0) {
 		DEBUG(0,(__location__ " failed sendto (%s)\n", strerror(errno)));
 	}

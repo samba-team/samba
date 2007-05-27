@@ -68,9 +68,9 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 
 	for (tcp=arp->tcp_list;tcp;tcp=tcp->next) {
 		DEBUG(0,("sending tcp tickle ack for %u->%s:%u\n",
-			 (unsigned)tcp->daddr.sin_port, 
+			 (unsigned)ntohs(tcp->daddr.sin_port), 
 			 inet_ntoa(tcp->saddr.sin_addr),
-			 (unsigned)tcp->saddr.sin_port));			 
+			 (unsigned)ntohs(tcp->saddr.sin_port)));
 		ret = ctdb_sys_send_ack(&tcp->daddr, &tcp->saddr);
 		if (ret != 0) {
 			DEBUG(0,(__location__ " Failed to send tcp tickle ack for %s\n",
