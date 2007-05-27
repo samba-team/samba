@@ -4,16 +4,16 @@
    @file    iniparser.c
    @author  N. Devillard
    @date    Mar 2000
-   @version $Revision: 2.14 $
+   @version $Revision: 2.17 $
    @brief   Parser for ini files.
 */
 /*--------------------------------------------------------------------------*/
 
 /*
-    $Id: iniparser.c,v 2.14 2002/12/12 10:49:01 ndevilla Exp $
+    $Id: iniparser.c,v 2.17 2007-05-27 13:03:43 ndevilla Exp $
     $Author: ndevilla $
-    $Date: 2002/12/12 10:49:01 $
-    $Revision: 2.14 $
+    $Date: 2007-05-27 13:03:43 $
+    $Revision: 2.17 $
 */
 
 /*---------------------------------------------------------------------------
@@ -280,6 +280,20 @@ char * iniparser_getstring(dictionary * d, const char * key, char * def)
   This function queries a dictionary for a key. A key as read from an
   ini file is given as "section:key". If the key cannot be found,
   the notfound value is returned.
+
+  Supported values for integers include the usual C notation
+  so decimal, octal (starting with 0) and hexadecimal (starting with 0x)
+  are supported. Examples:
+
+  "42"      ->  42
+  "042"     ->  34 (octal -> decimal)
+  "0x42"    ->  66 (hexa  -> decimal)
+
+  Warning: the conversion may overflow in various ways. Conversion is
+  totally outsourced to strtol(), see the associated man page for overflow
+  handling.
+
+  Credits: Thanks to A. Becker for suggesting strtol()
  */
 /*--------------------------------------------------------------------------*/
 int iniparser_getint(dictionary * d, const char * key, int notfound)
@@ -288,7 +302,7 @@ int iniparser_getint(dictionary * d, const char * key, int notfound)
 
     str = iniparser_getstring(d, key, INI_INVALID_KEY);
     if (str==INI_INVALID_KEY) return notfound ;
-    return atoi(str);
+    return (int)strtol(str, NULL, 0);
 }
 
 
