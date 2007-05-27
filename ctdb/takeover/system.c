@@ -224,10 +224,12 @@ int ctdb_sys_send_ack(const struct sockaddr_in *dest,
 	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
 	if (ret != sizeof(pkt)) {
 		DEBUG(0,(__location__ " failed sendto (%s)\n", strerror(errno)));
+		close(s);
+		return -1;
 	}
-	close(s);
 
-	return ret;
+	close(s);
+	return 0;
 }
 
 
