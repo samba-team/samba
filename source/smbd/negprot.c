@@ -580,7 +580,8 @@ int reply_negprot(connection_struct *conn,
 	   when the client connects to port 445.  Of course there is a small
 	   window where we are listening to messages   -- jerry */
 
-	claim_connection(NULL,"",0,FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
+	claim_connection(
+		NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
     
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {

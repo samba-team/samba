@@ -888,14 +888,28 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 /* ROOT Activities: */	
-	/* check number of connections */
-	if (!claim_connection(conn,
-			      lp_servicename(snum),
-			      lp_max_connections(snum),
-			      0)) {
-		DEBUG(1,("too many connections - rejected\n"));
+	/*
+	 * Enforce the max connections parameter.
+	 */
+
+	if ((lp_max_connections(snum) > 0)
+	    && (count_current_connections(lp_servicename(SNUM(conn)), True) >=
+		lp_max_connections(snum))) {
+
+		DEBUG(1, ("Max connections (%d) exceeded for %s\n",
+			  lp_max_connections(snum), lp_servicename(snum)));
 		conn_free(conn);
 		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
+		return NULL;
+	}  
+
+	/*
+	 * Get us an entry in the connections db
+	 */
+	if (!claim_connection(conn, lp_servicename(snum), 0)) {
+		DEBUG(1, ("Could not store connections entry\n"));
+		conn_free(conn);
+		*status = NT_STATUS_INTERNAL_DB_ERROR;
 		return NULL;
 	}  
 

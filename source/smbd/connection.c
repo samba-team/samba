@@ -139,7 +139,7 @@ int count_current_connections( const char *sharename, BOOL clear  )
 ****************************************************************************/
 
 BOOL claim_connection(connection_struct *conn, const char *name,
-		      int max_connections, uint32 msg_flags)
+		      uint32 msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;
@@ -150,23 +150,7 @@ BOOL claim_connection(connection_struct *conn, const char *name,
 		return False;
 	}
 	
-	/*
-	 * Enforce the max connections parameter.
-	 */
-
-	if (max_connections > 0) {
-		int curr_connections;
-		
-		curr_connections = count_current_connections( lp_servicename(SNUM(conn)), True );
-
-		if (curr_connections >= max_connections) {
-			DEBUG(1,("claim_connection: Max connections (%d) exceeded for %s\n",
-				max_connections, name ));
-			return False;
-		}
-	}
-
-	DEBUG(5,("claiming %s %d\n",name,max_connections));
+	DEBUG(5,("claiming %s\n",name));
 
 	make_conn_key(conn, name, &kbuf, &key);
 
