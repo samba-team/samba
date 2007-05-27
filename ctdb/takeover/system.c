@@ -218,6 +218,7 @@ int ctdb_sys_send_ack(const struct sockaddr_in *dest,
 	pkt.tcp.dest     = dest->sin_port;
 	pkt.tcp.ack      = 1;
 	pkt.tcp.doff     = sizeof(pkt.tcp)/4;
+	pkt.tcp.window   = htons(1234);
 	pkt.tcp.check    = tcp_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp), &pkt.ip);
 
 	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
