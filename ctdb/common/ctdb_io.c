@@ -225,7 +225,7 @@ static void queue_io_handler(struct event_context *ev, struct fd_event *fde,
 int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 {
 	struct ctdb_queue_pkt *pkt;
-	uint32_t length2;
+	uint32_t length2, full_length;
 
 	if (queue->alignment) {
 		/* enforce the length and alignment rules from the tcp packet allocator */
@@ -238,6 +238,8 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	if (length2 != length) {
 		memset(data+length, 0, length2-length);
 	}
+
+	full_length = length2;
 	
 	/* if the queue is empty then try an immediate write, avoiding
 	   queue overhead. This relies on non-blocking sockets */
@@ -268,7 +270,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	CTDB_NO_MEMORY(queue->ctdb, pkt->data);
 
 	pkt->length = length2;
-	pkt->full_length = length2;
+	pkt->full_length = full_length;
 
 	if (queue->out_queue == NULL && queue->fd != -1) {
 		EVENT_FD_WRITEABLE(queue->fde);
