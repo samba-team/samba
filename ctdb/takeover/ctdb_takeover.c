@@ -68,7 +68,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 	}
 
 	for (tcp=arp->tcp_list;tcp;tcp=tcp->next) {
-		DEBUG(0,("sending tcp tickle ack for %u->%s:%u\n",
+		DEBUG(2,("sending tcp tickle ack for %u->%s:%u\n",
 			 (unsigned)ntohs(tcp->daddr.sin_port), 
 			 inet_ntoa(tcp->saddr.sin_addr),
 			 (unsigned)ntohs(tcp->saddr.sin_port)));
@@ -152,6 +152,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	TDB_DATA data;
 	char *ip = inet_ntoa(sin->sin_addr);
 	int ret;
+	struct ctdb_tcp_list *tcp;
 
 	if (!ctdb_sys_have_ip(ip)) {
 		return 0;
@@ -177,6 +178,26 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	data.dsize = strlen(ip)+1;
 
 	ctdb_daemon_send_message(ctdb, ctdb->vnn, CTDB_SRVID_RELEASE_IP, data);
+
+	/* tell other nodes about any tcp connections we were holding with this IP */
+	for (tcp=ctdb->tcp_list;tcp;tcp=tcp->next) {
+		if (tcp->vnn == ctdb->vnn && 
+		    sin->sin_addr.s_addr == tcp->daddr.sin_addr.s_addr) {
+			struct ctdb_control_tcp_vnn t;
+
+			t.vnn  = ctdb->vnn;
+			t.src  = tcp->saddr;
+			t.dest = tcp->daddr;
+
+			data.dptr = (uint8_t *)&t;
+			data.dsize = sizeof(t);
+
+			ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0, 
+						 CTDB_CONTROL_TCP_ADD,
+						 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+		}
+	}
+
 
 	return 0;
 }
