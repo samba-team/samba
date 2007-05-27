@@ -382,8 +382,8 @@ BOOL locking_init(int read_only)
 	lock_db = db_open(NULL, lock_path("locking.tdb"),
 			  lp_open_files_db_hash_size(),
 			  TDB_DEFAULT
-			  |(read_only?0x0:TDB_CLEAR_IF_FIRST)
-			  |TDB_VOLATILE,
+			  |TDB_VOLATILE
+			  |(read_only?0x0:TDB_CLEAR_IF_FIRST),
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644);
 
 	if (!lock_db) {
