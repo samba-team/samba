@@ -1,0 +1,105 @@
+#!/bin/sh
+#
+# chkconfig: - 91 35
+# description: Starts and stops the Samba smbd and nmbd daemons \
+#	       used to provide SMB network services.
+#
+# pidfile: /var/run/samba/smbd.pid
+# pidfile: /var/run/samba/nmbd.pid
+# config:  /etc/samba/smb.conf
+
+
+# Source function library.
+if [ -f /etc/init.d/functions ] ; then
+  . /etc/init.d/functions
+elif [ -f /etc/rc.d/init.d/functions ] ; then
+  . /etc/rc.d/init.d/functions
+else
+  exit 0
+fi
+
+# Avoid using root's TMPDIR
+unset TMPDIR
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+if [ -f /etc/sysconfig/ctdb ]; then
+   . /etc/sysconfig/ctdb 
+fi
+
+# Check that networking is up.
+[ ${NETWORKING} = "no" ] && exit 0
+
+# Check that smb.conf exists.
+[ -f /etc/samba/smb.conf ] || exit 0
+
+RETVAL=0
+
+
+start() {
+	echo -n $"Starting ctdbd services: "
+	daemon ctdbd $CTDBDOPTIONS
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || \
+	   RETVAL=1
+	return $RETVAL
+}	
+
+stop() {
+	echo -n $"Shutting down ctdbd services: "
+	killproc ctdbd
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
+	echo ""
+	return $RETVAL
+}	
+
+restart() {
+	stop
+	start
+}	
+
+rhstatus() {
+	status ctdbd
+	if [ $? -ne 0 ] ; then
+		return 1
+	fi
+}	
+
+
+# Allow status as non-root.
+if [ "$1" = status ]; then
+       rhstatus
+       exit $?
+fi
+
+# Check that we can write to it... so non-root users stop here
+[ -w /etc/samba/smb.conf ] || exit 0
+
+
+
+case "$1" in
+  start)
+  	start
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+  	restart
+	;;
+  status)
+  	rhstatus
+	;;
+  condrestart)
+  	[ -f /var/lock/subsys/ctdb ] && restart || :
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|restart|status|condrestart}"
+	exit 1
+esac
+
+exit $?
