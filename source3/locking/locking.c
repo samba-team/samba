@@ -42,7 +42,7 @@
 #define DBGC_CLASS DBGC_LOCKING
 
 /* the locking database handle */
-static TDB_CONTEXT *tdb;
+static struct db_context *lock_db;
 
 /****************************************************************************
  Debugging aids :-).
@@ -376,22 +376,20 @@ BOOL locking_init(int read_only)
 {
 	brl_init(read_only);
 
-	if (tdb)
+	if (lock_db)
 		return True;
 
-	tdb = tdb_open_log(lock_path("locking.tdb"), 
-			lp_open_files_db_hash_size(),
-			TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
-			read_only?O_RDONLY:O_RDWR|O_CREAT,
-			0644);
+	lock_db = db_open(NULL, lock_path("locking.tdb"),
+			  lp_open_files_db_hash_size(),
+			  TDB_DEFAULT
+			  |(read_only?0x0:TDB_CLEAR_IF_FIRST)
+			  |TDB_VOLATILE,
+			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644);
 
-	if (!tdb) {
+	if (!lock_db) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
 		return False;
 	}
-
-	/* Activate the per-hashchain freelist */
-	tdb_set_max_dead(tdb, 5);
 
 	if (!posix_locking_init(read_only))
 		return False;
@@ -407,15 +405,11 @@ BOOL locking_init(int read_only)
 
 BOOL locking_end(void)
 {
-	BOOL ret = True;
-
 	brl_shutdown(open_read_only);
-	if (tdb) {
-		if (tdb_close(tdb) != 0)
-			ret = False;
+	if (lock_db) {
+		TALLOC_FREE(lock_db);
 	}
-
-	return ret;
+	return True;
 }
 
 /*******************************************************************
@@ -705,11 +699,11 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 
 static int share_mode_lock_destructor(struct share_mode_lock *lck)
 {
-	TDB_DATA key = locking_key(lck->dev, lck->ino);
+	NTSTATUS status;
 	TDB_DATA data;
 
 	if (!lck->modified) {
-		goto done;
+		return 0;
 	}
 
 	data = unparse_share_modes(lck);
@@ -717,38 +711,34 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	if (data.dptr == NULL) {
 		if (!lck->fresh) {
 			/* There has been an entry before, delete it */
-			if (tdb_delete(tdb, key) == -1) {
+
+			status = lck->record->delete_rec(lck->record);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("delete_rec returned %s\n",
+					  nt_errstr(status)));
 				smb_panic("Could not delete share entry\n");
 			}
 		}
 		goto done;
 	}
 
-	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
+	status = lck->record->store(lck->record, data, TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("store returned %s\n", nt_errstr(status)));
 		smb_panic("Could not store share mode entry\n");
 	}
 
  done:
-	tdb_chainunlock(tdb, key);
 
 	return 0;
 }
 
-struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-						SMB_DEV_T dev, SMB_INO_T ino,
-						const char *servicepath,
-						const char *fname)
+static BOOL fill_share_mode_lock(struct share_mode_lock *lck,
+				 SMB_DEV_T dev, SMB_INO_T ino,
+				 const char *servicepath,
+				 const char *fname,
+				 TDB_DATA share_mode_data)
 {
-	struct share_mode_lock *lck;
-	TDB_DATA key = locking_key(dev, ino);
-	TDB_DATA data;
-
-	lck = TALLOC_P(mem_ctx, struct share_mode_lock);
-	if (lck == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
 	/* Ensure we set every field here as the destructor must be
 	   valid even if parse_share_modes fails. */
 
@@ -763,44 +753,86 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->fresh = False;
 	lck->modified = False;
 
-	if (tdb_chainlock(tdb, key) != 0) {
-		DEBUG(3, ("Could not lock share entry\n"));
-		TALLOC_FREE(lck);
-		return NULL;
-	}
-
-	/* We must set the destructor immediately after the chainlock
-	   ensure the lock is cleaned up on any of the error return
-	   paths below. */
-
-	talloc_set_destructor(lck, share_mode_lock_destructor);
-
-	data = tdb_fetch(tdb, key);
-	lck->fresh = (data.dptr == NULL);
+	lck->fresh = (share_mode_data.dptr == NULL);
 
 	if (lck->fresh) {
-
 		if (fname == NULL || servicepath == NULL) {
-			TALLOC_FREE(lck);
-			return NULL;
+			return False;
 		}
 		lck->filename = talloc_strdup(lck, fname);
 		lck->servicepath = talloc_strdup(lck, servicepath);
 		if (lck->filename == NULL || lck->servicepath == NULL) {
 			DEBUG(0, ("talloc failed\n"));
-			TALLOC_FREE(lck);
-			return NULL;
+			return False;
 		}
 	} else {
-		if (!parse_share_modes(data, lck)) {
+		if (!parse_share_modes(share_mode_data, lck)) {
 			DEBUG(0, ("Could not parse share modes\n"));
-			TALLOC_FREE(lck);
-			SAFE_FREE(data.dptr);
-			return NULL;
+			return False;
 		}
 	}
 
-	SAFE_FREE(data.dptr);
+	return True;
+}
+
+struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
+					    SMB_DEV_T dev, SMB_INO_T ino,
+					    const char *servicepath,
+					    const char *fname)
+{
+	struct share_mode_lock *lck;
+	TDB_DATA key = locking_key(dev, ino);
+
+	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	if (!(lck->record = lock_db->fetch_locked(lock_db, lck, key))) {
+		DEBUG(3, ("Could not lock share entry\n"));
+		TALLOC_FREE(lck);
+		return NULL;
+	}
+
+	if (!fill_share_mode_lock(lck, dev, ino, servicepath, fname,
+				  lck->record->value)) {
+		DEBUG(3, ("fill_share_mode_lock failed\n"));
+		TALLOC_FREE(lck);
+		return NULL;
+	}
+
+	talloc_set_destructor(lck, share_mode_lock_destructor);
+
+	return lck;
+}
+
+struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
+						  SMB_DEV_T dev, SMB_INO_T ino,
+						  const char *servicepath,
+						  const char *fname)
+{
+	struct share_mode_lock *lck;
+	TDB_DATA key = locking_key(dev, ino);
+	TDB_DATA data;
+
+	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	if (lock_db->fetch(lock_db, lck, key, &data) == -1) {
+		DEBUG(3, ("Could not fetch share entry\n"));
+		TALLOC_FREE(lck);
+		return NULL;
+	}
+
+	if (!fill_share_mode_lock(lck, dev, ino, servicepath, fname, data)) {
+		DEBUG(3, ("fill_share_mode_lock failed\n"));
+		TALLOC_FREE(lck);
+		return NULL;
+	}
+
+	TALLOC_FREE(data.dptr);
 
 	return lck;
 }
@@ -889,29 +921,16 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 	return True;
 }
 
-static int pull_delete_on_close_flag(TDB_DATA key, TDB_DATA dbuf,
-				     void *private_data)
-{
-	BOOL *result = (BOOL *)private_data;
-	struct locking_data *data;
-
-	if (dbuf.dsize < sizeof(struct locking_data)) {
-		smb_panic("PANIC: parse_share_modes: buffer too short.\n");
-	}
-
-	data = (struct locking_data *)dbuf.dptr;
-
-	*result = data->u.s.delete_on_close;
-	return 0;
-}
-
 BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 {
-	TDB_DATA key = locking_key(dev, inode);
-	BOOL result = False;
-
-	tdb_parse_record(tdb, key, pull_delete_on_close_flag,
-			 (void *)&result);
+	BOOL result;
+	struct share_mode_lock *lck;
+  
+	if (!(lck = fetch_share_mode_unlocked(NULL, dev, inode, NULL, NULL))) {
+		return False;
+	}
+	result = lck->delete_on_close;
+	TALLOC_FREE(lck);
 	return result;
 }
 
@@ -1354,8 +1373,7 @@ struct forall_state {
 	void *private_data;
 };
 
-static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
-                       void *_state)
+static int traverse_fn(struct db_record *rec, void *_state)
 {
 	struct forall_state *state = (struct forall_state *)_state;
 	struct locking_data *data;
@@ -1365,15 +1383,15 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	int i;
 
 	/* Ensure this is a locking_key record. */
-	if (kbuf.dsize != sizeof(struct locking_key))
+	if (rec->key.dsize != sizeof(struct locking_key))
 		return 0;
 
-	data = (struct locking_data *)dbuf.dptr;
-	shares = (struct share_mode_entry *)(dbuf.dptr + sizeof(*data));
-	sharepath = (const char *)dbuf.dptr + sizeof(*data) +
+	data = (struct locking_data *)rec->value.dptr;
+	shares = (struct share_mode_entry *)(rec->value.dptr + sizeof(*data));
+	sharepath = (const char *)rec->value.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
 		data->u.s.delete_token_size;
-	fname = (const char *)dbuf.dptr + sizeof(*data) +
+	fname = (const char *)rec->value.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
 		data->u.s.delete_token_size +
 		strlen(sharepath) + 1;
@@ -1396,11 +1414,11 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 {
 	struct forall_state state;
 
-	if (tdb == NULL)
+	if (lock_db == NULL)
 		return 0;
 
 	state.fn = fn;
 	state.private_data = private_data;
 
-	return tdb_traverse(tdb, traverse_fn, (void *)&state);
+	return lock_db->traverse(lock_db, traverse_fn, (void *)&state);
 }

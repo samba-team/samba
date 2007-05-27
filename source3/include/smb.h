@@ -795,6 +795,7 @@ struct share_mode_lock {
 	BOOL delete_on_close;
 	BOOL fresh;
 	BOOL modified;
+	struct db_record *record;
 };
 
 /*
