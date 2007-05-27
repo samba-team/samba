@@ -29,14 +29,25 @@
 
 #define TAKEOVER_TIMEOUT() timeval_current_ofs(5,0)
 
-#define CTDB_ARP_INTERVAL 5
-#define CTDB_ARP_REPEAT  24
+#define CTDB_ARP_INTERVAL 1
+#define CTDB_ARP_REPEAT   3
 
 struct ctdb_takeover_arp {
 	struct ctdb_context *ctdb;
 	uint32_t count;
 	struct sockaddr_in sin;
+	struct ctdb_tcp_list *tcp_list;
 };
+
+/*
+  lists of tcp endpoints
+ */
+struct ctdb_tcp_list {
+	struct ctdb_tcp_list *prev, *next;
+	struct sockaddr_in saddr;
+	struct sockaddr_in daddr;	
+};
+
 
 
 /*
@@ -48,10 +59,23 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
 							struct ctdb_takeover_arp);
 	int ret;
+	struct ctdb_tcp_list *tcp;
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->ctdb->takeover.interface);
 	if (ret != 0) {
 		DEBUG(0,(__location__ "sending of arp failed (%s)\n", strerror(errno)));
+	}
+
+	for (tcp=arp->tcp_list;tcp;tcp=tcp->next) {
+		DEBUG(0,("sending tcp tickle ack for %u->%s:%u\n",
+			 (unsigned)tcp->daddr.sin_port, 
+			 inet_ntoa(tcp->saddr.sin_addr),
+			 (unsigned)tcp->saddr.sin_port));			 
+		ret = ctdb_sys_send_ack(&tcp->daddr, &tcp->saddr);
+		if (ret != 0) {
+			DEBUG(0,(__location__ " Failed to send tcp tickle ack for %s\n",
+				 inet_ntoa(tcp->saddr.sin_addr)));
+		}
 	}
 
 	arp->count++;
@@ -66,6 +90,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 			ctdb_control_send_arp, arp);
 }
 
+
 /*
   take over an ip address
  */
@@ -75,6 +100,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
 	struct ctdb_takeover_arp *arp;
 	char *ip = inet_ntoa(sin->sin_addr);
+	struct ctdb_tcp_list *tcp;
 
 	DEBUG(0,("Takover of IP %s on interface %s\n", ip, ctdb->takeover.interface));
 	ret = ctdb_sys_take_ip(ip, ctdb->takeover.interface);
@@ -94,6 +120,17 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	
 	arp->ctdb = ctdb;
 	arp->sin = *sin;
+
+	/* add all of the known tcp connections for this IP to the
+	   list of tcp connections to send tickle acks for */
+	for (tcp=ctdb->tcp_list;tcp;tcp=tcp->next) {
+		if (sin->sin_addr.s_addr == tcp->daddr.sin_addr.s_addr) {
+			struct ctdb_tcp_list *t2 = talloc(arp, struct ctdb_tcp_list);
+			CTDB_NO_MEMORY(ctdb, t2);
+			*t2 = *tcp;
+			DLIST_ADD(arp->tcp_list, t2);
+		}
+	}
 
 	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover.last_ctx, 
 			timeval_zero(), ctdb_control_send_arp, arp);
@@ -237,4 +274,130 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	}
 
 	return 0;
+}
+
+
+/*
+  called by a client to inform us of a TCP connection that it is managing
+  that should tickled with an ACK when IP takeover is done
+ */
+int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
+				TDB_DATA indata)
+{
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
+	struct ctdb_tcp_list *tcp;
+	int ret;
+
+	tcp = talloc(client, struct ctdb_tcp_list);
+	CTDB_NO_MEMORY(ctdb, tcp);
+
+	tcp->saddr = p->src;
+	tcp->daddr = p->dest;
+
+	DLIST_ADD(client->tcp_list, tcp);
+
+	/* tell all nodes about this tcp connection */
+	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0, 
+				       CTDB_CONTROL_TCP_ADD,
+				       0, CTDB_CTRL_FLAG_NOREPLY, indata, NULL, NULL);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to send CTDB_CONTROL_TCP_ADD\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  see if two sockaddr_in are the same
+ */
+static bool same_sockaddr_in(struct sockaddr_in *in1, struct sockaddr_in *in2)
+{
+	return in1->sin_family == in2->sin_family &&
+		in1->sin_port == in2->sin_port &&
+		in1->sin_addr.s_addr == in2->sin_addr.s_addr;
+}
+
+/*
+  find a tcp address on a list
+ */
+static struct ctdb_tcp_list *ctdb_tcp_find(struct ctdb_tcp_list *list, 
+					   struct ctdb_tcp_list *tcp)
+{
+	while (list) {
+		if (same_sockaddr_in(&list->saddr, &tcp->saddr) &&
+		    same_sockaddr_in(&list->daddr, &tcp->daddr)) {
+			return list;
+		}
+		list = list->next;
+	}
+	return NULL;
+}
+
+/*
+  called by a daemon to inform us of a TCP connection that one of its
+  clients managing that should tickled with an ACK when IP takeover is
+  done
+ */
+int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
+	struct ctdb_tcp_list *tcp;
+
+	tcp = talloc(ctdb, struct ctdb_tcp_list);
+	CTDB_NO_MEMORY(ctdb, tcp);
+
+	tcp->saddr = p->src;
+	tcp->daddr = p->dest;
+
+	if (NULL == ctdb_tcp_find(ctdb->tcp_list, tcp)) {
+		DLIST_ADD(ctdb->tcp_list, tcp);
+	}
+
+	return 0;
+}
+
+/*
+  called by a daemon to inform us of a TCP connection that one of its
+  clients managing that should tickled with an ACK when IP takeover is
+  done
+ */
+int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
+	struct ctdb_tcp_list t, *tcp;
+
+	t.saddr = p->src;
+	t.daddr = p->dest;
+
+	tcp = ctdb_tcp_find(ctdb->tcp_list, &t);
+	if (tcp) {
+		DLIST_REMOVE(ctdb->tcp_list, tcp);
+	}
+
+	return 0;
+}
+
+
+/*
+  called when a client structure goes away - hook to remove
+  elements from the tcp_list in all daemons
+ */
+void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
+{
+	while (client->tcp_list) {
+		TDB_DATA data;
+		struct ctdb_control_tcp p;
+		struct ctdb_tcp_list *tcp = client->tcp_list;
+		DLIST_REMOVE(client->tcp_list, tcp);
+		p.src = tcp->saddr;
+		p.dest = tcp->daddr;
+		data.dptr = (uint8_t *)&p;
+		data.dsize = sizeof(p);
+		ctdb_daemon_send_control(client->ctdb, CTDB_BROADCAST_VNNMAP, 0, 
+					 CTDB_CONTROL_TCP_REMOVE,
+					 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+		talloc_free(tcp);
+	}
 }

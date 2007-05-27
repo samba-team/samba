@@ -29,17 +29,6 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
-/*
-  structure describing a connected client in the daemon
- */
-struct ctdb_client {
-	struct ctdb_context *ctdb;
-	int fd;
-	struct ctdb_queue *queue;
-	uint32_t client_id;
-};
-
-
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
 static void ctdb_main_loop(struct ctdb_context *ctdb)
@@ -250,6 +239,7 @@ static void daemon_request_connect_wait(struct ctdb_client *client,
 */
 static int ctdb_client_destructor(struct ctdb_client *client)
 {
+	ctdb_takeover_client_destructor_hook(client);
 	ctdb_reqid_remove(client->ctdb, client->client_id);
 	client->ctdb->status.num_clients--;
 	return 0;

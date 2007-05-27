@@ -272,6 +272,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_delete_low_rsn));
 		return ctdb_control_delete_low_rsn(ctdb, indata, outdata);
 
+	case CTDB_CONTROL_TCP_CLIENT: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
+		return ctdb_control_tcp_client(ctdb, client_id, indata);
+
+	case CTDB_CONTROL_TCP_ADD: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
+		return ctdb_control_tcp_add(ctdb, indata);
+
+	case CTDB_CONTROL_TCP_REMOVE: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
+		return ctdb_control_tcp_remove(ctdb, indata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

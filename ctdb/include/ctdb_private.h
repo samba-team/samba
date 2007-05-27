@@ -81,6 +81,18 @@ typedef void (*ctdb_control_callback_fn_t)(struct ctdb_context *,
 					   void *private_data);
 
 /*
+  structure describing a connected client in the daemon
+ */
+struct ctdb_client {
+	struct ctdb_context *ctdb;
+	int fd;
+	struct ctdb_queue *queue;
+	uint32_t client_id;
+	struct ctdb_tcp_list *tcp_list;
+};
+
+
+/*
   state associated with one node
 */
 struct ctdb_node {
@@ -291,6 +303,7 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_takeover takeover;
+	struct ctdb_tcp_list *tcp_list;
 };
 
 struct ctdb_db_context {
@@ -398,6 +411,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_DELETE_LOW_RSN,
 		    CTDB_CONTROL_TAKEOVER_IP,
 		    CTDB_CONTROL_RELEASE_IP,
+		    CTDB_CONTROL_TCP_CLIENT,
+		    CTDB_CONTROL_TCP_ADD,
+		    CTDB_CONTROL_TCP_REMOVE,
 };
 
 /*
@@ -423,6 +439,14 @@ struct ctdb_control_set_call {
 	uint32_t db_id;
 	ctdb_fn_t fn;
 	uint32_t id;
+};
+
+/*
+  struct for tcp_client, tcp_add and tcp_remove controls
+ */
+struct ctdb_control_tcp {
+	struct sockaddr_in src;
+	struct sockaddr_in dest;
 };
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
@@ -896,9 +920,18 @@ int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
 int ctdb_sys_take_ip(const char *ip, const char *interface);
 int ctdb_sys_release_ip(const char *ip, const char *interface);
+int ctdb_sys_send_ack(const struct sockaddr_in *dest, 
+		      const struct sockaddr_in *src);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
+
+int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
+				TDB_DATA indata);
+int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
+
+void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 
 #endif
