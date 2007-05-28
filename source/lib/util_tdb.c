@@ -940,3 +940,40 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 
 	return w;
 }
+
+NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
+{
+	struct { enum TDB_ERROR err; NTSTATUS status; }	map[] =
+		{ { TDB_SUCCESS,	NT_STATUS_OK },
+		  { TDB_ERR_CORRUPT,	NT_STATUS_INTERNAL_DB_CORRUPTION },
+		  { TDB_ERR_IO,		NT_STATUS_UNEXPECTED_IO_ERROR },
+		  { TDB_ERR_OOM,	NT_STATUS_NO_MEMORY },
+		  { TDB_ERR_EXISTS,	NT_STATUS_OBJECT_NAME_COLLISION },
+
+		  /*
+		   * TDB_ERR_LOCK is very broad, we could for example
+		   * distinguish between fcntl locks and invalid lock
+		   * sequences. So NT_STATUS_FILE_LOCK_CONFLICT is a
+		   * compromise.
+		   */
+		  { TDB_ERR_LOCK,	NT_STATUS_FILE_LOCK_CONFLICT },
+		  /*
+		   * The next two ones in the enum are not actually used
+		   */
+		  { TDB_ERR_NOLOCK,	NT_STATUS_FILE_LOCK_CONFLICT },
+		  { TDB_ERR_LOCK_TIMEOUT, NT_STATUS_FILE_LOCK_CONFLICT },
+		  { TDB_ERR_NOEXIST,	NT_STATUS_NOT_FOUND },
+		  { TDB_ERR_EINVAL,	NT_STATUS_INVALID_PARAMETER },
+		  { TDB_ERR_RDONLY,	NT_STATUS_ACCESS_DENIED }
+		};
+
+	int i;
+
+	for (i=0; i < sizeof(map) / sizeof(map[0]); i++) {
+		if (err == map[i].err) {
+			return map[i].status;
+		}
+	}
+
+	return NT_STATUS_INTERNAL_ERROR;
+}
