@@ -20,76 +20,94 @@
 
 #include "includes.h"
 
-TDB_CONTEXT *conn_tdb_ctx(BOOL rw)
+static struct db_context *connections_db_ctx(BOOL rw)
 {
-	static TDB_CONTEXT *tdb;
+	static struct db_context *db_ctx;
 
-	if (tdb != NULL) {
-		return tdb;
+	if (db_ctx != NULL) {
+		return db_ctx;
 	}
 
 	if (rw) {
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-				   TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-				   O_RDWR | O_CREAT, 0644);
+		db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
+				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+				 O_RDWR | O_CREAT, 0644);
 	}
 	else {
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-				   TDB_DEFAULT, O_RDONLY, 0);
+		db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
+				 TDB_DEFAULT, O_RDONLY, 0);
 	}
 
-	if (tdb == NULL) {
-		DEBUG(0, ("Could not open connections.tdb: %s\n",
-			  strerror(errno)));
+	return db_ctx;
+}
+
+struct db_record *connections_fetch_record(TALLOC_CTX *mem_ctx,
+					   TDB_DATA key)
+{
+	struct db_context *ctx = connections_db_ctx(True);
+
+	if (ctx == NULL) {
+		return NULL;
 	}
 
-	return tdb;
+	return ctx->fetch_locked(ctx, mem_ctx, key);
+}
+
+struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
+					  connection_struct *conn,
+					  const char *name)
+{
+	struct connections_key ckey;
+	TDB_DATA key;
+
+	ZERO_STRUCT(ckey);
+	ckey.pid = procid_self();
+	ckey.cnum = conn ? conn->cnum : -1;
+	strlcpy(ckey.name, name, sizeof(ckey.name));
+
+	key.dsize = sizeof(ckey);
+	key.dptr = (uint8 *)&ckey;
+
+	return connections_fetch_record(mem_ctx, key);
 }
 
 struct conn_traverse_state {
-	int (*fn)(TDB_CONTEXT *tdb,
+	int (*fn)(struct db_record *rec,
 		  const struct connections_key *key,
 		  const struct connections_data *data,
 		  void *private_data);
 	void *private_data;
 };
 
-static int conn_traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key,
-			    TDB_DATA data, void *private_data)
+static int conn_traverse_fn(struct db_record *rec, void *private_data)
 {
 	struct conn_traverse_state *state =
 		(struct conn_traverse_state *)private_data;
 
-	if ((key.dsize != sizeof(struct connections_key))
-	    || (data.dsize != sizeof(struct connections_data))) {
+	if ((rec->key.dsize != sizeof(struct connections_key))
+	    || (rec->value.dsize != sizeof(struct connections_data))) {
 		return 0;
 	}
 
-	return state->fn(
-		tdb, (const struct connections_key *)key.dptr,
-		(const struct connections_data *)data.dptr,
-		state->private_data);
+	return state->fn(rec, (const struct connections_key *)rec->key.dptr,
+			 (const struct connections_data *)rec->value.dptr,
+			 state->private_data);
 }
 
-int connections_traverse(int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key,
-				   TDB_DATA data, void *private_data),
+int connections_traverse(int (*fn)(struct db_record *rec,
+				   void *private_data),
 			 void *private_data)
 {
-	TDB_CONTEXT *tdb = conn_tdb_ctx(True);
+	struct db_context *ctx = connections_db_ctx(False);
 
-	if (tdb == NULL) {
-		DEBUG(5, ("Could not open connections.tdb r/w, trying r/o\n"));
-		tdb = conn_tdb_ctx(False);
-	}
-
-	if (tdb == NULL) {
+	if (ctx == NULL) {
 		return -1;
 	}
 
-	return tdb_traverse(tdb, fn, private_data);
+	return ctx->traverse(ctx, fn, private_data);
 }
 
-int connections_forall(int (*fn)(TDB_CONTEXT *tdb,
+int connections_forall(int (*fn)(struct db_record *rec,
 				 const struct connections_key *key,
 				 const struct connections_data *data,
 				 void *private_data),
@@ -105,5 +123,5 @@ int connections_forall(int (*fn)(TDB_CONTEXT *tdb,
 
 BOOL connections_init(BOOL rw)
 {
-	return (conn_tdb_ctx(rw) != NULL);
+	return (connections_db_ctx(rw) != NULL);
 }

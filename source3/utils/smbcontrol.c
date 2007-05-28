@@ -243,9 +243,10 @@ cleanup:
 	ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
 
-static int stack_trace_connection(TDB_CONTEXT * tdb, 
+static int stack_trace_connection(struct db_record *rec,
 				  const struct connections_key *key,
-				  const struct connections_data *conn,
+				  const struct connections_data *crec,
+				  void *priv)
 {
 	print_stack_trace(procid_to_pid(&conn->pid), (int *)priv);
 
@@ -278,7 +279,7 @@ static BOOL do_daemon_stack_trace(struct messaging_context *msg_ctx,
 		 */
 		print_stack_trace(dest, &count);
 	} else {
-		connections_traverse(stack_trace_connection, &count);
+		connections_forall(stack_trace_connection, &count);
 	}
 
 	return True;
