@@ -188,7 +188,7 @@ static void print_brl(SMB_DEV_T dev,
 	       (double)start, (double)size);
 }
 
-static int traverse_fn1(TDB_CONTEXT *tdb,
+static int traverse_fn1(struct db_record *rec,
 			const struct connections_key *key,
 			const struct connections_data *crec,
 			void *state)
