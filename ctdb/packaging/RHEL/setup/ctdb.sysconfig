@@ -1,0 +1,2 @@
+# Options to ctdbd
+CTDBDOPTIONS="--nlist=/etc/samba/cluster_addresses.txt --dbdir=/var/lock/samba/ctdb --logfile=/var/log/samba/log.ctdb --public-addresses=/etc/samba/public_addresses.txt --public-interface=eth0"
