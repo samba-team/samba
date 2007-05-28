@@ -11,6 +11,7 @@ localstatedir = @localstatedir@
 VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
 builddir = @builddir@
+DESTDIR = /
 EXTRA_OBJ=@EXTRA_OBJ@
 
 POPT_LIBS = @POPT_LIBS@
@@ -110,10 +111,10 @@ distclean: clean
 	rm -f Makefile
 
 install: all
-	mkdir -p $(bindir)
-	mkdir -p $(includedir)
-	rsync $(BINS) $(bindir)
-	rsync $(srcdir)/include/ctdb.h $(includedir)
+	mkdir -p $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(includedir)
+	rsync $(BINS) $(DESTDIR)$(bindir)
+	rsync $(srcdir)/include/ctdb.h $(DESTDIR)$(includedir)
 
 test: all
 	tests/run_tests.sh
