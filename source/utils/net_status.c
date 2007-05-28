@@ -84,7 +84,7 @@ static int net_status_sessions(int argc, const char **argv)
 	return 0;
 }
 
-static int show_share(TDB_CONTEXT *tdb, 
+static int show_share(struct db_record *rec,
 		      const struct connections_key *key,
 		      const struct connections_data *crec,
 		      void *state)
@@ -134,7 +134,7 @@ static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	return 0;
 }
 
-static int show_share_parseable(TDB_CONTEXT *tdb,
+static int show_share_parseable(struct db_record *rec,
 				const struct connections_key *key,
 				const struct connections_data *crec,
 				void *state)

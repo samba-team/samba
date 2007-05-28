@@ -52,15 +52,15 @@ struct sess_file_count {
  Count the entries belonging to a service in the connection db.
 ****************************************************************************/
 
-static int pipe_enum_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *p)
+static int pipe_enum_fn( struct db_record *rec, void *p)
 {
 	struct pipe_open_rec prec;
 	struct file_enum_count *fenum = (struct file_enum_count *)p;
  
-	if (dbuf.dsize != sizeof(struct pipe_open_rec))
+	if (rec->value.dsize != sizeof(struct pipe_open_rec))
 		return 0;
 
-	memcpy(&prec, dbuf.dptr, sizeof(struct pipe_open_rec));
+	memcpy(&prec, rec->value.dptr, sizeof(struct pipe_open_rec));
  
 	if ( process_exists(prec.pid) ) {
 		struct srvsvc_NetFileInfo3 *f;
@@ -124,14 +124,12 @@ static WERROR net_enum_pipes( TALLOC_CTX *ctx, struct srvsvc_NetFileInfo3 **info
 /*******************************************************************
 ********************************************************************/
 
-/* global needed to make use of the share_mode_forall() callback */
-static struct file_enum_count f_enum_cnt;
-
 static void enum_file_fn( const struct share_mode_entry *e, 
                           const char *sharepath, const char *fname,
-			  void *dummy )
+			  void *private_data )
 {
-	struct file_enum_count *fenum = &f_enum_cnt;
+	struct file_enum_count *fenum =
+		(struct file_enum_count *)&private_data;
  
 	/* If the pid was not found delete the entry from connections.tdb */
 
@@ -199,11 +197,13 @@ static void enum_file_fn( const struct share_mode_entry *e,
 static WERROR net_enum_files( TALLOC_CTX *ctx, struct srvsvc_NetFileInfo3 **info, 
                               uint32 *count, uint32 *resume )
 {
+	struct file_enum_count f_enum_cnt;
+
 	f_enum_cnt.ctx = ctx;
 	f_enum_cnt.count = *count;
 	f_enum_cnt.info = *info;
 	
-	share_mode_forall( enum_file_fn, NULL );
+	share_mode_forall( enum_file_fn, (void *)&f_enum_cnt );
 	
 	*info  = f_enum_cnt.info;
 	*count = f_enum_cnt.count;

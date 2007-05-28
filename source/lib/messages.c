@@ -96,12 +96,12 @@ struct msg_all {
  Send one of the messages for the broadcast.
 ****************************************************************************/
 
-static int traverse_fn(TDB_CONTEXT *the_tdb,
+static int traverse_fn(struct db_record *rec,
 		       const struct connections_key *ckey,
 		       const struct connections_data *crec,
-		       void *private_data)
+		       void *state)
 {
-	struct msg_all *msg_all = (struct msg_all *)private_data;
+	struct msg_all *msg_all = (struct msg_all *)state;
 	NTSTATUS status;
 
 	if (crec->cnum != -1)
@@ -120,20 +120,14 @@ static int traverse_fn(TDB_CONTEXT *the_tdb,
 				    (uint8 *)msg_all->buf, msg_all->len);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
-
-		TDB_DATA key;
 		
-		/* If the pid was not found delete the entry from
-		 * connections.tdb */
+		/* If the pid was not found delete the entry from connections.tdb */
 
-		DEBUG(2,("pid %s doesn't exist - deleting connections "
-			 "%d [%s]\n", procid_str_static(&crec->pid),
-			 crec->cnum, crec->servicename));
+		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
+			 procid_str_static(&crec->pid), crec->cnum,
+			 crec->servicename));
 
-		key.dptr = (uint8 *)ckey;
-		key.dsize = sizeof(*ckey);
-
-		tdb_delete(the_tdb, key);
+		rec->delete_rec(rec);
 	}
 	msg_all->n_sent++;
 	return 0;
