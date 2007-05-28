@@ -768,17 +768,16 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
  fill in a sess info level 0 structure.
  ********************************************************************/
 
-static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *stot)
+static void init_srv_sess_info_0(pipes_struct *p, SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *stot)
 {
 	struct sessionid *session_list;
 	uint32 num_entries = 0;
-	(*stot) = list_sessions(&session_list);
+	(*stot) = list_sessions(p->mem_ctx, &session_list);
 
 	if (ss0 == NULL) {
 		if (snum) {
 			(*snum) = 0;
 		}
-		SAFE_FREE(session_list);
 		return;
 	}
 
@@ -803,7 +802,6 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 		ss0->ptr_sess_info = 0;
 		ss0->num_entries_read2 = 0;
 	}
-	SAFE_FREE(session_list);
 }
 
 /*******************************************************************
@@ -842,7 +840,7 @@ static int net_count_files( uid_t uid, struct server_id pid )
  fill in a sess info level 1 structure.
  ********************************************************************/
 
-static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *stot)
+static void init_srv_sess_info_1(pipes_struct *p, SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *stot)
 {
 	struct sessionid *session_list;
 	uint32 num_entries = 0;
@@ -863,7 +861,7 @@ static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		return;
 	}
 
-	(*stot) = list_sessions(&session_list);
+	(*stot) = list_sessions(p->mem_ctx, &session_list);
 	
 
 	for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
@@ -900,14 +898,13 @@ static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		(*snum) = 0;
 	}
 
-	SAFE_FREE(session_list);
 }
 
 /*******************************************************************
  makes a SRV_R_NET_SESS_ENUM structure.
 ********************************************************************/
 
-static WERROR init_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
+static WERROR init_srv_sess_info_ctr(pipes_struct *p, SRV_SESS_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
 {
 	WERROR status = WERR_OK;
@@ -917,11 +914,11 @@ static WERROR init_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
 
 	switch (switch_value) {
 	case 0:
-		init_srv_sess_info_0(&(ctr->sess.info0), resume_hnd, total_entries);
+		init_srv_sess_info_0(p, &(ctr->sess.info0), resume_hnd, total_entries);
 		ctr->ptr_sess_ctr = 1;
 		break;
 	case 1:
-		init_srv_sess_info_1(&(ctr->sess.info1), resume_hnd, total_entries);
+		init_srv_sess_info_1(p, &(ctr->sess.info1), resume_hnd, total_entries);
 		ctr->ptr_sess_ctr = 1;
 		break;
 	default:
@@ -940,7 +937,7 @@ static WERROR init_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
  makes a SRV_R_NET_SESS_ENUM structure.
 ********************************************************************/
 
-static void init_srv_r_net_sess_enum(SRV_R_NET_SESS_ENUM *r_n,
+static void init_srv_r_net_sess_enum(pipes_struct *p, SRV_R_NET_SESS_ENUM *r_n,
 				uint32 resume_hnd, int sess_level, int switch_value)  
 {
 	DEBUG(5,("init_srv_r_net_sess_enum: %d\n", __LINE__));
@@ -950,7 +947,7 @@ static void init_srv_r_net_sess_enum(SRV_R_NET_SESS_ENUM *r_n,
 	if (sess_level == -1)
 		r_n->status = WERR_UNKNOWN_LEVEL;
 	else
-		r_n->status = init_srv_sess_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
+		r_n->status = init_srv_sess_info_ctr(p, r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
 
 	if (!W_ERROR_IS_OK(r_n->status))
 		resume_hnd = 0;
@@ -1289,7 +1286,7 @@ WERROR _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_S
 	ZERO_STRUCTP(r_u->ctr);
 
 	/* set up the */
-	init_srv_r_net_sess_enum(r_u,
+	init_srv_r_net_sess_enum(p, r_u,
 				get_enum_hnd(&q_u->enum_hnd),
 				q_u->sess_level,
 				q_u->ctr->switch_value);
@@ -1320,7 +1317,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 		memmove(machine, &machine[1], strlen(machine));
 	}
 
-	num_sessions = list_sessions(&session_list);
+	num_sessions = list_sessions(p->mem_ctx, &session_list);
 
 	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
 
@@ -1364,7 +1361,6 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 
 done:
-	SAFE_FREE(session_list);
 
 	return r_u->status;
 }
