@@ -1,4 +1,7 @@
 #!/bin/sh
+# Blackbox tests for smbclient
+# Copyright (C) 2006-2007 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2006-2007 Andrew Bartlett <abartlet@samba.org>
 
 if [ $# -lt 5 ]; then
 cat <<EOF
@@ -95,6 +98,8 @@ echo rm tmpfilex | runcmd "Removing file" || failed=`expr $failed + 1`
 # do some simple operations using old protocol versions
 echo ls | runcmd "List directory with LANMAN1" -m LANMAN1 || failed=`expr $failed + 1`
 echo ls | runcmd "List directory with LANMAN2" -m LANMAN2 || failed=`expr $failed + 1`
+
+echo pwd | runcmd "Print current working directory" || failed=`expr $failed + 1`
 
 echo ls | testit "Test login with --machine-pass without kerberos" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp --machine-pass -k no || failed=`expr $failed + 1`
 
