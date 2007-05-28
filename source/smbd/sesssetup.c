@@ -1174,25 +1174,26 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
  a new session setup with VC==0 is ignored.
 ****************************************************************************/
 
-static int shutdown_other_smbds(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
-				void *p)
+static int shutdown_other_smbds(struct db_record *rec,
+				const struct connections_key *key,
+				const struct connections_data *crec,
+				void *private_data)
 {
-	struct sessionid *sessionid = (struct sessionid *)dbuf.dptr;
-	const char *ip = (const char *)p;
+	const char *ip = (const char *)private_data;
 
-	if (!process_exists(sessionid->pid)) {
+	if (!process_exists(crec->pid)) {
 		return 0;
 	}
 
-	if (procid_is_me(&sessionid->pid)) {
+	if (procid_is_me(&crec->pid)) {
 		return 0;
 	}
 
-	if (strcmp(ip, sessionid->ip_addr) != 0) {
+	if (strcmp(ip, crec->addr) != 0) {
 		return 0;
 	}
 
-	messaging_send(smbd_messaging_context(), sessionid->pid, MSG_SHUTDOWN,
+	messaging_send(smbd_messaging_context(), crec->pid, MSG_SHUTDOWN,
 		       &data_blob_null);
 	return 0;
 }
@@ -1205,7 +1206,7 @@ static void setup_new_vc_session(void)
 	invalidate_all_vuids();
 #endif
 	if (lp_reset_on_zero_vc()) {
-		session_traverse(shutdown_other_smbds, client_addr());
+		connections_forall(shutdown_other_smbds, client_addr());
 	}
 }
 
