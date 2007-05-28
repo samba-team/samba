@@ -519,7 +519,11 @@ if (defined($ENV{LD_LIBRARY_PATH})) {
 } else {
 	$ENV{LD_LIBRARY_PATH} = "$old_pwd/bin/shared";
 }
-$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
+if (defined($ENV{PKG_CONFIG_PATH})) {
+	$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
+} else { 
+	$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig";
+}
 $ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
 
 

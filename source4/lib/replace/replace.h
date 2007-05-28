@@ -258,6 +258,14 @@ int rep_socketpair(int d, int type, int protocol, int sv[2]);
 #endif
 #endif
 
+#ifndef _DEPRECATED_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
+#endif
+#endif
+
 #ifndef HAVE_VASPRINTF
 #define vasprintf rep_vasprintf
 int rep_vasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
