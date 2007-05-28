@@ -167,15 +167,14 @@ static void print_share_mode(const struct share_mode_entry *e,
 
 
 /* kill off any connections chosen by the user */
-static int traverse_fn1(TDB_CONTEXT *tdb,
+static int traverse_fn1(struct db_record *rec,
 			const struct connections_key *key,
 			const struct connections_data *crec,
-			void* state)
+			void *private_data)
 {
 	if (crec->cnum == -1 && process_exists(crec->pid)) {
 		char buf[30];
-		slprintf(buf, sizeof(buf)-1,"kill_%s",
-			 procid_str_static(&crec->pid));
+		slprintf(buf,sizeof(buf)-1,"kill_%s", procid_str_static(&crec->pid));
 		if (cgi_variable(buf)) {
 			kill_pid(crec->pid);
 			sleep(SLEEP_TIME);
@@ -185,10 +184,10 @@ static int traverse_fn1(TDB_CONTEXT *tdb,
 }
 
 /* traversal fn for showing machine connections */
-static int traverse_fn2(TDB_CONTEXT *tdb,
-			const struct connections_key *key,
-			const struct connections_data *crec,
-			void* state)
+static int traverse_fn2(struct db_record *rec,
+                        const struct connections_key *key,
+                        const struct connections_data *crec,
+                        void *private_data)
 {
 	if (crec->cnum == -1 || !process_exists(crec->pid) ||
 	    procid_equal(&crec->pid, &smbd_pid))
@@ -210,10 +209,10 @@ static int traverse_fn2(TDB_CONTEXT *tdb,
 }
 
 /* traversal fn for showing share connections */
-static int traverse_fn3(TDB_CONTEXT *tdb,
-			const struct connections_key *key,
-			const struct connections_data *crec,
-			void* state)
+static int traverse_fn3(struct db_record *rec,
+                        const struct connections_key *key,
+                        const struct connections_data *crec,
+                        void *private_data)
 {
 	if (crec->cnum == -1 || !process_exists(crec->pid))
 		return 0;
