@@ -1,13 +1,9 @@
 #!/bin/sh
 #
-# chkconfig: - 91 35
-# description: Starts and stops the Samba smbd and nmbd daemons \
-#	       used to provide SMB network services.
+# chkconfig: - 90 36
+# description: Starts and stops the clustered tdb daemon
 #
-# pidfile: /var/run/samba/smbd.pid
-# pidfile: /var/run/samba/nmbd.pid
-# config:  /etc/samba/smb.conf
-
+# pidfile: /var/run/ctdbd/ctdbd.pid
 
 # Source function library.
 if [ -f /etc/init.d/functions ] ; then
@@ -24,18 +20,48 @@ unset TMPDIR
 # Source networking configuration.
 . /etc/sysconfig/network
 
+# There is no "default" config so we must have this file with 
+# CLUSTER_NODES and PUBLIC_ADDRESSES
 if [ -f /etc/sysconfig/ctdb ]; then
    . /etc/sysconfig/ctdb 
+   if [ -z $CLUSTER_NODES ] || [ -z $PUBLIC_ADDRESSES ]; then
+       exit 0
+   fi
+else
+    exit 0
 fi
 
 # Check that networking is up.
 [ ${NETWORKING} = "no" ] && exit 0
 
-# Check that smb.conf exists.
-[ -f /etc/samba/smb.conf ] || exit 0
 
-RETVAL=0
+CLUSTER_BASEDIR=`dirname $CLUSTER_NODES`
+CLUSTER_ADDRESSES=$CLUSTER_BASEDIR/cluster_addresses.txt
+[ -z $CTDB_PORT ] && CTDB_PORT=9001
+[ -z $DEBUGLEVEL ] && DEBUGLEVEL=0
+if [ -z $LOGFILE ]; then
+    LOGFILEBASE=`smbd -b | grep LOGFILEBASE | awk '{print $2}'`
+    if [ -z $LOGFILEBASE ]; then
+	echo "must have LOGFILE specified or smbd installed"
+	return 0
+    fi
+    LOGFILE=$LOGFILEBASE/log.ctdb
+fi
 
+# build the cluster addresses file
+TMP_ADDRESSES=`mktemp -t cluster_addresses.XXXXXXXX`
+rm -f $TMP_ADDRESSES
+for a in `egrep '^[[:alnum:]]' $CLUSTER_NODES`; do
+    echo "$a:$CTDB_PORT" >> $TMP_ADDRESSES
+done
+mv -f $TMP_ADDRESSES $CLUSTER_ADDRESSES
+
+# create the temporary local dbdir
+DBDIR=`mktemp -td ctdb.XXXXXXXX`
+CTDBOPTIONS="--nlist=$CLUSTER_ADDRESSES --public-addresses=$PUBLIC_ADDRESSES --public-interface=$PUBLIC_INTERFACE --dbdir=$DBDIR --logfile=$LOGFILE -d $DEBUGLEVEL"
+
+echo ctdbd $CTDBOPTIONS
+exit 0
 
 start() {
 	echo -n $"Starting ctdbd services: "
