@@ -367,7 +367,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
 		if (tmp_db->db_id == ctdb_db->db_id) {
 			DEBUG(0,("db_id 0x%x hash collision. name1='%s' name2='%s'\n",
-				 db_name, tmp_db->db_name));
+				 tmp_db->db_id, db_name, tmp_db->db_name));
 			talloc_free(ctdb_db);
 			return -1;
 		}
@@ -448,7 +448,7 @@ int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint3
 
 	ctdb_db = find_ctdb_db(ctdb, db_id);
 	if (!ctdb_db) {
-		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_update_seqnum\n"));
+		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_update_seqnum\n", db_id));
 		return -1;
 	}
 
@@ -491,7 +491,7 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 	struct ctdb_db_context *ctdb_db;
 	ctdb_db = find_ctdb_db(ctdb, db_id);
 	if (!ctdb_db) {
-		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_enable_seqnum\n"));
+		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_enable_seqnum\n", db_id));
 		return -1;
 	}
 

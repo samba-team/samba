@@ -239,7 +239,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 	}
 
 	if (nlines != ctdb->num_nodes) {
-		DEBUG(0,("Number of lines in %s does not match number of nodes!\n"));
+		DEBUG(0,("Number of lines in %s does not match number of nodes!\n", alist));
 		talloc_free(lines);
 		return -1;
 	}

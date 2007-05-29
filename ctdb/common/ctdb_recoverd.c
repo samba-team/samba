@@ -546,7 +546,7 @@ static int do_recovery(struct ctdb_context *ctdb,
 	if (ctdb->takeover.enabled) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
-			DEBUG(0, (__location__, " Unable to setup public takeover addresses\n"));
+			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
 			return -1;
 		}
 	}

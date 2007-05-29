@@ -18,4 +18,4 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-void do_debug(const char *format, ...);
+void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);

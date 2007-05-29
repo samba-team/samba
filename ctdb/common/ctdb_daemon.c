@@ -617,11 +617,11 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
 
 	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		DEBUG(0,("Unable to bind on ctdb socket '%s', ctdb->daemon.name\n"));
+		DEBUG(0,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
 	}	
 	if (listen(ctdb->daemon.sd, 10) != 0) {
-		DEBUG(0,("Unable to listen on ctdb socket '%s', ctdb->daemon.name\n"));
+		DEBUG(0,("Unable to listen on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
 	}
 
