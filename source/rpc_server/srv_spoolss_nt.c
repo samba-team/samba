@@ -4333,6 +4333,32 @@ static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *p
 }
 
 /********************************************************************
+ * construct_printer_info_6
+ * fill a printer_info_6 struct
+ ********************************************************************/
+
+static BOOL construct_printer_info_6(Printer_entry *print_hnd,
+				     PRINTER_INFO_6 *printer,
+				     int snum)
+{
+	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	int count;
+	print_status_struct status;
+
+	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2,
+					 lp_const_servicename(snum))))
+		return False;
+
+	count = print_queue_length(snum, &status);
+
+	printer->status = nt_printq_status(status.status);
+		
+	free_a_printer(&ntprinter, 2);
+
+	return True;
+}
+
+/********************************************************************
  * construct_printer_info_7
  * fill a printer_info_7 struct
  ********************************************************************/
@@ -4960,6 +4986,46 @@ out:
 	return result;	
 }
 
+static WERROR getprinter_level_6(Printer_entry *print_hnd,
+				 int snum,
+				 RPC_BUFFER *buffer, uint32 offered,
+				 uint32 *needed)
+{
+	PRINTER_INFO_6 *printer;
+	WERROR result = WERR_OK;
+
+	if ((printer = SMB_MALLOC_P(PRINTER_INFO_6)) == NULL) {
+		return WERR_NOMEM;
+	}
+
+	if (!construct_printer_info_6(print_hnd, printer, snum)) {
+		free_printer_info_6(printer);
+		return WERR_NOMEM;
+	}
+
+	/* check the required size. */
+	*needed += spoolss_size_printer_info_6(printer);
+
+	if (*needed > offered) {
+		result = WERR_INSUFFICIENT_BUFFER;
+		goto out;
+	}
+
+	if (!rpcbuf_alloc_size(buffer, *needed)) {
+		result = WERR_NOMEM;
+		goto out;
+	}
+
+	/* fill the buffer with the structures */
+	smb_io_printer_info_6("", buffer, printer, 0);	
+	
+out:
+	/* clear memory */
+	free_printer_info_6(printer);
+	
+	return result;	
+}
+
 static WERROR getprinter_level_7(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_7 *printer=NULL;
@@ -5036,6 +5102,8 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 		return getprinter_level_4(Printer, snum, buffer, offered, needed);
 	case 5:		
 		return getprinter_level_5(Printer, snum, buffer, offered, needed);
+	case 6:		
+		return getprinter_level_6(Printer, snum, buffer, offered, needed);
 	case 7:
 		return getprinter_level_7(Printer, snum, buffer, offered, needed);
 	}
