@@ -43,6 +43,7 @@ BOOL yield_connection(connection_struct *conn, const char *name)
 			nt_errstr(status)));
 	}
 
+	TALLOC_FREE(rec);
 	return NT_STATUS_IS_OK(status);
 }
 
