@@ -70,8 +70,8 @@ AC_CHECK_FUNCS([				\
 	atexit					\
 	cgetent					\
 	getprogname				\
-	inet_ntop				\
 	inet_aton				\
+	inet_ntop				\
 	inet_pton				\
 	gethostname				\
 	getnameinfo				\
@@ -235,19 +235,38 @@ if test t$ac_cv_func_getaddrinfo != tyes; then
 	SMB_ENABLE(HEIMDAL_ROKEN_ADDRINFO, YES)
 fi
 
+SMB_ENABLE(HEIMDAL_ROKEN_GETNAMEINFO, NO)
+if test t$ac_cv_func_getnameinfo != tyes; then
+	SMB_ENABLE(HEIMDAL_ROKEN_GETNAMEINFO, YES)
+fi
+
 # only add inet_aton if needed
 SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, NO)
 if test t$ac_cv_func_inet_aton != tyes; then
 	SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, YES)
 fi
 
+SMB_ENABLE(HEIMDAL_ROKEN_INET_NTOP, NO)
+if test x"$ac_cv_func_inet_ntop" = x"no"; then
+    AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, inet_ntop)
+    AC_CHECK_LIB_EXT(nsl, NSL_LIBS, inet_ntop)
+    if test x"$ac_cv_lib_ext_nsl_s_inet_ntop" != x"yes" &&
+       test x"$ac_cv_lib_ext_nsl_inet_ntop" != x"yes"; then
+	SMB_ENABLE(HEIMDAL_ROKEN_INET_NTOP, YES)
+    else
+	SMB_ENABLE(NSL,YES)
+    fi
+fi
+
+SMB_ENABLE(HEIMDAL_ROKEN_INET_PTON, NO)
 if test x"$ac_cv_func_inet_pton" = x"no"; then
     AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, inet_pton)
     AC_CHECK_LIB_EXT(nsl, NSL_LIBS, inet_pton)
-    SMB_ENABLE(NSL,YES)
     if test x"$ac_cv_lib_ext_nsl_s_inet_pton" != x"yes" &&
        test x"$ac_cv_lib_ext_nsl_inet_pton" != x"yes"; then
-	AC_MSG_ERROR([no inet_pton() function available!])
+	SMB_ENABLE(HEIMDAL_ROKEN_INET_PTON, YES)
+    else
+	SMB_ENABLE(NSL,YES)
     fi
 fi
 

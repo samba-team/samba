@@ -373,6 +373,14 @@ OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 
+[SUBSYSTEM::HEIMDAL_ROKEN_INET_NTOP]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
+OBJ_FILES = ../heimdal/lib/roken/inet_ntop.o
+
+[SUBSYSTEM::HEIMDAL_ROKEN_INET_PTON]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
+OBJ_FILES = ../heimdal/lib/roken/inet_pton.o
+
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/getprogname.o
@@ -384,6 +392,10 @@ OBJ_FILES = ../heimdal/lib/roken/closefrom.o
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H] 
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/getprogname.ho
+
+[SUBSYSTEM::HEIMDAL_ROKEN_GETNAMEINFO]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
+OBJ_FILES = ../heimdal/lib/roken/getnameinfo.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
@@ -397,7 +409,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/freehostent.o \
 	../heimdal/lib/roken/copyhostent.o \
 	../heimdal/lib/roken/hostent_find_fqdn.o
-PRIVATE_DEPENDENCIES = EXT_SOCKET
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_INET_PTON EXT_SOCKET
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
@@ -436,8 +448,11 @@ PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_ADDRINFO \
 			HEIMDAL_ROKEN_GAI_STRERROR \
 			HEIMDAL_ROKEN_INET_ATON \
+			HEIMDAL_ROKEN_INET_NTOP \
+			HEIMDAL_ROKEN_INET_PTON \
 			HEIMDAL_ROKEN_GETPROGNAME \
 			HEIMDAL_ROKEN_CLOSEFROM \
+			HEIMDAL_ROKEN_GETNAMEINFO \
 			GAI \
 			NSL \
 			RESOLV \
