@@ -1200,6 +1200,17 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	/* check authentication loop */
 
 	do {
+		NTSTATUS (*logon_fn)(struct rpc_pipe_client
+				     *cli, TALLOC_CTX *mem_ctx,
+				     uint32 logon_parameters,
+				     const char *server,
+				     const char *username,
+				     const char *domain,
+				     const char *workstation, 
+				     const uint8 chal[8], 
+				     DATA_BLOB lm_response,
+				     DATA_BLOB nt_response,
+				     NET_USER_INFO_3 *info3);
 
 		ZERO_STRUCTP(my_info3);
 		retry = False;
@@ -1211,7 +1222,11 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
+		logon_fn = contact_domain->can_do_samlogon_ex
+			? rpccli_netlogon_sam_network_logon_ex
+			: rpccli_netlogon_sam_network_logon;
+
+		result = logon_fn(netlogon_pipe,
 							   state->mem_ctx,
 							   0,
 							   contact_domain->dcname, /* server name */
@@ -1222,6 +1237,16 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 							   lm_resp,
 							   nt_resp,
 							   my_info3);
+
+		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
+		    && contact_domain->can_do_samlogon_ex) {
+			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
+				  "retrying with NetSamLogon\n"));
+			contact_domain->can_do_samlogon_ex = False;
+			retry = True;
+			continue;
+		}
+			
 		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon
@@ -1807,6 +1832,18 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	}
 
 	do {
+		NTSTATUS (*logon_fn)(struct rpc_pipe_client
+				     *cli, TALLOC_CTX *mem_ctx,
+				     uint32 logon_parameters,
+				     const char *server,
+				     const char *username,
+				     const char *domain,
+				     const char *workstation, 
+				     const uint8 chal[8], 
+				     DATA_BLOB lm_response,
+				     DATA_BLOB nt_response,
+				     NET_USER_INFO_3 *info3);
+
 		ZERO_STRUCT(info3);
 		retry = False;
 
@@ -1819,7 +1856,11 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
+		logon_fn = contact_domain->can_do_samlogon_ex
+			? rpccli_netlogon_sam_network_logon_ex
+			: rpccli_netlogon_sam_network_logon;
+
+		result = logon_fn(netlogon_pipe,
 							   state->mem_ctx,
 							   state->request.data.auth_crap.logon_parameters,
 							   contact_domain->dcname,
@@ -1832,6 +1873,15 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 							   nt_resp,
 							   &info3);
 
+		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
+		    && contact_domain->can_do_samlogon_ex) {
+			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
+				  "retrying with NetSamLogon\n"));
+			contact_domain->can_do_samlogon_ex = False;
+			retry = True;
+			continue;
+		}
+			
 		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon
