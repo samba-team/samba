@@ -26,7 +26,7 @@
   return a file_id which gives a unique ID for a file given the device and
   inode numbers
  */
-static struct file_id file_id_create(SMB_DEV_T dev, SMB_INO_T inode)
+struct file_id file_id_create(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	struct file_id key;
 	/* the ZERO_STRUCT ensures padding doesn't break using the key as a
