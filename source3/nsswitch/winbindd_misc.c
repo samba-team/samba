@@ -247,9 +247,9 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
 
-	werr = rpccli_netlogon_getdcname(netlogon_pipe, state->mem_ctx, domain->dcname,
-					   state->request.domain_name,
-					   dcname_slash);
+	werr = rpccli_netlogon_getanydcname(netlogon_pipe, state->mem_ctx, domain->dcname,
+					    state->request.domain_name,
+					    dcname_slash);
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 

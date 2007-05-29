@@ -380,44 +380,6 @@ NTSTATUS rpccli_netlogon_logon_ctrl2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	return result;
 }
 
-/* GetDCName */
-
-WERROR rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx, const char *mydcname,
-				 const char *domainname, fstring newdcname)
-{
-	prs_struct qbuf, rbuf;
-	NET_Q_GETDCNAME q;
-	NET_R_GETDCNAME r;
-	WERROR result;
-	fstring mydcname_slash;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	slprintf(mydcname_slash, sizeof(fstring)-1, "\\\\%s", mydcname);
-	init_net_q_getdcname(&q, mydcname_slash, domainname);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_GETDCNAME,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_getdcname,
-		net_io_r_getdcname,
-		WERR_GENERAL_FAILURE);
-
-	result = r.status;
-
-	if (W_ERROR_IS_OK(result)) {
-		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
-	}
-
-	return result;
-}
-
 /* GetAnyDCName */
 
 WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
@@ -450,6 +412,44 @@ WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 	result = r.status;
 
 	if (W_ERROR_IS_OK(result)) {
+		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
+	}
+
+	return result;
+}
+
+/* GetDCName */
+
+NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx, const char *mydcname,
+				   const char *domainname, fstring newdcname)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_GETDCNAME q;
+	NET_R_GETDCNAME r;
+	NTSTATUS result;
+	fstring mydcname_slash;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+
+	slprintf(mydcname_slash, sizeof(fstring)-1, "\\\\%s", mydcname);
+	init_net_q_getdcname(&q, mydcname_slash, domainname);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_GETDCNAME,
+		q, r,
+		qbuf, rbuf,
+		net_io_q_getdcname,
+		net_io_r_getdcname,
+		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
 	}
 
