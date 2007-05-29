@@ -217,7 +217,7 @@ static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
 	WERROR result;
 	uint32 flags = DS_RETURN_DNS_NAME;
 	const char *server_name = cli->cli->desthost;
-	const char *domain_name;
+	const char *domain_name = NULL;
 	const char *client_account = NULL;
 	uint32 mask = 0;
 	const char *site_name = NULL;

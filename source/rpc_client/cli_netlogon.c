@@ -463,7 +463,8 @@ static WERROR pull_domain_controller_info_from_getdcname_reply(TALLOC_CTX *mem_c
 
 	info->domain_controller_address_type = r->dc_address_type;
 
-	info->domain_guid = talloc_memdup(mem_ctx, &r->domain_guid, sizeof(struct GUID));
+	info->domain_guid = (struct GUID *)talloc_memdup(
+		mem_ctx, &r->domain_guid, sizeof(struct GUID));
 	if (!info->domain_guid) {
 		return WERR_GENERAL_FAILURE;
 	}
