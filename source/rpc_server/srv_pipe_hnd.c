@@ -1170,7 +1170,7 @@ BOOL close_rpc_pipe_hnd(smb_np_struct *p)
 
 	DLIST_REMOVE(Pipes, p);
 	
-	/* Remove from pipe open db */
+	/* TODO: Remove from pipe open db */
 	
 	if ( !delete_pipe_opendb( p ) ) {
 		DEBUG(3,("close_rpc_pipe_hnd: failed to delete %s "
