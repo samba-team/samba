@@ -385,7 +385,7 @@ int cli_errno(struct cli_state *cli)
          * byte isn't 0xc0, it doesn't match cli_is_nt_error() above.
          */
         status = cli_nt_error(cli);
-        if (NT_STATUS_V(status) == NT_STATUS_V(STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
+        if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
             return EACCES;
         }
 
