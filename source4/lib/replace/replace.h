@@ -228,7 +228,11 @@ char *rep_dlerror(void);
 
 #ifndef HAVE_DLOPEN
 #define dlopen rep_dlopen
+#ifdef DLOPEN_TAKES_UNSIGNED_FLAGS
+void *rep_dlopen(const char *name, unsigned int flags);
+#else
 void *rep_dlopen(const char *name, int flags);
+#endif
 #endif
 
 #ifndef HAVE_DLSYM
