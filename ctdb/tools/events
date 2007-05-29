@@ -30,8 +30,12 @@ case $cmd in
 	;;
 
      recovered)
-     shutdown)
         # restart any services as necessary, like NFS
+	exit 0
+	;;
+
+     shutdown)
+        # shutdown any services as necessary
 	exit 0
 	;;
 esac
