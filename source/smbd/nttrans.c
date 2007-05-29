@@ -2294,11 +2294,9 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		if (pdata == NULL) {
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}		
-		SINO_T_VAL(pdata,0,fsp->inode);
-		SDEV_T_VAL(pdata,8,fsp->dev);
+		push_file_id_16(pdata, &fsp->file_id);
 		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
-		SINO_T_VAL(pdata,32,fsp->inode);
-		SDEV_T_VAL(pdata,40,fsp->dev);
+		push_file_id_16(pdata+32, &fsp->file_id);
 		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, pdata, data_count);
 		return -1;
 	}

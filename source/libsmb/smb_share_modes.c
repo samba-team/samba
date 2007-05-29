@@ -137,8 +137,8 @@ static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry,
 		e_entry->open_time.tv_usec == entry->time.tv_usec &&
 		e_entry->share_access == (uint32_t)entry->share_access &&
 		e_entry->access_mask == (uint32_t)entry->access_mask &&
-		e_entry->dev == (uint64_t)entry->dev && 
-		e_entry->ino == (uint64_t)entry->inode);
+		e_entry->dev == entry->id.devid && 
+		e_entry->ino == entry->id.inode);
 }
 
 /*
@@ -156,8 +156,8 @@ static void create_share_mode_entry(struct share_mode_entry *out,
 	out->time.tv_usec = in->open_time.tv_usec;
 	out->share_access = in->share_access;
 	out->access_mask = in->access_mask;
-	out->dev = (SMB_DEV_T)in->dev;
-	out->inode = (SMB_INO_T)in->ino;
+	out->id.devid = in->dev;
+	out->id.inode = in->ino;
 	out->uid = (uint32)geteuid();
 	out->flags = 0;
 }
@@ -224,8 +224,8 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 		}
 
 		/* Copy into the external list. */
-		sme->dev = (uint64_t)share->dev;
-		sme->ino = (uint64_t)share->inode;
+		sme->dev = share->id.devid;
+		sme->ino = share->id.inode;
 		sme->share_access = (uint32_t)share->share_access;
 		sme->access_mask = (uint32_t)share->access_mask;
 		sme->open_time.tv_sec = share->time.tv_sec;

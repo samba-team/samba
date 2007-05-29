@@ -167,17 +167,17 @@ static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_WRLCK) == -1) {
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
-			 "fd = %d, dev = %x, inode = %.0f. (%s)\n",
+			 "fd = %d, file_id = %s. (%s)\n",
 			 fsp->fsp_name, fsp->fh->fd, 
-			 (unsigned int)fsp->dev, (double)fsp->inode,
+			 file_id_static_string(&fsp->file_id),
 			 strerror(errno)));
 		return False;
 	}
 	
 	DEBUG(3,("linux_set_kernel_oplock: got kernel oplock on file %s, "
-		 "dev = %x, inode = %.0f, file_id = %lu\n",
-		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
-		 fsp->fh->file_id));
+		 "file_id = %s gen_id = %lu\n",
+		 fsp->fsp_name, file_id_static_string(&fsp->file_id),
+		 fsp->fh->gen_id));
 
 	return True;
 }
@@ -194,10 +194,10 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		 * oplock state of this file.
 		 */
 		int state = fcntl(fsp->fh->fd, F_GETLEASE, 0);
-		dbgtext("linux_release_kernel_oplock: file %s, dev = %x, "
-			"inode = %.0f file_id = %lu has kernel oplock state "
-			"of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
-                        (double)fsp->inode, fsp->fh->file_id, state );
+		dbgtext("linux_release_kernel_oplock: file %s, file_id = %s "
+			"gen_id = %lu has kernel oplock state "
+			"of %x.\n", fsp->fsp_name, file_id_static_string(&fsp->file_id),
+			fsp->fh->gen_id, state );
 	}
 
 	/*
@@ -207,10 +207,10 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		if (DEBUGLVL(0)) {
 			dbgtext("linux_release_kernel_oplock: Error when "
 				"removing kernel oplock on file " );
-			dbgtext("%s, dev = %x, inode = %.0f, file_id = %lu. "
+			dbgtext("%s, file_id = %s, gen_id = %lu. "
 				"Error was %s\n", fsp->fsp_name,
-				(unsigned int)fsp->dev, (double)fsp->inode,
-				fsp->fh->file_id, strerror(errno) );
+				file_id_static_string(&fsp->file_id),
+				fsp->fh->gen_id, strerror(errno) );
 		}
 	}
 }

@@ -87,8 +87,7 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	fsp->wcp = NULL; 
 	SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;
-	fsp->inode = sbuf.st_ino;
-	fsp->dev = sbuf.st_dev;
+	fsp->file_id = file_id_sbuf(&sbuf);
 
 	conn->num_files_open++;
 

@@ -166,8 +166,7 @@ static void print_share_mode(const struct share_mode_entry *e,
 	}
 }
 
-static void print_brl(SMB_DEV_T dev,
-			SMB_INO_T ino,
+static void print_brl(struct file_id id,
 			struct server_id pid, 
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
@@ -175,6 +174,18 @@ static void print_brl(SMB_DEV_T dev,
 			br_off size)
 {
 	static int count;
+	int i;
+	static const struct {
+		enum brl_type lock_type;
+		const char *desc;
+	} lock_types[] = {
+		{ READ_LOCK, "R" },
+		{ WRITE_LOCK, "W" },
+		{ PENDING_READ_LOCK, "PR" },
+		{ PENDING_WRITE_LOCK, "PW" },
+		{ UNLOCK_LOCK, "U" }
+	};
+	const char *desc="X";
 	if (count==0) {
 		d_printf("Byte range locks:\n");
 		d_printf("   Pid     dev:inode  R/W      start        size\n");
@@ -182,10 +193,16 @@ static void print_brl(SMB_DEV_T dev,
 	}
 	count++;
 
-	d_printf("%8s   %05x:%05x    %s  %9.0f   %9.0f\n", 
-	       procid_str_static(&pid), (int)dev, (int)ino, 
-	       lock_type==READ_LOCK?"R":"W",
-	       (double)start, (double)size);
+	for (i=0;i<ARRAY_SIZE(lock_types);i++) {
+		if (lock_type == lock_types[i].lock_type) {
+			desc = lock_types[i].desc;
+		}
+	}
+
+	d_printf("%8s   %s    %2s  %9.0f   %9.0f\n", 
+		 procid_str_static(&pid), file_id_static_string(&id),
+		 desc,
+		 (double)start, (double)size);
 }
 
 static int traverse_fn1(struct db_record *rec,

@@ -3312,7 +3312,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return UNIXERROR(ERRDOS,ERRbadpath);
 			}
 
-			delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
+			delete_pending = get_delete_on_close_flag(file_id_sbuf(&sbuf));
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -3325,7 +3325,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
 			pos = fsp->fh->position_information;
-			delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
+			delete_pending = get_delete_on_close_flag(file_id_sbuf(&sbuf));
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -3378,7 +3378,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return UNIXERROR(ERRDOS,ERRbadpath);
 		}
 
-		delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
+		delete_pending = get_delete_on_close_flag(file_id_sbuf(&sbuf));
 		if (delete_pending) {
 			return ERROR_NT(NT_STATUS_DELETE_PENDING);
 		}
@@ -3505,7 +3505,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	} else {
 		/* Do we have this path open ? */
-		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
+		files_struct *fsp1 = file_find_di_first(file_id_sbuf(&sbuf));
 		if (fsp1 && !null_timespec(fsp1->pending_modtime)) {
 			/* the pending modtime overrides the current modtime */
 			mtime_ts = fsp1->pending_modtime;
