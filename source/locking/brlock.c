@@ -1455,7 +1455,7 @@ static BOOL validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 static int traverse_fn(struct db_record *rec, void *state)
 {
 	struct lock_struct *locks;
-	struct lock_key *key;
+	struct file_id *key;
 	unsigned int i;
 	unsigned int num_locks = 0;
 	unsigned int orig_num_locks = 0;
@@ -1471,7 +1471,7 @@ static int traverse_fn(struct db_record *rec, void *state)
 		return -1; /* Terminate traversal. */
 	}
 
-	key = (struct lock_key *)rec->key.dptr;
+	key = (struct file_id *)rec->key.dptr;
 	orig_num_locks = num_locks = rec->value.dsize/sizeof(*locks);
 
 	/* Ensure the lock db is clean of entries from invalid processes. */
@@ -1493,8 +1493,7 @@ static int traverse_fn(struct db_record *rec, void *state)
 	}
 
 	for ( i=0; i<num_locks; i++) {
-		traverse_callback(key->device,
-				  key->inode,
+		traverse_callback(*key,
 				  locks[i].context.pid,
 				  locks[i].lock_type,
 				  locks[i].lock_flav,
@@ -1529,7 +1528,7 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 	TDB_DATA key;
 
 	key.dptr = (uint8 *)&br_lck->key;
-	key.dsize = sizeof(struct lock_key);
+	key.dsize = sizeof(struct file_id);
 
 	if (br_lck->read_only) {
 		SMB_ASSERT(!br_lck->modified);
@@ -1588,12 +1587,11 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	br_lck->fsp = fsp;
 	br_lck->num_locks = 0;
 	br_lck->modified = False;
-	memset(&br_lck->key, '\0', sizeof(struct lock_key));
-	br_lck->key.device = fsp->dev;
-	br_lck->key.inode = fsp->inode;
+	memset(&br_lck->key, '\0', sizeof(struct file_id));
+	br_lck->key = fsp->file_id;
 
 	key.dptr = (uint8 *)&br_lck->key;
-	key.dsize = sizeof(struct lock_key);
+	key.dsize = sizeof(struct file_id);
 
 	if (!fsp->lockdb_clean) {
 		/* We must be read/write to clean
@@ -1649,9 +1647,9 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
 		struct lock_struct *locks = br_lck->lock_data;
-		DEBUG(10,("brl_get_locks_internal: %u current locks on dev=%.0f, inode=%.0f\n",
+		DEBUG(10,("brl_get_locks_internal: %u current locks on file_id %s\n",
 			br_lck->num_locks,
-			(double)fsp->dev, (double)fsp->inode ));
+			  file_id_static_string(&fsp->file_id)));
 		for( i = 0; i < br_lck->num_locks; i++) {
 			print_lock_struct(i, &locks[i]);
 		}

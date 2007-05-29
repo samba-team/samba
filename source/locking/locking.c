@@ -416,24 +416,11 @@ BOOL locking_end(void)
  Form a static locking key for a dev/inode pair.
 ******************************************************************/
 
-/* key and data records in the tdb locking database */
-struct locking_key {
-	SMB_DEV_T dev;
-	SMB_INO_T ino;
-};
-
-/*******************************************************************
- Form a static locking key for a dev/inode pair.
-******************************************************************/
-
-static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
+static TDB_DATA locking_key(struct file_id id)
 {
-	static struct locking_key key;
+	static struct file_id key;	
 	TDB_DATA kbuf;
-
-	memset(&key, '\0', sizeof(key));
-	key.dev = dev;
-	key.ino = inode;
+	key = id;
 	kbuf.dptr = (uint8 *)&key;
 	kbuf.dsize = sizeof(key);
 	return kbuf;
@@ -449,15 +436,15 @@ char *share_mode_str(int num, struct share_mode_entry *e)
 
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
-		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, file_id = %lu, "
-		 "uid = %u, flags = %u, dev = 0x%x, inode = %.0f",
+		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, gen_id = %lu, "
+		 "uid = %u, flags = %u, file_id %s",
 		 num,
 		 e->op_type == UNUSED_SHARE_MODE_ENTRY ? "UNUSED" : "",
 		 procid_str_static(&e->pid),
 		 e->share_access, e->private_options,
 		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,
-		 (unsigned int)e->dev, (double)e->inode );
+		 file_id_static_string(&e->id));
 
 	return share_str;
 }
@@ -734,7 +721,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 }
 
 static BOOL fill_share_mode_lock(struct share_mode_lock *lck,
-				 SMB_DEV_T dev, SMB_INO_T ino,
+				 struct file_id id,
 				 const char *servicepath,
 				 const char *fname,
 				 TDB_DATA share_mode_data)
@@ -744,8 +731,7 @@ static BOOL fill_share_mode_lock(struct share_mode_lock *lck,
 
 	lck->servicepath = NULL;
 	lck->filename = NULL;
-	lck->dev = dev;
-	lck->ino = ino;
+	lck->id = id;
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
 	lck->delete_token = NULL;
@@ -776,12 +762,15 @@ static BOOL fill_share_mode_lock(struct share_mode_lock *lck,
 }
 
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-					    SMB_DEV_T dev, SMB_INO_T ino,
+					    struct file_id id,
 					    const char *servicepath,
 					    const char *fname)
 {
 	struct share_mode_lock *lck;
-	TDB_DATA key = locking_key(dev, ino);
+	TDB_DATA key;
+
+	key.dptr = (unsigned char *)&id;
+	key.dsize = sizeof(id);
 
 	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -794,7 +783,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!fill_share_mode_lock(lck, dev, ino, servicepath, fname,
+	if (!fill_share_mode_lock(lck, id, servicepath, fname,
 				  lck->record->value)) {
 		DEBUG(3, ("fill_share_mode_lock failed\n"));
 		TALLOC_FREE(lck);
@@ -807,12 +796,12 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 }
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
-						  SMB_DEV_T dev, SMB_INO_T ino,
+						  struct file_id id,
 						  const char *servicepath,
 						  const char *fname)
 {
 	struct share_mode_lock *lck;
-	TDB_DATA key = locking_key(dev, ino);
+	TDB_DATA key = locking_key(id);
 	TDB_DATA data;
 
 	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
@@ -826,7 +815,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!fill_share_mode_lock(lck, dev, ino, servicepath, fname, data)) {
+	if (!fill_share_mode_lock(lck, id, servicepath, fname, data)) {
 		DEBUG(3, ("fill_share_mode_lock failed\n"));
 		TALLOC_FREE(lck);
 		return NULL;
@@ -889,8 +878,7 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	SDEV_T_VAL(frm,0,lck->dev);
-	SINO_T_VAL(frm,8,lck->ino);
+	push_file_id_16(frm, &lck->id);
 
 	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
@@ -909,10 +897,10 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 		}
 
 		DEBUG(10,("rename_share_filename: sending rename message to pid %s "
-			"dev %x, inode  %.0f sharepath %s newname %s\n",
-			procid_str_static(&se->pid),
-			(unsigned int)lck->dev, (double)lck->ino,
-			lck->servicepath, lck->filename ));
+			  "file_id %s sharepath %s newname %s\n",
+			  procid_str_static(&se->pid),
+			  file_id_static_string(&lck->id),
+			  lck->servicepath, lck->filename ));
 
 		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
 				   (uint8 *)frm, msg_len);
@@ -921,12 +909,12 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 	return True;
 }
 
-BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
+BOOL get_delete_on_close_flag(struct file_id id)
 {
 	BOOL result;
 	struct share_mode_lock *lck;
   
-	if (!(lck = fetch_share_mode_unlocked(NULL, dev, inode, NULL, NULL))) {
+	if (!(lck = fetch_share_mode_unlocked(NULL, id, NULL, NULL))) {
 		return False;
 	}
 	result = lck->delete_on_close;
@@ -973,16 +961,15 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->op_type = op_type;
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
-	e->dev = fsp->dev;
-	e->inode = fsp->inode;
-	e->share_file_id = fsp->fh->file_id;
+	e->id = fsp->file_id;
+	e->share_file_id = fsp->fh->gen_id;
 	e->uid = (uint32)uid;
 	e->flags = fsp->posix_open ? SHARE_MODE_FLAG_POSIX_OPEN : 0;
 }
 
 static void fill_deferred_open_entry(struct share_mode_entry *e,
 				     const struct timeval request_time,
-				     SMB_DEV_T dev, SMB_INO_T ino, uint16 mid)
+				     struct file_id id, uint16 mid)
 {
 	ZERO_STRUCTP(e);
 	e->pid = procid_self();
@@ -990,8 +977,7 @@ static void fill_deferred_open_entry(struct share_mode_entry *e,
 	e->op_type = DEFERRED_OPEN_ENTRY;
 	e->time.tv_sec = request_time.tv_sec;
 	e->time.tv_usec = request_time.tv_usec;
-	e->dev = dev;
-	e->inode = ino;
+	e->id = id;
 	e->uid = (uint32)-1;
 	e->flags = 0;
 }
@@ -1030,10 +1016,10 @@ void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 
 void add_deferred_open(struct share_mode_lock *lck, uint16 mid,
 		       struct timeval request_time,
-		       SMB_DEV_T dev, SMB_INO_T ino)
+		       struct file_id id)
 {
 	struct share_mode_entry entry;
-	fill_deferred_open_entry(&entry, request_time, dev, ino, mid);
+	fill_deferred_open_entry(&entry, request_time, id, mid);
 	add_share_mode_entry(lck, &entry);
 }
 
@@ -1052,8 +1038,7 @@ static BOOL share_modes_identical(struct share_mode_entry *e1,
 	   fsp->share_access field. */
 
 	return (procid_equal(&e1->pid, &e2->pid) &&
-		e1->dev == e2->dev &&
-		e1->inode == e2->inode &&
+		file_id_equal(&e1->id, &e2->id) &&
 		e1->share_file_id == e2->share_file_id );
 }
 
@@ -1062,8 +1047,7 @@ static BOOL deferred_open_identical(struct share_mode_entry *e1,
 {
 	return (procid_equal(&e1->pid, &e2->pid) &&
 		(e1->op_mid == e2->op_mid) &&
-		(e1->dev == e2->dev) &&
-		(e1->inode == e2->inode));
+		file_id_equal(&e1->id, &e2->id));
 }
 
 static struct share_mode_entry *find_share_mode_entry(struct share_mode_lock *lck,
@@ -1114,7 +1098,7 @@ void del_deferred_open_entry(struct share_mode_lock *lck, uint16 mid)
 	struct share_mode_entry entry, *e;
 
 	fill_deferred_open_entry(&entry, timeval_zero(),
-				 lck->dev, lck->ino, mid);
+				 lck->id, mid);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -1325,7 +1309,7 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKE
 		return True;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
+	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
 	if (lck == NULL) {
 		return False;
 	}
@@ -1383,7 +1367,7 @@ static int traverse_fn(struct db_record *rec, void *_state)
 	int i;
 
 	/* Ensure this is a locking_key record. */
-	if (rec->key.dsize != sizeof(struct locking_key))
+	if (rec->key.dsize != sizeof(struct file_id))
 		return 0;
 
 	data = (struct locking_data *)rec->value.dptr;
