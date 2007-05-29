@@ -62,18 +62,6 @@ struct byte_range_lock {
 	struct db_record *record;
 };
 
-#define BRLOCK_FN_CAST() \
-	void (*)(struct file_id id, struct server_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
-#define BRLOCK_FN(fn) \
-	void (*fn)(struct file_id id, struct server_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
 /* Internal structure in brlock.tdb. 
    The data in brlock records is an unsorted linear array of these
    records.  It is unnecessary to store the count as tdb provides the
