@@ -47,9 +47,7 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
 	ace_dest->flags = ace_src->flags;
 	ace_dest->size  = ace_src->size;
 	ace_dest->access_mask = ace_src->access_mask;
-	ace_dest->obj_flags = ace_src->obj_flags;
-	memcpy(&ace_dest->obj_guid, &ace_src->obj_guid, sizeof(struct GUID));
-	memcpy(&ace_dest->inh_guid, &ace_src->inh_guid, sizeof(struct GUID));
+	ace_dest->object = ace_src->object;
 	sid_copy(&ace_dest->trustee, &ace_src->trustee);
 }
 
@@ -57,7 +55,7 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
  Sets up a SEC_ACE structure.
 ********************************************************************/
 
-void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag)
+void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, uint8 type, uint32 mask, uint8 flag)
 {
 	t->type = type;
 	t->flags = flag;

@@ -600,8 +600,6 @@ struct trans_state {
 
 /* Include VFS stuff */
 
-struct security_descriptor_info;
-
 #include "smb_acls.h"
 #include "vfs.h"
 
@@ -1890,6 +1888,7 @@ struct ea_list {
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 
 #define UUID_SIZE 16
+
 #define UUID_FLAT_SIZE 16
 typedef struct uuid_flat {
 	uint8 info[UUID_FLAT_SIZE];

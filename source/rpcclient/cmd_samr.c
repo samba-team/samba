@@ -1926,7 +1926,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_sec_desc(sec_desc_buf->sec);
+	display_sec_desc(sec_desc_buf->sd);
 
 	rpccli_samr_close(cli, mem_ctx, &user_pol);
 	rpccli_samr_close(cli, mem_ctx, &domain_pol);

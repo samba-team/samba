@@ -92,7 +92,7 @@
 struct vfs_handle_struct;
 struct connection_struct;
 struct files_struct;
-struct security_descriptor_info;
+struct security_descriptor;
 struct vfs_statvfs_struct;
 
 /*
@@ -298,10 +298,10 @@ struct vfs_ops {
 		
 		/* NT ACL operations. */
 		
-		size_t (*fget_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd,  uint32 security_info, struct security_descriptor_info **ppdesc);
-		size_t (*get_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name,  uint32 security_info, struct security_descriptor_info **ppdesc);
-		BOOL (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor_info *psd);
-		BOOL (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd);
+		size_t (*fget_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd,  uint32 security_info, struct security_descriptor **ppdesc);
+		size_t (*get_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name,  uint32 security_info, struct security_descriptor **ppdesc);
+		BOOL (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor *psd);
+		BOOL (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd);
 		
 		/* POSIX ACL operations. */
 		

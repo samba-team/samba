@@ -1558,7 +1558,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	case 1501:
 		pstrcpy(pathname, lp_pathname(snum));
 		fstrcpy(comment, lp_comment(snum));
-		psd = q_u->info.share.info1501.sdb->sec;
+		psd = q_u->info.share.info1501.sdb->sd;
 		map_generic_share_sd_bits(psd);
 		type = STYPE_DISKTREE;
 		break;

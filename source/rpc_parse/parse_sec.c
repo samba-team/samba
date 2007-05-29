@@ -28,6 +28,24 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
+ Reads or writes a SEC_ACCESS structure.
+********************************************************************/
+
+BOOL sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
+{
+	if (t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sec_io_access");
+	depth++;
+	
+	if(!prs_uint32("mask", ps, depth, t))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes a SEC_ACE structure.
 ********************************************************************/
 
@@ -35,6 +53,7 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 offset_ace_size;
+	uint8 type;
 
 	if (psa == NULL)
 		return False;
@@ -44,8 +63,16 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	
 	old_offset = prs_offset(ps);
 
-	if(!prs_uint8("type ", ps, depth, &psa->type))
+	if (MARSHALLING(ps)) {
+		type = (uint8)psa->type;
+	}
+
+	if(!prs_uint8("type ", ps, depth, &type))
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		psa->type = (enum security_ace_type)type;
+	}
 
 	if(!prs_uint8("flags", ps, depth, &psa->flags))
 		return False;
@@ -53,7 +80,7 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	if(!prs_uint16_pre("size ", ps, depth, &psa->size, &offset_ace_size))
 		return False;
 
-	if (!prs_uint32("access_mask", ps, depth, &psa->access_mask))
+	if(!prs_uint32("access_mask", ps, depth, &psa->access_mask))
 		return False;
 
 	/* check whether object access is present */
@@ -61,15 +88,15 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 		if (!smb_io_dom_sid("trustee  ", &psa->trustee , ps, depth))
 			return False;
 	} else {
-		if (!prs_uint32("obj_flags", ps, depth, &psa->obj_flags))
+		if (!prs_uint32("obj_flags", ps, depth, &psa->object.object.flags))
 			return False;
 
-		if (psa->obj_flags & SEC_ACE_OBJECT_PRESENT)
-			if (!smb_io_uuid("obj_guid", &psa->obj_guid, ps,depth))
+		if (psa->object.object.flags & SEC_ACE_OBJECT_PRESENT)
+			if (!smb_io_uuid("obj_guid", &psa->object.object.type.type, ps,depth))
 				return False;
 
-		if (psa->obj_flags & SEC_ACE_OBJECT_INHERITED_PRESENT)
-			if (!smb_io_uuid("inh_guid", &psa->inh_guid, ps,depth))
+		if (psa->object.object.flags & SEC_ACE_OBJECT_INHERITED_PRESENT)
+			if (!smb_io_uuid("inh_guid", &psa->object.object.inherited_type.inherited_type, ps,depth))
 				return False;
 
 		if(!smb_io_dom_sid("trustee  ", &psa->trustee , ps, depth))
@@ -110,6 +137,7 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	uint32 old_offset;
 	uint32 offset_acl_size;
 	SEC_ACL *psa;
+	uint16 revision;
 
 	/*
 	 * Note that the size is always a multiple of 4 bytes due to the
@@ -137,8 +165,16 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	
 	old_offset = prs_offset(ps);
 
-	if(!prs_uint16("revision", ps, depth, &psa->revision))
+	if (MARSHALLING(ps)) {
+		revision = (uint16)psa->revision;
+	}
+
+	if(!prs_uint16("revision", ps, depth, &revision))
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		psa->revision = (enum security_acl_revision)revision;
+	}
 
 	if(!prs_uint16_pre("size     ", ps, depth, &psa->size, &offset_acl_size))
 		return False;
@@ -192,6 +228,8 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
 	uint32 tmp_offset = 0;
+	uint32 off_sacl, off_dacl, off_owner_sid, off_grp_sid;
+	uint16 revision;
 
 	SEC_DESC *psd;
 
@@ -217,8 +255,16 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = prs_offset(ps);
 
-	if(!prs_uint16("revision ", ps, depth, &psd->revision))
+	if (MARSHALLING(ps)) {
+		revision = (uint16)psd->revision;
+	}
+
+	if(!prs_uint16("revision", ps, depth, &revision))
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		psd->revision = (enum security_acl_revision)revision;
+	}
 
 	if(!prs_uint16("type     ", ps, depth, &psd->type))
 		return False;
@@ -231,52 +277,52 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 		 */
 
 		if (psd->sacl != NULL) {
-			psd->off_sacl = offset;
+			off_sacl = offset;
 			offset += psd->sacl->size;
 		} else {
-			psd->off_sacl = 0;
+			off_sacl = 0;
 		}
 
 		if (psd->dacl != NULL) {
-			psd->off_dacl = offset;
+			off_dacl = offset;
 			offset += psd->dacl->size;
 		} else {
-			psd->off_dacl = 0;
+			off_dacl = 0;
 		}
 
 		if (psd->owner_sid != NULL) {
-			psd->off_owner_sid = offset;
+			off_owner_sid = offset;
 			offset += sid_size(psd->owner_sid);
 		} else {
-			psd->off_owner_sid = 0;
+			off_owner_sid = 0;
 		}
 
 		if (psd->group_sid != NULL) {
-			psd->off_grp_sid = offset;
+			off_grp_sid = offset;
 			offset += sid_size(psd->group_sid);
 		} else {
-			psd->off_grp_sid = 0;
+			off_grp_sid = 0;
 		}
 	}
 
-	if(!prs_uint32("off_owner_sid", ps, depth, &psd->off_owner_sid))
+	if(!prs_uint32("off_owner_sid", ps, depth, &off_owner_sid))
 		return False;
 
-	if(!prs_uint32("off_grp_sid  ", ps, depth, &psd->off_grp_sid))
+	if(!prs_uint32("off_grp_sid  ", ps, depth, &off_grp_sid))
 		return False;
 
-	if(!prs_uint32("off_sacl     ", ps, depth, &psd->off_sacl))
+	if(!prs_uint32("off_sacl     ", ps, depth, &off_sacl))
 		return False;
 
-	if(!prs_uint32("off_dacl     ", ps, depth, &psd->off_dacl))
+	if(!prs_uint32("off_dacl     ", ps, depth, &off_dacl))
 		return False;
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (psd->off_owner_sid != 0) {
+	if (off_owner_sid != 0) {
 
 		tmp_offset = prs_offset(ps);
-		if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
+		if(!prs_set_offset(ps, old_offset + off_owner_sid))
 			return False;
 
 		if (UNMARSHALLING(ps)) {
@@ -294,10 +340,10 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			return False;
 	}
 
-	if (psd->off_grp_sid != 0) {
+	if (psd->group_sid != 0) {
 
 		tmp_offset = prs_offset(ps);
-		if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
+		if(!prs_set_offset(ps, old_offset + off_grp_sid))
 			return False;
 
 		if (UNMARSHALLING(ps)) {
@@ -306,7 +352,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 				return False;
 		}
 
-		if(!smb_io_dom_sid("group_sid", psd->group_sid, ps, depth))
+		if(!smb_io_dom_sid("grp_sid", psd->group_sid, ps, depth))
 			return False;
 			
 		max_offset = MAX(max_offset, prs_offset(ps));
@@ -315,9 +361,9 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			return False;
 	}
 
-	if ((psd->type & SEC_DESC_SACL_PRESENT) && psd->off_sacl) {
+	if ((psd->type & SEC_DESC_SACL_PRESENT) && off_sacl) {
 		tmp_offset = prs_offset(ps);
-		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
+		if(!prs_set_offset(ps, old_offset + off_sacl))
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
 			return False;
@@ -326,9 +372,9 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			return False;
 	}
 
-	if ((psd->type & SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
+	if ((psd->type & SEC_DESC_DACL_PRESENT) && off_dacl != 0) {
 		tmp_offset = prs_offset(ps);
-		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
+		if(!prs_set_offset(ps, old_offset + off_dacl))
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
 			return False;
@@ -353,7 +399,9 @@ BOOL sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 	uint32 off_max_len;
 	uint32 old_offset;
 	uint32 size;
+	uint32 len;
 	SEC_DESC_BUF *psdb;
+	uint32 ptr;
 
 	if (ppsdb == NULL)
 		return False;
@@ -372,20 +420,22 @@ BOOL sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32_pre("max_len", ps, depth, &psdb->max_len, &off_max_len))
+	if(!prs_uint32_pre("max_len", ps, depth, &psdb->sd_size, &off_max_len))
 		return False;
 
-	if(!prs_uint32    ("ptr  ", ps, depth, &psdb->ptr))
+	ptr = 1;
+	if(!prs_uint32    ("ptr  ", ps, depth, &ptr))
 		return False;
 
-	if(!prs_uint32_pre("len    ", ps, depth, &psdb->len, &off_len))
+	len = sec_desc_size(psdb->sd);
+	if(!prs_uint32_pre("len    ", ps, depth, &len, &off_len))
 		return False;
 
 	old_offset = prs_offset(ps);
 
 	/* reading, length is non-zero; writing, descriptor is non-NULL */
-	if ((UNMARSHALLING(ps) && psdb->len != 0) || (MARSHALLING(ps) && psdb->sec != NULL)) {
-		if(!sec_io_desc("sec   ", &psdb->sec, ps, depth))
+	if ((UNMARSHALLING(ps) && psdb->sd_size != 0) || (MARSHALLING(ps) && psdb->sd != NULL)) {
+		if(!sec_io_desc("sec   ", &psdb->sd, ps, depth))
 			return False;
 	}
 
@@ -393,10 +443,10 @@ BOOL sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 		return False;
 	
 	size = prs_offset(ps) - old_offset;
-	if(!prs_uint32_post("max_len", ps, depth, &psdb->max_len, off_max_len, size == 0 ? psdb->max_len : size))
+	if(!prs_uint32_post("max_len", ps, depth, &psdb->sd_size, off_max_len, size == 0 ? psdb->sd_size : size))
 		return False;
 
-	if(!prs_uint32_post("len    ", ps, depth, &psdb->len, off_len, size))
+	if(!prs_uint32_post("len    ", ps, depth, &len, off_len, size))
 		return False;
 
 	return True;

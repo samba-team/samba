@@ -723,7 +723,7 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	dacl = q_u->buf->sec->dacl;
+	dacl = q_u->buf->sd->dacl;
 	for (i=0; i < dacl->num_aces; i++) {
 		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass, 
@@ -1727,7 +1727,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	int num_rids = (int)q_u->num_rids1;
 	uint32 acc_granted;
 	int i;
-	
+
 	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
@@ -3461,7 +3461,7 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
 	 * the delete explicit / add explicit, which would then fail to find
 	 * the previous primaryGroupSid value.
 	 */
- 
+
 	if ( IS_SAM_CHANGED(pwd, PDB_GROUPSID) ) {
 		status = pdb_set_unix_primary_group(mem_ctx, pwd);
 		if ( !NT_STATUS_IS_OK(status) ) {
@@ -4768,7 +4768,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			if ( !NT_STATUS_IS_OK( status ) ) 
 				return status;
 			break;
-			}
+		}
 		case 3:
 			if ( ctr->alias.info3.description.string ) {
 				unistr2_to_ascii( info.acct_desc, 

@@ -100,7 +100,7 @@ static void ads_disp_ace(SEC_ACE *sec_ace)
 		  sec_ace->flags,
 		  sec_ace->size,
 		  sec_ace->access_mask,
-		  sec_ace->obj_flags);
+		  sec_ace->object.object.flags);
 	}
 	
 	if (sec_ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {

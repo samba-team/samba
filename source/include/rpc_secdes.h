@@ -76,22 +76,7 @@
 typedef uint32 SEC_ACCESS;
 
 /* SEC_ACE */
-typedef struct security_ace_info {
-	uint8 type;  /* xxxx_xxxx_ACE_TYPE - e.g allowed / denied etc */
-	uint8 flags; /* xxxx_INHERIT_xxxx - e.g OBJECT_INHERIT_ACE */
-	uint16 size;
-
-	SEC_ACCESS access_mask;
-
-	/* this stuff may be present when type is XXXX_TYPE_XXXX_OBJECT */
-	uint32  obj_flags; /* xxxx_ACE_OBJECT_xxxx e.g present/inherited present etc */
-	struct GUID obj_guid;  /* object GUID */
-	struct GUID inh_guid;  /* inherited object GUID */		
-        /* eof object stuff */
-
-	DOM_SID trustee;
-
-} SEC_ACE;
+typedef struct security_ace SEC_ACE;
 #define  SEC_ACE_HEADER_SIZE (2 * sizeof(uint8) + sizeof(uint16) + sizeof(uint32))
 
 #ifndef ACL_REVISION
@@ -100,14 +85,7 @@ typedef struct security_ace_info {
 
 #ifndef _SEC_ACL
 /* SEC_ACL */
-typedef struct security_acl_info {
-	uint16 revision; /* 0x0003 */
-	uint16 size; /* size in bytes of the entire ACL structure */
-	uint32 num_aces; /* number of Access Control Entries */
-
-	SEC_ACE *aces;
-
-} SEC_ACL;
+typedef struct security_acl SEC_ACL;
 #define  SEC_ACL_HEADER_SIZE (2 * sizeof(uint16) + sizeof(uint32))
 #define _SEC_ACL
 #endif
@@ -118,35 +96,14 @@ typedef struct security_acl_info {
 
 #ifndef _SEC_DESC
 /* SEC_DESC */
-typedef struct security_descriptor_info {
-	uint16 revision; /* 0x0001 */
-	uint16 type;     /* SEC_DESC_xxxx flags */
-
-	uint32 off_owner_sid; /* offset to owner sid */
-	uint32 off_grp_sid  ; /* offset to group sid */
-	uint32 off_sacl     ; /* offset to system list of permissions */
-	uint32 off_dacl     ; /* offset to list of permissions */
-
-	SEC_ACL *dacl; /* user ACL */
-	SEC_ACL *sacl; /* system ACL */
-	DOM_SID *owner_sid; 
-	DOM_SID *group_sid;
-
-} SEC_DESC;
+typedef struct security_descriptor SEC_DESC;
 #define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16) + 4 * sizeof(uint32))
 #define _SEC_DESC
 #endif
 
 #ifndef _SEC_DESC_BUF
 /* SEC_DESC_BUF */
-typedef struct sec_desc_buf_info {
-	uint32 max_len;
-	uint32 ptr;
-	uint32 len;
-
-	SEC_DESC *sec;
-
-} SEC_DESC_BUF;
+typedef struct sec_desc_buf SEC_DESC_BUF;
 #define _SEC_DESC_BUF
 #endif
 

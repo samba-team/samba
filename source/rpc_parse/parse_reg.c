@@ -193,9 +193,9 @@ static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec,
 		}
 
 		if(!smb_io_hdrbuf_post("hdr_sec", hdr_sec, ps, depth,
-		                       hdr_offset, data->max_len, data->len))
+		                       hdr_offset, data->sd_size, data->sd_size))
 				return False;
-		if(!prs_set_offset(ps, old_offset + data->len +
+		if(!prs_set_offset(ps, old_offset + data->sd_size +
 		                       sizeof(uint32) * ((ptr3 != NULL) ? 5 : 3)))
 			return False;
 
@@ -233,7 +233,7 @@ void init_reg_q_create_key_ex(REG_Q_CREATE_KEY_EX *q_c, POLICY_HND *hnd,
 
 	q_c->data = sec_buf;
 	q_c->ptr2 = 1;
-	init_buf_hdr(&q_c->hdr_sec, sec_buf->len, sec_buf->len);
+	init_buf_hdr(&q_c->hdr_sec, sec_buf->sd_size, sec_buf->sd_size);
 	q_c->ptr3 = 1;
 	q_c->disposition = TALLOC_P( get_talloc_ctx(), uint32 );
 	if (!q_c->disposition) {
@@ -756,7 +756,7 @@ void init_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_u, POLICY_HND *pol,
 	q_u->sec_info = sec_info;
 
 	q_u->ptr = 1;
-	init_buf_hdr(&q_u->hdr_sec, sec_desc_buf->len, sec_desc_buf->len);
+	init_buf_hdr(&q_u->hdr_sec, sec_desc_buf->sd_size, sec_desc_buf->sd_size);
 	q_u->data = sec_desc_buf;
 }
 

@@ -383,7 +383,7 @@ WERROR rpccli_reg_get_key_sec(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return out.status;
 	
 	sec_buf       = out.data;
-	*sec_buf_size = out.data->len;
+	*sec_buf_size = out.data->sd_size;
 		
 	return out.status;	
 }

@@ -3084,8 +3084,8 @@ static void spoolss_notify_security_desc(int snum,
 					 NT_PRINTER_INFO_LEVEL *printer,
 					 TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.sd.size = printer->info_2->secdesc_buf->len;
-	data->notify_data.sd.desc = dup_sec_desc( mem_ctx, printer->info_2->secdesc_buf->sec ) ;
+	data->notify_data.sd.size = printer->info_2->secdesc_buf->sd_size;
+	data->notify_data.sd.desc = dup_sec_desc( mem_ctx, printer->info_2->secdesc_buf->sd ) ;
 }
 
 /*******************************************************************
@@ -4243,13 +4243,13 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 	printer->secdesc = NULL;
 
 	if ( ntprinter->info_2->secdesc_buf 
-		&& ntprinter->info_2->secdesc_buf->len != 0 ) 
+		&& ntprinter->info_2->secdesc_buf->sd_size != 0 ) 
 	{
 		/* don't use talloc_steal() here unless you do a deep steal of all 
 		   the SEC_DESC members */
 
 		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
-			ntprinter->info_2->secdesc_buf->sec );
+			ntprinter->info_2->secdesc_buf->sd );
 	}
 
 	free_a_printer(&ntprinter, 2);
@@ -4281,12 +4281,12 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **
 	
 	/* These are the components of the SD we are returning. */
 
-	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
+	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
 		/* don't use talloc_steal() here unless you do a deep steal of all 
 		   the SEC_DESC members */
 
 		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
-			ntprinter->info_2->secdesc_buf->sec );
+			ntprinter->info_2->secdesc_buf->sd );
 	}
 
 	free_a_printer(&ntprinter, 2);
@@ -5947,7 +5947,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		SEC_ACL *the_acl;
 		int i;
 
-		the_acl = old_secdesc_ctr->sec->dacl;
+		the_acl = old_secdesc_ctr->sd->dacl;
 		DEBUG(10, ("old_secdesc_ctr for %s has %d aces:\n", 
 			   PRINTERNAME(snum), the_acl->num_aces));
 
@@ -5960,7 +5960,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 				  the_acl->aces[i].access_mask));
 		}
 
-		the_acl = secdesc_ctr->sec->dacl;
+		the_acl = secdesc_ctr->sd->dacl;
 
 		if (the_acl) {
 			DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
@@ -5985,7 +5985,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
+	if (sec_desc_equal(new_secdesc_ctr->sd, old_secdesc_ctr->sd)) {
 		result = WERR_OK;
 		goto done;
 	}

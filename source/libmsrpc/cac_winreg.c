@@ -946,8 +946,10 @@ int cac_RegGetKeySecurity( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	op->out.size = buf.len;
-	op->out.descriptor = dup_sec_desc( mem_ctx, buf.sec );
+#if 0	/* FIX ME!!!!  unmarshall the security descriptor */
+	op->out.size = buf.sd_size;
+	op->out.descriptor = dup_sec_desc( mem_ctx, buf.sd );
+#endif
 
 	if ( op->out.descriptor == NULL ) {
 		return CAC_FAILURE;
