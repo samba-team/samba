@@ -353,7 +353,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 		return(ERROR_DOS(ERRSRV,ERRnofids));
 	}
 
-	/* Add pipe to db */
+	/* TODO: Add pipe to db */
 	
 	if ( !store_pipe_opendb( p ) ) {
 		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));
@@ -2284,7 +2284,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		unsigned char objid[16];
 
 		/* This should return the object-id on this file.
- 		 * I think I'll make this be the inode+dev. JRA.
+		 * I think I'll make this be the inode+dev. JRA.
 		 */
 
 		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on FID[0x%04X]\n",fidnum));
@@ -2293,7 +2293,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		pdata = nttrans_realloc(ppdata, data_count);
 		if (pdata == NULL) {
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}		
+		}
 		push_file_id_16(pdata, &fsp->file_id);
 		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
 		push_file_id_16(pdata+32, &fsp->file_id);
