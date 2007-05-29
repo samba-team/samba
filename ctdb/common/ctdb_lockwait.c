@@ -54,8 +54,8 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	key.dptr = talloc_memdup(tmp_ctx, key.dptr, key.dsize);
 
 	talloc_set_destructor(h, NULL);
-	ctdb_latency(&h->ctdb->status.max_lockwait_latency, h->start_time);
-	h->ctdb->status.pending_lockwait_calls--;
+	ctdb_latency(&h->ctdb->statistics.max_lockwait_latency, h->start_time);
+	h->ctdb->statistics.pending_lockwait_calls--;
 
 	/* the handle needs to go away when the context is gone - when
 	   the handle goes away this implicitly closes the pipe, which
@@ -79,7 +79,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 
 static int lockwait_destructor(struct lockwait_handle *h)
 {
-	h->ctdb->status.pending_lockwait_calls--;
+	h->ctdb->statistics.pending_lockwait_calls--;
 	kill(h->child, SIGKILL);
 	waitpid(h->child, NULL, 0);
 	return 0;
@@ -104,11 +104,11 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	int ret;
 	pid_t parent = getpid();
 
-	ctdb_db->ctdb->status.lockwait_calls++;
-	ctdb_db->ctdb->status.pending_lockwait_calls++;
+	ctdb_db->ctdb->statistics.lockwait_calls++;
+	ctdb_db->ctdb->statistics.pending_lockwait_calls++;
 
 	if (!(result = talloc_zero(private_data, struct lockwait_handle))) {
-		ctdb_db->ctdb->status.pending_lockwait_calls--;
+		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
 		return NULL;
 	}
 
@@ -116,7 +116,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 
 	if (ret != 0) {
 		talloc_free(result);
-		ctdb_db->ctdb->status.pending_lockwait_calls--;
+		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
 		return NULL;
 	}
 
@@ -126,7 +126,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		close(result->fd[0]);
 		close(result->fd[1]);
 		talloc_free(result);
-		ctdb_db->ctdb->status.pending_lockwait_calls--;
+		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
 		return NULL;
 	}
 
@@ -156,7 +156,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				   (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
-		ctdb_db->ctdb->status.pending_lockwait_calls--;
+		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
 		return NULL;
 	}
 

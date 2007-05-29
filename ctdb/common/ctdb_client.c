@@ -805,29 +805,29 @@ int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t
 }
 
 /*
-  get remote status
+  get remote statistics
  */
-int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status)
+int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_statistics *status)
 {
 	int ret;
 	TDB_DATA data;
 	int32_t res;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_STATUS, 0, tdb_null, 
+			   CTDB_CONTROL_STATISTICS, 0, tdb_null, 
 			   ctdb, &data, &res, NULL, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for status failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for statistics failed\n"));
 		return -1;
 	}
 
-	if (data.dsize != sizeof(struct ctdb_status)) {
-		DEBUG(0,(__location__ " Wrong status size %u - expected %u\n",
-			 data.dsize, sizeof(struct ctdb_status)));
+	if (data.dsize != sizeof(struct ctdb_statistics)) {
+		DEBUG(0,(__location__ " Wrong statistics size %u - expected %u\n",
+			 data.dsize, sizeof(struct ctdb_statistics)));
 		      return -1;
 	}
 
-	*status = *(struct ctdb_status *)data.dptr;
+	*status = *(struct ctdb_statistics *)data.dptr;
 	talloc_free(data.dptr);
 			
 	return 0;
@@ -1397,16 +1397,16 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 /*
   reset remote status
  */
-int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode)
+int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode)
 {
 	int ret;
 	int32_t res;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_STATUS_RESET, 0, tdb_null, 
+			   CTDB_CONTROL_STATISTICS_RESET, 0, tdb_null, 
 			   NULL, NULL, &res, NULL, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for reset status failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for reset statistics failed\n"));
 		return -1;
 	}
 	return 0;

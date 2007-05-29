@@ -211,8 +211,8 @@ struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
 struct ctdb_context *ctdb_cmdline_client(struct event_context *ev);
 
-struct ctdb_status;
-int ctdb_ctrl_status(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_status *status);
+struct ctdb_statistics;
+int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_statistics *status);
 
 int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
@@ -327,7 +327,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t *num_nodes);
 
-int ctdb_status_reset(struct ctdb_context *ctdb, uint32_t destnode);
+int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode);
 
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile);
 

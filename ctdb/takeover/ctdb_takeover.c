@@ -225,15 +225,57 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 	}
 
 	for (i=0;i<nlines;i++) {
+		char *p;
+		struct in_addr in;
+
 		ctdb->nodes[i]->public_address = talloc_strdup(ctdb->nodes[i], lines[i]);
 		CTDB_NO_MEMORY(ctdb, ctdb->nodes[i]->public_address);
 		ctdb->nodes[i]->takeover_vnn = -1;
+
+		/* see if they supplied a netmask length */
+		p = strchr(ctdb->nodes[i]->public_address, '/');
+		if (!p) {
+			DEBUG(0,("You must supply a netmask for public address %s\n",
+				 ctdb->nodes[i]->public_address));
+			return -1;
+		}
+		*p = 0;
+		ctdb->nodes[i]->public_netmask_bits = atoi(p+1);
+
+		if (ctdb->nodes[i]->public_netmask_bits > 32) {
+			DEBUG(0, ("Illegal netmask for IP %s\n", ctdb->nodes[i]->public_address));
+			return -1;
+		}
+
+		if (inet_aton(ctdb->nodes[i]->public_address, &in) != 0) {
+			DEBUG(0,("Badly formed IP '%s' in public address list\n", ctdb->nodes[i]->public_address));
+			return -1;
+		}
 	}
 
 	talloc_free(lines);
 	return 0;
 }
 
+/*
+  see if two IPs are on the same subnet
+ */
+static bool ctdb_same_subnet(const char *ip1, const char *ip2, uint8_t netmask_bits)
+{
+	struct in_addr in1, in2;
+	uint32_t mask;
+
+	inet_aton(ip1, &in1);
+	inet_aton(ip2, &in2);
+
+	mask = ~((1LL<<(32-netmask_bits))-1);
+
+	if ((ntohl(in1.s_addr) & mask) != (ntohl(in2.s_addr) & mask)) {
+		return false;
+	}
+
+	return true;
+}
 
 /*
   make any IP alias changes for public addresses that are necessary 
@@ -252,16 +294,16 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 			for (j=(i+1)%nodemap->num;
 			     j != i;
 			     j=(j+1)%nodemap->num) {
-				if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) && 
-				    same_subnet(nodemap->nodes[j]->public_address, nodemap->nodes[i]->public_address, 
-						nodemap->nodes[i]->public_netmask)) {
+				if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) &&
+				    ctdb_same_subnet(ctdb->nodes[j]->public_address, ctdb->nodes[i]->public_address, 
+						     ctdb->nodes[i]->public_netmask_bits)) {
 					ctdb->nodes[i]->takeover_vnn = nodemap->nodes[j].vnn;
 					break;
 				}
 			}
 			if (j == i) {
 				DEBUG(0,(__location__ " No node available on same network to take %s\n",
-					 nodemap->nodes[i]->public_address));
+					 ctdb->nodes[i]->public_address));
 				ctdb->nodes[i]->takeover_vnn = -1;	
 			}
 		}

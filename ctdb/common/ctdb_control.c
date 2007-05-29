@@ -52,7 +52,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
 		CHECK_CONTROL_DATA_SIZE(sizeof(pid_t));
-		ctdb->status.controls.process_exists++;
+		ctdb->statistics.controls.process_exists++;
 		return kill(*(pid_t *)indata.dptr, 0);
 	}
 
@@ -69,14 +69,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_STATUS: {
+	case CTDB_CONTROL_STATISTICS: {
 		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb->status.controls.status++;
-		ctdb->status.memory_used = talloc_total_size(ctdb);
-		ctdb->status.frozen = (ctdb->freeze_mode == CTDB_FREEZE_FROZEN);
-		ctdb->status.recovering = (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE);
-		outdata->dptr = (uint8_t *)&ctdb->status;
-		outdata->dsize = sizeof(ctdb->status);
+		ctdb->statistics.controls.statistics++;
+		ctdb->statistics.memory_used = talloc_total_size(ctdb);
+		ctdb->statistics.frozen = (ctdb->freeze_mode == CTDB_FREEZE_FROZEN);
+		ctdb->statistics.recovering = (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE);
+		outdata->dptr = (uint8_t *)&ctdb->statistics;
+		outdata->dsize = sizeof(ctdb->statistics);
 		return 0;
 	}
 
@@ -86,9 +86,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	case CTDB_CONTROL_STATUS_RESET: {
+	case CTDB_CONTROL_STATISTICS_RESET: {
 		CHECK_CONTROL_DATA_SIZE(0);
-		ZERO_STRUCT(ctdb->status);
+		ZERO_STRUCT(ctdb->statistics);
 		return 0;
 	}
 
@@ -144,7 +144,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_CONFIG: {
 		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb->status.controls.get_config++;
+		ctdb->statistics.controls.get_config++;
 		outdata->dptr = (uint8_t *)ctdb;
 		outdata->dsize = sizeof(*ctdb);
 		return 0;
@@ -152,8 +152,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb->status.controls.ping++;
-		return ctdb->status.num_clients;
+		ctdb->statistics.controls.ping++;
+		return ctdb->statistics.num_clients;
 
 	case CTDB_CONTROL_GET_DBNAME: {
 		uint32_t db_id;
@@ -182,50 +182,50 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_DB_ATTACH:
-		ctdb->status.controls.attach++;
+		ctdb->statistics.controls.attach++;
 		return ctdb_control_db_attach(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_CALL: {
 		struct ctdb_control_set_call *sc = 
 			(struct ctdb_control_set_call *)indata.dptr;
-		ctdb->status.controls.set_call++;
+		ctdb->statistics.controls.set_call++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_call));
 		return ctdb_daemon_set_call(ctdb, sc->db_id, sc->fn, sc->id);
 	}
 
 	case CTDB_CONTROL_TRAVERSE_START:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));
-		ctdb->status.controls.traverse_start++;
+		ctdb->statistics.controls.traverse_start++;
 		return ctdb_control_traverse_start(ctdb, indata, outdata, srcnode);
 
 	case CTDB_CONTROL_TRAVERSE_ALL:
-		ctdb->status.controls.traverse_all++;
+		ctdb->statistics.controls.traverse_all++;
 		return ctdb_control_traverse_all(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_TRAVERSE_DATA:
-		ctdb->status.controls.traverse_data++;
+		ctdb->statistics.controls.traverse_data++;
 		return ctdb_control_traverse_data(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_REGISTER_SRVID:
-		ctdb->status.controls.register_srvid++;
+		ctdb->statistics.controls.register_srvid++;
 		return daemon_register_message_handler(ctdb, client_id, srvid);
 
 	case CTDB_CONTROL_DEREGISTER_SRVID:
-		ctdb->status.controls.deregister_srvid++;
+		ctdb->statistics.controls.deregister_srvid++;
 		return daemon_deregister_message_handler(ctdb, client_id, srvid);
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
-		ctdb->status.controls.enable_seqnum++;
+		ctdb->statistics.controls.enable_seqnum++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_ltdb_enable_seqnum(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_UPDATE_SEQNUM:
-		ctdb->status.controls.update_seqnum++;
+		ctdb->statistics.controls.update_seqnum++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_ltdb_update_seqnum(ctdb, *(uint32_t *)indata.dptr, srcnode);
 
 	case CTDB_CONTROL_SET_SEQNUM_FREQUENCY:
-		ctdb->status.controls.set_seqnum_frequency++;
+		ctdb->statistics.controls.set_seqnum_frequency++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_ltdb_set_seqnum_frequency(ctdb, *(uint32_t *)indata.dptr);
 
@@ -409,7 +409,7 @@ static void ctdb_control_timeout(struct event_context *ev, struct timed_event *t
 	struct ctdb_control_state *state = talloc_get_type(private_data, struct ctdb_control_state);
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
 
-	state->ctdb->status.timeouts.control++;
+	state->ctdb->statistics.timeouts.control++;
 
 	talloc_steal(tmp_ctx, state);
 

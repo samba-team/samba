@@ -279,52 +279,52 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
-		ctdb->status.node.req_call++;
+		ctdb->statistics.node.req_call++;
 		ctdb_request_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CALL:
-		ctdb->status.node.reply_call++;
+		ctdb->statistics.node.reply_call++;
 		ctdb_reply_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_ERROR:
-		ctdb->status.node.reply_error++;
+		ctdb->statistics.node.reply_error++;
 		ctdb_reply_error(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_DMASTER:
-		ctdb->status.node.req_dmaster++;
+		ctdb->statistics.node.req_dmaster++;
 		ctdb_request_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_DMASTER:
-		ctdb->status.node.reply_dmaster++;
+		ctdb->statistics.node.reply_dmaster++;
 		ctdb_reply_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_MESSAGE:
-		ctdb->status.node.req_message++;
+		ctdb->statistics.node.req_message++;
 		ctdb_request_message(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_FINISHED:
-		ctdb->status.node.req_finished++;
+		ctdb->statistics.node.req_finished++;
 		ctdb_request_finished(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_CONTROL:
-		ctdb->status.node.req_control++;
+		ctdb->statistics.node.req_control++;
 		ctdb_request_control(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CONTROL:
-		ctdb->status.node.reply_control++;
+		ctdb->statistics.node.reply_control++;
 		ctdb_reply_control(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_KEEPALIVE:
-		ctdb->status.keepalive_packets_recv++;
+		ctdb->statistics.keepalive_packets_recv++;
 		break;
 
 	default:
@@ -345,7 +345,7 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 {
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 
-	ctdb->status.node_packets_recv++;
+	ctdb->statistics.node_packets_recv++;
 
 	/* up the counter for this source node, so we know its alive */
 	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
@@ -487,7 +487,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	ctdb->status.node_packets_sent++;
+	ctdb->statistics.node_packets_sent++;
 
 	if (!ctdb_validate_vnn(ctdb, hdr->destnode)) {
 	  	DEBUG(0,(__location__ " cant send to node %u that does not exist\n", 

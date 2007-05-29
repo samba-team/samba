@@ -115,6 +115,7 @@ struct ctdb_node {
 
 	/* the public address of this node, if known */
 	const char *public_address;
+	uint8_t public_netmask_bits;
 
 	/* the node number that has taken over this nodes public address, if any. 
 	   If not taken over, then set to -1 */
@@ -165,7 +166,7 @@ struct ctdb_daemon_data {
 /*
   ctdb status information
  */
-struct ctdb_status {
+struct ctdb_statistics {
 	uint32_t num_clients;
 	uint32_t frozen;
 	uint32_t recovering;
@@ -195,7 +196,7 @@ struct ctdb_status {
 		uint32_t req_control;
 	} client;
 	struct {
-		uint32_t status;
+		uint32_t statistics;
 		uint32_t get_config;
 		uint32_t ping;
 		uint32_t attach;
@@ -220,7 +221,7 @@ struct ctdb_status {
 	uint32_t lockwait_calls;
 	uint32_t pending_lockwait_calls;
 	uint32_t memory_used;
-	uint32_t __last_counter; /* hack for control_status_all */
+	uint32_t __last_counter; /* hack for control_statistics_all */
 	uint32_t max_hop_count;
 	double max_call_latency;
 	double max_lockwait_latency;
@@ -296,7 +297,7 @@ struct ctdb_context {
 	struct ctdb_db_context *db_list;
 	struct ctdb_message_list *message_list;
 	struct ctdb_daemon_data daemon;
-	struct ctdb_status status;
+	struct ctdb_statistics statistics;
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
 	uint32_t seqnum_frequency;
@@ -368,7 +369,7 @@ struct ctdb_ltdb_header {
 };
 
 enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS, 
-		    CTDB_CONTROL_STATUS, 
+		    CTDB_CONTROL_STATISTICS, 
 		    CTDB_CONTROL_CONFIG,
 		    CTDB_CONTROL_PING,
 		    CTDB_CONTROL_GETDBPATH,
@@ -384,7 +385,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS,
 		    CTDB_CONTROL_PUSH_DB,
 		    CTDB_CONTROL_GET_RECMODE,
 		    CTDB_CONTROL_SET_RECMODE,
-		    CTDB_CONTROL_STATUS_RESET,
+		    CTDB_CONTROL_STATISTICS_RESET,
 		    CTDB_CONTROL_DB_ATTACH,
 		    CTDB_CONTROL_SET_CALL,
 		    CTDB_CONTROL_TRAVERSE_START,

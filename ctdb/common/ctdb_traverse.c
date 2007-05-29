@@ -203,7 +203,7 @@ static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_eve
 {
 	struct ctdb_traverse_all_handle *state = talloc_get_type(private_data, struct ctdb_traverse_all_handle);
 
-	state->ctdb->status.timeouts.traverse++;
+	state->ctdb->statistics.timeouts.traverse++;
 
 	state->callback(state->private_data, tdb_null, tdb_null);
 	talloc_free(state);
