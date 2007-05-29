@@ -346,16 +346,6 @@ int rep_mkstemp(char *temp);
 char *rep_mkdtemp(char *template);
 #endif
 
-#ifndef HAVE_INET_PTON
-#define inet_pton rep_inet_pton
-int rep_inet_pton(int af, const char *src, void *dst);
-#endif
-
-#ifndef HAVE_INET_NTOP
-#define inet_ntop rep_inet_ntop
-const char *rep_inet_ntop(int af, const void *src, char *dst, size_t size);
-#endif
-
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
