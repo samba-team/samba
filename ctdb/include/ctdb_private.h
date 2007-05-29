@@ -945,6 +945,6 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
-
+int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...);
 
 #endif

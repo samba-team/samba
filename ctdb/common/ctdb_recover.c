@@ -447,6 +447,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 	ctdb->recovery_mode = recmode;
+	ctdb_event_script(ctdb, "recovered");
 	return 0;
 }
 

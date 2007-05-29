@@ -93,26 +93,6 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 
 
 /*
-  run the event script
- */
-static int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
-{
-	va_list ap;
-	char *cmdstr;
-	int ret;
-
-	va_start(ap, fmt);
-	cmdstr = talloc_vasprintf(ctdb, fmt, ap);
-	va_end(ap);
-	CTDB_NO_MEMORY(ctdb, cmdstr);
-
-	ret = system(cmdstr);
-	talloc_free(cmdstr);
-
-	return ret;
-}
-
-/*
   take over an ip address
  */
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)

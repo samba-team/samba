@@ -257,3 +257,28 @@ bool ctdb_sys_have_ip(const char *ip)
 	return ret == 0;
 }
 
+/*
+  run the event script
+ */
+int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
+{
+	va_list ap;
+	char *options, *cmdstr;
+	int ret;
+
+	va_start(ap, fmt);
+	options  = talloc_vasprintf(ctdb, fmt, ap);
+	va_end(ap);
+	CTDB_NO_MEMORY(ctdb, options);
+
+	cmdstr = talloc_asprintf(ctdb, "%s %s", ctdb->takeover.event_script, options);
+	CTDB_NO_MEMORY(ctdb, cmdstr);
+
+	ret = system(cmdstr);
+
+	talloc_free(cmdstr);
+	talloc_free(options);
+
+	return ret;
+}
+
