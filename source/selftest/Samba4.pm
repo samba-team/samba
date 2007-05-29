@@ -39,7 +39,7 @@ sub slapd_start($$)
 
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
-	if ($self->{ldap} eq "fedora") {
+	if ($self->{ldap} eq "fedora-ds") {
 	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d0 -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
 	} elsif ($self->{ldap} eq "openldap") {
 	        openldap_start($env_vars->{SLAPD_CONF}, $uri, "$env_vars->{LDAPDIR}/logs");
@@ -58,7 +58,7 @@ sub slapd_start($$)
 sub slapd_stop($$)
 {
 	my ($self, $envvars) = @_;
-	if ($self->{ldap} eq "fedora") {
+	if ($self->{ldap} eq "fedora-ds") {
 		system("$envvars->{LDAPDIR}/slapd-samba4/stop-slapd");
 	} elsif ($self->{ldap} eq "openldap") {
 		open(IN, "<$envvars->{OPENLDAP_PIDFILE}") or 
@@ -177,53 +177,17 @@ type: 0x3
 ");
 }
 
-sub mk_fedora($$$$$$)
+sub mk_fedora_ds($$$)
 {
-	my ($self, $ldapdir, $basedn, $root, $password, $privatedir, $configuration) = @_;
-
-	mkdir($ldapdir, 0777);
+	my ($self, $ldapdir, $configuration) = @_;
 
 	my $fedora_ds_inf = "$ldapdir/fedorads.inf";
-	my $fedora_ds_initial_ldif = "$ldapdir/fedorads-initial.ldif";
+	my $fedora_ds_extra_ldif = "$ldapdir/fedorads-partitions.ldif";
 
 	#Make the subdirectory be as fedora DS would expect
 	my $fedora_ds_dir = "$ldapdir/slapd-samba4";
 
 	my $pidfile = "$fedora_ds_dir/logs/slapd-samba4.pid";
-
-	open(CONF, ">$fedora_ds_inf");
-	print CONF "
-[General]
-SuiteSpotUserID = $root
-FullMachineName=   localhost
-ServerRoot=   $ldapdir
-
-[slapd]
-ldapifilepath=$ldapdir/ldapi
-Suffix= $basedn
-RootDN= cn=Manager,$basedn
-RootDNPwd= $password
-ServerIdentifier= samba4
-#InstallLdifFile=$fedora_ds_initial_ldif
-
-inst_dir= $fedora_ds_dir
-config_dir= $fedora_ds_dir
-schema_dir= $fedora_ds_dir/schema
-lock_dir= $fedora_ds_dir/lock
-log_dir= $fedora_ds_dir/logs
-run_dir= $fedora_ds_dir/logs
-db_dir= $fedora_ds_dir/db
-bak_dir= $fedora_ds_dir/bak
-tmp_dir= $fedora_ds_dir/tmp
-ldif_dir= $fedora_ds_dir/ldif
-cert_dir= $fedora_ds_dir
-
-start_server= 0
-install_full_schema= 0
-";
-	close(CONF);
-
-	open(LDIF, ">$fedora_ds_initial_ldif");
 
 my $dir = getcwd();
 chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
@@ -233,39 +197,9 @@ chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
         }
         chdir $dir || die;
 
-	open(LDIF, ">>$fedora_ds_dir/dse.ldif");
-	print LDIF "dn: cn=\"cn=Configuration,$basedn\",cn=mapping tree,cn=config
-objectclass: top
-objectclass: extensibleObject
-objectclass: nsMappingTree
-nsslapd-state: backend
-nsslapd-backend: configData
-cn: cn=Configuration,$basedn
+	system("cat $fedora_ds_extra_ldif >> $fedora_ds_dir/dse.ldif");
 
-dn: cn=configData,cn=ldbm database,cn=plugins,cn=config
-objectclass: extensibleObject
-objectclass: nsBackendInstance
-nsslapd-suffix: cn=Configuration,$basedn
-cn: configData
-
-dn: cn=\"cn=Schema,cn=Configuration,$basedn\",cn=mapping tree,cn=config
-objectclass: top
-objectclass: extensibleObject
-objectclass: nsMappingTree
-nsslapd-state: backend
-nsslapd-backend: schemaData
-cn: cn=Schema,cn=Configuration,$basedn
-
-dn: cn=schemaData,cn=ldbm database,cn=plugins,cn=config
-objectclass: extensibleObject
-objectclass: nsBackendInstance
-nsslapd-suffix: cn=Schema,cn=Configuration,$basedn
-cn: schemaData
-
-";
-	close(LDIF);
-
-	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $fedora_ds_dir/schema/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
+	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $fedora_ds_dir/schema/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
 
 	return ($fedora_ds_dir, $pidfile);
 }
@@ -425,8 +359,6 @@ moduleload	syncprov
 	system("slapadd -b cn=Configuration,$basedn -f $slapd_conf -l $ldapdir/$dnsname-config.ldif >/dev/null") == 0 or die("slapadd failed");
 	system("slapadd -b cn=Schema,cn=Configuration,$basedn -f $slapd_conf -l $ldapdir/$dnsname-schema.ldif >/dev/null") == 0 or die("slapadd failed");
 
-    system("slaptest -u -f $slapd_conf >/dev/null") == 0 or 
-		die ("slaptest after database load failed");
     
 	$ENV{PATH} = $oldpath;
 
@@ -626,10 +558,11 @@ sub provision($$$$$$)
 
 	if (defined($self->{ldap})) {
 
+                system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$root --realm=$dnsname --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
 	        if ($self->{ldap} eq "openldap") {
 		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, join(' ', @provision_options)) or die("Unable to create openldap directories");
-	        } elsif ($self->{ldap} eq "fedora") {
-		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora($ldapdir, $basedn, $root, $password, $privatedir, $configuration) or die("Unable to create fedora ds directories");
+	        } elsif ($self->{ldap} eq "fedora-ds") {
+		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ldapdir, $configuration) or die("Unable to create fedora ds directories");
 		       push (@provision_options, "--ldap-module=nsuniqueid");
 	        }
 
@@ -711,7 +644,7 @@ sub provision_ldap($$)
 	my ($self, $envvars) = @_;
 	my $provision_aci = "";
 	
-	if ($self->{ldap} eq "fedora") {
+	if ($self->{ldap} eq "fedora-ds") {
 		#it is easier to base64 encode this than correctly escape it:
 		# (targetattr = "*") (version 3.0;acl "full access to all by all";allow (all)(userdn = "ldap:///anyone");)
 		$provision_aci = "--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK";

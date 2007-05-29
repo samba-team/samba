@@ -422,7 +422,7 @@ Target Specific:
  --expected-failures=FILE   specify list of tests that is guaranteed to fail
 
 Samba4 Specific:
- --ldap=openldap|fedora     back smbd onto specified ldap server
+ --ldap=openldap|fedora-ds     back smbd onto specified ldap server
 
 Samba3 Specific:
  --bindir=PATH              path to binaries
@@ -477,7 +477,7 @@ my $old_pwd = "$RealBin/..";
 # Backwards compatibility:
 if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
 	if (defined($ENV{FEDORA_DS_PREFIX})) {
-		$ldap = "fedora";
+		$ldap = "fedora-ds";
 	} else {
 		$ldap = "openldap";
 	}
