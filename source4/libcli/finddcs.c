@@ -118,6 +118,9 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	state->ctx->status = resolve_name_recv(ctx, state, &address);
 	if (!composite_is_ok(state->ctx)) return;
 
+	/* TODO: This should try and find all the DCs, and give the
+	 * caller them in the order they responded */
+
 	state->num_dcs = 1;
 	state->dcs = talloc_array(state, struct nbt_dc_name, state->num_dcs);
 	if (composite_nomem(state->dcs, state->ctx)) return;
