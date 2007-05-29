@@ -275,6 +275,9 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 	CTDB_NO_MEMORY(ctdb, cmdstr);
 
 	ret = system(cmdstr);
+	if (ret != -1) {
+		ret = WEXITSTATUS(ret);
+	}
 
 	talloc_free(cmdstr);
 	talloc_free(options);
