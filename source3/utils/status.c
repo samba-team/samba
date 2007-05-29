@@ -219,22 +219,22 @@ static int traverse_fn1(struct db_record *rec,
 	}
 
 	d_printf("%-10s   %s   %-12s  %s",
-	       crec->servicename,procid_str_static(&crec->pid),
-	       crec->machine,
-	       time_to_asc(crec->start));
+		 crec->servicename,procid_str_static(&crec->pid),
+		 crec->machine,
+		 time_to_asc(crec->start));
 
 	return 0;
 }
 
-static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int traverse_sessionid(struct db_record *db, void *state)
 {
 	struct sessionid sessionid;
 	fstring uid_str, gid_str;
 
-	if (dbuf.dsize != sizeof(sessionid))
+	if (db->value.dsize != sizeof(sessionid))
 		return 0;
 
-	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
+	memcpy(&sessionid, db->value.dptr, sizeof(sessionid));
 
 	if (!process_exists(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
 		return 0;
@@ -245,7 +245,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	fstr_sprintf(uid_str, "%d", sessionid.uid);
 	fstr_sprintf(gid_str, "%d", sessionid.gid);
 
-	d_printf("%s   %-12s  %-12s  %-12s (%s)\n",
+	d_printf("%-7s   %-12s  %-12s  %-12s (%s)\n",
 		 procid_str_static(&sessionid.pid),
 		 numeric_only ? uid_str : uidtoname(sessionid.uid),
 		 numeric_only ? gid_str : gidtoname(sessionid.gid), 
@@ -261,7 +261,6 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
 	int c;
 	int profile_only = 0;
-	TDB_CONTEXT *tdb;
 	BOOL show_processes, show_locks, show_shares;
 	poptContext pc;
 	struct poptOption long_options[] = {
@@ -336,16 +335,18 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	}
 
 	if ( show_processes ) {
-		tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
-		if (!tdb) {
+		struct db_context *db;
+		db = db_open(NULL, lock_path("sessionid.tdb"), 0,
+			     TDB_DEFAULT, O_RDWR, 0644);
+		if (!db) {
 			d_printf("sessionid.tdb not initialised\n");
 		} else {
 			d_printf("\nSamba version %s\n",SAMBA_VERSION_STRING);
 			d_printf("PID     Username      Group         Machine                        \n");
 			d_printf("-------------------------------------------------------------------\n");
 
-			tdb_traverse(tdb, traverse_sessionid, NULL);
-			tdb_close(tdb);
+			db->traverse_read(db, traverse_sessionid, NULL);
+			talloc_free(db);
 		}
 
 		if (processes_only) 
