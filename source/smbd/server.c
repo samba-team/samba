@@ -471,6 +471,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated); 
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
+	brl_register_msgs(smbd_messaging_context());
 
 #ifdef DEVELOPER
 	messaging_register(smbd_messaging_context(), NULL,
@@ -1039,6 +1040,7 @@ extern void build_options(BOOL screen);
 		pidfile_create("smbd");
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
+
 	if (smbd_messaging_context() == NULL)
 		exit(1);
 
