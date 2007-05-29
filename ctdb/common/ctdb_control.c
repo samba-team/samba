@@ -250,7 +250,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb->monitoring_mode;
 
 	case CTDB_CONTROL_SHUTDOWN:
-		exit(10);
+		ctdb_release_all_ips(ctdb);
+		ctdb_event_script(ctdb, "shutdown");
+		DEBUG(0,("shutting down\n"));
+		exit(0);
 
 	case CTDB_CONTROL_MAX_RSN: 
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));

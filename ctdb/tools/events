@@ -30,6 +30,7 @@ case $cmd in
 	;;
 
      recovered)
+     shutdown)
         # restart any services as necessary, like NFS
 	exit 0
 	;;

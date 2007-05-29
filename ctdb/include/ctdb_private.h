@@ -946,5 +946,6 @@ int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...);
+void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 #endif

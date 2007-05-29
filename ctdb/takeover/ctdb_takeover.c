@@ -526,3 +526,26 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 		talloc_free(tcp);
 	}
 }
+
+
+/*
+  release all IPs on shutdown
+ */
+void ctdb_release_all_ips(struct ctdb_context *ctdb)
+{
+	int i;
+
+	if (!ctdb->takeover.enabled) {
+		return;
+	}
+
+	for (i=0;i<ctdb->num_nodes;i++) {
+		struct ctdb_node *node = ctdb->nodes[i];
+		if (ctdb_sys_have_ip(node->public_address)) {
+			ctdb_event_script(ctdb, "releaseip %s %s %u",
+					  ctdb->takeover.interface, 
+					  node->public_address,
+					  node->public_netmask_bits);
+		}
+	}
+}
