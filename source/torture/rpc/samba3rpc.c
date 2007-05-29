@@ -582,6 +582,7 @@ static BOOL create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		qui.out.info->info21.force_password_change = 0;
 		qui.out.info->info21.account_name.string = NULL;
 		qui.out.info->info21.rid = 0;
+		qui.out.info->info21.acct_expiry = 0;
 		qui.out.info->info21.fields_present = 0x81827fa; /* copy usrmgr.exe */
 
 		u_info.info21 = qui.out.info->info21;
