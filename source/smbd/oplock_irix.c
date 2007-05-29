@@ -140,8 +140,9 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 	 * is the first fsp open with this dev,ino pair.
 	 */
 
-	if ((fsp = file_find_di_first((SMB_DEV_T)os.os_dev,
-				      (SMB_INO_T)os.os_ino)) == NULL) {
+	if ((fsp = file_find_di_first(
+		     file_id_create((SMB_DEV_T)os.os_dev,
+				    (SMB_INO_T)os.os_ino))) == NULL) {
 		DEBUG(0,("irix_oplock_receive_message: unable to find open "
 			 "file with dev = %x, inode = %.0f\n",
 			 (unsigned int)os.os_dev, (double)os.os_ino ));
