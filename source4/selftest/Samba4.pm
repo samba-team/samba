@@ -422,8 +422,8 @@ moduleload	syncprov
 	}
 
 	system("slaptest -u -f $slapd_conf") == 0 or die("slaptest still fails after adding modules");
-	system("slapadd -b cn=Configuration,$basedn -f $slapd_conf -l $privatedir/$dnsname-config.ldif >/dev/null") == 0 or die("slapadd failed");
-	system("slapadd -b cn=Schema,cn=Configuration,$basedn -f $slapd_conf -l $privatedir/$dnsname-schema.ldif >/dev/null") == 0 or die("slapadd failed");
+	system("slapadd -b cn=Configuration,$basedn -f $slapd_conf -l $ldapdir/$dnsname-config.ldif >/dev/null") == 0 or die("slapadd failed");
+	system("slapadd -b cn=Schema,cn=Configuration,$basedn -f $slapd_conf -l $ldapdir/$dnsname-schema.ldif >/dev/null") == 0 or die("slapadd failed");
 
     system("slaptest -u -f $slapd_conf >/dev/null") == 0 or 
 		die ("slaptest after database load failed");
@@ -458,7 +458,7 @@ sub provision($$$$$$)
 	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
 
 	my $configuration = "--configfile=$conffile";
-	my $ldapdir = "$prefix_abs/ldap";
+	my $ldapdir = "$privatedir/ldap";
 
 	my $tlsdir = "$privatedir/tls";
 

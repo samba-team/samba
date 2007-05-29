@@ -385,10 +385,10 @@ function provision_default_paths(subobj)
 	paths.keytab = "secrets.keytab";
 	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
 	paths.winsdb = "wins.ldb";
-	paths.ldap_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".ldif";
-	paths.ldap_config_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + "-config.ldif";
-	paths.ldap_schema_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + "-schema.ldif";
 	paths.ldapdir = lp.get("private dir") + "/ldap";
+	paths.ldap_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + ".ldif";
+	paths.ldap_config_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-config.ldif";
+	paths.ldap_schema_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-schema.ldif";
 	return paths;
 }
 
@@ -793,6 +793,8 @@ function provision_ldapbase(subobj, message, paths)
 
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
+	sys.mkdir(paths.ldapdir, 0700);
+
 	setup_file("provision_basedn.ldif", 
 		   message, paths.ldap_basedn_ldif, 
 		   subobj);
@@ -805,7 +807,6 @@ function provision_ldapbase(subobj, message, paths)
 		   message, paths.ldap_schema_basedn_ldif, 
 		   subobj);
 
-	message("Please install the LDIF located in " + paths.ldap_basedn_ldif + ", " + paths.ldap_config_basedn_ldif + " and " + paths.ldap_schema_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server\n");
 }
 
 

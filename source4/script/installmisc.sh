@@ -15,6 +15,7 @@ cp scripting/libjs/*.js $JSDIR || exit 1
 echo "Installing setup templates"
 mkdir -p $SETUPDIR || exit 1
 cp setup/schema-map-* $SETUPDIR || exit 1
+cp setup/DB_CONFIG $SETUPDIR || exit 1
 cp setup/*.inf $SETUPDIR || exit 1
 cp setup/*.ldif $SETUPDIR || exit 1
 cp setup/*.zone $SETUPDIR || exit 1

@@ -1,4 +1,4 @@
-dn: cn=\"${CONFIGDN}\",cn=mapping tree,cn=config
+dn: cn="${CONFIGDN}",cn=mapping tree,cn=config
 objectclass: top
 objectclass: extensibleObject
 objectclass: nsMappingTree
@@ -12,7 +12,7 @@ objectclass: nsBackendInstance
 nsslapd-suffix: ${CONFIGDN}
 cn: configData
 
-dn: cn=\"${SCHEMADN}\",cn=mapping tree,cn=config
+dn: cn="${SCHEMADN}",cn=mapping tree,cn=config
 objectclass: top
 objectclass: extensibleObject
 objectclass: nsMappingTree
