@@ -1686,3 +1686,109 @@ struct byte_range_lock *brl_get_locks_readonly(TALLOC_CTX *mem_ctx,
 {
 	return brl_get_locks_internal(mem_ctx, fsp, True);
 }
+
+struct brl_revalidate_state {
+	ssize_t array_size;
+	uint32 num_pids;
+	struct server_id *pids;
+};
+
+/*
+ * Collect PIDs of all processes with pending entries
+ */
+
+static void brl_revalidate_collect(struct file_id id, struct server_id pid,
+				   enum brl_type lock_type,
+				   enum brl_flavour lock_flav,
+				   br_off start, br_off size,
+				   void *private_data)
+{
+	struct brl_revalidate_state *state =
+		(struct brl_revalidate_state *)private_data;
+
+	if (!IS_PENDING_LOCK(lock_type)) {
+		return;
+	}
+
+	add_to_large_array(state, sizeof(pid), (void *)&pid,
+			   &state->pids, &state->num_pids,
+			   &state->array_size);
+}
+
+/*
+ * qsort callback to sort the processes
+ */
+
+static int compare_procids(const void *p1, const void *p2)
+{
+	const struct server_id *i1 = (struct server_id *)i1;
+	const struct server_id *i2 = (struct server_id *)i2;
+
+	if (i1->pid < i2->pid) return -1;
+	if (i2->pid > i2->pid) return 1;
+	return 0;
+}
+
+/*
+ * Send a MSG_SMB_UNLOCK message to all processes with pending byte range
+ * locks so that they retry. Mainly used in the cluster code after a node has
+ * died.
+ *
+ * Done in two steps to avoid double-sends: First we collect all entries in an
+ * array, then qsort that array and only send to non-dupes.
+ */
+
+static void brl_revalidate(struct messaging_context *msg_ctx,
+			   void *private_data,
+			   uint32_t msg_type,
+			   struct server_id server_id,
+			   DATA_BLOB *data)
+{
+	struct brl_revalidate_state *state;
+	uint32 i;
+	struct server_id last_pid;
+
+	if (!(state = TALLOC_ZERO_P(NULL, struct brl_revalidate_state))) {
+		DEBUG(0, ("talloc failed\n"));
+		return;
+	}
+
+	brl_forall(brl_revalidate_collect, state);
+
+	if (state->array_size == -1) {
+		DEBUG(0, ("talloc failed\n"));
+		goto done;
+	}
+
+	if (state->num_pids == 0) {
+		goto done;
+	}
+
+	qsort(state->pids, state->num_pids, sizeof(state->pids[0]),
+	      compare_procids);
+
+	ZERO_STRUCT(last_pid);
+
+	for (i=0; i<state->num_pids; i++) {
+		if (procid_equal(&last_pid, &state->pids[i])) {
+			/*
+			 * We've seen that one already
+			 */
+			continue;
+		}
+
+		messaging_send(msg_ctx, state->pids[i], MSG_SMB_UNLOCK,
+			       &data_blob_null);
+		last_pid = state->pids[i];
+	}
+
+ done:
+	TALLOC_FREE(state);
+	return;
+}
+
+void brl_register_msgs(struct messaging_context *msg_ctx)
+{
+	messaging_register(msg_ctx, NULL, MSG_SMB_BRL_VALIDATE,
+			   brl_revalidate);
+}
