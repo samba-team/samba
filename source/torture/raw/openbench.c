@@ -114,6 +114,8 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	struct smb_composite_connect *io = &state->reconnect;
 	char *host, *share;
 
+	state->te = NULL;
+
 	if (!torture_get_conn_index(state->client_num, state->mem_ctx, &host, &share)) {
 		DEBUG(0,("Can't find host/share for reconnect?!\n"));
 		exit(1);
