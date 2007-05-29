@@ -2,6 +2,7 @@
 # Copyright (C) John H Terpstra 1998-2002
 #               Gerald (Jerry) Carter 2003
 #		Jim McDonough 2007
+#		Andrew Tridgell 2007
 
 # The following allows environment variables to override the target directories
 #   the alternative is to have a file in your home directory calles .rpmmacros
@@ -14,6 +15,14 @@
 
 EXTRA_OPTIONS="$1"
 
+RHEL="packaging/RHEL"
+
+[ -d ${RHEL} ] || {
+    echo "Must run this from the ctdb directory"
+    exit 1
+}
+
+
 SPECDIR=`rpm --eval %_specdir`
 SRCDIR=`rpm --eval %_sourcedir`
 
@@ -25,7 +34,7 @@ VERSION='1.0'
 REVISION=''
 SPECFILE="ctdb.spec"
 RPMVER=`rpm --version | awk '{print $3}'`
-RPM="rpmbuild"
+RPMBUILD="rpmbuild"
 
 ##
 ## Check the RPM version (paranoid)
@@ -40,15 +49,11 @@ case $RPMVER in
        ;;
 esac
 
-pushd .
-cd ../..
 if [ -f Makefile ]; then 
 	make distclean
 fi
-popd
 
 pushd .
-cd ../../
 BASEDIR=`basename $PWD`
 cd ..
 chown -R ${USERID}.${GRPID} $BASEDIR
@@ -57,7 +62,7 @@ if [ ! -d ctdb-${VERSION} ]; then
 	REMOVE_LN=$PWD/ctdb-$VERSION
 fi
 echo -n "Creating ctdb-${VERSION}.tar.bz2 ... "
-tar --exclude=.bzr --exclude .bzrignore --exclude packaging -cf - ctdb-${VERSION}/. | bzip2 > ${SRCDIR}/ctdb-${VERSION}.tar.bz2
+tar --exclude=.bzr --exclude .bzrignore --exclude packaging --exclude="*~" -cf - ctdb-${VERSION}/. | bzip2 > ${SRCDIR}/ctdb-${VERSION}.tar.bz2
 echo "Done."
 if [ $? -ne 0 ]; then
         echo "Build failed!"
@@ -71,16 +76,15 @@ popd
 ##
 ## copy additional source files
 ##
-tar --exclude=.svn -jcvf - setup > ${SRCDIR}/ctdb-setup.tar.bz2
-cp -p ${SPECFILE} ${SPECDIR}
+(cd packaging/RHEL && tar --exclude=.bzr --exclude="*~" -jcvf - setup) > ${SRCDIR}/ctdb-setup.tar.bz2
+cp -p ${RHEL}/${SPECFILE} ${SPECDIR}
 
 ##
 ## Build
 ##
 echo "$(basename $0): Getting Ready to build release package"
 cd ${SPECDIR}
-${RPM} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE
+${RPMBUILD} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE
 
 echo "$(basename $0): Done."
 [ ${REMOVE_LN} ] && rm $REMOVE_LN
-

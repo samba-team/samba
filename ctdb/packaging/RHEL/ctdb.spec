@@ -44,6 +44,7 @@ CC="gcc"
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 
+make showflags
 make   
 
 %install

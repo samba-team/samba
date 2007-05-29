@@ -7,6 +7,7 @@ datarootdir = @datarootdir@
 includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
+sbindir = @sbindir@
 localstatedir = @localstatedir@
 VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
@@ -42,11 +43,13 @@ CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
 
 OBJS = @TDB_OBJ@ @TALLOC_OBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ $(CTDB_OBJ) $(UTIL_OBJ)
 
-BINS = bin/ctdbd bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_messaging bin/ctdb_fetch bin/ctdb_fetch1 bin/lockwait bin/ctdb @INFINIBAND_BINS@
+TEST_BINS=bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_messaging bin/ctdb_fetch bin/ctdb_fetch1 bin/lockwait @INFINIBAND_BINS@
+BINS = bin/ctdb
+SBINS = bin/ctdbd
 
 DIRS = lib bin
 
-all: showflags dirs $(OBJS) $(BINS)
+all: showflags dirs $(OBJS) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
@@ -115,6 +118,7 @@ install: all
 	mkdir -p $(DESTDIR)$(bindir)
 	mkdir -p $(DESTDIR)$(includedir)
 	rsync $(BINS) $(DESTDIR)$(bindir)
+	rsync $(SBINS) $(DESTDIR)$(sbindir)
 	rsync $(srcdir)/include/ctdb.h $(DESTDIR)$(includedir)
 
 test: all
