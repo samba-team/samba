@@ -17,6 +17,8 @@ case $cmd in
 		 echo "Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
 	}
+	# if we have a local arp entry for this IP then remove it
+	/sbin/arp -d $ip 2> /dev/null
 	exit 0
 	;;
 
@@ -32,6 +34,8 @@ case $cmd in
 		 echo "Failed to del $ip on dev $iface"
 		 exit 1
 	}
+	# if we have a local arp entry for this IP then remove it
+	/sbin/arp -d $ip 2> /dev/null
 	exit 0
 	;;
 
