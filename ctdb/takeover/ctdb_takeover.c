@@ -93,6 +93,26 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 
 
 /*
+  run the event script
+ */
+static int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
+{
+	va_list ap;
+	char *cmdstr;
+	int ret;
+
+	va_start(ap, fmt);
+	cmdstr = talloc_vasprintf(ctdb, fmt, ap);
+	va_end(ap);
+	CTDB_NO_MEMORY(ctdb, cmdstr);
+
+	ret = system(cmdstr);
+	talloc_free(cmdstr);
+
+	return ret;
+}
+
+/*
   take over an ip address
  */
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
@@ -107,8 +127,13 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
-	DEBUG(0,("Takover of IP %s on interface %s\n", ip, ctdb->takeover.interface));
-	ret = ctdb_sys_take_ip(ip, ctdb->takeover.interface);
+	DEBUG(0,("Takover of IP %s/%u on interface %s\n", 
+		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
+		 ctdb->takeover.interface));
+	ret = ctdb_event_script(ctdb, "takeip %s %s %u",
+				ctdb->takeover.interface, 
+				ip,
+				ctdb->nodes[ctdb->vnn]->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, ctdb->takeover.interface));
@@ -158,13 +183,18 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
-	DEBUG(0,("Release of IP %s on interface %s\n", ip, ctdb->takeover.interface));
+	DEBUG(0,("Release of IP %s/%u on interface %s\n", 
+		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
+		 ctdb->takeover.interface));
 
 	/* stop any previous arps */
 	talloc_free(ctdb->takeover.last_ctx);
 	ctdb->takeover.last_ctx = NULL;
 
-	ret = ctdb_sys_release_ip(ip, ctdb->takeover.interface);
+	ret = ctdb_event_script(ctdb, "releaseip %s %s %u",
+				ctdb->takeover.interface, 
+				ip,
+				ctdb->nodes[ctdb->vnn]->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
 			 ip, ctdb->takeover.interface));
@@ -202,6 +232,16 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	return 0;
 }
 
+
+/*
+  setup the event script
+*/
+int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script)
+{
+	ctdb->takeover.event_script = talloc_strdup(ctdb, script);
+	CTDB_NO_MEMORY(ctdb, ctdb->takeover.event_script);
+	return 0;
+}
 
 /*
   setup the public address list from a file

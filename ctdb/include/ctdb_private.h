@@ -263,6 +263,7 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 struct ctdb_takeover {
 	bool enabled;
 	const char *interface;
+	const char *event_script;
 	TALLOC_CTX *last_ctx;
 };
 
@@ -930,13 +931,11 @@ int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
 bool ctdb_sys_have_ip(const char *ip);
-int ctdb_sys_take_ip(const char *ip, const char *interface);
-int ctdb_sys_release_ip(const char *ip, const char *interface);
 int ctdb_sys_send_ack(const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
-
+int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
@@ -946,5 +945,6 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
+
 
 #endif

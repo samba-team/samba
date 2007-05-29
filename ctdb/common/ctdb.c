@@ -44,6 +44,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
 	if (ctdb->logfile != NULL) {
 		int fd;
 		close(1);
+		close(2);
 		fd = open(ctdb->logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
 		if (fd == -1) {
 			abort();
@@ -52,6 +53,8 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
 			dup2(fd, 1);
 			close(fd);
 		}
+		/* also catch stderr of subcommands to the log file */
+		dup2(1, 2);
 	}
 	return 0;
 }

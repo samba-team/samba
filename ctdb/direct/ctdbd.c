@@ -38,6 +38,14 @@ static void block_signal(int signum)
 	sigaction(signum, &act, NULL);
 }
 
+static struct {
+	const char *public_address_list;
+	const char *public_interface;
+	const char *event_script;
+} options = {
+	.event_script = "/etc/ctdb/events"
+};
+
 
 /*
   main program
@@ -51,9 +59,12 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
+		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
+		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
+		{ "event-script", 0, POPT_ARG_STRING, &options.event_script, 0, "event script", "filename" },
 		POPT_TABLEEND
 	};
-	int opt;
+	int opt, ret;
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
@@ -82,6 +93,26 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	if (options.public_interface) {
+		ctdb->takeover.interface = talloc_strdup(ctdb, options.public_interface);
+		CTDB_NO_MEMORY(ctdb, ctdb->takeover.interface);
+	}
+
+	if (options.public_address_list) {
+		ret = ctdb_set_public_addresses(ctdb, options.public_address_list);
+		if (ret == -1) {
+			printf("Unable to setup public address list\n");
+			exit(1);
+		}
+		ctdb->takeover.enabled = true;
+	}
+
+	ret = ctdb_set_event_script(ctdb, options.event_script);
+	if (ret == -1) {
+		printf("Unable to setup event script\n");
+		exit(1);
+	}
 
 	/* useful default logfile */
 	if (ctdb->logfile == NULL) {
