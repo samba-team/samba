@@ -16,7 +16,8 @@ options = GetOptions(ARGV,
 		'ldap-manager-pass=s',
 		'root=s',
 		'quiet',
-		'ldap-backend-type=s');
+		'ldap-backend-type=s',
+                'ldap-backend-port=i');
 
 if (options == undefined) {
    println("Failed to parse options");
@@ -52,8 +53,8 @@ provision [options]
  --ldap-manager-pass	PASSWORD	choose LDAP Manager password (otherwise random)
  --root         USERNAME	choose 'root' unix username
  --quiet			Be quiet
- --ldap-backend-type LDAPSERVER     Select either \"openldap\" or \"fedora-ds\" as a target to configure
- --ldap-module= MODULE          LDB mapping module to use for the LDAP backend
+ --ldap-backend-type LDAPSERVER Select either \"openldap\" or \"fedora-ds\" as a target to configure
+ --ldap-backend-port PORT       Select the TCP port (if any) that the LDAP backend should listen on (Fedora DS only)
 You must provide at least a realm and ldap-backend-type
 
 ");
@@ -84,13 +85,12 @@ for (r in options) {
 	subobj[key] = options[r];
 }
 
-var ldapbackend = (options["ldap-backend-type"] != undefined);
+
 
 var paths = provision_default_paths(subobj);
 provision_fix_subobj(subobj, message, paths);
 message("Provisioning LDAP backend for %s in realm %s into %s\n", subobj.HOSTNAME, subobj.REALM, subobj.LDAPDIR);
 message("Using LDAP Manager password: %s\n", subobj.LDAPMANAGERPASS);
-
 var tmp_schema_ldb = subobj.LDAPDIR + "/schema-tmp.ldb";
 sys.mkdir(subobj.LDAPDIR, 0700);
 
@@ -101,12 +101,40 @@ var ext;
 if (options["ldap-backend-type"] == "fedora-ds") {
 	mapping = "schema-map-fedora-ds-1.0";
 	ext = "ldif";
+	if (options["ldap-backend-port"] != undefined) {
+		message("Will listen on TCP port " + options["ldap-backend-port"] + "\n");
+		subobj.SERVERPORT="ServerPort = " + options["ldap-backend-port"];
+	} else {
+		message("Will listen on LDAPI only\n");
+		subobj.SERVERPORT="";
+	}
 	setup_file("fedorads.inf", message, subobj.LDAPDIR + "/fedorads.inf", subobj);
 	setup_file("fedorads-partitions.ldif", message, subobj.LDAPDIR + "/fedorads-partitions.ldif", subobj);
 } else if (options["ldap-backend-type"] == "openldap") {
+	provision_ldapbase(subobj, message, paths);
 	mapping = "schema-map-openldap-2.3";
 	ext = "schema";
 	setup_file("slapd.conf", message, subobj.LDAPDIR + "/slapd.conf", subobj);
+	setup_file("modules.conf", message, subobj.LDAPDIR + "/modules.conf", subobj);
+	sys.mkdir(subobj.LDAPDIR + "/db", 0700);
+	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/user";
+	sys.mkdir(subobj.LDAPDBDIR, 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
+	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
+	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/config";
+	sys.mkdir(subobj.LDAPDBDIR, 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
+	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
+	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/schema";
+	sys.mkdir(subobj.LDAPDBDIR, 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
+	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
+	if (options["ldap-backend-port"] != undefined) {
+		message("NOTE: OpenLDAP TCP ports are controlled on the command line, not in the generated config file\n");
+	}
 }
 message("ad2oLschema --option=convert:target=" + options["ldap-backend-type"] + " -I " + lp.get("setup directory") + "/" + mapping + " -H tdb://" + tmp_schema_ldb + " -O " + subobj.LDAPDIR + "/backend-schema." + ext + "\n");
 

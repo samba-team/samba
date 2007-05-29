@@ -150,6 +150,7 @@ message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
 if (ldapbase) {
 	provision_ldapbase(subobj, message, paths);
+	message("Please install the LDIF located in " + paths.ldap_basedn_ldif + ", " + paths.ldap_config_basedn_ldif + " and " + paths.ldap_schema_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server\n");
 } else if (partitions_only) {
 	provision_become_dc(subobj, message, false, paths, system_session);
 } else {

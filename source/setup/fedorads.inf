@@ -9,6 +9,7 @@ Suffix= ${DOMAINDN}
 RootDN= cn=Manager,${DOMAINDN}
 RootDNPwd= ${LDAPMANAGERPASS}
 ServerIdentifier= samba4
+${SERVERPORT}
 
 inst_dir= ${LDAPDIR}/slapd-samba4
 config_dir= ${LDAPDIR}/slapd-samba4
