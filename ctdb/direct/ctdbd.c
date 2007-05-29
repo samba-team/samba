@@ -42,9 +42,12 @@ static struct {
 	const char *public_address_list;
 	const char *public_interface;
 	const char *event_script;
+	const char *logfile;
 } options = {
-	.event_script = ETCDIR "/ctdb/events"
+	.event_script = ETCDIR "/ctdb/events",
+	.logfile = VARDIR "/log/log.ctdb"
 };
+
 
 
 /*
@@ -62,6 +65,7 @@ int main(int argc, const char *argv[])
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "event-script", 0, POPT_ARG_STRING, &options.event_script, 0, "event script", "filename" },
+		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -93,6 +97,12 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	ret = ctdb_set_logfile(ctdb, options.logfile);
+	if (ret == -1) {
+		printf("ctdb_set_logfile to %s failed - %s\n", options.logfile, ctdb_errstr(ctdb));
+		exit(1);
+	}
 
 	if (options.public_interface) {
 		ctdb->takeover.interface = talloc_strdup(ctdb, options.public_interface);

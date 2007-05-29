@@ -1,8 +1,7 @@
 # Options to ctdbd
-CLUSTER_NODES=/etc/samba/cluster_nodes.txt
-PUBLIC_ADDRESSES=/etc/samba/public_addresses.txt
+CLUSTER_NODES=/etc/ctdb/nodes
+PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 PUBLIC_INTERFACE=eth0
-#CTDB_PORT=9001
 #LOGFILE=/var/log/samba/log.ctdb
 #DEBUGLEVEL=0
 
