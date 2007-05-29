@@ -35,6 +35,7 @@ int bIterate = 0;
 char *line;
 TDB_DATA iterate_kbuf;
 char cmdline[1024];
+static int disable_mmap;
 
 enum commands {
 	CMD_CREATE_TDB,
@@ -51,6 +52,8 @@ enum commands {
 	CMD_LIST_HASH_FREE,
 	CMD_LIST_FREE,
 	CMD_INFO,
+	CMD_MMAP,
+	CMD_SPEED,
 	CMD_FIRST,
 	CMD_NEXT,
 	CMD_SYSTEM,
@@ -78,6 +81,8 @@ COMMAND_TABLE cmd_table[] = {
 	{"list",	CMD_LIST_HASH_FREE},
 	{"free",	CMD_LIST_FREE},
 	{"info",	CMD_INFO},
+	{"speed",	CMD_SPEED},
+	{"mmap",	CMD_MMAP},
 	{"first",	CMD_FIRST},
 	{"1",		CMD_FIRST},
 	{"next",	CMD_NEXT},
@@ -87,6 +92,20 @@ COMMAND_TABLE cmd_table[] = {
 	{"!",		CMD_SYSTEM},
 	{NULL,		CMD_HELP}
 };
+
+struct timeval tp1,tp2;
+
+static void _start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double _end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return((tp2.tv_sec - tp1.tv_sec) + 
+	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
+}
 
 /* a tdb tool for manipulating a tdb database */
 
@@ -176,7 +195,7 @@ static void terror(const char *why)
 static void create_tdb(const char *tdbname)
 {
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tdbname, 0, TDB_CLEAR_IF_FIRST,
+	tdb = tdb_open(tdbname, 0, TDB_CLEAR_IF_FIRST | (disable_mmap?TDB_NOMMAP:0),
 		       O_RDWR | O_CREAT | O_TRUNC, 0600);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tdbname, strerror(errno));
@@ -186,7 +205,7 @@ static void create_tdb(const char *tdbname)
 static void open_tdb(const char *tdbname)
 {
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tdbname, 0, 0, O_RDWR, 0600);
+	tdb = tdb_open(tdbname, 0, disable_mmap?TDB_NOMMAP:0, O_RDWR, 0600);
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tdbname, strerror(errno));
 	}
@@ -366,6 +385,31 @@ static void info_tdb(void)
 		printf("%d records totalling %d bytes\n", count, total_bytes);
 }
 
+static void speed_tdb(const char *tlimit)
+{
+	unsigned timelimit = tlimit?atoi(tlimit):0;
+	double t;
+	int ops=0;
+	if (timelimit == 0) timelimit = 10;
+	printf("Testing traverse speed for %u seconds\n", timelimit);
+	_start_timer();
+	while ((t=_end_timer()) < timelimit) {
+		tdb_traverse(tdb, traverse_fn, NULL);
+		printf("%10.3f ops/sec\r", (++ops)/t);
+	}
+	printf("\n");
+}
+
+static void toggle_mmap(void)
+{
+	disable_mmap = !disable_mmap;
+	if (disable_mmap) {
+		printf("mmap is disabled\n");
+	} else {
+		printf("mmap is enabled\n");
+	}
+}
+
 static char *tdb_getline(const char *prompt)
 {
 	static char thisline[1024];
@@ -493,6 +537,12 @@ static int do_command(void)
 		return 0;
 	    case CMD_INFO:
 		info_tdb();
+		return 0;
+	    case CMD_SPEED:
+		speed_tdb(arg1);
+		return 0;
+	    case CMD_MMAP:
+		toggle_mmap();
 		return 0;
 	    case CMD_FIRST:
 		bIterate = 1;
