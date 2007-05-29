@@ -48,16 +48,20 @@ fi
 popd
 
 pushd .
-cd ../../../
-chown -R ${USERID}.${GRPID} ctdb
+cd ../../
+BASEDIR=`basename $PWD`
+cd ..
+chown -R ${USERID}.${GRPID} $BASEDIR
 if [ ! -d ctdb-${VERSION} ]; then
-	ln -s ctdb ctdb-${VERSION} || exit 1
+	ln -s $BASEDIR ctdb-${VERSION} || exit 1
+	REMOVE_LN=$PWD/ctdb-$VERSION
 fi
 echo -n "Creating ctdb-${VERSION}.tar.bz2 ... "
 tar --exclude=.bzr --exclude .bzrignore --exclude packaging -cf - ctdb-${VERSION}/. | bzip2 > ${SRCDIR}/ctdb-${VERSION}.tar.bz2
 echo "Done."
 if [ $? -ne 0 ]; then
         echo "Build failed!"
+	[ ${REMOVE_LN} ] && rm $REMOVE_LN
         exit 1
 fi
 
@@ -78,4 +82,5 @@ cd ${SPECDIR}
 ${RPM} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE
 
 echo "$(basename $0): Done."
+[ ${REMOVE_LN} ] && rm $REMOVE_LN
 
