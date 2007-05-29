@@ -252,14 +252,17 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 			for (j=(i+1)%nodemap->num;
 			     j != i;
 			     j=(j+1)%nodemap->num) {
-				if (nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) {
+				if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) && 
+				    same_subnet(nodemap->nodes[j]->public_address, nodemap->nodes[i]->public_address, 
+						nodemap->nodes[i]->public_netmask)) {
 					ctdb->nodes[i]->takeover_vnn = nodemap->nodes[j].vnn;
 					break;
 				}
 			}
 			if (j == i) {
-				DEBUG(0,(__location__ " No node available to assign to??\n"));
-				return -1;
+				DEBUG(0,(__location__ " No node available on same network to take %s\n",
+					 nodemap->nodes[i]->public_address));
+				ctdb->nodes[i]->takeover_vnn = -1;	
 			}
 		}
 	}	

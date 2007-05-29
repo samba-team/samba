@@ -68,7 +68,7 @@ bin/ctdbd: $(OBJS) direct/ctdbd.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ direct/ctdbd.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdb_control: $(OBJS) tools/ctdb_control.o 
+bin/ctdb: $(OBJS) tools/ctdb_control.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tools/ctdb_control.o $(OBJS) $(LIB_FLAGS)
 
