@@ -1447,6 +1447,15 @@ static BOOL validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 	return True;
 }
 
+struct brl_forall_cb {
+	void (*fn)(struct file_id id, struct server_id pid,
+		   enum brl_type lock_type,
+		   enum brl_flavour lock_flav,
+		   br_off start, br_off size,
+		   void *private_data);
+	void *private_data;
+};
+
 /****************************************************************************
  Traverse the whole database with this function, calling traverse_callback
  on each lock.
@@ -1454,13 +1463,12 @@ static BOOL validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 
 static int traverse_fn(struct db_record *rec, void *state)
 {
+	struct brl_forall_cb *cb = (struct brl_forall_cb *)state;
 	struct lock_struct *locks;
 	struct file_id *key;
 	unsigned int i;
 	unsigned int num_locks = 0;
 	unsigned int orig_num_locks = 0;
-
-	BRLOCK_FN(traverse_callback) = (BRLOCK_FN_CAST())state;
 
 	/* In a traverse function we must make a copy of
 	   dbuf before modifying it. */
@@ -1493,12 +1501,13 @@ static int traverse_fn(struct db_record *rec, void *state)
 	}
 
 	for ( i=0; i<num_locks; i++) {
-		traverse_callback(*key,
-				  locks[i].context.pid,
-				  locks[i].lock_type,
-				  locks[i].lock_flav,
-				  locks[i].start,
-				  locks[i].size);
+		cb->fn(*key,
+		       locks[i].context.pid,
+		       locks[i].lock_type,
+		       locks[i].lock_flav,
+		       locks[i].start,
+		       locks[i].size,
+		       cb->private_data);
 	}
 
 	SAFE_FREE(locks);
@@ -1509,12 +1518,21 @@ static int traverse_fn(struct db_record *rec, void *state)
  Call the specified function on each lock in the database.
 ********************************************************************/
 
-int brl_forall(BRLOCK_FN(fn))
+int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
+			  enum brl_type lock_type,
+			  enum brl_flavour lock_flav,
+			  br_off start, br_off size,
+			  void *private_data),
+	       void *private_data)
 {
+	struct brl_forall_cb cb;
+
 	if (!brlock_db) {
 		return 0;
 	}
-	return brlock_db->traverse(brlock_db, traverse_fn, (void *)fn);
+	cb.fn = fn;
+	cb.private_data = private_data;
+	return brlock_db->traverse(brlock_db, traverse_fn, &cb);
 }
 
 /*******************************************************************

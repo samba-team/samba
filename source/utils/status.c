@@ -171,7 +171,8 @@ static void print_brl(struct file_id id,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			br_off start,
-			br_off size)
+			br_off size,
+			void *private_data)
 {
 	static int count;
 	int i;
@@ -389,7 +390,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		d_printf("\n");
 
 		if (show_brl) {
-			brl_forall(print_brl);
+			brl_forall(print_brl, NULL);
 		}
 		
 		locking_end();

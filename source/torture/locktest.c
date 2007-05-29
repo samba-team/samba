@@ -121,7 +121,8 @@ static void print_brl(struct file_id id,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			br_off start,
-			br_off size)
+			br_off size,
+			void *private_data)
 {
 #if NASTY_POSIX_LOCK_HACK
 	{
@@ -147,7 +148,7 @@ static void print_brl(struct file_id id,
 
 static void show_locks(void)
 {
-	brl_forall(print_brl);
+	brl_forall(print_brl, NULL);
 	/* system("cat /proc/locks"); */
 }
 
