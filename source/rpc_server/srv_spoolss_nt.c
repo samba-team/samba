@@ -375,7 +375,8 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
  Return the snum of a printer corresponding to an handle.
 ****************************************************************************/
 
-static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
+static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number,
+			     struct share_params **params)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 		
@@ -1649,7 +1650,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
-		if (!get_printer_snum(p, handle, &snum)) {
+		if (!get_printer_snum(p, handle, &snum, NULL)) {
 			close_printer_handle(p, handle);
 			return WERR_BADFID;
 		}
@@ -1876,7 +1877,7 @@ static WERROR _spoolss_enddocprinter_internal(pipes_struct *p, POLICY_HND *handl
 		return WERR_BADFID;
 	}
 	
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	Printer->document_started=False;
@@ -2468,7 +2469,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
 	else
 	{
-		if ( !get_printer_snum(p,handle, &snum) ) {
+		if ( !get_printer_snum(p,handle, &snum, NULL) ) {
 			status = WERR_BADFID;
 			goto done;
 		}
@@ -2687,7 +2688,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	if ( Printer->printer_type == SPLHND_SERVER)
 		snum = -1;
 	else if ( (Printer->printer_type == SPLHND_PRINTER) &&
-			!get_printer_snum(p, handle, &snum) )
+			!get_printer_snum(p, handle, &snum, NULL) )
 		return WERR_BADFID;
 		
 	client_ip.s_addr = inet_addr(p->conn->client_address);
@@ -3827,7 +3828,7 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 	if ( !option )
 		return WERR_BADFID;
 
-	get_printer_snum(p, hnd, &snum);
+	get_printer_snum(p, hnd, &snum, NULL);
 
 	for (i=0; i<option->count; i++) {
 		option_type=&option->ctr.type[i];
@@ -5086,7 +5087,7 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 
 	*needed=0;
 
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	switch (level) {
@@ -5702,7 +5703,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	fstrcpy(servername, get_server_name( printer ));
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	switch (level) {
@@ -5758,7 +5759,7 @@ WERROR _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPO
 		return WERR_BADFID;
 	}
 	
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	Printer->page_started=False;
@@ -5807,7 +5808,7 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	}		
 	
 	/* get the share number of the printer */
-	if (!get_printer_snum(p, handle, &snum)) {
+	if (!get_printer_snum(p, handle, &snum, NULL)) {
 		return WERR_BADFID;
 	}
 
@@ -5859,7 +5860,7 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	(*buffer_written) = (uint32)print_job_write(snum, Printer->jobid, (const char *)buffer,
@@ -5895,7 +5896,7 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	switch (command) {
@@ -5940,7 +5941,7 @@ WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R
 		return WERR_BADFID;
 	}
 	
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 	
 	print_job_delete( &p->pipe_user, snum, Printer->jobid, &errcode );	
@@ -5963,7 +5964,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
-	if (!Printer || !get_printer_snum(p, handle, &snum)) {
+	if (!Printer || !get_printer_snum(p, handle, &snum, NULL)) {
 		DEBUG(2,("update_printer_sec: Invalid handle (%s:%u:%u)\n",
 			 OUR_HANDLE(handle)));
 
@@ -6245,7 +6246,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (!get_printer_snum(p, handle, &snum)) {
+	if (!get_printer_snum(p, handle, &snum, NULL)) {
 		result = WERR_BADFID;
 		goto done;
 	}
@@ -6436,7 +6437,7 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p, POLICY_HND *handle,
 	if (!Printer)
 		return WERR_BADFID;
 
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 	
 	nt_printer_publish(Printer, snum, info7->action);
@@ -6506,7 +6507,7 @@ WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 		if ( Printer->printer_type == SPLHND_SERVER)
 			snum = -1;
 		else if ( (Printer->printer_type == SPLHND_PRINTER) &&
-				!get_printer_snum(p, handle, &snum) )
+				!get_printer_snum(p, handle, &snum, NULL) )
 			return WERR_BADFID;
 
 		srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
@@ -6753,7 +6754,7 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 
 	/* lookup the printer snum and tdb entry */
 	
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	wret = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
@@ -6803,10 +6804,11 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 	POLICY_HND *handle = &q_u->handle;
 	uint32 jobid = q_u->jobid;
 	uint32 command = q_u->command;
+
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
 		
-	if (!get_printer_snum(p, handle, &snum)) {
+	if (!get_printer_snum(p, handle, &snum, NULL)) {
 		return WERR_BADFID;
 	}
 
@@ -8032,7 +8034,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p,handle, &snum))
+	if (!get_printer_snum(p,handle, &snum, NULL))
 		return WERR_BADFID;
 	
 	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
@@ -8206,7 +8208,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!get_printer_snum(p,handle, &snum))
+	if (!get_printer_snum(p,handle, &snum, NULL))
 		return WERR_BADFID;
 
 	/* 
@@ -8278,7 +8280,7 @@ WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p,handle, &snum))
+	if (!get_printer_snum(p,handle, &snum, NULL))
 		return WERR_BADFID;
 
 
@@ -8308,7 +8310,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -8360,7 +8362,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	
 	if ( Printer->printer_type == SPLHND_PRINTER )
 	{
-		if (!get_printer_snum(p,handle, &snum))
+		if (!get_printer_snum(p,handle, &snum, NULL))
 	                return WERR_BADFID;
 	 
 		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
@@ -8431,7 +8433,7 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	
 	if ( Printer->printer_type == SPLHND_PRINTER )
 	{
-		if (!get_printer_snum(p,handle, &snum))
+		if (!get_printer_snum(p,handle, &snum, NULL))
 	                return WERR_BADFID;
 	 
 		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
@@ -8499,7 +8501,7 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	
 	if ( Printer->printer_type == SPLHND_PRINTER )
 	{
-		if (!get_printer_snum(p,handle, &snum))
+		if (!get_printer_snum(p,handle, &snum, NULL))
 	                return WERR_BADFID;
 	 
 		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
@@ -8985,7 +8987,7 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	
 	*needed = 0;
 	
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 	
 	wstatus = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
@@ -9068,7 +9070,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 		goto done;
 	}
 	
-	if ( !get_printer_snum(p,handle, &snum) )
+	if ( !get_printer_snum(p,handle, &snum, NULL) )
 		return WERR_BADFID;
 
 	status = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
@@ -9153,7 +9155,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 		return WERR_INVALID_PARAM;
 	}
 
-	if ( !get_printer_snum(p,handle, &snum) )
+	if ( !get_printer_snum(p,handle, &snum, NULL) )
 		return WERR_BADFID;
 
 	/* 
@@ -9204,7 +9206,8 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 			 */
 		 
 			set_printer_dataex( printer, keyname, valuename, 
-			                    REG_SZ, (uint8 *)oid_string, strlen(oid_string)+1 );		
+			                    REG_SZ, (uint8 *)oid_string,
+					    strlen(oid_string)+1 );
 		}
 	
 		status = mod_a_printer(printer, 2);
@@ -9239,7 +9242,7 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -9291,7 +9294,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 		return WERR_BADFID;
 	}
 
-	if ( !get_printer_snum(p,handle, &snum) )
+	if ( !get_printer_snum(p,handle, &snum, NULL) )
 		return WERR_BADFID;
 
 	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
@@ -9361,7 +9364,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 	if ( !q_u->keyname.buffer )
 		return WERR_INVALID_PARAM;
 		
-	if (!get_printer_snum(p, handle, &snum))
+	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -9434,7 +9437,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 
 	/* get the printer off of disk */
 	
-	if (!get_printer_snum(p,handle, &snum))
+	if (!get_printer_snum(p,handle, &snum, NULL))
 		return WERR_BADFID;
 	
 	ZERO_STRUCT(printer);
@@ -9494,7 +9497,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		
 		data_len = regval_size( val );
 		if ( data_len ) {
-			if ( !(enum_values[i].data = TALLOC_MEMDUP(p->mem_ctx, regval_data_p(val), data_len)) ) 
+			if ( !(enum_values[i].data = (uint8 *)TALLOC_MEMDUP(p->mem_ctx, regval_data_p(val), data_len)) ) 
 			{
 				DEBUG(0,("TALLOC_MEMDUP failed to allocate memory [data_len=%d] for data!\n", 
 					data_len ));
