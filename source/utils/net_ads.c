@@ -1369,10 +1369,10 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 		status = ads_dns_lookup_ns( ctx, root_domain, &nameservers, &ns_count );
 		
 		if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {			
-		DEBUG(3,("net_ads_join: Failed to find name server for the %s "
+			DEBUG(3,("net_ads_join: Failed to find name server for the %s "
 			 "realm\n", ads->config.realm));
-		goto done;
-	}
+			goto done;
+		}
 
 		dnsdomain = root_domain;		
 		

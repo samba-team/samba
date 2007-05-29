@@ -381,7 +381,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 	fstring tok;
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
-	DOM_SID *group_sid=NULL, *owner_sid=NULL;
+	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
 
@@ -407,13 +407,13 @@ static SEC_DESC *sec_desc_parse(char *str)
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
-			if (group_sid) {
+			if (grp_sid) {
 				printf("Only specify group once\n");
 				goto done;
 			}
-			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!group_sid ||
-			    !StringToSid(group_sid, tok+6)) {
+			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!grp_sid ||
+			    !StringToSid(grp_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
 				goto done;
 			}
@@ -436,11 +436,11 @@ static SEC_DESC *sec_desc_parse(char *str)
 		goto done;
 	}
 
-	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, group_sid, 
+	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
 
   done:
-	SAFE_FREE(group_sid);
+	SAFE_FREE(grp_sid);
 	SAFE_FREE(owner_sid);
 
 	return ret;
@@ -738,7 +738,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	   and W2K. JRA.
 	*/
 
-	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->group_sid,
+	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->grp_sid,
 			   NULL, old->dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);

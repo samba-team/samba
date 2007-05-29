@@ -761,6 +761,7 @@ int main (int argc, char **argv)
 	static char *pwd_time_format = NULL;
 	static BOOL pw_from_stdin = False;
 	struct pdb_methods *bin, *bout, *bdef;
+	char *configfile = NULL;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -817,6 +818,9 @@ int main (int argc, char **argv)
 		switch (opt) {
 		case 'C':
 			account_policy_value_set = True;
+			break;
+		case 's':
+			configfile = optarg;
 			break;
 		}
 	}
