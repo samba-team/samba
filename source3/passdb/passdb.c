@@ -612,23 +612,7 @@ BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 	unbecome_root();
 
  	if (!ret) {
-		/* try to see if we can lookup a mapped
-		 * group with the unix group name */
-
-		struct group *grp;
-
-		grp = getgrnam(name);
-		if (!grp) {
-			return False;
-		}
-
-		become_root();
-		ret = pdb_getgrgid(&map, grp->gr_gid);
-		unbecome_root();
-
-		if (!ret) {
-			return False;
-		}
+		return False;
 	}
 
 	/* BUILTIN groups are looked up elsewhere */
