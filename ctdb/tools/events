@@ -25,7 +25,7 @@ case $cmd in
 	iface=$1
 	ip=$2
 	maskbits=$3
-	exec /sbin/ip addr del $ip/$maskbits dev $iface
+	exec /sbin/ip addr del $ip dev $iface
 	exit 1
 	;;
 
