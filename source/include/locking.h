@@ -42,33 +42,34 @@ struct lock_context {
 	struct server_id pid;
 };
 
-/* The key used in the brlock database. */
-
-struct lock_key {
-	SMB_DEV_T device;
-	SMB_INO_T inode;
-};
-
 struct files_struct;
+
+struct file_id {
+	/* we don't use SMB_DEV_T and SMB_INO_T as we want a fixed size here,
+	   and we may be using file system specific code to fill in something
+	   other than a dev_t for the device */
+	uint64_t devid;
+	uint64_t inode;
+};
 
 struct byte_range_lock {
 	struct files_struct *fsp;
 	unsigned int num_locks;
 	BOOL modified;
 	BOOL read_only;
-	struct lock_key key;
+	struct file_id key;
 	struct lock_struct *lock_data;
 	struct db_record *record;
 };
 
 #define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct server_id pid, \
+	void (*)(struct file_id id, struct server_id pid, \
 				 enum brl_type lock_type, \
 				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)
 
 #define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct server_id pid, \
+	void (*fn)(struct file_id id, struct server_id pid, \
 				 enum brl_type lock_type, \
 				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)

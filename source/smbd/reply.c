@@ -4171,12 +4171,12 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 ****************************************************************************/
 
 static void rename_open_files(connection_struct *conn, struct share_mode_lock *lck,
-				SMB_DEV_T dev, SMB_INO_T inode, const char *newname)
+			      struct file_id id, const char *newname)
 {
 	files_struct *fsp;
 	BOOL did_rename = False;
 
-	for(fsp = file_find_di_first(dev, inode); fsp; fsp = file_find_di_next(fsp)) {
+	for(fsp = file_find_di_first(id); fsp; fsp = file_find_di_next(fsp)) {
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
 		/* TODO - create the absolute path and manipulate the newname
@@ -4184,16 +4184,16 @@ static void rename_open_files(connection_struct *conn, struct share_mode_lock *l
 		if (fsp->conn != conn) {
 			continue;
 		}
-		DEBUG(10,("rename_open_files: renaming file fnum %d (dev = %x, inode = %.0f) from %s -> %s\n",
-			fsp->fnum, (unsigned int)fsp->dev, (double)fsp->inode,
+		DEBUG(10,("rename_open_files: renaming file fnum %d (file_id %s) from %s -> %s\n",
+			  fsp->fnum, file_id_static_string(&fsp->file_id),
 			fsp->fsp_name, newname ));
 		string_set(&fsp->fsp_name, newname);
 		did_rename = True;
 	}
 
 	if (!did_rename) {
-		DEBUG(10,("rename_open_files: no open files on dev %x, inode %.0f for %s\n",
-			(unsigned int)dev, (double)inode, newname ));
+		DEBUG(10,("rename_open_files: no open files on file_id %s for %s\n",
+			  file_id_static_string(&id), newname ));
 	}
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */
@@ -4341,7 +4341,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
+	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
 
 	if(SMB_VFS_RENAME(conn,fsp->fsp_name, newname) == 0) {
 		uint32 create_options = fsp->fh->private_options;
@@ -4349,7 +4349,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
 			fsp->fsp_name,newname));
 
-		rename_open_files(conn, lck, fsp->dev, fsp->inode, newname);
+		rename_open_files(conn, lck, fsp->file_id, newname);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
@@ -4457,6 +4457,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 	const char *dname;
 	long offset = 0;
 	pstring destname;
+	struct file_id id;
 
 	*directory = *mask = 0;
 
@@ -4635,9 +4636,10 @@ NTSTATUS rename_internals(connection_struct *conn,
 		 * don't do the rename, just return success.
 		 */
 
+		id = file_id_sbuf(&sbuf1);
+
 		if (strcsequal(directory, newname)) {
-			rename_open_files(conn, NULL, sbuf1.st_dev,
-					  sbuf1.st_ino, newname);
+			rename_open_files(conn, NULL, id, newname);
 			DEBUG(3, ("rename_internals: identical names in "
 				  "rename %s - returning success\n",
 				  directory));
@@ -4654,14 +4656,12 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		lck = get_share_mode_lock(NULL, sbuf1.st_dev, sbuf1.st_ino,
-					  NULL, NULL);
+		lck = get_share_mode_lock(NULL, id, NULL, NULL);
 
 		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
 			DEBUG(3,("rename_internals: succeeded doing rename "
 				 "on %s -> %s\n", directory, newname));
-			rename_open_files(conn, lck, sbuf1.st_dev,
-					  sbuf1.st_ino, newname);
+			rename_open_files(conn, lck, id, newname);
 			TALLOC_FREE(lck);
 			notify_rename(conn, S_ISDIR(sbuf1.st_mode),
 				      directory, newname);
@@ -4768,9 +4768,10 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return status;
 		}
 
+		id = file_id_sbuf(&sbuf1);
+
 		if (strcsequal(fname,destname)) {
-			rename_open_files(conn, NULL, sbuf1.st_dev,
-					  sbuf1.st_ino, newname);
+			rename_open_files(conn, NULL, id, newname);
 			DEBUG(3,("rename_internals: identical names "
 				 "in wildcard rename %s - success\n",
 				 fname));
@@ -4789,12 +4790,10 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		lck = get_share_mode_lock(NULL, sbuf1.st_dev,
-					  sbuf1.st_ino, NULL, NULL);
+		lck = get_share_mode_lock(NULL, id, NULL, NULL);
 
 		if (!SMB_VFS_RENAME(conn,fname,destname)) {
-			rename_open_files(conn, lck, sbuf1.st_dev,
-					  sbuf1.st_ino, newname);
+			rename_open_files(conn, lck, id, newname);
 			count++;
 			status = NT_STATUS_OK;
 		}

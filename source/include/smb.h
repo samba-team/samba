@@ -422,7 +422,7 @@ struct fd_handle {
 				 * DELETE_ON_CLOSE is not stored in the share
 				 * mode database.
 				 */
-	unsigned long file_id;
+	unsigned long gen_id;
 };
 
 struct event_context;
@@ -486,8 +486,7 @@ typedef struct files_struct {
 	struct fd_handle *fh;
 	unsigned int num_smb_operations;
 	uint16 rap_print_jobid;
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
+	struct file_id file_id;
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
 	mode_t mode;
 	uint16 file_pid;
@@ -756,8 +755,7 @@ struct share_mode_entry {
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB for
 				 * smbstatus and swat */
 	struct timeval time;
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
+	struct file_id id;
 	unsigned long share_file_id;
 	uint32 uid;		/* uid of file opener. */
 	uint16 flags;		/* See SHARE_MODE_XX above. */
@@ -787,8 +785,7 @@ Offset  Data			length.
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */
 	const char *filename;
-	SMB_DEV_T dev;
-	SMB_INO_T ino;
+	struct file_id id;
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
 	UNIX_USER_TOKEN *delete_token;

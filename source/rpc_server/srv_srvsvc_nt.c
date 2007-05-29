@@ -152,8 +152,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 		/* need to count the number of locks on a file */
 		
 		ZERO_STRUCT( fsp );		
-		fsp.dev   = e->dev;
-		fsp.inode = e->inode;
+		fsp.file_id = e->id;
 		
 		if ( (brl = brl_get_locks_readonly(NULL,&fsp)) != NULL ) {
 			num_locks = brl->num_locks;
