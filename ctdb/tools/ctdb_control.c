@@ -737,7 +737,7 @@ int main(int argc, const char *argv[])
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret, i;
+	int ret=-1, i;
 	poptContext pc;
 	struct event_context *ev;
 	const char *control;

@@ -2,7 +2,14 @@
 
 # DBDIR=/var/ctdb
 # NODES=/etc/ctdb/nodes
+# EVENT_SCRIPT=/etc/ctdb/events
+# CTDB_SOCKET=/tmp/ctdb.socket
+# TRANSPORT="tcp"
 # PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 # PUBLIC_INTERFACE=eth0
 # LOGFILE=/var/log/log.ctdb
 # DEBUGLEVEL=0
+
+# any other options
+# CTDB_OPTIONS=
+

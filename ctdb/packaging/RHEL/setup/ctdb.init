@@ -20,6 +20,8 @@ unset TMPDIR
 # Source networking configuration.
 . /etc/sysconfig/network
 
+CTDB_OPTIONS=""
+
 # pull in admin specified config 
 if [ -f /etc/sysconfig/ctdb ]; then
    . /etc/sysconfig/ctdb 
@@ -29,12 +31,14 @@ fi
 [ ${NETWORKING} = "no" ] && exit 0
 
 # build up CTDB_OPTIONS variable
-CTDB_OPTIONS=""
 [ -z "$LOGFILE" ]          || CTDB_OPTIONS="$CTDB_OPTIONS --logfile=$LOGFILE"
-[ -z "$PUBLIC_ADDRESSES" ] || CTDB_OPTIONS="$CTDB_OPTIONS --public-addresses=$PUBLIC_ADDRESSES"
 [ -z "$NODES" ]            || CTDB_OPTIONS="$CTDB_OPTIONS --nlist=$NODES"
+[ -z "$CTDB_SOCKET" ]      || CTDB_OPTIONS="$CTDB_OPTIONS --socket=$CTDB_SOCKET"
+[ -z "$PUBLIC_ADDRESSES" ] || CTDB_OPTIONS="$CTDB_OPTIONS --public-addresses=$PUBLIC_ADDRESSES"
 [ -z "$PUBLIC_INTERFACE" ] || CTDB_OPTIONS="$CTDB_OPTIONS --public-interface=$PUBLIC_INTERFACE"
 [ -z "$DBDIR" ]            || CTDB_OPTIONS="$CTDB_OPTIONS --dbdir=$DBDIR"
+[ -z "$EVENT_SCRIPT" ]     || CTDB_OPTIONS="$CTDB_OPTIONS --event-script $EVENT_SCRIPT"
+[ -z "$TRANSPORT" ]        || CTDB_OPTIONS="$CTDB_OPTIONS --transport $TRANSPORT"
 [ -z "$DEBUGLEVEL" ]       || CTDB_OPTIONS="$CTDB_OPTIONS -d $DEBUGLEVEL"
 
 start() {

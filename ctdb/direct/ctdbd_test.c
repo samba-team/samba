@@ -228,7 +228,7 @@ void fetch_record(int fd, uint32_t db_id, TDB_DATA key)
 
 int main(int argc, const char *argv[])
 {
-	int fd, pid, vnn, dstvnn, dstpid;
+	int fd, pid=0, vnn, dstvnn, dstpid;
 	TDB_DATA message;
 	struct ctdb_req_message *reply;
 	TDB_DATA dbname;

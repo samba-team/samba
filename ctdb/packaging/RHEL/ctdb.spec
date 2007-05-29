@@ -72,6 +72,7 @@ find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 rm -rf $RPM_BUILD_ROOT
 
 %post
+/sbin/chkconfig --add ctdb
 
 %preun
 if [ $1 = 0 ] ; then
