@@ -561,19 +561,23 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	DOM_SID unix_group_sid;
 	
 
-	if ( !(pwd = getpwnam_alloc(NULL, pdb_get_username(sampass))) ) {
-		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
-			  pdb_get_username(sampass)));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
 	if ( !(result = make_server_info(NULL)) ) {
-		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if ( !(pwd = getpwnam_alloc(result, pdb_get_username(sampass))) ) {
+		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
+			  pdb_get_username(sampass)));
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
 	result->sam_account = sampass;
-	result->unix_name = talloc_strdup(result, pwd->pw_name);
+	/* Ensure thaat the sampass will be freed with the result */
+	talloc_steal(result, sampass);
+	result->unix_name = pwd->pw_name;
+	/* Ensure that we keep pwd->pw_name, because we will free pwd below */
+	talloc_steal(result, pwd->pw_name);
 	result->gid = pwd->pw_gid;
 	result->uid = pwd->pw_uid;
 	

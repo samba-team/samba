@@ -205,9 +205,9 @@ BOOL session_claim(user_struct *vuser)
 			       sessionid.id_str, sessionid.id_num);
 	}
 
-	vuser->session_keystr = SMB_STRDUP(keystr);
+	vuser->session_keystr = talloc_strdup(vuser, keystr);
 	if (!vuser->session_keystr) {
-		DEBUG(0, ("session_claim:  strdup() failed for session_keystr\n"));
+		DEBUG(0, ("session_claim:  talloc_strdup() failed for session_keystr\n"));
 		return False;
 	}
 	return True;

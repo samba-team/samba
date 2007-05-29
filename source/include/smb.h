@@ -1757,9 +1757,9 @@ typedef struct user_struct {
 	gid_t gid; /* gid of a validated user */
 
 	userdom_struct user;
-	char *homedir;
-	char *unix_homedir;
-	char *logon_script;
+	const char *homedir;
+	const char *unix_homedir;
+	const char *logon_script;
 	
 	BOOL guest;
 
