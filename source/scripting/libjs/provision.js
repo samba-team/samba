@@ -388,6 +388,7 @@ function provision_default_paths(subobj)
 	paths.ldap_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".ldif";
 	paths.ldap_config_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + "-config.ldif";
 	paths.ldap_schema_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + "-schema.ldif";
+	paths.ldapdir = lp.get("private dir") + "/ldap";
 	return paths;
 }
 
@@ -446,9 +447,10 @@ function provision_fix_subobj(subobj, message, paths)
 	var rdns = split(",", subobj.DOMAINDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
-	subobj.SAM_LDB		= paths.samdb;
-	subobj.SECRETS_LDB	= paths.secrets;
+	subobj.SAM_LDB		= "tdb://" + paths.samdb;
 	subobj.SECRETS_KEYTAB	= paths.keytab;
+
+	subobj.LDAPDIR = paths.ldapdir;
 
 	return true;
 }
@@ -703,6 +705,53 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	return true;
 }
 
+/*
+  provision just the schema into a temporary ldb, so we can run ad2oLschema on it
+*/
+function provision_schema(subobj, message, tmp_schema_path, paths)
+{
+	var lp = loadparm_init();
+	var sys = sys_init();
+	var info = new Object();
+
+	var ok = provision_fix_subobj(subobj, message, paths);
+	assert(ok);
+
+	info.subobj = subobj;
+	info.message = message;
+
+	message("Setting up sam.ldb partitions\n");
+
+	/* This will erase anything in the tmp db */
+	var samdb = open_ldb(info, tmp_schema_path, true);
+
+	message("Adding schema container (permitted to fail)\n");
+	var add_ok = setup_add_ldif("provision_schema_basedn.ldif", info, samdb, true);
+	message("Modifying schema container\n");
+	var modify_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
+	if (!modify_ok) {
+		if (!add_ok) {
+			message("Failed to both add and modify schema dn: + samdb.errstring() + "\n");
+			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
+			assert(modify_ok);
+		}
+		message("Failed to modify the schema container: " + samdb.errstring() + "\n");
+		assert(modify_ok);
+	}
+
+	message("Setting up sam.ldb Samba4 schema\n");
+	setup_add_ldif("schema_samba4.ldif", info, samdb, false);
+	message("Setting up sam.ldb AD schema\n");
+	setup_add_ldif("schema.ldif", info, samdb, false);
+
+	var commit_ok = samdb.transaction_commit();
+	if (!commit_ok) {
+		info.message("samdb commit failed: " + samdb.errstring() + "\n");
+		assert(commit_ok);
+	}
+	samdb.close();
+}
+
 /* Write out a DNS zone file, from the info in the current database */
 function provision_dns(subobj, message, paths, session_info, credentials)
 {
@@ -787,6 +836,7 @@ function provision_guess()
 	subobj.KRBTGTPASS   = randpass(12);
 	subobj.MACHINEPASS  = randpass(12);
 	subobj.ADMINPASS    = randpass(12);
+	subobj.LDAPMANAGERPASS     = randpass(12);
 	subobj.DEFAULTSITE  = "Default-First-Site-Name";
 	subobj.NEWGUID      = randguid;
 	subobj.NTTIME       = nttime;
