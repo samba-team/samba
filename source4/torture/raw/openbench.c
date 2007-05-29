@@ -57,6 +57,7 @@ struct benchopen_state {
 	struct smbcli_request *req_open;
 	struct smbcli_request *req_close;
 	struct smb_composite_connect reconnect;
+	struct timed_event *te;
 
 	/* these are used for reconnections */
 	int dest_port;
@@ -81,9 +82,10 @@ static void reopen_connection_complete(struct composite_context *ctx)
 
 	status = smb_composite_connect_recv(ctx, state->mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		event_add_timed(state->ev, state->mem_ctx, 
-				timeval_current_ofs(1,0), 
-				reopen_connection, state);
+		talloc_free(state->te);
+		state->te = event_add_timed(state->ev, state->mem_ctx, 
+					    timeval_current_ofs(1,0), 
+					    reopen_connection, state);
 		return;
 	}
 
@@ -210,9 +212,10 @@ static void open_completed(struct smbcli_request *req)
 		state->cli = NULL;
 		num_connected--;	
 		DEBUG(0,("reopening connection to %s\n", state->dest_host));
-		event_add_timed(state->ev, state->mem_ctx, 
-				timeval_current_ofs(1,0), 
-				reopen_connection, state);
+		talloc_free(state->te);
+		state->te = event_add_timed(state->ev, state->mem_ctx, 
+					    timeval_current_ofs(1,0), 
+					    reopen_connection, state);
 		return;
 	}
 
@@ -262,9 +265,10 @@ static void close_completed(struct smbcli_request *req)
 		state->cli = NULL;
 		num_connected--;	
 		DEBUG(0,("reopening connection to %s\n", state->dest_host));
-		event_add_timed(state->ev, state->mem_ctx, 
-				timeval_current_ofs(1,0), 
-				reopen_connection, state);
+		talloc_free(state->te);
+		state->te = event_add_timed(state->ev, state->mem_ctx, 
+					    timeval_current_ofs(1,0), 
+					    reopen_connection, state);
 		return;
 	}
 
@@ -289,9 +293,10 @@ static void echo_completion(struct smbcli_request *req)
 		state->tree = NULL;
 		num_connected--;	
 		DEBUG(0,("reopening connection to %s\n", state->dest_host));
-		event_add_timed(state->ev, state->mem_ctx, 
-				timeval_current_ofs(1,0), 
-				reopen_connection, state);
+		talloc_free(state->te);
+		state->te = event_add_timed(state->ev, state->mem_ctx, 
+					    timeval_current_ofs(1,0), 
+					    reopen_connection, state);
 	}
 }
 
