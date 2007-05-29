@@ -1404,5 +1404,5 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 	state.fn = fn;
 	state.private_data = private_data;
 
-	return lock_db->traverse(lock_db, traverse_fn, (void *)&state);
+	return lock_db->traverse_read(lock_db, traverse_fn, (void *)&state);
 }
