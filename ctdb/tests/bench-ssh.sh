@@ -18,7 +18,7 @@ echo "Creating nodes-ssh.txt"
 rm -f nodes-ssh.txt
 count=0
 for h in $nodes; do
-    echo "$h:9001" >> nodes-ssh.txt
+    echo "$h" >> nodes-ssh.txt
     count=`expr $count + 1`
 done
 

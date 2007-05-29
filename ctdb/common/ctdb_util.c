@@ -65,15 +65,18 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address)
 {
-	char *p;
-	p = strchr(str, ':');
-	if (p == NULL) {
-		ctdb_set_error(ctdb, "Badly formed node '%s'\n", str);
-		return -1;
-	}
+	struct servent *se;
+
+	setservent(0);
+	se = getservbyname("ctdb", "tcp");
+	endservent();
 	
-	address->address = talloc_strndup(mem_ctx, str, p-str);
-	address->port = strtoul(p+1, NULL, 0);
+	address->address = talloc_strdup(mem_ctx, str);
+	if (se == NULL) {
+		address->port = CTDB_PORT;
+	} else {
+		address->port = ntohs(se->s_port);
+	}
 	return 0;
 }
 

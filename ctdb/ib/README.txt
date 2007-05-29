@@ -11,10 +11,9 @@ After then:
 
 Example for testing
 ===================
-bin/ctdb_test --transport ib --nlist ../2nodes_rm.txt --listen 10.0.0.1:9001
-bin/ctdb_test --transport ib --nlist ../2nodes_rm.txt --listen 10.0.0.2:9001
+bin/ctdb_test --transport ib --nlist ../2nodes_rm.txt --listen 10.0.0.1
+bin/ctdb_test --transport ib --nlist ../2nodes_rm.txt --listen 10.0.0.2
 
 where 2nodes_rm.txt:
-10.0.0.1:9001
-10.0.0.2:9001
-
+10.0.0.1
+10.0.0.2

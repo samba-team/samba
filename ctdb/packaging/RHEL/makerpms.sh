@@ -71,7 +71,7 @@ popd
 ##
 ## copy additional source files
 ##
-tar --exclude=.svn -jcvf - setup > ${SRCDIR}/setup.tar.bz2
+tar --exclude=.svn -jcvf - setup > ${SRCDIR}/ctdb-setup.tar.bz2
 cp -p ${SPECFILE} ${SPECDIR}
 
 ##

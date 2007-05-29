@@ -9,7 +9,7 @@ fi
 
 rm -f nodes.txt
 for i in `seq 1 $NUMNODES`; do
-  echo 127.0.0.$i:9001 >> nodes.txt
+  echo 127.0.0.$i >> nodes.txt
 done
 
 killall -9 ctdb_bench

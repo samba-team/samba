@@ -4,9 +4,9 @@ killall -q ctdbd
 
 echo "Starting 4 ctdb daemons"
 bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt
-bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.2:9001 --socket=/tmp/ctdb.socket.127.0.0.2
-bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.3:9001 --socket=/tmp/ctdb.socket.127.0.0.3
-bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.4:9001 --socket=/tmp/ctdb.socket.127.0.0.4
+bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.2 --socket=/tmp/ctdb.socket.127.0.0.2
+bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.3 --socket=/tmp/ctdb.socket.127.0.0.3
+bin/ctdbd --recovery-daemon --nlist direct/4nodes.txt --listen=127.0.0.4 --socket=/tmp/ctdb.socket.127.0.0.4
 
 echo
 echo "Attaching to some databases"

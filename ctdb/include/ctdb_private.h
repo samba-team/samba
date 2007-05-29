@@ -28,6 +28,9 @@
 /* location of daemon socket */
 #define CTDB_PATH	"/tmp/ctdb.socket"
 
+/* default ctdb port number */
+#define CTDB_PORT 9001
+
 /* we must align packets to ensure ctdb works on all architectures (eg. sparc) */
 #define CTDB_DS_ALIGNMENT 8
 
