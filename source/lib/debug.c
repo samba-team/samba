@@ -979,7 +979,7 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
   
 		/* Print it all out at once to prevent split syslog output. */
 		if( lp_debug_prefix_timestamp() ) {
-		    (void)Debug1( "[%s, %d%s] ",
+		    (void)Debug1( "[%s, %2d%s] ",
 			current_timestring(lp_debug_hires_timestamp()), level,
 			header_str);
 		} else {
