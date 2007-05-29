@@ -2307,7 +2307,6 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		return -1;
 	}
 
-
 	case FSCTL_GET_REPARSE_POINT:
 		/* pretend this fail - my winXP does it like this
 		 * --metze
@@ -2315,7 +2314,6 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 		DEBUG(10,("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
 		return ERROR_NT(NT_STATUS_NOT_A_REPARSE_POINT);
-		return -1;
 
 	case FSCTL_SET_REPARSE_POINT:
 		/* pretend this fail - I'm assuming this because of the FSCTL_GET_REPARSE_POINT case.
@@ -2324,7 +2322,6 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 		DEBUG(10,("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
 		return ERROR_NT(NT_STATUS_NOT_A_REPARSE_POINT);
-		return -1;
 			
 	case FSCTL_GET_SHADOW_COPY_DATA: /* don't know if this name is right...*/
 	{
