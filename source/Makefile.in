@@ -229,7 +229,8 @@ LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 
 RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 
-LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_notify.o
+LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_notify.o \
+		 librpc/gen_ndr/ndr_lsa.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -332,7 +333,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o \
 	       rpc_client/cli_shutdown.o rpc_client/cli_dfs.o rpc_client/cli_echo.o
 
-LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_wkssvc.o \
+LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_wkssvc.o librpc/gen_ndr/cli_lsa.o \
 		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
@@ -341,7 +342,7 @@ REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_pri
                registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
                registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o
 
-RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
+RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
 
 RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
 

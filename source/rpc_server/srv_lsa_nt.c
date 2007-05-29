@@ -1336,20 +1336,20 @@ NTSTATUS _lsa_lookup_names4(pipes_struct *p, LSA_Q_LOOKUP_NAMES4 *q_u, LSA_R_LOO
  _lsa_close. Also weird - needs to check if lsa handle is correct. JRA.
  ***************************************************************************/
 
-NTSTATUS _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
+NTSTATUS _lsa_Close(pipes_struct *p, struct lsa_Close *r)
 {
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL)) {
+	if (!find_policy_by_hnd(p, r->in.handle, NULL)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	close_policy_hnd(p, &q_u->pol);
+	close_policy_hnd(p, r->in.handle);
 	return NT_STATUS_OK;
 }
 
 /***************************************************************************
  ***************************************************************************/
 
-NTSTATUS _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECRET *r_u)
+NTSTATUS _lsa_OpenSecret(pipes_struct *p, struct lsa_OpenSecret *r)
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
@@ -1357,7 +1357,7 @@ NTSTATUS _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SE
 /***************************************************************************
  ***************************************************************************/
 
-NTSTATUS _lsa_open_trusted_domain(pipes_struct *p, LSA_Q_OPEN_TRUSTED_DOMAIN *q_u, LSA_R_OPEN_TRUSTED_DOMAIN *r_u)
+NTSTATUS _lsa_OpenTrustedDomain(pipes_struct *p, struct lsa_OpenTrustedDomain *r)
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
@@ -1365,7 +1365,7 @@ NTSTATUS _lsa_open_trusted_domain(pipes_struct *p, LSA_Q_OPEN_TRUSTED_DOMAIN *q_
 /***************************************************************************
  ***************************************************************************/
 
-NTSTATUS _lsa_create_trusted_domain(pipes_struct *p, LSA_Q_CREATE_TRUSTED_DOMAIN *q_u, LSA_R_CREATE_TRUSTED_DOMAIN *r_u)
+NTSTATUS _lsa_CreateTrustedDomain(pipes_struct *p, struct lsa_CreateTrustedDomain *r)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -1373,7 +1373,7 @@ NTSTATUS _lsa_create_trusted_domain(pipes_struct *p, LSA_Q_CREATE_TRUSTED_DOMAIN
 /***************************************************************************
  ***************************************************************************/
 
-NTSTATUS _lsa_create_secret(pipes_struct *p, LSA_Q_CREATE_SECRET *q_u, LSA_R_CREATE_SECRET *r_u)
+NTSTATUS _lsa_CreateSecret(pipes_struct *p, struct lsa_CreateSecret *r)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -1381,7 +1381,7 @@ NTSTATUS _lsa_create_secret(pipes_struct *p, LSA_Q_CREATE_SECRET *q_u, LSA_R_CRE
 /***************************************************************************
  ***************************************************************************/
 
-NTSTATUS _lsa_set_secret(pipes_struct *p, LSA_Q_SET_SECRET *q_u, LSA_R_SET_SECRET *r_u)
+NTSTATUS _lsa_SetSecret(pipes_struct *p, struct lsa_SetSecret *r)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -2150,4 +2150,467 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
 		
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+ * From here on the server routines are just dummy ones to make smbd link with
+ * librpc/gen_ndr/srv_lsa.c. These routines are actually never called, we are
+ * pulling the server stubs across one by one.
+ */ 
+
+NTSTATUS _lsa_Delete(pipes_struct *p, struct lsa_Delete *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_EnumPrivs(pipes_struct *p, struct lsa_EnumPrivs *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QuerySecurity(pipes_struct *p, struct lsa_QuerySecurity *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetSecObj(pipes_struct *p, struct lsa_SetSecObj *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_ChangePassword(pipes_struct *p, struct lsa_ChangePassword *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_OpenPolicy(pipes_struct *p, struct lsa_OpenPolicy *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p, struct lsa_QueryInfoPolicy *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetInfoPolicy(pipes_struct *p, struct lsa_SetInfoPolicy *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_ClearAuditLog(pipes_struct *p, struct lsa_ClearAuditLog *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CreateAccount(pipes_struct *p, struct lsa_CreateAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_EnumAccounts(pipes_struct *p, struct lsa_EnumAccounts *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_EnumTrustDom(pipes_struct *p, struct lsa_EnumTrustDom *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupNames(pipes_struct *p, struct lsa_LookupNames *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupSids(pipes_struct *p, struct lsa_LookupSids *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_OpenAccount(pipes_struct *p, struct lsa_OpenAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p, struct lsa_EnumPrivsAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_AddPrivilegesToAccount(pipes_struct *p, struct lsa_AddPrivilegesToAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_RemovePrivilegesFromAccount(pipes_struct *p, struct lsa_RemovePrivilegesFromAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_GetQuotasForAccount(pipes_struct *p, struct lsa_GetQuotasForAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetQuotasForAccount(pipes_struct *p, struct lsa_SetQuotasForAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p, struct lsa_GetSystemAccessAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p, struct lsa_SetSystemAccessAccount *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QueryTrustedDomainInfo(pipes_struct *p, struct lsa_QueryTrustedDomainInfo *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetInformationTrustedDomain(pipes_struct *p, struct lsa_SetInformationTrustedDomain *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QuerySecret(pipes_struct *p, struct lsa_QuerySecret *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupPrivValue(pipes_struct *p, struct lsa_LookupPrivValue *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p, struct lsa_LookupPrivDisplayName *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_DeleteObject(pipes_struct *p, struct lsa_DeleteObject *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p, struct lsa_EnumAccountsWithUserRight *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_EnumAccountRights(pipes_struct *p, struct lsa_EnumAccountRights *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_AddAccountRights(pipes_struct *p, struct lsa_AddAccountRights *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p, struct lsa_RemoveAccountRights *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QueryTrustedDomainInfoBySid(pipes_struct *p, struct lsa_QueryTrustedDomainInfoBySid *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetTrustedDomainInfo(pipes_struct *p, struct lsa_SetTrustedDomainInfo *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_DeleteTrustedDomain(pipes_struct *p, struct lsa_DeleteTrustedDomain *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_StorePrivateData(pipes_struct *p, struct lsa_StorePrivateData *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_RetrievePrivateData(pipes_struct *p, struct lsa_RetrievePrivateData *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_OpenPolicy2(pipes_struct *p, struct lsa_OpenPolicy2 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_GetUserName(pipes_struct *p, struct lsa_GetUserName *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QueryInfoPolicy2(pipes_struct *p, struct lsa_QueryInfoPolicy2 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetInfoPolicy2(pipes_struct *p, struct lsa_SetInfoPolicy2 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QueryTrustedDomainInfoByName(pipes_struct *p, struct lsa_QueryTrustedDomainInfoByName *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetTrustedDomainInfoByName(pipes_struct *p, struct lsa_SetTrustedDomainInfoByName *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_EnumTrustedDomainsEx(pipes_struct *p, struct lsa_EnumTrustedDomainsEx *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CreateTrustedDomainEx(pipes_struct *p, struct lsa_CreateTrustedDomainEx *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CloseTrustedDomainEx(pipes_struct *p, struct lsa_CloseTrustedDomainEx *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_QueryDomainInformationPolicy(pipes_struct *p, struct lsa_QueryDomainInformationPolicy *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_SetDomainInformationPolicy(pipes_struct *p, struct lsa_SetDomainInformationPolicy *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_OpenTrustedDomainByName(pipes_struct *p, struct lsa_OpenTrustedDomainByName *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_TestCall(pipes_struct *p, struct lsa_TestCall *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupSids2(pipes_struct *p, struct lsa_LookupSids2 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupNames2(pipes_struct *p, struct lsa_LookupNames2 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CreateTrustedDomainEx2(pipes_struct *p, struct lsa_CreateTrustedDomainEx2 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRWRITE(pipes_struct *p, struct lsa_CREDRWRITE *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRREAD(pipes_struct *p, struct lsa_CREDRREAD *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRENUMERATE(pipes_struct *p, struct lsa_CREDRENUMERATE *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p, struct lsa_CREDRWRITEDOMAINCREDENTIALS *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p, struct lsa_CREDRREADDOMAINCREDENTIALS *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRDELETE(pipes_struct *p, struct lsa_CREDRDELETE *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRGETTARGETINFO(pipes_struct *p, struct lsa_CREDRGETTARGETINFO *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRPROFILELOADED(pipes_struct *p, struct lsa_CREDRPROFILELOADED *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupNames3(pipes_struct *p, struct lsa_LookupNames3 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRGETSESSIONTYPES(pipes_struct *p, struct lsa_CREDRGETSESSIONTYPES *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARREGISTERAUDITEVENT *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARGENAUDITEVENT(pipes_struct *p, struct lsa_LSARGENAUDITEVENT *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARUNREGISTERAUDITEVENT *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p, struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p, struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_CREDRRENAME(pipes_struct *p, struct lsa_CREDRRENAME *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupSids3(pipes_struct *p, struct lsa_LookupSids3 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LookupNames4(pipes_struct *p, struct lsa_LookupNames4 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSAROPENPOLICYSCE(pipes_struct *p, struct lsa_LSAROPENPOLICYSCE *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p, struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p, struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p, struct lsa_LSARADTREPORTSECURITYEVENT *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }

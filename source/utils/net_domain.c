@@ -180,7 +180,7 @@ NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
 	/* Bail out if domain didn't get set. */

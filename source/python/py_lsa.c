@@ -125,7 +125,7 @@ static PyObject *lsa_close(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Call rpc function */
 
-	result = rpccli_lsa_close(hnd->cli, hnd->mem_ctx, &hnd->pol);
+	result = rpccli_lsa_Close(hnd->cli, hnd->mem_ctx, &hnd->pol);
 
 	/* Cleanup samba stuff */
 

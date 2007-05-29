@@ -27,6 +27,7 @@ DOM_SID domain_sid;
 
 static enum pipe_auth_type pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
 static enum pipe_auth_level pipe_default_auth_level = PIPE_AUTH_LEVEL_NONE;
+static unsigned int timeout = 0;
 
 /* List to hold groups of commands.
  *
@@ -168,7 +169,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	got_domain_sid = True;
 	sid_copy( &domain_sid, dom_sid );
 
-	rpccli_lsa_close(lsapipe, mem_ctx, &pol);
+	rpccli_lsa_Close(lsapipe, mem_ctx, &pol);
 	cli_rpc_pipe_close(lsapipe);
 	talloc_destroy(mem_ctx);
 
@@ -398,6 +399,39 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return cmd_set_ss_level();
 }
 
+static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+			    int argc, const char **argv)
+{
+	struct cmd_list *tmp;
+
+	if (argc > 2) {
+		printf("Usage: %s timeout\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 2) {
+		timeout = atoi(argv[1]);
+
+		for (tmp = cmd_list; tmp; tmp = tmp->next) {
+			
+			struct cmd_set *tmp_set;
+
+			for (tmp_set = tmp->cmd_set; tmp_set->name; tmp_set++) {
+				if (tmp_set->rpc_pipe == NULL) {
+					continue;
+				}
+
+				cli_set_timeout(tmp_set->rpc_pipe->cli, timeout);
+			}
+		}
+	}
+
+	printf("timeout is %d\n", timeout);
+
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS cmd_none(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
@@ -437,6 +471,7 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "help", RPC_RTYPE_NTSTATUS, cmd_help, NULL, 	  -1, NULL,	"Get help on commands", "[command]" },
 	{ "?", 	RPC_RTYPE_NTSTATUS, cmd_help, NULL,	  -1, NULL,	"Get help on commands", "[command]" },
 	{ "debuglevel", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   -1,	NULL, "Set debug level", "level" },
+	{ "debug", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   -1,	NULL, "Set debug level", "level" },
 	{ "list",	RPC_RTYPE_NTSTATUS, cmd_listcommands, NULL, -1,	NULL, "List available commands on <pipe>", "pipe" },
 	{ "exit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,   -1,	NULL,	"Exit program", "" },
 	{ "quit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,	  -1,	NULL, "Exit program", "" },
@@ -444,6 +479,7 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "seal", RPC_RTYPE_NTSTATUS, cmd_seal, NULL,	  -1,	NULL, "Force RPC pipe connections to be sealed", "" },
 	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  -1, NULL,	"Force RPC pipe connections to be sealed with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
 	{ "schannelsign", RPC_RTYPE_NTSTATUS, cmd_schannel_sign, NULL,	  -1, NULL, "Force RPC pipe connections to be signed (not sealed) with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
+	{ "timeout", RPC_RTYPE_NTSTATUS, cmd_timeout, NULL,	  -1, NULL, "Set timeout (in milliseonds) for RPC operations", "" },
 	{ "none", RPC_RTYPE_NTSTATUS, cmd_none, NULL,	  -1, NULL, "Force RPC pipe connections to have no special properties", "" },
 
 	{ NULL }
@@ -809,6 +845,8 @@ out_free:
 #endif
 
 	/* Load command lists */
+
+	timeout = cli_set_timeout(cli, 10000);
 
 	cmd_set = rpcclient_command_list;
 

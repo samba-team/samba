@@ -5,6 +5,7 @@
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
    Copyright (C) 2004 Guenther Deschner (gd@samba.org)
    Copyright (C) 2005 Jeremy Allison (jra@samba.org)
+   Copyright (C) 2006 Jelmer Vernooij (jelmer@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -81,7 +82,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	rpccli_lsa_close(lsa_pipe, mem_ctx, &pol);
+	rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
 	cli_rpc_pipe_close(lsa_pipe);
 
 	return NT_STATUS_OK;
@@ -2036,7 +2037,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 		*type = types[0];
 	}
 
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 
  done:
 	if (pipe_hnd) {
@@ -4083,7 +4084,7 @@ static NTSTATUS rpc_aliaslist_dump(const DOM_SID *domain_sid,
 	for (i=0; i<num_server_aliases; i++) {
 		char **names;
 		char **domains;
-		uint32 *types;
+		enum lsa_SidType *types;
 		int j;
 
 		struct full_alias *alias = &server_aliases[i];
@@ -4117,7 +4118,7 @@ static NTSTATUS rpc_aliaslist_dump(const DOM_SID *domain_sid,
 		DEBUG(1, ("\n"));
 	}
 
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 
 	return NT_STATUS_OK;
 }
@@ -5737,7 +5738,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Close the pipes and clean up
 	 */
 	 
-	nt_status = rpccli_lsa_close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6006,7 +6007,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close this connection before doing next one */
-	nt_status = rpccli_lsa_close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6140,7 +6141,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close this connection before doing next one */
-	nt_status = rpccli_lsa_close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));

@@ -78,9 +78,6 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result)) {
 		*pol = r.pol;
-#ifdef __INSURE__
-		pol->marker = MALLOC(1);
-#endif
 	}
 
 	return result;
@@ -124,45 +121,6 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	result = r.status;
 
 	if (NT_STATUS_IS_OK(result)) {
-		*pol = r.pol;
-#ifdef __INSURE__
-		pol->marker = (char *)malloc(1);
-#endif
-	}
-
-	return result;
-}
-
-/** Close a LSA policy handle */
-
-NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			  POLICY_HND *pol)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_CLOSE q;
-	LSA_R_CLOSE r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	init_lsa_q_close(&q, pol);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_CLOSE,
-			q, r,
-			qbuf, rbuf,
-			lsa_io_q_close,
-			lsa_io_r_close,
-			NT_STATUS_UNSUCCESSFUL );
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (NT_STATUS_IS_OK(result)) {
-#ifdef __INSURE__
-		SAFE_FREE(pol->marker);
-#endif
 		*pol = r.pol;
 	}
 

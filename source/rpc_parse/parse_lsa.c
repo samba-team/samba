@@ -2140,50 +2140,6 @@ BOOL lsa_io_r_lookup_names4(const char *desc, LSA_R_LOOKUP_NAMES4 *out, prs_stru
 }
 
 /*******************************************************************
- Inits an LSA_Q_CLOSE structure.
-********************************************************************/
-
-void init_lsa_q_close(LSA_Q_CLOSE *in, POLICY_HND *hnd)
-{
-	DEBUG(5, ("init_lsa_q_close\n"));
-
-	memcpy(&in->pol, hnd, sizeof(in->pol));
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_CLOSE structure.
-********************************************************************/
-
-BOOL lsa_io_q_close(const char *desc, LSA_Q_CLOSE *in, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_close");
-	depth++;
-
-	if(!smb_io_pol_hnd("", &in->pol, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_CLOSE structure.
-********************************************************************/
-
-BOOL lsa_io_r_close(const char *desc,  LSA_R_CLOSE *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_close");
-	depth++;
-
-	if(!smb_io_pol_hnd("", &out->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Reads or writes an LSA_Q_OPEN_SECRET structure.
 ********************************************************************/
 
