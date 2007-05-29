@@ -275,7 +275,7 @@ static BOOL session_traverse(int (*fn)(struct db_record *db,
 		return False;
 	}
 
-	ctx->traverse(ctx, fn, private_data);
+	ctx->traverse_read(ctx, fn, private_data);
 	return True;
 }
 
