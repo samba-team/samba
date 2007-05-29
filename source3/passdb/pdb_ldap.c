@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
-   Copyright (C) Jean François Micouleau	1998
+   Copyright (C) Jean FranÃ§ois Micouleau	1998
    Copyright (C) Gerald Carter			2001-2003
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
@@ -455,7 +455,11 @@ static time_t ldapsam_get_entry_timestamp( struct ldapsam_privates *ldap_state, 
 			temp))
 		return (time_t) 0;
 
-	strptime(temp, "%Y%m%d%H%M%SZ", &tm);
+	if ( !strptime(temp, "%Y%m%d%H%M%SZ", &tm)) {
+		DEBUG(2,("ldapsam_get_entry_timestamp: strptime failed on: %s\n",
+			(char*)temp));
+		return (time_t) 0;
+	}
 	tzset();
 	return timegm(&tm);
 }
