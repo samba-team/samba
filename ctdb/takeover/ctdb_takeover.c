@@ -247,7 +247,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 			return -1;
 		}
 
-		if (inet_aton(ctdb->nodes[i]->public_address, &in) != 0) {
+		if (inet_aton(ctdb->nodes[i]->public_address, &in) == 0) {
 			DEBUG(0,("Badly formed IP '%s' in public address list\n", ctdb->nodes[i]->public_address));
 			return -1;
 		}
