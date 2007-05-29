@@ -172,6 +172,46 @@ static int db_tdb_traverse(struct db_context *db,
 	return tdb_traverse(db_ctx->tdb, db_tdb_traverse_func, &ctx);
 }
 
+static NTSTATUS db_tdb_store_deny(struct db_record *rec, TDB_DATA data, int flag)
+{
+	return NT_STATUS_MEDIA_WRITE_PROTECTED;
+}
+
+static NTSTATUS db_tdb_delete_deny(struct db_record *rec)
+{
+	return NT_STATUS_MEDIA_WRITE_PROTECTED;
+}
+
+static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+				void *private_data)
+{
+	struct db_tdb_traverse_ctx *ctx =
+		(struct db_tdb_traverse_ctx *)private_data;
+	struct db_record rec;
+
+	rec.key = kbuf;
+	rec.value = dbuf;
+	rec.store = db_tdb_store_deny;
+	rec.delete_rec = db_tdb_delete_deny;
+	rec.private_data = ctx->db->private_data;
+
+	return ctx->f(&rec, ctx->private_data);
+}
+
+static int db_tdb_traverse_read(struct db_context *db,
+			   int (*f)(struct db_record *rec, void *private_data),
+			   void *private_data)
+{
+	struct db_tdb_ctx *db_ctx =
+		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
+	struct db_tdb_traverse_ctx ctx;
+
+	ctx.db = db;
+	ctx.f = f;
+	ctx.private_data = private_data;
+	return tdb_traverse_read(db_ctx->tdb, db_tdb_traverse_read_func, &ctx);
+}
+
 static int db_tdb_get_seqnum(struct db_context *db)
 
 {
@@ -220,6 +260,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(db_tdb, db_tdb_ctx_destr);
 	result->fetch_locked = db_tdb_fetch_locked;
 	result->traverse = db_tdb_traverse;
+	result->traverse_read = db_tdb_traverse_read;
 	result->get_seqnum = db_tdb_get_seqnum;
 	return result;
 

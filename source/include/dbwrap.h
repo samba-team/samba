@@ -38,6 +38,10 @@ struct db_context {
 			int (*f)(struct db_record *db,
 				 void *private_data),
 			void *private_data);
+	int (*traverse_read)(struct db_context *db,
+			     int (*f)(struct db_record *db,
+				      void *private_data),
+			     void *private_data);
 	int (*get_seqnum)(struct db_context *db);
 	void *private_data;
 };
