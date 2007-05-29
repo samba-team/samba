@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.2
+#! /usr/bin/env python
 
 __doc__ = """test case for samba.tdbpack functions
 

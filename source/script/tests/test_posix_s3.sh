@@ -49,8 +49,8 @@ tests="$base $raw $rpc $unix"
 
 skipped="BASE-CHARSET BASE-DEFER_OPEN BASE-DELAYWRITE BASE-OPENATTR BASE-TCONDEV"
 skipped="$skipped RAW-ACLS RAW-COMPOSITE RAW-CONTEXT RAW-EAS"
-skipped="$skipped RAW-IOCTL RAW-MKDIR RAW-MUX RAW-NOTIFY RAW-OPEN"
-skipped="$skipped RAW-QFILEINFO RAW-QFSINFO RAW-RENAME RAW-SEARCH"
+skipped="$skipped RAW-IOCTL RAW-MUX"
+skipped="$skipped RAW-QFILEINFO RAW-QFSINFO RAW-SEARCH"
 skipped="$skipped RAW-SFILEINFO RAW-STREAMS RAW-WRITE"
 
 echo "WARNING: Skipping tests $skipped"

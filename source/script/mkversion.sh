@@ -82,6 +82,13 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
 	else
 	    TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}"
 	fi
+	if test x"${HAVESVK}" = x"no";then
+	    HAVEBZR=no
+	    bzr revno > /dev/null 2>&1 && HAVEBZR=yes
+	    TMP_BZR_REVNO=`bzr revno 2> /dev/null`
+	    TMP_BZR_NICK=`bzr nick 2> /dev/null`
+	    TMP_BZR_REVISION_STR="${TMP_BZR_NICK}-${TMP_BZR_REVNO}"
+	fi
     fi
 
     if test x"${HAVESVN}" = x"yes";then
@@ -89,6 +96,8 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
 	    echo "#define SAMBA_VERSION_SVN_REVISION ${TMP_REVISION}" >> $OUTPUT_FILE
     elif test x"${HAVESVK}" = x"yes";then
 	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVK-build-${TMP_SVK_REVISION_STR}"
+    elif test x"${HAVEBZR}" = x"yes";then
+	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-BZR-build-${TMP_BZR_REVISION_STR}"
     else
 	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-UNKNOWN"
     fi
