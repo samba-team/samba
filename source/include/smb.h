@@ -243,20 +243,6 @@ typedef uint64_t NTTIME;
 
 #define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
 
-/* SID Types */
-enum lsa_SidType {
-	SID_NAME_USE_NONE = 0,
-	SID_NAME_USER    = 1, /* user */
-	SID_NAME_DOM_GRP,     /* domain group */
-	SID_NAME_DOMAIN,      /* domain sid */
-	SID_NAME_ALIAS,       /* local group */
-	SID_NAME_WKN_GRP,     /* well-known group */
-	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
-	SID_NAME_INVALID,     /* invalid account */
-	SID_NAME_UNKNOWN,     /* unknown sid type */
-	SID_NAME_COMPUTER     /* sid for a computer */
-};
-
 #define LOOKUP_NAME_ISOLATED 1	/* Look up unqualified names */
 #define LOOKUP_NAME_REMOTE   2  /* Ask others */
 #define LOOKUP_NAME_ALL (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
@@ -312,6 +298,7 @@ struct id_map {
 #include "librpc/ndr/misc.h"
 #include "librpc/ndr/security.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/wkssvc.h"
 
 struct lsa_dom_info {
