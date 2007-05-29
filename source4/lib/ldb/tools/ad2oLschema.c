@@ -195,9 +195,11 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
+	const char *no_attrs[] = { NULL };
 	struct ldb_dn *schemadn;
 	struct ldb_dn *basedn = ldb_dn_new(mem_ctx, ldb, NULL);
 	struct ldb_result *rootdse_res;
+	struct ldb_result *schema_res;
 	int ldb_ret;
 	if (!basedn) {
 		return NULL;
@@ -206,8 +208,25 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	/* Search for rootdse */
 	ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, rootdse_attrs, &rootdse_res);
 	if (ldb_ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
-		return NULL;
+		ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, 
+				 "(&(objectClass=dMD)(cn=Schema))", 
+				 no_attrs, &schema_res);
+		if (ldb_ret) {
+			printf("cn=Schema Search failed: %s\n", ldb_errstring(ldb));
+			return NULL;
+		}
+
+		talloc_steal(mem_ctx, schema_res);
+
+		if (schema_res->count != 1) {
+			printf("Failed to find rootDSE");
+			return NULL;
+		}
+		
+		schemadn = talloc_steal(mem_ctx, schema_res->msgs[0]->dn);
+		talloc_free(schema_res);
+		return schemadn;
+		
 	}
 	
 	talloc_steal(mem_ctx, rootdse_res);

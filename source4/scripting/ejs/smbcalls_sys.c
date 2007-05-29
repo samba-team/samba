@@ -305,6 +305,33 @@ static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
 	return 0;
 }
 
+/*
+  mkdir()
+  usage:
+     ok = sys.mkdir(dirname, mode);
+*/
+static int ejs_sys_mkdir(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	BOOL ret;
+	char *name;
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "sys_mkdir invalid arguments, need mkdir(dirname, mode)");
+		return -1;
+	}
+	if (!mprVarIsString(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "sys_mkdir dirname not a string");
+		return -1;
+	}
+	if (!mprVarIsNumber(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "sys_mkdir mode not a number");
+		return -1;
+	}
+	mprVarToString(&name, 0, NULL, argv[0]);
+	ret = mkdir(name, mprVarToNumber(argv[1]));
+	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	return 0;
+}
+
 
 /*
   return fields of a stat() call
@@ -438,6 +465,7 @@ static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(obj, "ntgmtime", ejs_sys_ntgmtime);
 	mprSetCFunction(obj, "ldaptime", ejs_sys_ldaptime);
 	mprSetCFunction(obj, "httptime", ejs_sys_httptime);
+	mprSetCFunction(obj, "mkdir", ejs_sys_mkdir);
 	mprSetStringCFunction(obj, "unlink", ejs_sys_unlink);
 	mprSetStringCFunction(obj, "file_load", ejs_sys_file_load);
 	mprSetStringCFunction(obj, "file_save", ejs_sys_file_save);

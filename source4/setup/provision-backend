@@ -1,0 +1,114 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	provision a Samba4 server
+	Copyright Andrew Tridgell 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
+		'realm=s',
+		'host-name=s',
+		'ldap-manager-pass=s',
+		'root=s',
+		'quiet',
+		'ldap-backend-type=s');
+
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+sys = sys_init();
+
+libinclude("base.js");
+libinclude("provision.js");
+
+/*
+  print a message if quiet is not set
+*/
+function message()
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 provisioning
+
+provision [options]
+ --realm	REALM		set realm
+ --host-name	HOSTNAME	set hostname
+ --ldap-manager-pass	PASSWORD	choose LDAP Manager password (otherwise random)
+ --root         USERNAME	choose 'root' unix username
+ --quiet			Be quiet
+ --ldap-backend-type LDAPSERVER     Select either \"openldap\" or \"fedora-ds\" as a target to configure
+ --ldap-module= MODULE          LDB mapping module to use for the LDAP backend
+You must provide at least a realm and ldap-backend-type
+
+");
+	exit(1);
+}
+
+if (options['host-name'] == undefined) {
+	options['host-name'] = hostname();
+}
+
+/*
+   main program
+*/
+if (options["realm"] == undefined ||
+    options["ldap-backend-type"] == undefined ||
+    options["host-name"] == undefined) {
+	ShowHelp();
+}
+
+/* cope with an initially blank smb.conf */
+var lp = loadparm_init();
+lp.set("realm", options.realm);
+lp.reload();
+
+var subobj = provision_guess();
+for (r in options) {
+	var key = strupper(join("", split("-", r)));
+	subobj[key] = options[r];
+}
+
+var ldapbackend = (options["ldap-backend-type"] != undefined);
+
+var paths = provision_default_paths(subobj);
+provision_fix_subobj(subobj, message, paths);
+message("Provisioning LDAP backend for %s in realm %s into %s\n", subobj.HOSTNAME, subobj.REALM, subobj.LDAPDIR);
+message("Using LDAP Manager password: %s\n", subobj.LDAPMANAGERPASS);
+
+var tmp_schema_ldb = subobj.LDAPDIR + "/schema-tmp.ldb";
+sys.mkdir(subobj.LDAPDIR, 0700);
+
+provision_schema(subobj, message, tmp_schema_ldb, paths);
+
+var mapping;
+var ext;
+if (options["ldap-backend-type"] == "fedora-ds") {
+	mapping = "schema-map-fedora-ds-1.0";
+	ext = "ldif";
+	setup_file("fedorads.inf", message, subobj.LDAPDIR + "/fedorads.inf", subobj);
+	setup_file("fedorads-partitions.ldif", message, subobj.LDAPDIR + "/fedorads-partitions.ldif", subobj);
+} else if (options["ldap-backend-type"] == "openldap") {
+	mapping = "schema-map-openldap-2.3";
+	ext = "schema";
+	setup_file("slapd.conf", message, subobj.LDAPDIR + "/slapd.conf", subobj);
+}
+message("ad2oLschema --option=convert:target=" + options["ldap-backend-type"] + " -I " + lp.get("setup directory") + "/" + mapping + " -H tdb://" + tmp_schema_ldb + " -O " + subobj.LDAPDIR + "/backend-schema." + ext + "\n");
+
+message("All OK\n");
+return 0;
