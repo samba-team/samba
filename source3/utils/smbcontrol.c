@@ -698,6 +698,34 @@ static BOOL do_closeshare(struct messaging_context *msg_ctx,
 			    strlen(argv[1]) + 1);
 }
 
+/* force a blocking lock retry */
+
+static BOOL do_lockretry(struct messaging_context *msg_ctx,
+			 const struct server_id pid,
+			 const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> lockretry\n");
+		return False;
+	}
+
+	return send_message(msg_ctx, pid, MSG_SMB_UNLOCK, NULL, 0);
+}
+
+/* force a validation of all brl entries, including re-sends. */
+
+static BOOL do_brl_revalidate(struct messaging_context *msg_ctx,
+			      const struct server_id pid,
+			      const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> brl-revalidate\n");
+		return False;
+	}
+
+	return send_message(msg_ctx, pid, MSG_SMB_BRL_VALIDATE, NULL, 0);
+}
+
 /* Force a SAM synchronisation */
 
 static BOOL do_samsync(struct messaging_context *msg_ctx,
@@ -1037,6 +1065,8 @@ static const struct {
 	{ "debuglevel", do_debuglevel, "Display current debuglevels" },
 	{ "printnotify", do_printnotify, "Send a print notify message" },
 	{ "close-share", do_closeshare, "Forcibly disconnect a share" },
+	{ "lockretry", do_lockretry, "Force a blocking lock retry" },
+	{ "brl-revalidate", do_brl_revalidate, "Revalidate all brl entries" },
         { "samsync", do_samsync, "Initiate SAM synchronisation" },
         { "samrepl", do_samrepl, "Initiate SAM replication" },
 	{ "pool-usage", do_poolusage, "Display talloc memory usage" },

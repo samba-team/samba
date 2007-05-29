@@ -199,7 +199,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	status = messaging_tdb_init(ctx, ctx, &ctx->local);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("message_init failed: %s\n", nt_errstr(status)));
+		DEBUG(0, ("messaging_tdb_init failed: %s\n", nt_errstr(status)));
 		TALLOC_FREE(ctx);
 	}
 
