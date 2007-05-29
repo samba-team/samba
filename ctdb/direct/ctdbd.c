@@ -43,7 +43,7 @@ static struct {
 	const char *public_interface;
 	const char *event_script;
 } options = {
-	.event_script = "/etc/ctdb/events"
+	.event_script = ETCDIR "/ctdb/events"
 };
 
 

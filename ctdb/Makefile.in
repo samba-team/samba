@@ -10,6 +10,7 @@ bindir = @bindir@
 localstatedir = @localstatedir@
 VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
+etcdir = @sysconfdir@
 builddir = @builddir@
 DESTDIR = /
 EXTRA_OBJ=@EXTRA_OBJ@
@@ -20,7 +21,7 @@ POPT_OBJ = @POPT_OBJ@
 
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
-	-DVARDIR=\"$(localstatedir)\" -DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
+	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" -DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
 
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@
 

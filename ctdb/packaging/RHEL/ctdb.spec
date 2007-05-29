@@ -62,6 +62,7 @@ make DESTDIR=$RPM_BUILD_ROOT install
 
 install -m644 setup/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 setup/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
+install -m755 tools/events $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events
 
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;

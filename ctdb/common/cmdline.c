@@ -39,7 +39,7 @@ static struct {
 	const char *logfile;
 	const char *events;
 } ctdb_cmdline = {
-	.nlist = "/etc/ctdb/nodes",
+	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
 	.myaddress = NULL,
 	.socketname = CTDB_PATH,
