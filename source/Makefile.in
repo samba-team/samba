@@ -23,10 +23,10 @@ SHLD=@SHLD@
 CFLAGS=@CFLAGS@
 CPPFLAGS=-DHAVE_CONFIG_H @CPPFLAGS@
 EXEEXT=@EXEEXT@
+LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AR=@AR@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
 WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
-LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AWK=@AWK@
 PICFLAG=@PICFLAG@
 DYNEXP=@DYNEXP@
@@ -197,10 +197,12 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 ######################################################################
 
 TDBBASE_OBJ = lib/tdb/common/tdb.o lib/tdb/common/dump.o lib/tdb/common/error.o \
-	lib/tdb/common/freelist.o lib/tdb/common/freelistcheck.o lib/tdb/common/io.o lib/tdb/common/lock.o \
-	lib/tdb/common/open.o lib/tdb/common/transaction.o lib/tdb/common/traverse.o
+	lib/tdb/common/freelist.o lib/tdb/common/freelistcheck.o \
+	lib/tdb/common/io.o lib/tdb/common/lock.o \
+	lib/tdb/common/open.o lib/tdb/common/transaction.o \
+	lib/tdb/common/traverse.o
 
-TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o \
+TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o\
 	lib/dbwrap.o lib/dbwrap_tdb.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
@@ -220,6 +222,7 @@ SERVER_MUTEX_OBJ = lib/server_mutex.o
 ERRORMAP_OBJ = libsmb/errormap.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
+
 
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
@@ -241,6 +244,7 @@ LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
 SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 
 TALLOC_OBJ = lib/talloc/talloc.o
+
 
 LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ) \
 	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o
@@ -456,8 +460,8 @@ AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
 AUTH_SCRIPT_OBJ = auth/auth_script.o
 
-AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
-	   auth/auth_ntlmssp.o \
+AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
+	   auth/auth_compat.o auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
@@ -726,8 +730,8 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
              rpcclient/cmd_lsarpc.o \
+             rpcclient/cmd_wkssvc.o \
              rpcclient/cmd_samr.o \
-	     rpcclient/cmd_wkssvc.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
@@ -769,7 +773,7 @@ IDMAP_OBJ     = nsswitch/idmap.o nsswitch/idmap_cache.o nsswitch/idmap_util.o @I
 
 NSS_INFO_OBJ = nsswitch/nss_info.o @NSS_INFO_STATIC@
 
-IDMAP_NSS_OBJ = sam/idmap_nss.o
+IDMAP_NSS_OBJ = sam/idmap_nss.o @IDMAP_NSS_STATIC@
 
 WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
@@ -790,7 +794,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_async.o \
 		nsswitch/winbindd_creds.o \
 		nsswitch/winbindd_cred_cache.o \
-		nsswitch/winbindd_ccache_access.o
+		nsswitch/winbindd_ccache_access.o \
+		auth/token_util.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \

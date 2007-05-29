@@ -60,7 +60,7 @@ static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, 
 
 	_pam_get_item(pamh, PAM_SERVICE, &service);
 
-	format2 = (char *)malloc(strlen(MODULE_NAME)+strlen(format)+strlen(service)+5);
+	format2 = malloc(strlen(MODULE_NAME)+strlen(format)+strlen(service)+5);
 	if (format2 == NULL) {
 		/* what else todo ? */
 		vsyslog(err, format, args);

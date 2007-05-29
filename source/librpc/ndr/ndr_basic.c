@@ -479,12 +479,17 @@ NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 /*
   push a 'simple' full non-zero value if a pointer is non-NULL, otherwise 0
 */
-NTSTATUS ndr_push_sptr_ptr(struct ndr_push *ndr, const void *p)
+NTSTATUS ndr_push_full_ptr(struct ndr_push *ndr, const void *p)
 {
 	uint32_t ptr = 0;
 	if (p) {
-		ndr->ptr_count++;
-		ptr = ndr->ptr_count;
+		/* Check if the pointer already exists and has an id */
+		ptr = ndr_token_peek(&ndr->full_ptr_list, p);
+		if (ptr == 0) {
+			ndr->ptr_count++;
+			ptr = ndr->ptr_count;
+			ndr_token_store(ndr, &ndr->full_ptr_list, p, ptr);
+		}
 	}
 	return ndr_push_uint32(ndr, NDR_SCALARS, ptr);
 }
@@ -572,6 +577,43 @@ NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, int ndr_flags, time_t *t)
 	return NT_STATUS_OK;
 }
 
+/*
+  pull a ipv4address
+*/
+NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **address)
+{
+	struct in_addr in;
+	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &in.s_addr));
+	in.s_addr = htonl(in.s_addr);
+	*address = talloc_strdup(ndr->current_mem_ctx, inet_ntoa(in));
+	NT_STATUS_HAVE_NO_MEMORY(*address);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a ipv4address
+*/
+NTSTATUS ndr_push_ipv4address(struct ndr_push *ndr, int ndr_flags, const char *address)
+{
+	uint32_t addr;
+	if (!is_ipaddress(address)) {
+		return ndr_push_error(ndr, NDR_ERR_IPV4ADDRESS,
+				      "Invalid IPv4 address: '%s'", 
+				      address);
+	}
+	addr = inet_addr(address);
+	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, htonl(addr)));
+	return NT_STATUS_OK;
+}
+
+/*
+  print a ipv4address
+*/
+void ndr_print_ipv4address(struct ndr_print *ndr, const char *name, 
+			   const char *address)
+{
+	ndr->print(ndr, "%-25s: %s", name, address);
+}
 
 void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 {
@@ -799,5 +841,6 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob
 
 uint32_t ndr_size_DATA_BLOB(int ret, const DATA_BLOB *data, int flags)
 {
+	if (!data) return ret;
 	return ret + data->length;
 }

@@ -1298,10 +1298,10 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;		
 	}
 	
-
 	/* BUILTIN */
 
-	if (sid_peek_check_rid(&global_sid_Builtin, sid, &rid)) {
+	if (sid_check_is_in_builtin(sid) ||
+	    sid_check_is_in_wellknown_domain(sid)) {
 		/* Here we only have aliases */
 		GROUP_MAP map;
 		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
@@ -1408,10 +1408,10 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 }
 
 static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
-					TALLOC_CTX *mem_ctx,
-					const DOM_SID *group,
-					uint32 **pp_member_rids,
-					size_t *p_num_members)
+					       TALLOC_CTX *mem_ctx,
+					       const DOM_SID *group,
+					       uint32 **pp_member_rids,
+					       size_t *p_num_members)
 {
 	gid_t gid;
 	uid_t *uids;
@@ -1450,11 +1450,11 @@ static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 }
 
 static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
-					    TALLOC_CTX *mem_ctx,
-					    struct samu *user,
-					    DOM_SID **pp_sids,
-					    gid_t **pp_gids,
-					    size_t *p_num_groups)
+						   TALLOC_CTX *mem_ctx,
+						   struct samu *user,
+						   DOM_SID **pp_sids,
+						   gid_t **pp_gids,
+						   size_t *p_num_groups)
 {
 	size_t i;
 	gid_t gid;
@@ -1589,11 +1589,11 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 }
 
 static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
-				 const DOM_SID *domain_sid,
-				 int num_rids,
-				 uint32 *rids,
-				 const char **names,
-				 enum lsa_SidType *attrs)
+					const DOM_SID *domain_sid,
+					int num_rids,
+					uint32 *rids,
+					const char **names,
+					enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;
@@ -1653,11 +1653,11 @@ static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 
 #if 0
 static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
-				  const DOM_SID *domain_sid,
-				  int num_names,
-				  const char **names,
-				  uint32 *rids,
-				  enum lsa_SidType *attrs)
+					 const DOM_SID *domain_sid,
+					 int num_names,
+					 const char **names,
+					 uint32 *rids,
+					 enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;

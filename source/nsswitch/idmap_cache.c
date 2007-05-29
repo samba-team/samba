@@ -328,8 +328,8 @@ BOOL idmap_cache_is_negative(const char *val)
 NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
-	time_t t;
 	TDB_DATA databuf;
+	time_t t;
 	char *sidkey;
 	char *endptr;
 	struct winbindd_domain *our_domain = find_our_domain();	
@@ -420,7 +420,7 @@ done:
 
 /* search the cahce for the ID an return a mapping if found *
  *
- * 3 cases are possible
+ * 4 cases are possible
  *
  * 1 map found
  * 	in this case id->status = ID_MAPPED and NT_STATUS_OK is returned
@@ -436,8 +436,8 @@ done:
 NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 {
 	NTSTATUS ret;
-	time_t t;
 	TDB_DATA databuf;
+	time_t t;
 	char *idkey;
 	char *endptr;
 	struct winbindd_domain *our_domain = find_our_domain();	

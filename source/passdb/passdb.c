@@ -550,7 +550,7 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
+BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 			    enum lsa_SidType *type)
 {
 	GROUP_MAP map;
@@ -561,7 +561,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 	   name "None" on Windows.  You will get an error that 
 	   the group already exists. */
 	   
-	if ( strequal( user, "None" ) ) {
+	if ( strequal( name, "None" ) ) {
 		*rid = DOMAIN_GROUP_RID_USERS;
 		*type = SID_NAME_DOM_GRP;
 		
@@ -581,7 +581,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 		}
 	
 		become_root();
-		ret =  pdb_getsampwnam(sam_account, user);
+		ret =  pdb_getsampwnam(sam_account, name);
 		unbecome_root();
 
 		if (ret) {
@@ -593,7 +593,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 		if (ret) {
 			if (!sid_check_is_in_our_domain(&user_sid)) {
 				DEBUG(0, ("User %s with invalid SID %s in passdb\n",
-					  user, sid_string_static(&user_sid)));
+					  name, sid_string_static(&user_sid)));
 				return False;
 			}
 
@@ -608,7 +608,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 	 */
 
 	become_root();
-	ret = pdb_getgrnam(&map, user);
+	ret = pdb_getgrnam(&map, name);
 	unbecome_root();
 
  	if (!ret) {
@@ -618,7 +618,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 	/* BUILTIN groups are looked up elsewhere */
 	if (!sid_check_is_in_our_domain(&map.sid)) {
 		DEBUG(10, ("Found group %s (%s) not in our domain -- "
-			   "ignoring.", user,
+			   "ignoring.", name,
 			   sid_string_static(&map.sid)));
 		return False;
 	}
@@ -1439,10 +1439,11 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 		  pdb_get_username(sampass), (uint32)LastBadPassword, duration*60, (uint32)time(NULL)));
 
 	if (LastBadPassword == (time_t)0) {
-		DEBUG(1,("pdb_update_autolock_flag: Account %s administratively locked out with no \
-bad password time. Leaving locked out.\n",
-			pdb_get_username(sampass) ));
-			return True;
+		DEBUG(1,("pdb_update_autolock_flag: Account %s "
+			 "administratively locked out with no bad password "
+			 "time. Leaving locked out.\n",
+			 pdb_get_username(sampass) ));
+		return True;
 	}
 
 	if ((time(NULL) > (LastBadPassword + convert_uint32_to_time_t(duration) * 60))) {

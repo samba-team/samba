@@ -1229,7 +1229,7 @@ static BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		}
 
 		/* This was ours, but it was not mapped.  Fail */
-		}
+	}
 
 	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
 	return False;
@@ -1288,12 +1288,12 @@ static BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 			*pgid = id.gid;
 			goto done;
 		}
-
+	
 		/* This was ours, but it was not mapped.  Fail */
 	}
 
 	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
-		return False;
+	return False;
 	
  done:
 	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_static(psid),
@@ -1325,7 +1325,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 			uid));
 		return;
 	}
-	
+
 	DEBUG(10,("uid %u -> sid %s\n",
 		  (unsigned int)uid, sid_string_static(psid)));
 
@@ -1340,7 +1340,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 void gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	ZERO_STRUCTP(psid);
-		
+
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return;
 
@@ -1399,7 +1399,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 			  sid_string_static(psid)));
 		return False;
 	}
-	
+
 	/* TODO: Here would be the place to allocate both a gid and a uid for
 	 * the SID in question */
 

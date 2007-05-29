@@ -99,7 +99,7 @@ static char* trustdom_cache_key(const char* name)
 
 /**
  * Store trusted domain in gencache as the domain name (key)
- * and ip address of domain controller (value)
+ * and trusted domain's SID (value)
  *
  * @param name trusted domain name
  * @param alt_name alternative trusted domain name (used in ADS domains)
@@ -152,7 +152,7 @@ BOOL trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
 
 
 /**
- * Fetch trusted domain's dc from the gencache.
+ * Fetch trusted domain's SID from the gencache.
  * This routine can also be used to check whether given
  * domain is currently trusted one.
  *
@@ -189,7 +189,7 @@ BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 		DEBUG(5, ("trusted domain %s found (%s)\n", name, value));
 	}
 
-	/* convert ip string representation into in_addr structure */
+	/* convert sid string representation into DOM_SID structure */
 	if(! string_to_sid(sid, value)) {
 		sid = NULL;
 		SAFE_FREE(value);
