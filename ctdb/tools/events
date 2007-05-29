@@ -1,0 +1,39 @@
+#!/bin/sh
+# sample event script for ctdb
+
+cmd="$1"
+shift
+
+case $cmd in 
+     takeip)
+	if [ $# != 3 ]; then
+	   echo "must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+	exec /sbin/ip add $ip/$maskbits dev $iface
+	exit 1
+	;;
+
+     releaseip)
+	if [ $# != 3 ]; then
+	   echo "must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+	exec /sbin/ip del $ip/$maskbits dev $iface
+	exit 1
+	;;
+
+     recovered)
+        # restart any services as necessary, like NFS
+	exit 0
+	;;
+esac
+
+echo "Invalid command $cmd"
+exit 1
