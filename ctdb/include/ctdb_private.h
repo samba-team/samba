@@ -821,7 +821,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 #define CHECK_CONTROL_DATA_SIZE(size) do { \
  if (indata.dsize != size) { \
 	 DEBUG(0,(__location__ " Invalid data size in opcode %u. Got %u expected %u\n", \
-		  opcode, indata.dsize, size));				\
+		  opcode, (unsigned)indata.dsize, (unsigned)size));	\
 	 return -1; \
  } \
  } while (0)

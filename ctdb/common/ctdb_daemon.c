@@ -142,9 +142,11 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 	}
 	res = ctdb_register_message_handler(ctdb, client, srvid, daemon_message_handler, client);
 	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", srvid));
+		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", 
+			 (unsigned long long)srvid));
 	} else {
-		DEBUG(2,(__location__ " Registered message handler for srvid=%llu\n", srvid));
+		DEBUG(2,(__location__ " Registered message handler for srvid=%llu\n", 
+			 (unsigned long long)srvid));
 	}
 	return res;
 }
@@ -789,7 +791,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	hdr = (struct ctdb_req_header *)talloc_size(mem_ctx, size);
 	if (hdr == NULL) {
 		DEBUG(0,("Unable to allocate packet for operation %u of length %u\n",
-			 operation, length));
+			 operation, (unsigned)length));
 		return NULL;
 	}
 	talloc_set_name_const(hdr, type);
@@ -825,7 +827,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 	hdr = (struct ctdb_req_header *)ctdb->methods->allocate_pkt(mem_ctx, size);
 	if (hdr == NULL) {
 		DEBUG(0,("Unable to allocate transport packet for operation %u of length %u\n",
-			 operation, length));
+			 operation, (unsigned)length));
 		return NULL;
 	}
 	talloc_set_name_const(hdr, type);

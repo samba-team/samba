@@ -79,7 +79,8 @@ static void ctdb_local_message_trigger(struct event_context *ev, struct timed_ev
 
 	res = ctdb_dispatch_message(m->ctdb, m->srvid, m->data);
 	if (res != 0) {
-		DEBUG(0, (__location__ " Failed to dispatch message for srvid=%llu\n", m->srvid));
+		DEBUG(0, (__location__ " Failed to dispatch message for srvid=%llu\n", 
+			  (unsigned long long)m->srvid));
 	}
 	talloc_free(m);
 }

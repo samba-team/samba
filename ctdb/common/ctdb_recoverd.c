@@ -286,7 +286,7 @@ static int vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb_node
 						 db_id, max_rsn+1);
 		if (ret != 0) {
 			DEBUG(0,(__location__ " Failed to set rsn on node %u to %llu\n",
-				 nodemap->nodes[i].vnn, max_rsn+1));
+				 nodemap->nodes[i].vnn, (unsigned long long)max_rsn+1));
 			return -1;
 		}
 	}
@@ -300,7 +300,7 @@ static int vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb_node
 						 db_id, max_rsn+1);
 		if (ret != 0) {
 			DEBUG(0,(__location__ " Failed to delete records on node %u with rsn below %llu\n",
-				 nodemap->nodes[i].vnn, max_rsn+1));
+				 nodemap->nodes[i].vnn, (unsigned long long)max_rsn+1));
 			return -1;
 		}
 	}

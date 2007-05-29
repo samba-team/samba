@@ -115,7 +115,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (cnt < sizeof(*hdr)) {
-		DEBUG(0,("Bad packet length %u in client\n", cnt));
+		DEBUG(0,("Bad packet length %u in client\n", (unsigned)cnt));
 		goto done;
 	}
 	if (cnt != hdr->length) {
@@ -527,7 +527,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	}
 	h->data    = data;
 
-	DEBUG(3,("ctdb_fetch_lock: key=%*.*s\n", key.dsize, key.dsize, 
+	DEBUG(3,("ctdb_fetch_lock: key=%*.*s\n", (int)key.dsize, (int)key.dsize, 
 		 (const char *)key.dptr));
 
 again:
@@ -823,7 +823,7 @@ int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ct
 
 	if (data.dsize != sizeof(struct ctdb_statistics)) {
 		DEBUG(0,(__location__ " Wrong statistics size %u - expected %u\n",
-			 data.dsize, sizeof(struct ctdb_statistics)));
+			 (unsigned)data.dsize, (unsigned)sizeof(struct ctdb_statistics)));
 		      return -1;
 	}
 
@@ -1330,7 +1330,7 @@ int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 	}
 	if (data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,("Bad control reply size in ctdb_get_debuglevel (got %u)\n",
-			      data.dsize));
+			 (unsigned)data.dsize));
 		return -1;
 	}
 	*level = *(uint32_t *)data.dptr;
@@ -1518,7 +1518,7 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 
 	if (data.dsize < sizeof(uint32_t) ||
 	    d->length != data.dsize) {
-		DEBUG(0,("Bad data size %u in traverse_handler\n", data.dsize));
+		DEBUG(0,("Bad data size %u in traverse_handler\n", (unsigned)data.dsize));
 		state->done = True;
 		return;
 	}

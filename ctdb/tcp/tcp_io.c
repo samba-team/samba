@@ -47,7 +47,8 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (cnt & (CTDB_TCP_ALIGNMENT-1)) {
-		DEBUG(0,(__location__ " Length 0x%x not multiple of alignment\n", cnt));
+		DEBUG(0,(__location__ " Length 0x%x not multiple of alignment\n", 
+			 (unsigned)cnt));
 		goto failed;
 	}
 

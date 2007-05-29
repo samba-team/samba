@@ -85,7 +85,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 
 	nread = read(queue->fd, queue->partial.data + queue->partial.length, num_ready);
 	if (nread <= 0) {
-		DEBUG(0,("read error nread=%d\n", nread));
+		DEBUG(0,("read error nread=%d\n", (int)nread));
 		goto failed;
 	}
 
@@ -135,7 +135,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 			queue->partial.data = talloc_memdup(queue, data, nread);
 			if (queue->partial.data == NULL) {
 				DEBUG(0,("read error memdup partial failed for %u\n", 
-					 nread));
+					 (unsigned)nread));
 				goto failed;
 			}
 			queue->partial.length = nread;
