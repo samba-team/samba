@@ -155,6 +155,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
+	struct file_id id;
 
 	/*
 	 * Lock the share entries, and determine if we should delete
@@ -162,7 +163,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
+	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
@@ -258,15 +259,17 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		goto done;
 	}
 
-	if(sbuf.st_dev != fsp->dev || sbuf.st_ino != fsp->inode) {
+	id = file_id_sbuf(&sbuf);
+
+	if (!file_id_equal(&fsp->file_id, &id)) {
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and dev and/or inode does not match\n",
 			 fsp->fsp_name ));
-		DEBUG(5,("close_remove_share_mode: file %s. stored dev = %x, "
-			 "inode = %.0f stat dev = %x, inode = %.0f\n",
+		DEBUG(5,("close_remove_share_mode: file %s. stored file_id %s, "
+			 "stat file_id %s\n",
 			 fsp->fsp_name,
-			 (unsigned int)fsp->dev, (double)fsp->inode,
-			 (unsigned int)sbuf.st_dev, (double)sbuf.st_ino ));
+			 file_id_static_string(&fsp->file_id),
+			 file_id_static_string2(&id)));
 		/*
 		 * Don't save the errno here, we ignore this error
 		 */
@@ -405,7 +408,7 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
+	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));

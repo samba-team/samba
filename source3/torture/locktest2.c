@@ -136,13 +136,13 @@ static BOOL try_unlock(struct cli_state *c, int fstype,
 	return False;
 }	
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct server_id pid, 
+static void print_brl(struct file_id id, struct server_id pid, 
 		      enum brl_type lock_type,
 		      enum brl_flavour lock_flav,
 		      br_off start, br_off size)
 {
-	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
-	       (int)procid_to_pid(&pid), (int)dev, (int)ino, 
+	printf("%6d   %s    %s  %.0f:%.0f(%.0f)\n", 
+	       (int)procid_to_pid(&pid), file_id_static_string(&id),
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)start+size-1,(double)size);
 

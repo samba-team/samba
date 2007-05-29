@@ -318,28 +318,19 @@ BOOL is_posix_locked(files_struct *fsp,
 /* The key used in the in-memory POSIX databases. */
 
 struct lock_ref_count_key {
-	SMB_DEV_T device;
-	SMB_INO_T inode;
+	struct file_id id;
 	char r;
-}; 
-
-struct fd_key {
-	SMB_DEV_T device;
-	SMB_INO_T inode;
 }; 
 
 /*******************************************************************
  Form a static locking key for a dev/inode pair for the fd array.
 ******************************************************************/
 
-static TDB_DATA fd_array_key(SMB_DEV_T dev, SMB_INO_T inode)
+static TDB_DATA fd_array_key(struct file_id id)
 {
-	static struct fd_key key;
+	static struct file_id key;
 	TDB_DATA kbuf;
-
-	memset(&key, '\0', sizeof(key));
-	key.device = dev;
-	key.inode = inode;
+	key = id;
 	kbuf.dptr = (uint8 *)&key;
 	kbuf.dsize = sizeof(key);
 	return kbuf;
@@ -349,14 +340,13 @@ static TDB_DATA fd_array_key(SMB_DEV_T dev, SMB_INO_T inode)
  Form a static locking key for a dev/inode pair for the lock ref count
 ******************************************************************/
 
-static TDB_DATA locking_ref_count_key(SMB_DEV_T dev, SMB_INO_T inode)
+static TDB_DATA locking_ref_count_key(struct file_id id)
 {
 	static struct lock_ref_count_key key;
 	TDB_DATA kbuf;
 
 	memset(&key, '\0', sizeof(key));
-	key.device = dev;
-	key.inode = inode;
+	key.id = id;
 	key.r = 'r';
 	kbuf.dptr = (uint8 *)&key;
 	kbuf.dsize = sizeof(key);
@@ -369,7 +359,7 @@ static TDB_DATA locking_ref_count_key(SMB_DEV_T dev, SMB_INO_T inode)
 
 static TDB_DATA fd_array_key_fsp(files_struct *fsp)
 {
-	return fd_array_key(fsp->dev, fsp->inode);
+	return fd_array_key(fsp->file_id);
 }
 
 /*******************************************************************
@@ -378,7 +368,7 @@ static TDB_DATA fd_array_key_fsp(files_struct *fsp)
 
 static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp)
 {
-	return locking_ref_count_key(fsp->dev, fsp->inode);
+	return locking_ref_count_key(fsp->file_id);
 }
 
 /*******************************************************************
