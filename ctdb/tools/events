@@ -13,8 +13,11 @@ case $cmd in
 	iface=$1
 	ip=$2
 	maskbits=$3
-	exec /sbin/ip addr add $ip/$maskbits dev $iface
-	exit 1
+	/sbin/ip addr add $ip/$maskbits dev $iface || {
+		 echo "Failed to add $ip/$maskbits on dev $iface"
+		 exit 1
+	}
+	exit 0
 	;;
 
      releaseip)
@@ -25,8 +28,11 @@ case $cmd in
 	iface=$1
 	ip=$2
 	maskbits=$3
-	exec /sbin/ip addr del $ip dev $iface
-	exit 1
+	/sbin/ip addr del $ip dev $iface || {
+		 echo "Failed to del $ip on dev $iface"
+		 exit 1
+	}
+	exit 0
 	;;
 
      recovered)
