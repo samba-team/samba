@@ -151,6 +151,9 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 		ctdb_set_error(ctdb, "Failed to load nlist '%s'\n", nlist);
 		return -1;
 	}
+	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
+		nlines--;
+	}
 
 	for (i=0;i<nlines;i++) {
 		if (ctdb_add_node(ctdb, lines[i]) != 0) {

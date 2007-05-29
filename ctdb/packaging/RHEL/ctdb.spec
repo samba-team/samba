@@ -43,6 +43,8 @@ CC="gcc"
 
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
+	--sysconfdir=%{_sysconfdir} \
+	--localstatedir="/var"
 
 make showflags
 make   

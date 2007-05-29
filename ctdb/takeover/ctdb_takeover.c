@@ -237,6 +237,9 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 		ctdb_set_error(ctdb, "Failed to load public address list '%s'\n", alist);
 		return -1;
 	}
+	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
+		nlines--;
+	}
 
 	if (nlines != ctdb->num_nodes) {
 		DEBUG(0,("Number of lines in %s does not match number of nodes!\n", alist));
