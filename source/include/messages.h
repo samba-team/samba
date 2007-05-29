@@ -83,6 +83,11 @@
  * Samba4 compatibility
  */
 #define MSG_PVFS_NOTIFY			0x0310
+/*
+ * cluster reconfigure events
+ */
+#define MSG_SMB_BRL_VALIDATE		0x0311
+#define MSG_SMB_RELEASE_IP		0x0312
 
 /* winbind messages */
 #define MSG_WINBIND_FINISHED		0x0401
