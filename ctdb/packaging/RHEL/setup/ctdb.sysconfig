@@ -1,7 +1,8 @@
 # Options to ctdbd
-CLUSTER_NODES=/etc/ctdb/nodes
-PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
-PUBLIC_INTERFACE=eth0
-#LOGFILE=/var/log/samba/log.ctdb
-#DEBUGLEVEL=0
 
+# DBDIR=/var/ctdb
+# NODES=/etc/ctdb/nodes
+# PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
+# PUBLIC_INTERFACE=eth0
+# LOGFILE=/var/log/log.ctdb
+# DEBUGLEVEL=0
