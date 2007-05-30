@@ -1,5 +1,7 @@
 2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/keytab_keyfile.c: Spelling.
+
 	* kdc/pkinit.c: Allow matching by MS UPN SAN, note that this delta
 	doesn't deal with case of realm.
 	
