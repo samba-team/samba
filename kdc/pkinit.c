@@ -786,6 +786,16 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (ret) 
 	goto out;
 
+    if (client_params->type == PKINIT_COMPAT_WIN2K) {
+	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
+					 &signed_data,
+					 &buf);
+	if (ret)
+	    goto out;
+	krb5_data_free(&signed_data);
+	signed_data = buf;
+    }
+
     ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
 			       0,
 			       client_params->cert,
