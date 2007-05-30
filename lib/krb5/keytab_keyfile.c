@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002, 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -350,7 +350,7 @@ akf_add_entry(krb5_context context,
 	for (i = 0; i < len; i++) {
 	    ret = krb5_ret_int32(sp, &kvno);
 	    if (ret) {
-		krb5_set_error_string (context, "Failed got get kvno ");
+		krb5_set_error_string (context, "Failed to get kvno ");
 		goto out;
 	    }
 	    if(krb5_storage_seek(sp, 8, SEEK_CUR) < 0) {
