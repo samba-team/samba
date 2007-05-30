@@ -1,21 +1,15 @@
+#
 # Set the database in memory cache size.
 #
 set_cachesize   0       524288        0
 
-
 #
-# Set database flags (this is a test environment, we don't need to fsync()).
-#		
-set_flags       DB_TXN_NOSYNC
-
-#
- Set log values.
+# Set log values.
 #
 set_lg_regionmax        104857
 set_lg_max              1048576
 set_lg_bsize            209715
 set_lg_dir              ${LDAPDBDIR}/bdb-logs
-
 
 #
 # Set temporary file creation directory.
