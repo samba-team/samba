@@ -28,26 +28,26 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static BOOL proxy_echo_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	rpcecho_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns)
+		return False;
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("ECHO function table not sorted\n");
+	}
+
+	return fns[opnum].fn(p);
+}
+
 static BOOL api_add_one(pipes_struct *p)
 {
-	ECHO_Q_ADD_ONE q_u;
-	ECHO_R_ADD_ONE r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!echo_io_q_add_one("", &q_u, data, 0))
-		return False;
-	
-	_echo_add_one(p, &q_u, &r_u);
-	
-	if(!echo_io_r_add_one("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_echo_call( p, DCERPC_ECHO_ADDONE );
 }
 
 static BOOL api_echo_data(pipes_struct *p)

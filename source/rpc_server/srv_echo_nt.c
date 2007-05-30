@@ -30,11 +30,11 @@
 
 /* Add one to the input and return it */
 
-void _echo_add_one(pipes_struct *p, ECHO_Q_ADD_ONE *q_u, ECHO_R_ADD_ONE *r_u)
+void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r )
 {
 	DEBUG(10, ("_echo_add_one\n"));
 
-	r_u->response = q_u->request + 1;
+	*r->out.out_data = r->in.in_data + 1;	
 }
 
 /* Echo back an array of data */
@@ -83,6 +83,60 @@ void _source_data(pipes_struct *p, ECHO_Q_SOURCE_DATA *q_u,
 
 	for (i = 0; i < r_u->size; i++)
 		r_u->data[i] = i & 0xff;
+}
+
+void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r)
+{
+	p->rng_fault_state = True;
+	return;
+}
+
+void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r)
+{
+	p->rng_fault_state = True;
+	return;
+}
+
+void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r)
+{
+	p->rng_fault_state = True;
+	return;
+}
+
+void _echo_TestCall(pipes_struct *p, struct echo_TestCall *r)
+{
+	p->rng_fault_state = True;
+	return;
+}
+
+NTSTATUS _echo_TestCall2(pipes_struct *p, struct echo_TestCall2 *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_OK;
+}
+
+uint32 _echo_TestSleep(pipes_struct *p, struct echo_TestSleep *r)
+{
+	p->rng_fault_state = True;
+	return 0;
+}
+
+void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r)
+{
+	p->rng_fault_state = True;
+	return;
+}
+
+void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r)
+{
+	p->rng_fault_state = True;
+	return;
+}
+
+uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r)
+{
+	p->rng_fault_state = True;
+	return 0;
 }
 
 #endif /* DEVELOPER */
