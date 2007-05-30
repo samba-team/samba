@@ -66,6 +66,9 @@ make DESTDIR=$RPM_BUILD_ROOT install
 install -m644 setup/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 setup/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 install -m755 tools/events $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events
+install -m755 tools/onnode.ssh $RPM_BUILD_ROOT%{_bindir}
+install -m755 tools/onnode.rsh $RPM_BUILD_ROOT%{_bindir}
+ln -sf %{_bindir}/onnode.ssh onnode
 
 # unfortunately samba3 needs ctdb_private.h too
 install -m644 include/ctdb_private.h %{_includedir}/ctdb_private.h
