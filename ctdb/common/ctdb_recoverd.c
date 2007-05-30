@@ -972,6 +972,10 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	close(fd[1]);
 
+	/* we need a new event context */
+	talloc_free(ctdb->ev);
+	ctdb->ev = event_context_init(ctdb);
+
 	event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 		     ctdb_recoverd_parent, &fd[0]);	
 

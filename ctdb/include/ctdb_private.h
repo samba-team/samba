@@ -129,6 +129,7 @@ struct ctdb_node {
   transport specific methods
 */
 struct ctdb_methods {
+	int (*initialise)(struct ctdb_context *); /* initialise transport structures */	
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
@@ -949,6 +950,9 @@ int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+int ctdb_event_script_callback(struct ctdb_context *ctdb, 
+			       void (*callback)(struct ctdb_context *, int),
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 

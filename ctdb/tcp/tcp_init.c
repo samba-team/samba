@@ -46,9 +46,9 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 }
 
 /*
-  start the protocol going
+  initialise transport structures
 */
-static int ctdb_tcp_start(struct ctdb_context *ctdb)
+static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 {
 	int i;
 
@@ -59,6 +59,16 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 		}
 	}
 	
+	return 0;
+}
+
+/*
+  start the protocol going
+*/
+static int ctdb_tcp_start(struct ctdb_context *ctdb)
+{
+	int i;
+
 	/* listen on our own address */
 	if (ctdb_tcp_listen(ctdb) != 0) return -1;
 
@@ -90,6 +100,7 @@ static void *ctdb_tcp_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size)
 
 
 static const struct ctdb_methods ctdb_tcp_methods = {
+	.initialise   = ctdb_tcp_initialise,
 	.start        = ctdb_tcp_start,
 	.queue_pkt    = ctdb_tcp_queue_pkt,
 	.add_node     = ctdb_tcp_add_node,

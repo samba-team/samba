@@ -70,9 +70,9 @@ static int ctdb_ibw_add_node(struct ctdb_node *node)
 }
 
 /*
- * Start infiniband
+ * initialise infiniband
  */
-static int ctdb_ibw_start(struct ctdb_context *ctdb)
+static int ctdb_ibw_initialise(struct ctdb_context *ctdb)
 {
 	int i, ret;
 
@@ -87,6 +87,17 @@ static int ctdb_ibw_start(struct ctdb_context *ctdb)
 			return -1;
 		}
 	}
+
+	return 0;
+}
+
+
+/*
+ * Start infiniband
+ */
+static int ctdb_ibw_start(struct ctdb_context *ctdb)
+{
+	int i, ret;
 
 	/* listen on our own address */
 	if (ctdb_ibw_listen(ctdb, 10)) /* TODO: backlog as param */
@@ -190,6 +201,7 @@ static int ctdb_ibw_stop(struct ctdb_context *cctx)
 #endif /* __NOTDEF__ */
 
 static const struct ctdb_methods ctdb_ibw_methods = {
+	.initialise= ctdb_ibw_initialise,
 	.start     = ctdb_ibw_start,
 	.queue_pkt = ctdb_ibw_queue_pkt,
 	.add_node = ctdb_ibw_add_node,

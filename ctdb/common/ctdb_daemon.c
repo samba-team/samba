@@ -31,6 +31,28 @@
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
+/* called when the "startup" event script has finished */
+static void ctdb_start_transport(struct ctdb_context *ctdb, int status)
+{
+	if (status != 0) {
+		DEBUG(0,("startup event failed!\n"));
+		ctdb_fatal(ctdb, "startup event script failed");		
+	}
+
+	/* start the transport running */
+	if (ctdb->methods->start(ctdb) != 0) {
+		DEBUG(0,("transport failed to start!\n"));
+		ctdb_fatal(ctdb, "transport failed to start");
+	}
+
+	/* start the recovery daemon process */
+	if (ctdb_start_recoverd(ctdb) != 0) {
+		DEBUG(0,("Failed to start recovery daemon\n"));
+		exit(11);
+	}
+}
+
+/* go into main ctdb loop */
 static void ctdb_main_loop(struct ctdb_context *ctdb)
 {
 	int ret = -1;
@@ -50,16 +72,10 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 		return;
 	}
 
-	ret = ctdb_event_script(ctdb, "startup");
-	if (ret != 0) {
-		DEBUG(0,("Failed startup event script\n"));
-		return;
-	}
-
-	/* start the transport running */
-	if (ctdb->methods->start(ctdb) != 0) {
-		DEBUG(0,("transport failed to start!\n"));
-		ctdb_fatal(ctdb, "transport failed to start");
+	/* initialise the transport  */
+	if (ctdb->methods->initialise(ctdb) != 0) {
+		DEBUG(0,("transport failed to initialise!\n"));
+		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
 
 	/* tell all other nodes we've just started up */
@@ -67,6 +83,12 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 				 0, CTDB_CONTROL_STARTUP, 0,
 				 CTDB_CTRL_FLAG_NOREPLY,
 				 tdb_null, NULL, NULL);
+
+	ret = ctdb_event_script_callback(ctdb, ctdb_start_transport, "startup");
+	if (ret != 0) {
+		DEBUG(0,("Failed startup event script\n"));
+		return;
+	}
 
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
@@ -743,12 +765,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	/* try to set us up as realtime */
 	ctdb_set_realtime();
-
-	/* start the recovery daemon process */
-	if (ctdb_start_recoverd(ctdb) != 0) {
-		DEBUG(0,("Failed to start recovery daemon\n"));
-		exit(11);
-	}
 
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
