@@ -88,6 +88,10 @@ static int ctdb_ibw_initialise(struct ctdb_context *ctdb)
 		}
 	}
 
+	/* listen on our own address */
+	if (ctdb_ibw_listen(ctdb, 10)) /* TODO: backlog as param */
+		return -1;
+
 	return 0;
 }
 
@@ -98,10 +102,6 @@ static int ctdb_ibw_initialise(struct ctdb_context *ctdb)
 static int ctdb_ibw_start(struct ctdb_context *ctdb)
 {
 	int i, ret;
-
-	/* listen on our own address */
-	if (ctdb_ibw_listen(ctdb, 10)) /* TODO: backlog as param */
-		return -1;
 
 	/* everything async here */
 	for (i=0;i<ctdb->num_nodes;i++) {

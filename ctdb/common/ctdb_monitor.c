@@ -64,13 +64,14 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 
 		if (node->dead_count >= CTDB_MONITORING_DEAD_COUNT) {
 			ctdb_node_dead(node);
+			ctdb_send_keepalive(ctdb, node->vnn);
 			/* maybe tell the transport layer to kill the
 			   sockets as well?
 			*/
 			continue;
 		}
 		
-		if (node->tx_cnt == 0) {
+		if (node->tx_cnt == 0 && (node->flags & NODE_FLAGS_CONNECTED)) {
 			ctdb_send_keepalive(ctdb, node->vnn);
 		}
 

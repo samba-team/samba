@@ -52,6 +52,9 @@ static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 {
 	int i;
 
+	/* listen on our own address */
+	if (ctdb_tcp_listen(ctdb) != 0) return -1;
+
 	for (i=0; i<ctdb->num_nodes; i++) {
 		if (ctdb_tcp_add_node(ctdb->nodes[i]) != 0) {
 			DEBUG(0, ("methods->add_node failed at %d\n", i));
@@ -68,9 +71,6 @@ static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 static int ctdb_tcp_start(struct ctdb_context *ctdb)
 {
 	int i;
-
-	/* listen on our own address */
-	if (ctdb_tcp_listen(ctdb) != 0) return -1;
 
 	/* startup connections to the other servers - will happen on
 	   next event loop */
