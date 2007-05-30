@@ -594,7 +594,6 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	}
 
-
 	return ret;
 }
 
@@ -1318,6 +1317,30 @@ static BOOL test_netr_DsRGetDCNameEx2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	return ret;
 }
 
+static BOOL test_netr_DsrGetDcSiteCoverageW(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx) 
+{
+	NTSTATUS status;
+	struct netr_DsrGetDcSiteCoverageW r;
+	BOOL ret = True;
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsrGetDcSiteCoverageW test against Samba4\n");
+		return True;
+	}
+
+	r.in.server_name = "";
+	printf("Testing netr_DsrGetDcSiteCoverageW\n");
+
+	status = dcerpc_netr_DsrGetDcSiteCoverageW(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("netr_DsrGetDcSiteCoverageW - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		ret = False;
+	}
+	return ret;
+}
+
+
 static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -1605,6 +1628,7 @@ BOOL torture_rpc_netlogon(struct torture_context *torture)
 	ret &= test_netr_DsRGetDCName(p, mem_ctx);
 	ret &= test_netr_DsRGetDCNameEx(p, mem_ctx);
 	ret &= test_netr_DsRGetDCNameEx2(p, mem_ctx);
+	ret &= test_netr_DsrGetDcSiteCoverageW(p, mem_ctx);
 
 	talloc_free(mem_ctx);
 

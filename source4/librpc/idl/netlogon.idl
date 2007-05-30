@@ -1145,7 +1145,16 @@ interface netlogon
 
 	/****************/
 	/* Function 0x26 */
-	WERROR netr_DSRGETDCSITECOVERAGEW();
+
+	typedef struct {
+		uint32 num_sites;
+		[size_is(num_sites)] [unique] lsa_String *sites;
+	} DcSitesCtr;
+
+	WERROR netr_DsrGetDcSiteCoverageW(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[out] DcSitesCtr *ctr
+		);
 
 	/****************/
 	/* Function 0x27 */
