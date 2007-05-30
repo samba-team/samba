@@ -332,11 +332,8 @@ syncprov-sessionlog 100
 	write_openldap_dbconfig("$ldapdir/db/config");
 	write_openldap_dbconfig("$ldapdir/db/schema");
 
-	#This uses the provision we just did, to read out the schema
-	system("$self->{bindir}/ad2oLschema $configuration -H $privatedir/sam.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/ad.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
-
-	#Now create an LDAP baseDN
-	system("$self->{bindir}/smbscript $self->{setupdir}/provision $provision_options --ldap-base >&2") == 0 or die("creating an OpenLDAP basedn failed");
+	#This uses the provision-backend we just did, to read out the schema
+	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/ad.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
 
 	my $oldpath = $ENV{PATH};
 	$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
