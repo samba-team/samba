@@ -52,7 +52,7 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	uint32 size, i;
 	NTSTATUS result;
-	uint8 *in_data = NULL, *out_data = NULL;
+	uint8_t *in_data = NULL, *out_data = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s num\n", argv[0]);
@@ -60,8 +60,16 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	size = atoi(argv[1]);
-	in_data = (uint8 *)SMB_MALLOC(size);
-	out_data = (uint8 *)SMB_MALLOC(size);
+	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
+		printf("Failure to allocate buff of %d bytes\n",
+		       size);
+		goto done;		
+	}
+	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
+		printf("Failure to allocate buff of %d bytes\n",
+		       size);
+		goto done;		
+	}
 
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
@@ -81,7 +89,7 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 done:
 	SAFE_FREE(in_data);
-	TALLOC_FREE(out_data);
+	SAFE_FREE(out_data);
 
 	return result;
 }
@@ -92,7 +100,7 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 {
 	uint32 size, i;
 	NTSTATUS result;
-	uint8 *out_data;
+	uint8_t *out_data = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s num\n", argv[0]);
@@ -100,15 +108,20 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 	}
 
 	size = atoi(argv[1]);
+	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
+		printf("Failure to allocate buff of %d bytes\n",
+		       size);
+		goto done;		
+	}
+	
 
-	out_data = SMB_MALLOC_ARRAY(uint8, size);
 	result = rpccli_echo_SourceData(cli, mem_ctx, size, out_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	for (i = 0; i < size; i++) {
-		if (out_data[i] != (i & 0xff)) {
+		if (out_data && out_data[i] != (i & 0xff)) {
 			printf("mismatch at offset %d, %d != %d\n",
 			       i, out_data[i], i & 0xff);
 			result = NT_STATUS_UNSUCCESSFUL;
@@ -116,8 +129,6 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 	}
 
 done:
-	TALLOC_FREE(out_data);
-
 	return result;
 }
 
@@ -126,7 +137,7 @@ static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 {
 	uint32 size, i;
 	NTSTATUS result;
-	uint8 *in_data = NULL;
+	uint8_t *in_data = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s num\n", argv[0]);
@@ -134,7 +145,11 @@ static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 
 	size = atoi(argv[1]);
-	in_data = (uint8 *)SMB_MALLOC(size);
+	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
+		printf("Failure to allocate buff of %d bytes\n",
+		       size);
+		goto done;		
+	}
 
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
