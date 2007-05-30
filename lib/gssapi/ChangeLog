@@ -1,3 +1,18 @@
+2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/accept_sec_context.c: Catch errors and return the up the
+	stack.
+
+	* test_kcred.c: more testing of lifetimes
+	
+2007-05-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Drop the gss oid_set function for the krb5 mech,
+	use the mech glue versions instead. Pointed out by Rafal
+	Malinowski.
+
+	* krb5: Use gss oid_set functions from mechglue
+
 2007-05-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/accept_sec_context.c: Set session key only if we are
