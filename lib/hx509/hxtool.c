@@ -1132,6 +1132,8 @@ crypto_available(struct crypto_available_options *opt, int argc, char **argv)
 	    type = HX509_SELECT_DIGEST;
 	else if (strcmp(opt->type_string, "public-sig") == 0)
 	    type = HX509_SELECT_PUBLIC_SIG;
+	else if (strcmp(opt->type_string, "secret") == 0)
+	    type = HX509_SELECT_SECRET_ENC;
 	else
 	    errx(1, "unknown type: %s", opt->type_string);
     } else
@@ -1558,6 +1560,11 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	ret = hx509_ca_tbs_set_proxy(context, tbs, opt->path_length_integer);
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_proxy");
+    }
+    if (opt->domain_controller_flag) {
+	hx509_ca_tbs_set_domaincontroller(context, tbs);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_set_domaincontroller");
     }
 
     if (delta) {
