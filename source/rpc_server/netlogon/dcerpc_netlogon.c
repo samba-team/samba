@@ -1119,10 +1119,10 @@ static WERROR dcesrv_netr_DSRADDRESSTOSITENAMESEXW(struct dcesrv_call_state *dce
 
 
 /* 
-  netr_DSRGETDCSITECOVERAGEW 
+  netr_DsrGetDcSiteCoverageW
 */
-static WERROR dcesrv_netr_DSRGETDCSITECOVERAGEW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRGETDCSITECOVERAGEW *r)
+static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DsrGetDcSiteCoverageW *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
