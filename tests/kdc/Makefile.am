@@ -79,8 +79,10 @@ CLEANFILES= \
 	sdigest-reply \
 	server.keytab \
 	req-pkinit.der \
+	req-pkinit2.der \
 	req-kdc.der \
 	pkinit.crt \
+	pkinit2.crt \
 	kdc.crt \
 	ca.crt \
 	uuserver.log \
