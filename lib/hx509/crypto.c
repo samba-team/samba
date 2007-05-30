@@ -113,6 +113,7 @@ struct signature_alg {
 
 #define SIG_DIGEST	0x100
 #define SIG_PUBLIC_SIG	0x200
+#define SIG_SECRET	0x400
 
     int (*verify_signature)(hx509_context context,
 			    const struct signature_alg *,
@@ -1418,6 +1419,15 @@ const AlgorithmIdentifier _hx509_signature_rsa_data = {
     { 7, rk_UNCONST(rsa_oid) }, NULL
 };
 
+static const unsigned des_rsdi_ede3_cbc_oid[] ={ 1, 2, 840, 113549, 3, 7 };
+const AlgorithmIdentifier _hx509_des_rsdi_ede3_cbc_oid = {
+    { 6, rk_UNCONST(des_rsdi_ede3_cbc_oid) }, NULL
+};
+
+static const unsigned aes256_cbc_oid[] ={ 2, 16, 840, 1, 101, 3, 4, 1, 42 };
+const AlgorithmIdentifier _hx509_crypto_aes256_cbc_data = {
+    { 9, rk_UNCONST(aes256_cbc_oid) }, NULL
+};
 
 const AlgorithmIdentifier *
 hx509_signature_sha512(void)
@@ -1470,6 +1480,14 @@ hx509_signature_rsa_with_md2(void)
 const AlgorithmIdentifier *
 hx509_signature_rsa(void)
 { return &_hx509_signature_rsa_data; }
+
+const AlgorithmIdentifier *
+hx509_crypto_des_rsdi_ede3_cbc(void)
+{ return &_hx509_des_rsdi_ede3_cbc_oid; }
+
+const AlgorithmIdentifier *
+hx509_crypto_aes256_cbc(void)
+{ return &_hx509_crypto_aes256_cbc_data; }
 
 int
 _hx509_private_key_init(hx509_private_key *key,
@@ -1570,6 +1588,7 @@ _hx509_private_key_export(hx509_context context,
 struct hx509cipher {
     const char *name;
     const heim_oid *(*oid_func)(void);
+    const AlgorithmIdentifier *(*ai_func)(void);
     const EVP_CIPHER *(*evp_func)(void);
     int (*get_params)(hx509_context, const hx509_crypto,
 		      const heim_octet_string *, heim_octet_string *);
@@ -1737,6 +1756,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"rc2-cbc",
 	oid_id_pkcs3_rc2_cbc,
+	NULL,
 	EVP_rc2_cbc,
 	CMSRC2CBCParam_get,
 	CMSRC2CBCParam_set
@@ -1744,6 +1764,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"rc2-cbc",
 	oid_id_rsadsi_rc2_cbc,
+	NULL,
 	EVP_rc2_cbc,
 	CMSRC2CBCParam_get,
 	CMSRC2CBCParam_set
@@ -1751,6 +1772,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"rc2-40-cbc",
 	oid_private_rc2_40,
+	NULL,
 	EVP_rc2_40_cbc,
 	CMSRC2CBCParam_get,
 	CMSRC2CBCParam_set
@@ -1758,6 +1780,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"des-ede3-cbc",
 	oid_id_pkcs3_des_ede3_cbc,
+	NULL,
 	EVP_des_ede3_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
@@ -1765,6 +1788,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"des-ede3-cbc",
 	oid_id_rsadsi_des_ede3_cbc,
+	hx509_crypto_des_rsdi_ede3_cbc,
 	EVP_des_ede3_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
@@ -1772,6 +1796,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"aes-128-cbc",
 	oid_id_aes_128_cbc,
+	NULL,
 	EVP_aes_128_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
@@ -1779,6 +1804,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"aes-192-cbc",
 	oid_id_aes_192_cbc,
+	NULL,
 	EVP_aes_192_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
@@ -1786,6 +1812,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"aes-256-cbc",
 	oid_id_aes_256_cbc,
+	hx509_crypto_aes256_cbc,
 	EVP_aes_256_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
@@ -2397,7 +2424,6 @@ hx509_crypto_select(const hx509_context context,
 		    hx509_peer_info peer,
 		    AlgorithmIdentifier *selected)
 {
-    const heim_oid *keytype = NULL;
     const AlgorithmIdentifier *def;
     size_t i, j;
     int ret, bits;
@@ -2411,15 +2437,20 @@ hx509_crypto_select(const hx509_context context,
 	bits = SIG_PUBLIC_SIG;
 	/* XXX depend on `source´ and `peer´ */
 	def = hx509_signature_rsa_with_sha256();
+    } else if (type == HX509_SELECT_SECRET_ENC) {
+	bits = SIG_SECRET;
+	def = hx509_crypto_aes256_cbc();
     } else {
 	hx509_set_error_string(context, 0, EINVAL, 
 			       "Unknown type %d of selection", type);
 	return EINVAL;
     }
 
-    keytype = find_keytype(source);
-
     if (peer) {
+	const heim_oid *keytype = NULL;
+
+	keytype = find_keytype(source);
+
 	for (i = 0; i < peer->len; i++) {
 	    for (j = 0; sig_algs[j]; j++) {
 		if ((sig_algs[j]->flags & bits) != bits)
@@ -2433,6 +2464,19 @@ hx509_crypto_select(const hx509_context context,
 
 		/* found one, use that */
 		ret = copy_AlgorithmIdentifier(&peer->val[i], selected);
+		if (ret)
+		    hx509_clear_error_string(context);
+		return ret;
+	    }
+	    if (bits & SIG_SECRET) {
+		const struct hx509cipher *cipher;
+
+		cipher = find_cipher_by_oid(&peer->val[i].algorithm);
+		if (cipher == NULL)
+		    continue;
+		if (cipher->ai_func == NULL)
+		    continue;
+		ret = copy_AlgorithmIdentifier(&peer->val[i], cipher->ai_func());
 		if (ret)
 		    hx509_clear_error_string(context);
 		return ret;
