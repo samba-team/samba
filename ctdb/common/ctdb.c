@@ -371,6 +371,12 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 */
 void ctdb_node_dead(struct ctdb_node *node)
 {
+	if (!(node->flags & NODE_FLAGS_CONNECTED)) {
+		DEBUG(1,("%s: node %s is already marked disconnected: %u connected\n", 
+			 node->ctdb->name, node->name, 
+			 node->ctdb->num_connected));
+		return;
+	}
 	node->ctdb->num_connected--;
 	node->flags &= ~NODE_FLAGS_CONNECTED;
 	node->rx_cnt = 0;
@@ -385,6 +391,12 @@ void ctdb_node_dead(struct ctdb_node *node)
 */
 void ctdb_node_connected(struct ctdb_node *node)
 {
+	if (node->flags & NODE_FLAGS_CONNECTED) {
+		DEBUG(1,("%s: node %s is already marked connected: %u connected\n", 
+			 node->ctdb->name, node->name, 
+			 node->ctdb->num_connected));
+		return;
+	}
 	node->ctdb->num_connected++;
 	node->dead_count = 0;
 	node->flags |= NODE_FLAGS_CONNECTED;

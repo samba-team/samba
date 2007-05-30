@@ -50,6 +50,9 @@ static void ctdb_start_transport(struct ctdb_context *ctdb, int status)
 		DEBUG(0,("Failed to start recovery daemon\n"));
 		exit(11);
 	}
+
+	/* start monitoring for dead nodes */
+	ctdb_start_monitoring(ctdb);
 }
 
 /* go into main ctdb loop */
@@ -771,9 +774,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 
 	ctdb->ev = event_context_init(NULL);
-
-	/* start monitoring for dead nodes */
-	ctdb_start_monitoring(ctdb);
 
 	/* start frozen, then let the first election sort things out */
 	if (!ctdb_blocking_freeze(ctdb)) {
