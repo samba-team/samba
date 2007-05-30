@@ -112,6 +112,24 @@ copy_import(void)
 	    errx(1, "usages disjoined");
     }
 
+    gss_release_name(&min_stat, &name2);
+    gss_release_oid_set(&min_stat, &mechs2);
+
+    maj_stat = gss_inquire_cred(&min_stat, cred2, &name2, &lifetime2,
+				&usage2, &mechs2);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_inquire_cred");
+
+    maj_stat = gss_compare_name(&min_stat, name1, name2, &equal);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_compare_name");
+    if (!equal)
+	errx(1, "names not equal");
+	
+    if (lifetime1 != lifetime2)
+	errx(1, "lifetime not equal %lu != %lu",
+	     (unsigned long)lifetime1, (unsigned long)lifetime2);
+
     gss_release_cred(&min_stat, &cred1);
     gss_release_cred(&min_stat, &cred2);
 
