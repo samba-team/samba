@@ -1,5 +1,18 @@
 2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_crypto.in: check for aes256-cbc
+
+	* tst-crypto-select7: check for aes256-cbc
+
+	* test_windows.in: test windows stuff
+
+	* hxtool.c: add ca --domain-controller option, add secret key
+	option to avaible.
+
+	* ca.c: Add hx509_ca_tbs_set_domaincontroller.
+
+	* hxtool-commands.in: add ca --domain-controller
+
 	* hxtool.c: hook for testing secrety key algs
 
 	* crypto.c: Add selection code for secret key crypto.
