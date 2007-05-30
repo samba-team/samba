@@ -938,11 +938,12 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No server in request";
     } else{
-	_krb5_principalname2krb5_principal (context,
-					    &server_princ,
-					    *(b->sname),
-					    b->realm);
-	ret = krb5_unparse_name(context, server_princ, &server_name);
+	ret = _krb5_principalname2krb5_principal (context,
+						  &server_princ,
+						  *(b->sname),
+						  b->realm);
+	if (ret == 0)
+	    ret = krb5_unparse_name(context, server_princ, &server_name);
     }
     if (ret) {
 	kdc_log(context, config, 0, 
@@ -966,11 +967,14 @@ _kdc_as_rep(krb5_context context,
 				  &client_princ);
 	    if (ret)
 		goto out;
-	} else
-	    _krb5_principalname2krb5_principal (context,
-						&client_princ,
-						*(b->cname),
-						b->realm);
+	} else {
+	    ret = _krb5_principalname2krb5_principal (context,
+						      &client_princ,
+						      *(b->cname),
+						      b->realm);
+	    if (ret)
+		goto out;
+	}
 	ret = krb5_unparse_name(context, client_princ, &client_name);
     }
     if (ret) {
