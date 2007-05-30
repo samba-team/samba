@@ -147,6 +147,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	cert-ee.pem cert-ca.pem \
 	cert-sub-ee.pem cert-sub-ca.pem \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
+	wca.pem wclient.pem wdc.pem \
 	random-data \
 	test
 
@@ -174,6 +175,7 @@ SCRIPT_TESTS = 			\
 	test_nist_cert		\
 	test_nist_pkcs12	\
 	test_req		\
+	test_windows		\
 	test_query
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
@@ -218,6 +220,11 @@ test_req: test_req.in Makefile
 	chmod +x test_req.tmp
 	mv test_req.tmp test_req
 
+test_windows: test_windows.in Makefile
+	$(do_subst) < $(srcdir)/test_windows.in > test_windows.tmp
+	chmod +x test_windows.tmp
+	mv test_windows.tmp test_windows
+
 test_query: test_query.in Makefile
 	$(do_subst) < $(srcdir)/test_query.in > test_query.tmp
 	chmod +x test_query.tmp
@@ -249,6 +256,7 @@ EXTRA_DIST = \
 	tst-crypto-select4 \
 	tst-crypto-select5 \
 	tst-crypto-select6 \
+	tst-crypto-select7 \
 	data/bleichenbacher-good.pem \
 	data/bleichenbacher-sf-pad-correct.pem \
 	data/ca.crt \
