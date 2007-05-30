@@ -688,7 +688,6 @@ typedef int BOOL;
 #include "rpc_eventlog.h"
 #include "rpc_dfs.h"
 #include "rpc_ds.h"
-#include "rpc_echo.h"
 #include "rpc_shutdown.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
