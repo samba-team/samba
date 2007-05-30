@@ -1,5 +1,9 @@
-2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: remove more files
+	
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/check-pkinit.in: try principal subject in DB
 	
 2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
