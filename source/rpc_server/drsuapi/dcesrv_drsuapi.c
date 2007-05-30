@@ -798,10 +798,10 @@ static WERROR dcesrv_DRSUAPI_GET_OBJECT_EXISTENCE(struct dcesrv_call_state *dce_
 
 
 /* 
-  DRSUAPI_QUERY_SITES_BY_COST 
+  drsuapi_QuerySitesByCost 
 */
-static WERROR dcesrv_DRSUAPI_QUERY_SITES_BY_COST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_QUERY_SITES_BY_COST *r)
+static WERROR dcesrv_drsuapi_QuerySitesByCost(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_QuerySitesByCost *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

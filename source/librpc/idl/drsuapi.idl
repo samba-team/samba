@@ -1457,5 +1457,37 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x18 */
-	WERROR DRSUAPI_QUERY_SITES_BY_COST();
+	typedef struct {
+		WERROR error_code;
+		uint32 site_cost;
+	} drsuapi_DsSiteCostInfo;
+
+	typedef struct {
+		[range(0,10000)] uint32 num_info;
+		[size_is(num_info)] drsuapi_DsSiteCostInfo *info;
+		uint32 unknown;
+	} drsuapi_QuerySitesByCostCtr1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_QuerySitesByCostCtr1 ctr1;
+	} drsuapi_QuerySitesByCostCtr;
+
+	typedef struct {
+		[charset(UTF16),string] uint16 *site_from;
+		[range(1,10000)] uint32 num_req;
+		[size_is(num_req)] [charset(UTF16),string] uint16 **site_to;
+		uint32 flags;
+	} drsuapi_QuerySitesByCostRequest1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_QuerySitesByCostRequest1 req1;
+	} drsuapi_QuerySitesByCostRequest;
+
+	WERROR drsuapi_QuerySitesByCost(
+		[in] policy_handle *bind_handle,
+		[in] int32 level,
+		[in] [switch_is(level)] drsuapi_QuerySitesByCostRequest req,
+		[out] int32 level_out,
+		[out] [switch_is(level_out)] drsuapi_QuerySitesByCostCtr ctr
+	);
 }
