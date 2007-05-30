@@ -424,7 +424,7 @@ struct {
 } check_altname[] = {
     { "pk-init", oid_id_pkinit_san, check_pkinit_san },
     { "jabber", oid_id_pkix_on_xmppAddr, check_xmpp_san },
-    { "dns-srv", oid_id_pkix_on_dnsSRV, check_altname },
+    { "dns-srv", oid_id_pkix_on_dnsSRV, check_altnull },
     { "card-id", oid_id_uspkicommon_card_id, check_altnull },
     { "Microsoft NT-PRINCIPAL-NAME", oid_id_pkinit_ms_san, check_altnull }
 };
