@@ -463,6 +463,13 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	if (NULL == ctdb_tcp_find(ctdb->tcp_list, tcp)) {
 		DLIST_ADD(ctdb->tcp_list, tcp);
+		DEBUG(2,("Added tickle info for %s:%u from vnn %u\n",
+			 inet_ntoa(tcp->daddr.sin_addr), ntohs(tcp->daddr.sin_port),
+			 tcp->vnn));
+	} else {
+		DEBUG(4,("Already had tickle info for %s:%u from vnn %u\n",
+			 inet_ntoa(tcp->daddr.sin_addr), ntohs(tcp->daddr.sin_port),
+			 tcp->vnn));
 	}
 
 	return 0;
@@ -484,7 +491,11 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	tcp = ctdb_tcp_find(ctdb->tcp_list, &t);
 	if (tcp) {
+		DEBUG(2,("Removed tickle info for %s:%u from vnn %u\n",
+			 inet_ntoa(tcp->daddr.sin_addr), ntohs(tcp->daddr.sin_port),
+			 tcp->vnn));
 		DLIST_REMOVE(ctdb->tcp_list, tcp);
+		talloc_free(tcp);
 	}
 
 	return 0;
@@ -502,6 +513,24 @@ int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn)
 		if (tcp->vnn == vnn) {
 			DLIST_REMOVE(ctdb->tcp_list, tcp);
 			talloc_free(tcp);
+		}
+
+		/* and tell the new guy about any that he should have
+		   from us */
+		if (tcp->vnn == ctdb->vnn) {
+			struct ctdb_control_tcp_vnn t;
+			TDB_DATA data;
+
+			t.vnn  = tcp->vnn;
+			t.src  = tcp->saddr;
+			t.dest = tcp->daddr;
+
+			data.dptr = (uint8_t *)&t;
+			data.dsize = sizeof(t);
+
+			ctdb_daemon_send_control(ctdb, vnn, 0, 
+						 CTDB_CONTROL_TCP_ADD,
+						 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 		}
 	}
 	return 0;
