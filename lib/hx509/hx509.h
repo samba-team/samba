@@ -108,6 +108,7 @@ typedef enum {
 #define HX509_SELECT_DIGEST 1
 #define HX509_SELECT_PUBLIC_SIG 2
 #define HX509_SELECT_PUBLIC_ENC 3
+#define HX509_SELECT_SECRET_ENC 4
 
 /* flags to hx509_ca_tbs_set_template */
 #define HX509_CA_TEMPLATE_SUBJECT 1
