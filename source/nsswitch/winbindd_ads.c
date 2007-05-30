@@ -1014,11 +1014,16 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			(*num_names)++;
 		}
 		else {
+			DEBUG(10, ("ads: lookup_groupmem: sid %s not found in cache\n",
+				  sid_string_static(&sid)));
 			sid_copy(&(sid_mem_nocache)[num_nocache], &sid);
 			num_nocache++;
 		}
 	}
-	
+
+	DEBUG(10, ("ads: lookup_groupmem: %d sids found in cache, "
+		  "%d left for lsa_lookupsids\n", *num_names, num_nocache));
+
 	/* handle sids not resolved from cache by lsa_lookup_sids */
 	if (num_nocache > 0) {
 
