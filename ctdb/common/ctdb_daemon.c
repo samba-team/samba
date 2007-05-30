@@ -50,6 +50,12 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 		return;
 	}
 
+	ret = ctdb_event_script(ctdb, "startup");
+	if (ret != 0) {
+		DEBUG(0,("Failed startup event script\n"));
+		return;
+	}
+
 	/* start the transport running */
 	if (ctdb->methods->start(ctdb) != 0) {
 		DEBUG(0,("transport failed to start!\n"));

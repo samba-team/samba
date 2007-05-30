@@ -1,10 +1,28 @@
 #!/bin/sh
 # sample event script for ctdb
 
+. /etc/sysconfig/ctdb
+
 cmd="$1"
 shift
 
 case $cmd in 
+     startup)
+	# wait for local services to come up
+	[ -z "$CTDB_WAIT_TCP_PORTS" ] || {
+	  all_ok=0
+	  while [ $all_ok -eq 0 ]; do
+	  	  all_ok=1
+	  	  for p in $CTDB_WAIT_TCP_PORTS; do
+	  	      /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
+		  done
+		  [ $all_ok -eq 1 ] || sleep 1
+          done
+	  echo "Local services on $CTDB_WAIT_TCP_PORTS are up"
+	}
+	exit 0;	
+	;;
+	
      takeip)
 	if [ $# != 3 ]; then
 	   echo "must supply interface, IP and maskbits"
@@ -13,6 +31,7 @@ case $cmd in
 	iface=$1
 	ip=$2
 	maskbits=$3
+
 	/sbin/ip addr add $ip/$maskbits dev $iface || {
 		 echo "Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
