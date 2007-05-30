@@ -529,7 +529,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	ws_name_replace( name_group, WB_REPLACE_CHAR );
         
 	winbindd_lookupname_async( state->mem_ctx, domain->name, name_group,
-				   getgrnam_recv, state );
+				   getgrnam_recv, WINBINDD_GETGRNAM, state );
 	}
 
 struct getgrsid_state {
@@ -1324,7 +1324,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	/* Get rid and name type from name.  The following costs 1 packet */
 
 	winbindd_lookupname_async(state->mem_ctx, s->domname, s->username,
-				  getgroups_usersid_recv, s);
+				  getgroups_usersid_recv, WINBINDD_GETGROUPS, s);
 }
 
 static void getgroups_usersid_recv(void *private_data, BOOL success,

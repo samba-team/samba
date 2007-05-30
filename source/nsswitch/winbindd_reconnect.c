@@ -84,6 +84,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
+			    enum winbindd_cmd orig_cmd,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
@@ -91,12 +92,12 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 
-	result = msrpc_methods.name_to_sid(domain, mem_ctx,
+	result = msrpc_methods.name_to_sid(domain, mem_ctx, orig_cmd,
 					   domain_name, name,
 					   sid, type);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
-		result = msrpc_methods.name_to_sid(domain, mem_ctx,
+		result = msrpc_methods.name_to_sid(domain, mem_ctx, orig_cmd,
 						   domain_name, name,
 						   sid, type);
 
