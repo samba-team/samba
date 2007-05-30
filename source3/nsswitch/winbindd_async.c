@@ -952,6 +952,7 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 			       void (*cont)(void *private_data, BOOL success,
 					    const DOM_SID *sid,
 					    enum lsa_SidType type),
+			       enum winbindd_cmd orig_cmd,
 			       void *private_data)
 {
 	struct winbindd_request request;
@@ -966,6 +967,7 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_LOOKUPNAME;
+	request.original_cmd = orig_cmd;
 	fstrcpy(request.data.name.dom_name, dom_name);
 	fstrcpy(request.data.name.name, name);
 
@@ -977,7 +979,7 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 
 	s->dom_name = talloc_strdup( s, dom_name );
 	s->name     = talloc_strdup( s, name );
-	s->caller_private_data = private_data;	
+	s->caller_private_data = private_data;
 
 	do_async_domain(mem_ctx, domain, &request, lookupname_recv,
 			(void *)cont, s);
@@ -1012,7 +1014,7 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 		  name_domain, lp_winbind_separator(), name_user));
 
 	/* Lookup name from DC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, name_domain,
+	if (!winbindd_lookup_sid_by_name(state->mem_ctx, state->request.original_cmd, domain, name_domain,
 					 name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}

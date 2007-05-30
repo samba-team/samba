@@ -244,6 +244,7 @@ struct winbindd_methods {
 	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
+				enum winbindd_cmd orig_cmd,
 				const char *domain_name,
 				const char *name,
 				DOM_SID *sid,

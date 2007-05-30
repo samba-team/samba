@@ -400,7 +400,8 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* Get rid and name type from name.  The following costs 1 packet */
 
 	winbindd_lookupname_async(state->mem_ctx, domname, username,
-				  getpwnam_name2sid_recv, state);
+				  getpwnam_name2sid_recv, WINBINDD_GETPWNAM, 
+				  state);
 }
 
 static void getpwnam_name2sid_recv(void *private_data, BOOL success,
