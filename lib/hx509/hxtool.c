@@ -1166,6 +1166,8 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
 	    type = HX509_SELECT_DIGEST;
 	else if (strcmp(opt->type_string, "public-sig") == 0)
 	    type = HX509_SELECT_PUBLIC_SIG;
+	else if (strcmp(opt->type_string, "secret") == 0)
+	    type = HX509_SELECT_SECRET_ENC;
 	else
 	    errx(1, "unknown type: %s", opt->type_string);
     } else
