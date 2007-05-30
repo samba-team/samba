@@ -265,7 +265,22 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	uint32_t recmode, recmaster;
 	uint32_t myvnn;
 
-	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (options.vnn == CTDB_BROADCAST_ALL) {
+		uint32_t *nodes;
+		uint32_t num_nodes;
+		ret = 0;
+
+		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
+		CTDB_NO_MEMORY(ctdb, nodes);
+	
+		for (i=0;i<num_nodes;i++) {
+			options.vnn = nodes[i];
+			ret |= control_status(ctdb, argc, argv);
+		}
+		return ret;
+	}
+
+	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.vnn, ctdb, &nodemap);
 	if (ret != 0) {
