@@ -18,6 +18,10 @@ case $cmd in
 	  	      /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
 		  done
 		  [ $all_ok -eq 1 ] || sleep 1
+		  /usr/bin/ctdb status > /dev/null 2>&1 || {
+	  		echo "ctdb daemon has died. Exiting event startup"
+			exit 1
+		  }
           done
 	  echo "Local tcp services on $CTDB_WAIT_TCP_PORTS are up"
 	}

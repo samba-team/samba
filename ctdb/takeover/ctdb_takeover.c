@@ -318,8 +318,9 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 			     j != i;
 			     j=(j+1)%nodemap->num) {
 				if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) &&
-				    ctdb_same_subnet(ctdb->nodes[j]->public_address, ctdb->nodes[i]->public_address, 
-						     ctdb->nodes[i]->public_netmask_bits)) {
+				    ctdb_same_subnet(ctdb->nodes[j]->public_address, 
+						     ctdb->nodes[i]->public_address, 
+						     ctdb->nodes[j]->public_netmask_bits)) {
 					ctdb->nodes[i]->takeover_vnn = nodemap->nodes[j].vnn;
 					break;
 				}
