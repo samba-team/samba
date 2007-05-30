@@ -482,4 +482,11 @@ id-netscape OBJECT IDENTIFIER ::=
     { joint-iso-itu-t(2) country(16) us(840) organization(1) netscape(113730) }
 id-netscape-cert-comment OBJECT IDENTIFIER ::= { id-netscape 1 13 }
 
+--- MS extentions
+
+id-ms-cert-enroll-domaincontroller OBJECT IDENTIFIER ::= 
+    { 1 3 6 1 4 1 311 20 2 }
+
+-- DER:1e:20:00:44:00:6f:00:6d:00:61:00:69:00:6e:00:43:00:6f:00:6e:00:74:00:72:00:6f:00:6c:00:6c:00:65:00:72
+
 END
