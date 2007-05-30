@@ -386,7 +386,8 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
 	while (1) {
-		fd_set lfds;
+		struct timeval now;
+		fd_set r_fds, w_fds;
 		int num;
 		
 		/* Free up temporary memory from the main smbd. */
@@ -404,13 +405,21 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 			}
 		}
 
-		memcpy((char *)&lfds, (char *)&listen_set, 
+		memcpy((char *)&r_fds, (char *)&listen_set, 
 		       sizeof(listen_set));
+		FD_ZERO(&w_fds);
+		GetTimeOfDay(&now);
 
-		num = sys_select(maxfd+1,&lfds,NULL,NULL,
+		event_add_to_select_args(smbd_event_context(), &now,
+					 &r_fds, &w_fds, &idle_timeout,
+					 &maxfd);
+
+		num = sys_select(maxfd+1,&r_fds,&w_fds,NULL,
 				 timeval_is_zero(&idle_timeout) ?
 				 NULL : &idle_timeout);
 		
+		run_events(smbd_event_context(), num, &r_fds, &w_fds);
+
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
 				exit_server_cleanly(NULL);
@@ -427,6 +436,10 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 			continue;
 		}
 
+#if 0
+		Deactivated for now, this needs to become a timed event
+		vl
+
 		/* If the idle timeout fired and we don't have any connected
 		 * users, exit gracefully. We should be running under a process
 		 * controller that will restart us if necessry.
@@ -434,6 +447,7 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 		if (num == 0 && count_all_current_connections() == 0) {
 			exit_server_cleanly("idle timeout");
 		}
+#endif
 
 		/* check if we need to reload services */
 		check_reload(time(NULL));
@@ -447,11 +461,11 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 
 			s = -1;
 			for(i = 0; i < num_sockets; i++) {
-				if(FD_ISSET(fd_listenset[i],&lfds)) {
+				if(FD_ISSET(fd_listenset[i],&r_fds)) {
 					s = fd_listenset[i];
 					/* Clear this so we don't look
 					   at it again. */
-					FD_CLR(fd_listenset[i],&lfds);
+					FD_CLR(fd_listenset[i],&r_fds);
 					break;
 				}
 			}
