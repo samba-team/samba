@@ -47,6 +47,7 @@ struct hx509_ca_tbs {
 	unsigned int ca:1;
 	unsigned int key:1;
 	unsigned int serial:1;
+	unsigned int domaincontroller:1;
     } flags;
     time_t notBefore;
     time_t notAfter;
@@ -227,6 +228,14 @@ hx509_ca_tbs_set_proxy(hx509_context context,
     return 0;
 }
 
+
+int
+hx509_ca_tbs_set_domaincontroller(hx509_context context,
+				  hx509_ca_tbs tbs)
+{
+    tbs->flags.domaincontroller = 1;
+    return 0;
+}
 
 int
 hx509_ca_tbs_set_spki(hx509_context context,
@@ -774,6 +783,22 @@ ca_sign(hx509_context context,
 	goto out;
     }
     
+    /* Add the text BMP string Domaincontroller to the cert */
+    if (tbs->flags.domaincontroller) {
+	data.data = rk_UNCONST("\x1e\x20\x00\x44\x00\x6f\x00\x6d"
+			       "\x00\x61\x00\x69\x00\x6e\x00\x43"
+			       "\x00\x6f\x00\x6e\x00\x74\x00\x72"
+			       "\x00\x6f\x00\x6c\x00\x6c\x00\x65"
+			       "\x00\x72");
+	data.length = 34;
+
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_ms_cert_enroll_domaincontroller(),
+			    &data);
+	if (ret)
+	    goto out;
+    }
+
     /* add KeyUsage */
     {
 	KeyUsage ku;
