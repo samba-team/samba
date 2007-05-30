@@ -476,6 +476,11 @@ command = {
 		help = "Issue a proxy certificate"
 	}
 	option = {
+		long = "domain-controller"
+		type = "flag"
+		help = "Issue a MS domaincontroller certificate"
+	}
+	option = {
 		long = "subject"
 		type = "string"
 		help = "Subject of issued certificate"
