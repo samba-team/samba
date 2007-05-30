@@ -941,6 +941,7 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
+				 enum winbindd_cmd orig_cmd,
 				 struct winbindd_domain *domain, 
 				 const char *domain_name,
 				 const char *name, DOM_SID *sid, 
@@ -949,7 +950,8 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 
 	/* Lookup name */
-	result = domain->methods->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
+	result = domain->methods->name_to_sid(domain, mem_ctx, orig_cmd,
+					      domain_name, name, sid, type);
 
 	/* Return sid and type if lookup successful */
 	if (!NT_STATUS_IS_OK(result)) {

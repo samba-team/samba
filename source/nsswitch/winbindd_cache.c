@@ -1355,6 +1355,7 @@ skip_save:
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
+			    enum winbindd_cmd orig_cmd,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
@@ -1402,7 +1403,8 @@ do_query:
 	DEBUG(10,("name_to_sid: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
-	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
+	status = domain->backend->name_to_sid(domain, mem_ctx, orig_cmd, 
+					      domain_name, name, sid, type);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);

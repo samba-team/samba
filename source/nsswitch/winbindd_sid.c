@@ -103,7 +103,8 @@ void winbindd_lookupname(struct winbindd_cli_state *state)
 		  name_domain, lp_winbind_separator(), name_user));
 
 	winbindd_lookupname_async(state->mem_ctx, name_domain, name_user,
-				  lookupname_recv, state);
+				  lookupname_recv, WINBINDD_LOOKUPNAME, 
+				  state);
 }
 
 static void lookupname_recv(void *private_data, BOOL success,

@@ -102,7 +102,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			goto ok;
 	}
 
-	if (strequal(domain, unix_users_domain_name())) {
+	if (!(flags & LOOKUP_NAME_EXPLICIT) && strequal(domain, unix_users_domain_name())) {
 		if (lookup_unix_user_name(name, &sid)) {
 			type = SID_NAME_USER;
 			goto ok;
@@ -111,7 +111,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (strequal(domain, unix_groups_domain_name())) {
+	if (!(flags & LOOKUP_NAME_EXPLICIT) && strequal(domain, unix_groups_domain_name())) {
 		if (lookup_unix_group_name(name, &sid)) {
 			type = SID_NAME_DOM_GRP;
 			goto ok;
@@ -262,13 +262,13 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* 11. Ok, windows would end here. Samba has two more options:
                Unmapped users and unmapped groups */
 
-	if (lookup_unix_user_name(name, &sid)) {
+	if (!(flags & LOOKUP_NAME_EXPLICIT) && lookup_unix_user_name(name, &sid)) {
 		domain = talloc_strdup(tmp_ctx, unix_users_domain_name());
 		type = SID_NAME_USER;
 		goto ok;
 	}
 
-	if (lookup_unix_group_name(name, &sid)) {
+	if (!(flags & LOOKUP_NAME_EXPLICIT) && lookup_unix_group_name(name, &sid)) {
 		domain = talloc_strdup(tmp_ctx, unix_groups_domain_name());
 		type = SID_NAME_DOM_GRP;
 		goto ok;

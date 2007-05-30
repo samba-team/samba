@@ -255,11 +255,12 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 
 /* convert a single name to a sid in a domain */
 NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    const char *domain_name,
-			    const char *name,
-			    DOM_SID *sid,
-			    enum lsa_SidType *type)
+			   TALLOC_CTX *mem_ctx,
+			   enum winbindd_cmd original_cmd,
+			   const char *domain_name,
+			   const char *name,
+			   DOM_SID *sid,
+			   enum lsa_SidType *type)
 {
 	NTSTATUS result;
 	DOM_SID *sids = NULL;

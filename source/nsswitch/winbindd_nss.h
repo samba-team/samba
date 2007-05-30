@@ -230,6 +230,8 @@ typedef struct winbindd_gr {
 struct winbindd_request {
 	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
+	enum winbindd_cmd original_cmd;   /* Original Winbindd command
+					     issued to parent process */
 	pid_t pid;               /* pid of calling process */
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
