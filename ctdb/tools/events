@@ -11,6 +11,7 @@ case $cmd in
 	# wait for local services to come up
 	[ -z "$CTDB_WAIT_TCP_PORTS" ] || {
 	  all_ok=0
+	  echo "Waiting for tcp services on $CTDB_WAIT_TCP_PORTS to come up"
 	  while [ $all_ok -eq 0 ]; do
 	  	  all_ok=1
 	  	  for p in $CTDB_WAIT_TCP_PORTS; do
@@ -18,7 +19,7 @@ case $cmd in
 		  done
 		  [ $all_ok -eq 1 ] || sleep 1
           done
-	  echo "Local services on $CTDB_WAIT_TCP_PORTS are up"
+	  echo "Local tcp services on $CTDB_WAIT_TCP_PORTS are up"
 	}
 	exit 0;	
 	;;
