@@ -204,136 +204,16 @@ chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
 	return ($fedora_ds_dir, $pidfile);
 }
 
-sub write_openldap_dbconfig($) {
-    my ( $ldapdbdir ) = @_;
-	open(CONF, ">$ldapdbdir/DB_CONFIG");
-	print CONF "
-#
-	# Set the database in memory cache size.
-	#
-	set_cachesize   0       524288        0
-	
-	
-	#
-	# Set database flags (this is a test environment, we don't need to fsync()).
-	#		
-	set_flags       DB_TXN_NOSYNC
-	
-	#
-	# Set log values.
-	#
-	set_lg_regionmax        104857
-	set_lg_max              1048576
-	set_lg_bsize            209715
-	set_lg_dir              $ldapdbdir/bdb-logs
-	
-	
-	#
-	# Set temporary file creation directory.
-	#			
-	set_tmp_dir             $ldapdbdir/tmp
-	";
-	close(CONF);
-
-
-}
-
-sub mk_openldap($$$$$$$$)
+sub mk_openldap($$$$$)
 {
-	my ($self, $ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, $provision_options) = @_;
+	my ($self, $ldapdir, $configuration, $basedn, $dnsname, $password) = @_;
 
 	my $slapd_conf = "$ldapdir/slapd.conf";
 	my $pidfile = "$ldapdir/slapd.pid";
 	my $modconf = "$ldapdir/modules.conf";
 
-	mkdir($_, 0777) foreach ($ldapdir, "$ldapdir/db", "$ldapdir/db/user", "$ldapdir/db/config", "$ldapdir/db/schema", "$ldapdir/db/bdb-logs", 
-		"$ldapdir/db/tmp");
-
-	open(CONF, ">$slapd_conf");
-	print CONF "
-loglevel 0
-
-include $ldapdir/ad.schema
-
-pidfile		$pidfile
-argsfile	$ldapdir/slapd.args
-sasl-realm $dnsname
-access to * by * write
-
-allow update_anon
-
-authz-regexp
-          uid=([^,]*),cn=$dnsname,cn=digest-md5,cn=auth
-          ldap:///$basedn??sub?(samAccountName=\$1)
-
-authz-regexp
-          uid=([^,]*),cn=([^,]*),cn=digest-md5,cn=auth
-          ldap:///$basedn??sub?(samAccountName=\$1)
-
-include $modconf
-
-defaultsearchbase \"$basedn\"
-
-backend		bdb
-database        bdb
-suffix		\"cn=Schema,cn=Configuration,$basedn\"
-directory	$ldapdir/db/schema
-index           objectClass eq
-index           samAccountName eq
-index name eq
-index objectCategory eq
-index lDAPDisplayName eq
-index subClassOf eq
-
-database        bdb
-suffix		\"cn=Configuration,$basedn\"
-directory	$ldapdir/db/config
-index           objectClass eq
-index           samAccountName eq
-index name eq
-index objectSid eq
-index objectCategory eq
-index nCName eq pres
-index subClassOf eq
-index dnsRoot eq
-index nETBIOSName eq pres
-
-database        bdb
-suffix		\"$basedn\"
-rootdn          \"cn=Manager,$basedn\"
-rootpw          $password
-directory	$ldapdir/db/user
-index           objectClass eq
-index           samAccountName eq
-index name eq
-index objectSid eq
-index objectCategory eq
-index member eq
-index uidNumber eq
-index gidNumber eq
-index unixName eq
-index privilege eq
-index nCName eq pres
-index lDAPDisplayName eq
-index subClassOf eq
-index dnsRoot eq
-index nETBIOSName eq pres
-
-#syncprov is stable in OpenLDAP 2.3, and available in 2.2.  
-#We only need this for the contextCSN attribute anyway....
-overlay syncprov
-syncprov-checkpoint 100 10
-syncprov-sessionlog 100
-";
-
-	close(CONF);
-	
-	write_openldap_dbconfig("$ldapdir/db/user");
-	write_openldap_dbconfig("$ldapdir/db/config");
-	write_openldap_dbconfig("$ldapdir/db/schema");
-
-	#This uses the provision-backend we just did, to read out the schema
-	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/ad.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
+	#This uses the backend provision we just did, to read out the schema
+	system("$self->{bindir}/ad2oLschema $configuration --option=convert:target=openldap -H $ldapdir/schema-tmp.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/backend-schema.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
 
 	my $oldpath = $ENV{PATH};
 	$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
@@ -514,21 +394,20 @@ sub provision($$$$$$)
 
 	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$netbiosname\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration!");
 
-	my @provision_options = ($configuration);
+my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provision");
+	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
 	push (@provision_options, "--host-ip=$ifaceipv4");
 	push (@provision_options, "--quiet");
-	push (@provision_options, "--domain $localdomain");
-	push (@provision_options, "--realm $localrealm");
-	push (@provision_options, "--adminpass $password");
-	push (@provision_options, "--krbtgtpass krbtgt$password");
-	push (@provision_options, "--machinepass machine$password");
+	push (@provision_options, "--domain=$localdomain");
+	push (@provision_options, "--realm=$localrealm");
+	push (@provision_options, "--adminpass=$password");
+	push (@provision_options, "--krbtgtpass=krbtgt$password");
+	push (@provision_options, "--machinepass=machine$password");
 	push (@provision_options, "--root=$root");
 	push (@provision_options, "--simple-bind-dn=cn=Manager,$basedn");
 	push (@provision_options, "--password=$password");
 	push (@provision_options, "--root=$root");
-
-	(system("$self->{bindir}/smbscript $self->{setupdir}/provision " .  join(' ', @provision_options) . ">&2") == 0) or die("Unable to provision");
 
 	my $ldap_uri= "$ldapdir/ldapi";
 	$ldap_uri =~ s|/|%2F|g;
@@ -555,27 +434,28 @@ sub provision($$$$$$)
 
 	if (defined($self->{ldap})) {
 
-                system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$root --realm=$dnsname --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+                push (@provision_options, "--ldap-backend=$ldap_uri");
+	        system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$root --realm=$dnsname --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+
 	        if ($self->{ldap} eq "openldap") {
-		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $basedn, $password, $privatedir, $dnsname, $configuration, join(' ', @provision_options)) or die("Unable to create openldap directories");
+		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration, $basedn, $dnsname, $password) or die("Unable to create openldap directories");
 	        } elsif ($self->{ldap} eq "fedora-ds") {
 		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ldapdir, $configuration) or die("Unable to create fedora ds directories");
 		       push (@provision_options, "--ldap-module=nsuniqueid");
-	        }
+		       push (@provision_options, "--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK");
+                 }
 
 		$self->slapd_start($ret) or 
 			die("couldn't start slapd");
-		    
-	        $ret->{PROVISION_OPTIONS} = join(' ', @provision_options);
+	}
 
-		print "LDAP PROVISIONING...";
-		$self->provision_ldap($ret);
+	(system(@provision_options) == 0) or die("Unable to provision");
 
+	if (defined($self->{ldap})) {
 		$self->slapd_stop($ret) or 
 			die("couldn't stop slapd");
-	} else {
-	        $ret->{PROVISION_OPTIONS} = join(' ', @provision_options);
         }
+
 	return $ret; 
 }
 
@@ -634,21 +514,6 @@ sub provision_dc($$)
 	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
 	$ret->{SMBD_TEST_LOG_POS} = 0;
 	return $ret;
-}
-
-sub provision_ldap($$)
-{
-	my ($self, $envvars) = @_;
-	my $provision_aci = "";
-	
-	if ($self->{ldap} eq "fedora-ds") {
-		#it is easier to base64 encode this than correctly escape it:
-		# (targetattr = "*") (version 3.0;acl "full access to all by all";allow (all)(userdn = "ldap:///anyone");)
-		$provision_aci = "--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK";
-	}
-
-	system("$self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$provision_aci\" --ldap-backend=$envvars->{LDAP_URI}") and
-		die("LDAP PROVISIONING failed: $self->{bindir}/smbscript $self->{setupdir}/provision $envvars->{PROVISION_OPTIONS} \"$provision_aci\" --ldap-backend=$envvars->{LDAP_URI}");
 }
 
 sub teardown_env($$)
