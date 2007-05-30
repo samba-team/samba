@@ -646,6 +646,61 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+BOOL test_QuerySitesByCost(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			   struct DsPrivate *priv)
+{
+	NTSTATUS status;
+	struct drsuapi_QuerySitesByCost r;
+	BOOL ret = True;
+
+	const char *my_site = "Default-First-Site-Name";
+	const char *remote_site1 = "smbtorture-nonexisting-site1";
+	const char *remote_site2 = "smbtorture-nonexisting-site2";
+
+	r.in.bind_handle = &priv->bind_handle;
+	r.in.level = 1;
+	r.in.req.req1.site_from = talloc_strdup(mem_ctx, my_site);
+	r.in.req.req1.num_req = 2;
+	r.in.req.req1.site_to = talloc_zero_array(mem_ctx, const char *, r.in.req.req1.num_req);
+	r.in.req.req1.site_to[0] = talloc_strdup(mem_ctx, remote_site1);
+	r.in.req.req1.site_to[1] = talloc_strdup(mem_ctx, remote_site2);
+	r.in.req.req1.flags = 0;
+
+	status = dcerpc_drsuapi_QuerySitesByCost(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_QuerySitesByCost - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("QuerySitesByCost failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	}
+
+	if (W_ERROR_IS_OK(r.out.result)) {
+
+		if (!W_ERROR_EQUAL(r.out.ctr.ctr1.info[0].error_code, WERR_DS_OBJ_NOT_FOUND) ||
+		    !W_ERROR_EQUAL(r.out.ctr.ctr1.info[1].error_code, WERR_DS_OBJ_NOT_FOUND)) {	
+			printf("expected error_code WERR_DS_OBJ_NOT_FOUND, got %s\n", 
+				win_errstr(r.out.ctr.ctr1.info[0].error_code));
+			ret = False;
+		}
+
+		if ((r.out.ctr.ctr1.info[0].site_cost != (uint32_t) -1) ||
+		    (r.out.ctr.ctr1.info[1].site_cost != (uint32_t) -1)) {
+			printf("expected site_cost %d, got %d\n", 
+				(uint32_t) -1, r.out.ctr.ctr1.info[0].site_cost);
+			ret = False;
+		}
+	}
+
+	return ret;
+
+
+}
+
 BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		   struct DsPrivate *priv)
 {
@@ -705,7 +760,9 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 	}
 
 	ret &= test_DsBind(p, mem_ctx, &priv);
-
+#if 0
+	ret &= test_QuerySitesByCost(p, mem_ctx, &priv);
+#endif
 	ret &= test_DsGetDomainControllerInfo(p, mem_ctx, &priv);
 
 	ret &= test_DsCrackNames(p, mem_ctx, &priv);
