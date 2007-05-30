@@ -1,5 +1,13 @@
-2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: hook for testing secrety key algs
+
+	* crypto.c: Add selection code for secret key crypto.
+
+	* hx509.h: Add HX509_SELECT_SECRET_ENC.
+	
+2007-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ks_p11.c: add more mechtypes
 	
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
