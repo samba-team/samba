@@ -1203,10 +1203,10 @@ out:
 }
 
 static int
-pk_principal_from_X509(krb5_context context, 
-		       krb5_kdc_configuration *config,
-		       hx509_cert client_cert, 
-		       krb5_const_principal match)
+match_rfc_san(krb5_context context, 
+	      krb5_kdc_configuration *config,
+	      hx509_cert client_cert, 
+	      krb5_const_principal match)
 {
     hx509_octet_string_list list;
     int ret, i, found = 0;
@@ -1258,6 +1258,64 @@ out:
     return 0;
 }
 
+static int
+match_ms_upn_san(krb5_context context, 
+		 krb5_kdc_configuration *config,
+		 hx509_cert client_cert, 
+		 krb5_const_principal match)
+{
+    hx509_octet_string_list list;
+    krb5_principal principal = NULL;
+    char *p;
+    int ret, found = 0;
+
+    memset(&list, 0 , sizeof(list));
+
+    ret = hx509_cert_find_subjectAltName_otherName(client_cert,
+						   oid_id_pkinit_ms_san(),
+						   &list);
+    if (ret)
+	goto out;
+
+    if (list.len != 1) {
+	kdc_log(context, config, 0,
+		"More then one PK-INIT MS UPN SAN");
+	goto out;
+    }
+
+    p = malloc(list.val[0].length + 1);
+    if (p == NULL) {
+	kdc_log(context, config, 0,
+		"More then one PK-INIT MS UPN SAN");
+	return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+    }
+    
+    memcpy(p, list.val[0].data, list.val[0].length);
+    p[list.val[0].length] = '\0';
+
+    ret = krb5_parse_name(context, p, &principal);
+    free(p);
+
+    if (ret) {
+	kdc_log(context, config, 0, "Failed to parse principal in MS UPN SAN");
+	goto out;
+    }
+
+    if (krb5_principal_compare(context, principal, match) == TRUE)
+	found = 1;
+
+out:
+    if (principal)
+	krb5_free_principal(context, principal);
+    hx509_free_octet_string_list(&list);    
+    if (ret)
+	return ret;
+
+    if (!found)
+	return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+
+    return 0;
+}
 
 krb5_error_code
 _kdc_pk_check_client(krb5_context context,
@@ -1287,12 +1345,20 @@ _kdc_pk_check_client(krb5_context context,
 	    *subject_name);
 
     if (config->enable_pkinit_princ_in_cert) {
-	ret = pk_principal_from_X509(context, config, 
-				     client_params->cert,
-				     client->entry.principal);
+	ret = match_rfc_san(context, config,
+			    client_params->cert,
+			    client->entry.principal);
 	if (ret == 0) {
 	    kdc_log(context, config, 5,
 		    "Found matching PK-INIT SAN in certificate");
+	    return 0;
+	}
+	ret = match_ms_upn_san(context, config,
+			       client_params->cert,
+			       client->entry.principal);
+	if (ret == 0) {
+	    kdc_log(context, config, 5,
+		    "Found matching MS UPN SAN in certificate");
 	    return 0;
 	}
     }
