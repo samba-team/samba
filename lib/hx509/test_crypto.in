@@ -131,7 +131,17 @@ ${hxtool} crypto-select \
 cmp test ${srcdir}/tst-crypto-select6 > /dev/null || \
 	{ echo "select6 failure"; exit 1; }
 
-echo "crypto available1"
+echo "crypto select7"
+${hxtool} crypto-select \
+	--type=secret \
+	--peer-cmstype=2.16.840.1.101.3.4.1.42 \
+	--peer-cmstype=1.2.840.113549.3.7 \
+	--peer-cmstype=1.2.840.113549.1.1.5 \
+	 > test || { echo "select7"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select7 > /dev/null || \
+	{ echo "select7 failure"; exit 1; }
+
+cho "crypto available1"
 ${hxtool} crypto-available \
 	--type=all \
 	> test || { echo "available1"; exit 1; }
