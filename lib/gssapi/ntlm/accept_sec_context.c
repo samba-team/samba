@@ -182,12 +182,15 @@ _gss_ntlm_accept_sec_context
 					     &type3,
 					     &session);
 	heim_ntlm_free_type3(&type3);
+	if (maj_stat) {
+	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
+	    return maj_stat;
+	}
 
 	ret = krb5_data_copy(&ctx->sessionkey, 
 			     session.data, session.length);
 	if (ret) {	
-	    _gss_ntlm_delete_sec_context(minor_status,
-					 context_handle, NULL);
+	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
 	}
