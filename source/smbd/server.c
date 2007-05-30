@@ -482,7 +482,8 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
 	while (1) {
-		fd_set lfds;
+		struct timeval now, idle_timeout;
+		fd_set r_fds, w_fds;
 		int num;
 		
 		/* Free up temporary memory from the main smbd. */
@@ -500,11 +501,23 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			}
 		}
 
-		memcpy((char *)&lfds, (char *)&listen_set, 
+		idle_timeout = timeval_zero();
+
+		memcpy((char *)&r_fds, (char *)&listen_set, 
 		       sizeof(listen_set));
-		
-		num = sys_select(maxfd+1,&lfds,NULL,NULL,NULL);
-		
+		FD_ZERO(&w_fds);
+		GetTimeOfDay(&now);
+
+		event_add_to_select_args(smbd_event_context(), &now,
+					 &r_fds, &w_fds, &idle_timeout,
+					 &maxfd);
+
+		num = sys_select(maxfd+1,&r_fds,&w_fds,NULL,
+				 timeval_is_zero(&idle_timeout) ?
+				 NULL : &idle_timeout);
+
+		run_events(smbd_event_context(), num, &r_fds, &w_fds);
+
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
 				exit_server_cleanly(NULL);
@@ -533,11 +546,11 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 			s = -1;
 			for(i = 0; i < num_sockets; i++) {
-				if(FD_ISSET(fd_listenset[i],&lfds)) {
+				if(FD_ISSET(fd_listenset[i],&r_fds)) {
 					s = fd_listenset[i];
 					/* Clear this so we don't look
 					   at it again. */
-					FD_CLR(fd_listenset[i],&lfds);
+					FD_CLR(fd_listenset[i],&r_fds);
 					break;
 				}
 			}
