@@ -192,10 +192,11 @@ BOOL session_claim(user_struct *vuser)
 
 	status = rec->store(rec, data, TDB_REPLACE);
 
+	TALLOC_FREE(rec);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("session_claim: unable to create session id "
 			 "record: %s\n", nt_errstr(status)));
-		TALLOC_FREE(rec);
 		return False;
 	}
 
