@@ -780,6 +780,9 @@ enum flush_reason_enum {
 
 #include "nss_info.h"
 
+/* generated rpc server implementation functions */
+#include "librpc/gen_ndr/srv_echo.h"
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"

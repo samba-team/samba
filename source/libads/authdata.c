@@ -451,10 +451,11 @@ static BOOL pac_io_pac_signature_data(const char *desc,
 				      PAC_SIGNATURE_DATA *data, uint32 length,
 				      prs_struct *ps, int depth)
 {
-	uint32 siglen = length - sizeof(uint32);
+	uint32 siglen = 0;
+
 	prs_debug(ps, depth, desc, "pac_io_pac_signature_data");
 	depth++;
-	
+
 	if (data == NULL)
 		return False;
 
@@ -462,6 +463,9 @@ static BOOL pac_io_pac_signature_data(const char *desc,
 		return False;
 	if (!prs_uint32("type", ps, depth, &data->type))
 		return False;
+
+	if ( length > sizeof(uint32) )
+		siglen = length - sizeof(uint32);	
 
 	if (UNMARSHALLING(ps) && length) {
 		if (siglen) {
