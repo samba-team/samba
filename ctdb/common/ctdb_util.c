@@ -217,3 +217,18 @@ void ctdb_set_realtime(void)
 	}
 #endif
 }
+
+void set_nonblocking(int fd)
+{
+	unsigned v;
+	v = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, v | O_NONBLOCK);
+}
+
+void set_close_on_exec(int fd)
+{
+	unsigned v;
+	v = fcntl(fd, F_GETFD, 0);
+        fcntl(fd, F_SETFD, v | FD_CLOEXEC);
+}
+

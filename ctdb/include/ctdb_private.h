@@ -955,6 +955,8 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
+void set_nonblocking(int fd);
+void set_close_on_exec(int fd);
 
 
 #endif

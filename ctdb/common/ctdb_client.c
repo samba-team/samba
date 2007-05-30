@@ -174,6 +174,9 @@ int ctdb_socket_connect(struct ctdb_context *ctdb)
 	if (ctdb->daemon.sd == -1) {
 		return -1;
 	}
+
+	set_nonblocking(ctdb->daemon.sd);
+	set_close_on_exec(ctdb->daemon.sd);
 	
 	if (connect(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		close(ctdb->daemon.sd);

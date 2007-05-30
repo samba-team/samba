@@ -101,13 +101,6 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 }
 
 
-static void set_non_blocking(int fd)
-{
-	unsigned v;
-	v = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, v | O_NONBLOCK);
-}
-
 static void block_signal(int signum)
 {
 	struct sigaction act;
@@ -585,7 +578,9 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	if (fd == -1) {
 		return;
 	}
-	set_non_blocking(fd);
+
+	set_nonblocking(fd);
+	set_close_on_exec(fd);
 
 	client = talloc_zero(ctdb, struct ctdb_client);
 	client->ctdb = ctdb;
@@ -634,6 +629,9 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		return -1;
 	}
 
+	set_nonblocking(ctdb->daemon.sd);
+	set_close_on_exec(ctdb->daemon.sd);
+
 #if 0
 	/* AIX doesn't like this :( */
 	if (fchown(ctdb->daemon.sd, geteuid(), getegid()) != 0 ||
@@ -643,7 +641,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	}
 #endif
 
-	set_non_blocking(ctdb->daemon.sd);
+	set_nonblocking(ctdb->daemon.sd);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;

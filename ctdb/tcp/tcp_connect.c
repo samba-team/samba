@@ -26,14 +26,6 @@
 #include "../include/ctdb_private.h"
 #include "ctdb_tcp.h"
 
-static void set_nonblocking(int fd)
-{
-	unsigned v;
-	v = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, v | O_NONBLOCK);
-}
-
-
 /*
   called when a complete packet has come in - should not happen on this socket
  */
@@ -134,6 +126,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	tnode->fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	set_nonblocking(tnode->fd);
+	set_close_on_exec(tnode->fd);
 
 	ZERO_STRUCT(sock_out);
 #ifdef HAVE_SOCK_SIN_LEN
@@ -213,6 +206,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	in->ctdb = ctdb;
 
 	set_nonblocking(in->fd);
+	set_close_on_exec(in->fd);
 
         setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 
@@ -321,6 +315,8 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 		ctdb_set_error(ctdb, "socket failed\n");
 		return -1;
 	}
+
+	set_close_on_exec(ctcp->listen_fd);
 
         setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
 
