@@ -1,8 +1,9 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines for rpcecho
- *  Copyright (C) Tim Potter                   2003.
- *  Copyright (C) Jelmer Vernooij 			   2006.
+ *  Copyright (C) Tim Potter                   2003
+ *  Copyright (C) Jelmer Vernooij              2006
+ *  Copyright (C) Gerald (Jerry) Carter        2007
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,9 +32,9 @@
 
 /* Add one to the input and return it */
 
-void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r)
+void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r )
 {
-	DEBUG(10, ("_echo_add_one\n"));
+	DEBUG(10, ("_echo_AddOne\n"));
 
 	*r->out.out_data = r->in.in_data + 1;
 }
@@ -42,18 +43,26 @@ void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r)
 
 void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r)
 {
-	DEBUG(10, ("_echo_data\n"));
+	DEBUG(10, ("_echo_EchoData\n"));
 
-	memcpy(r->out.out_data, r->in.in_data, r->in.len);
+	if ( r->in.len == 0 ) {		
+		r->out.out_data = NULL;
+		return;
+	}
+
+	r->out.out_data = TALLOC(p->mem_ctx, r->in.len);	
+	memcpy( r->out.out_data, r->in.in_data, r->in.len );
+	return;	
 }
 
 /* Sink an array of data */
 
 void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r)
 {
-	DEBUG(10, ("_sink_data\n"));
+	DEBUG(10, ("_echo_SinkData\n"));
 
 	/* My that was some yummy data! */
+	return;	
 }
 
 /* Source an array of data */
@@ -62,10 +71,20 @@ void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r)
 {
 	uint32 i;
 
-	DEBUG(10, ("_source_data\n"));
+	DEBUG(10, ("_echo_SourceData\n"));
 
-	for (i = 0; i < r->in.len; i++)
+	if ( r->in.len == 0 ) {
+		r->out.data = NULL;		
+		return;
+	}
+
+	r->out.data = TALLOC(p->mem_ctx, r->in.len );
+
+	for (i = 0; i < r->in.len; i++ ) {		
 		r->out.data[i] = i & 0xff;
+	}
+	
+	return;	
 }
 
 void _echo_TestCall(pipes_struct *p, struct echo_TestCall *r)
