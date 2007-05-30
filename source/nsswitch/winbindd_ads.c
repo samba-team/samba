@@ -402,49 +402,10 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-/* convert a DN to a name, SID and name type 
-   this might become a major speed bottleneck if groups have
-   lots of users, in which case we could cache the results
-*/
-static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-		      const char *dn,
-		      char **name, uint32 *name_type, DOM_SID *sid)
-{
-	LDAPMessage *res = NULL;
-	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
-			       "objectSid", "sAMAccountType", NULL};
-	ADS_STATUS rc;
-	uint32 atype;
-	DEBUG(3,("ads: dn_lookup\n"));
-
-	rc = ads_search_retry_dn(ads, &res, dn, attrs);
-
-	if (!ADS_ERR_OK(rc) || !res) {
-		goto failed;
-	}
-
-	(*name) = ads_pull_username(ads, mem_ctx, res);
-
-	if (!ads_pull_uint32(ads, res, "sAMAccountType", &atype)) {
-		goto failed;
-	}
-	(*name_type) = ads_atype_map(atype);
-
-	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
-		goto failed;
-	}
-
-	if (res) 
-		ads_msgfree(ads, res);
-
-	return True;
-
-failed:
-	if (res) 
-		ads_msgfree(ads, res);
-
-	return False;
-}
+/* If you are looking for "dn_lookup": Yes, it used to be here!
+ * It has gone now since it was a major speed bottleneck in
+ * lookup_groupmem (its only use). It has been replaced by
+ * an rpc lookup sids call... R.I.P. */
 
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
@@ -942,11 +903,18 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *sidstr;
-	char **members;
+	char **members = NULL;
 	int i;
-	size_t num_members;
-	fstring sid_string;
+	size_t num_members = 0;
 	ads_control args;
+        struct rpc_pipe_client *cli;
+        POLICY_HND lsa_policy;
+	DOM_SID *sid_mem_nocache = NULL;
+	char **names_nocache = NULL;
+	uint32 *name_types_nocache = NULL;
+	char **domains_nocache = NULL;     /* only needed for rpccli_lsa_lookup_sids */
+	uint32 num_nocache = 0;
+
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, 
 		  sid_string_static(group_sid)));
@@ -980,9 +948,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	}
 	SAFE_FREE(sidstr);
 
-	members = NULL;
-	num_members = 0;
-
 	args.control = ADS_EXTENDED_DN_OID;
 	args.val = ADS_EXTENDED_DN_HEX_STRING;
 	args.critical = True;
@@ -996,73 +961,134 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	} 
 	
-	/* now we need to turn a list of members into rids, names and name types 
-	   the problem is that the members are in the form of distinguised names
-	*/
-
-	if (num_members) {
+	DEBUG(10, ("ads lookup_groupmem: got %d sids via extended dn call\n", num_members));
+	
+	/* Now that we have a list of sids, we need to get the
+	 * lists of names and name_types belonging to these sids.
+	 * even though conceptually not quite clean,  we use the 
+	 * RPC call lsa_lookup_sids for this since it can handle a 
+	 * list of sids. ldap calls can just resolve one sid at a time.
+	 *
+	 * At this stage, the sids are still hidden in the exetended dn
+	 * member output format. We actually do a little better than
+	 * stated above: In extracting the sids from the member strings,
+	 * we try to resolve as many sids as possible from the
+	 * cache. Only the rest is passed to the lsa_lookup_sids call. */
+	
+	if (num_names) {
 		(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
-		(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
 		(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
+		(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
+		(sid_mem_nocache) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
 
 		if ((members == NULL) || (*sid_mem == NULL) ||
-		     (*name_types == NULL) || (*names == NULL)) {
+		    (*names == NULL) || (*name_types == NULL) ||
+		    (sid_mem_nocache == NULL))
+		{
 			DEBUG(1, ("talloc failed\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-	} else {
-		(*sid_mem) = NULL;
-		(*name_types) = NULL;
-		(*names) = NULL;
 	}
- 
-	for (i=0;i<num_members;i++) {
+	else {
+		(*sid_mem) = NULL;
+		(*names) = NULL;
+		(*name_types) = NULL;
+	}
+
+	for (i=0; i<num_members; i++) {
 		uint32 name_type;
-		char *name, *domain_name, *dn;
+		char *name, *domain_name;
 		DOM_SID sid;
 
-		if ((!ads_get_sid_from_extended_dn(mem_ctx, members[i], ADS_EXTENDED_DN_HEX_STRING, &sid)) ||
-		    (!ads_get_dn_from_extended_dn(mem_ctx, members[i], &dn)))
-		{
+	        if (!ads_get_sid_from_extended_dn(mem_ctx, members[i], args.val, &sid)) {
 			status = NT_STATUS_INVALID_PARAMETER;
+	                goto done;
+		}
+		if (lookup_cached_sid(mem_ctx, &sid, &domain_name, &name, &name_type)) {
+			DEBUG(10,("ads: lookup_groupmem: got sid %s from cache\n",
+				 sid_string_static(&sid)));
+			sid_copy(&(*sid_mem)[*num_names], &sid);
+			(*names)[*num_names] = CONST_DISCARD(char *,name);
+			(*name_types)[*num_names] = name_type;
+			(*num_names)++;
+		}
+		else {
+			DEBUG(10, ("ads: lookup_groupmem: sid %s not found in cache\n",
+				  sid_string_static(&sid)));
+			sid_copy(&(sid_mem_nocache)[num_nocache], &sid);
+			num_nocache++;
+		}
+	}
+
+	DEBUG(10, ("ads: lookup_groupmem: %d sids found in cache, "
+		  "%d left for lsa_lookupsids\n", *num_names, num_nocache));
+
+	/* handle sids not resolved from cache by lsa_lookup_sids */
+	if (num_nocache > 0) {
+
+		status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 
-		if (lookup_cached_sid(mem_ctx, &sid, &domain_name, &name, &name_type)) {
+		status = rpccli_lsa_lookup_sids_all(cli, mem_ctx, 
+						    &lsa_policy,
+						    num_nocache, 
+						    sid_mem_nocache, 
+						    &domains_nocache, 
+						    &names_nocache, 
+						    &name_types_nocache);
 
-			DEBUG(10,("ads: lookup_groupmem: got sid %s from cache\n", 
-				sid_string_static(&sid)));
-
-			(*names)[*num_names] = CONST_DISCARD(char *,name);
-			(*name_types)[*num_names] = name_type;
-			sid_copy(&(*sid_mem)[*num_names], &sid);
-
-			(*num_names)++;
-
-			continue;
+		if (NT_STATUS_IS_OK(status) ||
+		    NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) 
+		{
+			/* Copy the entries over from the "_nocache" arrays 
+			 * to the result arrays, skipping the gaps the 
+			 * lookup_sids call left. */
+			*num_names = 0;
+			for (i=0; i < num_nocache; i++) {
+				if (((names_nocache)[i] != NULL) && 
+				    ((name_types_nocache)[i] != SID_NAME_UNKNOWN)) 
+				{
+					sid_copy(&(*sid_mem)[*num_names],
+						 &sid_mem_nocache[i]);
+					(*names)[*num_names] = names_nocache[i];
+					(*name_types)[*num_names] = name_types_nocache[i];
+					(*num_names)++;
+				}
+			}
 		}
-
-		if (dn_lookup(ads, mem_ctx, dn, &name, &name_type, &sid)) {
-
-			DEBUG(10,("ads: lookup_groupmem: got sid %s from dn_lookup\n", 
-				sid_string_static(&sid)));
-			
-			(*names)[*num_names] = name;
-			(*name_types)[*num_names] = name_type;
-			sid_copy(&(*sid_mem)[*num_names], &sid);
-			
-			(*num_names)++;
-
+		else if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+			DEBUG(10, ("lookup_groupmem: lsa_lookup_sids could "
+				   "not map any SIDs at all.\n"));
+			/* Don't handle this as an error here.
+			 * There is nothing left to do with respect to the 
+			 * overall result... */
 		}
-	}	
+		else if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("lookup_groupmem: Error looking up %d "
+				   "sids via rpc_lsa_lookup_sids: %s\n",
+				   num_members, nt_errstr(status)));
+			goto done;
+		}
+	}
 
 	status = NT_STATUS_OK;
-	DEBUG(3,("ads lookup_groupmem for sid=%s succeeded\n", sid_to_string(sid_string, group_sid)));
+	DEBUG(3,("ads lookup_groupmem for sid=%s succeeded\n",
+		 sid_string_static(group_sid)));
+
 done:
 
 	if (res) 
 		ads_msgfree(ads, res);
+
+	/* free intermediate lists. - a temp talloc ctx might be better. */
+	TALLOC_FREE(sid_mem_nocache);
+	TALLOC_FREE(names_nocache);
+	TALLOC_FREE(name_types_nocache);
+	TALLOC_FREE(domains_nocache);
 
 	return status;
 }
