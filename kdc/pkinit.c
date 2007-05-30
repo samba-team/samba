@@ -679,6 +679,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 		      krb5_keyblock *reply_key,
 		      ContentInfo *content_info)
 {
+    const heim_oid *envelopedAlg = NULL;
     krb5_error_code ret;
     krb5_data buf, signed_data;
     size_t size;
@@ -690,6 +691,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
     case PKINIT_COMPAT_WIN2K: {
 	ReplyKeyPack_Win2k kp;
 	memset(&kp, 0, sizeof(kp));
+
+	envelopedAlg = oid_id_rsadsi_des_ede3_cbc();
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
@@ -799,7 +802,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
     ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
 			       0,
 			       client_params->cert,
-			       signed_data.data, signed_data.length, NULL,
+			       signed_data.data, signed_data.length, 
+			       envelopedAlg,
 			       oid_id_pkcs7_signedData(), &buf);
     if (ret)
 	goto out;
