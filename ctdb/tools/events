@@ -43,6 +43,10 @@ case $cmd in
 	}
 	# if we have a local arp entry for this IP then remove it
 	/sbin/arp -d $ip 2> /dev/null
+
+	# having a list of what IPs we have allows statd to do the right 
+	# thing via /etc/ctdb/statd-callout
+	/bin/touch /etc/ctdb/ip.$ip
 	exit 0
 	;;
 
@@ -61,12 +65,14 @@ case $cmd in
 	# if we have a local arp entry for this IP then remove it
 	/sbin/arp -d $ip 2> /dev/null
 	echo $ip >> /etc/ctdb/released_ips
+	/bin/rm -f /etc/ctdb/ip.$ip
 	exit 0
 	;;
 
      recovered)
         # restart any services as necessary, like NFS
 	# 
+	[ -x /etc/ctdb/statd-callout ] && /etc/ctdb/statd-callout copy
 	[ -f /etc/ctdb/released_ips ] && {
 		( /sbin/service nfs status > /dev/null 2>&1 && 
                       /sbin/service nfs restart > /dev/null 2>&1 ) &
