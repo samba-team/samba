@@ -41,7 +41,7 @@ static struct generic_mapping reg_generic_map =
 static void free_regkey_info(void *ptr)
 {
 	regkey_close_internal( (REGISTRY_KEY*)ptr );
-}
+};
 
 /******************************************************************
  Find a registry key handle and return a REGISTRY_KEY
@@ -207,11 +207,11 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
  reg_close
  ********************************************************************/
 
-WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
+WERROR _winreg_CloseKey(pipes_struct *p, struct winreg_CloseKey *r)
 {
 	/* close the policy handle */
 
-	if (!close_registry_key(p, &q_u->pol))
+	if (!close_registry_key(p, r->in.handle))
 		return WERR_BADFID; 
 
 	return WERR_OK;
@@ -1350,3 +1350,217 @@ WERROR _reg_set_key_sec(pipes_struct *p, REG_Q_SET_KEY_SEC  *q_u, REG_R_SET_KEY_
 		
 	return WERR_ACCESS_DENIED;
 }
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _winreg_FlushKey(pipes_struct *p, struct winreg_FlushKey *r)
+{
+	/* I'm just replying OK because there's not a lot 
+	   here I see to do i  --jerry */
+	
+	return WERR_OK;
+}
+
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _winreg_OpenHKCR(pipes_struct *p, struct winreg_OpenHKCR *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKCU(pipes_struct *p, struct winreg_OpenHKCU *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKLM(pipes_struct *p, struct winreg_OpenHKLM *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKPD(pipes_struct *p, struct winreg_OpenHKPD *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKU(pipes_struct *p, struct winreg_OpenHKU *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_CreateKey(pipes_struct *p, struct winreg_CreateKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_DeleteKey(pipes_struct *p, struct winreg_DeleteKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_DeleteValue(pipes_struct *p, struct winreg_DeleteValue *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_EnumKey(pipes_struct *p, struct winreg_EnumKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_LoadKey(pipes_struct *p, struct winreg_LoadKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct winreg_NotifyChangeKeyValue *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenKey(pipes_struct *p, struct winreg_OpenKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_QueryInfoKey(pipes_struct *p, struct winreg_QueryInfoKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_ReplaceKey(pipes_struct *p, struct winreg_ReplaceKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_UnLoadKey(pipes_struct *p, struct winreg_UnLoadKey *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSystemShutdown *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShutdown *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKCC(pipes_struct *p, struct winreg_OpenHKCC *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKDD(pipes_struct *p, struct winreg_OpenHKDD *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct winreg_QueryMultipleValues *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateSystemShutdownEx *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_SaveKeyEx(pipes_struct *p, struct winreg_SaveKeyEx *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKPT(pipes_struct *p, struct winreg_OpenHKPT *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_OpenHKPN(pipes_struct *p, struct winreg_OpenHKPN *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winreg_QueryMultipleValues2(pipes_struct *p, struct winreg_QueryMultipleValues2 *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+

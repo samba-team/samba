@@ -31,30 +31,30 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static BOOL proxy_winreg_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	winreg_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns)
+		return False;
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("WINREG function table not sorted\n");
+	}
+
+	return fns[opnum].fn(p);
+}
+
 /*******************************************************************
  api_reg_close
  ********************************************************************/
 
 static BOOL api_reg_close(pipes_struct *p)
 {
-	REG_Q_CLOSE q_u;
-	REG_R_CLOSE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the reg unknown 1 */
-	if(!reg_io_q_close("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _reg_close(p, &q_u, &r_u);
-
-	if(!reg_io_r_close("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_winreg_call( p, DCERPC_WINREG_CLOSEKEY );
 }
 
 /*******************************************************************

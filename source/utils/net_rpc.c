@@ -5082,7 +5082,7 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = rpccli_shutdown_abort(pipe_hnd, mem_ctx);
+	result = rpccli_initshutdown_Abort(pipe_hnd, mem_ctx, NULL);
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -5119,7 +5119,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = werror_to_ntstatus(rpccli_reg_abort_shutdown(pipe_hnd, mem_ctx));
+	result = rpccli_winreg_AbortSystemShutdown(pipe_hnd, mem_ctx, NULL);
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -5142,7 +5142,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 
 static int rpc_shutdown_abort(int argc, const char **argv) 
 {
-	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
+	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
 				 rpc_shutdown_abort_internals,
 				 argc, argv);
 
@@ -5183,6 +5183,8 @@ static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
+	struct initshutdown_String msg_string;
+	struct initshutdown_String_sub s;
 
 	if (opt_comment) {
 		msg = opt_comment;
@@ -5191,9 +5193,12 @@ static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 		timeout = opt_timeout;
 	}
 
+	s.name = msg;
+	msg_string.name = &s;
+
 	/* create an entry */
-	result = rpccli_shutdown_init(pipe_hnd, mem_ctx, msg, timeout, opt_reboot, 
-				   opt_force);
+	result = rpccli_initshutdown_Init(pipe_hnd, mem_ctx, NULL,
+			&msg_string, timeout, opt_force, opt_reboot);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
@@ -5228,55 +5233,37 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv) 
 {
-	WERROR result;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-#if 0
-	poptContext pc;
-	int rc;
+	struct initshutdown_String msg_string;
+	struct initshutdown_String_sub s;
+	NTSTATUS result;
 
-	struct poptOption long_options[] = {
-		{"message",    'm', POPT_ARG_STRING, &msg},
-		{"timeout",    't', POPT_ARG_INT,    &timeout},
-		{"reboot",     'r', POPT_ARG_NONE,   &reboot},
-		{"force",      'f', POPT_ARG_NONE,   &force},
-		{ 0, 0, 0, 0}
-	};
-
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
-
-	rc = poptGetNextOpt(pc);
-	
-	if (rc < -1) {
-		/* an error occurred during option processing */
-		DEBUG(0, ("%s: %s\n",
-			  poptBadOption(pc, POPT_BADOPTION_NOALIAS),
-			  poptStrerror(rc)));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-#endif
 	if (opt_comment) {
 		msg = opt_comment;
 	}
+	s.name = msg;
+	msg_string.name = &s;
+
 	if (opt_timeout) {
 		timeout = opt_timeout;
 	}
 
 	/* create an entry */
-	result = rpccli_reg_shutdown(pipe_hnd, mem_ctx, msg, timeout, opt_reboot, opt_force);
+	result = rpccli_winreg_InitiateSystemShutdown(pipe_hnd, mem_ctx, NULL,
+			&msg_string, timeout, opt_force, opt_reboot);
 
-	if (W_ERROR_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
 	} else {
 		d_fprintf(stderr, "\nShutdown of remote machine failed\n");
-		if (W_ERROR_EQUAL(result,WERR_MACHINE_LOCKED))
+		if ( W_ERROR_EQUAL(ntstatus_to_werror(result),WERR_MACHINE_LOCKED) )
 			d_fprintf(stderr, "\nMachine locked, use -f switch to force\n");
 		else
-			d_fprintf(stderr, "\nresult was: %s\n", dos_errstr(result));
+			d_fprintf(stderr, "\nresult was: %s\n", nt_errstr(result));
 	}
 
-	return werror_to_ntstatus(result);
+	return result;
 }
 
 /** 
@@ -5291,7 +5278,7 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 
 static int rpc_shutdown(int argc, const char **argv) 
 {
-	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
+	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
 				 rpc_init_shutdown_internals,
 				 argc, argv);
 

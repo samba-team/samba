@@ -202,7 +202,7 @@ typedef uint32 codepoint_t;
 #define PI_SPOOLSS		7
 #define PI_NETDFS		8
 #define PI_RPCECHO 		9
-#define PI_SHUTDOWN		10
+#define PI_INITSHUTDOWN		10
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12
 #define PI_NTSVCS		13
@@ -303,6 +303,8 @@ struct id_map {
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/dfs.h"
+#include "librpc/gen_ndr/winreg.h"
+#include "librpc/gen_ndr/initshutdown.h"
 #include "librpc/gen_ndr/eventlog.h"
 #include "librpc/gen_ndr/wkssvc.h"
 #include "librpc/gen_ndr/echo.h"

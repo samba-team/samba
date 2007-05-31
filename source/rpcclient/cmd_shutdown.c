@@ -108,10 +108,10 @@ struct cmd_set shutdown_commands[] = {
 	{ "SHUTDOWN"  },
 
 #if 0
-	{ "shutdowninit", RPC_RTYPE_NTSTATUS, cmd_shutdown_init, NULL, PI_SHUTDOWN, "Remote Shutdown (over shutdown pipe)",
+	{ "shutdowninit", RPC_RTYPE_NTSTATUS, cmd_shutdown_init, NULL, PI_INITSHUTDOWN, "Remote Shutdown (over shutdown pipe)",
 				"syntax: shutdown [-m message] [-t timeout] [-r] [-h] [-f] (-r == reboot, -h == halt, -f == force)" },
 				
-	{ "shutdownabort", RPC_RTYPE_NTSTATUS, cmd_shutdown_abort, NULL, PI_SHUTDOWN, "Abort Shutdown (over shutdown pipe)",
+	{ "shutdownabort", RPC_RTYPE_NTSTATUS, cmd_shutdown_abort, NULL, PI_INITSHUTDOWN, "Abort Shutdown (over shutdown pipe)",
 				"syntax: shutdownabort" },
 #endif
 	{ NULL }

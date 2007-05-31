@@ -234,7 +234,8 @@ RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_lsa.o librpc/gen_ndr/ndr_echo.o \
 		 librpc/gen_ndr/ndr_svcctl.o librpc/gen_ndr/ndr_eventlog.o \
-		 librpc/gen_ndr/ndr_dfs.o
+		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_initshutdown.o \
+		 librpc/gen_ndr/ndr_winreg.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -334,12 +335,12 @@ RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       $(RPC_CLIENT_OBJ1) rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
-	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o \
-	       rpc_client/cli_shutdown.o
+	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o 
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_wkssvc.o librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_echo.o librpc/gen_ndr/cli_svcctl.o \
-		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_dfs.o\
+		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_dfs.o \
+		   librpc/gen_ndr/cli_initshutdown.o librpc/gen_ndr/cli_winreg.o \
 		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
@@ -357,7 +358,10 @@ RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
 
 REGFIO_OBJ = registry/regfio.o
 
-RPC_REG_OBJ =  rpc_server/srv_winreg.o rpc_server/srv_winreg_nt.o $(REGFIO_OBJ)
+RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
+
+RPC_REG_OBJ =  rpc_server/srv_winreg.o rpc_server/srv_winreg_nt.o \
+	       librpc/gen_ndr/srv_winreg.o $(REGFIO_OBJ)
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
@@ -392,8 +396,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o $(RPC_PARSE_OBJ2) \
                 rpc_parse/parse_ds.o rpc_parse/parse_spoolss.o \
 	        rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
                 rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o $(REGOBJS_OBJ) \
-		rpc_parse/parse_reg.o \
-		rpc_parse/parse_shutdown.o
+		rpc_parse/parse_reg.o 
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 

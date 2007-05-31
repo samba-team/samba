@@ -687,7 +687,6 @@ typedef int BOOL;
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
 #include "rpc_ds.h"
-#include "rpc_shutdown.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
@@ -786,6 +785,8 @@ enum flush_reason_enum {
 #include "librpc/gen_ndr/srv_svcctl.h"
 #include "librpc/gen_ndr/srv_lsa.h"
 #include "librpc/gen_ndr/srv_eventlog.h"
+#include "librpc/gen_ndr/srv_winreg.h"
+#include "librpc/gen_ndr/srv_initshutdown.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H

@@ -1039,6 +1039,8 @@ int cac_Shutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 {
 	SMBCSRV *srv = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	struct initshutdown_String msg_string;
+	struct initshutdown_String_sub s;
 
 	char *msg;
 
@@ -1062,18 +1064,18 @@ int cac_Shutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	/*initialize for winreg pipe if we have to */
-	if ( !hnd->_internal.pipes[PI_SHUTDOWN] ) {
+	if ( !hnd->_internal.pipes[PI_INITSHUTDOWN] ) {
 		if ( !
 		     ( pipe_hnd =
-		       cli_rpc_pipe_open_noauth( srv->cli, PI_SHUTDOWN,
+		       cli_rpc_pipe_open_noauth( srv->cli, PI_INITSHUTDOWN,
 						 &( hnd->status ) ) ) ) {
 			return CAC_FAILURE;
 		}
 
-		hnd->_internal.pipes[PI_SHUTDOWN] = True;
+		hnd->_internal.pipes[PI_INITSHUTDOWN] = True;
 	}
 
-	pipe_hnd = cac_GetPipe( hnd, PI_SHUTDOWN );
+	pipe_hnd = cac_GetPipe( hnd, PI_INITSHUTDOWN );
 	if ( !pipe_hnd ) {
 		hnd->status = NT_STATUS_INVALID_HANDLE;
 		return CAC_FAILURE;
@@ -1081,22 +1083,27 @@ int cac_Shutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	msg = ( op->in.message !=
 		NULL ) ? op->in.message : talloc_strdup( mem_ctx, "" );
+	msg_string.name = &s;
+	msg_string.name->name = msg;
 
 	hnd->status = NT_STATUS_OK;
 
 	if ( hnd->_internal.srv_level > SRV_WIN_NT4 ) {
 		hnd->status =
-			rpccli_shutdown_init_ex( pipe_hnd, mem_ctx, msg,
+			rpccli_initshutdown_InitEx( pipe_hnd, mem_ctx, NULL,
+						    &msg_string,
 						 op->in.timeout,
-						 op->in.reboot, op->in.force,
+						    op->in.reboot,
+						    op->in.force,
 						 op->in.reason );
 	}
 
 	if ( hnd->_internal.srv_level < SRV_WIN_2K
 	     || !NT_STATUS_IS_OK( hnd->status ) ) {
 		hnd->status =
-			rpccli_shutdown_init( pipe_hnd, mem_ctx, msg,
-					      op->in.timeout, op->in.reboot,
+			rpccli_initshutdown_Init( pipe_hnd, mem_ctx, NULL,
+						  &msg_string, op->in.timeout,
+						  op->in.reboot,
 					      op->in.force );
 
 		hnd->_internal.srv_level = SRV_WIN_NT4;
@@ -1116,18 +1123,18 @@ int cac_AbortShutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx )
 	if ( !hnd )
 		return CAC_FAILURE;
 
-	if ( !hnd->_internal.ctx || !hnd->_internal.pipes[PI_SHUTDOWN] ) {
+	if ( !hnd->_internal.ctx || !hnd->_internal.pipes[PI_INITSHUTDOWN] ) {
 		hnd->status = NT_STATUS_INVALID_HANDLE;
 		return CAC_FAILURE;
 	}
 
-	pipe_hnd = cac_GetPipe( hnd, PI_SHUTDOWN );
+	pipe_hnd = cac_GetPipe( hnd, PI_INITSHUTDOWN );
 	if ( !pipe_hnd ) {
 		hnd->status = NT_STATUS_INVALID_HANDLE;
 		return CAC_FAILURE;
 	}
 
-	hnd->status = rpccli_shutdown_abort( pipe_hnd, mem_ctx );
+	hnd->status = rpccli_initshutdown_Abort( pipe_hnd, mem_ctx, NULL );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;
