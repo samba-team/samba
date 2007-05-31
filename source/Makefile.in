@@ -33,6 +33,8 @@ DYNEXP=@DYNEXP@
 PYTHON=@PYTHON@
 PERL=@PERL@
 
+PIDL_ARGS=@PIDL_ARGS@
+
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
 PRINT_LIBS=@PRINT_LIBS@
@@ -172,7 +174,7 @@ BIN_PROGS = @SMBMOUNT_PROGS@ @EXTRA_BIN_PROGS@ \
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
-	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@
+	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@
 
 SHLIBS = @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ @LIBADDNS@
 
@@ -729,6 +731,11 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 		lib/replace/test/strptime.o \
 		$(LIBREPLACE_OBJ)
 
+NDRDUMP_OBJ = librpc/tools/ndrdump.o \
+			  $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
+			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+			  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(SECRETS_OBJ)
+
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
              rpcclient/cmd_lsarpc.o \
@@ -898,6 +905,20 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 modules: SHOWFLAGS $(MODULES)
 
 cac: SHOWFLAGS $(LIBMSRPC)
+
+
+#####################################################################
+## Perl IDL Compiler
+IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
+	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
+	epmapper.idl messaging.idl
+
+idl:
+	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
+	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
+
+
+#####################################################################
 
 
 everything: all libsmbclient debug2html smbfilter talloctort replacetort modules torture \
@@ -1164,6 +1185,11 @@ bin/locktest2@EXEEXT@: proto_exists $(LOCKTEST2_OBJ) bin/.dummy
 bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/ndrdump@EXEEXT@: $(NDRDUMP_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
+		@POPTLIBS@ @LDAP_LIBS@
 
 bin/debug2html@EXEEXT@: proto_exists $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
