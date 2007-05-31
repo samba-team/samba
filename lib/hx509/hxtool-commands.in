@@ -588,6 +588,7 @@ command = {
 	name = "certificate-sign"
 	name = "cert-sign"
 	name = "issue-certificate"
+	name = "ca"
 	function = "hxtool_ca"
 	min_args="0"
 	help = "Issue a certificate"
