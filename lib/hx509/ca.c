@@ -468,12 +468,17 @@ out:
     return ret;
 }
     
-int
-hx509_ca_tbs_add_san_jid(hx509_context context,
-			 hx509_ca_tbs tbs,
-			 const char *jid)
+/*
+ *
+ */
+
+static int
+add_utf8_san(hx509_context context,
+	     hx509_ca_tbs tbs,
+	     const heim_oid *oid,
+	     const char *string)
 {
-    const PKIXXmppAddr ujid = (const PKIXXmppAddr)jid;
+    const PKIXXmppAddr ustring = (const PKIXXmppAddr)string;
     heim_octet_string os;
     size_t size;
     int ret;
@@ -481,7 +486,7 @@ hx509_ca_tbs_add_san_jid(hx509_context context,
     os.length = 0;
     os.data = NULL;
 
-    ASN1_MALLOC_ENCODE(PKIXXmppAddr, os.data, os.length, &ujid, &size, ret);
+    ASN1_MALLOC_ENCODE(PKIXXmppAddr, os.data, os.length, &ustring, &size, ret);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "Out of memory");
 	goto out;
@@ -491,11 +496,27 @@ hx509_ca_tbs_add_san_jid(hx509_context context,
     
     ret = hx509_ca_tbs_add_san_otherName(context,
 					 tbs,
-					 oid_id_pkix_on_xmppAddr(),
+					 oid,
 					 &os);
     free(os.data);
 out:
     return ret;
+}
+
+int
+hx509_ca_tbs_add_san_ms_upn(hx509_context context,
+			    hx509_ca_tbs tbs,
+			    const char *principal)
+{
+    return add_utf8_san(context, tbs, oid_id_pkinit_ms_san(), principal);
+}
+
+int
+hx509_ca_tbs_add_san_jid(hx509_context context,
+			 hx509_ca_tbs tbs,
+			 const char *jid)
+{
+    return add_utf8_san(context, tbs, oid_id_pkix_on_xmppAddr(), jid);
 }
 
 
