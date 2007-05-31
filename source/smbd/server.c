@@ -516,8 +516,6 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				 timeval_is_zero(&idle_timeout) ?
 				 NULL : &idle_timeout);
 
-		run_events(smbd_event_context(), num, &r_fds, &w_fds);
-
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
 				exit_server_cleanly(NULL);
@@ -534,6 +532,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			continue;
 		}
 		
+		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
+			continue;
+		}
+
 		/* check if we need to reload services */
 		check_reload(time(NULL));
 
