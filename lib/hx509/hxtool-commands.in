@@ -541,6 +541,11 @@ command = {
 		help = "PK-INIT principal (for SAN)"
 	}
 	option = {
+		long = "ms-upn"
+		type = "string"
+		help = "Microsoft UPN (for SAN)"
+	}
+	option = {
 		long = "jid"
 		type = "string"
 		help = "XMPP jabber id (for SAN)"
