@@ -83,10 +83,11 @@ struct krb5_pk_init_ctx_data {
     struct krb5_dh_moduli **m;
     hx509_peer_info peer;
     int type;
-    int require_binding;
-    int require_eku;
-    int require_krbtgt_otherName;
-    int require_hostname_match;
+    unsigned int require_binding:1;
+    unsigned int require_eku:1;
+    unsigned int require_krbtgt_otherName:1;
+    unsigned int require_hostname_match:1;
+    unsigned int trustedCertifiers:1;
 };
 
 static void
@@ -439,7 +440,6 @@ build_auth_pack(krb5_context context,
 	    return ret;
     }
 
-
     return ret;
 }
 
@@ -588,18 +588,21 @@ pk_mk_padata(krb5_context context,
 	memset(&req, 0, sizeof(req));
 	req.signedAuthPack = buf;	
 
-	req.trustedCertifiers = calloc(1, sizeof(*req.trustedCertifiers));
-	if (req.trustedCertifiers == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    free_PA_PK_AS_REQ(&req);
-	    goto out;
-	}
-	ret = build_edi(context, ctx->id->hx509ctx, 
-			ctx->id->anchors, req.trustedCertifiers);
-	if (ret) {
-	    krb5_set_error_string(context, "pk-init: failed to build trustedCertifiers");
-	    free_PA_PK_AS_REQ(&req);
-	    goto out;
+	if (ctx->trustedCertifiers) {
+
+	    req.trustedCertifiers = calloc(1, sizeof(*req.trustedCertifiers));
+	    if (req.trustedCertifiers == NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
+		free_PA_PK_AS_REQ(&req);
+		goto out;
+	    }
+	    ret = build_edi(context, ctx->id->hx509ctx, 
+			    ctx->id->anchors, req.trustedCertifiers);
+	    if (ret) {
+		krb5_set_error_string(context, "pk-init: failed to build trustedCertifiers");
+		free_PA_PK_AS_REQ(&req);
+		goto out;
+	    }
 	}
 	req.kdcPkId = NULL;
 
@@ -683,6 +686,14 @@ _krb5_pk_mk_padata(krb5_context context,
 				     "realms",
 				     req_body->realm,
 				     "pkinit_require_hostname_match",
+				     NULL);
+
+    ctx->trustedCertifiers = 
+	krb5_config_get_bool_default(context, NULL,
+				     TRUE,
+				     "realms",
+				     req_body->realm,
+				     "pkinit_trustedCertifiers",
 				     NULL);
 
     return pk_mk_padata(context, ctx, req_body, nonce, md);
