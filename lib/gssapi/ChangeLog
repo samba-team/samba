@@ -1,3 +1,11 @@
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* spnego/accept_sec_context.c: Use the return value before is
+	overwritten by later calls.  From Rafal Malinowski
+
+	* krb5/release_cred.c: Give an minor_status argument to
+	gss_release_oid_set.  From Rafal Malinowski
+	
 2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/accept_sec_context.c: Catch errors and return the up the
