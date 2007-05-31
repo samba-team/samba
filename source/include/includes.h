@@ -686,7 +686,6 @@ typedef int BOOL;
 #include "rpc_srvsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
-#include "rpc_dfs.h"
 #include "rpc_ds.h"
 #include "rpc_shutdown.h"
 #include "rpc_perfcount.h"

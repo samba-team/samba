@@ -302,10 +302,11 @@ struct id_map {
 #include "librpc/ndr/security.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/dfs.h"
+#include "librpc/gen_ndr/eventlog.h"
 #include "librpc/gen_ndr/wkssvc.h"
 #include "librpc/gen_ndr/echo.h"
 #include "librpc/gen_ndr/svcctl.h"
-#include "librpc/gen_ndr/eventlog.h"
 
 struct lsa_dom_info {
 	BOOL valid;

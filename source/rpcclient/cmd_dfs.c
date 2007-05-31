@@ -36,10 +36,9 @@ static NTSTATUS cmd_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_dfs_GetManagerVersion(cli, mem_ctx, &dfs_exists);
+	rpccli_dfs_GetManagerVersion(cli, mem_ctx, &dfs_exists);
 
-	if (NT_STATUS_IS_OK(result))
-		printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
+	printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
 
 	return result;
 }
@@ -91,25 +90,17 @@ static NTSTATUS cmd_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 /* Display a DFS_INFO_1 structure */
 
-static void display_dfs_info_1(NETDFS_DFS_INFO1 *info1)
+static void display_dfs_info_1(struct dfs_Info1 *info1)
 {
-	fstring temp;
-
-	unistr2_to_ascii(temp, &info1->path, sizeof(temp) - 1);
-	printf("path: %s\n", temp);
+	printf("path: %s\n", info1->path);
 }
 
 /* Display a DFS_INFO_2 structure */
 
-static void display_dfs_info_2(NETDFS_DFS_INFO2 *info2)
+static void display_dfs_info_2(struct dfs_Info2 *info2)
 {
-	fstring temp;
-
-	unistr2_to_ascii(temp, &info2->path, sizeof(temp) - 1);
-	printf("path: %s\n", temp);
-
-	unistr2_to_ascii(temp, &info2->comment, sizeof(temp) - 1);
-	printf("\tcomment: %s\n", temp);
+	printf("path: %s\n", info2->path);
+	printf("\tcomment: %s\n", info2->comment);
 
 	printf("\tstate: %d\n", info2->state);
 	printf("\tnum_stores: %d\n", info2->num_stores);
@@ -117,62 +108,57 @@ static void display_dfs_info_2(NETDFS_DFS_INFO2 *info2)
 
 /* Display a DFS_INFO_3 structure */
 
-static void display_dfs_info_3(NETDFS_DFS_INFO3 *info3)
+static void display_dfs_info_3(struct dfs_Info3 *info3)
 {
-	fstring temp;
 	int i;
 
-	unistr2_to_ascii(temp, &info3->path, sizeof(temp) - 1);
-	printf("path: %s\n", temp);
+	printf("path: %s\n", info3->path);
 
-	unistr2_to_ascii(temp, &info3->comment, sizeof(temp) - 1);
-	printf("\tcomment: %s\n", temp);
+	printf("\tcomment: %s\n", info3->comment);
 
 	printf("\tstate: %d\n", info3->state);
 	printf("\tnum_stores: %d\n", info3->num_stores);
 
 	for (i = 0; i < info3->num_stores; i++) {
-		NETDFS_DFS_STORAGEINFO *dsi = &info3->stores[i];
+		struct dfs_StorageInfo *dsi = &info3->stores[i];
 
-		unistr2_to_ascii(temp, &dsi->server, sizeof(temp) - 1);
-		printf("\t\tstorage[%d] server: %s\n", i, temp);
+		printf("\t\tstorage[%d] server: %s\n", i, dsi->server);
 
-		unistr2_to_ascii(temp, &dsi->share, sizeof(temp) - 1);
-		printf("\t\tstorage[%d] share: %s\n", i, temp);
+		printf("\t\tstorage[%d] share: %s\n", i, dsi->share);
 	}
 }
 
 
 /* Display a DFS_INFO_CTR structure */
-static void display_dfs_info(NETDFS_DFS_INFO_CTR *ctr)
+static void display_dfs_info(uint32 level, union dfs_Info *ctr)
 {
-	switch (ctr->switch_value) {
+	switch (level) {
 		case 0x01:
-			display_dfs_info_1(&ctr->u.info1);
+			display_dfs_info_1(ctr->info1);
 			break;
 		case 0x02:
-			display_dfs_info_2(&ctr->u.info2);
+			display_dfs_info_2(ctr->info2);
 			break;
 		case 0x03:
-			display_dfs_info_3(&ctr->u.info3);
+			display_dfs_info_3(ctr->info3);
 			break;
 		default:
 			printf("unsupported info level %d\n", 
-			       ctr->switch_value);
+			       level);
 			break;
 	}
 }
 
-static void display_dfs_enumstruct(NETDFS_DFS_ENUMSTRUCT *ctr)
+static void display_dfs_enumstruct(struct dfs_EnumStruct *ctr)
 {
 	int i;
 	
 	/* count is always the first element, so we can just use info1 here */
-	for (i = 0; i < ctr->e.u.info1.count; i++) {
+	for (i = 0; i < ctr->e.info1->count; i++) {
 		switch (ctr->level) {
-		case 1: display_dfs_info_1(&ctr->e.u.info1.s[i]); break;
-		case 2: display_dfs_info_2(&ctr->e.u.info2.s[i]); break;
-		case 3: display_dfs_info_3(&ctr->e.u.info3.s[i]); break;
+		case 1: display_dfs_info_1(&ctr->e.info1->s[i]); break;
+		case 2: display_dfs_info_2(&ctr->e.info2->s[i]); break;
+		case 3: display_dfs_info_3(&ctr->e.info3->s[i]); break;
 		default:
 				printf("unsupported info level %d\n", 
 			       ctr->level);
@@ -186,25 +172,41 @@ static void display_dfs_enumstruct(NETDFS_DFS_ENUMSTRUCT *ctr)
 static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                              int argc, const char **argv)
 {
-	NETDFS_DFS_ENUMSTRUCT str;
-	NETDFS_DFS_ENUMINFO_CTR ctr;
+	struct dfs_EnumStruct str;
+	struct dfs_EnumArray1 info1;
+	struct dfs_EnumArray2 info2;
+	struct dfs_EnumArray3 info3;
+	struct dfs_EnumArray4 info4;
+	struct dfs_EnumArray200 info200;
+	struct dfs_EnumArray300 info300;
+
 	NTSTATUS result;
-	uint32 info_level = 1;
 	uint32 total = 0;
+	uint32 unknown = 0;
 
 	if (argc > 2) {
 		printf("Usage: %s [info_level]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
+	str.level = 1;
 	if (argc == 2)
-		info_level = atoi(argv[1]);
+		str.level = atoi(argv[1]);
 
-	ZERO_STRUCT(ctr);
-	init_netdfs_dfs_EnumStruct(&str, info_level, ctr);
-	str.e.ptr0 = 1;
+	switch (str.level) {
+	case 1: str.e.info1 = &info1; ZERO_STRUCT(info1); break;
+	case 2: str.e.info2 = &info2; ZERO_STRUCT(info2); break;
+	case 3: str.e.info3 = &info3; ZERO_STRUCT(info3); break;
+	case 4: str.e.info4 = &info4; ZERO_STRUCT(info4); break;
+	case 200: str.e.info200 = &info200; ZERO_STRUCT(info200); break;
+	case 300: str.e.info300 = &info300; ZERO_STRUCT(info300); break;
+	default:
+			  printf("Unknown info level %d\n", str.level);
+			  break;
+	}
 
-	result = rpccli_dfs_Enum(cli, mem_ctx, info_level, 0xFFFFFFFF, &str, &total);
+	result = rpccli_dfs_Enum(cli, mem_ctx, str.level, 0xFFFFFFFF, &str,
+				 &unknown, &total);
 
 	if (NT_STATUS_IS_OK(result))
 		display_dfs_enumstruct(&str);
@@ -212,13 +214,59 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Enumerate dfs shares */
+
+static NTSTATUS cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+			       int argc, const char **argv)
+{
+	struct dfs_EnumStruct str;
+	struct dfs_EnumArray1 info1;
+	struct dfs_EnumArray2 info2;
+	struct dfs_EnumArray3 info3;
+	struct dfs_EnumArray4 info4;
+	struct dfs_EnumArray200 info200;
+	struct dfs_EnumArray300 info300;
+
+	NTSTATUS result;
+	uint32 total = 0;
+
+	if (argc < 2 || argc > 3) {
+		printf("Usage: %s dfs_name [info_level]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 3)
+		str.level = atoi(argv[2]);
+
+	switch (str.level) {
+	case 1: str.e.info1 = &info1; ZERO_STRUCT(info1); break;
+	case 2: str.e.info2 = &info2; ZERO_STRUCT(info2); break;
+	case 3: str.e.info3 = &info3; ZERO_STRUCT(info3); break;
+	case 4: str.e.info4 = &info4; ZERO_STRUCT(info4); break;
+	case 200: str.e.info200 = &info200; ZERO_STRUCT(info200); break;
+	case 300: str.e.info300 = &info300; ZERO_STRUCT(info300); break;
+	default:
+		  printf("Unknown info level %d\n", str.level);
+		  break;
+	}
+
+	result = rpccli_dfs_EnumEx(cli, mem_ctx, argv[1], str.level,
+				   0xFFFFFFFF, &str, &total);
+
+	if (NT_STATUS_IS_OK(result))
+		display_dfs_enumstruct(&str);
+
+	return result;
+}
+
+
 static NTSTATUS cmd_dfs_getinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                 int argc, const char **argv)
 {
 	NTSTATUS result;
 	const char *path, *servername, *sharename;
 	uint32 info_level = 1;
-	NETDFS_DFS_INFO_CTR ctr;
+	union dfs_Info ctr;
 
 	if (argc < 4 || argc > 5) {
 		printf("Usage: %s path servername sharename "
@@ -237,7 +285,7 @@ static NTSTATUS cmd_dfs_getinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 				  sharename, info_level, &ctr);
 
 	if (NT_STATUS_IS_OK(result))
-		display_dfs_info(&ctr);
+		display_dfs_info(info_level, &ctr);
 
 	return result;
 }
@@ -253,6 +301,7 @@ struct cmd_set dfs_commands[] = {
 	{ "dfsremove", RPC_RTYPE_NTSTATUS, cmd_dfs_remove,  NULL, PI_NETDFS, NULL, "Remove a DFS share",   "" },
 	{ "dfsgetinfo",RPC_RTYPE_NTSTATUS, cmd_dfs_getinfo, NULL, PI_NETDFS, NULL, "Query DFS share info", "" },
 	{ "dfsenum",   RPC_RTYPE_NTSTATUS, cmd_dfs_enum,    NULL, PI_NETDFS, NULL, "Enumerate dfs shares", "" },
+	{ "dfsenumex", RPC_RTYPE_NTSTATUS, cmd_dfs_enumex,  NULL, PI_NETDFS, NULL, "Enumerate dfs shares", "" },
 
 	{ NULL }
 };
