@@ -133,7 +133,7 @@ ${hxtool} issue-certificate \
 	  --req="req-kdc.der" \
 	  --certificate="FILE:kdc.crt" || exit 1
 
-echo "issue user certificate"
+echo "issue user certificate (pkinit san)"
 ${hxtool} issue-certificate \
 	  --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
 	  --type="pkinit-client" \
@@ -141,12 +141,20 @@ ${hxtool} issue-certificate \
 	  --req="req-pkinit.der" \
 	  --certificate="FILE:pkinit.crt" || exit 1
 
-echo "issue user 2 certificate"
+echo "issue user 2 certificate (no san)"
 ${hxtool} issue-certificate \
 	  --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
 	  --type="pkinit-client" \
 	  --req="req-pkinit2.der" \
 	  --certificate="FILE:pkinit2.crt" || exit 1
+
+echo "issue user 3 certificate (ms san)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
+	  --type="pkinit-client" \
+          --ms-upn="bar@test.h5l.se" \
+	  --req="req-pkinit2.der" \
+	  --certificate="FILE:pkinit3.crt" || exit 1
 
 
 echo foo > ${objdir}/foopassword
@@ -180,6 +188,42 @@ ${kdestroy}
 
 echo "Trying pk-init (principal subject in DB)"; > messages.log
 ${kinit} -C FILE:${base}/pkinit2.crt,${keyfile2} baz@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Trying pk-init (ms upn)"; > messages.log
+${kinit} -C FILE:${base}/pkinit3.crt,${keyfile2} bar@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+KRB5_CONFIG="${objdir}/krb5-pkinit-win.conf"
+export KRB5_CONFIG
+
+echo "Duplicated tests, now in windows 2000 mode"
+
+echo "Trying pk-init (principal in cert)"; > messages.log
+base="${objdir}"
+${kinit} -C FILE:${base}/pkinit.crt,${keyfile2} bar@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Trying pk-init (principal in pki-mapping file) "; > messages.log
+${kinit} -C FILE:${base}/pkinit.crt,${keyfile2} foo@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Trying pk-init (principal subject in DB)"; > messages.log
+${kinit} -C FILE:${base}/pkinit2.crt,${keyfile2} baz@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Trying pk-init (ms upn)"; > messages.log
+${kinit} -C FILE:${base}/pkinit3.crt,${keyfile2} bar@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
