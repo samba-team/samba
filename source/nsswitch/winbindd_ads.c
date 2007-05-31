@@ -898,7 +898,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **name_types)
 {
 	ADS_STATUS rc;
-	LDAPMessage *res=NULL;
 	ADS_STRUCT *ads = NULL;
 	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -1080,9 +1079,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		 sid_string_static(group_sid)));
 
 done:
-
-	if (res) 
-		ads_msgfree(ads, res);
 
 	/* free intermediate lists. - a temp talloc ctx might be better. */
 	TALLOC_FREE(sid_mem_nocache);
