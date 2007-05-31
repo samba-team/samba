@@ -375,8 +375,8 @@ NTSTATUS ndr_push_svcctl_ControlService(struct ndr_push *ndr, int flags, const s
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.control));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.status));
+		if (r->out.service_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.service_status));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -385,7 +385,7 @@ NTSTATUS ndr_push_svcctl_ControlService(struct ndr_push *ndr, int flags, const s
 NTSTATUS ndr_pull_svcctl_ControlService(struct ndr_pull *ndr, int flags, struct svcctl_ControlService *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
-	TALLOC_CTX *_mem_save_status_0;
+	TALLOC_CTX *_mem_save_service_status_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -397,17 +397,17 @@ NTSTATUS ndr_pull_svcctl_ControlService(struct ndr_pull *ndr, int flags, struct 
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.control));
-		NDR_PULL_ALLOC(ndr, r->out.status);
-		ZERO_STRUCTP(r->out.status);
+		NDR_PULL_ALLOC(ndr, r->out.service_status);
+		ZERO_STRUCTP(r->out.service_status);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.status);
+			NDR_PULL_ALLOC(ndr, r->out.service_status);
 		}
-		_mem_save_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.status, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.status));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_status_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_service_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.service_status, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.service_status));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_status_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -433,9 +433,9 @@ _PUBLIC_ void ndr_print_svcctl_ControlService(struct ndr_print *ndr, const char 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "svcctl_ControlService");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "status", r->out.status);
+		ndr_print_ptr(ndr, "service_status", r->out.service_status);
 		ndr->depth++;
-		ndr_print_SERVICE_STATUS(ndr, "status", r->out.status);
+		ndr_print_SERVICE_STATUS(ndr, "service_status", r->out.service_status);
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -660,8 +660,8 @@ NTSTATUS ndr_push_svcctl_QueryServiceStatus(struct ndr_push *ndr, int flags, con
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.status));
+		if (r->out.service_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.service_status));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -670,7 +670,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceStatus(struct ndr_push *ndr, int flags, con
 NTSTATUS ndr_pull_svcctl_QueryServiceStatus(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceStatus *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
-	TALLOC_CTX *_mem_save_status_0;
+	TALLOC_CTX *_mem_save_service_status_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -681,17 +681,17 @@ NTSTATUS ndr_pull_svcctl_QueryServiceStatus(struct ndr_pull *ndr, int flags, str
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.status);
-		ZERO_STRUCTP(r->out.status);
+		NDR_PULL_ALLOC(ndr, r->out.service_status);
+		ZERO_STRUCTP(r->out.service_status);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.status);
+			NDR_PULL_ALLOC(ndr, r->out.service_status);
 		}
-		_mem_save_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.status, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.status));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_status_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_service_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.service_status, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.service_status));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_status_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -716,9 +716,9 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceStatus(struct ndr_print *ndr, const c
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "svcctl_QueryServiceStatus");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "status", r->out.status);
+		ndr_print_ptr(ndr, "service_status", r->out.service_status);
 		ndr->depth++;
-		ndr_print_SERVICE_STATUS(ndr, "status", r->out.status);
+		ndr_print_SERVICE_STATUS(ndr, "service_status", r->out.service_status);
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -1553,9 +1553,9 @@ NTSTATUS ndr_push_svcctl_EnumDependentServicesW(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.status));
-		if (r->out.status) {
-			NDR_CHECK(ndr_push_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.service_status));
+		if (r->out.service_status) {
+			NDR_CHECK(ndr_push_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.service_status));
 		}
 		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
@@ -1568,9 +1568,9 @@ NTSTATUS ndr_push_svcctl_EnumDependentServicesW(struct ndr_push *ndr, int flags,
 
 NTSTATUS ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull *ndr, int flags, struct svcctl_EnumDependentServicesW *r)
 {
-	uint32_t _ptr_status;
+	uint32_t _ptr_service_status;
 	TALLOC_CTX *_mem_save_service_0;
-	TALLOC_CTX *_mem_save_status_0;
+	TALLOC_CTX *_mem_save_service_status_0;
 	TALLOC_CTX *_mem_save_bytes_needed_0;
 	TALLOC_CTX *_mem_save_services_returned_0;
 	if (flags & NDR_IN) {
@@ -1591,17 +1591,17 @@ NTSTATUS ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull *ndr, int flags,
 		ZERO_STRUCTP(r->out.services_returned);
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_status));
-		if (_ptr_status) {
-			NDR_PULL_ALLOC(ndr, r->out.status);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_service_status));
+		if (_ptr_service_status) {
+			NDR_PULL_ALLOC(ndr, r->out.service_status);
 		} else {
-			r->out.status = NULL;
+			r->out.service_status = NULL;
 		}
-		if (r->out.status) {
-			_mem_save_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.status, 0);
-			NDR_CHECK(ndr_pull_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_status_0, 0);
+		if (r->out.service_status) {
+			_mem_save_service_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.service_status, 0);
+			NDR_CHECK(ndr_pull_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.service_status));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_status_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
@@ -1643,10 +1643,10 @@ _PUBLIC_ void ndr_print_svcctl_EnumDependentServicesW(struct ndr_print *ndr, con
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "svcctl_EnumDependentServicesW");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "status", r->out.status);
+		ndr_print_ptr(ndr, "service_status", r->out.service_status);
 		ndr->depth++;
-		if (r->out.status) {
-			ndr_print_ENUM_SERVICE_STATUS(ndr, "status", r->out.status);
+		if (r->out.service_status) {
+			ndr_print_ENUM_SERVICE_STATUS(ndr, "service_status", r->out.service_status);
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "bytes_needed", r->out.bytes_needed);
@@ -2120,8 +2120,8 @@ NTSTATUS ndr_push_svcctl_QueryServiceLockStatusW(struct ndr_push *ndr, int flags
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
+		if (r->out.lock_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock_status));
 		if (r->out.required_buf_size == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.required_buf_size));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -2132,7 +2132,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceLockStatusW(struct ndr_push *ndr, int flags
 NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusW(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceLockStatusW *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
-	TALLOC_CTX *_mem_save_status_0;
+	TALLOC_CTX *_mem_save_lock_status_0;
 	TALLOC_CTX *_mem_save_required_buf_size_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -2145,19 +2145,19 @@ NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusW(struct ndr_pull *ndr, int flags
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		NDR_PULL_ALLOC(ndr, r->out.status);
-		ZERO_STRUCTP(r->out.status);
+		NDR_PULL_ALLOC(ndr, r->out.lock_status);
+		ZERO_STRUCTP(r->out.lock_status);
 		NDR_PULL_ALLOC(ndr, r->out.required_buf_size);
 		ZERO_STRUCTP(r->out.required_buf_size);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.status);
+			NDR_PULL_ALLOC(ndr, r->out.lock_status);
 		}
-		_mem_save_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.status, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_status_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_lock_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.lock_status, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock_status));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lock_status_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.required_buf_size);
 		}
@@ -2190,9 +2190,9 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusW(struct ndr_print *ndr, co
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "svcctl_QueryServiceLockStatusW");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "status", r->out.status);
+		ndr_print_ptr(ndr, "lock_status", r->out.lock_status);
 		ndr->depth++;
-		ndr_print_SERVICE_LOCK_STATUS(ndr, "status", r->out.status);
+		ndr_print_SERVICE_LOCK_STATUS(ndr, "lock_status", r->out.lock_status);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "required_buf_size", r->out.required_buf_size);
 		ndr->depth++;
@@ -3308,9 +3308,9 @@ NTSTATUS ndr_push_svcctl_EnumDependentServicesA(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.status));
-		if (r->out.status) {
-			NDR_CHECK(ndr_push_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.service_status));
+		if (r->out.service_status) {
+			NDR_CHECK(ndr_push_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.service_status));
 		}
 		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
@@ -3323,9 +3323,9 @@ NTSTATUS ndr_push_svcctl_EnumDependentServicesA(struct ndr_push *ndr, int flags,
 
 NTSTATUS ndr_pull_svcctl_EnumDependentServicesA(struct ndr_pull *ndr, int flags, struct svcctl_EnumDependentServicesA *r)
 {
-	uint32_t _ptr_status;
+	uint32_t _ptr_service_status;
 	TALLOC_CTX *_mem_save_service_0;
-	TALLOC_CTX *_mem_save_status_0;
+	TALLOC_CTX *_mem_save_service_status_0;
 	TALLOC_CTX *_mem_save_bytes_needed_0;
 	TALLOC_CTX *_mem_save_services_returned_0;
 	if (flags & NDR_IN) {
@@ -3346,17 +3346,17 @@ NTSTATUS ndr_pull_svcctl_EnumDependentServicesA(struct ndr_pull *ndr, int flags,
 		ZERO_STRUCTP(r->out.services_returned);
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_status));
-		if (_ptr_status) {
-			NDR_PULL_ALLOC(ndr, r->out.status);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_service_status));
+		if (_ptr_service_status) {
+			NDR_PULL_ALLOC(ndr, r->out.service_status);
 		} else {
-			r->out.status = NULL;
+			r->out.service_status = NULL;
 		}
-		if (r->out.status) {
-			_mem_save_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.status, 0);
-			NDR_CHECK(ndr_pull_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_status_0, 0);
+		if (r->out.service_status) {
+			_mem_save_service_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.service_status, 0);
+			NDR_CHECK(ndr_pull_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.service_status));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_status_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
@@ -3398,10 +3398,10 @@ _PUBLIC_ void ndr_print_svcctl_EnumDependentServicesA(struct ndr_print *ndr, con
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "svcctl_EnumDependentServicesA");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "status", r->out.status);
+		ndr_print_ptr(ndr, "service_status", r->out.service_status);
 		ndr->depth++;
-		if (r->out.status) {
-			ndr_print_ENUM_SERVICE_STATUS(ndr, "status", r->out.status);
+		if (r->out.service_status) {
+			ndr_print_ENUM_SERVICE_STATUS(ndr, "service_status", r->out.service_status);
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "bytes_needed", r->out.bytes_needed);
@@ -3878,8 +3878,8 @@ NTSTATUS ndr_push_svcctl_QueryServiceLockStatusA(struct ndr_push *ndr, int flags
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
+		if (r->out.lock_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock_status));
 		if (r->out.required_buf_size == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.required_buf_size));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -3890,7 +3890,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceLockStatusA(struct ndr_push *ndr, int flags
 NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusA(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceLockStatusA *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
-	TALLOC_CTX *_mem_save_status_0;
+	TALLOC_CTX *_mem_save_lock_status_0;
 	TALLOC_CTX *_mem_save_required_buf_size_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -3903,19 +3903,19 @@ NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusA(struct ndr_pull *ndr, int flags
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		NDR_PULL_ALLOC(ndr, r->out.status);
-		ZERO_STRUCTP(r->out.status);
+		NDR_PULL_ALLOC(ndr, r->out.lock_status);
+		ZERO_STRUCTP(r->out.lock_status);
 		NDR_PULL_ALLOC(ndr, r->out.required_buf_size);
 		ZERO_STRUCTP(r->out.required_buf_size);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.status);
+			NDR_PULL_ALLOC(ndr, r->out.lock_status);
 		}
-		_mem_save_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.status, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.status));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_status_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_lock_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.lock_status, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock_status));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lock_status_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.required_buf_size);
 		}
@@ -3948,9 +3948,9 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusA(struct ndr_print *ndr, co
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "svcctl_QueryServiceLockStatusA");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "status", r->out.status);
+		ndr_print_ptr(ndr, "lock_status", r->out.lock_status);
 		ndr->depth++;
-		ndr_print_SERVICE_LOCK_STATUS(ndr, "status", r->out.status);
+		ndr_print_SERVICE_LOCK_STATUS(ndr, "lock_status", r->out.lock_status);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "required_buf_size", r->out.required_buf_size);
 		ndr->depth++;
