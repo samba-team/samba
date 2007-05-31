@@ -204,9 +204,9 @@ chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
 	return ($fedora_ds_dir, $pidfile);
 }
 
-sub mk_openldap($$$$$)
+sub mk_openldap($$$)
 {
-	my ($self, $ldapdir, $configuration, $basedn, $dnsname, $password) = @_;
+	my ($self, $ldapdir, $configuration) = @_;
 
 	my $slapd_conf = "$ldapdir/slapd.conf";
 	my $pidfile = "$ldapdir/slapd.pid";
@@ -233,8 +233,6 @@ moduleload	syncprov
 	}
 
 	system("slaptest -u -f $slapd_conf") == 0 or die("slaptest still fails after adding modules");
-	system("slapadd -b cn=Configuration,$basedn -f $slapd_conf -l $ldapdir/$dnsname-config.ldif >/dev/null") == 0 or die("slapadd failed");
-	system("slapadd -b cn=Schema,cn=Configuration,$basedn -f $slapd_conf -l $ldapdir/$dnsname-schema.ldif >/dev/null") == 0 or die("slapadd failed");
 
     
 	$ENV{PATH} = $oldpath;
@@ -438,7 +436,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	        system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$root --realm=$dnsname --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
 
 	        if ($self->{ldap} eq "openldap") {
-		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration, $basedn, $dnsname, $password) or die("Unable to create openldap directories");
+		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration) or die("Unable to create openldap directories");
 	        } elsif ($self->{ldap} eq "fedora-ds") {
 		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ldapdir, $configuration) or die("Unable to create fedora ds directories");
 		       push (@provision_options, "--ldap-module=nsuniqueid");
