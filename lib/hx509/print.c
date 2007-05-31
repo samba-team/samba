@@ -422,7 +422,6 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 	    free_DistributionPointName(&dpname);
 	}
     }
-    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 
     return 0;
 }
