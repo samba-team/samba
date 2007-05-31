@@ -4,7 +4,7 @@
   Author:   M. J. Fromberger <http://www.dartmouth.edu/~sting/>
   Info:     $Id$
 
-  Copyright (C) 2002 Michael J. Fromberger, All Rights Reserved.
+  Copyright (C) 2002-2007 Michael J. Fromberger, All Rights Reserved.
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -38,6 +38,10 @@
 #include <ctype.h>
 
 #include <assert.h>
+
+#if DEBUG
+#define static
+#endif
 
 /* {{{ Constants */
 
@@ -182,15 +186,13 @@ static const mp_size multiply_threshold = MP_MULT_THRESH;
 /* Allocate a buffer of (at least) num digits, or return
    NULL if that couldn't be done.  */
 static mp_digit *s_alloc(mp_size num);
-#if TRACEABLE_FREE
+
+/* Release a buffer of digits allocated by s_alloc(). */
 static void s_free(void *ptr);
-#else
-#define s_free(P) free(P)
-#endif
 
 /* Insure that z has at least min digits allocated, resizing if
    necessary.  Returns true if successful, false if out of memory. */
-int       s_pad(mp_int z, mp_size min);
+static int  s_pad(mp_int z, mp_size min);
 
 /* Normalize by removing leading zeroes (except when z = 0) */
 #if TRACEABLE_CLAMP
@@ -456,7 +458,7 @@ void      mp_int_free(mp_int z)
   NRCHECK(z != NULL);
 
   mp_int_clear(z);
-  free(z);
+  free(z); /* note: NOT s_free() */
 }
 
 /* }}} */
@@ -975,7 +977,6 @@ mp_result mp_int_mod(mp_int a, mp_int m, mp_int c)
 }
 
 /* }}} */
-
 
 /* {{{ mp_int_div_value(a, value, q, r) */
 
@@ -2017,20 +2018,38 @@ static mp_digit *s_alloc(mp_size num)
   mp_digit *out = malloc(num * sizeof(mp_digit));
 
   assert(out != NULL); /* for debugging */
+#if DEBUG > 1
+  {
+    mp_digit v = (mp_digit) 0xdeadbeef;
+    int      ix;
+
+    for(ix = 0; ix < num; ++ix)
+      out[ix] = v;
+  }
+#endif
 
   return out;
 }
 
 /* }}} */
 
-/* {{{ s_realloc(old, num) */
+/* {{{ s_realloc(old, osize, nsize) */
 
-static mp_digit *s_realloc(mp_digit *old, mp_size num)
+static mp_digit *s_realloc(mp_digit *old, mp_size osize, mp_size nsize)
 {
-  mp_digit *new = realloc(old, num * sizeof(mp_digit));
+#if DEBUG > 1
+  mp_digit *new = s_alloc(nsize);
+  int       ix;
+
+  for(ix = 0; ix < nsize; ++ix)
+    new[ix] = (mp_digit) 0xdeadbeef;
+
+  memcpy(new, old, osize * sizeof(mp_digit));
+#else
+  mp_digit *new = realloc(old, nsize * sizeof(mp_digit));
 
   assert(new != NULL); /* for debugging */
-
+#endif
   return new;
 }
 
@@ -2038,18 +2057,16 @@ static mp_digit *s_realloc(mp_digit *old, mp_size num)
 
 /* {{{ s_free(ptr) */
 
-#if TRACEABLE_FREE
 static void s_free(void *ptr)
 {
   free(ptr);
 }
-#endif
 
 /* }}} */
 
 /* {{{ s_pad(z, min) */
 
-int      s_pad(mp_int z, mp_size min)
+static int      s_pad(mp_int z, mp_size min)
 {
   if(MP_ALLOC(z) < min) {
     mp_size nsize = ROUND_PREC(min);
@@ -2061,7 +2078,7 @@ int      s_pad(mp_int z, mp_size min)
 
       COPY(MP_DIGITS(z), tmp, MP_USED(z));
     }
-    else if((tmp = s_realloc(MP_DIGITS(z), nsize)) == NULL)
+    else if((tmp = s_realloc(MP_DIGITS(z), MP_ALLOC(z), nsize)) == NULL)
       return 0;
     
     MP_DIGITS(z) = tmp;
@@ -2409,7 +2426,7 @@ static int       s_ksqr(mp_digit *da, mp_digit *dc, mp_size size_a)
     (void) s_uadd(t2, dc + 2*bot_size, dc + 2*bot_size,
 		  buf_size, buf_size);
 
-    free(t1); /* note that t2 and t2 are internal pointers only */
+    s_free(t1); /* note that t2 and t2 are internal pointers only */
 
   } 
   else {
@@ -2706,7 +2723,9 @@ static int      s_qmul(mp_int z, mp_size p2)
 
 /* {{{ s_qsub(z, p2) */
 
-/* Subtract |z| from 2^p2, assuming 2^p2 > |z|, and set z to be positive */
+/* Compute z = 2^p2 - |z|; requires that 2^p2 >= |z|
+   The sign of the result is always zero/positive.
+ */
 static int       s_qsub(mp_int z, mp_size p2)
 {
   mp_digit hi = (1 << (p2 % MP_DIGIT_BIT)), *zp;
@@ -2884,10 +2903,11 @@ static int       s_reduce(mp_int x, mp_int m, mp_int mu, mp_int q1, mp_int q2)
 
   /* If x > m, we need to back it off until it is in range.
      This will be required at most twice.  */
-  if(mp_int_compare(x, m) >= 0)
+  if(mp_int_compare(x, m) >= 0) {
     (void) mp_int_sub(x, m, x);
-  if(mp_int_compare(x, m) >= 0)
-    (void) mp_int_sub(x, m, x);
+    if(mp_int_compare(x, m) >= 0)
+      (void) mp_int_sub(x, m, x);
+  }
 
   /* At this point, x has been properly reduced. */
   return 1;
@@ -2908,8 +2928,10 @@ static mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c)
 
   umu = MP_USED(mu); db = MP_DIGITS(b); dbt = db + MP_USED(b) - 1;
 
-  while(last < 3) 
+  while(last < 3) {
     SETUP(mp_int_init_size(TEMP(last), 4 * umu), last);
+    ZERO(MP_DIGITS(TEMP(last - 1)), MP_ALLOC(TEMP(last - 1)));
+  }
 
   (void) mp_int_set_value(c, 1);
 
