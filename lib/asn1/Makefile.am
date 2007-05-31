@@ -214,6 +214,7 @@ gen_files_rfc2459 =					\
 	asn1_id_netscape.x				\
 	asn1_id_netscape_cert_comment.x			\
 	asn1_id_ms_cert_enroll_domaincontroller.x	\
+	asn1_id_ms_client_authentication.x		\
 	asn1_AlgorithmIdentifier.x			\
 	asn1_AttributeType.x				\
 	asn1_AttributeValue.x				\
