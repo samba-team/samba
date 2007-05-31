@@ -1066,7 +1066,7 @@ _kdc_as_rep(krb5_context context,
 
 		kdc_log(context, config, 0, "%s", e_text);
 		pkp = NULL;
-		goto ts_enc;
+		goto out;
 	    }
 	    found_pa = 1;
 	    et.flags.pre_authent = 1;
