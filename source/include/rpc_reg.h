@@ -348,18 +348,6 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol; /* policy handle */
-} REG_Q_CLOSE;
-
-typedef struct {
-	POLICY_HND pol; 
-	WERROR status; 
-} REG_R_CLOSE;
-
-
-/***********************************************/
-
-typedef struct {
 	POLICY_HND pol; 
 	uint32 key_index;       
 	uint16 key_name_len;   

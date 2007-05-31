@@ -635,31 +635,6 @@ WERROR rpccli_reg_open_entry(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
-****************************************************************************/
-
-WERROR rpccli_reg_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                       POLICY_HND *hnd)
-{
-	REG_Q_CLOSE in;
-	REG_R_CLOSE out;
-	prs_struct qbuf, rbuf;
-
-	ZERO_STRUCT (in);
-	ZERO_STRUCT (out);
-	
-	init_reg_q_close(&in, hnd);
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_CLOSE, 
-	            in, out, 
-	            qbuf, rbuf,
-	            reg_io_q_close,
-	            reg_io_r_close, 
-	            WERR_GENERAL_FAILURE );
-	
-	return out.status;
-}
-
-/****************************************************************************
 do a REG Query Info
 ****************************************************************************/
 

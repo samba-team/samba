@@ -93,7 +93,6 @@ int cac_RegClose( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		  POLICY_HND * key )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	WERROR err;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -114,8 +113,7 @@ int cac_RegClose( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	err = rpccli_reg_close( pipe_hnd, mem_ctx, key );
-	hnd->status = werror_to_ntstatus( err );
+	hnd->status = rpccli_winreg_CloseKey( pipe_hnd, mem_ctx, key );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -203,8 +201,7 @@ int cac_RegOpenKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	if ( !op->in.parent_key ) {
 		/*then close the one that we opened above */
-		err = rpccli_reg_close( pipe_hnd, mem_ctx, parent_key );
-		hnd->status = werror_to_ntstatus( err );
+		hnd->status = rpccli_winreg_CloseKey( pipe_hnd, mem_ctx, parent_key );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 			return CAC_FAILURE;
@@ -436,7 +433,7 @@ WERROR cac_delete_subkeys_recursive( struct rpc_pipe_client * pipe_hnd,
 		rpccli_reg_flush_key( pipe_hnd, mem_ctx, key );
 
 		/*close the key that we opened */
-		rpccli_reg_close( pipe_hnd, mem_ctx, &subkey );
+		rpccli_winreg_CloseKey( pipe_hnd, mem_ctx, &subkey );
 
 		/*now we delete the subkey */
 		err = rpccli_reg_delete_key( pipe_hnd, mem_ctx, key,

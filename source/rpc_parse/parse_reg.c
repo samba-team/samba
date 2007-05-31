@@ -685,66 +685,6 @@ BOOL reg_io_r_save_key(const char *desc,  REG_R_SAVE_KEY *r_u, prs_struct *ps, i
 }
 
 /*******************************************************************
- Inits an REG_Q_CLOSE structure.
-********************************************************************/
-
-void init_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd)
-{
-	DEBUG(5,("init_reg_q_close\n"));
-
-	memcpy(&q_c->pol, hnd, sizeof(q_c->pol));
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-BOOL reg_io_q_close(const char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "reg_io_q_close");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
-		return False;
-	if(!prs_align(ps))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-BOOL reg_io_r_close(const char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
-{
-	if ( !r_u )
-		return False;
-
-	prs_debug(ps, depth, desc, "reg_io_r_close");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("", &r_u->pol, ps, depth))
-		return False;
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 makes a structure.
 ********************************************************************/
 

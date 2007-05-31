@@ -186,8 +186,8 @@ out:
 	/* cleanup */
 	
 	if ( strlen( subpath ) != 0 )
-		rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
-	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_hive );
+		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
 
 	return werror_to_ntstatus(result);
 }
@@ -249,8 +249,8 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	
 	/* cleanup */
 	
-	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
-	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_hive );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
 
 	return werror_to_ntstatus(result);
 }
