@@ -418,8 +418,6 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 				 timeval_is_zero(&idle_timeout) ?
 				 NULL : &idle_timeout);
 		
-		run_events(smbd_event_context(), num, &r_fds, &w_fds);
-
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
 				exit_server_cleanly(NULL);
@@ -433,6 +431,10 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 				reload_after_sighup = 0;
 			}
 
+			continue;
+		}
+
+		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
 			continue;
 		}
 
