@@ -1,5 +1,9 @@
 2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_windows.in: Add crl-uri for the ee certs.
+
+	* print.c: Printf formating.
+
 	* ca.c: Add glue for adding CRL dps.
 
 	* test_ca.in: Readd the crl adding code, it works (somewhat) now.
