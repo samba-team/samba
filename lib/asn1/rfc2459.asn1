@@ -320,14 +320,14 @@ DistributionPointReasonFlags ::= BIT STRING {
 }
 
 DistributionPointName ::= CHOICE {
-	fullName                [0]     GeneralNames,
+	fullName                [0]     IMPLICIT -- GeneralNames --  SEQUENCE -- SIZE (1..MAX) -- OF GeneralName,
 	nameRelativeToCRLIssuer [1]     RelativeDistinguishedName
 }
 
 DistributionPoint ::= SEQUENCE {
-	distributionPoint       [0]     DistributionPointName OPTIONAL,
-	reasons                 [1]     DistributionPointReasonFlags OPTIONAL,
-	cRLIssuer               [2]     GeneralNames OPTIONAL
+	distributionPoint       [0]     IMPLICIT heim_any -- DistributionPointName -- OPTIONAL,
+	reasons                 [1]     IMPLICIT heim_any -- DistributionPointReasonFlags -- OPTIONAL,
+	cRLIssuer               [2]     IMPLICIT heim_any -- GeneralNames -- OPTIONAL
 }
 
 CRLDistributionPoints ::= SEQUENCE -- SIZE (1..MAX) -- OF DistributionPoint
@@ -486,6 +486,9 @@ id-netscape-cert-comment OBJECT IDENTIFIER ::= { id-netscape 1 13 }
 
 id-ms-cert-enroll-domaincontroller OBJECT IDENTIFIER ::= 
     { 1 3 6 1 4 1 311 20 2 }
+
+id-ms-client-authentication OBJECT IDENTIFIER ::= 
+ { 1 3 6 1 5 5 7 3 2 }
 
 -- DER:1e:20:00:44:00:6f:00:6d:00:61:00:69:00:6e:00:43:00:6f:00:6e:00:74:00:72:00:6f:00:6c:00:6c:00:65:00:72
 
