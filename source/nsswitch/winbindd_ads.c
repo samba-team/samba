@@ -912,11 +912,19 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	uint32 *name_types_nocache = NULL;
 	char **domains_nocache = NULL;     /* only needed for rpccli_lsa_lookup_sids */
 	uint32 num_nocache = 0;
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, 
 		  sid_string_static(group_sid)));
 
 	*num_names = 0;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		DEBUG(1, ("ads: lookup_groupmem: talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("lookup_groupmem: No incoming trust for domain %s\n",
@@ -932,7 +940,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	}
 
 	/* search for all members of the group */
-	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(objectSid=%s)",
+	if (!(ldap_exp = talloc_asprintf(tmp_ctx, "(objectSid=%s)",
 					 sid_string_static(group_sid)))) 
 	{
 		DEBUG(1, ("ads: lookup_groupmem: talloc_asprintf for ldap_exp failed!\n"));
@@ -944,7 +952,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	args.val = ADS_EXTENDED_DN_HEX_STRING;
 	args.critical = True;
 
-	rc = ads_ranged_search(ads, mem_ctx, LDAP_SCOPE_SUBTREE, ads->config.bind_path, 
+	rc = ads_ranged_search(ads, tmp_ctx, LDAP_SCOPE_SUBTREE, ads->config.bind_path, 
 			       ldap_exp, &args, "member", &members, &num_members);
 
 	if (!ADS_ERR_OK(rc)) {
@@ -971,13 +979,13 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
 		(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
 		(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
-		(sid_mem_nocache) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
+		(sid_mem_nocache) = TALLOC_ZERO_ARRAY(tmp_ctx, DOM_SID, num_members);
 
 		if ((members == NULL) || (*sid_mem == NULL) ||
 		    (*names == NULL) || (*name_types == NULL) ||
 		    (sid_mem_nocache == NULL))
 		{
-			DEBUG(1, ("talloc failed\n"));
+			DEBUG(1, ("ads: lookup_groupmem: talloc failed\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
@@ -993,7 +1001,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		char *name, *domain_name;
 		DOM_SID sid;
 
-	        if (!ads_get_sid_from_extended_dn(mem_ctx, members[i], args.val, &sid)) {
+	        if (!ads_get_sid_from_extended_dn(tmp_ctx, members[i], args.val, &sid)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 	                goto done;
 		}
@@ -1019,13 +1027,13 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	/* handle sids not resolved from cache by lsa_lookup_sids */
 	if (num_nocache > 0) {
 
-		status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+		status = cm_connect_lsa(domain, tmp_ctx, &cli, &lsa_policy);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 
-		status = rpccli_lsa_lookup_sids_all(cli, mem_ctx, 
+		status = rpccli_lsa_lookup_sids_all(cli, tmp_ctx, 
 						    &lsa_policy,
 						    num_nocache, 
 						    sid_mem_nocache, 
@@ -1046,7 +1054,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				{
 					sid_copy(&(*sid_mem)[*num_names],
 						 &sid_mem_nocache[i]);
-					(*names)[*num_names] = names_nocache[i];
+					(*names)[*num_names] = talloc_steal(names, names_nocache[i]);
 					(*name_types)[*num_names] = name_types_nocache[i];
 					(*num_names)++;
 				}
@@ -1073,11 +1081,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 done:
 
-	/* free intermediate lists. - a temp talloc ctx might be better. */
-	TALLOC_FREE(sid_mem_nocache);
-	TALLOC_FREE(names_nocache);
-	TALLOC_FREE(name_types_nocache);
-	TALLOC_FREE(domains_nocache);
+	TALLOC_FREE(tmp_ctx);
 
 	return status;
 }
