@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/cli_lsa.h"
 #include "librpc/gen_ndr/cli_svcctl.h"
 #include "librpc/gen_ndr/cli_wkssvc.h"
+#include "librpc/gen_ndr/cli_eventlog.h"
 
 /* macro to expand cookie-cutter code in cli_xxx() using rpc_api_pipe_req() */
 

@@ -405,7 +405,7 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 	uiRetention = 604800;
 
 	/* the general idea is to internally open the registry 
-	   key and retreive the values.  That way we can continue 
+	   key and retrieve the values.  That way we can continue 
 	   to use the same fetch/store api that we use in 
 	   srv_reg_nt.c */
 
@@ -659,11 +659,9 @@ NTSTATUS _eventlog_clear_eventlog( pipes_struct * p,
 /********************************************************************
  ********************************************************************/
 
-NTSTATUS _eventlog_close_eventlog( pipes_struct * p,
-				 EVENTLOG_Q_CLOSE_EVENTLOG * q_u,
-				 EVENTLOG_R_CLOSE_EVENTLOG * r_u )
+NTSTATUS _eventlog_CloseEventLog( pipes_struct * p, struct eventlog_CloseEventLog *r )
 {
-	return elog_close( p, &q_u->handle );
+	return elog_close( p, r->in.handle );
 }
 
 /********************************************************************
@@ -802,3 +800,142 @@ NTSTATUS _eventlog_get_num_records( pipes_struct * p,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p, struct eventlog_ClearEventLogW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_BackupEventLogW(pipes_struct *p, struct eventlog_BackupEventLogW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_DeregisterEventSource *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_GetNumRecords(pipes_struct *p, struct eventlog_GetNumRecords *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_GetOldestRecord(pipes_struct *p, struct eventlog_GetOldestRecord *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_ChangeNotify(pipes_struct *p, struct eventlog_ChangeNotify *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p, struct eventlog_OpenEventLogW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_RegisterEventSourceW(pipes_struct *p, struct eventlog_RegisterEventSourceW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_OpenBackupEventLogW(pipes_struct *p, struct eventlog_OpenBackupEventLogW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_ReadEventLogW(pipes_struct *p, struct eventlog_ReadEventLogW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_ReportEventW(pipes_struct *p, struct eventlog_ReportEventW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_ClearEventLogA(pipes_struct *p, struct eventlog_ClearEventLogA *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_BackupEventLogA(pipes_struct *p, struct eventlog_BackupEventLogA *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_OpenEventLogA(pipes_struct *p, struct eventlog_OpenEventLogA *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_RegisterEventSourceA(pipes_struct *p, struct eventlog_RegisterEventSourceA *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_OpenBackupEventLogA(pipes_struct *p, struct eventlog_OpenBackupEventLogA *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_ReadEventLogA(pipes_struct *p, struct eventlog_ReadEventLogA *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_ReportEventA(pipes_struct *p, struct eventlog_ReportEventA *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_RegisterClusterSvc(pipes_struct *p, struct eventlog_RegisterClusterSvc *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_DeregisterClusterSvc(pipes_struct *p, struct eventlog_DeregisterClusterSvc *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_WriteClusterEvents(pipes_struct *p, struct eventlog_WriteClusterEvents *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_GetLogIntormation(pipes_struct *p, struct eventlog_GetLogIntormation *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+

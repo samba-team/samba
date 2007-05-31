@@ -786,6 +786,7 @@ enum flush_reason_enum {
 #include "librpc/gen_ndr/srv_echo.h"
 #include "librpc/gen_ndr/srv_svcctl.h"
 #include "librpc/gen_ndr/srv_lsa.h"
+#include "librpc/gen_ndr/srv_eventlog.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
