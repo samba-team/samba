@@ -64,3 +64,16 @@ ${hxtool} issue-certificate \
     --domain-controller \
     --ca-certificate=FILE:wca.pem || exit 1
 
+
+echo "Create domain controller cert"
+${hxtool} issue-certificate \
+    --type="pkinit-client" \
+    --pk-init-principal="user@HEIMDAL.PKI" \
+    --generate-key=rsa \
+    --subject="CN=User,DC=heimdal,DC=pki" \
+    --ms-upn="user@heimdal.pki" \
+    --certificate="FILE:wuser.pem" \
+    --ca-certificate=FILE:wca.pem || exit 1
+
+
+exit 0
