@@ -103,8 +103,8 @@ static BOOL api_svcctl_ControlService(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_ControlService, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
-	if (r.out.status == NULL) {
+	r.out.service_status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
+	if (r.out.service_status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -437,8 +437,8 @@ static BOOL api_svcctl_QueryServiceStatus(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatus, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
-	if (r.out.status == NULL) {
+	r.out.service_status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
+	if (r.out.service_status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -909,8 +909,8 @@ static BOOL api_svcctl_EnumDependentServicesW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUS);
-	if (r.out.status == NULL) {
+	r.out.service_status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUS);
+	if (r.out.service_status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1295,8 +1295,8 @@ static BOOL api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusW, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
-	if (r.out.status == NULL) {
+	r.out.lock_status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
+	if (r.out.lock_status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1786,8 +1786,8 @@ static BOOL api_svcctl_EnumDependentServicesA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUS);
-	if (r.out.status == NULL) {
+	r.out.service_status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUS);
+	if (r.out.service_status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2165,8 +2165,8 @@ static BOOL api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusA, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
-	if (r.out.status == NULL) {
+	r.out.lock_status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
+	if (r.out.lock_status == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}

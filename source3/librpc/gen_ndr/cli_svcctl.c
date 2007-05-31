@@ -37,7 +37,7 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli, TALLOC_CT
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t control, struct SERVICE_STATUS *status)
+NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t control, struct SERVICE_STATUS *service_status)
 {
 	struct svcctl_ControlService r;
 	NTSTATUS status;
@@ -63,7 +63,7 @@ NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return variables */
-	*status = *r.out.status;
+	*service_status = *r.out.service_status;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -188,7 +188,7 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli, TAL
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct SERVICE_STATUS *status)
+NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct SERVICE_STATUS *service_status)
 {
 	struct svcctl_QueryServiceStatus r;
 	NTSTATUS status;
@@ -213,7 +213,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return variables */
-	*status = *r.out.status;
+	*service_status = *r.out.service_status;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -429,7 +429,7 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned)
+NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *service_status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned)
 {
 	struct svcctl_EnumDependentServicesW r;
 	NTSTATUS status;
@@ -456,8 +456,8 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLO
 	}
 	
 	/* Return variables */
-	if ( status ) {
-		*status = *r.out.status;
+	if ( service_status ) {
+		*service_status = *r.out.service_status;
 	}
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
@@ -605,7 +605,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_C
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *status, uint32_t *required_buf_size)
+NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *lock_status, uint32_t *required_buf_size)
 {
 	struct svcctl_QueryServiceLockStatusW r;
 	NTSTATUS status;
@@ -631,7 +631,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALL
 	}
 	
 	/* Return variables */
-	*status = *r.out.status;
+	*lock_status = *r.out.lock_status;
 	*required_buf_size = *r.out.required_buf_size;
 	
 	/* Return result */
@@ -859,7 +859,7 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned)
+NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *service_status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned)
 {
 	struct svcctl_EnumDependentServicesA r;
 	NTSTATUS status;
@@ -886,8 +886,8 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLO
 	}
 	
 	/* Return variables */
-	if ( status ) {
-		*status = *r.out.status;
+	if ( service_status ) {
+		*service_status = *r.out.service_status;
 	}
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
@@ -1034,7 +1034,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_C
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *status, uint32_t *required_buf_size)
+NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *lock_status, uint32_t *required_buf_size)
 {
 	struct svcctl_QueryServiceLockStatusA r;
 	NTSTATUS status;
@@ -1060,7 +1060,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALL
 	}
 	
 	/* Return variables */
-	*status = *r.out.status;
+	*lock_status = *r.out.lock_status;
 	*required_buf_size = *r.out.required_buf_size;
 	
 	/* Return result */
