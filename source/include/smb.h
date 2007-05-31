@@ -313,6 +313,8 @@ struct id_map {
 #include "librpc/gen_ndr/eventlog.h"
 #include "librpc/gen_ndr/srvsvc.h"
 #include "librpc/gen_ndr/wkssvc.h"
+#include "librpc/gen_ndr/echo.h"
+#include "librpc/gen_ndr/svcctl.h"
 
 struct lsa_dom_info {
 	BOOL valid;

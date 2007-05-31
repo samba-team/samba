@@ -349,7 +349,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dfs.o librpc/gen_ndr/cli_echo.o \
-		   librpc/gen_ndr/cli_srvsvc.o \
+		   librpc/gen_ndr/cli_srvsvc.o librpc/gen_ndr/cli_svcctl.o \
 		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
 		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_epmapper.o \
 		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
@@ -384,6 +384,7 @@ RPC_SVC_OBJ = librpc/gen_ndr/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
+		  librpc/gen_ndr/srv_svcctl.o \
                   services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
                   services/svc_netlogon.o services/svc_winreg.o \
                   services/svc_wins.o
@@ -399,7 +400,7 @@ RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog.o rpc_server/srv_eventlog_nt.o rpc_se
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
 
-RPC_ECHO_OBJ = librpc/gen_ndr/srv_echo.o rpc_server/srv_echo_nt.o
+RPC_ECHO_OBJ = rpc_server/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
 
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
