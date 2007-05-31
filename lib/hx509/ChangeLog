@@ -1,5 +1,12 @@
 2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ca.c: Add glue for adding CRL dps.
+
+	* test_ca.in: Readd the crl adding code, it works (somewhat) now.
+
+	* print.c: Fix printing of CRL DPnames (I hate IMPLICIT encoded
+	structures).
+
 	* hxtool-commands.in: make ca and alias of certificate-sign
 	
 2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
