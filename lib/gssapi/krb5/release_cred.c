@@ -42,6 +42,7 @@ OM_uint32 _gsskrb5_release_cred
 {
     krb5_context context;
     gsskrb5_cred cred;
+    OM_uint32 junk;
 
     *minor_status = 0;
 
@@ -67,7 +68,7 @@ OM_uint32 _gsskrb5_release_cred
 	else 
 	    krb5_cc_close(context, cred->ccache);
     }
-    gss_release_oid_set(NULL, &cred->mechanisms);
+    gss_release_oid_set(&junk, &cred->mechanisms);
     if (cred->enctypes)
 	free(cred->enctypes);
     HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
