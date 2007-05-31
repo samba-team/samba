@@ -662,17 +662,17 @@ acceptor_start
 				     &ctx->mech_time_rec,
 				     &mech_delegated_cred);
 	if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
+	    ctx->preferred_mech_type = preferred_mech_type;
+	    ctx->negotiated_mech_type = preferred_mech_type;
+	    if (ret == GSS_S_COMPLETE)
+		ctx->open = 1;
+
 	    if (delegated_cred_handle)
 		ret = _gss_spnego_alloc_cred(minor_status,
 					     mech_delegated_cred,
 					     delegated_cred_handle);
 	    else
 		gss_release_cred(&ret2, &mech_delegated_cred);
-
-	    ctx->preferred_mech_type = preferred_mech_type;
-	    ctx->negotiated_mech_type = preferred_mech_type;
-	    if (ret == GSS_S_COMPLETE)
-		ctx->open = 1;
 
 	    ret = acceptor_complete(minor_status,
 				    ctx,
