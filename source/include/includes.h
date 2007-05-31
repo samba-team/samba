@@ -691,7 +691,6 @@ typedef int BOOL;
 #include "rpc_shutdown.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
-#include "librpc/gen_ndr/echo.h"
 #include "librpc/gen_ndr/notify.h"
 #include "nt_printing.h"
 #include "idmap.h"
@@ -782,6 +781,11 @@ enum flush_reason_enum {
     NUM_FLUSH_REASONS};
 
 #include "nss_info.h"
+
+/* generated rpc server implementation functions */
+#include "librpc/gen_ndr/srv_echo.h"
+#include "librpc/gen_ndr/srv_svcctl.h"
+#include "librpc/gen_ndr/srv_lsa.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H

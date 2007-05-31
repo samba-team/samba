@@ -2366,7 +2366,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			netdfs_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SVCCTL:
-			svcctl_get_pipe_fns( &cmds, &n_cmds );
+			svcctl2_get_pipe_fns( &cmds, &n_cmds );
 			break;
 	        case PI_EVENTLOG:
 			eventlog_get_pipe_fns( &cmds, &n_cmds );

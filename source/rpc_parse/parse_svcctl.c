@@ -196,53 +196,6 @@ uint32 svcctl_sizeof_service_config( SERVICE_CONFIG *config )
 	return size;
 }
 
-
-
-/*******************************************************************
-********************************************************************/
-
-BOOL svcctl_io_q_close_service(const char *desc, SVCCTL_Q_CLOSE_SERVICE *q_u, prs_struct *ps, int depth)
-{
-        
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_q_close_service");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
-********************************************************************/
-
-BOOL svcctl_io_r_close_service(const char *desc, SVCCTL_R_CLOSE_SERVICE *r_u, prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_close_service");
-	depth++;
-
-	if(!prs_align(ps))
-	    return False;
-
-	if(!smb_io_pol_hnd("pol_handle", &r_u->handle, ps, depth))
-	   return False; 
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
 /*******************************************************************
 ********************************************************************/
 

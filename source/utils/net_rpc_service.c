@@ -49,7 +49,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 		*state = service_status.state;
 	}
 	
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hService );
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService);
 	
 	return result;
 }
@@ -131,7 +131,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 	d_printf("%s service is %s.\n", service, svc_status_string(state));
 
 done:	
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hService  );
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService);
 		
 	return result;
 }	
@@ -185,7 +185,7 @@ static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
 	}
 
 done:	
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hSCM  );
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM);
 		
 	return werror_to_ntstatus(result);
 }	
@@ -286,8 +286,8 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 	}
 
 done:	
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hService  );
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hSCM  );
+        rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService);
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM);
 
 	return werror_to_ntstatus(result);
 }	
@@ -325,7 +325,7 @@ static NTSTATUS rpc_service_stop_internal(const DOM_SID *domain_sid,
 	result = control_service(pipe_hnd, mem_ctx, &hSCM, servicename, 
 		SVCCTL_CONTROL_STOP, SVCCTL_STOPPED );
 		
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hSCM  );
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM);
 		
 	return werror_to_ntstatus(result);
 }	
@@ -363,7 +363,7 @@ static NTSTATUS rpc_service_pause_internal(const DOM_SID *domain_sid,
 	result = control_service(pipe_hnd, mem_ctx, &hSCM, servicename, 
 		SVCCTL_CONTROL_PAUSE, SVCCTL_PAUSED );
 		
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hSCM  );
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM);
 		
 	return werror_to_ntstatus(result);
 }	
@@ -401,7 +401,7 @@ static NTSTATUS rpc_service_resume_internal(const DOM_SID *domain_sid,
 	result = control_service(pipe_hnd, mem_ctx, &hSCM, servicename, 
 		SVCCTL_CONTROL_CONTINUE, SVCCTL_RUNNING );
 		
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hSCM  );
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM);
 		
 	return werror_to_ntstatus(result);
 }	
@@ -463,8 +463,8 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 		d_fprintf(stderr, "Failed to start service: %s [%s]\n", servicename, dos_errstr(result) );
 	
 done:	
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hService  );
-	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hSCM  );
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService);
+	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM);
 
 	return werror_to_ntstatus(result);
 }
