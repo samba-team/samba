@@ -62,6 +62,7 @@ ${hxtool} issue-certificate \
     --subject="CN=kdc.heimdal.pki,dc=heimdal,dc=pki" \
     --certificate="FILE:wdc.pem" \
     --domain-controller \
+    --crl-uri="http://www.test.h5l.se/test-hemdal-pki-crl1.crl" \
     --ca-certificate=FILE:wca.pem || exit 1
 
 
@@ -72,6 +73,7 @@ ${hxtool} issue-certificate \
     --generate-key=rsa \
     --subject="CN=User,DC=heimdal,DC=pki" \
     --ms-upn="user@heimdal.pki" \
+    --crl-uri="http://www.test.h5l.se/test-hemdal-pki-crl1.crl" \
     --certificate="FILE:wuser.pem" \
     --ca-certificate=FILE:wca.pem || exit 1
 
