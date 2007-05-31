@@ -1,69 +1,49 @@
-'Samba4 TP4' presents you with an opportunity to see a Technology
-Preview (TP) snapshot of Samba4's development, as at January 2007.
+'Samba4 TP5' presents you with a snapshot into Samba4's ongoing
+development, as we move towards our first alpha releases.  This Technology
+Preview (TP) is snapshot of Samba4's development, as at June 2007.
 
-In the last few months since TP3 was released in October 2006,
-significant work has been done across many parts of Samba4.  Since that
-time, we have added the basis for some new and exciting features:
+In the time since TP4 was released in January 2007, Samba has
+continued to evolve, but you may particularly notice these areas:
 
-  PKINIT support to Samba4's KDC will allow, smart-card login to a
-  Samba4 domain.  TP4 demonstrates this with static key files, but
-  work will continue to enable actual hardware cards.
+  Work has continued on SWAT, the the libnet API behind it.  These we
+  hope will grow into a full web-based management solution for both
+  local and remote Samba and windows servers.
 
-  Clustering support was always a design goal of Samba4, and with TP4
-  we have the ctdb framework, a cluster-aware shared database.  This
-  allows Samba4 to share a shared cluster file-system with it's clients. 
-  Presented at this year's linux.conf.au, including a highly rigged
-  demo, you can expect to see this mature over the next few months.
+  The DRAUAPI research effort has largely concluded, and an initial
+  implementation of AD replication is present, included in torture
+  test-cases.  This includes the decryption of the AD passwords, which
+  were specially and separately encrypted.  This should be recognised
+  as vital milestone.
 
-  Non-blocking and Asynchronous IO support, has always been a design
-  goal in Samba4, and TP4 will use new Linux Kernel features to
-  implement event driven asynchronous IO.  This makes Samba more
-  efficient on systems where some data may be 'further away' than a
-  local disk, such as HSM systems.  This allows the Kernel to handle
-  reading the returned data from the disk, only notifying Samba when
-  the data is ready for dispatch to the client. 
+  Likewise, the LDAP Backend project has moved from a research
+  implementation into something that can be easily deployed outside
+  the test infrastructure.  
 
-  Our web-management console, known as SWAT, is being revamped, and in
-  TP4 you can find a new Web 2.0 style user interface, being used to
-  support a web-based ldb browser.  We hope this new system will allow
-  things simple not possible with the form-submit style of web
-  management.
+  Testing has been an area of great work, with renewed vigour to
+  increase our test coverage over the past few months.  In doing so,
+  we now demonstrate PKINIT and many other aspects of kerberos, as
+  well as command-line authentication handling in our testsuite.
 
-  Using LDB LDAP back-end integration has improved in this release, with an
-  improved mapping module allowing the start of Fedora DS back-end
-  support.  
+  The testsuite infrastructure has been rewritten in perl and
+  extended, to setup multiple environments: allowing testing of the
+  domain member, as well as the domain controller, roles.  Samba4's
+  initial implementation of winbind has been revived, to fill in these
+  tests.
 
-In continuing our research effort, TP4 includes the work to better
-understand and implement the DRSUAPI replication protocols.  By better
-understanding the needs of replication now, we can structure our
-databases so that their format will have to change less in future.
+  In clustering, work on CTDB (an implementation of a clustered Samba)
+  has moved ahead very well, but the current code has not
+  been merged into Samba4 in time for this release.
 
-We hope to use this replication function to replace the SamSync based
-Vampire process so effectively demonstrated since TP1, and to
-eventually join an Active Directory domain, as a replicating partner.
+  To support better management, we have investigated group policy
+  support, and include the infrastructure required.  Unfortunately
+  without MMC write support, you will need to place the polices into
+  the directory by hand.  
 
-Behind the scenes, much of the core infrastructure of Samba4 continues
-development:
-
-  In Kerberos, we have continued to track the development of the
-  Heimdal Kerberos implementation, and reduce the custom diff between
-  our branch and upstream.  Heimdal now provides plug-in APIs for
-  almost all of the hooks we need, including management and validation
-  of the PAC.
-
-  In testing, our test infrastructure has undergone a quiet
-  revolution, as we improve our unit test framework.  Likewise, the
-  tests themselves have continued to expand, as we follow our
-  test-driven development pattern.
-
-  In providing an abstraction above our raw RPC layer, the libnet
-  library continues to expand, becoming a C and JS management API for
-  Samba4 and remote servers.
-
-  To ensure that, as an administrator and developer, you can easily
-  read and edit our internal databases, our LDB layer has been
-  optimised for speed.  The aim here is to avoid needing to use the faster, but
-  more opaque, TDB layer.  
+As we move forward, we have many of the features we feel are required
+for a Samba4 Alpha.  Similarly, we know enough about the data
+formats (particularly those that are encrypted) to be confident that
+we won't need to change the LDB format.  Our plan is to publish a
+Samba4 alpha in the next few months. 
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our SVN history.
