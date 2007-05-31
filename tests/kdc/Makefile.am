@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-noinst_DATA = krb5.conf krb5-pkinit.conf
+noinst_DATA = krb5.conf krb5-pkinit.conf krb5-pkinit-win.conf
 
 check_PROGRAMS = ap-req
 check_SCRIPTS = $(SCRIPT_TESTS) 
@@ -49,10 +49,12 @@ krb5.conf: krb5.conf.in Makefile
 	mv krb5.conf.tmp krb5.conf
 
 krb5-pkinit.conf: krb5-pkinit.conf.in Makefile
-	$(do_subst) < $(srcdir)/krb5-pkinit.conf.in > krb5-pkinit.conf.tmp
+	$(do_subst) -e 's,[@]w2k[@],no,g' < $(srcdir)/krb5-pkinit.conf.in > krb5-pkinit.conf.tmp
 	mv krb5-pkinit.conf.tmp krb5-pkinit.conf
 
-
+krb5-pkinit-win.conf: krb5-pkinit.conf.in Makefile
+	$(do_subst) -e 's,[@]w2k[@],yes,g' < $(srcdir)/krb5-pkinit.conf.in > krb5-pkinit-win.conf.tmp
+	mv krb5-pkinit-win.conf.tmp krb5-pkinit-win.conf
 
 CLEANFILES= \
 	$(TESTS) \
@@ -70,6 +72,7 @@ CLEANFILES= \
 	foopassword \
 	krb5.conf krb5.conf.tmp \
 	krb5-pkinit.conf krb5-pkinit.conf.tmp \
+	krb5-pkinit-win.conf krb5-pkinit-win.conf.tmp \
 	messages.log \
 	o2cache.krb5 \
 	o2digest-reply \
@@ -83,6 +86,7 @@ CLEANFILES= \
 	req-kdc.der \
 	pkinit.crt \
 	pkinit2.crt \
+	pkinit3.crt \
 	kdc.crt \
 	ca.crt \
 	uuserver.log \
