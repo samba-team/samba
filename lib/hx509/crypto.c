@@ -1424,6 +1424,11 @@ const AlgorithmIdentifier _hx509_des_rsdi_ede3_cbc_oid = {
     { 6, rk_UNCONST(des_rsdi_ede3_cbc_oid) }, NULL
 };
 
+static const unsigned aes128_cbc_oid[] ={ 2, 16, 840, 1, 101, 3, 4, 1, 2 };
+const AlgorithmIdentifier _hx509_crypto_aes128_cbc_data = {
+    { 9, rk_UNCONST(aes128_cbc_oid) }, NULL
+};
+
 static const unsigned aes256_cbc_oid[] ={ 2, 16, 840, 1, 101, 3, 4, 1, 42 };
 const AlgorithmIdentifier _hx509_crypto_aes256_cbc_data = {
     { 9, rk_UNCONST(aes256_cbc_oid) }, NULL
@@ -1484,6 +1489,10 @@ hx509_signature_rsa(void)
 const AlgorithmIdentifier *
 hx509_crypto_des_rsdi_ede3_cbc(void)
 { return &_hx509_des_rsdi_ede3_cbc_oid; }
+
+const AlgorithmIdentifier *
+hx509_crypto_aes128_cbc(void)
+{ return &_hx509_crypto_aes128_cbc_data; }
 
 const AlgorithmIdentifier *
 hx509_crypto_aes256_cbc(void)
@@ -1796,7 +1805,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"aes-128-cbc",
 	oid_id_aes_128_cbc,
-	NULL,
+	hx509_crypto_aes128_cbc,
 	EVP_aes_128_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
@@ -2506,7 +2515,7 @@ hx509_crypto_available(hx509_context context,
     *val = NULL;
 
     if (type == HX509_SELECT_ALL) {
-	bits = SIG_DIGEST | SIG_PUBLIC_SIG;
+	bits = SIG_DIGEST | SIG_PUBLIC_SIG | SIG_SECRET;
     } else if (type == HX509_SELECT_DIGEST) {
 	bits = SIG_DIGEST;
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
@@ -2540,6 +2549,26 @@ hx509_crypto_available(hx509_context context,
 	if (ret)
 	    goto out;
 	len++;
+    }
+
+    /* Add AES */
+    if (bits & SIG_SECRET) {
+
+	for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++) {
+	
+	    if (ciphers[i].ai_func == NULL)
+		continue;
+
+	    ptr = realloc(*val, sizeof(**val) * (len + 1));
+	    if (ptr == NULL)
+		goto out;
+	    *val = ptr;
+	    
+	    ret = copy_AlgorithmIdentifier((ciphers[i].ai_func)(), &(*val)[len]);
+	    if (ret)
+		goto out;
+	    len++;
+	}
     }
 
     *plen = len;
