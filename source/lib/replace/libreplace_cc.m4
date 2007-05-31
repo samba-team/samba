@@ -60,10 +60,10 @@ case "$host_os" in
 	*hpux*)
 		# mmap on HPUX is completely broken...
 		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
-#		if test "`uname -r`" = "B.11.11"; then
+		if test "`uname -r`" = "B.11.00" -o "`uname -r`" = "B.11.11"; then
 			AC_MSG_WARN([Enabling HPUX 11.11 header bug workaround])
 			CFLAGS="$CFLAGS -D_LARGEFILE64_SUPPORT -D__LP64__ -DO_LARGEFILE=04000"
-#		fi
+		fi
 		if test "`uname -r`" = "B.11.23"; then
 			AC_MSG_WARN([Enabling HPUX 11.23 machine/sys/getppdp.h bug workaround])
 			CFLAGS="$CFLAGS -D_MACHINE_SYS_GETPPDP_INCLUDED"
