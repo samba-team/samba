@@ -1284,6 +1284,17 @@ eval_types(hx509_context context,
 				       oid_id_pkekuoid());
 	    if (ret)
 		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
+
+	    ret = hx509_ca_tbs_add_eku(context, tbs, 
+				       oid_id_ms_client_authentication());
+	    if (ret)
+		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
+
+	    ret = hx509_ca_tbs_add_eku(context, tbs, 
+				       oid_id_pkinit_ms_eku());
+	    if (ret)
+		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
+
 	} else if (strcmp(type, "email") == 0) {
 	    ret = hx509_ca_tbs_add_eku(context, tbs, 
 				       oid_id_pkix_kp_emailProtection());
@@ -1305,6 +1316,16 @@ eval_types(hx509_context context,
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_pkinit");
     }
+
+    if (opt->ms_upn_string) {
+	if (!pkinit)
+	    errx(1, "MS up given but no pk-init oid");
+
+	ret = hx509_ca_tbs_add_san_ms_upn(context, tbs, opt->ms_upn_string);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_ms_upn");
+    }
+
     
     for (i = 0; i < opt->hostname_strings.num_strings; i++) {
 	const char *hostname = opt->hostname_strings.strings[i];
