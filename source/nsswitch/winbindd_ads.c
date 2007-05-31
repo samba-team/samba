@@ -975,7 +975,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	 * we try to resolve as many sids as possible from the
 	 * cache. Only the rest is passed to the lsa_lookup_sids call. */
 	
-	if (num_names) {
+	if (num_members) {
 		(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
 		(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
 		(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
