@@ -1,3 +1,9 @@
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am: generate a krb5-pkinit-win.conf
+
+	* kdc/krb5-pkinit.conf.in: W2K tests.
+	
 2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/Makefile.am: remove more files
