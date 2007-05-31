@@ -101,7 +101,7 @@ struct svcctl_ControlService {
 	} in;
 
 	struct {
-		struct SERVICE_STATUS *status;/* [ref] */
+		struct SERVICE_STATUS *service_status;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -155,7 +155,7 @@ struct svcctl_QueryServiceStatus {
 	} in;
 
 	struct {
-		struct SERVICE_STATUS *status;/* [ref] */
+		struct SERVICE_STATUS *service_status;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -264,7 +264,7 @@ struct svcctl_EnumDependentServicesW {
 	} in;
 
 	struct {
-		struct ENUM_SERVICE_STATUS *status;/* [unique] */
+		struct ENUM_SERVICE_STATUS *service_status;/* [unique] */
 		uint32_t *bytes_needed;/* [ref] */
 		uint32_t *services_returned;/* [ref] */
 		WERROR result;
@@ -345,7 +345,7 @@ struct svcctl_QueryServiceLockStatusW {
 	} in;
 
 	struct {
-		struct SERVICE_LOCK_STATUS *status;/* [ref] */
+		struct SERVICE_LOCK_STATUS *lock_status;/* [ref] */
 		uint32_t *required_buf_size;/* [ref] */
 		WERROR result;
 	} out;
@@ -468,7 +468,7 @@ struct svcctl_EnumDependentServicesA {
 	} in;
 
 	struct {
-		struct ENUM_SERVICE_STATUS *status;/* [unique] */
+		struct ENUM_SERVICE_STATUS *service_status;/* [unique] */
 		uint32_t *bytes_needed;/* [ref] */
 		uint32_t *services_returned;/* [ref] */
 		WERROR result;
@@ -548,7 +548,7 @@ struct svcctl_QueryServiceLockStatusA {
 	} in;
 
 	struct {
-		struct SERVICE_LOCK_STATUS *status;/* [ref] */
+		struct SERVICE_LOCK_STATUS *lock_status;/* [ref] */
 		uint32_t *required_buf_size;/* [ref] */
 		WERROR result;
 	} out;
