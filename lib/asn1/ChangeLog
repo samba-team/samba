@@ -1,5 +1,18 @@
-2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: add MS-UPN-SAN
+
+	* pkinit.asn1: add MS-UPN-SAN
+
+	* rfc2459.asn1: Do evil things to handle IMPLICIT encoded
+	structures.  Add id-ms-client-authentication.
+	
+2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add asn1_id_ms_cert_enroll_domaincontroller.x
+	
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* gen.c: Add struct units; as a forward declaration. Pointed out
 	by Marcus Watts.
 
