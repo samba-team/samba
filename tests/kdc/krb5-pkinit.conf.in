@@ -10,6 +10,7 @@
 [realms]
 	TEST.H5L.SE = {
 		kdc = localhost:@port@
+		pkinit_win2k = @w2k@
 	}
 
 [kdc]
