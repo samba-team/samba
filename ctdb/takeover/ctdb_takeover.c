@@ -361,6 +361,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 
 	/* tell all nodes to get their own IPs */
 	for (i=0;i<nodemap->num;i++) {
+		if (ctdb->nodes[i]->takeover_vnn == -1) {
+			/* this IP won't be taken over */
+			continue;
+		}
 		ret = ctdb_ctrl_takeover_ip(ctdb, TAKEOVER_TIMEOUT(), 
 					    ctdb->nodes[i]->takeover_vnn, 
 					    ctdb->nodes[i]->public_address);
