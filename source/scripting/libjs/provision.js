@@ -720,7 +720,7 @@ function provision_schema(subobj, message, tmp_schema_path, paths)
 	info.subobj = subobj;
 	info.message = message;
 
-	message("Setting up sam.ldb partitions\n");
+	message("Setting up " + tmp_schema_path + " as a temporary database to store the schema\n");
 
 	/* This will erase anything in the tmp db */
 	var samdb = open_ldb(info, tmp_schema_path, true);
