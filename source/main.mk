@@ -269,7 +269,7 @@ distclean: clean
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f config.pm config.mk
-	-rm -rf webapps/qooxdoo-*-sdk/frontend/framework/.cache
+	-rm -rf ../webapps/qooxdoo-*-sdk/frontend/framework/.cache
 	-rm -f $(PC_FILES)
 
 removebackup:
@@ -417,7 +417,7 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
 
-dist:: distclean idl_full manpages configure
+dist:: idl_full manpages configure distclean 
 
 configure: 
 	./autogen.sh
