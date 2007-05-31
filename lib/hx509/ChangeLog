@@ -1,4 +1,18 @@
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool-commands.in: make ca and alias of certificate-sign
+	
 2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.c (hx509_crypto_select): copy AI to the right place.
+
+	* hxtool-commands.in: Add ca --ms-upn.
+
+	* hxtool.c: add --ms-upn and add more EKU's for pk-init client.
+
+	* ca.c: Add hx509_ca_tbs_add_san_ms_upn and refactor code.
+
+	* test_crypto.in: Resurect killed e.
 
 	* test_crypto.in: check for aes256-cbc
 
