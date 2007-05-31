@@ -84,18 +84,6 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND handle;
-} EVENTLOG_Q_CLOSE_EVENTLOG;
-
-typedef struct {
-	POLICY_HND handle;
-	NTSTATUS status;
-} EVENTLOG_R_CLOSE_EVENTLOG;
-
-
-/***********************************/
-
-typedef struct {
-	POLICY_HND handle;
 } EVENTLOG_Q_GET_NUM_RECORDS;
 
 typedef struct {
