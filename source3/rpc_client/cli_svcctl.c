@@ -133,30 +133,6 @@ WERROR rpccli_svcctl_open_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return out.status;
 }
 
-/********************************************************************
-********************************************************************/
-
-WERROR rpccli_svcctl_close_service(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
-{
-	SVCCTL_Q_CLOSE_SERVICE in;
-	SVCCTL_R_CLOSE_SERVICE out;
-	prs_struct qbuf, rbuf;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_CLOSE_SERVICE, 
-	            in, out, 
-	            qbuf, rbuf,
-	            svcctl_io_q_close_service,
-	            svcctl_io_r_close_service, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
 /*******************************************************************
 *******************************************************************/
 
