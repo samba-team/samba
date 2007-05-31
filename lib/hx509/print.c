@@ -367,7 +367,7 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 {
     CRLDistributionPoints dp;
     size_t size;
-    int ret, i, j;
+    int ret, i;
 
     check_Null(ctx, status, cf, e);
 
@@ -383,18 +383,29 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "CRL Distribution Points:\n");
     for (i = 0 ; i < dp.len; i++) {
 	if (dp.val[i].distributionPoint) {
-	    switch (dp.val[i].distributionPoint->element) {
+	    DistributionPointName dpname;
+	    heim_any *data = dp.val[i].distributionPoint;
+	    int j;
+	    
+	    ret = decode_DistributionPointName(data->data, data->length,
+					       &dpname, NULL);
+	    if (ret) {
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			       "Failed to parse CRL Distribution Point Name: %d\n", ret);
+		continue;
+	    }
+
+	    switch (dpname.element) {
 	    case choice_DistributionPointName_fullName:
-		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "Fullname: ");
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "Fullname:\n");
 		
-		for (j = 0 ; j < dp.val[i].distributionPoint->u.fullName.len; j++) {
+		for (j = 0 ; j < dpname.u.fullName.len; j++) {
 		    char *s;
-		    GeneralName *name = 
-			&dp.val[i].distributionPoint->u.fullName.val[j];
+		    GeneralName *name = &dpname.u.fullName.val[j];
 
 		    ret = hx509_general_name_unparse(name, &s);
 		    if (ret == 0 && s != NULL) {
-			validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", s);
+			validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "   %s\n", s);
 			free(s);
 		    }
 		}
@@ -408,8 +419,8 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 			       "Unknown DistributionPointName");
 		break;
 	    }
+	    free_DistributionPointName(&dpname);
 	}
-
     }
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 
