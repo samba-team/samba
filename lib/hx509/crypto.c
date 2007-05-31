@@ -2476,7 +2476,7 @@ hx509_crypto_select(const hx509_context context,
 		    continue;
 		if (cipher->ai_func == NULL)
 		    continue;
-		ret = copy_AlgorithmIdentifier(&peer->val[i], cipher->ai_func());
+		ret = copy_AlgorithmIdentifier(cipher->ai_func(), selected);
 		if (ret)
 		    hx509_clear_error_string(context);
 		return ret;
