@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Gerald Carter                   2005.
+ *  Copyright (C) Gerald Carter                   2005 - 2007
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,28 +23,30 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static BOOL proxy_svcctl_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	svcctl_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns)
+		return False;
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("SVCCTL function table not sorted\n");
+	}
+
+	return fns[opnum].fn(p);
+}
+
+
 /*******************************************************************
  ********************************************************************/
 
 static BOOL api_svcctl_close_service(pipes_struct *p)
 {
-	SVCCTL_Q_CLOSE_SERVICE q_u;
-	SVCCTL_R_CLOSE_SERVICE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_close_service("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_close_service(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_close_service("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call( p, DCERPC_SVCCTL_CLOSESERVICEHANDLE );
 }
 
 /*******************************************************************
@@ -432,14 +434,15 @@ static struct api_struct api_svcctl_cmds[] =
 };
 
 
-void svcctl_get_pipe_fns( struct api_struct **fns, int *n_fns )
+void svcctl2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
-	*fns = api_svcctl_cmds;
+        *fns = api_svcctl_cmds;
 	*n_fns = sizeof(api_svcctl_cmds) / sizeof(struct api_struct);
 }
 
-NTSTATUS rpc_svcctl_init(void)
+NTSTATUS rpc_svcctl2_init(void)
 {
-  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "svcctl", "ntsvcs", api_svcctl_cmds,
-				    sizeof(api_svcctl_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION,
+					  "svcctl", "ntsvcs", api_svcctl_cmds,
+					  sizeof(api_svcctl_cmds) / sizeof(struct api_struct));
 }
