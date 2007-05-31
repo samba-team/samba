@@ -1,7 +1,8 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Marcin Krzysztof Porwit    2005.
+ *  Copyright (C) Marcin Krzysztof Porwit         2005.
+ *  Copyright (C) Gerald Carter                   2005 - 2007
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +23,23 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
+
+static BOOL proxy_eventlog_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	eventlog_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns)
+		return False;
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("EVENTLOG function table not sorted\n");
+	}
+
+	return fns[opnum].fn(p);
+}
 
 static BOOL api_eventlog_open_eventlog(pipes_struct *p)
 {
@@ -50,27 +68,7 @@ static BOOL api_eventlog_open_eventlog(pipes_struct *p)
 
 static BOOL api_eventlog_close_eventlog(pipes_struct *p)
 {
-	EVENTLOG_Q_CLOSE_EVENTLOG q_u;
-	EVENTLOG_R_CLOSE_EVENTLOG r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!(eventlog_io_q_close_eventlog("", &q_u, data, 0))) {
-		DEBUG(0, ("eventlog_io_q_close_eventlog: unable to unmarshall EVENTLOG_Q_CLOSE_EVENTLOG.\n"));
-		return False;
-	}
-
-	r_u.status = _eventlog_close_eventlog(p, &q_u, &r_u);
-
-	if (!(eventlog_io_r_close_eventlog("", &r_u, rdata, 0))) {
-		DEBUG(0, ("eventlog_io_r_close_eventlog: unable to marshall EVENTLOG_R_CLOSE_EVENTLOG.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_eventlog_call( p, DCERPC_EVENTLOG_CLOSEEVENTLOG );	
 }
 
 static BOOL api_eventlog_get_num_records(pipes_struct *p)
@@ -186,14 +184,14 @@ struct api_struct api_eventlog_cmds[] =
 	{"EVENTLOG_CLEAREVENTLOG", 	EVENTLOG_CLEAREVENTLOG, 	api_eventlog_clear_eventlog   }
 };
 
-NTSTATUS rpc_eventlog_init(void)
+NTSTATUS rpc_eventlog2_init(void)
 {
 	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, 
 		"eventlog", "eventlog", api_eventlog_cmds,
 		sizeof(api_eventlog_cmds)/sizeof(struct api_struct));
 }
 
-void eventlog_get_pipe_fns(struct api_struct **fns, int *n_fns)
+void eventlog2_get_pipe_fns(struct api_struct **fns, int *n_fns)
 {
 	*fns = api_eventlog_cmds;
 	*n_fns = sizeof(api_eventlog_cmds) / sizeof(struct api_struct);
