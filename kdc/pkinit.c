@@ -1414,10 +1414,17 @@ _kdc_pk_check_client(krb5_context context,
 	return 0;
     }
 
+    krb5_set_error_string(context,
+			  "PKINIT no matching principals for %s",
+			  *subject_name);
+
+    kdc_log(context, config, 5,
+	    "PKINIT no matching principals for %s",
+	    *subject_name);
+
     free(*subject_name);
     *subject_name = NULL;
 
-    krb5_set_error_string(context, "PKINIT no matching principals");
     return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 }
 
