@@ -202,17 +202,6 @@ typedef struct _ServiceInfo {
 /**************************/
 
 typedef struct {
-	POLICY_HND handle;
-} SVCCTL_Q_CLOSE_SERVICE;
-
-typedef struct {
-        POLICY_HND handle;
-	WERROR status;
-} SVCCTL_R_CLOSE_SERVICE;
-
-/**************************/
-
-typedef struct {
 	UNISTR2 *servername;
 	UNISTR2 *database; 
 	uint32 access;
