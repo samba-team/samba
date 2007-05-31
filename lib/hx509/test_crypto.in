@@ -141,7 +141,7 @@ ${hxtool} crypto-select \
 cmp test ${srcdir}/tst-crypto-select7 > /dev/null || \
 	{ echo "select7 failure"; exit 1; }
 
-cho "crypto available1"
+echo "crypto available1"
 ${hxtool} crypto-available \
 	--type=all \
 	> test || { echo "available1"; exit 1; }
