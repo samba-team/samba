@@ -317,6 +317,7 @@ gen_files_pkinit =					\
 	asn1_id_pkinit_san.x				\
 	asn1_id_pkinit_ms_eku.x				\
 	asn1_id_pkinit_ms_san.x				\
+	asn1_MS_UPN_SAN.x				\
 	asn1_DHNonce.x					\
 	asn1_TrustedCA.x				\
 	asn1_ExternalPrincipalIdentifier.x		\
