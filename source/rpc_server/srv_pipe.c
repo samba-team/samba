@@ -2351,7 +2351,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			netlog_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SRVSVC:
-			srvsvc_get_pipe_fns( &cmds, &n_cmds );
+			srvsvc2_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_WKSSVC:
 			wkssvc_get_pipe_fns( &cmds, &n_cmds );

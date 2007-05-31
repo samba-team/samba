@@ -306,6 +306,7 @@ struct id_map {
 #include "librpc/gen_ndr/winreg.h"
 #include "librpc/gen_ndr/initshutdown.h"
 #include "librpc/gen_ndr/eventlog.h"
+#include "librpc/gen_ndr/srvsvc.h"
 #include "librpc/gen_ndr/wkssvc.h"
 #include "librpc/gen_ndr/echo.h"
 #include "librpc/gen_ndr/svcctl.h"

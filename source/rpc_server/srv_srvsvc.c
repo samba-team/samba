@@ -30,6 +30,23 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static BOOL proxy_srvsvc_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	lsarpc_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns)
+		return False;
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("LSA function table not sorted\n");
+	}
+
+	return fns[opnum].fn(p);
+}
+
 /*******************************************************************
  api_srv_net_srv_get_info
 ********************************************************************/
@@ -556,28 +573,7 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 
 static BOOL api_srv_net_file_close(pipes_struct *p)
 {
-	SRV_Q_NET_FILE_CLOSE q_u;
-	SRV_R_NET_FILE_CLOSE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* Unmarshall the net file set info from Win9x */
-	if(!srv_io_q_net_file_close("", &q_u, data, 0)) {
-		DEBUG(0,("api_srv_net_file_close: Failed to unmarshall SRV_Q_NET_FILE_SET_SECDESC.\n"));
-		return False;
-	}
-
-	r_u.status = _srv_net_file_close(p, &q_u, &r_u);
-
-	if(!srv_io_r_net_file_close("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_srv_net_file_close: Failed to marshall SRV_R_NET_FILE_SET_SECDESC.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_srvsvc_call( p, DCERPC_SRVSVC_NETFILECLOSE );
 }
 
 /*******************************************************************
@@ -607,14 +603,14 @@ static struct api_struct api_srv_cmds[] =
       { "SRV_NET_FILE_CLOSE"        , SRV_NET_FILE_CLOSE        , api_srv_net_file_close         }
 };
 
-void srvsvc_get_pipe_fns( struct api_struct **fns, int *n_fns )
+void srvsvc2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
 	*fns = api_srv_cmds;
 	*n_fns = sizeof(api_srv_cmds) / sizeof(struct api_struct);
 }
 
 
-NTSTATUS rpc_srv_init(void)
+NTSTATUS rpc_srvsvc2_init(void)
 {
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "srvsvc", "ntsvcs", api_srv_cmds,
 				    sizeof(api_srv_cmds) / sizeof(struct api_struct));

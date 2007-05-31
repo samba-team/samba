@@ -235,7 +235,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_lsa.o librpc/gen_ndr/ndr_echo.o \
 		 librpc/gen_ndr/ndr_svcctl.o librpc/gen_ndr/ndr_eventlog.o \
 		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_initshutdown.o \
-		 librpc/gen_ndr/ndr_winreg.o
+		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_srvsvc.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -341,6 +341,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_wkssvc.o librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_echo.o librpc/gen_ndr/cli_svcctl.o \
 		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_dfs.o \
 		   librpc/gen_ndr/cli_initshutdown.o librpc/gen_ndr/cli_winreg.o \
+		   librpc/gen_ndr/cli_srvsvc.o \
 		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
@@ -365,7 +366,8 @@ RPC_REG_OBJ =  rpc_server/srv_winreg.o rpc_server/srv_winreg_nt.o \
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
-RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
+RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
+	      librpc/gen_ndr/srv_srvsvc.o
 
 RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 

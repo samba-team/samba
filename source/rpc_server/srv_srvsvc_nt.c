@@ -2281,8 +2281,330 @@ WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 /********************************************************************
 ********************************************************************/
 
-WERROR _srv_net_file_close(pipes_struct *p, SRV_Q_NET_FILE_CLOSE *q_u, SRV_R_NET_FILE_CLOSE *r_u)
+WERROR _srvsvc_NetFileClose(pipes_struct *p, struct srvsvc_NetFileClose *r)
 {
 	return WERR_ACCESS_DENIED;
+}
+
+
+/********************************************************************
+********************************************************************/
+
+WERROR _srvsvc_NetCharDevEnum(pipes_struct *p, struct srvsvc_NetCharDevEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetCharDevGetInfo(pipes_struct *p, struct srvsvc_NetCharDevGetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetCharDevControl(pipes_struct *p, struct srvsvc_NetCharDevControl *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetCharDevQEnum(pipes_struct *p, struct srvsvc_NetCharDevQEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetCharDevQGetInfo(pipes_struct *p, struct srvsvc_NetCharDevQGetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetCharDevQSetInfo(pipes_struct *p, struct srvsvc_NetCharDevQSetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetCharDevQPurge(pipes_struct *p, struct srvsvc_NetCharDevQPurge *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetCharDevQPurgeSelf(pipes_struct *p, struct srvsvc_NetCharDevQPurgeSelf *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetConnEnum(pipes_struct *p, struct srvsvc_NetConnEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetFileEnum(pipes_struct *p, struct srvsvc_NetFileEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetFileGetInfo(pipes_struct *p, struct srvsvc_NetFileGetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetSessEnum(pipes_struct *p, struct srvsvc_NetSessEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareAdd(pipes_struct *p, struct srvsvc_NetShareAdd *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareEnumAll(pipes_struct *p, struct srvsvc_NetShareEnumAll *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareGetInfo(pipes_struct *p, struct srvsvc_NetShareGetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, struct srvsvc_NetShareSetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareDel(pipes_struct *p, struct srvsvc_NetShareDel *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareDelSticky(pipes_struct *p, struct srvsvc_NetShareDelSticky *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareCheck(pipes_struct *p, struct srvsvc_NetShareCheck *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p, struct srvsvc_NetSrvGetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetSrvSetInfo(pipes_struct *p, struct srvsvc_NetSrvSetInfo *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetDiskEnum(pipes_struct *p, struct srvsvc_NetDiskEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetServerStatisticsGet(pipes_struct *p, struct srvsvc_NetServerStatisticsGet *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetTransportAdd(pipes_struct *p, struct srvsvc_NetTransportAdd *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetTransportEnum(pipes_struct *p, struct srvsvc_NetTransportEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetTransportDel(pipes_struct *p, struct srvsvc_NetTransportDel *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetRemoteTOD(pipes_struct *p, struct srvsvc_NetRemoteTOD *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetSetServiceBits(pipes_struct *p, struct srvsvc_NetSetServiceBits *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetPathType(pipes_struct *p, struct srvsvc_NetPathType *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetPathCanonicalize(pipes_struct *p, struct srvsvc_NetPathCanonicalize *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetPathCompare(pipes_struct *p, struct srvsvc_NetPathCompare *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetNameValidate(pipes_struct *p, struct srvsvc_NetNameValidate *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRPRNAMECANONICALIZE(pipes_struct *p, struct srvsvc_NETRPRNAMECANONICALIZE *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetPRNameCompare(pipes_struct *p, struct srvsvc_NetPRNameCompare *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareEnum(pipes_struct *p, struct srvsvc_NetShareEnum *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareDelStart(pipes_struct *p, struct srvsvc_NetShareDelStart *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetShareDelCommit(pipes_struct *p, struct srvsvc_NetShareDelCommit *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecurity *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecurity *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetServerTransportAddEx(pipes_struct *p, struct srvsvc_NetServerTransportAddEx *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NetServerSetServiceBitsEx(pipes_struct *p, struct srvsvc_NetServerSetServiceBitsEx *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSGETVERSION(pipes_struct *p, struct srvsvc_NETRDFSGETVERSION *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSCREATELOCALPARTITION(pipes_struct *p, struct srvsvc_NETRDFSCREATELOCALPARTITION *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSDELETELOCALPARTITION(pipes_struct *p, struct srvsvc_NETRDFSDELETELOCALPARTITION *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSSETLOCALVOLUMESTATE(pipes_struct *p, struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSSETSERVERINFO(pipes_struct *p, struct srvsvc_NETRDFSSETSERVERINFO *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSCREATEEXITPOINT(pipes_struct *p, struct srvsvc_NETRDFSCREATEEXITPOINT *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSDELETEEXITPOINT(pipes_struct *p, struct srvsvc_NETRDFSDELETEEXITPOINT *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSMODIFYPREFIX(pipes_struct *p, struct srvsvc_NETRDFSMODIFYPREFIX *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p, struct srvsvc_NETRDFSFIXLOCALVOLUME *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p, struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _srvsvc_NETRSERVERTRANSPORTDELEX(pipes_struct *p, struct srvsvc_NETRSERVERTRANSPORTDELEX *r)
+{
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
 }
 

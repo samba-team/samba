@@ -2613,22 +2613,6 @@ BOOL srv_io_r_net_file_enum(const char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_stru
 }
 
 /*******************************************************************
- Initialize a net file close request
-********************************************************************/
-void init_srv_q_net_file_close(SRV_Q_NET_FILE_CLOSE *q_n, const char *server,
-			       uint32 file_id)
-{
-	if ( server ) {
-		if ( (q_n->servername = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL ) {
-			return;
-		}
-		init_unistr2(q_n->servername, server, UNI_STR_TERMINATE);
-	}
-
-	q_n->file_id = file_id;
-}
-
-/*******************************************************************
  Inits a SRV_INFO_100 structure.
  ********************************************************************/
 
@@ -3511,47 +3495,3 @@ void init_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_u, const char *server)
 	init_unistr2(&q_u->uni_srv_name, server, UNI_STR_TERMINATE);
 }
 
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-BOOL srv_io_q_net_file_close(const char *desc, SRV_Q_NET_FILE_CLOSE *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_q_net_file_close");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_pointer("servername", ps, depth, (void**)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
-		return False;
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("file_id", ps, depth, &q_u->file_id))
-		return False;
-		
-	return True;
-}
-
-/*******************************************************************
- ********************************************************************/
-
-BOOL srv_io_r_net_file_close(const char *desc, SRV_R_NET_FILE_CLOSE *r_n, 
-			       prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "srv_io_r_net_file_close");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_n->status))
-		return False;
-
-	return True;
-}

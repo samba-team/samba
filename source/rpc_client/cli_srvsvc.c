@@ -584,34 +584,3 @@ WERROR rpccli_srvsvc_net_file_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return result;
 }
 
-WERROR rpccli_srvsvc_net_file_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 uint32 file_id)
-{
-	prs_struct qbuf, rbuf;
-	SRV_Q_NET_FILE_CLOSE q;
-	SRV_R_NET_FILE_CLOSE r;
-	WERROR result = W_ERROR(ERRgeneral);
-	fstring server;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
-
-	init_srv_q_net_file_close(&q, server, file_id);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_FILE_CLOSE,
-		q, r,
-		qbuf, rbuf,
-		srv_io_q_net_file_close,
-		srv_io_r_net_file_close,
-		WERR_GENERAL_FAILURE);
-
-	result = r.status;
-	return result;
-}

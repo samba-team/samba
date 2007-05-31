@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/cli_dfs.h"
 #include "librpc/gen_ndr/cli_initshutdown.h"
 #include "librpc/gen_ndr/cli_winreg.h"
+#include "librpc/gen_ndr/cli_srvsvc.h"
 
 /* macro to expand cookie-cutter code in cli_xxx() using rpc_api_pipe_req() */
 

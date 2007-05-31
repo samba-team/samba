@@ -868,17 +868,5 @@ typedef struct r_net_file_set_secdesc
 	WERROR status;
 } SRV_R_NET_FILE_SET_SECDESC;
 
-/***************************/
-
-typedef struct {
-	UNISTR2 *servername;
-	uint32 file_id;
-} SRV_Q_NET_FILE_CLOSE;
-
-typedef struct {
-	WERROR status;
-} SRV_R_NET_FILE_CLOSE;
-
-/***************************/
 
 #endif /* _RPC_SRVSVC_H */

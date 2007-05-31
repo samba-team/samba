@@ -4910,9 +4910,9 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	WERROR result;
-	result = rpccli_srvsvc_net_file_close(pipe_hnd, mem_ctx, atoi(argv[0]));
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return rpccli_srvsvc_NetFileClose(pipe_hnd, mem_ctx, 
+					    pipe_hnd->cli->desthost, 
+					    atoi(argv[0]));
 }
 
 /** 
