@@ -1193,7 +1193,7 @@ bin/locktest2@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST2_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/rpctorture@EXEEXT$(BINARY_PREREQS) @: $(RPCTORTURE_OBJ)
+bin/rpctorture@EXEEXT@: $(BINARY_PREREQS) $(RPCTORTURE_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
