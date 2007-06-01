@@ -41,7 +41,7 @@ extern void mc_set_syslog(int syslog)
   _syslog = syslog;
 }
 
-void mc_abort(const char *msg, ...)
+_NORETURN_ void mc_abort(const char *msg, ...)
 {
   va_list ap;
   va_start(ap, msg);

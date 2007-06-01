@@ -20,7 +20,7 @@
 
 #include "linkhash.h"
 
-void lh_abort(const char *msg, ...)
+_NORETURN_ void lh_abort(const char *msg, ...)
 {
 	va_list ap;
 	va_start(ap, msg);
