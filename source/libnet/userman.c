@@ -246,7 +246,12 @@ static NTSTATUS userdel_lookup(struct composite_context *c,
 {
 	/* receive samr_LookupNames result */
 	c->status = dcerpc_ndr_request_recv(s->req);
+
+	/* check rpc layer status */
 	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	/* check the call itself status */
+	NT_STATUS_NOT_OK_RETURN(s->lookupname.out.result);
 
 	/* what to do when there's no user account to delete
 	   and what if there's more than one rid resolved */
