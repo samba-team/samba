@@ -36,7 +36,9 @@
 
 srcdir="@srcdir@"
 
-hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+#stat="--statistic-file=${objdir}/statfile"
+
+hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 
 echo "try printing"
 ${hxtool} print \

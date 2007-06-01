@@ -37,7 +37,9 @@
 srcdir="@srcdir@"
 nistdir=/sources/pki/nist/PKITS_data
 
-hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+#stat="--statistic-file=${objdir}/statfile"
+
+hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 
 if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77

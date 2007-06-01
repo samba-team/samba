@@ -42,7 +42,9 @@ echo "nist pkcs12 tests"
 
 test -d "$nistdir" || exit 77
 
-hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+#stat="--statistic-file=${objdir}/statfile"
+
+hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 
 for a in $nistdir/*.p12 ; do
 
