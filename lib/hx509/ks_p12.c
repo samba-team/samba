@@ -360,10 +360,9 @@ p12_init(hx509_context context,
     if (flags & HX509_CERTS_CREATE) {
 	ret = hx509_certs_init(context, "MEMORY:ks-file-create", 
 			       0, lock, &p12->certs);
-	if (ret)
-	    goto out;
-	*data = p12;
-	return 0;
+	if (ret == 0)
+	    *data = p12;
+	goto out;
     }
 
     ret = _hx509_map_file(residue, &buf, &len, NULL);
