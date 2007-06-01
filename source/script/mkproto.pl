@@ -180,7 +180,8 @@ sub process_file($$$)
 		}
 
 		next unless ( $is_public || $line =~ /
-			      (_DEPRECATED_ )?^(void|BOOL|bool|int|struct|char|const|\w+_[tT]\s|uint|unsigned|long|NTSTATUS|
+			      (_DEPRECATED_ |_NORETURN_ |_WARN_UNUSED_RESULT_ |_PURE_ )*^(
+				  void|BOOL|bool|int|struct|char|const|\w+_[tT]\s|uint|unsigned|long|NTSTATUS|
 				  ADS_STATUS|enum\s.*\(|DATA_BLOB|WERROR|XFILE|FILE|DIR|
 			      double|TDB_CONTEXT|TDB_DATA|TALLOC_CTX|NTTIME|FN_|init_module|
 			      GtkWidget|GType|smb_ucs2_t|krb5_error_code)
@@ -224,6 +225,10 @@ if ($public_file ne $private_file) {
 }
 
 public("#ifndef _PUBLIC_\n#define _PUBLIC_\n#endif\n\n");
+public("#ifndef _PURE_\n#define _PURE_\n#endif\n\n");
+public("#ifndef _NORETURN_\n#define _NORETURN_\n#endif\n\n");
+public("#ifndef _DEPRECATED_\n#define _DEPRECATED_\n#endif\n\n");
+public("#ifndef _WARN_UNUSED_RESULT_\n#define _WARN_UNUSED_RESULT_\n#endif\n\n");
 
 process_file(\&public, \&private, $_) foreach (@ARGV);
 print_footer(\&public, $public_define);

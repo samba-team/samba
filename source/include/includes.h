@@ -62,17 +62,45 @@
 #endif
 #endif
 
-#ifndef NORETURN_ATTRIBUTE
-#if (__GNUC__ >= 3)
-#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
+#ifndef _DEPRECATED_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _DEPRECATED_ __attribute__ ((deprecated))
 #else
-#define NORETURN_ATTRIBUTE
+#define _DEPRECATED_
 #endif
 #endif
 
-/* mark smb_panic() as noreturn, so static analysers know that it is
-   used like abort */
-_PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
+#ifndef _WARN_UNUSED_RESULT_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _WARN_UNUSED_RESULT_ __attribute__ ((warn_unused_result))
+#else
+#define _WARN_UNUSED_RESULT_
+#endif
+#endif
+
+#ifndef _NORETURN_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _NORETURN_ __attribute__ ((noreturn))
+#else
+#define _NORETURN_
+#endif
+#endif
+
+#ifndef _PURE_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1)
+#define _PURE_ __attribute__((pure))
+#else
+#define _PURE_
+#endif
+#endif
+
+#ifndef NONNULL
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1)
+#define NONNULL(param) param __attribute__((nonnull))
+#else
+#define NONNULL(param) param
+#endif
+#endif
 
 #include "system/time.h"
 #include "system/wait.h"

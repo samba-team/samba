@@ -118,7 +118,7 @@ _PUBLIC_ const char *panic_action = NULL;
 /**
  Something really nasty happened - panic !
 **/
-_PUBLIC_ void smb_panic(const char *why)
+_PUBLIC_ _NORETURN_ void smb_panic(const char *why)
 {
 	int result;
 

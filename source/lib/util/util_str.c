@@ -36,16 +36,16 @@
 /**
  Trim the specified elements off the front and back of a string.
 **/
-_PUBLIC_ BOOL trim_string(char *s,const char *front,const char *back)
+_PUBLIC_ bool trim_string(char *s, const char *front, const char *back)
 {
-	BOOL ret = False;
+	bool ret = false;
 	size_t front_len;
 	size_t back_len;
 	size_t len;
 
 	/* Ignore null or empty strings. */
 	if (!s || (s[0] == '\0'))
-		return False;
+		return false;
 
 	front_len	= front? strlen(front) : 0;
 	back_len	= back? strlen(back) : 0;
@@ -58,7 +58,7 @@ _PUBLIC_ BOOL trim_string(char *s,const char *front,const char *back)
 			 * easily overlap. Found by valgrind. JRA. */
 			memmove(s, s+front_len, (len-front_len)+1);
 			len -= front_len;
-			ret=True;
+			ret=true;
 		}
 	}
 	
@@ -66,7 +66,7 @@ _PUBLIC_ BOOL trim_string(char *s,const char *front,const char *back)
 		while ((len >= back_len) && strncmp(s+len-back_len,back,back_len)==0) {
 			s[len-back_len]='\0';
 			len -= back_len;
-			ret=True;
+			ret=true;
 		}
 	}
 	return ret;
@@ -75,7 +75,7 @@ _PUBLIC_ BOOL trim_string(char *s,const char *front,const char *back)
 /**
  Find the number of 'c' chars in a string
 **/
-_PUBLIC_ size_t count_chars(const char *s, char c)
+_PUBLIC_ _PURE_ size_t count_chars(const char *s, char c)
 {
 	size_t count = 0;
 
@@ -218,7 +218,7 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 /** 
  * Parse a hex string and return a data blob. 
  */
-_PUBLIC_ DATA_BLOB strhex_to_data_blob(const char *strhex) 
+_PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(const char *strhex) 
 {
 	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
 
