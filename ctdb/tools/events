@@ -41,6 +41,9 @@ case $cmd in
 		 echo "Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
 	}
+	echo $ip >> /etc/ctdb/taken_ips
+	echo $ip >> /etc/ctdb/changed_ips
+
 	# if we have a local arp entry for this IP then remove it
 	/sbin/arp -d $ip 2> /dev/null
 
@@ -65,19 +68,27 @@ case $cmd in
 	# if we have a local arp entry for this IP then remove it
 	/sbin/arp -d $ip 2> /dev/null
 	echo $ip >> /etc/ctdb/released_ips
+	echo $ip >> /etc/ctdb/changed_ips
 	/bin/rm -f /etc/ctdb/ip.$ip
 	exit 0
 	;;
 
      recovered)
-        # restart any services as necessary, like NFS
-	# 
-	[ -x /etc/ctdb/statd-callout ] && /etc/ctdb/statd-callout copy
+	# if we have taken or released any ips we must send out
+	# statd notifications to recover lost nfs locks
+	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/changed_ips ] && {
+		/etc/ctdb/statd-callout notify &
+	} >/dev/null 2>&1
+
+        # restart NFS to ensure that all TCP connections to the released ip
+	# are closed
 	[ -f /etc/ctdb/released_ips ] && {
 		( /sbin/service nfs status > /dev/null 2>&1 && 
                       /sbin/service nfs restart > /dev/null 2>&1 ) &
 	} > /dev/null 2>&1
+	/bin/rm -f /etc/ctdb/changed_ips
 	/bin/rm -f /etc/ctdb/released_ips
+	/bin/rm -f /etc/ctdb/taken_ips
 	exit 0
 	;;
 

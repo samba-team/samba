@@ -22,23 +22,23 @@ case "$1" in
 	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/$2
 	done
 	;;
-  copy)
-	restart_needed=0
+  notify)
+	# restart the local lock manager and statd
+	/sbin/service nfslock stop > /dev/null 2>&1 
+	/sbin/service nfslock start > /dev/null 2>&1 
+	# send out notifications to any additional ips we now serve
         for f in `/bin/ls /etc/ctdb/ip.*`; do
 	    fname=`/bin/basename $f`
 	    ip=`echo $fname | cut -d. -f2-`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && {
-		/bin/mv $STATD_SHARED_DIRECTORY/$ip $STATD_SHARED_DIRECTORY/$ip.$$
-		/bin/cp -a $STATD_SHARED_DIRECTORY/$ip.$$/. /var/lib/nfs/statd/sm/
-		/bin/rm -rf $STATD_SHARED_DIRECTORY/$ip.$$
-		restart_needed=1
+		# we must copy to a different directory since rpc.statd gets
+		# "upset" if sm-notify touches the files.
+		/bin/rm -rf /tmp/statd/$ip
+		/bin/mkdir -p /tmp/statd/$ip
+		/bin/cp -apr $STATD_SHARED_DIRECTORY/$ip/* /tmp/statd/$ip
+		/usr/sbin/sm-notify -P /tmp/statd/$ip -v $ip -n
 	    }
 	done
-	# restart lockd if necessary
-	[ $restart_needed -eq 1 ] && {
-		( /sbin/service nfslock status > /dev/null 2>&1 && 
-                      /sbin/service nfslock restart > /dev/null 2>&1 ) &
-	} > /dev/null 2>&1
 	;;
 esac
 
