@@ -1,0 +1,45 @@
+#!/bin/sh
+# event strict to manage lockd and statd in a cluster environment
+
+. /etc/sysconfig/ctdb
+
+cmd="$1"
+shift
+
+case $cmd in 
+     startup)
+	/bin/mkdir -p /etc/ctdb/state/statd/ip
+	;;
+
+     shutdown)
+	;;
+
+     takeip)
+	ip=$2
+
+	echo $ip >> /etc/ctdb/state/statd/restart
+
+	# having a list of what IPs we have allows statd to do the right 
+	# thing via /etc/ctdb/statd-callout
+	/bin/touch /etc/ctdb/state/statd/ip/$ip
+	;;
+
+     releaseip)
+	ip=$2
+
+	echo $ip >> /etc/ctdb/state/statd/restart
+	/bin/rm -f /etc/ctdb/state/statd/ip/$ip
+	;;
+
+     recovered)
+	# if we have taken or released any ips we must send out
+	# statd notifications to recover lost nfs locks
+	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/state/statd/restart ] && {
+		/etc/ctdb/statd-callout notify &
+	} >/dev/null 2>&1
+
+	/bin/rm -f /etc/ctdb/state/statd/restart
+	;;
+esac
+
+exit 0

@@ -58,6 +58,7 @@ mkdir -p $RPM_BUILD_ROOT%{_includedir}
 mkdir -p $RPM_BUILD_ROOT{%{_libdir},%{_includedir}}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
 
@@ -66,6 +67,8 @@ make DESTDIR=$RPM_BUILD_ROOT install
 install -m644 setup/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 setup/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 install -m755 tools/events $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events
+install -m755 tools/events.d/samba $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d/samba
+install -m755 tools/events.d/nfslock $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d/nfslock
 install -m755 tools/statd-callout $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/statd-callout
 install -m755 tools/onnode.ssh $RPM_BUILD_ROOT%{_bindir}
 install -m755 tools/onnode.rsh $RPM_BUILD_ROOT%{_bindir}
@@ -108,6 +111,9 @@ fi
 %attr(755,root,root) %config %{initdir}/ctdb
 
 %{_sysconfdir}/ctdb/events
+%{_sysconfdir}/ctdb/functions
+%{_sysconfdir}/ctdb/events.d/samba
+%{_sysconfdir}/ctdb/events.d/nfslock
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb

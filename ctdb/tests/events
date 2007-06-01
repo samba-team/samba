@@ -1,0 +1,35 @@
+#!/bin/sh
+# event script for 'make test'
+
+cmd="$1"
+shift
+
+case $cmd in 
+     startup)
+	echo "`date` ctdb startup event"
+	exit 0;	
+	;;
+	
+     takeip)
+	echo "`date` ctdb takeip event for $1 $2 $3"
+	exit 0
+	;;
+
+     releaseip)
+	echo "`date` ctdb releaseip event for $1 $2 $3"
+	exit 0
+	;;
+
+     recovered)
+	echo "`date` ctdb recovered event"
+	exit 0
+	;;
+
+     shutdown)
+	echo "`date` ctdb shutdown event"
+	exit 0
+	;;
+esac
+
+echo "`/bin/date` Invalid command $cmd"
+exit 1

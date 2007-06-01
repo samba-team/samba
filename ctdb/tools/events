@@ -1,52 +1,24 @@
 #!/bin/sh
-# sample event script for ctdb
+############################
+# main event script for ctdb
 
 . /etc/sysconfig/ctdb
+. /etc/ctdb/functions
 
 cmd="$1"
 shift
 
 case $cmd in 
+     #############################
+     # called when ctdbd starts up
      startup)
 	/bin/rm -rf /etc/ctdb/state
 	/bin/mkdir -p /etc/ctdb/state
-	# wait for local services to come up.
-	[ -z "$CTDB_WAIT_TCP_PORTS" ] || {
-	  all_ok=0
-	  echo "`/bin/date` Waiting for local tcp ports $CTDB_WAIT_TCP_PORTS"
-	  while [ $all_ok -eq 0 ]; do
-	  	  all_ok=1
-	  	  for p in $CTDB_WAIT_TCP_PORTS; do
-	  	      /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
-		  done
-		  [ $all_ok -eq 1 ] || sleep 1
-		  /usr/bin/ctdb status > /dev/null 2>&1 || {
-	  		echo "ctdb daemon has died. Exiting event startup"
-			exit 1
-		  }
-          done
-	  echo "`/bin/date` Local tcp services are up"
-	}
-	# wait for local directories to becomes available (could be slow to mount)
-	[ -z "$CTDB_WAIT_DIRECTORIES" ] || {
-	  all_ok=0
-	  echo "`/bin/date` Waiting for local directories $CTDB_WAIT_DIRECTORIES"
-	  while [ $all_ok -eq 0 ]; do
-	  	  all_ok=1
-	  	  for d in $CTDB_WAIT_DIRECTORIES; do
-	  	      [ -d $d ] || all_ok=0
-		  done
-		  [ $all_ok -eq 1 ] || sleep 1
-		  /usr/bin/ctdb status > /dev/null 2>&1 || {
-	  		echo "ctdb daemon has died. Exiting event startup"
-			exit 1
-		  }
-          done
-	  echo "`/bin/date` Local directories are available"
-	}
-	exit 0;	
 	;;
-	
+
+
+     ################################################
+     # called when ctdbd wants to claim an IP address
      takeip)
 	if [ $# != 3 ]; then
 	   echo "must supply interface, IP and maskbits"
@@ -60,18 +32,14 @@ case $cmd in
 		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
 	}
-	echo $ip >> /etc/ctdb/state/taken_ips
-	echo $ip >> /etc/ctdb/state/changed_ips
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
-
-	# having a list of what IPs we have allows statd to do the right 
-	# thing via /etc/ctdb/statd-callout
-	/bin/touch /etc/ctdb/state/ip.$ip
-	exit 0
 	;;
 
+
+     ##################################################
+     # called when ctdbd wants to release an IP address
      releaseip)
 	if [ $# != 3 ]; then
 	   echo "`/bin/date` must supply interface, IP and maskbits"
@@ -87,37 +55,35 @@ case $cmd in
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
-
-	echo $ip >> /etc/ctdb/state/released_ips
-	echo $ip >> /etc/ctdb/state/changed_ips
-	/bin/rm -f /etc/ctdb/state/ip.$ip
-	exit 0
 	;;
 
+
+     ###########################################
+     # called when ctdbd has finished a recovery
      recovered)
-	# if we have taken or released any ips we must send out
-	# statd notifications to recover lost nfs locks
-	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/state/changed_ips ] && {
-		/etc/ctdb/statd-callout notify &
-	} >/dev/null 2>&1
-
-        # restart NFS to ensure that all TCP connections to the released ip
-	# are closed
-	[ -f /etc/ctdb/state/released_ips ] && {
-		( /sbin/service nfs status > /dev/null 2>&1 && 
-                      /sbin/service nfs restart > /dev/null 2>&1 ) &
-	} > /dev/null 2>&1
-	/bin/rm -f /etc/ctdb/state/changed_ips
-	/bin/rm -f /etc/ctdb/state/released_ips
-	/bin/rm -f /etc/ctdb/state/taken_ips
-	exit 0
 	;;
 
+     ####################################
+     # called when ctdbd is shutting down
      shutdown)
-        # shutdown any services as necessary
-	exit 0
 	;;
+
+     *)
+        echo "`/bin/date` Invalid ctdb event command $cmd"
+        exit 1
+        ;;
 esac
 
-echo "`/bin/date` Invalid command $cmd"
-exit 1
+#######################################
+# call all application specific scripts
+[ -d /etc/ctdb/events.d ] && {
+    /bin/ls /etc/ctdb/events.d | /bin/grep -v '~' | 
+    while read SCRIPT; do
+	[ -x /etc/ctdb/events.d/$SCRIPT ] && {
+	    /etc/ctdb/events.d/$SCRIPT $cmd "$1" "$2" "$3" || exit 1
+	}
+    done
+}
+
+# all OK
+exit 0

@@ -1,0 +1,54 @@
+# utility functions for ctdb event scripts
+
+
+######################################################
+# wait for a set of tcp ports
+# usage: ctdb_wait_tcp_ports SERICE_NAME <ports...>
+######################################################
+ctdb_wait_tcp_ports() {
+  service_name="$1"
+  shift
+  wait_ports="$*"
+  [ -z "$wait_ports" ] && return;
+  all_ok=0
+  echo "`/bin/date` Waiting for tcp service $service_name to start"
+  while [ $all_ok -eq 0 ]; do
+  	  all_ok=1
+  	  for p in $wait_ports; do
+  	      /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
+	  done
+	  [ $all_ok -eq 1 ] || sleep 1
+	  /usr/bin/ctdb status > /dev/null 2>&1 || {
+  		echo "ctdb daemon has died. Exiting tcp wait $service_name"
+		exit 1
+	  }
+  done
+  echo "`/bin/date` Local tcp services for $service_name are up"
+}
+
+
+######################################################
+# wait for a set of directories
+# usage: ctdb_wait_directories SERICE_NAME <directories...>
+######################################################
+ctdb_wait_directories() {
+  service_name="$1"
+  shift
+  wait_dirs="$*"
+  [ -z "$wait_dirs" ] && return;
+  all_ok=0
+  echo "`/bin/date` Waiting for local directories for $service_name"
+  while [ $all_ok -eq 0 ]; do
+  	  all_ok=1
+  	  for d in $wait_dirs; do
+  	      [ -d $d ] || all_ok=0
+	  done
+	  [ $all_ok -eq 1 ] || sleep 1
+	  /usr/bin/ctdb status > /dev/null 2>&1 || {
+  		echo "ctdb daemon has died. Exiting directory wait for $service_name"
+		exit 1
+	  }
+  done
+  echo "`/bin/date` Local directories for $service_name are available"
+}
+

@@ -1,0 +1,42 @@
+#!/bin/sh
+# ctdb event script for Samba
+
+PATH=/bin:/usr/bin:$PATH
+
+. /etc/sysconfig/ctdb
+
+cmd="$1"
+shift
+
+case $cmd in 
+     startup)
+	# wait for the Samba tcp ports to become available
+	smb_ports=`testparm -stv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2"`
+	ctdb_wait_tcp_ports "Samba" $smb_ports
+
+	# wait for all shared directories to become available
+	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
+	ctdb_wait_directories "Samba" $smb_dirs	
+	;;
+	
+     takeip)
+	# nothing special for Samba
+	;;
+
+     releaseip)
+	# nothing special for Samba
+	;;
+
+     recovered)
+	# nothing special for Samba
+	exit 0
+	;;
+
+     shutdown)
+	/etc/init.d/smb stop
+	/etc/init.d/winbind stop
+	;;
+esac
+
+# ignore unknown commands
+exit 0
