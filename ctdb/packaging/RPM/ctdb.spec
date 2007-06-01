@@ -13,7 +13,7 @@ URL: http://ctdb.samba.org/
 
 Source: ctdb-%{version}.tar.bz2
 
-Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall /usr/bin/nc
+Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d
 
 Provides: ctdb = %{version}
