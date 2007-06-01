@@ -24,20 +24,22 @@ bugzilla</a> bug tracking system.
 
 <h2>Download</h2>
 
-You can download the latest release either via rsync or anonymous
-svn. To fetch via svn use the following command:
+You can download the latest source release
+using <a href="http://bazaar-vcs.org/">bzr</a>. Install bzr, then run
+this command:
 
 <pre>
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/cluster/ctdb ctdb
+  bzr branch http://samba.org/~tridge/ctdb
 </pre>
 
-To fetch via rsync use this command:
+Or alternatively you can use rsync like this:
 
 <pre>
-  rsync -Pavz samba.org::ftp/unpacked/samba4/source/cluster/ctdb .
+  rsync -avz samba.org::ftp/unpacked/ctdb .
 </pre>
 
-<h2>Packages</h2>
+
+<h2>Binary Packages</h2>
 
 Note that packages are so far only available for RHEL4. Other packages
 will come later. <p>
@@ -49,6 +51,7 @@ downloads.
 <h2>Developers</h2>
 <a href="http://samba.org/~tridge/">Andrew Tridgell</a><br>
 Ronnie Sahlberg<br>
+Peter Somogyi<br>
 
 
 </BODY>
