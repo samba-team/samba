@@ -324,13 +324,17 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
 	int status = -1;
+	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
+	void *private_data = state->private_data;
+	struct ctdb_context *ctdb = state->ctdb;
+
 	waitpid(state->child, &status, 0);
 	if (status != -1) {
 		status = WEXITSTATUS(status);
 	}
-	state->callback(state->ctdb, status, state->private_data);
 	talloc_set_destructor(state, NULL);
 	talloc_free(state);
+	callback(ctdb, status, private_data);
 }
 
 /*

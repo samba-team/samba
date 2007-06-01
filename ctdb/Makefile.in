@@ -116,6 +116,7 @@ distclean: clean
 
 install: all
 	mkdir -p $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(sbindir)
 	mkdir -p $(DESTDIR)$(includedir)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d

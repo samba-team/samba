@@ -25,8 +25,8 @@ case "$1" in
 	;;
   notify)
 	# restart the local lock manager and statd
-	/sbin/service nfslock stop > /dev/null 2>&1 
-	/sbin/service nfslock start > /dev/null 2>&1 
+	/etc/init.d/nfslock stop > /dev/null 2>&1 
+	/etc/init.d/nfslock start > /dev/null 2>&1 
 	# send out notifications to any additional ips we now serve
         for f in `/bin/ls /etc/ctdb/state/statd/ip/*`; do
 	    ip=`/bin/basename $f`

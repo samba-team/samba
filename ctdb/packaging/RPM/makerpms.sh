@@ -15,9 +15,7 @@
 
 EXTRA_OPTIONS="$1"
 
-RHEL="packaging/RHEL"
-
-[ -d ${RHEL} ] || {
+[ -d packaging ] || {
     echo "Must run this from the ctdb directory"
     exit 1
 }
@@ -62,7 +60,7 @@ if [ ! -d ctdb-${VERSION} ]; then
 	REMOVE_LN=$PWD/ctdb-$VERSION
 fi
 echo -n "Creating ctdb-${VERSION}.tar.bz2 ... "
-tar --exclude=.bzr --exclude .bzrignore --exclude packaging --exclude="*~" -cf - ctdb-${VERSION}/. | bzip2 > ${SRCDIR}/ctdb-${VERSION}.tar.bz2
+tar --exclude=.bzr --exclude .bzrignore --exclude="*~" -cf - ctdb-${VERSION}/. | bzip2 > ${SRCDIR}/ctdb-${VERSION}.tar.bz2
 echo "Done."
 if [ $? -ne 0 ]; then
         echo "Build failed!"
@@ -76,8 +74,7 @@ popd
 ##
 ## copy additional source files
 ##
-(cd packaging/RHEL && tar --exclude=.bzr --exclude="*~" -jcvf - setup) > ${SRCDIR}/ctdb-setup.tar.bz2
-cp -p ${RHEL}/${SPECFILE} ${SPECDIR}
+cp -p packaging/RPM/ctdb.spec ${SPECDIR}
 
 ##
 ## Build
@@ -87,4 +84,6 @@ cd ${SPECDIR}
 ${RPMBUILD} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE
 
 echo "$(basename $0): Done."
-[ ${REMOVE_LN} ] && rm $REMOVE_LN
+[ ${REMOVE_LN} ] && /bin/rm -f $REMOVE_LN
+
+exit 0

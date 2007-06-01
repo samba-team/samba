@@ -12,12 +12,10 @@ Group: System Environment/Daemons
 URL: http://ctdb.samba.org/
 
 Source: ctdb-%{version}.tar.bz2
-Source999: ctdb-setup.tar.bz2
 
 Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall /usr/bin/nc
 Prereq: fileutils sed /etc/init.d
 
-Requires: initscripts >= 5.54-1
 Provides: ctdb = %{version}
 
 Prefix: /usr
@@ -32,7 +30,7 @@ ctdb is the clustered database used by samba
 %prep
 %setup -q
 # setup the init script and sysconfig file
-%setup -T -D -a 999 -n ctdb-%{version} -q
+%setup -T -D -n ctdb-%{version} -q
 
 %build
 
@@ -54,18 +52,13 @@ make
 rm -rf $RPM_BUILD_ROOT
 
 # Create the target build directory hierarchy
-mkdir -p $RPM_BUILD_ROOT%{_includedir}
-mkdir -p $RPM_BUILD_ROOT{%{_libdir},%{_includedir}}
-mkdir -p $RPM_BUILD_ROOT%{_prefix}/{bin,sbin}
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
 
 make DESTDIR=$RPM_BUILD_ROOT install
 
-install -m644 setup/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
-install -m755 setup/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
+install -m644 tools/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
+install -m755 packaging/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
@@ -74,12 +67,11 @@ find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 rm -rf $RPM_BUILD_ROOT
 
 %post
-/sbin/chkconfig --add ctdb
+[ -x /sbin/chkconfig ] && /sbin/chkconfig --add ctdb
 
 %preun
 if [ $1 = 0 ] ; then
-    /sbin/chkconfig --del ctdb
-    /sbin/service ctdb stop >/dev/null 2>&1
+    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del ctdb
 fi
 exit 0
 
