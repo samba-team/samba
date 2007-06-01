@@ -4,6 +4,7 @@
 PATH=/bin:/usr/bin:$PATH
 
 . /etc/sysconfig/ctdb
+. /etc/ctdb/functions
 
 cmd="$1"
 shift

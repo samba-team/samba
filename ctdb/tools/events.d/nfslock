@@ -2,6 +2,7 @@
 # event strict to manage lockd and statd in a cluster environment
 
 . /etc/sysconfig/ctdb
+. /etc/ctdb/functions
 
 cmd="$1"
 shift
