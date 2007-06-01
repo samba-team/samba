@@ -76,6 +76,10 @@ error_code KDC_NOT_TRUSTED,	"KDC not trusted"
 error_code INVALID_SIG,		"Invalid signature"
 error_code DH_KEY_PARAMETERS_NOT_ACCEPTED, "DH parameters not accepted"
 
+index 68
+prefix KRB5_KDC_ERR
+error_code WRONG_REALM,		"Wrong realm"
+
 index 69
 prefix KRB5_AP_ERR
 error_code USER_TO_USER_REQUIRED, "User to user required"
