@@ -1,5 +1,26 @@
 2007-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_*.in: sprinle stat saveing
+
+	* Makefile.am: Add stat and objdir.
+
+	* collector.c (_hx509_collector_alloc): return error code instead
+	of pointer.
+
+	* hxtool.c: Add statistic hook.
+
+	* ks_file.c: Update _hx509_collector_alloc prototype.
+
+	* ks_p12.c: Update _hx509_collector_alloc prototype.
+
+	* ks_p11.c: Update _hx509_collector_alloc prototype.
+
+	* hxtool-commands.in: Add statistics hook.
+
+	* cert.c: Statistics printing.
+
+	* ks_p12.c: plug memory leak
+
 	* ca.c (hx509_ca_tbs_add_crl_dp_uri): plug memory leak
 	
 2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
