@@ -8,10 +8,10 @@ shift
 
 case $cmd in 
      startup)
-	# wait for local services to come up
+	# wait for local services to come up.
 	[ -z "$CTDB_WAIT_TCP_PORTS" ] || {
 	  all_ok=0
-	  echo "Waiting for tcp services on $CTDB_WAIT_TCP_PORTS to come up"
+	  echo "Waiting for local tcp ports $CTDB_WAIT_TCP_PORTS"
 	  while [ $all_ok -eq 0 ]; do
 	  	  all_ok=1
 	  	  for p in $CTDB_WAIT_TCP_PORTS; do
@@ -23,7 +23,24 @@ case $cmd in
 			exit 1
 		  }
           done
-	  echo "Local tcp services on $CTDB_WAIT_TCP_PORTS are up"
+	  echo "Local tcp services are up"
+	}
+	# wait for local directories to becomes available (could be slow to mount)
+	[ -z "$CTDB_WAIT_DIRECTORIES" ] || {
+	  all_ok=0
+	  echo "Waiting for local directories $CTDB_WAIT_DIRECTORIES"
+	  while [ $all_ok -eq 0 ]; do
+	  	  all_ok=1
+	  	  for d in $CTDB_WAIT_DIRECTORIES; do
+	  	      [ -d $d ] || all_ok=0
+		  done
+		  [ $all_ok -eq 1 ] || sleep 1
+		  /usr/bin/ctdb status > /dev/null 2>&1 || {
+	  		echo "ctdb daemon has died. Exiting event startup"
+			exit 1
+		  }
+          done
+	  echo "Local directories are available"
 	}
 	exit 0;	
 	;;
