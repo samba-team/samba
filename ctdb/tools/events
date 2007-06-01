@@ -11,7 +11,7 @@ case $cmd in
 	# wait for local services to come up.
 	[ -z "$CTDB_WAIT_TCP_PORTS" ] || {
 	  all_ok=0
-	  echo "Waiting for local tcp ports $CTDB_WAIT_TCP_PORTS"
+	  echo "`/bin/date` Waiting for local tcp ports $CTDB_WAIT_TCP_PORTS"
 	  while [ $all_ok -eq 0 ]; do
 	  	  all_ok=1
 	  	  for p in $CTDB_WAIT_TCP_PORTS; do
@@ -23,12 +23,12 @@ case $cmd in
 			exit 1
 		  }
           done
-	  echo "Local tcp services are up"
+	  echo "`/bin/date` Local tcp services are up"
 	}
 	# wait for local directories to becomes available (could be slow to mount)
 	[ -z "$CTDB_WAIT_DIRECTORIES" ] || {
 	  all_ok=0
-	  echo "Waiting for local directories $CTDB_WAIT_DIRECTORIES"
+	  echo "`/bin/date` Waiting for local directories $CTDB_WAIT_DIRECTORIES"
 	  while [ $all_ok -eq 0 ]; do
 	  	  all_ok=1
 	  	  for d in $CTDB_WAIT_DIRECTORIES; do
@@ -40,7 +40,7 @@ case $cmd in
 			exit 1
 		  }
           done
-	  echo "Local directories are available"
+	  echo "`/bin/date` Local directories are available"
 	}
 	exit 0;	
 	;;
@@ -55,7 +55,7 @@ case $cmd in
 	maskbits=$3
 
 	/sbin/ip addr add $ip/$maskbits dev $iface || {
-		 echo "Failed to add $ip/$maskbits on dev $iface"
+		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
 	}
 	echo $ip >> /etc/ctdb/taken_ips
@@ -72,14 +72,14 @@ case $cmd in
 
      releaseip)
 	if [ $# != 3 ]; then
-	   echo "must supply interface, IP and maskbits"
+	   echo "`/bin/date` must supply interface, IP and maskbits"
 	   exit 1
 	fi
 	iface=$1
 	ip=$2
 	maskbits=$3
 	/sbin/ip addr del $ip dev $iface || {
-		 echo "Failed to del $ip on dev $iface"
+		 echo "`/bin/date` Failed to del $ip on dev $iface"
 		 exit 1
 	}
 	# if we have a local arp entry for this IP then remove it
@@ -115,5 +115,5 @@ case $cmd in
 	;;
 esac
 
-echo "Invalid command $cmd"
+echo "`/bin/date` Invalid command $cmd"
 exit 1
