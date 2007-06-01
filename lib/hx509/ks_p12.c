@@ -341,24 +341,26 @@ p12_init(hx509_context context,
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    c = _hx509_collector_alloc(context, lock);
-    if (c == NULL)
-	return ENOMEM;
+    ret = _hx509_collector_alloc(context, lock, &c);
+    if (ret)
+	return ret;
 
     p12 = calloc(1, sizeof(*p12));
     if (p12 == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
     p12->fn = strdup(residue);
     if (p12->fn == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
     if (flags & HX509_CERTS_CREATE) {
-	ret = hx509_certs_init(context, "MEMORY:ks-file-create", 
+	ret = hx509_certs_init(context, "MEMORY:ks-file-create",
 			       0, lock, &p12->certs);
 	if (ret == 0)
 	    *data = p12;
@@ -366,13 +368,18 @@ p12_init(hx509_context context,
     }
 
     ret = _hx509_map_file(residue, &buf, &len, NULL);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     ret = decode_PKCS12_PFX(buf, len, &pfx, NULL);
     _hx509_unmap_file(buf, len);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to decode the PFX in %s", residue);
 	goto out;
+    }
 
     if (der_heim_oid_cmp(&pfx.authSafe.contentType, oid_id_pkcs7_data()) != 0) {
 	free_PKCS12_PFX(&pfx);
@@ -451,15 +458,20 @@ addBag(hx509_context context,
 
     ptr = realloc(as->val, sizeof(as->val[0]) * (as->len + 1));
     if (ptr == NULL) {
-	hx509_set_error_string(context, 0, ENOMEM, "malloc out of memory");
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
     }
     as->val = ptr;
 
     ret = der_copy_oid(oid, &as->val[as->len].contentType);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
+	return ret;
+    }
     
     as->val[as->len].content = calloc(1, sizeof(*as->val[0].content));
     if (as->val[as->len].content == NULL) {
+	der_free_oid(&as->val[as->len].contentType);
 	hx509_set_error_string(context, 0, ENOMEM, "malloc out of memory");
 	return ENOMEM;
     }
