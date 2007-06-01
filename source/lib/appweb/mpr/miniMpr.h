@@ -255,7 +255,7 @@ extern int 		mprAllocVsprintf(char **msgbuf, int maxSize, const char *fmt,
 extern int 		mprAllocSprintf(char **msgbuf, int maxSize, const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 extern char 	*mprItoa(int num, char *buf, int width);
 extern void		mprLog(int level, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-extern void		mprBreakpoint(const char *file, int line, const char *msg) NORETURN_ATTRIBUTE;
+extern void		mprBreakpoint(const char *file, int line, const char *msg) _NORETURN_;
 #endif /* BLD_GOAHEAD_WEBSERVER */
 
 extern MprArray	*mprCreateArray(void);
