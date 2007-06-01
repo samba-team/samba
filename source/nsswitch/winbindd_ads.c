@@ -1054,7 +1054,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				{
 					sid_copy(&(*sid_mem)[*num_names],
 						 &sid_mem_nocache[i]);
-					(*names)[*num_names] = talloc_steal(names, names_nocache[i]);
+					(*names)[*num_names] = talloc_move(names, &names_nocache[i]);
 					(*name_types)[*num_names] = name_types_nocache[i];
 					(*num_names)++;
 				}
