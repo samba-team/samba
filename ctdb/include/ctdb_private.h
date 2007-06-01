@@ -134,6 +134,7 @@ struct ctdb_methods {
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
 	void *(*allocate_pkt)(TALLOC_CTX *mem_ctx, size_t );
+	void (*shutdown)(struct ctdb_context *); /* shutdown transport */
 };
 
 /*
@@ -896,7 +897,10 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
 
-int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA data, const char **);
+int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, bool *async_reply,
+				 const char **errormsg);
 void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
 				TDB_DATA *outdata, int32_t status, const char *errormsg);
 

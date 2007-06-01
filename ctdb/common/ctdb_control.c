@@ -239,7 +239,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_SET_RECMODE:
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
-		return ctdb_control_set_recmode(ctdb, indata, errormsg);
+		return ctdb_control_set_recmode(ctdb, c, indata, async_reply, errormsg);
 
 	case CTDB_CONTROL_SET_MONMODE:
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
@@ -251,6 +251,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_SHUTDOWN:
 		ctdb_release_all_ips(ctdb);
+		ctdb->methods->shutdown(ctdb);
 		ctdb_event_script(ctdb, "shutdown");
 		DEBUG(0,("shutting down\n"));
 		exit(0);

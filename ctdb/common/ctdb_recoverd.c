@@ -972,7 +972,10 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	close(fd[1]);
 
-	/* we need a new event context */
+	/* shutdown the transport */
+	ctdb->methods->shutdown(ctdb);
+
+	/* get a new event context */
 	talloc_free(ctdb->ev);
 	ctdb->ev = event_context_init(ctdb);
 

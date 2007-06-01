@@ -32,14 +32,16 @@
 */
 static int ctdb_tcp_add_node(struct ctdb_node *node)
 {
+	struct ctdb_tcp *ctcp = talloc_get_type(node->ctdb->private_data,
+						struct ctdb_tcp);
 	struct ctdb_tcp_node *tnode;
-	tnode = talloc_zero(node, struct ctdb_tcp_node);
+	tnode = talloc_zero(ctcp, struct ctdb_tcp_node);
 	CTDB_NO_MEMORY(node->ctdb, tnode);
 
 	tnode->fd = -1;
 	node->private_data = tnode;
 
-	tnode->queue = ctdb_queue_setup(node->ctdb, node, tnode->fd, CTDB_TCP_ALIGNMENT,
+	tnode->queue = ctdb_queue_setup(node->ctdb, ctcp, tnode->fd, CTDB_TCP_ALIGNMENT,
 					ctdb_tcp_tnode_cb, node);
 	
 	return 0;
@@ -76,13 +78,27 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 	   next event loop */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = *(ctdb->nodes + i);
+		struct ctdb_tcp_node *tnode = talloc_get_type(
+			node->private_data, struct ctdb_tcp_node);
 		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
 		    ctdb_same_address(&ctdb->address, &node->address)) continue;
-		event_add_timed(ctdb->ev, node, timeval_zero(), 
+		event_add_timed(ctdb->ev, tnode, timeval_zero(), 
 				ctdb_tcp_node_connect, node);
 	}
 
 	return 0;
+}
+
+
+/*
+  shutdown the transport
+*/
+static void ctdb_tcp_shutdown(struct ctdb_context *ctdb)
+{
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
+						struct ctdb_tcp);
+	talloc_free(ctcp);
+	ctdb->private_data = NULL;
 }
 
 
@@ -104,7 +120,8 @@ static const struct ctdb_methods ctdb_tcp_methods = {
 	.start        = ctdb_tcp_start,
 	.queue_pkt    = ctdb_tcp_queue_pkt,
 	.add_node     = ctdb_tcp_add_node,
-	.allocate_pkt = ctdb_tcp_allocate_pkt
+	.allocate_pkt = ctdb_tcp_allocate_pkt,
+	.shutdown     = ctdb_tcp_shutdown,
 };
 
 /*

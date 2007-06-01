@@ -433,10 +433,34 @@ int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	return 0;
 }
 
+struct ctdb_set_recmode_state {
+	struct ctdb_req_control *c;
+	uint32_t recmode;
+};
+
+/*
+  called when the 'recovered' event script has finished
+ */
+static void ctdb_recovered_callback(struct ctdb_context *ctdb, int status, void *p)
+{
+	struct ctdb_set_recmode_state *state = talloc_get_type(p, struct ctdb_set_recmode_state);
+
+	if (status == 0) {
+		ctdb->recovery_mode = state->recmode;
+	} else {
+		DEBUG(0,(__location__ " recovered event script failed (status %d)\n", status));
+	}
+
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	talloc_free(state);
+}
+
 /*
   set the recovery mode
  */
-int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA indata, 
+int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, bool *async_reply,
 				 const char **errormsg)
 {
 	uint32_t recmode = *(uint32_t *)indata.dptr;
@@ -446,8 +470,23 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, TDB_DATA indata,
 		(*errormsg) = "Cannot change recovery mode while not frozen";
 		return -1;
 	}
-	ctdb->recovery_mode = recmode;
-	ctdb_event_script(ctdb, "recovered");
+	if (recmode == CTDB_RECOVERY_NORMAL && 
+	    ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+		int ret;
+		struct ctdb_set_recmode_state *state = 
+			talloc(ctdb, struct ctdb_set_recmode_state);
+		CTDB_NO_MEMORY(ctdb, state);
+		state->c = talloc_steal(state, c);
+		state->recmode = recmode;
+		/* call the events script to tell all subsystems that we have recovered */
+		ret = ctdb_event_script_callback(ctdb, state, 
+						 ctdb_recovered_callback, 
+						 state, "recovered");
+		if (ret != 0) {
+			return ret;
+		}
+		*async_reply = true;
+	}
 	return 0;
 }
 

@@ -43,7 +43,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 	   link */
 	ctdb_queue_set_fd(tnode->queue, -1);
 	tnode->fd = -1;
-	event_add_timed(node->ctdb->ev, node, timeval_zero(), 
+	event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
 			ctdb_tcp_node_connect, node);
 }
 
@@ -70,7 +70,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 		talloc_free(fde);
 		close(tnode->fd);
 		tnode->fd = -1;
-		event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
+		event_add_timed(ctdb->ev, tnode, timeval_current_ofs(1, 0), 
 				ctdb_tcp_node_connect, node);
 		return;
 	}
@@ -161,20 +161,20 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 		/* try again once a second */
 		close(tnode->fd);
 		tnode->fd = -1;
-		event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
+		event_add_timed(ctdb->ev, tnode, timeval_current_ofs(1, 0), 
 				ctdb_tcp_node_connect, node);
 		return;
 	}
 
 	/* non-blocking connect - wait for write event */
-	tnode->connect_fde = event_add_fd(node->ctdb->ev, node, tnode->fd, 
+	tnode->connect_fde = event_add_fd(node->ctdb->ev, tnode, tnode->fd, 
 					  EVENT_FD_WRITE|EVENT_FD_READ, 
 					  ctdb_node_connect_write, node);
 
 	/* don't give it long to connect - retry in one second. This ensures
 	   that we find a node is up quickly (tcp normally backs off a syn reply
 	   delay by quite a lot) */
-	tnode->connect_te = event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
+	tnode->connect_te = event_add_timed(ctdb->ev, tnode, timeval_current_ofs(1, 0), 
 					    ctdb_tcp_node_connect, node);
 }
 
@@ -186,22 +186,20 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde, 
 			      uint16_t flags, void *private_data)
 {
-	struct ctdb_context *ctdb;
-	struct ctdb_tcp *ctcp;
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	struct sockaddr_in addr;
 	socklen_t len;
 	int fd;
 	struct ctdb_incoming *in;
 	int one = 1;
 
-	ctdb = talloc_get_type(private_data, struct ctdb_context);
-	ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
 	if (fd == -1) return;
 
-	in = talloc_zero(ctdb, struct ctdb_incoming);
+	in = talloc_zero(ctcp, struct ctdb_incoming);
 	in->fd = fd;
 	in->ctdb = ctdb;
 
@@ -286,7 +284,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	event_add_fd(ctdb->ev, ctdb, ctcp->listen_fd, EVENT_FD_READ, 
+	event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 		     ctdb_listen_event, ctdb);	
 
 	close(lock_fd);
@@ -346,7 +344,7 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	event_add_fd(ctdb->ev, ctdb, ctcp->listen_fd, EVENT_FD_READ, 
+	event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 		     ctdb_listen_event, ctdb);	
 
 	return 0;
