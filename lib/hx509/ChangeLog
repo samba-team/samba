@@ -1,5 +1,9 @@
 2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* print.c: print utf8 type SAN's
+
+	* Makefile.am: Fix windows client cert name.
+
 	* test_windows.in: Add crl-uri for the ee certs.
 
 	* print.c: Printf formating.
