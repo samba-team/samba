@@ -8,7 +8,7 @@
 
 case "$1" in
   add-client)
-        for f in `/bin/ls /etc/ctdb/ip.*`; do
+        for f in `/bin/ls /etc/ctdb/state/ip.*`; do
 	    fname=`/bin/basename $f`
 	    ip=`echo $fname | cut -d. -f2-`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] || /bin/mkdir $STATD_SHARED_DIRECTORY/$ip
@@ -16,7 +16,7 @@ case "$1" in
 	done
 	;;
   del-client)
-        for f in `/bin/ls /etc/ctdb/ip.*`; do
+        for f in `/bin/ls /etc/ctdb/state/ip.*`; do
 	    fname=`/bin/basename $f`
 	    ip=`echo $fname | cut -d. -f2-`
 	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/$2
@@ -27,7 +27,7 @@ case "$1" in
 	/sbin/service nfslock stop > /dev/null 2>&1 
 	/sbin/service nfslock start > /dev/null 2>&1 
 	# send out notifications to any additional ips we now serve
-        for f in `/bin/ls /etc/ctdb/ip.*`; do
+        for f in `/bin/ls /etc/ctdb/state/ip.*`; do
 	    fname=`/bin/basename $f`
 	    ip=`echo $fname | cut -d. -f2-`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && {

@@ -8,6 +8,8 @@ shift
 
 case $cmd in 
      startup)
+	/bin/rm -rf /etc/ctdb/state
+	/bin/mkdir -p /etc/ctdb/state
 	# wait for local services to come up.
 	[ -z "$CTDB_WAIT_TCP_PORTS" ] || {
 	  all_ok=0
@@ -58,15 +60,15 @@ case $cmd in
 		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
 	}
-	echo $ip >> /etc/ctdb/taken_ips
-	echo $ip >> /etc/ctdb/changed_ips
+	echo $ip >> /etc/ctdb/state/taken_ips
+	echo $ip >> /etc/ctdb/state/changed_ips
 
-	# if we have a local arp entry for this IP then remove it
-	/sbin/arp -d $ip 2> /dev/null
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
 
 	# having a list of what IPs we have allows statd to do the right 
 	# thing via /etc/ctdb/statd-callout
-	/bin/touch /etc/ctdb/ip.$ip
+	/bin/touch /etc/ctdb/state/ip.$ip
 	exit 0
 	;;
 
@@ -82,30 +84,32 @@ case $cmd in
 		 echo "`/bin/date` Failed to del $ip on dev $iface"
 		 exit 1
 	}
-	# if we have a local arp entry for this IP then remove it
-	/sbin/arp -d $ip 2> /dev/null
-	echo $ip >> /etc/ctdb/released_ips
-	echo $ip >> /etc/ctdb/changed_ips
-	/bin/rm -f /etc/ctdb/ip.$ip
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+
+	echo $ip >> /etc/ctdb/state/released_ips
+	echo $ip >> /etc/ctdb/state/changed_ips
+	/bin/rm -f /etc/ctdb/state/ip.$ip
 	exit 0
 	;;
 
      recovered)
 	# if we have taken or released any ips we must send out
 	# statd notifications to recover lost nfs locks
-	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/changed_ips ] && {
+	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/state/changed_ips ] && {
 		/etc/ctdb/statd-callout notify &
 	} >/dev/null 2>&1
 
         # restart NFS to ensure that all TCP connections to the released ip
 	# are closed
-	[ -f /etc/ctdb/released_ips ] && {
+	[ -f /etc/ctdb/state/released_ips ] && {
 		( /sbin/service nfs status > /dev/null 2>&1 && 
                       /sbin/service nfs restart > /dev/null 2>&1 ) &
 	} > /dev/null 2>&1
-	/bin/rm -f /etc/ctdb/changed_ips
-	/bin/rm -f /etc/ctdb/released_ips
-	/bin/rm -f /etc/ctdb/taken_ips
+	/bin/rm -f /etc/ctdb/state/changed_ips
+	/bin/rm -f /etc/ctdb/state/released_ips
+	/bin/rm -f /etc/ctdb/state/taken_ips
 	exit 0
 	;;
 
