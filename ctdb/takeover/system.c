@@ -312,8 +312,9 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 struct ctdb_event_script_state {
 	struct ctdb_context *ctdb;
 	pid_t child;
-	void (*callback)(struct ctdb_context *, int);
+	void (*callback)(struct ctdb_context *, int, void *);
 	int fd[2];
+	void *private_data;
 };
 
 /* called when child is finished */
@@ -327,28 +328,41 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	if (status != -1) {
 		status = WEXITSTATUS(status);
 	}
-	state->callback(state->ctdb, status);
+	state->callback(state->ctdb, status, state->private_data);
+	talloc_set_destructor(state, NULL);
 	talloc_free(state);
 }
 
+/*
+  destroy a running event script
+ */
+static int event_script_destructor(struct ctdb_event_script_state *state)
+{
+	kill(state->child, SIGKILL);
+	waitpid(state->child, NULL, 0);
+	return 0;
+}
 
 /*
   run the event script in the background, calling the callback when 
   finished
  */
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
-			       void (*callback)(struct ctdb_context *, int),
+			       TALLOC_CTX *mem_ctx,
+			       void (*callback)(struct ctdb_context *, int, void *),
+			       void *private_data,
 			       const char *fmt, ...)
 {
 	struct ctdb_event_script_state *state;
 	va_list ap;
 	int ret;
 
-	state = talloc(ctdb, struct ctdb_event_script_state);
+	state = talloc(mem_ctx, struct ctdb_event_script_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->ctdb = ctdb;
 	state->callback = callback;
+	state->private_data = private_data;
 	
 	ret = pipe(state->fd);
 	if (ret != 0) {
@@ -372,6 +386,8 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 		va_end(ap);
 		_exit(ret);
 	}
+
+	talloc_set_destructor(state, event_script_destructor);
 
 	close(state->fd[1]);
 

@@ -925,10 +925,16 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
 void ctdb_set_realtime(void);
-int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, 
+				 bool *async_reply);
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			  uint32_t destnode, const char *ip);
-int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, 
+				 bool *async_reply);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			 uint32_t destnode, const char *ip);
 
@@ -951,8 +957,10 @@ int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
-			       void (*callback)(struct ctdb_context *, int),
-			       const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+			       TALLOC_CTX *mem_ctx,
+			       void (*callback)(struct ctdb_context *, int, void *),
+			       void *private_data,
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(5,6);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 void set_nonblocking(int fd);

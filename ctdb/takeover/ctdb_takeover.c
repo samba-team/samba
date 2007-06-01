@@ -91,52 +91,48 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 			ctdb_control_send_arp, arp);
 }
 
+struct takeover_callback_state {
+	struct ctdb_req_control *c;
+	struct sockaddr_in *sin;
+};
 
 /*
-  take over an ip address
+  called when takeip event finishes
  */
-int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
+static void takeover_ip_callback(struct ctdb_context *ctdb, int status, 
+				 void *private_data)
 {
-	int ret;
-	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
+	struct takeover_callback_state *state = 
+		talloc_get_type(private_data, struct takeover_callback_state);
 	struct ctdb_takeover_arp *arp;
-	char *ip = inet_ntoa(sin->sin_addr);
+	char *ip = inet_ntoa(state->sin->sin_addr);
 	struct ctdb_tcp_list *tcp;
 
-	if (ctdb_sys_have_ip(ip)) {
-		return 0;
-	}
-
-	DEBUG(0,("Takover of IP %s/%u on interface %s\n", 
-		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
-		 ctdb->takeover.interface));
-	ret = ctdb_event_script(ctdb, "takeip %s %s %u",
-				ctdb->takeover.interface, 
-				ip,
-				ctdb->nodes[ctdb->vnn]->public_netmask_bits);
-	if (ret != 0) {
+	if (status != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, ctdb->takeover.interface));
-		return -1;
+		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+		talloc_free(state);
+		return;
 	}
 
 	if (!ctdb->takeover.last_ctx) {
 		ctdb->takeover.last_ctx = talloc_new(ctdb);
-		CTDB_NO_MEMORY(ctdb, ctdb->takeover.last_ctx);
+		if (!ctdb->takeover.last_ctx) goto failed;
 	}
 
 	arp = talloc_zero(ctdb->takeover.last_ctx, struct ctdb_takeover_arp);
-	CTDB_NO_MEMORY(ctdb, arp);
+	if (!arp) goto failed;
 	
 	arp->ctdb = ctdb;
-	arp->sin = *sin;
+	arp->sin = *state->sin;
 
 	/* add all of the known tcp connections for this IP to the
 	   list of tcp connections to send tickle acks for */
 	for (tcp=ctdb->tcp_list;tcp;tcp=tcp->next) {
-		if (sin->sin_addr.s_addr == tcp->daddr.sin_addr.s_addr) {
+		if (state->sin->sin_addr.s_addr == tcp->daddr.sin_addr.s_addr) {
 			struct ctdb_tcp_list *t2 = talloc(arp, struct ctdb_tcp_list);
-			CTDB_NO_MEMORY(ctdb, t2);
+			if (t2 == NULL) goto failed;
 			*t2 = *tcp;
 			DLIST_ADD(arp->tcp_list, t2);
 		}
@@ -145,41 +141,77 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover.last_ctx, 
 			timeval_zero(), ctdb_control_send_arp, arp);
 
-	return ret;
+	/* the control succeeded */
+	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
+	talloc_free(state);
+	return;
+
+failed:
+	ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
+	talloc_free(state);
+	return;
 }
 
 /*
-  release an ip address
+  take over an ip address
  */
-int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
+int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, 
+				 bool *async_reply)
 {
-	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
-	TDB_DATA data;
-	char *ip = inet_ntoa(sin->sin_addr);
 	int ret;
-	struct ctdb_tcp_list *tcp;
+	struct takeover_callback_state *state;
+	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
+	char *ip = inet_ntoa(sin->sin_addr);
 
-	if (!ctdb_sys_have_ip(ip)) {
+	/* if our kernel already has this IP, do nothing */
+	if (ctdb_sys_have_ip(ip)) {
 		return 0;
 	}
 
-	DEBUG(0,("Release of IP %s/%u on interface %s\n", 
+	state = talloc(ctdb, struct takeover_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c = talloc_steal(ctdb, c);
+	state->sin = talloc(ctdb, struct sockaddr_in);       
+	CTDB_NO_MEMORY(ctdb, state->sin);
+	*state->sin = *(struct sockaddr_in *)indata.dptr;	
+
+	DEBUG(0,("Takover of IP %s/%u on interface %s\n", 
 		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
 		 ctdb->takeover.interface));
 
-	/* stop any previous arps */
-	talloc_free(ctdb->takeover.last_ctx);
-	ctdb->takeover.last_ctx = NULL;
-
-	ret = ctdb_event_script(ctdb, "releaseip %s %s %u",
-				ctdb->takeover.interface, 
-				ip,
-				ctdb->nodes[ctdb->vnn]->public_netmask_bits);
+	ret = ctdb_event_script_callback(ctdb, state, takeover_ip_callback, state,
+					 "takeip %s %s %u",
+					 ctdb->takeover.interface, 
+					 ip,
+					 ctdb->nodes[ctdb->vnn]->public_netmask_bits);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
+		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, ctdb->takeover.interface));
+		talloc_free(state);
 		return -1;
 	}
+
+	/* tell ctdb_control.c that we will be replying asynchronously */
+	*async_reply = true;
+
+	return 0;
+}
+
+
+/*
+  called when releaseip event finishes
+ */
+static void release_ip_callback(struct ctdb_context *ctdb, int status, 
+				void *private_data)
+{
+	struct takeover_callback_state *state = 
+		talloc_get_type(private_data, struct takeover_callback_state);
+	char *ip = inet_ntoa(state->sin->sin_addr);
+	TDB_DATA data;
+	struct ctdb_tcp_list *tcp;
 
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
@@ -192,7 +224,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 	/* tell other nodes about any tcp connections we were holding with this IP */
 	for (tcp=ctdb->tcp_list;tcp;tcp=tcp->next) {
 		if (tcp->vnn == ctdb->vnn && 
-		    sin->sin_addr.s_addr == tcp->daddr.sin_addr.s_addr) {
+		    state->sin->sin_addr.s_addr == tcp->daddr.sin_addr.s_addr) {
 			struct ctdb_control_tcp_vnn t;
 
 			t.vnn  = ctdb->vnn;
@@ -208,6 +240,59 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 	}
 
+	/* the control succeeded */
+	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
+	talloc_free(state);
+}
+
+
+/*
+  release an ip address
+ */
+int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, 
+				struct ctdb_req_control *c,
+				TDB_DATA indata, 
+				bool *async_reply)
+{
+	int ret;
+	struct takeover_callback_state *state;
+	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
+	char *ip = inet_ntoa(sin->sin_addr);
+
+	if (!ctdb_sys_have_ip(ip)) {
+		return 0;
+	}
+
+	DEBUG(0,("Release of IP %s/%u on interface %s\n", 
+		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
+		 ctdb->takeover.interface));
+
+	/* stop any previous arps */
+	talloc_free(ctdb->takeover.last_ctx);
+	ctdb->takeover.last_ctx = NULL;
+
+	state = talloc(ctdb, struct takeover_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c = talloc_steal(state, c);
+	state->sin = talloc(state, struct sockaddr_in);       
+	CTDB_NO_MEMORY(ctdb, state->sin);
+	*state->sin = *(struct sockaddr_in *)indata.dptr;	
+
+	ret = ctdb_event_script_callback(ctdb, state, release_ip_callback, state,
+					 "releaseip %s %s %u",
+					 ctdb->takeover.interface, 
+					 ip,
+					 ctdb->nodes[ctdb->vnn]->public_netmask_bits);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
+			 ip, ctdb->takeover.interface));
+		talloc_free(state);
+		return -1;
+	}
+
+	/* tell the control that we will be reply asynchronously */
+	*async_reply = true;
 
 	return 0;
 }

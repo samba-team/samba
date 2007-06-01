@@ -41,7 +41,7 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
 {
 	ctdb->logfile = talloc_strdup(ctdb, logfile);
-	if (ctdb->logfile != NULL) {
+	if (ctdb->logfile != NULL && strcmp(logfile, "-") != 0) {
 		int fd;
 		close(1);
 		close(2);

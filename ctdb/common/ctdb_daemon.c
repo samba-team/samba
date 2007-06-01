@@ -32,7 +32,7 @@
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
 /* called when the "startup" event script has finished */
-static void ctdb_start_transport(struct ctdb_context *ctdb, int status)
+static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
 {
 	if (status != 0) {
 		DEBUG(0,("startup event failed!\n"));
@@ -87,7 +87,8 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 				 CTDB_CTRL_FLAG_NOREPLY,
 				 tdb_null, NULL, NULL);
 
-	ret = ctdb_event_script_callback(ctdb, ctdb_start_transport, "startup");
+	ret = ctdb_event_script_callback(ctdb, ctdb, 
+					 ctdb_start_transport, NULL, "startup");
 	if (ret != 0) {
 		DEBUG(0,("Failed startup event script\n"));
 		return;
