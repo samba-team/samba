@@ -148,7 +148,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	cert-sub-ee.pem cert-sub-ca.pem \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
 	wca.pem wuser.pem wdc.pem \
-	random-data \
+	random-data statfile \
 	test
 
 
@@ -178,7 +178,8 @@ SCRIPT_TESTS = 			\
 	test_windows		\
 	test_query
 
-do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
+do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
+	-e 's,[@]objdir[@],$(top_builddir)/lib/hx509,g'
 
 test_ca: test_ca.in Makefile
 	$(do_subst) < $(srcdir)/test_ca.in > test_ca.tmp
