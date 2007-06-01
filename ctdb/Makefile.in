@@ -128,6 +128,7 @@ install: all
 	install -m755 tools/functions $(DESTDIR)$(etcdir)/ctdb
 	install -m755 tools/statd-callout $(DESTDIR)$(etcdir)/ctdb
 	install -m755 tools/events.d/samba $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 tools/events.d/nfs $(DESTDIR)$(etcdir)/ctdb/events.d
 	install -m755 tools/events.d/nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
 	install -m755 tools/onnode.ssh $(DESTDIR)$(bindir)
 	install -m755 tools/onnode.rsh $(DESTDIR)$(bindir)
