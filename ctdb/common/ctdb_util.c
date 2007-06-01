@@ -204,16 +204,20 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
 /*
   if possible, make this task real time
  */
-void ctdb_set_realtime(void)
+void ctdb_set_realtime(bool enable)
 {
 #if HAVE_SCHED_SETSCHEDULER
 	struct sched_param p;
 	p.__sched_priority = 1;
 
-	if (sched_setscheduler(getpid(), SCHED_FIFO, &p) == -1) {
-		DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", strerror(errno)));
+	if (enable) {
+		if (sched_setscheduler(getpid(), SCHED_FIFO, &p) == -1) {
+			DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", strerror(errno)));
+		} else {
+			DEBUG(0,("Set scheduler to SCHED_FIFO\n"));
+		}
 	} else {
-		DEBUG(0,("Set scheduler to SCHED_FIFO\n"));
+		sched_setscheduler(getpid(), SCHED_OTHER, &p);
 	}
 #endif
 }
