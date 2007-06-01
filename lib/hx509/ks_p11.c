@@ -766,11 +766,9 @@ p11_list_keys(hx509_context context,
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    collector = _hx509_collector_alloc(context, lock);
-    if (collector == NULL) {
-	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
-	return ENOMEM;
-    }
+    ret = _hx509_collector_alloc(context, lock, &collector);
+    if (ret)
+	return ret;
 
     key_class = CKO_PRIVATE_KEY;
     ret = iterate_entries(context, p, slot, session,
