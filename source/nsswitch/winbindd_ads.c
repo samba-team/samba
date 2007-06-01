@@ -901,6 +901,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	ADS_STRUCT *ads = NULL;
 	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *sidbinstr;
 	char **members = NULL;
 	int i;
 	size_t num_members = 0;
@@ -939,14 +940,21 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	}
 
+	if ((sidbinstr = sid_binstring(group_sid)) == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	/* search for all members of the group */
-	if (!(ldap_exp = talloc_asprintf(tmp_ctx, "(objectSid=%s)",
-					 sid_string_static(group_sid)))) 
+	if (!(ldap_exp = talloc_asprintf(tmp_ctx, "(objectSid=%s)", 
+					 sidbinstr))) 
 	{
+		SAFE_FREE(sidbinstr);
 		DEBUG(1, ("ads: lookup_groupmem: talloc_asprintf for ldap_exp failed!\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	SAFE_FREE(sidbinstr);
 
 	args.control = ADS_EXTENDED_DN_OID;
 	args.val = ADS_EXTENDED_DN_HEX_STRING;
