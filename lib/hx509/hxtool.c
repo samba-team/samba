@@ -40,10 +40,12 @@ RCSID("$Id$");
 
 static hx509_context context;
 
+static char *stat_file_string;
 static int version_flag;
 static int help_flag;
 
 struct getargs args[] = {
+    { "statistic-file", 0, arg_string, &stat_file_string },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -1707,6 +1709,21 @@ test_crypto(struct test_crypto_options *opt, int argc, char ** argv)
     return 0;
 }
 
+int
+statistic_print(struct statistic_print_options*opt, int argc, char **argv)
+{
+    int type = 0;
+
+    if (stat_file_string == NULL)
+	errx(1, "no stat file");
+
+    if (opt->type_integer)
+	type = opt->type_integer;
+
+    hx509_query_unparse_stats(context, type, stdout);
+    return 0;
+}
+
 
 int
 help(void *opt, int argc, char **argv)
@@ -1739,6 +1756,9 @@ main(int argc, char **argv)
     ret = hx509_context_init(&context);
     if (ret)
 	errx(1, "hx509_context_init failed with %d", ret);
+
+    if (stat_file_string)
+	hx509_query_statistic_file(context, stat_file_string);
 
     ret = sl_command(commands, argc, argv);
     if(ret == -1)
