@@ -34,6 +34,7 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 #include "crypto-headers.h"
+#include <rtbl.h>
 
 struct hx509_verify_ctx_data {
     hx509_certs trust_anchors;
@@ -2055,6 +2056,8 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 {
     Certificate *c = _hx509_get_cert(cert);
 
+    _hx509_query_statistic(context, 1, q);
+
     if ((q->match & HX509_QUERY_FIND_ISSUER_CERT) &&
 	_hx509_cert_is_parent_cmp(q->subject, c, 0) != 0)
 	return 0;
@@ -2177,6 +2180,113 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	return 0;
 
     return 1;
+}
+
+void
+hx509_query_statistic_file(hx509_context context, const char *fn)
+{
+    if (context->querystat)
+	free(context->querystat);
+    context->querystat = strdup(fn);
+}
+
+void
+_hx509_query_statistic(hx509_context context, int type, const hx509_query *q)
+{
+    FILE *f;
+    if (context->querystat == NULL)
+	return;
+    f = fopen(context->querystat, "a");
+    if (f == NULL)
+	return;
+    fprintf(f, "%d %d\n", type, q->match);
+    fclose(f);
+}
+
+static const char *statname[] = {
+    "find issuer cert",
+    "match serialnumber",
+    "match issuer name",
+    "match subject name",
+    "match subject key id",
+    "match issuer id",
+    "private key",
+    "ku encipherment",
+    "ku digitalsignature",
+    "ku keycertsign",
+    "ku crlsign",
+    "ku nonrepudiation",
+    "ku keyagreement",
+    "ku dataencipherment",
+    "anchor",
+    "match certificate",
+    "match local key id",
+    "no match path",
+    "match friendly name",
+    "match function",
+    "match key hash sha1",
+    "match time"
+};
+
+void
+hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
+{
+    rtbl_t t;
+    FILE *f;
+    int type, mask, i, num;
+    unsigned long stats[32];
+    unsigned long multiqueries = 0, totalqueries = 0;
+
+    if (context->querystat == NULL)
+	return;
+    f = fopen(context->querystat, "r");
+    if (f == NULL)
+	return;
+    memset(stats, 0, sizeof(stats));
+    
+    while (fscanf(f, "%d %d\n", &type, &mask) == 2) {
+	if (type != printtype)
+	    continue;
+	num = i = 0;
+	while (mask && i < sizeof(stats)/sizeof(stats[0])) {
+	    if (mask & 1) {
+		stats[i]++;
+		num++;
+	    }
+	    mask = mask >>1 ;
+	    i++;
+	}
+	if (num > 1)
+	    multiqueries++;
+	totalqueries++;
+    }
+    fclose(f);
+
+    t = rtbl_create();
+    if (t == NULL)
+	errx(1, "out of memory");
+
+    rtbl_set_separator (t, "  ");
+    
+    rtbl_add_column_by_id (t, 0, "Name", 0);
+    rtbl_add_column_by_id (t, 1, "Counter", 0);
+
+
+    for (i = 0; i < sizeof(stats)/sizeof(stats[0]); i++) {
+	char str[10];
+
+	if (i < sizeof(statname)/sizeof(statname[0])) 
+	    rtbl_add_column_entry_by_id (t, 0, statname[i]);
+	else {
+	    snprintf(str, sizeof(str), "%d", i);
+	    rtbl_add_column_entry_by_id (t, 0, str);
+	}
+	snprintf(str, sizeof(str), "%lu", stats[i]);
+	rtbl_add_column_entry_by_id (t, 1, str);
+    }
+
+    rtbl_format(t, out);
+    rtbl_destroy(t);
 }
 
 int
