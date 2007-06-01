@@ -47,6 +47,11 @@
 # the default is not to wait for any local services
 # CTDB_WAIT_TCP_PORTS="445 139"
 
+# use this to specify any local directories to wait on before starting
+# ctdb. You should list any critical Samba or NFS shared directories 
+# the default is not to wait for any local directories
+# CTDB_WAIT_DIRECTORIES="/some/directory"
+
 # the shared directory where you want to put statd information on
 # which clients to notify on a NFS restart
 # there is no default
