@@ -3,19 +3,19 @@
 
    Copyright (C) Andrew Tridgell  2006
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include "includes.h"
@@ -46,11 +46,14 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 }
 
 /*
-  start the protocol going
+  initialise transport structures
 */
-static int ctdb_tcp_start(struct ctdb_context *ctdb)
+static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 {
 	int i;
+
+	/* listen on our own address */
+	if (ctdb_tcp_listen(ctdb) != 0) return -1;
 
 	for (i=0; i<ctdb->num_nodes; i++) {
 		if (ctdb_tcp_add_node(ctdb->nodes[i]) != 0) {
@@ -59,8 +62,15 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 		}
 	}
 	
-	/* listen on our own address */
-	if (ctdb_tcp_listen(ctdb) != 0) return -1;
+	return 0;
+}
+
+/*
+  start the protocol going
+*/
+static int ctdb_tcp_start(struct ctdb_context *ctdb)
+{
+	int i;
 
 	/* startup connections to the other servers - will happen on
 	   next event loop */
@@ -90,6 +100,7 @@ static void *ctdb_tcp_allocate_pkt(TALLOC_CTX *mem_ctx, size_t size)
 
 
 static const struct ctdb_methods ctdb_tcp_methods = {
+	.initialise   = ctdb_tcp_initialise,
 	.start        = ctdb_tcp_start,
 	.queue_pkt    = ctdb_tcp_queue_pkt,
 	.add_node     = ctdb_tcp_add_node,

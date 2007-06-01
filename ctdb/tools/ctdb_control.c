@@ -3,19 +3,19 @@
 
    Copyright (C) Andrew Tridgell  2007
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include "includes.h"
@@ -265,7 +265,22 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	uint32_t recmode, recmaster;
 	uint32_t myvnn;
 
-	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (options.vnn == CTDB_BROADCAST_ALL) {
+		uint32_t *nodes;
+		uint32_t num_nodes;
+		ret = 0;
+
+		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
+		CTDB_NO_MEMORY(ctdb, nodes);
+	
+		for (i=0;i<num_nodes;i++) {
+			options.vnn = nodes[i];
+			ret |= control_status(ctdb, argc, argv);
+		}
+		return ret;
+	}
+
+	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.vnn, ctdb, &nodemap);
 	if (ret != 0) {

@@ -1,0 +1,44 @@
+#!/bin/sh
+
+. /etc/sysconfig/ctdb
+
+[ -z "$STATD_SHARED_DIRECTORY" ] && exit 0
+
+[ -d $STATD_SHARED_DIRECTORY ] || exit 0
+
+case "$1" in
+  add-client)
+        for f in `/bin/ls /etc/ctdb/ip.*`; do
+	    fname=`/bin/basename $f`
+	    ip=`echo $fname | cut -d. -f2-`
+	    [ -d $STATD_SHARED_DIRECTORY/$ip ] || /bin/mkdir $STATD_SHARED_DIRECTORY/$ip
+	    /bin/touch $STATD_SHARED_DIRECTORY/$ip/$2
+	done
+	;;
+  del-client)
+        for f in `/bin/ls /etc/ctdb/ip.*`; do
+	    fname=`/bin/basename $f`
+	    ip=`echo $fname | cut -d. -f2-`
+	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/$2
+	done
+	;;
+  copy)
+	restart_needed=0
+        for f in `/bin/ls /etc/ctdb/ip.*`; do
+	    fname=`/bin/basename $f`
+	    ip=`echo $fname | cut -d. -f2-`
+	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && {
+		/bin/mv $STATD_SHARED_DIRECTORY/$ip $STATD_SHARED_DIRECTORY/$ip.$$
+		/bin/cp -a $STATD_SHARED_DIRECTORY/$ip.$$/. /var/lib/nfs/statd/sm/
+		/bin/rm -rf $STATD_SHARED_DIRECTORY/$ip.$$
+		restart_needed=1
+	    }
+	done
+	# restart lockd if necessary
+	[ $restart_needed -eq 1 ] && {
+		( /sbin/service nfslock status > /dev/null 2>&1 && 
+                      /sbin/service nfslock restart > /dev/null 2>&1 ) &
+	} > /dev/null 2>&1
+	;;
+esac
+

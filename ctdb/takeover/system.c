@@ -4,19 +4,19 @@
    Copyright (C) Ronnie Sahlberg  2007
    Copyright (C) Andrew Tridgell  2007
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include "includes.h"
@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
+#include "lib/events/events.h"
 #include <net/ethernet.h>
 #include <net/if_arp.h>
 
@@ -258,17 +259,24 @@ bool ctdb_sys_have_ip(const char *ip)
 }
 
 /*
-  run the event script
+  run the event script - varargs version
  */
-int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
+static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_list ap)
 {
-	va_list ap;
 	char *options, *cmdstr;
 	int ret;
+	va_list ap2;
+	struct stat st;
 
-	va_start(ap, fmt);
-	options  = talloc_vasprintf(ctdb, fmt, ap);
-	va_end(ap);
+	if (stat(ctdb->takeover.event_script, &st) != 0 && 
+	    errno == ENOENT) {
+		DEBUG(0,("No event script found at '%s'\n", ctdb->takeover.event_script));
+		return 0;
+	}
+
+	va_copy(ap2, ap);
+	options  = talloc_vasprintf(ctdb, fmt, ap2);
+	va_end(ap2);
 	CTDB_NO_MEMORY(ctdb, options);
 
 	cmdstr = talloc_asprintf(ctdb, "%s %s", ctdb->takeover.event_script, options);
@@ -285,3 +293,90 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 	return ret;
 }
 
+/*
+  run the event script
+ */
+int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = ctdb_event_script_v(ctdb, fmt, ap);
+	va_end(ap);
+
+	return ret;
+}
+
+
+struct ctdb_event_script_state {
+	struct ctdb_context *ctdb;
+	pid_t child;
+	void (*callback)(struct ctdb_context *, int);
+	int fd[2];
+};
+
+/* called when child is finished */
+static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde, 
+				      uint16_t flags, void *p)
+{
+	struct ctdb_event_script_state *state = 
+		talloc_get_type(p, struct ctdb_event_script_state);
+	int status = -1;
+	waitpid(state->child, &status, 0);
+	if (status != -1) {
+		status = WEXITSTATUS(status);
+	}
+	state->callback(state->ctdb, status);
+	talloc_free(state);
+}
+
+
+/*
+  run the event script in the background, calling the callback when 
+  finished
+ */
+int ctdb_event_script_callback(struct ctdb_context *ctdb, 
+			       void (*callback)(struct ctdb_context *, int),
+			       const char *fmt, ...)
+{
+	struct ctdb_event_script_state *state;
+	va_list ap;
+	int ret;
+
+	state = talloc(ctdb, struct ctdb_event_script_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->ctdb = ctdb;
+	state->callback = callback;
+	
+	ret = pipe(state->fd);
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+
+	state->child = fork();
+
+	if (state->child == (pid_t)-1) {
+		close(state->fd[0]);
+		close(state->fd[1]);
+		talloc_free(state);
+		return -1;
+	}
+
+	if (state->child == 0) {
+		close(state->fd[0]);
+		va_start(ap, fmt);
+		ret = ctdb_event_script_v(ctdb, fmt, ap);
+		va_end(ap);
+		_exit(ret);
+	}
+
+	close(state->fd[1]);
+
+	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+		     ctdb_event_script_handler, state);
+
+	return 0;
+}

@@ -6,6 +6,9 @@
 /* Whether strnlen is broken */
 #undef BROKEN_STRNLEN
 
+/* Define to 1 if you have the <acl/libacl.h> header file. */
+#undef HAVE_ACL_LIBACL_H
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
@@ -74,12 +77,6 @@
 /* Define to 1 if you have the `dlsym' function. */
 #undef HAVE_DLSYM
 
-/* Define to 1 if you have the `endnetgrent' function. */
-#undef HAVE_ENDNETGRENT
-
-/* Define to 1 if you have the `epoll_create' function. */
-#undef HAVE_EPOLL_CREATE
-
 /* Whether errno() is available */
 #undef HAVE_ERRNO_DECL
 
@@ -101,9 +98,6 @@
 /* Define to 1 if you have the `getdirentries' function. */
 #undef HAVE_GETDIRENTRIES
 
-/* Define to 1 if you have the `getnetgrent' function. */
-#undef HAVE_GETNETGRENT
-
 /* Define to 1 if you have the `getpgrp' function. */
 #undef HAVE_GETPGRP
 
@@ -115,9 +109,6 @@
 
 /* Define to 1 if you have the `initgroups' function. */
 #undef HAVE_INITGROUPS
-
-/* Define to 1 if you have the `innetgr' function. */
-#undef HAVE_INNETGR
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -221,14 +212,17 @@
 /* Define to 1 if you have the `setenv' function. */
 #undef HAVE_SETENV
 
+/* Whether setenv() is available */
+#undef HAVE_SETENV_DECL
+
 /* Define to 1 if you have the `seteuid' function. */
 #undef HAVE_SETEUID
 
+/* Define to 1 if you have the <setjmp.h> header file. */
+#undef HAVE_SETJMP_H
+
 /* Define to 1 if you have the `setlinebuf' function. */
 #undef HAVE_SETLINEBUF
-
-/* Define to 1 if you have the `setnetgrent' function. */
-#undef HAVE_SETNETGRENT
 
 /* Define to 1 if you have the `setresgid' function. */
 #undef HAVE_SETRESGID
@@ -250,6 +244,9 @@
 
 /* Define to 1 if you have the `snprintf' function. */
 #undef HAVE_SNPRINTF
+
+/* Define to 1 if you have the `socketpair' function. */
+#undef HAVE_SOCKETPAIR
 
 /* Define to 1 if you have the `srand' function. */
 #undef HAVE_SRAND
@@ -343,9 +340,6 @@
    */
 #undef HAVE_SYS_DIR_H
 
-/* Define to 1 if you have the <sys/epoll.h> header file. */
-#undef HAVE_SYS_EPOLL_H
-
 /* Define to 1 if you have the <sys/fcntl.h> header file. */
 #undef HAVE_SYS_FCNTL_H
 
@@ -437,6 +431,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if you have the `unsetenv' function. */
+#undef HAVE_UNSETENV
+
 /* Define to 1 if you have the `usleep' function. */
 #undef HAVE_USLEEP
 
@@ -523,6 +520,9 @@
 
 /* replace readdir using getdirentries() */
 #undef REPLACE_READDIR_GETDIRENTRIES
+
+/* Whether strptime should be replaced */
+#undef REPLACE_STRPTIME
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #undef RETSIGTYPE

@@ -3,19 +3,19 @@
 
    Copyright (C) Andrew Tridgell  2006
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include "includes.h"
@@ -25,14 +25,6 @@
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
 #include "ctdb_tcp.h"
-
-static void set_nonblocking(int fd)
-{
-	unsigned v;
-	v = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, v | O_NONBLOCK);
-}
-
 
 /*
   called when a complete packet has come in - should not happen on this socket
@@ -134,6 +126,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	tnode->fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	set_nonblocking(tnode->fd);
+	set_close_on_exec(tnode->fd);
 
 	ZERO_STRUCT(sock_out);
 #ifdef HAVE_SOCK_SIN_LEN
@@ -213,6 +206,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	in->ctdb = ctdb;
 
 	set_nonblocking(in->fd);
+	set_close_on_exec(in->fd);
 
         setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 
@@ -321,6 +315,8 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 		ctdb_set_error(ctdb, "socket failed\n");
 		return -1;
 	}
+
+	set_close_on_exec(ctcp->listen_fd);
 
         setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
 

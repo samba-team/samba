@@ -3,19 +3,19 @@
 
    Copyright (C) Andrew Tridgell  2006
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #ifndef _CTDB_PRIVATE_H
@@ -129,6 +129,7 @@ struct ctdb_node {
   transport specific methods
 */
 struct ctdb_methods {
+	int (*initialise)(struct ctdb_context *); /* initialise transport structures */	
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
@@ -949,8 +950,13 @@ int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+int ctdb_event_script_callback(struct ctdb_context *ctdb, 
+			       void (*callback)(struct ctdb_context *, int),
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
+void set_nonblocking(int fd);
+void set_close_on_exec(int fd);
 
 
 #endif

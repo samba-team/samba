@@ -3,19 +3,19 @@
 
    Copyright (C) Andrew Tridgell  2006
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include "includes.h"
@@ -31,6 +31,31 @@
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
+/* called when the "startup" event script has finished */
+static void ctdb_start_transport(struct ctdb_context *ctdb, int status)
+{
+	if (status != 0) {
+		DEBUG(0,("startup event failed!\n"));
+		ctdb_fatal(ctdb, "startup event script failed");		
+	}
+
+	/* start the transport running */
+	if (ctdb->methods->start(ctdb) != 0) {
+		DEBUG(0,("transport failed to start!\n"));
+		ctdb_fatal(ctdb, "transport failed to start");
+	}
+
+	/* start the recovery daemon process */
+	if (ctdb_start_recoverd(ctdb) != 0) {
+		DEBUG(0,("Failed to start recovery daemon\n"));
+		exit(11);
+	}
+
+	/* start monitoring for dead nodes */
+	ctdb_start_monitoring(ctdb);
+}
+
+/* go into main ctdb loop */
 static void ctdb_main_loop(struct ctdb_context *ctdb)
 {
 	int ret = -1;
@@ -50,10 +75,10 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 		return;
 	}
 
-	/* start the transport running */
-	if (ctdb->methods->start(ctdb) != 0) {
-		DEBUG(0,("transport failed to start!\n"));
-		ctdb_fatal(ctdb, "transport failed to start");
+	/* initialise the transport  */
+	if (ctdb->methods->initialise(ctdb) != 0) {
+		DEBUG(0,("transport failed to initialise!\n"));
+		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
 
 	/* tell all other nodes we've just started up */
@@ -62,6 +87,12 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 				 CTDB_CTRL_FLAG_NOREPLY,
 				 tdb_null, NULL, NULL);
 
+	ret = ctdb_event_script_callback(ctdb, ctdb_start_transport, "startup");
+	if (ret != 0) {
+		DEBUG(0,("Failed startup event script\n"));
+		return;
+	}
+
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
 
@@ -69,13 +100,6 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 	exit(1);
 }
 
-
-static void set_non_blocking(int fd)
-{
-	unsigned v;
-	v = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, v | O_NONBLOCK);
-}
 
 static void block_signal(int signum)
 {
@@ -554,7 +578,9 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	if (fd == -1) {
 		return;
 	}
-	set_non_blocking(fd);
+
+	set_nonblocking(fd);
+	set_close_on_exec(fd);
 
 	client = talloc_zero(ctdb, struct ctdb_client);
 	client->ctdb = ctdb;
@@ -603,6 +629,9 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		return -1;
 	}
 
+	set_nonblocking(ctdb->daemon.sd);
+	set_close_on_exec(ctdb->daemon.sd);
+
 #if 0
 	/* AIX doesn't like this :( */
 	if (fchown(ctdb->daemon.sd, geteuid(), getegid()) != 0 ||
@@ -612,7 +641,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	}
 #endif
 
-	set_non_blocking(ctdb->daemon.sd);
+	set_nonblocking(ctdb->daemon.sd);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -738,20 +767,11 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	/* try to set us up as realtime */
 	ctdb_set_realtime();
 
-	/* start the recovery daemon process */
-	if (ctdb_start_recoverd(ctdb) != 0) {
-		DEBUG(0,("Failed to start recovery daemon\n"));
-		exit(11);
-	}
-
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 
 	ctdb->ev = event_context_init(NULL);
-
-	/* start monitoring for dead nodes */
-	ctdb_start_monitoring(ctdb);
 
 	/* start frozen, then let the first election sort things out */
 	if (!ctdb_blocking_freeze(ctdb)) {
