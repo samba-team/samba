@@ -1,0 +1,47 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>ctdb</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" VLINK="#292555" LINK="#292555" ALINK="#cc0033">
+
+<h1>ctdb</h1>
+
+ctdb is a fast cluster database for temporary data.
+ctdb also provides HA features such as IP failover between nodes.
+
+It is the core component for samba3/4 clustering.
+
+To get started with ctdb, I would recommend you read <a
+href="http://wiki.samba.org/CTDB_Setup">the ctdb wiki</a>.
+
+<h2>Discussion and bug reports</h2>
+
+ctdb does not currently have its own mailing list or bug tracking
+system. For now, please use the <ahref="https://lists.samba.org/mailman/listinfo/samba-technical">samba-technical</a>
+mailing list, and the <a href="http://bugzilla.samba.org/">Samba
+bugzilla</a> bug tracking system.
+
+<h2>Download</h2>
+
+You can download the latest release either via rsync or anonymous
+svn. To fetch via svn use the following command:
+
+<pre>
+  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/cluster/ctdb ctdb
+</pre>
+
+To fetch via rsync use this command:
+
+<pre>
+  rsync -Pavz samba.org::ftp/unpacked/samba4/source/cluster/ctdb .
+</pre>
+
+<hr>
+<h2>Developers</h2>
+<a href="http://samba.org/~tridge/">Andrew Tridgell</a><br>
+Ronnie Sahlberg<br>
+
+
+</BODY>
+</HTML>
