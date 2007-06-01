@@ -9,12 +9,12 @@ Release: 1
 Epoch: 0
 License: GNU GPL version 2
 Group: System Environment/Daemons
-URL: bzr://www.samba.org/~tridge/ctdb/
+URL: http://ctdb.samba.org/
 
 Source: ctdb-%{version}.tar.bz2
 Source999: ctdb-setup.tar.bz2
 
-Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
+Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall /usr/bin/nc
 Prereq: fileutils sed /etc/init.d
 
 Requires: initscripts >= 5.54-1
@@ -66,17 +66,6 @@ make DESTDIR=$RPM_BUILD_ROOT install
 
 install -m644 setup/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 setup/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
-install -m755 tools/events $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events
-install -m755 tools/events.d/samba $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d/samba
-install -m755 tools/events.d/nfslock $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d/nfslock
-install -m755 tools/statd-callout $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/statd-callout
-install -m755 tools/onnode.ssh $RPM_BUILD_ROOT%{_bindir}
-install -m755 tools/onnode.rsh $RPM_BUILD_ROOT%{_bindir}
-ln -sf %{_bindir}/onnode.ssh $RPM_BUILD_ROOT%{_bindir}/onnode
-
-# unfortunately samba3 needs ctdb_private.h too
-install -m644 include/ctdb_private.h $RPM_BUILD_ROOT%{_includedir}/ctdb_private.h
-
 
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;

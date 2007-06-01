@@ -117,9 +117,19 @@ distclean: clean
 install: all
 	mkdir -p $(DESTDIR)$(bindir)
 	mkdir -p $(DESTDIR)$(includedir)
-	rsync $(BINS) $(DESTDIR)$(bindir)
-	rsync $(SBINS) $(DESTDIR)$(sbindir)
-	rsync $(srcdir)/include/ctdb.h $(DESTDIR)$(includedir)
+	mkdir -p $(DESTDIR)$(etcdir)/ctdb
+	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 bin/ctdb $(DESTDIR)$(bindir)
+	install -m755 bin/ctdbd $(DESTDIR)$(sbindir)
+	install -m644 include/ctdb.h $(DESTDIR)$(includedir)
+	install -m644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
+	install -m755 tools/events $(DESTDIR)$(etcdir)/ctdb
+	install -m755 tools/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	install -m755 tools/events.d/samba $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 tools/events.d/nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 tools/onnode.ssh $(DESTDIR)$(bindir)
+	install -m755 tools/onnode.rsh $(DESTDIR)$(bindir)
+	ln -sf $(DESTDIR)$(bindir)/onnode.ssh $(DESTDIR)$(bindir)/onnode
 
 test: all
 	tests/run_tests.sh
