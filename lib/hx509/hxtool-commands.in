@@ -608,7 +608,17 @@ command = {
 	}
 	min_args="1"
 	argument="certificates..."
-	help = "Test "
+	help = "Test crypto system related to the certificates"
+}
+command = {
+	option = {
+		long = "type"
+		type = "integer"
+		help = "type of statistics"
+	}
+	name = "statistic-print"
+	min_args="0"
+	help = "Print statistics"
 }
 command = {
 	name = "help"
