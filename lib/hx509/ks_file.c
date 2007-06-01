@@ -542,12 +542,9 @@ file_init(hx509_context context,
 	return 0;
     }
 
-    c = _hx509_collector_alloc(context, lock);
-    if (c == NULL) {
-	ret = ENOMEM;
-	hx509_set_error_string(context, 0, ret, "out of memory");
+    ret = _hx509_collector_alloc(context, lock, &c);
+    if (ret)
 	goto out;
-    }
 
     for (p = f->fn; p != NULL; p = pnext) {
 	int found_data;
