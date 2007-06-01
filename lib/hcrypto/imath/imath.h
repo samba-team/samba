@@ -4,7 +4,7 @@
   Author:   M. J. Fromberger <http://www.dartmouth.edu/~sting/>
   Info:     $Id$
 
-  Copyright (C) 2002 Michael J. Fromberger, All Rights Reserved.
+  Copyright (C) 2002-2007 Michael J. Fromberger, All Rights Reserved.
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -94,7 +94,7 @@ extern const mp_result MP_BADARG;
    standard multiplication algorithm; otherwise, a recursive algorithm
    is used.  Choose a value to suit your platform.  
  */
-#define MP_MULT_THRESH  32
+#define MP_MULT_THRESH  22
 
 #define MP_DEFAULT_PREC 8   /* default memory allocation, in digits */
 
