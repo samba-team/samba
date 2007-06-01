@@ -2246,10 +2246,9 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 		return;
 	}
-
-  normal_readbraw:
-
 #endif
+
+normal_readbraw:
 
 	if (nread > 0) {
 		ret = read_file(fsp,outbuf+4,startpos,nread);
@@ -2646,7 +2645,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 #endif
 
-  normal_read:
+normal_read:
 
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
 		int sendlen = setup_readX_header(inbuf,outbuf,smb_maxcnt) - smb_maxcnt;
