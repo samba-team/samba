@@ -1,5 +1,10 @@
-2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath/imath.[ch]: New snapshot for Michael Fromberger, lets see if
+	this corrupts memory less.
+	
+2007-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* version-script.map: Don't prefix all symbols with _
 	
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
