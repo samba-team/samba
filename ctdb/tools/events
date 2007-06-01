@@ -76,7 +76,7 @@ case $cmd in
      recovered)
 	# if we have taken or released any ips we must send out
 	# statd notifications to recover lost nfs locks
-	[ -x /etc/ctdb/statd-callout ] && [ -x /etc/ctdb/changed_ips ] && {
+	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/changed_ips ] && {
 		/etc/ctdb/statd-callout notify &
 	} >/dev/null 2>&1
 
