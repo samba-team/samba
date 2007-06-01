@@ -1,0 +1,36 @@
+#!/bin/sh
+# script to manage nfs in a clustered environment
+
+. /etc/sysconfig/ctdb
+. /etc/ctdb/functions
+
+cmd="$1"
+shift
+
+case $cmd in 
+     startup)
+	mkdir -p /etc/ctdb/state/nfs
+	;;
+
+     releaseip)
+	iface=$1
+	ip=$2
+	maskbits=$3
+
+	echo $ip >> /etc/ctdb/state/nfs/restart
+	exit 0
+	;;
+
+     recovered)
+        # restart NFS to ensure that all TCP connections to the released ip
+	# are closed
+	[ -f /etc/ctdb/state/nfs/restart ] && {
+		( /sbin/service nfs status > /dev/null 2>&1 && 
+                      /sbin/service nfs restart > /dev/null 2>&1 ) &
+	} > /dev/null 2>&1
+	/bin/rm -f /etc/ctdb/state/nfs/restart
+	;;
+
+esac
+
+exit 0

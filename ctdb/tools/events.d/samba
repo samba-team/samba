@@ -34,9 +34,8 @@ case $cmd in
 	;;
 
      shutdown)
-	# shutdown Samba cleanly when ctdb goes down
-	/etc/init.d/smb stop
-	/etc/init.d/winbind stop
+	# shutdown Samba when ctdb goes down
+	killall -q smbd nmbd winbindd
 	;;
 esac
 
