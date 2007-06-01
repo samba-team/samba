@@ -759,5 +759,6 @@ main(int argc, char **argv)
 	fclose(cfile);
 	fclose(hfile);
     }
+    fclose(yyin);
     return 0;
 }
