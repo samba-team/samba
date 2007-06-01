@@ -291,12 +291,10 @@ hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
 			    const char *uri,
 			    hx509_name issuername)
 {
-    GeneralNames crlissuer;
     DistributionPoint dp;
     int ret;
 
     memset(&dp, 0, sizeof(dp));
-    memset(&crlissuer, 0, sizeof(crlissuer));
     
     dp.distributionPoint = ecalloc(1, sizeof(*dp.distributionPoint));
 
@@ -331,6 +329,7 @@ hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
 			       "CRLDistributionPoints.name.issuername not yet supported");
 	return EINVAL;
 #else 
+	GeneralNames crlissuer;
 	GeneralName gn;
 	Name n;
 
@@ -362,7 +361,7 @@ hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
     }
 
 out:
-    free_GeneralNames(&crlissuer);
+    free_DistributionPoint(&dp);
 
     return ret;
 }
@@ -659,7 +658,7 @@ ca_sign(hx509_context context,
     time_t notAfter;
     unsigned key_usage;
 
-    sigalg = hx509_signature_rsa_with_sha256();
+    sigalg = hx509_signature_rsa_with_sha1();
 
     memset(&c, 0, sizeof(c));
 
