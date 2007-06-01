@@ -334,7 +334,7 @@ check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
 }
 
 static int
-check_xmpp_san(hx509_validate_ctx ctx, heim_any *a)
+check_utf8_string_san(hx509_validate_ctx ctx, heim_any *a)
 {
     PKIXXmppAddr jid;
     size_t size;
@@ -347,7 +347,7 @@ check_xmpp_san(hx509_validate_ctx ctx, heim_any *a)
 	return 1;
     }
 
-    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "jid: %s", jid);
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", jid);
     free_PKIXXmppAddr(&jid);
 
     return 0;
@@ -433,10 +433,10 @@ struct {
     int (*func)(hx509_validate_ctx, heim_any *);
 } check_altname[] = {
     { "pk-init", oid_id_pkinit_san, check_pkinit_san },
-    { "jabber", oid_id_pkix_on_xmppAddr, check_xmpp_san },
+    { "jabber", oid_id_pkix_on_xmppAddr, check_utf8_string_san },
     { "dns-srv", oid_id_pkix_on_dnsSRV, check_altnull },
     { "card-id", oid_id_uspkicommon_card_id, check_altnull },
-    { "Microsoft NT-PRINCIPAL-NAME", oid_id_pkinit_ms_san, check_altnull }
+    { "Microsoft NT-PRINCIPAL-NAME", oid_id_pkinit_ms_san, check_utf8_string_san }
 };
 
 static int
