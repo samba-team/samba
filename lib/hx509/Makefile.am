@@ -148,7 +148,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	cert-sub-ee.pem cert-sub-ca.pem \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
 	wca.pem wuser.pem wdc.pem \
-	random-data statfile \
+	random-data statfile crl.crl \
 	test
 
 
