@@ -12,7 +12,7 @@ AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(ctdb.h)
-AC_CONFIG_SRCDIR([tests/ctdb_test.c])
+AC_CONFIG_SRCDIR([common/ctdb.c])
 
 AC_LIBREPLACE_ALL_CHECKS
 
