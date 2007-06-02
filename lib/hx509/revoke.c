@@ -442,7 +442,8 @@ verify_crl(hx509_context context,
 					    &crl->tbsCertList._save,
 					    &crl->signatureValue);
     if (ret) {
-	hx509_set_error_string(context, HX509_ERROR_APPEND, ret, "CRL signature invalid");
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+			       "CRL signature invalid");
 	goto out;
     }
 
