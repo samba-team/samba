@@ -108,12 +108,12 @@ install: all
 	install -m755 bin/ctdbd $(DESTDIR)$(sbindir)
 	install -m644 include/ctdb.h $(DESTDIR)$(includedir)
 	install -m644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
-	install -m755 tools/events $(DESTDIR)$(etcdir)/ctdb
-	install -m755 tools/functions $(DESTDIR)$(etcdir)/ctdb
-	install -m755 tools/statd-callout $(DESTDIR)$(etcdir)/ctdb
-	install -m755 tools/events.d/samba $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 tools/events.d/nfs $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 tools/events.d/nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 config/events $(DESTDIR)$(etcdir)/ctdb
+	install -m755 config/functions $(DESTDIR)$(etcdir)/ctdb
+	install -m755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	install -m755 config/events.d/samba $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 config/events.d/nfs $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 config/events.d/nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
 	install -m755 tools/onnode.ssh $(DESTDIR)$(bindir)
 	install -m755 tools/onnode.rsh $(DESTDIR)$(bindir)
 	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode

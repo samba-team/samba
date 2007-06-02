@@ -57,8 +57,8 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
 
 make DESTDIR=$RPM_BUILD_ROOT install
 
-install -m644 tools/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
-install -m755 packaging/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
+install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
+install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;

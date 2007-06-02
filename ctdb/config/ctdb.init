@@ -65,6 +65,7 @@ else
 fi
 
 start() {
+        killall -q ctdbd
 	echo -n $"Starting ctdbd service: "
 	case $init_style in
 	    suse)
