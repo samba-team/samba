@@ -48,3 +48,4 @@ sleep 1
 
 echo "All done"
 killall -q ctdbd
+exit 0

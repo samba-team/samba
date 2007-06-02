@@ -18,9 +18,10 @@ done
 
 killall -9 -q ctdb_fetch
 for i in `seq 1 $NUMNODES`; do
-  $VALGRIND bin/ctdb_fetch --socket sock.$i $* &
+  $VALGRIND bin/ctdb_fetch --socket sock.$i -n $NUMNODES $* &
 done
 wait
 
 echo "Shutting down"
 bin/ctdb shutdown -n all --socket=sock.1
+exit 0

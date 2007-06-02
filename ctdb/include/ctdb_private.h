@@ -38,13 +38,6 @@
 #define CTDB_NULL_FUNC      0xFF000001
 #define CTDB_FETCH_FUNC     0xFF000002
 
-/* used on the domain socket, send a pdu to the local daemon */
-#define CTDB_CURRENT_NODE     0xF0000001
-/* send a broadcast to all nodes in the cluster, active or not */
-#define CTDB_BROADCAST_ALL    0xF0000002
-/* send a broadcast to all nodes in the current vnn map */
-#define CTDB_BROADCAST_VNNMAP 0xF0000003
-
 #define CTDB_MAX_REDIRECT_COUNT 3
 #define CTDB_DEFAULT_SEQNUM_FREQUENCY 1
 

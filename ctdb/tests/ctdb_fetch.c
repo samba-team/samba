@@ -44,8 +44,7 @@ static double end_timer(void)
 
 static int timelimit = 10;
 static int num_records = 10;
-static int num_msgs = 1;
-static uint32_t num_nodes;
+static int num_nodes;
 static int msg_count;
 
 #define TESTKEY "testkey"
@@ -181,7 +180,7 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
-		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
+		{ NULL, 'n', POPT_ARG_INT, &num_nodes, 0, "num_nodes", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -232,11 +231,12 @@ int main(int argc, const char *argv[])
 	ctdb_set_message_handler(ctdb, 0, message_handler, &msg_count);
 
 	printf("Waiting for cluster\n");
-	while (!cluster_ready) {
+	while (1) {
+		uint32_t recmode=1;
+		ctdb_ctrl_getrecmode(ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
+		if (recmode == 0) break;
 		event_loop_once(ev);
 	}
-
-	ctdb_get_connected_nodes(ctdb, timeval_zero(), ctdb, &num_nodes);
 
 	bench_fetch(ctdb, ev);
 

@@ -44,8 +44,7 @@ static double end_timer(void)
 
 static int timelimit = 10;
 static int num_records = 10;
-static int num_msgs = 1;
-static uint32_t num_nodes;
+static int num_nodes;
 
 enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
 
@@ -109,7 +108,6 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 	int vnn=ctdb_get_vnn(ctdb);
 
 	if (vnn == 0) {
-		int i;
 		/* two messages are injected into the ring, moving
 		   in opposite directions */
 		int dest, incr;
@@ -118,15 +116,13 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 		data.dptr = (uint8_t *)&incr;
 		data.dsize = sizeof(incr);
 
-		for (i=0;i<num_msgs;i++) {
-			incr = 1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
-			ctdb_send_message(ctdb, dest, 0, data);
-
-			incr = -1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
-			ctdb_send_message(ctdb, dest, 0, data);
-		}
+		incr = 1;
+		dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
+		ctdb_send_message(ctdb, dest, 0, data);
+		
+		incr = -1;
+		dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
+		ctdb_send_message(ctdb, dest, 0, data);
 	}
 	
 	start_timer();
@@ -168,7 +164,7 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
-		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
+		{ NULL, 'n', POPT_ARG_INT, &num_nodes, 0, "num_nodes", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -220,11 +216,12 @@ int main(int argc, const char *argv[])
 		goto error;
 
 	printf("Waiting for cluster\n");
-	while (!cluster_ready) {
+	while (1) {
+		uint32_t recmode=1;
+		ctdb_ctrl_getrecmode(ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
+		if (recmode == 0) break;
 		event_loop_once(ev);
 	}
-
-	ctdb_get_connected_nodes(ctdb, timeval_zero(), ctdb, &num_nodes);
 
 	bench_ring(ctdb, ev);
        

@@ -20,8 +20,8 @@ done
 killall -9 ctdb_bench
 echo "Trying $NUMNODES nodes"
 for i in `seq 1 $NUMNODES`; do
-  $VALGRIND bin/ctdb_bench --nlist nodes.txt --socket sock.$i $* &
+  valgrind -q $VALGRIND bin/ctdb_bench --socket sock.$i -n $NUMNODES $*  &
 done
 
 wait
-ctdb shutdown --socket sock.1 -n all
+bin/ctdb shutdown --socket sock.1 -n all

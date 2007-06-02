@@ -72,6 +72,14 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_RELEASE_IP 0xF300000000000000LL
 
+/* used on the domain socket, send a pdu to the local daemon */
+#define CTDB_CURRENT_NODE     0xF0000001
+/* send a broadcast to all nodes in the cluster, active or not */
+#define CTDB_BROADCAST_ALL    0xF0000002
+/* send a broadcast to all nodes in the current vnn map */
+#define CTDB_BROADCAST_VNNMAP 0xF0000003
+
+
 struct event_context;
 
 /*
