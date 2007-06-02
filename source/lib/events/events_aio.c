@@ -393,6 +393,8 @@ static int aio_event_fd_destructor(struct fd_event *fde)
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
 							   struct aio_event_context);
 
+	epoll_check_reopen(aio_ev);
+
 	aio_ev->num_fd_events--;
 	aio_ev->destruction_count++;
 
