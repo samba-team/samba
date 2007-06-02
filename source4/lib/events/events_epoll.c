@@ -342,6 +342,8 @@ static int epoll_event_fd_destructor(struct fd_event *fde)
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 							   struct epoll_event_context);
 
+	epoll_check_reopen(epoll_ev);
+
 	epoll_ev->num_fd_events--;
 	epoll_ev->destruction_count++;
 
