@@ -5773,6 +5773,8 @@ if test x"$samba_cv_HAVE_LINUX_READAHEAD" = x"yes"; then
              [Whether Linux readahead is available])
 fi
 
+AC_HAVE_DECL(readahead, [#include <fcntl.h>])
+
 ############################################
 # See if we have the posix_fadvise syscall.
 
