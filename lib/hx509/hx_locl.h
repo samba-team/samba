@@ -179,6 +179,7 @@ struct hx509_context_data {
 #define HX509_DEFAULT_OCSP_TIME_DIFF	(5*60)
     hx509_error error;
     struct et_list *et_list;
+    char *querystat;
 };
 
 /* _hx509_calculate_path flag field */
