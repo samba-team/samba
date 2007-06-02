@@ -375,7 +375,9 @@ static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_nod
 	return 0;
 }
 
-
+/*
+  we are the recmaster, and recovery is needed - start a recovery run
+ */
 static int do_recovery(struct ctdb_context *ctdb, 
 		       TALLOC_CTX *mem_ctx, uint32_t vnn, uint32_t num_active,
 		       struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
@@ -383,36 +385,16 @@ static int do_recovery(struct ctdb_context *ctdb,
 	int i, j, ret;
 	uint32_t generation;
 	struct ctdb_dbid_map *dbmap;
-	struct flock lock;
+
+	if (!ctdb_lock_node_list(ctdb, true)) {
+		DEBUG(0,("Unable to lock node list - aborting recovery\n"));
+		return -1;
+	}
 
 	/* set recovery mode to active on all nodes */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret!=0) {
 		DEBUG(0, (__location__ " Unable to set recovery mode to active on cluster\n"));
-		return -1;
-	}
-
-	/* get the recmaster lock */
-	if (ctdb->node_list_fd != -1) {
-		close(ctdb->node_list_fd);
-	}
-
-	ctdb->node_list_fd = open(ctdb->node_list_file, O_RDWR);
-	if (ctdb->node_list_fd == -1) {
-		DEBUG(0,("Unable to open %s - aborting recovery (%s)\n", 
-			 ctdb->node_list_file, strerror(errno)));
-		return -1;
-	}
-
-	lock.l_type = F_WRLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 1;
-	lock.l_pid = 0;
-
-	if (fcntl(ctdb->node_list_fd, F_SETLK, &lock) != 0) {
-		DEBUG(0,("Unable to lock %s - aborting recovery (%s)\n", 
-			 ctdb->node_list_file, strerror(errno)));
 		return -1;
 	}
 

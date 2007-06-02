@@ -357,7 +357,7 @@ struct ctdb_db_context {
 #define CTDB_MONITORING_TIMEOUT 2
 
 /* number of monitoring timeouts before a node is considered dead */
-#define CTDB_MONITORING_DEAD_COUNT 2
+#define CTDB_MONITORING_DEAD_COUNT 3
 
 
 /* number of consecutive calls from the same node before we give them
@@ -969,6 +969,8 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 void set_nonblocking(int fd);
 void set_close_on_exec(int fd);
+
+bool ctdb_lock_node_list(struct ctdb_context *ctdb, bool keep);
 
 
 #endif

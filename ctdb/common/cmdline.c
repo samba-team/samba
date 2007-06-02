@@ -29,21 +29,11 @@
  */
 
 static struct {
-	const char *nlist;
-	const char *transport;
-	const char *myaddress;
 	const char *socketname;
-	int self_connect;
-	const char *db_dir;
 	int torture;
 	const char *events;
 } ctdb_cmdline = {
-	.nlist = ETCDIR "/ctdb/nodes",
-	.transport = "tcp",
-	.myaddress = NULL,
 	.socketname = CTDB_PATH,
-	.self_connect = 0,
-	.db_dir = VARDIR "/ctdb",
 	.torture = 0,
 };
 
@@ -64,13 +54,8 @@ static void ctdb_cmdline_callback(poptContext con,
 
 struct poptOption popt_ctdb_cmdline[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, (void *)ctdb_cmdline_callback },	
-	{ "nlist", 0, POPT_ARG_STRING, &ctdb_cmdline.nlist, 0, "node list file", "filename" },
-	{ "listen", 0, POPT_ARG_STRING, &ctdb_cmdline.myaddress, 0, "address to listen on", "address" },
 	{ "socket", 0, POPT_ARG_STRING, &ctdb_cmdline.socketname, 0, "local socket name", "filename" },
-	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
-	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
 	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
-	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
 	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
 	{ "events", 0, POPT_ARG_STRING, NULL, OPT_EVENTSYSTEM, "event system", NULL },
 	{ NULL }
@@ -85,11 +70,6 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	struct ctdb_context *ctdb;
 	int ret;
 
-	if (ctdb_cmdline.nlist == NULL) {
-		printf("You must provide a node list with --nlist\n");
-		exit(1);
-	}
-
 	/* initialise ctdb */
 	ctdb = ctdb_init(ev);
 	if (ctdb == NULL) {
@@ -97,26 +77,8 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 		exit(1);
 	}
 
-	if (ctdb_cmdline.self_connect) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
-	}
 	if (ctdb_cmdline.torture) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
-	}
-
-	ret = ctdb_set_transport(ctdb, ctdb_cmdline.transport);
-	if (ret == -1) {
-		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	/* tell ctdb what address to listen on */
-	if (ctdb_cmdline.myaddress) {
-		ret = ctdb_set_address(ctdb, ctdb_cmdline.myaddress);
-		if (ret == -1) {
-			printf("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb));
-			exit(1);
-		}
 	}
 
 	/* tell ctdb the socket address */
@@ -124,21 +86,6 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	if (ret == -1) {
 		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
-	}
-
-	/* tell ctdb what nodes are available */
-	ret = ctdb_set_nlist(ctdb, ctdb_cmdline.nlist);
-	if (ret == -1) {
-		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	if (ctdb_cmdline.db_dir) {
-		ret = ctdb_set_tdb_dir(ctdb, ctdb_cmdline.db_dir);
-		if (ret == -1) {
-			printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
-			exit(1);
-		}
 	}
 
 	return ctdb;

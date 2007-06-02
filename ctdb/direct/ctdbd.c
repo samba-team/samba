@@ -39,13 +39,23 @@ static void block_signal(int signum)
 }
 
 static struct {
+	const char *nlist;
+	const char *transport;
+	const char *myaddress;
 	const char *public_address_list;
 	const char *public_interface;
 	const char *event_script;
 	const char *logfile;
+	const char *recovery_lock_file;
+	const char *db_dir;
+	int self_connect;
 } options = {
+	.nlist = ETCDIR "/ctdb/nodes",
+	.transport = "tcp",
 	.event_script = ETCDIR "/ctdb/events",
-	.logfile = VARDIR "/log/log.ctdb"
+	.logfile = VARDIR "/log/log.ctdb",
+	.db_dir = VARDIR "/ctdb",
+	.self_connect = 0,
 };
 
 
@@ -66,6 +76,11 @@ int main(int argc, const char *argv[])
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "event-script", 0, POPT_ARG_STRING, &options.event_script, 0, "event script", "filename" },
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
+		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
+		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
+		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
+		{ "self-connect", 0, POPT_ARG_NONE, &options.self_connect, 0, "enable self connect", "boolean" },
+		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -97,6 +112,40 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	if (options.self_connect) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
+	}
+
+	ret = ctdb_set_transport(ctdb, options.transport);
+	if (ret == -1) {
+		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	/* tell ctdb what address to listen on */
+	if (options.myaddress) {
+		ret = ctdb_set_address(ctdb, options.myaddress);
+		if (ret == -1) {
+			printf("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb));
+			exit(1);
+		}
+	}
+
+	/* tell ctdb what nodes are available */
+	ret = ctdb_set_nlist(ctdb, options.nlist);
+	if (ret == -1) {
+		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	if (options.db_dir) {
+		ret = ctdb_set_tdb_dir(ctdb, options.db_dir);
+		if (ret == -1) {
+			printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
+			exit(1);
+		}
+	}
 
 	ret = ctdb_set_logfile(ctdb, options.logfile);
 	if (ret == -1) {

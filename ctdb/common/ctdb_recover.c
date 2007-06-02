@@ -655,3 +655,39 @@ int32_t ctdb_control_delete_low_rsn(struct ctdb_context *ctdb, TDB_DATA indata, 
 	return 0;
 }
 
+
+/*
+  try and lock the node list file - should only work on the recovery master recovery
+  daemon. Anywhere else is a bug
+ */
+bool ctdb_lock_node_list(struct ctdb_context *ctdb, bool keep)
+{
+	struct flock lock;
+
+	if (ctdb->node_list_fd != -1) {
+		close(ctdb->node_list_fd);
+	}
+	ctdb->node_list_fd = open(ctdb->node_list_file, O_RDWR);
+	if (ctdb->node_list_fd == -1) {
+		DEBUG(0,("Unable to open %s - (%s)\n", 
+			 ctdb->node_list_file, strerror(errno)));
+		return false;
+	}
+
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	if (fcntl(ctdb->node_list_fd, F_SETLK, &lock) != 0) {
+		return false;
+	}
+
+	if (!keep) {
+		close(ctdb->node_list_fd);
+		ctdb->node_list_fd = -1;
+	}
+
+	return true;
+}

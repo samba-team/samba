@@ -951,6 +951,7 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	TDB_DATA data;
 	int res;
 	struct daemon_control_state *state;
+	TALLOC_CTX *tmp_ctx = talloc_new(client);
 
 	if (c->hdr.destnode == CTDB_CURRENT_NODE) {
 		c->hdr.destnode = client->ctdb->vnn;
@@ -970,6 +971,10 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	}
 
 	talloc_set_destructor(state, daemon_control_destructor);
+
+	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {
+		talloc_steal(tmp_ctx, state);
+	}
 	
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
@@ -983,9 +988,7 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 			 c->hdr.destnode));
 	}
 
-	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {
-		talloc_free(state);
-	}
+	talloc_free(tmp_ctx);
 }
 
 /*

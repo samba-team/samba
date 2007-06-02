@@ -48,11 +48,14 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 			continue;
 		}
 		
-		/* it might have come alive again */
-		if (!(node->flags & NODE_FLAGS_CONNECTED) && node->rx_cnt != 0) {
-			ctdb_node_connected(node);
+		if (!(node->flags & NODE_FLAGS_CONNECTED)) {
+			/* it might have come alive again */
+			if (node->rx_cnt != 0) {
+				ctdb_node_connected(node);
+			}
 			continue;
 		}
+
 
 		if (node->rx_cnt == 0) {
 			node->dead_count++;
@@ -63,6 +66,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 		node->rx_cnt = 0;
 
 		if (node->dead_count >= CTDB_MONITORING_DEAD_COUNT) {
+			DEBUG(0,("dead count reached for node %u\n", node->vnn));
 			ctdb_node_dead(node);
 			ctdb_send_keepalive(ctdb, node->vnn);
 			/* maybe tell the transport layer to kill the
@@ -71,7 +75,8 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 			continue;
 		}
 		
-		if (node->tx_cnt == 0 && (node->flags & NODE_FLAGS_CONNECTED)) {
+		if (node->tx_cnt == 0) {
+			DEBUG(5,("sending keepalive to %u\n", node->vnn));
 			ctdb_send_keepalive(ctdb, node->vnn);
 		}
 
