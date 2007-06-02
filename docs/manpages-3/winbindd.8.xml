@@ -248,6 +248,12 @@ hosts:		files wins
 		<smbconfoption name="template shell"/></para></listitem>
 		<listitem><para>
 		<smbconfoption name="winbind use default domain"/></para></listitem>
+		<listitem><para>
+		<smbconfoption name="winbind: rpc only"/>
+		Setting this parameter forces winbindd to use RPC
+		instead of LDAP to retrieve information from Domain
+		Controllers.
+		</para></listitem>
 	</itemizedlist>
 </refsect1>
 
