@@ -46,7 +46,7 @@ RCSID("$Id$");
 #include <heimntlm.h>
 
 static int
-test_libntlm_v1(void)
+test_libntlm_v1(int flags)
 {
     const char *user = "foo", 
 	*domain = "mydomain",
@@ -64,7 +64,7 @@ test_libntlm_v1(void)
     memset(&type2, 0, sizeof(type2));
     memset(&type3, 0, sizeof(type3));
 
-    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM|NTLM_NEG_KEYEX;
+    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM|flags;
     type1.domain = strdup(domain);
     type1.hostname = NULL;
     type1.os[0] = 0;
@@ -113,7 +113,6 @@ test_libntlm_v1(void)
 
     {
 	struct ntlm_buf key;
-	struct ntlm_buf sessionkey;
 
 	heim_ntlm_nt_key(password, &key);
 
@@ -121,11 +120,14 @@ test_libntlm_v1(void)
 				  type2.challange,
 				  &type3.ntlm);
 
-	heim_ntlm_build_ntlm1_master(key.data, key.length,
-				     &sessionkey,
+	if (flags & NTLM_NEG_KEYEX) {
+	    struct ntlm_buf sessionkey;
+	    heim_ntlm_build_ntlm1_master(key.data, key.length,
+					 &sessionkey,
 				     &type3.sessionkey);
+	    free(sessionkey.data);
+	}
 	free(key.data);
-	free(sessionkey.data);
     }
 
     ret = heim_ntlm_encode_type3(&type3, &data);
@@ -157,7 +159,7 @@ test_libntlm_v1(void)
 }
 
 static int
-test_libntlm_v2(void)
+test_libntlm_v2(int flags)
 {
     const char *user = "foo", 
 	*domain = "mydomain",
@@ -175,7 +177,7 @@ test_libntlm_v2(void)
     memset(&type2, 0, sizeof(type2));
     memset(&type3, 0, sizeof(type3));
 
-    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM|NTLM_NEG_KEYEX;
+    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM|flags;
     type1.domain = strdup(domain);
     type1.hostname = NULL;
     type1.os[0] = 0;
@@ -225,7 +227,6 @@ test_libntlm_v2(void)
     {
 	struct ntlm_buf key;
 	unsigned char ntlmv2[16];
-	struct ntlm_buf sessionkey;
 
 	heim_ntlm_nt_key(password, &key);
 
@@ -238,10 +239,13 @@ test_libntlm_v2(void)
 				  &type3.ntlm);
 	free(key.data);
 
-	heim_ntlm_build_ntlm1_master(ntlmv2, sizeof(ntlmv2),
-				     &sessionkey,
-				     &type3.sessionkey);
-	free(sessionkey.data);
+	if (flags & NTLM_NEG_KEYEX) {
+	    struct ntlm_buf sessionkey;
+	    heim_ntlm_build_ntlm1_master(ntlmv2, sizeof(ntlmv2),
+					 &sessionkey,
+					 &type3.sessionkey);
+	    free(sessionkey.data);
+	}
     }
 
     ret = heim_ntlm_encode_type3(&type3, &data);
@@ -311,8 +315,11 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    ret += test_libntlm_v1();
-    ret += test_libntlm_v2();
+    ret += test_libntlm_v1(0);
+    ret += test_libntlm_v1(NTLM_NEG_KEYEX);
+
+    ret += test_libntlm_v2(0);
+    ret += test_libntlm_v2(NTLM_NEG_KEYEX);
 
     return 0;
 }
