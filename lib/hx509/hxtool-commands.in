@@ -621,6 +621,27 @@ command = {
 	help = "Print statistics"
 }
 command = {
+	option = {
+		long = "signer"
+		type = "string"
+		help = "signer certificate"
+	}
+	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
+		long = "crl-file"
+		type = "string"
+		help = "CRL output file"
+	}
+	name = "crl-sign"
+	min_args="0"
+	help = "Create a CRL"
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
