@@ -99,7 +99,7 @@ AC_CHECK_HEADERS(stdarg.h vararg.h)
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
 AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
-
+AC_CHECK_HEADERS(sys/mount.h mntent.h)
 
 dnl we need to check that net/if.h really can be used, to cope with hpux
 dnl where including it always fails
@@ -354,6 +354,7 @@ AC_LIBREPLACE_LOCATION_CHECKS
 AC_LIBREPLACE_CC_CHECKS
 AC_LIBREPLACE_BROKEN_CHECKS
 AC__LIBREPLACE_ALL_CHECKS_END
+CFLAGS="$CFLAGS -I$libreplacedir"
 ])
 
 m4_include(libreplace_cc.m4)
