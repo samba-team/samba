@@ -1,5 +1,11 @@
 2007-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* keyset.c (hx509_certs_find): collects stats for queries.
+
+	* cert.c: Sort and print more info.
+
+	* hx_locl.h: Add querystat to hx509_context.
+
 	* test_*.in: sprinle stat saveing
 
 	* Makefile.am: Add stat and objdir.
