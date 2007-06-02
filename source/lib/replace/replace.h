@@ -111,10 +111,6 @@ extern char *sys_errlist[];
 extern int errno;
 #endif
 
-#if defined(HAVE_LINUX_READAHEAD) && ! defined(HAVE_READAHEAD_DECL)
-ssize_t readahead(int fd, off64_t offset, size_t count);
-#endif
-
 #ifndef HAVE_STRDUP
 #define strdup rep_strdup
 char *rep_strdup(const char *s);
