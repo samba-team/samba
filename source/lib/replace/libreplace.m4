@@ -155,7 +155,6 @@ AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp socketpair)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
 AC_HAVE_DECL(errno, [#include <errno.h>])
-AC_HAVE_DECL(readahead, [#include <fcntl.h>])
 
 AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
 AC_TRY_RUN([#include <stdlib.h>
