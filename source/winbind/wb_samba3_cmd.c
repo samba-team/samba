@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
 #include "winbind/wb_async_helpers.h"
@@ -111,9 +112,9 @@ NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
-	s3call->response.extra_data =
+	s3call->response.extra_data.data =
 		smbd_tmp_path(s3call, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
-	NT_STATUS_HAVE_NO_MEMORY(s3call->response.extra_data);
+	NT_STATUS_HAVE_NO_MEMORY(s3call->response.extra_data.data);
 	return NT_STATUS_OK;
 }
 
@@ -262,7 +263,7 @@ static void userdomgroups_recv_groups(struct composite_context *ctx)
 	}
 
 	s3call->response.result = WINBINDD_OK;
-	s3call->response.extra_data = sids_string;
+	s3call->response.extra_data.data = sids_string;
 	s3call->response.length += strlen(sids_string)+1;
 	s3call->response.data.num_entries = num_sids;
 
@@ -328,7 +329,7 @@ static void usersids_recv_sids(struct composite_context *ctx)
 	}
 
 	s3call->response.result = WINBINDD_OK;
-	s3call->response.extra_data = sids_string;
+	s3call->response.extra_data.data = sids_string;
 	s3call->response.length += strlen(sids_string);
 	s3call->response.data.num_entries = num_sids;
 
@@ -510,7 +511,7 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	}
 
 	if (s3call->request.flags & WBFLAG_PAM_INFO3_NDR) {
-		s3call->response.extra_data = info3.data;
+		s3call->response.extra_data.data = info3.data;
 		s3call->response.length += info3.length;
 	}
 
@@ -521,7 +522,7 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	}
 	
 	if (s3call->request.flags & WBFLAG_PAM_UNIX_NAME) {
-		s3call->response.extra_data = unix_username;
+		s3call->response.extra_data.data = unix_username;
 		s3call->response.length += strlen(unix_username)+1;
 	}
 
@@ -654,7 +655,7 @@ static void list_trustdom_recv_doms(struct composite_context *ctx)
 
 	s3call->response.result = WINBINDD_OK;
 	if (num_domains > 0) {
-		s3call->response.extra_data = result;
+		s3call->response.extra_data.data = result;
 		s3call->response.length += strlen(result)+1;
 	}
 

@@ -36,7 +36,7 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 		NTSTATUS status;
 		DATA_BLOB blob;
 		blob.length = len - 4;
-		blob.data = (uint8_t *)(((char *)response->extra_data) + 4);
+		blob.data = (uint8_t *)(((char *)response->extra_data.data) + 4);
 
 		status = ndr_pull_struct_blob(&blob, mem_ctx, info3,
 					      (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
@@ -91,12 +91,12 @@ static NTSTATUS winbind_check_password_samba3(struct auth_method_context *ctx,
 
 	request.data.auth_crap.logon_parameters = user_info->logon_parameters;
 
-	winbind_strcpy(request.data.auth_crap.user, 
-		       user_info->client.account_name);
-	winbind_strcpy(request.data.auth_crap.domain, 
-		       user_info->client.domain_name);
-	winbind_strcpy(request.data.auth_crap.workstation, 
-		       user_info->workstation_name);
+	safe_strcpy(request.data.auth_crap.user,
+		       user_info->client.account_name, sizeof(fstring));
+	safe_strcpy(request.data.auth_crap.domain,
+		       user_info->client.domain_name, sizeof(fstring));
+	safe_strcpy(request.data.auth_crap.workstation,
+		       user_info->workstation_name, sizeof(fstring));
 
 	memcpy(request.data.auth_crap.chal, ctx->auth_ctx->challenge.data.data, sizeof(request.data.auth_crap.chal));
 
@@ -115,11 +115,11 @@ static NTSTATUS winbind_check_password_samba3(struct auth_method_context *ctx,
 	nt_status = NT_STATUS(response.data.auth.nt_status);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	if (result == NSS_STATUS_SUCCESS && response.extra_data) {
+	if (result == NSS_STATUS_SUCCESS && response.extra_data.data) {
 		union netr_Validation validation;
 
 		nt_status = get_info3_from_ndr(mem_ctx, &response, &info3);
-		SAFE_FREE(response.extra_data);
+		SAFE_FREE(response.extra_data.data);
 		NT_STATUS_NOT_OK_RETURN(nt_status); 
 
 		validation.sam3 = &info3;
@@ -128,7 +128,7 @@ static NTSTATUS winbind_check_password_samba3(struct auth_method_context *ctx,
 								 3, &validation,
 								 server_info);
 		return nt_status;
-	} else if (result == NSS_STATUS_SUCCESS && !response.extra_data) {
+	} else if (result == NSS_STATUS_SUCCESS && !response.extra_data.data) {
 		DEBUG(0, ("Winbindd authenticated the user [%s]\\[%s], "
 			  "but did not include the required info3 reply!\n", 
 			  user_info->client.domain_name, user_info->client.account_name));
