@@ -4,15 +4,20 @@
 . /etc/sysconfig/nfs
 . /etc/ctdb/functions
 
+[ -z $CTDB_MANAGES_NFS ] && exit 0
+[ $CTDB_MANAGES_NFS != "yes" ] && exit 0
+
 cmd="$1"
 shift
 
 case $cmd in 
      startup)
 	/bin/mkdir -p /etc/ctdb/state/statd/ip
+	service nfslock start
 	;;
 
      shutdown)
+	service nfslock stop
 	;;
 
      takeip)
