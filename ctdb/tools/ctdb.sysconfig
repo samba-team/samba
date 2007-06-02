@@ -48,11 +48,6 @@
 # the default is 0
 # DEBUGLEVEL=0
 
-# the shared directory where you want to put statd information on
-# which clients to notify on a NFS restart
-# there is no default
-# STATD_SHARED_DIRECTORY="/some/shared/directory"
-
 # any other options you might want. Run ctdbd --help for a list
 # CTDB_OPTIONS=
 

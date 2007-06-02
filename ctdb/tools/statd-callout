@@ -3,7 +3,7 @@
 # this script needs to be installed so that statd points to it with the -H 
 # command line argument. The easiest way to do that is 
 
-. /etc/sysconfig/ctdb
+. /etc/sysconfig/nfs
 
 [ -z "$STATD_SHARED_DIRECTORY" ] && exit 0
 
