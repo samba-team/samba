@@ -84,14 +84,13 @@ static SMB_ACE4_INT_T *get_validated_aceint(SMB4ACE_T *ace)
 SMB4ACL_T *smb_create_smb4acl(void)
 {
 	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
-	SMB_ACL4_INT_T	*acl = (SMB_ACL4_INT_T *)TALLOC_SIZE(mem_ctx, sizeof(SMB_ACL4_INT_T));
+	SMB_ACL4_INT_T	*acl = (SMB_ACL4_INT_T *)TALLOC_ZERO_SIZE(mem_ctx, sizeof(SMB_ACL4_INT_T));
 	if (acl==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
 		errno = ENOMEM;
 		return NULL;
 	}
-	memset(acl, 0, sizeof(SMB_ACL4_INT_T));
 	acl->magic = SMB_ACL4_INT_MAGIC;
 	/* acl->first, last = NULL not needed */
 	return (SMB4ACL_T *)acl;
@@ -103,14 +102,13 @@ SMB4ACE_T *smb_add_ace4(SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
 	SMB_ACE4_INT_T *ace;
 
-	ace = (SMB_ACE4_INT_T *)TALLOC_SIZE(mem_ctx, sizeof(SMB_ACE4_INT_T));
+	ace = (SMB_ACE4_INT_T *)TALLOC_ZERO_SIZE(mem_ctx, sizeof(SMB_ACE4_INT_T));
 	if (ace==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
 		errno = ENOMEM;
 		return NULL;
 	}
-	memset(ace, 0, sizeof(SMB_ACE4_INT_T));
 	ace->magic = SMB_ACE4_INT_MAGIC;
 	/* ace->next = NULL not needed */
 	memcpy(&ace->prop, prop, sizeof(SMB_ACE4PROP_T));
@@ -187,7 +185,7 @@ static int smbacl4_GetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 	return 0;
 }
 
-static BOOL smbacl4_nfs42win(SMB4ACL_T *acl, /* in */
+static BOOL smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 	DOM_SID *psid_owner, /* in */
 	DOM_SID *psid_group, /* in */
 	SEC_ACE **ppnt_ace_list, /* out */
@@ -198,25 +196,18 @@ static BOOL smbacl4_nfs42win(SMB4ACL_T *acl, /* in */
 	SMB_ACE4_INT_T *aceint;
 	SEC_ACE *nt_ace_list = NULL;
 	int good_aces = 0;
-	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
 
 	DEBUG(10, ("smbacl_nfs42win entered"));
 
 	aclint = get_validated_aclint(acl);
-	if (aclint==NULL)
+	/* We do not check for naces being 0 or acl being NULL here because it is done upstream */
+	/* in smb_get_nt_acl_nfs4(). */
+	nt_ace_list = (SEC_ACE *)TALLOC_ZERO_SIZE(mem_ctx, aclint->naces * sizeof(SEC_ACE));
+	if (nt_ace_list==NULL)
+	{
+		DEBUG(10, ("talloc error"));
+		errno = ENOMEM;
 		return False;
-
-	if (aclint->naces) {
-		nt_ace_list = (SEC_ACE *)TALLOC_SIZE(mem_ctx, aclint->naces * sizeof(SEC_ACE));
-		if (nt_ace_list==NULL)
-		{
-			DEBUG(10, ("talloc error"));
-			errno = ENOMEM;
-			return False;
-		}
-		memset(nt_ace_list, 0, aclint->naces * sizeof(SEC_ACE));
-	} else {
-		nt_ace_list = NULL;
 	}
 
 	for (aceint=aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
@@ -290,31 +281,22 @@ size_t smb_get_nt_acl_nfs4(files_struct *fsp,
 	uid_to_sid(&sid_owner, sbuf.st_uid);
 	gid_to_sid(&sid_group, sbuf.st_gid);
 
-	if (smbacl4_nfs42win(acl,
-		&sid_owner,
-		&sid_group,
-		&nt_ace_list,
-		&good_aces
-		)==False) {
+	if (smbacl4_nfs42win(mem_ctx, acl, &sid_owner, &sid_group, &nt_ace_list, &good_aces)==False) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
 		return 0;
 	}
 
-	psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION,
-		good_aces, nt_ace_list);
+	psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, good_aces, nt_ace_list);
 	if (psa == NULL) {
 		DEBUG(2,("make_sec_acl failed\n"));
 		return 0;
 	}
 
 	DEBUG(10,("after make sec_acl\n"));
-	*ppdesc = make_sec_desc(mem_ctx, SEC_DESC_REVISION,
-		SEC_DESC_SELF_RELATIVE,
-		(security_info & OWNER_SECURITY_INFORMATION)
-		? &sid_owner : NULL,
-		(security_info & GROUP_SECURITY_INFORMATION)
-		? &sid_group : NULL,
-		NULL, psa, &sd_size);
+	*ppdesc = make_sec_desc(mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	                        (security_info & OWNER_SECURITY_INFORMATION) ? &sid_owner : NULL,
+	                        (security_info & GROUP_SECURITY_INFORMATION) ? &sid_group : NULL,
+	                        NULL, psa, &sd_size);
 	if (*ppdesc==NULL) {
 		DEBUG(2,("make_sec_desc failed\n"));
 		return 0;
@@ -448,7 +430,7 @@ static int smbacl4_fill_ace4(
 		sid_string_static(&ace_nt->trustee)));
 
 	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
-	ace_v4->aceType = ace_nt->type; /* only ACCES|DENY supported right now */
+	ace_v4->aceType = ace_nt->type; /* only ACCESS|DENY supported right now */
 	ace_v4->aceFlags = ace_nt->flags & SEC_ACE_FLAG_VALID_INHERIT;
 	ace_v4->aceMask = ace_nt->access_mask &
 		(STD_RIGHT_ALL_ACCESS | SA_RIGHT_FILE_ALL_ACCESS);
