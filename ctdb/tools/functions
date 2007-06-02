@@ -2,6 +2,20 @@
 
 
 ######################################################
+# simulate /sbin/service on platforms that don't have it
+service() { 
+  service_name="$1"
+  op="$2"
+  if [ -x /sbin/service ]; then
+      /sbin/service "$service_name" "$op"
+  elif [ -x /etc/init.d/$service_name ]; then
+      /etc/init.d/$service_name "$op"
+  elif [ -x /etc/rc.d/init.d/$service_name ]; then
+      /etc/init.d/$service_name "$op"
+  fi
+}
+
+######################################################
 # wait for a set of tcp ports
 # usage: ctdb_wait_tcp_ports SERICE_NAME <ports...>
 ######################################################
