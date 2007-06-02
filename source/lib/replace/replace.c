@@ -568,20 +568,24 @@ int rep_unsetenv(const char *name)
 {
 	extern char **environ;
 	size_t len = strlen(name);
-	size_t i; 
-	int found = 0;
+	size_t i, count;
 
-	for (i=0; (environ && environ[i]); i++) {
-		if (found) {
-			environ[i-1] = environ[i];
-			continue;
-		}
+	if (environ == NULL || getenv(name) == NULL) {
+		return 0;
+	}
 
+	for (i=0;environ[i];i++) /* noop */ ;
+
+	count=i;
+	
+	for (i=0;i<count;) {
 		if (strncmp(environ[i], name, len) == 0 && environ[i][len] == '=') {
-			free(environ[i]);
-			environ[i] = NULL;
-			found = 1;
-			continue;
+			/* note: we do _not_ free the old variable here. It is unsafe to 
+			   do so, as the pointer may not have come from malloc */
+			memmove(&environ[i], &environ[i+1], (count-i)*sizeof(char *));
+			count--;
+		} else {
+			i++;
 		}
 	}
 
