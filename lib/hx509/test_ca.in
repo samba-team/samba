@@ -66,6 +66,17 @@ ${hxtool} verify --missing-revoke \
 	cert:FILE:cert-ee.pem \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
+echo "issue crl"
+${hxtool} crl-sign \
+	--crl-file=crl.crl \
+	--signer=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key
+
+echo "verify certificate (with CRL)"
+${hxtool} verify \
+	cert:FILE:cert-ee.pem \
+	crl:FILE:crl.crl \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
 echo "issue certificate (10years 1 month)"
 ${hxtool} issue-certificate \
 	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
