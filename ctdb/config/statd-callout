@@ -1,7 +1,10 @@
 #!/bin/sh
 
 # this script needs to be installed so that statd points to it with the -H 
-# command line argument. The easiest way to do that is 
+# command line argument. The easiest way to do that is to put something like this in 
+# /etc/sysconfig/nfs:
+#   STATD_HOSTNAME="myhostname -H /etc/ctdb/statd-callout"
+
 
 . /etc/sysconfig/nfs
 
