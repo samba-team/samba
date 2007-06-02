@@ -676,7 +676,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				continue;
 
 			if (smbd_server_fd() == -1) {
-				DEBUG(0,("open_sockets_smbd: accept: %s\n",
+				DEBUG(2,("open_sockets_smbd: accept: %s\n",
 					 strerror(errno)));
 				continue;
 			}
