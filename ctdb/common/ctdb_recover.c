@@ -150,7 +150,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 
 	CHECK_CONTROL_DATA_SIZE(0);
 
-	num_nodes = ctdb_get_num_nodes(ctdb);
+	num_nodes = ctdb->num_nodes;
 
 	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
 	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);

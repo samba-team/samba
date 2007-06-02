@@ -10,9 +10,17 @@ for i in `seq 1 $NUMNODES`; do
   echo 127.0.0.$i >> nodes.txt
 done
 
-killall -9 ctdb_fetch
+killall -q ctdbd
 echo "Trying $NUMNODES nodes"
 for i in `seq 1 $NUMNODES`; do
-  $VALGRIND bin/ctdb_fetch --nlist nodes.txt --socket /tmp/ctdb.127.0.0.$i $* &
+    $VALGRIND bin/ctdbd --reclock=rec.lock --nlist nodes.txt --event-script=tests/events --logfile=- --socket=sock.$i
+done
+
+killall -9 -q ctdb_fetch
+for i in `seq 1 $NUMNODES`; do
+  $VALGRIND bin/ctdb_fetch --socket sock.$i $* &
 done
 wait
+
+echo "Shutting down"
+bin/ctdb shutdown -n all --socket=sock.1

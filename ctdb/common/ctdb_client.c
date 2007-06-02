@@ -301,13 +301,9 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	}
 
 	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
-	if (ret != 0) {
-		ctdb_ltdb_unlock(ctdb_db, call->key);
-		DEBUG(0,(__location__ " Failed to fetch record\n"));
-		return NULL;
-	}
 
-	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (ret == 0 &&
+	    header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		state = ctdb_client_call_local_send(ctdb_db, call, &header, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call->key);
@@ -547,11 +543,6 @@ again:
 	talloc_set_destructor(h, fetch_lock_destructor);
 
 	ret = ctdb_ltdb_fetch(ctdb_db, key, &h->header, h, data);
-	if (ret != 0) {
-		ctdb_ltdb_unlock(ctdb_db, key);
-		talloc_free(h);
-		return NULL;
-	}
 
 	/* when torturing, ensure we test the remote path */
 	if ((ctdb_db->ctdb->flags & CTDB_FLAG_TORTURE) &&
@@ -562,7 +553,7 @@ again:
 
 	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
 
-	if (h->header.dmaster != ctdb_db->ctdb->vnn) {
+	if (ret != 0 || h->header.dmaster != ctdb_db->ctdb->vnn) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		ret = ctdb_client_force_migration(ctdb_db, key);
 		if (ret != 0) {

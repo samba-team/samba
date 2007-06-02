@@ -45,7 +45,7 @@ static double end_timer(void)
 static int timelimit = 10;
 static int num_records = 10;
 static int num_msgs = 1;
-
+static uint32_t num_nodes;
 static int msg_count;
 
 #define TESTKEY "testkey"
@@ -100,7 +100,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	nulldata.dptr = NULL;
 	nulldata.dsize = 0;
 
-	dest = (ctdb_get_vnn(ctdb) + 1) % ctdb_get_num_nodes(ctdb);
+	dest = (ctdb_get_vnn(ctdb) + 1) % num_nodes;
 	ctdb_send_message(ctdb, dest, 0, nulldata);
 }
 
@@ -127,7 +127,7 @@ static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
 {
 	int vnn=ctdb_get_vnn(ctdb);
 
-	if (vnn == ctdb_get_num_nodes(ctdb)-1) {
+	if (vnn == num_nodes - 1) {
 		bench_fetch_1node(ctdb);
 	}
 	
@@ -159,6 +159,16 @@ static int fetch_func(struct ctdb_call_info *call)
 }
 
 /*
+  handler for reconfigure message
+*/
+static void reconfigure_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+				TDB_DATA data, void *private_data)
+{
+	int *ready = (int *)private_data;
+	*ready = 1;
+}
+
+/*
   main program
 */
 int main(int argc, const char *argv[])
@@ -181,6 +191,7 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct event_context *ev;
 	struct ctdb_call call;
+	int cluster_ready=0;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -204,10 +215,10 @@ int main(int argc, const char *argv[])
 
 	ev = event_context_init(NULL);
 
-	ctdb = ctdb_cmdline_init(ev);
+	ctdb = ctdb_cmdline_client(ev);
 
-	/* start the protocol running */
-	ret = ctdb_start(ctdb);
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
+				 &cluster_ready);
 
 	/* attach to a specific database */
 	ctdb_db = ctdb_attach(ctdb, "test.tdb");
@@ -220,15 +231,20 @@ int main(int argc, const char *argv[])
 
 	ctdb_set_message_handler(ctdb, 0, message_handler, &msg_count);
 
-	/* wait until all nodes are connected (should not be needed
-	   outside of test code) */
-	ctdb_connect_wait(ctdb);
+	printf("Waiting for cluster\n");
+	while (!cluster_ready) {
+		event_loop_once(ev);
+	}
+
+	ctdb_get_connected_nodes(ctdb, timeval_zero(), ctdb, &num_nodes);
 
 	bench_fetch(ctdb, ev);
 
 	ZERO_STRUCT(call);
 	call.key.dptr = discard_const(TESTKEY);
 	call.key.dsize = strlen(TESTKEY);
+
+	printf("Fetching final record\n");
 
 	/* fetch the record */
 	call.call_id = FUNC_FETCH;
@@ -242,9 +258,6 @@ int main(int argc, const char *argv[])
 	}
 
 	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
-
-	/* go into a wait loop to allow other nodes to complete */
-	ctdb_shutdown(ctdb);
 
 	return 0;
 }

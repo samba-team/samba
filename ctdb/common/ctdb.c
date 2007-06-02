@@ -229,14 +229,6 @@ uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
 }
 
 /*
-  return the number of nodes
-*/
-uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb)
-{
-	return ctdb->num_nodes;
-}
-
-/*
   return the number of connected nodes
 */
 uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb)
@@ -480,7 +472,7 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	int i;
-	for (i=0;i<ctdb_get_num_nodes(ctdb);i++) {
+	for (i=0;i<ctdb->num_nodes;i++) {
 		hdr->destnode = ctdb->nodes[i]->vnn;
 		ctdb_queue_packet(ctdb, hdr);
 	}

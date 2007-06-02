@@ -45,6 +45,7 @@ static double end_timer(void)
 static int timelimit = 10;
 static int num_records = 10;
 static int num_msgs = 1;
+static uint32_t num_nodes;
 
 enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
 
@@ -91,7 +92,7 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	int *count = (int *)private_data;
 	int dest;
 	(*count)++;
-	dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+	dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
 	ctdb_send_message(ctdb, dest, srvid, data);
 	if (incr == 1) {
 		msg_plus++;
@@ -119,11 +120,11 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 
 		for (i=0;i<num_msgs;i++) {
 			incr = 1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+			dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
 			ctdb_send_message(ctdb, dest, 0, data);
 
 			incr = -1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+			dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
 			ctdb_send_message(ctdb, dest, 0, data);
 		}
 	}
@@ -141,6 +142,16 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 
 	printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\n", 
 	       msg_count/end_timer(), msg_plus, msg_minus);
+}
+
+/*
+  handler for reconfigure message
+*/
+static void reconfigure_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+				TDB_DATA data, void *private_data)
+{
+	int *ready = (int *)private_data;
+	*ready = 1;
 }
 
 
@@ -166,6 +177,7 @@ int main(int argc, const char *argv[])
 	int ret;
 	poptContext pc;
 	struct event_context *ev;
+	int cluster_ready=0;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -188,10 +200,10 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	/* initialise ctdb */
-	ctdb = ctdb_cmdline_init(ev);
+	ctdb = ctdb_cmdline_client(ev);
 
-	/* start the protocol running */
-	ret = ctdb_start(ctdb);
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
+				 &cluster_ready);
 
 	/* attach to a specific database */
 	ctdb_db = ctdb_attach(ctdb, "test.tdb");
@@ -207,15 +219,15 @@ int main(int argc, const char *argv[])
 	if (ctdb_set_message_handler(ctdb, 0, ring_message_handler,&msg_count))
 		goto error;
 
-	/* wait until all nodes are connected (should not be needed
-	   outside of test code) */
-	ctdb_connect_wait(ctdb);
+	printf("Waiting for cluster\n");
+	while (!cluster_ready) {
+		event_loop_once(ev);
+	}
+
+	ctdb_get_connected_nodes(ctdb, timeval_zero(), ctdb, &num_nodes);
 
 	bench_ring(ctdb, ev);
        
 error:
-	/* shut it down */
-	ctdb_shutdown(ctdb);
-
 	return 0;
 }

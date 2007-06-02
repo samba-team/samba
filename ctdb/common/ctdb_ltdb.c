@@ -106,6 +106,12 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 		TDB_DATA d2;
 		/* return an initial header */
 		if (rec.dptr) free(rec.dptr);
+		if (ctdb->vnn_map == NULL) {
+			/* called from the client */
+			ZERO_STRUCTP(data);
+			header->dmaster = (uint32_t)-1;
+			return -1;
+		}
 		ltdb_initial_header(ctdb_db, key, header);
 		ZERO_STRUCT(d2);
 		if (data) {

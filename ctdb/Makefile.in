@@ -43,7 +43,7 @@ CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
 
 OBJS = @TDB_OBJ@ @TALLOC_OBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ $(CTDB_OBJ) $(UTIL_OBJ)
 
-TEST_BINS=bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_messaging bin/ctdb_fetch bin/ctdb_fetch1 bin/lockwait @INFINIBAND_BINS@
+TEST_BINS=bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_fetch bin/lockwait @INFINIBAND_BINS@
 BINS = bin/ctdb
 SBINS = bin/ctdbd
 
@@ -88,14 +88,6 @@ bin/ctdb_fetch: $(OBJS) tests/ctdb_fetch.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(OBJS) $(LIB_FLAGS)
 
-bin/ctdb_fetch1: $(OBJS) tests/ctdb_fetch1.o 
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch1.o $(OBJS) $(LIB_FLAGS)
-
-bin/ctdb_messaging: $(OBJS) tests/ctdb_messaging.o 
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_messaging.o $(OBJS) $(LIB_FLAGS)
-
 bin/ibwrapper_test: $(OBJS) ib/ibwrapper_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(OBJS) $(LIB_FLAGS)
@@ -106,7 +98,7 @@ bin/lockwait: $(OBJS) tests/lockwait.o
 
 clean:
 	rm -f *.o */*.o */*/*.o
-	rm -f $(BINS)
+	rm -f $(BINS) $(SBINS) $(TEST_BINS)
 
 distclean: clean
 	rm -f *~ */*~
