@@ -1498,6 +1498,21 @@ const AlgorithmIdentifier *
 hx509_crypto_aes256_cbc(void)
 { return &_hx509_crypto_aes256_cbc_data; }
 
+/*
+ *
+ */
+
+const AlgorithmIdentifier * _hx509_crypto_default_sig_alg = 
+    &_hx509_signature_rsa_with_sha1_data;
+const AlgorithmIdentifier * _hx509_crypto_default_digest_alg = 
+    &_hx509_signature_sha1_data;
+const AlgorithmIdentifier * _hx509_crypto_default_secret_alg = 
+    &_hx509_crypto_aes128_cbc_data;
+
+/*
+ *
+ */
+
 int
 _hx509_private_key_init(hx509_private_key *key,
 			hx509_private_key_ops *ops,
@@ -2441,14 +2456,14 @@ hx509_crypto_select(const hx509_context context,
 
     if (type == HX509_SELECT_DIGEST) {
 	bits = SIG_DIGEST;
-	def = hx509_signature_sha256();
+	def = _hx509_crypto_default_digest_alg;
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
 	/* XXX depend on `source´ and `peer´ */
-	def = hx509_signature_rsa_with_sha256();
+	def = _hx509_crypto_default_sig_alg;
     } else if (type == HX509_SELECT_SECRET_ENC) {
 	bits = SIG_SECRET;
-	def = hx509_crypto_aes256_cbc();
+	def = _hx509_crypto_default_secret_alg;
     } else {
 	hx509_set_error_string(context, 0, EINVAL, 
 			       "Unknown type %d of selection", type);
