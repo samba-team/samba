@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbindd_nss.h"
 
 

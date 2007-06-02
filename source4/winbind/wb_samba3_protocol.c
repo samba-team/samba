@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
@@ -138,14 +139,21 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_ENDGRENT:
 	case WINBINDD_GETGRENT:
 	case WINBINDD_PAM_CHAUTHTOK:
+	case WINBINDD_PAM_LOGOFF:
+	case WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP:
 	case WINBINDD_LIST_USERS:
 	case WINBINDD_LIST_GROUPS:
+	case WINBINDD_LOOKUPRIDS:
 	case WINBINDD_SID_TO_UID:
 	case WINBINDD_SID_TO_GID:
+	case WINBINDD_SIDS_TO_XIDS:
 	case WINBINDD_UID_TO_SID:
 	case WINBINDD_GID_TO_SID:
-	case WINBINDD_ALLOCATE_RID:
-	case WINBINDD_ALLOCATE_RID_AND_GID:
+	case WINBINDD_ALLOCATE_UID:
+	case WINBINDD_ALLOCATE_GID:
+	case WINBINDD_SET_MAPPING:
+	case WINBINDD_SET_HWM:
+	case WINBINDD_DUMP_MAPS:
 	case WINBINDD_CHECK_MACHACC:
 	case WINBINDD_DOMAIN_INFO:
 	case WINBINDD_SHOW_SEQUENCE:
@@ -155,13 +163,19 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_INIT_CONNECTION:
 	case WINBINDD_DUAL_SID2UID:
 	case WINBINDD_DUAL_SID2GID:
-	case WINBINDD_DUAL_IDMAPSET:
+	case WINBINDD_DUAL_SIDS2XIDS:
+	case WINBINDD_DUAL_UID2SID:
+	case WINBINDD_DUAL_GID2SID:
+	case WINBINDD_DUAL_SET_MAPPING:
+	case WINBINDD_DUAL_SET_HWM:
+	case WINBINDD_DUAL_DUMP_MAPS:
 	case WINBINDD_DUAL_UID2NAME:
 	case WINBINDD_DUAL_NAME2UID:
 	case WINBINDD_DUAL_GID2NAME:
 	case WINBINDD_DUAL_NAME2GID:
 	case WINBINDD_DUAL_USERINFO:
 	case WINBINDD_DUAL_GETSIDALIASES:
+	case WINBINDD_CCACHE_NTLMAUTH:
 	case WINBINDD_NUM_CMDS:
 		DEBUG(10, ("Unimplemented winbind samba3 request %d\n", 
 			   s3call->request.cmd));
@@ -178,7 +192,7 @@ static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call, TALLOC_C
 	uint8_t *extra_data;
 	size_t extra_data_len = 0;
 
-	extra_data = call->response.extra_data;
+	extra_data = call->response.extra_data.data;
 	if (extra_data) {
 		extra_data_len = call->response.length -
 			sizeof(call->response);
@@ -189,11 +203,11 @@ static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call, TALLOC_C
 
 	/* don't push real pointer values into sockets */
 	if (extra_data) {
-		call->response.extra_data = (void *)0xFFFFFFFF;
+		call->response.extra_data.data = (void *)0xFFFFFFFF;
 	}
 	memcpy(blob.data, &call->response, sizeof(call->response));
 	/* set back the pointer */
-	call->response.extra_data = extra_data;
+	call->response.extra_data.data = extra_data;
 
 	if (extra_data) {
 		memcpy(blob.data + sizeof(call->response), extra_data, extra_data_len);
