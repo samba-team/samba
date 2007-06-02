@@ -2240,8 +2240,11 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
     if (context->querystat == NULL)
 	return;
     f = fopen(context->querystat, "r");
-    if (f == NULL)
+    if (f == NULL) {
+	fprintf(out, "No statistic file %s: %s.\n", 
+		context->querystat, strerror(errno));
 	return;
+    }
     memset(stats, 0, sizeof(stats));
     
     while (fscanf(f, "%d %d\n", &type, &mask) == 2) {
