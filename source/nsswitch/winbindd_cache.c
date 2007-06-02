@@ -133,9 +133,6 @@ void winbindd_check_cache_size(time_t t)
 static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
 	struct winbind_cache *ret = wcache;
-#ifdef HAVE_ADS
-	struct winbindd_domain *our_domain = domain;
-#endif
 
 	/* We have to know what type of domain we are dealing with first. */
 
@@ -163,6 +160,8 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 
 	if (!domain->backend) {
 #ifdef HAVE_ADS
+		struct winbindd_domain *our_domain = domain;
+
 		/* find our domain first so we can figure out if we 
 		   are joined to a kerberized domain */
 
@@ -171,7 +170,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 
 		if ((our_domain->active_directory || IS_DC)
 		    && domain->active_directory
-		    && lp_parm_bool(-1, "winbind", "ads", True)) {
+		    && !lp_parm_bool(-1, "winbind", "rpc only", False)) {
 			DEBUG(5,("get_cache: Setting ADS methods for domain %s\n", domain->name));
 			domain->backend = &ads_methods;
 		} else {
