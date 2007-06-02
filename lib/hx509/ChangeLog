@@ -1,5 +1,27 @@
 2007-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ca.in: Create crl and verify that is works.
+
+	* hxtool.c: Sign CRL command.
+
+	* hx509.h: Add hx509_crl.
+
+	* hxtool-commands.in: Add crl-sign commands.
+
+	* revoke.c: Support to generate an empty CRL.
+
+	* tst-crypto-select2: Switched default types.
+
+	* tst-crypto-select1: Switched default types.
+
+	* ca.c: Use default AlgorithmIdentifier.
+
+	* cms.c: Use default AlgorithmIdentifier.
+
+	* crypto.c: Provide default AlgorithmIdentifier and use them.
+
+	* hx_locl.h: Provide default AlgorithmIdentifier.
+
 	* keyset.c (hx509_certs_find): collects stats for queries.
 
 	* cert.c: Sort and print more info.
