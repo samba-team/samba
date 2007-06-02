@@ -283,6 +283,9 @@ kdc_type3(OM_uint32 *minor_status,
     struct ntlmkrb5 *c = ctx;
     krb5_error_code ret;
 
+    sessionkey->data = NULL;
+    sessionkey->length = 0;
+
     ret = krb5_ntlm_req_set_flags(c->context, c->ntlm, type3->flags);
     if (ret) goto out;
     ret = krb5_ntlm_req_set_username(c->context, c->ntlm, type3->username);
@@ -298,6 +301,7 @@ kdc_type3(OM_uint32 *minor_status,
     if (ret) goto out;
     ret = krb5_ntlm_req_set_opaque(c->context, c->ntlm, &c->opaque);
     if (ret) goto out;
+
     if (type3->sessionkey.length) {
 	ret = krb5_ntlm_req_set_session(c->context, c->ntlm,
 					type3->sessionkey.data,
@@ -320,14 +324,16 @@ kdc_type3(OM_uint32 *minor_status,
 	goto out;
     }
 
-    ret = krb5_ntlm_rep_get_sessionkey(c->context, 
-				       c->ntlm,
-				       &c->sessionkey);
-    if (ret)
-	goto out;
+    if (type3->sessionkey.length) {
+	ret = krb5_ntlm_rep_get_sessionkey(c->context, 
+					   c->ntlm,
+					   &c->sessionkey);
+	if (ret)
+	    goto out;
 
-    sessionkey->data = c->sessionkey.data;
-    sessionkey->length = c->sessionkey.length;
+	sessionkey->data = c->sessionkey.data;
+	sessionkey->length = c->sessionkey.length;
+    }
 
     return 0;
 
