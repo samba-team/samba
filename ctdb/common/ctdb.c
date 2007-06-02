@@ -36,6 +36,15 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 }
 
 /*
+  choose the recovery lock file
+*/
+int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
+{
+	ctdb->recovery_lock_file = talloc_strdup(ctdb, file);
+	return 0;
+}
+
+/*
   choose the logfile location
 */
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
@@ -550,7 +559,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->idr              = idr_init(ctdb);
 	ctdb->max_lacount      = CTDB_DEFAULT_MAX_LACOUNT;
 	ctdb->seqnum_frequency = CTDB_DEFAULT_SEQNUM_FREQUENCY;
-	ctdb->node_list_fd     = -1;
+	ctdb->recovery_lock_fd = -1;
 	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
 
 	return ctdb;

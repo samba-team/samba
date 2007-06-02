@@ -386,8 +386,8 @@ static int do_recovery(struct ctdb_context *ctdb,
 	uint32_t generation;
 	struct ctdb_dbid_map *dbmap;
 
-	if (!ctdb_lock_node_list(ctdb, true)) {
-		DEBUG(0,("Unable to lock node list - aborting recovery\n"));
+	if (!ctdb_recovery_lock(ctdb, true)) {
+		DEBUG(0,("Unable to get recovery lock - aborting recovery\n"));
 		return -1;
 	}
 
@@ -614,9 +614,9 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* release the recmaster lock */
-	if (ctdb->node_list_fd != -1) {
-		close(ctdb->node_list_fd);
-		ctdb->node_list_fd = -1;
+	if (ctdb->recovery_lock_fd != -1) {
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
 	}
 
 	/* ok, let that guy become recmaster then */

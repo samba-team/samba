@@ -41,7 +41,13 @@ if [ -f /etc/sysconfig/ctdb ]; then
    . /etc/sysconfig/ctdb 
 fi
 
-# build up CTDB_OPTIONS variable
+[ -z "$CTDB_RECOVERY_LOCK" ] && {
+    echo "You must configure the location of the CTDB_RECOVERY_LOCK"
+    exit 1
+}
+CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
+
+# build up CTDB_OPTIONS variable from optional parameters
 [ -z "$LOGFILE" ]          || CTDB_OPTIONS="$CTDB_OPTIONS --logfile=$LOGFILE"
 [ -z "$NODES" ]            || CTDB_OPTIONS="$CTDB_OPTIONS --nlist=$NODES"
 [ -z "$CTDB_SOCKET" ]      || CTDB_OPTIONS="$CTDB_OPTIONS --socket=$CTDB_SOCKET"

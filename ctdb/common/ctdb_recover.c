@@ -464,29 +464,45 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 const char **errormsg)
 {
 	uint32_t recmode = *(uint32_t *)indata.dptr;
+	int ret;
+	struct ctdb_set_recmode_state *state;
+
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(0,("Attempt to change recovery mode to %u when not frozen\n", 
 			 recmode));
 		(*errormsg) = "Cannot change recovery mode while not frozen";
 		return -1;
 	}
-	if (recmode == CTDB_RECOVERY_NORMAL && 
-	    ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
-		int ret;
-		struct ctdb_set_recmode_state *state = 
-			talloc(ctdb, struct ctdb_set_recmode_state);
-		CTDB_NO_MEMORY(ctdb, state);
-		state->c = talloc_steal(state, c);
-		state->recmode = recmode;
-		/* call the events script to tell all subsystems that we have recovered */
-		ret = ctdb_event_script_callback(ctdb, state, 
-						 ctdb_recovered_callback, 
-						 state, "recovered");
-		if (ret != 0) {
-			return ret;
-		}
-		*async_reply = true;
+
+	if (recmode != CTDB_RECOVERY_NORMAL ||
+	    ctdb->recovery_mode != CTDB_RECOVERY_ACTIVE) {
+		ctdb->recovery_mode = recmode;
+		return 0;
 	}
+
+	/* some special handling when ending recovery mode */
+	state = talloc(ctdb, struct ctdb_set_recmode_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	/* we should not be able to get the lock on the nodes list, as it should be
+	   held by the recovery master */
+	if (ctdb_recovery_lock(ctdb, false)) {
+		DEBUG(0,("ERROR: node list not locked when recovering!\n"));
+		ctdb_fatal(ctdb, "node list not locked - make sure it is on shared storage");
+		return -1;
+	}	
+
+	state->c = talloc_steal(state, c);
+	state->recmode = recmode;
+	/* call the events script to tell all subsystems that we have recovered */
+	ret = ctdb_event_script_callback(ctdb, state, 
+					 ctdb_recovered_callback, 
+					 state, "recovered");
+	if (ret != 0) {
+		return ret;
+	}
+	*async_reply = true;
+
 	return 0;
 }
 
@@ -657,20 +673,20 @@ int32_t ctdb_control_delete_low_rsn(struct ctdb_context *ctdb, TDB_DATA indata, 
 
 
 /*
-  try and lock the node list file - should only work on the recovery master recovery
-  daemon. Anywhere else is a bug
+  try and get the recovery lock in shared storage - should only work
+  on the recovery master recovery daemon. Anywhere else is a bug
  */
-bool ctdb_lock_node_list(struct ctdb_context *ctdb, bool keep)
+bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 {
 	struct flock lock;
 
-	if (ctdb->node_list_fd != -1) {
-		close(ctdb->node_list_fd);
+	if (ctdb->recovery_lock_fd != -1) {
+		close(ctdb->recovery_lock_fd);
 	}
-	ctdb->node_list_fd = open(ctdb->node_list_file, O_RDWR);
-	if (ctdb->node_list_fd == -1) {
+	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
+	if (ctdb->recovery_lock_fd == -1) {
 		DEBUG(0,("Unable to open %s - (%s)\n", 
-			 ctdb->node_list_file, strerror(errno)));
+			 ctdb->recovery_lock_file, strerror(errno)));
 		return false;
 	}
 
@@ -680,13 +696,13 @@ bool ctdb_lock_node_list(struct ctdb_context *ctdb, bool keep)
 	lock.l_len = 1;
 	lock.l_pid = 0;
 
-	if (fcntl(ctdb->node_list_fd, F_SETLK, &lock) != 0) {
+	if (fcntl(ctdb->recovery_lock_fd, F_SETLK, &lock) != 0) {
 		return false;
 	}
 
 	if (!keep) {
-		close(ctdb->node_list_fd);
-		ctdb->node_list_fd = -1;
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
 	}
 
 	return true;

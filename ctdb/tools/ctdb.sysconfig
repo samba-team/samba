@@ -1,5 +1,11 @@
 # Options to ctdbd. This is read by /etc/init.d/ctdb
 
+# you must specify the location of a shared lock file across all the
+# nodes. This must be on shared storage
+# there is no default
+# CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
+
+
 # the NODES file must be specified or ctdb won't start
 # it should contain a list of IPs that ctdb will use
 # it must be exactly the same on all cluster nodes

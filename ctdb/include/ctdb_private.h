@@ -286,7 +286,8 @@ struct ctdb_context {
 	const char *transport;
 	const char *logfile;
 	char *node_list_file;
-	int node_list_fd;
+	char *recovery_lock_file;
+	int recovery_lock_fd;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
@@ -970,7 +971,8 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb);
 void set_nonblocking(int fd);
 void set_close_on_exec(int fd);
 
-bool ctdb_lock_node_list(struct ctdb_context *ctdb, bool keep);
+bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep);
 
+int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file);
 
 #endif

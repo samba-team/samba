@@ -81,6 +81,7 @@ int main(int argc, const char *argv[])
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "self-connect", 0, POPT_ARG_NONE, &options.self_connect, 0, "enable self connect", "boolean" },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
+		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -107,11 +108,22 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
+	if (!options.recovery_lock_file) {
+		DEBUG(0,("You must specifiy the location of a recovery lock file with --reclock\n"));
+		exit(1);
+	}
+
 	block_signal(SIGPIPE);
 
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	ret = ctdb_set_recovery_lock_file(ctdb, options.recovery_lock_file);
+	if (ret == -1) {
+		printf("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
 
 	if (options.self_connect) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
