@@ -2228,14 +2228,28 @@ static const char *statname[] = {
     "match time"
 };
 
+struct stat_el {
+    unsigned long stats;
+    unsigned int index;
+};
+
+
+static int
+stat_sort(const void *a, const void *b)
+{
+    const struct stat_el *ae = a;
+    const struct stat_el *be = b;
+    return be->stats - ae->stats;
+}
+
 void
 hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
 {
     rtbl_t t;
     FILE *f;
     int type, mask, i, num;
-    unsigned long stats[32];
     unsigned long multiqueries = 0, totalqueries = 0;
+    struct stat_el stats[32];
 
     if (context->querystat == NULL)
 	return;
@@ -2245,15 +2259,19 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
 		context->querystat, strerror(errno));
 	return;
     }
-    memset(stats, 0, sizeof(stats));
     
+    for (i = 0; i < sizeof(stats)/sizeof(stats[0]); i++) {
+	stats[i].index = i;
+	stats[i].stats = 0;
+    }
+
     while (fscanf(f, "%d %d\n", &type, &mask) == 2) {
 	if (type != printtype)
 	    continue;
 	num = i = 0;
 	while (mask && i < sizeof(stats)/sizeof(stats[0])) {
 	    if (mask & 1) {
-		stats[i]++;
+		stats[i].stats++;
 		num++;
 	    }
 	    mask = mask >>1 ;
@@ -2264,6 +2282,8 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
 	totalqueries++;
     }
     fclose(f);
+
+    qsort(stats, sizeof(stats)/sizeof(stats[0]), sizeof(stats[0]), stat_sort);
 
     t = rtbl_create();
     if (t == NULL)
@@ -2278,18 +2298,21 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
     for (i = 0; i < sizeof(stats)/sizeof(stats[0]); i++) {
 	char str[10];
 
-	if (i < sizeof(statname)/sizeof(statname[0])) 
-	    rtbl_add_column_entry_by_id (t, 0, statname[i]);
+	if (stats[i].index < sizeof(statname)/sizeof(statname[0])) 
+	    rtbl_add_column_entry_by_id (t, 0, statname[stats[i].index]);
 	else {
-	    snprintf(str, sizeof(str), "%d", i);
+	    snprintf(str, sizeof(str), "%d", stats[i].index);
 	    rtbl_add_column_entry_by_id (t, 0, str);
 	}
-	snprintf(str, sizeof(str), "%lu", stats[i]);
+	snprintf(str, sizeof(str), "%lu", stats[i].stats);
 	rtbl_add_column_entry_by_id (t, 1, str);
     }
 
     rtbl_format(t, out);
     rtbl_destroy(t);
+
+    fprintf(out, "\nQueries: multi %lu total %lu\n", 
+	    multiqueries, totalqueries);
 }
 
 int
