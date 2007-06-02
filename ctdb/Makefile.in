@@ -43,7 +43,7 @@ CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
 
 OBJS = @TDB_OBJ@ @TALLOC_OBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ $(CTDB_OBJ) $(UTIL_OBJ)
 
-TEST_BINS=bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_fetch bin/lockwait @INFINIBAND_BINS@
+TEST_BINS=bin/ctdbd_test bin/ctdb_bench bin/ctdb_fetch @INFINIBAND_BINS@
 BINS = bin/ctdb
 SBINS = bin/ctdbd
 
@@ -63,10 +63,6 @@ showflags:
 
 dirs:
 	@mkdir -p $(DIRS)
-
-bin/ctdb_test: $(OBJS) tests/ctdb_test.o
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_test.o $(OBJS) $(LIB_FLAGS)
 
 bin/ctdbd: $(OBJS) direct/ctdbd.o 
 	@echo Linking $@
@@ -92,10 +88,6 @@ bin/ibwrapper_test: $(OBJS) ib/ibwrapper_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(OBJS) $(LIB_FLAGS)
 
-bin/lockwait: $(OBJS) tests/lockwait.o 
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/lockwait.o $(OBJS) $(LIB_FLAGS)
-
 clean:
 	rm -f *.o */*.o */*/*.o
 	rm -f $(BINS) $(SBINS) $(TEST_BINS)
@@ -116,12 +108,12 @@ install: all
 	install -m755 bin/ctdbd $(DESTDIR)$(sbindir)
 	install -m644 include/ctdb.h $(DESTDIR)$(includedir)
 	install -m644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
-	install -m755 tools/events $(DESTDIR)$(etcdir)/ctdb
-	install -m755 tools/functions $(DESTDIR)$(etcdir)/ctdb
-	install -m755 tools/statd-callout $(DESTDIR)$(etcdir)/ctdb
-	install -m755 tools/events.d/samba $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 tools/events.d/nfs $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 tools/events.d/nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 config/events $(DESTDIR)$(etcdir)/ctdb
+	install -m755 config/functions $(DESTDIR)$(etcdir)/ctdb
+	install -m755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	install -m755 config/events.d/samba $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 config/events.d/nfs $(DESTDIR)$(etcdir)/ctdb/events.d
+	install -m755 config/events.d/nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
 	install -m755 tools/onnode.ssh $(DESTDIR)$(bindir)
 	install -m755 tools/onnode.rsh $(DESTDIR)$(bindir)
 	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode

@@ -9,8 +9,14 @@ PATH=/bin:/usr/bin:$PATH
 cmd="$1"
 shift
 
+[ "$CTDB_MANAGES_SAMBA" = "yes" ] || exit 0
+
 case $cmd in 
      startup)
+	# start Samba service
+	service smb start
+	service winbind start
+
 	# wait for the Samba tcp ports to become available
 	smb_ports=`testparm -stv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
 	ctdb_wait_tcp_ports "Samba" $smb_ports
@@ -35,7 +41,8 @@ case $cmd in
 
      shutdown)
 	# shutdown Samba when ctdb goes down
-	killall -q smbd nmbd winbindd
+	service smb stop
+	service winbind stop
 	;;
 esac
 

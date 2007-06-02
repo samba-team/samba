@@ -65,6 +65,7 @@ else
 fi
 
 start() {
+        killall -q ctdbd
 	echo -n $"Starting ctdbd service: "
 	case $init_style in
 	    suse)
@@ -119,13 +120,17 @@ case "$1" in
   	restart
 	;;
   status)
-  	rhstatus
+  	status
 	;;
   condrestart)
   	ctdb status > /dev/null && restart || :
 	;;
+  cron)
+	# used from cron to auto-restart ctdb
+  	ctdb status > /dev/null || start
+	;;
   *)
-	echo $"Usage: $0 {start|stop|restart|status|condrestart}"
+	echo $"Usage: $0 {start|stop|restart|status|cron|condrestart}"
 	exit 1
 esac
 
