@@ -37,7 +37,7 @@
 srcdir="@srcdir@"
 objdir="@objdir@"
 
-#stat="--statistic-file=${objdir}/statfile"
+stat="--statistic-file=${objdir}/statfile"
 
 hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then

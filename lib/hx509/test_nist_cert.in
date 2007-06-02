@@ -35,11 +35,12 @@
 #
 
 srcdir="@srcdir@"
+objdir="@objdir@"
 nistdir=/sources/pki/nist/PKITS_data
 
 test -d "$nistdir" || exit 77
 
-#stat="--statistic-file=${objdir}/statfile"
+stat="--statistic-file=${objdir}/statfile"
 
 hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 

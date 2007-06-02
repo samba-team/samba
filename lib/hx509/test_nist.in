@@ -35,9 +35,10 @@
 #
 
 srcdir="@srcdir@"
+objdir="@objdir@"
 nistdir=/sources/pki/nist/PKITS_data
 
-#stat="--statistic-file=${objdir}/statfile"
+stat="--statistic-file=${objdir}/statfile"
 
 hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 
