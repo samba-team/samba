@@ -658,7 +658,7 @@ ca_sign(hx509_context context,
     time_t notAfter;
     unsigned key_usage;
 
-    sigalg = hx509_signature_rsa_with_sha1();
+    sigalg = _hx509_crypto_default_sig_alg;
 
     memset(&c, 0, sizeof(c));
 
