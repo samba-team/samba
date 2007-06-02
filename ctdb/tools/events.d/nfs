@@ -1,8 +1,11 @@
 #!/bin/sh
 # script to manage nfs in a clustered environment
 
-. /etc/sysconfig/ctdb
+. /etc/sysconfig/nfs
 . /etc/ctdb/functions
+
+[ -z $CTDB_MANAGES_NFS ] && exit 0
+[ $CTDB_MANAGES_NFS != "yes" ] && exit 0
 
 cmd="$1"
 shift
@@ -10,6 +13,11 @@ shift
 case $cmd in 
      startup)
 	mkdir -p /etc/ctdb/state/nfs
+	service nfs start
+	;;
+
+     shutdown)
+	service nfs stop
 	;;
 
      releaseip)
