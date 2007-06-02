@@ -276,6 +276,8 @@ hx509_certs_find(hx509_context context,
 
     *r = NULL;
 
+    _hx509_query_statistic(context, 0, q);
+
     if (certs->ops->query)
 	return (*certs->ops->query)(context, certs, certs->ops_data, q, r);
 
