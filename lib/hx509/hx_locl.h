@@ -184,3 +184,7 @@ struct hx509_context_data {
 
 /* _hx509_calculate_path flag field */
 #define HX509_CALCULATE_PATH_NO_ANCHOR 1
+
+extern const AlgorithmIdentifier * _hx509_crypto_default_sig_alg;
+extern const AlgorithmIdentifier * _hx509_crypto_default_digest_alg;
+extern const AlgorithmIdentifier * _hx509_crypto_default_secret_alg;
