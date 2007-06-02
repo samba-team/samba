@@ -379,6 +379,8 @@ static int std_event_fd_destructor(struct fd_event *fde)
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
 
+	epoll_check_reopen(std_ev);
+
 	if (std_ev->maxfd == fde->fd) {
 		std_ev->maxfd = EVENT_INVALID_MAXFD;
 	}
