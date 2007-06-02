@@ -26,7 +26,11 @@
 #include "replace.h"
 
 #ifndef HAVE_DLOPEN
+#ifdef DLOPEN_TAKES_UNSIGNED_FLAGS
+void *rep_dlopen(const char *name, unsigned int flags)
+#else
 void *rep_dlopen(const char *name, int flags)
+#endif
 {
 	return NULL;
 }

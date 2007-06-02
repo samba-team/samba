@@ -228,7 +228,11 @@ char *rep_dlerror(void);
 
 #ifndef HAVE_DLOPEN
 #define dlopen rep_dlopen
+#ifdef DLOPEN_TAKES_UNSIGNED_FLAGS
+void *rep_dlopen(const char *name, unsigned int flags);
+#else
 void *rep_dlopen(const char *name, int flags);
+#endif
 #endif
 
 #ifndef HAVE_DLSYM
@@ -255,6 +259,14 @@ int rep_socketpair(int d, int type, int protocol, int sv[2]);
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+#endif
+
+#ifndef _DEPRECATED_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
 #endif
 #endif
 
