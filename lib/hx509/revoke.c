@@ -801,7 +801,7 @@ hx509_ocsp_request(hx509_context context,
     memset(&req, 0, sizeof(req));
 
     if (digest == NULL)
-	digest = hx509_signature_sha256();
+	digest = _hx509_crypto_default_digest_alg;
 
     ctx.req = &req.tbsRequest;
     ctx.certs = pool;
@@ -1018,4 +1018,113 @@ hx509_ocsp_verify(hx509_context context,
     free_OCSPBasicOCSPResponse(&basic);
 
     return 0;
+}
+
+struct hx509_crl {
+    int foo;
+};
+
+int
+hx509_crl_alloc(hx509_context context, hx509_crl *crl)
+{
+    *crl = NULL;
+    return 0;
+}
+
+int
+hx509_crl_free(hx509_context context, hx509_crl crl)
+{
+    return 0;
+}
+
+int
+hx509_crl_sign(hx509_context context,
+	       hx509_cert signer,
+	       hx509_crl crl,
+	       heim_octet_string *os)
+{
+    const AlgorithmIdentifier *sigalg = _hx509_crypto_default_sig_alg;
+    CRLCertificateList c;
+    size_t size;
+    int ret;
+    hx509_private_key signerkey;
+
+    memset(&c, 0, sizeof(c));
+
+    signerkey = _hx509_cert_private_key(signer);
+    if (signerkey == NULL) {
+	ret = HX509_PRIVATE_KEY_MISSING;
+	hx509_set_error_string(context, 0, ret,
+			       "Private key missing for CRL signing");
+	return ret;
+    }
+
+    c.tbsCertList.version = malloc(sizeof(*c.tbsCertList.version));
+    if (c.tbsCertList.version == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+
+    *c.tbsCertList.version = 1;
+
+    ret = copy_AlgorithmIdentifier(sigalg, &c.tbsCertList.signature);
+    if (ret) {
+	hx509_clear_error_string(context);
+	goto out;
+    }
+
+    ret = copy_Name(&_hx509_get_cert(signer)->tbsCertificate.issuer,
+		    &c.tbsCertList.issuer);
+    if (ret) {
+	hx509_clear_error_string(context);
+	goto out;
+    }
+
+    c.tbsCertList.thisUpdate.element = choice_Time_generalTime;
+    c.tbsCertList.thisUpdate.u.generalTime = time(NULL) - 24 * 3600;
+
+    c.tbsCertList.nextUpdate = malloc(sizeof(*c.tbsCertList.nextUpdate));
+    if (c.tbsCertList.nextUpdate == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+    c.tbsCertList.nextUpdate->element = choice_Time_generalTime;
+    c.tbsCertList.nextUpdate->u.generalTime = time(NULL) + 24 * 3600 * 365;
+
+    c.tbsCertList.revokedCertificates = NULL;
+    c.tbsCertList.crlExtensions = NULL;
+
+    ASN1_MALLOC_ENCODE(TBSCRLCertList, os->data, os->length,
+		       &c.tbsCertList, &size, ret);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "failed to encode tbsCRL");
+	goto out;
+    }
+    if (size != os->length)
+	_hx509_abort("internal ASN.1 encoder error");
+
+
+    ret = _hx509_create_signature_bitstring(context,
+					    signerkey,
+					    sigalg,
+					    os,
+					    &c.signatureAlgorithm,
+					    &c.signatureValue);
+    free(os->data);
+
+    ASN1_MALLOC_ENCODE(CRLCertificateList, os->data, os->length,
+		       &c, &size, ret);
+    free_CRLCertificateList(&c);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "failed to encode CRL");
+	goto out;
+    }
+    if (size != os->length)
+	_hx509_abort("internal ASN.1 encoder error");
+
+    return 0;
+
+out:
+    free_CRLCertificateList(&c);
+    return ret;
 }
