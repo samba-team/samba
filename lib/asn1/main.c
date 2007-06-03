@@ -127,5 +127,7 @@ main(int argc, char **argv)
     if(ret != 0 || error_flag != 0)
 	exit(1);
     close_generate ();
+    if (argc != optidx)
+	fclose(file);
     return 0;
 }
