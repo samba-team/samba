@@ -1,5 +1,7 @@
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath: new update from Michael Fromberger
+
 	* test_imath.c: Try to find ABR in mp_int_mul.
 
 	* engine.c: Don't try to load gmp module.
