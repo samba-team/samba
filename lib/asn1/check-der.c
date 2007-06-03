@@ -89,7 +89,6 @@ test_integer (void)
 
     for (i = 0; i < ntests; ++i)
 	free (tests[i].name);
-
     return ret;
 }
 
@@ -193,7 +192,7 @@ test_unsigned (void)
 
     unsigned int values[] = {0, 127, 128, 256, 512, 32768, 
 			     0x80000000, 0x7fffffff};
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
     for (i = 0; i < ntests; ++i) {
@@ -203,12 +202,15 @@ test_unsigned (void)
 	    errx(1, "malloc");
     }
 
-    return generic_test (tests, ntests, sizeof(int),
-			 (generic_encode)der_put_unsigned,
-			 (generic_length)der_length_unsigned,
-			 (generic_decode)der_get_unsigned,
-			 (generic_free)NULL,
-			 cmp_unsigned);
+    ret = generic_test (tests, ntests, sizeof(int),
+			(generic_encode)der_put_unsigned,
+			(generic_length)der_length_unsigned,
+			(generic_decode)der_get_unsigned,
+			(generic_free)NULL,
+			cmp_unsigned);
+    for (i = 0; i < ntests; ++i) 
+	free (tests[i].name);
+    return ret;
 }
 
 static int
@@ -232,18 +234,21 @@ test_octet_string (void)
 	{NULL, 8, "\x01\x23\x45\x67\x89\xab\xcd\xef"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
+    int ret;
 
     tests[0].val = &s1;
     asprintf (&tests[0].name, "a octet string");
     if (tests[0].name == NULL)
 	errx(1, "malloc");
 
-    return generic_test (tests, ntests, sizeof(heim_octet_string),
-			 (generic_encode)der_put_octet_string,
-			 (generic_length)der_length_octet_string,
-			 (generic_decode)der_get_octet_string,
-			 (generic_free)der_free_octet_string,
-			 cmp_octet_string);
+    ret = generic_test (tests, ntests, sizeof(heim_octet_string),
+			(generic_encode)der_put_octet_string,
+			(generic_length)der_length_octet_string,
+			(generic_decode)der_get_octet_string,
+			(generic_free)der_free_octet_string,
+			cmp_octet_string);
+    free(tests[0].name);
+    return ret;
 }
 
 static int
@@ -269,6 +274,7 @@ test_bmp_string (void)
 	{NULL, 4, "\x00\x20\x00\x20"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
+    int ret;
 
     tests[0].val = &s1;
     asprintf (&tests[0].name, "a bmp string");
@@ -279,12 +285,15 @@ test_bmp_string (void)
     if (tests[1].name == NULL)
 	errx(1, "malloc");
 
-    return generic_test (tests, ntests, sizeof(heim_bmp_string),
-			 (generic_encode)der_put_bmp_string,
-			 (generic_length)der_length_bmp_string,
-			 (generic_decode)der_get_bmp_string,
-			 (generic_free)der_free_bmp_string,
-			 cmp_bmp_string);
+    ret = generic_test (tests, ntests, sizeof(heim_bmp_string),
+			(generic_encode)der_put_bmp_string,
+			(generic_length)der_length_bmp_string,
+			(generic_decode)der_get_bmp_string,
+			(generic_free)der_free_bmp_string,
+			cmp_bmp_string);
+    free(tests[0].name);
+    free(tests[1].name);
+    return ret;
 }
 
 static int
@@ -304,19 +313,21 @@ test_general_string (void)
     struct test_case tests[] = {
 	{NULL, 11, "\x54\x65\x73\x74\x20\x55\x73\x65\x72\x20\x31"}
     };
-    int ntests = sizeof(tests) / sizeof(*tests);
+    int ret, ntests = sizeof(tests) / sizeof(*tests);
 
     tests[0].val = &s1;
     asprintf (&tests[0].name, "the string \"%s\"", s1);
     if (tests[0].name == NULL)
 	errx(1, "malloc");
 
-    return generic_test (tests, ntests, sizeof(unsigned char *),
-			 (generic_encode)der_put_general_string,
-			 (generic_length)der_length_general_string,
-			 (generic_decode)der_get_general_string,
-			 (generic_free)der_free_general_string,
-			 cmp_general_string);
+    ret = generic_test (tests, ntests, sizeof(unsigned char *),
+			(generic_encode)der_put_general_string,
+			(generic_length)der_length_general_string,
+			(generic_decode)der_get_general_string,
+			(generic_free)der_free_general_string,
+			cmp_general_string);
+    free(tests[0].name);
+    return ret;
 }
 
 static int
@@ -336,7 +347,7 @@ test_generalized_time (void)
 	{NULL, 15, "19851106210627Z"}
     };
     time_t values[] = {0, 500159187};
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
     for (i = 0; i < ntests; ++i) {
@@ -346,12 +357,15 @@ test_generalized_time (void)
 	    errx(1, "malloc");
     }
 
-    return generic_test (tests, ntests, sizeof(time_t),
-			 (generic_encode)der_put_generalized_time,
-			 (generic_length)der_length_generalized_time,
-			 (generic_decode)der_get_generalized_time,
-			 (generic_free)NULL,
-			 cmp_generalized_time);
+    ret = generic_test (tests, ntests, sizeof(time_t),
+			(generic_encode)der_put_generalized_time,
+			(generic_length)der_length_generalized_time,
+			(generic_decode)der_get_generalized_time,
+			(generic_free)NULL,
+			cmp_generalized_time);
+    for (i = 0; i < ntests; ++i)
+	free(tests[i].name);
+    return ret;
 }
 
 static int
@@ -380,7 +394,7 @@ test_oid (void)
 	{ 3, oid_comp3 },
 	{ 2, oid_comp4 }
     };
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
     for (i = 0; i < ntests; ++i) {
@@ -390,12 +404,15 @@ test_oid (void)
 	    errx(1, "malloc");
     }
 
-    return generic_test (tests, ntests, sizeof(heim_oid),
-			 (generic_encode)der_put_oid,
-			 (generic_length)der_length_oid,
-			 (generic_decode)der_get_oid,
-			 (generic_free)der_free_oid,
-			 test_cmp_oid);
+    ret = generic_test (tests, ntests, sizeof(heim_oid),
+			(generic_encode)der_put_oid,
+			(generic_length)der_length_oid,
+			(generic_decode)der_get_oid,
+			(generic_free)der_free_oid,
+			test_cmp_oid);
+    for (i = 0; i < ntests; ++i)
+	free(tests[i].name);
+    return ret;
 }
 
 static int
@@ -413,7 +430,7 @@ test_bit_string (void)
     heim_bit_string values[] = {
 	{ 0, "" }
     };
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
     for (i = 0; i < ntests; ++i) {
@@ -423,12 +440,15 @@ test_bit_string (void)
 	    errx(1, "malloc");
     }
 
-    return generic_test (tests, ntests, sizeof(heim_bit_string),
-			 (generic_encode)der_put_bit_string,
-			 (generic_length)der_length_bit_string,
-			 (generic_decode)der_get_bit_string,
-			 (generic_free)der_free_bit_string,
-			 test_cmp_bit_string);
+    ret = generic_test (tests, ntests, sizeof(heim_bit_string),
+			(generic_encode)der_put_bit_string,
+			(generic_length)der_length_bit_string,
+			(generic_decode)der_get_bit_string,
+			(generic_free)der_free_bit_string,
+			test_cmp_bit_string);
+    for (i = 0; i < ntests; ++i)
+	free(tests[i].name);
+    return ret;
 }
 
 static int
@@ -459,7 +479,7 @@ test_heim_integer (void)
 	{ 1, "\x01", 0 },
 	{ 1, "\x80", 0 }
     };
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(tests[0]);
 
     for (i = 0; i < ntests; ++i) {
@@ -469,12 +489,15 @@ test_heim_integer (void)
 	    errx(1, "malloc");
     }
 
-    return generic_test (tests, ntests, sizeof(heim_integer),
-			 (generic_encode)der_put_heim_integer,
-			 (generic_length)der_length_heim_integer,
-			 (generic_decode)der_get_heim_integer,
-			 (generic_free)der_free_heim_integer,
-			 test_cmp_heim_integer);
+    ret = generic_test (tests, ntests, sizeof(heim_integer),
+			(generic_encode)der_put_heim_integer,
+			(generic_length)der_length_heim_integer,
+			(generic_decode)der_get_heim_integer,
+			(generic_free)der_free_heim_integer,
+			test_cmp_heim_integer);
+    for (i = 0; i < ntests; ++i) 
+	free (tests[i].name);
+    return ret;
 }
 
 static int
