@@ -13,6 +13,10 @@ shift
 
 case $cmd in 
      startup)
+	# wait for all shared directories to become available
+	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
+	ctdb_wait_directories "Samba" $smb_dirs	
+
 	# start Samba service
 	service smb start
 	service winbind start
@@ -20,10 +24,6 @@ case $cmd in
 	# wait for the Samba tcp ports to become available
 	smb_ports=`testparm -stv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
 	ctdb_wait_tcp_ports "Samba" $smb_ports
-
-	# wait for all shared directories to become available
-	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
-	ctdb_wait_directories "Samba" $smb_dirs	
 	;;
 	
      takeip)

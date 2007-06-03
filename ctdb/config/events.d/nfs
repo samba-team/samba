@@ -13,6 +13,11 @@ shift
 case $cmd in 
      startup)
 	mkdir -p /etc/ctdb/state/nfs
+
+	# wait for all nfs exported directories to become available
+	nfs_dirs=`cut -d' ' -f1 /etc/exports`
+	ctdb_wait_directories "NFS" $nfs_dirs
+
 	service nfs start
 	;;
 
