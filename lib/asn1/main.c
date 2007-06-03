@@ -128,6 +128,6 @@ main(int argc, char **argv)
 	exit(1);
     close_generate ();
     if (argc != optidx)
-	fclose(file);
+	fclose(yyin);
     return 0;
 }
