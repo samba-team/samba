@@ -5,8 +5,8 @@
 # /etc/sysconfig/nfs:
 #   STATD_HOSTNAME="myhostname -H /etc/ctdb/statd-callout"
 
-
-. /etc/sysconfig/nfs
+. /etc/ctdb/functions
+loadconfig nfs
 
 [ -z "$STATD_SHARED_DIRECTORY" ] && exit 0
 
