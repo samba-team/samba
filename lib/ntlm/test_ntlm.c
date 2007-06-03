@@ -123,12 +123,16 @@ test_parse(void)
     if (ret)
 	errx(1, "heim_ntlm_encode_type3");
 
+    free(type3.ntlm.data);
+
     memset(&type3, 0, sizeof(type3));
 
     ret = heim_ntlm_decode_type3(&data, 1, &type3);
     free(data.data);
     if (ret)
 	errx(1, "heim_ntlm_encode_type3");
+
+    heim_ntlm_free_type3(&type3);
 
     /*
      * NTLMv2
@@ -184,7 +188,6 @@ test_keys(void)
 
     heim_ntlm_nt_key(password, &key);
 
-
     ret = heim_ntlm_calculate_ntlm2(key.data,
 				    key.length,
 				    username,
@@ -216,6 +219,9 @@ test_keys(void)
 
     if (memcmp(infotarget.data, infotarget2.data, infotarget.length) != 0)
 	errx(1, "infotarget not the same");
+
+    free(key.data);
+    free(answer.data);
 
     return 0;
 }
