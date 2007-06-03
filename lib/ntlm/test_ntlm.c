@@ -151,12 +151,16 @@ test_parse(void)
     if (ret)
 	errx(1, "heim_ntlm_encode_type2");
 
+    free(type2.targetname);
+
     memset(&type2, 0, sizeof(type2));
 
     ret = heim_ntlm_decode_type2(&data, &type2);
     free(data.data);
     if (ret)
 	errx(1, "heim_ntlm_decode_type2");
+
+    heim_ntlm_free_type2(&type2);
 
     return 0;
 }
@@ -222,6 +226,7 @@ test_keys(void)
 
     free(key.data);
     free(answer.data);
+    free(targetinfo.data);
 
     return 0;
 }
