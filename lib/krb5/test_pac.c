@@ -131,6 +131,7 @@ main(int argc, char **argv)
     krb5_pac_free(context, pac);
 
     ret = krb5_pac_parse(context, data.data, data.length, &pac);
+    krb5_data_free(&data);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_pac_parse 2");
 
@@ -194,6 +195,7 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pac_verify 4");
 	
+	krb5_pac_free(context, pac2);
     }
 
     krb5_pac_free(context, pac);
@@ -262,6 +264,7 @@ main(int argc, char **argv)
     krb5_pac_free(context, pac);
 
     ret = krb5_pac_parse(context, data.data, data.length, &pac);
+    krb5_data_free(&data);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_pac_parse 3");
 
@@ -283,6 +286,9 @@ main(int argc, char **argv)
 	free(list);
     }
 
+    krb5_pac_free(context, pac);
+
+    krb5_free_principal(context, p);
     krb5_free_context(context);
 
     return 0;
