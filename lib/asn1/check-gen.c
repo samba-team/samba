@@ -181,7 +181,7 @@ test_authenticator (void)
 	{ 5, "SU.SE", { KRB5_NT_PRINCIPAL, { 2, lharoot_princ } },
 	  NULL, 292, 999, NULL, NULL, NULL }
     };
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
     for (i = 0; i < ntests; ++i) {
@@ -189,12 +189,16 @@ test_authenticator (void)
 	asprintf (&tests[i].name, "Authenticator %d", i);
     }
 
-    return generic_test (tests, ntests, sizeof(Authenticator),
-			 (generic_encode)encode_Authenticator,
-			 (generic_length)length_Authenticator,
-			 (generic_decode)decode_Authenticator,
-			 (generic_free)free_Authenticator,
-			 cmp_authenticator);
+    ret = generic_test (tests, ntests, sizeof(Authenticator),
+			(generic_encode)encode_Authenticator,
+			(generic_length)length_Authenticator,
+			(generic_decode)decode_Authenticator,
+			(generic_free)free_Authenticator,
+			cmp_authenticator);
+    for (i = 0; i < ntests; ++i)
+	free(tests[i].name);
+
+    return ret;
 }
 
 static int
