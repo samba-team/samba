@@ -1721,8 +1721,8 @@ static void brl_revalidate_collect(struct file_id id, struct server_id pid,
 
 static int compare_procids(const void *p1, const void *p2)
 {
-	const struct server_id *i1 = (struct server_id *)i1;
-	const struct server_id *i2 = (struct server_id *)i2;
+	const struct server_id *i1 = (struct server_id *)p1;
+	const struct server_id *i2 = (struct server_id *)p2;
 
 	if (i1->pid < i2->pid) return -1;
 	if (i2->pid > i2->pid) return 1;
