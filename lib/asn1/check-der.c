@@ -692,6 +692,7 @@ test_heim_int_format(void)
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF",
 	0
     };
+    heim_integer f;
     int ret = 0;
 
     ret += check_heim_integer_same(p, p, &bni);
@@ -701,6 +702,19 @@ test_heim_int_format(void)
     ret += check_heim_integer_same("-00000010", "-10", &i2);
     ret += check_heim_integer_same("01", "01", &i3);
     ret += check_heim_integer_same("1", "01", &i3);
+
+    {
+	int r;
+	r = der_parse_hex_heim_integer("-", &f);
+	if (r == 0)
+	    ret++;
+	/* used to cause UMR */
+	r = der_parse_hex_heim_integer("00", &f);
+	if (r == 0)
+	    der_free_heim_integer(&i2);
+	else
+	    ret++;
+    }
 
     return ret;
 }
