@@ -92,7 +92,7 @@ test_mcache(krb5_context context)
     krb5_error_code ret;
     krb5_ccache id, id2;
     const char *nc, *tc;
-    char *n, *t, *c;
+    char *c;
     krb5_principal p, p2;
 
     ret = krb5_parse_name(context, "lha@SU.SE", &p);
@@ -115,13 +115,10 @@ test_mcache(krb5_context context)
     if (tc == NULL)
 	krb5_errx(context, 1, "krb5_cc_get_name");
 
-    n = estrdup(nc);
-    t = estrdup(tc);
-
+    asprintf(&c, "%s:%s", tc, nc);
+    
     krb5_cc_close(context, id);
-
-    asprintf(&c, "%s:%s", t, n);
-
+    
     ret = krb5_cc_resolve(context, c, &id2);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_resolve");
@@ -174,6 +171,7 @@ test_init_vs_destroy(krb5_context context, const krb5_cc_ops *ops)
 	     krb5_cc_get_name(context, id));
 
     ret = krb5_cc_resolve(context, n, &id2);
+    free(n);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_resolve");
 
