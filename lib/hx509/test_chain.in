@@ -132,7 +132,7 @@ echo "ocsp no-ca responder, keyHash"
 ${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
-    ocsp:FILE:$srcdir/data/ocsp-resp1-keyhash.der || exit 1
+    ocsp:FILE:$srcdir/data/ocsp-resp1-keyhash.der > /dev/null || exit 1
 
 echo "ocsp revoked cert"
 ${hxtool} verify \
@@ -143,8 +143,23 @@ ${hxtool} verify \
 for a in resp1-ocsp-no-cert resp1-ca resp1-keyhash resp2 ; do
 	echo "ocsp print reply $a"
 	${hxtool} ocsp-print \
-	    $srcdir/data/ocsp-resp2.der > /dev/null || exit 1
+	    $srcdir/data/ocsp-${a}.der > /dev/null || exit 1
 done
+
+echo "ocsp verify exists"
+${hxtool} ocsp-verify \
+	--ocsp-file=$srcdir/data/ocsp-resp1-ca.der \
+	FILE:$srcdir/data/test.crt > /dev/null || exit 1
+
+echo "ocsp verify not exists"
+${hxtool} ocsp-verify \
+    --ocsp-file=$srcdir/data/ocsp-resp1.der \
+	FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
+echo "ocsp verify revoked"
+${hxtool} ocsp-verify \
+    --ocsp-file=$srcdir/data/ocsp-resp2.der \
+	FILE:$srcdir/data/revoke.crt > /dev/null && exit 1
 
 echo "crl non-revoked cert"
 ${hxtool} verify \
