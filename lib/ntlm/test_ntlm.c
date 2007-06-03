@@ -226,7 +226,7 @@ test_keys(void)
 
     free(key.data);
     free(answer.data);
-    free(targetinfo.data);
+    free(infotarget.data);
 
     return 0;
 }
