@@ -139,6 +139,9 @@ hx509_context_free(hx509_context *context)
     }
     (*context)->ks_num_ops = 0;
     free_error_table ((*context)->et_list);
+    if ((*context)->querystat)
+	free((*context)->querystat);
+    memset(*context, 0, sizeof(**context));
     free(*context);
     *context = NULL;
 }
