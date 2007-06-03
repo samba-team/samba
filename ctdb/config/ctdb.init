@@ -39,7 +39,7 @@ loadconfig network
 loadconfig ctdb
 
 # check networking is up (for redhat)
-[ ${NETWORKING} = "no" ] && exit 0
+[ "${NETWORKING}" = "no" ] && exit 0
 
 CTDB_OPTIONS=""
 
