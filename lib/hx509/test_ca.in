@@ -66,16 +66,41 @@ ${hxtool} verify --missing-revoke \
 	cert:FILE:cert-ee.pem \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
-echo "issue crl"
+echo "issue crl (no cert)"
 ${hxtool} crl-sign \
 	--crl-file=crl.crl \
-	--signer=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key
+	--signer=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key || exit 1
 
 echo "verify certificate (with CRL)"
 ${hxtool} verify \
 	cert:FILE:cert-ee.pem \
 	crl:FILE:crl.crl \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+echo "issue crl (with cert)"
+${hxtool} crl-sign \
+	--crl-file=crl.crl \
+	--signer=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	FILE:cert-ee.pem || exit 1
+
+echo "verify certificate (included in CRL)"
+${hxtool} verify \
+	cert:FILE:cert-ee.pem \
+	crl:FILE:crl.crl \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
+echo "issue crl (with cert)"
+${hxtool} crl-sign \
+	--crl-file=crl.crl \
+	--lifetime='1 month' \
+	--signer=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	FILE:cert-ee.pem || exit 1
+
+echo "verify certificate (included in CRL, and lifetime 1 month)"
+${hxtool} verify \
+	cert:FILE:cert-ee.pem \
+	crl:FILE:crl.crl \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
 echo "issue certificate (10years 1 month)"
 ${hxtool} issue-certificate \
