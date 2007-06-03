@@ -48,17 +48,19 @@ test_parse(void)
 {
     const char *user = "foo", 
 	*domain = "mydomain",
-	*password = "digestpassword";
+	*password = "digestpassword",
+	*target = "DOMAIN";
     struct ntlm_type1 type1;
     struct ntlm_type2 type2;
     struct ntlm_type3 type3;
     struct ntlm_buf data;
     krb5_error_code ret;
+    int flags;
     
     memset(&type1, 0, sizeof(type1));
 
     type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM;
-    type1.domain = strdup(domain);
+    type1.domain = rk_UNCONST(domain);
     type1.hostname = NULL;
     type1.os[0] = 0;
     type1.os[1] = 0;
@@ -66,8 +68,6 @@ test_parse(void)
     ret = heim_ntlm_encode_type1(&type1, &data);
     if (ret)
 	errx(1, "heim_ntlm_encode_type1");
-
-    free(type1.domain);
 
     memset(&type1, 0, sizeof(type1));
 
@@ -84,18 +84,17 @@ test_parse(void)
 
     memset(&type2, 0, sizeof(type2));
 
-    type2.flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_NEG_TARGET_DOMAIN;
+    flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_NEG_TARGET_DOMAIN;
+    type2.flags = flags;
 
     memset(type2.challange, 0x7f, sizeof(type2.challange));
-    type2.targetname = strdup("DOMAIN");
+    type2.targetname = rk_UNCONST(target);
     type2.targetinfo.data = NULL;
     type2.targetinfo.length = 0;
 
     ret = heim_ntlm_encode_type2(&type2, &data);
     if (ret)
 	errx(1, "heim_ntlm_encode_type2");
-
-    free(type2.targetname);
 
     memset(&type2, 0, sizeof(type2));
 
@@ -112,9 +111,9 @@ test_parse(void)
 
     memset(&type3, 0, sizeof(type3));
 
-    type3.flags = type2.flags;
+    type3.flags = flags;
     type3.username = rk_UNCONST(user);
-    type3.targetname = type2.targetname;
+    type3.targetname = rk_UNCONST(target);
     type3.ws = rk_UNCONST("workstation");
 
     {
@@ -138,7 +137,7 @@ test_parse(void)
     ret = heim_ntlm_decode_type3(&data, 1, &type3);
     free(data.data);
     if (ret)
-	errx(1, "heim_ntlm_encode_type3");
+	errx(1, "heim_ntlm_decode_type3");
 
     heim_ntlm_free_type3(&type3);
 
@@ -148,18 +147,17 @@ test_parse(void)
 
     memset(&type2, 0, sizeof(type2));
 
-    type2.flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_NEG_TARGET_DOMAIN;
+    flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_NEG_TARGET_DOMAIN;
+    type2.flags = flags;
 
     memset(type2.challange, 0x7f, sizeof(type2.challange));
-    type2.targetname = strdup("DOMAIN");
+    type2.targetname = rk_UNCONST(target);
     type2.targetinfo.data = "\x00\x00";
     type2.targetinfo.length = 2;
 
     ret = heim_ntlm_encode_type2(&type2, &data);
     if (ret)
 	errx(1, "heim_ntlm_encode_type2");
-
-    free(type2.targetname);
 
     memset(&type2, 0, sizeof(type2));
 
@@ -234,7 +232,6 @@ test_keys(void)
 
     free(key.data);
     free(answer.data);
-    free(infotarget.data);
     free(infotarget2.data);
 
     return 0;
