@@ -1,4 +1,4 @@
-%define initdir %{_sysconfdir}/rc.d/init.d
+%define initdir %{_sysconfdir}/init.d
 
 Summary: Clustered TDB
 Vendor: Samba Team
@@ -53,7 +53,7 @@ rm -rf $RPM_BUILD_ROOT
 
 # Create the target build directory hierarchy
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
 
 make DESTDIR=$RPM_BUILD_ROOT install
 
