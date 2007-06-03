@@ -127,17 +127,8 @@ Management tool, you do it like this:
 netdom trust NT.REALM.EXAMPLE.COM /Domain:EXAMPLE.COM /add /realm /passwordt:TrustPassword
 @end example
 
-You also need to add the inter-realm keys to the Heimdal KDC. There are
-some tweaks that you need to do to @file{krb5.conf} beforehand.
-
-@example
-[libdefaults]
-        default_etypes = des-cbc-crc
-        default_etypes_des = des-cbc-crc
-@end example
-
-since otherwise checksum types that are not understood by Windows 2000
-will be generated (@pxref{Quirks of Windows 2000 KDC}).
+You also need to add the inter-realm keys to the Heimdal KDC. Make sure
+you have matching encryption types (DES, Arcfour and AES in case of Longhorn)
 
 Another issue is salting.  Since Windows 2000 does not seem to
 understand Kerberos 4 salted hashes you might need to turn off anything
@@ -161,8 +152,6 @@ What you probably want to use is this:
 @c XXX check this
 @c It is definitely not supported in base 2003.  I haven't been able to
 @c get SP1 installed here, but it is supposed to work in that.
-Note that before Windows 2003 SP1, arcfour-hmac-md5 wasn't supported
-between Windows realms and Non Windows realms.
 
 Once that is also done, you can add the required inter-realm keys:
 
