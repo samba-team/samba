@@ -447,12 +447,15 @@ verify_checksum(krb5_context context,
 
     ret = krb5_verify_checksum(context, crypto, KRB5_KU_OTHER_CKSUM,
 			       ptr, len, &cksum);
+    free(cksum.checksum.data);
     krb5_crypto_destroy(context, crypto);
     krb5_storage_free(sp);
 
     return ret;
 
 out:
+    if (cksum.checksum.data)
+	free(cksum.checksum.data);
     if (sp)
 	krb5_storage_free(sp);
     if (crypto)
