@@ -322,21 +322,4 @@ ENGINE_by_id(const char *id)
 void
 ENGINE_add_conf_module(void)
 {
-    ENGINE *engine;
-
-    /*
-     * XXX Parse configuration file instead
-     */
-
-    {
-	const RSA_METHOD *method = ENGINE_get_RSA(engine);
-	if (method)
-	    RSA_set_default_method(method);
-    }
-    {
-	const DH_METHOD *method = ENGINE_get_DH(engine);
-	if (method)
-	    DH_set_default_method(method);
-    }
-
 }
