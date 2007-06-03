@@ -51,7 +51,7 @@ der_parse_hex_heim_integer (const char *p, heim_integer *data)
     }
 
     len = strlen(p);
-    if (len < 0) {
+    if (len <= 0) {
 	data->data = NULL;
 	data->length = 0;
 	return EINVAL;
