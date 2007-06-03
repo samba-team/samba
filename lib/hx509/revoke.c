@@ -1067,7 +1067,7 @@ hx509_crl_alloc(hx509_context context, hx509_crl *crl)
 {
     int ret;
 
-    *crl = calloc(1, sizeof(*crl));
+    *crl = calloc(1, sizeof(**crl));
     if (*crl == NULL) {
 	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
@@ -1104,7 +1104,7 @@ hx509_crl_free(hx509_context context, hx509_crl *crl)
     if (*crl == NULL)
 	return;
     hx509_certs_free(&(*crl)->revoked);
-    memset(*crl, 0, sizeof(crl));
+    memset(*crl, 0, sizeof(**crl));
     free(*crl);
     *crl = NULL;
 }
