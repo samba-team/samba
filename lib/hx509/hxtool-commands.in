@@ -648,6 +648,11 @@ command = {
 		type = "string"
 		help = "CRL output file"
 	}
+	option = {
+		long = "lifetime"
+		type = "string"
+		help = "time the crl will be valid"
+	}
 	name = "crl-sign"
 	min_args="0"
 	argument="certificates..."
