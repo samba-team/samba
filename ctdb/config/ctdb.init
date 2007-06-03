@@ -66,8 +66,11 @@ CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
 
 if [ -x /sbin/startproc ]; then
     init_style="suse"
-else 
-    init_style="redhat"
+else if [ -x /sbin/start-stop-daemon ]; then
+	init_style="ubuntu"
+    else
+	init_style="redhat"
+    fi
 fi
 
 start() {
@@ -84,6 +87,10 @@ start() {
 		echo
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
 		return $RETVAL
+		;;
+	    ubuntu)
+		start-stop-daemon --start --quiet --background --exec /usr/sbin/ctdbd -- $CTDB_OPTIONS
+		return $?
 		;;
 	esac
 }	
