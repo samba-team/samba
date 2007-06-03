@@ -1828,6 +1828,16 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 	    hx509_err(context, 1, ret, "no signer certificate found");
     }
 
+    if (opt->lifetime_string) {
+	int delta;
+
+	delta = parse_time(opt->lifetime_string, "day");
+	if (delta < 0)
+	    errx(1, "Invalid lifetime: %s", opt->lifetime_string);
+
+	hx509_crl_lifetime(context, crl, delta);
+    }
+
     {
 	hx509_certs revoked = NULL;
 	int i;
