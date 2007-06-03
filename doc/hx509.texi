@@ -469,7 +469,9 @@ Create an empty CRL with not certificates revoked. Default expiration
 value is one year from now.
 
 @example
-hxtool crl-sign --crl-file=crl.der --signer=FILE:ca.pem
+hxtool crl-sign \
+	--crl-file=crl.der \
+	--signer=FILE:ca.pem
 @end example
 
 Create a CRL with all certificates in the directory
@@ -477,8 +479,11 @@ Create a CRL with all certificates in the directory
 it expire one month from now.
 
 @example
-hxtool crl-sign --crl-file=crl.der --signer=FILE:ca.pem \
---lifetime='1 month' DIR:/path/to/revoked/dir
+hxtool crl-sign \
+	--crl-file=crl.der \
+        --signer=FILE:ca.pem \
+	--lifetime='1 month' \
+        DIR:/path/to/revoked/dir
 @end example
 
 @node Application requirements, CMS signing and encryption, Issuing CRLs, Top
