@@ -379,6 +379,9 @@ Who is allowed to issue certificates.
 
 Who is allowed to requests certificates.
 
+How to handle certificate revocation, issuing CRLs and maintain OCSP
+services.
+
 @node Creating a CA certificate, Issuing certificates, Setting up a CA, Top
 @section Creating a CA certificate
 
@@ -460,7 +463,7 @@ request for a certificate. The user can specified what DN the user wants
 and what public key. To prove the user have the key, the whole request
 is signed by the private key of the user.
 
-Name space management.
+@subsection Name space management
 
 What people might want to see.
 
@@ -469,6 +472,20 @@ Re-issue certificates just because people moved within the organization.
 Expose privacy information.
 
 Using Sub-component name (+ notation).
+
+@subsection Certificate Revocation, CRL and OCSP
+
+Sonetimes people loose smartcard or computers and certificates have to
+be make not valid any more, this is called revoking certificates. There
+are two main protocols for doing this Certificate Revocations Lists
+(CRL) and Online Certificate Status Protocol (OCSP).
+
+If you know that the certificate is destroyed then there is no need to
+revoke the certificate because it can not be used by someone else.
+
+The main reason you as a CA administrator have to deal with CRLs however
+will be that some software require there to be CRLs. Example of this is
+Windows, so you have to deal with this somehow.
 
 @node Application requirements, CMS signing and encryption, Issuing certificates, Top
 @section Application requirements
