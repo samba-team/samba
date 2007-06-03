@@ -846,6 +846,63 @@ ocsp_print(struct ocsp_print_options *opt, int argc, char **argv)
     return 0;
 }
 
+/*
+ *
+ */
+
+static int
+verify_o(hx509_context hxcontext, void *ctx, hx509_cert c)
+{
+    heim_octet_string *os = ctx;
+    time_t expiration;
+    int ret;
+
+    ret = hx509_ocsp_verify(context, 0, c, 0, 
+			    os->data, os->length, &expiration);
+    if (ret) {
+	char *s = hx509_get_error_string(hxcontext, ret);
+	printf("ocsp_verify: %s: %d\n", s, ret);
+	free(s);
+    } else
+	printf("expire: %d\n", (int)expiration);
+
+    return ret;
+}
+
+
+int
+ocsp_verify(struct ocsp_verify_options *opt, int argc, char **argv)
+{
+    hx509_lock lock;
+    hx509_certs certs;
+    int ret, i;
+    heim_octet_string os;
+    
+    hx509_lock_init(context, &lock);
+
+    if (opt->ocsp_file_string == NULL)
+	errx(1, "no ocsp file given");
+
+    ret = _hx509_map_file(opt->ocsp_file_string, &os.data, &os.length, NULL);
+    if (ret)
+	err(1, "map_file: %s: %d", argv[0], ret);
+    
+    ret = hx509_certs_init(context, "MEMORY:test-certs", 0, NULL, &certs);
+
+    for (i = 0; i < argc; i++) {
+	ret = hx509_certs_append(context, certs, lock, argv[i]);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_certs_append: %s", argv[i]);
+    }
+
+    ret = hx509_certs_iter(context, certs, verify_o, &os);
+
+    hx509_certs_free(&certs);
+    _hx509_unmap_file(os.data, os.length);
+
+    return ret;
+}
+
 static int
 read_private_key(const char *fn, hx509_private_key *key)
 {
