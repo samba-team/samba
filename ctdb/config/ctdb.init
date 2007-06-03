@@ -127,7 +127,7 @@ case "$1" in
 	;;
   cron)
 	# used from cron to auto-restart ctdb
-  	ctdb status > /dev/null || start
+  	ctdb status > /dev/null || restart
 	;;
   *)
 	echo $"Usage: $0 {start|stop|restart|status|cron|condrestart}"
