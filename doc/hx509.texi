@@ -465,9 +465,20 @@ Windows, so you have to deal with this somehow.
 @node Issuing CRLs, Application requirements, Issuing certificates, Top
 @section Issuing CRLs
 
+Create an empty CRL with not certificates revoked. Default expiration
+value is one year from now.
+
 @example
 hxtool crl-sign --crl-file=crl.der --signer=FILE:ca.pem
-cp crl.der /path/to/published/uri
+@end example
+
+Create a CRL with all certificates in the directory
+@file{/path/to/revoked/dir} included in the CRL as revoked.  Also make
+it expire one month from now.
+
+@example
+hxtool crl-sign --crl-file=crl.der --signer=FILE:ca.pem \
+--lifetime='1 month' DIR:/path/to/revoked/dir
 @end example
 
 @node Application requirements, CMS signing and encryption, Issuing CRLs, Top
