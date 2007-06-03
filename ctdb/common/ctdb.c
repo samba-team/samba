@@ -52,12 +52,13 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
 	ctdb->logfile = talloc_strdup(ctdb, logfile);
 	if (ctdb->logfile != NULL && strcmp(logfile, "-") != 0) {
 		int fd;
-		close(1);
-		close(2);
 		fd = open(ctdb->logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
 		if (fd == -1) {
+			printf("Failed to open logfile %s\n", ctdb->logfile);
 			abort();
 		}
+		close(1);
+		close(2);
 		if (fd != 1) {
 			dup2(fd, 1);
 			close(fd);
