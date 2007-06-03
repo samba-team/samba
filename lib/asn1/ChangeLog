@@ -1,5 +1,7 @@
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: Also free right memory.
+
 	* main.c: Close asn1 file when done.
 
 	* check-der.c: more check for der_parse_hex_heim_integer
