@@ -1,3 +1,17 @@
+2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_chain.in: test ocsp-verify
+	
+	* revoke.c (hx509_ocsp_verify): explain what its useful for and
+	provide sane error message.
+
+	* hx509_err.et: New error code, CERT_NOT_IN_OCSP
+
+	* hxtool.c: New command ocsp-verify, check if ocsp contains all
+	certs and are valid (exist and non expired).
+
+	* hxtool-commands.in: New command ocsp-verify.
+	
 2007-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_ca.in: Create crl and verify that is works.
