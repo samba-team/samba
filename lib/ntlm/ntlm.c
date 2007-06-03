@@ -308,8 +308,10 @@ heim_ntlm_decode_targetinfo(struct ntlm_buf *data, int ucs2,
 void
 heim_ntlm_free_type1(struct ntlm_type1 *data)
 {
-    free(data->domain);
-    free(data->hostname);
+    if (data->domain)
+	free(data->domain);
+    if (data->hostname)
+	free(data->hostname);
     memset(data, 0, sizeof(*data));
 }
 
@@ -432,9 +434,12 @@ out:
  */
 
 void
-heim_ntlm_free_type2(struct ntlm_type2 *type2)
+heim_ntlm_free_type2(struct ntlm_type2 *data)
 {
-    memset(type2, 0, sizeof(*type2));
+    if (data->targetname)
+	free(data->targetname);
+    _ntlm_free_buf(&data->targetinfo);
+    memset(data, 0, sizeof(*data));
 }
 
 int
@@ -558,9 +563,17 @@ out:
 void
 heim_ntlm_free_type3(struct ntlm_type3 *data)
 {
+    _ntlm_free_buf(&data->lm);
+    _ntlm_free_buf(&data->ntlm);
+    if (data->targetname)
+	free(data->targetname);
+    if (data->username)
+	free(data->username);
+    if (data->ws)
+	free(data->ws);
+    _ntlm_free_buf(&data->sessionkey);
     memset(data, 0, sizeof(*data));
 }
-
 
 /*
  *
