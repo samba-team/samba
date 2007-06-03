@@ -584,6 +584,7 @@ certificate_copy(struct certificate_copy_options *opt, int argc, char **argv)
 	    hx509_err(context, 1, ret, "hx509_certs_store");
 
     hx509_certs_free(&certs);
+    hx509_lock_free(lock);
 
     return 0;
 }
@@ -899,6 +900,7 @@ ocsp_verify(struct ocsp_verify_options *opt, int argc, char **argv)
 
     hx509_certs_free(&certs);
     _hx509_unmap_file(os.data, os.length);
+    hx509_lock_free(lock);
 
     return ret;
 }
@@ -1826,6 +1828,22 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 	    hx509_err(context, 1, ret, "no signer certificate found");
     }
 
+    {
+	hx509_certs revoked = NULL;
+	int i;
+
+	ret = hx509_certs_init(context, "MEMORY:revoked-certs", 0,
+			       NULL, &revoked);
+
+	for (i = 0; i < argc; i++) {
+	    ret = hx509_certs_append(context, revoked, lock, argv[i]);
+	    if (ret)
+		hx509_err(context, 1, ret, "hx509_certs_append: %s", argv[i]);
+	}
+
+	hx509_crl_add_revoked_certs(context, crl, revoked);
+	hx509_certs_free(&revoked);
+    }
 
     hx509_crl_sign(context, signer, crl, &os);
 
@@ -1834,7 +1852,7 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 
     free(os.data);
 
-    hx509_crl_free(context, crl);
+    hx509_crl_free(context, &crl);
     hx509_cert_free(signer);
     hx509_lock_free(lock);
 
