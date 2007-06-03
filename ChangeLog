@@ -1,3 +1,7 @@
+2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/win2k.texi: drop text about enctypes.
+	
 2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/pkinit.c: In case of OCSP verification failure, referash
