@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -249,6 +249,7 @@ test_BN_uadd(void)
 	free(p);
 	return 1;
     }
+    free(p);
 
     BN_uadd(c, a, b);
     p = BN_bn2hex(c);
@@ -256,7 +257,6 @@ test_BN_uadd(void)
 	free(p);
 	return 1;
     }
-
     free(p);
 
     BN_free(a);
