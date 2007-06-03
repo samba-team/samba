@@ -1,5 +1,14 @@
-2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ntlm.c: Test both with and without keyex.
+
+	* ntlm/digest.c: If we didn't set session key, don't expect one
+	back.
+
+	* test_ntlm.c: Set keyex flag and calculate session key.
+	
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* spnego/accept_sec_context.c: Use the return value before is
 	overwritten by later calls.  From Rafal Malinowski
 
