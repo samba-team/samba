@@ -282,7 +282,7 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
     ret = parse_ocsp_basic(data, length, &basic);
     _hx509_unmap_file(data, length);
     if (ret) {
-	hx509_set_error_string(context, ret, 0,
+	hx509_set_error_string(context, 0, ret,
 			       "Failed to parse OCSP response");
 	return ret;
     }
@@ -984,7 +984,7 @@ hx509_ocsp_verify(hx509_context context,
 
     ret = parse_ocsp_basic(data, length, &basic);
     if (ret) {
-	hx509_set_error_string(context, ret, 0,
+	hx509_set_error_string(context, 0, ret,
 			       "Failed to parse OCSP response");
 	return ret;
     }
@@ -1047,7 +1047,7 @@ hx509_ocsp_verify(hx509_context context,
 	    hx509_clear_error_string(context);
 	    goto out;
 	}
-	hx509_set_error_string(context, HX509_CERT_NOT_IN_OCSP, 0,
+	hx509_set_error_string(context, 0, HX509_CERT_NOT_IN_OCSP,
 			       "Certificate %s not in OCSP response "
 			       "or not good",
 			       subject);
@@ -1058,20 +1058,45 @@ out:
 }
 
 struct hx509_crl {
-    int foo;
+    hx509_certs revoked;
 };
 
 int
 hx509_crl_alloc(hx509_context context, hx509_crl *crl)
 {
-    *crl = NULL;
-    return 0;
+    int ret;
+
+    *crl = calloc(1, sizeof(*crl));
+    if (*crl == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+
+    ret = hx509_certs_init(context, "MEMORY:crl", 0, NULL, &(*crl)->revoked);
+    if (ret) {
+	free(*crl);
+	*crl = NULL;
+    }
+    return ret;
 }
 
 int
-hx509_crl_free(hx509_context context, hx509_crl crl)
+hx509_crl_add_revoked_certs(hx509_context context,
+			    hx509_crl crl, 
+			    hx509_certs certs)
 {
-    return 0;
+    return hx509_certs_merge(context, crl->revoked, certs);
+}
+
+void
+hx509_crl_free(hx509_context context, hx509_crl *crl)
+{
+    if (*crl == NULL)
+	return;
+    hx509_certs_free(&(*crl)->revoked);
+    memset(*crl, 0, sizeof(crl));
+    free(*crl);
+    *crl = NULL;
 }
 
 int
