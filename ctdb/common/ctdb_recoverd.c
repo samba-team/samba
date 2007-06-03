@@ -614,7 +614,8 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* release the recmaster lock */
-	if (ctdb->recovery_lock_fd != -1) {
+	if (em->vnn != ctdb_get_vnn(ctdb) &&
+	    ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
 	}
