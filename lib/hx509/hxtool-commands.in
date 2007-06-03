@@ -302,6 +302,17 @@ command = {
 	help = "Fetch OCSP responses for the following certs"
 }
 command = {
+	option = {
+		long = "ocsp-file"
+		type = "string"
+		help = "OCSP file"
+	}
+	name = "ocsp-verify"
+	min_args="1"
+	argument="certificates ..."
+	help = "Check that certificates are in OCSP file and valid"
+}
+command = {
 	name = "ocsp-print"
 	option = {
 		long = "verbose"
