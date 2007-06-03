@@ -1,5 +1,9 @@
-2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_bn.c: Plug memory leak.
+	
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* imath/imath.[ch]: New snapshot for Michael Fromberger, lets see if
 	this corrupts memory less.
 	
