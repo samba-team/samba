@@ -99,6 +99,7 @@ main(int argc, char **argv)
 	warnx("test 2: variable count %d != 1", count);
 	error++;
     }
+
     unlink(fn);
     count = read_environment(fn, &env);
     if(count != 0) {
@@ -110,6 +111,7 @@ main(int argc, char **argv)
 	warnx("total variable count %d != 3", count);
 	error++;
     }
+    free_environment(env);
     
     
     return error;
