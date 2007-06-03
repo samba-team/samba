@@ -94,6 +94,8 @@ main(int argc, char **argv)
 
     krb5_crypto_destroy(context, crypto);
     
+    krb5_free_keyblock_contents(context, &key);
+
     krb5_free_context(context);
 
     return 0;
