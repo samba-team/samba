@@ -143,3 +143,14 @@ read_environment(const char *file, char ***env)
     fclose(F);
     return assigned;
 }
+
+void ROKEN_LIB_FUNCTION
+free_environment(char **env)
+{
+    int i;
+    if (env == NULL)
+	return;
+    for (i = 0; env[i]; i++)
+	free(env[i]);
+    free(env);
+}
