@@ -1,5 +1,7 @@
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: Free more memory.
+
 	* der_format.c: Don't accect zero length hex numbers.
 
 	* check-der.c: Also free right memory.
