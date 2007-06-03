@@ -1143,6 +1143,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    krb5_data_free(&ocsp.data);
 
 	    ocsp.expire = 0;
+	    ocsp.next_update = kdc_time + 60 * 5;
 
 	    fd = open(config->pkinit_kdc_ocsp_file, O_RDONLY);
 	    if (fd < 0) {
@@ -1186,11 +1187,13 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			"PK-INIT failed to verify ocsp data %d", ret);
 		krb5_data_free(&ocsp.data);
 		ocsp.expire = 0;
-	    } else if (ocsp.expire > 180)
+	    } else if (ocsp.expire > 180) {
 		ocsp.expire -= 180; /* refetch the ocsp before it expire */
-	    
+		ocsp.next_update = ocsp.expire;
+	    } else {
+		ocsp.next_update = kdc_time;
+	    }
 	out_ocsp:
-	    ocsp.next_update = kdc_time + 3600;
 	    ret = 0;
 	}
 
