@@ -1,3 +1,14 @@
+2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* main.c: Close asn1 file when done.
+
+	* check-der.c: more check for der_parse_hex_heim_integer
+
+	* der_format.c (der_parse_hex_heim_integer): check length before
+	reading data.
+	
+	* check-gen.c (test_authenticator): free memory
+	
 2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add MS-UPN-SAN
