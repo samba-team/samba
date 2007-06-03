@@ -376,6 +376,9 @@ int ROKEN_LIB_FUNCTION
 read_environment(const char *file, char ***env);
 
 void ROKEN_LIB_FUNCTION
+free_environment(char **, int);
+
+void ROKEN_LIB_FUNCTION
 warnerr(int doerrno, const char *fmt, va_list ap)
     __attribute__ ((format (printf, 2, 0)));
 
