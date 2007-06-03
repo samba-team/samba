@@ -25,7 +25,9 @@ If an application is already using TDB for temporary data it is very easy to con
 
 CTDB is the core component that provides <strong>pCIFS</strong> with samba3/4.<br><br>
 
-CTDB provides HA features such as node monitoring, node failover, and ip takeover.
+CTDB provides HA features such as node monitoring, node failover, and ip takeover.<br><br>
+
+CTDB provides a messaging transport to allow applications linked with CTDB to communicate to other instances of the application running on different nodes in the cluster. Allowing an easy to use mechanism for an application running on one node in the cluster to communicate with an application running on a different node.
 
 <h2>Requirements</h2>
 CTDB relies on that a clustered filesystem is available and shared on all nodes that participate in the CTDB cluster.<br>
