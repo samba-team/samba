@@ -196,6 +196,7 @@ test_princ(krb5_context context)
     ret = krb5_unparse_name_flags(context, p2, 
 				  KRB5_PRINCIPAL_UNPARSE_NO_REALM,
 				  &princ_unparsed);
+    krb5_free_principal(context, p2);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_unparse_name_norealm");
 
@@ -222,6 +223,7 @@ test_princ(krb5_context context)
     ret = krb5_unparse_name_flags(context, p2, 
 				  KRB5_PRINCIPAL_UNPARSE_NO_REALM,
 				  &princ_unparsed);
+    krb5_free_principal(context, p2);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_unparse_name_norealm");
 
