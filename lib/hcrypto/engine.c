@@ -328,9 +328,6 @@ ENGINE_add_conf_module(void)
      * XXX Parse configuration file instead
      */
 
-    engine = ENGINE_by_dso("/usr/heimdal/lib/hc-modules/hc-gmp.so", NULL);
-    if (engine == NULL)
-	return;
     {
 	const RSA_METHOD *method = ENGINE_get_RSA(engine);
 	if (method)
