@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -1059,6 +1059,7 @@ out:
 
 struct hx509_crl {
     hx509_certs revoked;
+    time_t expire;
 };
 
 int
@@ -1077,6 +1078,7 @@ hx509_crl_alloc(hx509_context context, hx509_crl *crl)
 	free(*crl);
 	*crl = NULL;
     }
+    (*crl)->expire = 0;
     return ret;
 }
 
@@ -1087,6 +1089,14 @@ hx509_crl_add_revoked_certs(hx509_context context,
 {
     return hx509_certs_merge(context, crl->revoked, certs);
 }
+
+int
+hx509_crl_lifetime(hx509_context context, hx509_crl crl, int delta)
+{
+    crl->expire = time(NULL) + delta;
+    return 0;
+}
+
 
 void
 hx509_crl_free(hx509_context context, hx509_crl *crl)
@@ -1186,8 +1196,15 @@ hx509_crl_sign(hx509_context context,
 	ret = ENOMEM;
 	goto out;
     }
-    c.tbsCertList.nextUpdate->element = choice_Time_generalTime;
-    c.tbsCertList.nextUpdate->u.generalTime = time(NULL) + 24 * 3600 * 365;
+
+    {
+	time_t next = crl->expire;
+	if (next == 0)
+	    next = time(NULL) + 24 * 3600 * 365;
+
+	c.tbsCertList.nextUpdate->element = choice_Time_generalTime;
+	c.tbsCertList.nextUpdate->u.generalTime = next;
+    }
 
     c.tbsCertList.revokedCertificates = 
 	calloc(1, sizeof(*c.tbsCertList.revokedCertificates));
