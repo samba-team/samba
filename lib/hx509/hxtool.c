@@ -1829,14 +1829,14 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 
     hx509_crl_sign(context, signer, crl, &os);
 
-    hx509_crl_free(context, crl);
-
-    hx509_cert_free(signer);
-
     if (opt->crl_file_string)
 	rk_dumpdata(opt->crl_file_string, os.data, os.length);
 
     free(os.data);
+
+    hx509_crl_free(context, crl);
+    hx509_cert_free(signer);
+    hx509_lock_free(lock);
 
     return 0;
 }
