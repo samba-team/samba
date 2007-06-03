@@ -706,12 +706,14 @@ test_heim_int_format(void)
     {
 	int r;
 	r = der_parse_hex_heim_integer("-", &f);
-	if (r == 0)
+	if (r == 0) {
+	    der_free_heim_integer(&f);
 	    ret++;
+	}
 	/* used to cause UMR */
 	r = der_parse_hex_heim_integer("00", &f);
 	if (r == 0)
-	    der_free_heim_integer(&i2);
+	    der_free_heim_integer(&f);
 	else
 	    ret++;
     }
