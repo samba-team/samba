@@ -1099,6 +1099,41 @@ hx509_crl_free(hx509_context context, hx509_crl *crl)
     *crl = NULL;
 }
 
+static int
+add_revoked(hx509_context context, void *ctx, hx509_cert cert)
+{
+    TBSCRLCertList *c = ctx;
+    unsigned int num;
+    void *ptr;
+    int ret;
+
+    num = c->revokedCertificates->len;
+    ptr = realloc(c->revokedCertificates->val,
+		  (num + 1) * sizeof(c->revokedCertificates->val[0]));
+    if (ptr == NULL) {
+	hx509_clear_error_string(context);
+	return ENOMEM;
+    }
+    c->revokedCertificates->val = ptr;
+
+    ret = hx509_cert_get_serialnumber(cert, 
+				      &c->revokedCertificates->val[num].userCertificate);
+    if (ret) {
+	hx509_clear_error_string(context);
+	return ret;
+    }
+    c->revokedCertificates->val[num].revocationDate.element = 
+	choice_Time_generalTime;
+    c->revokedCertificates->val[num].revocationDate.u.generalTime =
+	time(NULL) - 3600 * 24;
+    c->revokedCertificates->val[num].crlEntryExtensions = NULL;
+
+    c->revokedCertificates->len++;
+
+    return 0;
+}    
+
+
 int
 hx509_crl_sign(hx509_context context,
 	       hx509_cert signer,
@@ -1148,13 +1183,30 @@ hx509_crl_sign(hx509_context context,
     c.tbsCertList.nextUpdate = malloc(sizeof(*c.tbsCertList.nextUpdate));
     if (c.tbsCertList.nextUpdate == NULL) {
 	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
-	return ENOMEM;
+	ret = ENOMEM;
+	goto out;
     }
     c.tbsCertList.nextUpdate->element = choice_Time_generalTime;
     c.tbsCertList.nextUpdate->u.generalTime = time(NULL) + 24 * 3600 * 365;
 
-    c.tbsCertList.revokedCertificates = NULL;
+    c.tbsCertList.revokedCertificates = 
+	calloc(1, sizeof(*c.tbsCertList.revokedCertificates));
+    if (c.tbsCertList.revokedCertificates == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
     c.tbsCertList.crlExtensions = NULL;
+
+    ret = hx509_certs_iter(context, crl->revoked, add_revoked, &c.tbsCertList);
+    if (ret)
+	goto out;
+
+    /* if not revoked certs, remove OPTIONAL entry */
+    if (c.tbsCertList.revokedCertificates->len == 0) {
+	free(c.tbsCertList.revokedCertificates);
+	c.tbsCertList.revokedCertificates = NULL;
+    }
 
     ASN1_MALLOC_ENCODE(TBSCRLCertList, os->data, os->length,
 		       &c.tbsCertList, &size, ret);
