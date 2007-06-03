@@ -281,8 +281,11 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 
     ret = parse_ocsp_basic(data, length, &basic);
     _hx509_unmap_file(data, length);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, ret, 0,
+			       "Failed to parse OCSP response");
 	return ret;
+    }
 
     if (basic.certs) {
 	int i;
@@ -956,6 +959,12 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
     return ret;
 }
 
+/*
+ * Verify that the `cert' is part of the OCSP reply and its not
+ * expired. Doesn't verify signature the OCSP reply or its done by a
+ * authorized sender, that is assumed to be already done.
+ */
+
 int
 hx509_ocsp_verify(hx509_context context,
 		  time_t now,
@@ -968,12 +977,17 @@ hx509_ocsp_verify(hx509_context context,
     OCSPBasicOCSPResponse basic;
     int ret, i;
 
+    if (now == 0)
+	now = time(NULL);
+
     *expiration = 0;
 
     ret = parse_ocsp_basic(data, length, &basic);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, ret, 0,
+			       "Failed to parse OCSP response");
 	return ret;
-
+    }
 
     for (i = 0; i < basic.tbsResponseData.responses.len; i++) {
 
@@ -1004,20 +1018,43 @@ hx509_ocsp_verify(hx509_context context,
 	    now + context->ocsp_time_diff)
 	    continue;
 
-	/* don't allow the next updte to be in the past */
+	/* don't allow the next update to be in the past */
 	if (basic.tbsResponseData.responses.val[i].nextUpdate) {
 	    if (*basic.tbsResponseData.responses.val[i].nextUpdate < now)
 		continue;
+	    *expiration = *basic.tbsResponseData.responses.val[i].nextUpdate;
 	} else
-	    continue;
+	    *expiration = now;
 
-	*expiration = *basic.tbsResponseData.responses.val[i].nextUpdate;
-
+	free_OCSPBasicOCSPResponse(&basic);
 	return 0;
     }
+
     free_OCSPBasicOCSPResponse(&basic);
 
-    return 0;
+    {
+	hx509_name name;
+	char *subject;
+	
+	ret = hx509_cert_get_subject(cert, &name);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    goto out;
+	}
+	ret = hx509_name_to_string(name, &subject);
+	hx509_name_free(&name);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    goto out;
+	}
+	hx509_set_error_string(context, HX509_CERT_NOT_IN_OCSP, 0,
+			       "Certificate %s not in OCSP response "
+			       "or not good",
+			       subject);
+	free(subject);
+    }
+out:
+    return HX509_CERT_NOT_IN_OCSP;
 }
 
 struct hx509_crl {
