@@ -1,5 +1,22 @@
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: Add lifetime to crls.
+
+	* hxtool-commands.in: Add lifetime to crls.
+
+	* revoke.c: Add lifetime to crls.
+
+	* test_ca.in: More crl checks.
+
+	* revoke.c: Add revoking certs.
+
+	* hxtool-commands.in: argument is certificates.. for crl-sign
+
+	* hxtool.c (certificate_copy): free lock
+
+	* revoke.c: Fix hx509_set_error_string calls, add
+	hx509_crl_add_revoked_certs(), implement hx509_crl_{alloc,free}.
+
 	* hxtool.c (crl_sign): free lock
 
 	* cert.c (hx509_context_free): free querystat
