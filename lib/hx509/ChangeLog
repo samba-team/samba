@@ -1,5 +1,8 @@
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* revoke.c (hx509_crl_*): fix sizeof() mistakes to fix memory
+	corruption.
+
 	* hxtool.c: Add lifetime to crls.
 
 	* hxtool-commands.in: Add lifetime to crls.
