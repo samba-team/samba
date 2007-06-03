@@ -32,6 +32,7 @@ static void usage(void);
 static struct {
 	int timelimit;
 	uint32_t vnn;
+	int machinereadable;
 } options;
 
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
@@ -286,6 +287,15 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	if (ret != 0) {
 		printf("Unable to get nodemap from node %u\n", options.vnn);
 		return ret;
+	}
+
+	if(options.machinereadable){
+		printf(":Node:Status:\n");
+		for(i=0;i<nodemap->num;i++){
+			printf(":%d:%d:\n", nodemap->nodes[i].vnn,
+				!!nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED);
+		}
+		return 0;
 	}
 
 	printf("Number of nodes:%d\n", nodemap->num);
@@ -723,6 +733,7 @@ static void usage(void)
 "Usage: ctdb [options] <control>\n" \
 "Options:\n" \
 "   -n <node>          choose node number, or 'all' (defaults to local node)\n"
+"   -Y                 generate machinereadable output\n"
 "   -t <timelimit>     set timelimit for control in seconds (default %u)\n", options.timelimit);
 	printf("Controls:\n");
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
@@ -747,6 +758,7 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0, "timelimit", "integer" },
 		{ "node",      'n', POPT_ARG_STRING, &nodestring, 0, "node", "integer|all" },
+		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
