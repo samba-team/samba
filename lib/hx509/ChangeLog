@@ -1,5 +1,7 @@
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c (crl_sign): free lock
+
 	* cert.c (hx509_context_free): free querystat
 	
 2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
