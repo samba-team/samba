@@ -21,7 +21,7 @@
 #include "includes.h"
 
 struct db_tdb_ctx {
-	TDB_CONTEXT *tdb;
+	struct tdb_wrap *wtdb;
 };
 
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag);
@@ -36,7 +36,7 @@ static int db_tdb_record_destr(struct db_record* data)
 		   hex_encode(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
-	if (tdb_chainunlock(ctx->tdb, data->key) != 0) {
+	if (tdb_chainunlock(ctx->wtdb->tdb, data->key) != 0) {
 		DEBUG(0, ("tdb_chainunlock failed\n"));
 		return -1;
 	}
@@ -77,7 +77,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 		TALLOC_FREE(keystr);
 	}
 
-	if (tdb_chainlock(ctx->tdb, key) != 0) {
+	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
@@ -85,7 +85,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 
 	talloc_set_destructor(result, db_tdb_record_destr);
 
-	value = tdb_fetch(ctx->tdb, key);
+	value = tdb_fetch(ctx->wtdb->tdb, key);
 
 	if (value.dptr == NULL) {
 		return result;
@@ -117,7 +117,7 @@ static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag)
 	 * anymore after it was stored.
 	 */
 
-	return (tdb_store(ctx->tdb, rec->key, data, flag) == 0) ?
+	return (tdb_store(ctx->wtdb->tdb, rec->key, data, flag) == 0) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -127,13 +127,13 @@ static NTSTATUS db_tdb_delete(struct db_record *rec)
 						       struct db_tdb_ctx);
 	int res;
 	
-	res = tdb_delete(ctx->tdb, rec->key);
+	res = tdb_delete(ctx->wtdb->tdb, rec->key);
 
 	if (res == 0) {
 		return NT_STATUS_OK;
 	}
 
-	return map_nt_error_from_tdb(tdb_error(ctx->tdb));
+	return map_nt_error_from_tdb(tdb_error(ctx->wtdb->tdb));
 }
 
 struct db_tdb_traverse_ctx {
@@ -169,7 +169,7 @@ static int db_tdb_traverse(struct db_context *db,
 	ctx.db = db;
 	ctx.f = f;
 	ctx.private_data = private_data;
-	return tdb_traverse(db_ctx->tdb, db_tdb_traverse_func, &ctx);
+	return tdb_traverse(db_ctx->wtdb->tdb, db_tdb_traverse_func, &ctx);
 }
 
 static NTSTATUS db_tdb_store_deny(struct db_record *rec, TDB_DATA data, int flag)
@@ -209,7 +209,7 @@ static int db_tdb_traverse_read(struct db_context *db,
 	ctx.db = db;
 	ctx.f = f;
 	ctx.private_data = private_data;
-	return tdb_traverse_read(db_ctx->tdb, db_tdb_traverse_read_func, &ctx);
+	return tdb_traverse_read(db_ctx->wtdb->tdb, db_tdb_traverse_read_func, &ctx);
 }
 
 static int db_tdb_get_seqnum(struct db_context *db)
@@ -217,17 +217,7 @@ static int db_tdb_get_seqnum(struct db_context *db)
 {
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	return tdb_get_seqnum(db_ctx->tdb);
-}
-
-static int db_tdb_ctx_destr(struct db_tdb_ctx *ctx)
-{
-	if (tdb_close(ctx->tdb) != 0) {
-		DEBUG(0, ("Failed to close tdb: %s\n", strerror(errno)));
-		return -1;
-	}
-
-	return 0;
+	return tdb_get_seqnum(db_ctx->wtdb->tdb);
 }
 
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
@@ -250,14 +240,13 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	db_tdb->tdb = tdb_open_log(name, hash_size, tdb_flags,
-				   open_flags, mode);
-	if (db_tdb->tdb == NULL) {
+	db_tdb->wtdb = tdb_wrap_open(db_tdb, name, hash_size, tdb_flags,
+				     open_flags, mode);
+	if (db_tdb->wtdb == NULL) {
 		DEBUG(3, ("Could not open tdb: %s\n", strerror(errno)));
 		goto fail;
 	}
 
-	talloc_set_destructor(db_tdb, db_tdb_ctx_destr);
 	result->fetch_locked = db_tdb_fetch_locked;
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
