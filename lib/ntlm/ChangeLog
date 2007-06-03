@@ -1,5 +1,11 @@
-2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ntlm.c: Free memory diffrently.
+
+	* ntlm.c: Make free functions free memory.
+	
+2007-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: symbol versioning.
 	
 	* version-script.map: symbol versioning.
