@@ -1,5 +1,21 @@
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/hx509.texi: Indent crl-sign.
+
+	* doc/hx509.texi: One more crl-sign example.
+
+	* lib/krb5/test_princ.c: plug memory leaks.
+
+	* lib/krb5/pac.c: plug memory leaks.
+
+	* lib/krb5/test_pac.c: plug memory leaks.
+
+	* lib/krb5/test_prf.c: plug memory leak.
+
+	* lib/krb5/test_cc.c: plug memory leaks.
+
+	* doc/hx509.texi: Simple blob about publishing CRLs.
+
 	* doc/win2k.texi: drop text about enctypes.
 	
 2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
