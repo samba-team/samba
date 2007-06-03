@@ -67,6 +67,8 @@ test_parse(void)
     if (ret)
 	errx(1, "heim_ntlm_encode_type1");
 
+    free(type1.domain);
+
     memset(&type1, 0, sizeof(type1));
 
     ret = heim_ntlm_decode_type1(&data, &type1);
@@ -101,6 +103,8 @@ test_parse(void)
     free(data.data);
     if (ret)
 	errx(1, "heim_ntlm_decode_type2");
+
+    heim_ntlm_free_type2(&type2);
 
     /*
      *
