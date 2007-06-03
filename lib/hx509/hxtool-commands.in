@@ -650,6 +650,7 @@ command = {
 	}
 	name = "crl-sign"
 	min_args="0"
+	argument="certificates..."
 	help = "Create a CRL"
 }
 command = {
