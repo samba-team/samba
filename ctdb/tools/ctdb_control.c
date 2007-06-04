@@ -290,7 +290,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:Status:\n");
+		printf(":Node:IP:Status:\n");
 		for(i=0;i<nodemap->num;i++){
 			printf(":%d:%s:%d:\n", nodemap->nodes[i].vnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
