@@ -705,6 +705,7 @@ hx509_general_name_unparse(GeneralName *name, char **str)
 	Name dir;
 	char *s;
 	int ret;
+	memset(&dir, 0, sizeof(dir));
 	dir.element = name->u.directoryName.element;
 	dir.u.rdnSequence = name->u.directoryName.u.rdnSequence;
 	ret = _hx509_unparse_Name(&dir, &s);
