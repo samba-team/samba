@@ -427,7 +427,7 @@ NTSTATUS idmap_init(void)
 
 		/* check the set_mapping function exists otherwise mark the module as readonly */
 		if ( ! dom->methods->set_mapping) {
-			DEBUG(5, ("Forcing to readonly, as ithis module can't store arbitrary mappings.\n"));
+			DEBUG(5, ("Forcing to readonly, as this module can't store arbitrary mappings.\n"));
 			dom->readonly = True;
 		}
 
