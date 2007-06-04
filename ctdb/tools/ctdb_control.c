@@ -107,7 +107,6 @@ static void show_statistics(struct ctdb_statistics *s)
 		STATISTICS_FIELD(controls.traverse_data),
 		STATISTICS_FIELD(controls.update_seqnum),
 		STATISTICS_FIELD(controls.enable_seqnum),
-		STATISTICS_FIELD(controls.set_seqnum_frequency),
 		STATISTICS_FIELD(controls.register_srvid),
 		STATISTICS_FIELD(controls.deregister_srvid),
 		STATISTICS_FIELD(timeouts.call),

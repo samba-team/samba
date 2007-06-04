@@ -10,11 +10,8 @@ for i in `seq 1 $NUMNODES`; do
   echo 127.0.0.$i >> nodes.txt
 done
 
-killall -q ctdbd
-echo "Trying $NUMNODES nodes"
-for i in `seq 1 $NUMNODES`; do
-    $VALGRIND bin/ctdbd --reclock=rec.lock --nlist nodes.txt --event-script=tests/events --logfile=- --socket=sock.$i
-done
+tests/start_daemons.sh $NUMNODES nodes.txt || exit 1
+
 
 killall -9 -q ctdb_fetch
 for i in `seq 1 $NUMNODES`; do

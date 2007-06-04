@@ -87,14 +87,6 @@ void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags)
 }
 
 /*
-  set max acess count before a dmaster migration
-*/
-void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count)
-{
-	ctdb->max_lacount = count;
-}
-
-/*
   set the directory for the local databases
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
@@ -528,10 +520,17 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
 	ctdb->idr              = idr_init(ctdb);
-	ctdb->max_lacount      = CTDB_DEFAULT_MAX_LACOUNT;
-	ctdb->seqnum_frequency = CTDB_DEFAULT_SEQNUM_FREQUENCY;
 	ctdb->recovery_lock_fd = -1;
 	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
+
+	/* set default values for tunables */
+	ctdb->tunable.max_redirect_count = 3;
+	ctdb->tunable.seqnum_frequency   = 1;
+	ctdb->tunable.control_timeout    = 60;
+	ctdb->tunable.traverse_timeout   = 20;
+	ctdb->tunable.monitoring_timeout = 2;
+	ctdb->tunable.monitoring_limit   = 3;
+	ctdb->tunable.max_lacount        = 7;
 
 	return ctdb;
 }

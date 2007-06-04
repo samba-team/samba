@@ -256,7 +256,8 @@ struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context
 	}
 
 	/* timeout the traverse */
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_TRAVERSE_TIMEOUT, 0), 
+	event_add_timed(ctdb->ev, state, 
+			timeval_current_ofs(ctdb->tunable.traverse_timeout, 0), 
 			ctdb_traverse_all_timeout, state);
 
 	return state;

@@ -142,14 +142,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_VNN:
 		return ctdb->vnn;
 
-	case CTDB_CONTROL_CONFIG: {
-		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb->statistics.controls.get_config++;
-		outdata->dptr = (uint8_t *)ctdb;
-		outdata->dsize = sizeof(*ctdb);
-		return 0;
-	}
-
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->statistics.controls.ping++;
@@ -223,11 +215,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb->statistics.controls.update_seqnum++;
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_ltdb_update_seqnum(ctdb, *(uint32_t *)indata.dptr, srcnode);
-
-	case CTDB_CONTROL_SET_SEQNUM_FREQUENCY:
-		ctdb->statistics.controls.set_seqnum_frequency++;
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
-		return ctdb_ltdb_set_seqnum_frequency(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_FREEZE:
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -489,10 +476,11 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 		return 0;
 	}
 
-#if CTDB_CONTROL_TIMEOUT
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_CONTROL_TIMEOUT, 0), 
-			ctdb_control_timeout, state);
-#endif
+	if (ctdb->tunable.control_timeout) {
+		event_add_timed(ctdb->ev, state, 
+				timeval_current_ofs(ctdb->tunable.control_timeout, 0), 
+				ctdb_control_timeout, state);
+	}
 
 	talloc_free(c);
 	return 0;

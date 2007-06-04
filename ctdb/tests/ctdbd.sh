@@ -2,14 +2,7 @@
 
 killall -q ctdbd
 
-echo "Starting 2 ctdb daemons"
-$VALGRIND bin/ctdbd --reclock=rec.lock --nlist tests/nodes.txt --event-script=tests/events --logfile=-
-$VALGRIND bin/ctdbd --reclock=rec.lock --nlist tests/nodes.txt --event-script=tests/events --logfile=- --socket=sock.2
-
-while bin/ctdb status | grep RECOVERY > /dev/null; do
-    echo "`date` Waiting for recovery"
-    sleep 1;
-done
+tests/start_daemons.sh 2 tests/nodes.txt || exit 1
 
 echo "Testing ping"
 $VALGRIND bin/ctdb ping || exit 1
