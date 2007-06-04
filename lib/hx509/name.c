@@ -183,10 +183,10 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss = ds->u.ia5String;
 		break;
 	    case choice_DirectoryString_printableString:
-		ss = ds->u.ia5String;
+		ss = ds->u.printableString;
 		break;
 	    case choice_DirectoryString_utf8String:
-		ss = ds->u.ia5String;
+		ss = ds->u.utf8String;
 		break;
 	    case choice_DirectoryString_bmpString: {
 		uint16_t *bmp = ds->u.bmpString.data;
