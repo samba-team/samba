@@ -163,11 +163,6 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id);
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 
 /*
-  wait for all nodes to be connected - useful for test code
-*/
-void ctdb_connect_wait(struct ctdb_context *ctdb);
-
-/*
   initiate an ordered ctdb cluster shutdown
   this function will never return
 */

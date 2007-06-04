@@ -39,17 +39,6 @@ static int ctdb_client_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_head
 
 
 /*
-  handle a connect wait reply packet
- */
-static void ctdb_reply_connect_wait(struct ctdb_context *ctdb, 
-				    struct ctdb_req_header *hdr)
-{
-	struct ctdb_reply_connect_wait *r = (struct ctdb_reply_connect_wait *)hdr;
-	ctdb->vnn = r->vnn;
-	ctdb->num_connected = r->num_connected;
-}
-
-/*
   state of a in-progress ctdb call in client
 */
 struct ctdb_client_call_state {
@@ -141,10 +130,6 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 
 	case CTDB_REQ_MESSAGE:
 		ctdb_request_message(ctdb, hdr);
-		break;
-
-	case CTDB_REPLY_CONNECT_WAIT:
-		ctdb_reply_connect_wait(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CONTROL:
@@ -437,38 +422,6 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	return 0;
 }
 
-/*
-  wait for all nodes to be connected - from client
- */
-void ctdb_connect_wait(struct ctdb_context *ctdb)
-{
-	struct ctdb_req_connect_wait *r;
-	int res;
-
-	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_CONNECT_WAIT, sizeof(*r), 
-			       struct ctdb_req_connect_wait);
-	CTDB_NO_MEMORY_VOID(ctdb, r);
-
-	DEBUG(3,("ctdb_connect_wait: sending to ctdbd\n"));
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb->daemon.sd==-1) {
-		ctdb_socket_connect(ctdb);
-	}
-	
-	res = ctdb_queue_send(ctdb->daemon.queue, (uint8_t *)&r->hdr, r->hdr.length);
-	talloc_free(r);
-	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to queue a connect wait request\n"));
-		return;
-	}
-
-	DEBUG(3,("ctdb_connect_wait: waiting\n"));
-
-	/* now we can go into the normal wait routine, as the reply packet
-	   will update the ctdb->num_connected variable */
-	ctdb_daemon_connect_wait(ctdb);
-}
 
 /*
   cancel a ctdb_fetch_lock operation, releasing the lock
@@ -575,34 +528,6 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 {
 	return ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
 }
-
-/*
-  wait until we're the only node left.
-  this function never returns
-*/
-void ctdb_shutdown(struct ctdb_context *ctdb)
-{
-	struct ctdb_req_shutdown *r;
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb->daemon.sd==-1) {
-		ctdb_socket_connect(ctdb);
-	}
-
-	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_SHUTDOWN, sizeof(*r), 
-			       struct ctdb_req_shutdown);
-	CTDB_NO_MEMORY_VOID(ctdb, r);
-
-	ctdb_client_queue_pkt(ctdb, &(r->hdr));
-
-	talloc_free(r);
-
-	/* this event loop will terminate once we receive the reply */
-	while (1) {
-		event_loop_once(ctdb->ev);
-	}
-}
-
 
 struct ctdb_client_control_state {
 	struct ctdb_context *ctdb;

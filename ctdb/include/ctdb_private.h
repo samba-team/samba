@@ -40,6 +40,23 @@
 
 #define CTDB_MAX_REDIRECT_COUNT 3
 #define CTDB_DEFAULT_SEQNUM_FREQUENCY 1
+#define CTDB_CONTROL_TIMEOUT 60
+#define CTDB_TRAVERSE_TIMEOUT 20
+#define CTDB_MONITORING_TIMEOUT 2
+#define CTDB_MONITORING_DEAD_COUNT 3
+#define CTDB_DEFAULT_MAX_LACOUNT 7
+
+
+/* all tunable variables go in here */
+struct ctdb_tunable {
+	uint32_t max_redirect_count;
+	uint32_t seqnum_frequency;
+	uint32_t control_timeout;
+	uint32_t traverse_timeout;
+	uint32_t monitoring_timeout;
+	uint32_t monitoring_limit;
+	uint32_t max_lacount;
+};
 
 /*
   an installed ctdb remote call
@@ -181,16 +198,12 @@ struct ctdb_statistics {
 		uint32_t reply_dmaster;
 		uint32_t reply_error;
 		uint32_t req_message;
-		uint32_t req_finished;
 		uint32_t req_control;
 		uint32_t reply_control;
 	} node;
 	struct {
 		uint32_t req_call;
 		uint32_t req_message;
-		uint32_t req_finished;
-		uint32_t req_connect_wait;
-		uint32_t req_shutdown;
 		uint32_t req_control;
 	} client;
 	struct {
@@ -284,7 +297,6 @@ struct ctdb_context {
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
-	uint32_t num_finished;
 	unsigned flags;
 	struct idr_context *idr;
 	uint16_t idr_cnt;
@@ -339,24 +351,6 @@ struct ctdb_db_context {
           DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
           ctdb_fatal(ctdb, "Out of memory in " __location__ ); \
 	  }} while (0)
-
-/* maximum timeout for ctdb control calls */
-#define CTDB_CONTROL_TIMEOUT 60
-
-/* timeout for ctdb traverse calls. When this is reached we cut short
-   the traverse */
-#define CTDB_TRAVERSE_TIMEOUT 20
-
-/* timeout between dead-node monitoring events */
-#define CTDB_MONITORING_TIMEOUT 2
-
-/* number of monitoring timeouts before a node is considered dead */
-#define CTDB_MONITORING_DEAD_COUNT 3
-
-
-/* number of consecutive calls from the same node before we give them
-   the record */
-#define CTDB_DEFAULT_MAX_LACOUNT 7
 
 /*
   the extended header for records in the ltdb
@@ -505,11 +499,6 @@ enum ctdb_operation {
 	CTDB_REQ_CONTROL,
 	CTDB_REPLY_CONTROL,
 	CTDB_REQ_KEEPALIVE,
-	
-	/* only used on the domain socket */
-	CTDB_REQ_CONNECT_WAIT   = 1000,
-	CTDB_REPLY_CONNECT_WAIT,
-	CTDB_REQ_SHUTDOWN
 };
 
 #define CTDB_MAGIC 0x43544442 /* CTDB */
@@ -578,24 +567,6 @@ struct ctdb_req_message {
 	uint64_t srvid;
 	uint32_t datalen;
 	uint8_t data[1];
-};
-
-struct ctdb_req_finished {
-	struct ctdb_req_header hdr;
-};
-
-struct ctdb_req_shutdown {
-	struct ctdb_req_header hdr;
-};
-
-struct ctdb_req_connect_wait {
-	struct ctdb_req_header hdr;
-};
-
-struct ctdb_reply_connect_wait {
-	struct ctdb_req_header hdr;
-	uint32_t vnn;
-	uint32_t num_connected;
 };
 
 struct ctdb_req_getdbpath {
@@ -757,12 +728,6 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			     uint64_t srvid, TDB_DATA data);
 
 
-/*
-  wait for all nodes to be connected
-*/
-void ctdb_daemon_connect_wait(struct ctdb_context *ctdb);
-
-
 struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,
 				      void (*callback)(void *), void *private_data);
@@ -775,8 +740,6 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctdb_db, 
 						     struct ctdb_call *call, 
 						     struct ctdb_ltdb_header *header);
-
-void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx, TDB_DATA *data,
