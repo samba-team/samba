@@ -14,7 +14,7 @@ case $cmd in
 	mkdir -p /etc/ctdb/state/nfs
 
 	# wait for all nfs exported directories to become available
-	nfs_dirs=`cut -d' ' -f1 /etc/exports`
+	nfs_dirs=`grep -v '^#' < /etc/exports | cut -d' ' -f1`
 	ctdb_wait_directories "NFS" $nfs_dirs
 
 	service nfs start
