@@ -329,9 +329,15 @@ hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
 			       "CRLDistributionPoints.name.issuername not yet supported");
 	return EINVAL;
 #else 
-	GeneralNames crlissuer;
+	GeneralNames *crlissuer;
 	GeneralName gn;
 	Name n;
+
+	crlissuer = calloc(1, sizeof(*crlissuer));
+	if (crlissuer == NULL) {
+	    return ENOMEM;
+	}
+	memset(&gn, 0, sizeof(gn));
 
 	gn.element = choice_GeneralName_directoryName;
 	ret = hx509_name_to_Name(issuername, &n);
@@ -1111,6 +1117,7 @@ get_AuthorityKeyIdentifier(hx509_context context,
 	    goto out;
 	}
 
+	memset(&gn, 0, sizeof(gn));
 	gn.element = choice_GeneralName_directoryName;
 	gn.u.directoryName.element = 
 	    choice_GeneralName_directoryName_rdnSequence;
