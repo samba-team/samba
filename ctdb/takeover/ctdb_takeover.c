@@ -162,8 +162,12 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 {
 	int ret;
 	struct takeover_callback_state *state;
-	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
-	char *ip = inet_ntoa(sin->sin_addr);
+	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
+	char *ip = inet_ntoa(pip->sin.sin_addr);
+
+
+	/* update out node table */
+	ctdb->nodes[pip->vnn]->takeover_vnn = pip->takeover_vnn;
 
 	/* if our kernel already has this IP, do nothing */
 	if (ctdb_sys_have_ip(ip)) {
@@ -256,8 +260,11 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 {
 	int ret;
 	struct takeover_callback_state *state;
-	struct sockaddr_in *sin = (struct sockaddr_in *)indata.dptr;
-	char *ip = inet_ntoa(sin->sin_addr);
+	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
+	char *ip = inet_ntoa(pip->sin.sin_addr);
+
+	/* update out node table */
+	ctdb->nodes[pip->vnn]->takeover_vnn = pip->takeover_vnn;
 
 	if (!ctdb_sys_have_ip(ip)) {
 		return 0;
@@ -392,6 +399,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 {
 	int i, j;
 	int ret;
+	struct ctdb_public_ip ip;
 
 	/* work out which node will look after each public IP */
 	for (i=0;i<nodemap->num;i++) {
@@ -431,9 +439,17 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 		/* tell this node to delete all of the aliases that it should not have */
 		for (j=0;j<nodemap->num;j++) {
 			if (ctdb->nodes[j]->takeover_vnn != nodemap->nodes[i].vnn) {
+				ip.vnn = j;
+				ip.takeover_vnn = ctdb->nodes[j]->takeover_vnn;
+#ifdef HAVE_SOCK_SIN_LEN
+				ip.sin.sin_len = sizeof(*sin);
+#endif
+				ip.sin.sin_family = AF_INET;
+				inet_aton(ctdb->nodes[j]->public_address, &ip.sin.sin_addr);
+
 				ret = ctdb_ctrl_release_ip(ctdb, TAKEOVER_TIMEOUT(),
 							   nodemap->nodes[i].vnn, 
-							   ctdb->nodes[j]->public_address);
+							   &ip);
 				if (ret != 0) {
 					DEBUG(0,("Failed to tell vnn %u to release IP %s\n",
 						 nodemap->nodes[i].vnn,
@@ -450,9 +466,17 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 			/* this IP won't be taken over */
 			continue;
 		}
+		ip.vnn = i;
+		ip.takeover_vnn = ctdb->nodes[i]->takeover_vnn;
+#ifdef HAVE_SOCK_SIN_LEN
+		ip.sin.sin_len = sizeof(*sin);
+#endif
+		ip.sin.sin_family = AF_INET;
+		inet_aton(ctdb->nodes[i]->public_address, &ip.sin.sin_addr);
+
 		ret = ctdb_ctrl_takeover_ip(ctdb, TAKEOVER_TIMEOUT(), 
 					    ctdb->nodes[i]->takeover_vnn, 
-					    ctdb->nodes[i]->public_address);
+					    &ip);
 		if (ret != 0) {
 			DEBUG(0,("Failed asking vnn %u to take over IP %s\n",
 				 ctdb->nodes[i]->takeover_vnn, 

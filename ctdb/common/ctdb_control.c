@@ -265,11 +265,11 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_set_rsn_nonempty(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_TAKEOVER_IP:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct sockaddr));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_takeover_ip(ctdb, c, indata, async_reply);
 
 	case CTDB_CONTROL_RELEASE_IP:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct sockaddr));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_release_ip(ctdb, c, indata, async_reply);
 
 	case CTDB_CONTROL_DELETE_LOW_RSN: 

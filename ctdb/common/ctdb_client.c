@@ -1825,23 +1825,14 @@ int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout,
   sent to a node to make it take over an ip address
 */
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, const char *ip)
+			  uint32_t destnode, struct ctdb_public_ip *ip)
 {
 	TDB_DATA data;
 	int ret;
 	int32_t res;
-	struct sockaddr sa;
-	struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
-	ZERO_STRUCT(sa);
-#ifdef HAVE_SOCK_SIN_LEN
-	sin->sin_len = sizeof(*sin);
-#endif
-	sin->sin_family = AF_INET;
-	inet_aton(ip, &sin->sin_addr);
-
-	data.dsize = sizeof(sa);
-	data.dptr  = (uint8_t *)&sa;
+	data.dsize = sizeof(*ip);
+	data.dptr  = (uint8_t *)ip;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_TAKEOVER_IP, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);
@@ -1859,23 +1850,14 @@ int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout,
   sent to a node to make it release an ip address
 */
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			 uint32_t destnode, const char *ip)
+			 uint32_t destnode, struct ctdb_public_ip *ip)
 {
 	TDB_DATA data;
 	int ret;
 	int32_t res;
-	struct sockaddr sa;
-	struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
-	ZERO_STRUCT(sa);
-#ifdef HAVE_SOCK_SIN_LEN
-	sin->sin_len = sizeof(*sin);
-#endif
-	sin->sin_family = AF_INET;
-	inet_aton(ip, &sin->sin_addr);
-
-	data.dsize = sizeof(sa);
-	data.dptr  = (uint8_t *)&sa;
+	data.dsize = sizeof(*ip);
+	data.dptr  = (uint8_t *)ip;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_RELEASE_IP, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);

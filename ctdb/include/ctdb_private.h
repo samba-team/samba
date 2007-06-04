@@ -942,14 +942,20 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
 				 bool *async_reply);
-int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, const char *ip);
 int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
 				 bool *async_reply);
+
+struct ctdb_public_ip {
+	uint32_t vnn;
+	uint32_t takeover_vnn;
+	struct sockaddr_in sin;
+};
+int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
+			  uint32_t destnode, struct ctdb_public_ip *ip);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
-			 uint32_t destnode, const char *ip);
+			 uint32_t destnode, struct ctdb_public_ip *ip);
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
