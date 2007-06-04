@@ -1,5 +1,7 @@
 2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_crypto.in: Print certificate with utf8.
+
 	* print.c: Leak less memory.
 
 	* hxtool.c: Leak less memory.
