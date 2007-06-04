@@ -468,6 +468,9 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
 	hx509_validate_ctx_add_flags(vctx, HX509_VALIDATE_F_VERBOSE);
 	
 	hx509_validate_cert(hxcontext, vctx, cert);
+
+	hx509_validate_ctx_free(vctx);
+
     }
 }
 
