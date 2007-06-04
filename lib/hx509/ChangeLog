@@ -1,5 +1,18 @@
-2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* name.c (quote_string): don't sign extend the (signed) char to
+	avoid printing too much, add an assert to check that we didn't
+	overrun the buffer.
+
+	* name.c: Use right element out of the CHOICE for printableString
+	and utf8String
+
+	* ks_keychain.c: Certificate only KeyChain backend.
+
+	* name.c: Reset name before parsing it.
+	
+2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* revoke.c (hx509_crl_*): fix sizeof() mistakes to fix memory
 	corruption.
 
