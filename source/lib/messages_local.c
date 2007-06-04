@@ -93,9 +93,11 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 			   O_RDWR|O_CREAT,0600);
 
 	if (!tdb) {
-		DEBUG(0,("ERROR: Failed to initialise messages database\n"));
+		NTSTATUS status = map_nt_error_from_unix(errno);
+		DEBUG(0, ("ERROR: Failed to initialise messages database: "
+			  "%s\n", strerror(errno)));
 		TALLOC_FREE(result);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return status;
 	}
 
 	sec_init();
