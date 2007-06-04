@@ -1,5 +1,9 @@
-2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* framework-security.m4: test for -framework Security
+	
+2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* roken-frag.m4: we have a fnmatch.h only if there is a working
 	implementation and a header file. If we do use roken, lets use our
 	own headerfile that does symbol renaming.
