@@ -320,6 +320,9 @@ static void process_request(struct winbindd_cli_state *state)
 	if (state->mem_ctx == NULL)
 		return;
 
+	/* Remember who asked us. */
+	state->pid = state->request.pid;
+
 	/* Process command */
 
 	for (table = dispatch_table; table->fn; table++) {
