@@ -27,6 +27,7 @@
 
 #undef DEVELOPER
 
+#include "winbind_client.h"
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -37,7 +38,6 @@
 #if !defined(HPUX)
 #include <sys/syslog.h>
 #endif /*hpux*/
-#include "winbind_nss_config.h"
 
 #if defined(HAVE_NSS_COMMON_H) || defined(HPUX) 
 
