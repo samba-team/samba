@@ -17,3 +17,5 @@ ctdb-3
 nodes.txt
 TAGS
 web/packages
+rec.lock
+test.db

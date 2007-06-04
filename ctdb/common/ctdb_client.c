@@ -1813,3 +1813,128 @@ int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
 	return 0;	
 }
 
+
+/*
+  get a tunable
+ */
+int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb, 
+			  struct timeval timeout, 
+			  uint32_t destnode,
+			  const char *name, uint32_t *value)
+{
+	struct ctdb_control_get_tunable *t;
+	TDB_DATA data, outdata;
+	int32_t res;
+	int ret;
+
+	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen(name) + 1;
+	data.dptr  = talloc_size(ctdb, data.dsize);
+	CTDB_NO_MEMORY(ctdb, data.dptr);
+
+	t = (struct ctdb_control_get_tunable *)data.dptr;
+	t->length = strlen(name)+1;
+	memcpy(t->name, name, t->length);
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_TUNABLE, 0, data, ctdb,
+			   &outdata, &res, &timeout, NULL);
+	talloc_free(data.dptr);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for get_tunable failed\n"));
+		return -1;
+	}
+
+	if (outdata.dsize != sizeof(uint32_t)) {
+		DEBUG(0,("Invalid return data in get_tunable\n"));
+		talloc_free(outdata.dptr);
+		return -1;
+	}
+	
+	*value = *(uint32_t *)outdata.dptr;
+	talloc_free(outdata.dptr);
+
+	return 0;
+}
+
+/*
+  set a tunable
+ */
+int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb, 
+			  struct timeval timeout, 
+			  uint32_t destnode,
+			  const char *name, uint32_t value)
+{
+	struct ctdb_control_set_tunable *t;
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = offsetof(struct ctdb_control_set_tunable, name) + strlen(name) + 1;
+	data.dptr  = talloc_size(ctdb, data.dsize);
+	CTDB_NO_MEMORY(ctdb, data.dptr);
+
+	t = (struct ctdb_control_set_tunable *)data.dptr;
+	t->length = strlen(name)+1;
+	memcpy(t->name, name, t->length);
+	t->value = value;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SET_TUNABLE, 0, data, NULL,
+			   NULL, &res, &timeout, NULL);
+	talloc_free(data.dptr);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for set_tunable failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  list tunables
+ */
+int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb, 
+			    struct timeval timeout, 
+			    uint32_t destnode,
+			    TALLOC_CTX *mem_ctx,
+			    const char ***list, uint32_t *count)
+{
+	TDB_DATA outdata;
+	int32_t res;
+	int ret;
+	struct ctdb_control_list_tunable *t;
+	char *p, *s, *ptr;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_LIST_TUNABLES, 0, tdb_null, 
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for list_tunables failed\n"));
+		return -1;
+	}
+
+	t = (struct ctdb_control_list_tunable *)outdata.dptr;
+	if (outdata.dsize < offsetof(struct ctdb_control_list_tunable, data) ||
+	    t->length > outdata.dsize-offsetof(struct ctdb_control_list_tunable, data)) {
+		DEBUG(0,("Invalid data in list_tunables reply\n"));
+		talloc_free(outdata.dptr);
+		return -1;		
+	}
+	
+	p = talloc_strndup(mem_ctx, (char *)t->data, t->length);
+	CTDB_NO_MEMORY(ctdb, p);
+
+	talloc_free(outdata.dptr);
+	
+	(*list) = NULL;
+	(*count) = 0;
+
+	for (s=strtok_r(p, ":", &ptr); s; s=strtok_r(NULL, ":", &ptr)) {
+		(*list) = talloc_realloc(mem_ctx, *list, const char *, 1+(*count));
+		CTDB_NO_MEMORY(ctdb, *list);
+		(*list)[*count] = talloc_strdup(*list, s);
+		CTDB_NO_MEMORY(ctdb, (*list)[*count]);
+		(*count)++;
+	}
+
+	talloc_free(p);
+
+	return 0;
+}

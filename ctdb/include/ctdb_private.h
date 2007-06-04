@@ -400,6 +400,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TCP_ADD                 = 45,
 		    CTDB_CONTROL_TCP_REMOVE              = 46,
 		    CTDB_CONTROL_STARTUP                 = 47,
+		    CTDB_CONTROL_SET_TUNABLE             = 48,
+		    CTDB_CONTROL_GET_TUNABLE             = 49,
+		    CTDB_CONTROL_LIST_TUNABLES           = 50,
 };
 
 /*
@@ -822,6 +825,33 @@ struct ctdb_control_set_dmaster {
 	uint32_t dmaster;
 };
 
+/*
+  structure for setting a tunable
+ */
+struct ctdb_control_set_tunable {
+	uint32_t value;
+	uint32_t length;
+	uint8_t  name[1];
+};
+
+/*
+  structure for getting a tunable
+ */
+struct ctdb_control_get_tunable {
+	uint32_t length;
+	uint8_t  name[1];
+};
+
+/*
+  structure for listing tunables
+ */
+struct ctdb_control_list_tunable {
+	uint32_t length;
+	/* returns a : separated list of tunable names */
+	uint8_t  data[1];
+};
+
+
 /* table that contains a list of all nodes a ctdb knows about and their 
    status
  */
@@ -935,5 +965,10 @@ void set_close_on_exec(int fd);
 bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep);
 
 int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file);
+
+int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata, 
+				 TDB_DATA *outdata);
+int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 #endif

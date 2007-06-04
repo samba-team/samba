@@ -279,6 +279,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_vnn));
 		return ctdb_control_tcp_remove(ctdb, indata);
 
+	case CTDB_CONTROL_SET_TUNABLE:
+		return ctdb_control_set_tunable(ctdb, indata);
+
+	case CTDB_CONTROL_GET_TUNABLE:
+		return ctdb_control_get_tunable(ctdb, indata, outdata);
+
+	case CTDB_CONTROL_LIST_TUNABLES:
+		return ctdb_control_list_tunables(ctdb, outdata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

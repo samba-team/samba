@@ -32,6 +32,12 @@ $VALGRIND bin/ctdb getdbmap || exit 1
 echo "Testing status"
 $VALGRIND bin/ctdb status || exit 1
 
+echo "Testing variables"
+$VALGRIND bin/ctdb listvars || exit 1
+$VALGRIND bin/ctdb getvar TraverseTimeout || exit 1
+$VALGRIND bin/ctdb setvar TraverseTimeout 10 || exit 1
+$VALGRIND bin/ctdb getvar TraverseTimeout || exit 1
+
 sleep 1
 
 echo "Testing shutdown"

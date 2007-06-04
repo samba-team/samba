@@ -33,7 +33,8 @@ CTDB_COMMON_OBJ = common/ctdb.o common/ctdb_daemon.o common/ctdb_client.o \
 	common/ctdb_call.o common/ctdb_ltdb.o common/ctdb_lockwait.o \
 	common/ctdb_message.o common/cmdline.o common/ctdb_control.o \
 	lib/util/debug.o common/ctdb_recover.o common/ctdb_recoverd.o \
-	common/ctdb_freeze.o common/ctdb_traverse.o common/ctdb_monitor.o
+	common/ctdb_freeze.o common/ctdb_traverse.o common/ctdb_monitor.o \
+	common/ctdb_tunables.o
 
 CTDB_TAKEOVER_OBJ = takeover/system.o takeover/ctdb_takeover.o
 

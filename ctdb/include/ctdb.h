@@ -340,4 +340,22 @@ int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t d
 
 int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
+int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb, 
+			  struct timeval timeout, 
+			  uint32_t destnode,
+			  const char *name, uint32_t *value);
+
+int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb, 
+			  struct timeval timeout, 
+			  uint32_t destnode,
+			  const char *name, uint32_t value);
+
+int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb, 
+			    struct timeval timeout, 
+			    uint32_t destnode,
+			    TALLOC_CTX *mem_ctx,
+			    const char ***list, uint32_t *count);
+
+
+
 #endif
