@@ -695,3 +695,34 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 		}
 	}
 }
+
+
+/*
+  
+ */
+int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata)
+{
+	int i, len;
+	struct ctdb_all_public_ips *ips;
+
+	len = offsetof(struct ctdb_all_public_ips, ips) + ctdb->num_nodes*sizeof(struct ctdb_public_ip);
+
+	ips = talloc_size(outdata, len);
+	CTDB_NO_MEMORY(ctdb, ips);
+
+	outdata->dsize = len;
+	outdata->dptr  = (uint8_t *)ips;
+
+	ips->num = ctdb->num_nodes;
+	for(i=0;i<ctdb->num_nodes;i++){
+		ips->ips[i].vnn = i;
+		ips->ips[i].takeover_vnn = ctdb->nodes[i]->takeover_vnn;
+#ifdef HAVE_SOCK_SIN_LEN
+		ips->ips[i].sin.sin_len = sizeof(struct sockaddr_in);
+#endif
+		ips->ips[i].sin.sin_family = AF_INET;
+		inet_aton(ctdb->nodes[i]->public_address, &ips->ips[i].sin.sin_addr);
+	}
+
+	return 0;
+}

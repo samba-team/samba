@@ -1920,3 +1920,27 @@ int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
 
 	return 0;
 }
+
+
+int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
+			struct timeval timeout, uint32_t destnode, 
+			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_PUBLIC_IPS, 0, tdb_null, 
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for getpublicips failed\n"));
+		return -1;
+	}
+
+	*ips = (struct ctdb_all_public_ips *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	talloc_free(outdata.dptr);
+		    
+	return 0;
+}
+

@@ -403,6 +403,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_TUNABLE             = 48,
 		    CTDB_CONTROL_GET_TUNABLE             = 49,
 		    CTDB_CONTROL_LIST_TUNABLES           = 50,
+		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
 };
 
 /*
@@ -939,6 +940,16 @@ int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout,
 			  uint32_t destnode, struct ctdb_public_ip *ip);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			 uint32_t destnode, struct ctdb_public_ip *ip);
+
+struct ctdb_all_public_ips {
+	uint32_t num;
+	struct ctdb_public_ip ips[1];
+};
+int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
+int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
+			struct timeval timeout, uint32_t destnode, 
+			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
+
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
