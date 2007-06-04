@@ -70,6 +70,7 @@ dist_libhx509_la_SOURCES = \
 	ks_null.c \
 	ks_p11.c \
 	ks_p12.c \
+	ks_keychain.c \
 	lock.c \
 	name.c \
 	peer.c \
@@ -84,6 +85,10 @@ libhx509_la_LIBADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIBADD_roken) \
 	$(LIB_dlopen)
+
+if FRAMEWORK_SECURITY
+libhx509_la_LDFLAGS += -framework Security -framework CoreFoundation
+endif
 
 libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_hcrypto)
 nodist_libhx509_la_SOURCES = $(BUILT_SOURCES)
