@@ -1692,13 +1692,9 @@ static BOOL cli_get_ea_list(struct cli_state *cli,
 		goto out;
 	}
 
-	if (num_eas) {
-		ea_list = TALLOC_ARRAY(ctx, struct ea_struct, num_eas);
-		if (!ea_list) {
-			goto out;
-		}
-	} else {
-		ea_list = NULL;
+	ea_list = TALLOC_ARRAY(ctx, struct ea_struct, num_eas);
+	if (!ea_list) {
+		goto out;
 	}
 
 	ea_size = (size_t)IVAL(rdata,0);
