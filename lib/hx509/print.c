@@ -577,6 +577,7 @@ check_basicConstraints(hx509_validate_ctx ctx,
 	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 			   "cA is FALSE, not allowed to be\n");
     }
+    free_BasicConstraints(&b);
 
     return 0;
 }
