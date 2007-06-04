@@ -124,10 +124,10 @@ proto (int sock, const char *service)
     {
 	char *str;
 	krb5_unparse_name(context, in_creds.server, &str);
-	fprintf (stderr, "User is `%s'\n", str);
+	printf ("User is `%s'\n", str);
 	free(str);
 	krb5_unparse_name(context, in_creds.client, &str);
-	fprintf (stderr, "Server is `%s'\n", str);
+	printf ("Server is `%s'\n", str);
 	free(str);
     }
 
@@ -147,7 +147,7 @@ proto (int sock, const char *service)
 	errx (1, "krb5_rd_safe: %s",
 	      krb5_get_err_text(context, status));
 
-    fprintf (stderr, "safe packet: %.*s\n", (int)data.length,
+    printf ("safe packet: %.*s\n", (int)data.length,
 	    (char *)data.data);
 
     status = krb5_read_message(context, &sock, &packet);
@@ -163,7 +163,7 @@ proto (int sock, const char *service)
 	errx (1, "krb5_rd_priv: %s",
 	      krb5_get_err_text(context, status));
 
-    fprintf (stderr, "priv packet: %.*s\n", (int)data.length,
+    printf ("priv packet: %.*s\n", (int)data.length,
 	    (char *)data.data);
 
     return 0;
