@@ -1204,6 +1204,7 @@ _kdc_do_digest(krb5_context context,
 		
 		if ((config->digests_allowed & NTLM_V1_SESSION) == 0) {
 		    kdc_log(context, config, 0, "NTLM v1-session not allowed");
+		    ret = EINVAL;
 		    goto out;
 		}
 
@@ -1263,6 +1264,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context,
 				      "NTLM client failed to neg key "
 				      "exchange but still sent key");
+		ret = EINVAL;
 		goto out;
 	    }
 	    
