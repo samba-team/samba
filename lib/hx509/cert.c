@@ -1378,7 +1378,7 @@ match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
 	{
 	    GeneralName certname;
 	    
-	    
+	    memset(&certname, 0, sizeof(certname));
 	    certname.element = choice_GeneralName_directoryName;
 	    certname.u.directoryName.element = 
 		c->tbsCertificate.subject.element;
