@@ -408,8 +408,8 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 
-	if (!secrets_fetch_trusted_domain_password(user_info->domain, &trust_password,
-				&sid, &last_change_time)) {
+	if (!pdb_get_trusteddom_pw(user_info->domain, &trust_password,
+				   &sid, &last_change_time)) {
 		DEBUG(0, ("check_trustdomain_security: could not fetch trust "
 			  "account password for domain %s\n",
 			  user_info->domain));
