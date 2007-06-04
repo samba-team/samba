@@ -26,10 +26,14 @@
 
 static TDB_CONTEXT *tdb; /* used for driver files */
 
+static BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
+			       size_t *p_num_entries, BOOL unix_only);
+static BOOL group_map_remove(const DOM_SID *sid);
+	
 /****************************************************************************
  Open the group mapping tdb.
 ****************************************************************************/
- BOOL init_group_mapping(void)
+static BOOL init_group_mapping(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
@@ -85,18 +89,13 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 /****************************************************************************
 ****************************************************************************/
- BOOL add_mapping_entry(GROUP_MAP *map, int flag)
+static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	TDB_DATA dbuf;
 	pstring key, buf;
 	fstring string_sid="";
 	int len;
 
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
-	
 	sid_to_string(string_sid, &map->sid);
 
 	len = tdb_pack((uint8 *)buf, sizeof(buf), "ddff",
@@ -119,18 +118,13 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
- BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	TDB_DATA dbuf;
 	pstring key;
 	fstring string_sid;
 	int ret = 0;
 	
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
-
 	/* the key is the SID, retrieving is direct */
 
 	sid_to_string(string_sid, &sid);
@@ -159,16 +153,11 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
- BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
+static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
 	int ret;
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
 
 	/* we need to enumerate the TDB to find the GID */
 
@@ -209,16 +198,11 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
- BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
+static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
 	int ret;
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("get_group_map_from_ntname:failed to initialize group mapping\n"));
-		return(False);
-	}
 
 	/* we need to enumerate the TDB to find the name */
 
@@ -259,17 +243,12 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  Remove a group mapping entry.
 ****************************************************************************/
 
-BOOL group_map_remove(const DOM_SID *sid)
+static BOOL group_map_remove(const DOM_SID *sid)
 {
 	TDB_DATA dbuf;
 	pstring key;
 	fstring string_sid;
 	
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
-
 	/* the key is the SID, retrieving is direct */
 
 	sid_to_string(string_sid, sid);
@@ -291,7 +270,7 @@ BOOL group_map_remove(const DOM_SID *sid)
  Enumerate the group mapping.
 ****************************************************************************/
 
-BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
+static BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
 			size_t *p_num_entries, BOOL unix_only)
 {
 	TDB_DATA kbuf, dbuf, newkey;
@@ -302,11 +281,6 @@ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GR
 	size_t entries=0;
 	DOM_SID grpsid;
 	uint32 rid;
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
 
 	*p_num_entries=0;
 	*pp_rmap=NULL;
@@ -388,17 +362,12 @@ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GR
 /* This operation happens on session setup, so it should better be fast. We
  * store a list of aliases a SID is member of hanging off MEMBEROF/SID. */
 
- NTSTATUS one_alias_membership(const DOM_SID *member,
+static NTSTATUS one_alias_membership(const DOM_SID *member,
 			       DOM_SID **sids, size_t *num)
 {
 	fstring key, string_sid;
 	TDB_DATA dbuf;
 	const char *p;
-
-	if (!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	sid_to_string(string_sid, member);
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, string_sid);
@@ -464,7 +433,7 @@ static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 }
 
 
- NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	GROUP_MAP map;
 	TDB_DATA dbuf;
@@ -472,11 +441,6 @@ static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	fstring string_sid;
 	char *new_memberstring;
 	int result;
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	if (!get_group_map_from_sid(*alias, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -570,15 +534,10 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
- NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
+static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 {
 	GROUP_MAP map;
 	struct aliasmem_closure closure;
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	if (!get_group_map_from_sid(*alias, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -598,7 +557,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	return NT_STATUS_OK;
 }
 
- NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	NTSTATUS result;
 	DOM_SID *sids;
@@ -669,3 +628,29 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	return result;
 }
 
+
+static const struct mapping_backend tdb_backend = {
+	.add_mapping_entry         = add_mapping_entry,
+	.get_group_map_from_sid    = get_group_map_from_sid,
+	.get_group_map_from_gid    = get_group_map_from_gid,
+	.get_group_map_from_ntname = get_group_map_from_ntname,
+	.group_map_remove          = group_map_remove,
+	.enum_group_mapping        = enum_group_mapping,
+	.one_alias_membership      = one_alias_membership,
+	.add_aliasmem              = add_aliasmem,
+	.del_aliasmem              = del_aliasmem,
+	.enum_aliasmem             = enum_aliasmem	
+};
+
+/*
+  initialise the tdb mapping backend
+ */
+const struct mapping_backend *groupdb_tdb_init(void)
+{
+	if (!init_group_mapping()) {
+		DEBUG(0,("Failed to initialise tdb mapping backend\n"));
+		return NULL;
+	}
+
+	return &tdb_backend;
+}
