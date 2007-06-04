@@ -180,7 +180,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	state->c = talloc_steal(ctdb, c);
 	state->sin = talloc(ctdb, struct sockaddr_in);       
 	CTDB_NO_MEMORY(ctdb, state->sin);
-	*state->sin = *(struct sockaddr_in *)indata.dptr;	
+	*state->sin = pip->sin;
 
 	DEBUG(0,("Takover of IP %s/%u on interface %s\n", 
 		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
@@ -284,7 +284,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	state->c = talloc_steal(state, c);
 	state->sin = talloc(state, struct sockaddr_in);       
 	CTDB_NO_MEMORY(ctdb, state->sin);
-	*state->sin = *(struct sockaddr_in *)indata.dptr;	
+	*state->sin = pip->sin;
 
 	ret = ctdb_event_script_callback(ctdb, state, release_ip_callback, state,
 					 "releaseip %s %s %u",
