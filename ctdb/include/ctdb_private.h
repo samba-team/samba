@@ -869,6 +869,21 @@ struct ctdb_control_set_dmaster {
 	uint32_t dmaster;
 };
 
+/* table that contains a list of all nodes a ctdb knows about and their 
+   status
+ */
+struct ctdb_node_and_flags {
+	uint32_t vnn;
+	uint32_t flags;
+	struct sockaddr_in sin;
+
+};
+
+struct ctdb_node_map {
+	uint32_t num;
+	struct ctdb_node_and_flags nodes[1];
+};
+
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
 int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);

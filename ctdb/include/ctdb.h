@@ -243,17 +243,8 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb,
 	TALLOC_CTX *mem_ctx, struct ctdb_dbid_map **dbmap);
 
 
-/* table that contains a list of all nodes a ctdb knows about and their 
-   status
- */
-struct ctdb_node_and_flags {
-	uint32_t vnn;
-	uint32_t flags;
-};
-struct ctdb_node_map {
-	uint32_t num;
-	struct ctdb_node_and_flags nodes[1];
-};
+struct ctdb_node_map;
+
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, 
 		    struct timeval timeout, uint32_t destnode, 
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
