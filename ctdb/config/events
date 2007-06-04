@@ -21,6 +21,15 @@ case $cmd in
         # make sure we have a blank state directory for the scripts to work with
 	/bin/rm -rf /etc/ctdb/state
 	/bin/mkdir -p /etc/ctdb/state
+
+	# set any tunables from the config file
+	set | grep ^CTDB_SET_ | cut -d_ -f3- | 
+	while read v; do
+	    varname=`echo $v | cut -d= -f1`
+	    value=`echo $v | cut -d= -f2`
+	    ctdb setvar $varname $value || exit 1
+	    echo "`date` Set $varname to $value"
+	done
 	;;
 esac
 
