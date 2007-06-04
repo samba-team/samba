@@ -91,14 +91,10 @@ static void show_statistics(struct ctdb_statistics *s)
 		STATISTICS_FIELD(node.reply_dmaster),
 		STATISTICS_FIELD(node.reply_error),
 		STATISTICS_FIELD(node.req_message),
-		STATISTICS_FIELD(node.req_finished),
 		STATISTICS_FIELD(node.req_control),
 		STATISTICS_FIELD(node.reply_control),
 		STATISTICS_FIELD(client.req_call),
 		STATISTICS_FIELD(client.req_message),
-		STATISTICS_FIELD(client.req_finished),
-		STATISTICS_FIELD(client.req_connect_wait),
-		STATISTICS_FIELD(client.req_shutdown),
 		STATISTICS_FIELD(client.req_control),
 		STATISTICS_FIELD(controls.statistics),
 		STATISTICS_FIELD(controls.get_config),
@@ -111,7 +107,6 @@ static void show_statistics(struct ctdb_statistics *s)
 		STATISTICS_FIELD(controls.traverse_data),
 		STATISTICS_FIELD(controls.update_seqnum),
 		STATISTICS_FIELD(controls.enable_seqnum),
-		STATISTICS_FIELD(controls.set_seqnum_frequency),
 		STATISTICS_FIELD(controls.register_srvid),
 		STATISTICS_FIELD(controls.deregister_srvid),
 		STATISTICS_FIELD(timeouts.call),
@@ -523,6 +518,78 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 
 
 /*
+  get a tunable
+ */
+static int control_getvar(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *name;
+	uint32_t value;
+	int ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	name = argv[0];
+	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), options.vnn, name, &value);
+	if (ret == -1) {
+		printf("Unable to get tunable variable '%s'\n", name);
+		return -1;
+	}
+
+	printf("%-17s = %u\n", name, value);
+	return 0;
+}
+
+/*
+  set a tunable
+ */
+static int control_setvar(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *name;
+	uint32_t value;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	name = argv[0];
+	value = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_ctrl_set_tunable(ctdb, TIMELIMIT(), options.vnn, name, value);
+	if (ret == -1) {
+		printf("Unable to set tunable variable '%s'\n", name);
+		return -1;
+	}
+	return 0;
+}
+
+/*
+  list all tunables
+ */
+static int control_listvars(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t count;
+	const char **list;
+	int ret, i;
+
+	ret = ctdb_ctrl_list_tunables(ctdb, TIMELIMIT(), options.vnn, ctdb, &list, &count);
+	if (ret == -1) {
+		printf("Unable to list tunable variables\n");
+		return -1;
+	}
+
+	for (i=0;i<count;i++) {
+		control_getvar(ctdb, 1, &list[i]);
+	}
+
+	talloc_free(list);
+	
+	return 0;
+}
+
+/*
   display debug level on a node
  */
 static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -707,6 +774,9 @@ static const struct {
 } ctdb_commands[] = {
 	{ "status",          control_status,            "show node status" },
 	{ "ping",            control_ping,              "ping all nodes" },
+	{ "getvar",          control_getvar,            "get a tunable variable",               "<name>"},
+	{ "setvar",          control_setvar,            "set a tunable variable",               "<name> <value>"},
+	{ "listvars",        control_listvars,          "list tunable variables"},
 	{ "statistics",      control_statistics,        "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  "reset statistics"},
 	{ "process-exists",  control_process_exists,    "check if a process exists on a node",  "<pid>"},

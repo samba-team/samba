@@ -51,6 +51,14 @@
 # the default is 0
 # DEBUGLEVEL=0
 
+# set any default tuning options for ctdb
+# use CTDB_SET_XXXX=value where XXXX is the name of the tuning
+# variable
+# for example
+#    CTDB_SET_TRAVERSETIMEOUT=60
+# you can get a list of variables using "ctdb listvars"
+
+
 # any other options you might want. Run ctdbd --help for a list
 # CTDB_OPTIONS=
 

@@ -2,14 +2,7 @@
 
 killall -q ctdbd
 
-echo "Starting 2 ctdb daemons"
-$VALGRIND bin/ctdbd --reclock=rec.lock --nlist direct/nodes.txt --event-script=tests/events --logfile=-
-$VALGRIND bin/ctdbd --reclock=rec.lock --nlist direct/nodes.txt --event-script=tests/events --logfile=- --socket=sock.2
-
-while bin/ctdb status | grep RECOVERY > /dev/null; do
-    echo "`date` Waiting for recovery"
-    sleep 1;
-done
+tests/start_daemons.sh 2 tests/nodes.txt || exit 1
 
 echo "Testing ping"
 $VALGRIND bin/ctdb ping || exit 1
@@ -38,6 +31,12 @@ $VALGRIND bin/ctdb getdbmap || exit 1
 
 echo "Testing status"
 $VALGRIND bin/ctdb status || exit 1
+
+echo "Testing variables"
+$VALGRIND bin/ctdb listvars || exit 1
+$VALGRIND bin/ctdb getvar TraverseTimeout || exit 1
+$VALGRIND bin/ctdb setvar TraverseTimeout 10 || exit 1
+$VALGRIND bin/ctdb getvar TraverseTimeout || exit 1
 
 sleep 1
 

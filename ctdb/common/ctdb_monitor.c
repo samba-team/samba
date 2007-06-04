@@ -36,7 +36,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 
 	if (ctdb->monitoring_mode==CTDB_MONITORING_DISABLED) {
 		event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(CTDB_MONITORING_TIMEOUT, 0), 
+			timeval_current_ofs(ctdb->tunable.monitoring_timeout, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 		return;
 	}
@@ -65,7 +65,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 
 		node->rx_cnt = 0;
 
-		if (node->dead_count >= CTDB_MONITORING_DEAD_COUNT) {
+		if (node->dead_count >= ctdb->tunable.monitoring_limit) {
 			DEBUG(0,("dead count reached for node %u\n", node->vnn));
 			ctdb_node_dead(node);
 			ctdb_send_keepalive(ctdb, node->vnn);
@@ -84,7 +84,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	}
 	
 	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(CTDB_MONITORING_TIMEOUT, 0), 
+			timeval_current_ofs(ctdb->tunable.monitoring_timeout, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 }
 
@@ -94,7 +94,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 int ctdb_start_monitoring(struct ctdb_context *ctdb)
 {
 	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(CTDB_MONITORING_TIMEOUT, 0), 
+			timeval_current_ofs(ctdb->tunable.monitoring_timeout, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 	return 0;
 }

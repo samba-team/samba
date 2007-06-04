@@ -33,7 +33,8 @@ CTDB_COMMON_OBJ = common/ctdb.o common/ctdb_daemon.o common/ctdb_client.o \
 	common/ctdb_call.o common/ctdb_ltdb.o common/ctdb_lockwait.o \
 	common/ctdb_message.o common/cmdline.o common/ctdb_control.o \
 	lib/util/debug.o common/ctdb_recover.o common/ctdb_recoverd.o \
-	common/ctdb_freeze.o common/ctdb_traverse.o common/ctdb_monitor.o
+	common/ctdb_freeze.o common/ctdb_traverse.o common/ctdb_monitor.o \
+	common/ctdb_tunables.o
 
 CTDB_TAKEOVER_OBJ = takeover/system.o takeover/ctdb_takeover.o
 
@@ -43,7 +44,7 @@ CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
 
 OBJS = @TDB_OBJ@ @TALLOC_OBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ $(CTDB_OBJ) $(UTIL_OBJ)
 
-TEST_BINS=bin/ctdbd_test bin/ctdb_bench bin/ctdb_fetch @INFINIBAND_BINS@
+TEST_BINS=bin/ctdb_bench bin/ctdb_fetch @INFINIBAND_BINS@
 BINS = bin/ctdb
 SBINS = bin/ctdbd
 
@@ -71,10 +72,6 @@ bin/ctdbd: $(OBJS) direct/ctdbd.o
 bin/ctdb: $(OBJS) tools/ctdb_control.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tools/ctdb_control.o $(OBJS) $(LIB_FLAGS)
-
-bin/ctdbd_test: $(OBJS) direct/ctdbd_test.o
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ direct/ctdbd_test.o 
 
 bin/ctdb_bench: $(OBJS) tests/ctdb_bench.o 
 	@echo Linking $@

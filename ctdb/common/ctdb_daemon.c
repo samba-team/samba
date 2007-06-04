@@ -192,82 +192,6 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 
 
 /*
-  called when the daemon gets a shutdown request from a client
- */
-static void daemon_request_shutdown(struct ctdb_client *client, 
-				      struct ctdb_req_shutdown *f)
-{
-	struct ctdb_context *ctdb = talloc_get_type(client->ctdb, struct ctdb_context);
-	int len;
-	uint32_t node;
-
-	/* we dont send to ourself so we can already count one daemon as
-	   exiting */
-	ctdb->num_finished++;
-
-
-	/* loop over all nodes of the cluster */
-	for (node=0; node<ctdb->num_nodes;node++) {
-		struct ctdb_req_finished *rf;
-
-		/* dont send a message to ourself */
-		if (ctdb->vnn == node) {
-			continue;
-		}
-
-		len = sizeof(struct ctdb_req_finished);
-		rf = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_FINISHED, len,
-					     struct ctdb_req_finished);
-		CTDB_NO_MEMORY_FATAL(ctdb, rf);
-
-		rf->hdr.destnode  = node;
-
-		ctdb_queue_packet(ctdb, &(rf->hdr));
-
-		talloc_free(rf);
-	}
-
-	/* wait until all nodes have are prepared to shutdown */
-	while (ctdb->num_finished != ctdb->num_nodes) {
-		event_loop_once(ctdb->ev);
-	}
-
-	/* all daemons have requested to finish - we now exit */
-	DEBUG(1,("All daemons finished - exiting\n"));
-	_exit(0);
-}
-
-
-
-/*
-  called when the daemon gets a connect wait request from a client
- */
-static void daemon_request_connect_wait(struct ctdb_client *client, 
-					struct ctdb_req_connect_wait *c)
-{
-	struct ctdb_reply_connect_wait *r;
-	int res;
-
-	/* first wait - in the daemon */
-	ctdb_daemon_connect_wait(client->ctdb);
-
-	/* now send the reply */
-	r = ctdbd_allocate_pkt(client->ctdb, client, CTDB_REPLY_CONNECT_WAIT, sizeof(*r), 
-			       struct ctdb_reply_connect_wait);
-	CTDB_NO_MEMORY_VOID(client->ctdb, r);
-	r->vnn           = ctdb_get_vnn(client->ctdb);
-	r->num_connected = client->ctdb->num_connected;
-	
-	res = daemon_queue_send(client, &r->hdr);
-	talloc_free(r);
-	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to queue a connect wait response\n"));
-		return;
-	}
-}
-
-
-/*
   destroy a ctdb_client
 */
 static int ctdb_client_destructor(struct ctdb_client *client)
@@ -493,16 +417,6 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 	case CTDB_REQ_MESSAGE:
 		ctdb->statistics.client.req_message++;
 		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
-		break;
-
-	case CTDB_REQ_CONNECT_WAIT:
-		ctdb->statistics.client.req_connect_wait++;
-		daemon_request_connect_wait(client, (struct ctdb_req_connect_wait *)hdr);
-		break;
-
-	case CTDB_REQ_SHUTDOWN:
-		ctdb->statistics.client.req_shutdown++;
-		daemon_request_shutdown(client, (struct ctdb_req_shutdown *)hdr);
 		break;
 
 	case CTDB_REQ_CONTROL:
@@ -861,15 +775,6 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 
 	return hdr;	
 }
-
-/*
-  called when a CTDB_REQ_FINISHED packet comes in
-*/
-void ctdb_request_finished(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
-{
-	ctdb->num_finished++;
-}
-
 
 struct daemon_control_state {
 	struct daemon_control_state *next, *prev;

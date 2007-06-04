@@ -1,0 +1,4 @@
+This directory is where you should put any local or application
+specific event scripts for ctdb to call.
+
+

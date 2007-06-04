@@ -163,11 +163,6 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id);
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 
 /*
-  wait for all nodes to be connected - useful for test code
-*/
-void ctdb_connect_wait(struct ctdb_context *ctdb);
-
-/*
   initiate an ordered ctdb cluster shutdown
   this function will never return
 */
@@ -344,5 +339,23 @@ int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb, 
+			  struct timeval timeout, 
+			  uint32_t destnode,
+			  const char *name, uint32_t *value);
+
+int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb, 
+			  struct timeval timeout, 
+			  uint32_t destnode,
+			  const char *name, uint32_t value);
+
+int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb, 
+			    struct timeval timeout, 
+			    uint32_t destnode,
+			    TALLOC_CTX *mem_ctx,
+			    const char ***list, uint32_t *count);
+
+
 
 #endif

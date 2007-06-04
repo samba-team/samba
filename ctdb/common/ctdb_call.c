@@ -180,7 +180,7 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 	uint32_t lmaster = ctdb_lmaster(ctdb, &key);
 	if (ctdb->vnn == lmaster) {
 		c->hdr.destnode = header->dmaster;
-	} else if ((c->hopcount % CTDB_MAX_REDIRECT_COUNT) == 0) {
+	} else if ((c->hopcount % ctdb->tunable.max_redirect_count) == 0) {
 		c->hdr.destnode = lmaster;
 	} else {
 		c->hdr.destnode = header->dmaster;
@@ -476,8 +476,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	*/
 	if ( c->hdr.srcnode != ctdb->vnn &&
 	     ((header.laccessor == c->hdr.srcnode
-	       && header.lacount >= ctdb->max_lacount)
-	      || (c->flags&CTDB_IMMEDIATE_MIGRATION)) ) {
+	       && header.lacount >= ctdb->tunable.max_lacount)
+	      || (c->flags & CTDB_IMMEDIATE_MIGRATION)) ) {
 		DEBUG(2,("vnn %u starting migration of %08x to %u\n", 
 			 ctdb->vnn, ctdb_hash(&call.key), c->hdr.srcnode));
 		ctdb_call_send_dmaster(ctdb_db, c, &header, &call.key, &data);
