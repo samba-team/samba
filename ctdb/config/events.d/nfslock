@@ -1,8 +1,8 @@
 #!/bin/sh
 # event strict to manage lockd and statd in a cluster environment
 
-. /etc/sysconfig/nfs
 . /etc/ctdb/functions
+loadconfig nfs
 
 [ -z $CTDB_MANAGES_NFS ] && exit 0
 [ $CTDB_MANAGES_NFS != "yes" ] && exit 0

@@ -1,5 +1,16 @@
 # utility functions for ctdb event scripts
 
+#######################################
+# pull in a system config file, if any
+loadconfig() {
+    name="$1"
+    if [ -f /etc/sysconfig/$name ]; then
+	. /etc/sysconfig/$name
+    elif [ -f /etc/default/$name ]; then
+	. /etc/default/$name
+    fi
+}
+
 
 ######################################################
 # simulate /sbin/service on platforms that don't have it

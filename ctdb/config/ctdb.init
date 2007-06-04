@@ -34,18 +34,14 @@ fi
 # Avoid using root's TMPDIR
 unset TMPDIR
 
+. /etc/ctdb/functions
+loadconfig network
+loadconfig ctdb
+
 # check networking is up (for redhat)
-[ -f /etc/sysconfig/network ] && {
-    . /etc/sysconfig/network
-    [ ${NETWORKING} = "no" ] && exit 0
-}
+[ "${NETWORKING}" = "no" ] && exit 0
 
 CTDB_OPTIONS=""
-
-# pull in admin specified config for ctdb
-if [ -f /etc/sysconfig/ctdb ]; then
-   . /etc/sysconfig/ctdb 
-fi
 
 [ -z "$CTDB_RECOVERY_LOCK" ] && {
     echo "You must configure the location of the CTDB_RECOVERY_LOCK"

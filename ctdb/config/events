@@ -2,8 +2,8 @@
 ############################
 # main event script for ctdb
 
-. /etc/sysconfig/ctdb
 . /etc/ctdb/functions
+loadconfig ctdb
 
 cmd="$1"
 shift
