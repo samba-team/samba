@@ -1,87 +1,34 @@
 #!/bin/sh
 ############################
 # main event script for ctdb
+#
+# This script is called with one of the following sets of arguments
+#     startup    : called when ctdb starts
+#     shutdown   : called when ctdb shuts down
+#     takeip 
 
 . /etc/ctdb/functions
 loadconfig ctdb
+
+# ensure we have /bin and /usr/bin in the path
+PATH=/bin:/usr/bin:$PATH
 
 cmd="$1"
 shift
 
 case $cmd in 
-     #############################
-     # called when ctdbd starts up
      startup)
+        # make sure we have a blank state directory for the scripts to work with
 	/bin/rm -rf /etc/ctdb/state
 	/bin/mkdir -p /etc/ctdb/state
 	;;
-
-
-     ################################################
-     # called when ctdbd wants to claim an IP address
-     takeip)
-	if [ $# != 3 ]; then
-	   echo "must supply interface, IP and maskbits"
-	   exit 1
-	fi
-	iface=$1
-	ip=$2
-	maskbits=$3
-
-	/sbin/ip link set $iface up || {
-		 echo "`/bin/date` Failed to bringup interface $iface"
-		 exit 1
-	}
-	/sbin/ip addr add $ip/$maskbits dev $iface || {
-		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
-		 exit 1
-	}
-
-	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
-	;;
-
-
-     ##################################################
-     # called when ctdbd wants to release an IP address
-     releaseip)
-	if [ $# != 3 ]; then
-	   echo "`/bin/date` must supply interface, IP and maskbits"
-	   exit 1
-	fi
-	iface=$1
-	ip=$2
-	maskbits=$3
-	/sbin/ip addr del $ip dev $iface || {
-		 echo "`/bin/date` Failed to del $ip on dev $iface"
-		 exit 1
-	}
-
-	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
-	;;
-
-
-     ###########################################
-     # called when ctdbd has finished a recovery
-     recovered)
-	;;
-
-     ####################################
-     # called when ctdbd is shutting down
-     shutdown)
-	;;
-
-     *)
-        echo "`/bin/date` Invalid ctdb event command $cmd"
-        exit 1
-        ;;
 esac
 
 #######################################
-# call all application specific scripts
+# call all application or local scripts
 [ -d /etc/ctdb/events.d ] && {
-    /bin/ls /etc/ctdb/events.d | /bin/grep -v '~' | 
+    # only accept scripts of the form NN.name
+    /bin/ls /etc/ctdb/events.d | /bin/grep '^[0-9]*\.\w*$' | sort -n |
     while read SCRIPT; do
 	[ -x /etc/ctdb/events.d/$SCRIPT ] && {
 	    /etc/ctdb/events.d/$SCRIPT $cmd "$1" "$2" "$3" || exit 1
