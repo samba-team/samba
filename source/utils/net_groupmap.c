@@ -725,7 +725,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 		printf("%s\n", sid_string_static(&(members[i])));
 	}
 
-	SAFE_FREE(members);
+	TALLOC_FREE(members);
 
 	return 0;
 }
