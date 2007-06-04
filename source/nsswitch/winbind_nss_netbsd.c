@@ -22,10 +22,10 @@
    Boston, MA  02111-1307, USA.
 */
 
-#include <sys/param.h>
 
 #include "winbind_client.h"
 
+#include <sys/param.h>
 #include <stdarg.h>
 #include <syslog.h>
 
