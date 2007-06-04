@@ -422,6 +422,7 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 	    free_DistributionPointName(&dpname);
 	}
     }
+    free_CRLDistributionPoints(&dp);
 
     return 0;
 }
@@ -673,6 +674,7 @@ hx509_validate_cert(hx509_context context,
     hx509_name issuer, subject;
     char *str;
     struct cert_status status;
+    int ret;
 
     memset(&status, 0, sizeof(status));
 
@@ -688,13 +690,15 @@ hx509_validate_cert(hx509_context context,
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Version 3 certificate without extensions\n");
 
-    _hx509_name_from_Name(&t->subject, &subject);
+    ret = hx509_cert_get_subject(cert, &subject);
+    if (ret) abort();
     hx509_name_to_string(subject, &str);
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "subject name: %s\n", str);
     free(str);
 
-    _hx509_name_from_Name(&t->issuer, &issuer);
+    ret = hx509_cert_get_issuer(cert, &issuer);
+    if (ret) abort();
     hx509_name_to_string(issuer, &str);
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "issuer name: %s\n", str);
