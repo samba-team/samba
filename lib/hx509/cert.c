@@ -103,11 +103,13 @@ hx509_context_init(hx509_context *context)
     if (*context == NULL)
 	return ENOMEM;
 
+    _hx509_ks_null_register(*context);
     _hx509_ks_mem_register(*context);
     _hx509_ks_file_register(*context);
     _hx509_ks_pkcs12_register(*context);
     _hx509_ks_pkcs11_register(*context);
     _hx509_ks_dir_register(*context);
+    _hx509_ks_keychain_register(*context);
 
     ENGINE_add_conf_module();
     OpenSSL_add_all_algorithms();
