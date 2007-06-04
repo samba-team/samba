@@ -1,5 +1,12 @@
 2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* print.c: Leak less memory.
+
+	* hxtool.c: Leak less memory.
+
+	* print.c: Leak less memory, use functions that does same but
+	more.
+
 	* name.c (quote_string): don't sign extend the (signed) char to
 	avoid printing too much, add an assert to check that we didn't
 	overrun the buffer.
