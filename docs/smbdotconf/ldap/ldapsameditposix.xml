@@ -20,7 +20,7 @@
 	provision</command>. To run this command the ldap server must be running, Winindd must be running and
 	the smb.conf ldap options must be properly configured.
 
-	The tipical ldap setup used with the <smbconfoption name="ldapsam:trusted">yes</smbconfoption> option
+	The typical ldap setup used with the <smbconfoption name="ldapsam:trusted">yes</smbconfoption> option
 	is usually sufficient to use <smbconfoption name="ldapsam:editposix">yes</smbconfoption> as well.
 	</para>
 
