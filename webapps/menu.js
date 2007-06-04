@@ -8,19 +8,9 @@ swat_menus = new Object();
 
 swat_menus.main = simple_menu(
 	"Main Menu",
-	"Servers",            session_uri("/?menu=servers"),
 	"Installation",       session_uri("/install/"),
 	"ESP Tests",          session_uri("/esptest/"),
 	"Preview of new SWAT",session_uri("/index.html"));
-
-swat_menus.servers = simple_menu(
-	"Servers",
-	"LDAP Server",        session_uri("/ldap_server/"),
-	"CLDAP Server",       session_uri("/cldap_server/"),
-	"RPC Server",         session_uri("/rpc_server/"),
-	"NBT Server",         session_uri("/nbt_server/"),
-	"WINS Server",        session_uri("/wins_server/"),
-	"Kerberos Server",    session_uri("/kdc_server/"));
 
 swat_menus.esptest = simple_menu(
 	"ESP Tests",
