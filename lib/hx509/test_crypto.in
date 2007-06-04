@@ -180,5 +180,8 @@ ${hxtool} certificate-copy \
     FILE:out.pem \
     PKCS12:out2.pem || exit 1
 
+echo "print certificate with utf8"
+${hxtool} print \
+	FILE:$srcdir/data/j.pem >/dev/null 2>/dev/null || exit 1
 
 exit 0
