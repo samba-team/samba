@@ -1,5 +1,7 @@
 2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/test/uu_server.c: Print status to stdout.
+
 	* kdc/digest.c (digest ntlm): provide log entires by setting ret
 	to an error.
 	
