@@ -82,11 +82,12 @@ quote_string(const char *f, size_t len, size_t *rlen)
 	    to[j++] = from[i];
 	} else {
 	    int l = snprintf(&to[j], tolen - j - 1,
-			     "#%02x", (unsigned int)from[i]);
+			     "#%02x", (unsigned char)from[i]);
 	    j += l;
 	}
     }
     to[j] = '\0';
+    assert(j < tolen);
     *rlen = j;
     return to;
 }
