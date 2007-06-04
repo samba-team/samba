@@ -28,6 +28,10 @@ case $cmd in
 	ip=$2
 	maskbits=$3
 
+	/sbin/ip link set $iface up || {
+		 echo "`/bin/date` Failed to bringup interface $iface"
+		 exit 1
+	}
 	/sbin/ip addr add $ip/$maskbits dev $iface || {
 		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
