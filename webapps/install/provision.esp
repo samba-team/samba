@@ -47,7 +47,10 @@ for (i=0;i<f.element.length;i++) {
 }
 
 if (form['submit'] == "Provision") {
+        /* overcome an initially blank smb.conf */
 	lp.set("realm", subobj.REALM);
+	lp.set("workgroup", subobj.DOMAIN);
+	lp.reload()
 	var goodpass = (subobj.CONFIRM == subobj.ADMINPASS);
 
 	if (!goodpass) {
