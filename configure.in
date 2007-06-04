@@ -419,6 +419,8 @@ AC_CHECK_TYPES([int8_t, int16_t, int32_t, int64_t,
 #endif
 ])
 
+rk_FRAMEWORK_SECURITY
+
 KRB_READLINE
 
 rk_TELNET
