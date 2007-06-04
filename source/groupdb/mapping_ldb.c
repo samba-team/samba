@@ -34,7 +34,7 @@ static BOOL mapping_upgrade(const char *tdb_path);
 /*
   connect to the group mapping ldb
 */
- BOOL init_group_mapping(void)
+static BOOL init_group_mapping(void)
 {
 	BOOL existed;
 	const char *init_ldif[] = 
@@ -128,16 +128,12 @@ static struct ldb_dn *mapping_dn(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 /*
   add a group mapping entry
  */
- BOOL add_mapping_entry(GROUP_MAP *map, int flag)
+static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	struct ldb_message *msg;	
 	int ret, i;
 	fstring string_sid;
 
-	if (!init_group_mapping()) {
-		return False;
-	}
-	
 	msg = ldb_msg_new(ldb);
 	if (msg == NULL) {
 		return False;
@@ -204,16 +200,12 @@ static BOOL msg_to_group_map(struct ldb_message *msg, GROUP_MAP *map)
 /*
  return a group map entry for a given sid
 */
- BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	int ret;
 	struct ldb_dn *dn;
 	struct ldb_result *res=NULL;
 	
-	if (!init_group_mapping()) {
-		return False;
-	}
-
 	dn = mapping_dn(ldb, &sid);
 	if (dn == NULL) goto failed;
 
@@ -236,15 +228,11 @@ failed:
 /*
  return a group map entry for a given gid
 */
- BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
+static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	int ret;
 	char *expr;
 	struct ldb_result *res=NULL;
-
-	if (!init_group_mapping()) {
-		return False;
-	}
 
 	expr = talloc_asprintf(ldb, "(&(gidNumber=%u)(objectClass=groupMap))", 
 			       (unsigned)gid);
@@ -267,15 +255,11 @@ failed:
 /*
   Return the sid and the type of the unix group.
 */
- BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
+static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 {
 	int ret;
 	char *expr;
 	struct ldb_result *res=NULL;
-
-	if (!init_group_mapping()) {
-		return False;
-	}
 
 	expr = talloc_asprintf(ldb, "(&(ntName=%s)(objectClass=groupMap))", name);
 	if (expr == NULL) goto failed;
@@ -297,15 +281,11 @@ failed:
 /*
  Remove a group mapping entry.
 */
- BOOL group_map_remove(const DOM_SID *sid)
+static BOOL group_map_remove(const DOM_SID *sid)
 {
 	struct ldb_dn *dn;
 	int ret;
 	
-	if (!init_group_mapping()) {
-		return False;
-	}
-
 	dn = mapping_dn(ldb, sid);
 	if (dn == NULL) {
 		return False;
@@ -320,9 +300,9 @@ failed:
 /*
   Enumerate the group mappings for a domain
 */
- BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, 
-			 GROUP_MAP **pp_rmap,
-			 size_t *p_num_entries, BOOL unix_only)
+static BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, 
+			       GROUP_MAP **pp_rmap,
+			       size_t *p_num_entries, BOOL unix_only)
 {
 	int i, ret;
 	char *expr;
@@ -330,10 +310,6 @@ failed:
 	struct ldb_result *res;
 	struct ldb_dn *basedn=NULL;
 	TALLOC_CTX *tmp_ctx;
-
-	if (!init_group_mapping()) {
-		return False;
-	}
 
 	tmp_ctx = talloc_new(ldb);
 	if (tmp_ctx == NULL) goto failed;
@@ -383,8 +359,8 @@ failed:
    This operation happens on session setup, so it should better be fast. We
    store a list of aliases a SID is member of hanging off MEMBEROF/SID. 
 */
- NTSTATUS one_alias_membership(const DOM_SID *member,
-			       DOM_SID **sids, size_t *num)
+static NTSTATUS one_alias_membership(const DOM_SID *member,
+				     DOM_SID **sids, size_t *num)
 {
 	const char *attrs[] = {
 		"sid",
@@ -396,10 +372,6 @@ failed:
 	struct ldb_result *res=NULL;
 	fstring string_sid;
 	NTSTATUS status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-
-	if (!init_group_mapping()) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
       	if (!sid_to_string(string_sid, member)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -451,10 +423,6 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	TALLOC_CTX *tmp_ctx;
 	GROUP_MAP map;
 
-	if (!init_group_mapping()) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	if (!get_group_map_from_sid(*alias, &map)) {
 		sid_to_string(string_sid, alias);
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -500,12 +468,12 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	return (ret == LDB_SUCCESS ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED);
 }
 
- NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	return modify_aliasmem(alias, member, LDB_FLAG_MOD_ADD);
 }
 
- NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	return modify_aliasmem(alias, member, LDB_FLAG_MOD_DELETE);
 }
@@ -514,7 +482,7 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 /*
   enumerate sids that have the given alias set in member
 */
- NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
+static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 {
 	const char *attrs[] = {
 		"member",
@@ -525,10 +493,6 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	struct ldb_dn *dn;
 	struct ldb_message_element *el;
 	
-	if (!init_group_mapping()) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	*sids = NULL;
 	*num = 0;
 
@@ -576,7 +540,7 @@ static int upgrade_map_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key,
 	int ret;
 	GROUP_MAP map;
 
-	if (strncmp(key.dptr, GROUP_PREFIX, 
+	if (strncmp((char *)key.dptr, GROUP_PREFIX, 
 		    MIN(key.dsize, strlen(GROUP_PREFIX))) != 0) {
 		return 0;
 	}
@@ -610,11 +574,11 @@ static int upgrade_map_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key,
 static int upgrade_alias_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key, 
 				TDB_DATA data, void *state)
 {
-	const char *p = data.dptr;
+	const char *p = (const char *)data.dptr;
 	fstring string_sid;
 	DOM_SID member;
 
-	if (strncmp(key.dptr, MEMBEROF_PREFIX, 
+	if (strncmp((char *)key.dptr, MEMBEROF_PREFIX, 
 		    MIN(key.dsize, strlen(MEMBEROF_PREFIX))) != 0) {
 		return 0;
 	}
@@ -683,4 +647,32 @@ failed:
 	DEBUG(0,("Failed to upgrade group mapping database\n"));
 	if (tdb) tdb_close(tdb);
 	return False;
+}
+
+
+
+static const struct mapping_backend ldb_backend = {
+	.add_mapping_entry         = add_mapping_entry,
+	.get_group_map_from_sid    = get_group_map_from_sid,
+	.get_group_map_from_gid    = get_group_map_from_gid,
+	.get_group_map_from_ntname = get_group_map_from_ntname,
+	.group_map_remove          = group_map_remove,
+	.enum_group_mapping        = enum_group_mapping,
+	.one_alias_membership      = one_alias_membership,
+	.add_aliasmem              = add_aliasmem,
+	.del_aliasmem              = del_aliasmem,
+	.enum_aliasmem             = enum_aliasmem	
+};
+
+/*
+  initialise the ldb mapping backend
+ */
+const struct mapping_backend *groupdb_ldb_init(void)
+{
+	if (!init_group_mapping()) {
+		DEBUG(0,("Failed to initialise ldb mapping backend\n"));
+		return NULL;
+	}
+
+	return &ldb_backend;
 }
