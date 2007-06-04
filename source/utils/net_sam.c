@@ -958,6 +958,8 @@ static int net_sam_listmem(int argc, const char **argv)
 					 sid_string_static(&members[i]));
 			}
 		}
+
+		TALLOC_FREE(members);
 	} else {
 		d_fprintf(stderr, "Can only list local group members so far.\n"
 			  "%s is a %s\n", argv[0], sid_type_lookup(grouptype));
