@@ -162,6 +162,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	node_map = (struct ctdb_node_map *)outdata->dptr;
 	node_map->num = num_nodes;
 	for (i=0; i<num_nodes; i++) {
+		inet_aton(ctdb->nodes[i]->address.address, &node_map->nodes[i].sin.sin_addr);
 		node_map->nodes[i].vnn   = ctdb->nodes[i]->vnn;
 		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
 	}
