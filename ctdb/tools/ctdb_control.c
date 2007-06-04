@@ -285,7 +285,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:Status:\n");
+		printf(":Node:IP:Status:\n");
 		for(i=0;i<nodemap->num;i++){
 			printf(":%d:%s:%d:\n", nodemap->nodes[i].vnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
@@ -327,6 +327,33 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 	printf("Recovery master:%d\n",recmaster);
+
+	return 0;
+}
+
+/*
+  display public ip status
+ */
+static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_all_public_ips *ips;
+	uint32_t myvnn;
+
+	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
+
+	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.vnn, ctdb, &ips);
+	if (ret != 0) {
+		printf("Unable to get public ips from node %u\n", options.vnn);
+		return ret;
+	}
+
+	printf("Number of nodes:%d\n", ips->num);
+	for(i=0;i<ips->num;i++){
+		printf("%-16s %d\n",
+			inet_ntoa(ips->ips[i].sin.sin_addr),
+			ips->ips[i].takeover_vnn);
+	}
 
 	return 0;
 }
@@ -779,6 +806,7 @@ static const struct {
 	{ "listvars",        control_listvars,          "list tunable variables"},
 	{ "statistics",      control_statistics,        "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  "reset statistics"},
+	{ "ip",              control_ip,                "show which public ip's that ctdb manages" },
 	{ "process-exists",  control_process_exists,    "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          "show the database map" },
 	{ "catdb",           control_catdb,             "dump a database" ,                     "<dbname>"},
