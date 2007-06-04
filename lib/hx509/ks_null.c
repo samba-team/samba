@@ -90,3 +90,9 @@ struct hx509_keyset_ops keyset_null = {
     null_iter,
     null_iter_end
 };
+
+void
+_hx509_ks_null_register(hx509_context context)
+{
+    _hx509_ks_register(context, &keyset_null);
+}
