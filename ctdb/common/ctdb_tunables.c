@@ -22,16 +22,31 @@
 
 static const struct {
 	const char *name;
-	size_t offset;
+	uint32_t default_v;
+	size_t offset;	
 } tunable_map[] = {
-	{ "MaxRedirectCount",  offsetof(struct ctdb_tunable, max_redirect_count) },
-	{ "SeqnumFrequency",   offsetof(struct ctdb_tunable, seqnum_frequency) },
-	{ "ControlTimeout",    offsetof(struct ctdb_tunable, control_timeout) },
-	{ "TraverseTimeout",   offsetof(struct ctdb_tunable, traverse_timeout) },
-	{ "MonitoringTimeout", offsetof(struct ctdb_tunable, monitoring_timeout) },
-	{ "MonitoringLimit",   offsetof(struct ctdb_tunable, monitoring_limit) },
-	{ "MaxLACount",        offsetof(struct ctdb_tunable, max_lacount) },
+	{ "MaxRedirectCount",  3,  offsetof(struct ctdb_tunable, max_redirect_count) },
+	{ "SeqnumFrequency",   1,  offsetof(struct ctdb_tunable, seqnum_frequency) },
+	{ "ControlTimeout",    60, offsetof(struct ctdb_tunable, control_timeout) },
+	{ "TraverseTimeout",   20, offsetof(struct ctdb_tunable, traverse_timeout) },
+	{ "MonitoringTimeout", 2,  offsetof(struct ctdb_tunable, monitoring_timeout) },
+	{ "MonitoringLimit",   3,  offsetof(struct ctdb_tunable, monitoring_limit) },
+	{ "MaxLACount",        7,  offsetof(struct ctdb_tunable, max_lacount) },
+	{ "RecoverTimeout",    5,  offsetof(struct ctdb_tunable, recover_timeout) },
+	{ "MonitorFrequency",  1,  offsetof(struct ctdb_tunable, monitor_frequency) },
+	{ "ElectionTimeout",   3,  offsetof(struct ctdb_tunable, election_timeout) },
 };
+
+/*
+  set all tunables to defaults
+ */
+void ctdb_tunables_set_defaults(struct ctdb_context *ctdb)
+{
+	int i;
+	for (i=0;i<ARRAY_SIZE(tunable_map);i++) {
+		*(uint32_t *)(tunable_map[i].offset + (uint8_t*)&ctdb->tunable) = tunable_map[i].default_v;
+	}
+}
 
 
 /*
