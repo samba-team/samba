@@ -24,6 +24,37 @@
 #include "includes.h"
 #include "groupdb/mapping.h"
 
+static const struct mapping_backend *backend;
+
+/*
+  initialise a group mapping backend
+ */
+static BOOL init_group_mapping(void)
+{
+	const char *backend_string;
+
+	if (backend != NULL) {
+		/* already initialised */
+		return True;
+	}
+	
+	/* default to using the ldb backend. This parameter should
+	   disappear in future versions of Samba3, but for now it
+	   provides a safety net in case any major problems are
+	   discovered with ldb after the release */	   
+	backend_string = lp_parm_const_string(-1, "groupdb", "backend", "ldb");
+
+	if (strcmp(backend_string, "ldb") == 0) {
+		backend = groupdb_ldb_init();
+	} else if (strcmp(backend_string, "tdb") == 0) {
+		backend = groupdb_tdb_init();
+	} else {
+		DEBUG(0,("Unknown groupdb backend '%s'\n", backend_string));
+		smb_panic("Unknown groupdb backend\n");
+	}
+	return backend != NULL;
+}
+
 /****************************************************************************
 initialise first time the mapping list
 ****************************************************************************/
@@ -58,7 +89,7 @@ static NTSTATUS alias_memberships(const DOM_SID *members, size_t num_members,
 	*sids = NULL;
 
 	for (i=0; i<num_members; i++) {
-		NTSTATUS status = one_alias_membership(&members[i], sids, num);
+		NTSTATUS status = backend->one_alias_membership(&members[i], sids, num);
 		if (!NT_STATUS_IS_OK(status))
 			return status;
 	}
@@ -304,42 +335,66 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 NTSTATUS pdb_default_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 				 DOM_SID sid)
 {
-	return get_group_map_from_sid(sid, map) ?
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->get_group_map_from_sid(sid, map) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS pdb_default_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 				 gid_t gid)
 {
-	return get_group_map_from_gid(gid, map) ?
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->get_group_map_from_gid(gid, map) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS pdb_default_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 				 const char *name)
 {
-	return get_group_map_from_ntname(name, map) ?
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->get_group_map_from_ntname(name, map) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS pdb_default_add_group_mapping_entry(struct pdb_methods *methods,
 						GROUP_MAP *map)
 {
-	return add_mapping_entry(map, TDB_INSERT) ?
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->add_mapping_entry(map, TDB_INSERT) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS pdb_default_update_group_mapping_entry(struct pdb_methods *methods,
 						   GROUP_MAP *map)
 {
-	return add_mapping_entry(map, TDB_REPLACE) ?
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->add_mapping_entry(map, TDB_REPLACE) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 						   DOM_SID sid)
 {
-	return group_map_remove(&sid) ?
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->group_map_remove(&sid) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -348,7 +403,11 @@ NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   BOOL unix_only)
 {
-	return enum_group_mapping(sid, sid_name_use, pp_rmap, p_num_entries, unix_only) ?
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->enum_group_mapping(sid, sid_name_use, pp_rmap, p_num_entries, unix_only) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -461,20 +520,32 @@ NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
 NTSTATUS pdb_default_add_aliasmem(struct pdb_methods *methods,
 				  const DOM_SID *alias, const DOM_SID *member)
 {
-	return add_aliasmem(alias, member);
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->add_aliasmem(alias, member);
 }
 
 NTSTATUS pdb_default_del_aliasmem(struct pdb_methods *methods,
 				  const DOM_SID *alias, const DOM_SID *member)
 {
-	return del_aliasmem(alias, member);
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->del_aliasmem(alias, member);
 }
 
 NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
 				   const DOM_SID *alias, DOM_SID **pp_members,
 				   size_t *p_num_members)
 {
-	return enum_aliasmem(alias, pp_members, p_num_members);
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return backend->enum_aliasmem(alias, pp_members, p_num_members);
 }
 
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
@@ -488,6 +559,11 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 	DOM_SID *alias_sids;
 	size_t i, num_alias_sids;
 	NTSTATUS result;
+
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	alias_sids = NULL;
 	num_alias_sids = 0;
