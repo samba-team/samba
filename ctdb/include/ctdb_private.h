@@ -47,6 +47,9 @@ struct ctdb_tunable {
 	uint32_t monitoring_timeout;
 	uint32_t monitoring_limit;
 	uint32_t max_lacount;
+	uint32_t recover_timeout;
+	uint32_t monitor_frequency;
+	uint32_t election_timeout;
 };
 
 /*
@@ -987,5 +990,7 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 				 TDB_DATA *outdata);
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
+
+void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
 
 #endif

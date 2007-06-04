@@ -523,14 +523,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->recovery_lock_fd = -1;
 	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
 
-	/* set default values for tunables */
-	ctdb->tunable.max_redirect_count = 3;
-	ctdb->tunable.seqnum_frequency   = 1;
-	ctdb->tunable.control_timeout    = 60;
-	ctdb->tunable.traverse_timeout   = 20;
-	ctdb->tunable.monitoring_timeout = 2;
-	ctdb->tunable.monitoring_limit   = 3;
-	ctdb->tunable.max_lacount        = 7;
+	ctdb_tunables_set_defaults(ctdb);
 
 	return ctdb;
 }

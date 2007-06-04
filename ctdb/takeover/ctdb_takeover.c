@@ -441,9 +441,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 			if (ctdb->nodes[j]->takeover_vnn != nodemap->nodes[i].vnn) {
 				ip.vnn = j;
 				ip.takeover_vnn = ctdb->nodes[j]->takeover_vnn;
-#ifdef HAVE_SOCK_SIN_LEN
-				ip.sin.sin_len = sizeof(*sin);
-#endif
 				ip.sin.sin_family = AF_INET;
 				inet_aton(ctdb->nodes[j]->public_address, &ip.sin.sin_addr);
 
@@ -468,9 +465,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 		}
 		ip.vnn = i;
 		ip.takeover_vnn = ctdb->nodes[i]->takeover_vnn;
-#ifdef HAVE_SOCK_SIN_LEN
-		ip.sin.sin_len = sizeof(*sin);
-#endif
 		ip.sin.sin_family = AF_INET;
 		inet_aton(ctdb->nodes[i]->public_address, &ip.sin.sin_addr);
 
@@ -698,7 +692,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 
 
 /*
-  
+  get list of public IPs
  */
 int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata)
 {
@@ -707,7 +701,7 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_c
 
 	len = offsetof(struct ctdb_all_public_ips, ips) + ctdb->num_nodes*sizeof(struct ctdb_public_ip);
 
-	ips = talloc_size(outdata, len);
+	ips = talloc_zero_size(outdata, len);
 	CTDB_NO_MEMORY(ctdb, ips);
 
 	outdata->dsize = len;
@@ -717,11 +711,10 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_c
 	for(i=0;i<ctdb->num_nodes;i++){
 		ips->ips[i].vnn = i;
 		ips->ips[i].takeover_vnn = ctdb->nodes[i]->takeover_vnn;
-#ifdef HAVE_SOCK_SIN_LEN
-		ips->ips[i].sin.sin_len = sizeof(struct sockaddr_in);
-#endif
 		ips->ips[i].sin.sin_family = AF_INET;
-		inet_aton(ctdb->nodes[i]->public_address, &ips->ips[i].sin.sin_addr);
+		if (ctdb->nodes[i]->public_address) {
+			inet_aton(ctdb->nodes[i]->public_address, &ips->ips[i].sin.sin_addr);
+		}
 	}
 
 	return 0;

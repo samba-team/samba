@@ -35,8 +35,8 @@ static void timeout_func(struct event_context *ev, struct timed_event *te,
 	timed_out = 1;
 }
 
-#define CONTROL_TIMEOUT() timeval_current_ofs(5, 0)
-#define MONITOR_TIMEOUT() timeval_current_ofs(1, 0)
+#define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
+#define MONITOR_TIMEOUT() timeval_current_ofs(ctdb->tunable.monitor_frequency, 0)
 
 static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t rec_mode)
 {
@@ -50,7 +50,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 		}
 
 		if (rec_mode == CTDB_RECOVERY_ACTIVE) {
-			ret = ctdb_ctrl_freeze(ctdb, timeval_current_ofs(5, 0), nodemap->nodes[j].vnn);
+			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to freeze node %u\n", nodemap->nodes[j].vnn));
 				return -1;
@@ -64,7 +64,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 		}
 
 		if (rec_mode == CTDB_RECOVERY_NORMAL) {
-			ret = ctdb_ctrl_thaw(ctdb, timeval_current_ofs(5, 0), nodemap->nodes[j].vnn);
+			ret = ctdb_ctrl_thaw(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to thaw node %u\n", nodemap->nodes[j].vnn));
 				return -1;
@@ -652,14 +652,16 @@ static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint3
 
 	/* wait for a few seconds to collect all responses */
 	timed_out = 0;
-	event_add_timed(ctdb->ev, mem_ctx, timeval_current_ofs(3, 0), 
+	event_add_timed(ctdb->ev, mem_ctx, timeval_current_ofs(ctdb->tunable.election_timeout, 0),
 			timeout_func, ctdb);
 	while (!timed_out) {
 		event_loop_once(ctdb->ev);
 	}
 }
 
-
+/*
+  the main monitoring loop
+ */
 void monitor_cluster(struct ctdb_context *ctdb)
 {
 	uint32_t vnn, num_active, recmode, recmaster;
@@ -687,6 +689,14 @@ again:
 	while (!timed_out) {
 		event_loop_once(ctdb->ev);
 	}
+
+	/* get relevant tunables */
+	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
+			      "RecoverTimeout", &ctdb->tunable.recover_timeout);
+	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
+			      "MonitorFrequency", &ctdb->tunable.monitor_frequency);
+	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
+			      "ElectionTimeout", &ctdb->tunable.election_timeout);
 
 	vnn = ctdb_ctrl_getvnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 	if (vnn == (uint32_t)-1) {
