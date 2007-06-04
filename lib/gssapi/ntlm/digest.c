@@ -165,6 +165,13 @@ kdc_destroy(OM_uint32 *minor, void *ctx)
     struct ntlmkrb5 *c = ctx;
     krb5_data_free(&c->opaque);
     krb5_data_free(&c->sessionkey);
+    if (c->ntlm)
+	krb5_ntlm_free(c->context, c->ntlm);
+    if (c->id)
+	krb5_cc_close(c->context, c->id);
+    if (c->context)
+	krb5_free_context(c->context);
+
     return GSS_S_COMPLETE;
 }
 
