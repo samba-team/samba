@@ -1,0 +1,78 @@
+#!/bin/sh
+
+#################################
+# interface event script for ctdb
+# this adds/removes IPs from your 
+# public interface
+
+. /etc/ctdb/functions
+
+cmd="$1"
+shift
+
+case $cmd in 
+     #############################
+     # called when ctdbd starts up
+     startup)
+	;;
+
+
+     ################################################
+     # called when ctdbd wants to claim an IP address
+     takeip)
+	if [ $# != 3 ]; then
+	   echo "must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+
+	# we make sure the interface is up first
+	/sbin/ip link set $iface up || {
+		 echo "`/bin/date` Failed to bringup interface $iface"
+		 exit 1
+	}
+	/sbin/ip addr add $ip/$maskbits dev $iface || {
+		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
+		 exit 1
+	}
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+	;;
+
+
+     ##################################################
+     # called when ctdbd wants to release an IP address
+     releaseip)
+	if [ $# != 3 ]; then
+	   echo "`/bin/date` must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+	/sbin/ip addr del $ip dev $iface || {
+		 echo "`/bin/date` Failed to del $ip on dev $iface"
+		 exit 1
+	}
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+	;;
+
+
+     ###########################################
+     # called when ctdbd has finished a recovery
+     recovered)
+	;;
+
+     ####################################
+     # called when ctdbd is shutting down
+     shutdown)
+	;;
+
+esac
+
+exit 0

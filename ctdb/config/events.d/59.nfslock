@@ -4,8 +4,7 @@
 . /etc/ctdb/functions
 loadconfig nfs
 
-[ -z $CTDB_MANAGES_NFS ] && exit 0
-[ $CTDB_MANAGES_NFS != "yes" ] && exit 0
+[ "$CTDB_MANAGES_NFS" = "yes" ] || exit 0
 
 [ -z "$STATD_SHARED_DIRECTORY" ] && exit 0
 
