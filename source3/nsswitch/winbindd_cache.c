@@ -3617,6 +3617,7 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
 	}
 
 	if ( buflen < len ) {
+		SAFE_FREE(buffer);
 		if ( (buffer = SMB_MALLOC_ARRAY(unsigned char, len)) == NULL ) {
 			DEBUG(0,("pack_tdc_domains: failed to alloc buffer!\n"));
 			buflen = -1;
