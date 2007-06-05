@@ -348,6 +348,17 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return ret;
 	}
 
+	if(options.machinereadable){
+		printf(":Public IP:Node:\n");
+		for(i=0;i<ips->num;i++){
+			printf(":%s:%d:\n",
+			inet_ntoa(ips->ips[i].sin.sin_addr),
+			ips->ips[i].takeover_vnn);
+		}
+		return 0;
+	}
+
+
 	printf("Number of nodes:%d\n", ips->num);
 	for(i=0;i<ips->num;i++){
 		printf("%-16s %d\n",
