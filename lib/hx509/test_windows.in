@@ -53,7 +53,7 @@ ${hxtool} issue-certificate \
     --self-signed \
     --issue-ca \
     --generate-key=rsa \
-    --subject="CN=CertificateAuthority,DC=heimdal,DC=pki" \
+    --subject="CN=Windows-CA,DC=heimdal,DC=pki" \
     --lifetime=10years \
     --certificate="FILE:wca.pem" || exit 1
 
