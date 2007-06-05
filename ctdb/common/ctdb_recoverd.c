@@ -662,7 +662,7 @@ static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint3
 /*
   the main monitoring loop
  */
-void monitor_cluster(struct ctdb_context *ctdb)
+static void monitor_cluster(struct ctdb_context *ctdb)
 {
 	uint32_t vnn, num_active, recmode, recmaster;
 	TALLOC_CTX *mem_ctx=NULL;

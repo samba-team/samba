@@ -79,14 +79,6 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 }
 
 /*
-  clear some ctdb flags
-*/
-void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags)
-{
-	ctdb->flags &= ~flags;
-}
-
-/*
   set the directory for the local databases
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
@@ -489,7 +481,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	node = ctdb->nodes[hdr->destnode];
 
-	if (hdr->destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (hdr->destnode == ctdb->vnn) {
 		ctdb_defer_packet(ctdb, hdr);
 	} else {
 		node->tx_cnt++;

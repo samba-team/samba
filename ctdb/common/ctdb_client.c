@@ -287,8 +287,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 
-	if (ret == 0 &&
-	    header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (ret == 0 && header.dmaster == ctdb->vnn) {
 		state = ctdb_client_call_local_send(ctdb_db, call, &header, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call->key);
@@ -1103,31 +1102,6 @@ int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, struct timeval timeout, uint
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
 		DEBUG(0,(__location__ " ctdb_control for setdmaster failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
-  delete all records from a tdb
- */
-int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid)
-{
-	int ret;
-	TDB_DATA indata;
-	int32_t res;
-
-	indata.dsize = sizeof(uint32_t);
-	indata.dptr = (unsigned char *)talloc_array(mem_ctx, uint32_t, 1);
-
-	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_CLEAR_DB, 0, indata, 
-			   NULL, NULL, &res, NULL, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for cleardb failed\n"));
 		return -1;
 	}
 

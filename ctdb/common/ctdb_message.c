@@ -115,7 +115,7 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	int len;
 
 	/* see if this is a message to ourselves */
-	if (vnn == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (vnn == ctdb->vnn) {
 		return ctdb_local_message(ctdb, srvid, data);
 	}
 

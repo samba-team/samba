@@ -392,48 +392,6 @@ int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata)
 	return 0;
 }
 
-
-static int traverse_cleardb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
-{
-	int ret;
-
-	ret = tdb_delete(tdb, key);
-	if (ret) {
-		DEBUG(0,(__location__ " failed to delete tdb record\n"));
-		return ret;
-	}
-	return 0;
-}
-
-		
-int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata)
-{
-	uint32_t dbid = *(uint32_t *)indata.dptr;
-	struct ctdb_db_context *ctdb_db;
-
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("rejecting ctdb_control_clear_db when not frozen\n"));
-		return -1;
-	}
-
-	ctdb_db = find_ctdb_db(ctdb, dbid);
-	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%08x\n",dbid));
-		return -1;
-	}
-
-	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
-		DEBUG(0,(__location__ " Failed to get lock on entired db - failing\n"));
-		return -1;
-	}
-
-	tdb_traverse(ctdb_db->ltdb->tdb, traverse_cleardb, NULL);
-
-	ctdb_lock_all_databases_unmark(ctdb);
-
-	return 0;
-}
-
 struct ctdb_set_recmode_state {
 	struct ctdb_req_control *c;
 	uint32_t recmode;

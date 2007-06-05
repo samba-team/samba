@@ -47,7 +47,7 @@ double timeval_elapsed(struct timeval *tv)
 /**
   return a timeval struct with the given elements
 */
-struct timeval timeval_set(uint32_t secs, uint32_t usecs)
+_PUBLIC_ struct timeval timeval_set(uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv;
 	tv.tv_sec = secs;
@@ -55,7 +55,7 @@ struct timeval timeval_set(uint32_t secs, uint32_t usecs)
 	return tv;
 }
 
-int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
+_PUBLIC_ int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 {
 	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
 	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
@@ -64,8 +64,8 @@ int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 	return 0;
 }
 
-struct timeval timeval_until(const struct timeval *tv1,
-			     const struct timeval *tv2)
+_PUBLIC_ struct timeval timeval_until(const struct timeval *tv1,
+				      const struct timeval *tv2)
 {
 	struct timeval t;
 	if (timeval_compare(tv1, tv2) >= 0) {
@@ -81,7 +81,7 @@ struct timeval timeval_until(const struct timeval *tv1,
 	return t;
 }
 
-_PUBLIC_ struct timeval timeval_add(const struct timeval *tv,
+static struct timeval timeval_add(const struct timeval *tv,
 			   uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv2 = *tv;
@@ -100,7 +100,7 @@ _PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
 	return timeval_add(&tv, secs, usecs);
 }
 
-_PUBLIC_ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
+static char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 {
 	struct stat sbuf;
 	char *p;
@@ -122,7 +122,7 @@ _PUBLIC_ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 }
 
 
-_PUBLIC_ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
+static char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 {
 	int fd;
 	char *p;

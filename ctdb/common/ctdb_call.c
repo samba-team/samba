@@ -47,7 +47,7 @@
 /*
   a varient of input packet that can be used in lock requeue
 */
-void ctdb_call_input_pkt(void *p, struct ctdb_req_header *hdr)
+static void ctdb_call_input_pkt(void *p, struct ctdb_req_header *hdr)
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 	ctdb_input_pkt(ctdb, hdr);

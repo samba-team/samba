@@ -359,7 +359,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	call->call_data.dsize = c->calldatalen;
 	call->flags = c->flags;
 
-	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (header.dmaster == ctdb->vnn) {
 		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
 	} else {
 		state = ctdb_daemon_call_send_remote(ctdb_db, call, &header);
