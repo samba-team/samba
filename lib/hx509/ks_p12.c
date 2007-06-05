@@ -516,7 +516,7 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     }
     ASN1_MALLOC_ENCODE(PKCS12_CertBag, os.data, os.length,
 		       &cb, &size, ret);
-    free(cb.certValue.data);
+    free_PKCS12_CertBag(&cb);
     if (ret)
 	goto out;
 
