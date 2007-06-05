@@ -693,6 +693,7 @@ ca_sign(hx509_context context,
 	KeyUsage ku;
 	memset(&ku, 0, sizeof(ku));
 	ku.keyCertSign = 1;
+	ku.cRLSign = 1;
 	key_usage |= KeyUsage2int(ku);
     }
 
@@ -840,7 +841,7 @@ ca_sign(hx509_context context,
 	}
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
-	ret = add_extension(context, tbsc, 1, 
+	ret = add_extension(context, tbsc, 1,
 			    oid_id_x509_ce_keyUsage(), &data);
 	free(data.data);
 	if (ret)
