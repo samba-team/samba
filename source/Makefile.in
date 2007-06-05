@@ -2003,7 +2003,6 @@ realclean: clean delheaders
 	-rm -f script/installbin.sh script/uninstallbin.sh
 
 distclean: realclean
-	-rm -f include/stamp-h
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps TAGS
