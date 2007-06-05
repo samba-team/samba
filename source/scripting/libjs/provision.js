@@ -547,7 +547,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	/* only install a new smb.conf if there isn't one there already */
 	var st = sys.stat(paths.smbconf);
 	if (st == undefined) {
-		message("Setting up smb.conf\n");
+		message("Setting up " + paths.smbconf +"\n");
 		setup_file("provision.smb.conf", info.message, paths.smbconf, subobj);
 		lp.reload();
 	}
