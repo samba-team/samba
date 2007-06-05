@@ -119,6 +119,11 @@ hx509_context_init(hx509_context *context)
     initialize_hx_error_table_r(&(*context)->et_list);
     initialize_asn1_error_table_r(&(*context)->et_list);
 
+#ifdef HX509_DEFAULT_ANCHORS
+    (void)hx509_certs_init(*context, HX509_DEFAULT_ANCHORS, 0,
+			   NULL, &(*context)->default_trust_anchors);
+#endif
+
     return 0;
 }
 
@@ -1466,6 +1471,7 @@ hx509_verify_path(hx509_context context,
     int ret, i, proxy_cert_depth;
     enum certtype type;
     Name proxy_issuer;
+    hx509_certs anchors = NULL;
 
     memset(&proxy_issuer, 0, sizeof(proxy_issuer));
 
@@ -1480,11 +1486,24 @@ hx509_verify_path(hx509_context context,
 	ctx->time_now = time(NULL);
 
     /*
+     *
+     */
+    ret = hx509_certs_init(context, "MEMORY:trust-anchors", 0, NULL, &anchors);
+    if (ret)
+	goto out;
+    ret = hx509_certs_merge(context, anchors, ctx->trust_anchors);
+    if (ret)
+	goto out;
+    ret = hx509_certs_merge(context, anchors, context->default_trust_anchors);
+    if (ret)
+	goto out;
+
+    /*
      * Calculate the path from the certificate user presented to the
      * to an anchor.
      */
     ret = _hx509_calculate_path(context, 0, ctx->time_now,
-				ctx->trust_anchors, ctx->max_depth,
+				anchors, ctx->max_depth,
 				cert, pool, &path);
     if (ret)
 	goto out;
@@ -1806,6 +1825,7 @@ hx509_verify_path(hx509_context context,
     }
 
 out:
+    hx509_certs_free(&anchors);
     free_Name(&proxy_issuer);
     free_name_constraints(&nc);
     _hx509_path_free(&path);
