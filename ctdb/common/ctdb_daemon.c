@@ -588,66 +588,6 @@ static int unlink_destructor(const char *name)
 	return 0;
 }
 
-/*
-  start the protocol going
-*/
-int ctdb_start(struct ctdb_context *ctdb)
-{
-	pid_t pid;
-	static int fd[2];
-	int res;
-	struct fd_event *fde;
-	const char *domain_socket_name;
-
-	/* get rid of any old sockets */
-	unlink(ctdb->daemon.name);
-
-	/* create a unix domain stream socket to listen to */
-	res = ux_socket_bind(ctdb);
-	if (res!=0) {
-		DEBUG(0,(__location__ " Failed to open CTDB unix domain socket\n"));
-		exit(10);
-	}
-
-	res = pipe(&fd[0]);
-	if (res) {
-		DEBUG(0,(__location__ " Failed to open pipe for CTDB\n"));
-		exit(1);
-	}
-	pid = fork();
-	if (pid==-1) {
-		DEBUG(0,(__location__ " Failed to fork CTDB daemon\n"));
-		exit(1);
-	}
-
-	if (pid) {
-		close(fd[0]);
-		close(ctdb->daemon.sd);
-		ctdb->daemon.sd = -1;
-		ctdb->vnn = ctdb_ctrl_getvnn(ctdb, timeval_zero(), CTDB_CURRENT_NODE);
-		if (ctdb->vnn == (uint32_t)-1) {
-			DEBUG(0,(__location__ " Failed to get ctdb vnn\n"));
-			return -1;
-		}
-		return 0;
-	}
-
-	block_signal(SIGPIPE);
-
-	/* ensure the socket is deleted on exit of the daemon */
-	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
-	talloc_set_destructor(domain_socket_name, unlink_destructor);	
-	
-	close(fd[1]);
-
-	ctdb->ev = event_context_init(NULL);
-	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, ctdb_read_from_parent, &fd[0]);
-	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, ctdb_accept_client, ctdb);
-	ctdb_main_loop(ctdb);
-
-	return 0;
-}
-
 
 /*
   start the protocol going as a daemon
