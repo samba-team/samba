@@ -511,26 +511,6 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 
 
 
-static void ctdb_read_from_parent(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private_data)
-{
-	int *fd = private_data;
-	int cnt;
-	char buf;
-
-	/* XXX this is a good place to try doing some cleaning up before exiting */
-	cnt = read(*fd, &buf, 1);
-	if (cnt==0) {
-		DEBUG(2,(__location__ " parent process exited. filedescriptor dissappeared\n"));
-		exit(1);
-	} else {
-		DEBUG(0,(__location__ " ctdb: did not expect data from parent process\n"));
-		exit(1);
-	}
-}
-
-
-
 /*
   create a unix domain socket and bind it
   return a file descriptor open on the socket 
