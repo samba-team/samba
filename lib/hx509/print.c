@@ -49,6 +49,7 @@ struct cert_status {
     unsigned int haveIAN:1;
     unsigned int haveSKI:1;
     unsigned int haveAKI:1;
+    unsigned int haveCRLDP:1;
 };
 
 
@@ -424,6 +425,8 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
     }
     free_CRLDistributionPoints(&dp);
 
+    status->haveCRLDP = 1;
+
     return 0;
 }
 
@@ -792,6 +795,12 @@ hx509_validate_cert(hx509_context context,
     if (hx509_name_is_null_p(subject) && !status.haveSAN)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
 		       "NULL subject DN and doesn't have a SAN\n");
+
+    if (!status.isca && !status.isproxy && !status.haveCRLDP) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "Not a CA nor PROXY and doesn't have"
+		       "CRL Dist Point\n");
+    }
 
     hx509_name_free(&subject);
     hx509_name_free(&issuer);
