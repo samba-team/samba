@@ -180,6 +180,7 @@ struct hx509_context_data {
     hx509_error error;
     struct et_list *et_list;
     char *querystat;
+    hx509_certs default_trust_anchors;
 };
 
 /* _hx509_calculate_path flag field */
@@ -188,3 +189,11 @@ struct hx509_context_data {
 extern const AlgorithmIdentifier * _hx509_crypto_default_sig_alg;
 extern const AlgorithmIdentifier * _hx509_crypto_default_digest_alg;
 extern const AlgorithmIdentifier * _hx509_crypto_default_secret_alg;
+
+/*
+ * Configurable options
+ */
+
+#ifdef __APPLE__
+#define HX509_DEFAULT_ANCHORS "KEYCHAIN:system"
+#endif
