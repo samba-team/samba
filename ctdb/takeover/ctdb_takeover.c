@@ -27,7 +27,7 @@
 #include "../include/ctdb_private.h"
 
 
-#define TAKEOVER_TIMEOUT() timeval_current_ofs(5,0)
+#define TAKEOVER_TIMEOUT() timeval_current_ofs(ctdb->tunable.takeover_timeout,0)
 
 #define CTDB_ARP_INTERVAL 1
 #define CTDB_ARP_REPEAT   3
@@ -403,7 +403,8 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 
 	/* work out which node will look after each public IP */
 	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) {
+		if ((nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) && 
+		    !(nodemap->nodes[i].flags & NODE_FLAGS_DISABLED)) {
 			ctdb->nodes[i]->takeover_vnn = nodemap->nodes[i].vnn;
 		} else {
 			/* assign this dead nodes IP to the next higher node */
@@ -411,6 +412,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 			     j != i;
 			     j=(j+1)%nodemap->num) {
 				if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) &&
+				    !(nodemap->nodes[j].flags & NODE_FLAGS_DISABLED) &&
 				    ctdb_same_subnet(ctdb->nodes[j]->public_address, 
 						     ctdb->nodes[i]->public_address, 
 						     ctdb->nodes[j]->public_netmask_bits)) {

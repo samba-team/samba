@@ -35,6 +35,7 @@ static const struct {
 	{ "RecoverTimeout",    5,  offsetof(struct ctdb_tunable, recover_timeout) },
 	{ "MonitorFrequency",  1,  offsetof(struct ctdb_tunable, monitor_frequency) },
 	{ "ElectionTimeout",   3,  offsetof(struct ctdb_tunable, election_timeout) },
+	{ "TakeoverTimeout",   5,  offsetof(struct ctdb_tunable, takeover_timeout) },
 };
 
 /*

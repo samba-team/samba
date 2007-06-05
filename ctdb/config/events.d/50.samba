@@ -21,8 +21,10 @@ case $cmd in
 	service smb stop > /dev/null 2>&1
 	service winbind stop > /dev/null 2>&1
 
-	# start Samba service
-	service smb start
+	# start Samba service. Start it reniced, as under very heavy load 
+	# the number of smbd processes will mean that it leaves few cycles for
+	# anything else
+	nice service smb start
 	service winbind start
 
 	# wait for the Samba tcp ports to become available

@@ -383,7 +383,7 @@ static int control_shutdown(struct ctdb_context *ctdb, int argc, const char **ar
 {
 	int ret;
 
-	ret = ctdb_ctrl_shutdown(ctdb, timeval_current_ofs(1, 0), options.vnn);
+	ret = ctdb_ctrl_shutdown(ctdb, TIMELIMIT(), options.vnn);
 	if (ret != 0) {
 		printf("Unable to shutdown node %u\n", options.vnn);
 		return ret;

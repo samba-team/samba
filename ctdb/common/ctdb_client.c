@@ -1364,7 +1364,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
 	ctdb_db->db_id = *(uint32_t *)data.dptr;
 	talloc_free(data.dptr);
 
-	ret = ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(1, 0), CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
+	ret = ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(2, 0), CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
 	if (ret != 0) {
 		DEBUG(0,("Failed to get dbpath for database '%s'\n", name));
 		talloc_free(ctdb_db);

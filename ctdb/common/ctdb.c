@@ -222,14 +222,16 @@ uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
 }
 
 /*
-  return the number of connected nodes
+  return the number of enabled nodes
 */
-uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb)
+uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb)
 {
 	int i;
 	uint32_t count=0;
 	for (i=0;i<ctdb->vnn_map->size;i++) {
-		if (ctdb->nodes[ctdb->vnn_map->map[i]]->flags & NODE_FLAGS_CONNECTED) {
+		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
+		if ((node->flags & NODE_FLAGS_CONNECTED) &&
+		    !(node->flags & NODE_FLAGS_DISABLED)) {
 			count++;
 		}
 	}
