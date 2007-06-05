@@ -96,6 +96,7 @@ kc_rsa_finish(RSA *rsa)
 {
     struct kc_rsa *kc_rsa = RSA_get_app_data(rsa);
     CFRelease(kc_rsa->item);
+    memset(kc_rsa, 0, sizeof(*kc_rsa));
     free(kc_rsa);
     return 1;
 }
@@ -215,8 +216,9 @@ static int
 keychain_iter_start(hx509_context context,
 		    hx509_certs certs, void *data, void **cursor)
 {
-    OSStatus ret;
+    struct ks_keychain *ctx = data;
     struct iter *iter;
+    OSStatus ret;
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
@@ -224,7 +226,7 @@ keychain_iter_start(hx509_context context,
 	return ENOMEM;
     }
 
-    ret = SecKeychainSearchCreateFromAttributes(NULL,
+    ret = SecKeychainSearchCreateFromAttributes(ctx->keychain,
 						kSecCertificateItemClass,
 						NULL,
 						&iter->searchRef);
