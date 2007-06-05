@@ -83,6 +83,8 @@ all IO operations by ctdb clients are suspended.
 
 <h3>Is CTDB a HA solution?</h3>
 Yes and no.<br>
+CTDB alone is not a HA solution, but when you combine CTDB with a clustered 
+filesystem it becomes one.<br>
 CTDB is primarily developed around the concept of having a shared cluster 
 filesystem shared across all the nodes in the cluster to provide the features
 required for building a NAS cluster.<br>
