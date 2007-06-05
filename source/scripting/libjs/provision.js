@@ -436,7 +436,7 @@ function setup_name_mappings(info, ldb)
 	return true;
 }
 
-function provision_fix_subobj(subobj, message, paths)
+function provision_fix_subobj(subobj, paths)
 {
 	subobj.REALM       = strupper(subobj.REALM);
 	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
@@ -444,6 +444,19 @@ function provision_fix_subobj(subobj, message, paths)
 	assert(valid_netbios_name(subobj.DOMAIN));
 	subobj.NETBIOSNAME = strupper(subobj.HOSTNAME);
 	assert(valid_netbios_name(subobj.NETBIOSNAME));
+	subobj.DNSDOMAIN    = strlower(subobj.REALM);
+	subobj.DNSNAME      = sprintf("%s.%s", 
+				      strlower(subobj.HOSTNAME), 
+				      subobj.DNSDOMAIN);
+	rdn_list = split(".", subobj.DNSDOMAIN);
+	subobj.DOMAINDN     = "DC=" + join(",DC=", rdn_list);
+	subobj.DOMAINDN_LDB = "users.ldb";
+	subobj.ROOTDN       = subobj.DOMAINDN;
+	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
+	subobj.CONFIGDN_LDB = "configuration.ldb";
+	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
+	subobj.SCHEMADN_LDB = "schema.ldb";
+
 	var rdns = split(",", subobj.DOMAINDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
@@ -461,7 +474,7 @@ function provision_become_dc(subobj, message, erase, paths, session_info)
 	var sys = sys_init();
 	var info = new Object();
 
-	var ok = provision_fix_subobj(subobj, message, paths);
+	var ok = provision_fix_subobj(subobj, paths);
 	assert(ok);
 
 	info.subobj = subobj;
@@ -511,7 +524,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var sys = sys_init();
 	var info = new Object();
 
-	var ok = provision_fix_subobj(subobj, message, paths);
+	var ok = provision_fix_subobj(subobj, paths);
 	assert(ok);
 
 	if (subobj.DOMAINGUID != undefined) {
@@ -714,13 +727,13 @@ function provision_schema(subobj, message, tmp_schema_path, paths)
 	var sys = sys_init();
 	var info = new Object();
 
-	var ok = provision_fix_subobj(subobj, message, paths);
+	var ok = provision_fix_subobj(subobj, paths);
 	assert(ok);
 
 	info.subobj = subobj;
 	info.message = message;
 
-	message("Setting up " + tmp_schema_path + " as a temporary database to store the schema\n");
+	message("Setting up sam.ldb partitions\n");
 
 	/* This will erase anything in the tmp db */
 	var samdb = open_ldb(info, tmp_schema_path, true);
@@ -787,6 +800,9 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 /* Write out a DNS zone file, from the info in the current database */
 function provision_ldapbase(subobj, message, paths)
 {
+	var ok = provision_fix_subobj(subobj, paths);
+	assert(ok);
+
 	message("Setting up LDAP base entry: " + subobj.DOMAINDN + " \n");
 	var rdns = split(",", subobj.DOMAINDN);
 	subobj.EXTENSIBLEOBJECT = "objectClass: extensibleObject";
@@ -850,19 +866,6 @@ function provision_guess()
 	subobj.BACKUP       = findnss(nss.getgrnam, "backup", "wheel", "root", "staff");
 	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other", "unknown", "usr");
 
-	subobj.DNSDOMAIN    = strlower(subobj.REALM);
-	subobj.DNSNAME      = sprintf("%s.%s", 
-				      strlower(subobj.HOSTNAME), 
-				      subobj.DNSDOMAIN);
-	rdn_list = split(".", subobj.DNSDOMAIN);
-	subobj.DOMAINDN     = "DC=" + join(",DC=", rdn_list);
-	subobj.DOMAINDN_LDB = "users.ldb";
-	subobj.ROOTDN       = subobj.DOMAINDN;
-	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
-	subobj.CONFIGDN_LDB = "configuration.ldb";
-	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
-	subobj.SCHEMADN_LDB = "schema.ldb";
-
 	//Add modules to the list to activate them by default
 	//beware often order is important
 	//
@@ -892,6 +895,7 @@ function provision_guess()
 
 	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
 	subobj.ACI		= "# no aci for local ldb";
+
 	return subobj;
 }
 
