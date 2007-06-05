@@ -1,5 +1,15 @@
 2007-06-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_keychain.c: Limit the searches to the selected keychain.
+
+	* ks_keychain.c: include -framework Security specific header files
+	after #ifdef
+
+	* ks_keychain.c: Find and attach private key (does not provide
+	operations yet though).
+
+	* ks_p11.c: Prefix rsa method with p11_
+
 	* ks_keychain.c: Allow opening a specific chain, making "system"
 	special and be the system X509Anchors file. By not specifing any
 	keychain ("KEYCHAIN:"), all keychains are probed.
