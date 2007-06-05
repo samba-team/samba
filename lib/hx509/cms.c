@@ -946,7 +946,7 @@ hx509_cms_create_signed_1(hx509_context context,
     AlgorithmIdentifier digest;
     hx509_name name;
     SignerInfo *signer_info;
-    heim_octet_string buf, content;
+    heim_octet_string buf, content, sigdata;
     SignedData sd;
     int ret;
     size_t size;
@@ -1023,18 +1023,24 @@ hx509_cms_create_signed_1(hx509_context context,
     signer_info->signedAttrs = NULL;
     signer_info->unsignedAttrs = NULL;
 
-    ALLOC(signer_info->signedAttrs, 1);
-    if (signer_info->signedAttrs == NULL) {
-	ret = ENOMEM;
+
+    ret = copy_AlgorithmIdentifier(&digest, &signer_info->digestAlgorithm);
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
     }
 
-    {
+    /*
+     * If its not pkcs7-data send signedAttributes
+     */
+
+    if (der_heim_oid_cmp(eContentType, oid_id_pkcs7_data()) != 0) {
+	CMSAttributes sa;	
 	heim_octet_string sig;
 
-	ret = copy_AlgorithmIdentifier(&digest, &signer_info->digestAlgorithm);
-	if (ret) {
-	    hx509_clear_error_string(context);
+	ALLOC(signer_info->signedAttrs, 1);
+	if (signer_info->signedAttrs == NULL) {
+	    ret = ENOMEM;
 	    goto out;
 	}
 
@@ -1072,9 +1078,6 @@ hx509_cms_create_signed_1(hx509_context context,
 	    goto out;
 	}
 
-    }
-
-    if (der_heim_oid_cmp(eContentType, oid_id_pkcs7_data()) != 0) {
 
 	ASN1_MALLOC_ENCODE(ContentType,
 			   buf.data,
@@ -1095,19 +1098,13 @@ hx509_cms_create_signed_1(hx509_context context,
 	    hx509_clear_error_string(context);
 	    goto out;
 	}
-    }
 
-
-    {
-	CMSAttributes sa;
-	heim_octet_string os;
-	
 	sa.val = signer_info->signedAttrs->val;
 	sa.len = signer_info->signedAttrs->len;
 	
 	ASN1_MALLOC_ENCODE(CMSAttributes,
-			   os.data,
-			   os.length,
+			   sigdata.data,
+			   sigdata.length,
 			   &sa,
 			   &size,
 			   ret);
@@ -1115,21 +1112,25 @@ hx509_cms_create_signed_1(hx509_context context,
 	    hx509_clear_error_string(context);
 	    goto out;
 	}
-	if (size != os.length)
+	if (size != sigdata.length)
 	    _hx509_abort("internal ASN.1 encoder error");
-			
-	ret = _hx509_create_signature(context,
-				      _hx509_cert_private_key(cert),
-				      _hx509_crypto_default_sig_alg,
-				      &os,
-				      &signer_info->signatureAlgorithm,
-				      &signer_info->signature);
-				
-	der_free_octet_string(&os);
-	if (ret) {
-	    hx509_clear_error_string(context);
-	    goto out;
-	}
+    } else {
+	sigdata.data = content.data;
+	sigdata.length = content.length;
+    }
+
+
+    ret = _hx509_create_signature(context,
+				  _hx509_cert_private_key(cert),
+				  _hx509_crypto_default_sig_alg,
+				  &sigdata,
+				  &signer_info->signatureAlgorithm,
+				  &signer_info->signature);
+    if (sigdata.data != content.data)
+	der_free_octet_string(&sigdata);
+    if (ret) {
+	hx509_clear_error_string(context);
+	goto out;
     }
 
     ALLOC_SEQ(&sd.digestAlgorithms, 1);
