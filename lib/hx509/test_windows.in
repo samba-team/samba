@@ -70,7 +70,7 @@ ${hxtool} issue-certificate \
     --ca-certificate=FILE:wca.pem || exit 1
 
 
-echo "Create domain controller cert"
+echo "Create user cert"
 ${hxtool} issue-certificate \
     --type="pkinit-client" \
     --pk-init-principal="user@HEIMDAL.PKI" \
