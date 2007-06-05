@@ -470,7 +470,6 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
 	hx509_validate_cert(hxcontext, vctx, cert);
 
 	hx509_validate_ctx_free(vctx);
-
     }
 }
 
@@ -663,14 +662,14 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
 	    ret = hx509_certs_append(context, chain, NULL, s);
 	    if (ret)
-		errx(1, "hx509_certs_append: chain: %s: %d", s, ret);
+		hx509_err(context, 1, ret, "hx509_certs_append: chain: %s: %d", s, ret);
 
 	} else if (strncmp(s, "anchor:", 7) == 0) {
 	    s += 7;
 
 	    ret = hx509_certs_append(context, anchors, NULL, s);
 	    if (ret)
-		errx(1, "hx509_certs_append: anchor: %s: %d", s, ret);
+		hx509_err(context, 1, ret, "hx509_certs_append: anchor: %s: %d", s, ret);
 
 	} else if (strncmp(s, "cert:", 5) == 0) {
 	    s += 5;
