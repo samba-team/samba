@@ -37,12 +37,38 @@ RCSID("$Id$");
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 
+struct ks_keychain {
+    SecKeychainRef keychain;
+};
+
+
 static int
 keychain_init(hx509_context context,
 	      hx509_certs certs, void **data, int flags,
 	      const char *residue, hx509_lock lock)
 {
-    *data = NULL;
+    struct ks_keychain *ctx;
+    OSStatus ret;
+
+    ctx = calloc(1, sizeof(*ctx));
+    if (ctx == NULL) {
+	hx509_clear_error_string(context);
+	return ENOMEM;
+    }
+
+    if (strcasecmp(residue, "system") == 0)
+	residue = "/System/Library/Keychains/X509Anchors";
+
+    if (residue && residue[0] != '\0') {
+	ret = SecKeychainOpen(residue, &ctx->keychain);
+	if (ret != noErr) {
+	    hx509_set_error_string(context, 0, ENOENT, 
+				   "Failed to open %s", residue);
+	    return ENOENT;
+	}
+   }
+
+    *data = ctx;
     return 0;
 }
 
@@ -53,7 +79,11 @@ keychain_init(hx509_context context,
 static int
 keychain_free(hx509_certs certs, void *data)
 {
-    assert(data == NULL);
+    struct ks_keychain *ctx = data;
+    if (ctx->keychain)
+	CFRelease(ctx->keychain);
+    memset(ctx, 0, sizeof(*ctx));
+    free(ctx);
     return 0;
 }
 
