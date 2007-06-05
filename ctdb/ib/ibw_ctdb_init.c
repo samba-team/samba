@@ -106,10 +106,9 @@ static int ctdb_ibw_start(struct ctdb_context *ctdb)
 	/* everything async here */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];
-		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
-			ctdb_same_address(&ctdb->address, &node->address))
-			continue;
-		ctdb_ibw_node_connect(node);
+		if (!ctdb_same_address(&ctdb->address, &node->address)) {
+			ctdb_ibw_node_connect(node);
+		}
 	}
 
 	return 0;

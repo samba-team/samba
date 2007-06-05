@@ -106,17 +106,6 @@ uint32_t ctdb_hash(const TDB_DATA *key)
 }
 
 /*
-  hash function for a string
-*/
-uint32_t ctdb_hash_string(const char *str)
-{
-	TDB_DATA data;
-	data.dptr = (uint8_t *)discard_const(str);
-	data.dsize = strlen(str)+1;
-	return ctdb_hash(&data);
-}
-
-/*
   a type checking varient of idr_find
  */
 static void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location)

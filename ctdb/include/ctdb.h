@@ -49,7 +49,6 @@ struct ctdb_call_info {
 /*
   ctdb flags
 */
-#define CTDB_FLAG_SELF_CONNECT (1<<0)
 #define CTDB_FLAG_TORTURE      (1<<1)
 
 /* 
@@ -101,11 +100,6 @@ int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir);
   set some flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
-
-/*
-  clear some flags
-*/
-void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags);
 
 /*
   set max acess count before a dmaster migration
@@ -276,11 +270,6 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, 
 	struct timeval timeout, uint32_t destnode, 
 	TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
-
-/*
-  delete all records from a tdb
- */
-int ctdb_ctrl_cleardb(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid);
 
 /*
   write a record on a specific db (this implicitely updates dmaster of the record to locally be the vnn of the node where the control is executed on)

@@ -48,7 +48,7 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 
 	/* for now, we only handle AF_INET addresses */
 	if (saddr->sin_family != AF_INET) {
-		DEBUG(0,(__location__ " not an ipv4 address\n"));
+		DEBUG(0,(__location__ " not an ipv4 address (family is %u)\n", saddr->sin_family));
 		return -1;
 	}
 
@@ -386,6 +386,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 	if (state->child == 0) {
 		close(state->fd[0]);
 		ctdb_set_realtime(false);
+		set_close_on_exec(state->fd[1]);
 		va_start(ap, fmt);
 		ret = ctdb_event_script_v(ctdb, fmt, ap);
 		va_end(ap);

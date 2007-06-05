@@ -662,7 +662,7 @@ static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint3
 /*
   the main monitoring loop
  */
-void monitor_cluster(struct ctdb_context *ctdb)
+static void monitor_cluster(struct ctdb_context *ctdb)
 {
 	uint32_t vnn, num_active, recmode, recmaster;
 	TALLOC_CTX *mem_ctx=NULL;
@@ -697,6 +697,8 @@ again:
 			      "MonitorFrequency", &ctdb->tunable.monitor_frequency);
 	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
 			      "ElectionTimeout", &ctdb->tunable.election_timeout);
+	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
+			      "TakeoverTimeout", &ctdb->tunable.takeover_timeout);
 
 	vnn = ctdb_ctrl_getvnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 	if (vnn == (uint32_t)-1) {

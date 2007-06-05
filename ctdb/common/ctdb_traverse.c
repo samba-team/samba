@@ -116,9 +116,9 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 
   The traverse is finished when the callback is called with tdb_null for key and data
  */
-struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_context *ctdb_db,
-						 ctdb_traverse_fn_t callback,
-						 void *private_data)
+static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_context *ctdb_db,
+							      ctdb_traverse_fn_t callback,
+							      void *private_data)
 {
 	struct ctdb_traverse_local_handle *h;
 	int ret;
@@ -217,9 +217,9 @@ static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_eve
   The traverse is finished when the callback is called with tdb_null
   for key and data
  */
-struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context *ctdb_db,
-							  ctdb_traverse_fn_t callback,
-							  void *private_data)
+static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context *ctdb_db,
+								 ctdb_traverse_fn_t callback,
+								 void *private_data)
 {
 	struct ctdb_traverse_all_handle *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -372,7 +372,7 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 
 	if (key.dsize == 0 && data.dsize == 0) {
 		state->null_count++;
-		if (state->null_count != ctdb_get_num_connected_nodes(ctdb)) {
+		if (state->null_count != ctdb_get_num_enabled_nodes(ctdb)) {
 			return 0;
 		}
 	}

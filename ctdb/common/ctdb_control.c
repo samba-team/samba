@@ -112,10 +112,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_dmaster));
 		return ctdb_control_set_dmaster(ctdb, indata);
 
-	case CTDB_CONTROL_CLEAR_DB: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		return ctdb_control_clear_db(ctdb, indata);
-
 	case CTDB_CONTROL_PUSH_DB:
 		return ctdb_control_push_db(ctdb, indata);
 

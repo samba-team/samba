@@ -48,14 +48,12 @@ static struct {
 	const char *logfile;
 	const char *recovery_lock_file;
 	const char *db_dir;
-	int self_connect;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
 	.event_script = ETCDIR "/ctdb/events",
 	.logfile = VARDIR "/log/log.ctdb",
 	.db_dir = VARDIR "/ctdb",
-	.self_connect = 0,
 };
 
 
@@ -79,7 +77,6 @@ int main(int argc, const char *argv[])
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
-		{ "self-connect", 0, POPT_ARG_NONE, &options.self_connect, 0, "enable self connect", "boolean" },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
 		POPT_TABLEEND
@@ -123,10 +120,6 @@ int main(int argc, const char *argv[])
 	if (ret == -1) {
 		printf("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
-	}
-
-	if (options.self_connect) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
 
 	ret = ctdb_set_transport(ctdb, options.transport);

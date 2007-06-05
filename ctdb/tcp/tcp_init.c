@@ -80,10 +80,10 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 		struct ctdb_node *node = *(ctdb->nodes + i);
 		struct ctdb_tcp_node *tnode = talloc_get_type(
 			node->private_data, struct ctdb_tcp_node);
-		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
-		    ctdb_same_address(&ctdb->address, &node->address)) continue;
-		event_add_timed(ctdb->ev, tnode, timeval_zero(), 
-				ctdb_tcp_node_connect, node);
+		if (!ctdb_same_address(&ctdb->address, &node->address)) {
+			event_add_timed(ctdb->ev, tnode, timeval_zero(), 
+					ctdb_tcp_node_connect, node);
+		}
 	}
 
 	return 0;

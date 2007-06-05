@@ -50,6 +50,7 @@ struct ctdb_tunable {
 	uint32_t recover_timeout;
 	uint32_t monitor_frequency;
 	uint32_t election_timeout;
+	uint32_t takeover_timeout;
 };
 
 /*
@@ -109,6 +110,7 @@ struct ctdb_node {
 	void *private_data; /* private to transport */
 	uint32_t vnn;
 #define NODE_FLAGS_CONNECTED 0x00000001
+#define NODE_FLAGS_DISABLED  0x00000002
 	uint32_t flags;
 
 	/* used by the dead node monitoring */
@@ -367,7 +369,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_DBMAP               = 9,
 		    CTDB_CONTROL_GET_NODEMAP             = 10,
 		    CTDB_CONTROL_SET_DMASTER             = 11,
-		    CTDB_CONTROL_CLEAR_DB                = 12,
+		    /* #12 removed */
 		    CTDB_CONTROL_PULL_DB                 = 13,
 		    CTDB_CONTROL_PUSH_DB                 = 14,
 		    CTDB_CONTROL_GET_RECMODE             = 15,
@@ -891,7 +893,6 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_clear_db(struct ctdb_context *ctdb, TDB_DATA indata);
 
 int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
@@ -905,7 +906,7 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb);
 
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 
-uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb);
+uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb);
 
 int ctdb_start_monitoring(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);

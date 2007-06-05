@@ -79,14 +79,6 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 }
 
 /*
-  clear some ctdb flags
-*/
-void ctdb_clear_flags(struct ctdb_context *ctdb, unsigned flags)
-{
-	ctdb->flags &= ~flags;
-}
-
-/*
   set the directory for the local databases
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
@@ -222,14 +214,16 @@ uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
 }
 
 /*
-  return the number of connected nodes
+  return the number of enabled nodes
 */
-uint32_t ctdb_get_num_connected_nodes(struct ctdb_context *ctdb)
+uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb)
 {
 	int i;
 	uint32_t count=0;
 	for (i=0;i<ctdb->vnn_map->size;i++) {
-		if (ctdb->nodes[ctdb->vnn_map->map[i]]->flags & NODE_FLAGS_CONNECTED) {
+		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
+		if ((node->flags & NODE_FLAGS_CONNECTED) &&
+		    !(node->flags & NODE_FLAGS_DISABLED)) {
 			count++;
 		}
 	}
@@ -487,7 +481,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	node = ctdb->nodes[hdr->destnode];
 
-	if (hdr->destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+	if (hdr->destnode == ctdb->vnn) {
 		ctdb_defer_packet(ctdb, hdr);
 	} else {
 		node->tx_cnt++;

@@ -5,7 +5,9 @@
 # This script is called with one of the following sets of arguments
 #     startup    : called when ctdb starts
 #     shutdown   : called when ctdb shuts down
-#     takeip 
+#     takeip     : called when an IP address is taken over
+#     releaseip  : called when an IP address is released
+#     recovered  : called when ctdb has finished a recovery event
 
 . /etc/ctdb/functions
 loadconfig ctdb
