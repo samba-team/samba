@@ -1,4 +1,46 @@
+2007-06-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_keychain.c: Allow opening a specific chain, making "system"
+	special and be the system X509Anchors file. By not specifing any
+	keychain ("KEYCHAIN:"), all keychains are probed.
+	
 2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c (verify): Friendlier error message.
+
+	* cert.c: Read in and use default trust anchors if they exists.
+
+	* hx_locl.h: Add concept of default_trust_anchors.
+
+	* ks_keychain.c: Remove err(), remove extra empty comment, fix
+	_iter function.
+
+	* error.c (hx509_get_error_string): if the error code is not the
+	one we expect, punt and use the default com_err/strerror string
+	instead.
+
+	* keyset.c (hx509_certs_merge): its ok to merge in the NULL set of
+	certs.
+
+	* test_windows.in: Fix status string.
+
+	* ks_p12.c (store_func): free whole CertBag, not just the data
+	part.
+	
+	* print.c: Check that the self-signed cert is really self-signed.
+
+	* print.c: Use selfsigned for CRL DP whine, tell if its a
+	self-signed.
+
+	* print.c: Whine if its a non CA/proxy and doesn't have CRL DP.
+
+	* ca.c: Add cRLSign to CA certs.
+
+	* cert.c: Register NULL and KEYCHAIN.
+
+	* ks_null.c: register the NULL keystore.
+
+	* Makefile.am: Add ks_keychain.c and related libs.
 
 	* test_crypto.in: Print certificate with utf8.
 
