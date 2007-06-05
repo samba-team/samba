@@ -1,0 +1,45 @@
+#!/bin/sh
+# event strict to manage vsftpd in a cluster environment
+
+. /etc/ctdb/functions
+loadconfig vsftpd
+
+[ "$CTDB_MANAGES_VSFTPD" = "yes" ] || exit 0
+
+cmd="$1"
+shift
+
+case $cmd in 
+     startup)
+	/bin/mkdir -p /etc/ctdb/state/vsftpd
+
+	# make sure the service is stopped first
+	service vsftpd stop > /dev/null 2>&1
+	service vsftpd start
+	;;
+
+     shutdown)
+	service vsftpd stop
+	;;
+
+     takeip)
+	echo "restart" >> /etc/ctdb/state/vsftpd/restart
+	;;
+
+     releaseip)
+	echo "restart" >> /etc/ctdb/state/vsftpd/restart
+	;;
+
+     recovered)
+	# if we have taken or released any ips we must 
+	# restart vsftpd to ensure that all tcp connections are reset
+	[ -f /etc/ctdb/state/vsftpd/restart ] && {
+		service vsftpd stop > /dev/null 2>&1
+		service vsftpd start
+	} >/dev/null 2>&1
+
+	/bin/rm -f /etc/ctdb/state/vsftpd/restart
+	;;
+esac
+
+exit 0
