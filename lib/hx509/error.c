@@ -101,9 +101,9 @@ char *
 hx509_get_error_string(hx509_context context, int error_code)
 {
     struct rk_strpool *p = NULL;
-    hx509_error msg;
+    hx509_error msg = context->error;
 
-    if (context->error == NULL) {
+    if (msg == NULL || msg->code != error_code) {
 	const char *cstr;
 	char *str;
 
