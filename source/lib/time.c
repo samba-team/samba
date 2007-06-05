@@ -1111,7 +1111,7 @@ struct timespec timespec_current(void)
 	struct timespec ts;
 	GetTimeOfDay(&tv);
 	ts.tv_sec = tv.tv_sec;
-	ts.tv_nsec = tv.tv_sec * 1000;
+	ts.tv_nsec = tv.tv_usec * 1000;
 	return ts;
 }
 
