@@ -214,7 +214,7 @@ p11_rsa_finish(RSA *rsa)
     return 1;
 }
 
-static const RSA_METHOD rsa_pkcs1_method = {
+static const RSA_METHOD p11_rsa_pkcs1_method = {
     "hx509 PKCS11 PKCS#1 RSA",
     p11_rsa_public_encrypt,
     p11_rsa_public_decrypt,
@@ -644,7 +644,7 @@ collect_private_key(hx509_context context,
     if (p->refcount == 0)
 	_hx509_abort("pkcs11 refcount to high");
 
-    RSA_set_method(rsa, &rsa_pkcs1_method);
+    RSA_set_method(rsa, &p11_rsa_pkcs1_method);
     ret = RSA_set_app_data(rsa, p11rsa);
     if (ret != 1)
 	_hx509_abort("RSA_set_app_data");
