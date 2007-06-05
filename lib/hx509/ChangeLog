@@ -1,5 +1,11 @@
 2007-06-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c: When we are not using pkcs7-data, avoid seing
+	signedAttributes since some clients get upset by that (pkcs7 based
+	or just plain broken).
+
+	* ks_keychain.c: Provide rsa signatures.
+
 	* ks_keychain.c: Limit the searches to the selected keychain.
 
 	* ks_keychain.c: include -framework Security specific header files
