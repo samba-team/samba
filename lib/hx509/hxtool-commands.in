@@ -533,6 +533,7 @@ command = {
 	}
 	option = {
 		long = "path-length"
+		default = "-1"
 		type = "integer"
 		help = "Maximum path length (CA and proxy certificates), -1 no limit"
 	}
