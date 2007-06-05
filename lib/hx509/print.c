@@ -708,8 +708,11 @@ hx509_validate_cert(hx509_context context,
 		   "issuer name: %s\n", str);
     free(str);
 
-    if (hx509_name_cmp(subject, issuer) == 0)
+    if (hx509_name_cmp(subject, issuer) == 0) {
 	status.selfsigned = 1;
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+		       "\tis a self-signed certificate\n");
+    }
 
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "Validity:\n");
@@ -796,11 +799,10 @@ hx509_validate_cert(hx509_context context,
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
 		       "NULL subject DN and doesn't have a SAN\n");
 
-    if (!status.isca && !status.isproxy && !status.haveCRLDP) {
+    if (!status.selfsigned && !status.haveCRLDP)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
 		       "Not a CA nor PROXY and doesn't have"
 		       "CRL Dist Point\n");
-    }
 
     hx509_name_free(&subject);
     hx509_name_free(&issuer);
