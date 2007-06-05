@@ -16,7 +16,6 @@ if (lp.get("realm") == "") {
 	lp.set("realm", lp.get("workgroup") + ".example.com");
 }
 
-
 var subobj = provision_guess();
 /* Don't supply default password for web interface */
 subobj.ADMINPASS = "";
@@ -47,10 +46,11 @@ for (i=0;i<f.element.length;i++) {
 }
 
 if (form['submit'] == "Provision") {
+
         /* overcome an initially blank smb.conf */
 	lp.set("realm", subobj.REALM);
 	lp.set("workgroup", subobj.DOMAIN);
-	lp.reload()
+	lp.reload();
 	var goodpass = (subobj.CONFIRM == subobj.ADMINPASS);
 
 	if (!goodpass) {
