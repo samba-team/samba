@@ -38,12 +38,42 @@ RCSID("$Id$");
 
 #include <Security/Security.h>
 
+/* Missing function decls */
+OSStatus SecKeyGetCSPHandle(SecKeyRef, CSSM_CSP_HANDLE *);
+OSStatus SecKeyGetCredentials(SecKeyRef, CSSM_ACL_AUTHORIZATION_TAG,
+			      int, const CSSM_ACCESS_CREDENTIALS **);
+#define kSecCredentialTypeDefault 0
+
+
+static int
+getAttribute(SecKeychainItemRef itemRef, SecItemAttr item,
+	     SecKeychainAttributeList **attrs)
+{	     
+    SecKeychainAttributeInfo attrInfo;
+    uint32 attrFormat = 0;
+    OSStatus ret;
+
+    *attrs = NULL;
+
+    attrInfo.count = 1;
+    attrInfo.tag = &item;
+    attrInfo.format = &attrFormat;
+  
+    ret = SecKeychainItemCopyAttributesAndData(itemRef, &attrInfo, NULL,
+					       attrs, NULL, NULL);
+    if (ret)
+	return EINVAL;
+    return 0;
+}
+
+
 /*
  *
  */
 
 struct kc_rsa {
     SecKeychainItemRef item;
+    size_t keysize;
 };
 
 
@@ -75,7 +105,50 @@ kc_rsa_private_encrypt(int flen,
 		       RSA *rsa,
 		       int padding)
 {
-    return -1;
+    struct kc_rsa *kc = RSA_get_app_data(rsa);
+
+    CSSM_RETURN cret;
+    OSStatus ret;
+    const CSSM_ACCESS_CREDENTIALS *creds;
+    SecKeyRef privKeyRef = (SecKeyRef)kc->item;
+    CSSM_CSP_HANDLE cspHandle;
+    const CSSM_KEY *cssmKey;
+    CSSM_CC_HANDLE sigHandle = 0;
+    CSSM_DATA sig, in;
+    int fret = 0;
+
+
+    cret = SecKeyGetCSSMKey(privKeyRef, &cssmKey);
+    if(cret) abort();
+
+    cret = SecKeyGetCSPHandle(privKeyRef, &cspHandle);
+    if(cret) abort();
+
+    ret = SecKeyGetCredentials(privKeyRef, CSSM_ACL_AUTHORIZATION_SIGN,
+			       kSecCredentialTypeDefault, &creds);
+    if(ret) abort();
+
+    ret = CSSM_CSP_CreateSignatureContext(cspHandle, CSSM_ALGID_RSA,
+					  creds, cssmKey, &sigHandle);
+    if(ret) abort();
+
+    in.Data = (uint8 *)from;
+    in.Length = flen;
+	
+    sig.Data = (uint8 *)to;
+    sig.Length = kc->keysize;
+	
+    cret = CSSM_SignData(sigHandle, &in, 1, CSSM_ALGID_NONE, &sig);
+    if(cret) {
+	/* cssmErrorString(cret); */
+	fret = -1;
+    } else
+	fret = sig.Length;
+
+    if(sigHandle)
+	CSSM_DeleteContext(sigHandle);
+
+    return fret;
 }
 
 static int
@@ -121,7 +194,7 @@ static int
 private_key(hx509_context context, SecKeychainItemRef itemRef,
 	    hx509_cert cert)
 {
-    struct kc_rsa *kc_rsa;
+    struct kc_rsa *kc;
     hx509_private_key key;
     RSA *rsa;
     int ret;
@@ -130,18 +203,41 @@ private_key(hx509_context context, SecKeychainItemRef itemRef,
     if (ret)
 	return ret;
 
+    kc = calloc(1, sizeof(*kc));
+    if (kc == NULL)
+	_hx509_abort("out of memory");
+
+    kc->item = itemRef;
+
     rsa = RSA_new();
     if (rsa == NULL)
 	_hx509_abort("out of memory");
 
-    kc_rsa = calloc(1, sizeof(*kc_rsa));
-    if (kc_rsa == NULL)
-	_hx509_abort("out of memory");
+    /* Argh, fake modulus since OpenSSL API is on crack */
+    {
+	SecKeychainAttributeList *attrs;
+	uint32_t size;
+	void *data;
 
-    kc_rsa->item = itemRef;
-    
+	rsa->n = BN_new();
+	if (rsa->n == NULL) abort();
+
+	ret = getAttribute(itemRef, kSecKeyKeySizeInBits, &attrs);
+	if (ret) abort();
+
+	size = *(uint32_t *)attrs->attr[0].data;
+	SecKeychainItemFreeAttributesAndData(attrs, NULL);
+
+	kc->keysize = (size + 7) / 8;
+
+	data = malloc(kc->keysize);
+	memset(data, 0xe0, kc->keysize);
+	BN_bin2bn(data, kc->keysize, rsa->n);
+    }
+    rsa->e = NULL;
+
     RSA_set_method(rsa, &kc_rsa_pkcs1_method);
-    ret = RSA_set_app_data(rsa, kc_rsa);
+    ret = RSA_set_app_data(rsa, kc);
     if (ret != 1)
 	_hx509_abort("RSA_set_app_data");
 
