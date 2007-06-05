@@ -37,10 +37,125 @@ RCSID("$Id$");
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 
+/*
+ *
+ */
+
+struct kc_rsa {
+    SecKeychainItemRef item;
+};
+
+
+static int
+kc_rsa_public_encrypt(int flen,
+		       const unsigned char *from,
+		       unsigned char *to,
+		       RSA *rsa,
+		       int padding)
+{
+    return -1;
+}
+
+static int
+kc_rsa_public_decrypt(int flen,
+		       const unsigned char *from,
+		       unsigned char *to,
+		       RSA *rsa,
+		       int padding)
+{
+    return -1;
+}
+
+
+static int
+kc_rsa_private_encrypt(int flen, 
+			const unsigned char *from,
+			unsigned char *to,
+			RSA *rsa,
+			int padding)
+{
+    return -1;
+}
+
+static int
+kc_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
+			RSA * rsa, int padding)
+{
+    return -1;
+}
+
+static int 
+kc_rsa_init(RSA *rsa)
+{
+    return 1;
+}
+
+static int
+kc_rsa_finish(RSA *rsa)
+{
+    struct kc_rsa *kc_rsa = RSA_get_app_data(rsa);
+    CFRelease(kc_rsa->item);
+    free(kc_rsa);
+    return 1;
+}
+
+static const RSA_METHOD kc_rsa_pkcs1_method = {
+    "hx509 Keychain PKCS#1 RSA",
+    kc_rsa_public_encrypt,
+    kc_rsa_public_decrypt,
+    kc_rsa_private_encrypt,
+    kc_rsa_private_decrypt,
+    NULL,
+    NULL,
+    kc_rsa_init,
+    kc_rsa_finish,
+    0,
+    NULL,
+    NULL,
+    NULL
+};
+
+static int
+private_key(hx509_context context, SecKeychainItemRef itemRef,
+	    hx509_cert cert)
+{
+    struct kc_rsa *kc_rsa;
+    hx509_private_key key;
+    RSA *rsa;
+    int ret;
+
+    ret = _hx509_private_key_init(&key, NULL, NULL);
+    if (ret)
+	return ret;
+
+    rsa = RSA_new();
+    if (rsa == NULL)
+	_hx509_abort("out of memory");
+
+    kc_rsa = calloc(1, sizeof(*kc_rsa));
+    if (kc_rsa == NULL)
+	_hx509_abort("out of memory");
+
+    kc_rsa->item = itemRef;
+    
+    RSA_set_method(rsa, &kc_rsa_pkcs1_method);
+    ret = RSA_set_app_data(rsa, kc_rsa);
+    if (ret != 1)
+	_hx509_abort("RSA_set_app_data");
+
+    _hx509_private_key_assign_rsa(key, rsa);
+    _hx509_cert_assign_key(cert, key);
+
+    return 0;
+}
+
+/*
+ *
+ */
+
 struct ks_keychain {
     SecKeychainRef keychain;
 };
-
 
 static int
 keychain_init(hx509_context context,
@@ -56,10 +171,10 @@ keychain_init(hx509_context context,
 	return ENOMEM;
     }
 
-    if (strcasecmp(residue, "system") == 0)
-	residue = "/System/Library/Keychains/X509Anchors";
+    if (residue) {
+	if (strcasecmp(residue, "system") == 0)
+	    residue = "/System/Library/Keychains/X509Anchors";
 
-    if (residue && residue[0] != '\0') {
 	ret = SecKeychainOpen(residue, &ctx->keychain);
 	if (ret != noErr) {
 	    hx509_set_error_string(context, 0, ENOENT, 
@@ -93,7 +208,6 @@ keychain_free(hx509_certs certs, void *data)
 
 struct iter {
     SecKeychainSearchRef searchRef;
-    SecKeychainItemRef itemRef;
 };
 
 static int 
@@ -132,14 +246,18 @@ static int
 keychain_iter(hx509_context context,
 	      hx509_certs certs, void *data, void *cursor, hx509_cert *cert)
 {
+    SecKeychainAttributeList *attrs = NULL;
+    SecKeychainAttributeInfo attrInfo;
+    uint32 attrFormat = 0;
     SecKeychainItemRef itemRef;
+    SecItemAttr item;
     struct iter *iter = cursor;
     Certificate t;
     OSStatus ret;
     UInt32 len;
-    void *ptr;
+    void *ptr = NULL;
     size_t size;
-    
+
     *cert = NULL;
 
     ret = SecKeychainSearchCopyNext(iter->searchRef, &itemRef);
@@ -148,26 +266,75 @@ keychain_iter(hx509_context context,
     else if (ret != 0)
 	return EINVAL;
 	
-    ret = SecKeychainItemCopyAttributesAndData(itemRef, NULL, NULL,
-					       NULL, &len, &ptr);
+    /*
+     * Pick out certificate and matching "keyid"
+     */
+
+    item = kSecPublicKeyHashItemAttr;
+
+    attrInfo.count = 1;
+    attrInfo.tag = &item;
+    attrInfo.format = &attrFormat;
+  
+    ret = SecKeychainItemCopyAttributesAndData(itemRef, &attrInfo, NULL,
+					       &attrs, &len, &ptr);
     if (ret)
 	return EINVAL;
     
     ret = decode_Certificate(ptr, len, &t, &size);
-    SecKeychainItemFreeAttributesAndData(NULL, ptr);
     CFRelease(itemRef);
     if (ret) {
-	hx509_set_error_string(context, 0, ret, 
-			       "Failed to parse certificate");
-	return ret;
+	hx509_set_error_string(context, 0, ret, "Failed to parse certificate");
+	goto out;
     }
 
     ret = hx509_cert_init(context, &t, cert);
     free_Certificate(&t);
     if (ret)
-	return ret;
+	goto out;
 
-    return 0;
+    /* 
+     * Find related private key if there is one by looking at
+     * kSecPublicKeyHashItemAttr == kSecKeyLabel
+     */
+    {
+	SecKeychainSearchRef search;
+	SecKeychainAttribute attrKeyid;
+	SecKeychainAttributeList attrList;
+
+	attrKeyid.tag = kSecKeyLabel;
+	attrKeyid.length = attrs->attr[0].length;
+	attrKeyid.data = attrs->attr[0].data;
+	
+	attrList.count = 1;
+	attrList.attr = &attrKeyid;
+
+	ret = SecKeychainSearchCreateFromAttributes(NULL,
+						    CSSM_DL_DB_RECORD_PRIVATE_KEY,
+						    &attrList,
+						    &search);
+	if (ret) {
+	    ret = 0;
+	    goto out;
+	}
+
+	ret = SecKeychainSearchCopyNext(search, &itemRef);
+	CFRelease(search);
+	if (ret == errSecItemNotFound) {
+	    ret = 0;
+	    goto out;
+	} else if (ret) {
+	    ret = EINVAL;
+	    goto out;
+	}
+
+	private_key(context, itemRef, *cert);
+    }
+
+out:
+    SecKeychainItemFreeAttributesAndData(attrs, ptr);
+
+    return ret;
 }
 
 /*
