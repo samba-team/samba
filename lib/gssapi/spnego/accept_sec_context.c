@@ -92,7 +92,7 @@ send_supported_mechs (OM_uint32 *minor_status,
 		      gss_buffer_t output_token)
 {
     NegotiationTokenWin nt;
-    char hostname[MAXHOSTNAMELEN], *p;
+    char hostname[MAXHOSTNAMELEN + 1], *p;
     gss_buffer_desc name_buf;
     gss_OID name_type;
     gss_name_t target_princ;
@@ -117,11 +117,12 @@ send_supported_mechs (OM_uint32 *minor_status,
     }
 
     memset(&target_princ, 0, sizeof(target_princ));
-    if (gethostname(hostname, sizeof(hostname) - 1) != 0) {
+    if (gethostname(hostname, sizeof(hostname) - 2) != 0) {
 	*minor_status = errno;
 	free_NegotiationTokenWin(&nt);
 	return GSS_S_FAILURE;
     }
+    hostname[sizeof(hostname) - 1] = '\0';
 
     /* Send the constructed SAM name for this host */
     for (p = hostname; *p != '\0' && *p != '.'; p++) {
