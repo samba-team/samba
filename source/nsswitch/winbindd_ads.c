@@ -969,7 +969,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	} 
 	
-	DEBUG(10, ("ads lookup_groupmem: got %d sids via extended dn call\n", num_members));
+	DEBUG(10, ("ads lookup_groupmem: got %d sids via extended dn call\n", (int)num_members));
 	
 	/* Now that we have a list of sids, we need to get the
 	 * lists of names and name_types belonging to these sids.
@@ -1078,7 +1078,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		else if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("lookup_groupmem: Error looking up %d "
 				   "sids via rpc_lsa_lookup_sids: %s\n",
-				   num_members, nt_errstr(status)));
+				   (int)num_members, nt_errstr(status)));
 			goto done;
 		}
 	}

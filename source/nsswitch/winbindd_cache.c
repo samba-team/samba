@@ -3419,7 +3419,7 @@ int winbindd_validate_cache(void)
 
 	if (bytes_read != sizeof(v_status)) {
 		DEBUG(10, ("winbindd_validate_cache: read %d bytes from pipe "
-			   "but expected %d", bytes_read, sizeof(v_status)));
+			   "but expected %d", bytes_read, (int)sizeof(v_status)));
 		DEBUGADD(10, (" -> assuming child crashed\n"));
 		v_status.success = False;
 	}
