@@ -17,6 +17,10 @@ case $cmd in
 	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
 	ctdb_wait_directories "Samba" $smb_dirs	
 
+	# make sure samba is not already started
+	service smb stop > /dev/null 2>&1
+	service winbind stop > /dev/null 2>&1
+
 	# start Samba service
 	service smb start
 	service winbind start

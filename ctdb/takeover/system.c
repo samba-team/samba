@@ -386,6 +386,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 	if (state->child == 0) {
 		close(state->fd[0]);
 		ctdb_set_realtime(false);
+		set_close_on_exec(state->fd[1]);
 		va_start(ap, fmt);
 		ret = ctdb_event_script_v(ctdb, fmt, ap);
 		va_end(ap);

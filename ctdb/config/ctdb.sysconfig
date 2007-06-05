@@ -20,6 +20,11 @@
 # default is to not manage Samba
 # CTDB_MANAGES_SAMBA=yes
 
+# you may wish to raise the file descriptor limit for ctdb
+# use a ulimit command here. ctdb needs one file descriptor per
+# connected client (ie. one per connected client in Samba)
+#  ulimit -n 10000
+
 # the NODES file must be specified or ctdb won't start
 # it should contain a list of IPs that ctdb will use
 # it must be exactly the same on all cluster nodes
