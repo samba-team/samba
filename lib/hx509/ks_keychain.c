@@ -83,16 +83,16 @@ keychain_iter_start(hx509_context context,
 						kSecCertificateItemClass,
 						NULL,
 						&iter->searchRef);
-    if (ret)
-	errx(1, "SecKeychainSearchCreateFromAttributes: %d\n", ret);
+    if (ret) {
+	free(iter);
+	hx509_set_error_string(context, 0, ret, 
+			       "Failed to start search for attributes");
+	return ENOMEM;
+    }
 
     *cursor = iter;
     return 0;
 }
-
-/*
- *
- */
 
 /*
  *
@@ -114,7 +114,7 @@ keychain_iter(hx509_context context,
 
     ret = SecKeychainSearchCopyNext(iter->searchRef, &itemRef);
     if (ret == errSecItemNotFound)
-	return ENOENT;
+	return 0;
     else if (ret != 0)
 	return EINVAL;
 	
