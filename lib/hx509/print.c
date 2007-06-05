@@ -804,6 +804,20 @@ hx509_validate_cert(hx509_context context,
 		       "Not a CA nor PROXY and doesn't have"
 		       "CRL Dist Point\n");
 
+    if (status.selfsigned) {
+	ret = _hx509_verify_signature_bitstring(context,
+						c,
+						&c->signatureAlgorithm,
+						&c->tbsCertificate._save,
+						&c->signatureValue);
+	if (ret == 0)
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, 
+			   "Self-signed certificate was self-signed\n");
+	else
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Self-signed certificate NOT really self-signed!\n");
+    }
+
     hx509_name_free(&subject);
     hx509_name_free(&issuer);
 
