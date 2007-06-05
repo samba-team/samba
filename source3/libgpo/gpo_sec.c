@@ -49,6 +49,7 @@ static BOOL gpo_sd_check_agp_access_bits(uint32 access_mask)
 	return (access_mask & SEC_RIGHTS_APPLY_GROUP_POLICY);
 }
 
+#if 0
 /****************************************************************
 ****************************************************************/
 
@@ -60,7 +61,7 @@ static BOOL gpo_sd_check_read_access_bits(uint32 access_mask)
 
 	return (read_bits == (access_mask & read_bits));
 }
-
+#endif
 
 /****************************************************************
 ****************************************************************/
