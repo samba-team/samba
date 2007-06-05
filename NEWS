@@ -1,5 +1,7 @@
 Changes in release 0.9
 
+ * Inital support for Mac OS X Keychain for hx509
+
  * Alias support for inital ticket requests
 
  * Add symbol versioning to hcrypto, heimntlm, and libkdc
