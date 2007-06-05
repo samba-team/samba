@@ -319,6 +319,8 @@ certs_merge_func(hx509_context context, void *ctx, hx509_cert c)
 int
 hx509_certs_merge(hx509_context context, hx509_certs to, hx509_certs from)
 {
+    if (from == NULL)
+	return 0;
     return hx509_certs_iter(context, from, certs_merge_func, to);
 }
 
