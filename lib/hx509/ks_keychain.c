@@ -32,10 +32,11 @@
  */
 
 #include "hx_locl.h"
-#include <Security/Security.h>
 RCSID("$Id$");
 
 #ifdef HAVE_FRAMEWORK_SECURITY
+
+#include <Security/Security.h>
 
 /*
  *
@@ -48,20 +49,20 @@ struct kc_rsa {
 
 static int
 kc_rsa_public_encrypt(int flen,
-		       const unsigned char *from,
-		       unsigned char *to,
-		       RSA *rsa,
-		       int padding)
+		      const unsigned char *from,
+		      unsigned char *to,
+		      RSA *rsa,
+		      int padding)
 {
     return -1;
 }
 
 static int
 kc_rsa_public_decrypt(int flen,
-		       const unsigned char *from,
-		       unsigned char *to,
-		       RSA *rsa,
-		       int padding)
+		      const unsigned char *from,
+		      unsigned char *to,
+		      RSA *rsa,
+		      int padding)
 {
     return -1;
 }
@@ -69,17 +70,17 @@ kc_rsa_public_decrypt(int flen,
 
 static int
 kc_rsa_private_encrypt(int flen, 
-			const unsigned char *from,
-			unsigned char *to,
-			RSA *rsa,
-			int padding)
+		       const unsigned char *from,
+		       unsigned char *to,
+		       RSA *rsa,
+		       int padding)
 {
     return -1;
 }
 
 static int
 kc_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
-			RSA * rsa, int padding)
+		       RSA * rsa, int padding)
 {
     return -1;
 }
@@ -181,7 +182,7 @@ keychain_init(hx509_context context,
 				   "Failed to open %s", residue);
 	    return ENOENT;
 	}
-   }
+    }
 
     *data = ctx;
     return 0;
