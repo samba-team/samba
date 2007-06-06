@@ -9,6 +9,8 @@ loadconfig nfs
 cmd="$1"
 shift
 
+PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
+
 case $cmd in 
      startup)
 	mkdir -p /etc/ctdb/state/nfs
@@ -43,6 +45,16 @@ case $cmd in
                       service nfs restart > /dev/null 2>&1 ) &
 	} > /dev/null 2>&1
 	/bin/rm -f /etc/ctdb/state/nfs/restart
+	;;
+
+      monitor)
+	# check that NFS responds to rpc requests
+	ctdb_check_rpc "NFS" 100003 3
+	ctdb_check_rpc "mount" 100005 1
+
+	# and that its directories are available
+	nfs_dirs=`grep -v '^#' < /etc/exports | cut -d' ' -f1`
+	ctdb_check_directories "nfs" $nfs_dirs
 	;;
 
 esac

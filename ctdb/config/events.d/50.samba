@@ -50,6 +50,15 @@ case $cmd in
 	service smb stop
 	service winbind stop
 	;;
+
+     monitor)
+	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
+	ctdb_check_directories "Samba" $smb_dirs	
+
+	smb_ports=`testparm -stv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
+	ctdb_check_tcp_ports "Samba" $smb_ports
+	;;
+
 esac
 
 # ignore unknown commands

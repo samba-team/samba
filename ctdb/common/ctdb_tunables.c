@@ -36,7 +36,7 @@ static const struct {
 	{ "RecoverInterval",   1,  offsetof(struct ctdb_tunable, recover_interval) },
 	{ "ElectionTimeout",   3,  offsetof(struct ctdb_tunable, election_timeout) },
 	{ "TakeoverTimeout",   5,  offsetof(struct ctdb_tunable, takeover_timeout) },
-	{ "MonitorInterval",  60,  offsetof(struct ctdb_tunable, monitor_interval) },
+	{ "MonitorInterval",  15,  offsetof(struct ctdb_tunable, monitor_interval) },
 };
 
 /*
