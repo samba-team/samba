@@ -81,5 +81,9 @@ ${hxtool} issue-certificate \
     --certificate="FILE:wuser.pem" \
     --ca-certificate=FILE:wca.pem || exit 1
 
+echo "Create crl"
+${hxtool} crl-sign \
+	--crl-file=wcrl.crl \
+	--signer=FILE:wca.pem || exit 1
 
 exit 0
