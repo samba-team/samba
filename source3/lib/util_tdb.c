@@ -906,6 +906,9 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	struct tdb_logging_context log_ctx;
 	log_ctx.log_fn = tdb_wrap_log;
 
+	if (!lp_use_mmap())
+		tdb_flags |= TDB_NOMMAP;
+
 	for (w=tdb_list;w;w=w->next) {
 		if (strcmp(name, w->name) == 0) {
 			/*
