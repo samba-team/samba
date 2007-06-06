@@ -640,6 +640,8 @@ _kdc_pk_rd_padata(krb5_context context,
     kdc_log(context, config, 0, "PK-INIT request of type %s", type);
 
 out:
+    if (ret)
+	krb5_warn(context, ret, "PKINIT");
 
     if (signed_content.data)
 	free(signed_content.data);
