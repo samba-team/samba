@@ -152,7 +152,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	cert-ee.pem cert-ca.pem \
 	cert-sub-ee.pem cert-sub-ca.pem \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
-	wca.pem wuser.pem wdc.pem \
+	wca.pem wuser.pem wdc.pem wcrl.crl \
 	random-data statfile crl.crl \
 	test
 
