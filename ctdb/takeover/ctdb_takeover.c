@@ -432,6 +432,28 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 					break;
 				}
 			}
+			
+			/* if no enabled node can take it, then we
+			   might as well use any connected node. It
+			   probably means that some subsystem (such as
+			   NFS) is sick on all nodes. Best we can do
+			   is to keep the other services up. */
+			if (j == i) {
+				for (j=(i+1)%nodemap->num;
+				     j != i;
+				     j=(j+1)%nodemap->num) {
+					if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) &&
+					    ctdb_same_subnet(ctdb->nodes[j]->public_address, 
+							     ctdb->nodes[i]->public_address, 
+							     ctdb->nodes[j]->public_netmask_bits)) {
+						ctdb->nodes[i]->takeover_vnn = nodemap->nodes[j].vnn;
+						DEBUG(0,("All available nodes disabled for %s - using a connected node\n",
+							 ctdb->nodes[i]->public_address));
+						break;
+					}
+				}
+			}
+			
 			if (j == i) {
 				DEBUG(0,(__location__ " No node available on same network to take %s\n",
 					 ctdb->nodes[i]->public_address));
