@@ -44,7 +44,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 
 </bookinfo>
 
-<xi:include href="../Samba-Developers-Guide-attributions.xml">
+<xi:include href="../Samba3-Developers-Guide-attributions.xml">
 	<xi:fallback/>
 </xi:include>
 
