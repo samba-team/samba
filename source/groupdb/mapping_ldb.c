@@ -67,6 +67,10 @@ static BOOL init_group_mapping(void)
 		flags |= LDB_FLG_NOSYNC;
 	}
 
+	if (!lp_use_mmap()) {
+		flags |= LDB_FLG_NOMMAP;
+	}
+
 	ret = ldb_connect(ldb, db_path, flags, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
