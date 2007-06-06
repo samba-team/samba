@@ -285,11 +285,13 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Status:\n");
+		printf(":Node:IP:Connected:Disabled:Permanently Disabled:\n");
 		for(i=0;i<nodemap->num;i++){
-			printf(":%d:%s:%d:\n", nodemap->nodes[i].vnn,
+			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].vnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
-				!!nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED);
+				!!(nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED),
+				!!(nodemap->nodes[i].flags&NODE_FLAGS_DISABLED),
+				!!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED));
 		}
 		return 0;
 	}
