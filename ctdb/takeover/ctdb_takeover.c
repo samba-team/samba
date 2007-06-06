@@ -108,6 +108,8 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	char *ip = inet_ntoa(state->sin->sin_addr);
 	struct ctdb_tcp_list *tcp;
 
+	ctdb_start_monitoring(ctdb);
+
 	if (status != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, ctdb->takeover.interface));
@@ -186,7 +188,11 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
 		 ctdb->takeover.interface));
 
-	ret = ctdb_event_script_callback(ctdb, state, takeover_ip_callback, state,
+	ctdb_stop_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, takeover_ip_callback, state,
 					 "takeip %s %s %u",
 					 ctdb->takeover.interface, 
 					 ip,
@@ -216,6 +222,8 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	char *ip = inet_ntoa(state->sin->sin_addr);
 	TDB_DATA data;
 	struct ctdb_tcp_list *tcp;
+
+	ctdb_start_monitoring(ctdb);
 
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
@@ -286,7 +294,11 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state->sin);
 	*state->sin = pip->sin;
 
-	ret = ctdb_event_script_callback(ctdb, state, release_ip_callback, state,
+	ctdb_stop_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, release_ip_callback, state,
 					 "releaseip %s %s %u",
 					 ctdb->takeover.interface, 
 					 ip,
@@ -420,6 +432,28 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 					break;
 				}
 			}
+			
+			/* if no enabled node can take it, then we
+			   might as well use any connected node. It
+			   probably means that some subsystem (such as
+			   NFS) is sick on all nodes. Best we can do
+			   is to keep the other services up. */
+			if (j == i) {
+				for (j=(i+1)%nodemap->num;
+				     j != i;
+				     j=(j+1)%nodemap->num) {
+					if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) &&
+					    ctdb_same_subnet(ctdb->nodes[j]->public_address, 
+							     ctdb->nodes[i]->public_address, 
+							     ctdb->nodes[j]->public_netmask_bits)) {
+						ctdb->nodes[i]->takeover_vnn = nodemap->nodes[j].vnn;
+						DEBUG(0,("All available nodes disabled for %s - using a connected node\n",
+							 ctdb->nodes[i]->public_address));
+						break;
+					}
+				}
+			}
+			
 			if (j == i) {
 				DEBUG(0,(__location__ " No node available on same network to take %s\n",
 					 ctdb->nodes[i]->public_address));

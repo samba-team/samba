@@ -87,7 +87,7 @@ static void ctdb_main_loop(struct ctdb_context *ctdb)
 				 CTDB_CTRL_FLAG_NOREPLY,
 				 tdb_null, NULL, NULL);
 
-	ret = ctdb_event_script_callback(ctdb, ctdb, 
+	ret = ctdb_event_script_callback(ctdb, timeval_zero(), ctdb, 
 					 ctdb_start_transport, NULL, "startup");
 	if (ret != 0) {
 		DEBUG(0,("Failed startup event script\n"));

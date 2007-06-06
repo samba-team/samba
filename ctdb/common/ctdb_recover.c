@@ -404,6 +404,8 @@ static void ctdb_recovered_callback(struct ctdb_context *ctdb, int status, void 
 {
 	struct ctdb_set_recmode_state *state = talloc_get_type(p, struct ctdb_set_recmode_state);
 
+	ctdb_start_monitoring(ctdb);
+
 	if (status == 0) {
 		ctdb->recovery_mode = state->recmode;
 	} else {
@@ -453,8 +455,13 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 	state->c = talloc_steal(state, c);
 	state->recmode = recmode;
+	
+	ctdb_stop_monitoring(ctdb);
+
 	/* call the events script to tell all subsystems that we have recovered */
-	ret = ctdb_event_script_callback(ctdb, state, 
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, 
 					 ctdb_recovered_callback, 
 					 state, "recovered");
 	if (ret != 0) {

@@ -29,13 +29,13 @@
   see if any nodes are dead
  */
 static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_event *te, 
-			   struct timeval t, void *private_data)
+				      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int i;
 
 	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED) {
-		event_add_timed(ctdb->ev, ctdb, 
+		event_add_timed(ctdb->ev, ctdb->monitor_context, 
 			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 		return;
@@ -83,7 +83,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 		node->tx_cnt = 0;
 	}
 	
-	event_add_timed(ctdb->ev, ctdb, 
+	event_add_timed(ctdb->ev, ctdb->monitor_context, 
 			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 }
@@ -100,7 +100,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	TDB_DATA data;
 	struct ctdb_node_flag_change c;
 
-	event_add_timed(ctdb->ev, ctdb, 
+	event_add_timed(ctdb->ev, ctdb->monitor_context, 
 			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			ctdb_check_health, ctdb);
 
@@ -136,32 +136,47 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	int ret;
 
 	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED) {
-		event_add_timed(ctdb->ev, ctdb, 
+		event_add_timed(ctdb->ev, ctdb->monitor_context,
 				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 				ctdb_check_health, ctdb);
 		return;
 	}
 	
-	ret = ctdb_event_script_callback(ctdb, ctdb, ctdb_health_callback, ctdb, "monitor");
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 ctdb->monitor_context, ctdb_health_callback, ctdb, "monitor");
 	if (ret != 0) {
 		DEBUG(0,("Unable to launch monitor event script\n"));
-		event_add_timed(ctdb->ev, ctdb, 
+		event_add_timed(ctdb->ev, ctdb->monitor_context, 
 				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 				ctdb_check_health, ctdb);
 	}	
 }
 
+/* stop any monitoring */
+void ctdb_stop_monitoring(struct ctdb_context *ctdb)
+{
+	talloc_free(ctdb->monitor_context);
+	ctdb->monitor_context = talloc_new(ctdb);
+	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor_context);
+}
 
 /*
   start watching for nodes that might be dead
  */
-int ctdb_start_monitoring(struct ctdb_context *ctdb)
+void ctdb_start_monitoring(struct ctdb_context *ctdb)
 {
-	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
-			ctdb_check_for_dead_nodes, ctdb);
-	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
-			ctdb_check_health, ctdb);
-	return 0;
+	struct timed_event *te;
+
+	ctdb_stop_monitoring(ctdb);
+
+	te = event_add_timed(ctdb->ev, ctdb->monitor_context,
+			     timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
+			     ctdb_check_for_dead_nodes, ctdb);
+	CTDB_NO_MEMORY_FATAL(ctdb, te);
+
+	te = event_add_timed(ctdb->ev, ctdb->monitor_context,
+			     timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+			     ctdb_check_health, ctdb);
+	CTDB_NO_MEMORY_FATAL(ctdb, te);
 }

@@ -337,6 +337,21 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	callback(ctdb, status, private_data);
 }
 
+
+/* called when child times out */
+static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t, void *p)
+{
+	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
+	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
+	void *private_data = state->private_data;
+	struct ctdb_context *ctdb = state->ctdb;
+
+	DEBUG(0,("event script timed out\n"));
+	talloc_free(state);
+	callback(ctdb, -1, private_data);
+}
+
 /*
   destroy a running event script
  */
@@ -352,6 +367,7 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
   finished
  */
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
+			       struct timeval timeout,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
@@ -399,6 +415,10 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 
 	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 		     ctdb_event_script_handler, state);
+
+	if (!timeval_is_zero(&timeout)) {
+		event_add_timed(ctdb->ev, state, timeout, ctdb_event_script_timeout, state);
+	}
 
 	return 0;
 }
