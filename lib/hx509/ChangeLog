@@ -1,3 +1,25 @@
+2007-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_cms.in: Test cms peer-alg.
+
+	* crypto.c (rsa_create_signature): make oid_id_pkcs1_rsaEncryption
+	mean rsa-with-sha1 but oid oid_id_pkcs1_rsaEncryption in algorithm
+	field.  XXX should probably use another algorithmIdentifier for
+	this.
+
+	* peer.c: Make free function return void.
+
+	* cms.c (hx509_cms_create_signed_1): Use hx509_peer_info to select
+	the signature algorithm too.
+
+	* hxtool-commands.in: Add cms-create-sd --peer-alg.
+
+	* req.c: Use _hx509_crypto_default_sig_alg.
+
+	* test_windows.in: Create crl, because everyone needs one.
+
+	* Makefile.am: add wcrl.crl
+	
 2007-06-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hx_locl.h: Disable KEYCHAIN for now, its slow.
