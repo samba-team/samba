@@ -12,7 +12,9 @@
 
 	<xsl:template match="description"><xsl:apply-templates/></xsl:template>
 
-	<xsl:template match="value"><xsl:apply-templates/></xsl:template>
+	<xsl:template match="value"><xsl:element name="literal"><xsl:apply-templates/></xsl:element></xsl:template>
+	
+	<xsl:template match="command"><xsl:element name="literal"><xsl:apply-templates/></xsl:element></xsl:template>
 
 	<xsl:template match="synonym"><xsl:apply-templates/></xsl:template>
 
