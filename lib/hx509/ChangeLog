@@ -1,5 +1,7 @@
 2007-06-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hx_locl.h: Disable KEYCHAIN for now, its slow.
+
 	* cms.c: When we are not using pkcs7-data, avoid seing
 	signedAttributes since some clients get upset by that (pkcs7 based
 	or just plain broken).
