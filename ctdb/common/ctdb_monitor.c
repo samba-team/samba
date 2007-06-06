@@ -104,7 +104,12 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			ctdb_check_health, ctdb);
 
-	if (status != 0 && !(node->flags & NODE_FLAGS_DISABLED)) {
+	if (node->flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
+		if ( !(node->flags & NODE_FLAGS_DISABLED) ) {
+			DEBUG(0,("monitoring - node is permanently disabled\n"));
+			node->flags |= NODE_FLAGS_DISABLED;
+		}
+	} else if (status != 0 && !(node->flags & NODE_FLAGS_DISABLED)) {
 		DEBUG(0,("monitor event failed - disabling node\n"));
 		node->flags |= NODE_FLAGS_DISABLED;
 	} else if (status == 0 && (node->flags & NODE_FLAGS_DISABLED)) {

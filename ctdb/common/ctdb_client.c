@@ -1918,3 +1918,26 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/*
+  set/clear the permanent disabled bit on a remote node
+ */
+int ctdb_ctrl_permdisable(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t mode)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	data.dsize = sizeof(uint32_t);
+	data.dptr = (unsigned char *)&mode;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_PERMANENTLY_DISABLE, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for setpermdisable failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+

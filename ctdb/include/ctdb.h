@@ -351,6 +351,9 @@ int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
 			    TALLOC_CTX *mem_ctx,
 			    const char ***list, uint32_t *count);
 
-
+int ctdb_ctrl_permdisable(struct ctdb_context *ctdb, 
+			  struct timeval timeout, 
+			  uint32_t destnode, 
+			  uint32_t mode);
 
 #endif
