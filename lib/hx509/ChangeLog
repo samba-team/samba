@@ -1,5 +1,8 @@
 2007-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_keychain.c: rename functions, leaks less memory and more
+	paranoia.
+
 	* test_cms.in: Test cms peer-alg.
 
 	* crypto.c (rsa_create_signature): make oid_id_pkcs1_rsaEncryption
