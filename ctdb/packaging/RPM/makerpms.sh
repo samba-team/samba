@@ -81,7 +81,7 @@ cp -p packaging/RPM/ctdb.spec ${SPECDIR}
 ##
 echo "$(basename $0): Getting Ready to build release package"
 cd ${SPECDIR}
-${RPMBUILD} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE
+${RPMBUILD} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE || exit 1
 
 echo "$(basename $0): Done."
 [ ${REMOVE_LN} ] && /bin/rm -f $REMOVE_LN
