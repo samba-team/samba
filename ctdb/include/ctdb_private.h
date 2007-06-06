@@ -44,13 +44,14 @@ struct ctdb_tunable {
 	uint32_t seqnum_frequency;
 	uint32_t control_timeout;
 	uint32_t traverse_timeout;
-	uint32_t monitoring_timeout;
-	uint32_t monitoring_limit;
+	uint32_t keepalive_interval;
+	uint32_t keepalive_limit;
 	uint32_t max_lacount;
 	uint32_t recover_timeout;
-	uint32_t monitor_frequency;
+	uint32_t recover_interval;
 	uint32_t election_timeout;
 	uint32_t takeover_timeout;
+	uint32_t monitor_interval;
 };
 
 /*
@@ -451,6 +452,14 @@ struct ctdb_control_tcp_vnn {
 	uint32_t vnn;
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
+};
+
+/*
+  structure used for CTDB_SRVID_NODE_FLAGS_CHANGED
+ */
+struct ctdb_node_flag_change {
+	uint32_t vnn;
+	uint32_t flags;
 };
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};

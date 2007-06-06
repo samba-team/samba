@@ -296,11 +296,18 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
+		const char *flags_str;
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISABLED) {
+			flags_str = "DISABLED";
+		} else if (nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) {
+			flags_str = "CONNECTED";
+		} else {
+			flags_str = "UNAVAILABLE";
+		}
 		printf("vnn:%d %-16s %s%s\n", nodemap->nodes[i].vnn,
-			inet_ntoa(nodemap->nodes[i].sin.sin_addr),
-			nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED?
-				"CONNECTED":"UNAVAILABLE",
-			nodemap->nodes[i].vnn == myvnn?" (THIS NODE)":"");
+		       inet_ntoa(nodemap->nodes[i].sin.sin_addr),
+		       flags_str,
+		       nodemap->nodes[i].vnn == myvnn?" (THIS NODE)":"");
 	}
 
 	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.vnn, ctdb, &vnnmap);
