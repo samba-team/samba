@@ -122,7 +122,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	data.dsize = sizeof(c);
 
 	/* tell the recmaster that something has changed */
-	ctdb_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+	ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_NODE_FLAGS_CHANGED, data);
 }
 
 

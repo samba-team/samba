@@ -991,8 +991,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	DEBUG(0,("Node %u has changed flags - was 0x%x now 0x%x\n", 
-		 c->vnn, nodemap->nodes[i].flags, c->flags));
+	DEBUG(0,("Node %u has changed flags - now 0x%x\n", c->vnn, c->flags));
 
 	nodemap->nodes[i].flags = c->flags;
 	

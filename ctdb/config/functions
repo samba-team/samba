@@ -28,7 +28,7 @@ service() {
 
 ######################################################
 # wait for a set of tcp ports
-# usage: ctdb_wait_tcp_ports SERICE_NAME <ports...>
+# usage: ctdb_wait_tcp_ports SERVICE_NAME <ports...>
 ######################################################
 ctdb_wait_tcp_ports() {
   service_name="$1"
@@ -59,9 +59,10 @@ ctdb_wait_tcp_ports() {
 }
 
 
+
 ######################################################
 # wait for a set of directories
-# usage: ctdb_wait_directories SERICE_NAME <directories...>
+# usage: ctdb_wait_directories SERVICE_NAME <directories...>
 ######################################################
 ctdb_wait_directories() {
   service_name="$1"
@@ -84,3 +85,58 @@ ctdb_wait_directories() {
   echo "`/bin/date` Local directories for $service_name are available"
 }
 
+
+######################################################
+# check that a rpc server is registered with portmap
+# and responding to requests
+# usage: ctdb_check_rpc SERVICE_NAME PROGNUM VERSION
+######################################################
+ctdb_check_rpc() {
+    service_name="$1"
+    prognum="$2"
+    version="$3"
+    rpcinfo -u localhost $prognum $version > /dev/null || {
+	    echo "`date` ERROR: $service_name not responding to rpc requests"
+	    exit 1
+    }
+}
+
+######################################################
+# check a set of directories is available
+# usage: ctdb_check_directories SERVICE_NAME <directories...>
+######################################################
+ctdb_check_directories() {
+  service_name="$1"
+  shift
+  wait_dirs="$*"
+  [ -z "$wait_dirs" ] && return;
+  for d in $wait_dirs; do
+      [ -d $d ] || {
+	  echo "`date` ERROR: $service_name directory $d not available"
+	  exit 1
+      }
+  done
+}
+
+######################################################
+# check a set of tcp ports
+# usage: ctdb_check_tcp_ports SERVICE_NAME <ports...>
+######################################################
+ctdb_check_tcp_ports() {
+  service_name="$1"
+  shift
+  wait_ports="$*"
+  [ -z "$wait_ports" ] && return;
+  for p in $wait_ports; do
+      all_ok=1
+      if [ -x /usr/bin/netcat ]; then
+          /usr/bin/netcat -z 127.0.0.1 $p || all_ok=0
+      elif [ -x /usr/bin/nc ]; then
+          /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
+      fi
+      [ $all_ok -eq 1 ] || {
+	  echo "`date` ERROR: $service_name tcp port $p is not responding"
+	  exit 1
+      }
+  done
+}

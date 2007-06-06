@@ -51,6 +51,14 @@ case $cmd in
 
 	/bin/rm -f /etc/ctdb/state/statd/restart
 	;;
+
+      monitor)
+	# check that lockd responds to rpc requests
+	ctdb_check_rpc "statd" 100024 1
+	ctdb_check_rpc "lockd" 100021 1
+	ctdb_check_directories "statd" $STATD_SHARED_DIRECTORY
+	;;
+
 esac
 
 exit 0

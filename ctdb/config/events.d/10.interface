@@ -6,6 +6,9 @@
 # public interface
 
 . /etc/ctdb/functions
+loadconfig ctdb
+
+[ -z "$CTDB_PUBLIC_INTERFACE" ] && exit 0
 
 cmd="$1"
 shift
@@ -71,6 +74,15 @@ case $cmd in
      ####################################
      # called when ctdbd is shutting down
      shutdown)
+	;;
+
+     monitor)
+	[ -x /usr/sbin/ethtool ] && {
+	    /usr/sbin/ethtool $CTDB_PUBLIC_INTERFACE | grep 'Link detected: yes' > /dev/null || {
+		echo "`date` ERROR: No link on network interface $CTDB_PUBLIC_INTERFACE"
+		exit 1
+	    }
+	}
 	;;
 
 esac

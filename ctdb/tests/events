@@ -5,6 +5,10 @@ cmd="$1"
 shift
 
 case $cmd in 
+    monitor)
+	echo "`date` monitor event"
+	exit 0
+	;;
      startup)
 	echo "`date` ctdb startup event"
 	exit 0;	
