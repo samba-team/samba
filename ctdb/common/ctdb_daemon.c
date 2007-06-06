@@ -31,6 +31,25 @@
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
+/*
+  handler for when a node changes its flags
+*/
+static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+				TDB_DATA data, void *private_data)
+{
+	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
+
+	if (data.dsize != sizeof(*c) || !ctdb_validate_vnn(ctdb, c->vnn)) {
+		DEBUG(0,(__location__ "Invalid data in ctdb_node_flag_change\n"));
+		return;
+	}
+
+	/* don't get the connected flag from the other node */
+	ctdb->nodes[c->vnn]->flags = 
+		(ctdb->nodes[c->vnn]->flags&NODE_FLAGS_CONNECTED) 
+		| (c->flags & ~NODE_FLAGS_CONNECTED);	
+}
+
 /* called when the "startup" event script has finished */
 static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
 {
@@ -50,6 +69,10 @@ static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
 		DEBUG(0,("Failed to start recovery daemon\n"));
 		exit(11);
 	}
+
+	/* a handler for when nodes are disabled/enabled */
+	ctdb_register_message_handler(ctdb, ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, 
+				      flag_change_handler, NULL);
 
 	/* start monitoring for dead nodes */
 	ctdb_start_monitoring(ctdb);
