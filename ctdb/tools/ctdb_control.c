@@ -582,7 +582,7 @@ static int control_getvar(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	printf("%-17s = %u\n", name, value);
+	printf("%-18s = %u\n", name, value);
 	return 0;
 }
 

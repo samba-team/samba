@@ -991,11 +991,24 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	DEBUG(0,("Node %u has changed flags - now 0x%x\n", c->vnn, c->flags));
+	if (c->vnn != ctdb->vnn) {
+		DEBUG(0,("Node %u has changed flags - now 0x%x\n", c->vnn, c->flags));
+	}
 
 	nodemap->nodes[i].flags = c->flags;
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), 
+				     CTDB_CURRENT_NODE, &ctdb->recovery_master);
+
+	if (ret == 0) {
+		ret = ctdb_ctrl_getrecmode(ctdb, CONTROL_TIMEOUT(), 
+					   CTDB_CURRENT_NODE, &ctdb->recovery_mode);
+	}
 	
-	if (ctdb->takeover.enabled) {
+	if (ret == 0 &&
+	    ctdb->recovery_master == ctdb->vnn &&
+	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL &&
+	    ctdb->takeover.enabled) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));

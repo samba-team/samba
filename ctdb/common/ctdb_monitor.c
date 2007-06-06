@@ -121,8 +121,9 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	data.dptr = (uint8_t *)&c;
 	data.dsize = sizeof(c);
 
-	/* tell the recmaster that something has changed */
-	ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+	/* tell the other nodes that something has changed */
+	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
+				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
 }
 
 
