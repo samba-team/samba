@@ -322,6 +322,8 @@ rsa_create_signature(hx509_context context,
 	digest_alg = hx509_signature_md5();
     } else if (der_heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
 	digest_alg = hx509_signature_sha1();
+    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_rsaEncryption()) == 0) {
+	digest_alg = hx509_signature_sha1();
     } else
 	return HX509_ALG_NOT_SUPP;
 
@@ -949,6 +951,7 @@ static const struct signature_alg *sig_algs[] = {
     &pkcs1_rsa_sha1_alg,
     &rsa_with_md5_alg,
     &rsa_with_md2_alg,
+    &pkcs1_rsa_sha1_alg,
     &dsa_sha1_alg,
     &sha256_alg,
     &sha1_alg,
