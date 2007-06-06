@@ -181,6 +181,7 @@ typedef struct {
 	BOOL bWinbindRefreshTickets;
 	BOOL bWinbindOfflineLogon;
 	BOOL bWinbindNormalizeNames;
+	BOOL bWinbindRpcOnly;
 	char **szIdmapDomains;
 	char **szIdmapBackend; /* deprecated */
 	char *szIdmapAllocBackend;
@@ -1290,6 +1291,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind refresh tickets", P_BOOL, P_GLOBAL, &Globals.bWinbindRefreshTickets, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind offline logon", P_BOOL, P_GLOBAL, &Globals.bWinbindOfflineLogon, NULL, NULL, FLAG_ADVANCED},
 	{"winbind normalize names", P_BOOL, P_GLOBAL, &Globals.bWinbindNormalizeNames, NULL, NULL, FLAG_ADVANCED},
+	{"winbind rpc only", P_BOOL, P_GLOBAL, &Globals.bWinbindRpcOnly, NULL, NULL, FLAG_ADVANCED},
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1896,6 +1898,7 @@ FN_GLOBAL_BOOL(lp_winbind_nested_groups, &Globals.bWinbindNestedGroups)
 FN_GLOBAL_BOOL(lp_winbind_refresh_tickets, &Globals.bWinbindRefreshTickets)
 FN_GLOBAL_BOOL(lp_winbind_offline_logon, &Globals.bWinbindOfflineLogon)
 FN_GLOBAL_BOOL(lp_winbind_normalize_names, &Globals.bWinbindNormalizeNames)
+FN_GLOBAL_BOOL(lp_winbind_rpc_only, &Globals.bWinbindRpcOnly)
 
 FN_GLOBAL_LIST(lp_idmap_domains, &Globals.szIdmapDomains)
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend) /* deprecated */
