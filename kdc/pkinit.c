@@ -375,7 +375,6 @@ _kdc_pk_rd_padata(krb5_context context,
     krb5_data eContent = { 0, NULL };
     krb5_data signed_content = { 0, NULL };
     const char *type = "unknown type";
-    const heim_oid *pa_contentType;
     int have_data = 0;
 
     *ret_params = NULL;
@@ -396,7 +395,6 @@ _kdc_pk_rd_padata(krb5_context context,
 	PA_PK_AS_REQ_Win2k r;
 
 	type = "PK-INIT-Win2k";
-	pa_contentType = oid_id_pkcs7_data();
 
 	ret = decode_PA_PK_AS_REQ_Win2k(pa->padata_value.data,
 					pa->padata_value.length,
@@ -422,7 +420,6 @@ _kdc_pk_rd_padata(krb5_context context,
 	PA_PK_AS_REQ r;
 
 	type = "PK-INIT-IETF";
-	pa_contentType = oid_id_pkauthdata();
 
 	ret = decode_PA_PK_AS_REQ(pa->padata_value.data,
 				  pa->padata_value.length,
@@ -548,7 +545,9 @@ _kdc_pk_rd_padata(krb5_context context,
     }
 
     /* Signature is correct, now verify the signed message */
-    if (der_heim_oid_cmp(&eContentType, pa_contentType)) {
+    if (der_heim_oid_cmp(&eContentType, oid_id_pkcs7_data()) != 0 &&
+	der_heim_oid_cmp(&eContentType, oid_id_pkauthdata()) != 0)
+    {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
