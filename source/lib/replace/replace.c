@@ -438,6 +438,10 @@ char *rep_mkdtemp(char *template)
 }
 #endif
 
+/*****************************************************************
+ Watch out: this is not thread safe.
+*****************************************************************/
+
 #ifndef HAVE_PREAD
 ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
 {
@@ -447,6 +451,10 @@ ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
 	return read(__fd, __buf, __nbytes);
 }
 #endif
+
+/*****************************************************************
+ Watch out: this is not thread safe.
+*****************************************************************/
 
 #ifndef HAVE_PWRITE
 ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
