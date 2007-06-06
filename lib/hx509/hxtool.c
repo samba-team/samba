@@ -85,6 +85,38 @@ certs_strings(hx509_context context, const char *type, hx509_certs certs,
     }
 }
 
+static void
+peer_strings(hx509_context context,
+	     hx509_peer_info *peer, 
+	     const getarg_strings *s)
+{
+    AlgorithmIdentifier *val;
+    int ret, i;
+    
+    ret = hx509_peer_info_alloc(context, peer);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_peer_info_alloc");
+    
+    val = calloc(s->num_strings, sizeof(*val));
+    if (val == NULL)
+	err(1, "malloc");
+
+    for (i = 0; i < s->num_strings; i++) {
+	ret = der_parse_heim_oid (s->strings[i], " .", &val[i].algorithm);
+	if  (ret)
+	    errx(1, "der_parse_heim_oid failed on: %s", s->strings[i]);
+    }
+	    
+    ret = hx509_peer_info_set_cms_algs(context, *peer, val, s->num_strings);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_peer_info_set_cms_algs");
+
+    for (i = 0; i < s->num_strings; i++)
+	free_AlgorithmIdentifier(&val[i]);
+    free(val);
+}
+
+
 int
 cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 {
@@ -186,6 +218,7 @@ int
 cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 {
     const heim_oid *contentType;
+    hx509_peer_info peer = NULL;
     heim_octet_string o;
     hx509_query *q;
     hx509_lock lock;
@@ -232,11 +265,14 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     ret = hx509_certs_find(context, store, q, &cert);
     hx509_query_free(context, q);
     if (ret)
-	errx(1, "hx509_certs_find: %d", ret);
+	hx509_err(context, 1, ret, "hx509_certs_find");
 
     ret = _hx509_map_file(argv[0], &p, &sz, NULL);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
+
+    if (opt->peer_alg_strings.num_strings)
+	peer_strings(context, &peer, &opt->peer_alg_strings);
 
     ret = hx509_cms_create_signed_1(context,
 				    flags,
@@ -245,7 +281,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 				    sz, 
 				    NULL,
 				    cert,
-				    NULL,
+				    peer,
 				    anchors,
 				    pool,
 				    &o);
@@ -258,6 +294,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_certs_free(&store);
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
+    hx509_peer_info_free(peer);
 
     if (opt->content_info_flag) {
 	heim_octet_string wo;
@@ -1238,34 +1275,8 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
     } else
 	type = HX509_SELECT_DIGEST;
 
-    if (opt->peer_cmstype_strings.num_strings) {
-	AlgorithmIdentifier *val;
-	size_t i;
-
-	ret = hx509_peer_info_alloc(context, &peer);
-	if (ret)
-	    errx(1, "hx509_peer_info_alloc");
-
-	val = calloc(opt->peer_cmstype_strings.num_strings, sizeof(*val));
-	if (val == NULL)
-	    err(1, "malloc");
-
-	for (i = 0; i < opt->peer_cmstype_strings.num_strings; i++) {
-	    ret = der_parse_heim_oid (opt->peer_cmstype_strings.strings[i],
-				      " .", &val[i].algorithm);
-	    if  (ret)
-		errx(1, "der_parse_heim_oid failed on: %s", 
-		     opt->peer_cmstype_strings.strings[i]);
-	}
-	    
-	ret = hx509_peer_info_set_cms_algs(context, peer, val, 
-					   opt->peer_cmstype_strings.num_strings);
-	for (i = 0; i < opt->peer_cmstype_strings.num_strings; i++)
-	    free_AlgorithmIdentifier(&val[i]);
-	free(val);
-	if (ret)
-	    errx(1, "hx509_peer_info_set_cms_algs");
-    }
+    if (opt->peer_cmstype_strings.num_strings)
+	peer_strings(context, &peer, &opt->peer_cmstype_strings);
 
     ret = hx509_crypto_select(context, type, NULL, peer, &selected);
     if (ret)
@@ -1276,8 +1287,7 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
     free(s);
     free_AlgorithmIdentifier(&selected);
 
-    if (peer)
-	hx509_peer_info_free(peer);
+    hx509_peer_info_free(peer);
 
     return 0;
 }
