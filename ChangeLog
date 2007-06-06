@@ -1,4 +1,18 @@
+2007-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c (_kdc_pk_rd_padata): accept both pkcs-7 and
+	pkauthdata as the signeddata oid
+	
+	* kdc/pkinit.c (_kdc_pk_rd_padata): Try to log what went wrong.
+
+2007-06-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/pkinit.c: Use oid_id_pkcs7_data for pkinit-9 encKey reply to
+	match windows DC behavior better.
+	
 2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: use test for -framework Security
 
 	* appl/test/uu_server.c: Print status to stdout.
 
