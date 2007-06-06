@@ -191,8 +191,9 @@ static const RSA_METHOD kc_rsa_pkcs1_method = {
 };
 
 static int
-private_key(hx509_context context, SecKeychainItemRef itemRef,
-	    hx509_cert cert)
+set_private_key(hx509_context context,
+		SecKeychainItemRef itemRef,
+		hx509_cert cert)
 {
     struct kc_rsa *kc;
     hx509_private_key key;
@@ -215,7 +216,7 @@ private_key(hx509_context context, SecKeychainItemRef itemRef,
 
     /* Argh, fake modulus since OpenSSL API is on crack */
     {
-	SecKeychainAttributeList *attrs;
+	SecKeychainAttributeList *attrs = NULL;
 	uint32_t size;
 	void *data;
 
@@ -233,6 +234,7 @@ private_key(hx509_context context, SecKeychainItemRef itemRef,
 	data = malloc(kc->keysize);
 	memset(data, 0xe0, kc->keysize);
 	BN_bin2bn(data, kc->keysize, rsa->n);
+	free(data);
     }
     rsa->e = NULL;
 
@@ -426,8 +428,7 @@ keychain_iter(hx509_context context,
 	    ret = EINVAL;
 	    goto out;
 	}
-
-	private_key(context, itemRef, *cert);
+	set_private_key(context, itemRef, *cert);
     }
 
 out:
