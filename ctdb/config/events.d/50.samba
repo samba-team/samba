@@ -52,6 +52,11 @@ case $cmd in
 	;;
 
      monitor)
+	testparm -st 2>&1 | egrep '^WARNING|^ERROR|^Unknown' && {
+	    echo "`date` ERROR: testparm shows smb.conf is not clean"
+	    exit 1
+	}
+
 	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
 	ctdb_check_directories "Samba" $smb_dirs	
 
