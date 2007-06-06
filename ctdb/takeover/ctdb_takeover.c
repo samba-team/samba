@@ -108,6 +108,8 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	char *ip = inet_ntoa(state->sin->sin_addr);
 	struct ctdb_tcp_list *tcp;
 
+	ctdb_start_monitoring(ctdb);
+
 	if (status != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, ctdb->takeover.interface));
@@ -186,7 +188,11 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		 ip, ctdb->nodes[ctdb->vnn]->public_netmask_bits, 
 		 ctdb->takeover.interface));
 
-	ret = ctdb_event_script_callback(ctdb, state, takeover_ip_callback, state,
+	ctdb_stop_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, takeover_ip_callback, state,
 					 "takeip %s %s %u",
 					 ctdb->takeover.interface, 
 					 ip,
@@ -216,6 +222,8 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	char *ip = inet_ntoa(state->sin->sin_addr);
 	TDB_DATA data;
 	struct ctdb_tcp_list *tcp;
+
+	ctdb_start_monitoring(ctdb);
 
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
@@ -286,7 +294,11 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state->sin);
 	*state->sin = pip->sin;
 
-	ret = ctdb_event_script_callback(ctdb, state, release_ip_callback, state,
+	ctdb_stop_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, release_ip_callback, state,
 					 "releaseip %s %s %u",
 					 ctdb->takeover.interface, 
 					 ip,

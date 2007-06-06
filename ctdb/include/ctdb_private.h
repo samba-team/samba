@@ -52,6 +52,7 @@ struct ctdb_tunable {
 	uint32_t election_timeout;
 	uint32_t takeover_timeout;
 	uint32_t monitor_interval;
+	uint32_t script_timeout;
 };
 
 /*
@@ -281,6 +282,7 @@ struct ctdb_context {
 	struct event_context *ev;
 	uint32_t recovery_mode;
 	uint32_t monitoring_mode;
+	TALLOC_CTX *monitor_context;
 	struct ctdb_tunable tunable;
 	enum ctdb_freeze_mode freeze_mode;
 	struct ctdb_freeze_handle *freeze_handle;
@@ -917,7 +919,8 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb);
 
 uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb);
 
-int ctdb_start_monitoring(struct ctdb_context *ctdb);
+void ctdb_stop_monitoring(struct ctdb_context *ctdb);
+void ctdb_start_monitoring(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
@@ -983,10 +986,11 @@ int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
+			       struct timeval timeout,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
-			       const char *fmt, ...) PRINTF_ATTRIBUTE(5,6);
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 void set_nonblocking(int fd);
