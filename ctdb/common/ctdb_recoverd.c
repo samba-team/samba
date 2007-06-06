@@ -996,8 +996,17 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	nodemap->nodes[i].flags = c->flags;
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), 
+				     CTDB_CURRENT_NODE, &ctdb->recovery_master);
+
+	if (ret == 0) {
+		ret = ctdb_ctrl_getrecmode(ctdb, CONTROL_TIMEOUT(), 
+					   CTDB_CURRENT_NODE, &ctdb->recovery_mode);
+	}
 	
-	if (ctdb->recovery_master == ctdb->vnn &&
+	if (ret == 0 &&
+	    ctdb->recovery_master == ctdb->vnn &&
 	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL &&
 	    ctdb->takeover.enabled) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
