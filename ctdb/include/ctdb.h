@@ -59,7 +59,7 @@ struct ctdb_call_info {
 /*
   srvid type : RECOVERY
 */
-#define CTDB_SRVTYPE_RECOVERY	0xF100000000000000LL
+#define CTDB_SRVID_RECOVERY	0xF100000000000000LL
 
 /* 
    a message handler ID meaning that the cluster has been reconfigured
@@ -70,6 +70,12 @@ struct ctdb_call_info {
    a message handler ID meaning that an IP address has been released
  */
 #define CTDB_SRVID_RELEASE_IP 0xF300000000000000LL
+
+/* 
+   a message ID meaning that a nodes flags have changed
+ */
+#define CTDB_SRVID_NODE_FLAGS_CHANGED 0xF400000000000000LL
+
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001

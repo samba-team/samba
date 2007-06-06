@@ -29,13 +29,14 @@ static const struct {
 	{ "SeqnumFrequency",   1,  offsetof(struct ctdb_tunable, seqnum_frequency) },
 	{ "ControlTimeout",    60, offsetof(struct ctdb_tunable, control_timeout) },
 	{ "TraverseTimeout",   20, offsetof(struct ctdb_tunable, traverse_timeout) },
-	{ "MonitoringTimeout", 2,  offsetof(struct ctdb_tunable, monitoring_timeout) },
-	{ "MonitoringLimit",   3,  offsetof(struct ctdb_tunable, monitoring_limit) },
+	{ "KeepaliveInterval", 2,  offsetof(struct ctdb_tunable, keepalive_interval) },
+	{ "KeepaliveLimit",    3,  offsetof(struct ctdb_tunable, keepalive_limit) },
 	{ "MaxLACount",        7,  offsetof(struct ctdb_tunable, max_lacount) },
 	{ "RecoverTimeout",    5,  offsetof(struct ctdb_tunable, recover_timeout) },
-	{ "MonitorFrequency",  1,  offsetof(struct ctdb_tunable, monitor_frequency) },
+	{ "RecoverInterval",   1,  offsetof(struct ctdb_tunable, recover_interval) },
 	{ "ElectionTimeout",   3,  offsetof(struct ctdb_tunable, election_timeout) },
 	{ "TakeoverTimeout",   5,  offsetof(struct ctdb_tunable, takeover_timeout) },
+	{ "MonitorInterval",  60,  offsetof(struct ctdb_tunable, monitor_interval) },
 };
 
 /*

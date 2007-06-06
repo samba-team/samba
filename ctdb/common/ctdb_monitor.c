@@ -34,9 +34,9 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int i;
 
-	if (ctdb->monitoring_mode==CTDB_MONITORING_DISABLED) {
+	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED) {
 		event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(ctdb->tunable.monitoring_timeout, 0), 
+			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 		return;
 	}
@@ -65,7 +65,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 
 		node->rx_cnt = 0;
 
-		if (node->dead_count >= ctdb->tunable.monitoring_limit) {
+		if (node->dead_count >= ctdb->tunable.keepalive_limit) {
 			DEBUG(0,("dead count reached for node %u\n", node->vnn));
 			ctdb_node_dead(node);
 			ctdb_send_keepalive(ctdb, node->vnn);
@@ -84,9 +84,73 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	}
 	
 	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(ctdb->tunable.monitoring_timeout, 0), 
+			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
 }
+
+static void ctdb_check_health(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data);
+
+/*
+  called when a health monitoring event script finishes
+ */
+static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
+{
+	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
+	TDB_DATA data;
+	struct ctdb_node_flag_change c;
+
+	event_add_timed(ctdb->ev, ctdb, 
+			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+			ctdb_check_health, ctdb);
+
+	if (status != 0 && !(node->flags & NODE_FLAGS_DISABLED)) {
+		DEBUG(0,("monitor event failed - disabling node\n"));
+		node->flags |= NODE_FLAGS_DISABLED;
+	} else if (status == 0 && (node->flags & NODE_FLAGS_DISABLED)) {
+		DEBUG(0,("monitor event OK - node re-enabled\n"));
+		ctdb->nodes[ctdb->vnn]->flags &= ~NODE_FLAGS_DISABLED;
+	} else {
+		/* no change */
+		return;
+	}
+
+	c.vnn = ctdb->vnn;
+	c.flags = node->flags;
+
+	data.dptr = (uint8_t *)&c;
+	data.dsize = sizeof(c);
+
+	/* tell the recmaster that something has changed */
+	ctdb_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+}
+
+
+/*
+  see if the event scripts think we are healthy
+ */
+static void ctdb_check_health(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	int ret;
+
+	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED) {
+		event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+				ctdb_check_health, ctdb);
+		return;
+	}
+	
+	ret = ctdb_event_script_callback(ctdb, ctdb, ctdb_health_callback, ctdb, "monitor");
+	if (ret != 0) {
+		DEBUG(0,("Unable to launch monitor event script\n"));
+		event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+				ctdb_check_health, ctdb);
+	}	
+}
+
 
 /*
   start watching for nodes that might be dead
@@ -94,9 +158,10 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 int ctdb_start_monitoring(struct ctdb_context *ctdb)
 {
 	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(ctdb->tunable.monitoring_timeout, 0), 
+			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
 			ctdb_check_for_dead_nodes, ctdb);
+	event_add_timed(ctdb->ev, ctdb, 
+			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+			ctdb_check_health, ctdb);
 	return 0;
 }
-
-

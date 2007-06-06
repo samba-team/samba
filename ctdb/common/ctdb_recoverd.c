@@ -36,7 +36,7 @@ static void timeout_func(struct event_context *ev, struct timed_event *te,
 }
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
-#define MONITOR_TIMEOUT() timeval_current_ofs(ctdb->tunable.monitor_frequency, 0)
+#define MONITOR_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_interval, 0)
 
 static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t rec_mode)
 {
@@ -560,7 +560,7 @@ static int send_election_request(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	struct election_message emsg;
 	uint64_t srvid;
 	
-	srvid = CTDB_SRVTYPE_RECOVERY;
+	srvid = CTDB_SRVID_RECOVERY;
 
 	emsg.vnn = vnn;
 
@@ -671,8 +671,11 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	int i, j, ret;
+	bool need_takeover_run;
 	
 again:
+	need_takeover_run = false;
+
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
 		mem_ctx = NULL;
@@ -694,7 +697,7 @@ again:
 	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
 			      "RecoverTimeout", &ctdb->tunable.recover_timeout);
 	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
-			      "MonitorFrequency", &ctdb->tunable.monitor_frequency);
+			      "RecoverInterval", &ctdb->tunable.recover_interval);
 	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
 			      "ElectionTimeout", &ctdb->tunable.election_timeout);
 	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
@@ -849,13 +852,23 @@ again:
 		 */
 		for (i=0;i<nodemap->num;i++) {
 			if ((remote_nodemap->nodes[i].vnn != nodemap->nodes[i].vnn)
-			||  (remote_nodemap->nodes[i].flags != nodemap->nodes[i].flags)) {
+			    || ((remote_nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED) != 
+				(nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED))) {
 				DEBUG(0, (__location__ " Remote node:%u has different nodemap.\n", nodemap->nodes[j].vnn));
 				do_recovery(ctdb, mem_ctx, vnn, num_active, nodemap, vnnmap);
 				goto again;
 			}
 		}
 
+		/* update our nodemap flags according to the other
+		   server - this gets the NODE_FLAGS_DISABLED
+		   flag. Note that the remote node is authoritative
+		   for its flags (except CONNECTED, which we know
+		   matches in this code) */
+		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
+			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+			need_takeover_run = true;
+		}
 	}
 
 
@@ -872,7 +885,7 @@ again:
 	   the vnnmap.
 	 */
 	for (j=0; j<nodemap->num; j++) {
-		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+		if (!(nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED)) {
 			continue;
 		}
 		if (nodemap->nodes[j].vnn == vnn) {
@@ -896,7 +909,7 @@ again:
 	   and are from the same generation
 	 */
 	for (j=0; j<nodemap->num; j++) {
-		if (!(nodemap->nodes[j].flags&NODE_FLAGS_CONNECTED)) {
+		if (!(nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED)) {
 			continue;
 		}
 		if (nodemap->nodes[j].vnn == vnn) {
@@ -933,9 +946,66 @@ again:
 		}
 	}
 
+	/* we might need to change who has what IP assigned */
+	if (need_takeover_run && ctdb->takeover.enabled) {
+		ret = ctdb_takeover_run(ctdb, nodemap);
+		if (ret != 0) {
+			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+		}
+	}
+
 	goto again;
 
 }
+
+
+/*
+  handler for when a node changes its flags
+*/
+static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			    TDB_DATA data, void *private_data)
+{
+	int ret;
+	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
+	struct ctdb_node_map *nodemap=NULL;
+	TALLOC_CTX *tmp_ctx;
+	int i;
+
+	if (data.dsize != sizeof(*c)) {
+		DEBUG(0,(__location__ "Invalid data in ctdb_node_flag_change\n"));
+		return;
+	}
+
+	tmp_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY_VOID(ctdb, tmp_ctx);
+
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+
+	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].vnn == c->vnn) break;
+	}
+
+	if (i == nodemap->num) {
+		DEBUG(0,(__location__ "Flag change for non-existant node %u\n", c->vnn));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	DEBUG(0,("Node %u has changed flags - was 0x%x now 0x%x\n", 
+		 c->vnn, nodemap->nodes[i].flags, c->flags));
+
+	nodemap->nodes[i].flags = c->flags;
+	
+	if (ctdb->takeover.enabled) {
+		ret = ctdb_takeover_run(ctdb, nodemap);
+		if (ret != 0) {
+			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+		}
+	}
+
+	talloc_free(tmp_ctx);
+}
+
 
 static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde, 
 				 uint16_t flags, void *private_data)
@@ -947,7 +1017,6 @@ static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde,
 int ctdb_start_recoverd(struct ctdb_context *ctdb)
 {
 	int ret;
-	uint64_t srvid;
 	int fd[2];
 	pid_t child;
 
@@ -990,8 +1059,10 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	}
 
 	/* register a message port for recovery elections */
-	srvid = CTDB_SRVTYPE_RECOVERY;
-	ctdb_set_message_handler(ctdb, srvid, election_handler, NULL);
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, NULL);
+
+	/* and one for when nodes are disabled/enabled */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, monitor_handler, NULL);
 
 	monitor_cluster(ctdb);
 
