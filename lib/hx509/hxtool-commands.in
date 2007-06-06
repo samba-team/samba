@@ -67,6 +67,12 @@ command = {
 		help = "password, prompter, or environment"
 	}
 	option = {
+		long = "peer-alg"
+		type = "strings"
+		argument = "oid"
+		help = "oid that the peer support"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
