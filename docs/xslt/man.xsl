@@ -132,6 +132,12 @@
   <xsl:text>\fR</xsl:text>
 </xsl:template>
 
+<xsl:template match="//quote">
+  <xsl:text>\fB</xsl:text>
+  <xsl:apply-templates/>
+  <xsl:text>\fR</xsl:text>
+</xsl:template>
+
 <xsl:template match="para|simpara|remark" mode="list">
   <xsl:variable name="foo">
     <xsl:apply-templates/>
