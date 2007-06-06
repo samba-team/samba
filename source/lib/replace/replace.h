@@ -350,6 +350,16 @@ int rep_mkstemp(char *temp);
 char *rep_mkdtemp(char *template);
 #endif
 
+#ifndef HAVE_PREAD
+#define pread rep_pread
+ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
+#endif
+
+#ifndef HAVE_PWRITE
+#define pwrite rep_pwrite
+ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
+#endif
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
