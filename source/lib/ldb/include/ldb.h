@@ -232,6 +232,11 @@ struct ldb_utf8_fns {
 */
 #define LDB_FLG_RECONNECT 4
 
+/**
+   Flag to tell backends not to use mmap
+*/
+#define LDB_FLG_NOMMAP 8
+
 /*
    structures for ldb_parse_tree handling code
 */

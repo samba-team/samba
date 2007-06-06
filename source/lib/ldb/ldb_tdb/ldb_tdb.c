@@ -1014,6 +1014,11 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		tdb_flags |= TDB_NOSYNC;
 	}
 
+	/* and nommap option */
+	if (flags & LDB_FLG_NOMMAP) {
+		tdb_flags |= TDB_NOMMAP;
+	}
+
 	if (flags & LDB_FLG_RDONLY) {
 		open_flags = O_RDONLY;
 	} else {
