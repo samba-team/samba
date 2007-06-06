@@ -260,6 +260,20 @@ ${hxtool} cms-verify-sd \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	sd.data sd.data.out > /dev/null 2>/dev/null && exit 1
 
+echo "create signed data (rsa)"
+${hxtool} cms-create-sd \
+	--peer-alg=1.2.840.113549.1.1.1 \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify signed data (rsa)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null 2>/dev/null || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
 echo "envelope data (content-info)"
 ${hxtool} cms-envelope \
 	--certificate=FILE:$srcdir/data/test.crt \
