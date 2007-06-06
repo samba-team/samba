@@ -946,7 +946,7 @@ hx509_cms_create_signed_1(hx509_context context,
     AlgorithmIdentifier digest;
     hx509_name name;
     SignerInfo *signer_info;
-    heim_octet_string buf, content, sigdata;
+    heim_octet_string buf, content, sigdata = { 0, NULL };
     SignedData sd;
     int ret;
     size_t size;
@@ -1050,10 +1050,8 @@ hx509_cms_create_signed_1(hx509_context context,
 				      &content,
 				      NULL,
 				      &sig);
-	if (ret) {
-	    hx509_clear_error_string(context);
+	if (ret)
 	    goto out;
-	}
 
 	ASN1_MALLOC_ENCODE(MessageDigest,
 			   buf.data,
@@ -1120,17 +1118,24 @@ hx509_cms_create_signed_1(hx509_context context,
     }
 
 
-    ret = _hx509_create_signature(context,
-				  _hx509_cert_private_key(cert),
-				  _hx509_crypto_default_sig_alg,
-				  &sigdata,
-				  &signer_info->signatureAlgorithm,
-				  &signer_info->signature);
-    if (sigdata.data != content.data)
-	der_free_octet_string(&sigdata);
-    if (ret) {
-	hx509_clear_error_string(context);
-	goto out;
+    {
+	AlgorithmIdentifier sigalg;
+
+	ret = hx509_crypto_select(context, HX509_SELECT_PUBLIC_SIG,
+				  _hx509_cert_private_key(cert), peer,
+				  &sigalg);
+	if (ret)
+	    goto out;
+
+	ret = _hx509_create_signature(context,
+				      _hx509_cert_private_key(cert),
+				      &sigalg,
+				      &sigdata,
+				      &signer_info->signatureAlgorithm,
+				      &signer_info->signature);
+	free_AlgorithmIdentifier(&sigalg);
+	if (ret)
+	    goto out;
     }
 
     ALLOC_SEQ(&sd.digestAlgorithms, 1);
@@ -1199,6 +1204,8 @@ hx509_cms_create_signed_1(hx509_context context,
 	_hx509_abort("internal ASN.1 encoder error");
 
 out:
+    if (sigdata.data != content.data)
+	der_free_octet_string(&sigdata);
     free_AlgorithmIdentifier(&digest);
     _hx509_path_free(&path);
     free_SignedData(&sd);
