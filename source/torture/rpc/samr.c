@@ -922,17 +922,43 @@ static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (!NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
 		printf("LookupNames[2] failed - %s\n", nt_errstr(status));		
+		if (NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 		return status;
 	}
 
-	init_lsa_String(&sname[1], "xxNONAMExx");
 	n.in.num_names = 0;
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames[0] failed - %s\n", nt_errstr(status));		
+		return status;
 	}
 
-	return status;
+	init_lsa_String(&sname[0], "xxNONAMExx");
+	n.in.num_names = 1;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		printf("LookupNames[1 bad name] failed - %s\n", nt_errstr(status));		
+		if (NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		return status;
+	}
+
+	init_lsa_String(&sname[0], "xxNONAMExx");
+	init_lsa_String(&sname[1], "xxNONAME2xx");
+	n.in.num_names = 2;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		printf("LookupNames[2 bad names] failed - %s\n", nt_errstr(status));		
+		if (NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS test_OpenUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
