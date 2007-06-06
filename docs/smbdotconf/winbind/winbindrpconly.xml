@@ -1,4 +1,4 @@
-<samba:parameter name="winbind:rpc only"
+<samba:parameter name="winbind rpc only"
 	context="G"
 	type="string"
 		 advanced="1" developer="0"
