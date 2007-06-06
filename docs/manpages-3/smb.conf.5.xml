@@ -55,7 +55,7 @@
 	</para>
 
 	<para>
-	Any line ending in a <quote>\</quote> is continued on the next line in the customary UNIX fashion.
+	Any line ending in a <quote>\\</quote> is continued on the next line in the customary UNIX fashion.
 	</para>
 
 	<para>

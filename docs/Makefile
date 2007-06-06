@@ -53,6 +53,18 @@ $(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard S
 all: $(TARGETS)
 everything: manpages3 pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
 release: manpages3 htmlman3 html pdf 
+clean:
+	@echo "Cleaning up..." 
+	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
+	rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
+			$(patsubst %.dia,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
+			$(patsubst %.dia,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia)))
+	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
+	rm -f *-images-html*
+	rm -f *-images-latex-* latexfigures
+	rm -f xslt/figures/*pdf
+	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
+	rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Output format targets
 pdf: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
@@ -115,6 +127,7 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 # Attributions
 %-attributions.xml: 
 	@echo "Generating attributions file $@ from $*/"
+	@cp -f templates/attributions.xml $@
 	$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
 
 # Text files
@@ -302,18 +315,6 @@ xslt/pearson.xsl:
 distclean clobber: clean
 	rm Makefile.settings config.status config.log configure
 
-clean: 
-	@echo "Cleaning up..." 
-	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
-			$(patsubst %.dia,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
-			$(patsubst %.dia,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia)))
-	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
-	rm -f *-images-html*
-	rm -f *-images-latex-* latexfigures
-	rm -f xslt/figures/*pdf
-	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
-	rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Always keep intermediate files if we can
 .SECONDARY:
