@@ -9,6 +9,27 @@
 <xsl:param name="chunk.first.sections" select="1"/>
 <xsl:param name="use.id.as.filename" select="1"/>
 
+<xsl:template name="string-subst">
+  <xsl:param name="content" select="''"/>
+  <xsl:param name="replace" select="''"/>
+  <xsl:param name="with" select="''"/>
+  <xsl:choose>
+    <xsl:when test="not(contains($content,$replace))">
+      <xsl:value-of select="$content"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="substring-before($content,$replace)"/>
+      <xsl:value-of select="$with"/>
+      <xsl:call-template name="string-subst">
+        <xsl:with-param name="content"
+             select="substring-after($content,$replace)"/>
+        <xsl:with-param name="replace" select="$replace"/>
+        <xsl:with-param name="with" select="$with"/>
+      </xsl:call-template>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
 <!-- 
     Our ulink stylesheet omits @url part if content was specified
 -->
@@ -137,6 +158,31 @@
   <xsl:apply-templates/>
   <xsl:text>\fR</xsl:text>
 </xsl:template>
+
+<xsl:template match="//literal">
+<xsl:variable name="foo">
+  <xsl:apply-templates />
+</xsl:variable>
+  <xsl:call-template name="string-subst">
+    <xsl:with-param name="content" select="$foo" />
+    <xsl:with-param name="replace" select="'\'" />
+    <xsl:with-param name="with" select="'\\'" />
+  </xsl:call-template>
+</xsl:template>
+
+<xsl:template match="itemizedlist/listitem">
+  <xsl:text>\(bu&#10;</xsl:text>
+  <xsl:apply-templates/>
+  <xsl:if test="following-sibling::listitem">
+    <xsl:text>.TP</xsl:text> 
+    <xsl:if test="not($list-indent = '')">
+      <xsl:text> </xsl:text>
+      <xsl:value-of select="$list-indent"/>
+    </xsl:if>
+    <xsl:text>&#10;</xsl:text>
+  </xsl:if>
+</xsl:template>
+
 
 <xsl:template match="para|simpara|remark" mode="list">
   <xsl:variable name="foo">

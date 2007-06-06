@@ -55,7 +55,7 @@
 	</para>
 
 	<para>
-	Any line ending in a <quote>\\</quote> is continued on the next line in the customary UNIX fashion.
+	Any line ending in a <quote><literal>\</literal></quote> is continued on the next line in the customary UNIX fashion.
 	</para>
 
 	<para>
@@ -677,7 +677,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<listitem><para>
 		If the client has passed a username/password pair and that username/password pair is validated by the UNIX 
 		system's password programs, the connection is made as that username. This includes the
-		<literal>\\server\service%<replaceable>username</replaceable></literal> method of passing a username.
+		<literal>\\server\service</literal>%<replaceable>username</replaceable> method of passing a username.
 		</para></listitem>
 
 		<listitem><para>
