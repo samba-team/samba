@@ -1783,7 +1783,7 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	int i;
+	int i, num_mapped;
 	NTSTATUS status = NT_STATUS_OK;
 	const char * const attrs[] = { "sAMAccountType", "objectSid", NULL };
 	int count;
@@ -1806,6 +1806,8 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 	}
 	r->out.rids.count = r->in.num_names;
 	r->out.types.count = r->in.num_names;
+
+	num_mapped = 0;
 
 	for (i=0;i<r->in.num_names;i++) {
 		struct ldb_message **res;
@@ -1844,9 +1846,12 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 
 		r->out.rids.ids[i] = sid->sub_auths[sid->num_auths-1];
 		r->out.types.ids[i] = rtype;
+		num_mapped++;
 	}
 	
-
+	if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
 	return status;
 }
 
