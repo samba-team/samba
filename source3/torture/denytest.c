@@ -1515,7 +1515,7 @@ BOOL torture_denytest2(int dummy)
 		enum deny_result res;
 		const char *fname = fnames[denytable2[i].isexe];
 
-		progress_bar(i, ARRAY_SIZE(denytable1));
+		progress_bar(i, ARRAY_SIZE(denytable2));
 
 		fnum1 = cli_open(cli1, fname, 
 				 denytable2[i].mode1,
