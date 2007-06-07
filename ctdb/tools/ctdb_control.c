@@ -462,6 +462,10 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
+	if (options.vnn == CTDB_CURRENT_NODE) {
+		options.vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
+	}
+
 	if (options.vnn == CTDB_BROADCAST_ALL) {
 		uint32_t *nodes;
 		uint32_t num_nodes;
@@ -511,6 +515,10 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 	int ret;
 	uint32_t recmaster;
 	TDB_DATA data;
+
+	if (options.vnn == CTDB_CURRENT_NODE) {
+		options.vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
+	}
 
 	if (options.vnn == CTDB_BROADCAST_ALL) {
 		uint32_t *nodes;

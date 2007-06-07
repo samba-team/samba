@@ -54,6 +54,11 @@ static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t vnn)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 
+	if (!ctdb_validate_vnn(ctdb, vnn)) {
+		DEBUG(0,("Bad vnn %u in ctdb_ban_node\n", vnn));
+		return;
+	}
+
 	if (rec->banned_nodes[vnn] == NULL) {
 		return;
 	}
@@ -84,6 +89,11 @@ static void ctdb_ban_timeout(struct event_context *ev, struct timed_event *te, s
 static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_time)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (!ctdb_validate_vnn(ctdb, vnn)) {
+		DEBUG(0,("Bad vnn %u in ctdb_ban_node\n", vnn));
+		return;
+	}
 
 	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), vnn, NODE_FLAGS_BANNED, 0);
 
