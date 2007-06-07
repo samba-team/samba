@@ -97,6 +97,7 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_
 	}
 
 	if (vnn == ctdb->vnn) {
+		DEBUG(0,("self ban - lowering our election priority\n"));
 		/* banning ourselves - lower our election priority */
 		rec->priority_time = timeval_current();
 	}
@@ -842,7 +843,7 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 
 	/* then the longest running node */
 	if (cmp == 0) {
-		cmp = timeval_compare(&myem.priority_time, &em->priority_time);
+		cmp = timeval_compare(&em->priority_time, &myem.priority_time);
 	}
 
 	if (cmp == 0) {
