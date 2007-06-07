@@ -1,3 +1,7 @@
+2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* version-script.map: export _hc_DES_ipfp_test
+
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* imath: new update from Michael Fromberger
