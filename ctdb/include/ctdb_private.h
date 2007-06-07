@@ -211,22 +211,6 @@ struct ctdb_statistics {
 		uint32_t req_control;
 	} client;
 	struct {
-		uint32_t statistics;
-		uint32_t get_config;
-		uint32_t ping;
-		uint32_t attach;
-		uint32_t set_call;
-		uint32_t process_exists;
-		uint32_t traverse_start;
-		uint32_t traverse_all;
-		uint32_t traverse_data;
-		uint32_t update_seqnum;
-		uint32_t enable_seqnum;
-		uint32_t set_seqnum_frequency;
-		uint32_t register_srvid;
-		uint32_t deregister_srvid;
-	} controls;
-	struct {
 		uint32_t call;
 		uint32_t control;
 		uint32_t traverse;
