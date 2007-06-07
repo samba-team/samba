@@ -1,5 +1,10 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: Break out loading of mappings file to a separate
+	function and remove warning that it can't open the mapping file,
+	there are now mappings in the db, maybe the users uses that
+	instead...
+
 	* lib/krb5/crypto.c: Require the raw key have the correct size and
 	do away with the minsize.  Minsize was a thing that originated
 	from RC2, but since RC2 is done in the x509/cms subsystem now
