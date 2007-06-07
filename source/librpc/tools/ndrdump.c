@@ -91,7 +91,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 			result = (char *) talloc_realloc(
 				mem_ctx, result, char *, total_len + num_read);
 		} else {
-			result = talloc_size(mem_ctx, num_read);
+			result = (char *) talloc_size(mem_ctx, num_read);
 		}
 
 		memcpy(result + total_len, buf, num_read);
@@ -105,7 +105,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	return result;
 }
 
-const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, const char *pipe_name)
+static const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, const char *pipe_name)
 {
 	const struct dcerpc_interface_table *p;
 	void *handle;
@@ -118,7 +118,7 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 	}
 
 	symbol = talloc_asprintf(NULL, "dcerpc_table_%s", pipe_name);
-	p = dlsym(handle, symbol);
+	p = (const struct dcerpc_interface_table *)dlsym(handle, symbol);
 
 	if (!p) {
 		printf("%s: Unable to find DCE/RPC interface table for '%s': %s\n", plugin, pipe_name, dlerror());
@@ -403,7 +403,9 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 		f->ndr_print(ndr_v_print, function, flags, v_st);
 
 		if (blob.length != v_blob.length) {
-			printf("WARNING! orig bytes:%u validated pushed bytes:%u\n", blob.length, v_blob.length);
+			printf("WARNING! orig bytes:%u validated pushed "
+			       "bytes:%u\n", (unsigned int)blob.length,
+			       (unsigned int)v_blob.length);
 		}
 
 		if (ndr_pull->offset != ndr_v_pull->offset) {
