@@ -37,6 +37,19 @@
 RCSID("$Id$");
 
 /*
+ *
+ */
+
+void
+krb5_kdc_update_time(struct timeval *tv)
+{
+    if (tv == NULL)
+	gettimeofday(&_kdc_now, NULL);
+    else
+	_kdc_now = *tv;
+}
+
+/*
  * handle the request in `buf, len', from `addr' (or `from' as a string),
  * sending a reply in `reply'.
  */
@@ -59,7 +72,6 @@ krb5_kdc_process_request(krb5_context context,
     krb5_error_code ret;
     size_t i;
 
-    gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
 	krb5_data req_buffer;
 
@@ -121,7 +133,6 @@ krb5_kdc_process_krb5_request(krb5_context context,
     krb5_error_code ret;
     size_t i;
 
-    gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
 	krb5_data req_buffer;
 
