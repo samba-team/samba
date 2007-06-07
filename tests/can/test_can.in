@@ -58,8 +58,8 @@ port=@port@
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 replay="${TESTS_ENVIRONMENT} ../../kdc/kdc-replay"
 
-if [ -f ${srcdir}/{tst}.conf ]; then
-    KRB5_CONFIG="${srcdir}/{tst}.conf"
+if [ -f ${objdir}/${tst}.cf ]; then
+    KRB5_CONFIG="${objdir}/${tst}.cf"
 else
     KRB5_CONFIG="${objdir}/krb5.conf"
 fi
