@@ -21,11 +21,11 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "system/filesys.h"
+#include "system/network.h"
 #include "popt.h"
 #include "cmdline.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
-#include <arpa/inet.h>
 
 static void usage(void);
 
