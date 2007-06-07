@@ -27,9 +27,10 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
 
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@
 
-UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o
+UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o \
+	lib/util/util_time.o lib/util/util_file.o
 
-CTDB_COMMON_OBJ =  common/ctdb_io.o common/util.o common/ctdb_util.o \
+CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
 	lib/util/debug.o 
 
