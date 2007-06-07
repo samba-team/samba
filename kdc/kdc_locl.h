@@ -46,6 +46,7 @@ typedef struct pk_client_params pk_client_params;
 
 extern sig_atomic_t exit_flag;
 extern size_t max_request;
+extern const char *request_log;
 extern const char *port_str;
 extern krb5_addresses explicit_addresses;
 
