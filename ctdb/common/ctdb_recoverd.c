@@ -790,11 +790,67 @@ static int do_recovery(struct ctdb_recoverd *rec,
 }
 
 
+/*
+  elections are won by first checking the number of connected nodes, then
+  the priority time, then the vnn
+ */
 struct election_message {
-	uint32_t vnn;
+	uint32_t num_connected;
 	struct timeval priority_time;
+	uint32_t vnn;
 };
 
+/*
+  form this nodes election data
+ */
+static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_message *em)
+{
+	int ret, i;
+	struct ctdb_node_map *nodemap;
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	ZERO_STRUCTP(em);
+
+	em->vnn = rec->ctdb->vnn;
+	em->priority_time = rec->priority_time;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, rec, &nodemap);
+	if (ret != 0) {
+		return;
+	}
+
+	for (i=0;i<nodemap->num;i++) {
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
+			em->num_connected++;
+		}
+	}
+	talloc_free(nodemap);
+}
+
+/*
+  see if the given election data wins
+ */
+static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message *em)
+{
+	struct election_message myem;
+	int cmp;
+
+	ctdb_election_data(rec, &myem);
+
+	/* try to use the most connected node */
+	cmp = (int)myem.num_connected - (int)em->num_connected;
+
+	/* then the longest running node */
+	if (cmp == 0) {
+		cmp = timeval_compare(&myem.priority_time, &em->priority_time);
+	}
+
+	if (cmp == 0) {
+		cmp = (int)myem.vnn - (int)em->vnn;
+	}
+
+	return cmp > 0;
+}
 
 /*
   send out an election request
@@ -809,8 +865,7 @@ static int send_election_request(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	
 	srvid = CTDB_SRVID_RECOVERY;
 
-	emsg.vnn = vnn;
-	emsg.priority_time = rec->priority_time;
+	ctdb_election_data(rec, &emsg);
 
 	election_data.dsize = sizeof(struct election_message);
 	election_data.dptr  = (unsigned char *)&emsg;
@@ -821,7 +876,7 @@ static int send_election_request(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	 */
 	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), vnn, vnn);
 	if (ret != 0) {
-		DEBUG(0, (__location__ " failed to send recmaster election request"));
+		DEBUG(0, (__location__ " failed to send recmaster election request\n"));
 		return -1;
 	}
 
@@ -843,16 +898,14 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	int ret;
 	struct election_message *em = (struct election_message *)data.dptr;
 	TALLOC_CTX *mem_ctx;
-	int cmp;
 
 	mem_ctx = talloc_new(ctdb);
-		
+
 	/* someone called an election. check their election data
 	   and if we disagree and we would rather be the elected node, 
 	   send a new election message to all other nodes
 	 */
-	cmp = timeval_compare(&em->priority_time, &rec->priority_time);
-	if (cmp > 0 || (cmp == 0 && em->vnn > ctdb->vnn)) {
+	if (ctdb_election_win(rec, em)) {
 		ret = send_election_request(rec, mem_ctx, ctdb_get_vnn(ctdb));
 		if (ret!=0) {
 			DEBUG(0, (__location__ " failed to initiate recmaster election"));
