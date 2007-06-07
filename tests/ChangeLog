@@ -1,5 +1,7 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* can/test_can.in: Don't need to start a kdc for this test.
+
 	* can: pre-canned requests from older versions and other implementations
 
 	* Makefile.am: SUBDIRS += can
