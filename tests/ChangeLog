@@ -1,5 +1,15 @@
-2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* can: pre-canned requests from older versions and other implementations
+
+	* Makefile.am: SUBDIRS += can
+	
+2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-uu.in: Use stdout from uu_server.
+	
+2007-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/check-pkinit.in: Try pkinit in w2k mode, also add tests for
 	MS SAN.
 
