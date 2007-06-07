@@ -1,5 +1,7 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kdc-replay.c: Add --[version|help].
+
 	* kdc/pkinit.c: Push down the kdc time into the x509 library.
 
 	* kdc/connect.c: Move up krb5_kdc_save_request so we can catch the
