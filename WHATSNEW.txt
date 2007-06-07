@@ -9,7 +9,7 @@ continued to evolve, but you may particularly notice these areas:
   hope will grow into a full web-based management solution for both
   local and remote Samba and windows servers.
 
-  The DRAUAPI research effort has largely concluded, and an initial
+  The DRSUAPI research effort has largely concluded, and an initial
   implementation of AD replication is present, included in torture
   test-cases.  This includes the decryption of the AD passwords, which
   were specially and separately encrypted.  This should be recognised
