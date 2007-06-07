@@ -39,5 +39,6 @@ objdir="@objdir@"
 
 ./test_can TEST.H5L.SE heim-0.8 || exit 1
 ./test_can TEST.H5L.SE apple-10.4 || exit 1
+./test_can HEIMDAL.CITI.UMICH.EDU mit-pkinit-20070607 || exit 1
 
 exit 0
