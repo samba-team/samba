@@ -150,3 +150,62 @@ krb5_kdc_process_krb5_request(krb5_context context,
     }
     return -1;
 }
+
+/*
+ *
+ */
+
+int
+krb5_kdc_save_request(krb5_context context, 
+		      const char *fn,
+		      unsigned char *buf,
+		      size_t len, 
+		      const struct sockaddr *sa)
+{
+    krb5_storage *sp;
+    krb5_address a;
+    int fd, ret;
+    uint32_t t;
+    krb5_data d;
+
+    memset(&a, 0, sizeof(a));
+
+    d.data = buf;
+    d.length = len;
+    t = _kdc_now.tv_sec;
+
+    fd = open(fn, O_WRONLY|O_CREAT|O_APPEND, 0600);
+    if (fd < 0) {
+	krb5_set_error_string(context, "Failed to open: %s", fn);
+	return errno;
+    }
+    
+    sp = krb5_storage_from_fd(fd);
+    close(fd);
+    if (sp == NULL) {
+	krb5_set_error_string(context, "Storage failed to open fd");
+	return ENOMEM;
+    }
+
+    ret = krb5_sockaddr2address(context, sa, &a);
+    if (ret)
+	goto out;
+
+    ret = krb5_store_uint32(sp, 1);
+    if (ret)
+	goto out2;
+    ret = krb5_store_uint32(sp, t);
+    if (ret)
+	goto out2;
+    ret = krb5_store_address(sp, a);
+    if (ret)
+	goto out2;
+    ret = krb5_store_data(sp, d);
+
+out2:
+    krb5_free_address(context, &a);
+out:
+    krb5_storage_free(sp);
+
+    return 0;
+}
