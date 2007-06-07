@@ -38,7 +38,7 @@ srcdir="@srcdir@"
 objdir="@objdir@"
 EGREP="@EGREP@"
 
-testfailed="echo test failed; cat messages.log; exit 1"
+testfailed="echo test failed; exit 1"
 
 # If there is no useful db support compile in, disable test
 ../db/have-db || exit 77
@@ -56,10 +56,13 @@ fi
 port=@port@
 
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
-kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 replay="${TESTS_ENVIRONMENT} ../../kdc/kdc-replay"
 
-KRB5_CONFIG="${objdir}/krb5.conf"
+if [ -f ${srcdir}/{tst}.conf ]; then
+    KRB5_CONFIG="${srcdir}/{tst}.conf"
+else
+    KRB5_CONFIG="${objdir}/krb5.conf"
+fi
 export KRB5_CONFIG
 
 rm -f ${keytabfile}
@@ -73,25 +76,8 @@ ${kadmin} < ${srcdir}/${tst}.kadm
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
 
-echo Starting kdc
-${kdc} &
-kdcpid=$!
-
-sh ${srcdir}/../kdc/wait-kdc.sh
-if [ "$?" != 0 ] ; then
-    kill ${kdcpid}
-    exit 1
-fi
-
-trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
-
 ec=0
 
 ${replay} ${srcdir}/${tst}.req || { ec=1 ; eval "${testfailed}"; }
-
-echo "killing kdc (${kdcpid})"
-kill $kdcpid || exit 1
-
-trap "" EXIT
 
 exit $ec
