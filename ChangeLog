@@ -1,5 +1,16 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/dbinfo.c: If there is no default dbname, also check for
+	unset mkey_file and set it default mkey name, make backward compat
+	stuff work.
+
+	* kdc/version-script.map: add new symbols
+
+	* kdc/kdc-replay.c: Also update krb5_context view of what the time
+	is.
+
+	* configure.in: add tests/can/Makefile
+
 	* kdc/kdc-replay.c: Add --[version|help].
 
 	* kdc/pkinit.c: Push down the kdc time into the x509 library.
