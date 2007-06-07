@@ -158,8 +158,9 @@ krb5_kdc_process_krb5_request(krb5_context context,
 int
 krb5_kdc_save_request(krb5_context context, 
 		      const char *fn,
-		      unsigned char *buf,
-		      size_t len, 
+		      const unsigned char *buf,
+		      size_t len,
+		      const krb5_data *reply,
 		      const struct sockaddr *sa)
 {
     krb5_storage *sp;
@@ -170,7 +171,7 @@ krb5_kdc_save_request(krb5_context context,
 
     memset(&a, 0, sizeof(a));
 
-    d.data = buf;
+    d.data = rk_UNCONST(buf);
     d.length = len;
     t = _kdc_now.tv_sec;
 
@@ -191,16 +192,24 @@ krb5_kdc_save_request(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = krb5_store_uint32(sp, 1);
-    if (ret)
-	goto out2;
-    ret = krb5_store_uint32(sp, t);
-    if (ret)
-	goto out2;
-    ret = krb5_store_address(sp, a);
-    if (ret)
-	goto out2;
-    ret = krb5_store_data(sp, d);
+    krb5_store_uint32(sp, 1);
+    krb5_store_uint32(sp, t);
+    krb5_store_address(sp, a);
+    krb5_store_data(sp, d);
+    {
+	Der_class cl;
+	Der_type ty;
+	unsigned int tag;
+	ret = der_get_tag (reply->data, reply->length,
+			   &cl, &ty, &tag, NULL);
+	if (ret) {
+	    krb5_store_uint32(sp, 0xffffffff);
+	    krb5_store_uint32(sp, 0xffffffff);
+	} else {
+	    krb5_store_uint32(sp, MAKE_TAG(cl, ty, 0));
+	    krb5_store_uint32(sp, tag);
+	}
+    }
 
 out2:
     krb5_free_address(context, &a);
