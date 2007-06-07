@@ -256,6 +256,12 @@ configure(krb5_context context, int argc, char **argv)
 	enable_http = krb5_config_get_bool(context, NULL, "kdc", 
 					   "enable-http", NULL);
 
+    if(request_log == NULL)
+	request_log = krb5_config_get_string(context, NULL, 
+					     "kdc", 
+					     "kdc-request-log", 
+					     NULL);
+
     if (krb5_config_get_string(context, NULL, "kdc", 
 			       "enforce-transited-policy", NULL))
 	krb5_errx(context, 1, "enforce-transited-policy deprecated, "
