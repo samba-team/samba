@@ -494,6 +494,7 @@ AC_CONFIG_FILES(Makefile 		\
 	appl/kf/Makefile		\
 	appl/dceutils/Makefile		\
 	tests/Makefile			\
+	tests/can/Makefile		\
 	tests/db/Makefile		\
 	tests/kdc/Makefile		\
 	tests/ldap/Makefile		\
