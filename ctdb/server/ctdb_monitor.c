@@ -48,7 +48,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 			continue;
 		}
 		
-		if (!(node->flags & NODE_FLAGS_CONNECTED)) {
+		if (node->flags & NODE_FLAGS_DISCONNECTED) {
 			/* it might have come alive again */
 			if (node->rx_cnt != 0) {
 				ctdb_node_connected(node);
@@ -104,17 +104,12 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			ctdb_check_health, ctdb);
 
-	if (node->flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
-		if ( !(node->flags & NODE_FLAGS_DISABLED) ) {
-			DEBUG(0,("monitoring - node is permanently disabled\n"));
-			node->flags |= NODE_FLAGS_DISABLED;
-		}
-	} else if (status != 0 && !(node->flags & NODE_FLAGS_DISABLED)) {
+	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(0,("monitor event failed - disabling node\n"));
-		node->flags |= NODE_FLAGS_DISABLED;
-	} else if (status == 0 && (node->flags & NODE_FLAGS_DISABLED)) {
+		node->flags |= NODE_FLAGS_UNHEALTHY;
+	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(0,("monitor event OK - node re-enabled\n"));
-		ctdb->nodes[ctdb->vnn]->flags &= ~NODE_FLAGS_DISABLED;
+		ctdb->nodes[ctdb->vnn]->flags &= ~NODE_FLAGS_UNHEALTHY;
 	} else {
 		/* no change */
 		return;
@@ -129,6 +124,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	/* tell the other nodes that something has changed */
 	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
 				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+
 }
 
 
@@ -185,4 +181,49 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 			     timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			     ctdb_check_health, ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
+}
+
+
+/*
+  modify flags on a node
+ */
+int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_node_modflags *m = (struct ctdb_node_modflags *)indata.dptr;
+	TDB_DATA data;
+	struct ctdb_node_flag_change c;
+	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
+	uint32_t old_flags = node->flags;
+
+	node->flags |= m->set;
+	node->flags &= ~m->clear;
+
+	if (node->flags == old_flags) {
+		/* no change */
+		return 0;
+	}
+
+	DEBUG(0, ("Control modflags on node %u - flags now 0x%x\n", ctdb->vnn, node->flags));
+
+	/* if we have been banned, go into recovery mode */
+	c.vnn = ctdb->vnn;
+	c.flags = node->flags;
+
+	data.dptr = (uint8_t *)&c;
+	data.dsize = sizeof(c);
+
+	/* tell the other nodes that something has changed */
+	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
+				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+
+	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {
+		/* make sure we are frozen */
+		DEBUG(0,("This node has been banned - forcing freeze and recovery\n"));
+		if (!ctdb_blocking_freeze(ctdb)) {
+			ctdb_fatal(ctdb, "Unable to freeze when banned");
+		}
+		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+	}
+	
+	return 0;
 }

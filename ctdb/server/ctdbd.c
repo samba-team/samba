@@ -57,6 +57,36 @@ static struct {
 };
 
 
+/*
+  called by the transport layer when a packet comes in
+*/
+static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
+{
+	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
+
+	ctdb->statistics.node_packets_recv++;
+
+	/* up the counter for this source node, so we know its alive */
+	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
+		/* as a special case, redirected calls don't increment the rx_cnt */
+		if (hdr->operation != CTDB_REQ_CALL ||
+		    ((struct ctdb_req_call *)hdr)->hopcount == 0) {
+			ctdb->nodes[hdr->srcnode]->rx_cnt++;
+		}
+	}
+
+	ctdb_input_pkt(ctdb, hdr);
+}
+
+
+
+static const struct ctdb_upcalls ctdb_upcalls = {
+	.recv_pkt       = ctdb_recv_pkt,
+	.node_dead      = ctdb_node_dead,
+	.node_connected = ctdb_node_connected
+};
+
+
 
 /*
   main program
@@ -115,6 +145,15 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
+	ctdb->recovery_master  = (uint32_t)-1;
+	ctdb->upcalls          = &ctdb_upcalls;
+	ctdb->idr              = idr_init(ctdb);
+	ctdb->recovery_lock_fd = -1;
+	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
+
+	ctdb_tunables_set_defaults(ctdb);
 
 	ret = ctdb_set_recovery_lock_file(ctdb, options.recovery_lock_file);
 	if (ret == -1) {

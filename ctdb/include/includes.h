@@ -5,7 +5,6 @@
 #include "tdb.h"
 #include "idtree.h"
 #include "ctdb.h"
-#include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 
 typedef bool BOOL;

@@ -76,6 +76,16 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_NODE_FLAGS_CHANGED 0xF400000000000000LL
 
+/* 
+   a message ID meaning that a node should be banned
+ */
+#define CTDB_SRVID_BAN_NODE 0xF500000000000000LL
+
+/* 
+   a message ID meaning that a node should be unbanned
+ */
+#define CTDB_SRVID_UNBAN_NODE 0xF600000000000000LL
+
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
@@ -351,9 +361,9 @@ int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
 			    TALLOC_CTX *mem_ctx,
 			    const char ***list, uint32_t *count);
 
-int ctdb_ctrl_permdisable(struct ctdb_context *ctdb, 
-			  struct timeval timeout, 
-			  uint32_t destnode, 
-			  uint32_t mode);
+int ctdb_ctrl_modflags(struct ctdb_context *ctdb, 
+		       struct timeval timeout, 
+		       uint32_t destnode, 
+		       uint32_t set, uint32_t clear);
 
 #endif
