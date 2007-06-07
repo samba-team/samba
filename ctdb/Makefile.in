@@ -28,21 +28,23 @@ LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@
 
 UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o
 
-CTDB_COMMON_OBJ = common/ctdb.o common/ctdb_daemon.o common/ctdb_client.o \
-	common/ctdb_io.o common/util.o common/ctdb_util.o \
-	common/ctdb_call.o common/ctdb_ltdb.o common/ctdb_lockwait.o \
-	common/ctdb_message.o common/cmdline.o common/ctdb_control.o \
-	lib/util/debug.o common/ctdb_recover.o common/ctdb_recoverd.o \
-	common/ctdb_freeze.o common/ctdb_traverse.o common/ctdb_monitor.o \
-	common/ctdb_tunables.o
-
-CTDB_TAKEOVER_OBJ = takeover/system.o takeover/ctdb_takeover.o
+CTDB_COMMON_OBJ =  common/ctdb_io.o common/util.o common/ctdb_util.o \
+	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
+	lib/util/debug.o 
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
-CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) $(POPT_OBJ)
+CTDB_CLIENT_OBJ = client/ctdb_client.o \
+	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) @TALLOC_OBJ@ @TDB_OBJ@ @LIBREPLACEOBJ@ \
+	$(EXTRA_OBJ) @EVENTS_OBJ@ 
 
-OBJS = @TDB_OBJ@ @TALLOC_OBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ $(CTDB_OBJ) $(UTIL_OBJ)
+CTDB_TAKEOVER_OBJ = takeover/system.o takeover/ctdb_takeover.o
+
+CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o server/ctdb_recoverd.o \
+	server/ctdb_recover.o server/ctdb_freeze.o server/ctdb_tunables.o server/ctdb_monitor.o \
+	server/ctdb.o server/ctdb_control.o server/ctdb_call.o server/ctdb_ltdb_server.o \
+	server/ctdb_traverse.o $(CTDB_CLIENT_OBJ) \
+	$(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
 TEST_BINS=bin/ctdb_bench bin/ctdb_fetch @INFINIBAND_BINS@
 BINS = bin/ctdb
@@ -50,7 +52,7 @@ SBINS = bin/ctdbd
 
 DIRS = lib bin
 
-all: showflags dirs $(OBJS) $(BINS) $(SBINS) $(TEST_BINS)
+all: showflags dirs $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
@@ -65,25 +67,25 @@ showflags:
 dirs:
 	@mkdir -p $(DIRS)
 
-bin/ctdbd: $(OBJS) direct/ctdbd.o 
+bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ direct/ctdbd.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
 
 bin/ctdb: $(OBJS) tools/ctdb_control.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tools/ctdb_control.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tools/ctdb_control.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_bench: $(OBJS) tests/ctdb_bench.o 
+bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/ctdb_bench.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_fetch: $(OBJS) tests/ctdb_fetch.o 
+bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/ctdb_fetch.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ibwrapper_test: $(OBJS) ib/ibwrapper_test.o
+bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 clean:
 	rm -f *.o */*.o */*/*.o

@@ -71,14 +71,6 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
 
 
 /*
-  set some ctdb flags
-*/
-void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
-{
-	ctdb->flags |= flags;
-}
-
-/*
   set the directory for the local databases
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
@@ -201,22 +193,6 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 
 
 /*
-  setup the local socket name
-*/
-int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
-{
-	ctdb->daemon.name = talloc_strdup(ctdb, socketname);
-	return 0;
-}
-/*
-  return the vnn of this node
-*/
-uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
-{
-	return ctdb->vnn;
-}
-
-/*
   return the number of enabled nodes
 */
 uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb)
@@ -326,28 +302,6 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 done:
 	talloc_free(tmp_ctx);
-}
-
-
-/*
-  called by the transport layer when a packet comes in
-*/
-static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
-{
-	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
-
-	ctdb->statistics.node_packets_recv++;
-
-	/* up the counter for this source node, so we know its alive */
-	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
-		/* as a special case, redirected calls don't increment the rx_cnt */
-		if (hdr->operation != CTDB_REQ_CALL ||
-		    ((struct ctdb_req_call *)hdr)->hopcount == 0) {
-			ctdb->nodes[hdr->srcnode]->rx_cnt++;
-		}
-	}
-
-	ctdb_input_pkt(ctdb, hdr);
 }
 
 
@@ -493,34 +447,4 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 }
 
-
-static const struct ctdb_upcalls ctdb_upcalls = {
-	.recv_pkt       = ctdb_recv_pkt,
-	.node_dead      = ctdb_node_dead,
-	.node_connected = ctdb_node_connected
-};
-
-/*
-  initialise the ctdb daemon. 
-
-  NOTE: In current code the daemon does not fork. This is for testing purposes only
-  and to simplify the code.
-*/
-struct ctdb_context *ctdb_init(struct event_context *ev)
-{
-	struct ctdb_context *ctdb;
-
-	ctdb = talloc_zero(ev, struct ctdb_context);
-	ctdb->ev               = ev;
-	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
-	ctdb->recovery_master  = (uint32_t)-1;
-	ctdb->upcalls          = &ctdb_upcalls;
-	ctdb->idr              = idr_init(ctdb);
-	ctdb->recovery_lock_fd = -1;
-	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
-
-	ctdb_tunables_set_defaults(ctdb);
-
-	return ctdb;
-}
 

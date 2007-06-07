@@ -30,6 +30,116 @@
 #include "../include/ctdb_private.h"
 
 /*
+  allocate a packet for use in client<->daemon communication
+ */
+struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
+					    TALLOC_CTX *mem_ctx, 
+					    enum ctdb_operation operation, 
+					    size_t length, size_t slength,
+					    const char *type)
+{
+	int size;
+	struct ctdb_req_header *hdr;
+
+	length = MAX(length, slength);
+	size = (length+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
+
+	hdr = (struct ctdb_req_header *)talloc_size(mem_ctx, size);
+	if (hdr == NULL) {
+		DEBUG(0,("Unable to allocate packet for operation %u of length %u\n",
+			 operation, (unsigned)length));
+		return NULL;
+	}
+	talloc_set_name_const(hdr, type);
+	memset(hdr, 0, slength);
+	hdr->length       = length;
+	hdr->operation    = operation;
+	hdr->ctdb_magic   = CTDB_MAGIC;
+	hdr->ctdb_version = CTDB_VERSION;
+	hdr->srcnode      = ctdb->vnn;
+	if (ctdb->vnn_map) {
+		hdr->generation = ctdb->vnn_map->generation;
+	}
+
+	return hdr;
+}
+
+/*
+  local version of ctdb_call
+*/
+int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
+		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
+		    TDB_DATA *data, uint32_t caller)
+{
+	struct ctdb_call_info *c;
+	struct ctdb_registered_call *fn;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	
+	c = talloc(ctdb, struct ctdb_call_info);
+	CTDB_NO_MEMORY(ctdb, c);
+
+	c->key = call->key;
+	c->call_data = &call->call_data;
+	c->record_data.dptr = talloc_memdup(c, data->dptr, data->dsize);
+	c->record_data.dsize = data->dsize;
+	CTDB_NO_MEMORY(ctdb, c->record_data.dptr);
+	c->new_data = NULL;
+	c->reply_data = NULL;
+	c->status = 0;
+
+	for (fn=ctdb_db->calls;fn;fn=fn->next) {
+		if (fn->id == call->call_id) break;
+	}
+	if (fn == NULL) {
+		ctdb_set_error(ctdb, "Unknown call id %u\n", call->call_id);
+		talloc_free(c);
+		return -1;
+	}
+
+	if (fn->fn(c) != 0) {
+		ctdb_set_error(ctdb, "ctdb_call %u failed\n", call->call_id);
+		talloc_free(c);
+		return -1;
+	}
+
+	if (header->laccessor != caller) {
+		header->lacount = 0;
+	}
+	header->laccessor = caller;
+	header->lacount++;
+
+	/* we need to force the record to be written out if this was a remote access,
+	   so that the lacount is updated */
+	if (c->new_data == NULL && header->laccessor != ctdb->vnn) {
+		c->new_data = &c->record_data;
+	}
+
+	if (c->new_data) {
+		/* XXX check that we always have the lock here? */
+		if (ctdb_ltdb_store(ctdb_db, call->key, header, *c->new_data) != 0) {
+			ctdb_set_error(ctdb, "ctdb_call tdb_store failed\n");
+			talloc_free(c);
+			return -1;
+		}
+	}
+
+	if (c->reply_data) {
+		call->reply_data = *c->reply_data;
+		talloc_steal(ctdb, call->reply_data.dptr);
+		talloc_set_name_const(call->reply_data.dptr, __location__);
+	} else {
+		call->reply_data.dptr = NULL;
+		call->reply_data.dsize = 0;
+	}
+	call->status = c->status;
+
+	talloc_free(c);
+
+	return 0;
+}
+
+
+/*
   queue a packet for sending from client to daemon
 */
 static int ctdb_client_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
@@ -1976,3 +2086,47 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 	talloc_free(outdata.dptr);
 	return 0;
 }
+
+
+/*
+  initialise the ctdb daemon for client applications
+
+  NOTE: In current code the daemon does not fork. This is for testing purposes only
+  and to simplify the code.
+*/
+struct ctdb_context *ctdb_init(struct event_context *ev)
+{
+	struct ctdb_context *ctdb;
+
+	ctdb = talloc_zero(ev, struct ctdb_context);
+	ctdb->ev               = ev;
+
+	return ctdb;
+}
+
+
+/*
+  set some ctdb flags
+*/
+void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
+{
+	ctdb->flags |= flags;
+}
+
+/*
+  setup the local socket name
+*/
+int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
+{
+	ctdb->daemon.name = talloc_strdup(ctdb, socketname);
+	return 0;
+}
+
+/*
+  return the vnn of this node
+*/
+uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
+{
+	return ctdb->vnn;
+}
+
