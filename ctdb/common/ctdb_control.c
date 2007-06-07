@@ -288,6 +288,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_LIST_TUNABLES:
 		return ctdb_control_list_tunables(ctdb, outdata);
 
+	case CTDB_CONTROL_PERMANENTLY_DISABLE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_permdisable(ctdb, indata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

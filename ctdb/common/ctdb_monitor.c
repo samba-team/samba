@@ -104,12 +104,12 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			ctdb_check_health, ctdb);
 
-	if (status != 0 && !(node->flags & NODE_FLAGS_DISABLED)) {
+	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(0,("monitor event failed - disabling node\n"));
-		node->flags |= NODE_FLAGS_DISABLED;
-	} else if (status == 0 && (node->flags & NODE_FLAGS_DISABLED)) {
+		node->flags |= NODE_FLAGS_UNHEALTHY;
+	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(0,("monitor event OK - node re-enabled\n"));
-		ctdb->nodes[ctdb->vnn]->flags &= ~NODE_FLAGS_DISABLED;
+		ctdb->nodes[ctdb->vnn]->flags &= ~NODE_FLAGS_UNHEALTHY;
 	} else {
 		/* no change */
 		return;
@@ -124,6 +124,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	/* tell the other nodes that something has changed */
 	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
 				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+
 }
 
 
@@ -180,4 +181,34 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 			     timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			     ctdb_check_health, ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
+}
+
+
+/*
+  administratively disable/enable a node 
+ */
+int32_t ctdb_control_permdisable(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	uint32_t set = *(uint32_t *)indata.dptr;
+	TDB_DATA data;
+	struct ctdb_node_flag_change c;
+	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
+
+	if (set) {
+		node->flags |= NODE_FLAGS_PERMANENTLY_DISABLED;
+	} else {
+		node->flags &= ~NODE_FLAGS_PERMANENTLY_DISABLED;
+	}
+
+	c.vnn = ctdb->vnn;
+	c.flags = node->flags;
+
+	data.dptr = (uint8_t *)&c;
+	data.dsize = sizeof(c);
+
+	/* tell the other nodes that something has changed */
+	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
+				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+	
+	return 0;
 }

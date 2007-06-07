@@ -285,11 +285,13 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Status:\n");
+		printf(":Node:IP:Connected:Disabled:Permanently Disabled:\n");
 		for(i=0;i<nodemap->num;i++){
-			printf(":%d:%s:%d:\n", nodemap->nodes[i].vnn,
+			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].vnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
-				!!nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED);
+				!!(nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED),
+				!!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
+				!!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED));
 		}
 		return 0;
 	}
@@ -297,8 +299,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
 		const char *flags_str;
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISABLED) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
 			flags_str = "DISABLED";
+		} else if (nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY) {
+			flags_str = "UNHEALTHY";
 		} else if (nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) {
 			flags_str = "CONNECTED";
 		} else {
@@ -390,6 +394,38 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 	printf("Pid:%d\n", pid);
+
+	return 0;
+}
+
+/*
+  disable a remote node
+ */
+static int control_disable(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+
+	ret = ctdb_ctrl_permdisable(ctdb, TIMELIMIT(), options.vnn, NODE_FLAGS_PERMANENTLY_DISABLED);
+	if (ret != 0) {
+		printf("Unable to disable node %u\n", options.vnn);
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  enable a disabled remote node
+ */
+static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+
+	ret = ctdb_ctrl_permdisable(ctdb, TIMELIMIT(), options.vnn, 0);
+	if (ret != 0) {
+		printf("Unable to enable node %u\n", options.vnn);
+		return ret;
+	}
 
 	return 0;
 }
@@ -835,6 +871,8 @@ static const struct {
 	{ "attach",          control_attach,            "attach to a database",                 "<dbname>" },
 	{ "dumpmemory",      control_dumpmemory,        "dump memory map to logs" },
 	{ "getpid",          control_getpid,            "get ctdbd process ID" },
+	{ "disable",         control_disable,           "disable a node" },
+	{ "enable",          control_enable,            "enable a node" },
 	{ "shutdown",        control_shutdown,          "shutdown ctdbd" },
 	{ "recover",         control_recover,           "force recovery" },
 	{ "freeze",          control_freeze,            "freeze all databases" },

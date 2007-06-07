@@ -111,8 +111,10 @@ struct ctdb_node {
 	const char *name; /* for debug messages */
 	void *private_data; /* private to transport */
 	uint32_t vnn;
-#define NODE_FLAGS_CONNECTED 0x00000001
-#define NODE_FLAGS_DISABLED  0x00000002
+#define NODE_FLAGS_CONNECTED 		0x00000001
+#define NODE_FLAGS_UNHEALTHY  		0x00000002
+#define NODE_FLAGS_PERMANENTLY_DISABLED	0x00000004
+#define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
 	uint32_t flags;
 
 	/* used by the dead node monitoring */
@@ -412,6 +414,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_TUNABLE             = 49,
 		    CTDB_CONTROL_LIST_TUNABLES           = 50,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
+		    CTDB_CONTROL_PERMANENTLY_DISABLE     = 52,
 };
 
 /*
@@ -1006,5 +1009,7 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_permdisable(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif
