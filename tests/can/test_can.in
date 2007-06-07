@@ -71,7 +71,7 @@ rm -f out-*
 rm -f mkey.file*
 
 echo "Load database for ${tst}"
-${kadmin} < ${srcdir}/${tst}.kadm
+${kadmin} < ${srcdir}/${tst}.kadm || exit 1
 
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
