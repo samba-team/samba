@@ -1,5 +1,21 @@
 2007-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kdc_locl.h: extern for request_log.
+
+	* kdc/Makefile.am: Add kdc-replay.
+
+	* kdc/kdc-replay.c: Replay kdc messages to the KDC library.
+
+	* kdc/config.c: Pick up request_log from [kdc]kdc-request-log.
+
+	* kdc/connect.c: Option to save the request to disk.
+
+	* kdc/process.c (krb5_kdc_save_request): save request to file.
+
+	* kdc/process.c (krb5_kdc_process*): dont update _kdc_time
+	automagicly.
+	(krb5_kdc_update_time): set or get current kdc-time.
+
 	* kdc/pkinit.c (_kdc_pk_rd_padata): accept both pkcs-7 and
 	pkauthdata as the signeddata oid
 	
