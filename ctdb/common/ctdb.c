@@ -116,10 +116,13 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	/* this assumes that the nodes are kept in sorted order, and no gaps */
 	node->vnn = ctdb->num_nodes;
 
+	/* nodes start out disconnected */
+	node->flags |= NODE_FLAGS_DISCONNECTED;
+
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {
 		ctdb->vnn = node->vnn;
-		node->flags |= NODE_FLAGS_CONNECTED;
+		node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	}
 
 	ctdb->num_nodes++;
@@ -222,8 +225,7 @@ uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb)
 	uint32_t count=0;
 	for (i=0;i<ctdb->vnn_map->size;i++) {
 		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
-		if ((node->flags & NODE_FLAGS_CONNECTED) &&
-		    !(node->flags & NODE_FLAGS_DISABLED)) {
+		if (!(node->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
 			count++;
 		}
 	}
@@ -354,14 +356,14 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 */
 void ctdb_node_dead(struct ctdb_node *node)
 {
-	if (!(node->flags & NODE_FLAGS_CONNECTED)) {
+	if (node->flags & NODE_FLAGS_DISCONNECTED) {
 		DEBUG(1,("%s: node %s is already marked disconnected: %u connected\n", 
 			 node->ctdb->name, node->name, 
 			 node->ctdb->num_connected));
 		return;
 	}
 	node->ctdb->num_connected--;
-	node->flags &= ~NODE_FLAGS_CONNECTED;
+	node->flags |= NODE_FLAGS_DISCONNECTED;
 	node->rx_cnt = 0;
 	node->dead_count = 0;
 	DEBUG(1,("%s: node %s is dead: %u connected\n", 
@@ -374,7 +376,7 @@ void ctdb_node_dead(struct ctdb_node *node)
 */
 void ctdb_node_connected(struct ctdb_node *node)
 {
-	if (node->flags & NODE_FLAGS_CONNECTED) {
+	if (!(node->flags & NODE_FLAGS_DISCONNECTED)) {
 		DEBUG(1,("%s: node %s is already marked connected: %u connected\n", 
 			 node->ctdb->name, node->name, 
 			 node->ctdb->num_connected));
@@ -382,7 +384,7 @@ void ctdb_node_connected(struct ctdb_node *node)
 	}
 	node->ctdb->num_connected++;
 	node->dead_count = 0;
-	node->flags |= NODE_FLAGS_CONNECTED;
+	node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	DEBUG(1,("%s: connected to %s - %u connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 }

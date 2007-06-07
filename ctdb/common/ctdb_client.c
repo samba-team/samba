@@ -1277,7 +1277,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 	}
 
 	for (i=0;i<map->num;i++) {
-		if (map->nodes[i].flags & NODE_FLAGS_CONNECTED) {
+		if (!(map->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
 			nodes[*num_nodes] = map->nodes[i].vnn;
 			(*num_nodes)++;
 		}
@@ -1921,20 +1921,25 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 /*
   set/clear the permanent disabled bit on a remote node
  */
-int ctdb_ctrl_permdisable(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t mode)
+int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
+		       uint32_t set, uint32_t clear)
 {
 	int ret;
 	TDB_DATA data;
+	struct ctdb_node_modflags m;
 	int32_t res;
 
-	data.dsize = sizeof(uint32_t);
-	data.dptr = (unsigned char *)&mode;
+	m.set = set;
+	m.clear = clear;
+
+	data.dsize = sizeof(m);
+	data.dptr = (unsigned char *)&m;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_PERMANENTLY_DISABLE, 0, data, 
+			   CTDB_CONTROL_MODIFY_FLAGS, 0, data, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for setpermdisable failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for modflags failed\n"));
 		return -1;
 	}
 

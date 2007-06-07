@@ -48,7 +48,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 			continue;
 		}
 		
-		if (!(node->flags & NODE_FLAGS_CONNECTED)) {
+		if (node->flags & NODE_FLAGS_DISCONNECTED) {
 			/* it might have come alive again */
 			if (node->rx_cnt != 0) {
 				ctdb_node_connected(node);
@@ -185,19 +185,22 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 
 
 /*
-  administratively disable/enable a node 
+  modify flags on a node
  */
-int32_t ctdb_control_permdisable(struct ctdb_context *ctdb, TDB_DATA indata)
+int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	uint32_t set = *(uint32_t *)indata.dptr;
+	struct ctdb_node_modflags *m = (struct ctdb_node_modflags *)indata.dptr;
 	TDB_DATA data;
 	struct ctdb_node_flag_change c;
 	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
+	uint32_t old_flags = node->flags;
 
-	if (set) {
-		node->flags |= NODE_FLAGS_PERMANENTLY_DISABLED;
-	} else {
-		node->flags &= ~NODE_FLAGS_PERMANENTLY_DISABLED;
+	node->flags |= m->set;
+	node->flags &= ~m->clear;
+
+	if (node->flags == old_flags) {
+		/* no change */
+		return 0;
 	}
 
 	c.vnn = ctdb->vnn;

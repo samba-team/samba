@@ -288,9 +288,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_LIST_TUNABLES:
 		return ctdb_control_list_tunables(ctdb, outdata);
 
-	case CTDB_CONTROL_PERMANENTLY_DISABLE:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		return ctdb_control_permdisable(ctdb, indata);
+	case CTDB_CONTROL_MODIFY_FLAGS:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_node_modflags));
+		return ctdb_control_modflags(ctdb, indata);
 
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
@@ -445,7 +445,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 
 	if (destnode != CTDB_BROADCAST_VNNMAP && destnode != CTDB_BROADCAST_ALL && 
 	    (!ctdb_validate_vnn(ctdb, destnode) || 
-	     !(ctdb->nodes[destnode]->flags & NODE_FLAGS_CONNECTED))) {
+	     (ctdb->nodes[destnode]->flags & NODE_FLAGS_DISCONNECTED))) {
 		if (!(flags & CTDB_CTRL_FLAG_NOREPLY)) {
 			callback(ctdb, -1, tdb_null, "ctdb_control to disconnected node", private_data);
 		}

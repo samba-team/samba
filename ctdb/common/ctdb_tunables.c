@@ -25,19 +25,21 @@ static const struct {
 	uint32_t default_v;
 	size_t offset;	
 } tunable_map[] = {
-	{ "MaxRedirectCount",    3,  offsetof(struct ctdb_tunable, max_redirect_count) },
-	{ "SeqnumFrequency",     1,  offsetof(struct ctdb_tunable, seqnum_frequency) },
-	{ "ControlTimeout",     60, offsetof(struct ctdb_tunable, control_timeout) },
-	{ "TraverseTimeout",    20, offsetof(struct ctdb_tunable, traverse_timeout) },
-	{ "KeepaliveInterval",   2,  offsetof(struct ctdb_tunable, keepalive_interval) },
-	{ "KeepaliveLimit",      3,  offsetof(struct ctdb_tunable, keepalive_limit) },
-	{ "MaxLACount",          7,  offsetof(struct ctdb_tunable, max_lacount) },
-	{ "RecoverTimeout",      5,  offsetof(struct ctdb_tunable, recover_timeout) },
-	{ "RecoverInterval",     1,  offsetof(struct ctdb_tunable, recover_interval) },
-	{ "ElectionTimeout",     3,  offsetof(struct ctdb_tunable, election_timeout) },
-	{ "TakeoverTimeout",     5,  offsetof(struct ctdb_tunable, takeover_timeout) },
-	{ "MonitorInterval",    15,  offsetof(struct ctdb_tunable, monitor_interval) },
-	{ "EventScriptTimeout", 20,  offsetof(struct ctdb_tunable, script_timeout) },
+	{ "MaxRedirectCount",     3,  offsetof(struct ctdb_tunable, max_redirect_count) },
+	{ "SeqnumFrequency",      1,  offsetof(struct ctdb_tunable, seqnum_frequency) },
+	{ "ControlTimeout",      60, offsetof(struct ctdb_tunable, control_timeout) },
+	{ "TraverseTimeout",     20, offsetof(struct ctdb_tunable, traverse_timeout) },
+	{ "KeepaliveInterval",    2,  offsetof(struct ctdb_tunable, keepalive_interval) },
+	{ "KeepaliveLimit",       3,  offsetof(struct ctdb_tunable, keepalive_limit) },
+	{ "MaxLACount",           7,  offsetof(struct ctdb_tunable, max_lacount) },
+	{ "RecoverTimeout",       5,  offsetof(struct ctdb_tunable, recover_timeout) },
+	{ "RecoverInterval",      1,  offsetof(struct ctdb_tunable, recover_interval) },
+	{ "ElectionTimeout",      3,  offsetof(struct ctdb_tunable, election_timeout) },
+	{ "TakeoverTimeout",      5,  offsetof(struct ctdb_tunable, takeover_timeout) },
+	{ "MonitorInterval",     15,  offsetof(struct ctdb_tunable, monitor_interval) },
+	{ "EventScriptTimeout",  20,  offsetof(struct ctdb_tunable, script_timeout) },
+	{ "RecoveryGracePeriod", 60,  offsetof(struct ctdb_tunable, recovery_grace_period) },
+	{ "RecoveryBanPeriod",  300,  offsetof(struct ctdb_tunable, recovery_ban_period) },
 };
 
 /*

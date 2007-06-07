@@ -53,6 +53,8 @@ struct ctdb_tunable {
 	uint32_t takeover_timeout;
 	uint32_t monitor_interval;
 	uint32_t script_timeout;
+	uint32_t recovery_grace_period;
+	uint32_t recovery_ban_period;
 };
 
 /*
@@ -111,10 +113,12 @@ struct ctdb_node {
 	const char *name; /* for debug messages */
 	void *private_data; /* private to transport */
 	uint32_t vnn;
-#define NODE_FLAGS_CONNECTED 		0x00000001
-#define NODE_FLAGS_UNHEALTHY  		0x00000002
-#define NODE_FLAGS_PERMANENTLY_DISABLED	0x00000004
+#define NODE_FLAGS_DISCONNECTED		0x00000001 /* node isn't connected */
+#define NODE_FLAGS_UNHEALTHY  		0x00000002 /* monitoring says node is unhealthy */
+#define NODE_FLAGS_PERMANENTLY_DISABLED	0x00000004 /* administrator has disabled node */
+#define NODE_FLAGS_BANNED		0x00000008 /* recovery daemon has banned the node */
 #define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
+#define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED)
 	uint32_t flags;
 
 	/* used by the dead node monitoring */
@@ -414,7 +418,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_TUNABLE             = 49,
 		    CTDB_CONTROL_LIST_TUNABLES           = 50,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
-		    CTDB_CONTROL_PERMANENTLY_DISABLE     = 52,
+		    CTDB_CONTROL_MODIFY_FLAGS            = 52,
 };
 
 /*
@@ -465,6 +469,14 @@ struct ctdb_control_tcp_vnn {
 struct ctdb_node_flag_change {
 	uint32_t vnn;
 	uint32_t flags;
+};
+
+/*
+  structure to change flags on a node
+ */
+struct ctdb_node_modflags {
+	uint32_t set;
+	uint32_t clear;
 };
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
@@ -1010,6 +1022,6 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
 
-int32_t ctdb_control_permdisable(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif

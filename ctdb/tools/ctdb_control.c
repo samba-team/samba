@@ -285,13 +285,13 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Connected:Disabled:Permanently Disabled:\n");
+		printf(":Node:IP:Disonnected:Disabled:Permanently Disabled:\n");
 		for(i=0;i<nodemap->num;i++){
 			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].vnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
-				!!(nodemap->nodes[i].flags&NODE_FLAGS_CONNECTED),
-				!!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
-				!!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED));
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED));
 		}
 		return 0;
 	}
@@ -303,10 +303,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			flags_str = "DISABLED";
 		} else if (nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY) {
 			flags_str = "UNHEALTHY";
-		} else if (nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) {
-			flags_str = "CONNECTED";
+		} else if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			flags_str = "DISCONNECTED";
 		} else {
-			flags_str = "UNAVAILABLE";
+			flags_str = "OK";
 		}
 		printf("vnn:%d %-16s %s%s\n", nodemap->nodes[i].vnn,
 		       inet_ntoa(nodemap->nodes[i].sin.sin_addr),
@@ -405,7 +405,7 @@ static int control_disable(struct ctdb_context *ctdb, int argc, const char **arg
 {
 	int ret;
 
-	ret = ctdb_ctrl_permdisable(ctdb, TIMELIMIT(), options.vnn, NODE_FLAGS_PERMANENTLY_DISABLED);
+	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.vnn, NODE_FLAGS_PERMANENTLY_DISABLED, 0);
 	if (ret != 0) {
 		printf("Unable to disable node %u\n", options.vnn);
 		return ret;
@@ -421,7 +421,7 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	int ret;
 
-	ret = ctdb_ctrl_permdisable(ctdb, TIMELIMIT(), options.vnn, 0);
+	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.vnn, 0, NODE_FLAGS_PERMANENTLY_DISABLED);
 	if (ret != 0) {
 		printf("Unable to enable node %u\n", options.vnn);
 		return ret;
@@ -618,7 +618,7 @@ static int control_getvar(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	printf("%-18s = %u\n", name, value);
+	printf("%-19s = %u\n", name, value);
 	return 0;
 }
 
