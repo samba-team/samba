@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2000, 2005-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -256,7 +256,7 @@ const char *const std_dict[2048] =
 "MOB",   "MOD",  "MOE",   "MOO",   "MOP",   "MOS",   "MOT",   "MOW",
 "MUD",   "MUG",  "MUM",   "MY",    "NAB",   "NAG",   "NAN",   "NAP",
 "NAT",   "NAY",  "NE",    "NED",   "NEE",   "NET",   "NEW",   "NIB",
-"NIIL",  "NIP",  "NIT",   "NO",    "NOB",   "NOD",   "NON",   "NOR",
+"NIL",   "NIP",  "NIT",   "NO",    "NOB",   "NOD",   "NON",   "NOR",
 "NOT",   "NOV",  "NOW",   "NU",    "NUN",   "NUT",   "O",     "OAF",
 "OAK",   "OAR",  "OAT",   "ODD",   "ODE",   "OF",    "OFF",   "OFT",
 "OH",    "OIL",  "OK",    "OLD",   "ON",    "ONE",   "OR",    "ORB",
@@ -1822,7 +1822,7 @@ const struct e inv_std_dict[2048] = {
 {"NIBS", 1568},
 {"NICE", 1569},
 {"NICK", 1570},
-{"NIIL", 351},
+{"NIL", 351},
 {"NILE", 1571},
 {"NINA", 1572},
 {"NINE", 1573},
