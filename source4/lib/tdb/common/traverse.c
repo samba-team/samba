@@ -259,7 +259,7 @@ TDB_DATA tdb_firstkey(struct tdb_context *tdb)
 	tdb->travlocks.off = tdb->travlocks.hash = 0;
 	tdb->travlocks.lock_rw = F_RDLCK;
 
-	/* Grab first record: locks chain and returns record. */
+	/* Grab first record: locks chain and returned record. */
 	if (tdb_next_lock(tdb, &tdb->travlocks, &rec) <= 0)
 		return tdb_null;
 	/* now read the key */
@@ -316,7 +316,7 @@ TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA oldkey)
 	}
 	oldhash = tdb->travlocks.hash;
 
-	/* Grab next record: locks chain and returns record,
+	/* Grab next record: locks chain and returned record,
 	   unlocks old record */
 	if (tdb_next_lock(tdb, &tdb->travlocks, &rec) > 0) {
 		key.dsize = rec.key_len;
