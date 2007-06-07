@@ -2292,7 +2292,7 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	if (data->data == NULL
 	    || data->length < MSG_FILE_RENAMED_MIN_SIZE + 2) {
                 DEBUG(0, ("msg_file_was_renamed: Got invalid msg len %d\n",
-			  data->length));
+			  (int)data->length));
                 return;
         }
 
