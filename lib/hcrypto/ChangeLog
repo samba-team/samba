@@ -1,5 +1,13 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Include more ui.[ch] in libbctest.
+
+	* version-script.map: Unexport _hc_DES_ipfp_test now there is a
+	separate test lib.
+
+	* Makefile.am: Build library libhctest.la for testing and link
+	with that when testing.
+
 	* version-script.map: export _hc_DES_ipfp_test
 
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
