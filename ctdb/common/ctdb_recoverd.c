@@ -202,7 +202,8 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 			continue;
 		}
 
-		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, mem_ctx, &remote_dbmap);
+		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+					 mem_ctx, &remote_dbmap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get dbids from node %u\n", vnn));
 			return -1;
@@ -260,7 +261,8 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			continue;
 		}
 
-		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, mem_ctx, &remote_dbmap);
+		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+					 mem_ctx, &remote_dbmap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get dbids from node %u\n", vnn));
 			return -1;
@@ -282,9 +284,11 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			/* ok so we need to create this database and
 			   rebuild dbmap
 			 */
-			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, remote_dbmap->dbids[db], mem_ctx, &name);
+			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+					    remote_dbmap->dbids[db], mem_ctx, &name);
 			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to get dbname from node %u\n", nodemap->nodes[j].vnn));
+				DEBUG(0, (__location__ " Unable to get dbname from node %u\n", 
+					  nodemap->nodes[j].vnn));
 				return -1;
 			}
 			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), vnn, mem_ctx, name);
@@ -325,9 +329,11 @@ static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node
 			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 				continue;
 			}
-			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
+			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+					       vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
 			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", nodemap->nodes[j].vnn, vnn));
+				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", 
+					  nodemap->nodes[j].vnn, vnn));
 				return -1;
 			}
 		}
@@ -476,9 +482,11 @@ static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_
 			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 				continue;
 			}
-			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), vnn, nodemap->nodes[j].vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
+			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), vnn, nodemap->nodes[j].vnn, 
+					       dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
 			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", vnn, nodemap->nodes[j].vnn));
+				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", 
+					  vnn, nodemap->nodes[j].vnn));
 				return -1;
 			}
 		}
@@ -1142,7 +1150,8 @@ again:
 		}
 
 		if (recmaster!=vnn) {
-			DEBUG(0, ("Node %u does not agree we are the recmaster. Force reelection\n", nodemap->nodes[j].vnn));
+			DEBUG(0, ("Node %u does not agree we are the recmaster. Force reelection\n", 
+				  nodemap->nodes[j].vnn));
 			force_election(rec, mem_ctx, vnn, nodemap);
 			goto again;
 		}
@@ -1163,7 +1172,8 @@ again:
 			goto again;
 		}
 		if (recmode != CTDB_RECOVERY_NORMAL) {
-			DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", nodemap->nodes[j].vnn));
+			DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", 
+				  nodemap->nodes[j].vnn));
 			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
 			goto again;
 		}
@@ -1181,9 +1191,11 @@ again:
 			continue;
 		}
 
-		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, mem_ctx, &remote_nodemap);
+		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+					   mem_ctx, &remote_nodemap);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", nodemap->nodes[j].vnn));
+			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
+				  nodemap->nodes[j].vnn));
 			goto again;
 		}
 
@@ -1206,7 +1218,8 @@ again:
 				(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE))) {
 				DEBUG(0, (__location__ " Remote node:%u has different nodemap.\n", 
 					  nodemap->nodes[j].vnn));
-				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
+					    vnnmap, nodemap->nodes[j].vnn);
 				goto again;
 			}
 		}
@@ -1269,9 +1282,11 @@ again:
 			continue;
 		}
 
-		ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, mem_ctx, &remote_vnnmap);
+		ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+					  mem_ctx, &remote_vnnmap);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to get vnnmap from remote node %u\n", nodemap->nodes[j].vnn));
+			DEBUG(0, (__location__ " Unable to get vnnmap from remote node %u\n", 
+				  nodemap->nodes[j].vnn));
 			goto again;
 		}
 
@@ -1296,7 +1311,8 @@ again:
 			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
 				DEBUG(0, (__location__ " Remote node %u has different vnnmap.\n", 
 					  nodemap->nodes[j].vnn));
-				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
+					    vnnmap, nodemap->nodes[j].vnn);
 				goto again;
 			}
 		}
