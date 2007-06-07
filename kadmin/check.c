@@ -62,6 +62,46 @@ get_check_entry(const char *name, kadm5_principal_ent_rec *ent)
 }
 
 
+static int
+do_check_entry(krb5_principal principal, void *data)
+{
+    krb5_error_code ret;
+    kadm5_principal_ent_rec princ;
+    char *name;
+    int i;
+    
+    ret = krb5_unparse_name(context, principal, &name);
+    if (ret)
+	return 1;
+
+    memset (&princ, 0, sizeof(princ));
+    ret = kadm5_get_principal(kadm_handle, principal, &princ,
+			      KADM5_PRINCIPAL | KADM5_KEY_DATA);
+    if(ret) {
+	krb5_warn(context, ret, "Failed to get principal: %s", name);
+	free(name);
+	return 0;
+    }
+
+    for (i = 0; i < princ.n_key_data; i++) {
+	size_t keysize;
+	ret = krb5_enctype_keysize(context, 
+				   princ.key_data[i].key_data_type[0],
+				   &keysize);
+	if (ret == 0 && keysize != princ.key_data[i].key_data_length[0]) {
+	    krb5_warnx(context,
+		       "Principal %s enctype %d, wrong length: %lu\n",
+		       name, princ.key_data[i].key_data_type[0],
+		       (unsigned long)princ.key_data[i].key_data_length);
+	}
+    }
+
+    free(name);
+    kadm5_free_principal_ent(kadm_handle, &princ);
+
+    return 0;
+}
+
 int
 check(void *opt, int argc, char **argv)
 {
@@ -187,6 +227,8 @@ check(void *opt, int argc, char **argv)
 	    goto fail;
 	}
     }
+
+    foreach_principal("*", do_check_entry, "check", NULL);
 
     free(realm);
     return 0;
