@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = db kdc gss ldap
+SUBDIRS = db kdc gss ldap can
 
 if ENABLE_SHARED
 if HAVE_DLOPEN
