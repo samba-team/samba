@@ -446,6 +446,8 @@ do_request(krb5_context context,
     krb5_data reply;
     int datagram_reply = (d->type == SOCK_DGRAM);
 
+    krb5_kdc_update_time(NULL);
+
     krb5_data_zero(&reply);
     ret = krb5_kdc_process_request(context, config, 
 				   buf, len, &reply, &prependlength,
