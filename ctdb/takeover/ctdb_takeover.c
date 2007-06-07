@@ -412,25 +412,44 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	int i, j;
 	int ret;
 	struct ctdb_public_ip ip;
+	int takeover_node = 0;
 
-	/* work out which node will look after each public IP */
+	/* Work out which node will look after each public IP.
+	 * takeover_node cycles over the nodes and is incremented each time a 
+	 * node has been assigned to take over for another node.
+	 * This spreads the failed nodes out across the remaining
+	 * nodes more evenly
+	 */
 	for (i=0;i<nodemap->num;i++) {
 		if ((nodemap->nodes[i].flags & NODE_FLAGS_CONNECTED) && 
 		    !(nodemap->nodes[i].flags & NODE_FLAGS_DISABLED)) {
 			ctdb->nodes[i]->takeover_vnn = nodemap->nodes[i].vnn;
 		} else {
+			j = takeover_node;
+
 			/* assign this dead nodes IP to the next higher node */
-			for (j=(i+1)%nodemap->num;
-			     j != i;
-			     j=(j+1)%nodemap->num) {
+			ctdb->nodes[i]->takeover_vnn = -1;
+			while(1) {
 				if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) &&
 				    !(nodemap->nodes[j].flags & NODE_FLAGS_DISABLED) &&
 				    ctdb_same_subnet(ctdb->nodes[j]->public_address, 
 						     ctdb->nodes[i]->public_address, 
 						     ctdb->nodes[j]->public_netmask_bits)) {
 					ctdb->nodes[i]->takeover_vnn = nodemap->nodes[j].vnn;
+					takeover_node = (takeover_node+1)%nodemap->num;
 					break;
 				}
+				/* ok, try the next node instead then */
+				j=(j+1)%nodemap->num;
+
+				/* If we wrapped back to the takeover node node
+				 * without finding any ENABLED nodes
+				 * there is not much to do 
+				 */
+				if (j==takeover_node) {
+					break;
+				}
+				
 			}
 			
 			/* if no enabled node can take it, then we
@@ -438,10 +457,9 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 			   probably means that some subsystem (such as
 			   NFS) is sick on all nodes. Best we can do
 			   is to keep the other services up. */
-			if (j == i) {
-				for (j=(i+1)%nodemap->num;
-				     j != i;
-				     j=(j+1)%nodemap->num) {
+			if (ctdb->nodes[i]->takeover_vnn == -1) {
+				j = takeover_node;
+				while(1) {
 					if ((nodemap->nodes[j].flags & NODE_FLAGS_CONNECTED) &&
 					    ctdb_same_subnet(ctdb->nodes[j]->public_address, 
 							     ctdb->nodes[i]->public_address, 
@@ -449,12 +467,23 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 						ctdb->nodes[i]->takeover_vnn = nodemap->nodes[j].vnn;
 						DEBUG(0,("All available nodes disabled for %s - using a connected node\n",
 							 ctdb->nodes[i]->public_address));
+						takeover_node = (takeover_node+1)%nodemap->num;
+						break;
+					}
+					/* ok, try the next node instead then */
+					j=(j+1)%nodemap->num;
+
+					/* If we wrapped back to the takeover node node
+					 * without finding any ENABLED nodes
+					 * there is not much to do 
+					 */
+					if (j==takeover_node) {
 						break;
 					}
 				}
 			}
 			
-			if (j == i) {
+			if (ctdb->nodes[i]->takeover_vnn == -1) {
 				DEBUG(0,(__location__ " No node available on same network to take %s\n",
 					 ctdb->nodes[i]->public_address));
 				ctdb->nodes[i]->takeover_vnn = -1;	
