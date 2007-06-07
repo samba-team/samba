@@ -10,6 +10,8 @@ HEIMDAL_KDC_1.0 {
 		krb5_kdc_get_config;
 		krb5_kdc_process_krb5_request;
 		krb5_kdc_process_request;
+		krb5_kdc_save_request;
+		krb5_kdc_update_time;
 	local:
 		*;
 };
