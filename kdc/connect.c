@@ -456,6 +456,8 @@ do_request(krb5_context context,
 				   buf, len, &reply, &prependlength,
 				   d->addr_string, d->sa,
 				   datagram_reply);
+    if(request_log)
+	krb5_kdc_save_request(context, request_log, buf, len, &reply, d->sa);
     if(reply.length){
 	send_reply(context, config, prependlength, d, &reply);
 	krb5_data_free(&reply);
@@ -464,9 +466,6 @@ do_request(krb5_context context,
 	kdc_log(context, config, 0, 
 		"Failed processing %lu byte request from %s", 
 		(unsigned long)len, d->addr_string);
-
-    if(request_log)
-	krb5_kdc_save_request(context, request_log, buf, len, d->sa);
 }
 
 /*
