@@ -64,7 +64,9 @@ libhctest_la_SOURCES = \
 	imath/imath.c	\
 	des-tables.h	\
 	des.c		\
-	des.h
+	des.h		\
+	ui.c		\
+	ui.h
 
 test_imath_LDADD = libhctest.la $(LIB_roken)
 destest_LDADD = libhctest.la $(LIB_roken)
