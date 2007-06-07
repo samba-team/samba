@@ -91,6 +91,7 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
     const krb5_config_binding *db_binding;
     struct hdb_dbinfo *di, **dt, *databases;
     const char *default_dbname = HDB_DEFAULT_DB;
+    const char *default_mkey = HDB_DB_DIR "/m-key";
     const char *default_acl = HDB_DB_DIR "/kadmind.acl";
     const char *p;
     int ret;
@@ -140,8 +141,11 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
     }
 
     for(di = databases; di; di = di->next) {
-	if(di->dbname == NULL)
+	if(di->dbname == NULL) {
 	    di->dbname = strdup(default_dbname);
+	    if (di->mkey_file == NULL)
+		di->mkey_file = strdup(default_mkey);
+	}
 	if(di->mkey_file == NULL) {
 	    p = strrchr(di->dbname, '.');
 	    if(p == NULL || strchr(p, '/') != NULL)
