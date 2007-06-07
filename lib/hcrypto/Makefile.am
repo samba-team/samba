@@ -3,6 +3,8 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libhcrypto.la
+check_LTLIBRARIES = libhctest.la
+
 libhcrypto_la_LDFLAGS = -version-info 4:0:0
 libhcrypto_la_LIBADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
@@ -57,6 +59,15 @@ PROGRAM_TESTS = \
 	test_imath \
 	test_pkcs5 \
 	test_pkcs12
+
+libhctest_la_SOURCES = \
+	imath/imath.c	\
+	des-tables.h	\
+	des.c		\
+	des.h
+
+test_imath_LDADD = libhctest.la $(LIB_roken)
+destest_LDADD = libhctest.la $(LIB_roken)
 
 SCRIPT_TESTS = \
 	test_crypto
