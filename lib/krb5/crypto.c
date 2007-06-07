@@ -80,7 +80,6 @@ struct key_type {
     const char *name;
     size_t bits;
     size_t size;
-    size_t minsize;
     size_t schedule_size;
 #if 0
     krb5_enctype best_etype;
@@ -725,7 +724,6 @@ static struct key_type keytype_null = {
     0,
     0,
     0,
-    0,
     NULL,
     NULL,
     NULL
@@ -735,7 +733,6 @@ static struct key_type keytype_des = {
     KEYTYPE_DES,
     "des",
     56,
-    sizeof(DES_cblock),
     sizeof(DES_cblock),
     sizeof(DES_key_schedule),
     krb5_DES_random_key,
@@ -749,7 +746,6 @@ static struct key_type keytype_des3 = {
     "des3",
     168,
     3 * sizeof(DES_cblock), 
-    3 * sizeof(DES_cblock), 
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
     DES3_schedule,
@@ -761,7 +757,6 @@ static struct key_type keytype_des3_derived = {
     KEYTYPE_DES3,
     "des3",
     168,
-    3 * sizeof(DES_cblock),
     3 * sizeof(DES_cblock),
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
@@ -775,7 +770,6 @@ static struct key_type keytype_aes128 = {
     "aes-128",
     128,
     16,
-    16,
     sizeof(struct krb5_aes_schedule),
     NULL,
     AES_schedule,
@@ -787,7 +781,6 @@ static struct key_type keytype_aes256 = {
     "aes-256",
     256,
     32,
-    32,
     sizeof(struct krb5_aes_schedule),
     NULL,
     AES_schedule,
@@ -798,7 +791,6 @@ static struct key_type keytype_arcfour = {
     KEYTYPE_ARCFOUR,
     "arcfour",
     128,
-    16,
     16,
     sizeof(RC4_KEY),
     NULL,
@@ -3692,7 +3684,7 @@ krb5_crypto_init(krb5_context context,
 			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
-    if((*crypto)->et->keytype->minsize > key->keyvalue.length) {
+    if((*crypto)->et->keytype->size != key->keyvalue.length) {
 	free(*crypto);
 	*crypto = NULL;
 	krb5_set_error_string (context, "encryption key has bad length");
