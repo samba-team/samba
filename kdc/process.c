@@ -211,7 +211,6 @@ krb5_kdc_save_request(krb5_context context,
 	}
     }
 
-out2:
     krb5_free_address(context, &a);
 out:
     krb5_storage_free(sp);
