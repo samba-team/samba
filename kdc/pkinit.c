@@ -384,6 +384,8 @@ _kdc_pk_rd_padata(krb5_context context,
 	return 0;
     }
 
+    hx509_verify_set_time(kdc_identity->verify_ctx, _kdc_now.tv_sec);
+
     client_params = calloc(1, sizeof(*client_params));
     if (client_params == NULL) {
 	krb5_clear_error_string(context);
