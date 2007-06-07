@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-noinst_DATA = krb5.conf
+noinst_DATA = krb5.conf mit-pkinit-20070607.cf
 
 check_SCRIPTS = $(SCRIPT_TESTS) test_can
 
@@ -30,12 +30,13 @@ krb5.conf: krb5.conf.in Makefile
 	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
 	mv krb5.conf.tmp krb5.conf
 
-CLEANFILES= \
-	$(TESTS) \
-	test_can.tmp \
-	check-can.tmp \
-	krb5.conf \
-	krb5.conf.tmp
+SUFFIXES += .xf .cf
+
+.xf.cf:
+	$(do_subst) < $< > $@.tmp
+	mv $@.tmp $@
+
+CLEANFILES= $(TESTS) *.tmp *.xf
 
 
 EXTRA_DIST = \
