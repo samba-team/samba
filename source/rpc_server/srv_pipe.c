@@ -1632,11 +1632,18 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		case RPC_ANONYMOUS_AUTH_TYPE:
 			/* Unauthenticated bind request. */
+			/* Get the authenticated pipe user from current_user */
+			if (!copy_current_user(&p->pipe_user, &current_user)) {
+				DEBUG(10, ("Could not copy current user\n"));
+				goto err_exit;
+			}
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 			/* We must set the pipe auth_level here also. */
 			p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
 			p->pipe_bound = True;
+			/* The session key was initialized from the SMB
+			 * session in make_internal_rpc_pipe_p */
 			break;
 
 		default:
