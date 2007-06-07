@@ -75,7 +75,7 @@ main(int argc, char **argv)
 	struct timeval tv;
 	krb5_address a;
 	krb5_data d, r;
-	uint32_t t;
+	uint32_t t, clty, tag;
 	char astr[80];
 
 	ret = krb5_ret_uint32(sp, &t);
@@ -94,6 +94,13 @@ main(int argc, char **argv)
 	ret = krb5_ret_data(sp, &d);
 	if (ret)
 	    krb5_errx(context, 1, "krb5_ret_data");
+	ret = krb5_ret_uint32(sp, &clty);
+	if (ret)
+	    krb5_errx(context, 1, "krb5_ret_uint32(class|type)");
+	ret = krb5_ret_uint32(sp, &tag);
+	if (ret)
+	    krb5_errx(context, 1, "krb5_ret_uint32(tag)");
+
 
 	ret = krb5_addr2sockaddr (context, &a, (struct sockaddr *)&sa,
 				  &salen, 88);
@@ -121,8 +128,25 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_kdc_process_request");
 
-	if(r.length)
+	if (r.length) {
+	    Der_class cl;
+	    Der_type ty;
+	    unsigned int tag2;
+	    ret = der_get_tag (r.data, r.length,
+			       &cl, &ty, &tag2, NULL);
+	    if (MAKE_TAG(cl, ty, 0) != clty)
+		krb5_errx(context, 1, "class|type mismatch: %d != %d",
+			  (int)MAKE_TAG(cl, ty, 0), (int)clty);
+	    if (tag != tag2)
+		krb5_errx(context, 1, "tag mismatch");
+
 	    krb5_data_free(&r);
+	} else {
+	    if (clty != 0xffffffff)
+		krb5_errx(context, 1, "clty not invalid");
+	    if (tag != 0xffffffff)
+		krb5_errx(context, 1, "tag not invalid");
+	}
 
 	krb5_data_free(&d);
 	krb5_free_address(context, &a);
