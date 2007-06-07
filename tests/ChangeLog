@@ -1,5 +1,15 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* can/mit-pkinit-20070607.*: mit pkinit-9 request
+
+	* can/check-can.in: Add mit-pkinit test.
+
+	* can/Makefile.am: Create specific configurtion files for some
+	tests.
+
+	* can/test_can.in: Pick up the right generated
+	krb5.conf (spelling).
+
 	* can: Add Apple Tiger 10.4/MIT Kerberos 1.4
 
 	* can/test_can.in: Don't need to start a kdc for this test.
