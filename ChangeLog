@@ -1,5 +1,10 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c: Require the raw key have the correct size and
+	do away with the minsize.  Minsize was a thing that originated
+	from RC2, but since RC2 is done in the x509/cms subsystem now
+	there is no need to keep that around.
+
 	* lib/hdb/dbinfo.c: If there is no default dbname, also check for
 	unset mkey_file and set it default mkey name, make backward compat
 	stuff work.
