@@ -149,6 +149,7 @@ main(int argc, char **argv)
 	tv.tv_usec = 0;
 
 	krb5_kdc_update_time(&tv);
+	krb5_set_real_time(context, tv.tv_sec, 0);
 
 	ret = krb5_kdc_process_request(context, config, d.data, d.length,
 				       &r, NULL, astr,
