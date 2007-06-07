@@ -35,6 +35,23 @@
 
 RCSID("$Id$");
 
+static int version_flag;
+static int help_flag;
+
+struct getargs args[] = {
+    { "version",   0,	arg_flag, &version_flag },
+    { "help",     'h',	arg_flag, &help_flag }
+};
+
+const static int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(int ret)
+{
+    arg_printusage (args, num_args, NULL, "kdc-request-log-file");
+    exit (ret);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -42,10 +59,21 @@ main(int argc, char **argv)
     krb5_context context;
     krb5_kdc_configuration *config;
     krb5_storage *sp;
-    int fd;
+    int fd, optidx = 0;
 
     setprogname(argv[0]);
     
+    if(getarg(args, num_args, argc, argv, &optidx))
+	usage(1);
+
+    if(help_flag)
+	usage(0);
+    
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
     ret = krb5_init_context(&context);
     if (ret)
 	errx (1, "krb5_init_context failed to parse configuration file");
