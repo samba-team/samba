@@ -1,5 +1,9 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* can/test_can.in: Simplify error reporting.
+
+	* can/test_can.in: Catch error from kadmin.
+
 	* can/mit-pkinit-20070607.*: mit pkinit-9 request
 
 	* can/check-can.in: Add mit-pkinit test.
