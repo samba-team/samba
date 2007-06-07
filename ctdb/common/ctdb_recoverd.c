@@ -42,6 +42,7 @@ struct ctdb_recoverd {
 	uint32_t culprit_counter;
 	struct timeval first_recover_time;
 	struct ban_state **banned_nodes;
+	struct timeval priority_time;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -79,7 +80,7 @@ static void ctdb_ban_timeout(struct event_context *ev, struct timed_event *te, s
 	struct ctdb_recoverd *rec = state->rec;
 	uint32_t vnn = state->banned_node;
 
-	DEBUG(0,("Node %u in now unbanned\n", vnn));
+	DEBUG(0,("Node %u is now unbanned\n", vnn));
 	ctdb_unban_node(rec, vnn);
 }
 
@@ -93,6 +94,11 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_
 	if (!ctdb_validate_vnn(ctdb, vnn)) {
 		DEBUG(0,("Bad vnn %u in ctdb_ban_node\n", vnn));
 		return;
+	}
+
+	if (vnn == ctdb->vnn) {
+		/* banning ourselves - lower our election priority */
+		rec->priority_time = timeval_current();
 	}
 
 	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), vnn, NODE_FLAGS_BANNED, 0);
@@ -778,22 +784,25 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 struct election_message {
 	uint32_t vnn;
+	struct timeval priority_time;
 };
 
 
 /*
   send out an election request
  */
-static int send_election_request(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t vnn)
+static int send_election_request(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx, uint32_t vnn)
 {
 	int ret;
 	TDB_DATA election_data;
 	struct election_message emsg;
 	uint64_t srvid;
+	struct ctdb_context *ctdb = rec->ctdb;
 	
 	srvid = CTDB_SRVID_RECOVERY;
 
 	emsg.vnn = vnn;
+	emsg.priority_time = rec->priority_time;
 
 	election_data.dsize = sizeof(struct election_message);
 	election_data.dptr  = (unsigned char *)&emsg;
@@ -826,6 +835,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	int ret;
 	struct election_message *em = (struct election_message *)data.dptr;
 	TALLOC_CTX *mem_ctx;
+	int cmp;
 
 	mem_ctx = talloc_new(ctdb);
 		
@@ -833,11 +843,9 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	   and if we disagree and we would rather be the elected node, 
 	   send a new election message to all other nodes
 	 */
-	/* for now we just check the vnn number and allow the lowest
-	   vnn number to become recovery master
-	 */
-	if (em->vnn > ctdb_get_vnn(ctdb)) {
-		ret = send_election_request(ctdb, mem_ctx, ctdb_get_vnn(ctdb));
+	cmp = timeval_compare(&em->priority_time, &rec->priority_time);
+	if (cmp > 0 || (cmp == 0 && em->vnn > ctdb->vnn)) {
+		ret = send_election_request(rec, mem_ctx, ctdb_get_vnn(ctdb));
 		if (ret!=0) {
 			DEBUG(0, (__location__ " failed to initiate recmaster election"));
 		}
@@ -846,7 +854,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* release the recmaster lock */
-	if (em->vnn != ctdb_get_vnn(ctdb) &&
+	if (em->vnn != ctdb->vnn &&
 	    ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
@@ -896,9 +904,11 @@ static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
 /*
   force the start of the election process
  */
-static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint32_t vnn, struct ctdb_node_map *nodemap)
+static void force_election(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx, uint32_t vnn, 
+			   struct ctdb_node_map *nodemap)
 {
 	int ret;
+	struct ctdb_context *ctdb = rec->ctdb;
 
 	/* set all nodes to recovery mode to stop all internode traffic */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
@@ -907,7 +917,7 @@ static void force_election(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, uint3
 		return;
 	}
 	
-	ret = send_election_request(ctdb, mem_ctx, vnn);
+	ret = send_election_request(rec, mem_ctx, vnn);
 	if (ret!=0) {
 		DEBUG(0, (__location__ " failed to initiate recmaster election"));
 		return;
@@ -1002,6 +1012,8 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	rec->banned_nodes = talloc_zero_array(rec, struct ban_state *, ctdb->num_nodes);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes);
 
+	rec->priority_time = timeval_current();
+
 	/* register a message port for recovery elections */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, rec);
 
@@ -1082,7 +1094,7 @@ again:
 
 	if (recmaster == (uint32_t)-1) {
 		DEBUG(0,(__location__ " Initial recovery master set - forcing election\n"));
-		force_election(ctdb, mem_ctx, vnn, nodemap);
+		force_election(rec, mem_ctx, vnn, nodemap);
 		goto again;
 	}
 	
@@ -1095,13 +1107,13 @@ again:
 
 	if (j == nodemap->num) {
 		DEBUG(0, ("Recmaster node %u not in list. Force reelection\n", recmaster));
-		force_election(ctdb, mem_ctx, vnn, nodemap);
+		force_election(rec, mem_ctx, vnn, nodemap);
 		goto again;
 	}
 
 	if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 		DEBUG(0, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].vnn));
-		force_election(ctdb, mem_ctx, vnn, nodemap);
+		force_election(rec, mem_ctx, vnn, nodemap);
 		goto again;
 	}
 	
@@ -1131,7 +1143,7 @@ again:
 
 		if (recmaster!=vnn) {
 			DEBUG(0, ("Node %u does not agree we are the recmaster. Force reelection\n", nodemap->nodes[j].vnn));
-			force_election(ctdb, mem_ctx, vnn, nodemap);
+			force_election(rec, mem_ctx, vnn, nodemap);
 			goto again;
 		}
 	}

@@ -1968,7 +1968,7 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 
 	if (outdata.dsize != sizeof(*tunables)) {
 		DEBUG(0,(__location__ " bad data size %u in ctdb_ctrl_get_all_tunables should be %u\n",
-			 outdata.dsize, sizeof(*tunables)));
+			 (unsigned)outdata.dsize, (unsigned)sizeof(*tunables)));
 		return -1;		
 	}
 
