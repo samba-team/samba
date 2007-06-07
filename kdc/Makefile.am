@@ -12,6 +12,8 @@ sbin_PROGRAMS = kstash
 
 libexec_PROGRAMS = hprop hpropd kdc
 
+noinst_PROGRAMS = kdc-replay
+
 man_MANS = kdc.8 kstash.8 hprop.8 hpropd.8 string2key.8
 
 hprop_SOURCES = hprop.c mit_dump.c v4_dump.c hprop.h kadb.h 
@@ -109,6 +111,7 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(DBLIB)
 
 kdc_LDADD = libkdc.la $(LDADD) $(LIB_pidfile)
+kdc_replay_LDADD = $(kdc_LDADD)
 
 include_HEADERS = kdc.h kdc-protos.h
 
