@@ -2099,7 +2099,9 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	struct ctdb_context *ctdb;
 
 	ctdb = talloc_zero(ev, struct ctdb_context);
-	ctdb->ev               = ev;
+	ctdb->ev  = ev;
+	ctdb->idr = idr_init(ctdb);
+	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
 
 	return ctdb;
 }

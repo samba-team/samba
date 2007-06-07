@@ -22,7 +22,8 @@ POPT_OBJ = @POPT_OBJ@
 
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
-	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" -DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
+	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
+	-DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
 
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@
 
@@ -35,14 +36,15 @@ CTDB_COMMON_OBJ =  common/ctdb_io.o common/util.o common/ctdb_util.o \
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
 CTDB_CLIENT_OBJ = client/ctdb_client.o \
-	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) @TALLOC_OBJ@ @TDB_OBJ@ @LIBREPLACEOBJ@ \
-	$(EXTRA_OBJ) @EVENTS_OBJ@ 
+	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) @TALLOC_OBJ@ @TDB_OBJ@ \
+	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ 
 
 CTDB_TAKEOVER_OBJ = takeover/system.o takeover/ctdb_takeover.o
 
-CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o server/ctdb_recoverd.o \
-	server/ctdb_recover.o server/ctdb_freeze.o server/ctdb_tunables.o server/ctdb_monitor.o \
-	server/ctdb.o server/ctdb_control.o server/ctdb_call.o server/ctdb_ltdb_server.o \
+CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
+	server/ctdb_recoverd.o server/ctdb_recover.o server/ctdb_freeze.o \
+	server/ctdb_tunables.o server/ctdb_monitor.o server/ctdb_server.o \
+	server/ctdb_control.o server/ctdb_call.o server/ctdb_ltdb_server.o \
 	server/ctdb_traverse.o $(CTDB_CLIENT_OBJ) \
 	$(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
@@ -71,9 +73,9 @@ bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
 
-bin/ctdb: $(OBJS) tools/ctdb_control.o 
+bin/ctdb: $(CLIENT_OBJS) tools/ctdb.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tools/ctdb_control.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/ctdb_bench.o 
 	@echo Linking $@
@@ -88,7 +90,7 @@ bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 clean:
-	rm -f *.o */*.o */*/*.o
+	rm -f *.o */*.o */*/*.o */*~
 	rm -f $(BINS) $(SBINS) $(TEST_BINS)
 
 distclean: clean
