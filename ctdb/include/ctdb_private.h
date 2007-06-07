@@ -419,6 +419,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_LIST_TUNABLES           = 50,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
 		    CTDB_CONTROL_MODIFY_FLAGS            = 52,
+		    CTDB_CONTROL_GET_ALL_TUNABLES        = 53,
 };
 
 /*
@@ -1031,5 +1032,10 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb, 
+			       struct timeval timeout, 
+			       uint32_t destnode,
+			       struct ctdb_tunable *tunables);
 
 #endif

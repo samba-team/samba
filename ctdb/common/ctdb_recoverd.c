@@ -1031,18 +1031,11 @@ again:
 	ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval);
 
 	/* get relevant tunables */
-	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
-			      "RecoverTimeout", &ctdb->tunable.recover_timeout);
-	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
-			      "RecoverInterval", &ctdb->tunable.recover_interval);
-	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
-			      "ElectionTimeout", &ctdb->tunable.election_timeout);
-	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
-			      "TakeoverTimeout", &ctdb->tunable.takeover_timeout);
-	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
-			      "RecoveryGracePeriod", &ctdb->tunable.recovery_grace_period);
-	ctdb_ctrl_get_tunable(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 
-			      "RecoveryBanPeriod", &ctdb->tunable.recovery_ban_period);
+	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);
+	if (ret != 0) {
+		DEBUG(0,("Failed to get tunables - retrying\n"));
+		goto again;
+	}
 
 	vnn = ctdb_ctrl_getvnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 	if (vnn == (uint32_t)-1) {

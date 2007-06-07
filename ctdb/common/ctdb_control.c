@@ -80,6 +80,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_GET_ALL_TUNABLES: {
+		CHECK_CONTROL_DATA_SIZE(0);
+		outdata->dptr = (uint8_t *)&ctdb->tunable;
+		outdata->dsize = sizeof(ctdb->tunable);
+		return 0;
+	}
+
 	case CTDB_CONTROL_DUMP_MEMORY: {
 		CHECK_CONTROL_DATA_SIZE(0);
 		talloc_report_full(ctdb, stdout);
