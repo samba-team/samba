@@ -44,10 +44,16 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
+	if (!ctdb_validate_vnn(ctdb, c->vnn)) {
+		DEBUG(0,("Bad vnn %u in flag_change_handler\n", c->vnn));
+		return;
+	}
+
 	/* don't get the disconnected flag from the other node */
 	ctdb->nodes[c->vnn]->flags = 
 		(ctdb->nodes[c->vnn]->flags&NODE_FLAGS_DISCONNECTED) 
 		| (c->flags & ~NODE_FLAGS_DISCONNECTED);	
+	DEBUG(2,("Node flags for node %u are now 0x%x\n", c->vnn, ctdb->nodes[c->vnn]->flags));
 }
 
 /* called when the "startup" event script has finished */
