@@ -203,6 +203,9 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
+	DEBUG(0, ("Control modflags on node %u - flags now 0x%x\n", ctdb->vnn, node->flags));
+
+	/* if we have been banned, go into recovery mode */
 	c.vnn = ctdb->vnn;
 	c.flags = node->flags;
 
@@ -212,6 +215,15 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	/* tell the other nodes that something has changed */
 	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
 				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+
+	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {
+		/* make sure we are frozen */
+		DEBUG(0,("This node has been banned - forcing freeze and recovery\n"));
+		if (!ctdb_blocking_freeze(ctdb)) {
+			ctdb_fatal(ctdb, "Unable to freeze when banned");
+		}
+		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+	}
 	
 	return 0;
 }

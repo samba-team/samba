@@ -27,20 +27,79 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 
+
+struct ban_state {
+	struct ctdb_recoverd *rec;
+	uint32_t banned_node;
+};
+
 /*
   private state of recovery daemon
  */
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
-	TALLOC_CTX *mem_ctx;
 	uint32_t last_culprit;
 	uint32_t culprit_counter;
 	struct timeval first_recover_time;
-	bool *banned_nodes;
+	struct ban_state **banned_nodes;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
 #define MONITOR_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_interval, 0)
+
+/*
+  unban a node
+ */
+static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t vnn)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (rec->banned_nodes[vnn] == NULL) {
+		return;
+	}
+
+	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), vnn, 0, NODE_FLAGS_BANNED);
+
+	talloc_free(rec->banned_nodes[vnn]);
+	rec->banned_nodes[vnn] = NULL;
+}
+
+
+/*
+  called when a ban has timed out
+ */
+static void ctdb_ban_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+{
+	struct ban_state *state = talloc_get_type(p, struct ban_state);
+	struct ctdb_recoverd *rec = state->rec;
+	uint32_t vnn = state->banned_node;
+
+	DEBUG(0,("Node %u in now unbanned\n", vnn));
+	ctdb_unban_node(rec, vnn);
+}
+
+/*
+  ban a node for a period of time
+ */
+static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_time)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), vnn, NODE_FLAGS_BANNED, 0);
+
+	rec->banned_nodes[vnn] = talloc(rec, struct ban_state);
+	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes[vnn]);
+
+	rec->banned_nodes[vnn]->rec = rec;
+	rec->banned_nodes[vnn]->banned_node = vnn;
+
+	if (ban_time != 0) {
+		event_add_timed(ctdb->ev, rec->banned_nodes[vnn], 
+				timeval_current_ofs(ban_time, 0),
+				ctdb_ban_timeout, rec->banned_nodes[vnn]);
+	}
+}
+
 
 /*
   change recovery mode on all nodes
@@ -439,22 +498,70 @@ static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_nod
 }
 
 
-struct ban_state {
-	struct ctdb_recoverd *rec;
-	uint32_t banned_node;
-};
+/*
+  handler for when the admin bans a node
+*/
+static void ban_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_ban_info *b = (struct ctdb_ban_info *)data.dptr;
+	uint32_t recmaster;
+	int ret;
+
+	if (data.dsize != sizeof(*b)) {
+		DEBUG(0,("Bad data in ban_handler\n"));
+		return;
+	}
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to find the recmaster\n"));
+		return;
+	}
+
+	if (recmaster != ctdb->vnn) {
+		DEBUG(0,("We are not the recmaster - ignoring ban request\n"));
+		return;
+	}
+
+	DEBUG(0,("Node %u has been banned for %u seconds by the administrator\n", 
+		 b->vnn, b->ban_time));
+	ctdb_ban_node(rec, b->vnn, b->ban_time);
+}
 
 /*
-  called when a ban has timed out
- */
-static void ctdb_ban_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+  handler for when the admin unbans a node
+*/
+static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			  TDB_DATA data, void *private_data)
 {
-	struct ban_state *state = talloc_get_type(p, struct ban_state);
-	DEBUG(0,("Node %u in now unbanned\n", state->banned_node));
-	
-	state->rec->banned_nodes[state->banned_node] = false;	
-	talloc_free(state);
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	uint32_t vnn;
+	int ret;
+	uint32_t recmaster;
+
+	if (data.dsize != sizeof(uint32_t)) {
+		DEBUG(0,("Bad data in unban_handler\n"));
+		return;
+	}
+	vnn = *(uint32_t *)data.dptr;
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Failed to find the recmaster\n"));
+		return;
+	}
+
+	if (recmaster != ctdb->vnn) {
+		DEBUG(0,("We are not the recmaster - ignoring unban request\n"));
+		return;
+	}
+
+	DEBUG(0,("Node %u has been unbanned by the administrator\n", vnn));
+	ctdb_unban_node(rec, vnn);
 }
+
 
 
 /*
@@ -480,22 +587,10 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	rec->culprit_counter++;
 
 	if (rec->culprit_counter > 2*nodemap->num) {
-		struct ban_state *state;
-
 		DEBUG(0,("Node %u has caused %u recoveries in %.0f seconds - banning it for %u seconds\n",
 			 culprit, rec->culprit_counter, timeval_elapsed(&rec->first_recover_time),
 			 ctdb->tunable.recovery_ban_period));
-		ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), culprit, NODE_FLAGS_BANNED, 0);
-		rec->banned_nodes[culprit] = true;
-
-		state = talloc(rec->mem_ctx, struct ban_state);
-		CTDB_NO_MEMORY_FATAL(ctdb, state);
-
-		state->rec = rec;
-		state->banned_node = culprit;
-
-		event_add_timed(ctdb->ev, state, timeval_current_ofs(ctdb->tunable.recovery_ban_period, 0),
-				ctdb_ban_timeout, state);
+		ctdb_ban_node(rec, culprit, ctdb->tunable.recovery_ban_period);
 	}
 
 	if (!ctdb_recovery_lock(ctdb, true)) {
@@ -592,7 +687,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
 	vnnmap->size = num_active;
-	vnnmap->map = talloc_array(vnnmap, uint32_t, vnnmap->size);
+	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
 	for (i=j=0;i<nodemap->num;i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
 			vnnmap->map[j++] = nodemap->nodes[i].vnn;
@@ -755,14 +850,10 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	/* release any ban information */
-	talloc_free(rec->mem_ctx);
-	rec->mem_ctx = talloc_new(rec);
-	CTDB_NO_MEMORY_FATAL(rec->mem_ctx, rec->banned_nodes);
-
+	/* release any bans */
 	rec->last_culprit = (uint32_t)-1;
 	talloc_free(rec->banned_nodes);
-	rec->banned_nodes = talloc_zero_array(rec, bool, ctdb->num_nodes);
+	rec->banned_nodes = talloc_zero_array(rec, struct ban_state *, ctdb->num_nodes);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes);
 
 	talloc_free(mem_ctx);
@@ -898,17 +989,20 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, rec);
 
 	rec->ctdb = ctdb;
-	rec->banned_nodes = talloc_zero_array(rec, bool, ctdb->num_nodes);
+	rec->banned_nodes = talloc_zero_array(rec, struct ban_state *, ctdb->num_nodes);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes);
-
-	rec->mem_ctx = talloc_new(rec);
-	CTDB_NO_MEMORY_FATAL(ctdb, rec->mem_ctx);
 
 	/* register a message port for recovery elections */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, rec);
 
 	/* and one for when nodes are disabled/enabled */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, monitor_handler, rec);
+
+	/* and one for when nodes are banned */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_BAN_NODE, ban_handler, rec);
+
+	/* and one for when nodes are unbanned */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_UNBAN_NODE, unban_handler, rec);
 	
 again:
 	need_takeover_run = false;
@@ -965,7 +1059,7 @@ again:
 	/* count how many active nodes there are */
 	num_active = 0;
 	for (i=0; i<nodemap->num; i++) {
-		if (rec->banned_nodes[nodemap->nodes[i].vnn]) {
+		if (rec->banned_nodes[nodemap->nodes[i].vnn] != NULL) {
 			nodemap->nodes[i].flags |= NODE_FLAGS_BANNED;
 		} else {
 			nodemap->nodes[i].flags &= ~NODE_FLAGS_BANNED;

@@ -479,6 +479,14 @@ struct ctdb_node_modflags {
 	uint32_t clear;
 };
 
+/*
+  struct for admin setting a ban
+ */
+struct ctdb_ban_info {
+	uint32_t vnn;
+	uint32_t ban_time;
+};
+
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
 #define CTDB_LMASTER_ANY	0xffffffff

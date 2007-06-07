@@ -298,20 +298,37 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
-		const char *flags_str;
-		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
-			flags_str = "DISABLED";
-		} else if (nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY) {
-			flags_str = "UNHEALTHY";
-		} else if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			flags_str = "DISCONNECTED";
-		} else {
-			flags_str = "OK";
+		static const struct {
+			uint32_t flag;
+			const char *name;
+		} flag_names[] = {
+			{ NODE_FLAGS_DISCONNECTED,          "DISCONNECTED" },
+			{ NODE_FLAGS_PERMANENTLY_DISABLED,  "DISABLED" },
+			{ NODE_FLAGS_BANNED,                "BANNED" },
+			{ NODE_FLAGS_UNHEALTHY,             "UNHEALTHY" },
+		};
+		char *flags_str = NULL;
+		int j;
+		for (j=0;j<ARRAY_SIZE(flag_names);j++) {
+			if (nodemap->nodes[i].flags & flag_names[j].flag) {
+				if (flags_str == NULL) {
+					flags_str = talloc_strdup(ctdb, flag_names[j].name);
+				} else {
+					flags_str = talloc_asprintf_append(flags_str, "|%s",
+									   flag_names[j].name);
+				}
+				CTDB_NO_MEMORY_FATAL(ctdb, flags_str);
+			}
+		}
+		if (flags_str == NULL) {
+			flags_str = talloc_strdup(ctdb, "OK");
+			CTDB_NO_MEMORY_FATAL(ctdb, flags_str);
 		}
 		printf("vnn:%d %-16s %s%s\n", nodemap->nodes[i].vnn,
 		       inet_ntoa(nodemap->nodes[i].sin.sin_addr),
 		       flags_str,
 		       nodemap->nodes[i].vnn == myvnn?" (THIS NODE)":"");
+		talloc_free(flags_str);
 	}
 
 	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.vnn, ctdb, &vnnmap);
@@ -429,6 +446,107 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 
 	return 0;
 }
+
+/*
+  ban a node from the cluster
+ */
+static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	uint32_t recmaster;
+	struct ctdb_ban_info b;
+	TDB_DATA data;
+	uint32_t ban_time;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	if (options.vnn == CTDB_BROADCAST_ALL) {
+		uint32_t *nodes;
+		uint32_t num_nodes;
+		int i;
+
+		ret = 0;
+
+		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
+		CTDB_NO_MEMORY(ctdb, nodes);
+		for (i=0;i<num_nodes;i++) {
+			options.vnn = nodes[i];
+			ret |= control_ban(ctdb, argc, argv);
+		}
+		talloc_free(nodes);
+		return ret;
+	}
+
+	ban_time = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(0,("Failed to find the recmaster\n"));
+		return -1;
+	}
+
+	b.vnn = options.vnn;
+	b.ban_time = ban_time;
+
+	data.dptr = (uint8_t *)&b;
+	data.dsize = sizeof(b);
+
+	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_BAN_NODE, data);
+	if (ret != 0) {
+		DEBUG(0,("Failed to tell the recmaster to ban node %u\n", options.vnn));
+		return -1;
+	}
+	
+	return 0;
+}
+
+
+/*
+  unban a node from the cluster
+ */
+static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	uint32_t recmaster;
+	TDB_DATA data;
+
+	if (options.vnn == CTDB_BROADCAST_ALL) {
+		uint32_t *nodes;
+		uint32_t num_nodes;
+		int i;
+
+		ret = 0;
+
+		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
+		CTDB_NO_MEMORY(ctdb, nodes);
+		for (i=0;i<num_nodes;i++) {
+			options.vnn = nodes[i];
+			ret |= control_unban(ctdb, argc, argv);
+		}
+		talloc_free(nodes);
+		return ret;
+	}
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(0,("Failed to find the recmaster\n"));
+		return -1;
+	}
+
+	data.dptr = (uint8_t *)&options.vnn;
+	data.dsize = sizeof(uint32_t);
+
+	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_UNBAN_NODE, data);
+	if (ret != 0) {
+		DEBUG(0,("Failed to tell the recmaster to unban node %u\n", options.vnn));
+		return -1;
+	}
+	
+	return 0;
+}
+
 
 /*
   shutdown a daemon
@@ -871,8 +989,10 @@ static const struct {
 	{ "attach",          control_attach,            "attach to a database",                 "<dbname>" },
 	{ "dumpmemory",      control_dumpmemory,        "dump memory map to logs" },
 	{ "getpid",          control_getpid,            "get ctdbd process ID" },
-	{ "disable",         control_disable,           "disable a node" },
-	{ "enable",          control_enable,            "enable a node" },
+	{ "disable",         control_disable,           "disable a nodes public IP" },
+	{ "enable",          control_enable,            "enable a nodes public IP" },
+	{ "ban",             control_ban,               "ban a node from the cluster",          "<bantime|0>"},
+	{ "unban",           control_unban,             "unban a node from the cluster" },
 	{ "shutdown",        control_shutdown,          "shutdown ctdbd" },
 	{ "recover",         control_recover,           "force recovery" },
 	{ "freeze",          control_freeze,            "freeze all databases" },

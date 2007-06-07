@@ -76,6 +76,16 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_NODE_FLAGS_CHANGED 0xF400000000000000LL
 
+/* 
+   a message ID meaning that a node should be banned
+ */
+#define CTDB_SRVID_BAN_NODE 0xF500000000000000LL
+
+/* 
+   a message ID meaning that a node should be unbanned
+ */
+#define CTDB_SRVID_UNBAN_NODE 0xF600000000000000LL
+
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
