@@ -1500,7 +1500,56 @@ _kdc_add_inital_verified_cas(krb5_context context,
     return ret;
 }
 
+/*
+ *
+ */
 
+static void
+load_mappings(krb5_context context, const char *fn)
+{
+    krb5_error_code ret;
+    char buf[1024];
+    unsigned long lineno = 0;
+    FILE *f;
+
+    f = fopen(fn, "r");
+    if (f == NULL)
+	return;
+
+    while (fgets(buf, sizeof(buf), f) != NULL) {
+	char *subject_name, *p;
+    
+	buf[strcspn(buf, "\n")] = '\0';
+	lineno++;
+
+	p = buf + strspn(buf, " \t");
+
+	if (*p == '#' || *p == '\0')
+	    continue;
+
+	subject_name = strchr(p, ':');
+	if (subject_name == NULL) {
+	    krb5_warnx(context, "pkinit mapping file line %lu "
+		       "missing \":\" :%s",
+		       lineno, buf);
+	    continue;
+	}
+	*subject_name++ = '\0';
+
+	ret = add_principal_mapping(context, p, subject_name);
+	if (ret) {
+	    krb5_warn(context, ret, "failed to add line %lu \":\" :%s\n",
+		      lineno, buf);
+	    continue;
+	}
+    } 
+
+    fclose(f);
+}
+		   
+/*
+ *
+ */
 
 krb5_error_code
 _kdc_pk_initialize(krb5_context context,
@@ -1512,9 +1561,6 @@ _kdc_pk_initialize(krb5_context context,
 {
     const char *file; 
     krb5_error_code ret;
-    char buf[1024];
-    unsigned long lineno = 0;
-    FILE *f;
 
     file = krb5_config_get_string(context, NULL,
 				  "libdefaults", "moduli", NULL);
@@ -1585,41 +1631,8 @@ _kdc_pk_initialize(krb5_context context,
 					  "kdc",
 					  "pkinit_mappings_file",
 					  NULL);
-    f = fopen(file, "r");
-    if (f == NULL) {
-	krb5_warnx(context, "PKINIT: failed to load mappings file %s", file);
-	return 0;
-    }
 
-    while (fgets(buf, sizeof(buf), f) != NULL) {
-	char *subject_name, *p;
-    
-	buf[strcspn(buf, "\n")] = '\0';
-	lineno++;
-
-	p = buf + strspn(buf, " \t");
-
-	if (*p == '#' || *p == '\0')
-	    continue;
-
-	subject_name = strchr(p, ':');
-	if (subject_name == NULL) {
-	    krb5_warnx(context, "pkinit mapping file line %lu "
-		       "missing \":\" :%s",
-		       lineno, buf);
-	    continue;
-	}
-	*subject_name++ = '\0';
-
-	ret = add_principal_mapping(context, p, subject_name);
-	if (ret) {
-	    krb5_warn(context, ret, "failed to add line %lu \":\" :%s\n",
-		      lineno, buf);
-	    continue;
-	}
-    } 
-
-    fclose(f);
+    load_mappings(context, file);
 
     return 0;
 }
