@@ -1,3 +1,16 @@
+2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: Push down the kdc time into the x509 library.
+
+	* kdc/connect.c: Move up krb5_kdc_save_request so we can catch the
+	reply data too.
+
+	* kdc/kdc-replay.c: verify reply by checking asn1 class, type and
+	tag of the reply if there is one.
+
+	* kdc/process.c: Save asn1 class, type and tag of the reply if
+	there is one. Used to verify the reply in kdc-replay.
+
 2007-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kdc_locl.h: extern for request_log.
