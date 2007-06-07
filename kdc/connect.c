@@ -38,6 +38,9 @@ RCSID("$Id$");
 /* Should we enable the HTTP hack? */
 int enable_http = -1;
 
+/* Log over requests to the KDC */
+const char *request_log;
+
 /* A string describing on what ports to listen */
 const char *port_str;
 
@@ -461,6 +464,9 @@ do_request(krb5_context context,
 	kdc_log(context, config, 0, 
 		"Failed processing %lu byte request from %s", 
 		(unsigned long)len, d->addr_string);
+
+    if(request_log)
+	krb5_kdc_save_request(context, request_log, buf, len, d->sa);
 }
 
 /*
