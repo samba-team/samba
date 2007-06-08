@@ -40,7 +40,7 @@ CLEANFILES= $(TESTS) *.tmp *.cf \
 	current-db* \
 	krb5.conf \
 	messages.log \
-	test_can \
+	test_can
 
 EXTRA_DIST = \
 	apple-10.4.kadm \
