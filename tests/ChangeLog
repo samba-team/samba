@@ -1,3 +1,7 @@
+2007-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* can/Makefile.am: Clean up more cruft.
+	
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* can/test_can.in: Simplify error reporting.
