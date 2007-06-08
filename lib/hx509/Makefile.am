@@ -252,6 +252,7 @@ EXTRA_DIST = \
 	test_nist_pkcs12.in \
 	test_query.in \
 	test_req.in \
+	test_windows.in \
 	tst-crypto-available1 \
 	tst-crypto-available2 \
 	tst-crypto-available3 \
