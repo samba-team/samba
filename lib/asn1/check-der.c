@@ -830,6 +830,70 @@ check_trailing_nul(void)
     return 0;
 }
 
+static int
+test_misc_cmp(void)
+{
+    int ret;
+
+    /* diffrent lengths are diffrent */
+    {
+	const heim_octet_string os1 = { 1, "a" } , os2 = { 0, NULL };
+	ret = der_heim_octet_string_cmp(&os1, &os2);
+	if (ret == 0)
+	    return 1;
+    }
+    /* diffrent data are diffrent */
+    {
+	const heim_octet_string os1 = { 1, "a" } , os2 = { 1, "b" };
+	ret = der_heim_octet_string_cmp(&os1, &os2);
+	if (ret == 0)
+	    return 1;
+    }
+    /* diffrent lengths are diffrent */
+    {
+	const heim_bit_string bs1 = { 8, "a" } , bs2 = { 7, "a" };
+	ret = der_heim_bit_string_cmp(&bs1, &bs2);
+	if (ret == 0)
+	    return 1;
+    }
+    /* diffrent data are diffrent */
+    {
+	const heim_bit_string bs1 = { 7, "\x0f" } , bs2 = { 7, "\x02" };
+	ret = der_heim_bit_string_cmp(&bs1, &bs2);
+	if (ret == 0)
+	    return 1;
+    }
+    /* diffrent lengths are diffrent */
+    {
+	uint16_t data = 1;
+	heim_bmp_string bs1 = { 1, NULL } , bs2 = { 0, NULL };
+	bs1.data = &data;
+	ret = der_heim_bmp_string_cmp(&bs1, &bs2);
+	if (ret == 0)
+	    return 1;
+    }
+    /* diffrent lengths are diffrent */
+    {
+	uint32_t data;
+	heim_universal_string us1 = { 1, NULL } , us2 = { 0, NULL };
+	us1.data = &data;
+	ret = der_heim_universal_string_cmp(&us1, &us2);
+	if (ret == 0)
+	    return 1;
+    }
+    /* same */
+    {
+	uint32_t data;
+	heim_universal_string us1 = { 1, NULL } , us2 = { 1, NULL };
+	us1.data = &data;
+	us2.data = &data;
+	ret = der_heim_universal_string_cmp(&us1, &us2);
+	if (ret != 0)
+	    return 1;
+    }
+
+    return 0;
+}
 
 int
 main(int argc, char **argv)
@@ -861,6 +925,7 @@ main(int argc, char **argv)
     ret += test_heim_int_format();
     ret += test_heim_oid_format();
     ret += check_trailing_nul();
+    ret += test_misc_cmp();
 
     return ret;
 }
