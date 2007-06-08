@@ -45,7 +45,7 @@ EXTRA_DIST = \
 	check-can.in \
 	heim-0.8.kadm \
 	heim-0.8.req \
-	krb5.conf.in
+	krb5.conf.in \
 	mit-pkinit-20070607.ca.crt \
 	mit-pkinit-20070607.kadm \
 	mit-pkinit-20070607.req \
