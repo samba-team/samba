@@ -889,15 +889,13 @@ int groups_max(void)
 }
 
 /**************************************************************************
- Wrapper for getgroups. Deals with broken (int) case.
+ Wrap setgroups and getgroups for systems that declare getgroups() as
+ returning an array of gid_t, but actuall return an array of int.
 ****************************************************************************/
 
-int sys_getgroups(int setlen, gid_t *gidset)
+#if defined(HAVE_BROKEN_GETGROUPS)
+static int sys_broken_getgroups(int setlen, gid_t *gidset)
 {
-#if !defined(HAVE_BROKEN_GETGROUPS)
-	return getgroups(setlen, gidset);
-#else
-
 	GID_T gid;
 	GID_T *group_list;
 	int i, ngroups;
@@ -919,7 +917,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
 	if (setlen == 0)
 		setlen = groups_max();
 
-	if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
+	if((group_list = SMB_MALLOC_ARRAY(GID_T, setlen)) == NULL) {
 		DEBUG(0,("sys_getgroups: Malloc fail.\n"));
 		return -1;
 	}
@@ -936,26 +934,10 @@ int sys_getgroups(int setlen, gid_t *gidset)
 
 	SAFE_FREE(group_list);
 	return ngroups;
-#endif /* HAVE_BROKEN_GETGROUPS */
 }
 
-
-/**************************************************************************
- Wrapper for setgroups. Deals with broken (int) case. Automatically used
- if we have broken getgroups.
-****************************************************************************/
-
-int sys_setgroups(int setlen, gid_t *gidset)
+static int sys_broken_setgroups(gid_t primary_gid, int setlen, gid_t *gidset)
 {
-#if !defined(HAVE_SETGROUPS)
-	errno = ENOSYS;
-	return -1;
-#endif /* HAVE_SETGROUPS */
-
-#if !defined(HAVE_BROKEN_GETGROUPS)
-	return setgroups(setlen, gidset);
-#else
-
 	GID_T *group_list;
 	int i ; 
 
@@ -972,7 +954,7 @@ int sys_setgroups(int setlen, gid_t *gidset)
 	 * GID_T array of size setlen.
 	 */
 
-	if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
+	if((group_list = SMB_MALLOC_ARRAY(GID_T, setlen)) == NULL) {
 		DEBUG(0,("sys_setgroups: Malloc fail.\n"));
 		return -1;    
 	}
@@ -989,7 +971,101 @@ int sys_setgroups(int setlen, gid_t *gidset)
  
 	SAFE_FREE(group_list);
 	return 0 ;
+}
+
 #endif /* HAVE_BROKEN_GETGROUPS */
+
+/* This is a list of systems that require the first GID passed to setgroups(2)
+ * to be the effective GID. If your system is one of these, add it here.
+ */
+#if defined (FREEBSD) || defined (DARWINOS)
+#define USE_BSD_SETGROUPS
+#endif
+
+#if defined(USE_BSD_SETGROUPS)
+/* Depending on the particular BSD implementation, the first GID that is
+ * passed to setgroups(2) will either be ignored or will set the credential's
+ * effective GID. In either case, the right thing to do is to guarantee that
+ * gidset[0] is the effective GID.
+ */
+static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
+{
+	gid_t *new_gidset = NULL;
+	int max;
+	int ret;
+
+	/* setgroups(2) will fail with EINVAL if we pass too many groups. */
+	max = groups_max();
+
+	/* No group list, just make sure we are setting the efective GID. */
+	if (setlen == 0) {
+		return setgroups(1, &primary_gid);
+	}
+
+	/* If the primary gid is not the first array element, grow the array
+	 * and insert it at the front.
+	 */
+	if (gidset[0] != primary_gid) {
+	        gid_t *new_gidset;
+
+	        new_gidset = SMB_MALLOC_ARRAY(gid_t, setlen + 1);
+	        if (new_gidset == NULL) {
+			return -1;
+	        }
+
+		memcpy(new_gidset + 1, gidset, ((setlen + 1) * sizeof(gid_t)));
+		new_gidset[0] = primary_gid;
+		setlen++;
+	}
+
+#if defined(BROKEN_GETGROUPS)
+	ret = sys_broken_setgroups(max, new_gidset ? new_gidset : gidset);
+#else
+	ret = setgroups(max, new_gidset ? new_gidset : gidset);
+#endif
+
+	if (new_gidset) {
+		int errsav = errno;
+		SAFE_FREE(new_gidset);
+		errno = errsav;
+	}
+
+	return ret;
+}
+
+#endif /* USE_BSD_SETGROUPS */
+
+/**************************************************************************
+ Wrapper for getgroups. Deals with broken (int) case.
+****************************************************************************/
+
+int sys_getgroups(int setlen, gid_t *gidset)
+{
+#if defined(HAVE_BROKEN_GETGROUPS)
+	return sys_broken_getgroups(setlen, gidset);
+#else
+	return getgroups(setlen, gidset);
+#endif
+}
+
+/**************************************************************************
+ Wrapper for setgroups. Deals with broken (int) case and BSD case.
+****************************************************************************/
+
+int sys_setgroups(gid_t UNUSED(primary_gid), int setlen, gid_t *gidset)
+{
+#if !defined(HAVE_SETGROUPS)
+	errno = ENOSYS;
+	return -1;
+#endif /* HAVE_SETGROUPS */
+
+#if defined(HAVE_BROKEN_GETGROUPS)
+	return sys_broken_setgroups(setlen, gidset);
+#elif defined(USE_BSD_SETGROUPS)
+	return sys_bsd_setgroups(primary_gid, setlen, gidset);
+#else
+	return setgroups(setlen, gidset);
+#endif
 }
 
 /**************************************************************************
