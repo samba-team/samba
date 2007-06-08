@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "librpc/gen_ndr/netlogon.h"
 #include "lib/events/events.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
@@ -1449,6 +1450,68 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static BOOL test_QueryForestTrustInformation(struct dcerpc_pipe *p, 
+					     TALLOC_CTX *mem_ctx, 
+					     struct policy_handle *handle,
+					     const char *trusted_domain_name)
+{
+	BOOL ret = True;
+	struct lsa_lsaRQueryForestTrustInformation r;
+	NTSTATUS status;
+	struct lsa_String string;
+	struct lsa_ForestTrustInformation info, *info_ptr;
+	uint16_t unknown = 0;
+
+	printf("\nTesting lsaRQueryForestTrustInformation\n");
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping QueryForestTrustInformation against Samba4\n");
+		return True;
+	}
+
+	ZERO_STRUCT(string);
+
+	if (trusted_domain_name) {
+		init_lsa_String(&string, trusted_domain_name);
+	}
+
+	info_ptr = &info;
+
+	r.in.handle = handle;
+	r.in.trusted_domain_name = &string;
+	r.in.unknown = 0;
+	r.out.forest_trust_info = &info_ptr;
+
+	status = dcerpc_lsa_lsaRQueryForestTrustInformation(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lsaRQueryForestTrustInformation failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+static BOOL test_query_each_TrustDomEx(struct dcerpc_pipe *p, 
+				       TALLOC_CTX *mem_ctx, 
+				       struct policy_handle *handle, 
+				       struct lsa_DomainListEx *domains) 
+{
+	NTSTATUS status;
+	int i,j;
+	BOOL ret = True;
+
+	for (i=0; i< domains->count; i++) {
+
+		if (domains->domains[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			ret &= test_QueryForestTrustInformation(p, mem_ctx, handle, 
+								domains->domains[i].domain_name.string);
+		}
+	}
+
+	return ret;
+}
+
 static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p, 
 				     TALLOC_CTX *mem_ctx, 
 				     struct policy_handle *handle, 
@@ -1682,6 +1745,9 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 			printf("EnumTrustedDomainEx failed - %s\n", nt_errstr(enum_status));
 			return False;
 		}
+
+		ret &= test_query_each_TrustDomEx(p, mem_ctx, handle, &domains_ex);
+		
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
 	return ret;
