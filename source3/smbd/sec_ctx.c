@@ -243,11 +243,13 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	debug_nt_user_token(DBGC_CLASS, 5, token);
 	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, ngroups, groups);
 
+	/* Start context switch */
 	gain_root();
-
 #ifdef HAVE_SETGROUPS
 	sys_setgroups(ngroups, groups);
 #endif
+	become_id(uid, gid);
+	/* end context switch */
 
 	ctx_p->ut.ngroups = ngroups;
 
@@ -276,8 +278,6 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	} else {
 		ctx_p->token = NULL;
 	}
-
-	become_id(uid, gid);
 
 	ctx_p->ut.uid = uid;
 	ctx_p->ut.gid = gid;
@@ -334,15 +334,15 @@ BOOL pop_sec_ctx(void)
 
 	sec_ctx_stack_ndx--;
 
-	gain_root();
-
 	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
+	/* Start context switch */
+	gain_root();
 #ifdef HAVE_SETGROUPS
 	sys_setgroups(prev_ctx_p->ut.ngroups, prev_ctx_p->ut.groups);
 #endif
-
 	become_id(prev_ctx_p->ut.uid, prev_ctx_p->ut.gid);
+	/* end context switch */
 
 	/* Update current_user stuff */
 
