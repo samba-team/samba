@@ -39,7 +39,6 @@ The most important options are:
  * CTDB_RECOVERY_LOCK
  * CTDB_PUBLIC_INTERFACE
  * CTDB_PUBLIC_ADDRESSES
- * CTDB_MANAGES_SAMBA
 </pre>
 
 Please verify these parameters carefully.
@@ -128,22 +127,6 @@ This parameter is used when CTDB operated in takeover ip mode.<br><br>
 
 The default for this file is /etc/ctdb/public_addresses .<br>
 If you use this you <strong>must</strong> also specify the CTDB_PUBLIC_INTERFACE parameter.<br>
-
-<h3>CTDB_MANAGES_SAMBA</h3>
-
-When this parameter is set to "yes" CTDB will start/stop/restart the localo samba daemon as the cluster configuration changes.<br><br>
-When this parameter is set you should also make sure that samba is NOT started by default by the linux system when it boots:
-<pre>
-  chkconfig samba off
-</pre>
-
-Example:
-<pre>
-  CTDB_MANAGES_SAMBA="yes"
-</pre>
-
-It is strongly recommended that you set this parameter to "yes" if you intend to use clustered samba.
-
 
 <h2>Event scripts</h2>
 CTDB comes with a number of application specific event scripts that are used to do service specific tasks when the cluster has been reconfigured.<br>
