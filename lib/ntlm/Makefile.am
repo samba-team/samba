@@ -31,3 +31,4 @@ check_PROGRAMS = test_ntlm
 
 LDADD = libheimntlm.la $(LIB_roken)
 
+EXTRA_DIST = version-script.map
