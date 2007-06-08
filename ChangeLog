@@ -1,5 +1,7 @@
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am (print-distdir): print name of dist
+
 	* kdc/pkinit.c: Break out loading of mappings file to a separate
 	function and remove warning that it can't open the mapping file,
 	there are now mappings in the db, maybe the users uses that
