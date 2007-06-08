@@ -1380,7 +1380,8 @@ static BOOL test_netr_DsrGetDcSiteCoverageW(struct dcerpc_pipe *p, TALLOC_CTX *m
 		return True;
 	}
 
-	r.in.server_name = "";
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+
 	printf("Testing netr_DsrGetDcSiteCoverageW\n");
 
 	status = dcerpc_netr_DsrGetDcSiteCoverageW(p, mem_ctx, &r);
