@@ -40,7 +40,7 @@ RCSID("$Id$");
 #include <unistd.h>
 #include <errno.h>
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * Like read but never return partial data.

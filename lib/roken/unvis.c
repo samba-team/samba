@@ -34,7 +34,7 @@
 #include <config.h>
 RCSID("$Id$");
 #endif
-#include <roken.h>
+#include "roken.h"
 #ifndef _DIAGASSERT
 #define _DIAGASSERT(X)
 #endif

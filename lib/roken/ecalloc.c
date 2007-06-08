@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <err.h>
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * Like calloc but never fails.

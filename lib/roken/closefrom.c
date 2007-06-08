@@ -43,7 +43,7 @@ RCSID("$Id$");
 #include <unistd.h>
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 int ROKEN_LIB_FUNCTION
 closefrom(int fd)
