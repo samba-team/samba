@@ -692,7 +692,7 @@ static NTSTATUS dcesrv_netr_AccountSync(struct dcesrv_call_state *dce_call, TALL
 /* 
   netr_GetDcName 
 */
-static NTSTATUS dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetDcName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);

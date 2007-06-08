@@ -839,8 +839,8 @@ static BOOL test_GetDcName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	printf("Testing GetDcName\n");
 
 	status = dcerpc_netr_GetDcName(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetDcName - %s\n", nt_errstr(status));
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("GetDcName - %s/%s\n", nt_errstr(status), win_errstr(r.out.result));
 		return False;
 	}
 
