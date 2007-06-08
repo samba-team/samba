@@ -4,6 +4,8 @@
 	
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* can/Makefile.am: More files we want in the dist.
+
 	* can/test_can.in: Simplify error reporting.
 
 	* can/test_can.in: Catch error from kadmin.
