@@ -1214,10 +1214,10 @@ static WERROR dcesrv_netr_NETRSERVERTRUSTPASSWORDSGET(struct dcesrv_call_state *
 
 
 /* 
-  netr_DSRGETFORESTTRUSTINFORMATION 
+  netr_DsRGetForestTrustInformation 
 */
-static WERROR dcesrv_netr_DSRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRGETFORESTTRUSTINFORMATION *r)
+static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DsRGetForestTrustInformation *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

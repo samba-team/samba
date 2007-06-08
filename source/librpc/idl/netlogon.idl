@@ -1227,7 +1227,15 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2b */
-	WERROR netr_DSRGETFORESTTRUSTINFORMATION();
+
+	const int DS_GFTI_UPDATE_TDO = 0x1;
+
+	WERROR netr_DsRGetForestTrustInformation(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *trusted_domain_name,
+		[in] uint32 flags,
+		[out,ref] lsa_ForestTrustInformation **forest_trust_info
+		);
 
 	/****************/
 	/* Function 0x2c */
