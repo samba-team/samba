@@ -485,7 +485,7 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 
 	return True;
 
- fail:
+fail:
 	TALLOC_FREE( old_subkeys );
 	TALLOC_FREE( subkeys );
 
