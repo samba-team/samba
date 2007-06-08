@@ -5419,7 +5419,11 @@ else
 		ACL_LIBS="$ACL_LIBS -lpacl"
 		default_static_modules="$default_static_modules vfs_tru64acl"
 		;;
-         *)
+	*darwin*)
+		AC_MSG_NOTICE(ACLs on Darwin currently not supported)
+		AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
+		;;
+	*)
 		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		case "$host_os" in
 		*linux*)
