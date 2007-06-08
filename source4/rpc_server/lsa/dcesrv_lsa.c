@@ -3415,10 +3415,10 @@ static NTSTATUS dcesrv_lsa_LSARUNREGISTERAUDITEVENT(struct dcesrv_call_state *dc
 
 
 /* 
-  lsa_LSARQUERYFORESTTRUSTINFORMATION 
+  lsa_lsaRQueryForestTrustInformation 
 */
-static NTSTATUS dcesrv_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+static NTSTATUS dcesrv_lsa_lsaRQueryForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_lsaRQueryForestTrustInformation *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

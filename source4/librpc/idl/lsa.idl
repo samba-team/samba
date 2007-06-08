@@ -928,7 +928,49 @@ import "security.idl";
 	NTSTATUS lsa_LSARUNREGISTERAUDITEVENT();
 
 	/* Function 0x49 */
-	NTSTATUS lsa_LSARQUERYFORESTTRUSTINFORMATION();
+	typedef struct {
+		[range(0,131072)] uint32 length;
+		[size_is(length)] uint8 *data;
+	} lsa_ForestTrustBinaryData;
+
+	typedef struct {
+		dom_sid2 *domain_sid;
+		lsa_StringLarge dns_domain_name;
+		lsa_StringLarge netbios_domain_name;
+	} lsa_ForestTrustDomainInfo;
+
+	typedef [switch_type(uint32)] union {
+		[case(LSA_FOREST_TRUST_TOP_LEVEL_NAME)] lsa_String top_level_name;
+		[case(LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX)] lsa_StringLarge top_level_name_ex;
+		[case(LSA_FOREST_TRUST_DOMAIN_INFO)] lsa_ForestTrustDomainInfo domain_info;
+		[default] lsa_ForestTrustBinaryData data;
+	} lsa_ForestTrustData;
+
+	typedef [v1_enum] enum {
+		LSA_FOREST_TRUST_TOP_LEVEL_NAME = 0,
+		LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX = 1,
+		LSA_FOREST_TRUST_DOMAIN_INFO = 2,
+		LSA_FOREST_TRUST_RECORD_TYPE_LAST = 3
+	} lsa_ForestTrustRecordType;
+
+	typedef struct {
+		uint32 flags;
+		lsa_ForestTrustRecordType level;
+		hyper unknown;
+		[switch_is(level)] lsa_ForestTrustData forest_trust_data;
+	} lsa_ForestTrustRecord;
+
+	typedef [public] struct {
+		[range(0,4000)] uint32 count;
+		[size_is(count)] lsa_ForestTrustRecord **entries;
+	} lsa_ForestTrustInformation;
+
+	NTSTATUS lsa_lsaRQueryForestTrustInformation(
+		[in] policy_handle *handle,
+		[in,ref] lsa_String *trusted_domain_name,
+		[in] uint16 unknown, /* level ? */
+		[out,ref] lsa_ForestTrustInformation **forest_trust_info
+		);
 
 	/* Function 0x4a */
 	NTSTATUS lsa_LSARSETFORESTTRUSTINFORMATION();
