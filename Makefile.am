@@ -19,3 +19,5 @@ EXTRA_DIST = \
 	cf/check-symbols.sh \
 	cf/install-catman.sh
 
+print-distdir:
+	@echo $(distdir)
