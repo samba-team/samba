@@ -1141,6 +1141,35 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+static BOOL test_netr_DsRGetForestTrustInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *trusted_domain_name) 
+{
+	NTSTATUS status;
+	struct netr_DsRGetForestTrustInformation r;
+	BOOL ret = True;
+	struct lsa_ForestTrustInformation info, *info_ptr;
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsRGetForestTrustInformation test against Samba4\n");
+		return True;
+	}
+
+	info_ptr = &info;
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.trusted_domain_name = trusted_domain_name;
+	r.in.flags = 0;
+	r.out.forest_trust_info = &info_ptr;
+
+	printf("Testing netr_DsRGetForestTrustInformation\n");
+
+	status = dcerpc_netr_DsRGetForestTrustInformation(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("netr_DsRGetForestTrustInformation - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		ret = False;
+	}
+	return ret;
+}
 
 /*
   try a netlogon netr_DsrEnumerateDomainTrusts
@@ -1149,6 +1178,7 @@ static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem
 {
 	NTSTATUS status;
 	struct netr_DsrEnumerateDomainTrusts r;
+	int i;
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.trust_flags = 0x3f;
@@ -1160,6 +1190,28 @@ static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem
 		printf("netr_DsrEnumerateDomainTrusts - %s/%s\n", 
 		       nt_errstr(status), win_errstr(r.out.result));
 		return False;
+	}
+
+	/* when trusted_domain_name is NULL, netr_DsRGetForestTrustInformation
+	 * will show non-forest trusts and all UPN suffixes of the own forest
+	 * as LSA_FOREST_TRUST_TOP_LEVEL_NAME types */
+
+	if (r.out.count) {
+		if (!test_netr_DsRGetForestTrustInformation(p, mem_ctx, NULL)) {
+			return False;
+		}
+	}
+
+	for (i=0; i<r.out.count; i++) {
+
+		/* get info for transitive forest trusts */
+
+		if (r.out.trusts[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			if (!test_netr_DsRGetForestTrustInformation(p, mem_ctx, 
+								    r.out.trusts[i].dns_name)) {
+				return False;
+			}
+		}
 	}
 
 	return True;
