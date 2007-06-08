@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>Getting the code</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" VLINK="#292555" LINK="#292555" ALINK="#cc0033">
+
+<h1>Getting the code</h1>
+
+You need two source trees, one is a copy of Samba3 with clustering patches, and the other is the ctdb code itself.<br>
+
+Both source trees are stored in bzr repositories.<br><br>
+
+See http://bazaar-vcs.org/ for more information on bzr.<br><br>
+
+<h2>CTDB</h2>
+To get an initial checkout of the ctdb code do this:
+<pre>
+   rsync -avz samba.org::ftp/unpacked/ctdb .
+</pre>
+
+To update this tree when improvements are made in the upstream code do this:
+<pre>
+    cd ctdb
+    bzr merge http://samba.org/~tridge/ctdb
+</pre>
+
+If you don't have bzr and can't easily install it, then you can instead use the following command to update your tree to the latest version:
+<pre>
+    cd ctdb
+    rsync -avz samba.org::ftp/unpacked/ctdb/ .
+</pre>
+
+
+<h2>Samba3 ctdb verion</h2>
+The fastest way to checkout an initial copy of the Samba3 tree with clustering patches is:
+<pre>
+  rsync -avz samba.org::ftp/unpacked/samba_3_0_ctdb .
+</pre>
+
+To update this tree when improvements are made in the upstream code do this:
+<pre>
+   cd samba_3_0_ctdb
+   bzr merge http://samba.org/~tridge/samba_3_0_ctdb
+</pre>
+
+If you don't have bzr and can't easily install it, then you can instead use the following command to update your tree to the latest version:
+<pre>
+    cd samba_3_0_ctdb
+    rsync -avz samba.org::ftp/unpacked/samba_3_0_ctdb/ .
+</pre>
+
+</BODY>
+</HTML>
