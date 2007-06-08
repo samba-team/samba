@@ -36,8 +36,11 @@ SUFFIXES += .xf .cf
 	$(do_subst) < $< > $@.tmp
 	mv $@.tmp $@
 
-CLEANFILES= $(TESTS) *.tmp *.cf
-
+CLEANFILES= $(TESTS) *.tmp *.cf \
+	current-db* \
+	krb5.conf \
+	messages.log \
+	test_can \
 
 EXTRA_DIST = \
 	apple-10.4.kadm \
