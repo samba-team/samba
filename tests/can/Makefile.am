@@ -36,10 +36,18 @@ SUFFIXES += .xf .cf
 	$(do_subst) < $< > $@.tmp
 	mv $@.tmp $@
 
-CLEANFILES= $(TESTS) *.tmp *.xf
+CLEANFILES= $(TESTS) *.tmp *.cf
 
 
 EXTRA_DIST = \
-	test_can.in \
+	apple-10.4.kadm \
+	apple-10.4.req \
 	check-can.in \
+	heim-0.8.kadm \
+	heim-0.8.req \
 	krb5.conf.in
+	mit-pkinit-20070607.ca.crt \
+	mit-pkinit-20070607.kadm \
+	mit-pkinit-20070607.req \
+	mit-pkinit-20070607.xf \
+	test_can.in
