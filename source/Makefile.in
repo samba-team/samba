@@ -1502,7 +1502,7 @@ bin/CP437.@SHLIBEXT@: $(BINARY_PREREQS) $(CP437_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/macosxfs.@SHLIBEXT@: $(BINARY_PREREQS) (CHARSET_MACOSXFS_OBJ)
+bin/macosxfs.@SHLIBEXT@: $(BINARY_PREREQS) $(CHARSET_MACOSXFS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ) \
 		-framework CoreFoundation @SONAMEFLAG@`basename $@`
