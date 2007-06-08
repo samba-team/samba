@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>Configuring CTDB</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" VLINK="#292555" LINK="#292555" ALINK="#cc0033">
+
+<h1>Configuring CTDB</h1>
+
+<h2>Clustering Model</h2>
+
+The setup instructions on this page are modelled on setting up a cluster of N 
+nodes that function in nearly all respects as a single multi-homed node. 
+So the cluster will export N IP interfaces, each of which is equivalent 
+(same shares) and which offers coherent CIFS file access across all 
+nodes.<br><br>
+
+
+The clustering model utilizes IP takeover techniques to ensure that the full set of public IP addresses assigned to services on the cluster will always be available to the clients even when some nodes have failed and become unavailable.
+
+<h2>CTDB Cluster Configuration</h2>
+
+These are the primary configuration files for CTDB.<br>
+When CTDB is installed, it will install template versions of these files 
+which you need to edit to suit your system.<br>
+The current set of config files for CTDB are also available from http://samba.org/~tridge/ctdb/config
+
+<h3>/etc/sysconfig/ctdb</h3>
+
+This file contains the startup parameters for ctdb.<br>
+
+When you installed ctdb, a template config file should have been installed in /etc/sysconfig/ctdb.<br>
+
+Edit this file, following the instructions in the template.<br><br>
+
+The most important options are:
+<pre>
+ * NODES
+ * CTDB_RECOVERY_LOCK
+ * PUBLIC_INTERFACE
+ * PUBLIC_ADDRESSES
+ * CTDB_MANAGES_SAMBA
+</pre>
+
+Please verify these parameters carefully.
+
+<h4>CTDB_RECOVERY_LOCK</h4>
+This parameter specifies the lock file that the CTDB daemons use to arbitrate 
+which node is acting as a recovery master.<br>
+
+This file MUST be held on shared storage so that all CTDB daemons in the cluster will access/lock the same file.<br><br>
+
+You <strong>must</strong> specify this parameter.<br>
+There is no default for this parameter.
+<h3>NODES</h3>
+
+This file needs to be created and should contain a list of the private IP addresses that the CTDB daemons will use in your cluster. One ip address for each node in the cluster.<br>
+
+This should be a private non-routable subnet which is only used for internal cluster traffic.<br>
+
+This file must be the same on all nodes in the cluster.<br><br>
+
+Make sure that these ip addresses are automatically started when the linux host boots and that each node can ping each other node.<br><br>
+
+Example 4 node cluster:
+<pre>
+ 10.1.1.1
+ 10.1.1.2
+ 10.1.1.3
+ 10.1.1.4
+</pre>
+
+The default for this file is /etc/ctdb/nodes.
+
+
+<h3>PUBLIC_INTERFACE</h3>
+
+This parameter is used to tell CTDB which network interface is used to hold the public ip addresses when CTDB is used to manage IP takeover.<br>
+This can be the same network interface as is used for the private addresses in the NODES list but it is recommended that you use a different interface.<br><br>
+
+
+Example using eth0 for the public interface:
+<pre>
+  PUBLIC_INTERFACE=eth0
+</pre>
+
+It is strongly recommended that you use CTDB with IP takeover.<br>
+When you use this parameter you must also specify the PUBLIC_ADDRESSES parameter.<br>
+
+
+<h3>PUBLIC_ADDRESSES</h3>
+In order to use IP takeover you must specify a file containing a list of public IP addresses. One IP address for each node.<br><br>
+
+
+This file contains a list of public cluster addresses.<br>
+These are the addresses that the SMBD daemons and other services will bind to and which clients will use to connect to the cluster.<br>
+This file must contain one address for each node, i.e. it must have the same number of entries as the nodes file. This file must also be the same for all nodes in the cluster.<br><br>
+
+Example 4 node cluster:
+<pre>
+ 192.168.1.1/24
+ 192.168.1.2/24
+ 192.168.2.1/24
+ 192.168.2.2/24
+</pre>
+
+These are the IP addresses that you should configure in DNS for the name of the clustered samba server and are the addresses that CIFS clients will connect to.<br>
+Configure it as one DNS A record (==name) with multiple ip addresses and let round-robin DNS distribute the clients across the nodes of the cluster.<br><br>
+
+The CTDB cluster utilizes IP takeover techniques to ensure that as long as at least one node in the cluster is available, all the public IP addresses will always be available to clients.<br>
+This means that if one physical node fails, the public address of that node will be taken over by a different node in the cluster. This provides a guarantee that all ip addresses exposed to clients will always be reachable by clients even if a node has been powered off or has crashed.<br><br>
+
+CTDB nodes will only take over IP addresses that are inside the same subnet as its own public IP address.<br>
+In the example above, nodes 0 and 1 would be able to take over each others public ip and analog for nodes 2 and 3, but node 0 and 1 would NOT be able to take over the IP addresses for nodes 2 or 3 since they are on a different subnet.<br><br>
+
+Do not assign these addresses to any of the interfaces on the host. CTDB will add and remove these addresses automatically at runtime.<br>
+
+This parameter is used when CTDB operated in takeover ip mode.<br><br>
+
+
+The default for this file is /etc/ctdb/public_addresses .<br>
+If you use this you <strong>must</strong> also specify the PUBLIC_INTERFACE parameter.<br>
+
+<h3>CTDB_MANAGES_SAMBA</h3>
+
+When this parameter is set to "yes" CTDB will start/stop/restart the localo samba daemon as the cluster configuration changes.<br><br>
+When this parameter is set you should also make sure that samba is NOT started by default by the linux system when it boots:
+<pre>
+  chkconfig samba off
+</pre>
+
+Example:
+<pre>
+  CTDB_MANAGES_SAMBA="yes"
+</pre>
+
+It is strongly recommended that you set this parameter to "yes" if you intend to use clustered samba.
+
+
+<h2>Event scripts</h2>
+CTDB comes with a number of application specific event scripts that are used to do service specific tasks when the cluster has been reconfigured.<br>
+These scripts are stored in /etc/ctdb/events.d/ .<br><br>
+You do not need to modify these scripts if you just want to use cluster samba or nfs but they serve as examples in case you want to add clustering support for other application servers we do not yet proivide event scripts for.<br><br>
+Please see the service scripts that installed by ctdb in /etc/ctdb/events.d for examples of how to configure other services to be aware of the HA features of CTDB.
+
+<h2>TCP port to use for CTDB</h2>
+CTDB defaults to use TCP port 9001 for its traffic.<br>
+
+Configuring a different port to use for CTDB traffic is done by adding a ctdb entry to the /etc/services file.<br><br>
+
+Example: for change CTDB to use port 9999 add the following line to /etc/services
+<pre>
+ ctdb  9999/tcp
+</pre>
+
+Note: all nodes in the cluster MUST use the same port or else CTDB will not start correctly.
+
+<h2>Name resolution</h2>
+
+You need to setup some method for your Windows and NFS clients to find the nodes of the cluster, and automatically balance the load between the nodes.<br><br>
+We recommend that you use public ip addresses using PUBLIC_INTERFACE/PUBLIC_ADDRESSES and that you setup a round-robin DNS entry for your cluster, listing all the public IP addresses that CTDB will be managing as a single DNS A record.<br><br>
+
+You may also wish to setup a static WINS server entry listing all of your cluster nodes IP addresses.
+
+
+</BODY>
+</HTML>
