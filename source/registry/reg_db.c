@@ -396,7 +396,8 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	REGSUBKEY_CTR *subkeys, *old_subkeys;
 	char *oldkeyname;
 	
-	/* fetch a list of the old subkeys so we can determine if any were deleted */
+	/* fetch a list of the old subkeys so we can determine if any were
+	 * deleted */
 	
 	if ( !(old_subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
@@ -408,7 +409,8 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	/* store the subkey list for the parent */
 	
 	if ( !regdb_store_keys_internal( key, ctr ) ) {
-		DEBUG(0,("regdb_store_keys: Failed to store new subkey list for parent [%s}\n", key ));
+		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
+			 "for parent [%s]\n", key ));
 		return False;
 	}
 	
@@ -421,6 +423,10 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 			pstr_sprintf( path, "%s%c%s", key, '/', oldkeyname );
 			normalize_reg_path( path );
 			tdb_delete_bystring( tdb_reg, path );
+			pstr_sprintf( path, "%s/%s/%s", VALUE_PREFIX, key,
+				      oldkeyname );
+			normalize_reg_path( path );
+			tdb_delete_bystring( tdb_reg, path );
 		}
 	}
 
@@ -430,7 +436,8 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	
 	num_subkeys = regsubkey_ctr_numkeys( ctr );
 	for ( i=0; i<num_subkeys; i++ ) {
-		pstr_sprintf( path, "%s%c%s", key, '/', regsubkey_ctr_specific_key( ctr, i ) );
+		pstr_sprintf( path, "%s%c%s", key, '/',
+			      regsubkey_ctr_specific_key( ctr, i ) );
 
 		if ( !(subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
@@ -440,7 +447,8 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 		if ( regdb_fetch_keys( path, subkeys ) == -1 ) {
 			/* create a record with 0 subkeys */
 			if ( !regdb_store_keys_internal( path, subkeys ) ) {
-				DEBUG(0,("regdb_store_keys: Failed to store new record for key [%s}\n", path ));
+				DEBUG(0,("regdb_store_keys: Failed to store "
+					 "new record for key [%s]\n", path ));
 				TALLOC_FREE( subkeys );
 				return False;
 			}
