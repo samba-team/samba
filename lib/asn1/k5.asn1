@@ -649,26 +649,6 @@ PA-SvrReferralData ::= SEQUENCE {
 	referred-realm  [0] Realm
 }
 
--- Kerberos remote encryption
-
-K5REncEncryptDecryptREQ ::= SEQUENCE {
-	id		[0] krb5int32,
-	encrypt		[1] BOOLEAN,
-	principal	[2] Principal,
-	kvno		[3] krb5int32 OPTIONAL,
-	etype		[4] krb5int32,
-	usage		[5] krb5int32,
-	ivec		[6] OCTET STRING OPTIONAL,
-	data		[7] OCTET STRING
-}
-
-K5REncEncryptDecryptREP ::= SEQUENCE {
-	id		[0] krb5int32,
-	data		[1] OCTET STRING,
-	error-code	[2] krb5int32 OPTIONAL
-}
-
-
 END
 
 -- etags -r '/\([A-Za-z][-A-Za-z0-9]*\).*::=/\1/' k5.asn1

@@ -1,7 +1,3 @@
-2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
-
-	* ntlm/digest.c: Free memory when done.
-	
 2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_ntlm.c: Test both with and without keyex.

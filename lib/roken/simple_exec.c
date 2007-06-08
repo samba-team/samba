@@ -49,7 +49,7 @@ RCSID("$Id$");
 #endif
 #include <errno.h>
 
-#include "roken.h"
+#include <roken.h>
 
 #define EX_NOEXEC	126
 #define EX_NOTFOUND	127

@@ -36,7 +36,7 @@
 RCSID("$Id$");
 #endif
 
-#include "roken.h"
+#include <roken.h>
 
 #undef roken_gethostbyname
 #undef roken_gethostbyaddr

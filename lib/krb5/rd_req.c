@@ -826,15 +826,14 @@ krb5_rd_req_ctx(krb5_context context,
 	    goto out;
     }
 
-    ret = krb5_verify_ap_req2(context,
-			      auth_context,
-			      &ap_req,
-			      server,
-			      o->keyblock,
-			      0,
-			      &o->ap_req_options,
-			      &o->ticket,
-			      KRB5_KU_AP_REQ_AUTH);
+    ret = krb5_verify_ap_req(context,
+			     auth_context,
+			     &ap_req,
+			     server,
+			     o->keyblock,
+			     0,
+			     &o->ap_req_options,
+			     &o->ticket);
 
     if (ret)
 	goto out;

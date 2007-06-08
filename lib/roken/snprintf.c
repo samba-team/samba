@@ -43,7 +43,7 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "roken.h"
+#include <roken.h>
 #include <assert.h>
 
 enum format_flags {

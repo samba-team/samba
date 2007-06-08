@@ -37,7 +37,7 @@
 RCSID("$Id$");
 #endif
 
-#include "roken.h"
+#include <roken.h>
 #include <hex.h>
 
 int

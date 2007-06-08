@@ -58,7 +58,7 @@ RCSID("$Id$");
 #include <termios.h>
 #endif
 
-#include "roken.h"
+#include <roken.h>
 
 int ROKEN_LIB_FUNCTION
 get_window_size(int fd, struct winsize *wp)

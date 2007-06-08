@@ -43,12 +43,8 @@ testfailed="echo test failed; cat messages.log; exit 1"
 # If there is no useful db support compile in, disable test
 ../db/have-db || exit 77
 
-exit 77
-
 R=TEST.H5L.SE
-R2=SUB.TEST.H5L.SE
-
-service=ldap/host.sub.test.h5l.se
+R2=TEST2.H5L.SE
 
 port=@port@
 
@@ -61,6 +57,7 @@ kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
 kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
 kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache --no-unlog"
+
 
 
 KRB5_CONFIG="${objdir}/krb5.conf"
@@ -87,8 +84,6 @@ ${kadmin} \
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} modify --alias=alias1 --alias=alias2 foo@${R} || exit 1
 
-${kadmin} add -p foo --use-defaults  ${service}@${R2} || exit 1
-
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
 ${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
 
@@ -111,14 +106,6 @@ fi
 trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 
 ec=0
-
-echo "Getting client (no canon)"; > messages.log
-${kinit} --password-file=${objdir}/foopassword foo@${R} || \
-	{ ec=1 ; eval "${testfailed}"; }
-echo "checking that we go back right principal"
-${klist} | grep "Principal: foo@${R}" > /dev/null || \
-	{ ec=1 ; eval "${testfailed}"; }
-${kdestroy}
 
 echo "Getting client alias1 tickets"; > messages.log
 ${kinit} --canonicalize \
@@ -152,32 +139,6 @@ ${kinit} --canonicalize \
 
 echo "Remove alias"
 ${kadmin} modify --alias= foo@${R} || { ec=1 ; eval "${testfailed}"; }
-
-
-echo "Getting client for ${service}@${R} (kdc referral)"
-> messages.log
-${kinit} --password-file=${objdir}/foopassword foo@${R} || \
-	{ ec=1 ; eval "${testfailed}"; }
-${kgetcred} --server ${service}@${R} ||
-	{ ec=1 ; eval "${testfailed}"; }
-${klist}
-echo "checking that we go back right principal"
-${klist} | grep "${service}@${R2}" > /dev/null || \
-	{ ec=1 ; eval "${testfailed}"; }
-${kdestroy}
-
-echo "Getting client for ${service}@${R2} (client side guessing)"
-> messages.log
-${kinit} --password-file=${objdir}/foopassword foo@${R} || \
-	{ ec=1 ; eval "${testfailed}"; }
-${kgetcred} --server ${service}@${R2} ||
-	{ ec=1 ; eval "${testfailed}"; }
-${klist}
-echo "checking that we go back right principal"
-${klist} | grep "${service}@${R2}" > /dev/null || \
-	{ ec=1 ; eval "${testfailed}"; }
-${kdestroy}
-
 
 
 echo "killing kdc (${kdcpid})"

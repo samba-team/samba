@@ -40,7 +40,7 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include "roken.h"
+#include <roken.h>
 
 enum { initial = 10, increment = 5 };
 
