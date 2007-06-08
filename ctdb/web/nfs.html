@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>Setting up clustered NFS</TITLE>
+</HEAD>
+<!--#include virtual="header.html" -->
+
+<h1>Setting up clustered NFS</h1>
+
+<h2>Prereqs</h2>
+Configure CTDB as above and set it up to use public ipaddresses.<br>
+Verify that the CTDB cluster works.
+
+<h2>sm-notify</h2>
+
+Make sure you have the sm-notify tool installed in /usr/sbin.<br>
+You should find that tool in the nfs-util package for your operating system.<br><br>
+This tool is required so that CTDB will be able to successfully trigger lock recovery after an ip address failover/failback.<br><br>
+This tool must be installed as /usr/sbin/sm-notify on all nodes in the cluster.
+
+<h2>/etc/exports</h2>
+
+Export the same directory from all nodes.<br>
+Make sure to specify the fsid export option so that all nodes will present the same fsid to clients.<br>
+
+Clients can get "upset" if the fsid on a mount suddenly changes.<br>
+Example /etc/exports :
+<pre>
+  /gpfs0/data *(rw,fsid=1235)
+</pre>
+
+<h2>/etc/sysconfig/nfs</h2>
+
+This file must be edited to point statd to keep its state directory on 
+shared storage instead of in a local directory.<br><br>
+
+We must also make statd use a fixed port to listen on that is the same for 
+all nodes in the cluster.<br>
+
+If we don't specify a fixed port, the statd port will change during failover 
+which causes problems on some clients.<br>
+(some clients are very slow to realize when the port has changed)<br><br>
+
+This file should look something like :
+<pre>
+  CTDB_MANAGES_NFS=yes
+  CTDB_MANAGES_NFSLOCK=yes
+  STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
+  STATD_HOSTNAME=\"ctdb -P $STATD_SHARED_DIRECTORY/192.168.1.1 -H /etc/ctdb/statd-callout -p 97\"
+</pre>
+
+The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
+
+The CTDB_MANAGES_NFSLOCK line tells the events scripts that CTDB is also to manage the nfs lock manager.<br>
+
+With these set to yes, CTDB will start/stop/restart these services as required.<br><br>
+
+STATD_SHARED_DIRECTORY is the shared directory where statd and the statd-callout script expects that the state variables and lists of clients to notify are found.<br>
+
+This directory must be stored on the shared cluster filesystem so that all nodes can access the same data.<br><br>
+
+Don't forget to create this directory:
+<pre>
+  mkdir /gpfs0/nfs-state
+</pre>
+
+
+<h2>chkconfig</h2>
+
+Since CTDB will manage and start/stop/restart the nfs and the nfslock services, you must disable them using chkconfig.
+<pre>
+  chkconfig nfs off
+  chkconfig nfslock off
+</pre>
+
+
+<h2>Event scripts</h2>
+
+CTDB clustering for NFS relies on two event scripts /etc/ctdb/events.d/nfs and /etc/ctdb/events.d/nfslock.<br>
+
+These two scripts are provided by the RPM package and there should not be any need to change them.
+
+<h2><strong>IMPORTANT</strong></h2>
+
+Never ever mount the same nfs share on a client from two different nodes in the cluster at the same time!<br><br>
+
+The client side caching in NFS is very fragile and assumes/relies on that an object can only be accessed through one single path at a time.
+
+
+<!--#include virtual="footer.html" -->
+
