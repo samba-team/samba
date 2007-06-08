@@ -1,3 +1,9 @@
+2007-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add data/j.pem.
+
+	* Makefile.am: Add test_windows.in.
+	
 2007-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_keychain.c: rename functions, leaks less memory and more
