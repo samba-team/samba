@@ -1,11 +1,11 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-<TITLE>ctdb</TITLE>
+<TITLE>CTDB</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff" TEXT="#000000" VLINK="#292555" LINK="#292555" ALINK="#cc0033">
+<!--#include virtual="header.html" -->
 
-<h1>CTDB</h1>
+<H2 align="center">Welcome to the CTDB web pages</H2>
 
 CTDB is a cluster implementation of the TDB database used by Samba and
 other projects to store temporary data. If an application is already
@@ -61,10 +61,12 @@ README file</a> for some description of how TDB is used.
 
 <h2>Documentation</h2>
 
-<a href="./getting_the_code.html">Getting the code</a><br>
-<a href="./building_samba_ctdb.html">Building Samba and CTDB</a><br>
-<a href="./configuring_ctdb.html">Configuring CTDB</a><br>
-<a href="./starting_and_testing_ctdb.html">Starting and testing CTDB</a><br>
+<ul>
+<li><a href="download.html">Getting the code</a><br>
+<li><a href="building.html">Building Samba and CTDB</a><br>
+<li><a href="configuring.html">Configuring CTDB</a><br>
+<li><a href="testing.html">Starting and testing CTDB</a><br>
+</ul>
 
 <br>
 Additional documentation on how to install and configure CTDB is available in the
@@ -88,14 +90,19 @@ seconds. During the recovery period the databases are 'frozen', and
 all IO operations by ctdb clients are suspended.
 
 <h3>Is CTDB a HA solution?</h3>
-Yes and no.<br>
+
+Yes and no.<p>
+
 CTDB alone is not a HA solution, but when you combine CTDB with a clustered 
-filesystem it becomes one.<br>
+filesystem it becomes one.<p>
+
 CTDB is primarily developed around the concept of having a shared cluster 
 filesystem shared across all the nodes in the cluster to provide the features
-required for building a NAS cluster.<br>
+required for building a NAS cluster.<p>
+
 Thus CTDB relies on an external component (the cluster filesystem) to provide 
-the mechanisms for avoiding split-brain and other difficult tasks.<br><br>
+the mechanisms for avoiding split-brain and other difficult tasks.<p>
+
 However, If you applications do need a clustered filesystem for all the nodes, 
 in that scenario CTDB will provide a very easy to install and manage 
 solution for your clustering HA needs.
@@ -181,10 +188,10 @@ downloads.
 
 <hr>
 <h2>Developers</h2>
-<a href="http://samba.org/~tridge/">Andrew Tridgell</a><br>
-Ronnie Sahlberg<br>
-Peter Somogyi<br>
+<ul>
+<li><a href="http://samba.org/~tridge/">Andrew Tridgell</a><br>
+<li>Ronnie Sahlberg<br>
+<li>Peter Somogyi<br>
+<ul>
 
-
-</BODY>
-</HTML>
+<!--#include virtual="footer.html" -->
