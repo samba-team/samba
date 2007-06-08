@@ -13,7 +13,22 @@ SUBDIRS+= $(kcm_dir) appl doc tools tests packages etc
 ACLOCAL_AMFLAGS = -I cf
 
 EXTRA_DIST = \
+	TODO \
+	TODO-1.0 \
+	LICENSE \
+	README \
+	ChangeLog \
+	ChangeLog.1998 \
+	ChangeLog.1999 \
+	ChangeLog.2000 \
+	ChangeLog.2001 \
+	ChangeLog.2002 \
+	ChangeLog.2003 \
+	ChangeLog.2004 \
+	ChangeLog.2005 \
+	ChangeLog.2006 \
 	Makefile.am.common \
+	autogen.sh \
 	krb5.conf \
 	cf/make-proto.pl \
 	cf/check-symbols.sh \
