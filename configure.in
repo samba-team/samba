@@ -464,6 +464,7 @@ AC_CONFIG_FILES(Makefile 		\
 	lib/roken/Makefile		\
 	lib/sl/Makefile			\
 	lib/vers/Makefile		\
+	lib/wind/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\

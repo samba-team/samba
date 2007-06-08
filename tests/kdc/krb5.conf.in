@@ -11,9 +11,16 @@
 	TEST.H5L.SE = {
 		kdc = localhost:@port@
 	}
+	SUB.TEST.H5L.SE = {
+		kdc = localhost:@port@
+	}
 	TEST2.H5L.SE = {
 		kdc = localhost:@port@
 	}
+
+[domain_realms]
+	.sub.test.h5l.se = SUB.TEST.H5L.SE
+	
 
 [kdc]
 	enable-digest = true

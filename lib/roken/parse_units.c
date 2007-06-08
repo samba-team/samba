@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <roken.h>
+#include "roken.h"
 #include "parse_units.h"
 
 /*

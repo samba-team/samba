@@ -798,6 +798,71 @@ gss_decapsulate_token(gss_buffer_t /* input_token */,
 		      gss_buffer_t /* output_token */);
 
 
+/*
+ * GSS_Unwrap() with support for associated data.
+ *
+ * Notes:
+ *
+ *	token_header_buffer contains the GSS-API token as
+ *	received from the peer
+ *
+ *	associated_data_buffer contains the complete data
+ *	over which the checksum is to be verified;
+ *
+ *	input_message_buffer contains the complete data to
+ *	be decrypted if confidentiality was requested;
+ *
+ *	input_message_buffer value must point into the value
+ *	of associated_data_buffer (hence input_message_buffer
+ *	just specifies a span within associated_data_buffer).
+ *
+ *	On returning GSS_S_COMPLETE, output_message_buffer
+ *	will contain input_message_buffer after unwrapping and;
+ *
+ *	associated_data_buffer will have been authenticated
+ *
+ */
+
+OM_uint32
+gss_unwrap_ex(OM_uint32 *minor_status,
+	      const gss_ctx_id_t context_handle,
+	      const gss_buffer_t token_header_buffer,
+	      const gss_buffer_t associated_data_buffer,
+	      const gss_buffer_t input_message_buffer,
+	      gss_buffer_t output_message_buffer,
+	      int *conf_state,
+	      gss_qop_t *qop_state);
+    
+/*
+ * GSS_Wrap() with support for associated data.
+ *
+ * Notes:
+ *
+ *	associated_data_buffer contains the complete data
+ *	over which the checksum is to be verified;
+ *
+ *	input_message_buffer contains the data to be
+ *	encrypted if conf_req_flag == TRUE.
+ *
+ *	On returning GSS_S_COMPLETE, output_token_buffer
+ *	will contain the GSS-API tokenheader, and;
+ *
+ *	output_message_buffer will contain input_message_buffer
+ *	after wrapping (including any padding)
+ */
+
+OM_uint32
+gss_wrap_ex(OM_uint32 *minor_status,
+	    const gss_ctx_id_t context_handle,
+	    int conf_req_flag,
+	    gss_qop_t qop_req,
+	    const gss_buffer_t associated_data_buffer,
+	    const gss_buffer_t input_message_buffer,
+	    int *conf_state,
+	    gss_buffer_t output_token_buffer,
+	    gss_buffer_t output_message_buffer);
+
+
 
 #ifdef __cplusplus
 }

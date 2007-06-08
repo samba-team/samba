@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <err.h>
-#include <roken.h>
+#include "roken.h"
 
 #include "test-mem.h"
 

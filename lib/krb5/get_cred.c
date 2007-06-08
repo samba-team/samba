@@ -724,16 +724,41 @@ add_cred(krb5_context context, krb5_creds ***tgts, krb5_creds *tkt)
 /*
 get_cred(server)
 	creds = cc_get_cred(server)
-	if(creds) return creds
-	tgt = cc_get_cred(krbtgt/server_realm@any_realm)
-	if(tgt)
-		return get_cred_tgt(server, tgt)
-	if(client_realm == server_realm)
-		return NULL
-	tgt = get_cred(krbtgt/server_realm@client_realm)
-	while(tgt_inst != server_realm)
-		tgt = get_cred(krbtgt/server_realm@tgt_inst)
-	return get_cred_tgt(server, tgt)
+	if(creds)
+		return creds
+	# XXX check referrals cache
+	try-realm = ca-paths
+	if (try-realm == NULL)
+		try_realm = client.realm;
+	server-realm = server.realm
+	tgt = find_cred(krbtgt/{try-realm}@ANY)
+	while (num-referrals++ < max-num-referrals) {
+		req-server = server.service@server_realm
+		creds = get_cred(tgt, req-server)
+		if (creds == NULL)
+			break
+		add-traversed(server_realm)
+		if (referral?(creds, secure?, &referral)) {
+			if (referral && check-name(creds, req-server))
+				return NULL(bad-name)
+			if (tgt?(creds)) {
+				if (traversed-before(creds.realm))
+					return NULL(eloop)
+				server_realm = creds.realm
+				tgt = creds
+				if (referral && referral.true-name)
+					server = referral.true-name
+			} else {
+				return creds
+			}
+		} else if (match(server, creds)) {
+			return creds
+		} else {
+			break
+		}
+	}
+	return NULL(enotfound)
+
 	*/
 
 static krb5_error_code

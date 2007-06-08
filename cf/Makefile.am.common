@@ -132,9 +132,12 @@ check-local::
 	  echo "$$dashes"; \
 	fi
 
-SUFFIXES += .x
+SUFFIXES += .x .z
 
 .x.c:
+	@cmp -s $< $@ 2> /dev/null || cp $< $@
+
+.z.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
 
 SUFFIXES += .1 .3 .5 .8 .cat1 .cat3 .cat5 .cat8

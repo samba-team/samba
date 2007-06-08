@@ -41,9 +41,10 @@ static char *delegation_cred_str;
 static char *etype_str;
 static int transit_flag = 1;
 static int forwardable_flag;
+static char *impersonate_str;
+static int server_flag;
 static int version_flag;
 static int help_flag;
-static char *impersonate_str;
 
 struct getargs args[] = {
     { "cache",		'c', arg_string, &cache_str,
@@ -59,6 +60,7 @@ struct getargs args[] = {
       "encryption type to use", "enctype"},
     { "impersonate",	0,   arg_string, &impersonate_str,
       "client to impersonate", "principal"},
+    { "server",		0,   arg_flag, &server_flag },
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -184,6 +186,9 @@ main(int argc, char **argv)
     ret = krb5_parse_name(context, argv[0], &server);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_parse_name %s", argv[0]);
+
+    if (server_flag)
+	server->name.name_type = KRB5_NT_SRV_INST;
 
     ret = krb5_get_creds(context, opt, cache, server, &out);
     if (ret)

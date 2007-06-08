@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include <stdarg.h>
 #include <stdlib.h>
-#include <roken.h>
+#include "roken.h"
 
 struct rk_strpool {
     char *str;

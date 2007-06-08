@@ -38,7 +38,7 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <string.h>
 
-#include <roken.h>
+#include "roken.h"
 
 #ifndef HAVE_STRNDUP
 char * ROKEN_LIB_FUNCTION

@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <roken.h>
+#include "roken.h"
 
 #include "roken.h"
 

@@ -59,7 +59,7 @@ struct aud_rec;
 #ifdef HAVE_USERCONF_H
 #include <userconf.h>
 #endif
-#include <roken.h>
+#include "roken.h"
 
 #ifndef _PATH_SHELLS
 #define _PATH_SHELLS "/etc/shells"

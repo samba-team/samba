@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include <unistd.h>
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * Write datablob to a filename, don't care about errors.
