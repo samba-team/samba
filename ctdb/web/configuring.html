@@ -1,11 +1,11 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-<TITLE>Configuring CTDB</TITLE>
+<TITLE>CTDB</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff" TEXT="#000000" VLINK="#292555" LINK="#292555" ALINK="#cc0033">
+<!--#include virtual="header.html" -->
 
-<h1>Configuring CTDB</h1>
+<H2 align="center">Configuring CTDB</H2>
 
 <h2>Clustering Model</h2>
 
@@ -13,37 +13,43 @@ The setup instructions on this page are modelled on setting up a cluster of N
 nodes that function in nearly all respects as a single multi-homed node. 
 So the cluster will export N IP interfaces, each of which is equivalent 
 (same shares) and which offers coherent CIFS file access across all 
-nodes.<br><br>
+nodes.<p>
 
-
-The clustering model utilizes IP takeover techniques to ensure that the full set of public IP addresses assigned to services on the cluster will always be available to the clients even when some nodes have failed and become unavailable.
+The clustering model utilizes IP takeover techniques to ensure that
+the full set of public IP addresses assigned to services on the
+cluster will always be available to the clients even when some nodes
+have failed and become unavailable.
 
 <h2>CTDB Cluster Configuration</h2>
 
-These are the primary configuration files for CTDB.<br>
-When CTDB is installed, it will install template versions of these files 
-which you need to edit to suit your system.<br>
-The current set of config files for CTDB are also available from http://samba.org/~tridge/ctdb/config
+These are the primary configuration files for CTDB.<p>
+
+When CTDB is installed, it will install template versions of these
+files which you need to edit to suit your system.  The current set of
+config files for CTDB are also available from
+<a href="http://samba.org/~tridge/ctdb/config">http://samba.org/~tridge/ctdb/config</a>
 
 <h3>/etc/sysconfig/ctdb</h3>
 
-This file contains the startup parameters for ctdb.<br>
+This file contains the startup parameters for ctdb.<p>
 
-When you installed ctdb, a template config file should have been installed in /etc/sysconfig/ctdb.<br>
+When you installed ctdb, a template config file should have been
+installed in /etc/sysconfig/ctdb.<p>
 
-Edit this file, following the instructions in the template.<br><br>
+Edit this file, following the instructions in the template.<p>
 
 The most important options are:
-<pre>
- * CTDB_NODES
- * CTDB_RECOVERY_LOCK
- * CTDB_PUBLIC_INTERFACE
- * CTDB_PUBLIC_ADDRESSES
-</pre>
+<ul>
+<li>CTDB_NODES
+<li>CTDB_RECOVERY_LOCK
+<li>CTDB_PUBLIC_INTERFACE
+<li>CTDB_PUBLIC_ADDRESSES
+</ul>
 
 Please verify these parameters carefully.
 
 <h4>CTDB_RECOVERY_LOCK</h4>
+
 This parameter specifies the lock file that the CTDB daemons use to arbitrate 
 which node is acting as a recovery master.<br>
 
@@ -51,6 +57,7 @@ This file MUST be held on shared storage so that all CTDB daemons in the cluster
 
 You <strong>must</strong> specify this parameter.<br>
 There is no default for this parameter.
+
 <h3>CTDB_NODES</h3>
 
 This file needs to be created and should contain a list of the private IP addresses that the CTDB daemons will use in your cluster. One ip address for each node in the cluster.<br>
@@ -154,5 +161,4 @@ We recommend that you use public ip addresses using CTDB_PUBLIC_INTERFACE/CTDB_P
 You may also wish to setup a static WINS server entry listing all of your cluster nodes IP addresses.
 
 
-</BODY>
-</HTML>
+<!--#include virtual="footer.html" -->
