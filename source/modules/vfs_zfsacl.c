@@ -133,14 +133,15 @@ static BOOL zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			zfs_process_smbacl);
 }
 
-size_t zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
+static size_t zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 int fd,  uint32 security_info,
 				 struct security_descriptor **ppdesc)
 {
 	return zfs_get_nt_acl(fsp, security_info, ppdesc);
 }
-size_t zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
+
+static size_t zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const char *name,  uint32 security_info,
 				struct security_descriptor **ppdesc)
@@ -148,7 +149,7 @@ size_t zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	return zfs_get_nt_acl(fsp, security_info, ppdesc);
 }
 
-BOOL zfsacl_fset_nt_acl(vfs_handle_struct *handle,
+static BOOL zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 int fd, uint32 security_info_sent,
 			 SEC_DESC *psd)
@@ -156,7 +157,7 @@ BOOL zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 	return zfs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
-BOOL zfsacl_set_nt_acl(vfs_handle_struct *handle,
+static BOOL zfsacl_set_nt_acl(vfs_handle_struct *handle,
 		       files_struct *fsp,
 		       const char *name, uint32 security_info_sent,
 		       SEC_DESC *psd)
@@ -168,13 +169,13 @@ BOOL zfsacl_set_nt_acl(vfs_handle_struct *handle,
 
 static vfs_op_tuple zfsacl_ops[] = {	
 	{SMB_VFS_OP(zfsacl_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(zfsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(zfsacl_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(zfsacl_set_nt_acl), SMB_VFS_OP_SET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
