@@ -380,12 +380,10 @@ static void init_reply_lookup_names4(LSA_R_LOOKUP_NAMES4 *r_l,
 
 static void init_reply_lookup_sids2(LSA_R_LOOKUP_SIDS2 *r_l,
 				DOM_R_REF *ref,
-				LSA_TRANS_NAME_ENUM2 *names,
 				uint32 mapped_count)
 {
 	r_l->ptr_dom_ref  = ref ? 1 : 0;
 	r_l->dom_ref      = ref;
-	r_l->names        = names;
 	r_l->mapped_count = mapped_count;
 }
 
@@ -395,12 +393,10 @@ static void init_reply_lookup_sids2(LSA_R_LOOKUP_SIDS2 *r_l,
 
 static void init_reply_lookup_sids3(LSA_R_LOOKUP_SIDS3 *r_l,
 				DOM_R_REF *ref,
-				LSA_TRANS_NAME_ENUM2 *names,
 				uint32 mapped_count)
 {
 	r_l->ptr_dom_ref  = ref ? 1 : 0;
 	r_l->dom_ref      = ref;
-	r_l->names        = names;
 	r_l->mapped_count = mapped_count;
 }
 
@@ -414,11 +410,7 @@ static NTSTATUS init_reply_lookup_sids(TALLOC_CTX *mem_ctx,
 				LSA_TRANS_NAME_ENUM2 *names,
 				uint32 mapped_count)
 {
-	LSA_TRANS_NAME_ENUM *oldnames = TALLOC_ZERO_P(mem_ctx, LSA_TRANS_NAME_ENUM);
-
-	if (!oldnames) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	LSA_TRANS_NAME_ENUM *oldnames = &r_l->names;
 
 	oldnames->num_entries = names->num_entries;
 	oldnames->ptr_trans_names = names->ptr_trans_names;
@@ -442,7 +434,6 @@ static NTSTATUS init_reply_lookup_sids(TALLOC_CTX *mem_ctx,
 
 	r_l->ptr_dom_ref  = ref ? 1 : 0;
 	r_l->dom_ref      = ref;
-	r_l->names        = oldnames;
 	r_l->mapped_count = mapped_count;
 	return NT_STATUS_OK;
 }
@@ -810,13 +801,12 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 				int num_sids,				/* input */
 				const DOM_SID2 *sid,			/* input */
 				DOM_R_REF **pp_ref,			/* output */
-				LSA_TRANS_NAME_ENUM2 **pp_names,	/* output */
+				LSA_TRANS_NAME_ENUM2 *names,		/* input/output */
 				uint32 *pp_mapped_count)
 {
 	NTSTATUS status;
 	int i;
 	const DOM_SID **sids = NULL;
-	LSA_TRANS_NAME_ENUM2 *names = NULL;
 	DOM_R_REF *ref = NULL;
 	uint32 mapped_count = 0;
 	struct lsa_dom_info *dom_infos = NULL;
@@ -824,17 +814,16 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 
 	*pp_mapped_count = 0;
 	*pp_ref = NULL;
-	*pp_names = NULL;
+	ZERO_STRUCTP(names);
 
 	if (num_sids == 0) {
 		return NT_STATUS_OK;
 	}
 
-	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM2);
 	sids = TALLOC_ARRAY(p->mem_ctx, const DOM_SID *, num_sids);
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 
-	if (sids == NULL || names == NULL || ref == NULL) {
+	if (sids == NULL || ref == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -907,7 +896,6 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 
 	*pp_mapped_count = mapped_count;
 	*pp_ref = ref;
-	*pp_names = names;
 
 	return status;
 }
@@ -924,7 +912,7 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p,
 	int num_sids = q_u->sids.num_entries;
 	uint32 mapped_count = 0;
 	DOM_R_REF *ref = NULL;
-	LSA_TRANS_NAME_ENUM2 *names = NULL;
+	LSA_TRANS_NAME_ENUM2 names;
 	NTSTATUS status;
 
 	if ((q_u->level < 1) || (q_u->level > 6)) {
@@ -956,7 +944,7 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p,
 
 	/* Convert from LSA_TRANS_NAME_ENUM2 to LSA_TRANS_NAME_ENUM */
 
-	status = init_reply_lookup_sids(p->mem_ctx, r_u, ref, names, mapped_count);
+	status = init_reply_lookup_sids(p->mem_ctx, r_u, ref, &names, mapped_count);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -975,7 +963,6 @@ NTSTATUS _lsa_lookup_sids2(pipes_struct *p,
 	int num_sids = q_u->sids.num_entries;
 	uint32 mapped_count = 0;
 	DOM_R_REF *ref = NULL;
-	LSA_TRANS_NAME_ENUM2 *names = NULL;
 
 	if ((q_u->level < 1) || (q_u->level > 6)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1001,10 +988,10 @@ NTSTATUS _lsa_lookup_sids2(pipes_struct *p,
 						num_sids, 
 						q_u->sids.sid,
 						&ref,
-						&names,
+						&r_u->names,
 						&mapped_count);
 
-	init_reply_lookup_sids2(r_u, ref, names, mapped_count);
+	init_reply_lookup_sids2(r_u, ref, mapped_count);
 	return r_u->status;
 }
 
@@ -1019,7 +1006,6 @@ NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 	int num_sids = q_u->sids.num_entries;
 	uint32 mapped_count = 0;
 	DOM_R_REF *ref = NULL;
-	LSA_TRANS_NAME_ENUM2 *names = NULL;
 
 	if ((q_u->level < 1) || (q_u->level > 6)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1043,10 +1029,10 @@ NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 						num_sids, 
 						q_u->sids.sid,
 						&ref,
-						&names,
+						&r_u->names,
 						&mapped_count);
 
-	init_reply_lookup_sids3(r_u, ref, names, mapped_count);
+	init_reply_lookup_sids3(r_u, ref, mapped_count);
 	return r_u->status;
 }
 
