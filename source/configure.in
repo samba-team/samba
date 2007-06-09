@@ -2956,6 +2956,21 @@ if test x"$samba_cv_USE_SETUIDX" = x"yes"; then
 fi
 fi
 
+AC_CACHE_CHECK([for the Darwin initgroups system call],
+	samba_cv_DARWIN_INITGROUPS,
+	AC_TRY_LINK([
+#include <sys/syscall.h>
+#include <unistd.h>
+	],
+	[ syscall(SYS_initgroups, 16, NULL, NULL, 0); ],
+	samba_cv_DARWIN_INITGROUPS=yes,
+	samba_cv_DARWIN_INITGROUPS=no)
+)
+
+if test x"$samba_cv_DARWIN_INITGROUPS" = x"yes" ; then
+    AC_DEFINE(HAVE_DARWIN_INITGROUPS, 1,
+	[Whether to use the Darwin-specific initgroups system call])
+fi
 
 AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
