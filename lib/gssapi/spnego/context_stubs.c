@@ -310,7 +310,7 @@ OM_uint32 _gss_spnego_display_name
 
     *minor_status = 0;
 
-    if (name->mech == GSS_C_NO_NAME)
+    if (name == NULL || name->mech == GSS_C_NO_NAME)
 	return GSS_S_FAILURE;
 
     return gss_display_name(minor_status, name->mech,
