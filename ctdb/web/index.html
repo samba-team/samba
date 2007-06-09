@@ -124,37 +124,6 @@ attached clients to trigger the clients to immediately recognize that
 the TCP connection needs to be re-established and to shortcut any TCP
 retransmission timeouts that may be active in the clients.
 
-<h2>Services using CTDB</h2>
-
-<h3>Samba 3/4</h3>
-
-Extensions has been developed to Samba3 and Samba 4 to integrate with
-CTDB to build a clustered highly available version of Samba where the
-same data/network shares are exported read-write from multiple nodes
-in a cluster. These versions of Samba have been demonstrated to provide very good
-scalability.<br><br>
-
-See <a href="samba.html">Setting up clustered Samba</a> for instructions on how to configure samba for clustering.<br>
-
-<p>Also see the <a href="http://wiki.samba.org/index.php/CTDB_Project">CTDB
-Project at samba.org</a> for more information about
-this <strong>pCIFS</strong> implementation.
-
-<h3>NFS v2/v3</h3>
-
-NFS v2/v3 has been successfully tested with exporting the same
-data/network share from multiple nodes in a CTDB cluster with correct
-file locking behaviour and lock recovery.<br><br>
-
-See <a href="nfs.html">Setting up clustered NFS</a> for instruction on how to set up a NFS cluster.<br>
-
-Also see <a href="http://wiki.samba.org/index.php/CTDB_Setup#Setting_up_CTDB_for_clustered_NFS">Configuring
-NFS for CTDB clustering</a> at samba.org for additional information.
-
-<h3>FTP</h3>
-
-See <a href="ftp.html">Setting up clustered FTP</a><br> for instructions on how to use vsftpd together with CTDB to provide a HA solution for FTP.
-
 <h2>Discussion and bug reports</h2>
 
 For discussions please use
@@ -168,31 +137,6 @@ projects that want to make their services cluster aware using CTDB.
 
 <p>CTDB discussions also happen on the #ctdb IRC channel on freenode.net
 
-
-<h2>Download</h2>
-
-You can download the latest source release
-using <a href="http://bazaar-vcs.org/">bzr</a>. Install bzr, then run
-this command:
-
-<pre>
-  bzr branch http://samba.org/~tridge/ctdb
-</pre>
-
-Or alternatively you can use rsync like this:
-
-<pre>
-  rsync -avz samba.org::ftp/unpacked/ctdb .
-</pre>
-
-
-<h2>Binary Packages</h2>
-
-Note that packages are so far only available for RHEL4. Other packages
-will come later. <p>
-
-See <a href="packages/">packages</a> directory for package
-downloads.
 
 <hr>
 <h2>Developers</h2>

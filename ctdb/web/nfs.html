@@ -7,6 +7,13 @@
 
 <h1>Setting up clustered NFS</h1>
 
+NFS v2/v3 has been successfully tested with exporting the same
+data/network share from multiple nodes in a CTDB cluster with correct
+file locking behaviour and lock recovery.<br><br>
+
+Also see <a href="http://wiki.samba.org/index.php/CTDB_Setup#Setting_up_CTDB_for_clustered_NFS">Configuring
+NFS for CTDB clustering</a> at samba.org for additional information.
+
 <h2>Prereqs</h2>
 Configure CTDB as above and set it up to use public ipaddresses.<br>
 Verify that the CTDB cluster works.
