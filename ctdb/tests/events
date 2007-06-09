@@ -15,12 +15,41 @@ case $cmd in
 	;;
 	
      takeip)
-	echo "`date` ctdb takeip event for $1 $2 $3"
-	exit 0
+	if [ $# != 3 ]; then
+	   echo "must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+
+	[ `id -u` = 0 ] && {
+	    /sbin/ip addr add $ip/$maskbits dev $iface || {
+		echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
+		exit 1
+	    }
+	}
+	exit 0;
 	;;
 
+
+     ##################################################
+     # called when ctdbd wants to release an IP address
      releaseip)
-	echo "`date` ctdb releaseip event for $1 $2 $3"
+	if [ $# != 3 ]; then
+	   echo "`/bin/date` must supply interface, IP and maskbits"
+	   exit 1
+	fi
+	iface=$1
+	ip=$2
+	maskbits=$3
+	[ `id -u` = 0 ] && {
+	    /sbin/ip addr del $ip/$maskbits dev $iface || {
+		echo "`/bin/date` Failed to del $ip on dev $iface"
+		exit 1
+	    }
+	}
+	echo "`date` ctdb takeip event for $1 $2 $3"
 	exit 0
 	;;
 
