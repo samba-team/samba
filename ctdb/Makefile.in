@@ -8,6 +8,7 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 sbindir = @sbindir@
+mandir = @mandir@
 localstatedir = @localstatedir@
 VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
@@ -16,6 +17,7 @@ builddir = @builddir@
 DESTDIR = /
 EXTRA_OBJ=@EXTRA_OBJ@
 XSLTPROC = /usr/bin/xsltproc
+INSTALLCMD = @INSTALL@
 
 POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
@@ -56,7 +58,7 @@ SBINS = bin/ctdbd
 
 DIRS = lib bin
 
-all: showflags dirs $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
+all: showflags dirs doc $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
@@ -115,20 +117,22 @@ install: all
 	mkdir -p $(DESTDIR)$(includedir)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 bin/ctdb $(DESTDIR)$(bindir)
-	install -m755 bin/ctdbd $(DESTDIR)$(sbindir)
-	install -m644 include/ctdb.h $(DESTDIR)$(includedir)
-	install -m644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
-	install -m755 config/events $(DESTDIR)$(etcdir)/ctdb
-	install -m755 config/functions $(DESTDIR)$(etcdir)/ctdb
-	install -m755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
-	install -m755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 config/events.d/50.samba $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 config/events.d/59.nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 config/events.d/60.nfs $(DESTDIR)$(etcdir)/ctdb/events.d
-	install -m755 tools/onnode.ssh $(DESTDIR)$(bindir)
-	install -m755 tools/onnode.rsh $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m755 bin/ctdb $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m755 bin/ctdbd $(DESTDIR)$(sbindir)
+	${INSTALLCMD} -m644 include/ctdb.h $(DESTDIR)$(includedir)
+	${INSTALLCMD} -m644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
+	${INSTALLCMD} -m755 config/events $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m755 config/functions $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m755 config/events.d/50.samba $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m755 config/events.d/59.nfslock $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m755 config/events.d/60.nfs $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m755 tools/onnode.ssh $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m755 tools/onnode.rsh $(DESTDIR)$(bindir)
+	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
+	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -m 644 doc/ctdb.1 $(DESTDIR)$(mandir)/man1; fi
 	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode
 
 test: all

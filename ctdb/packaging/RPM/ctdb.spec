@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 3
+Release: 4
 Epoch: 0
 License: GNU GPL version 2
 Group: System Environment/Daemons
@@ -104,5 +104,6 @@ fi
 %{_bindir}/onnode.ssh
 %{_bindir}/onnode.rsh
 %{_bindir}/onnode
+%{_mandir}/man1/ctdb.1
 %{_includedir}/ctdb.h
 %{_includedir}/ctdb_private.h
