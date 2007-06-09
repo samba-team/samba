@@ -66,6 +66,9 @@ README file</a> for some description of how TDB is used.
 <li><a href="building.html">Building Samba and CTDB</a><br>
 <li><a href="configuring.html">Configuring CTDB</a><br>
 <li><a href="testing.html">Starting and testing CTDB</a><br>
+<li><a href="samba.html">Setting up clustered Samba</a><br>
+<li><a href="nfs.html">Setting up clustered NFS</a><br>
+<li><a href="ftp.html">Setting up clustered FTP</a><br>
 </ul>
 
 <br>
@@ -129,9 +132,11 @@ Extensions has been developed to Samba3 and Samba 4 to integrate with
 CTDB to build a clustered highly available version of Samba where the
 same data/network shares are exported read-write from multiple nodes
 in a cluster. These versions of Samba have been demonstrated to provide very good
-scalability.
+scalability.<br><br>
 
-<p>See <a href="http://wiki.samba.org/index.php/CTDB_Project">CTDB
+See <a href="samba.html">Setting up clustered Samba</a> for instructions on how to configure samba for clustering.<br>
+
+<p>Also see the <a href="http://wiki.samba.org/index.php/CTDB_Project">CTDB
 Project at samba.org</a> for more information about
 this <strong>pCIFS</strong> implementation.
 
@@ -139,13 +144,16 @@ this <strong>pCIFS</strong> implementation.
 
 NFS v2/v3 has been successfully tested with exporting the same
 data/network share from multiple nodes in a CTDB cluster with correct
-file locking behaviour and lock recovery.
+file locking behaviour and lock recovery.<br><br>
 
-See <a
-href="http://wiki.samba.org/index.php/CTDB_Setup#Setting_up_CTDB_for_clustered_NFS">Configuring
-NFS for CTDB clustering</a> for instructions on how to configure a
-CTDB cluster to provide NFS clustering.
+See <a href="nfs.html">Setting up clustered NFS</a> for instruction on how to set up a NFS cluster.<br>
 
+Also see <a href="http://wiki.samba.org/index.php/CTDB_Setup#Setting_up_CTDB_for_clustered_NFS">Configuring
+NFS for CTDB clustering</a> at samba.org for additional information.
+
+<h3>FTP</h3>
+
+See <a href="ftp.html">Setting up clustered FTP</a><br> for instructions on how to use vsftpd together with CTDB to provide a HA solution for FTP.
 
 <h2>Discussion and bug reports</h2>
 

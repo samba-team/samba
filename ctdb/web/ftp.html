@@ -1,0 +1,67 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>Setting up clustered FTP</TITLE>
+</HEAD>
+<!--#include virtual="header.html" -->
+
+<h1>Setting up clustered FTP</h1>
+
+<h2>Prereqs</h2>
+Configure CTDB as above and set it up to use public ipaddresses.<br>
+Verify that the CTDB cluster works.
+
+<h2>Configuration</h2>
+
+Setting up a vsftpd cluster is really easy.<br>
+Configure vsftpd on each node on the cluster.<br><br>
+Set up vsftpd to export directories from the shared cluster filesystem.
+
+<h2>/etc/sysconfig/vsftpd</h2>
+
+Create the file /etc/sysconfig/vsftpd with the content :
+<pre>
+  CTDB_MANAGES_VSFTPD=yes
+</pre>
+
+Disable vsftpd in chkconfig so that it does not start by default. Instead CTDB will start/stop vsftdp as required.
+<pre>
+  chkconfig vsftpd off
+</pre>
+
+<h2>Events script</h2>
+
+The CTDB distribution already comes with an events script for vsftp in the file /etc/ctdb/events.d/40.vsftpd<br><br>
+There should not be any need to edit this file.
+
+
+<h2>Restart your cluster</h2>
+Next time your cluster restarts, CTDB will start managing the vsftp service.<br><br>
+If the cluster is already in production you may not want to restart the entire cluster since this would disrupt services.<br>
+
+Insted you can just disable/enable the nodes one by one. Once a node becomes enabled again it will start the vsftp service.<br><br>
+
+Follow the procedure below for each node, one node at a time :
+
+<h3>1 Disable the node</h3>
+Use the ctdb command to disable the node :
+<pre>
+  ctdb -n NODE disable
+</pre>
+
+<h3>2 Wait until the cluster has recovered</h3>
+
+Use the ctdb tool to monitor until the cluster has recovered, i.e. Recovery mode is NORMAL. This should happen within seconds of when you disabled the node.
+<pre>
+  ctdb status
+</pre>
+
+<h3>3 Enable the node again</h3>
+
+Re-enable the node again which will start the newly configured vsftp service.
+<pre>
+  ctdb -n NODE enable
+</pre>
+
+<!--#include virtual="footer.html" -->
+

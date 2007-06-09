@@ -978,7 +978,7 @@ static const struct {
 	{ "getdbmap",        control_getdbmap,          "show the database map" },
 	{ "catdb",           control_catdb,             "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        "show monitoring mode" },
-	{ "setmonmode",      control_setmonmode,        "set monitoring mode" },
+	{ "setmonmode",      control_setmonmode,        "set monitoring mode", "<0|1>" },
 	{ "setdebug",        control_setdebug,          "set debug level",                      "<debuglevel>" },
 	{ "getdebug",        control_getdebug,          "get debug level" },
 	{ "attach",          control_attach,            "attach to a database",                 "<dbname>" },

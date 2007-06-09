@@ -15,6 +15,7 @@ etcdir = @sysconfdir@
 builddir = @builddir@
 DESTDIR = /
 EXTRA_OBJ=@EXTRA_OBJ@
+XSLTPROC = /usr/bin/xsltproc
 
 POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
@@ -89,6 +90,14 @@ bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/ctdb_fetch.o
 bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+doc: doc/ctdb.1 doc/ctdb.1.html
+
+doc/ctdb.1: doc/ctdb.1.xml
+	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+
+doc/ctdb.1.html: doc/ctdb.1.xml
+	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 clean:
 	rm -f *.o */*.o */*/*.o */*~
