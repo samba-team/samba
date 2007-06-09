@@ -1476,7 +1476,7 @@ BOOL lsa_io_r_lookup_sids(const char *desc, LSA_R_LOOKUP_SIDS *r_s,
 		if(!lsa_io_dom_r_ref ("dom_ref", r_s->dom_ref, ps, depth)) /* domain reference info */
 			return False;
 
-	if(!lsa_io_trans_names("names  ", r_s->names, ps, depth)) /* translated names */
+	if(!lsa_io_trans_names("names  ", &r_s->names, ps, depth)) /* translated names */
 		return False;
 
 	if(!prs_align(ps))
@@ -1511,7 +1511,7 @@ BOOL lsa_io_r_lookup_sids2(const char *desc, LSA_R_LOOKUP_SIDS2 *r_s,
 		if(!lsa_io_dom_r_ref ("dom_ref", r_s->dom_ref, ps, depth)) /* domain reference info */
 			return False;
 
-	if(!lsa_io_trans_names2("names  ", r_s->names, ps, depth)) /* translated names */
+	if(!lsa_io_trans_names2("names  ", &r_s->names, ps, depth)) /* translated names */
 		return False;
 
 	if(!prs_align(ps))
@@ -1547,7 +1547,7 @@ BOOL lsa_io_r_lookup_sids3(const char *desc, LSA_R_LOOKUP_SIDS3 *r_s,
 		if(!lsa_io_dom_r_ref ("dom_ref", r_s->dom_ref, ps, depth)) /* domain reference info */
 			return False;
 
-	if(!lsa_io_trans_names2("names  ", r_s->names, ps, depth)) /* translated names */
+	if(!lsa_io_trans_names2("names  ", &r_s->names, ps, depth)) /* translated names */
 		return False;
 
 	if(!prs_align(ps))

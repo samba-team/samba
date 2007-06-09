@@ -515,7 +515,7 @@ typedef struct lsa_r_lookup_sids
 	uint32              ptr_dom_ref;
 	DOM_R_REF           *dom_ref; /* domain reference info */
 
-	LSA_TRANS_NAME_ENUM *names;
+	LSA_TRANS_NAME_ENUM names;
 	uint32              mapped_count;
 
 	NTSTATUS            status; /* return code */
@@ -541,7 +541,7 @@ typedef struct lsa_r_lookup_sids2
 	uint32              ptr_dom_ref;
 	DOM_R_REF           *dom_ref; /* domain reference info */
 
-	LSA_TRANS_NAME_ENUM2 *names;
+	LSA_TRANS_NAME_ENUM2 names;
 	uint32              mapped_count;
 
 	NTSTATUS            status; /* return code */
@@ -566,7 +566,7 @@ typedef struct lsa_r_lookup_sids3
 	uint32              ptr_dom_ref;
 	DOM_R_REF           *dom_ref; /* domain reference info */
 
-	LSA_TRANS_NAME_ENUM2 *names;
+	LSA_TRANS_NAME_ENUM2 names;
 	uint32              mapped_count;
 
 	NTSTATUS            status; /* return code */
