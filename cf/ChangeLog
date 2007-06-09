@@ -1,5 +1,9 @@
-2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am.common: Add heimdal-lorikeet target distdir-in-tree
+
+2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* framework-security.m4: test for -framework Security
 	
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
