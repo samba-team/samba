@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+#include "torture/nsstest.h"
+
 static const char *so_path = "/lib/libnss_winbind.so";
 static const char *nss_name = "winbind";
 static int nss_errno;
@@ -35,13 +37,13 @@ static void *find_fn(const char *name)
 	snprintf(s,sizeof(s), "_nss_%s_%s", nss_name, name);
 
 	if (!h) {
-		h = sys_dlopen(so_path, RTLD_LAZY);
+		h = dlopen(so_path, RTLD_LAZY);
 	}
 	if (!h) {
 		printf("Can't open shared library %s\n", so_path);
 		exit(1);
 	}
-	res = sys_dlsym(h, s);
+	res = dlsym(h, s);
 	if (!res) {
 		printf("Can't find function %s\n", s);
 		return NULL;
