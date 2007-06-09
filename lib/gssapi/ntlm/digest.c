@@ -50,6 +50,8 @@ struct ntlmkrb5 {
     krb5_data sessionkey;
 };
 
+static OM_uint32 kdc_destroy(OM_uint32 *, void *);
+
 /*
  * Get credential cache that the ntlm code can use to talk to the KDC
  * using the digest API.
@@ -126,26 +128,31 @@ kdc_alloc(OM_uint32 *minor, void **ctx)
 {
     krb5_error_code ret;
     struct ntlmkrb5 *c;
+    OM_uint32 junk;
 
     c = calloc(1, sizeof(*c));
+    if (c == NULL) {
+	*minor = ENOMEM;
+	return GSS_S_FAILURE;
+    }
 
     ret = krb5_init_context(&c->context);
     if (ret) {
-	/* free */
+	kdc_destroy(&junk, c);
 	*minor = ret;
 	return GSS_S_FAILURE;
     }
 
     ret = get_ccache(c->context, &c->id);
     if (ret) {
-	/* free */
+	kdc_destroy(&junk, c);
 	*minor = ret;
 	return GSS_S_FAILURE;
     }
 
     ret = krb5_ntlm_alloc(c->context, &c->ntlm);
     if (ret) {
-	/* free */
+	kdc_destroy(&junk, c);
 	*minor = ret;
 	return GSS_S_FAILURE;
     }
