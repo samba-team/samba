@@ -45,6 +45,10 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	TALLOC_CTX *ctx;
 	int i;
 
+	if (! dom->initialized) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	ctx = talloc_new(dom);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -130,6 +134,10 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 {
 	TALLOC_CTX *ctx;
 	int i;
+
+	if (! dom->initialized) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	ctx = talloc_new(dom);
 	if ( ! ctx) {
