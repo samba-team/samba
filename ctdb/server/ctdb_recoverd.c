@@ -888,6 +888,30 @@ static int send_election_request(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+/*
+  this function will unban all nodes in the cluster
+*/
+static void unban_all_nodes(struct ctdb_context *ctdb)
+{
+	int ret, i;
+	struct ctdb_node_map *nodemap;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " failed to get nodemap to unban all nodes\n"));
+		return;
+	}
+
+	for (i=0;i<nodemap->num;i++) {
+		if ( (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED))
+		  && (nodemap->nodes[i].flags & NODE_FLAGS_BANNED) ) {
+			ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].vnn, 0, NODE_FLAGS_BANNED);
+		}
+	}
+
+	talloc_free(tmp_ctx);
+}
 
 /*
   handler for recovery master elections
@@ -912,6 +936,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			DEBUG(0, (__location__ " failed to initiate recmaster election"));
 		}
 		talloc_free(mem_ctx);
+		/*unban_all_nodes(ctdb);*/
 		return;
 	}
 
@@ -920,6 +945,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	    ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
+		unban_all_nodes(ctdb);
 	}
 
 	/* ok, let that guy become recmaster then */
