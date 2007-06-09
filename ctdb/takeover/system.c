@@ -66,9 +66,16 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 		DEBUG(0,(__location__ " ioctl failed\n"));
 		return -1;
 	}
+	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
+		DEBUG(3,("Ignoring loopback arp request\n"));
+		close(s);
+		return 0;
+	}
 	if (if_hwaddr.ifr_hwaddr.sa_family != AF_LOCAL) {
 		close(s);
-		DEBUG(0,(__location__ " not an ethernet address\n"));
+		errno = EINVAL;
+		DEBUG(0,(__location__ " not an ethernet address family (0x%x)\n",
+			 if_hwaddr.ifr_hwaddr.sa_family));
 		return -1;
 	}
 
