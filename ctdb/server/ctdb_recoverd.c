@@ -936,7 +936,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			DEBUG(0, (__location__ " failed to initiate recmaster election"));
 		}
 		talloc_free(mem_ctx);
-		unban_all_nodes(ctdb);
+		/*unban_all_nodes(ctdb);*/
 		return;
 	}
 
