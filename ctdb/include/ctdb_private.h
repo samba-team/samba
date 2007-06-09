@@ -1022,4 +1022,6 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 			       uint32_t destnode,
 			       struct ctdb_tunable *tunables);
 
+void ctdb_start_freeze(struct ctdb_context *ctdb);
+
 #endif

@@ -54,6 +54,12 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		(ctdb->nodes[c->vnn]->flags&NODE_FLAGS_DISCONNECTED) 
 		| (c->flags & ~NODE_FLAGS_DISCONNECTED);	
 	DEBUG(2,("Node flags for node %u are now 0x%x\n", c->vnn, ctdb->nodes[c->vnn]->flags));
+
+	/* make sure we don't hold any IPs when we shouldn't */
+	if (c->vnn == ctdb->vnn &&
+	    (ctdb->nodes[c->vnn]->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_BANNED))) {
+		ctdb_release_all_ips(ctdb);
+	}
 }
 
 /* called when the "startup" event script has finished */

@@ -219,9 +219,8 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {
 		/* make sure we are frozen */
 		DEBUG(0,("This node has been banned - forcing freeze and recovery\n"));
-		if (!ctdb_blocking_freeze(ctdb)) {
-			ctdb_fatal(ctdb, "Unable to freeze when banned");
-		}
+		ctdb_start_freeze(ctdb);
+		ctdb_release_all_ips(ctdb);
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 	}
 	

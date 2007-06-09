@@ -182,6 +182,24 @@ static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
 }
 
 /*
+  start the freeze process
+ */
+void ctdb_start_freeze(struct ctdb_context *ctdb)
+{
+	if (ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
+		/* we're already frozen */
+		return;
+	}
+
+	/* if there isn't a freeze lock child then create one */
+	if (!ctdb->freeze_handle) {
+		ctdb->freeze_handle = ctdb_freeze_lock(ctdb);
+		CTDB_NO_MEMORY_VOID(ctdb, ctdb->freeze_handle);
+		ctdb->freeze_mode = CTDB_FREEZE_PENDING;
+	}
+}
+
+/*
   freeze the databases
  */
 int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply)
@@ -193,12 +211,7 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 		return 0;
 	}
 
-	/* if there isn't a freeze lock child then create one */
-	if (!ctdb->freeze_handle) {
-		ctdb->freeze_handle = ctdb_freeze_lock(ctdb);
-		CTDB_NO_MEMORY(ctdb, ctdb->freeze_handle);
-		ctdb->freeze_mode = CTDB_FREEZE_PENDING;
-	}
+	ctdb_start_freeze(ctdb);
 
 	/* add ourselves to list of waiters */
 	w = talloc(ctdb->freeze_handle, struct ctdb_freeze_waiter);
@@ -220,17 +233,7 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
  */
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
 {
-	if (ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
-		/* we're already frozen */
-		return true;
-	}
-
-	/* if there isn't a freeze lock child then create one */
-	if (!ctdb->freeze_handle) {
-		ctdb->freeze_handle = ctdb_freeze_lock(ctdb);
-		CTDB_NO_MEMORY(ctdb, ctdb->freeze_handle);
-		ctdb->freeze_mode = CTDB_FREEZE_PENDING;
-	}
+	ctdb_start_freeze(ctdb);
 
 	/* block until frozen */
 	while (ctdb->freeze_mode == CTDB_FREEZE_PENDING) {
