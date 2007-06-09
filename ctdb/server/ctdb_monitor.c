@@ -122,7 +122,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	data.dsize = sizeof(c);
 
 	/* tell the other nodes that something has changed */
-	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
+	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
 				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
 
 }
@@ -213,7 +213,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	data.dsize = sizeof(c);
 
 	/* tell the other nodes that something has changed */
-	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
+	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
 				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
 
 	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {

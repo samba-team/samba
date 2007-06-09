@@ -390,7 +390,8 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 /*
   broadcast a packet to all nodes
 */
-static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb, 
+				      struct ctdb_req_header *hdr)
 {
 	int i;
 	for (i=0;i<ctdb->num_nodes;i++) {
@@ -402,12 +403,28 @@ static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb, struct ctdb_req
 /*
   broadcast a packet to all nodes in the current vnnmap
 */
-static void ctdb_broadcast_packet_vnnmap(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+static void ctdb_broadcast_packet_vnnmap(struct ctdb_context *ctdb, 
+					 struct ctdb_req_header *hdr)
 {
 	int i;
 	for (i=0;i<ctdb->vnn_map->size;i++) {
 		hdr->destnode = ctdb->vnn_map->map[i];
 		ctdb_queue_packet(ctdb, hdr);
+	}
+}
+
+/*
+  broadcast a packet to all connected nodes
+*/
+static void ctdb_broadcast_packet_connected(struct ctdb_context *ctdb, 
+					    struct ctdb_req_header *hdr)
+{
+	int i;
+	for (i=0;i<ctdb->num_nodes;i++) {
+		if (!(ctdb->nodes[i]->flags & NODE_FLAGS_DISCONNECTED)) {
+			hdr->destnode = ctdb->nodes[i]->vnn;
+			ctdb_queue_packet(ctdb, hdr);
+		}
 	}
 }
 
@@ -424,6 +441,9 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	case CTDB_BROADCAST_VNNMAP:
 		ctdb_broadcast_packet_vnnmap(ctdb, hdr);
+		return;
+	case CTDB_BROADCAST_CONNECTED:
+		ctdb_broadcast_packet_connected(ctdb, hdr);
 		return;
 	}
 
