@@ -38,7 +38,7 @@ slc_SOURCES = slc-gram.y slc-lex.l slc.h
 ssincludedir = $(includedir)/ss
 ssinclude_HEADERS = ss.h
 
-CLEANFILES = lex.c parse.c parse.h snprintf.c strtok_r.c strdup.c strupr.c getprogname.c
+CLEANFILES = snprintf.c strtok_r.c strdup.c strupr.c getprogname.c
 
 $(mk_cmds_OBJECTS): parse.h parse.c
 
