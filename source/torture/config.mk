@@ -358,6 +358,18 @@ MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################
 
+#################################
+# Start BINARY nsstest
+[BINARY::nsstest]
+INSTALLDIR = BINDIR
+OBJ_FILES = \
+		nsstest.o
+PRIVATE_DEPENDENCIES = \
+		LIBSAMBA-UTIL \
+		LIBREPLACE_EXT
+# End BINARY nsstest
+#################################
+
 GCOV_FLAGS = -ftest-coverage -fprofile-arcs
 GCOV_LIBS = -lgcov
 
