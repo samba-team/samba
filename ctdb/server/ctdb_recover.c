@@ -645,11 +645,9 @@ int32_t ctdb_control_delete_low_rsn(struct ctdb_context *ctdb, TDB_DATA indata, 
 bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 {
 	struct flock lock;
-	bool lock_already_held = false;
 
 	if (ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
-		lock_already_held = true;
 	}
 	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
 	if (ctdb->recovery_lock_fd == -1) {
@@ -671,13 +669,6 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	if (!keep) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
-	}
-
-	if ( (!lock_already_held) && (ctdb->recovery_lock_fd != -1) ) {
-		/* we have just become the recmaster, we must now unban all
-		   nodes
-		 */
-		ctdb_ctrl_modflags(ctdb, timeval_current_ofs(ctdb->tunable.recover_timeout, 0), CTDB_BROADCAST_ALL, 0, NODE_FLAGS_BANNED);
 	}
 
 	return true;
