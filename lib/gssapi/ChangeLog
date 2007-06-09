@@ -1,3 +1,18 @@
+2007-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/digest.c (kdc_alloc): free memory on failure, pointed out
+	by Rafal Malinowski.
+	
+	* ntlm/digest.c (kdc_destroy): free context when done, pointed out
+	by Rafal Malinowski.
+
+	* spnego/context_stubs.c (_gss_spnego_display_name): if input_name
+	is null, fail.  From Rafal Malinowski.
+	
+2007-06-04  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* ntlm/digest.c: Free memory when done.
+	
 2007-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_ntlm.c: Test both with and without keyex.
