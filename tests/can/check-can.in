@@ -37,6 +37,9 @@
 srcdir="@srcdir@"
 objdir="@objdir@"
 
+# If there is no useful db support compile in, disable test
+../db/have-db || exit 77
+
 ./test_can TEST.H5L.SE heim-0.8 || exit 1
 ./test_can TEST.H5L.SE apple-10.4 || exit 1
 ./test_can HEIMDAL.CITI.UMICH.EDU mit-pkinit-20070607 || exit 1
