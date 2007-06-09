@@ -962,7 +962,7 @@ again:
 		}
 		if ( ! entry) {
 			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
-			continue;
+			break;
 		}
 
 		/* first check if the SID is present */
@@ -1176,6 +1176,10 @@ again:
 			entry = ldap_first_entry(ctx->smbldap_state->ldap_struct, result);
 		} else { /* following ones */
 			entry = ldap_next_entry(ctx->smbldap_state->ldap_struct, entry);
+		}
+		if ( ! entry) {
+			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
+			break;
 		}
 
 		/* first check if the SID is present */
