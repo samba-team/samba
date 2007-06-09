@@ -132,7 +132,7 @@ check-local::
 	  echo "$$dashes"; \
 	fi
 
-SUFFIXES += .x
+SUFFIXES += .x .z
 
 .x.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
@@ -240,3 +240,15 @@ endif
 
 check-valgrind:
 	env TESTS_ENVIRONMENT="$(top_builddir)/libtool --mode execute valgrind --leak-check=full --quiet --suppressions=$(top_srcdir)/cf/valgrind-suppressions" make check
+
+#
+# Target to please samba build farm, builds distfiles in-tree.
+# Will break when automake changes...
+#
+
+distdir-in-tree: $(DISTFILES)
+	list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) distdir-in-tree) ; \
+	  fi ; \
+	done
