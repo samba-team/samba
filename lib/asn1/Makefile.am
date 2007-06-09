@@ -494,7 +494,7 @@ asn1_print_LDADD = $(check_der_LDADD)
 asn1_gen_LDADD = $(check_der_LDADD)
 check_timegm_LDADD = $(check_der_LDADD)
 
-CLEANFILES = lex.c parse.c parse.h \
+CLEANFILES = \
 	$(BUILT_SOURCES) \
 	$(gen_files_rfc2459) \
 	$(gen_files_cms) \
