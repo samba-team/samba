@@ -247,7 +247,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 			data.dptr = (uint8_t *)&t;
 			data.dsize = sizeof(t);
 
-			ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0, 
+			ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
 						 CTDB_CONTROL_TCP_ADD,
 						 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 		}
@@ -469,7 +469,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 
 	/* at this point ctdb->nodes[i]->takeover_vnn is the vnn which will own each IP */
 
-
 	/* now tell all nodes to delete any alias that they should not
 	   have.  This will be a NOOP on nodes that don't currently
 	   hold the given alias */
@@ -557,7 +556,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, u
 	data.dsize = sizeof(t);
 
 	/* tell all nodes about this tcp connection */
-	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0, 
+	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
 				       CTDB_CONTROL_TCP_ADD,
 				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
@@ -703,7 +702,7 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 		p.dest = tcp->daddr;
 		data.dptr = (uint8_t *)&p;
 		data.dsize = sizeof(p);
-		ctdb_daemon_send_control(client->ctdb, CTDB_BROADCAST_VNNMAP, 0, 
+		ctdb_daemon_send_control(client->ctdb, CTDB_BROADCAST_CONNECTED, 0, 
 					 CTDB_CONTROL_TCP_REMOVE,
 					 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 		talloc_free(tcp);
