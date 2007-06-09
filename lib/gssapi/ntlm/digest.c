@@ -171,6 +171,8 @@ kdc_destroy(OM_uint32 *minor, void *ctx)
 	krb5_cc_close(c->context, c->id);
     if (c->context)
 	krb5_free_context(c->context);
+    memset(c, 0, sizeof(*c));
+    free(c);
 
     return GSS_S_COMPLETE;
 }
