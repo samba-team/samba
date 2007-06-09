@@ -21,8 +21,6 @@ compile_et_SOURCES = compile_et.c compile_et.h parse.y lex.l lex.h
 
 libcom_err_la_SOURCES = error.c com_err.c roken_rename.h $(ES)
 
-CLEANFILES = lex.c parse.c parse.h
-
 $(compile_et_OBJECTS): parse.h parse.c ## XXX broken automake 1.4s
 
 compile_et_LDADD = \
