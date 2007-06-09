@@ -43,7 +43,7 @@ krb4.c:
 gssapi.c:
 	@test -f gssapi.c || $(LN_S) $(srcdir)/../ftp/gssapi.c .
 
-CLEANFILES = security.c security.h krb4.c gssapi.c ftpcmd.c
+CLEANFILES = security.c security.h krb4.c gssapi.c
 
 man_MANS = ftpd.8 ftpusers.5
 
