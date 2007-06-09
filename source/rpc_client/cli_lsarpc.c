@@ -145,7 +145,6 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 	LSA_Q_LOOKUP_SIDS q;
 	LSA_R_LOOKUP_SIDS r;
 	DOM_R_REF ref;
-	LSA_TRANS_NAME_ENUM t_names;
 	NTSTATUS result = NT_STATUS_OK;
 	TALLOC_CTX *tmp_ctx = NULL;
 	int i;
@@ -163,10 +162,8 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 	init_q_lookup_sids(tmp_ctx, &q, pol, num_sids, sids, 1);
 
 	ZERO_STRUCT(ref);
-	ZERO_STRUCT(t_names);
 
 	r.dom_ref = &ref;
-	r.names = &t_names;
 
 	CLI_DO_RPC( cli, tmp_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
 			q, r,
@@ -192,7 +189,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 
 	for (i = 0; i < num_sids; i++) {
 		fstring name, dom_name;
-		uint32 dom_idx = t_names.name[i].domain_idx;
+		uint32 dom_idx = r.names.name[i].domain_idx;
 
 		/* Translate optimised name through domain index array */
 
@@ -201,14 +198,14 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 			rpcstr_pull_unistr2_fstring(
                                 dom_name, &ref.ref_dom[dom_idx].uni_dom_name);
 			rpcstr_pull_unistr2_fstring(
-                                name, &t_names.uni_name[i]);
+                                name, &r.names.uni_name[i]);
 
 			(names)[i] = talloc_strdup(mem_ctx, name);
 			(domains)[i] = talloc_strdup(mem_ctx, dom_name);
-			(types)[i] = (enum lsa_SidType)t_names.name[i].sid_name_use;
+			(types)[i] = (enum lsa_SidType)r.names.name[i].sid_name_use;
 			
 			if (((names)[i] == NULL) || ((domains)[i] == NULL)) {
-				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+				DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
 				result = NT_STATUS_UNSUCCESSFUL;
 				goto done;
 			}
@@ -350,7 +347,6 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 	LSA_Q_LOOKUP_SIDS q;
 	LSA_R_LOOKUP_SIDS r;
 	DOM_R_REF ref;
-	LSA_TRANS_NAME_ENUM t_names;
 	NTSTATUS result = NT_STATUS_OK;
 	int i;
 
@@ -360,10 +356,8 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 	init_q_lookup_sids(mem_ctx, &q, pol, num_sids, sids, 1);
 
 	ZERO_STRUCT(ref);
-	ZERO_STRUCT(t_names);
 
 	r.dom_ref = &ref;
-	r.names = &t_names;
 
 	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
 			q, r,
@@ -414,7 +408,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 		
 	for (i = 0; i < num_sids; i++) {
 		fstring name, dom_name;
-		uint32 dom_idx = t_names.name[i].domain_idx;
+		uint32 dom_idx = r.names.name[i].domain_idx;
 
 		/* Translate optimised name through domain index array */
 
@@ -423,11 +417,11 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 			rpcstr_pull_unistr2_fstring(
                                 dom_name, &ref.ref_dom[dom_idx].uni_dom_name);
 			rpcstr_pull_unistr2_fstring(
-                                name, &t_names.uni_name[i]);
+                                name, &r.names.uni_name[i]);
 
 			(*names)[i] = talloc_strdup(mem_ctx, name);
 			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
-			(*types)[i] = (enum lsa_SidType)t_names.name[i].sid_name_use;
+			(*types)[i] = (enum lsa_SidType)r.names.name[i].sid_name_use;
 			
 			if (((*names)[i] == NULL) || ((*domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
