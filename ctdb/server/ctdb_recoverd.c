@@ -920,6 +920,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	    ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
+		ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), ctdb->vnn, 0, NODE_FLAGS_BANNED);
 	}
 
 	/* ok, let that guy become recmaster then */
