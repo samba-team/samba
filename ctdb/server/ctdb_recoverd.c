@@ -392,7 +392,7 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 		data.dptr = (uint8_t *)&c;
 		data.dsize = sizeof(c);
 
-		ctdb_send_message(ctdb, CTDB_BROADCAST_VNNMAP,
+		ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
 				  CTDB_SRVID_NODE_FLAGS_CHANGED, data);
 
 	}
