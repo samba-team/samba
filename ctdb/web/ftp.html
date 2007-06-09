@@ -36,7 +36,32 @@ There should not be any need to edit this file.
 
 
 <h2>Restart your cluster</h2>
-Next time your cluster restarts, CTDB will start managing the vsftp service.
+Next time your cluster restarts, CTDB will start managing the vsftp service.<br><br>
+If the cluster is already in production you may not want to restart the entire cluster since this would disrupt services.<br>
+
+Insted you can just disable/enable the nodes one by one. Once a node becomes enabled again it will start the vsftp service.<br><br>
+
+Follow the procedure below for each node, one node at a time :
+
+<h3>1 Disable the node</h3>
+Use the ctdb command to disable the node :
+<pre>
+  ctdb -n NODE disable
+</pre>
+
+<h3>2 Wait until the cluster has recovered</h3>
+
+Use the ctdb tool to monitor until the cluster has recovered, i.e. Recovery mode is NORMAL. this should happen within seconds of when you disabled the node.
+<pre>
+  ctdb status
+</pre>
+
+<h3>3 Enable the node again</h3>
+
+Re-enable the node again which will start the newly configured vsftp service.
+<pre>
+  ctdb -n NODE enable
+</pre>
 
 <!--#include virtual="footer.html" -->
 
