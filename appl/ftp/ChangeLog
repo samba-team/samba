@@ -1,3 +1,8 @@
+2007-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/Makefile.am: don't clean yacc/lex files in CLEANFILES,
+	maintainers clean will do that for us.
+	
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/Makefile.am: Add man_MANS to EXTRA_DIST
