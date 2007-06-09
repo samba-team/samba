@@ -420,7 +420,7 @@ static NTSTATUS init_reply_lookup_sids(TALLOC_CTX *mem_ctx,
 	if (names->num_entries) {
 		int i;
 
-		oldnames->name = TALLOC_ARRAY(oldnames, LSA_TRANS_NAME, names->num_entries);
+		oldnames->name = TALLOC_ARRAY(mem_ctx, LSA_TRANS_NAME, names->num_entries);
 
 		if (!oldnames->name) {
 			return NT_STATUS_NO_MEMORY;
@@ -838,8 +838,8 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 		return status;
 	}
 
-	names->name = TALLOC_ARRAY(names, LSA_TRANS_NAME2, num_sids);
-	names->uni_name = TALLOC_ARRAY(names, UNISTR2, num_sids);
+	names->name = TALLOC_ARRAY(p->mem_ctx, LSA_TRANS_NAME2, num_sids);
+	names->uni_name = TALLOC_ARRAY(p->mem_ctx, UNISTR2, num_sids);
 	if ((names->name == NULL) || (names->uni_name == NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
