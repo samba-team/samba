@@ -56,7 +56,7 @@ case $cmd in
 	iface=$1
 	ip=$2
 	maskbits=$3
-	/sbin/ip addr del $ip dev $iface || {
+	/sbin/ip addr del $ip/$maskbits dev $iface || {
 		 echo "`/bin/date` Failed to del $ip on dev $iface"
 		 exit 1
 	}

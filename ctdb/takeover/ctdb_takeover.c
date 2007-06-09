@@ -65,7 +65,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->ctdb->takeover.interface);
 	if (ret != 0) {
-		DEBUG(0,(__location__ "sending of arp failed (%s)\n", strerror(errno)));
+		DEBUG(0,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
 	}
 
 	for (tcp=arp->tcp_list;tcp;tcp=tcp->next) {

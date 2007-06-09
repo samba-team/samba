@@ -42,6 +42,7 @@ CC="gcc"
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--sysconfdir=%{_sysconfdir} \
+	--mandir=%{_mandir} \
 	--localstatedir="/var"
 
 make showflags
@@ -104,6 +105,6 @@ fi
 %{_bindir}/onnode.ssh
 %{_bindir}/onnode.rsh
 %{_bindir}/onnode
-%{_mandir}/man1/ctdb.1
+%{_mandir}/man1/ctdb.1.gz
 %{_includedir}/ctdb.h
 %{_includedir}/ctdb_private.h

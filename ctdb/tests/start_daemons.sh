@@ -5,9 +5,14 @@ NODES=$2
 
 killall -q ctdbd
 
+CTDB_OPTIONS="--reclock=rec.lock --nlist $NODES --event-script=tests/events --logfile=-  --dbdir=test.db"
+if [ `id -u` -eq 0 ]; then
+    CTDB_OPTIONS="$CTDB_OPTIONS --public-addresses=tests/public_addresses --public-interface=lo"
+fi
+
 echo "Starting $NUMNODES ctdb daemons"
 for i in `seq 1 $NUMNODES`; do
-    $VALGRIND bin/ctdbd --reclock=rec.lock --nlist $NODES --event-script=tests/events --logfile=- --socket=sock.$i --dbdir=test.db || exit 1
+    $VALGRIND bin/ctdbd --socket=sock.$i $CTDB_OPTIONS || exit 1
 done
 ln -sf $PWD/sock.1 /tmp/ctdb.socket || exit 1
 
