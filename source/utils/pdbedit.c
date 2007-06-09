@@ -624,27 +624,24 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 	fstrcpy(machineaccount, machinename);
 	fstrcat(machineaccount, "$");
 
-	if ((pwd = getpwnam_alloc(NULL, machineaccount))) {
-
-		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
-			fprintf(stderr, "Memory allocation error!\n");
-			TALLOC_FREE(pwd);
-			return -1;
-		}
-
-		if ( !NT_STATUS_IS_OK(samu_set_unix(sam_pwent, pwd )) ) {
-			fprintf(stderr, "Could not init sam from pw\n");
-			TALLOC_FREE(pwd);
-			return -1;
-		}
-
-		TALLOC_FREE(pwd);
-	} else {
-		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
-			fprintf(stderr, "Could not init sam from pw\n");
-			return -1;
-		}
+	if ( !(pwd = getpwnam_alloc( NULL, machineaccount )) ) {
+		DEBUG(0,("Cannot locate Unix account for %s\n", machineaccount));
+		return -1;
 	}
+
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+		fprintf(stderr, "Memory allocation error!\n");
+		TALLOC_FREE(pwd);
+		return -1;
+	}
+
+	if ( !NT_STATUS_IS_OK(samu_alloc_rid_unix(sam_pwent, pwd )) ) {
+		fprintf(stderr, "Could not init sam from pw\n");
+		TALLOC_FREE(pwd);
+		return -1;
+	}
+
+	TALLOC_FREE(pwd);
 
 	pdb_set_plaintext_passwd (sam_pwent, machinename);
 	pdb_set_username (sam_pwent, machineaccount, PDB_CHANGED);	
