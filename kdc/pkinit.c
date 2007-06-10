@@ -97,7 +97,7 @@ static struct {
 static krb5_error_code
 pk_check_pkauthenticator_win2k(krb5_context context,
 			       PKAuthenticator_Win2k *a,
-			       KDC_REQ *req)
+			       const KDC_REQ *req)
 {
     krb5_timestamp now;
 
@@ -114,7 +114,7 @@ pk_check_pkauthenticator_win2k(krb5_context context,
 static krb5_error_code
 pk_check_pkauthenticator(krb5_context context,
 			 PKAuthenticator *a,
-			 KDC_REQ *req)
+			 const KDC_REQ *req)
 {
     u_char *buf = NULL;
     size_t buf_size;
@@ -365,8 +365,8 @@ get_dh_param(krb5_context context,
 krb5_error_code
 _kdc_pk_rd_padata(krb5_context context,
 		  krb5_kdc_configuration *config,
-		  KDC_REQ *req,
-		  PA_DATA *pa,
+		  const KDC_REQ *req,
+		  const PA_DATA *pa,
 		  pk_client_params **ret_params)
 {
     pk_client_params *client_params;
@@ -686,12 +686,31 @@ pk_mk_pa_reply_enckey(krb5_context context,
     krb5_error_code ret;
     krb5_data buf, signed_data;
     size_t size;
+    int do_win2k = 0;
 
     krb5_data_zero(&buf);
     krb5_data_zero(&signed_data);
 
+    /*
+     * If the message client is a win2k-type but it send pa data
+     * 09-binding it expects a IETF (checksum) reply so there can be
+     * no replay attacks.
+     */
+
     switch (client_params->type) {
     case PKINIT_COMPAT_WIN2K: {
+	int i = 0;
+	if (_kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_09_BINDING) == NULL)
+	    do_win2k = 1;
+	break;
+    }
+    case PKINIT_COMPAT_27:
+	break;
+    default:
+	krb5_abortx(context, "internal pkinit error");
+    }	    
+
+    if (do_win2k) {
 	ReplyKeyPack_Win2k kp;
 	memset(&kp, 0, sizeof(kp));
 
@@ -709,9 +728,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			   buf.data, buf.length,
 			   &kp, &size,ret);
 	free_ReplyKeyPack_Win2k(&kp);
-	break;
-    }
-    case PKINIT_COMPAT_27: {
+    } else {
 	krb5_crypto ascrypto;
 	ReplyKeyPack kp;
 	memset(&kp, 0, sizeof(kp));
@@ -745,10 +762,6 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
 	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
 	free_ReplyKeyPack(&kp);
-	break;
-    }
-    default:
-	krb5_abortx(context, "internal pkinit error");
     }
     if (ret) {
 	krb5_set_error_string(context, "ASN.1 encoding of ReplyKeyPack "
