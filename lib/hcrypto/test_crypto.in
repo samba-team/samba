@@ -40,6 +40,8 @@ rsa="${TESTS_ENVIRONMENT} ./test_rsa"
 engine="${TESTS_ENVIRONMENT} ./test_engine_dso"
 rand="${TESTS_ENVIRONMENT} ./test_rand"
 
+${engine} --test-random > /dev/null || { echo "missing random"; exit 77; }
+
 ${rsa} --key=${srcdir}/rsakey.der || \
 	{ echo "rsa test failed" ; exit 1; }
 
