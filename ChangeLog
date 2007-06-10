@@ -1,5 +1,19 @@
-2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/krb5tgs.c: Constify.
+
+	* kdc/kerberos5.c: Constify.
+
+	* kdc/pkinit.c: Check for KRB5-PADATA-PK-AS-09-BINDING. Constify.
+
+2007-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* include/Makefile.am: Make krb5-types.h nodist_include_HEADERS.
+
+	* kdc/Makefile.am: EXTRA_DIST += version-script.map.
+	
+2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am (print-distdir): print name of dist
 
 	* kdc/pkinit.c: Break out loading of mappings file to a separate
