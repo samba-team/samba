@@ -1010,7 +1010,7 @@ static krb5_error_code
 tgs_parse_request(krb5_context context, 
 		  krb5_kdc_configuration *config,
 		  KDC_REQ_BODY *b,
-		  PA_DATA *tgs_req,
+		  const PA_DATA *tgs_req,
 		  hdb_entry_ex **krbtgt,
 		  krb5_enctype *krbtgt_etype,
 		  krb5_ticket **ticket,
@@ -1811,7 +1811,7 @@ _kdc_tgs_rep(krb5_context context,
     AuthorizationData *auth_data = NULL;
     krb5_error_code ret;
     int i = 0;
-    PA_DATA *tgs_req = NULL;
+    const PA_DATA *tgs_req;
 
     hdb_entry_ex *krbtgt = NULL;
     krb5_ticket *ticket = NULL;
