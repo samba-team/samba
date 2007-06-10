@@ -117,6 +117,7 @@ static int help_flag;
 static char *id_flag;
 static char *rsa_flag;
 static int dh_flag = 1;
+static int test_random_flag;
 
 static struct getargs args[] = {
     { "id",		0,	arg_string,	&id_flag,
@@ -125,6 +126,8 @@ static struct getargs args[] = {
       "tests RSA modes", 	"private-rsa-der-file" },
     { "dh",		0,	arg_negative_flag,	&dh_flag,
       "test dh", NULL },
+    { "test-random",	0,	arg_flag,	&test_random_flag,
+      "test if there is a random device", NULL },
     { "version",	0,	arg_flag,	&version_flag,
       "print version", NULL },
     { "help",		0,	arg_flag,	&help_flag,
@@ -191,6 +194,8 @@ main(int argc, char **argv)
 
     if (RAND_status() != 1)
 	errx(77, "no functional random device, can't execute tests");
+    if (test_random_flag)
+	exit(0);
 
     if (rsa_flag && have_rsa) {
 	unsigned char buf[1024 * 4];
