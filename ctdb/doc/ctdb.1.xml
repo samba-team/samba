@@ -1,23 +1,111 @@
-<?xml version="1.0"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="ctdb.1">
 
-<refentry>
-  <refmeta>
-    <refentrytitle>ctdb</refentrytitle>
-    <manvolnum>1</manvolnum>
-  </refmeta>
-  <refnamediv>
-    <refname>ctdb</refname>
-<refpurpose>clustered tdb database management utility</refpurpose>
-  </refnamediv>
-  <refsynopsisdiv>
-<synopsis>ctdb [-n &lt;node&gt;] [ -Y ] [ -t &lt;timelimit&gt; ] COMMAND ...</synopsis>
-  </refsynopsisdiv>
+<refmeta>
+	<refentrytitle>ctdb</refentrytitle>
+	<manvolnum>1</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>ctdb</refname>
+        <refpurpose>clustered tdb database management utility</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>ctdb [ OPTIONS ] COMMAND ...</command>
+	</cmdsynopsis>
+	
+	<cmdsynopsis>
+		<command>ctdb</command>
+		<arg choice="opt">-n &lt;node&gt;</arg>
+		<arg choice="opt">-Y</arg>
+		<arg choice="opt">-t &lt;timeout&gt;</arg>
+		<arg choice="opt">-? --help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d --debug=&lt;INTEGER&gt;</arg>
+		<arg choice="opt">--socket=&lt;filename&gt;</arg>
+	</cmdsynopsis>
+	
+</refsynopsisdiv>
+
   <refsect1><title>DESCRIPTION</title>
     <para>
-      Ctdb is a command line tool to view and modify the status of a running 
-      ctdb cluster.
+      ctdb is a utility to view and manage a ctdb cluster.
     </para>
+  </refsect1>
+
+
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry><term>-n &lt;node&gt;</term>
+        <listitem>
+          <para>
+            This specifies on which node to execute the command. Default is
+            to run the command on the deamon running on the local host.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-Y</term>
+        <listitem>
+          <para>
+            Produce output in machinereadable form for easier parsing by scripts. Not all commands support this option.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-t &lt;timeout&gt;</term>
+        <listitem>
+          <para>
+            How long should ctdb wait for a command to complete before timing out. Default is 3 seconds.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-? --help</term>
+        <listitem>
+          <para>
+            Print some help text to the screen.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--usage</term>
+        <listitem>
+          <para>
+            Print useage information to the screen.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-d --debug=&lt;debuglevel&gt;</term>
+        <listitem>
+          <para>
+            Change the debug level for the command. Default is 0.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--socket=&lt;filename&gt;</term>
+        <listitem>
+          <para>
+            Specify the socketname to use when connecting to the local ctdb 
+            daemon. The default is /tmp/ctdb.socket .
+          </para>
+          <para>
+            You only need to specify this parameter if you run multiple ctdb 
+            daemons on the same physical host and thus can not use the default
+            name for the domain socket.
+          </para>
+        </listitem>
+      </varlistentry>
+
+    </variablelist>
   </refsect1>
 
 

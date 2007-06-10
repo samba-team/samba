@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 06/09/2007
+.\"      Date: 06/10/2007
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "06/09/2007" "" ""
+.TH "CTDB" "1" "06/10/2007" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -13,15 +13,51 @@
 .SH "NAME"
 ctdb \- clustered tdb database management utility
 .SH "SYNOPSIS"
-.sp
-.RS 3n
-.nf
-ctdb [\-n <node>] [ \-Y ] [ \-t <timelimit> ] COMMAND ...
-.fi
-.RE
+.HP 29
+\fBctdb [ OPTIONS ] COMMAND ...\fR
+.HP 5
+\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>]
 .SH "DESCRIPTION"
 .PP
-Ctdb is a command line tool to view and modify the status of a running ctdb cluster.
+ctdb is the utility to view and manage a ctdb cluster.
+.SH "OPTIONS"
+.PP
+\-n <node>
+.RS 3n
+This specifies on which node to execute the command. Default is to run the command on the deamon running on the local host.
+.RE
+.PP
+\-Y
+.RS 3n
+Produce output in machinereadable form for easier parsing by scripts. Not all commands support this option.
+.RE
+.PP
+\-t <timeout>
+.RS 3n
+How long should ctdb wait for a command to complete before timing out. Default is 3 seconds.
+.RE
+.PP
+\-? \-\-help
+.RS 3n
+Print some help text to the screen.
+.RE
+.PP
+\-\-usage
+.RS 3n
+Print useage information to the screen.
+.RE
+.PP
+\-d \-\-debug=<debuglevel>
+.RS 3n
+Change the debug level for the command. Default is 0.
+.RE
+.PP
+\-\-socket=<filename>
+.RS 3n
+Specify the socketname to use when connecting to the local ctdb daemon. The default is /tmp/ctdb.socket .
+.sp
+You only need to specify this parameter if you run multiple ctdb daemons on the same physical host and thus can not use the default name for the domain socket.
+.RE
 .SH "ADMINISTRATIVE COMMANDS"
 .PP
 These are commands used to monitor and administrate a CTDB cluster.
