@@ -46,6 +46,7 @@ RCSID("$Id$");
 #include <string.h>
 
 #include <bn.h>
+#include <rand.h>
 
 static int
 set_get(unsigned long num)
