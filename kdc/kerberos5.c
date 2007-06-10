@@ -70,8 +70,8 @@ set_salt_padata (METHOD_DATA *md, Salt *salt)
     }
 }
 
-PA_DATA*
-_kdc_find_padata(KDC_REQ *req, int *start, int type)
+const PA_DATA*
+_kdc_find_padata(const KDC_REQ *req, int *start, int type)
 {
     if (req->padata == NULL)
 	return NULL;
@@ -874,7 +874,7 @@ send_pac_p(krb5_context context, KDC_REQ *req)
 {
     krb5_error_code ret;
     PA_PAC_REQUEST pacreq;
-    PA_DATA *pa;
+    const PA_DATA *pa;
     int i = 0;
     
     pa = _kdc_find_padata(req, &i, KRB5_PADATA_PA_PAC_REQUEST);
@@ -1021,7 +1021,7 @@ _kdc_as_rep(krb5_context context,
 
     if(req->padata){
 	int i;
-	PA_DATA *pa;
+	const PA_DATA *pa;
 	int found_pa = 0;
 
 	log_patypes(context, config, req->padata);
