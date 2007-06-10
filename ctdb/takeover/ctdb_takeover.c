@@ -437,6 +437,8 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	int ret;
 	struct ctdb_public_ip ip;
 
+	ZERO_STRUCT(ip);
+
 	/* Work out which node will look after each public IP.
 	 * takeover_node cycles over the nodes and is incremented each time a 
 	 * node has been assigned to take over for another node.
