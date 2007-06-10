@@ -101,6 +101,7 @@ INSTALLPERMS_DATA = 0644
 LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
+CTDBDIR = @ctdbdir@
 
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
@@ -136,7 +137,7 @@ LIBADDNS_MINOR=1
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
 FLAGS3 =
-FLAGS4 =
+FLAGS4 = -I$(CTDBDIR)/include
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
 FLAGS  = $(ISA) $(FLAGS5) -I$(srcdir)/lib -D_SAMBA_BUILD_=3
 
@@ -152,6 +153,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DLIBDIR=\"$(LIBDIR)\" \
 	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
+	-DCTDBDIR=\"$(CTDBDIR)\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\"
 
 # Note that all executable programs now provide for an optional executable suffix.
@@ -213,7 +215,7 @@ TDBBASE_OBJ = lib/tdb/common/tdb.o lib/tdb/common/dump.o lib/tdb/common/error.o 
 	lib/tdb/common/traverse.o
 
 TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o\
-	lib/dbwrap.o lib/dbwrap_tdb.o
+	lib/dbwrap.o lib/dbwrap_tdb.o lib/dbwrap_ctdb.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
@@ -263,7 +265,8 @@ TALLOC_OBJ = lib/talloc/talloc.o
 
 
 LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ) \
-	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o
+	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
+	lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \

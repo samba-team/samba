@@ -1,7 +1,7 @@
 
-$SCRIPTDIR/test_local_s3.sh || failed=`expr $failed + $?`
-$SCRIPTDIR/test_smbtorture_s3.sh //$SERVER_IP/tmp $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
-$SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP || failed=`expr $failed + $?`
+#$SCRIPTDIR/test_local_s3.sh || failed=`expr $failed + $?`
+#$SCRIPTDIR/test_smbtorture_s3.sh //$SERVER_IP/tmp $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
+#$SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP || failed=`expr $failed + $?`
 
 SMBTORTURE4VERSION=`$SMBTORTURE4 --version`
 if [ -n "$SMBTORTURE4" -a -n "$SMBTORTURE4VERSION" ];then
