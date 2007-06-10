@@ -119,9 +119,34 @@
 #define FLAG_MSG_PRINT_NOTIFY		0x0008
 #define FLAG_MSG_PRINT_GENERAL		0x0010
 
+
+/*
+ * Virtual Node Numbers are identifying a node within a cluster. Ctdbd sets
+ * this, we retrieve our vnn from it.
+ */
+
+#define NONCLUSTER_VNN (0xFFFFFFFF)
+
+/*
+ * ctdb gives us 64-bit server ids for messaging_send. This is done to avoid
+ * pid clashes and to be able to register for special messages like "all
+ * smbds".
+ *
+ * Normal individual server id's have the upper 32 bits to 0, I picked "1" for
+ * Samba, other subsystems might use something else.
+ */
+
+#define MSG_SRVID_SAMBA 0x0000000100000000LL
+
+
 struct server_id {
 	pid_t pid;
+#ifdef CLUSTER_SUPPORT
+	uint32 vnn;
+#endif
 };
+
+
 
 struct messaging_context;
 struct messaging_rec;
@@ -139,6 +164,7 @@ struct messaging_context {
 	struct messaging_callback *callbacks;
 
 	struct messaging_backend *local;
+	struct messaging_backend *remote;
 };
 
 struct messaging_backend {
@@ -154,6 +180,10 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 			    struct messaging_backend **presult);
 void message_dispatch(struct messaging_context *msg_ctx);
 
+NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
+			      TALLOC_CTX *mem_ctx,
+			      struct messaging_backend **presult);
+struct ctdbd_connection *messaging_ctdbd_connection(void);
 
 BOOL message_send_all(struct messaging_context *msg_ctx,
 		      int msg_type,
@@ -163,6 +193,12 @@ struct event_context *messaging_event_context(struct messaging_context *msg_ctx)
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct server_id server_id, 
 					 struct event_context *ev);
+
+/*
+ * re-init after a fork
+ */
+NTSTATUS messaging_reinit(struct messaging_context *msg_ctx);
+
 NTSTATUS messaging_register(struct messaging_context *msg_ctx,
 			    void *private_data,
 			    uint32_t msg_type,

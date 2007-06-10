@@ -48,6 +48,32 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 {
 	struct db_context *result = NULL;
 
+#ifdef CLUSTER_SUPPORT
+
+	if (lp_clustering()) {
+		const char *partname;
+		/* ctdb only wants the file part of the name */
+		partname = strrchr(name, '/');
+		if (partname) {
+			partname++;
+		} else {
+			partname = name;
+		}
+		/* allow ctdb for individual databases to be disabled */
+		if (lp_parm_bool(-1, "ctdb", partname, True)) {
+			result = db_open_ctdb(mem_ctx, partname, hash_size,
+					      tdb_flags, open_flags, mode);
+			if (result == NULL) {
+				DEBUG(0,("failed to attach to ctdb %s\n",
+					 partname));
+				smb_panic("failed to attach to a ctdb "
+					  "database");
+			}
+		}
+	}
+
+#endif
+
 	if (result == NULL) {
 		result = db_open_tdb(mem_ctx, name, hash_size,
 				     tdb_flags, open_flags, mode);

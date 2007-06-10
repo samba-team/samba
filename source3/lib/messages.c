@@ -205,6 +205,19 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+#ifdef CLUSTER_SUPPORT
+	if (lp_clustering()) {
+		status = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("messaging_ctdb_init failed: %s\n",
+				  nt_errstr(status)));
+			TALLOC_FREE(ctx);
+			return NULL;
+		}
+	}
+#endif
+
 	messaging_register(ctx, NULL, MSG_PING, ping_message);
 
 	/* Register some debugging related messages */
@@ -215,6 +228,34 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	return ctx;
 }
+
+/*
+ * re-init after a fork
+ */
+NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
+{
+#ifdef CLUSTER_SUPPORT
+
+	TALLOC_FREE(msg_ctx->remote);
+
+	if (lp_clustering()) {
+		NTSTATUS status;
+
+		status = messaging_ctdbd_init(msg_ctx, msg_ctx,
+					      &msg_ctx->remote);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("messaging_ctdb_init failed: %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
+	}
+
+#endif
+
+	return NT_STATUS_OK;
+}
+
 
 /*
  * Register a dispatch function for a particular message type. Allow multiple

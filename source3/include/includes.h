@@ -702,6 +702,8 @@ typedef int BOOL;
 #include "rpc_client.h"
 #include "event.h"
 #include "dbwrap.h"
+#include "packet.h"
+#include "ctdbd_conn.h"
 
 /*
  * Type for wide character dirent structure.
