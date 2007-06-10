@@ -327,6 +327,9 @@ test_BN_rand(void)
 {
     BIGNUM *bn;
 
+    if (RAND_status() != 1)
+	return 0;
+
     bn = BN_new();
     if (bn == NULL)
 	return 1;
