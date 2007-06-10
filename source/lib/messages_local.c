@@ -47,7 +47,6 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/ndr_messaging.h"
 
-/* the locking database handle */
 static int received_signal;
 
 static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
