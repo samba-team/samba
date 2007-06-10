@@ -106,5 +106,6 @@ fi
 %{_bindir}/onnode.rsh
 %{_bindir}/onnode
 %{_mandir}/man1/ctdb.1.gz
+%{_mandir}/man1/ctdbd.1.gz
 %{_includedir}/ctdb.h
 %{_includedir}/ctdb_private.h
