@@ -323,6 +323,13 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		return (-1);
 	}
 
+	/*
+	 * This implicitly initializes the global ctdbd connection, usable by
+	 * the db_open() calls further down.
+	 */
+
+	messaging_init(NULL, procid_self(), event_context_init(NULL));
+	
 	switch (profile_only) {
 		case 'P':
 			/* Dump profile data */

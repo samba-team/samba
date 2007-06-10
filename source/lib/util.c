@@ -1511,20 +1511,24 @@ BOOL process_exists(const struct server_id pid)
 		return True;
 	}
 
-	if (!procid_is_local(&pid)) {
-		/* This *SEVERELY* needs fixing. */
-		return True;
+	if (procid_is_local(&pid)) {
+		return (kill(pid.pid,0) == 0 || errno != ESRCH);
 	}
 
-	/* Doing kill with a non-positive pid causes messages to be
-	 * sent to places we don't want. */
-	SMB_ASSERT(pid.pid > 0);
-	return(kill(pid.pid,0) == 0 || errno != ESRCH);
+#ifdef CLUSTER_SUPPORT
+	return ctdbd_process_exists(messaging_ctdbd_connection(), pid.vnn,
+				    pid.pid);
+#else
+	return False;
+#endif
 }
 
 BOOL process_exists_by_pid(pid_t pid)
 {
-	return process_exists(pid_to_procid(pid));
+	/* Doing kill with a non-positive pid causes messages to be
+	 * sent to places we don't want. */
+	SMB_ASSERT(pid > 0);
+	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
 /*******************************************************************
@@ -3045,10 +3049,26 @@ pid_t procid_to_pid(const struct server_id *proc)
 	return proc->pid;
 }
 
+static uint32 my_vnn = NONCLUSTER_VNN;
+
+void set_my_vnn(uint32 vnn)
+{
+	DEBUG(10, ("vnn pid %d = %u\n", (int)sys_getpid(), (unsigned int)vnn));
+	my_vnn = vnn;
+}
+
+uint32 get_my_vnn(void)
+{
+	return my_vnn;
+}
+
 struct server_id pid_to_procid(pid_t pid)
 {
 	struct server_id result;
 	result.pid = pid;
+#ifdef CLUSTER_SUPPORT
+	result.vnn = my_vnn;
+#endif
 	return result;
 }
 
@@ -3064,7 +3084,13 @@ struct server_id server_id_self(void)
 
 BOOL procid_equal(const struct server_id *p1, const struct server_id *p2)
 {
-	return (p1->pid == p2->pid);
+	if (p1->pid != p2->pid)
+		return False;
+#ifdef CLUSTER_SUPPORT
+	if (p1->vnn != p2->vnn)
+		return False;
+#endif
+	return True;
 }
 
 BOOL cluster_id_equal(const struct server_id *id1,
@@ -3075,18 +3101,47 @@ BOOL cluster_id_equal(const struct server_id *id1,
 
 BOOL procid_is_me(const struct server_id *pid)
 {
-	return (pid->pid == sys_getpid());
+	if (pid->pid != sys_getpid())
+		return False;
+#ifdef CLUSTER_SUPPORT
+	if (pid->vnn != my_vnn)
+		return False;
+#endif
+	return True;
 }
 
 struct server_id interpret_pid(const char *pid_string)
 {
+#ifdef CLUSTER_SUPPORT
+	unsigned int vnn, pid;
+	struct server_id result;
+	if (sscanf(pid_string, "%u:%u", &vnn, &pid) == 2) {
+		result.vnn = vnn;
+		result.pid = pid;
+	}
+	else {
+		result.vnn = NONCLUSTER_VNN;
+		result.pid = -1;
+	}
+	return result;
+#else
 	return pid_to_procid(atoi(pid_string));
+#endif
 }
 
 char *procid_str_static(const struct server_id *pid)
 {
 	static fstring str;
-	fstr_sprintf(str, "%d", pid->pid);
+#ifdef CLUSTER_SUPPORT
+	if (pid->vnn == NONCLUSTER_VNN) {
+		fstr_sprintf(str, "%d", (int)pid->pid);
+	}
+	else {
+		fstr_sprintf(str, "%u:%d", (unsigned)pid->vnn, (int)pid->pid);
+	}
+#else
+	fstr_sprintf(str, "%d", (int)pid->pid);
+#endif
 	return str;
 }
 
@@ -3102,7 +3157,11 @@ BOOL procid_valid(const struct server_id *pid)
 
 BOOL procid_is_local(const struct server_id *pid)
 {
+#ifdef CLUSTER_SUPPORT
+	return pid->vnn == my_vnn;
+#else
 	return True;
+#endif
 }
 
 int this_is_smp(void)

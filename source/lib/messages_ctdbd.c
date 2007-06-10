@@ -1,0 +1,119 @@
+/* 
+   Unix SMB/CIFS implementation.
+   Samba internal messaging functions
+   Copyright (C) 2007 by Volker Lendecke
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+
+#ifdef CLUSTER_SUPPORT
+
+#include "librpc/gen_ndr/messaging.h"
+
+struct messaging_ctdbd_context {
+	struct ctdbd_connection *conn;
+};
+
+/*
+ * This is a Samba3 hack/optimization. Routines like process_exists need to
+ * talk to ctdbd, and they don't get handed a messaging context.
+ */
+struct ctdbd_connection *global_ctdbd_connection;
+
+struct ctdbd_connection *messaging_ctdbd_connection(void)
+{
+	return global_ctdbd_connection;
+}
+
+static NTSTATUS messaging_ctdb_send(struct messaging_context *msg_ctx,
+				    struct server_id pid, int msg_type,
+				    const DATA_BLOB *data,
+				    struct messaging_backend *backend)
+{
+	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
+		backend->private_data, struct messaging_ctdbd_context);
+
+	struct messaging_rec msg;
+
+	msg.msg_version	= MESSAGE_VERSION;
+	msg.msg_type	= msg_type;
+	msg.dest	= pid;
+	msg.src		= procid_self();
+	msg.buf		= *data;
+
+	return ctdbd_messaging_send(ctx->conn, pid.vnn, pid.pid, &msg);
+}
+
+static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)
+{
+	/*
+	 * The global connection just went away
+	 */
+	global_ctdbd_connection = NULL;
+	return 0;
+}
+
+NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
+			      TALLOC_CTX *mem_ctx,
+			      struct messaging_backend **presult)
+{
+	struct messaging_backend *result;
+	struct messaging_ctdbd_context *ctx;
+	NTSTATUS status;
+
+	if (!(result = TALLOC_P(mem_ctx, struct messaging_backend))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!(ctx = TALLOC_P(result, struct messaging_ctdbd_context))) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ctdbd_messaging_connection(ctx, &ctx->conn);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("ctdbd_init_connection failed: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	global_ctdbd_connection = ctx->conn;
+	talloc_set_destructor(ctx, messaging_ctdbd_destructor);
+
+	set_my_vnn(ctdbd_vnn(ctx->conn));
+
+	result->send_fn = messaging_ctdb_send;
+	result->private_data = (void *)ctx;
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
+
+#else
+
+NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
+			      TALLOC_CTX *mem_ctx,
+			      struct messaging_backend **presult)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+#endif

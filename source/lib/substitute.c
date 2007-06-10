@@ -453,7 +453,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 		      const char *str)
 {
 	char *b, *p, *s, *r, *a_string;
-	fstring pidstr;
+	fstring pidstr, vnnstr;
 	struct passwd *pass;
 	const char *local_machine_name = get_local_machine_name();
 
@@ -551,6 +551,10 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		case '(':
 			a_string = realloc_expand_longvar( a_string, p );
+			break;
+		case 'V' :
+			slprintf(vnnstr,sizeof(vnnstr)-1, "%u", get_my_vnn());
+			a_string = realloc_string_sub(a_string, "%V", vnnstr);
 			break;
 		default: 
 			break;

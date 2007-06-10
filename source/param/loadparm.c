@@ -241,6 +241,8 @@ typedef struct {
 	int iAclCompat;
 	char *szCupsServer;
 	char *szIPrintServer;
+	char *ctdbdSocket;
+	BOOL clustering;
 	int ldap_passwd_sync; 
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
@@ -1034,6 +1036,8 @@ static struct parm_struct parm_table[] = {
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED}, 
 
 	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, FLAG_ADVANCED}, 
+	{"ctdbd socket", P_STRING, P_GLOBAL, &Globals.ctdbdSocket, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
+	{"clustering", P_BOOL, P_GLOBAL, &Globals.clustering, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
 
 	{N_("Printing Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1629,6 +1633,9 @@ static void init_globals(BOOL first_time_only)
 	string_set(&Globals.szCupsServer, "");
 	string_set(&Globals.szIPrintServer, "");
 
+	string_set(&Globals.ctdbdSocket, "");
+	Globals.clustering = False;
+
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnumUsers = False;
 	Globals.bWinbindEnumGroups = False;
@@ -2033,6 +2040,8 @@ FN_GLOBAL_LIST(lp_svcctl_list, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
+FN_GLOBAL_CONST_STRING(lp_ctdbd_socket, &Globals.ctdbdSocket)
+FN_GLOBAL_BOOL(lp_clustering, &Globals.clustering);
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)

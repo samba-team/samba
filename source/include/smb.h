@@ -782,7 +782,11 @@ Offset  Data			length.
 54
 
 */
+#ifdef CLUSTER_SUPPORT
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 58
+#else
 #define MSG_SMB_SHARE_MODE_ENTRY_SIZE 54
+#endif
 
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */

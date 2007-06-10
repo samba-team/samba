@@ -1156,6 +1156,13 @@ extern void build_options(BOOL screen);
 	/* Setup aio signal handler. */
 	initialize_async_io_handler();
 
+	/*
+	 * For clustering, we need to re-init our ctdbd connection after the
+	 * fork
+	 */
+	if (!NT_STATUS_IS_OK(messaging_reinit(smbd_messaging_context())))
+		exit(1);
+
 	/* register our message handlers */
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);

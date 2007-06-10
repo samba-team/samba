@@ -833,6 +833,9 @@ void share_mode_entry_to_message(char *msg, struct share_mode_entry *e)
 	SIVAL(msg,44,e->share_file_id);
 	SIVAL(msg,48,e->uid);
 	SSVAL(msg,52,e->flags);
+#ifdef CLUSTER_SUPPORT
+	SIVAL(msg,54,e->pid.vnn);
+#endif
 }
 
 /****************************************************************************
@@ -853,6 +856,9 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 	e->share_file_id = (unsigned long)IVAL(msg,44);
 	e->uid = (uint32)IVAL(msg,48);
 	e->flags = (uint16)SVAL(msg,52);
+#ifdef CLUSTER_SUPPORT
+	e->pid.vnn = IVAL(msg,54);
+#endif
 }
 
 /****************************************************************************
