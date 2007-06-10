@@ -139,7 +139,6 @@ install: all
 	${INSTALLCMD} -m755 tools/onnode.rsh $(DESTDIR)$(bindir)
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -m 644 doc/ctdb.1 $(DESTDIR)$(mandir)/man1; fi
-	if [ -f doc/ctdbd.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdbd.1 ];then ${INSTALLCMD} -m 644 doc/ctdbd.1 $(DESTDIR)$(mandir)/man1; fi
 	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode
 
