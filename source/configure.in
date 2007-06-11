@@ -5247,55 +5247,71 @@ fi
 
 AC_MSG_CHECKING(whether to support ACLs)
 AC_ARG_WITH(acl-support,
-[  --with-acl-support      Include ACL support (default=no)],
+[  --with-acl-support      Include ACL support (default=auto)],
 [ case "$withval" in
-  yes)
+	yes|no)
+		with_acl_support="$withval"
+		;;
+  esac ])
 
+if test x"$with_acl_support" = x ; then
+	with_acl_support="auto"
+fi
+
+AC_MSG_RESULT($with_acl_support)
+
+if test x"$with_acl_support" = x"no"; then
+	AC_MSG_RESULT(Disabling ACL support)
+	AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
+else
+	AC_MSG_NOTICE(checking whether ACL support is available:)
 	case "$host_os" in
 	*sysv5*)
-		AC_MSG_RESULT(Using UnixWare ACLs)
+		AC_MSG_NOTICE(Using UnixWare ACLs)
 		AC_DEFINE(HAVE_UNIXWARE_ACLS,1,[Whether UnixWare ACLs are available])
 		default_static_modules="$default_static_modules vfs_solarisacl"
 		;;
 	*solaris*)
-		AC_MSG_RESULT(Using solaris ACLs)
+		AC_MSG_NOTICE(Using solaris ACLs)
 		AC_DEFINE(HAVE_SOLARIS_ACLS,1,[Whether solaris ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lsec"
 		default_static_modules="$default_static_modules vfs_solarisacl"
 		;;
 	*hpux*)
-		AC_MSG_RESULT(Using HPUX ACLs)
+		AC_MSG_NOTICE(Using HPUX ACLs)
 		AC_DEFINE(HAVE_HPUX_ACLS,1,[Whether HPUX ACLs are available])
 		default_static_modules="$default_static_modules vfs_hpuxacl"
 		;;
 	*irix*)
-		AC_MSG_RESULT(Using IRIX ACLs)
+		AC_MSG_NOTICE(Using IRIX ACLs)
 		AC_DEFINE(HAVE_IRIX_ACLS,1,[Whether IRIX ACLs are available])
 		default_static_modules="$default_static_modules vfs_irixacl"
 		;;
 	*aix*)
-		AC_MSG_RESULT(Using AIX ACLs)
+		AC_MSG_NOTICE(Using AIX ACLs)
 		AC_DEFINE(HAVE_AIX_ACLS,1,[Whether AIX ACLs are available])
 		default_static_modules="$default_static_modules vfs_aixacl"
 		;;
 	*osf*)
-		AC_MSG_RESULT(Using Tru64 ACLs)
+		AC_MSG_NOTICE(Using Tru64 ACLs)
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lpacl"
 		default_static_modules="$default_static_modules vfs_tru64acl"
 		;;
-	*freebsd[[5-9]]*)
-		AC_MSG_RESULT(Using FreeBSD posix ACLs)
-		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
-		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
-		default_static_modules="$default_static_modules vfs_posixacl"
+	*darwin*)
+		AC_MSG_NOTICE(ACLs on Darwin currently not supported)
+		AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
 		;;
-	*linux*)
-		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
-       		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
-		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
+	*)
+		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
+		case "$host_os" in
+		*linux*)
+			AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
+			;;
+		esac
+		AC_CACHE_CHECK([for POSIX ACL support],samba_cv_HAVE_POSIX_ACLS,[
 			acl_LIBS=$LIBS
-			LIBS="$LIBS -lacl"
+			LIBS="$LIBS $ACL_LIBS"
 			AC_TRY_LINK([
 				#include <sys/types.h>
 				#include <sys/acl.h>
@@ -5310,11 +5326,11 @@ AC_ARG_WITH(acl-support,
 			LIBS=$acl_LIBS
 		])
 		if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
-			AC_MSG_RESULT(Using posix ACLs)
+			AC_MSG_NOTICE(Using posix ACLs)
 			AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
 			AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
 				acl_LIBS=$LIBS
-				LIBS="$LIBS -lacl"
+				LIBS="$LIBS $ACL_LIBS"
 				AC_TRY_LINK([
 					#include <sys/types.h>
 					#include <sys/acl.h>
@@ -5330,63 +5346,16 @@ AC_ARG_WITH(acl-support,
 			if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
 				AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 			fi
+   			default_static_modules="$default_static_modules vfs_posixacl"
+		else
+			AC_MSG_NOTICE(ACL support is not avaliable)
+			AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
 		fi
-            ;;
-         *)
-		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
-		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
-			acl_LIBS=$LIBS
-			LIBS="$LIBS -lacl"
-			AC_TRY_LINK([
-				#include <sys/types.h>
-				#include <sys/acl.h>
-			],[
-				acl_t acl;
-				int entry_id;
-				acl_entry_t *entry_p;
-				return acl_get_entry( acl, entry_id, entry_p);
-			],
-			[samba_cv_HAVE_POSIX_ACLS=yes],
-			[samba_cv_HAVE_POSIX_ACLS=no])
-			LIBS=$acl_LIBS
-		])
-		if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
-			AC_MSG_RESULT(Using posix ACLs)
-			AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
-			AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
-				acl_LIBS=$LIBS
-				LIBS="$LIBS -lacl"
-				AC_TRY_LINK([
-					#include <sys/types.h>
-					#include <sys/acl.h>
-				],[
-					acl_permset_t permset_d;
-					acl_perm_t perm;
-					return acl_get_perm_np( permset_d, perm);
-				],
-				[samba_cv_HAVE_ACL_GET_PERM_NP=yes],
-				[samba_cv_HAVE_ACL_GET_PERM_NP=no])
-				LIBS=$acl_LIBS
-			])
-			if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
-				AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
-			fi
-		fi
-            ;;
+		;;
         esac
-        ;;
-  *)
-    AC_MSG_RESULT(no)
-    AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
-    ;;
-  esac ],
-  AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
-  AC_MSG_RESULT(no)
-)
+fi # with_acl_support
 
-if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
-   default_static_modules="$default_static_modules vfs_posixacl"
-fi
+
 
 #################################################
 # check for AIO support
