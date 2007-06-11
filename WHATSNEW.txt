@@ -1,6 +1,6 @@
 'Samba4 TP5' presents you with a snapshot into Samba4's ongoing
 development, as we move towards our first alpha releases.  This Technology
-Preview (TP) is snapshot of Samba4's development, as at June 2007.
+Preview (TP) is a snapshot of Samba4's development, as at June 2007.
 
 In the time since TP4 was released in January 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
