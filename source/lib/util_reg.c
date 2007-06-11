@@ -40,8 +40,8 @@ const char *reg_type_lookup(uint32 type)
 	case REG_DWORD:
 		result = "REG_DWORD";
 		break;
-	case REG_DWORD_BE:
-		result = "REG_DWORD_BE";
+	case REG_DWORD_BIG_ENDIAN:
+		result = "REG_DWORD_BIG_ENDIAN";
 		break;
 	case REG_LINK:
 		result = "REG_LINK";

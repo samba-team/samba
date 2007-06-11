@@ -46,5 +46,73 @@ typedef struct {
 	char            **subkeys;
 } REGSUBKEY_CTR;
 
+/*
+ *
+ * Macros that used to reside in rpc_reg.h
+ *
+ */
+ 
+#define HKEY_CLASSES_ROOT	0x80000000
+#define HKEY_CURRENT_USER	0x80000001
+#define HKEY_LOCAL_MACHINE 	0x80000002
+#define HKEY_USERS         	0x80000003
+#define HKEY_PERFORMANCE_DATA	0x80000004
+
+#define KEY_HKLM		"HKLM"
+#define KEY_HKU			"HKU"
+#define KEY_HKCC		"HKCC"
+#define KEY_HKCR		"HKCR"
+#define KEY_HKPD		"HKPD"
+#define KEY_HKPT		"HKPT"
+#define KEY_HKPN		"HKPN"
+#define KEY_HKCU		"HKCU"
+#define KEY_HKDD		"HKDD"
+#define KEY_SERVICES		"HKLM\\SYSTEM\\CurrentControlSet\\Services"
+#define KEY_PRINTING 		"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
+#define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
+#define KEY_PRINTING_PORTS	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports"
+#define KEY_EVENTLOG 		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
+#define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
+#define KEY_TREE_ROOT		""
+
+/*
+ * Registry key types
+ *	Most keys are going to be GENERIC -- may need a better name?
+ *	HKPD and HKPT are used by reg_perfcount.c
+ *		they are special keys that contain performance data
+ */
+#define REG_KEY_GENERIC		0
+#define REG_KEY_HKPD		1
+#define REG_KEY_HKPT		2
+
+/* 
+ * container for function pointers to enumeration routines
+ * for virtual registry view 
+ */ 
+ 
+typedef struct {
+	/* functions for enumerating subkeys and values */	
+	int 	(*fetch_subkeys)( const char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*fetch_values) ( const char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys)( const char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values)( const char *key, REGVAL_CTR *val );
+	BOOL	(*reg_access_check)( const char *keyname, uint32 requested, uint32 *granted, NT_USER_TOKEN *token );
+} REGISTRY_OPS;
+
+typedef struct {
+	const char	*keyname;	/* full path to name of key */
+	REGISTRY_OPS	*ops;		/* registry function hooks */
+} REGISTRY_HOOK;
+
+
+/* structure to store the registry handles */
+
+typedef struct _RegistryKey {
+	uint32		type;
+	char		*name; 		/* full name of registry key */
+	uint32 		access_granted;
+	REGISTRY_HOOK	*hook;	
+} REGISTRY_KEY;
+
 #endif /* _REG_OBJECTS_H */
 
