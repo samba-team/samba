@@ -125,6 +125,11 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 {
 	int j, ret;
 
+	/* start the freeze process immediately on all nodes */
+	ctdb_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
+		     CTDB_CONTROL_FREEZE, CTDB_CTRL_FLAG_NOREPLY, tdb_null, 
+		     NULL, NULL, NULL, NULL, NULL);
+
 	/* set recovery mode to active on all nodes */
 	for (j=0; j<nodemap->num; j++) {
 		/* dont change it for nodes that are unavailable */
