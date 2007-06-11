@@ -14,7 +14,7 @@ shift
 case $cmd in 
      startup)
 	# wait for all shared directories to become available
-	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
+	smb_dirs=`testparm -s 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
 	ctdb_wait_directories "Samba" $smb_dirs	
 
 	# make sure samba is not already started
@@ -28,7 +28,7 @@ case $cmd in
 	service winbind start
 
 	# wait for the Samba tcp ports to become available
-	smb_ports=`testparm -stv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
+	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
 	ctdb_wait_tcp_ports "Samba" $smb_ports
 	;;
 	
@@ -52,15 +52,15 @@ case $cmd in
 	;;
 
      monitor)
-	testparm -st 2>&1 | egrep '^WARNING|^ERROR|^Unknown' && {
+	testparm -s 2>&1 | egrep '^WARNING|^ERROR|^Unknown' && {
 	    echo "`date` ERROR: testparm shows smb.conf is not clean"
 	    exit 1
 	}
 
-	smb_dirs=`testparm -st 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
+	smb_dirs=`testparm -s 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
 	ctdb_check_directories "Samba" $smb_dirs	
 
-	smb_ports=`testparm -stv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
+	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
 	ctdb_check_tcp_ports "Samba" $smb_ports
 	;;
 
