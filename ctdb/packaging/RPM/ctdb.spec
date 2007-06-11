@@ -5,13 +5,13 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 4
+Release: 5
 Epoch: 0
 License: GNU GPL version 2
 Group: System Environment/Daemons
 URL: http://ctdb.samba.org/
 
-Source: ctdb-%{version}.tar.bz2
+Source: ctdb-%{version}.tar.gz
 
 Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d
