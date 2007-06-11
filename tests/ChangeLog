@@ -1,3 +1,8 @@
+2007-06-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-referral.in: Add some more as-req canon tests, add
+	disable tgs-req tests.
+	
 2007-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* can/check-can.in: Check is there is a working db backend here.
