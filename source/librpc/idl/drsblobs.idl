@@ -148,14 +148,14 @@ interface drsblobs {
 	 * prefixMap
 	 * w2k  unknown
 	 * w2k3 unknown
-	 * samba4 uses 0x44544442 'DSDB'
+	 * samba4 uses 0x44534442 'DSDB'
 	 *
 	 * as we windows don't return the prefixMap attribute when you ask for
 	 * we don't know the format, but the attribute is not replicated
 	 * so that we can choose our own format...
 	 */
 	typedef [v1_enum] enum {
-		PREFIX_MAP_VERSION_DSDB = 0x44544442
+		PREFIX_MAP_VERSION_DSDB = 0x44534442
 	} prefixMapVersion;
 
 	typedef [nodiscriminant] union {
