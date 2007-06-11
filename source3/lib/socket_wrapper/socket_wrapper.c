@@ -175,7 +175,7 @@ static void set_port(int family, int prt, struct sockaddr *addr)
 	}
 }
 
-static int socket_length(int family)
+static size_t socket_length(int family)
 {
 	switch (family) {
 	case AF_INET:
@@ -185,7 +185,7 @@ static int socket_length(int family)
 		return sizeof(struct sockaddr_in6);
 #endif
 	}
-	return -1;
+	return 0;
 }
 
 
@@ -789,6 +789,9 @@ static struct swrap_packet *swrap_packet_init(struct timeval *tval,
 		wire_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.udp);
 		wire_len = wire_hdr_len + payload_len;
 		break;
+
+	default:
+		return NULL;
 	}
 
 	if (unreachable) {
@@ -1232,10 +1235,12 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 		if (type == SOCK_STREAM) {
 			break;
 		}
+		/*fall through*/
 	case 17:
 		if (type == SOCK_DGRAM) {
 			break;
 		}
+		/*fall through*/
 	default:
 		errno = EPROTONOSUPPORT;
 		return -1;
@@ -1279,7 +1284,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	 * socket family
 	 */
 	my_addrlen = socket_length(parent_si->family);
-	if (my_addrlen < 0) {
+	if (my_addrlen <= 0) {
 		errno = EINVAL;
 		return -1;
 	}
