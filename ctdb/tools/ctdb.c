@@ -194,39 +194,11 @@ static int control_statistics(struct ctdb_context *ctdb, int argc, const char **
 
 
 /*
-  reset statistics on all nodes
- */
-static int control_statistics_reset_all(struct ctdb_context *ctdb)
-{
-	int ret, i;
-	uint32_t *nodes;
-	uint32_t num_nodes;
-
-	nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-	CTDB_NO_MEMORY(ctdb, nodes);
-	
-	for (i=0;i<num_nodes;i++) {
-		ret = ctdb_statistics_reset(ctdb, nodes[i]);
-		if (ret != 0) {
-			printf("Unable to reset statistics on node %u\n", nodes[i]);
-			return ret;
-		}
-	}
-	talloc_free(nodes);
-	return 0;
-}
-
-
-/*
   reset remote ctdb statistics
  */
 static int control_statistics_reset(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-
-	if (options.vnn == CTDB_BROADCAST_ALL) {
-		return control_statistics_reset_all(ctdb);
-	}
 
 	ret = ctdb_statistics_reset(ctdb, options.vnn);
 	if (ret != 0) {
@@ -247,21 +219,6 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	struct ctdb_node_map *nodemap=NULL;
 	uint32_t recmode, recmaster;
 	uint32_t myvnn;
-
-	if (options.vnn == CTDB_BROADCAST_ALL) {
-		uint32_t *nodes;
-		uint32_t num_nodes;
-		ret = 0;
-
-		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-		CTDB_NO_MEMORY(ctdb, nodes);
-	
-		for (i=0;i<num_nodes;i++) {
-			options.vnn = nodes[i];
-			ret |= control_status(ctdb, argc, argv);
-		}
-		return ret;
-	}
 
 	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
 
@@ -449,27 +406,6 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	if (options.vnn == CTDB_CURRENT_NODE) {
-		options.vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
-	}
-
-	if (options.vnn == CTDB_BROADCAST_ALL) {
-		uint32_t *nodes;
-		uint32_t num_nodes;
-		int i;
-
-		ret = 0;
-
-		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-		CTDB_NO_MEMORY(ctdb, nodes);
-		for (i=0;i<num_nodes;i++) {
-			options.vnn = nodes[i];
-			ret |= control_ban(ctdb, argc, argv);
-		}
-		talloc_free(nodes);
-		return ret;
-	}
-
 	ban_time = strtoul(argv[0], NULL, 0);
 
 	ret = ctdb_ctrl_getrecmaster(ctdb, TIMELIMIT(), options.vnn, &recmaster);
@@ -502,27 +438,6 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 	int ret;
 	uint32_t recmaster;
 	TDB_DATA data;
-
-	if (options.vnn == CTDB_CURRENT_NODE) {
-		options.vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
-	}
-
-	if (options.vnn == CTDB_BROADCAST_ALL) {
-		uint32_t *nodes;
-		uint32_t num_nodes;
-		int i;
-
-		ret = 0;
-
-		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-		CTDB_NO_MEMORY(ctdb, nodes);
-		for (i=0;i<num_nodes;i++) {
-			options.vnn = nodes[i];
-			ret |= control_unban(ctdb, argc, argv);
-		}
-		talloc_free(nodes);
-		return ret;
-	}
 
 	ret = ctdb_ctrl_getrecmaster(ctdb, TIMELIMIT(), options.vnn, &recmaster);
 	if (ret != 0) {
@@ -689,24 +604,15 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
  */
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret, i;
-	uint32_t *nodes;
-	uint32_t num_nodes;
-
-	nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-	CTDB_NO_MEMORY(ctdb, nodes);
-
-	for (i=0;i<num_nodes;i++) {
-		struct timeval tv = timeval_current();
-		ret = ctdb_ctrl_ping(ctdb, nodes[i]);
-		if (ret == -1) {
-			printf("Unable to get ping response from node %u\n", nodes[i]);
-		} else {
-			printf("response from %u time=%.6f sec  (%d clients)\n", 
-			       nodes[i], timeval_elapsed(&tv), ret);
-		}
+	int ret;
+	struct timeval tv = timeval_current();
+	ret = ctdb_ctrl_ping(ctdb, options.vnn);
+	if (ret == -1) {
+		printf("Unable to get ping response from node %u\n", options.vnn);
+	} else {
+		printf("response from %u time=%.6f sec  (%d clients)\n", 
+		       options.vnn, timeval_elapsed(&tv), ret);
 	}
-	talloc_free(nodes);
 	return 0;
 }
 
@@ -788,35 +694,16 @@ static int control_listvars(struct ctdb_context *ctdb, int argc, const char **ar
  */
 static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret, i;
-	uint32_t *nodes;
-	uint32_t num_nodes;
+	int ret;
 	uint32_t level;
 
-	if (options.vnn != CTDB_BROADCAST_ALL) {
-		ret = ctdb_ctrl_get_debuglevel(ctdb, options.vnn, &level);
-		if (ret != 0) {
-			printf("Unable to get debuglevel response from node %u\n", 
-				options.vnn);
-		} else {
-			printf("Node %u is at debug level %u\n", options.vnn, level);
-		}
-		return 0;
+	ret = ctdb_ctrl_get_debuglevel(ctdb, options.vnn, &level);
+	if (ret != 0) {
+		printf("Unable to get debuglevel response from node %u\n", 
+		       options.vnn);
+	} else {
+		printf("Node %u is at debug level %u\n", options.vnn, level);
 	}
-
-	nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-	CTDB_NO_MEMORY(ctdb, nodes);
-	
-	for (i=0;i<num_nodes;i++) {
-		ret = ctdb_ctrl_get_debuglevel(ctdb, nodes[i], &level);
-		if (ret != 0) {
-			printf("Unable to get debuglevel response from node %u\n", 
-				nodes[i]);
-		} else {
-			printf("Node %u is at debug level %u\n", nodes[i], level);
-		}
-	}
-	talloc_free(nodes);
 	return 0;
 }
 
@@ -827,9 +714,7 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t level, i;
-	uint32_t *nodes;
-	uint32_t num_nodes;
+	uint32_t level;
 
 	if (argc < 1) {
 		usage();
@@ -837,24 +722,10 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 
 	level = strtoul(argv[0], NULL, 0);
 
-	if (options.vnn != CTDB_BROADCAST_ALL) {
-		ret = ctdb_ctrl_set_debuglevel(ctdb, options.vnn, level);
-		if (ret != 0) {
-			printf("Unable to set debug level on node %u\n", options.vnn);
-		}
-		return 0;
+	ret = ctdb_ctrl_set_debuglevel(ctdb, options.vnn, level);
+	if (ret != 0) {
+		printf("Unable to set debug level on node %u\n", options.vnn);
 	}
-
-	nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-	CTDB_NO_MEMORY(ctdb, nodes);
-	for (i=0;i<num_nodes;i++) {
-		ret = ctdb_ctrl_set_debuglevel(ctdb, nodes[i], level);
-		if (ret != 0) {
-			printf("Unable to set debug level on node %u\n", nodes[i]);
-			break;
-		}
-	}
-	talloc_free(nodes);
 	return 0;
 }
 
@@ -864,32 +735,12 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
  */
 static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret=0, count=0;
-	uint32_t i;
-	uint32_t *nodes;
-	uint32_t num_nodes;
+	int ret;
 
-	if (options.vnn != CTDB_BROADCAST_ALL) {
-		ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.vnn);
-		if (ret != 0) {
-			printf("Unable to freeze node %u\n", options.vnn);
-		}		
-		return 0;
-	}
-
-	nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-	CTDB_NO_MEMORY(ctdb, nodes);
-	for (i=0;i<num_nodes;i++) {
-		int res = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), nodes[i]);
-		if (res != 0) {
-			printf("Warning: Unable to freeze node %u\n", nodes[i]);
-		} else {
-			count++;
-		}
-		ret |= res;
-	}
-	printf("Froze %u nodes\n", count);
-	talloc_free(nodes);
+	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.vnn);
+	if (ret != 0) {
+		printf("Unable to freeze node %u\n", options.vnn);
+	}		
 	return 0;
 }
 
@@ -898,32 +749,12 @@ static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int control_thaw(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret=0, count=0;
-	uint32_t i;
-	uint32_t *nodes;
-	uint32_t num_nodes;
+	int ret;
 
-	if (options.vnn != CTDB_BROADCAST_ALL) {
-		ret = ctdb_ctrl_thaw(ctdb, TIMELIMIT(), options.vnn);
-		if (ret != 0) {
-			printf("Unable to thaw node %u\n", options.vnn);
-		}		
-		return 0;
-	}
-
-	nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-	CTDB_NO_MEMORY(ctdb, nodes);
-	for (i=0;i<num_nodes;i++) {
-		int res = ctdb_ctrl_thaw(ctdb, TIMELIMIT(), nodes[i]);
-		if (res != 0) {
-			printf("Warning: Unable to thaw node %u\n", nodes[i]);
-		} else {
-			count++;
-		}
-		ret |= res;
-	}
-	printf("Thawed %u nodes\n", count);
-	talloc_free(nodes);
+	ret = ctdb_ctrl_thaw(ctdb, TIMELIMIT(), options.vnn);
+	if (ret != 0) {
+		printf("Unable to thaw node %u\n", options.vnn);
+	}		
 	return 0;
 }
 
@@ -963,35 +794,36 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 static const struct {
 	const char *name;
 	int (*fn)(struct ctdb_context *, int, const char **);
+	bool auto_all;
 	const char *msg;
 	const char *args;
 } ctdb_commands[] = {
-	{ "status",          control_status,            "show node status" },
-	{ "ping",            control_ping,              "ping all nodes" },
-	{ "getvar",          control_getvar,            "get a tunable variable",               "<name>"},
-	{ "setvar",          control_setvar,            "set a tunable variable",               "<name> <value>"},
-	{ "listvars",        control_listvars,          "list tunable variables"},
-	{ "statistics",      control_statistics,        "show statistics" },
-	{ "statisticsreset", control_statistics_reset,  "reset statistics"},
-	{ "ip",              control_ip,                "show which public ip's that ctdb manages" },
-	{ "process-exists",  control_process_exists,    "check if a process exists on a node",  "<pid>"},
-	{ "getdbmap",        control_getdbmap,          "show the database map" },
-	{ "catdb",           control_catdb,             "dump a database" ,                     "<dbname>"},
-	{ "getmonmode",      control_getmonmode,        "show monitoring mode" },
-	{ "setmonmode",      control_setmonmode,        "set monitoring mode", "<0|1>" },
-	{ "setdebug",        control_setdebug,          "set debug level",                      "<debuglevel>" },
-	{ "getdebug",        control_getdebug,          "get debug level" },
-	{ "attach",          control_attach,            "attach to a database",                 "<dbname>" },
-	{ "dumpmemory",      control_dumpmemory,        "dump memory map to logs" },
-	{ "getpid",          control_getpid,            "get ctdbd process ID" },
-	{ "disable",         control_disable,           "disable a nodes public IP" },
-	{ "enable",          control_enable,            "enable a nodes public IP" },
-	{ "ban",             control_ban,               "ban a node from the cluster",          "<bantime|0>"},
-	{ "unban",           control_unban,             "unban a node from the cluster" },
-	{ "shutdown",        control_shutdown,          "shutdown ctdbd" },
-	{ "recover",         control_recover,           "force recovery" },
-	{ "freeze",          control_freeze,            "freeze all databases" },
-	{ "thaw",            control_thaw,              "thaw all databases" },
+	{ "status",          control_status,            true,  "show node status" },
+	{ "ping",            control_ping,              true,  "ping all nodes" },
+	{ "getvar",          control_getvar,            true,  "get a tunable variable",               "<name>"},
+	{ "setvar",          control_setvar,            true,  "set a tunable variable",               "<name> <value>"},
+	{ "listvars",        control_listvars,          true,  "list tunable variables"},
+	{ "statistics",      control_statistics,        false, "show statistics" },
+	{ "statisticsreset", control_statistics_reset,  true,  "reset statistics"},
+	{ "ip",              control_ip,                true,  "show which public ip's that ctdb manages" },
+	{ "process-exists",  control_process_exists,    true,  "check if a process exists on a node",  "<pid>"},
+	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
+	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
+	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
+	{ "setmonmode",      control_setmonmode,        true,  "set monitoring mode", "<0|1>" },
+	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<debuglevel>" },
+	{ "getdebug",        control_getdebug,          true,  "get debug level" },
+	{ "attach",          control_attach,            true,  "attach to a database",                 "<dbname>" },
+	{ "dumpmemory",      control_dumpmemory,        true,  "dump memory map to logs" },
+	{ "getpid",          control_getpid,            true,  "get ctdbd process ID" },
+	{ "disable",         control_disable,           true,  "disable a nodes public IP" },
+	{ "enable",          control_enable,            true,  "enable a nodes public IP" },
+	{ "ban",             control_ban,               true,  "ban a node from the cluster",          "<bantime|0>"},
+	{ "unban",           control_unban,             true,  "unban a node from the cluster" },
+	{ "shutdown",        control_shutdown,          true,  "shutdown ctdbd" },
+	{ "recover",         control_recover,           true,  "force recovery" },
+	{ "freeze",          control_freeze,            true,  "freeze all databases" },
+	{ "thaw",            control_thaw,              true,  "thaw all databases" },
 };
 
 /*
@@ -1088,7 +920,29 @@ int main(int argc, const char *argv[])
 
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
-			ret = ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
+			int j;
+
+			if (options.vnn == CTDB_CURRENT_NODE) {
+				options.vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
+			}
+
+			if (ctdb_commands[i].auto_all && 
+			    options.vnn == CTDB_BROADCAST_ALL) {
+				uint32_t *nodes;
+				uint32_t num_nodes;
+				ret = 0;
+
+				nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
+				CTDB_NO_MEMORY(ctdb, nodes);
+	
+				for (j=0;j<num_nodes;j++) {
+					options.vnn = nodes[j];
+					ret |= ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
+				}
+				talloc_free(nodes);
+			} else {
+				ret = ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
+			}
 			break;
 		}
 	}
