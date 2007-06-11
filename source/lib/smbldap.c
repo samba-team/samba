@@ -138,6 +138,7 @@ ATTRIB_MAP_ENTRY attrib_map_to_delete_v30[] = {
 	{ LDAP_ATTR_LOGON_TIME,		"sambaLogonTime" 	},
 	{ LDAP_ATTR_LOGOFF_TIME,	"sambaLogoffTime"	},
 	{ LDAP_ATTR_KICKOFF_TIME,	"sambaKickoffTime"	},
+	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
 	{ LDAP_ATTR_HOME_DRIVE,		"sambaHomeDrive"	},
 	{ LDAP_ATTR_HOME_PATH,		"sambaHomePath"		},
 	{ LDAP_ATTR_LOGON_SCRIPT,	"sambaLogonScript"	},
