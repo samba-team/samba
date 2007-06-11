@@ -129,7 +129,7 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 		break;
 
 	case REG_MULTI_SZ: {
-		int i, num_values;
+		uint32 i, num_values;
 		char **values;
 
 		if (!NT_STATUS_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
