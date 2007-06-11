@@ -25,35 +25,6 @@
 /********************************************************************
 ********************************************************************/
 
-char* dump_regval_type( uint32 type )
-{
-	static fstring string;
-	
-	switch (type) {
-	case REG_SZ:
-		fstrcpy( string, "REG_SZ" );
-		break;
-	case REG_MULTI_SZ:
-		fstrcpy( string, "REG_MULTI_SZ" );
-		break;
-	case REG_EXPAND_SZ:
-		fstrcpy( string, "REG_EXPAND_SZ" );
-		break;
-	case REG_DWORD:
-		fstrcpy( string, "REG_DWORD" );
-		break;
-	case REG_BINARY:
-		fstrcpy( string, "REG_BINARY" );
-		break;
-	default:
-		fstr_sprintf( string, "UNKNOWN [%d]", type );
-	}
-	
-	return string;
-}
-/********************************************************************
-********************************************************************/
-
 void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
 {
 	pstring string;
@@ -64,9 +35,26 @@ void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
 		rpcstr_pull( string, buffer->buffer, sizeof(string), -1, STR_TERMINATE );
 		d_printf("%s\n", string);
 		break;
-	case REG_MULTI_SZ:
+	case REG_MULTI_SZ: {
+		int i, num_values;
+		char **values;
+
 		d_printf("\n");
+
+		if (!NT_STATUS_IS_OK(reg_pull_multi_sz(NULL, buffer->buffer,
+						       buffer->buf_len,
+						       &num_values,
+						       &values))) {
+			d_printf("reg_pull_multi_sz failed\n");
+			break;
+		}
+
+		for (i=0; i<num_values; i++) {
+			d_printf("%s\n", values[i]);
+		}
+		TALLOC_FREE(values);
 		break;
+	}
 	case REG_DWORD:
 		value = IVAL( buffer->buffer, 0 );
 		d_printf( "0x%x\n", value );
@@ -113,16 +101,17 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_reg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Unable to connect to remote registry\n");
+		d_fprintf(stderr, "Unable to connect to remote registry: "
+			  "%s\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
-	if ( strlen( subpath ) != 0 ) {
-		result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
-		if ( !W_ERROR_IS_OK(result) ) {
-			d_fprintf(stderr, "Unable to open [%s]\n", argv[0]);
-			return werror_to_ntstatus(result);
-		}
+	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath,
+				       MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_fprintf(stderr, "Unable to open [%s]: %s\n", argv[0],
+			  dos_errstr(result));
+		return werror_to_ntstatus(result);
 	}
 	
 	/* get the subkeys */
@@ -173,7 +162,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		}
 			
 		d_printf("Valuename  = %s\n", name );
-		d_printf("Type       = %s\n", dump_regval_type(type) );
+		d_printf("Type       = %s\n", reg_type_lookup(type));
 		d_printf("Data       = " );
 		dump_regval_buffer( type, &value );
 		d_printf("\n" );
@@ -279,7 +268,7 @@ static void dump_values( REGF_NK_REC *nk )
 
 	for ( i=0; i<nk->num_values; i++ ) {
 		d_printf( "\"%s\" = ", nk->values[i].valuename ? nk->values[i].valuename : "(default)" );
-		d_printf( "(%s) ", dump_regval_type( nk->values[i].type ) );
+		d_printf( "(%s) ", reg_type_lookup( nk->values[i].type ) );
 
 		data_size = nk->values[i].data_size & ~VK_DATA_IN_OFFSET;
 		switch ( nk->values[i].type ) {
