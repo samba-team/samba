@@ -169,6 +169,7 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 	W_ERROR_NOT_OK_RETURN(status);
 
 	pfm.version	= PREFIX_MAP_VERSION_DSDB;
+	pfm.reserved	= 0;
 	pfm.ctr.dsdb	= *ctr;
 
 	nt_status = ndr_push_struct_blob(prefixMap, mem_ctx, &pfm,
