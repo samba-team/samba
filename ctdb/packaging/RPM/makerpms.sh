@@ -59,8 +59,8 @@ if [ ! -d ctdb-${VERSION} ]; then
 	ln -s $BASEDIR ctdb-${VERSION} || exit 1
 	REMOVE_LN=$PWD/ctdb-$VERSION
 fi
-echo -n "Creating ctdb-${VERSION}.tar.bz2 ... "
-tar --exclude=.bzr --exclude .bzrignore --exclude="*~" -cf - ctdb-${VERSION}/. | bzip2 > ${SRCDIR}/ctdb-${VERSION}.tar.bz2
+echo -n "Creating ctdb-${VERSION}.tar.gz ... "
+tar --exclude=.bzr --exclude .bzrignore --exclude="*~" -cf - ctdb-${VERSION}/. | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
 echo "Done."
 if [ $? -ne 0 ]; then
         echo "Build failed!"
