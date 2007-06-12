@@ -40,7 +40,7 @@ static struct generic_mapping reg_generic_map =
  
 static void free_regkey_info(void *ptr)
 {
-	regkey_close_internal( (REGISTRY_KEY*)ptr );
+	TALLOC_FREE(ptr);
 };
 
 /******************************************************************
@@ -72,31 +72,19 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
                                  REGISTRY_KEY **keyinfo, REGISTRY_KEY *parent,
 				 const char *subkeyname, uint32 access_desired  )
 {
-	pstring         keypath;
-	int		path_len;
 	WERROR     	result = WERR_OK;
 
-	/* create a full registry path and strip any trailing '\' 
-	   characters */
-	   
-	pstr_sprintf( keypath, "%s%s%s", 
-		parent ? parent->name : "",
-		parent ? "\\" : "", 
-		subkeyname );
-	
-	path_len = strlen( keypath );
-	if ( path_len && keypath[path_len-1] == '\\' )
-		keypath[path_len-1] = '\0';
-	
-	/* now do the internal open */
-		
-	result = regkey_open_internal( keyinfo, keypath, p->pipe_user.nt_user_token, access_desired );
-	if ( !W_ERROR_IS_OK(result) )
+	result = regkey_open_internal( NULL, parent, keyinfo, subkeyname, 
+				       p->pipe_user.nt_user_token, 
+				       access_desired );
+	if ( !W_ERROR_IS_OK(result) ) {
+		TALLOC_FREE( *keyinfo );
 		return result;
+	}
 	
 	if ( !create_policy_hnd( p, hnd, free_regkey_info, *keyinfo ) ) {
 		result = WERR_BADFILE; 
-		regkey_close_internal( *keyinfo );
+		TALLOC_FREE( *keyinfo );
 	}
 	
 	return result;
