@@ -1,3 +1,10 @@
+2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* keyset.c: Add refcounting to keystores.
+
+	* cert.c: Change logic for default trust anchors, make it be
+	either default trust anchor, the user supplied, or non at all.
+
 2007-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add data/j.pem.
