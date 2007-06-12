@@ -45,6 +45,7 @@ test_princ(krb5_context context)
 {
     const char *princ = "lha@SU.SE";
     const char *princ_short = "lha";
+    const char *noquote;
     krb5_error_code ret;
     char *princ_unparsed;
     char *princ_reformed = NULL;
@@ -229,6 +230,34 @@ test_princ(krb5_context context)
 
     if (strcmp(princ_short, princ_unparsed))
 	krb5_errx(context, 1, "'%s' != '%s'", princ_short, princ_unparsed);
+    free(princ_unparsed);
+
+    krb5_free_principal(context, p);
+
+    /* test quoting */
+
+    princ = "test\\ principal@SU.SE";
+    noquote = "test principal@SU.SE";
+
+    ret = krb5_parse_name_flags(context, princ, 0, &p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+
+    ret = krb5_unparse_name_flags(context, p, 0, &princ_unparsed);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_unparse_name_flags");
+
+    if (strcmp(princ, princ_unparsed))
+	krb5_errx(context, 1, "q '%s' != '%s'", princ, princ_unparsed);
+    free(princ_unparsed);
+
+    ret = krb5_unparse_name_flags(context, p, KRB5_PRINCIPAL_UNPARSE_NO_QUOTE,
+				  &princ_unparsed);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_unparse_name_flags");
+
+    if (strcmp(noquote, princ_unparsed))
+	krb5_errx(context, 1, "nq '%s' != '%s'", noquote, princ_unparsed);
     free(princ_unparsed);
 
     krb5_free_principal(context, p);
