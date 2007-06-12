@@ -50,7 +50,8 @@ OM_uint32 _gsskrb5_display_name
 
     GSSAPI_KRB5_INIT (&context);
 
-    kret = krb5_unparse_name (context, name, &buf);
+    kret = krb5_unparse_name_flags (context, name,
+				    KRB5_PRINCIPAL_UNPARSE_DISPLAY, &buf);
     if (kret) {
 	*minor_status = kret;
 	return GSS_S_FAILURE;
