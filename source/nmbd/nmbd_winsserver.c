@@ -2140,7 +2140,7 @@ static int wins_processing_traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA
 
 		/* handle records, samba is the wins owner */
 		if (ip_equal(namerec->data.wins_ip, our_fake_ip)) {
-			switch (namerec->data.wins_flags | WINS_STATE_MASK) {
+			switch (namerec->data.wins_flags & WINS_STATE_MASK) {
 				case WINS_ACTIVE:
 					namerec->data.wins_flags&=~WINS_STATE_MASK;
 					namerec->data.wins_flags|=WINS_RELEASED;
@@ -2165,7 +2165,7 @@ static int wins_processing_traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA
 					goto done;
 			}
 		} else {
-			switch (namerec->data.wins_flags | WINS_STATE_MASK) {
+			switch (namerec->data.wins_flags & WINS_STATE_MASK) {
 				case WINS_ACTIVE:
 					/* that's not as MS says it should be */
 					namerec->data.wins_flags&=~WINS_STATE_MASK;
