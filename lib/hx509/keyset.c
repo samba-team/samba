@@ -35,6 +35,7 @@
 RCSID("$Id$");
 
 struct hx509_certs_data {
+    int ref;
     struct hx509_keyset_ops *ops;
     void *ops_data;
 };
@@ -140,10 +141,26 @@ hx509_certs_store(hx509_context context,
 }
 
 
+hx509_certs
+_hx509_certs_ref(hx509_certs certs)
+{
+    if (certs->ref <= 0)
+	_hx509_abort("certs refcount <= 0");
+    certs->ref++;
+    if (certs->ref == 0)
+	_hx509_abort("certs refcount == 0");
+    return certs;
+}
+
 void
 hx509_certs_free(hx509_certs *certs)
 {
     if (*certs) {
+	if ((*certs)->ref <= 0)
+	    _hx509_abort("refcount <= 0");
+	if (--(*certs)->ref > 0)
+	    return;
+
 	(*(*certs)->ops->free)(*certs, (*certs)->ops_data);
 	free(*certs);
 	*certs = NULL;
