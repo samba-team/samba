@@ -244,6 +244,16 @@ ${kinit} --password-file=${objdir}/foopassword rename2@${R} || \
 ${kdestroy}
 ${kadmin} delete rename2@${R} || exit 1
 
+echo "rename user to another realm"; > messages.log
+${kadmin} add -p foo --use-defaults rename@${R} || exit 1
+${kinit} --password-file=${objdir}/foopassword rename@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kadmin} rename rename@${R} rename@${R2} || exit 1
+${kinit} --password-file=${objdir}/foopassword rename@${R2} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+${kadmin} delete rename@${R2} || exit 1
+
 echo deleting all but aes enctypes on krbtgt
 ${kadmin} del_enctype krbtgt/${R}@${R} ${enctype_sans_aes} || exit 1
 
