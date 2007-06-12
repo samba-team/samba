@@ -354,7 +354,8 @@ REGOBJS_OBJ = registry/reg_objects.o
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
                registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
                registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o \
-	       registry/reg_smbconf.o registry/reg_api.o
+	       registry/reg_smbconf.o registry/reg_api.o \
+	       registry/reg_frontend_hilvl.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
 
@@ -657,8 +658,22 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
 	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
-	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o
+	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
+	   utils/net_conf.o
 
+NET_REG_OBJ = registry/reg_api.o \
+	      registry/reg_frontend_hilvl.o \
+	      registry/reg_smbconf.o \
+	      registry/reg_db.o \
+	      registry/reg_util.o \
+	      \
+	      registry/reg_cachehook.o \
+	      registry/reg_eventlog.o \
+	      registry/reg_perfcount.o \
+	      registry/reg_dynamic.o \
+	      \
+	      auth/token_util.o
+  
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
@@ -666,7 +681,8 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(REGFIO_OBJ) $(READLINE_OBJ) \
-	  $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) $(LDB_OBJ)
+	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
+	  $(NET_REG_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)

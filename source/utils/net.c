@@ -85,6 +85,7 @@ int opt_attrs = 0;
 int opt_timestamps = 0;
 const char *opt_exclude = NULL;
 const char *opt_destination = NULL;
+BOOL opt_testmode = False;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -871,6 +872,7 @@ static struct functable net_func[] = {
 	{"STATUS", net_status},
 	{"USERSHARE", net_usershare},
 	{"USERSIDLIST", net_usersidlist},
+	{"CONF", net_conf},
 #ifdef WITH_FAKE_KASERVER
 	{"AFS", net_afs},
 #endif
@@ -912,6 +914,7 @@ static struct functable net_func[] = {
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
 		{"verbose",	'v', POPT_ARG_NONE,   &opt_verbose},
+		{"test",	'T', POPT_ARG_NONE,   &opt_testmode},
 		/* Options for 'net groupmap set' */
 		{"local",       'L', POPT_ARG_NONE,   &opt_localgroup},
 		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},
