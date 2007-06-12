@@ -146,5 +146,11 @@ typedef struct _RegistryKey {
 	REGISTRY_HOOK	*hook;	
 } REGISTRY_KEY;
 
-#endif /* _REG_OBJECTS_H */
+struct registry_key {
+	REGISTRY_KEY *key;
+	REGSUBKEY_CTR *subkeys;
+	REGVAL_CTR *values;
+	struct nt_user_token *token;
+};
 
+#endif /* _REG_OBJECTS_H */

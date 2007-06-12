@@ -68,8 +68,8 @@ const char *reg_type_lookup(enum winreg_Type type)
 	return result;
 }
 
-NTSTATUS reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
-			   uint32 *num_values, char ***values)
+WERROR reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
+			 uint32 *num_values, char ***values)
 {
 	const smb_ucs2_t *p = (const smb_ucs2_t *)buf;
 	*num_values = 0;
@@ -79,7 +79,7 @@ NTSTATUS reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 	 */
 
 	if (!(*values = TALLOC_ARRAY(mem_ctx, char *, 1))) {
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	}
 
 	len /= 2; 		/* buf is a set of UCS2 strings */
@@ -94,31 +94,31 @@ NTSTATUS reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 						 True);
 		if (dstlen == (size_t)-1) {
 			TALLOC_FREE(*values);
-			return NT_STATUS_NO_MEMORY;
+			return WERR_NOMEM;
 		}
 
 		ADD_TO_ARRAY(*values, char *, val, values, num_values);
 		if (*values == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			return WERR_NOMEM;
 		}
 
 		p += thislen;
 		len -= thislen;
 	}
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
-NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
-			     struct registry_value **pvalue,
-			     enum winreg_Type type, uint8 *data,
-			     uint32 size, uint32 length)
+WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
+			   struct registry_value **pvalue,
+			   enum winreg_Type type, uint8 *data,
+			   uint32 size, uint32 length)
 {
 	struct registry_value *value;
-	NTSTATUS status;
+	WERROR err;
 
 	if (!(value = TALLOC_ZERO_P(mem_ctx, struct registry_value))) {
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	}
 
 	value->type = type;
@@ -126,7 +126,7 @@ NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
 	switch (type) {
 	case REG_DWORD:
 		if ((size != 4) || (length != 4)) {
-			status = NT_STATUS_INVALID_PARAMETER;
+			err = WERR_INVALID_PARAM;
 			goto error;
 		}
 		value->v.dword = IVAL(data, 0);
@@ -143,12 +143,12 @@ NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
 		uint32 num_ucs2 = length / 2;
 
 		if ((length % 2) != 0) {
-			status = NT_STATUS_INVALID_PARAMETER;
+			err = WERR_INVALID_PARAM;
 			goto error;
 		}
 
 		if (!(tmp = SMB_MALLOC_ARRAY(smb_ucs2_t, num_ucs2+1))) {
-			status = NT_STATUS_NO_MEMORY;
+			err = WERR_NOMEM;
 			goto error;
 		}
 
@@ -162,16 +162,16 @@ NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
 		SAFE_FREE(tmp);
 
 		if (value->v.sz.len == (size_t)-1) {
-			status = NT_STATUS_INVALID_PARAMETER;
+			err = WERR_INVALID_PARAM;
 			goto error;
 		}
 		break;
 	}
 	case REG_MULTI_SZ:
-		status = reg_pull_multi_sz(value, (void *)data, length,
-					   &value->v.multi_sz.num_strings,
-					   &value->v.multi_sz.strings);
-		if (!(NT_STATUS_IS_OK(status))) {
+		err = reg_pull_multi_sz(value, (void *)data, length,
+					&value->v.multi_sz.num_strings,
+					&value->v.multi_sz.strings);
+		if (!(W_ERROR_IS_OK(err))) {
 			goto error;
 		}
 		break;
@@ -180,21 +180,21 @@ NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
 		value->v.binary.length = length;
 		break;
 	default:
-		status = NT_STATUS_INVALID_PARAMETER;
+		err = WERR_INVALID_PARAM;
 		goto error;
 	}
 
 	*pvalue = value;
-	return NT_STATUS_OK;
+	return WERR_OK;
 
  error:
 	TALLOC_FREE(value);
-	return status;
+	return err;
 }
 
-NTSTATUS registry_push_value(TALLOC_CTX *mem_ctx,
-			     const struct registry_value *value,
-			     DATA_BLOB *presult)
+WERROR registry_push_value(TALLOC_CTX *mem_ctx,
+			   const struct registry_value *value,
+			   DATA_BLOB *presult)
 {
 	switch (value->type) {
 	case REG_DWORD: {
@@ -202,7 +202,7 @@ NTSTATUS registry_push_value(TALLOC_CTX *mem_ctx,
 		SIVAL(buf, 0, value->v.dword);
 		*presult = data_blob_talloc(mem_ctx, (void *)buf, 4);
 		if (presult->data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			return WERR_NOMEM;
 		}
 		break;
 	}
@@ -213,13 +213,13 @@ NTSTATUS registry_push_value(TALLOC_CTX *mem_ctx,
 			MIN(value->v.sz.len, strlen(value->v.sz.str)+1),
 			(void *)&(presult->data), False);
 		if (presult->length == (size_t)-1) {
-			return NT_STATUS_NO_MEMORY;
+			return WERR_NOMEM;
 		}
 		break;
 	}
 	default:
-		return NT_STATUS_INVALID_PARAMETER;
+		return WERR_INVALID_PARAM;
 	}
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }

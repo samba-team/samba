@@ -41,10 +41,10 @@ void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
 
 		d_printf("\n");
 
-		if (!NT_STATUS_IS_OK(reg_pull_multi_sz(NULL, buffer->buffer,
-						       buffer->buf_len,
-						       &num_values,
-						       &values))) {
+		if (!W_ERROR_IS_OK(reg_pull_multi_sz(NULL, buffer->buffer,
+						     buffer->buf_len,
+						     &num_values,
+						     &values))) {
 			d_printf("reg_pull_multi_sz failed\n");
 			break;
 		}
