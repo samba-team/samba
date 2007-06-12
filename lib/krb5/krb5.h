@@ -756,6 +756,14 @@ enum {
     KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2
 };
 
+typedef struct krb5_sendto_ctx *krb5_sendto_ctx;
+
+#define KRB5_SENDTO_DONE	0
+#define KRB5_SENDTO_RESTART	1
+#define KRB5_SENDTO_CONTINUE	2
+
+typedef krb5_error_code (*krb5_sendto_ctx_func)(krb5_context, krb5_sendto_ctx, void *, const krb5_data *, int *);
+
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
 struct sockaddr;
