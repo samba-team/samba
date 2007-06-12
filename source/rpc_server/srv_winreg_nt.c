@@ -31,7 +31,7 @@ static struct generic_mapping reg_generic_map =
 	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
 /******************************************************************
- free() function for struct regkey_info
+ free() function for struct registry_key
  *****************************************************************/
  
 static void free_regkey(void *ptr)
