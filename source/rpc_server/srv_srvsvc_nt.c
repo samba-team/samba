@@ -463,6 +463,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	num_services = load_usershare_shares();
+	load_registry_shares();
 	unbecome_root();
 
 	/* Count the number of entries. */

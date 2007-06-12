@@ -1720,6 +1720,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn, uint16 vuid,
   
 	/* Ensure all the usershares are loaded. */
 	become_root();
+	load_registry_shares();
 	count = load_usershare_shares();
 	unbecome_root();
 

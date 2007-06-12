@@ -36,7 +36,7 @@ void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
 		d_printf("%s\n", string);
 		break;
 	case REG_MULTI_SZ: {
-		int i, num_values;
+		uint32 i, num_values;
 		char **values;
 
 		d_printf("\n");
