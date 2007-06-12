@@ -4636,7 +4636,6 @@ NTSTATUS rename_internals(connection_struct *conn,
 		id = file_id_sbuf(&sbuf1);
 
 		if (strcsequal(directory, newname)) {
-			rename_open_files(conn, NULL, id, newname);
 			DEBUG(3, ("rename_internals: identical names in "
 				  "rename %s - returning success\n",
 				  directory));
@@ -4768,7 +4767,6 @@ NTSTATUS rename_internals(connection_struct *conn,
 		id = file_id_sbuf(&sbuf1);
 
 		if (strcsequal(fname,destname)) {
-			rename_open_files(conn, NULL, id, newname);
 			DEBUG(3,("rename_internals: identical names "
 				 "in wildcard rename %s - success\n",
 				 fname));
