@@ -574,3 +574,31 @@ krb5_sendto_context(krb5_context context,
 	krb5_sendto_ctx_free(context, ctx);
     return ret;
 }
+
+krb5_error_code
+_krb5_kdc_retry(krb5_context context, krb5_sendto_ctx ctx, void *data,
+		const krb5_data *reply, int *action)
+{
+    krb5_error_code ret;
+    KRB_ERROR error;
+
+    if(krb5_rd_error(context, reply, &error))
+	return 0;
+
+    ret = krb5_error_from_rd_error(context, &error, NULL);
+    krb5_free_error_contents(context, &error);
+
+    switch(ret) {
+    case KRB5KRB_ERR_RESPONSE_TOO_BIG: {
+	if (krb5_sendto_ctx_get_flags(ctx) & KRB5_KRBHST_FLAGS_LARGE_MSG)
+	    break;
+	krb5_sendto_ctx_add_flags(ctx, KRB5_KRBHST_FLAGS_LARGE_MSG);
+	*action = KRB5_SENDTO_RESTART;
+	break;
+    }
+    case KRB5KDC_ERR_SVC_UNAVAILABLE:
+	*action = KRB5_SENDTO_CONTINUE;
+	break;
+    }
+    return 0;
+}
