@@ -38,9 +38,6 @@ srcdir="@srcdir@"
 objdir="@objdir@"
 EGREP="@EGREP@"
 
-# If there is no useful db support compile in, disable test
-../db/have-db || exit 77
-
 R=$1
 tst=$2
 
@@ -74,6 +71,7 @@ ${kadmin} < ${srcdir}/${tst}.kadm || exit 1
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
 
-${replay} ${srcdir}/${tst}.req || exit 1
+> messages.log
+${replay} ${srcdir}/${tst}.req || { cat messages.log ; exit 1; }
 
 exit 0
