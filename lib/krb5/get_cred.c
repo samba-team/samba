@@ -411,7 +411,6 @@ get_cred_kdc_usage(krb5_context context,
     krb5_keyblock *subkey = NULL;
     size_t len;
     Ticket second_ticket_data;
-    int send_to_kdc_flags = 0;
     METHOD_DATA padata;
     
     krb5_data_zero(&resp);
@@ -511,11 +510,18 @@ get_cred_kdc_usage(krb5_context context,
     /*
      * Send and receive
      */
-again:
-    ret = krb5_sendto_kdc_flags (context, &enc, 
-				 &krbtgt->server->name.name_string.val[1],
-				 &resp,
-				 send_to_kdc_flags);
+    {
+	krb5_sendto_ctx stctx;
+	ret = krb5_sendto_ctx_alloc(context, &stctx);
+	if (ret)
+	    return ret;
+	krb5_sendto_ctx_set_func(stctx, _krb5_kdc_retry, NULL);
+
+	ret = krb5_sendto_context (context, stctx, &enc,
+				   krbtgt->server->name.name_string.val[1],
+				   &resp);
+	krb5_sendto_ctx_free(context, stctx);
+    }
     if(ret)
 	goto out;
 
@@ -550,12 +556,6 @@ again:
     } else if(krb5_rd_error(context, &resp, &error) == 0) {
 	ret = krb5_error_from_rd_error(context, &error, in_creds);
 	krb5_free_error_contents(context, &error);
-
-	if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG && !(send_to_kdc_flags & KRB5_KRBHST_FLAGS_LARGE_MSG)) {
-	    send_to_kdc_flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
-	    krb5_data_free(&resp);
-	    goto again;
-	}
     } else if(resp.data && ((char*)resp.data)[0] == 4) {
 	ret = KRB5KRB_AP_ERR_V4_REPLY;
 	krb5_clear_error_string(context);
