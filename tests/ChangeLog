@@ -1,5 +1,11 @@
 2007-06-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: Also test rename user to anther realm.
+
+	* kdc/check-kdc.in: Test renaming a user.
+
+	* can/test_can.in: Tell use what the messages.log told us.
+
 	* kdc/check-referral.in: Add some more as-req canon tests, add
 	disable tgs-req tests.
 	
