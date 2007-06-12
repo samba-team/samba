@@ -2174,7 +2174,6 @@ static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
 			 service * pserviceSource, BOOL *pcopymapDest);
-static BOOL service_ok(int iService);
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue);
 static BOOL do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
@@ -2994,7 +2993,7 @@ Check a service for consistency. Return False if the service is in any way
 incomplete or faulty, else True.
 ***************************************************************************/
 
-static BOOL service_ok(int iService)
+BOOL service_ok(int iService)
 {
 	BOOL bRetval;
 
@@ -3027,7 +3026,7 @@ static BOOL service_ok(int iService)
 		ServicePtrs[iService]->bAvailable = False;
 	}
 
-	/* If a service is flagged unavailable, log the fact at level 0. */
+	/* If a service is flagged unavailable, log the fact at level 1. */
 	if (!ServicePtrs[iService]->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
 			  ServicePtrs[iService]->szService));
