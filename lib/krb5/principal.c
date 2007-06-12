@@ -286,12 +286,12 @@ static const char nq_chars[] = "    \\/@";
 #define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
 
 static size_t
-quote_string(const char *s, char *out, size_t idx, size_t len, int no_quote)
+quote_string(const char *s, char *out, size_t idx, size_t len, int display)
 {
     const char *p, *q;
     for(p = s; *p && idx < len; p++){
 	q = strchr(quotable_chars, *p);
-	if (q && no_quote) {
+	if (q && display) {
 	    add_char(out, idx, len, replace_chars[q - quotable_chars]);
 	} else if (q) {
 	    add_char(out, idx, len, '\\');
@@ -316,7 +316,7 @@ unparse_name_fixed(krb5_context context,
     int i;
     int short_form = (flags & KRB5_PRINCIPAL_UNPARSE_SHORT) != 0;
     int no_realm = (flags & KRB5_PRINCIPAL_UNPARSE_NO_REALM) != 0;
-    int no_quote = (flags & KRB5_PRINCIPAL_UNPARSE_NO_QUOTE) != 0;
+    int display = (flags & KRB5_PRINCIPAL_UNPARSE_DISPLAY) != 0;
 
     if (!no_realm && princ_realm(principal) == NULL) {
 	krb5_set_error_string(context, "Realm missing from principal, "
@@ -327,7 +327,7 @@ unparse_name_fixed(krb5_context context,
     for(i = 0; i < princ_num_comp(principal); i++){
 	if(i)
 	    add_char(name, idx, len, '/');
-	idx = quote_string(princ_ncomp(principal, i), name, idx, len, no_quote);
+	idx = quote_string(princ_ncomp(principal, i), name, idx, len, display);
 	if(idx == len) {
 	    krb5_set_error_string(context, "Out of space printing principal");
 	    return ERANGE;
@@ -346,7 +346,7 @@ unparse_name_fixed(krb5_context context,
     }
     if(!short_form && !no_realm) {
 	add_char(name, idx, len, '@');
-	idx = quote_string(princ_realm(principal), name, idx, len, no_quote);
+	idx = quote_string(princ_realm(principal), name, idx, len, display);
 	if(idx == len) {
 	    krb5_set_error_string(context, 
 				  "Out of space printing realm of principal");
