@@ -754,7 +754,7 @@ enum {
 enum {
     KRB5_PRINCIPAL_UNPARSE_SHORT = 1,
     KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2,
-    KRB5_PRINCIPAL_UNPARSE_NO_QUOTE = 4
+    KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4
 };
 
 typedef struct krb5_sendto_ctx *krb5_sendto_ctx;
