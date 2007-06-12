@@ -188,6 +188,9 @@ static void async_request_timeout_handler(struct event_context *ctx,
 		state->child->pid ));
 
 	winbind_child_died(state->child->pid);
+
+	/* Send kill signal to child. */
+	kill(state->child->pid, SIGTERM);
 }
 
 static void async_request_sent(void *private_data_data, BOOL success)
