@@ -365,9 +365,9 @@ void
 hx509_verify_ctx_f_allow_default_trustanchors(hx509_verify_ctx ctx, int boolean)
 {
     if (boolean)
-	ctx->flags |= HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
-    else
 	ctx->flags &= ~HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
+    else
+	ctx->flags |= HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
 }
 
 static const Extension *
