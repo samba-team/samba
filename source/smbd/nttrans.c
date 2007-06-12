@@ -1979,8 +1979,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		 * here.
 		 */
 
-		change_notify_reply(inbuf, max_param_count,
-				    fsp->notify);
+		change_notify_reply(inbuf, fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its
@@ -1993,8 +1992,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	 * No changes pending, queue the request
 	 */
 
-	status = change_notify_add_request(inbuf, max_param_count, filter,
-					   recursive, fsp);
+	status = change_notify_add_request(inbuf, filter, recursive, fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}

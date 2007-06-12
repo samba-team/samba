@@ -27,7 +27,6 @@ struct notify_change_request {
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
 	char request_buf[smb_size];
 	uint32 filter;
-	uint32 max_param_count;
 	uint32 current_bufsize;
 	struct notify_mid_map *mid_map;
 	void *backend_data;
@@ -126,12 +125,12 @@ static void change_notify_reply_packet(const char *request_buf,
 				    "failed.");
 }
 
-void change_notify_reply(const char *request_buf, uint32 max_param_count,
+void change_notify_reply(const char *request_buf,
 			 struct notify_change_buf *notify_buf)
 {
 	char *outbuf = NULL;
 	prs_struct ps;
-	size_t buflen = smb_size+38+max_param_count;
+	size_t buflen;
 
 	if (notify_buf->num_changes == -1) {
 		change_notify_reply_packet(request_buf, NT_STATUS_OK);
@@ -145,14 +144,7 @@ void change_notify_reply(const char *request_buf, uint32 max_param_count,
 		goto done;
 	}
 
-	if (prs_offset(&ps) > max_param_count) {
-		/*
-		 * We exceed what the client is willing to accept. Send
-		 * nothing.
-		 */
-		change_notify_reply_packet(request_buf, NT_STATUS_OK);
-		goto done;
-	}
+	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
 
 	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
@@ -214,7 +206,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	return status;
 }
 
-NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
+NTSTATUS change_notify_add_request(const char *inbuf, 
 				   uint32 filter, BOOL recursive,
 				   struct files_struct *fsp)
 {
@@ -231,7 +223,6 @@ NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param_count,
 	map->req = request;
 
 	memcpy(request->request_buf, inbuf, sizeof(request->request_buf));
-	request->max_param_count = max_param_count;
 	request->current_bufsize = 0;
 	request->filter = filter;
 	request->fsp = fsp;
@@ -408,7 +399,6 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	 */
 
 	change_notify_reply(fsp->notify->requests->request_buf,
-			    fsp->notify->requests->max_param_count,
 			    fsp->notify);
 
 	change_notify_remove_request(fsp->notify->requests);
