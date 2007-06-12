@@ -413,26 +413,16 @@ krb5_sendto_kdc_flags(krb5_context context,
 		      int flags)
 {
     krb5_error_code ret;
-    krb5_krbhst_handle handle;
-    int type;
+    krb5_sendto_ctx ctx;
 
-    if ((flags & KRB5_KRBHST_FLAGS_MASTER) || context->use_admin_kdc)
-	type = KRB5_KRBHST_ADMIN;
-    else
-	type = KRB5_KRBHST_KDC;
-
-    if (send_data->length > context->large_msg_size)
-	flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
-
-    ret = krb5_krbhst_init_flags(context, *realm, type, flags, &handle);
+    ret = krb5_sendto_ctx_alloc(context, &ctx);
     if (ret)
 	return ret;
+    krb5_sendto_ctx_add_flags(ctx, flags);
+    krb5_sendto_ctx_set_func(ctx, _krb5_kdc_retry, NULL);
 
-    ret = krb5_sendto(context, send_data, handle, receive);
-    krb5_krbhst_free(context, handle);
-    if (ret == KRB5_KDC_UNREACH)
-	krb5_set_error_string(context,
-			      "unable to reach any KDC in realm %s", *realm);
+    ret = krb5_sendto_context(context, ctx, send_data, *realm, receive);
+    krb5_sendto_ctx_free(context, ctx);
     return ret;
 }
 
@@ -458,4 +448,129 @@ krb5_set_send_to_kdc_func(krb5_context context,
     return 0;
 }
 
+struct krb5_sendto_ctx {
+    int flags;
+    int type;
+    krb5_sendto_ctx_func func;
+    void *data;
+};
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_sendto_ctx_alloc(krb5_context context, krb5_sendto_ctx *ctx)
+{
+    *ctx = calloc(1, sizeof(**ctx));
+    if (*ctx == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_add_flags(krb5_sendto_ctx ctx, int flags)
+{
+    ctx->flags |= flags;
+}
+
+int KRB5_LIB_FUNCTION
+krb5_sendto_ctx_get_flags(krb5_sendto_ctx ctx)
+{
+    return ctx->flags;
+}
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_set_type(krb5_sendto_ctx ctx, int type)
+{
+    ctx->type = type;
+}
+
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_set_func(krb5_sendto_ctx ctx,
+			 krb5_sendto_ctx_func func,
+			 void *data)
+{
+    ctx->func = func;
+    ctx->data = data;
+}
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_free(krb5_context context, krb5_sendto_ctx ctx)
+{
+    memset(ctx, 0, sizeof(*ctx));
+    free(ctx);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_sendto_context(krb5_context context,
+		    krb5_sendto_ctx ctx,
+		    const krb5_data *send_data,
+		    const krb5_realm realm,
+		    krb5_data *receive)
+{
+    krb5_error_code ret;
+    krb5_krbhst_handle handle = NULL;
+    int type, freectx = 0;
+    int action;
+
+    krb5_data_zero(receive);
+
+    if (ctx == NULL) {
+	freectx = 1;
+	ret = krb5_sendto_ctx_alloc(context, &ctx);
+	if (ret)
+	    return ret;
+    }
+
+    type = ctx->type;
+    if (type == 0) {
+	if ((ctx->flags & KRB5_KRBHST_FLAGS_MASTER) || context->use_admin_kdc)
+	    type = KRB5_KRBHST_ADMIN;
+	else
+	    type = KRB5_KRBHST_KDC;
+    }
+
+    if (send_data->length > context->large_msg_size)
+	ctx->flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
+
+    /* loop until we get back a appropriate response */
+
+    do {
+	action = KRB5_SENDTO_DONE;
+
+	krb5_data_free(receive);
+
+	if (handle == NULL) {
+	    ret = krb5_krbhst_init_flags(context, realm, type, 
+					 ctx->flags, &handle);
+	    if (ret) {
+		if (freectx)
+		    krb5_sendto_ctx_free(context, ctx);
+		return ret;
+	    }
+	}
+    
+	ret = krb5_sendto(context, send_data, handle, receive);
+	if (ret)
+	    break;
+	if (ctx->func) {
+	    ret = (*ctx->func)(context, ctx, ctx->data, receive, &action);
+	    if (ret)
+		break;
+	}
+	if (action != KRB5_SENDTO_CONTINUE) {
+	    krb5_krbhst_free(context, handle);
+	    handle = NULL;
+	}
+    } while (action != KRB5_SENDTO_DONE);
+    if (handle)
+	krb5_krbhst_free(context, handle);
+    if (ret == KRB5_KDC_UNREACH)
+	krb5_set_error_string(context, 
+			      "unable to reach any KDC in realm %s", realm);
+    if (ret)
+	krb5_data_free(receive);
+    if (freectx)
+	krb5_sendto_ctx_free(context, ctx);
+    return ret;
+}
