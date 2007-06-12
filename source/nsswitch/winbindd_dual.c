@@ -178,19 +178,18 @@ static void async_request_timeout_handler(struct event_context *ctx,
 
 	async_reply_recv(private_data, False);
 
-	/* 
-	 * Close the socket to the child. Should cause the
-	 * child to exit.
-	 */
-
 	DEBUG(0,("async_request_timeout_handler: child pid %u is not responding. "
 		"Closing connection to it.\n",
 		state->child->pid ));
 
-	winbind_child_died(state->child->pid);
-
 	/* Send kill signal to child. */
 	kill(state->child->pid, SIGTERM);
+
+	/* 
+	 * Close the socket to the child.
+	 */
+
+	winbind_child_died(state->child->pid);
 }
 
 static void async_request_sent(void *private_data_data, BOOL success)
