@@ -192,7 +192,7 @@ static void async_request_timeout_handler(struct event_context *ctx,
 
 static void async_request_sent(void *private_data_data, BOOL success)
 {
-	uint32_t timeout;
+	uint32_t timeout = 30;
 	struct winbindd_async_request *state =
 		talloc_get_type_abort(private_data_data, struct winbindd_async_request);
 
@@ -212,35 +212,31 @@ static void async_request_sent(void *private_data_data, BOOL success)
 			 sizeof(state->response->result),
 			 async_reply_recv, state);
 
-	timeout = 30;
+	/* 
+	 * Normal timeouts are 30s, but auth requests may take a long
+	 * time to timeout.
+	 */
 
-	if (state->request->cmd == WINBINDD_PAM_AUTH
-	    || state->request->cmd == WINBINDD_PAM_AUTH_CRAP ) {
-
-		/* 
-		 * Normal timeouts are 30s, but auth requests may take a long
-		 * time to timeout.
-		 */
+	if (state->request->cmd == WINBINDD_PAM_AUTH ||
+			state->request->cmd == WINBINDD_PAM_AUTH_CRAP ) {
 
 		timeout = 300;
 	}
 
 	/* 
-	 * Set up a timeout of for the response. If we don't get it close the
-	 * child socket and report failure.
+	 * Set up a timeout of 30 seconds for the response.
+	 * If we don't get it close the child socket and
+	 * report failure.
 	 */
 
-	state->reply_timeout_event = event_add_timed(
-		winbind_event_context(),
-		NULL,
-		timeval_current_ofs(timeout,0),
-		"async_request_timeout",
-		async_request_timeout_handler,
-		state);
-
+	state->reply_timeout_event = event_add_timed(winbind_event_context(),
+							NULL,
+							timeval_current_ofs(timeout,0),
+							"async_request_timeout",
+							async_request_timeout_handler,
+							state);
 	if (!state->reply_timeout_event) {
-		smb_panic("async_request_sent: failed to add timeout "
-			  "handler.\n");
+		smb_panic("async_request_sent: failed to add timeout handler.\n");
 	}
 }
 
