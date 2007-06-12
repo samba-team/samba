@@ -37,7 +37,7 @@ RCSID("$Id$");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_error(krb5_context context,
-	      krb5_data *msg,
+	      const krb5_data *msg,
 	      KRB_ERROR *result)
 {
     
