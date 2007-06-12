@@ -73,8 +73,6 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 	WERROR result = WERR_OK;
 	struct registry_key *key;
 
-	/* now do the internal open */
-
 	if (parent == NULL) {
 		result = reg_openhive(NULL, subkeyname, access_desired,
 				      p->pipe_user.nt_user_token, &key);
