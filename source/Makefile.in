@@ -369,6 +369,7 @@ REGFIO_OBJ = registry/regfio.o
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
 
 RPC_REG_OBJ =  rpc_server/srv_winreg.o rpc_server/srv_winreg_nt.o \
+	       registry/reg_frontend_legacy.o \
 	       librpc/gen_ndr/srv_winreg.o $(REGFIO_OBJ)
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
