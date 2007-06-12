@@ -281,6 +281,7 @@ krb5_parse_name(krb5_context context,
 
 static const char quotable_chars[] = " \n\t\b\\/@";
 static const char replace_chars[] = " ntb\\/@";
+static const char nq_chars[] = "    \\/@";
 
 #define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
 
@@ -289,7 +290,10 @@ quote_string(const char *s, char *out, size_t idx, size_t len, int no_quote)
 {
     const char *p, *q;
     for(p = s; *p && idx < len; p++){
-	if(!no_quote && (q = strchr(quotable_chars, *p))){
+	q = strchr(quotable_chars, *p);
+	if (q && no_quote) {
+	    add_char(out, idx, len, replace_chars[q - quotable_chars]);
+	} else if (q) {
 	    add_char(out, idx, len, '\\');
 	    add_char(out, idx, len, replace_chars[q - quotable_chars]);
 	}else
