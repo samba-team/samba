@@ -1,3 +1,8 @@
+2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/display_name.c: Use KRB5_PRINCIPAL_UNPARSE_DISPLAY, this is
+	not ment for machine consumption.
+
 2007-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/digest.c (kdc_alloc): free memory on failure, pointed out
