@@ -90,7 +90,7 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 		return WERR_BADFILE; 
 	}
 	
-	return WERR_OK;;
+	return WERR_OK;
 }
 
 /*******************************************************************
