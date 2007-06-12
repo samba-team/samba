@@ -43,6 +43,7 @@ struct hx509_verify_ctx_data {
 #define HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE	2
 #define HX509_VERIFY_CTX_F_REQUIRE_RFC3280		4
 #define HX509_VERIFY_CTX_F_CHECK_TRUST_ANCHORS		8
+#define HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS		16
     time_t time_now;
     unsigned int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
@@ -51,6 +52,7 @@ struct hx509_verify_ctx_data {
 
 #define REQUIRE_RFC3280(ctx) ((ctx)->flags & HX509_VERIFY_CTX_F_REQUIRE_RFC3280)
 #define CHECK_TA(ctx) ((ctx)->flags & HX509_VERIFY_CTX_F_CHECK_TRUST_ANCHORS)
+#define ALLOW_DEF_TA(ctx) (((ctx)->flags & HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS) == 0)
 
 struct _hx509_cert_attrs {
     size_t len;
@@ -291,10 +293,10 @@ hx509_cert
 hx509_cert_ref(hx509_cert cert)
 {
     if (cert->ref <= 0)
-	_hx509_abort("refcount <= 0");
+	_hx509_abort("cert refcount <= 0");
     cert->ref++;
     if (cert->ref == 0)
-	_hx509_abort("refcount == 0");
+	_hx509_abort("cert refcount == 0");
     return cert;
 }
 
@@ -357,6 +359,15 @@ hx509_verify_set_strict_rfc3280_verification(hx509_verify_ctx ctx, int boolean)
 	ctx->flags |= HX509_VERIFY_CTX_F_REQUIRE_RFC3280;
     else
 	ctx->flags &= ~HX509_VERIFY_CTX_F_REQUIRE_RFC3280;
+}
+
+void
+hx509_verify_ctx_f_allow_default_trustanchors(hx509_verify_ctx ctx, int boolean)
+{
+    if (boolean)
+	ctx->flags |= HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
+    else
+	ctx->flags &= ~HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
 }
 
 static const Extension *
@@ -1488,15 +1499,15 @@ hx509_verify_path(hx509_context context,
     /*
      *
      */
-    ret = hx509_certs_init(context, "MEMORY:trust-anchors", 0, NULL, &anchors);
-    if (ret)
-	goto out;
-    ret = hx509_certs_merge(context, anchors, ctx->trust_anchors);
-    if (ret)
-	goto out;
-    ret = hx509_certs_merge(context, anchors, context->default_trust_anchors);
-    if (ret)
-	goto out;
+    if (ctx->trust_anchors)
+	anchors = _hx509_certs_ref(ctx->trust_anchors);
+    else if (context->default_trust_anchors && ALLOW_DEF_TA(ctx))
+	anchors = _hx509_certs_ref(context->default_trust_anchors);
+    else {
+	ret = hx509_certs_init(context, "MEMORY:no-TA", 0, NULL, &anchors);
+	if (ret)
+	    goto out;
+    }
 
     /*
      * Calculate the path from the certificate user presented to the
