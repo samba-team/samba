@@ -756,7 +756,7 @@ static WERROR regdb_set_secdesc(const char *key,
 	normalize_dbkey(tdbkey);
 
 	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc,
-						   (uint8 **)&tdbdata.dptr,
+						   &tdbdata.dptr,
 						   &tdbdata.dsize));
 	if (!W_ERROR_IS_OK(err)) {
 		goto done;
