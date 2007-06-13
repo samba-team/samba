@@ -1,8 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
-<HTML>
-<HEAD>
-<TITLE>CTDB</TITLE>
-</HEAD>
+<!--#set var="TITLE" value="Configuring CTDB" -->
 <!--#include virtual="header.html" -->
 
 <H2 align="center">Configuring CTDB</H2>
@@ -60,19 +56,22 @@ There is no default for this parameter.
 
 <h3>CTDB_NODES</h3>
 
-This file needs to be created and should contain a list of the private IP addresses that the CTDB daemons will use in your cluster. One ip address for each node in the cluster.<br>
+This file needs to be created and should contain a list of the private
+IP addresses that the CTDB daemons will use in your cluster. One IP
+address for each node in the cluster.<p>
 
-This should be a private non-routable subnet which is only used for internal cluster traffic.<br>
+This should be a private non-routable subnet which is only used for
+internal cluster traffic. This file must be the same on all nodes in
+the cluster.<p>
 
-This file must be the same on all nodes in the cluster.<br><br>
-
-Make sure that these ip addresses are automatically started when the linux host boots and that each node can ping each other node.<br><br>
+Make sure that these IP addresses are automatically started when the
+cluster node boots and that each node can ping each other node.<p>
 
 Example 4 node cluster:
 <pre>
   CTDB_NODES=/etc/ctdb/nodes
 </pre>
-Content of /etc/ctdb/nodes :
+Content of /etc/ctdb/nodes:
 <pre>
  10.1.1.1
  10.1.1.2
@@ -85,26 +84,37 @@ The default for this file is /etc/ctdb/nodes.
 
 <h3>CTDB_PUBLIC_INTERFACE</h3>
 
-This parameter is used to tell CTDB which network interface is used to hold the public ip addresses when CTDB is used to manage IP takeover.<br>
-This can be the same network interface as is used for the private addresses in the CTDB_NODES list but it is recommended that you use a different interface.<br><br>
+This parameter is used to tell CTDB which network interface is used to
+hold the public ip addresses when CTDB is used to manage IP
+takeover.<p>
 
+This can be the same network interface as is used for the private
+addresses in the CTDB_NODES list but it is recommended that you use a
+different interface.<p>
 
 Example using eth0 for the public interface:
 <pre>
   CTDB_PUBLIC_INTERFACE=eth0
 </pre>
 
-It is strongly recommended that you use CTDB with IP takeover.<br>
-When you use this parameter you must also specify the CTDB_PUBLIC_ADDRESSES parameter.<br>
+It is strongly recommended that you use CTDB with IP takeover.<p>
 
+When you use this parameter you must also specify the
+CTDB_PUBLIC_ADDRESSES parameter.
 
 <h3>CTDB_PUBLIC_ADDRESSES</h3>
-In order to use IP takeover you must specify a file containing a list of public IP addresses. One IP address for each node.<br><br>
+
+In order to use IP takeover you must specify a file containing a list
+of public IP addresses. One IP address for each node.<p>
 
 
-This file contains a list of public cluster addresses.<br>
-These are the addresses that the SMBD daemons and other services will bind to and which clients will use to connect to the cluster.<br>
-This file must contain one address for each node, i.e. it must have the same number of entries as the nodes file. This file must also be the same for all nodes in the cluster.<br><br>
+This file contains a list of public cluster addresses.<p>
+
+These are the addresses that the SMBD daemons and other services will
+bind to and which clients will use to connect to the cluster. This
+file must contain one address for each node, i.e. it must have the
+same number of entries as the nodes file. This file must also be the
+same for all nodes in the cluster.<p>
 
 Example 4 node cluster:
 <pre>
@@ -118,47 +128,81 @@ Content of /etc/ctdb/public_addresses:
  192.168.2.2/24
 </pre>
 
-These are the IP addresses that you should configure in DNS for the name of the clustered samba server and are the addresses that CIFS clients will connect to.<br>
-Configure it as one DNS A record (==name) with multiple ip addresses and let round-robin DNS distribute the clients across the nodes of the cluster.<br><br>
+These are the IP addresses that you should configure in DNS for the
+name of the clustered samba server and are the addresses that CIFS
+clients will connect to.<p>
 
-The CTDB cluster utilizes IP takeover techniques to ensure that as long as at least one node in the cluster is available, all the public IP addresses will always be available to clients.<br>
-This means that if one physical node fails, the public address of that node will be taken over by a different node in the cluster. This provides a guarantee that all ip addresses exposed to clients will always be reachable by clients even if a node has been powered off or has crashed.<br><br>
+Configure it as one DNS A record (==name) with multiple IP addresses
+and let round-robin DNS distribute the clients across the nodes of the
+cluster.<p>
 
-CTDB nodes will only take over IP addresses that are inside the same subnet as its own public IP address.<br>
-In the example above, nodes 0 and 1 would be able to take over each others public ip and analog for nodes 2 and 3, but node 0 and 1 would NOT be able to take over the IP addresses for nodes 2 or 3 since they are on a different subnet.<br><br>
+The CTDB cluster utilizes IP takeover techniques to ensure that as long as at least one node in the cluster is available, all the public IP addresses will always be available to clients.<p>
 
-Do not assign these addresses to any of the interfaces on the host. CTDB will add and remove these addresses automatically at runtime.<br>
+This means that if one physical node fails, the public address of that
+node will be taken over by a different node in the cluster. This
+provides a guarantee that all ip addresses exposed to clients will
+always be reachable by clients even if a node has been powered off or
+has crashed.<p>
 
-This parameter is used when CTDB operated in takeover ip mode.<br><br>
+CTDB nodes will only take over IP addresses that are inside the same
+subnet as its own public IP address. In the example above, nodes 0 and
+1 would be able to take over each others public ip and analog for
+nodes 2 and 3, but node 0 and 1 would NOT be able to take over the IP
+addresses for nodes 2 or 3 since they are on a different
+subnet.<p>
 
+Do not assign these addresses to any of the interfaces on the
+host. CTDB will add and remove these addresses automatically at
+runtime.<p>
 
-The default for this file is /etc/ctdb/public_addresses .<br>
-If you use this you <strong>must</strong> also specify the CTDB_PUBLIC_INTERFACE parameter.<br>
+This parameter is used when CTDB operated in takeover ip mode.<p>
+
+The usual location for this file is /etc/ctdb/public_addresses. If you
+use this you <strong>must</strong> also specify the
+CTDB_PUBLIC_INTERFACE parameter.<p>
 
 <h2>Event scripts</h2>
-CTDB comes with a number of application specific event scripts that are used to do service specific tasks when the cluster has been reconfigured.<br>
-These scripts are stored in /etc/ctdb/events.d/ .<br><br>
-You do not need to modify these scripts if you just want to use cluster samba or nfs but they serve as examples in case you want to add clustering support for other application servers we do not yet proivide event scripts for.<br><br>
-Please see the service scripts that installed by ctdb in /etc/ctdb/events.d for examples of how to configure other services to be aware of the HA features of CTDB.
+
+CTDB comes with a number of application specific event scripts that
+are used to do service specific tasks when the cluster has been
+reconfigured. These scripts are stored in /etc/ctdb/events.d/<p>
+
+You do not need to modify these scripts if you just want to use
+clustered Samba or NFS but they serve as examples in case you want to
+add clustering support for other application servers we do not yet
+proivide event scripts for.<p>
+
+Please see the service scripts that installed by ctdb in
+/etc/ctdb/events.d for examples of how to configure other services to
+be aware of the HA features of CTDB.
 
 <h2>TCP port to use for CTDB</h2>
-CTDB defaults to use TCP port 9001 for its traffic.<br>
 
-Configuring a different port to use for CTDB traffic is done by adding a ctdb entry to the /etc/services file.<br><br>
+CTDB defaults to use TCP port 9001 for its traffic.<p>
+
+Configuring a different port to use for CTDB traffic is done by adding
+a ctdb entry to the /etc/services file.<p>
 
 Example: for change CTDB to use port 9999 add the following line to /etc/services
 <pre>
  ctdb  9999/tcp
 </pre>
 
-Note: all nodes in the cluster MUST use the same port or else CTDB will not start correctly.
+Note: all nodes in the cluster MUST use the same port or else CTDB
+will not start correctly.
 
 <h2>Name resolution</h2>
 
-You need to setup some method for your Windows and NFS clients to find the nodes of the cluster, and automatically balance the load between the nodes.<br><br>
-We recommend that you use public ip addresses using CTDB_PUBLIC_INTERFACE/CTDB_PUBLIC_ADDRESSES and that you setup a round-robin DNS entry for your cluster, listing all the public IP addresses that CTDB will be managing as a single DNS A record.<br><br>
+You need to setup some method for your Windows and NFS clients to find
+the nodes of the cluster, and automatically balance the load between
+the nodes.<p>
 
-You may also wish to setup a static WINS server entry listing all of your cluster nodes IP addresses.
+We recommend that you use public ip addresses using
+CTDB_PUBLIC_INTERFACE/CTDB_PUBLIC_ADDRESSES and that you setup a
+round-robin DNS entry for your cluster, listing all the public IP
+addresses that CTDB will be managing as a single DNS A record.<p>
 
+You may also wish to setup a static WINS server entry listing all of
+your cluster nodes IP addresses.
 
 <!--#include virtual="footer.html" -->

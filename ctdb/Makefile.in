@@ -58,6 +58,8 @@ SBINS = bin/ctdbd
 
 DIRS = lib bin
 
+.SUFFIXES: .c .o .h .1 .1.xml .1.html
+
 all: showflags dirs doc $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
@@ -93,19 +95,15 @@ bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-doc: doc/ctdb.1 doc/ctdb.1.html doc/ctdbd.1 doc/ctdbd.1.html
+.1.xml.1:
+	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
-doc/ctdb.1: doc/ctdb.1.xml
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+.1.xml.1.html:
+	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
-doc/ctdb.1.html: doc/ctdb.1.xml
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
-
-doc/ctdbd.1: doc/ctdbd.1.xml
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
-
-doc/ctdbd.1.html: doc/ctdbd.1.xml
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
+doc: doc/ctdb.1 doc/ctdb.1.html \
+	doc/ctdbd.1 doc/ctdbd.1.html \
+	doc/onnode.1 doc/onnode.1.html
 
 clean:
 	rm -f *.o */*.o */*/*.o */*~
@@ -140,6 +138,7 @@ install: all
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -m 644 doc/ctdb.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdbd.1 ];then ${INSTALLCMD} -m 644 doc/ctdbd.1 $(DESTDIR)$(mandir)/man1; fi
+	if [ -f doc/onnode.1 ];then ${INSTALLCMD} -m 644 doc/onnode.1 $(DESTDIR)$(mandir)/man1; fi
 	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode
 
 test: all

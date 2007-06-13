@@ -125,6 +125,11 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 {
 	int j, ret;
 
+	/* start the freeze process immediately on all nodes */
+	ctdb_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
+		     CTDB_CONTROL_FREEZE, CTDB_CTRL_FLAG_NOREPLY, tdb_null, 
+		     NULL, NULL, NULL, NULL, NULL);
+
 	/* set recovery mode to active on all nodes */
 	for (j=0; j<nodemap->num; j++) {
 		/* dont change it for nodes that are unavailable */
@@ -1293,11 +1298,19 @@ again:
 		   active, then that is also a good reason to do recovery
 		 */
 		for (i=0;i<nodemap->num;i++) {
-			if ((remote_nodemap->nodes[i].vnn != nodemap->nodes[i].vnn)
-			    || ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
-				(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE))) {
-				DEBUG(0, (__location__ " Remote node:%u has different nodemap.\n", 
-					  nodemap->nodes[j].vnn));
+			if (remote_nodemap->nodes[i].vnn != nodemap->nodes[i].vnn) {
+				DEBUG(0, (__location__ " Remote node:%u has different nodemap vnn for %d (%u vs %u).\n", 
+					  nodemap->nodes[j].vnn, i, 
+					  remote_nodemap->nodes[i].vnn, nodemap->nodes[i].vnn));
+				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
+					    vnnmap, nodemap->nodes[j].vnn);
+				goto again;
+			}
+			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
+			    (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
+				DEBUG(0, (__location__ " Remote node:%u has different nodemap flags for %d (0x%x vs 0x%x)\n", 
+					  nodemap->nodes[j].vnn, i,
+					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
 				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
 					    vnnmap, nodemap->nodes[j].vnn);
 				goto again;
