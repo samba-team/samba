@@ -31,6 +31,8 @@ static int tdb_refcount;
 #define VALUE_PREFIX	"SAMBA_REGVAL"
 #define SECDESC_PREFIX  "SAMBA_SECDESC"
 
+#define REG_TDB_FLAGS TDB_SEQNUM
+
 /* List the deepest path into the registry.  All part components will be created.*/
 
 /* If you want to have a part of the path controlled by the tdb and part by
@@ -236,9 +238,9 @@ BOOL regdb_init( void )
 	if ( tdb_reg )
 		return True;
 
-	if ( !(tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600)) )
+	if ( !(tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600)) )
 	{
-		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
 		if ( !tdb_reg ) {
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
 				lock_path("registry.tdb"), strerror(errno) ));
@@ -283,7 +285,7 @@ WERROR regdb_open( void )
 	
 	become_root();
 
-	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600);
 	if ( !tdb_reg ) {
 		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
 		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n", 
@@ -318,6 +320,16 @@ int regdb_close( void )
 	tdb_reg = NULL;
 
 	return ret;
+}
+
+/***********************************************************************
+ return the tdb sequence number of the registry tdb.
+ this is an indicator for the content of the registry
+ having changed. it will change upon regdb_init, too, though.
+ ***********************************************************************/
+int regdb_get_seqnum(void)
+{
+	return tdb_get_seqnum(tdb_reg);
 }
 
 /***********************************************************************
