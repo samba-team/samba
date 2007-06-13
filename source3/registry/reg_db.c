@@ -470,7 +470,7 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 			/* create a record with 0 subkeys */
 			if ( !regdb_store_keys_internal( path, subkeys ) ) {
 				DEBUG(0,("regdb_store_keys: Failed to store "
-					 "new record for key [%s}\n", path ));
+					 "new record for key [%s]\n", path ));
 				goto fail;
 			}
 		}
