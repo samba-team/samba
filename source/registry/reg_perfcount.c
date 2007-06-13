@@ -358,6 +358,7 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
     
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
+	SAFE_FREE(data.dptr);
 	return (uint32)atoi(buf);
 }
 
@@ -1321,11 +1322,15 @@ static BOOL _reg_perfcount_marshall_hkpd(prs_struct *ps, PERF_DATA_BLOCK block)
 /*********************************************************************
 *********************************************************************/
 
-WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, char *object_ids)
+WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, const char *object_ids)
 {
 	/*
 	 * For a detailed description of the layout of this structure,
 	 * see http://msdn.microsoft.com/library/default.asp?url=/library/en-us/perfmon/base/performance_data_format.asp
+	 *
+	 * By 2006-11-23 this link did not work anymore, I found something
+	 * promising under
+	 * http://msdn2.microsoft.com/en-us/library/aa373105.aspx -- vl
 	 */
 	PERF_DATA_BLOCK block;
 	uint32 buffer_size, base_index; 
