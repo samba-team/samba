@@ -380,6 +380,7 @@ _kdc_pk_rd_padata(krb5_context context,
     *ret_params = NULL;
     
     if (!config->enable_pkinit) {
+	kdc_log(context, config, 0, "PK-INIT request but PK-INIT not enabled");
 	krb5_clear_error_string(context);
 	return 0;
     }
