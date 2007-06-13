@@ -87,18 +87,29 @@ static char *gssapi_error_string(TALLOC_CTX *mem_ctx,
 	OM_uint32 disp_min_stat, disp_maj_stat;
 	gss_buffer_desc maj_error_message;
 	gss_buffer_desc min_error_message;
+	char *maj_error_string, *min_error_string;
 	OM_uint32 msg_ctx = 0;
 
 	char *ret;
 
 	maj_error_message.value = NULL;
 	min_error_message.value = NULL;
+	maj_error_message.length = 0;
+	min_error_message.length = 0;
 	
 	disp_maj_stat = gss_display_status(&disp_min_stat, maj_stat, GSS_C_GSS_CODE,
 			   mech, &msg_ctx, &maj_error_message);
 	disp_maj_stat = gss_display_status(&disp_min_stat, min_stat, GSS_C_MECH_CODE,
 			   mech, &msg_ctx, &min_error_message);
-	ret = talloc_asprintf(mem_ctx, "%s: %s", (char *)maj_error_message.value, (char *)min_error_message.value);
+	
+	maj_error_string = talloc_strndup(mem_ctx, (char *)maj_error_message.value, maj_error_message.length);
+
+	min_error_string = talloc_strndup(mem_ctx, (char *)min_error_message.value, min_error_message.length);
+
+	ret = talloc_asprintf(mem_ctx, "%s: %s", maj_error_string, min_error_string);
+
+	talloc_free(maj_error_string);
+	talloc_free(min_error_string);
 
 	gss_release_buffer(&disp_min_stat, &maj_error_message);
 	gss_release_buffer(&disp_min_stat, &min_error_message);
