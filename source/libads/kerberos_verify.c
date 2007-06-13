@@ -325,7 +325,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	krb5_keyblock *keyblock = NULL;
 	time_t authtime;
 	krb5_error_code ret = 0;
-	krb5_int32 flags = 0;	
+	int flags = 0;	
 	krb5_principal host_princ = NULL;
 	krb5_const_principal client_principal = NULL;
 	char *host_princ_s = NULL;
