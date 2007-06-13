@@ -1018,10 +1018,16 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 		setlen++;
 	}
 
+	if (setlen > max) {
+		DEBUG(10, ("forced to truncate group list from %d to %d\n",
+			setlen, max));
+		setlen = max;
+	}
+
 #if defined(BROKEN_GETGROUPS)
-	ret = sys_broken_setgroups(max, new_gidset ? new_gidset : gidset);
+	ret = sys_broken_setgroups(setlen, new_gidset ? new_gidset : gidset);
 #else
-	ret = setgroups(max, new_gidset ? new_gidset : gidset);
+	ret = setgroups(setlen, new_gidset ? new_gidset : gidset);
 #endif
 
 	if (new_gidset) {
