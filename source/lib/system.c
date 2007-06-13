@@ -936,7 +936,7 @@ static int sys_broken_getgroups(int setlen, gid_t *gidset)
 	return ngroups;
 }
 
-static int sys_broken_setgroups(gid_t primary_gid, int setlen, gid_t *gidset)
+static int sys_broken_setgroups(int setlen, gid_t *gidset)
 {
 	GID_T *group_list;
 	int i ; 
@@ -1019,7 +1019,7 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 	}
 
 	if (setlen > max) {
-		DEBUG(10, ("forced to truncate group list from %d to %d\n",
+		DEBUG(3, ("forced to truncate group list from %d to %d\n",
 			setlen, max));
 		setlen = max;
 	}
