@@ -251,7 +251,7 @@ test_princ(krb5_context context)
 	krb5_errx(context, 1, "q '%s' != '%s'", princ, princ_unparsed);
     free(princ_unparsed);
 
-    ret = krb5_unparse_name_flags(context, p, KRB5_PRINCIPAL_UNPARSE_NO_QUOTE,
+    ret = krb5_unparse_name_flags(context, p, KRB5_PRINCIPAL_UNPARSE_DISPLAY,
 				  &princ_unparsed);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_unparse_name_flags");
