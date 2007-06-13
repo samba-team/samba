@@ -1841,7 +1841,7 @@ static NTSTATUS do_unlink(connection_struct *conn, char *fname,
 	uint32 dirtype_orig = dirtype;
 	NTSTATUS status;
 
-	DEBUG(10,("can_delete: %s, dirtype = %d\n", fname, dirtype ));
+	DEBUG(10,("do_unlink: %s, dirtype = %d\n", fname, dirtype ));
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
