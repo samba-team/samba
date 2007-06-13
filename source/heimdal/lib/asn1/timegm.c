@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: timegm.c,v 1.11 2006/10/19 16:19:32 lha Exp $");
+RCSID("$Id: timegm.c 18607 2006-10-19 16:19:32Z lha $");
 
 static int
 is_leap(unsigned y)

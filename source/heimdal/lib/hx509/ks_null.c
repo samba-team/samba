@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_null.c,v 1.5 2007/01/09 10:52:10 lha Exp $");
+RCSID("$Id: ks_null.c 20901 2007-06-04 23:14:08Z lha $");
 
 
 static int
@@ -90,3 +90,9 @@ struct hx509_keyset_ops keyset_null = {
     null_iter,
     null_iter_end
 };
+
+void
+_hx509_ks_null_register(hx509_context context)
+{
+    _hx509_ks_register(context, &keyset_null);
+}

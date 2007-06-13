@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: delete_sec_context.c,v 1.20 2006/11/13 18:01:32 lha Exp $");
+RCSID("$Id: delete_sec_context.c 19031 2006-11-13 18:02:57Z lha $");
 
 OM_uint32
 _gsskrb5_delete_sec_context(OM_uint32 * minor_status,

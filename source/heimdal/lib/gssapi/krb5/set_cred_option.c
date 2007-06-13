@@ -32,7 +32,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: set_cred_option.c,v 1.5 2006/11/13 18:02:39 lha Exp $");
+RCSID("$Id: set_cred_option.c 20325 2007-04-12 16:49:17Z lha $");
 
 static gss_OID_desc gss_krb5_import_cred_x_oid_desc =
 {9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x04"}; /* XXX */
@@ -130,6 +130,78 @@ out:
 }
 
 
+static OM_uint32
+allowed_enctypes(OM_uint32 *minor_status,
+		 krb5_context context,
+		 gss_cred_id_t *cred_handle,
+		 const gss_buffer_t value)
+{
+    OM_uint32 major_stat;
+    krb5_error_code ret;
+    size_t len, i;
+    krb5_enctype *enctypes = NULL;
+    krb5_storage *sp = NULL;
+    gsskrb5_cred cred;
+
+    if (cred_handle == NULL || *cred_handle == GSS_C_NO_CREDENTIAL) {
+	*minor_status = 0;
+	return GSS_S_FAILURE;
+    }
+
+    cred = (gsskrb5_cred)*cred_handle;
+
+    if ((value->length % 4) != 0) {
+	*minor_status = 0;
+	major_stat = GSS_S_FAILURE;
+	goto out;
+    }
+
+    len = value->length / 4;
+    enctypes = malloc((len + 1) * 4);
+    if (enctypes == NULL) {
+	*minor_status = ENOMEM;
+	major_stat = GSS_S_FAILURE;
+	goto out;
+    }
+
+    sp = krb5_storage_from_mem(value->value, value->length);
+    if (sp == NULL) {
+	*minor_status = ENOMEM;
+	major_stat = GSS_S_FAILURE;
+	goto out;
+    }
+
+    for (i = 0; i < len; i++) {
+	uint32_t e;
+
+	ret = krb5_ret_uint32(sp, &e);
+	if (ret) {
+	    *minor_status = ret;
+	    major_stat =  GSS_S_FAILURE;
+	    goto out;
+	}
+	enctypes[i] = e;
+    }
+    enctypes[i] = 0;
+
+    if (cred->enctypes)
+	free(cred->enctypes);
+    cred->enctypes = enctypes;
+
+    krb5_storage_free(sp);
+
+    return GSS_S_COMPLETE;
+
+out:
+    if (sp)
+	krb5_storage_free(sp);
+    if (enctypes)
+	free(enctypes);
+
+    return major_stat;
+}
+
+
 OM_uint32
 _gsskrb5_set_cred_option
            (OM_uint32 *minor_status,
@@ -146,9 +218,11 @@ _gsskrb5_set_cred_option
 	return GSS_S_FAILURE;
     }
 
-    if (gss_oid_equal(desired_object, GSS_KRB5_IMPORT_CRED_X)) {
+    if (gss_oid_equal(desired_object, GSS_KRB5_IMPORT_CRED_X))
 	return import_cred(minor_status, context, cred_handle, value);
-    }
+
+    if (gss_oid_equal(desired_object, GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X))
+	return allowed_enctypes(minor_status, context, cred_handle, value);
 
     *minor_status = EINVAL;
     return GSS_S_FAILURE;

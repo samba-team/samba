@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: constants.c,v 1.8 2004/09/23 07:57:37 joda Exp $");
+RCSID("$Id: constants.c 14253 2004-09-23 07:57:37Z joda $");
 
 const char *krb5_config_file = 
 #ifdef __APPLE__

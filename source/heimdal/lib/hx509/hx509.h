@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx509.h,v 1.16 2007/01/09 10:52:05 lha Exp $ */
+/* $Id: hx509.h 20798 2007-06-02 03:28:55Z lha $ */
 
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
 typedef struct hx509_cert_data *hx509_cert;
@@ -50,6 +50,8 @@ typedef struct hx509_request_data *hx509_request;
 typedef struct hx509_error_data *hx509_error;
 typedef struct hx509_peer_info *hx509_peer_info;
 typedef struct hx509_ca_tbs *hx509_ca_tbs;
+typedef struct hx509_env *hx509_env;
+typedef struct hx509_crl *hx509_crl;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 
@@ -107,5 +109,18 @@ typedef enum {
 #define HX509_SELECT_DIGEST 1
 #define HX509_SELECT_PUBLIC_SIG 2
 #define HX509_SELECT_PUBLIC_ENC 3
+#define HX509_SELECT_SECRET_ENC 4
+
+/* flags to hx509_ca_tbs_set_template */
+#define HX509_CA_TEMPLATE_SUBJECT 1
+#define HX509_CA_TEMPLATE_SERIAL 2
+#define HX509_CA_TEMPLATE_NOTBEFORE 4
+#define HX509_CA_TEMPLATE_NOTAFTER 8
+#define HX509_CA_TEMPLATE_SPKI 16
+#define HX509_CA_TEMPLATE_KU 32
+#define HX509_CA_TEMPLATE_EKU 64
+
+/* flags hx509_cms_create_signed* */
+#define HX509_CMS_SIGATURE_DETACHED 1
 
 #include <hx509-protos.h>

@@ -34,7 +34,7 @@
 #include "hdb_locl.h"
 #include <der.h>
 
-RCSID("$Id: ext.c,v 1.6 2006/10/14 10:13:03 lha Exp $");
+RCSID("$Id: ext.c 20236 2007-02-16 23:52:29Z lha $");
 
 krb5_error_code
 hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
@@ -389,6 +389,20 @@ hdb_entry_get_ConstrainedDelegACL(const hdb_entry *entry,
 			     choice_HDB_extension_data_allowed_to_delegate_to);
     if (ext)
 	*a = &ext->data.u.allowed_to_delegate_to;
+    else
+	*a = NULL;
+
+    return 0;
+}
+
+krb5_error_code
+hdb_entry_get_aliases(const hdb_entry *entry, const HDB_Ext_Aliases **a)
+{
+    const HDB_extension *ext;
+
+    ext = hdb_find_extension(entry, choice_HDB_extension_data_aliases);
+    if (ext)
+	*a = &ext->data.u.aliases;
     else
 	*a = NULL;
 

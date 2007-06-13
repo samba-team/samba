@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_put.c,v 1.34 2006/12/28 17:14:33 lha Exp $");
+RCSID("$Id: der_put.c 19539 2006-12-28 17:15:05Z lha $");
 
 /*
  * All encoding functions take a pointer `p' to first position in

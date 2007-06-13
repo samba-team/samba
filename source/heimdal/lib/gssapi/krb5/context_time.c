@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: context_time.c,v 1.14 2006/11/13 18:01:26 lha Exp $");
+RCSID("$Id: context_time.c 19031 2006-11-13 18:02:57Z lha $");
 
 OM_uint32
 _gsskrb5_lifetime_left(OM_uint32 *minor_status, 

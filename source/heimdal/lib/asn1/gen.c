@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c,v 1.70 2006/12/28 17:14:37 lha Exp $");
+RCSID("$Id: gen.c 20670 2007-05-11 00:39:41Z lha $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -167,6 +167,7 @@ init_generate (const char *filename, const char *base)
 	  "    }                                                          \\\n"
 	  "  } while (0)\n\n",
 	  headerfile);
+    fprintf (headerfile, "struct units;\n\n");
     fprintf (headerfile, "#endif\n\n");
     asprintf(&fn, "%s_files", base);
     if (fn == NULL)

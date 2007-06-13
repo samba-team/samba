@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_cred.c,v 1.29 2006/10/06 17:04:47 lha Exp $");
+RCSID("$Id: rd_cred.c 20304 2007-04-11 11:15:05Z lha $");
 
 static krb5_error_code
 compare_addrs(krb5_context context,
@@ -79,8 +79,10 @@ krb5_rd_cred(krb5_context context,
 
     ret = decode_KRB_CRED(in_data->data, in_data->length, 
 			  &cred, &len);
-    if(ret)
+    if(ret) {
+	krb5_clear_error_string(context);
 	return ret;
+    }
 
     if (cred.pvno != 5) {
 	ret = KRB5KRB_AP_ERR_BADVERSION;
@@ -151,6 +153,8 @@ krb5_rd_cred(krb5_context context,
 				      enc_krb_cred_part_data.length,
 				      &enc_krb_cred_part,
 				      &len);
+    if (enc_krb_cred_part_data.data != cred.enc_part.cipher.data)
+	krb5_data_free(&enc_krb_cred_part_data);
     if (ret)
 	goto out;
 

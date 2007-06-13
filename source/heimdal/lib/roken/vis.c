@@ -65,7 +65,7 @@
 #if 1
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: vis.c,v 1.13 2006/12/15 11:49:22 lha Exp $");
+RCSID("$Id: vis.c 21005 2007-06-08 01:54:35Z lha $");
 #endif
 #include <roken.h>
 #ifndef _DIAGASSERT

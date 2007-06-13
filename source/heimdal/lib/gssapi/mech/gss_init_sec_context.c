@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_init_sec_context.c,v 1.4 2006/11/14 12:33:11 lha Exp $");
+RCSID("$Id: gss_init_sec_context.c 19957 2007-01-17 13:48:11Z lha $");
 
 static gss_cred_id_t
 _gss_mech_cred_find(gss_cred_id_t cred_handle, gss_OID mech_type)
@@ -70,6 +70,14 @@ gss_init_sec_context(OM_uint32 * minor_status,
 	gss_OID mech_type = input_mech_type;
 
 	*minor_status = 0;
+
+	_mg_buffer_zero(output_token);
+	if (actual_mech_type)
+	    *actual_mech_type = GSS_C_NO_OID;
+	if (ret_flags)
+	    *ret_flags = 0;
+	if (time_rec)
+	    *time_rec = 0;
 
 	/*
 	 * If we haven't allocated a context yet, do so now and lookup
@@ -131,6 +139,8 @@ gss_init_sec_context(OM_uint32 * minor_status,
 	    && major_status != GSS_S_CONTINUE_NEEDED) {
 		if (allocated_ctx)
 			free(ctx);
+		_mg_buffer_zero(output_token);
+		_gss_mg_error(m, major_status, *minor_status);
 	} else {
 		*context_handle = (gss_ctx_id_t) ctx;
 	}

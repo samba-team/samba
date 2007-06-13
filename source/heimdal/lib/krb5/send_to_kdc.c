@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: send_to_kdc.c,v 1.60 2006/10/20 18:42:01 lha Exp $");
+RCSID("$Id: send_to_kdc.c 19973 2007-01-17 17:19:52Z lha $");
 
 struct send_to_kdc {
     krb5_send_to_kdc_func func;
@@ -330,6 +330,8 @@ krb5_sendto (krb5_context context,
      krb5_error_code ret;
      int fd;
      int i;
+
+     krb5_data_zero(receive);
 
      for (i = 0; i < context->max_retries; ++i) {
 	 krb5_krbhst_info *hi;

@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: accept_sec_context.c,v 1.66 2006/11/13 18:00:54 lha Exp $");
+RCSID("$Id: accept_sec_context.c 20199 2007-02-07 22:36:39Z lha $");
 
 HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab _gsskrb5_keytab;
@@ -187,6 +187,7 @@ gsskrb5_accept_delegated_token
 
 out:
     if (ccache) {
+	/* Don't destroy the default cred cache */
 	if (delegated_cred_handle == NULL)
 	    krb5_cc_close(context, ccache);
 	else

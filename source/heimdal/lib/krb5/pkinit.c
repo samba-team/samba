@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.120 2006/12/08 02:48:09 lha Exp $");
+RCSID("$Id: pkinit.c 21004 2007-06-08 01:53:10Z lha $");
 
 struct krb5_dh_moduli {
     char *name;
@@ -83,10 +83,11 @@ struct krb5_pk_init_ctx_data {
     struct krb5_dh_moduli **m;
     hx509_peer_info peer;
     int type;
-    int require_binding;
-    int require_eku;
-    int require_krbtgt_otherName;
-    int require_hostname_match;
+    unsigned int require_binding:1;
+    unsigned int require_eku:1;
+    unsigned int require_krbtgt_otherName:1;
+    unsigned int require_hostname_match:1;
+    unsigned int trustedCertifiers:1;
 };
 
 static void
@@ -170,6 +171,7 @@ _krb5_pk_create_sign(krb5_context context,
     }
 
     ret = hx509_cms_create_signed_1(id->hx509ctx,
+				    0,
 				    eContentType,
 				    eContent->data,
 				    eContent->length,
@@ -438,7 +440,6 @@ build_auth_pack(krb5_context context,
 	    return ret;
     }
 
-
     return ret;
 }
 
@@ -587,18 +588,21 @@ pk_mk_padata(krb5_context context,
 	memset(&req, 0, sizeof(req));
 	req.signedAuthPack = buf;	
 
-	req.trustedCertifiers = calloc(1, sizeof(*req.trustedCertifiers));
-	if (req.trustedCertifiers == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    free_PA_PK_AS_REQ(&req);
-	    goto out;
-	}
-	ret = build_edi(context, ctx->id->hx509ctx, 
-			ctx->id->anchors, req.trustedCertifiers);
-	if (ret) {
-	    krb5_set_error_string(context, "pk-init: failed to build trustedCertifiers");
-	    free_PA_PK_AS_REQ(&req);
-	    goto out;
+	if (ctx->trustedCertifiers) {
+
+	    req.trustedCertifiers = calloc(1, sizeof(*req.trustedCertifiers));
+	    if (req.trustedCertifiers == NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
+		free_PA_PK_AS_REQ(&req);
+		goto out;
+	    }
+	    ret = build_edi(context, ctx->id->hx509ctx, 
+			    ctx->id->anchors, req.trustedCertifiers);
+	    if (ret) {
+		krb5_set_error_string(context, "pk-init: failed to build trustedCertifiers");
+		free_PA_PK_AS_REQ(&req);
+		goto out;
+	    }
 	}
 	req.kdcPkId = NULL;
 
@@ -684,6 +688,14 @@ _krb5_pk_mk_padata(krb5_context context,
 				     "pkinit_require_hostname_match",
 				     NULL);
 
+    ctx->trustedCertifiers = 
+	krb5_config_get_bool_default(context, NULL,
+				     TRUE,
+				     "realms",
+				     req_body->realm,
+				     "pkinit_trustedCertifiers",
+				     NULL);
+
     return pk_mk_padata(context, ctx, req_body, nonce, md);
 }
 
@@ -705,6 +717,7 @@ _krb5_pk_verify_sign(krb5_context context,
 				  id->verify_ctx,
 				  data,
 				  length,
+				  NULL,
 				  id->certpool,
 				  contentType,
 				  content,
@@ -1120,8 +1133,11 @@ pk_rd_pa_reply_dh(krb5_context context,
 			      &kdc_dh_info,
 			      &size);
 
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context, "pkinit - "
+			      "failed to decode KDC DH Key Info");
 	goto out;
+    }
 
     if (kdc_dh_info.nonce != nonce) {
 	krb5_set_error_string(context, "PKINIT: DH nonce is wrong");
@@ -1226,6 +1242,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	_krb5_pk_cert_free(host);
     if (content.data)
 	krb5_data_free(&content);
+    der_free_oid(&contentType);
     free_KDCDHKeyInfo(&kdc_dh_info);
 
     return ret;
@@ -1262,8 +1279,10 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				  pa->padata_value.length,
 				  &rep,
 				  &size);
-	if (ret)
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to decode pkinit AS rep");
 	    return ret;
+	}
 
 	switch (rep.element) {
 	case choice_PA_PK_AS_REP_dhInfo:
@@ -1861,6 +1880,7 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	free(ctx->id);
 	ctx->id = NULL;
     }
+    free(opt->opt_private->pk_init_ctx);
     opt->opt_private->pk_init_ctx = NULL;
 #endif
 }

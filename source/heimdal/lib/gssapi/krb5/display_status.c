@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: display_status.c,v 1.17 2006/11/13 18:01:38 lha Exp $");
+RCSID("$Id: display_status.c 19031 2006-11-13 18:02:57Z lha $");
 
 static const char *
 calling_error(OM_uint32 v)

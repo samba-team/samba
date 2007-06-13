@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.86 2007/01/04 12:54:09 lha Exp $");
+RCSID("$Id: pkinit.c 21039 2007-06-10 06:20:31Z lha $");
 
 #ifdef PKINIT
 
@@ -97,7 +97,7 @@ static struct {
 static krb5_error_code
 pk_check_pkauthenticator_win2k(krb5_context context,
 			       PKAuthenticator_Win2k *a,
-			       KDC_REQ *req)
+			       const KDC_REQ *req)
 {
     krb5_timestamp now;
 
@@ -114,7 +114,7 @@ pk_check_pkauthenticator_win2k(krb5_context context,
 static krb5_error_code
 pk_check_pkauthenticator(krb5_context context,
 			 PKAuthenticator *a,
-			 KDC_REQ *req)
+			 const KDC_REQ *req)
 {
     u_char *buf = NULL;
     size_t buf_size;
@@ -365,8 +365,8 @@ get_dh_param(krb5_context context,
 krb5_error_code
 _kdc_pk_rd_padata(krb5_context context,
 		  krb5_kdc_configuration *config,
-		  KDC_REQ *req,
-		  PA_DATA *pa,
+		  const KDC_REQ *req,
+		  const PA_DATA *pa,
 		  pk_client_params **ret_params)
 {
     pk_client_params *client_params;
@@ -375,7 +375,6 @@ _kdc_pk_rd_padata(krb5_context context,
     krb5_data eContent = { 0, NULL };
     krb5_data signed_content = { 0, NULL };
     const char *type = "unknown type";
-    const heim_oid *pa_contentType;
     int have_data = 0;
 
     *ret_params = NULL;
@@ -384,6 +383,8 @@ _kdc_pk_rd_padata(krb5_context context,
 	krb5_clear_error_string(context);
 	return 0;
     }
+
+    hx509_verify_set_time(kdc_identity->verify_ctx, _kdc_now.tv_sec);
 
     client_params = calloc(1, sizeof(*client_params));
     if (client_params == NULL) {
@@ -396,7 +397,6 @@ _kdc_pk_rd_padata(krb5_context context,
 	PA_PK_AS_REQ_Win2k r;
 
 	type = "PK-INIT-Win2k";
-	pa_contentType = oid_id_pkcs7_data();
 
 	ret = decode_PA_PK_AS_REQ_Win2k(pa->padata_value.data,
 					pa->padata_value.length,
@@ -422,7 +422,6 @@ _kdc_pk_rd_padata(krb5_context context,
 	PA_PK_AS_REQ r;
 
 	type = "PK-INIT-IETF";
-	pa_contentType = oid_id_pkauthdata();
 
 	ret = decode_PA_PK_AS_REQ(pa->padata_value.data,
 				  pa->padata_value.length,
@@ -467,7 +466,7 @@ _kdc_pk_rd_padata(krb5_context context,
 						   edi->val[i].issuerAndSerialNumber->length,
 						   &iasn,
 						   &size);
-		if (ret || size != 0) {
+		if (ret) {
 		    hx509_query_free(kdc_identity->hx509ctx, q);
 		    continue;
 		}
@@ -527,6 +526,7 @@ _kdc_pk_rd_padata(krb5_context context,
 				      kdc_identity->verify_ctx,
 				      signed_content.data,
 				      signed_content.length,
+				      NULL,
 				      kdc_identity->certpool,
 				      &eContentType,
 				      &eContent,
@@ -547,7 +547,9 @@ _kdc_pk_rd_padata(krb5_context context,
     }
 
     /* Signature is correct, now verify the signed message */
-    if (der_heim_oid_cmp(&eContentType, pa_contentType)) {
+    if (der_heim_oid_cmp(&eContentType, oid_id_pkcs7_data()) != 0 &&
+	der_heim_oid_cmp(&eContentType, oid_id_pkauthdata()) != 0)
+    {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
@@ -639,6 +641,8 @@ _kdc_pk_rd_padata(krb5_context context,
     kdc_log(context, config, 0, "PK-INIT request of type %s", type);
 
 out:
+    if (ret)
+	krb5_warn(context, ret, "PKINIT");
 
     if (signed_content.data)
 	free(signed_content.data);
@@ -678,17 +682,40 @@ pk_mk_pa_reply_enckey(krb5_context context,
 		      krb5_keyblock *reply_key,
 		      ContentInfo *content_info)
 {
+    const heim_oid *envelopedAlg = NULL, *sdAlg = NULL;
     krb5_error_code ret;
     krb5_data buf, signed_data;
     size_t size;
+    int do_win2k = 0;
 
     krb5_data_zero(&buf);
     krb5_data_zero(&signed_data);
 
+    /*
+     * If the message client is a win2k-type but it send pa data
+     * 09-binding it expects a IETF (checksum) reply so there can be
+     * no replay attacks.
+     */
+
     switch (client_params->type) {
     case PKINIT_COMPAT_WIN2K: {
+	int i = 0;
+	if (_kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_09_BINDING) == NULL)
+	    do_win2k = 1;
+	break;
+    }
+    case PKINIT_COMPAT_27:
+	break;
+    default:
+	krb5_abortx(context, "internal pkinit error");
+    }	    
+
+    if (do_win2k) {
 	ReplyKeyPack_Win2k kp;
 	memset(&kp, 0, sizeof(kp));
+
+	envelopedAlg = oid_id_rsadsi_des_ede3_cbc();
+	sdAlg = oid_id_pkcs7_data();
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
@@ -701,12 +728,12 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			   buf.data, buf.length,
 			   &kp, &size,ret);
 	free_ReplyKeyPack_Win2k(&kp);
-	break;
-    }
-    case PKINIT_COMPAT_27: {
+    } else {
 	krb5_crypto ascrypto;
 	ReplyKeyPack kp;
 	memset(&kp, 0, sizeof(kp));
+
+	sdAlg = oid_id_pkrkeydata();
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
@@ -735,10 +762,6 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
 	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
 	free_ReplyKeyPack(&kp);
-	break;
-    }
-    default:
-	krb5_abortx(context, "internal pkinit error");
     }
     if (ret) {
 	krb5_set_error_string(context, "ASN.1 encoding of ReplyKeyPack "
@@ -768,7 +791,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	    goto out;
 	
 	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
-					oid_id_pkrkeydata(),
+					0,
+					sdAlg,
 					buf.data,
 					buf.length,
 					NULL,
@@ -784,9 +808,21 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (ret) 
 	goto out;
 
+    if (client_params->type == PKINIT_COMPAT_WIN2K) {
+	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
+					 &signed_data,
+					 &buf);
+	if (ret)
+	    goto out;
+	krb5_data_free(&signed_data);
+	signed_data = buf;
+    }
+
     ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
+			       0,
 			       client_params->cert,
-			       signed_data.data, signed_data.length, NULL,
+			       signed_data.data, signed_data.length, 
+			       envelopedAlg,
 			       oid_id_pkcs7_signedData(), &buf);
     if (ret)
 	goto out;
@@ -881,6 +917,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 	    goto out;
 	
 	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+					0,
 					oid_id_pkdhkeydata(),
 					buf.data,
 					buf.length,
@@ -1125,6 +1162,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    krb5_data_free(&ocsp.data);
 
 	    ocsp.expire = 0;
+	    ocsp.next_update = kdc_time + 60 * 5;
 
 	    fd = open(config->pkinit_kdc_ocsp_file, O_RDONLY);
 	    if (fd < 0) {
@@ -1168,11 +1206,13 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			"PK-INIT failed to verify ocsp data %d", ret);
 		krb5_data_free(&ocsp.data);
 		ocsp.expire = 0;
-	    } else if (ocsp.expire > 180)
+	    } else if (ocsp.expire > 180) {
 		ocsp.expire -= 180; /* refetch the ocsp before it expire */
-	    
+		ocsp.next_update = ocsp.expire;
+	    } else {
+		ocsp.next_update = kdc_time;
+	    }
 	out_ocsp:
-	    ocsp.next_update = kdc_time + 3600;
 	    ret = 0;
 	}
 
@@ -1199,10 +1239,10 @@ out:
 }
 
 static int
-pk_principal_from_X509(krb5_context context, 
-		       krb5_kdc_configuration *config,
-		       hx509_cert client_cert, 
-		       krb5_const_principal match)
+match_rfc_san(krb5_context context, 
+	      krb5_kdc_configuration *config,
+	      hx509_cert client_cert, 
+	      krb5_const_principal match)
 {
     hx509_octet_string_list list;
     int ret, i, found = 0;
@@ -1254,6 +1294,68 @@ out:
     return 0;
 }
 
+static int
+match_ms_upn_san(krb5_context context, 
+		 krb5_kdc_configuration *config,
+		 hx509_cert client_cert, 
+		 krb5_const_principal match)
+{
+    hx509_octet_string_list list;
+    krb5_principal principal = NULL;
+    int ret, found = 0;
+    MS_UPN_SAN upn;
+    size_t size;
+
+    memset(&list, 0 , sizeof(list));
+
+    ret = hx509_cert_find_subjectAltName_otherName(client_cert,
+						   oid_id_pkinit_ms_san(),
+						   &list);
+    if (ret)
+	goto out;
+
+    if (list.len != 1) {
+	kdc_log(context, config, 0,
+		"More then one PK-INIT MS UPN SAN");
+	goto out;
+    }
+
+    ret = decode_MS_UPN_SAN(list.val[0].data, list.val[0].length, &upn, &size);
+    if (ret) {
+	kdc_log(context, config, 0, "Decode of MS-UPN-SAN failed");
+	goto out;
+    }
+
+    kdc_log(context, config, 0, "found MS UPN SAN: %s", upn);
+
+    ret = krb5_parse_name(context, upn, &principal);
+    free_MS_UPN_SAN(&upn);
+    if (ret) {
+	kdc_log(context, config, 0, "Failed to parse principal in MS UPN SAN");
+	goto out;
+    }
+
+    /* 
+     * This is very wrong, but will do for now, should really and a
+     * plugin to the windc layer to very this ACL.
+    */
+    strupr(principal->realm);
+
+    if (krb5_principal_compare(context, principal, match) == TRUE)
+	found = 1;
+
+out:
+    if (principal)
+	krb5_free_principal(context, principal);
+    hx509_free_octet_string_list(&list);    
+    if (ret)
+	return ret;
+
+    if (!found)
+	return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+
+    return 0;
+}
 
 krb5_error_code
 _kdc_pk_check_client(krb5_context context,
@@ -1283,12 +1385,20 @@ _kdc_pk_check_client(krb5_context context,
 	    *subject_name);
 
     if (config->enable_pkinit_princ_in_cert) {
-	ret = pk_principal_from_X509(context, config, 
-				     client_params->cert,
-				     client->entry.principal);
+	ret = match_rfc_san(context, config,
+			    client_params->cert,
+			    client->entry.principal);
 	if (ret == 0) {
 	    kdc_log(context, config, 5,
 		    "Found matching PK-INIT SAN in certificate");
+	    return 0;
+	}
+	ret = match_ms_upn_san(context, config,
+			       client_params->cert,
+			       client->entry.principal);
+	if (ret == 0) {
+	    kdc_log(context, config, 5,
+		    "Found matching MS UPN SAN in certificate");
 	    return 0;
 	}
     }
@@ -1330,10 +1440,17 @@ _kdc_pk_check_client(krb5_context context,
 	return 0;
     }
 
+    krb5_set_error_string(context,
+			  "PKINIT no matching principals for %s",
+			  *subject_name);
+
+    kdc_log(context, config, 5,
+	    "PKINIT no matching principals for %s",
+	    *subject_name);
+
     free(*subject_name);
     *subject_name = NULL;
 
-    krb5_set_error_string(context, "PKINIT no matching principals");
     return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 }
 
@@ -1396,7 +1513,56 @@ _kdc_add_inital_verified_cas(krb5_context context,
     return ret;
 }
 
+/*
+ *
+ */
 
+static void
+load_mappings(krb5_context context, const char *fn)
+{
+    krb5_error_code ret;
+    char buf[1024];
+    unsigned long lineno = 0;
+    FILE *f;
+
+    f = fopen(fn, "r");
+    if (f == NULL)
+	return;
+
+    while (fgets(buf, sizeof(buf), f) != NULL) {
+	char *subject_name, *p;
+    
+	buf[strcspn(buf, "\n")] = '\0';
+	lineno++;
+
+	p = buf + strspn(buf, " \t");
+
+	if (*p == '#' || *p == '\0')
+	    continue;
+
+	subject_name = strchr(p, ':');
+	if (subject_name == NULL) {
+	    krb5_warnx(context, "pkinit mapping file line %lu "
+		       "missing \":\" :%s",
+		       lineno, buf);
+	    continue;
+	}
+	*subject_name++ = '\0';
+
+	ret = add_principal_mapping(context, p, subject_name);
+	if (ret) {
+	    krb5_warn(context, ret, "failed to add line %lu \":\" :%s\n",
+		      lineno, buf);
+	    continue;
+	}
+    } 
+
+    fclose(f);
+}
+		   
+/*
+ *
+ */
 
 krb5_error_code
 _kdc_pk_initialize(krb5_context context,
@@ -1408,9 +1574,6 @@ _kdc_pk_initialize(krb5_context context,
 {
     const char *file; 
     krb5_error_code ret;
-    char buf[1024];
-    unsigned long lineno = 0;
-    FILE *f;
 
     file = krb5_config_get_string(context, NULL,
 				  "libdefaults", "moduli", NULL);
@@ -1481,41 +1644,8 @@ _kdc_pk_initialize(krb5_context context,
 					  "kdc",
 					  "pkinit_mappings_file",
 					  NULL);
-    f = fopen(file, "r");
-    if (f == NULL) {
-	krb5_warnx(context, "PKINIT: failed to load mappings file %s", file);
-	return 0;
-    }
 
-    while (fgets(buf, sizeof(buf), f) != NULL) {
-	char *subject_name, *p;
-    
-	buf[strcspn(buf, "\n")] = '\0';
-	lineno++;
-
-	p = buf + strspn(buf, " \t");
-
-	if (*p == '#' || *p == '\0')
-	    continue;
-
-	subject_name = strchr(p, ':');
-	if (subject_name == NULL) {
-	    krb5_warnx(context, "pkinit mapping file line %lu "
-		       "missing \":\" :%s",
-		       lineno, buf);
-	    continue;
-	}
-	*subject_name++ = '\0';
-
-	ret = add_principal_mapping(context, p, subject_name);
-	if (ret) {
-	    krb5_warn(context, ret, "failed to add line %lu \":\" :%s\n",
-		      lineno, buf);
-	    continue;
-	}
-    } 
-
-    fclose(f);
+    load_mappings(context, file);
 
     return 0;
 }

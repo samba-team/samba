@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c,v 1.231 2007/01/04 13:27:27 lha Exp $");
+RCSID("$Id: kerberos5.c 21040 2007-06-10 06:20:59Z lha $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -70,9 +70,12 @@ set_salt_padata (METHOD_DATA *md, Salt *salt)
     }
 }
 
-PA_DATA*
-_kdc_find_padata(KDC_REQ *req, int *start, int type)
+const PA_DATA*
+_kdc_find_padata(const KDC_REQ *req, int *start, int type)
 {
+    if (req->padata == NULL)
+	return NULL;
+
     while(*start < req->padata->len){
 	(*start)++;
 	if(req->padata->val[*start - 1].padata_type == type)
@@ -431,7 +434,8 @@ get_pa_etype_info(krb5_context context,
 	ret = krb5_unparse_name(context, client->principal, &name);
 	if (ret)
 	    name = rk_UNCONST("<unparse_name failed>");
-	kdc_log(context, config, 0, "internal error in get_pa_etype_info(%s): %d != %d", 
+	kdc_log(context, config, 0, 
+		"internal error in get_pa_etype_info(%s): %d != %d", 
 		name, n, pa.len);
 	if (ret == 0)
 	    free(name);
@@ -689,11 +693,11 @@ log_as_req(krb5_context context,
     }
     
     {
-	char _str[128];
+	char fixedstr[128];
 	unparse_flags(KDCOptions2int(b->kdc_options), asn1_KDCOptions_units(), 
-		      _str, sizeof(_str));
-	if(*_str)
-	    kdc_log(context, config, 2, "Requested flags: %s", _str);
+		      fixedstr, sizeof(fixedstr));
+	if(*fixedstr)
+	    kdc_log(context, config, 2, "Requested flags: %s", fixedstr);
     }
 }
 
@@ -870,7 +874,7 @@ send_pac_p(krb5_context context, KDC_REQ *req)
 {
     krb5_error_code ret;
     PA_PAC_REQUEST pacreq;
-    PA_DATA *pa;
+    const PA_DATA *pa;
     int i = 0;
     
     pa = _kdc_find_padata(req, &i, KRB5_PADATA_PA_PAC_REQUEST);
@@ -909,32 +913,37 @@ _kdc_as_rep(krb5_context context,
     KDCOptions f = b->kdc_options;
     hdb_entry_ex *client = NULL, *server = NULL;
     krb5_enctype cetype, setype, sessionetype;
+    krb5_data e_data;
     EncTicketPart et;
     EncKDCRepPart ek;
     krb5_principal client_princ = NULL, server_princ = NULL;
     char *client_name = NULL, *server_name = NULL;
     krb5_error_code ret = 0;
     const char *e_text = NULL;
-    krb5_data e_data;
     krb5_crypto crypto;
     Key *ckey, *skey;
     EncryptionKey *reply_key;
+    int flags = 0;
 #ifdef PKINIT
     pk_client_params *pkp = NULL;
 #endif
 
     memset(&rep, 0, sizeof(rep));
-    memset(&e_data, 0, sizeof(e_data));
+    krb5_data_zero(&e_data);
+
+    if (f.canonicalize)
+	flags |= HDB_F_CANON;
 
     if(b->sname == NULL){
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No server in request";
     } else{
-	_krb5_principalname2krb5_principal (context,
-					    &server_princ,
-					    *(b->sname),
-					    b->realm);
-	ret = krb5_unparse_name(context, server_princ, &server_name);
+	ret = _krb5_principalname2krb5_principal (context,
+						  &server_princ,
+						  *(b->sname),
+						  b->realm);
+	if (ret == 0)
+	    ret = krb5_unparse_name(context, server_princ, &server_name);
     }
     if (ret) {
 	kdc_log(context, config, 0, 
@@ -946,10 +955,26 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No client in request";
     } else {
-	_krb5_principalname2krb5_principal (context,
-					    &client_princ,
-					    *(b->cname),
-					    b->realm);
+
+	if (b->cname->name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	    if (b->cname->name_string.len != 1) {
+		kdc_log(context, config, 0,
+			"AS-REQ malformed canon request from %s", from);
+		ret = KRB5_PARSE_MALFORMED;
+		goto out;
+	    }
+	    ret = krb5_parse_name(context, b->cname->name_string.val[0],
+				  &client_princ);
+	    if (ret)
+		goto out;
+	} else {
+	    ret = _krb5_principalname2krb5_principal (context,
+						      &client_princ,
+						      *(b->cname),
+						      b->realm);
+	    if (ret)
+		goto out;
+	}
 	ret = krb5_unparse_name(context, client_princ, &client_name);
     }
     if (ret) {
@@ -962,7 +987,7 @@ _kdc_as_rep(krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch(context, config, client_princ, 
-			HDB_F_GET_CLIENT, NULL, &client);
+			HDB_F_GET_CLIENT | flags, NULL, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -996,7 +1021,7 @@ _kdc_as_rep(krb5_context context,
 
     if(req->padata){
 	int i;
-	PA_DATA *pa;
+	const PA_DATA *pa;
 	int found_pa = 0;
 
 	log_patypes(context, config, req->padata);
@@ -1041,7 +1066,7 @@ _kdc_as_rep(krb5_context context,
 
 		kdc_log(context, config, 0, "%s", e_text);
 		pkp = NULL;
-		goto ts_enc;
+		goto out;
 	    }
 	    found_pa = 1;
 	    et.flags.pre_authent = 1;
@@ -1169,6 +1194,8 @@ _kdc_as_rep(krb5_context context,
 			(unsigned)abs(kdc_time - p.patimestamp), 
 			context->max_skew,
 			client_name);
+#if 1
+		/* This code is from samba, needs testing */
 		/* 
 		 * the following is needed to make windows clients
 		 * to retry using the timestamp in the error message
@@ -1177,6 +1204,9 @@ _kdc_as_rep(krb5_context context,
 		 * is present...
 		 */
 		e_text = NULL;
+#else
+		e_text = "Too large time skew";
+#endif
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;
@@ -1227,6 +1257,12 @@ _kdc_as_rep(krb5_context context,
 	pa->padata_type		= KRB5_PADATA_PK_AS_REQ;
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
+
+	ret = realloc_method_data(&method_data);
+	pa = &method_data.val[method_data.len-1];
+	pa->padata_type		= KRB5_PADATA_PK_AS_REQ_WIN;
+	pa->padata_value.length	= 0;
+	pa->padata_value.data	= NULL;
 #endif
 
 	/* 
@@ -1253,12 +1289,12 @@ _kdc_as_rep(krb5_context context,
 	e_data.data   = buf;
 	e_data.length = len;
 	e_text ="Need to use PA-ENC-TIMESTAMP/PA-PK-AS-REQ",
+
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
 
 	kdc_log(context, config, 0,
 		"No preauth found, returning PREAUTH-REQUIRED -- %s",
 		client_name);
-
 	goto out;
     }
     
@@ -1283,45 +1319,57 @@ _kdc_as_rep(krb5_context context,
     if(ret)
 	goto out;
 
+    /* 
+     * Select a session enctype from the list of the crypto systems
+     * supported enctype, is supported by the client and is one of the
+     * enctype of the enctype of the krbtgt.
+     *
+     * The later is used as a hint what enctype all KDC are supporting
+     * to make sure a newer version of KDC wont generate a session
+     * enctype that and older version of a KDC in the same realm can't
+     * decrypt.
+     *
+     * But if the KDC admin is paranoid and doesn't want to have "no
+     * the best" enctypes on the krbtgt, lets save the best pick from
+     * the client list and hope that that will work for any other
+     * KDCs.
+     */
     {
 	const krb5_enctype *p;
-	int i, j, y;
+	krb5_enctype clientbest = ETYPE_NULL;
+	int i, j;
 
 	p = krb5_kerberos_enctypes(context);
 
 	sessionetype = ETYPE_NULL;
 
 	for (i = 0; p[i] != ETYPE_NULL && sessionetype == ETYPE_NULL; i++) {
-	    /* check it's valid */
 	    if (krb5_enctype_valid(context, p[i]) != 0)
 		continue;
 
-	    /* check if the client supports it */
 	    for (j = 0; j < b->etype.len && sessionetype == ETYPE_NULL; j++) {
-		if (p[i] == b->etype.val[j]) {
-		    /*
-		     * if the server (krbtgt) has explicit etypes,
-		     * check if it also supports it
-		     */
-		    if (server->entry.etypes) {
-		        for (y = 0; y < server->entry.etypes->len; y++) {
-			    if (p[i] == server->entry.etypes->val[y]) {
-			        sessionetype = p[i];
-			        break;
-			    }
-		        }
-		    } else {
-			sessionetype = p[i];
-			break;
-		    }
-		}
+		Key *dummy;
+		/* check with client */
+		if (p[i] != b->etype.val[j])
+		    continue; 
+		/* save best of union of { client, crypto system } */
+		if (clientbest == ETYPE_NULL)
+		    clientbest = p[i];
+		/* check with krbtgt */
+		ret = hdb_enctype2key(context, &server->entry, p[i], &dummy);
+		if (ret) 
+		    continue;
+		sessionetype = p[i];
 	    }
 	}
-	if (sessionetype == ETYPE_NULL) {
-	    kdc_log(context, config, 0, 
+	/* if krbtgt had no shared keys with client, pick clients best */
+	if (clientbest != ETYPE_NULL && sessionetype == ETYPE_NULL) {
+	    sessionetype = clientbest;
+	} else if (sessionetype == ETYPE_NULL) {
+	    kdc_log(context, config, 0,
 		    "Client (%s) from %s has no common enctypes with KDC"
-		    "to use for the session key",
-		    client_name, from);
+		    "to use for the session key", 
+		    client_name, from); 
 	    goto out;
 	}
     }
@@ -1533,6 +1581,58 @@ _kdc_as_rep(krb5_context context,
 #endif
 
     set_salt_padata (rep.padata, ckey->salt);
+
+    /* Add signing of alias referral */
+    if (f.canonicalize) {
+	PA_ClientCanonicalized canon;
+	krb5_data data;
+	PA_DATA pa;
+	krb5_crypto crypto;
+	size_t len;
+
+	memset(&canon, 0, sizeof(canon));
+
+	canon.names.requested_name = *b->cname;
+	canon.names.real_name = client->entry.principal->name;
+
+	ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
+			   &canon.names, &len, ret);
+	if (ret) 
+	    goto out;
+	if (data.length != len)
+	    krb5_abortx(context, "internal asn.1 error");
+
+	/* sign using "returned session key" */
+	ret = krb5_crypto_init(context, &et.key, 0, &crypto);
+	if (ret) {
+	    free(data.data);
+	    goto out;
+	}
+
+	ret = krb5_create_checksum(context, crypto, 
+				   KRB5_KU_CANONICALIZED_NAMES, 0,
+				   data.data, data.length,
+				   &canon.canon_checksum);
+	free(data.data);
+	krb5_crypto_destroy(context, crypto);
+	if (ret)
+	    goto out;
+	  
+	ASN1_MALLOC_ENCODE(PA_ClientCanonicalized, data.data, data.length,
+			   &canon, &len, ret);
+	free_Checksum(&canon.canon_checksum);
+	if (ret) 
+	    goto out;
+	if (data.length != len)
+	    krb5_abortx(context, "internal asn.1 error");
+
+	pa.padata_type = KRB5_PADATA_CLIENT_CANONICALIZED;
+	pa.padata_value = data;
+	ret = add_METHOD_DATA(rep.padata, &pa);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
 
     if (rep.padata->len == 0) {
 	free(rep.padata);

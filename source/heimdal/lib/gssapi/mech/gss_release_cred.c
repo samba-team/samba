@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_release_cred.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_release_cred.c 19963 2007-01-17 16:01:22Z lha $");
 
 OM_uint32
 gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
@@ -47,6 +47,6 @@ gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
 	free(cred);
 
 	*minor_status = 0;
-	*cred_handle = 0;
+	*cred_handle = GSS_C_NO_CREDENTIAL;
 	return (GSS_S_COMPLETE);
 }

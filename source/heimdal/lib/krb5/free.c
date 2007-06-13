@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: free.c,v 1.8 2005/05/18 10:06:16 lha Exp $");
+RCSID("$Id: free.c 15175 2005-05-18 10:06:16Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep)

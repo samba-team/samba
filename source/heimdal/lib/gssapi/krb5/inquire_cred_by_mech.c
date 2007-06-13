@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003, 2006, 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_cred_by_mech.c,v 1.4 2006/10/07 22:15:08 lha Exp $");
+RCSID("$Id: inquire_cred_by_mech.c 20634 2007-05-09 15:33:01Z lha $");
 
 OM_uint32 _gsskrb5_inquire_cred_by_mech (
     OM_uint32 * minor_status,
@@ -45,39 +45,32 @@ OM_uint32 _gsskrb5_inquire_cred_by_mech (
 	gss_cred_usage_t * cred_usage
     )
 {
-    OM_uint32 ret;
+    gss_cred_usage_t usage;
+    OM_uint32 maj_stat;
     OM_uint32 lifetime;
 
-    if (gss_oid_equal(mech_type, GSS_C_NO_OID) == 0 &&
-	gss_oid_equal(mech_type, GSS_KRB5_MECHANISM) == 0) {
-	*minor_status = EINVAL;
-	return GSS_S_BAD_MECH;
-    }    
+    maj_stat = 
+	_gsskrb5_inquire_cred (minor_status, cred_handle,
+			       name, &lifetime, &usage, NULL);
+    if (maj_stat)
+	return maj_stat;
 
-    ret = _gsskrb5_inquire_cred (minor_status,
-				 cred_handle,
-				 name,
-				 &lifetime,
-				 cred_usage,
-				 NULL);
-    
-    if (ret == 0 && cred_handle != GSS_C_NO_CREDENTIAL) {
-	gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
-	gss_cred_usage_t usage;
-
-	HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
-	usage = cred->usage;
-	HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
-
-	if (initiator_lifetime) {
-	    if (usage == GSS_C_INITIATE || usage == GSS_C_BOTH)
-		*initiator_lifetime = lifetime;
-	}
-	if (acceptor_lifetime) {
-	    if (usage == GSS_C_ACCEPT || usage == GSS_C_BOTH)
-		*acceptor_lifetime = lifetime;
-	}
+    if (initiator_lifetime) {
+	if (usage == GSS_C_INITIATE || usage == GSS_C_BOTH)
+	    *initiator_lifetime = lifetime;
+	else
+	    *initiator_lifetime = 0;
+    }
+   
+    if (acceptor_lifetime) {
+	if (usage == GSS_C_ACCEPT || usage == GSS_C_BOTH)
+	    *acceptor_lifetime = lifetime;
+	else
+	    *acceptor_lifetime = 0;
     }
 
-    return ret;
+    if (cred_usage)
+	*cred_usage = usage;
+
+    return GSS_S_COMPLETE;
 }

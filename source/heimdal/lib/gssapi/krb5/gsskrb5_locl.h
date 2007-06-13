@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gsskrb5_locl.h,v 1.9 2006/11/13 18:02:03 lha Exp $ */
+/* $Id: gsskrb5_locl.h 20324 2007-04-12 16:46:01Z lha $ */
 
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
@@ -92,6 +92,7 @@ typedef struct {
   gss_OID_set mechanisms;
   struct krb5_ccache_data *ccache;
   HEIMDAL_MUTEX cred_id_mutex;
+  krb5_enctype *enctypes;
 } *gsskrb5_cred;
 
 typedef struct Principal *gsskrb5_name;

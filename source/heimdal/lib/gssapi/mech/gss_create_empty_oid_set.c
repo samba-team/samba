@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_create_empty_oid_set.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_create_empty_oid_set.c 19951 2007-01-17 10:14:58Z lha $");
 
 OM_uint32
 gss_create_empty_oid_set(OM_uint32 *minor_status,
@@ -36,7 +36,7 @@ gss_create_empty_oid_set(OM_uint32 *minor_status,
 	gss_OID_set set;
 
 	*minor_status = 0;
-	*oid_set = 0;
+	*oid_set = GSS_C_NO_OID_SET;
 
 	set = malloc(sizeof(gss_OID_set_desc));
 	if (!set) {

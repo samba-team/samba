@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/cred.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
- *	$Id: cred.h,v 1.3 2006/10/05 18:26:54 lha Exp $
+ *	$Id: cred.h 20626 2007-05-08 13:56:49Z lha $
  */
 
 struct _gss_mechanism_cred {
@@ -36,7 +36,6 @@ struct _gss_mechanism_cred {
 SLIST_HEAD(_gss_mechanism_cred_list, _gss_mechanism_cred);
 
 struct _gss_cred {
-	gss_cred_usage_t gc_usage;
 	struct _gss_mechanism_cred_list gc_mc;
 };
 

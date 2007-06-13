@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_duplicate_name.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_duplicate_name.c 19953 2007-01-17 11:16:35Z lha $");
 
 OM_uint32 gss_duplicate_name(OM_uint32 *minor_status,
     const gss_name_t src_name,
@@ -39,6 +39,7 @@ OM_uint32 gss_duplicate_name(OM_uint32 *minor_status,
 	struct _gss_mechanism_name *mn;
 
 	*minor_status = 0;
+	*dest_name = GSS_C_NO_NAME;
 
 	/*
 	 * If this name has a value (i.e. it didn't come from

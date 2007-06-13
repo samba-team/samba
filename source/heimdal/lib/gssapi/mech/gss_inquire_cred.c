@@ -27,7 +27,21 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_cred.c,v 1.5 2006/07/20 02:03:18 lha Exp $");
+RCSID("$Id: gss_inquire_cred.c 20626 2007-05-08 13:56:49Z lha $");
+
+#define AUSAGE 1
+#define IUSAGE 2
+
+static void
+updateusage(gss_cred_usage_t usage, int *usagemask)
+{
+    if (usage == GSS_C_BOTH)
+	*usagemask |= AUSAGE | IUSAGE;
+    else if (usage == GSS_C_ACCEPT)
+	*usagemask |= AUSAGE;
+    else if (usage == GSS_C_INITIATE)
+	*usagemask |= IUSAGE;
+}
 
 OM_uint32
 gss_inquire_cred(OM_uint32 *minor_status,
@@ -44,27 +58,30 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	struct _gss_mechanism_name *mn;
 	OM_uint32 min_lifetime;
 	int found = 0;
+	int usagemask = 0;
+	gss_cred_usage_t usage;
 
 	_gss_load_mech();
 
 	*minor_status = 0;
 	if (name_ret)
-		*name_ret = 0;
+		*name_ret = GSS_C_NO_NAME;
 	if (lifetime)
 		*lifetime = 0;
 	if (cred_usage)
 		*cred_usage = 0;
+	if (mechanisms)
+		*mechanisms = GSS_C_NO_OID_SET;
 
 	if (name_ret) {
-		name = malloc(sizeof(struct _gss_name));
-		if (!name) {
+		name = calloc(1, sizeof(*name));
+		if (name == NULL) {
 			*minor_status = ENOMEM;
 			return (GSS_S_FAILURE);
 		}
-		memset(name, 0, sizeof(struct _gss_name));
 		SLIST_INIT(&name->gn_mn);
 	} else {
-		name = 0;
+		name = NULL;
 	}
 
 	if (mechanisms) {
@@ -85,10 +102,11 @@ gss_inquire_cred(OM_uint32 *minor_status,
 			OM_uint32 mc_lifetime;
 
 			major_status = mc->gmc_mech->gm_inquire_cred(minor_status,
-			    mc->gmc_cred, &mc_name, &mc_lifetime, NULL, NULL);
+			    mc->gmc_cred, &mc_name, &mc_lifetime, &usage, NULL);
 			if (major_status)
 				continue;
 
+			updateusage(usage, &usagemask);
 			if (name) {
 				mn = malloc(sizeof(struct _gss_mechanism_name));
 				if (!mn) {
@@ -120,10 +138,11 @@ gss_inquire_cred(OM_uint32 *minor_status,
 
 			major_status = m->gm_mech.gm_inquire_cred(minor_status,
 			    GSS_C_NO_CREDENTIAL, &mc_name, &mc_lifetime,
-			    cred_usage, NULL);
+			    &usage, NULL);
 			if (major_status)
 				continue;
 
+			updateusage(usage, &usagemask);
 			if (name && mc_name) {
 				mn = malloc(
 					sizeof(struct _gss_mechanism_name));
@@ -152,6 +171,9 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	}
 
 	if (found == 0) {
+		gss_name_t n = (gss_name_t)name;
+		if (n)
+			gss_release_name(minor_status, &n);
 		gss_release_oid_set(minor_status, mechanisms);
 		*minor_status = 0;
 		return (GSS_S_NO_CRED);
@@ -162,7 +184,13 @@ gss_inquire_cred(OM_uint32 *minor_status,
 		*name_ret = (gss_name_t) name;
 	if (lifetime)
 		*lifetime = min_lifetime;
-	if (cred && cred_usage)
-		*cred_usage = cred->gc_usage;
+	if (cred_usage) {
+		if ((usagemask & (AUSAGE|IUSAGE)) == (AUSAGE|IUSAGE))
+			*cred_usage = GSS_C_BOTH;
+		else if (usagemask & IUSAGE)
+			*cred_usage = GSS_C_INITIATE;
+		else if (usagemask & AUSAGE)
+			*cred_usage = GSS_C_ACCEPT;
+	}
 	return (GSS_S_COMPLETE);
 }

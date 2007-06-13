@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_import_name.c,v 1.3 2006/06/29 21:23:13 lha Exp $");
+RCSID("$Id: gss_import_name.c 19954 2007-01-17 11:50:23Z lha $");
 
 static OM_uint32
 _gss_import_export_name(OM_uint32 *minor_status,
@@ -119,6 +119,10 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	 */
 	major_status = m->gm_import_name(minor_status,
 	    input_name_buffer, GSS_C_NT_EXPORT_NAME, &new_canonical_name);
+	if (major_status != GSS_S_COMPLETE) {
+		_gss_mg_error(m, major_status, *minor_status);
+		return major_status;
+	}
 
 	/*
 	 * Now we make a new name and mark it as an MN.
@@ -145,9 +149,10 @@ gss_import_name(OM_uint32 *minor_status,
 	OM_uint32		major_status;
 	struct _gss_name	*name;
 
+	*output_name = GSS_C_NO_NAME;
+
 	if (input_name_buffer->length == 0) {
 		*minor_status = 0;
-		*output_name = 0;
 		return (GSS_S_BAD_NAME);
 	}
 
@@ -180,7 +185,6 @@ gss_import_name(OM_uint32 *minor_status,
 	    && !gss_oid_equal(name_type, GSS_C_NT_ANONYMOUS)
 	    && !gss_oid_equal(name_type, GSS_KRB5_NT_PRINCIPAL_NAME)) {
 		*minor_status = 0;
-		*output_name = 0;
 		return (GSS_S_BAD_NAMETYPE);
 	}
 

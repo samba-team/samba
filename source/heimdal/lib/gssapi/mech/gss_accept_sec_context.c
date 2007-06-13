@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_accept_sec_context.c,v 1.9 2006/12/15 20:12:20 lha Exp $");
+RCSID("$Id: gss_accept_sec_context.c 20626 2007-05-08 13:56:49Z lha $");
 
 static OM_uint32
 parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
@@ -127,10 +127,10 @@ choose_mech(const gss_buffer_t input, gss_OID mech_oid)
 		return GSS_S_COMPLETE;
 	} else if (input->length == 0) {
 		/* 
-		 * There is the a wiered mode of SPNEGO (in CIFS and
+		 * There is the a wierd mode of SPNEGO (in CIFS and
 		 * SASL GSS-SPENGO where the first token is zero
 		 * length and the acceptor returns a mech_list, lets
-		 * home that is what is happening now.
+		 * hope that is what is happening now.
 		 */
 		*mech_oid = spnego_mechanism;
 		return GSS_S_COMPLETE;
@@ -161,13 +161,18 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	int allocated_ctx;
 
 	*minor_status = 0;
-	if (src_name) *src_name = 0;
-	if (mech_type) *mech_type = 0;
-	if (ret_flags) *ret_flags = 0;
-	if (time_rec) *time_rec = 0;
-	if (delegated_cred_handle) *delegated_cred_handle = 0;
-	output_token->length = 0;
-	output_token->value = 0;
+	if (src_name)
+	    *src_name = GSS_C_NO_NAME;
+	if (mech_type)
+	    *mech_type = GSS_C_NO_OID;
+	if (ret_flags)
+	    *ret_flags = 0;
+	if (time_rec)
+	    *time_rec = 0;
+	if (delegated_cred_handle)
+	    *delegated_cred_handle = GSS_C_NO_CREDENTIAL;
+	_mg_buffer_zero(output_token);
+
 
 	/*
 	 * If this is the first call (*context_handle is NULL), we must
@@ -227,7 +232,10 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	    &delegated_mc);
 	if (major_status != GSS_S_COMPLETE &&
 	    major_status != GSS_S_CONTINUE_NEEDED)
+	{
+		_gss_mg_error(m, major_status, *minor_status);
 		return (major_status);
+	}
 
 	if (!src_name) {
 		m->gm_release_name(minor_status, &src_mn);
@@ -264,8 +272,6 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 				*minor_status = ENOMEM;
 				return (GSS_S_FAILURE);
 			}
-			m->gm_inquire_cred(minor_status, delegated_mc,
-			    0, 0, &dcred->gc_usage, 0);
 			dmc->gmc_mech = m;
 			dmc->gmc_mech_oid = &m->gm_mech_oid;
 			dmc->gmc_cred = delegated_mc;

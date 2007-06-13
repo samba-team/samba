@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: get_in_tkt.c,v 1.119 2006/10/06 17:05:08 lha Exp $");
+RCSID("$Id: get_in_tkt.c 20226 2007-02-16 03:31:50Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_etype (krb5_context context,
@@ -125,13 +125,12 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_key_usage key_usage,
 		     krb5_addresses *addrs,
 		     unsigned nonce,
-		     krb5_boolean allow_server_mismatch,
-		     krb5_boolean ignore_cname,
+		     unsigned flags,
 		     krb5_decrypt_proc decrypt_proc,
 		     krb5_const_pointer decryptarg)
 {
     krb5_error_code ret;
-    krb5_principal tmp_principal, srv_principal = NULL;
+    krb5_principal tmp_principal;
     int tmp;
     size_t len;
     time_t tmp_time;
@@ -143,8 +142,8 @@ _krb5_extract_ticket(krb5_context context,
  * as realm against windows KDC's, they always return the full realm
  * based on the DNS Name.
  */
-allow_server_mismatch = 1;
-ignore_cname = 1;
+flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
 
     ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
@@ -155,7 +154,7 @@ ignore_cname = 1;
 
     /* compare client */
 
-    if (!ignore_cname) {
+    if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0){
 	tmp = krb5_principal_compare (context, tmp_principal, creds->client);
 	if (!tmp) {
 	    krb5_free_principal (context, tmp_principal);
@@ -177,6 +176,29 @@ ignore_cname = 1;
 	krb5_abortx(context, "internal error in ASN.1 encoder");
     creds->second_ticket.length = 0;
     creds->second_ticket.data   = NULL;
+
+    /* compare server */
+
+    ret = _krb5_principalname2krb5_principal (context,
+					      &tmp_principal,
+					      rep->kdc_rep.ticket.sname,
+					      rep->kdc_rep.ticket.realm);
+    if (ret)
+	goto out;
+    if(flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH){
+	krb5_free_principal(context, creds->server);
+	creds->server = tmp_principal;
+	tmp_principal = NULL;
+    } else {
+	tmp = krb5_principal_compare (context, tmp_principal,
+				      creds->server);
+	krb5_free_principal (context, tmp_principal);
+	if (!tmp) {
+	    ret = KRB5KRB_AP_ERR_MODIFIED;
+	    krb5_clear_error_string (context);
+	    goto out;
+	}
+    }
     
     /* decrypt */
 
@@ -187,50 +209,16 @@ ignore_cname = 1;
     if (ret)
 	goto out;
 
-#if 0
-    /* XXX should this decode be here, or in the decrypt_proc? */
-    ret = krb5_decode_keyblock(context, &rep->enc_part.key, 1);
-    if(ret)
-	goto out;
-#endif
+    /* verify names */
+    if(flags & EXTRACT_TICKET_MATCH_REALM){
+	const char *srealm = krb5_principal_get_realm(context, creds->server);
+	const char *crealm = krb5_principal_get_realm(context, creds->client);
 
-    /* compare server */
-
-    ret = _krb5_principalname2krb5_principal (context,
-					      &srv_principal,
-					      rep->kdc_rep.ticket.sname,
-					      rep->kdc_rep.ticket.realm);
-    if (ret)
-	goto out;
-
-    ret = _krb5_principalname2krb5_principal (context,
-					      &tmp_principal,
-					      rep->enc_part.sname,
-					      rep->enc_part.srealm);
-    if (ret)
-	goto out;
-
-    /* 
-     * see if the service principal matches in the ticket
-     * and in the enc_part
-     */
-    tmp = krb5_principal_compare (context, tmp_principal, srv_principal);
-    krb5_free_principal (context, tmp_principal);
-    if (!tmp) {
-	ret = KRB5KRB_AP_ERR_MODIFIED;
-	krb5_clear_error_string (context);
-	goto out;
-    }
-
-    if(allow_server_mismatch){
-	krb5_free_principal(context, creds->server);
-	creds->server = srv_principal;
-	srv_principal = NULL;
-    }else{
-	tmp = krb5_principal_compare (context, srv_principal, creds->server);
-	if (!tmp) {
+	if (strcmp(rep->enc_part.srealm, srealm) != 0 ||
+	    strcmp(rep->enc_part.srealm, crealm) != 0)
+	{
 	    ret = KRB5KRB_AP_ERR_MODIFIED;
-	    krb5_clear_error_string (context);
+	    krb5_clear_error_string(context);
 	    goto out;
 	}
     }
@@ -329,8 +317,6 @@ ignore_cname = 1;
 out:
     memset (rep->enc_part.key.keyvalue.data, 0,
 	    rep->enc_part.key.keyvalue.length);
-    if (srv_principal)
-        krb5_free_principal (context, srv_principal);
     return ret;
 }
 
@@ -792,18 +778,23 @@ krb5_get_in_cred(krb5_context context,
     if (ret)
 	goto out;
 	
-    ret = _krb5_extract_ticket(context, 
-			       &rep, 
-			       creds, 
-			       key, 
-			       keyseed, 
-			       KRB5_KU_AS_REP_ENC_PART,
-			       NULL, 
-			       nonce, 
-			       FALSE, 
-			       opts.request_anonymous,
-			       decrypt_proc, 
-			       decryptarg);
+    {
+	unsigned flags = 0;
+	if (opts.request_anonymous)
+	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+
+	ret = _krb5_extract_ticket(context, 
+				   &rep, 
+				   creds, 
+				   key, 
+				   keyseed, 
+				   KRB5_KU_AS_REP_ENC_PART,
+				   NULL, 
+				   nonce, 
+				   flags,
+				   decrypt_proc, 
+				   decryptarg);
+    }
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_free_keyblock_contents (context, key);
     free (key);

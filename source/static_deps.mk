@@ -38,7 +38,7 @@ heimdal_basics: \
        heimdal/lib/krb5/krb5_err.h \
        heimdal/lib/gssapi/gkrb5_err.h \
        heimdal/lib/hx509/hx509_err.h \
-       heimdal/lib/des/hcrypto
+       heimdal/lib/hcrypto/hcrypto
 
 proto: basics
 basics: include/includes.h \

@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: release_cred.c,v 1.14 2006/11/13 18:02:34 lha Exp $");
+RCSID("$Id: release_cred.c 20753 2007-05-31 22:50:06Z lha $");
 
 OM_uint32 _gsskrb5_release_cred
            (OM_uint32 * minor_status,
@@ -42,6 +42,7 @@ OM_uint32 _gsskrb5_release_cred
 {
     krb5_context context;
     gsskrb5_cred cred;
+    OM_uint32 junk;
 
     *minor_status = 0;
 
@@ -67,7 +68,9 @@ OM_uint32 _gsskrb5_release_cred
 	else 
 	    krb5_cc_close(context, cred->ccache);
     }
-    _gsskrb5_release_oid_set(NULL, &cred->mechanisms);
+    gss_release_oid_set(&junk, &cred->mechanisms);
+    if (cred->enctypes)
+	free(cred->enctypes);
     HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     HEIMDAL_MUTEX_destroy(&cred->cred_id_mutex);
     memset(cred, 0, sizeof(*cred));

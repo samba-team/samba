@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken-common.h,v 1.64 2005/09/28 03:05:58 lha Exp $ */
+/* $Id: roken-common.h 20867 2007-06-03 21:00:45Z lha $ */
 
 #ifndef __ROKEN_COMMON_H__
 #define __ROKEN_COMMON_H__
@@ -374,6 +374,9 @@ pid_file_delete (char **);
 
 int ROKEN_LIB_FUNCTION
 read_environment(const char *file, char ***env);
+
+void ROKEN_LIB_FUNCTION
+free_environment(char **);
 
 void ROKEN_LIB_FUNCTION
 warnerr(int doerrno, const char *fmt, va_list ap)

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_delete_sec_context.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_delete_sec_context.c 19951 2007-01-17 10:14:58Z lha $");
 
 OM_uint32
 gss_delete_sec_context(OM_uint32 *minor_status,
@@ -36,6 +36,9 @@ gss_delete_sec_context(OM_uint32 *minor_status,
 {
 	OM_uint32 major_status;
 	struct _gss_context *ctx = (struct _gss_context *) *context_handle;
+
+	if (output_token)
+	    _mg_buffer_zero(output_token);
 
 	*minor_status = 0;
 	if (ctx) {
@@ -46,12 +49,9 @@ gss_delete_sec_context(OM_uint32 *minor_status,
 		if (ctx->gc_ctx) {
 			major_status = ctx->gc_mech->gm_delete_sec_context(
 				minor_status, &ctx->gc_ctx, output_token);
-		} else if (output_token != GSS_C_NO_BUFFER) {
-			output_token->length = 0;
-			output_token->value = 0;
 		}
 		free(ctx);
-		*context_handle = 0;
+		*context_handle = GSS_C_NO_CONTEXT;
 	}
 
 	return (GSS_S_COMPLETE);

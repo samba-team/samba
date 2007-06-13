@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_export_name.c,v 1.3 2006/07/05 22:41:57 lha Exp $");
+RCSID("$Id: gss_export_name.c 19954 2007-01-17 11:50:23Z lha $");
 
 OM_uint32
 gss_export_name(OM_uint32 *minor_status,
@@ -37,8 +37,7 @@ gss_export_name(OM_uint32 *minor_status,
 	struct _gss_name *name = (struct _gss_name *) input_name;
 	struct _gss_mechanism_name *mn;
 
-	exported_name->value = NULL;
-	exported_name->length = 0;
+	_mg_buffer_zero(exported_name);
 
 	/*
 	 * If this name already has any attached MNs, export the first

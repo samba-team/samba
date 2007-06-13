@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_p12.c,v 1.18 2007/01/09 10:52:11 lha Exp $");
+RCSID("$Id: ks_p12.c 20909 2007-06-05 03:09:13Z lha $");
 
 struct ks_pkcs12 {
     hx509_certs certs;
@@ -341,39 +341,45 @@ p12_init(hx509_context context,
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    c = _hx509_collector_alloc(context, lock);
-    if (c == NULL)
-	return ENOMEM;
+    ret = _hx509_collector_alloc(context, lock, &c);
+    if (ret)
+	return ret;
 
     p12 = calloc(1, sizeof(*p12));
     if (p12 == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
     p12->fn = strdup(residue);
     if (p12->fn == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
     if (flags & HX509_CERTS_CREATE) {
-	ret = hx509_certs_init(context, "MEMORY:ks-file-create", 
+	ret = hx509_certs_init(context, "MEMORY:ks-file-create",
 			       0, lock, &p12->certs);
-	if (ret)
-	    goto out;
-	*data = p12;
-	return 0;
+	if (ret == 0)
+	    *data = p12;
+	goto out;
     }
 
     ret = _hx509_map_file(residue, &buf, &len, NULL);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     ret = decode_PKCS12_PFX(buf, len, &pfx, NULL);
     _hx509_unmap_file(buf, len);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to decode the PFX in %s", residue);
 	goto out;
+    }
 
     if (der_heim_oid_cmp(&pfx.authSafe.contentType, oid_id_pkcs7_data()) != 0) {
 	free_PKCS12_PFX(&pfx);
@@ -452,15 +458,20 @@ addBag(hx509_context context,
 
     ptr = realloc(as->val, sizeof(as->val[0]) * (as->len + 1));
     if (ptr == NULL) {
-	hx509_set_error_string(context, 0, ENOMEM, "malloc out of memory");
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
     }
     as->val = ptr;
 
     ret = der_copy_oid(oid, &as->val[as->len].contentType);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
+	return ret;
+    }
     
     as->val[as->len].content = calloc(1, sizeof(*as->val[0].content));
     if (as->val[as->len].content == NULL) {
+	der_free_oid(&as->val[as->len].contentType);
 	hx509_set_error_string(context, 0, ENOMEM, "malloc out of memory");
 	return ENOMEM;
     }
@@ -488,11 +499,11 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     os.data = NULL;
     os.length = 0;
 
-    ASN1_MALLOC_ENCODE(Certificate, os.data, os.length, 
-		       _hx509_get_cert(c), &size, ret);
+    ret = hx509_cert_binary(context, c, &os);
     if (ret)
-	goto out;
-    ASN1_MALLOC_ENCODE(PKCS12_OctetString, 
+	return ret;
+
+    ASN1_MALLOC_ENCODE(PKCS12_OctetString,
 		       cb.certValue.data,cb.certValue.length,
 		       &os, &size, ret);
     free(os.data);
@@ -505,7 +516,7 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     }
     ASN1_MALLOC_ENCODE(PKCS12_CertBag, os.data, os.length,
 		       &cb, &size, ret);
-    free(cb.certValue.data);
+    free_PKCS12_CertBag(&cb);
     if (ret)
 	goto out;
 

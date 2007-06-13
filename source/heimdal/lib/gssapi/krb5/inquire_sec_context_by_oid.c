@@ -32,7 +32,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_sec_context_by_oid.c,v 1.12 2006/11/13 18:02:27 lha Exp $");
+RCSID("$Id: inquire_sec_context_by_oid.c 19031 2006-11-13 18:02:57Z lha $");
 
 static int
 oid_prefix_equal(gss_OID oid_enc, gss_OID prefix_enc, unsigned *suffix)

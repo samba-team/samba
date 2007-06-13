@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_krb5.h,v 1.17 2006/11/10 01:05:34 lha Exp $ */
+/* $Id: gssapi_krb5.h 20385 2007-04-18 08:51:32Z lha $ */
 
 #ifndef GSSAPI_KRB5_H_
 #define GSSAPI_KRB5_H_
@@ -65,6 +65,7 @@ extern gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X;
 extern gss_OID GSS_KRB5_SET_DNS_CANONICALIZE_X;
 extern gss_OID GSS_KRB5_SEND_TO_KDC_X;
 extern gss_OID GSS_KRB5_SET_DEFAULT_REALM_X;
+extern gss_OID GSS_KRB5_CCACHE_NAME_X;
 /* Extensions inquire context */
 extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
 extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;

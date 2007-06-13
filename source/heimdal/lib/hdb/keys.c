@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: keys.c,v 1.6 2006/10/22 09:40:12 lha Exp $");
+RCSID("$Id: keys.c 18819 2006-10-22 09:40:12Z lha $");
 
 /*
  * free all the memory used by (len, keys)

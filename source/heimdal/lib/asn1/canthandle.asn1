@@ -1,4 +1,4 @@
--- $Id: canthandle.asn1,v 1.6 2006/01/18 19:12:33 lha Exp $ --
+-- $Id: canthandle.asn1 16593 2006-01-18 19:12:33Z lha $ --
 
 CANTHANDLE DEFINITIONS ::= BEGIN
 

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: getarg.h,v 1.14 2005/04/13 05:52:27 lha Exp $ */
+/* $Id: getarg.h 14776 2005-04-13 05:52:27Z lha $ */
 
 #ifndef __GETARG_H__
 #define __GETARG_H__

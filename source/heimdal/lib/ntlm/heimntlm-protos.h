@@ -83,7 +83,7 @@ void
 heim_ntlm_free_type1 (struct ntlm_type1 */*data*/);
 
 void
-heim_ntlm_free_type2 (struct ntlm_type2 */*type2*/);
+heim_ntlm_free_type2 (struct ntlm_type2 */*data*/);
 
 void
 heim_ntlm_free_type3 (struct ntlm_type3 */*data*/);

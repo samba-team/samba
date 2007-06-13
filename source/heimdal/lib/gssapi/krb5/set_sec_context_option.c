@@ -36,7 +36,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: set_sec_context_option.c,v 1.10 2006/12/14 11:02:16 lha Exp $");
+RCSID("$Id: set_sec_context_option.c 20384 2007-04-18 08:51:06Z lha $");
 
 static OM_uint32
 get_bool(OM_uint32 *minor_status,
@@ -48,6 +48,25 @@ get_bool(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
     *flag = *((const char *)value->value) != 0;
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
+get_string(OM_uint32 *minor_status,
+	   const gss_buffer_t value,
+	   char **str)
+{
+    if (value == NULL || value->length == 0) {
+	*str = NULL;
+    } else {
+	*str = malloc(value->length + 1);
+	if (*str == NULL) {
+	    *minor_status = 0;
+	    return GSS_S_UNAVAILABLE;
+	}
+	memcpy(*str, value->value, value->length);
+	(*str)[value->length] = '\0';
+    }
     return GSS_S_COMPLETE;
 }
 
@@ -103,17 +122,9 @@ _gsskrb5_set_sec_context_option
     } else if (gss_oid_equal(desired_object, GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X)) {
 	char *str;
 
-	if (value == NULL || value->length == 0) {
-	    str = NULL;
-	} else {
-	    str = malloc(value->length + 1);
-	    if (str) {
-		*minor_status = 0;
-		return GSS_S_UNAVAILABLE;
-	    }
-	    memcpy(str, value->value, value->length);
-	    str[value->length] = '\0';
-	}
+	maj_stat = get_string(minor_status, value, &str);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
 
 	_gsskrb5_register_acceptor_identity(str);
 	free(str);
@@ -124,17 +135,13 @@ _gsskrb5_set_sec_context_option
     } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_DEFAULT_REALM_X)) {
 	char *str;
 
-	if (value == NULL || value->length == 0) {
+	maj_stat = get_string(minor_status, value, &str);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
+	if (str == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_CALL_INACCESSIBLE_READ;
 	}
-	str = malloc(value->length + 1);
-	if (str == NULL) {
-	    *minor_status = 0;
-	    return GSS_S_UNAVAILABLE;
-	}
-	memcpy(str, value->value, value->length);
-	str[value->length] = '\0';
 
 	krb5_set_default_realm(context, str);
 	free(str);
@@ -161,8 +168,24 @@ _gsskrb5_set_sec_context_option
 
 	*minor_status = 0;
 	return GSS_S_COMPLETE;
-    }
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_CCACHE_NAME_X)) {
+	char *str;
 
+	maj_stat = get_string(minor_status, value, &str);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
+	if (str == NULL) {
+	    *minor_status = 0;
+	    return GSS_S_CALL_INACCESSIBLE_READ;
+	}
+
+	*minor_status = krb5_cc_set_default_name(context, str);
+	free(str);
+	if (*minor_status)
+	    return GSS_S_FAILURE;
+
+	return GSS_S_COMPLETE;
+    }
 
     *minor_status = EINVAL;
     return GSS_S_FAILURE;

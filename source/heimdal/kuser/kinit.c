@@ -32,11 +32,9 @@
  */
 
 #include "kuser_locl.h"
-RCSID("$Id: kinit.c,v 1.141 2006/12/12 16:35:41 lha Exp $");
+RCSID("$Id: kinit.c 20517 2007-04-22 10:42:26Z lha $");
 
-#ifndef KRB4
 #include "krb5-v4compat.h"
-#endif
 
 struct krb5_pk_identity;
 struct krb5_pk_cert;
@@ -46,6 +44,7 @@ struct krb5_dh_moduli;
 struct krb5_plugin;
 enum plugin_type;
 #include "krb5-private.h"
+#include "heimntlm.h"
 
 int forwardable_flag	= -1;
 int proxiable_flag	= -1;
@@ -74,6 +73,8 @@ char *password_file	= NULL;
 char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
+static int canonicalize_flag = 0;
+static char *ntlm_domain;
 
 static char *krb4_cc_name;
 
@@ -153,18 +154,21 @@ static struct getargs args[] = {
     { "password-file",	0,   arg_string, &password_file,
       "read the password from a file" },
 
+    { "canonicalize",0,   arg_flag, &canonicalize_flag,
+      "canonicalize client principal" },
 #ifdef PKINIT
-    {  "pk-user",	'C',	arg_string,	&pk_user_id,
-       "principal's public/private/certificate identifier",
-       "id" },
+    { "pk-user",	'C',	arg_string,	&pk_user_id,
+      "principal's public/private/certificate identifier", "id" },
 
-    {  "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
-       "directory with CA certificates", "directory" },
+    { "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
+      "directory with CA certificates", "directory" },
 
-    {  "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
-       "Use RSA encrypted reply (instead of DH)" },
-
+    { "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
+      "Use RSA encrypted reply (instead of DH)" },
 #endif
+    { "ntlm-domain",	0,  arg_string, &ntlm_domain,
+      "NTLM domain", "domain" },
+
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -178,130 +182,6 @@ usage (int ret)
 		    "[principal [command]]");
     exit (ret);
 }
-
-#ifdef KRB4
-/* for when the KDC tells us it's a v4 one, we try to talk that */
-
-static int
-key_to_key(const char *user,
-	   char *instance,
-	   const char *realm,
-	   const void *arg,
-	   des_cblock *key)
-{
-    memcpy(key, arg, sizeof(des_cblock));
-    return 0;
-}
-
-static int
-do_v4_fallback (krb5_context context,
-		const krb5_principal principal,
-		int lifetime,
-		int use_srvtab, const char *srvtab_str,
-		const char *passwd)
-{
-    int ret;
-    krb_principal princ;
-    des_cblock key;
-    krb5_error_code kret;
-
-    if (lifetime == 0)
-	lifetime = DEFAULT_TKT_LIFE;
-    else
-	lifetime = krb_time_to_life (0, lifetime);
-
-    kret = krb5_524_conv_principal (context, principal,
-				    princ.name,
-				    princ.instance,
-				    princ.realm);
-    if (kret) {
-	krb5_warn (context, kret, "krb5_524_conv_principal");
-	return 1;
-    }
-
-    if (use_srvtab || srvtab_str) {
-	if (srvtab_str == NULL)
-	    srvtab_str = KEYFILE;
-
-	ret = read_service_key (princ.name, princ.instance, princ.realm,
-				0, srvtab_str, (char *)&key);
-	if (ret) {
-	    warnx ("read_service_key %s: %s", srvtab_str,
-		   krb_get_err_text (ret));
-	    return 1;
-	}
-	ret = krb_get_in_tkt (princ.name, princ.instance, princ.realm,
-			      KRB_TICKET_GRANTING_TICKET, princ.realm,
-			      lifetime, key_to_key, NULL, key);
-    } else {
-	ret = krb_get_pw_in_tkt(princ.name, princ.instance, princ.realm, 
-				KRB_TICKET_GRANTING_TICKET, princ.realm, 
-				lifetime, passwd);
-    }
-    memset (key, 0, sizeof(key));
-    if (ret) {
-	warnx ("%s", krb_get_err_text(ret));
-	return 1;
-    }
-    if (do_afslog && k_hasafs()) {
-	if ((ret = krb_afslog(NULL, NULL)) != 0 && ret != KDC_PR_UNKNOWN) {
-	    if(ret > 0)
-		warnx ("%s", krb_get_err_text(ret));
-	    else
-		warnx ("failed to store AFS token");
-	}
-    }
-    return 0;
-}
-
-
-/*
- * the special version of get_default_principal that takes v4 into account
- */
-
-static krb5_error_code
-kinit_get_default_principal (krb5_context context,
-			     krb5_principal *princ)
-{
-    krb5_error_code ret;
-    krb5_ccache id;
-    krb_principal v4_princ;
-    int kret;
-
-    ret = krb5_cc_default (context, &id);
-    if (ret == 0) {
-	ret = krb5_cc_get_principal (context, id, princ);
-	krb5_cc_close (context, id);
-	if (ret == 0)
-	    return 0;
-    }
-
-    kret = krb_get_tf_fullname (tkt_string(),
-				v4_princ.name,
-				v4_princ.instance,
-				v4_princ.realm);
-    if (kret == KSUCCESS) {
-	ret = krb5_425_conv_principal (context,
-				       v4_princ.name,
-				       v4_princ.instance,
-				       v4_princ.realm,
-				       princ);
-	if (ret == 0)
-	    return 0;
-    }
-    return krb5_get_default_principal (context, princ);
-}
-
-#else /* !KRB4 */
-
-static krb5_error_code
-kinit_get_default_principal (krb5_context context,
-			     krb5_principal *princ)
-{
-    return krb5_get_default_principal (context, princ);
-}
-
-#endif /* !KRB4 */
 
 static krb5_error_code
 get_server(krb5_context context,
@@ -457,6 +337,39 @@ out:
 }
 
 static krb5_error_code
+store_ntlmkey(krb5_context context, krb5_ccache id, 
+	      const char *domain, krb5_const_principal client,
+	      struct ntlm_buf *buf)
+{
+    krb5_error_code ret;
+    krb5_creds cred;
+    
+    memset(&cred, 0, sizeof(cred));
+
+    ret = krb5_make_principal(context, &cred.server,
+			      krb5_principal_get_realm(context, client),
+			      "@ntlm-key", domain, NULL);
+    if (ret)
+	goto out;
+    ret = krb5_copy_principal(context, client, &cred.client);
+    if (ret)
+	goto out;
+    
+    cred.times.authtime = time(NULL);
+    cred.times.endtime = time(NULL) + 3600 * 24 * 30; /* XXX */
+    cred.session.keytype = ENCTYPE_ARCFOUR_HMAC_MD5;
+    ret = krb5_data_copy(&cred.session.keyvalue, buf->data, buf->length);
+    if (ret)
+	goto out;
+
+    ret = krb5_cc_store_cred(context, id, &cred);
+
+out:
+    krb5_free_cred_contents (context, &cred);
+    return 0;
+}
+
+static krb5_error_code
 get_new_tickets(krb5_context context, 
 		krb5_principal principal,
 		krb5_ccache ccache,
@@ -471,7 +384,9 @@ get_new_tickets(krb5_context context,
     krb5_deltat renew = 0;
     char *renewstr = NULL;
     krb5_enctype *enctype = NULL;
+    struct ntlm_buf ntlmkey;
 
+    memset(&ntlmkey, 0, sizeof(ntlmkey));
     passwd[0] = '\0';
 
     if (password_file) {
@@ -500,8 +415,8 @@ get_new_tickets(krb5_context context,
     if (ret)
 	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
     
-    krb5_get_init_creds_opt_set_default_flags(context, "kinit", 
-					      /* XXX */principal->realm, opt);
+    krb5_get_init_creds_opt_set_default_flags(context, "kinit",
+	krb5_principal_get_realm(context, principal), opt);
 
     if(forwardable_flag != -1)
 	krb5_get_init_creds_opt_set_forwardable (opt, forwardable_flag);
@@ -512,6 +427,8 @@ get_new_tickets(krb5_context context,
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_pac_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
+    if (canonicalize_flag)
+	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
     if (pk_user_id) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
@@ -629,19 +546,8 @@ get_new_tickets(krb5_context context,
 					    opt);
     }
     krb5_get_init_creds_opt_free(context, opt);
-#ifdef KRB4
-    if (ret == KRB5KRB_AP_ERR_V4_REPLY || ret == KRB5_KDC_UNREACH) {
-	int exit_val;
-
-	exit_val = do_v4_fallback (context, principal, ticket_life,
-				   use_keytab, keytab_str, passwd);
-	get_v4_tgt = 0;
-	do_afslog  = 0;
-	memset(passwd, 0, sizeof(passwd));
-	if (exit_val == 0 || ret == KRB5KRB_AP_ERR_V4_REPLY)
-	    return exit_val;
-    }
-#endif
+    if (ntlm_domain && passwd[0])
+	heim_ntlm_nt_key(passwd, &ntlmkey);
     memset(passwd, 0, sizeof(passwd));
 
     switch(ret){
@@ -651,7 +557,11 @@ get_new_tickets(krb5_context context,
 	exit(1);
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
+    case KRB5KDC_ERR_PREAUTH_FAILED:
 	krb5_errx(context, 1, "Password incorrect");
+	break;
+    case KRB5KRB_AP_ERR_V4_REPLY:
+	krb5_errx(context, 1, "Looks like a Kerberos 4 reply");
 	break;
     default:
 	krb5_err(context, 1, ret, "krb5_get_init_creds");
@@ -684,6 +594,9 @@ get_new_tickets(krb5_context context,
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
 
     krb5_free_cred_contents (context, &cred);
+
+    if (ntlm_domain && ntlmkey.data)
+	store_ntlmkey(context, ccache, ntlm_domain, principal, &ntlmkey);
 
     if (enctype)
 	free(enctype);
@@ -774,6 +687,7 @@ main (int argc, char **argv)
     krb5_principal principal;
     int optidx = 0;
     krb5_deltat ticket_life = 0;
+    int parseflags = 0;
 
     setprogname (argv[0]);
     
@@ -797,12 +711,15 @@ main (int argc, char **argv)
     argc -= optidx;
     argv += optidx;
 
+    if (canonicalize_flag)
+	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
+
     if (argv[0]) {
-	ret = krb5_parse_name (context, argv[0], &principal);
+	ret = krb5_parse_name_flags (context, argv[0], parseflags, &principal);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_parse_name");
     } else {
-	ret = kinit_get_default_principal (context, &principal);
+	ret = krb5_get_default_principal (context, &principal);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_get_default_principal");
     }

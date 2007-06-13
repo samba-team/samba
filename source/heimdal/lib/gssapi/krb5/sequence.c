@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: sequence.c,v 1.8 2006/10/07 22:15:32 lha Exp $");
+RCSID("$Id: sequence.c 18334 2006-10-07 22:16:04Z lha $");
 
 #define DEFAULT_JITTER_WINDOW 20
 

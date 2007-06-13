@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: canonicalize_name.c,v 1.4 2006/10/07 22:14:08 lha Exp $");
+RCSID("$Id: canonicalize_name.c 18334 2006-10-07 22:16:04Z lha $");
 
 OM_uint32 _gsskrb5_canonicalize_name (
             OM_uint32 * minor_status,

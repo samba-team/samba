@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_file.c,v 1.31 2007/01/09 10:52:08 lha Exp $");
+RCSID("$Id: ks_file.c 20776 2007-06-01 22:02:01Z lha $");
 
 struct ks_file {
     hx509_certs certs;
@@ -542,12 +542,9 @@ file_init(hx509_context context,
 	return 0;
     }
 
-    c = _hx509_collector_alloc(context, lock);
-    if (c == NULL) {
-	ret = ENOMEM;
-	hx509_set_error_string(context, 0, ret, "out of memory");
+    ret = _hx509_collector_alloc(context, lock, &c);
+    if (ret)
 	goto out;
-    }
 
     for (p = f->fn; p != NULL; p = pnext) {
 	int found_data;
@@ -678,16 +675,12 @@ static int
 store_func(hx509_context context, void *ctx, hx509_cert c)
 {
     FILE *f = (FILE *)ctx;
-    size_t size;
     heim_octet_string data;
     int ret;
 
-    ASN1_MALLOC_ENCODE(Certificate, data.data, data.length, 
-		       _hx509_get_cert(c), &size, ret);
+    ret = hx509_cert_binary(context, c, &data);
     if (ret)
 	return ret;
-    if (data.length != size)
-	_hx509_abort("internal ASN.1 encoder error");
     
     dump_pem_file(context, "CERTIFICATE", f, data.data, data.length);
     free(data.data);

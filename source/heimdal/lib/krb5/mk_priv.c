@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: mk_priv.c,v 1.35 2006/02/01 12:39:26 lha Exp $");
+RCSID("$Id: mk_priv.c 16680 2006-02-01 12:39:26Z lha $");
 
       
 krb5_error_code KRB5_LIB_FUNCTION

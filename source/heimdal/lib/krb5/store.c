@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store.c,v 1.60 2006/12/17 22:49:37 lha Exp $");
+RCSID("$Id: store.c 20529 2007-04-22 14:28:19Z lha $");
 
 #define BYTEORDER_IS(SP, V) (((SP)->flags & KRB5_STORAGE_BYTEORDER_MASK) == (V))
 #define BYTEORDER_IS_LE(SP) BYTEORDER_IS((SP), KRB5_STORAGE_BYTEORDER_LE)
@@ -891,7 +891,7 @@ krb5_store_creds_tag(krb5_storage *sp, krb5_creds *creds)
 	header |= SC_CLIENT_PRINCIPAL;
     if (creds->server)
 	header |= SC_SERVER_PRINCIPAL;
-    if (creds->session.keyvalue.data)
+    if (creds->session.keytype != ETYPE_NULL)
 	header |= SC_SESSION_KEY;
     if (creds->ticket.data)
 	header |= SC_TICKET;
@@ -916,7 +916,7 @@ krb5_store_creds_tag(krb5_storage *sp, krb5_creds *creds)
 	    return ret;
     }
 
-    if (creds->session.keyvalue.data) {
+    if (creds->session.keytype != ETYPE_NULL) {
 	ret = krb5_store_keyblock(sp, creds->session);
 	if(ret)
 	    return ret;

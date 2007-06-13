@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: revoke.c,v 1.32 2006/12/30 17:09:06 lha Exp $");
+RCSID("$Id: revoke.c 20871 2007-06-03 21:22:51Z lha $");
 
 struct revoke_crl {
     char *path;
@@ -281,8 +281,11 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 
     ret = parse_ocsp_basic(data, length, &basic);
     _hx509_unmap_file(data, length);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to parse OCSP response");
 	return ret;
+    }
 
     if (basic.certs) {
 	int i;
@@ -442,7 +445,8 @@ verify_crl(hx509_context context,
 					    &crl->tbsCertList._save,
 					    &crl->signatureValue);
     if (ret) {
-	hx509_set_error_string(context, HX509_ERROR_APPEND, ret, "CRL signature invalid");
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+			       "CRL signature invalid");
 	goto out;
     }
 
@@ -800,7 +804,7 @@ hx509_ocsp_request(hx509_context context,
     memset(&req, 0, sizeof(req));
 
     if (digest == NULL)
-	digest = hx509_signature_sha1();
+	digest = _hx509_crypto_default_digest_alg;
 
     ctx.req = &req.tbsRequest;
     ctx.certs = pool;
@@ -922,7 +926,7 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
     fprintf(out, "replies: %d\n", ocsp.ocsp.tbsResponseData.responses.len);
 
     for (i = 0; i < ocsp.ocsp.tbsResponseData.responses.len; i++) {
-	char *status;
+	const char *status;
 	switch (ocsp.ocsp.tbsResponseData.responses.val[i].certStatus.element) {
 	case choice_OCSPCertStatus_good:
 	    status = "good";
@@ -955,6 +959,12 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
     return ret;
 }
 
+/*
+ * Verify that the `cert' is part of the OCSP reply and its not
+ * expired. Doesn't verify signature the OCSP reply or its done by a
+ * authorized sender, that is assumed to be already done.
+ */
+
 int
 hx509_ocsp_verify(hx509_context context,
 		  time_t now,
@@ -967,12 +977,17 @@ hx509_ocsp_verify(hx509_context context,
     OCSPBasicOCSPResponse basic;
     int ret, i;
 
+    if (now == 0)
+	now = time(NULL);
+
     *expiration = 0;
 
     ret = parse_ocsp_basic(data, length, &basic);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to parse OCSP response");
 	return ret;
-
+    }
 
     for (i = 0; i < basic.tbsResponseData.responses.len; i++) {
 
@@ -1003,18 +1018,244 @@ hx509_ocsp_verify(hx509_context context,
 	    now + context->ocsp_time_diff)
 	    continue;
 
-	/* don't allow the next updte to be in the past */
+	/* don't allow the next update to be in the past */
 	if (basic.tbsResponseData.responses.val[i].nextUpdate) {
 	    if (*basic.tbsResponseData.responses.val[i].nextUpdate < now)
 		continue;
+	    *expiration = *basic.tbsResponseData.responses.val[i].nextUpdate;
 	} else
-	    continue;
+	    *expiration = now;
 
-	*expiration = *basic.tbsResponseData.responses.val[i].nextUpdate;
-
+	free_OCSPBasicOCSPResponse(&basic);
 	return 0;
     }
+
     free_OCSPBasicOCSPResponse(&basic);
 
+    {
+	hx509_name name;
+	char *subject;
+	
+	ret = hx509_cert_get_subject(cert, &name);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    goto out;
+	}
+	ret = hx509_name_to_string(name, &subject);
+	hx509_name_free(&name);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    goto out;
+	}
+	hx509_set_error_string(context, 0, HX509_CERT_NOT_IN_OCSP,
+			       "Certificate %s not in OCSP response "
+			       "or not good",
+			       subject);
+	free(subject);
+    }
+out:
+    return HX509_CERT_NOT_IN_OCSP;
+}
+
+struct hx509_crl {
+    hx509_certs revoked;
+    time_t expire;
+};
+
+int
+hx509_crl_alloc(hx509_context context, hx509_crl *crl)
+{
+    int ret;
+
+    *crl = calloc(1, sizeof(**crl));
+    if (*crl == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+
+    ret = hx509_certs_init(context, "MEMORY:crl", 0, NULL, &(*crl)->revoked);
+    if (ret) {
+	free(*crl);
+	*crl = NULL;
+    }
+    (*crl)->expire = 0;
+    return ret;
+}
+
+int
+hx509_crl_add_revoked_certs(hx509_context context,
+			    hx509_crl crl, 
+			    hx509_certs certs)
+{
+    return hx509_certs_merge(context, crl->revoked, certs);
+}
+
+int
+hx509_crl_lifetime(hx509_context context, hx509_crl crl, int delta)
+{
+    crl->expire = time(NULL) + delta;
     return 0;
+}
+
+
+void
+hx509_crl_free(hx509_context context, hx509_crl *crl)
+{
+    if (*crl == NULL)
+	return;
+    hx509_certs_free(&(*crl)->revoked);
+    memset(*crl, 0, sizeof(**crl));
+    free(*crl);
+    *crl = NULL;
+}
+
+static int
+add_revoked(hx509_context context, void *ctx, hx509_cert cert)
+{
+    TBSCRLCertList *c = ctx;
+    unsigned int num;
+    void *ptr;
+    int ret;
+
+    num = c->revokedCertificates->len;
+    ptr = realloc(c->revokedCertificates->val,
+		  (num + 1) * sizeof(c->revokedCertificates->val[0]));
+    if (ptr == NULL) {
+	hx509_clear_error_string(context);
+	return ENOMEM;
+    }
+    c->revokedCertificates->val = ptr;
+
+    ret = hx509_cert_get_serialnumber(cert, 
+				      &c->revokedCertificates->val[num].userCertificate);
+    if (ret) {
+	hx509_clear_error_string(context);
+	return ret;
+    }
+    c->revokedCertificates->val[num].revocationDate.element = 
+	choice_Time_generalTime;
+    c->revokedCertificates->val[num].revocationDate.u.generalTime =
+	time(NULL) - 3600 * 24;
+    c->revokedCertificates->val[num].crlEntryExtensions = NULL;
+
+    c->revokedCertificates->len++;
+
+    return 0;
+}    
+
+
+int
+hx509_crl_sign(hx509_context context,
+	       hx509_cert signer,
+	       hx509_crl crl,
+	       heim_octet_string *os)
+{
+    const AlgorithmIdentifier *sigalg = _hx509_crypto_default_sig_alg;
+    CRLCertificateList c;
+    size_t size;
+    int ret;
+    hx509_private_key signerkey;
+
+    memset(&c, 0, sizeof(c));
+
+    signerkey = _hx509_cert_private_key(signer);
+    if (signerkey == NULL) {
+	ret = HX509_PRIVATE_KEY_MISSING;
+	hx509_set_error_string(context, 0, ret,
+			       "Private key missing for CRL signing");
+	return ret;
+    }
+
+    c.tbsCertList.version = malloc(sizeof(*c.tbsCertList.version));
+    if (c.tbsCertList.version == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+
+    *c.tbsCertList.version = 1;
+
+    ret = copy_AlgorithmIdentifier(sigalg, &c.tbsCertList.signature);
+    if (ret) {
+	hx509_clear_error_string(context);
+	goto out;
+    }
+
+    ret = copy_Name(&_hx509_get_cert(signer)->tbsCertificate.issuer,
+		    &c.tbsCertList.issuer);
+    if (ret) {
+	hx509_clear_error_string(context);
+	goto out;
+    }
+
+    c.tbsCertList.thisUpdate.element = choice_Time_generalTime;
+    c.tbsCertList.thisUpdate.u.generalTime = time(NULL) - 24 * 3600;
+
+    c.tbsCertList.nextUpdate = malloc(sizeof(*c.tbsCertList.nextUpdate));
+    if (c.tbsCertList.nextUpdate == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
+
+    {
+	time_t next = crl->expire;
+	if (next == 0)
+	    next = time(NULL) + 24 * 3600 * 365;
+
+	c.tbsCertList.nextUpdate->element = choice_Time_generalTime;
+	c.tbsCertList.nextUpdate->u.generalTime = next;
+    }
+
+    c.tbsCertList.revokedCertificates = 
+	calloc(1, sizeof(*c.tbsCertList.revokedCertificates));
+    if (c.tbsCertList.revokedCertificates == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
+    c.tbsCertList.crlExtensions = NULL;
+
+    ret = hx509_certs_iter(context, crl->revoked, add_revoked, &c.tbsCertList);
+    if (ret)
+	goto out;
+
+    /* if not revoked certs, remove OPTIONAL entry */
+    if (c.tbsCertList.revokedCertificates->len == 0) {
+	free(c.tbsCertList.revokedCertificates);
+	c.tbsCertList.revokedCertificates = NULL;
+    }
+
+    ASN1_MALLOC_ENCODE(TBSCRLCertList, os->data, os->length,
+		       &c.tbsCertList, &size, ret);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "failed to encode tbsCRL");
+	goto out;
+    }
+    if (size != os->length)
+	_hx509_abort("internal ASN.1 encoder error");
+
+
+    ret = _hx509_create_signature_bitstring(context,
+					    signerkey,
+					    sigalg,
+					    os,
+					    &c.signatureAlgorithm,
+					    &c.signatureValue);
+    free(os->data);
+
+    ASN1_MALLOC_ENCODE(CRLCertificateList, os->data, os->length,
+		       &c, &size, ret);
+    free_CRLCertificateList(&c);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "failed to encode CRL");
+	goto out;
+    }
+    if (size != os->length)
+	_hx509_abort("internal ASN.1 encoder error");
+
+    return 0;
+
+out:
+    free_CRLCertificateList(&c);
+    return ret;
 }

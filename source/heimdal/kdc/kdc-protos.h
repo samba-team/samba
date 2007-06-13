@@ -37,8 +37,10 @@ kdc_openlog (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/);
 
-void
-krb5_kdc_default_config (krb5_kdc_configuration */*config*/);
+int
+krb5_kdc_get_config (
+	krb5_context /*context*/,
+	krb5_kdc_configuration **/*config*/);
 
 int
 krb5_kdc_process_krb5_request (
@@ -62,6 +64,21 @@ krb5_kdc_process_request (
 	const char */*from*/,
 	struct sockaddr */*addr*/,
 	int /*datagram_reply*/);
+
+int
+krb5_kdc_save_request (
+	krb5_context /*context*/,
+	const char */*fn*/,
+	const unsigned char */*buf*/,
+	size_t /*len*/,
+	const krb5_data */*reply*/,
+	const struct sockaddr */*sa*/);
+
+void
+krb5_kdc_update_time (struct timeval */*tv*/);
+
+krb5_error_code
+krb5_kdc_windc_init (krb5_context /*context*/);
 
 #ifdef __cplusplus
 }

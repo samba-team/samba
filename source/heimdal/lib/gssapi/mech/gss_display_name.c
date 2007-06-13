@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_display_name.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_display_name.c 19952 2007-01-17 10:16:15Z lha $");
 
 OM_uint32
 gss_display_name(OM_uint32 *minor_status,
@@ -38,6 +38,10 @@ gss_display_name(OM_uint32 *minor_status,
 	OM_uint32 major_status;
 	struct _gss_name *name = (struct _gss_name *) input_name;
 	struct _gss_mechanism_name *mn;
+
+	_mg_buffer_zero(output_name_buffer);
+	if (output_name_type)
+	    *output_name_type = GSS_C_NO_OID;
 
 	/*
 	 * If we know it, copy the buffer used to import the name in

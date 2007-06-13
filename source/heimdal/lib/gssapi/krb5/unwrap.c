@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: unwrap.c,v 1.39 2006/11/13 18:02:51 lha Exp $");
+RCSID("$Id: unwrap.c 19031 2006-11-13 18:02:57Z lha $");
 
 static OM_uint32
 unwrap_des

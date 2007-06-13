@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_cred_by_mech.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_inquire_cred_by_mech.c 19960 2007-01-17 15:09:24Z lha $");
 
 OM_uint32
 gss_inquire_cred_by_mech(OM_uint32 *minor_status,
@@ -46,6 +46,14 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 	struct _gss_name *name;
 
 	*minor_status = 0;
+	if (cred_name)
+	    *cred_name = GSS_C_NO_NAME;
+	if (initiator_lifetime)
+	    *initiator_lifetime = 0;
+	if (acceptor_lifetime)
+	    *acceptor_lifetime = 0;
+	if (cred_usage)
+	    *cred_usage = 0;
 
 	m = __gss_get_mechanism(mech_type);
 	if (!m)
@@ -65,8 +73,10 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 
 	major_status = m->gm_inquire_cred_by_mech(minor_status, mc, mech_type,
 	    &mn, initiator_lifetime, acceptor_lifetime, cred_usage);
-	if (major_status != GSS_S_COMPLETE)
+	if (major_status != GSS_S_COMPLETE) {
+		_gss_mg_error(m, major_status, *minor_status);
 		return (major_status);
+	}
 
 	name = _gss_make_name(m, mn);
 	if (!name) {

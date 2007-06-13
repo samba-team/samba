@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: mcache.c,v 1.20 2005/09/30 11:16:04 lha Exp $");
+RCSID("$Id: mcache.c 19834 2007-01-11 09:26:21Z lha $");
 
 typedef struct krb5_mcache {
     char *name;
@@ -53,8 +53,6 @@ static struct krb5_mcache *mcc_head;
 #define	MCACHE(X)	((krb5_mcache *)(X)->data.data)
 
 #define MISDEAD(X)	((X)->dead)
-
-#define MCC_CURSOR(C) ((struct link*)(C))
 
 static const char*
 mcc_get_name(krb5_context context,

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: generate_seq_number.c,v 1.10 2006/05/05 09:28:06 lha Exp $");
+RCSID("$Id: generate_seq_number.c 17442 2006-05-05 09:31:15Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_seq_number(krb5_context context,

@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: spnego_locl.h,v 1.15 2006/12/18 15:42:03 lha Exp $ */
+/* $Id: spnego_locl.h 19411 2006-12-18 15:42:03Z lha $ */
 
 #ifndef SPNEGO_LOCL_H
 #define SPNEGO_LOCL_H

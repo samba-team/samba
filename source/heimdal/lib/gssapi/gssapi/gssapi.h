@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi.h,v 1.7 2006/12/15 20:02:54 lha Exp $ */
+/* $Id: gssapi.h 21004 2007-06-08 01:53:10Z lha $ */
 
 #ifndef GSSAPI_GSSAPI_H_
 #define GSSAPI_GSSAPI_H_
@@ -713,6 +713,23 @@ gss_inquire_cred_by_oid(OM_uint32 *minor_status,
 	                const gss_cred_id_t cred_handle,
 	                const gss_OID desired_object,
 	                gss_buffer_set_t *data_set);
+
+/*
+ * RFC 4401
+ */
+
+#define GSS_C_PRF_KEY_FULL 0
+#define GSS_C_PRF_KEY_PARTIAL 1
+
+OM_uint32
+gss_pseudo_random
+	(OM_uint32 *minor_status,
+	 gss_ctx_id_t context,
+	 int prf_key,
+	 const gss_buffer_t prf_in,
+	 ssize_t desired_output_len,
+	 gss_buffer_t prf_out
+	);
 
 /*
  * The following routines are obsolete variants of gss_get_mic,

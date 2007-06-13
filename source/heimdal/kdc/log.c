@@ -32,7 +32,7 @@
  */
 
 #include "kdc_locl.h"
-RCSID("$Id: log.c,v 1.16 2005/06/30 01:52:48 lha Exp $");
+RCSID("$Id: log.c 15532 2005-06-30 01:54:49Z lha $");
 
 void
 kdc_openlog(krb5_context context, 

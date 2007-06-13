@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: asn1_err.et,v 1.6 2006/10/24 14:11:20 lha Exp $"
+id "$Id: asn1_err.et 20010 2007-01-20 21:52:27Z lha $"
 
 error_table asn1
 prefix ASN1
@@ -18,4 +18,5 @@ error_code BAD_LENGTH,		"ASN.1 length doesn't match expected value"
 error_code BAD_FORMAT,		"ASN.1 badly-formatted encoding"
 error_code PARSE_ERROR,		"ASN.1 parse error"
 error_code EXTRA_DATA,		"ASN.1 extra data past end of end structure"
+error_code BAD_CHARACTER,	"ASN.1 invalid character in string"
 end

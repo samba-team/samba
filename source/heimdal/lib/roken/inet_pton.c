@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: inet_pton.c,v 1.4 2005/04/12 11:28:52 lha Exp $");
+RCSID("$Id: inet_pton.c 21005 2007-06-08 01:54:35Z lha $");
 #endif
 
 #include <roken.h>

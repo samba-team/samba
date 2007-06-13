@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: mech_locl.h,v 1.4 2006/10/07 18:25:27 lha Exp $ */
+/* $Id: mech_locl.h 19948 2007-01-17 10:03:07Z lha $ */
 
 #include <config.h>
 
@@ -61,3 +61,6 @@
 #include "mech_switch.h"
 #include "name.h"
 #include "utils.h"
+
+#define _mg_buffer_zero(buffer) \
+	do { (buffer)->value = NULL; (buffer)->length = 0; } while(0)

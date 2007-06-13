@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: peer.c,v 1.1 2006/11/26 15:49:01 lha Exp $");
+RCSID("$Id: peer.c 20938 2007-06-06 20:51:34Z lha $");
 
 int
 hx509_peer_info_alloc(hx509_context context, hx509_peer_info *peer)
@@ -59,14 +59,16 @@ free_cms_alg(hx509_peer_info peer)
     }
 }
 
-int
+void
 hx509_peer_info_free(hx509_peer_info peer)
 {
+    if (peer == NULL)
+	return;
     if (peer->cert)
 	hx509_cert_free(peer->cert);
     free_cms_alg(peer);
     memset(peer, 0, sizeof(*peer));
-    return 0;
+    free(peer);
 }
 
 int

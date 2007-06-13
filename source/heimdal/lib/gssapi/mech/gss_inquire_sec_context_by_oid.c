@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_sec_context_by_oid.c,v 1.1 2006/06/28 09:07:08 lha Exp $");
+RCSID("$Id: gss_inquire_sec_context_by_oid.c 19961 2007-01-17 15:57:51Z lha $");
 
 OM_uint32
 gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
@@ -44,7 +44,7 @@ gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
 	gssapi_mech_interface	m;
 
 	*minor_status = 0;
-
+	*data_set = GSS_C_NO_BUFFER_SET;
 	if (ctx == NULL)
 		return GSS_S_NO_CONTEXT;
 
@@ -58,10 +58,12 @@ gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
 	if (m == NULL)
 		return GSS_S_BAD_MECH;
 
-	if (m->gm_inquire_sec_context_by_oid != NULL)
+	if (m->gm_inquire_sec_context_by_oid != NULL) {
 		major_status = m->gm_inquire_sec_context_by_oid(minor_status,
 		    ctx->gc_ctx, desired_object, data_set);
-	else
+		if (major_status != GSS_S_COMPLETE)
+			_gss_mg_error(m, major_status, *minor_status);
+	} else
 		major_status = GSS_S_BAD_MECH;
 
 	return major_status;

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_add_cred.c,v 1.3 2006/06/29 08:23:53 lha Exp $");
+RCSID("$Id: gss_add_cred.c 20626 2007-05-08 13:56:49Z lha $");
 
 static struct _gss_mechanism_cred *
 _gss_copy_cred(struct _gss_mechanism_cred *mc)
@@ -43,8 +43,10 @@ _gss_copy_cred(struct _gss_mechanism_cred *mc)
 	major_status = m->gm_inquire_cred_by_mech(&minor_status,
 	    mc->gmc_cred, mc->gmc_mech_oid,
 	    &name, &initiator_lifetime, &acceptor_lifetime, &cred_usage);
-	if (major_status)
+	if (major_status) {
+		_gss_mg_error(m, major_status, minor_status);
 		return (0);
+	}
 
 	major_status = m->gm_add_cred(&minor_status,
 	    GSS_C_NO_CREDENTIAL, name, mc->gmc_mech_oid,
@@ -52,8 +54,10 @@ _gss_copy_cred(struct _gss_mechanism_cred *mc)
 	    &cred, 0, 0, 0);
 	m->gm_release_name(&minor_status, &name);
 
-	if (major_status)
+	if (major_status) {
+		_gss_mg_error(m, major_status, minor_status);
 		return (0);
+	}
 
 	new_mc = malloc(sizeof(struct _gss_mechanism_cred));
 	if (!new_mc) {
@@ -89,15 +93,20 @@ gss_add_cred(OM_uint32 *minor_status,
 	struct _gss_mechanism_name *mn;
 	OM_uint32 junk;
 
-	*output_cred_handle = 0;
 	*minor_status = 0;
+	*output_cred_handle = GSS_C_NO_CREDENTIAL;
+	if (initiator_time_rec)
+	    *initiator_time_rec = 0;
+	if (acceptor_time_rec)
+	    *acceptor_time_rec = 0;
+	if (actual_mechs)
+	    *actual_mechs = GSS_C_NO_OID_SET;
 
 	new_cred = malloc(sizeof(struct _gss_cred));
 	if (!new_cred) {
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
-	new_cred->gc_usage = cred_usage;
 	SLIST_INIT(&new_cred->gc_mc);
 
 	/*
@@ -162,6 +171,7 @@ gss_add_cred(OM_uint32 *minor_status,
 	    acceptor_time_rec);
 
 	if (major_status) {
+		_gss_mg_error(m, major_status, *minor_status);
 		release_cred = (gss_cred_id_t)new_cred;
 		gss_release_cred(&junk, &release_cred);
 		free(mc);

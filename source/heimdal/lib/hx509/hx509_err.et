@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: hx509_err.et,v 1.19 2006/12/30 23:05:39 lha Exp $"
+id "$Id: hx509_err.et 20807 2007-06-03 03:11:20Z lha $"
 
 error_table hx
 prefix HX509
@@ -76,7 +76,8 @@ error_code CRL_CERT_REVOKED, "Certificate is included in CRL"
 error_code REVOKE_STATUS_MISSING, "No revoke status found for certificates"
 error_code CRL_UNKNOWN_EXTENSION, "Unknown extension"
 error_code REVOKE_WRONG_DATA, "Got wrong CRL/OCSP data from server"
-error_code REVOKE_NOT_SAME_PARENT, "Doesn't have same parent as other certificaes"
+error_code REVOKE_NOT_SAME_PARENT, "Doesn't have same parent as other certificates"
+error_code CERT_NOT_IN_OCSP, "Certificates not in OCSP reply"
 
 # misc error
 index 108

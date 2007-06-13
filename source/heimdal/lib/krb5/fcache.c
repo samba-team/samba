@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: fcache.c,v 1.54 2006/12/15 21:35:52 lha Exp $");
+RCSID("$Id: fcache.c 19379 2006-12-15 21:35:52Z lha $");
 
 typedef struct krb5_fcache{
     char *filename;

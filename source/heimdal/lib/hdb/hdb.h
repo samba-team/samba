@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb.h,v 1.38 2006/04/28 07:37:11 lha Exp $ */
+/* $Id: hdb.h 20535 2007-04-23 07:49:16Z lha $ */
 
 #ifndef __HDB_H__
 #define __HDB_H__
@@ -40,6 +40,8 @@
 
 #include <heim_asn1.h>
 #include <hdb_asn1.h>
+
+struct hdb_dbinfo;
 
 enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
@@ -50,6 +52,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_GET_SERVER	8	/* fetch server */
 #define HDB_F_GET_KRBTGT	16	/* fetch krbtgt */
 #define HDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
+#define HDB_F_CANON		32	/* want canonicalition */
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
@@ -69,7 +72,7 @@ typedef struct HDB{
     char *hdb_name;
     int hdb_master_key_set;
     hdb_master_key hdb_master_key;
-    void *hdb_openp;
+    int hdb_openp;
 
     krb5_error_code (*hdb_open)(krb5_context,
 				struct HDB*,

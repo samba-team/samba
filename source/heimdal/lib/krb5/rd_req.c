@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c,v 1.70 2007/01/04 11:27:20 lha Exp $");
+RCSID("$Id: rd_req.c 21004 2007-06-08 01:53:10Z lha $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -208,6 +208,8 @@ find_etypelist(krb5_context context,
 			   adIfRelevant.val[0].ad_data.length,
 			   etypes,
 			   NULL);
+    if (ret)
+	krb5_clear_error_string(context);
 
     free_AD_IF_RELEVANT(&adIfRelevant);
 

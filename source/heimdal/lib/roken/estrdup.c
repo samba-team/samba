@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: estrdup.c,v 1.4 2005/04/12 11:28:39 lha Exp $");
+RCSID("$Id: estrdup.c 21005 2007-06-08 01:54:35Z lha $");
 #endif
 
 #include <stdlib.h>

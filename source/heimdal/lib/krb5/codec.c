@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: codec.c,v 1.9 2004/05/25 21:19:37 lha Exp $");
+RCSID("$Id: codec.c 13863 2004-05-25 21:46:46Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_decode_EncTicketPart (krb5_context context,

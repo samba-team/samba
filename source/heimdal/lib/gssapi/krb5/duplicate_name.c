@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: duplicate_name.c,v 1.11 2006/11/13 18:01:42 lha Exp $");
+RCSID("$Id: duplicate_name.c 19031 2006-11-13 18:02:57Z lha $");
 
 OM_uint32 _gsskrb5_duplicate_name (
             OM_uint32 * minor_status,

@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id: warn.c,v 1.16 2006/11/21 08:06:40 lha Exp $");
+RCSID("$Id: warn.c 19086 2006-11-21 08:06:40Z lha $");
 
 static krb5_error_code _warnerr(krb5_context context, int do_errtext, 
 	 krb5_error_code code, int level, const char *fmt, va_list ap)

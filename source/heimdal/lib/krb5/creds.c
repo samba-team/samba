@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: creds.c,v 1.20 2005/05/18 04:21:04 lha Exp $");
+RCSID("$Id: creds.c 15167 2005-05-18 04:21:57Z lha $");
 
 /* keep this for compatibility with older code */
 krb5_error_code KRB5_LIB_FUNCTION

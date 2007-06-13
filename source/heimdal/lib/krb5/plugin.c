@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: plugin.c,v 1.4 2007/01/09 17:46:01 lha Exp $");
+RCSID("$Id: plugin.c 19789 2007-01-09 17:46:01Z lha $");
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif

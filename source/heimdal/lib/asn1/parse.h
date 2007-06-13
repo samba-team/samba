@@ -222,7 +222,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 65 "heimdal/lib/asn1/parse.y"
+#line 65 "parse.y"
 {
     int constant;
     struct value *value;
@@ -238,7 +238,7 @@ typedef union YYSTYPE
     struct constraint_spec *constraint_spec;
 }
 /* Line 1489 of yacc.c.  */
-#line 242 "heimdal/lib/asn1/parse.y"
+#line 242 "parse.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

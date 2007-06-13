@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: init_sec_context.c,v 1.75 2006/12/13 10:33:20 lha Exp $");
+RCSID("$Id: init_sec_context.c 20326 2007-04-12 16:49:57Z lha $");
 
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
@@ -391,6 +391,20 @@ init_auth
 	goto failure;
 
 
+    /*
+     * This is hideous glue for (NFS) clients that wants to limit the
+     * available enctypes to what it can support (encryption in
+     * kernel). If there is no enctypes selected for this credential,
+     * reset it to the default set of enctypes.
+     */
+    {
+	krb5_enctype *enctypes = NULL;
+
+	if (initiator_cred_handle && initiator_cred_handle->enctypes)
+	    enctypes = initiator_cred_handle->enctypes;
+	krb5_set_default_in_tkt_etypes(context, enctypes);
+    }
+
     ret = gsskrb5_get_creds(minor_status,
 			    context,
 			    ccache,
@@ -476,11 +490,8 @@ init_auth
     if (req_flags & GSS_C_EXTENDED_ERROR_FLAG)
 	flags |= GSS_C_EXTENDED_ERROR_FLAG;
 
-    if (req_flags & GSS_C_CONF_FLAG)
-	flags |= GSS_C_CONF_FLAG;
-    if (req_flags & GSS_C_INTEG_FLAG)
-	flags |= GSS_C_INTEG_FLAG;
-
+    flags |= GSS_C_CONF_FLAG;
+    flags |= GSS_C_INTEG_FLAG;
     flags |= GSS_C_TRANS_FLAG;
     
     if (ret_flags)

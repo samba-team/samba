@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h,v 1.259 2007/01/03 18:51:52 lha Exp $ */
+/* $Id: krb5.h 20245 2007-02-17 00:09:57Z lha $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -222,8 +222,10 @@ typedef enum krb5_key_usage {
     /* Encryption key usage used in the digest encryption field */
     KRB5_KU_DIGEST_OPAQUE = -19,
     /* Checksum key usage used in the digest opaque field */
-    KRB5_KU_KRB5SIGNEDPATH = -21
+    KRB5_KU_KRB5SIGNEDPATH = -21,
     /* Checksum key usage on KRB5SignedPath */
+    KRB5_KU_CANONICALIZED_NAMES = -23
+    /* Checksum key usage on PA-CANONICALIZED */
 } krb5_key_usage;
 
 typedef krb5_key_usage krb5_keyusage;
@@ -744,7 +746,8 @@ typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context,
 /* flags for krb5_parse_name_flags */
 enum {
     KRB5_PRINCIPAL_PARSE_NO_REALM = 1,
-    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2
+    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2,
+    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4
 };
 
 /* flags for krb5_unparse_name_flags */

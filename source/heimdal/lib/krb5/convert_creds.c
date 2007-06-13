@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: convert_creds.c,v 1.32 2005/04/23 19:40:57 lha Exp $");
+RCSID("$Id: convert_creds.c 14897 2005-04-23 19:40:57Z lha $");
 
 #include "krb5-v4compat.h"
 

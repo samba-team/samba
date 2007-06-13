@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_set_cred_option.c,v 1.8 2006/11/13 08:59:43 lha Exp $");
+RCSID("$Id: gss_set_cred_option.c 20626 2007-05-08 13:56:49Z lha $");
 
 OM_uint32
 gss_set_cred_option (OM_uint32 *minor_status,
@@ -55,7 +55,6 @@ gss_set_cred_option (OM_uint32 *minor_status,
 		if (cred == NULL)
 		    return GSS_S_FAILURE;
 
-		cred->gc_usage = GSS_C_BOTH; /* XXX */
 		SLIST_INIT(&cred->gc_mc);
 
 		SLIST_FOREACH(m, &_gss_mechs, gm_link) {
@@ -104,6 +103,9 @@ gss_set_cred_option (OM_uint32 *minor_status,
 			    &mc->gmc_cred, object, value);
 			if (major_status == GSS_S_COMPLETE)
 				one_ok = 1;
+			else
+				_gss_mg_error(m, major_status, *minor_status);
+
 		}
 	}
 	if (one_ok) {

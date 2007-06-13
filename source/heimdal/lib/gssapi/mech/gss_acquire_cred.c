@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_acquire_cred.c,v 1.4 2006/10/25 00:44:55 lha Exp $");
+RCSID("$Id: gss_acquire_cred.c 20626 2007-05-08 13:56:49Z lha $");
 
 OM_uint32
 gss_acquire_cred(OM_uint32 *minor_status,
@@ -49,6 +49,14 @@ gss_acquire_cred(OM_uint32 *minor_status,
 	OM_uint32 min_time, cred_time;
 	int i;
 
+	*minor_status = 0;
+	if (actual_mechs)
+	    *output_cred_handle = GSS_C_NO_CREDENTIAL;
+	if (actual_mechs)
+	    *actual_mechs = GSS_C_NO_OID_SET;
+	if (time_rec)
+	    *time_rec = 0;
+
 	_gss_load_mech();
 
 	/*
@@ -64,7 +72,6 @@ gss_acquire_cred(OM_uint32 *minor_status,
 				break;
 		}
 		if (i == mechs->count) {
-			*output_cred_handle = 0;
 			*minor_status = 0;
 			return (GSS_S_BAD_MECH);
 		}
@@ -84,7 +91,6 @@ gss_acquire_cred(OM_uint32 *minor_status,
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
-	cred->gc_usage = cred_usage;
 	SLIST_INIT(&cred->gc_mc);
 
 	if (mechs == GSS_C_NO_OID_SET)
@@ -109,7 +115,6 @@ gss_acquire_cred(OM_uint32 *minor_status,
 		if (!mc) {
 			continue;
 		}
-		SLIST_INIT(&cred->gc_mc);
 		mc->gmc_mech = m;
 		mc->gmc_mech_oid = &m->gm_mech_oid;
 
@@ -151,7 +156,6 @@ gss_acquire_cred(OM_uint32 *minor_status,
 		free(cred);
 		if (actual_mechs)
 			gss_release_oid_set(minor_status, actual_mechs);
-		*output_cred_handle = 0;
 		*minor_status = 0;
 		return (GSS_S_NO_CRED);
 	}

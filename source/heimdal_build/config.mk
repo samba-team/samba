@@ -18,7 +18,7 @@ OBJ_FILES = \
 	../heimdal/kdc/kx509.o \
 	../heimdal/lib/asn1/asn1_KRB5SignedPath.o
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1
-PUBLIC_DEPENDENCIES = HEIMDAL_NTLM HEIMDAL_DES
+PUBLIC_DEPENDENCIES = HEIMDAL_NTLM HEIMDAL_HCRYPTO
 # End SUBSYSTEM HEIMDAL_KDC
 #######################
 
@@ -26,7 +26,7 @@ PUBLIC_DEPENDENCIES = HEIMDAL_NTLM HEIMDAL_DES
 CFLAGS = -Iheimdal_build -Iheimdal/lib/ntlm
 OBJ_FILES = \
 	../heimdal/lib/ntlm/ntlm.o
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_KRB5
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
 
 [SUBSYSTEM::HEIMDAL_HDB_KEYS]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
@@ -34,7 +34,7 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/keys.o \
 	../heimdal/lib/hdb/asn1_Key.o \
 	../heimdal/lib/hdb/asn1_Salt.o
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_KRB5
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
 
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
@@ -48,7 +48,7 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/mkey.o \
 	../heimdal/lib/hdb/ndbm.o \
 	../heimdal/lib/hdb/hdb_err.o
-PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1
+PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1
 # End SUBSYSTEM HEIMDAL_HDB
 #######################
 
@@ -57,6 +57,7 @@ PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMD
 [SUBSYSTEM::HEIMDAL_GSSAPI]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi -Iheimdal/lib/gssapi/gssapi -Iheimdal/lib/gssapi/spnego -Iheimdal/lib/gssapi/krb5 -Iheimdal/lib/gssapi/mech
 OBJ_FILES = \
+	../heimdal/lib/gssapi/mech/context.o \
 	../heimdal/lib/gssapi/mech/gss_krb5.o \
 	../heimdal/lib/gssapi/mech/gss_mech_switch.o \
 	../heimdal/lib/gssapi/mech/gss_process_context_token.o \
@@ -96,6 +97,7 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/mech/gss_utils.o \
 	../heimdal/lib/gssapi/mech/gss_init_sec_context.o \
 	../heimdal/lib/gssapi/mech/gss_oid_equal.o \
+	../heimdal/lib/gssapi/mech/gss_oid_to_str.o \
 	../heimdal/lib/gssapi/mech/gss_context_time.o \
 	../heimdal/lib/gssapi/mech/gss_encapsulate_token.o \
 	../heimdal/lib/gssapi/mech/gss_get_mic.o \
@@ -143,9 +145,6 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/krb5/wrap.o \
 	../heimdal/lib/gssapi/krb5/release_name.o \
 	../heimdal/lib/gssapi/krb5/cfx.o \
-	../heimdal/lib/gssapi/krb5/add_oid_set_member.o \
-	../heimdal/lib/gssapi/krb5/release_oid_set.o \
-	../heimdal/lib/gssapi/krb5/create_emtpy_oid_set.o \
 	../heimdal/lib/gssapi/krb5/8003.o \
 	../heimdal/lib/gssapi/krb5/arcfour.o \
 	../heimdal/lib/gssapi/krb5/encapsulate.o \
@@ -153,7 +152,6 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/krb5/sequence.o \
 	../heimdal/lib/gssapi/krb5/display_status.o \
 	../heimdal/lib/gssapi/krb5/release_buffer.o \
-	../heimdal/lib/gssapi/krb5/test_oid_set_member.o \
 	../heimdal/lib/gssapi/krb5/external.o \
 	../heimdal/lib/gssapi/krb5/compat.o \
 	../heimdal/lib/gssapi/krb5/acquire_cred.o \
@@ -163,8 +161,9 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/krb5/verify_mic.o \
 	../heimdal/lib/gssapi/krb5/accept_sec_context.o \
 	../heimdal/lib/gssapi/krb5/set_sec_context_option.o \
-	../heimdal/lib/gssapi/krb5/process_context_token.o
-PRIVATE_DEPENDENCIES = HEIMDAL_DES HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1
+	../heimdal/lib/gssapi/krb5/process_context_token.o \
+	../heimdal/lib/gssapi/krb5/prf.o
+PRIVATE_DEPENDENCIES = HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1
 PUBLIC_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
@@ -174,7 +173,7 @@ PUBLIC_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1
-PUBLIC_DEPENDENCIES = HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509 HEIMDAL_DES
+PUBLIC_DEPENDENCIES = HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509 HEIMDAL_HCRYPTO
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
 	../heimdal/lib/krb5/add_et_list.o \
@@ -286,46 +285,48 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 #######################
 
 #######################
-# Start SUBSYSTEM HEIMDAL_DES_IMATH
-[SUBSYSTEM::HEIMDAL_DES_IMATH]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/des/imath 
+# Start SUBSYSTEM HEIMDAL_HCRYPTO_IMATH
+[SUBSYSTEM::HEIMDAL_HCRYPTO_IMATH]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/hcrypto/imath 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN 
 OBJ_FILES = \
-	../heimdal/lib/des/imath/imath.o \
-	../heimdal/lib/des/imath/iprime.o
-# End SUBSYSTEM HEIMDAL_DES_IMATH
+	../heimdal/lib/hcrypto/imath/imath.o \
+	../heimdal/lib/hcrypto/imath/iprime.o
+# End SUBSYSTEM HEIMDAL_HCRYPTO_IMATH
 #######################
 
-[SUBSYSTEM::HEIMDAL_DES]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/des 
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HEIM_ASN1 HEIMDAL_DES_IMATH HEIMDAL_RFC2459_ASN1
+[SUBSYSTEM::HEIMDAL_HCRYPTO]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/hcrypto
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1
 OBJ_FILES = \
-	../heimdal/lib/des/aes.o \
-	../heimdal/lib/des/bn.o \
-	../heimdal/lib/des/dh.o \
-	../heimdal/lib/des/dh-imath.o \
-	../heimdal/lib/des/des.o \
-	../heimdal/lib/des/dsa.o \
-	../heimdal/lib/des/engine.o \
-	../heimdal/lib/des/md2.o \
-	../heimdal/lib/des/md4.o \
-	../heimdal/lib/des/md5.o \
-	../heimdal/lib/des/rsa.o \
-	../heimdal/lib/des/rsa-imath.o \
-	../heimdal/lib/des/rc2.o \
-	../heimdal/lib/des/rc4.o \
-	../heimdal/lib/des/rijndael-alg-fst.o \
-	../heimdal/lib/des/rnd_keys.o \
-	../heimdal/lib/des/sha.o \
-	../heimdal/lib/des/sha256.o \
-	../heimdal/lib/des/ui.o \
-	../heimdal/lib/des/evp.o \
-	../heimdal/lib/des/pkcs5.o \
-	../heimdal/lib/des/pkcs12.o \
-	../heimdal/lib/des/rand.o \
-	../heimdal/lib/des/rand-unix.o \
-	../heimdal/lib/des/hmac.o
-# End SUBSYSTEM HEIMDAL_DES
+	../heimdal/lib/hcrypto/aes.o \
+	../heimdal/lib/hcrypto/bn.o \
+	../heimdal/lib/hcrypto/dh.o \
+	../heimdal/lib/hcrypto/dh-imath.o \
+	../heimdal/lib/hcrypto/des.o \
+	../heimdal/lib/hcrypto/dsa.o \
+	../heimdal/lib/hcrypto/engine.o \
+	../heimdal/lib/hcrypto/md2.o \
+	../heimdal/lib/hcrypto/md4.o \
+	../heimdal/lib/hcrypto/md5.o \
+	../heimdal/lib/hcrypto/rsa.o \
+	../heimdal/lib/hcrypto/rsa-imath.o \
+	../heimdal/lib/hcrypto/rc2.o \
+	../heimdal/lib/hcrypto/rc4.o \
+	../heimdal/lib/hcrypto/rijndael-alg-fst.o \
+	../heimdal/lib/hcrypto/rnd_keys.o \
+	../heimdal/lib/hcrypto/sha.o \
+	../heimdal/lib/hcrypto/sha256.o \
+	../heimdal/lib/hcrypto/ui.o \
+	../heimdal/lib/hcrypto/evp.o \
+	../heimdal/lib/hcrypto/pkcs5.o \
+	../heimdal/lib/hcrypto/pkcs12.o \
+	../heimdal/lib/hcrypto/rand.o \
+	../heimdal/lib/hcrypto/rand-egd.o \
+	../heimdal/lib/hcrypto/rand-unix.o \
+	../heimdal/lib/hcrypto/rand-fortuna.o \
+	../heimdal/lib/hcrypto/hmac.o
+# End SUBSYSTEM HEIMDAL_HCRYPTO
 #######################
 
 #######################
@@ -334,10 +335,11 @@ OBJ_FILES = \
 CFLAGS = -Iheimdal_build -Iheimdal/lib/hx509 
 PRIVATE_DEPENDENCIES = \
 	HEIMDAL_ROKEN HEIMDAL_COM_ERR \
-	HEIMDAL_HEIM_ASN1 HEIMDAL_DES \
+	HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO \
 	HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 \
 	HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 \
-	HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1
+	HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 \
+	HEIMDAL_PKINIT_ASN1
 OBJ_FILES = \
 	../heimdal/lib/hx509/ca.o \
 	../heimdal/lib/hx509/cert.o \
@@ -345,10 +347,12 @@ OBJ_FILES = \
 	../heimdal/lib/hx509/collector.o \
 	../heimdal/lib/hx509/crypto.o \
 	../heimdal/lib/hx509/error.o \
+	../heimdal/lib/hx509/env.o \
 	../heimdal/lib/hx509/file.o \
 	../heimdal/lib/hx509/keyset.o \
 	../heimdal/lib/hx509/ks_dir.o \
 	../heimdal/lib/hx509/ks_file.o \
+	../heimdal/lib/hx509/ks_keychain.o \
 	../heimdal/lib/hx509/ks_mem.o \
 	../heimdal/lib/hx509/ks_null.o \
 	../heimdal/lib/hx509/ks_p11.o \
@@ -421,6 +425,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/bswap.o \
 	../heimdal/lib/roken/dumpdata.o \
 	../heimdal/lib/roken/emalloc.o \
+	../heimdal/lib/roken/ecalloc.o \
 	../heimdal/lib/roken/get_window_size.o \
 	../heimdal/lib/roken/h_errno.o \
 	../heimdal/lib/roken/issuid.o \
@@ -443,6 +448,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/simple_exec.o \
 	../heimdal/lib/roken/simple_exec.o \
 	../heimdal/lib/roken/strcollect.o \
+	../heimdal/lib/roken/rtbl.o \
 	replace.o
 PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_ADDRINFO \
@@ -550,12 +556,12 @@ PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H E
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1 heimdal/lib/hdb |
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1 heimdal/lib/gssapi --sequence=MechTypeList |
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/mech/gssapi.asn1 gssapi_asn1 heimdal/lib/gssapi|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 heimdal/lib/asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 heimdal/lib/asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/digest.asn1 digest_asn1 heimdal/lib/asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs8.asn1 pkcs8_asn1 heimdal/lib/asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs9.asn1 pkcs9_asn1 heimdal/lib/asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs12.asn1 pkcs12_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/rfc2459.asn1 rfc2459_asn1 heimdal/lib/asn1 --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/rfc2459.asn1 rfc2459_asn1 heimdal/lib/asn1 --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkinit.asn1 pkinit_asn1 heimdal/lib/asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/CMS.asn1 cms_asn1 heimdal/lib/asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/ocsp.asn1 ocsp_asn1 heimdal/lib/hx509 --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData|
@@ -569,14 +575,14 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
 
-include perl_path_wrapper.sh hcrypto-deps.pl heimdal/lib/des/*.h|
+include perl_path_wrapper.sh hcrypto-deps.pl heimdal/lib/hcrypto/*.h|
 
-heimdal/lib/des/hcrypto: 
-	@rm -f $@; ln -s ./../des $@
+heimdal/lib/hcrypto/hcrypto:
+	@rm -f $@; ln -s ./../hcrypto $@
 
 clean::	
 	@-rm -f bin/compile_et bin/asn1_compile
-	@-rm -f heimdal/lib/krb5/des/hcrypto
+	@-rm -f heimdal/lib/krb5/hcrypto/hcrypto
 
 #######################
 # Start SUBSYSTEM HEIMDAL
@@ -606,7 +612,7 @@ OBJ_FILES = ../heimdal/kuser/kinit.o \
 	../heimdal/lib/vers/print_version.o \
 	../heimdal/lib/roken/setprogname.o \
 	../heimdal/lib/roken/getarg.o 
-PRIVATE_DEPENDENCIES = HEIMDAL_KRB5
+PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_NTLM
 # End BINARY compile_et
 #######################
 

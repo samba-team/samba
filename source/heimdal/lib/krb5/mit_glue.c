@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: mit_glue.c,v 1.12 2006/11/17 22:17:46 lha Exp $");
+RCSID("$Id: mit_glue.c 20042 2007-01-23 20:37:43Z lha $");
 
 /*
  * Glue for MIT API
@@ -339,4 +339,31 @@ krb5_c_keylengths(krb5_context context,
 	return ret;
     *ilen = (*ilen + 7) / 8;
     return krb5_enctype_keysize(context, enctype, keylen);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_c_prf_length(krb5_context context,
+		  krb5_enctype type,
+		  size_t *length)
+{
+    return krb5_crypto_prf_length(context, type, length);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_c_prf(krb5_context context,
+	   const krb5_keyblock *key,
+	   const krb5_data *input, 
+	   krb5_data *output)
+{
+    krb5_crypto crypto;
+    krb5_error_code ret;
+
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
+
+    ret = krb5_crypto_prf(context, crypto, input, output);
+    krb5_crypto_destroy(context, crypto);
+
+    return ret;
 }

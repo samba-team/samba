@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: acquire_cred.c,v 1.33 2006/11/20 18:09:30 lha Exp $");
+RCSID("$Id: acquire_cred.c 20688 2007-05-17 18:44:31Z lha $");
 
 OM_uint32
 __gsskrb5_ccache_lifetime(OM_uint32 *minor_status,
@@ -301,8 +301,8 @@ OM_uint32 _gsskrb5_acquire_cred
     if (desired_mechs) {
 	int present = 0;
 
-	ret = _gsskrb5_test_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-					   desired_mechs, &present); 
+	ret = gss_test_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+				      desired_mechs, &present); 
 	if (ret)
 	    return ret;
 	if (!present) {
@@ -352,16 +352,16 @@ OM_uint32 _gsskrb5_acquire_cred
 	    return (ret);
 	}
     }
-    ret = _gsskrb5_create_empty_oid_set(minor_status, &handle->mechanisms);
+    ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
     if (ret == GSS_S_COMPLETE)
-    	ret = _gsskrb5_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-					  &handle->mechanisms);
+    	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+				     &handle->mechanisms);
     if (ret == GSS_S_COMPLETE)
     	ret = _gsskrb5_inquire_cred(minor_status, (gss_cred_id_t)handle, 
 				    NULL, time_rec, NULL, actual_mechs);
     if (ret != GSS_S_COMPLETE) {
 	if (handle->mechanisms != NULL)
-	    _gsskrb5_release_oid_set(NULL, &handle->mechanisms);
+	    gss_release_oid_set(NULL, &handle->mechanisms);
 	HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
 	krb5_free_principal(context, handle->principal);
 	free(handle);

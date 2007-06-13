@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_p11.c,v 1.45 2007/01/09 19:43:35 lha Exp $");
+RCSID("$Id: ks_p11.c 20920 2007-06-05 05:47:06Z lha $");
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -214,7 +214,7 @@ p11_rsa_finish(RSA *rsa)
     return 1;
 }
 
-static const RSA_METHOD rsa_pkcs1_method = {
+static const RSA_METHOD p11_rsa_pkcs1_method = {
     "hx509 PKCS11 PKCS#1 RSA",
     p11_rsa_public_encrypt,
     p11_rsa_public_decrypt,
@@ -644,7 +644,7 @@ collect_private_key(hx509_context context,
     if (p->refcount == 0)
 	_hx509_abort("pkcs11 refcount to high");
 
-    RSA_set_method(rsa, &rsa_pkcs1_method);
+    RSA_set_method(rsa, &p11_rsa_pkcs1_method);
     ret = RSA_set_app_data(rsa, p11rsa);
     if (ret != 1)
 	_hx509_abort("RSA_set_app_data");
@@ -766,11 +766,9 @@ p11_list_keys(hx509_context context,
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    collector = _hx509_collector_alloc(context, lock);
-    if (collector == NULL) {
-	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
-	return ENOMEM;
-    }
+    ret = _hx509_collector_alloc(context, lock, &collector);
+    if (ret)
+	return ret;
 
     key_class = CKO_PRIVATE_KEY;
     ret = iterate_entries(context, p, slot, session,
@@ -1113,7 +1111,7 @@ static int
 p11_printinfo(hx509_context context, 
 	      hx509_certs certs, 
 	      void *data,
-	      int (*func)(void *, char *),
+	      int (*func)(void *, const char *),
 	      void *ctx)
 {
     struct p11_module *p = data;
@@ -1140,6 +1138,17 @@ p11_printinfo(hx509_context context,
 		MECHNAME(CKM_RSA_X_509, "rsa-x-509");
 		MECHNAME(CKM_MD5_RSA_PKCS, "md5-rsa-pkcs");
 		MECHNAME(CKM_SHA1_RSA_PKCS, "sha1-rsa-pkcs");
+		MECHNAME(CKM_RIPEMD160_RSA_PKCS, "ripemd160-rsa-pkcs");
+		MECHNAME(CKM_RSA_PKCS_OAEP, "rsa-pkcs-oaep");
+		MECHNAME(CKM_SHA_1, "sha1");
+		MECHNAME(CKM_MD5, "md5");
+		MECHNAME(CKM_MD2, "md2");
+		MECHNAME(CKM_RIPEMD160, "ripemd-160");
+		MECHNAME(CKM_DES_ECB, "des-ecb");
+		MECHNAME(CKM_DES_CBC, "des-cbc");
+		MECHNAME(CKM_AES_ECB, "aes-ecb");
+		MECHNAME(CKM_AES_CBC, "aes-cbc");
+		MECHNAME(CKM_DH_PKCS_PARAMETER_GEN, "dh-pkcs-parameter-gen");
 	    default:
 		snprintf(unknownname, sizeof(unknownname),
 			 "unknown-mech-%lu", 

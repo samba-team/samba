@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_ccapi.h,v 1.3 2006/05/05 09:29:59 lha Exp $ */
+/* $Id: krb5_ccapi.h 17442 2006-05-05 09:31:15Z lha $ */
 
 #ifndef KRB5_CCAPI_H
 #define KRB5_CCAPI_H 1

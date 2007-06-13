@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: 524.c,v 1.40 2006/10/06 17:06:30 lha Exp $");
+RCSID("$Id: 524.c 18270 2006-10-06 17:06:30Z lha $");
 
 #include <krb5-v4compat.h>
 

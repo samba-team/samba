@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: keyset.c,v 1.18 2007/01/09 10:52:07 lha Exp $");
+RCSID("$Id: keyset.c 20911 2007-06-05 03:41:17Z lha $");
 
 struct hx509_certs_data {
     struct hx509_keyset_ops *ops;
@@ -276,6 +276,8 @@ hx509_certs_find(hx509_context context,
 
     *r = NULL;
 
+    _hx509_query_statistic(context, 0, q);
+
     if (certs->ops->query)
 	return (*certs->ops->query)(context, certs, certs->ops_data, q, r);
 
@@ -317,6 +319,8 @@ certs_merge_func(hx509_context context, void *ctx, hx509_cert c)
 int
 hx509_certs_merge(hx509_context context, hx509_certs to, hx509_certs from)
 {
+    if (from == NULL)
+	return 0;
     return hx509_certs_iter(context, from, certs_merge_func, to);
 }
 
@@ -358,7 +362,7 @@ hx509_get_one_cert(hx509_context context, hx509_certs certs, hx509_cert *c)
 }
 
 static int
-certs_info_stdio(void *ctx, char *str)
+certs_info_stdio(void *ctx, const char *str)
 {
     FILE *f = ctx;
     fprintf(f, "%s\n", str);
@@ -368,7 +372,7 @@ certs_info_stdio(void *ctx, char *str)
 int
 hx509_certs_info(hx509_context context, 
 		 hx509_certs certs,
-		 int (*func)(void *, char *),
+		 int (*func)(void *, const char *),
 		 void *ctx)
 {
     if (func == NULL) {
@@ -385,8 +389,8 @@ hx509_certs_info(hx509_context context,
 }
 
 void
-_hx509_pi_printf(int (*func)(void *, char *), void *ctx,
-		 char *fmt, ...)
+_hx509_pi_printf(int (*func)(void *, const char *), void *ctx,
+		 const char *fmt, ...)
 {
     va_list ap;
     char *str;

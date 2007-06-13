@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: process_context_token.c,v 1.5 2006/11/13 18:02:30 lha Exp $");
+RCSID("$Id: process_context_token.c 19031 2006-11-13 18:02:57Z lha $");
 
 OM_uint32 _gsskrb5_process_context_token (
 	OM_uint32          *minor_status,

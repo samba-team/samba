@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store_emem.c,v 1.14 2004/05/25 21:43:29 lha Exp $");
+RCSID("$Id: store_emem.c 13863 2004-05-25 21:46:46Z lha $");
 
 typedef struct emem_storage{
     unsigned char *base;

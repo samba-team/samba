@@ -32,7 +32,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_duplicate_oid.c,v 1.1 2006/06/28 09:07:07 lha Exp $");
+RCSID("$Id: gss_duplicate_oid.c 19954 2007-01-17 11:50:23Z lha $");
 
 OM_uint32 gss_duplicate_oid (
         OM_uint32 *minor_status,
@@ -56,6 +56,7 @@ OM_uint32 gss_duplicate_oid (
     (*dest_oid)->elements = malloc(src_oid->length);
     if ((*dest_oid)->elements == NULL) {
 	free(*dest_oid);
+	*dest_oid = GSS_C_NO_OID;
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }

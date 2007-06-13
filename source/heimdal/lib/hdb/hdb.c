@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: hdb.c,v 1.64 2006/11/28 14:24:27 lha Exp $");
+RCSID("$Id: hdb.c 20214 2007-02-09 21:51:10Z lha $");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -56,7 +56,7 @@ static struct hdb_method methods[] = {
     {"ldapi:",	hdb_ldapi_create},
 #endif
 #ifdef _SAMBA_BUILD_
-    {"ldb:",	hdb_ldb_create},
+    {"ldb:",   hdb_ldb_create},
 #endif
 #ifdef HAVE_LDB /* Used for integrated samba build */
     {"ldb:",	hdb_ldb_create},
@@ -81,11 +81,15 @@ hdb_next_enctype2key(krb5_context context,
     
     for (k = *key ? (*key) + 1 : e->keys.val;
 	 k < e->keys.val + e->keys.len; 
-	 k++)
+	 k++) 
+    {
 	if(k->key.keytype == enctype){
 	    *key = k;
 	    return 0;
 	}
+    }
+    krb5_set_error_string(context, "No next enctype %d for hdb-entry", 
+			  (int)enctype);
     return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
 
@@ -164,6 +168,8 @@ hdb_foreach(krb5_context context,
     krb5_error_code ret;
     hdb_entry_ex entry;
     ret = db->hdb_firstkey(context, db, flags, &entry);
+    if (ret == 0)
+	krb5_clear_error_string(context);
     while(ret == 0){
 	ret = (*func)(context, db, &entry, data);
 	hdb_free_entry(context, &entry);
@@ -228,8 +234,11 @@ hdb_init_db(krb5_context context, HDB *db)
     version.length = strlen(version.data) + 1; /* zero terminated */
     ret = (*db->hdb__put)(context, db, 0, tag, version);
     ret2 = db->hdb_unlock(context, db);
-    if (ret)
+    if (ret) {
+	if (ret2)
+	    krb5_clear_error_string(context);
 	return ret;
+    }
     return ret2;
 }
 

@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: kdc_locl.h,v 1.76 2006/12/26 17:18:14 lha Exp $ 
+ * $Id: kdc_locl.h 20954 2007-06-07 03:30:15Z lha $ 
  */
 
 #ifndef __KDC_LOCL_H__
@@ -46,6 +46,7 @@ typedef struct pk_client_params pk_client_params;
 
 extern sig_atomic_t exit_flag;
 extern size_t max_request;
+extern const char *request_log;
 extern const char *port_str;
 extern krb5_addresses explicit_addresses;
 
@@ -54,18 +55,6 @@ extern int enable_http;
 #define DETACH_IS_DEFAULT FALSE
 
 extern int detach_from_console;
-
-extern int require_preauth; /* 1 == require preauth for all principals */
-
-extern const char *trpolicy_str;
-
-extern int disable_des;
-extern int enable_v4;
-extern int enable_kaserver;
-extern int enable_524;
-extern int enable_v4_cross_realm;
-
-extern char *v4_realm;
 
 extern const struct units _kdc_digestunits[];
 
@@ -80,7 +69,5 @@ loop(krb5_context context, krb5_kdc_configuration *config);
 
 krb5_kdc_configuration *
 configure(krb5_context context, int argc, char **argv);
-
-void krb5_kdc_configure(krb5_context context, krb5_kdc_configuration *config);
 
 #endif /* __KDC_LOCL_H__ */

@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: misc.c,v 1.32 2006/08/28 14:41:49 lha Exp $");
+RCSID("$Id: misc.c 17951 2006-08-28 14:41:49Z lha $");
 
 struct timeval _kdc_now;
 

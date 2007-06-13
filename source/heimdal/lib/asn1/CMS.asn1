@@ -1,5 +1,5 @@
 -- From RFC 3369 --
--- $Id: CMS.asn1,v 1.5 2006/09/07 12:20:42 lha Exp $ --
+-- $Id: CMS.asn1 18054 2006-09-07 12:20:42Z lha $ --
 
 CMS DEFINITIONS ::= BEGIN
 

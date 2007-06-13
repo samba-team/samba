@@ -8,6 +8,14 @@
 extern "C" {
 #endif
 
+#ifndef HX509_LIB_FUNCTION
+#if defined(_WIN32)
+#define HX509_LIB_FUNCTION _stdcall
+#else
+#define HX509_LIB_FUNCTION
+#endif
+#endif
+
 void
 hx509_bitstring_print (
 	const heim_bit_string */*b*/,
@@ -29,8 +37,15 @@ hx509_ca_sign_self (
 	hx509_cert */*certificate*/);
 
 int
+hx509_ca_tbs_add_crl_dp_uri (
+	hx509_context /*context*/,
+	hx509_ca_tbs /*tbs*/,
+	const char */*uri*/,
+	hx509_name /*issuername*/);
+
+int
 hx509_ca_tbs_add_eku (
-	hx509_context /*contex*/,
+	hx509_context /*context*/,
 	hx509_ca_tbs /*tbs*/,
 	const heim_oid */*oid*/);
 
@@ -39,6 +54,18 @@ hx509_ca_tbs_add_san_hostname (
 	hx509_context /*context*/,
 	hx509_ca_tbs /*tbs*/,
 	const char */*dnsname*/);
+
+int
+hx509_ca_tbs_add_san_jid (
+	hx509_context /*context*/,
+	hx509_ca_tbs /*tbs*/,
+	const char */*jid*/);
+
+int
+hx509_ca_tbs_add_san_ms_upn (
+	hx509_context /*context*/,
+	hx509_ca_tbs /*tbs*/,
+	const char */*principal*/);
 
 int
 hx509_ca_tbs_add_san_otherName (
@@ -72,6 +99,11 @@ hx509_ca_tbs_set_ca (
 	hx509_context /*context*/,
 	hx509_ca_tbs /*tbs*/,
 	int /*pathLenConstraint*/);
+
+int
+hx509_ca_tbs_set_domaincontroller (
+	hx509_context /*context*/,
+	hx509_ca_tbs /*tbs*/);
 
 int
 hx509_ca_tbs_set_notAfter (
@@ -116,6 +148,28 @@ hx509_ca_tbs_set_subject (
 	hx509_name /*subject*/);
 
 int
+hx509_ca_tbs_set_template (
+	hx509_context /*context*/,
+	hx509_ca_tbs /*tbs*/,
+	int /*flags*/,
+	hx509_cert /*cert*/);
+
+int
+hx509_ca_tbs_subject_expand (
+	hx509_context /*context*/,
+	hx509_ca_tbs /*tbs*/,
+	hx509_env /*env*/);
+
+const struct units *
+hx509_ca_tbs_template_units (void);
+
+int
+hx509_cert_binary (
+	hx509_context /*context*/,
+	hx509_cert /*c*/,
+	heim_octet_string */*os*/);
+
+int
 hx509_cert_check_eku (
 	hx509_context /*context*/,
 	hx509_cert /*cert*/,
@@ -136,6 +190,11 @@ hx509_cert_find_subjectAltName_otherName (
 void
 hx509_cert_free (hx509_cert /*cert*/);
 
+int
+hx509_cert_get_SPKI (
+	hx509_cert /*p*/,
+	SubjectPublicKeyInfo */*spki*/);
+
 hx509_cert_attribute
 hx509_cert_get_attribute (
 	hx509_cert /*cert*/,
@@ -154,6 +213,12 @@ int
 hx509_cert_get_issuer (
 	hx509_cert /*p*/,
 	hx509_name */*name*/);
+
+time_t
+hx509_cert_get_notAfter (hx509_cert /*p*/);
+
+time_t
+hx509_cert_get_notBefore (hx509_cert /*p*/);
 
 int
 hx509_cert_get_serialnumber (
@@ -218,7 +283,7 @@ int
 hx509_certs_info (
 	hx509_context /*context*/,
 	hx509_certs /*certs*/,
-	int (*/*func*/)(void *, char *),
+	int (*/*func*/)(void *, const char *),
 	void */*ctx*/);
 
 int
@@ -274,6 +339,7 @@ hx509_clear_error_string (hx509_context /*context*/);
 int
 hx509_cms_create_signed_1 (
 	hx509_context /*context*/,
+	int /*flags*/,
 	const heim_oid */*eContentType*/,
 	const void */*data*/,
 	size_t /*length*/,
@@ -296,6 +362,7 @@ hx509_cms_decrypt_encrypted (
 int
 hx509_cms_envelope_1 (
 	hx509_context /*context*/,
+	int /*flags*/,
 	hx509_cert /*cert*/,
 	const void */*data*/,
 	size_t /*length*/,
@@ -327,6 +394,7 @@ hx509_cms_verify_signed (
 	hx509_verify_ctx /*ctx*/,
 	const void */*data*/,
 	size_t /*length*/,
+	const heim_octet_string */*signedContent*/,
 	hx509_certs /*store*/,
 	heim_oid */*contentType*/,
 	heim_octet_string */*content*/,
@@ -350,6 +418,41 @@ hx509_context_set_missing_revoke (
 	int /*flag*/);
 
 int
+hx509_crl_add_revoked_certs (
+	hx509_context /*context*/,
+	hx509_crl /*crl*/,
+	hx509_certs /*certs*/);
+
+int
+hx509_crl_alloc (
+	hx509_context /*context*/,
+	hx509_crl */*crl*/);
+
+void
+hx509_crl_free (
+	hx509_context /*context*/,
+	hx509_crl */*crl*/);
+
+int
+hx509_crl_lifetime (
+	hx509_context /*context*/,
+	hx509_crl /*crl*/,
+	int /*delta*/);
+
+int
+hx509_crl_sign (
+	hx509_context /*context*/,
+	hx509_cert /*signer*/,
+	hx509_crl /*crl*/,
+	heim_octet_string */*os*/);
+
+const AlgorithmIdentifier *
+hx509_crypto_aes128_cbc (void);
+
+const AlgorithmIdentifier *
+hx509_crypto_aes256_cbc (void);
+
+int
 hx509_crypto_available (
 	hx509_context /*context*/,
 	int /*type*/,
@@ -364,6 +467,9 @@ hx509_crypto_decrypt (
 	const size_t /*length*/,
 	heim_octet_string */*ivec*/,
 	heim_octet_string */*clear*/);
+
+const AlgorithmIdentifier *
+hx509_crypto_des_rsdi_ede3_cbc (void);
 
 void
 hx509_crypto_destroy (hx509_crypto /*crypto*/);
@@ -432,16 +538,43 @@ hx509_crypto_set_random_key (
 	hx509_crypto /*crypto*/,
 	heim_octet_string */*key*/);
 
+int
+hx509_env_add (
+	hx509_context /*context*/,
+	hx509_env /*env*/,
+	const char */*key*/,
+	const char */*value*/);
+
+void
+hx509_env_free (hx509_env */*env*/);
+
+int
+hx509_env_init (
+	hx509_context /*context*/,
+	hx509_env */*env*/);
+
+const char *
+hx509_env_lfind (
+	hx509_context /*context*/,
+	hx509_env /*env*/,
+	const char */*key*/,
+	size_t /*len*/);
+
 void
 hx509_err (
 	hx509_context /*context*/,
 	int /*exit_code*/,
 	int /*error_code*/,
-	char */*fmt*/,
+	const char */*fmt*/,
 	...);
 
 void
 hx509_free_octet_string_list (hx509_octet_string_list */*list*/);
+
+int
+hx509_general_name_unparse (
+	GeneralName */*name*/,
+	char **/*str*/);
 
 char *
 hx509_get_error_string (
@@ -507,16 +640,32 @@ hx509_lock_set_prompter (
 	void */*data*/);
 
 int
+hx509_name_cmp (
+	hx509_name /*n1*/,
+	hx509_name /*n2*/);
+
+int
 hx509_name_copy (
 	hx509_context /*context*/,
 	const hx509_name /*from*/,
 	hx509_name */*to*/);
+
+int
+hx509_name_expand (
+	hx509_context /*context*/,
+	hx509_name /*name*/,
+	hx509_env /*env*/);
 
 void
 hx509_name_free (hx509_name */*name*/);
 
 int
 hx509_name_is_null_p (const hx509_name /*name*/);
+
+int
+hx509_name_normalize (
+	hx509_context /*context*/,
+	hx509_name /*name*/);
 
 int
 hx509_name_to_Name (
@@ -576,7 +725,7 @@ hx509_peer_info_alloc (
 	hx509_context /*context*/,
 	hx509_peer_info */*peer*/);
 
-int
+void
 hx509_peer_info_free (hx509_peer_info /*peer*/);
 
 int
@@ -638,6 +787,17 @@ void
 hx509_query_match_option (
 	hx509_query */*q*/,
 	hx509_query_option /*option*/);
+
+void
+hx509_query_statistic_file (
+	hx509_context /*context*/,
+	const char */*fn*/);
+
+void
+hx509_query_unparse_stats (
+	hx509_context /*context*/,
+	int /*printtype*/,
+	FILE */*out*/);
 
 int
 hx509_revoke_add_crl (

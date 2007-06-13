@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: krb5tgs.c,v 1.25 2007/01/04 12:49:45 lha Exp $");
+RCSID("$Id: krb5tgs.c 21041 2007-06-10 06:21:12Z lha $");
 
 /*
  * return the realm of a krbtgt-ticket or NULL
@@ -656,7 +656,7 @@ tgs_make_reply(krb5_context context,
 	       KDC_REQ_BODY *b, 
 	       krb5_const_principal tgt_name,
 	       const EncTicketPart *tgt, 
-	       const EncryptionKey *ekey,
+	       const EncryptionKey *serverkey,
 	       const krb5_keyblock *sessionkey,
 	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
@@ -883,7 +883,7 @@ tgs_make_reply(krb5_context context,
     ret = _kdc_encode_reply(context, config, 
 			    &rep, &et, &ek, et.key.keytype,
 			    kvno, 
-			    ekey, 0, &tgt->key, e_text, reply);
+			    serverkey, 0, &tgt->key, e_text, reply);
 out:
     free_TGS_REP(&rep);
     free_TransitedEncoding(&et.transited);
@@ -1010,7 +1010,7 @@ static krb5_error_code
 tgs_parse_request(krb5_context context, 
 		  krb5_kdc_configuration *config,
 		  KDC_REQ_BODY *b,
-		  PA_DATA *tgs_req,
+		  const PA_DATA *tgs_req,
 		  hdb_entry_ex **krbtgt,
 		  krb5_enctype *krbtgt_etype,
 		  krb5_ticket **ticket,
@@ -1258,6 +1258,7 @@ tgs_build_reply(krb5_context context,
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
     krb5_data rspac;
+    int cross_realm = 0;
 
     PrincipalName *s;
     Realm r;
@@ -1421,6 +1422,8 @@ server_lookup:
 	
 	kdc_log(context, config, 1, "Client not found in database: %s: %s",
 		cpn, krb5_get_err_text(context, ret));
+
+	cross_realm = 1;
     }
     
     /*
@@ -1707,21 +1710,25 @@ server_lookup:
     /* check PAC if there is one */
     {
 	Key *tkey;
+	krb5_keyblock *tgtkey = NULL;
 
-	ret = hdb_enctype2key(context, &krbtgt->entry, 
-			      krbtgt_etype, &tkey);
-	if(ret) {
-	    kdc_log(context, config, 0,
-		    "Failed to find key for krbtgt PAC check");
-	    goto out;
+	if (!cross_realm) {
+	    ret = hdb_enctype2key(context, &krbtgt->entry, 
+				  krbtgt_etype, &tkey);
+	    if(ret) {
+		kdc_log(context, config, 0,
+			"Failed to find key for krbtgt PAC check");
+		goto out;
+	    }
+	    tgtkey = &tkey->key;
 	}
 
 	ret = check_PAC(context, config, client_principal, 
-			client, server, ekey, &tkey->key, 
+			client, server, ekey, tgtkey,
 			tgt, &rspac, &require_signedpath);
 	if (ret) {
 	    kdc_log(context, config, 0,
-		    "check_PAC check failed for %s (%s) from %s with %s",
+		    "Verify PAC failed for %s (%s) from %s with %s",
 		    spn, cpn, from, krb5_get_err_text(context, ret));
 	    goto out;
 	}
@@ -1804,7 +1811,7 @@ _kdc_tgs_rep(krb5_context context,
     AuthorizationData *auth_data = NULL;
     krb5_error_code ret;
     int i = 0;
-    PA_DATA *tgs_req = NULL;
+    const PA_DATA *tgs_req;
 
     hdb_entry_ex *krbtgt = NULL;
     krb5_ticket *ticket = NULL;

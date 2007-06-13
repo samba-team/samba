@@ -521,6 +521,19 @@ krb5_c_make_random_key (
 	krb5_keyblock */*random_key*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_c_prf (
+	krb5_context /*context*/,
+	const krb5_keyblock */*key*/,
+	const krb5_data */*input*/,
+	krb5_data */*output*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_c_prf_length (
+	krb5_context /*context*/,
+	krb5_enctype /*type*/,
+	size_t */*length*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_c_set_checksum (
 	krb5_context /*context*/,
 	krb5_checksum */*cksum*/,
@@ -1103,10 +1116,33 @@ krb5_crypto_init (
 	krb5_enctype /*etype*/,
 	krb5_crypto */*crypto*/);
 
+size_t
+krb5_crypto_overhead (
+	krb5_context /*context*/,
+	krb5_crypto /*crypto*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_crypto_prf (
+	krb5_context /*context*/,
+	const krb5_crypto /*crypto*/,
+	const krb5_data */*input*/,
+	krb5_data */*output*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_crypto_prf_length (
+	krb5_context /*context*/,
+	krb5_enctype /*type*/,
+	size_t */*length*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_data_alloc (
 	krb5_data */*p*/,
 	int /*len*/);
+
+int KRB5_LIB_FUNCTION
+krb5_data_cmp (
+	const krb5_data */*data1*/,
+	const krb5_data */*data2*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_data_copy (
@@ -1248,12 +1284,6 @@ void
 krb5_digest_free (krb5_digest /*digest*/);
 
 krb5_error_code
-krb5_digest_get_a1_hash (
-	krb5_context /*context*/,
-	krb5_digest /*digest*/,
-	krb5_data */*data*/);
-
-krb5_error_code
 krb5_digest_get_client_binding (
 	krb5_context /*context*/,
 	krb5_digest /*digest*/,
@@ -1271,11 +1301,6 @@ krb5_digest_get_opaque (
 	krb5_digest /*digest*/);
 
 const char *
-krb5_digest_get_responseData (
-	krb5_context /*context*/,
-	krb5_digest /*digest*/);
-
-const char *
 krb5_digest_get_rsp (
 	krb5_context /*context*/,
 	krb5_digest /*digest*/);
@@ -1284,6 +1309,12 @@ const char *
 krb5_digest_get_server_nonce (
 	krb5_context /*context*/,
 	krb5_digest /*digest*/);
+
+krb5_error_code
+krb5_digest_get_session_key (
+	krb5_context /*context*/,
+	krb5_digest /*digest*/,
+	krb5_data */*data*/);
 
 krb5_error_code
 krb5_digest_get_tickets (
@@ -1297,6 +1328,11 @@ krb5_digest_init_request (
 	krb5_digest /*digest*/,
 	krb5_realm /*realm*/,
 	krb5_ccache /*ccache*/);
+
+krb5_boolean
+krb5_digest_rep_get_status (
+	krb5_context /*context*/,
+	krb5_digest /*digest*/);
 
 krb5_error_code
 krb5_digest_request (
@@ -1370,6 +1406,12 @@ krb5_digest_set_realm (
 	krb5_context /*context*/,
 	krb5_digest /*digest*/,
 	const char */*realm*/);
+
+int
+krb5_digest_set_responseData (
+	krb5_context /*context*/,
+	krb5_digest /*digest*/,
+	const char */*response*/);
 
 krb5_error_code
 krb5_digest_set_server_cb (
@@ -2057,6 +2099,12 @@ krb5_get_init_creds_opt_set_anonymous (
 	krb5_get_init_creds_opt */*opt*/,
 	int /*anonymous*/);
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_canonicalize (
+	krb5_context /*context*/,
+	krb5_get_init_creds_opt */*opt*/,
+	krb5_boolean /*req*/);
+
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_default_flags (
 	krb5_context /*context*/,
@@ -2127,6 +2175,12 @@ void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_tkt_life (
 	krb5_get_init_creds_opt */*opt*/,
 	krb5_deltat /*tkt_life*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_win2k (
+	krb5_context /*context*/,
+	krb5_get_init_creds_opt */*opt*/,
+	krb5_boolean /*req*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_password (

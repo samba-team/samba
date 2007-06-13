@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_canonicalize_name.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_canonicalize_name.c 19928 2007-01-16 10:37:54Z lha $");
 
 OM_uint32
 gss_canonicalize_name(OM_uint32 *minor_status,
@@ -52,8 +52,10 @@ gss_canonicalize_name(OM_uint32 *minor_status,
 	m = mn->gmn_mech;
 	major_status = m->gm_canonicalize_name(minor_status,
 	    mn->gmn_name, mech_type, &new_canonical_name);
-	if (major_status)
+	if (major_status) {
+		_gss_mg_error(m, major_status, *minor_status);
 		return (major_status);
+	}
 
 	/*
 	 * Now we make a new name and mark it as an MN.
