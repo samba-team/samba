@@ -267,7 +267,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
-	ret = ads_verify_ticket(mem_ctx, lp_realm(), 0, &ticket, &client, &pac_data, &ap_rep, &session_key);
+	ret = ads_verify_ticket(mem_ctx, lp_realm(), 0, &ticket, 
+				&client, &pac_data, &ap_rep, 
+				&session_key, True);
 
 	data_blob_free(&ticket);
 
