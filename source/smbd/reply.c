@@ -4586,38 +4586,9 @@ NTSTATUS rename_internals(connection_struct *conn,
 		}
 
 		/*
-		 * The source object must exist.
+		 * The source object must exist, and it may not have a
+		 * conflicting share mode.
 		 */
-
-		if (!vfs_object_exist(conn, directory, &sbuf1)) {
-			DEBUG(3, ("rename_internals: source doesn't exist "
-				  "doing rename %s -> %s\n",
-				directory,newname));
-
-			if (errno == ENOTDIR || errno == EISDIR
-			    || errno == ENOENT) {
-				/*
-				 * Must return different errors depending on
-				 * whether the parent directory existed or
-				 * not.
-				 */
-
-				p = strrchr_m(directory, '/');
-				if (!p)
-					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-				*p = '\0';
-				if (vfs_object_exist(conn, directory, NULL))
-					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-			status = map_nt_error_from_unix(errno);
-			DEBUG(3, ("rename_internals: Error %s rename %s -> "
-				  "%s\n", nt_errstr(status), directory,
-				  newname));
-
-			return status;
-		}
-
 		status = can_rename(conn,directory,attrs,&sbuf1,False);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4738,15 +4709,19 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return status;
 		}
 
-		if (!vfs_object_exist(conn, fname, &sbuf1)) {
-			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			DEBUG(6, ("rename %s failed. Error %s\n",
-				  fname, nt_errstr(status)));
-			continue;
-		}
+		/*
+		 * can_rename does an open_file_ntcreate which needs a valid
+		 * stat in case the file exists
+		 */
+
+		ZERO_STRUCT(sbuf1);
+		SMB_VFS_STAT(conn, fname, &sbuf1);
+
 		status = can_rename(conn,fname,attrs,&sbuf1,False);
+
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(6, ("rename %s refused\n", fname));
+			DEBUG(6, ("rename %s refused: %s\n", fname,
+				  nt_errstr(status)));
 			continue;
 		}
 		pstrcpy(destname,newname);
