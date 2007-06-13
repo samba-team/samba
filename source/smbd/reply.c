@@ -1829,11 +1829,11 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 }
 
 /*******************************************************************
- Check if a user is allowed to delete a file.
-********************************************************************/
+ * unlink a file with all relevant access checks
+ *******************************************************************/
 
-static NTSTATUS can_delete(connection_struct *conn, char *fname,
-			   uint32 dirtype, BOOL can_defer)
+static NTSTATUS do_unlink(connection_struct *conn, char *fname,
+			  uint32 dirtype, BOOL can_defer)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -1934,10 +1934,19 @@ static NTSTATUS can_delete(connection_struct *conn, char *fname,
 				    can_defer ? 0 : INTERNAL_OPEN_ONLY,
 				    NULL, &fsp);
 
-	if (NT_STATUS_IS_OK(status)) {
-		close_file(fsp,NORMAL_CLOSE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("open_file_ntcreate failed: %s\n",
+			   nt_errstr(status)));
+		return status;
 	}
-	return status;
+
+	/* The set is across all open files on this dev/inode pair. */
+	if (!set_delete_on_close(fsp, True, &current_user.ut)) {
+		close_file(fsp, NORMAL_CLOSE);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return close_file(fsp,NORMAL_CLOSE);
 }
 
 /****************************************************************************
@@ -1996,17 +2005,15 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			return status;
 		}
 
-		status = can_delete(conn,directory,dirtype,can_defer);
+		status = do_unlink(conn,directory,dirtype,can_defer);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
-		if (SMB_VFS_UNLINK(conn,directory) == 0) {
-			count++;
-			notify_fname(conn, NOTIFY_ACTION_REMOVED,
-				     FILE_NOTIFY_CHANGE_FILE_NAME,
-				     directory);
-		}
+		count++;
+		notify_fname(conn, NOTIFY_ACTION_REMOVED,
+			     FILE_NOTIFY_CHANGE_FILE_NAME,
+			     directory);
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
 		long offset = 0;
@@ -2065,19 +2072,17 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				return status;
 			}
 
-			status = can_delete(conn, fname, dirtype, can_defer);
+			status = do_unlink(conn, fname, dirtype, can_defer);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			if (SMB_VFS_UNLINK(conn,fname) == 0) {
-				count++;
-				DEBUG(3,("unlink_internals: succesful unlink "
-					 "[%s]\n",fname));
-				notify_fname(conn, NOTIFY_ACTION_REMOVED,
-					     FILE_NOTIFY_CHANGE_FILE_NAME,
-					     fname);
-			}
-				
+
+			count++;
+			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",
+				 fname));
+			notify_fname(conn, NOTIFY_ACTION_REMOVED,
+				     FILE_NOTIFY_CHANGE_FILE_NAME,
+				     fname);
 		}
 		CloseDir(dir_hnd);
 	}
