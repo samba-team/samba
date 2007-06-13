@@ -105,20 +105,9 @@ parse_certificate(hx509_context context, const char *fn,
 		  const void *data, size_t len)
 {
     hx509_cert cert;
-    Certificate t;
-    size_t size;
     int ret;
 
-    ret = decode_Certificate(data, len, &t, &size);
-    if (ret) {
-	hx509_set_error_string(context, 0, ret, 
-			       "Failed to parse certificate in %s",
-			       fn);
-	return ret;
-    }
-
-    ret = hx509_cert_init(context, &t, &cert);
-    free_Certificate(&t);
+    ret = hx509_cert_init_data(context, data, len, &cert);
     if (ret)
 	return ret;
 

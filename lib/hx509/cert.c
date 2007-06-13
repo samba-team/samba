@@ -233,6 +233,32 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     return ret;
 }
 
+int
+hx509_cert_init_data(hx509_context context, 
+		     const void *ptr,
+		     size_t len,
+		     hx509_cert *cert)
+{
+    Certificate t;
+    size_t size;
+    int ret;
+
+    ret = decode_Certificate(ptr, len, &t, &size);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to decode certificate");
+	return ret;
+    }
+    if (size != len) {
+	hx509_set_error_string(context, 0, HX509_EXTRA_DATA_AFTER_STRUCTURE,
+			       "Extra data after certificate");
+	return HX509_EXTRA_DATA_AFTER_STRUCTURE;
+    }
+
+    ret = hx509_cert_init(context, &t, cert);
+    free_Certificate(&t);
+    return ret;
+}
+
 void
 _hx509_cert_set_release(hx509_cert cert, 
 			_hx509_cert_release_func release,

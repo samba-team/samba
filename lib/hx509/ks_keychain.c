@@ -347,25 +347,19 @@ keychain_iter_start(hx509_context context,
 	    return ENOMEM;
 	}
 	for (i = 0; i < CFArrayGetCount(anchors); i++) {
-	    Certificate t;
+	    SecCertificateRef cr; 
 	    hx509_cert cert;
-
-	    SecCertificateRef cr = 
-		(SecCertificateRef)CFArrayGetValueAtIndex(anchors, i);
 	    CSSM_DATA cssm;
+
+	    cr = (SecCertificateRef)CFArrayGetValueAtIndex(anchors, i);
 
 	    SecCertificateGetData(cr, &cssm);
 
-	    ret = decode_Certificate(cssm.Data, cssm.Length, &t, NULL);
-	    if (ret)
-		continue;
-
-	    ret = hx509_cert_init(context, &t, &cert);
+	    ret = hx509_cert_init_data(context, cssm.Data, cssm.Length, &cert);
 	    if (ret)
 		continue;
 
 	    ret = hx509_certs_add(context, iter->certs, cert);
-	    free_Certificate(&t);
 	    hx509_cert_free(cert);
 	}
 	CFRelease(anchors);
@@ -412,11 +406,9 @@ keychain_iter(hx509_context context,
     SecKeychainItemRef itemRef;
     SecItemAttr item;
     struct iter *iter = cursor;
-    Certificate t;
     OSStatus ret;
     UInt32 len;
     void *ptr = NULL;
-    size_t size;
 
     if (iter->certs)
 	return hx509_certs_next_cert(context, iter->certs, iter->cursor, cert);
@@ -444,15 +436,7 @@ keychain_iter(hx509_context context,
     if (ret)
 	return EINVAL;
     
-    ret = decode_Certificate(ptr, len, &t, &size);
-    CFRelease(itemRef);
-    if (ret) {
-	hx509_set_error_string(context, 0, ret, "Failed to parse certificate");
-	goto out;
-    }
-
-    ret = hx509_cert_init(context, &t, cert);
-    free_Certificate(&t);
+    ret = hx509_cert_init_data(context, ptr, len, cert);
     if (ret)
 	goto out;
 

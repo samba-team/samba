@@ -682,7 +682,6 @@ collect_cert(hx509_context context,
 {
     struct hx509_collector *collector = ptr;
     hx509_cert cert;
-    Certificate t;
     int ret;
 
     if ((CK_LONG)query[0].ulValueLen == -1 ||
@@ -691,16 +690,8 @@ collect_cert(hx509_context context,
 	return 0;
     }
 
-
-    ret = decode_Certificate(query[1].pValue, query[1].ulValueLen,
-			     &t, NULL);
-    if (ret) {
-	hx509_clear_error_string(context);
-	return 0;
-    }
-
-    ret = hx509_cert_init(context, &t, &cert);
-    free_Certificate(&t);
+    ret = hx509_cert_init_data(context, query[1].pValue, 
+			       query[1].ulValueLen, &cert);
     if (ret)
 	return ret;
 

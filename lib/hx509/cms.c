@@ -585,22 +585,12 @@ any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 	return 0;
 
     for (i = 0; i < sd->certificates->len; i++) {
-	Certificate cert;
 	hx509_cert c;
 
-	const void *p = sd->certificates->val[i].data;
-	size_t size, length = sd->certificates->val[i].length;
-
-	ret = decode_Certificate(p, length, &cert, &size);
-	if (ret) {
-	    hx509_set_error_string(context, 0, ret,
-				   "Failed to decode certificate %d "
-				   "in SignedData.certificates", i);
-	    return ret;
-	}
-
-	ret = hx509_cert_init(context, &cert, &c);
-	free_Certificate(&cert);
+	ret = hx509_cert_init_data(context, 
+				   sd->certificates->val[i].data, 
+				   sd->certificates->val[i].length,
+				   &c);
 	if (ret)
 	    return ret;
 	ret = hx509_certs_add(context, certs, c);

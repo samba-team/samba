@@ -132,7 +132,6 @@ certBag_parser(hx509_context context,
 	       const PKCS12_Attributes *attrs)
 {
     heim_octet_string os;
-    Certificate t;
     hx509_cert cert;
     PKCS12_CertBag cb;
     int ret;
@@ -154,13 +153,8 @@ certBag_parser(hx509_context context,
     if (ret)
 	return ret;
 
-    ret = decode_Certificate(os.data, os.length, &t, NULL);
+    ret = hx509_cert_init_data(context, os.data, os.length, &cert);
     der_free_octet_string(&os);
-    if (ret)
-	return ret;
-
-    ret = hx509_cert_init(context, &t, &cert);
-    free_Certificate(&t);
     if (ret)
 	return ret;
 
