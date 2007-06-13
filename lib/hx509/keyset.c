@@ -112,6 +112,7 @@ hx509_certs_init(hx509_context context,
 	return ENOMEM;
     }
     c->ops = ops;
+    c->ref = 1;
 
     ret = (*ops->init)(context, c, &c->ops_data, flags, residue, lock);
     if (ret) {
