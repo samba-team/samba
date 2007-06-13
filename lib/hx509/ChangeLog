@@ -1,5 +1,7 @@
 2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* *.c: Add hx509_cert_init_data and use everywhere
+
 	* hx_locl.h: Now that KEYCHAIN:system-anchors is fast again, use
 	that.
 
