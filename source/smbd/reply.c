@@ -2012,9 +2012,6 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 		}
 
 		count++;
-		notify_fname(conn, NOTIFY_ACTION_REMOVED,
-			     FILE_NOTIFY_CHANGE_FILE_NAME,
-			     directory);
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
 		long offset = 0;
@@ -2081,9 +2078,6 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			count++;
 			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",
 				 fname));
-			notify_fname(conn, NOTIFY_ACTION_REMOVED,
-				     FILE_NOTIFY_CHANGE_FILE_NAME,
-				     fname);
 		}
 		CloseDir(dir_hnd);
 	}
