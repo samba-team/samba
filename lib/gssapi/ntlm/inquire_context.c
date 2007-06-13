@@ -59,7 +59,7 @@ OM_uint32 _gss_ntlm_inquire_context (
     if (mech_type)
 	*mech_type = GSS_NTLM_MECHANISM;
     if (ctx_flags)
-	*ctx_flags = ctx->flags;
+	*ctx_flags = ctx->gssflags;
     if (locally_initiated)
 	*locally_initiated = (ctx->status & STATUS_CLIENT) ? 1 : 0;
     if (open_context)
