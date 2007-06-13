@@ -214,7 +214,14 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 	BOOL auth_ok = False;
 	char *password_s = NULL;
 	krb5_data password;
-	krb5_enctype enctypes[4] = { ENCTYPE_DES_CBC_CRC, ENCTYPE_DES_CBC_MD5, 0, 0 };
+	krb5_enctype enctypes[] = { 
+#if defined(ENCTYPE_ARCFOUR_HMAC)
+		ENCTYPE_ARCFOUR_HMAC,
+#endif
+		ENCTYPE_DES_CBC_CRC, 
+		ENCTYPE_DES_CBC_MD5, 
+		ENCTYPE_NULL
+	};
 	krb5_data packet;
 	int i;
 
@@ -222,9 +229,6 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 	*keyblock = NULL;
 	*perr = 0;
 
-#if defined(ENCTYPE_ARCFOUR_HMAC)
-	enctypes[2] = ENCTYPE_ARCFOUR_HMAC;
-#endif
 
 	if (!secrets_init()) {
 		DEBUG(1,("ads_secrets_verify_ticket: secrets_init failed\n"));
@@ -307,7 +311,8 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   char **principal,
 			   PAC_DATA **pac_data,
 			   DATA_BLOB *ap_rep,
-			   DATA_BLOB *session_key)
+			   DATA_BLOB *session_key,
+			   BOOL use_replay_cache)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	NTSTATUS pac_ret;
@@ -320,7 +325,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	krb5_keyblock *keyblock = NULL;
 	time_t authtime;
 	krb5_error_code ret = 0;
-	
+	krb5_int32 flags = 0;	
 	krb5_principal host_princ = NULL;
 	krb5_const_principal client_principal = NULL;
 	char *host_princ_s = NULL;
@@ -363,6 +368,13 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
+	krb5_auth_con_getflags( context, auth_context, &flags );
+	if ( !use_replay_cache ) {
+		/* Disable default use of a replay cache */
+		flags &= ~KRB5_AUTH_CONTEXT_DO_TIME;
+		krb5_auth_con_setflags( context, auth_context, flags );
+	}
+
 	asprintf(&host_princ_s, "%s$", global_myname());
 	if (!host_princ_s) {
 		goto out;
@@ -377,50 +389,62 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 
 
-	/* Lock a mutex surrounding the replay as there is no locking in the MIT krb5
-	 * code surrounding the replay cache... */
+	if ( use_replay_cache ) {
+		
+		/* Lock a mutex surrounding the replay as there is no 
+		   locking in the MIT krb5 code surrounding the replay 
+		   cache... */
 
-	if (!grab_server_mutex("replay cache mutex")) {
-		DEBUG(1,("ads_verify_ticket: unable to protect replay cache with mutex.\n"));
-		ret = KRB5_CC_IO;
-		goto out;
+		if (!grab_server_mutex("replay cache mutex")) {
+			DEBUG(1,("ads_verify_ticket: unable to protect "
+				 "replay cache with mutex.\n"));
+			ret = KRB5_CC_IO;
+			goto out;
+		}
+
+		got_replay_mutex = True;
+
+		/* JRA. We must set the rcache here. This will prevent 
+		   replay attacks. */
+		
+		ret = krb5_get_server_rcache(context, 
+					     krb5_princ_component(context, host_princ, 0), 
+					     &rcache);
+		if (ret) {
+			DEBUG(1,("ads_verify_ticket: krb5_get_server_rcache "
+				 "failed (%s)\n", error_message(ret)));
+			goto out;
+		}
+
+		ret = krb5_auth_con_setrcache(context, auth_context, rcache);
+		if (ret) {
+			DEBUG(1,("ads_verify_ticket: krb5_auth_con_setrcache "
+				 "failed (%s)\n", error_message(ret)));
+			goto out;
+		}
 	}
 
-	got_replay_mutex = True;
+	/* Try secrets.tdb first and fallback to the krb5.keytab if
+	   necessary */
 
-	/*
-	 * JRA. We must set the rcache here. This will prevent replay attacks.
-	 */
+        auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
+					    ticket, &tkt, &keyblock, &ret);
 
-	ret = krb5_get_server_rcache(context, krb5_princ_component(context, host_princ, 0), &rcache);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_get_server_rcache failed (%s)\n", error_message(ret)));
-		goto out;
+	if (!auth_ok && lp_use_kerberos_keytab()) {
+		auth_ok = ads_keytab_verify_ticket(context, auth_context, 
+						   ticket, &tkt, &keyblock, &ret);
 	}
 
-	ret = krb5_auth_con_setrcache(context, auth_context, rcache);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_auth_con_setrcache failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-
-	if (lp_use_kerberos_keytab()) {
-		auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &tkt, &keyblock, &ret);
-	}
-	if (!auth_ok) {
-		auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
-						    ticket, &tkt, &keyblock, &ret);
-	}
-
-	release_server_mutex();
-	got_replay_mutex = False;
-
+	if ( use_replay_cache ) {		
+		release_server_mutex();
+		got_replay_mutex = False;
 #if 0
-	/* Heimdal leaks here, if we fix the leak, MIT crashes */
-	if (rcache) {
-		krb5_rc_close(context, rcache);
-	}
+		/* Heimdal leaks here, if we fix the leak, MIT crashes */
+		if (rcache) {
+			krb5_rc_close(context, rcache);
+		}
 #endif
+	}	
 
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 

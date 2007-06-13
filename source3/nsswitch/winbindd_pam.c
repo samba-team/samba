@@ -615,7 +615,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 				   &client_princ_out, 
 				   &pac_data, 
 				   &ap_rep, 
-				   &session_key);	
+				   &session_key, False);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("winbindd_raw_kerberos_login: ads_verify_ticket failed: %s\n", 
 			nt_errstr(result)));
