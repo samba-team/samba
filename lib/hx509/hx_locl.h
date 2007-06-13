@@ -194,6 +194,6 @@ extern const AlgorithmIdentifier * _hx509_crypto_default_secret_alg;
  * Configurable options
  */
 
-#if 0 /* fdef __APPLE__*/
-#define HX509_DEFAULT_ANCHORS "KEYCHAIN:system"
+#ifdef __APPLE__
+#define HX509_DEFAULT_ANCHORS "KEYCHAIN:system-anchors"
 #endif
