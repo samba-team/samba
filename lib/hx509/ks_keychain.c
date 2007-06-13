@@ -254,6 +254,7 @@ set_private_key(hx509_context context,
  */
 
 struct ks_keychain {
+    int anchors;
     SecKeychainRef keychain;
 };
 
@@ -272,9 +273,9 @@ keychain_init(hx509_context context,
     }
 
     if (residue) {
-	if (strcasecmp(residue, "system") == 0)
-	    residue = "/System/Library/Keychains/X509Anchors";
-
+	if (strcasecmp(residue, "system-anchors") == 0)
+	    ctx->anchors = 1;
+	    
 	ret = SecKeychainOpen(residue, &ctx->keychain);
 	if (ret != noErr) {
 	    hx509_set_error_string(context, 0, ENOENT, 
@@ -307,6 +308,8 @@ keychain_free(hx509_certs certs, void *data)
  */
 
 struct iter {
+    hx509_certs certs;
+    void *cursor;
     SecKeychainSearchRef searchRef;
 };
 
@@ -316,7 +319,6 @@ keychain_iter_start(hx509_context context,
 {
     struct ks_keychain *ctx = data;
     struct iter *iter;
-    OSStatus ret;
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
@@ -324,15 +326,72 @@ keychain_iter_start(hx509_context context,
 	return ENOMEM;
     }
 
-    ret = SecKeychainSearchCreateFromAttributes(ctx->keychain,
-						kSecCertificateItemClass,
-						NULL,
-						&iter->searchRef);
-    if (ret) {
-	free(iter);
-	hx509_set_error_string(context, 0, ret, 
-			       "Failed to start search for attributes");
-	return ENOMEM;
+    if (ctx->anchors) {
+        CFArrayRef anchors;
+	int ret;
+	int i;
+
+	ret = hx509_certs_init(context, "MEMORY:ks-file-create", 
+			       0, NULL, &iter->certs);
+	if (ret) {
+	    free(iter);
+	    return ret;
+	}
+
+	ret = SecTrustCopyAnchorCertificates(&anchors);
+	if (ret != 0) {
+	    hx509_certs_free(&iter->certs);
+	    free(iter);
+	    hx509_set_error_string(context, 0, ENOMEM, 
+				   "Can't get trust anchors from Keychain");
+	    return ENOMEM;
+	}
+	for (i = 0; i < CFArrayGetCount(anchors); i++) {
+	    Certificate t;
+	    hx509_cert cert;
+
+	    SecCertificateRef cr = 
+		(SecCertificateRef)CFArrayGetValueAtIndex(anchors, i);
+	    CSSM_DATA cssm;
+
+	    SecCertificateGetData(cr, &cssm);
+
+	    ret = decode_Certificate(cssm.Data, cssm.Length, &t, NULL);
+	    if (ret)
+		continue;
+
+	    ret = hx509_cert_init(context, &t, &cert);
+	    if (ret)
+		continue;
+
+	    ret = hx509_certs_add(context, iter->certs, cert);
+	    free_Certificate(&t);
+	    hx509_cert_free(cert);
+	}
+	CFRelease(anchors);
+    }
+
+    if (iter->certs) {
+	int ret;
+	ret = hx509_certs_start_seq(context, iter->certs, &iter->cursor);
+	if (ret) {
+	    hx509_certs_free(&iter->certs);
+	    free(iter);
+	    return ret;
+	}
+    } else {
+	OSStatus ret;
+
+	ret = SecKeychainSearchCreateFromAttributes(ctx->keychain,
+						    kSecCertificateItemClass,
+						    NULL,
+						    &iter->searchRef);
+	if (ret) {
+	    free(iter);
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to start search for attributes");
+	    return ENOMEM;
+	}
     }
 
     *cursor = iter;
@@ -358,6 +417,9 @@ keychain_iter(hx509_context context,
     UInt32 len;
     void *ptr = NULL;
     size_t size;
+
+    if (iter->certs)
+	return hx509_certs_next_cert(context, iter->certs, iter->cursor, cert);
 
     *cert = NULL;
 
@@ -449,7 +511,14 @@ keychain_iter_end(hx509_context context,
 {
     struct iter *iter = cursor;
 
-    CFRelease(iter->searchRef);
+    if (iter->certs) {
+	int ret;
+	ret = hx509_certs_end_seq(context, iter->certs, iter->cursor);
+	hx509_certs_free(&iter->certs);
+    } else {
+	CFRelease(iter->searchRef);
+    }
+
     memset(iter, 0, sizeof(*iter));
     free(iter);
     return 0;
