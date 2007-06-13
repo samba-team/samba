@@ -1,5 +1,11 @@
 2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hx_locl.h: Now that KEYCHAIN:system-anchors is fast again, use
+	that.
+
+	* ks_keychain.c: Implement trust anchor support with
+	SecTrustCopyAnchorCertificates.
+
 	* keyset.c: Set ref to 1 for the new object.
 
 	* cert.c: Fix logic for allow_default_trust_anchors
