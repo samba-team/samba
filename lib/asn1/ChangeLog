@@ -1,3 +1,8 @@
+2007-06-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pkinit.asn1: Make the pkinit nonce signed (like the kerberos
+	nonce).
+
 2007-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: Free more memory.
