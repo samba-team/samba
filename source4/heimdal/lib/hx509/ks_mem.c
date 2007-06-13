@@ -80,6 +80,7 @@ mem_free(hx509_certs certs, void *data)
     free(mem->certs.val);
     for (i = 0; mem->keys && mem->keys[i]; i++)
 	_hx509_private_key_free(&mem->keys[i]);
+    free(mem->keys);
     free(mem->name);
     free(mem);
 
@@ -162,7 +163,7 @@ mem_getkeys(hx509_context context,
 
     for (i = 0; mem->keys && mem->keys[i]; i++)
 	;
-    *keys = calloc(i, sizeof(**keys));
+    *keys = calloc(i + 1, sizeof(**keys));
     for (i = 0; mem->keys && mem->keys[i]; i++) {
 	(*keys)[i] = _hx509_private_key_ref(mem->keys[i]);
 	if ((*keys)[i] == NULL) {

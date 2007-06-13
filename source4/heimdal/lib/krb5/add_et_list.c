@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: add_et_list.c,v 1.3 2004/04/13 14:33:45 lha Exp $");
+RCSID("$Id: add_et_list.c 13713 2004-04-13 14:33:45Z lha $");
 
 /*
  * Add a specified list of error messages to the et list in context.

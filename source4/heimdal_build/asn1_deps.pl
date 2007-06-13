@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # Generate make dependency rules for asn1 files
 # Jelmer Vernooij <jelmer@samba.org> 2005
+# Andrew Bartlett <abartlet@samba.org> 2006
 # Stefan Metzmacher <metze@samba.org> 2007
 # GPL
 

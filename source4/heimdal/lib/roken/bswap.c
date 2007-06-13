@@ -36,7 +36,7 @@
 #endif
 #include <roken.h>
 
-RCSID("$Id: bswap.c,v 1.4 2005/04/12 11:28:35 lha Exp $");
+RCSID("$Id: bswap.c 14773 2005-04-12 11:29:18Z lha $");
 
 #ifndef HAVE_BSWAP32
 

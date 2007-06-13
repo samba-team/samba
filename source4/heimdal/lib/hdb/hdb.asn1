@@ -1,4 +1,4 @@
--- $Id: hdb.asn1,v 1.17 2006/08/24 10:45:19 lha Exp $
+-- $Id: hdb.asn1 20236 2007-02-16 23:52:29Z lha $
 HDB DEFINITIONS ::=
 BEGIN
 
@@ -118,6 +118,10 @@ hdb_entry ::= SEQUENCE {
 	etypes[11]	SEQUENCE OF INTEGER (0..4294967295) OPTIONAL,
 	generation[12]	GENERATION OPTIONAL,
         extensions[13]  HDB-extensions OPTIONAL
+}
+
+hdb_entry_alias ::= [APPLICATION 0] SEQUENCE {
+	principal[0]	Principal  OPTIONAL
 }
 
 END

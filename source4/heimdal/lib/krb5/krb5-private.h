@@ -4,14 +4,6 @@
 
 #include <stdarg.h>
 
-#ifndef KRB5_LIB_FUNCTION
-#if defined(_WIN32)
-#define KRB5_LIB_FUNCTION _stdcall
-#else
-#define KRB5_LIB_FUNCTION
-#endif
-#endif
-
 void KRB5_LIB_FUNCTION
 _krb5_aes_cts_encrypt (
 	const unsigned char */*in*/,
@@ -68,8 +60,7 @@ _krb5_extract_ticket (
 	krb5_key_usage /*key_usage*/,
 	krb5_addresses */*addrs*/,
 	unsigned /*nonce*/,
-	krb5_boolean /*allow_server_mismatch*/,
-	krb5_boolean /*ignore_cname*/,
+	unsigned /*flags*/,
 	krb5_decrypt_proc /*decrypt_proc*/,
 	krb5_const_pointer /*decryptarg*/);
 

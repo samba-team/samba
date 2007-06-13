@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: verify_mic.c,v 1.37 2006/11/13 18:02:54 lha Exp $");
+RCSID("$Id: verify_mic.c 19031 2006-11-13 18:02:57Z lha $");
 
 static OM_uint32
 verify_mic_des

@@ -35,7 +35,7 @@
 
 #include <krb5-v4compat.h>
 
-RCSID("$Id: kerberos4.c,v 1.63 2006/10/08 13:43:27 lha Exp $");
+RCSID("$Id: kerberos4.c 18349 2006-10-08 13:43:52Z lha $");
 
 #ifndef swap32
 static uint32_t

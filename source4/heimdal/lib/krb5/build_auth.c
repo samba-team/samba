@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: build_auth.c,v 1.43 2006/04/10 08:53:21 lha Exp $");
+RCSID("$Id: build_auth.c 17033 2006-04-10 08:53:21Z lha $");
 
 static krb5_error_code
 make_etypelist(krb5_context context,

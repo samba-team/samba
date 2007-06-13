@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: auth_context.c,v 1.62 2005/01/05 02:34:08 lukeh Exp $");
+RCSID("$Id: auth_context.c 14452 2005-01-05 02:34:08Z lukeh $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_auth_con_init(krb5_context context,

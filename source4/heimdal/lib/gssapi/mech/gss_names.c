@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_names.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_names.c 19928 2007-01-16 10:37:54Z lha $");
 
 struct _gss_mechanism_name *
 _gss_find_mn(struct _gss_name *name, gss_OID mech)
@@ -62,7 +62,8 @@ _gss_find_mn(struct _gss_name *name, gss_OID mech)
 		    (name->gn_type.elements
 			? &name->gn_type : GSS_C_NO_OID),
 		    &mn->gmn_name);
-		if (major_status) {
+		if (major_status != GSS_S_COMPLETE) {
+			_gss_mg_error(m, major_status, minor_status);
 			free(mn);
 			return (0);
 		}

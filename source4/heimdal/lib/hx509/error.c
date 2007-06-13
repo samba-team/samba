@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: error.c,v 1.4 2006/11/16 15:08:09 lha Exp $");
+RCSID("$Id: error.c 20912 2007-06-05 03:53:52Z lha $");
 
 struct hx509_error_data {
     hx509_error next;
@@ -87,7 +87,8 @@ hx509_set_error_stringv(hx509_context context, int flags, int code,
 }
 
 void
-hx509_set_error_string(hx509_context context, int flags, int code, const char *fmt, ...)
+hx509_set_error_string(hx509_context context, int flags, int code,
+		       const char *fmt, ...)
 {
     va_list ap;
 
@@ -100,9 +101,9 @@ char *
 hx509_get_error_string(hx509_context context, int error_code)
 {
     struct rk_strpool *p = NULL;
-    hx509_error msg;
+    hx509_error msg = context->error;
 
-    if (context->error == NULL) {
+    if (msg == NULL || msg->code != error_code) {
 	const char *cstr;
 	char *str;
 
@@ -125,10 +126,12 @@ hx509_get_error_string(hx509_context context, int error_code)
 }
 
 void
-hx509_err(hx509_context context, int exit_code, int error_code, char *fmt, ...)
+hx509_err(hx509_context context, int exit_code, 
+	  int error_code, const char *fmt, ...)
 {
     va_list ap;
-    char *msg, *str;
+    const char *msg;
+    char *str;
 
     va_start(ap, fmt);
     vasprintf(&str, fmt, ap);

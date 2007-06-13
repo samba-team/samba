@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: log.c,v 1.40 2006/11/21 08:08:46 lha Exp $");
+RCSID("$Id: log.c 19088 2006-11-21 08:08:46Z lha $");
 
 struct facility {
     int min;

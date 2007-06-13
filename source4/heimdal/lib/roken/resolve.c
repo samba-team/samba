@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -45,7 +45,7 @@
 
 #include <assert.h>
 
-RCSID("$Id: resolve.c,v 1.55 2006/04/14 13:56:00 lha Exp $");
+RCSID("$Id: resolve.c 19869 2007-01-12 16:03:14Z lha $");
 
 #ifdef _AIX /* AIX have broken res_nsearch() in 5.1 (5.0 also ?) */
 #undef HAVE_RES_NSEARCH
@@ -492,6 +492,14 @@ parse_reply(const unsigned char *data, size_t len)
     return r;
 }
 
+#ifdef HAVE_RES_NSEARCH
+#ifdef HAVE_RES_NDESTROY
+#define rk_res_free(x) res_ndestroy(x)
+#else
+#define rk_res_free(x) res_nclose(x)
+#endif
+#endif
+
 static struct dns_reply *
 dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
@@ -530,7 +538,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	reply = malloc(size);
 	if (reply == NULL) {
 #ifdef HAVE_RES_NSEARCH
-	    res_nclose(&state);
+	    rk_res_free(&state);
 #endif
 	    return NULL;
 	}
@@ -548,18 +556,14 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	}
 	if (len < 0) {
 #ifdef HAVE_RES_NSEARCH
-#ifdef HAVE_RES_NDESTROY
-	    res_ndestroy(&state);
-#else
-	    res_nclose(&state);
-#endif
+	    rk_res_free(&state);
 #endif
 	    free(reply);
 	    return NULL;
 	}
     } while (size < len && len < rk_DNS_MAX_PACKET_SIZE);
 #ifdef HAVE_RES_NSEARCH
-    res_nclose(&state);
+    rk_res_free(&state);
 #endif
 
     len = min(len, size);

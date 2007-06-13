@@ -34,7 +34,7 @@
 #include "der_locl.h"
 #include <hex.h>
 
-RCSID("$Id: der_format.c,v 1.8 2006/11/27 10:32:21 lha Exp $");
+RCSID("$Id: der_format.c 20861 2007-06-03 20:18:29Z lha $");
 
 int
 der_parse_hex_heim_integer (const char *p, heim_integer *data)
@@ -51,7 +51,7 @@ der_parse_hex_heim_integer (const char *p, heim_integer *data)
     }
 
     len = strlen(p);
-    if (len < 0) {
+    if (len <= 0) {
 	data->data = NULL;
 	data->length = 0;
 	return EINVAL;
@@ -74,7 +74,7 @@ der_parse_hex_heim_integer (const char *p, heim_integer *data)
 
     {
 	unsigned char *q = data->data;
-	while(*q == 0 && len > 0) {
+	while(len > 0 && *q == 0) {
 	    q++;
 	    len--;
 	}

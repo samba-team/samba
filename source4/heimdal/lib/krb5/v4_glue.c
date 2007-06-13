@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: v4_glue.c,v 1.5 2006/05/05 09:31:00 lha Exp $");
+RCSID("$Id: v4_glue.c 17442 2006-05-05 09:31:15Z lha $");
 
 #include "krb5-v4compat.h"
 

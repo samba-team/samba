@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: com_right.h,v 1.12 2005/02/03 08:43:01 lha Exp $ */
+/* $Id: com_right.h 14551 2005-02-03 08:45:13Z lha $ */
 
 #ifndef __COM_RIGHT_H__
 #define __COM_RIGHT_H__

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,8 +33,10 @@
 
 #include "kdc_locl.h"
 #include <hex.h>
+#include <rfc2459_asn1.h>
+#include <hx509.h>
 
-RCSID("$Id: kx509.c,v 1.1 2006/12/28 21:03:53 lha Exp $");
+RCSID("$Id: kx509.c 19992 2007-01-20 09:06:18Z lha $");
 
 /*
  *
@@ -140,72 +142,146 @@ build_certificate(krb5_context context,
 		  krb5_principal principal,
 		  krb5_data *certificate)
 {
-    /* XXX write code here to generate certificates */
-    FILE *in, *out;
-    krb5_error_code ret;
-    const char *program;
-    char *str, *strkey;
-    char tstr[64];
-    pid_t pid;
+    hx509_context hxctx = NULL;
+    hx509_ca_tbs tbs = NULL;
+    hx509_env env = NULL;
+    hx509_cert cert = NULL;
+    hx509_cert signer = NULL;
+    int ret;
 
-    snprintf(tstr, sizeof(tstr), "%lu", (unsigned long)endtime);
-
-    ret = base64_encode(key->data, key->length, &strkey);
-    if (ret < 0) {
-	krb5_set_error_string(context, "failed to base64 encode key");
-	return ENOMEM;
+    if (krb5_principal_get_comp_string(context, principal, 1) != NULL) {
+	kdc_log(context, config, 0, "Principal is not a user");
+	return EINVAL;
     }
 
-    program = krb5_config_get_string(context,
-				     NULL,
-				     "kdc",
-				     "kx509_cert_program",
-				     NULL);
-    if (program == NULL) {
-	free(strkey);
-	krb5_set_error_string(context, "no certificate program configured");
-	return ENOENT;
-    }
+    ret = hx509_context_init(&hxctx);
+    if (ret)
+	goto out;
 
-    ret = krb5_unparse_name(context, principal, &str);
-    if (ret) {
-	free(strkey);
-	return ret;
-    }
+    ret = hx509_env_init(hxctx, &env);
+    if (ret)
+	goto out;
 
-    pid = pipe_execv(&in, &out, NULL, program, str, tstr, NULL);
-    free(str);
-    if (pid <= 0) {
-	free(strkey);
-	krb5_set_error_string(context, 
-			      "Failed to run the cert program %s",
-			      program);
-	return ret;
-    }
-    fprintf(in, "%s\n", strkey);
-    fclose(in);
-    free(strkey);
+    ret = hx509_env_add(hxctx, env, "principal-name", 
+			krb5_principal_get_comp_string(context, principal, 0));
+    if (ret)
+	goto out;
 
     {
-	unsigned buf[1024 * 10];
-	size_t len;
+	hx509_certs certs;
+	hx509_query *q;
 
-	len = fread(buf, 1, sizeof(buf), out);
-	fclose(out);
-	if(len == 0) {
-	    krb5_set_error_string(context, 
-				  "Certificate program returned no data");
-	    return KRB5KDC_ERR_PREAUTH_FAILED;
-	}
-	ret = krb5_data_copy(certificate, buf, len);
+	ret = hx509_certs_init(hxctx, config->kx509_ca, 0,
+			       NULL, &certs);
 	if (ret) {
-	    krb5_set_error_string(context, "Failed To copy certificate");
-	    return ret;
+	    kdc_log(context, config, 0, "Failed to load CA %s",
+		    config->kx509_ca);
+	    goto out;
+	}
+	ret = hx509_query_alloc(hxctx, &q);
+	if (ret) {
+	    hx509_certs_free(&certs);
+	    goto out;
+	}
+
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_KEYCERTSIGN);
+
+	ret = hx509_certs_find(hxctx, certs, q, &signer);
+	hx509_query_free(hxctx, q);
+	hx509_certs_free(&certs);
+	if (ret) {
+	    kdc_log(context, config, 0, "Failed to find a CA in %s",
+		    config->kx509_ca);
+	    goto out;
 	}
     }
-    kill(pid, SIGKILL);
-    waitpid(pid, NULL, 0);
+
+    ret = hx509_ca_tbs_init(hxctx, &tbs);
+    if (ret)
+	goto out;
+
+    {
+	SubjectPublicKeyInfo spki;
+	heim_any any;
+
+	memset(&spki, 0, sizeof(spki));
+
+	spki.subjectPublicKey.data = key->data;
+	spki.subjectPublicKey.length = key->length * 8;
+
+	ret = der_copy_oid(oid_id_pkcs1_rsaEncryption(), 
+			   &spki.algorithm.algorithm);
+
+	any.data = "\x05\x00";
+	any.length = 2;
+	spki.algorithm.parameters = &any;
+
+	ret = hx509_ca_tbs_set_spki(hxctx, tbs, &spki);
+	der_free_oid(&spki.algorithm.algorithm);
+	if (ret)
+	    goto out;
+    }
+
+    {
+	hx509_certs certs;
+	hx509_cert template;
+
+	ret = hx509_certs_init(hxctx, config->kx509_template, 0,
+			       NULL, &certs);
+	if (ret) {
+	    kdc_log(context, config, 0, "Failed to load template %s",
+		    config->kx509_template);
+	    goto out;
+	}
+	ret = hx509_get_one_cert(hxctx, certs, &template);
+	hx509_certs_free(&certs);
+	if (ret) {
+	    kdc_log(context, config, 0, "Failed to find template in %s",
+		    config->kx509_template);
+	    goto out;
+	}
+	ret = hx509_ca_tbs_set_template(hxctx, tbs, 
+					HX509_CA_TEMPLATE_SUBJECT|
+					HX509_CA_TEMPLATE_KU|
+					HX509_CA_TEMPLATE_EKU,
+					template);
+	hx509_cert_free(template);
+	if (ret)
+	    goto out;
+    }
+
+    hx509_ca_tbs_set_notAfter(hxctx, tbs, endtime);
+
+    hx509_ca_tbs_subject_expand(hxctx, tbs, env);
+    hx509_env_free(&env);
+
+    ret = hx509_ca_sign(hxctx, tbs, signer, &cert);
+    hx509_cert_free(signer);
+    if (ret)
+	goto out;
+
+    hx509_ca_tbs_free(&tbs);
+
+    ret = hx509_cert_binary(hxctx, cert, certificate);
+    hx509_cert_free(cert);
+    if (ret)
+	goto out;
+		      
+    hx509_context_free(&hxctx);
+
     return 0;
+out:
+    if (env)
+	hx509_env_free(&env);
+    if (tbs)
+	hx509_ca_tbs_free(&tbs);
+    if (signer)
+	hx509_cert_free(signer);
+    if (hxctx)
+	hx509_context_free(&hxctx);
+    krb5_set_error_string(context, "cert creation failed");
+    return ret;
 }
 
 /*
@@ -298,6 +374,20 @@ _kdc_do_kx509(krb5_context context,
     ret = verify_req_hash(context, req, key);
     if (ret)
 	goto out;
+
+    /* Verify that the key is encoded RSA key */
+    {
+	RSAPublicKey key;
+	size_t size;
+
+	ret = decode_RSAPublicKey(req->pk_key.data, req->pk_key.length,
+				  &key, &size);
+	if (ret)
+	    goto out;
+	free_RSAPublicKey(&key);
+	if (size != req->pk_key.length)
+	    ;
+    }
 
     ALLOC(rep.certificate);
     if (rep.certificate == NULL)

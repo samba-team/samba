@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: windc.c,v 1.3 2007/01/04 11:10:06 lha Exp $");
+RCSID("$Id: windc.c 20559 2007-04-24 16:00:07Z lha $");
 
 static krb5plugin_windc_ftable *windcft;
 static void *windcctx;
@@ -43,7 +43,7 @@ static void *windcctx;
  */
 
 krb5_error_code
-_kdc_windc_init(krb5_context context)
+krb5_kdc_windc_init(krb5_context context)
 {
     struct krb5_plugin *list = NULL, *e;
     krb5_error_code ret;
@@ -91,10 +91,11 @@ _kdc_pac_verify(krb5_context context,
 		krb5_pac *pac)
 {
     if (windcft == NULL) {
-	krb5_set_error_string(context, "Can't verify WINDC, no function");
+	krb5_set_error_string(context, "Can't verify PAC, no function");
 	return EINVAL;
     }
-    return (windcft->pac_verify)(windcctx, context, client_principal, client, server, pac);
+    return (windcft->pac_verify)(windcctx, context, 
+				 client_principal, client, server, pac);
 }
 
 krb5_error_code

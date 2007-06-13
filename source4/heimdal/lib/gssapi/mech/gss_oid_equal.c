@@ -32,7 +32,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_oid_equal.c,v 1.1 2006/06/28 09:07:08 lha Exp $");
+RCSID("$Id: gss_oid_equal.c 17702 2006-06-28 09:07:08Z lha $");
 
 int
 gss_oid_equal(const gss_OID a, const gss_OID b)

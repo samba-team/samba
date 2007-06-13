@@ -32,7 +32,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: cfx.c,v 1.25 2006/11/13 18:01:14 lha Exp $");
+RCSID("$Id: cfx.c 19031 2006-11-13 18:02:57Z lha $");
 
 /*
  * Implementation of draft-ietf-krb-wg-gssapi-cfx-06.txt

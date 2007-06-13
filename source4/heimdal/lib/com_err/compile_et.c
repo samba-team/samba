@@ -35,7 +35,7 @@
 #include "compile_et.h"
 #include <getarg.h>
 
-RCSID("$Id: compile_et.c,v 1.19 2005/06/16 19:21:00 lha Exp $");
+RCSID("$Id: compile_et.c 15426 2005-06-16 19:21:42Z lha $");
 
 #include <roken.h>
 #include <err.h>

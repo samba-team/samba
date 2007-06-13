@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_get_mic.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_get_mic.c 19954 2007-01-17 11:50:23Z lha $");
 
 OM_uint32
 gss_get_mic(OM_uint32 *minor_status,
@@ -38,6 +38,12 @@ gss_get_mic(OM_uint32 *minor_status,
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
 	gssapi_mech_interface m = ctx->gc_mech;
+
+	_mg_buffer_zero(message_token);
+	if (ctx == NULL) {
+	    *minor_status = 0;
+	    return GSS_S_NO_CONTEXT;
+	}
 
 	return (m->gm_get_mic(minor_status, ctx->gc_ctx, qop_req,
 		    message_buffer, message_token));

@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_set_sec_context_option.c,v 1.2 2006/06/28 14:39:00 lha Exp $");
+RCSID("$Id: gss_set_sec_context_option.c 19928 2007-01-16 10:37:54Z lha $");
 
 OM_uint32
 gss_set_sec_context_option (OM_uint32 *minor_status,
@@ -58,10 +58,12 @@ gss_set_sec_context_option (OM_uint32 *minor_status,
 	if (m == NULL)
 		return GSS_S_BAD_MECH;
 
-	if (m->gm_set_sec_context_option != NULL)
+	if (m->gm_set_sec_context_option != NULL) {
 		major_status = m->gm_set_sec_context_option(minor_status,
 		    &ctx->gc_ctx, object, value);
-	else
+		if (major_status != GSS_S_COMPLETE)
+			_gss_mg_error(m, major_status, *minor_status);
+	} else
 		major_status = GSS_S_BAD_MECH;
 
 	return major_status;

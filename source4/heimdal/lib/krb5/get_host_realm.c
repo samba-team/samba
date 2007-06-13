@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <resolve.h>
 
-RCSID("$Id: get_host_realm.c,v 1.37 2006/10/17 19:28:36 lha Exp $");
+RCSID("$Id: get_host_realm.c 18541 2006-10-17 19:28:36Z lha $");
 
 /* To automagically find the correct realm of a host (without
  * [domain_realm] in krb5.conf) add a text record for your domain with

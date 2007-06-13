@@ -1,4 +1,4 @@
--- $Id: k5.asn1,v 1.51 2006/11/21 05:17:47 lha Exp $
+-- $Id: k5.asn1 21004 2007-06-08 01:53:10Z lha $
 
 KERBEROS5 DEFINITIONS ::=
 BEGIN
@@ -59,6 +59,7 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-PA-PK-OCSP-RESPONSE(18),
 	KRB5-PADATA-ETYPE-INFO2(19),
 	KRB5-PADATA-USE-SPECIFIED-KVNO(20),
+	KRB5-PADATA-SVR-REFERRAL-INFO(20), --- old ms referral number
 	KRB5-PADATA-SAM-REDIRECT(21), -- (sam/otp)
 	KRB5-PADATA-GET-FROM-TYPED-DATA(22),
 	KRB5-PADATA-SAM-ETYPE-INFO(23),
@@ -71,10 +72,11 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-TD-REQ-SEQ(108),		-- INTEGER
 	KRB5-PADATA-PA-PAC-REQUEST(128),	-- jbrezak@exchange.microsoft.com
 	KRB5-PADATA-S4U2SELF(129),
-	KRB5-PADATA-PK-AS-09-BINDING(132)	-- client send this to 
+	KRB5-PADATA-PK-AS-09-BINDING(132),	-- client send this to 
 						-- tell KDC that is supports 
 						-- the asCheckSum in the
 						--  PK-AS-REP
+	KRB5-PADATA-CLIENT-CANONICALIZED(133)	-- 
 }
 
 AUTHDATA-TYPE ::= INTEGER {
@@ -229,6 +231,7 @@ KDCOptions ::= BIT STRING {
 	unused11(11),
 	request-anonymous(14),
 	canonicalize(15),
+	constrained-delegation(16), -- ms extension
 	disable-transited-check(26),
 	renewable-ok(27),
 	enc-tkt-in-skey(28),
@@ -409,7 +412,8 @@ EncKDCRepPart ::= SEQUENCE {
 	renew-till[8]		KerberosTime OPTIONAL,
 	srealm[9]		Realm,
 	sname[10]		PrincipalName,
-	caddr[11]		HostAddresses OPTIONAL
+	caddr[11]		HostAddresses OPTIONAL,
+	encrypted-pa-data[12]	METHOD-DATA OPTIONAL
 }
 
 EncASRepPart ::= [APPLICATION 25] EncKDCRepPart
@@ -622,6 +626,27 @@ KRB5SignedPath ::= SEQUENCE {
 	cksum[1]	Checksum,
 	-- srvs delegated though
 	delegated[2]	KRB5SignedPathPrincipals OPTIONAL
+}
+
+PA-ClientCanonicalizedNames ::= SEQUENCE{
+	requested-name [0] PrincipalName,
+	real-name      [1] PrincipalName
+}
+
+PA-ClientCanonicalized ::= SEQUENCE {
+	names          [0] PA-ClientCanonicalizedNames,
+	canon-checksum [1] Checksum
+}
+
+AD-LoginAlias ::= SEQUENCE { -- ad-type number TBD --
+	login-alias  [0] PrincipalName,
+	checksum     [1] Checksum
+}
+
+-- old ms referral
+PA-SvrReferralData ::= SEQUENCE {
+	referred-name   [1] PrincipalName OPTIONAL,
+	referred-realm  [0] Realm
 }
 
 END

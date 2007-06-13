@@ -33,10 +33,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: getnameinfo.c,v 1.6 2005/06/16 16:53:09 lha Exp $");
+RCSID("$Id: getnameinfo.c 15412 2005-06-16 16:53:09Z lha $");
 #endif
 
-#include "roken.h"
+#include <roken.h>
 
 static int
 doit (int af,

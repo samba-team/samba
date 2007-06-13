@@ -34,7 +34,20 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: process.c,v 1.7 2006/12/28 21:09:35 lha Exp $");
+RCSID("$Id: process.c 20959 2007-06-07 04:46:06Z lha $");
+
+/*
+ *
+ */
+
+void
+krb5_kdc_update_time(struct timeval *tv)
+{
+    if (tv == NULL)
+	gettimeofday(&_kdc_now, NULL);
+    else
+	_kdc_now = *tv;
+}
 
 /*
  * handle the request in `buf, len', from `addr' (or `from' as a string),
@@ -59,7 +72,6 @@ krb5_kdc_process_request(krb5_context context,
     krb5_error_code ret;
     size_t i;
 
-    gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
 	krb5_data req_buffer;
 
@@ -121,7 +133,6 @@ krb5_kdc_process_krb5_request(krb5_context context,
     krb5_error_code ret;
     size_t i;
 
-    gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
 	krb5_data req_buffer;
 
@@ -138,4 +149,71 @@ krb5_kdc_process_krb5_request(krb5_context context,
 	return ret;
     }
     return -1;
+}
+
+/*
+ *
+ */
+
+int
+krb5_kdc_save_request(krb5_context context, 
+		      const char *fn,
+		      const unsigned char *buf,
+		      size_t len,
+		      const krb5_data *reply,
+		      const struct sockaddr *sa)
+{
+    krb5_storage *sp;
+    krb5_address a;
+    int fd, ret;
+    uint32_t t;
+    krb5_data d;
+
+    memset(&a, 0, sizeof(a));
+
+    d.data = rk_UNCONST(buf);
+    d.length = len;
+    t = _kdc_now.tv_sec;
+
+    fd = open(fn, O_WRONLY|O_CREAT|O_APPEND, 0600);
+    if (fd < 0) {
+	krb5_set_error_string(context, "Failed to open: %s", fn);
+	return errno;
+    }
+    
+    sp = krb5_storage_from_fd(fd);
+    close(fd);
+    if (sp == NULL) {
+	krb5_set_error_string(context, "Storage failed to open fd");
+	return ENOMEM;
+    }
+
+    ret = krb5_sockaddr2address(context, sa, &a);
+    if (ret)
+	goto out;
+
+    krb5_store_uint32(sp, 1);
+    krb5_store_uint32(sp, t);
+    krb5_store_address(sp, a);
+    krb5_store_data(sp, d);
+    {
+	Der_class cl;
+	Der_type ty;
+	unsigned int tag;
+	ret = der_get_tag (reply->data, reply->length,
+			   &cl, &ty, &tag, NULL);
+	if (ret) {
+	    krb5_store_uint32(sp, 0xffffffff);
+	    krb5_store_uint32(sp, 0xffffffff);
+	} else {
+	    krb5_store_uint32(sp, MAKE_TAG(cl, ty, 0));
+	    krb5_store_uint32(sp, tag);
+	}
+    }
+
+    krb5_free_address(context, &a);
+out:
+    krb5_storage_free(sp);
+
+    return 0;
 }

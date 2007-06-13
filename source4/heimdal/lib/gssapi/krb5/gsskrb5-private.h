@@ -240,12 +240,6 @@ _gsskrb5_add_cred (
 	OM_uint32 */*acceptor_time_rec*/);
 
 OM_uint32
-_gsskrb5_add_oid_set_member (
-	 OM_uint32 * /*minor_status*/,
-	const gss_OID /*member_oid*/,
-	gss_OID_set * oid_set );
-
-OM_uint32
 _gsskrb5_canonicalize_name (
 	 OM_uint32 * /*minor_status*/,
 	const gss_name_t /*input_name*/,
@@ -283,11 +277,6 @@ _gsskrb5_create_ctx (
 	krb5_context /*context*/,
 	const gss_channel_bindings_t /*input_chan_bindings*/,
 	enum gss_ctx_id_t_state /*state*/);
-
-OM_uint32
-_gsskrb5_create_empty_oid_set (
-	 OM_uint32 * /*minor_status*/,
-	gss_OID_set * oid_set );
 
 OM_uint32
 _gsskrb5_decapsulate (
@@ -521,6 +510,15 @@ _gsskrb5_process_context_token (
 	const gss_buffer_t token_buffer );
 
 OM_uint32
+_gsskrb5_pseudo_random (
+	OM_uint32 */*minor_status*/,
+	gss_ctx_id_t /*context_handle*/,
+	int /*prf_key*/,
+	const gss_buffer_t /*prf_in*/,
+	ssize_t /*desired_output_len*/,
+	gss_buffer_t /*prf_out*/);
+
+OM_uint32
 _gsskrb5_register_acceptor_identity (const char */*identity*/);
 
 OM_uint32
@@ -537,11 +535,6 @@ OM_uint32
 _gsskrb5_release_name (
 	OM_uint32 * /*minor_status*/,
 	gss_name_t * input_name );
-
-OM_uint32
-_gsskrb5_release_oid_set (
-	OM_uint32 * /*minor_status*/,
-	gss_OID_set * set );
 
 OM_uint32
 _gsskrb5_seal (
@@ -579,13 +572,6 @@ _gsskrb5_sign (
 	int /*qop_req*/,
 	gss_buffer_t /*message_buffer*/,
 	gss_buffer_t message_token );
-
-OM_uint32
-_gsskrb5_test_oid_set_member (
-	OM_uint32 * /*minor_status*/,
-	const gss_OID /*member*/,
-	const gss_OID_set /*set*/,
-	int * present );
 
 OM_uint32
 _gsskrb5_unseal (

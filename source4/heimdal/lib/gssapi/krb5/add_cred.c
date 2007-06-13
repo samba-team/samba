@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: add_cred.c,v 1.10 2006/11/13 18:01:01 lha Exp $");
+RCSID("$Id: add_cred.c 20688 2007-05-17 18:44:31Z lha $");
 
 OM_uint32 _gsskrb5_add_cred (
      OM_uint32           *minor_status,
@@ -204,12 +204,12 @@ OM_uint32 _gsskrb5_add_cred (
 		}	    
 	    }
 	}
-	ret = _gsskrb5_create_empty_oid_set(minor_status, &handle->mechanisms);
+	ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
 	if (ret)
 	    goto failure;
 
-	ret = _gsskrb5_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-					  &handle->mechanisms);
+	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+				     &handle->mechanisms);
 	if (ret)
 	    goto failure;
     }
@@ -243,7 +243,7 @@ OM_uint32 _gsskrb5_add_cred (
 	if (handle->ccache)
 	    krb5_cc_destroy(context, handle->ccache);
 	if (handle->mechanisms)
-	    _gsskrb5_release_oid_set(NULL, &handle->mechanisms);
+	    gss_release_oid_set(NULL, &handle->mechanisms);
 	free(handle);
     }
     if (output_cred_handle)

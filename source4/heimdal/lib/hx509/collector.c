@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: collector.c,v 1.16 2007/01/09 10:52:04 lha Exp $");
+RCSID("$Id: collector.c 20778 2007-06-01 22:04:13Z lha $");
 
 struct private_key {
     AlgorithmIdentifier alg;
@@ -51,22 +51,26 @@ struct hx509_collector {
 };
 
 
-struct hx509_collector *
-_hx509_collector_alloc(hx509_context context, hx509_lock lock)
+int
+_hx509_collector_alloc(hx509_context context, hx509_lock lock, struct hx509_collector **collector)
 {
     struct hx509_collector *c;
     int ret;
 
+    *collector = NULL;
+
     c = calloc(1, sizeof(*c));
-    if (c == NULL)
-	return NULL;
+    if (c == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
     c->lock = lock;
 
     ret = hx509_certs_init(context, "MEMORY:collector-unenvelop-cert",
 			   0,NULL, &c->unenvelop_certs);
     if (ret) {
 	free(c);
-	return NULL;
+	return ret;
     }
     c->val.data = NULL;
     c->val.len = 0;
@@ -75,10 +79,11 @@ _hx509_collector_alloc(hx509_context context, hx509_lock lock)
     if (ret) {
 	hx509_certs_free(&c->unenvelop_certs);
 	free(c);
-	return NULL;
+	return ret;
     }
 
-    return c;
+    *collector = c;
+    return 0;
 }
 
 hx509_lock

@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: export_sec_context.c,v 1.12 2006/11/13 18:01:55 lha Exp $");
+RCSID("$Id: export_sec_context.c 19031 2006-11-13 18:02:57Z lha $");
 
 OM_uint32
 _gsskrb5_export_sec_context (

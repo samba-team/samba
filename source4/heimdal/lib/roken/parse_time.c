@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: parse_time.c,v 1.7 2005/04/12 11:28:58 lha Exp $");
+RCSID("$Id: parse_time.c 14773 2005-04-12 11:29:18Z lha $");
 #endif
 
 #include <parse_units.h>

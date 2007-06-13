@@ -34,7 +34,7 @@
 #include "krb5/gsskrb5_locl.h"
 #include <gssapi_mech.h>
 
-RCSID("$Id: external.c,v 1.23 2006/11/13 18:01:57 lha Exp $");
+RCSID("$Id: external.c 20386 2007-04-18 08:52:08Z lha $");
 
 /*
  * The implementation must reserve static storage for a
@@ -358,6 +358,11 @@ static gss_OID_desc gss_krb5_set_default_realm_x_desc =
 
 gss_OID GSS_KRB5_SET_DEFAULT_REALM_X = &gss_krb5_set_default_realm_x_desc;
 
+/* 1.2.752.43.13.16 */
+static gss_OID_desc gss_krb5_ccache_name_x_desc =
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x10")};
+
+gss_OID GSS_KRB5_CCACHE_NAME_X = &gss_krb5_ccache_name_x_desc;
 
 /* 1.2.752.43.14.1 */
 static gss_OID_desc gss_sasl_digest_md5_mechanism_desc =
@@ -411,7 +416,8 @@ static gssapi_mech_interface_desc krb5_mech = {
     _gsskrb5_inquire_sec_context_by_oid,
     _gsskrb5_inquire_cred_by_oid,
     _gsskrb5_set_sec_context_option,
-    _gsskrb5_set_cred_option
+    _gsskrb5_set_cred_option,
+    _gsskrb5_pseudo_random
 };
 
 gssapi_mech_interface

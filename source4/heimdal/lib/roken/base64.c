@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: base64.c,v 1.7 2005/06/23 10:47:57 lha Exp $");
+RCSID("$Id: base64.c 15506 2005-06-23 10:47:57Z lha $");
 #endif
 #include <stdlib.h>
 #include <string.h>

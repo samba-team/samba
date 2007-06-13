@@ -32,8 +32,9 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: cert.c,v 1.82 2007/01/09 10:52:03 lha Exp $");
+RCSID("$Id: cert.c 20915 2007-06-05 03:58:56Z lha $");
 #include "crypto-headers.h"
+#include <rtbl.h>
 
 struct hx509_verify_ctx_data {
     hx509_certs trust_anchors;
@@ -102,11 +103,13 @@ hx509_context_init(hx509_context *context)
     if (*context == NULL)
 	return ENOMEM;
 
+    _hx509_ks_null_register(*context);
     _hx509_ks_mem_register(*context);
     _hx509_ks_file_register(*context);
     _hx509_ks_pkcs12_register(*context);
     _hx509_ks_pkcs11_register(*context);
     _hx509_ks_dir_register(*context);
+    _hx509_ks_keychain_register(*context);
 
     ENGINE_add_conf_module();
     OpenSSL_add_all_algorithms();
@@ -115,6 +118,11 @@ hx509_context_init(hx509_context *context)
 
     initialize_hx_error_table_r(&(*context)->et_list);
     initialize_asn1_error_table_r(&(*context)->et_list);
+
+#ifdef HX509_DEFAULT_ANCHORS
+    (void)hx509_certs_init(*context, HX509_DEFAULT_ANCHORS, 0,
+			   NULL, &(*context)->default_trust_anchors);
+#endif
 
     return 0;
 }
@@ -138,6 +146,9 @@ hx509_context_free(hx509_context *context)
     }
     (*context)->ks_num_ops = 0;
     free_error_table ((*context)->et_list);
+    if ((*context)->querystat)
+	free((*context)->querystat);
+    memset(*context, 0, sizeof(**context));
     free(*context);
     *context = NULL;
 }
@@ -836,7 +847,7 @@ find_parent(hx509_context context,
 	
 	hx509_set_error_string(context, 0, HX509_ISSUER_NOT_FOUND,
 			       "Failed to find issuer for "
-			       "certificate with subject: %s", str);
+			       "certificate with subject: '%s'", str);
 	free(str);
     }
     return HX509_ISSUER_NOT_FOUND;
@@ -847,7 +858,9 @@ find_parent(hx509_context context,
  */
 
 static int
-is_proxy_cert(hx509_context context, const Certificate *cert, ProxyCertInfo *rinfo)
+is_proxy_cert(hx509_context context, 
+	      const Certificate *cert, 
+	      ProxyCertInfo *rinfo)
 {
     ProxyCertInfo info;
     const Extension *e;
@@ -876,7 +889,9 @@ is_proxy_cert(hx509_context context, const Certificate *cert, ProxyCertInfo *rin
 	hx509_clear_error_string(context);
 	return HX509_EXTRA_DATA_AFTER_STRUCTURE; 
     }
-    if (rinfo)
+    if (rinfo == NULL)
+	free_ProxyCertInfo(&info);
+    else
 	*rinfo = info;
 
     return 0;
@@ -969,8 +984,10 @@ _hx509_calculate_path(hx509_context context,
 	current = parent;
 
 	if (path->len > max_depth) {
+	    hx509_cert_free(current);
 	    hx509_set_error_string(context, 0, HX509_PATH_TOO_LONG,
-				   "Path too long while bulding certificate chain");
+				   "Path too long while bulding "
+				   "certificate chain");
 	    return HX509_PATH_TOO_LONG;
 	}
     }
@@ -1063,6 +1080,25 @@ int
 hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
 {
     return der_copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
+}
+
+time_t
+hx509_cert_get_notBefore(hx509_cert p)
+{
+    return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notBefore);
+}
+
+time_t
+hx509_cert_get_notAfter(hx509_cert p)
+{
+    return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notAfter);
+}
+
+int
+hx509_cert_get_SPKI(hx509_cert p, SubjectPublicKeyInfo *spki)
+{
+    return copy_SubjectPublicKeyInfo(&p->data->tbsCertificate.subjectPublicKeyInfo,
+				     spki);
 }
 
 hx509_private_key
@@ -1349,7 +1385,7 @@ match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
 	{
 	    GeneralName certname;
 	    
-	    
+	    memset(&certname, 0, sizeof(certname));
 	    certname.element = choice_GeneralName_directoryName;
 	    certname.u.directoryName.element = 
 		c->tbsCertificate.subject.element;
@@ -1435,6 +1471,7 @@ hx509_verify_path(hx509_context context,
     int ret, i, proxy_cert_depth;
     enum certtype type;
     Name proxy_issuer;
+    hx509_certs anchors = NULL;
 
     memset(&proxy_issuer, 0, sizeof(proxy_issuer));
 
@@ -1449,11 +1486,24 @@ hx509_verify_path(hx509_context context,
 	ctx->time_now = time(NULL);
 
     /*
+     *
+     */
+    ret = hx509_certs_init(context, "MEMORY:trust-anchors", 0, NULL, &anchors);
+    if (ret)
+	goto out;
+    ret = hx509_certs_merge(context, anchors, ctx->trust_anchors);
+    if (ret)
+	goto out;
+    ret = hx509_certs_merge(context, anchors, context->default_trust_anchors);
+    if (ret)
+	goto out;
+
+    /*
      * Calculate the path from the certificate user presented to the
      * to an anchor.
      */
     ret = _hx509_calculate_path(context, 0, ctx->time_now,
-				ctx->trust_anchors, ctx->max_depth,
+				anchors, ctx->max_depth,
 				cert, pool, &path);
     if (ret)
 	goto out;
@@ -1775,6 +1825,7 @@ hx509_verify_path(hx509_context context,
     }
 
 out:
+    hx509_certs_free(&anchors);
     free_Name(&proxy_issuer);
     free_name_constraints(&nc);
     _hx509_path_free(&path);
@@ -2030,6 +2081,8 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 {
     Certificate *c = _hx509_get_cert(cert);
 
+    _hx509_query_statistic(context, 1, q);
+
     if ((q->match & HX509_QUERY_FIND_ISSUER_CERT) &&
 	_hx509_cert_is_parent_cmp(q->subject, c, 0) != 0)
 	return 0;
@@ -2154,6 +2207,139 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
     return 1;
 }
 
+void
+hx509_query_statistic_file(hx509_context context, const char *fn)
+{
+    if (context->querystat)
+	free(context->querystat);
+    context->querystat = strdup(fn);
+}
+
+void
+_hx509_query_statistic(hx509_context context, int type, const hx509_query *q)
+{
+    FILE *f;
+    if (context->querystat == NULL)
+	return;
+    f = fopen(context->querystat, "a");
+    if (f == NULL)
+	return;
+    fprintf(f, "%d %d\n", type, q->match);
+    fclose(f);
+}
+
+static const char *statname[] = {
+    "find issuer cert",
+    "match serialnumber",
+    "match issuer name",
+    "match subject name",
+    "match subject key id",
+    "match issuer id",
+    "private key",
+    "ku encipherment",
+    "ku digitalsignature",
+    "ku keycertsign",
+    "ku crlsign",
+    "ku nonrepudiation",
+    "ku keyagreement",
+    "ku dataencipherment",
+    "anchor",
+    "match certificate",
+    "match local key id",
+    "no match path",
+    "match friendly name",
+    "match function",
+    "match key hash sha1",
+    "match time"
+};
+
+struct stat_el {
+    unsigned long stats;
+    unsigned int index;
+};
+
+
+static int
+stat_sort(const void *a, const void *b)
+{
+    const struct stat_el *ae = a;
+    const struct stat_el *be = b;
+    return be->stats - ae->stats;
+}
+
+void
+hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
+{
+    rtbl_t t;
+    FILE *f;
+    int type, mask, i, num;
+    unsigned long multiqueries = 0, totalqueries = 0;
+    struct stat_el stats[32];
+
+    if (context->querystat == NULL)
+	return;
+    f = fopen(context->querystat, "r");
+    if (f == NULL) {
+	fprintf(out, "No statistic file %s: %s.\n", 
+		context->querystat, strerror(errno));
+	return;
+    }
+    
+    for (i = 0; i < sizeof(stats)/sizeof(stats[0]); i++) {
+	stats[i].index = i;
+	stats[i].stats = 0;
+    }
+
+    while (fscanf(f, "%d %d\n", &type, &mask) == 2) {
+	if (type != printtype)
+	    continue;
+	num = i = 0;
+	while (mask && i < sizeof(stats)/sizeof(stats[0])) {
+	    if (mask & 1) {
+		stats[i].stats++;
+		num++;
+	    }
+	    mask = mask >>1 ;
+	    i++;
+	}
+	if (num > 1)
+	    multiqueries++;
+	totalqueries++;
+    }
+    fclose(f);
+
+    qsort(stats, sizeof(stats)/sizeof(stats[0]), sizeof(stats[0]), stat_sort);
+
+    t = rtbl_create();
+    if (t == NULL)
+	errx(1, "out of memory");
+
+    rtbl_set_separator (t, "  ");
+    
+    rtbl_add_column_by_id (t, 0, "Name", 0);
+    rtbl_add_column_by_id (t, 1, "Counter", 0);
+
+
+    for (i = 0; i < sizeof(stats)/sizeof(stats[0]); i++) {
+	char str[10];
+
+	if (stats[i].index < sizeof(statname)/sizeof(statname[0])) 
+	    rtbl_add_column_entry_by_id (t, 0, statname[stats[i].index]);
+	else {
+	    snprintf(str, sizeof(str), "%d", stats[i].index);
+	    rtbl_add_column_entry_by_id (t, 0, str);
+	}
+	snprintf(str, sizeof(str), "%lu", stats[i].stats);
+	rtbl_add_column_entry_by_id (t, 1, str);
+    }
+
+    rtbl_format(t, out);
+    rtbl_destroy(t);
+
+    fprintf(out, "\nQueries: multi %lu total %lu\n", 
+	    multiqueries, totalqueries);
+}
+
 int
 hx509_cert_check_eku(hx509_context context, hx509_cert cert,
 		     const heim_oid *eku, int allow_any_eku)
@@ -2211,4 +2397,40 @@ _hx509_cert_get_keyusage(hx509_context context,
     if (ret)
 	return ret;
     return 0;
+}
+
+int
+_hx509_cert_get_eku(hx509_context context,
+		    hx509_cert cert,
+		    ExtKeyUsage *e)
+{
+    int ret;
+
+    memset(e, 0, sizeof(*e));
+
+    ret = find_extension_eku(_hx509_get_cert(cert), e);
+    if (ret && ret != HX509_EXTENSION_NOT_FOUND) {
+	hx509_clear_error_string(context);
+	return ret;
+    }
+    return 0;
+}
+
+int
+hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
+{
+    size_t size;
+    int ret;
+
+    os->data = NULL;
+    os->length = 0;
+
+    ASN1_MALLOC_ENCODE(Certificate, os->data, os->length, 
+		       _hx509_get_cert(c), &size, ret);
+    if (ret)
+	return ret;
+    if (os->length != size)
+	_hx509_abort("internal ASN.1 encoder error");
+
+    return ret;
 }

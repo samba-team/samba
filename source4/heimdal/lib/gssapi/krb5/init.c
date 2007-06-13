@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: init.c,v 1.10 2006/11/13 18:02:12 lha Exp $");
+RCSID("$Id: init.c 19031 2006-11-13 18:02:57Z lha $");
 
 static HEIMDAL_MUTEX context_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static int created_key;

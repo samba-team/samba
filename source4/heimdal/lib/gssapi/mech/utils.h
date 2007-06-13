@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/utils.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
- *	$Id: utils.h,v 1.4 2006/12/18 13:01:40 lha Exp $
+ *	$Id: utils.h 19398 2006-12-18 13:01:40Z lha $
  */
 
 OM_uint32 _gss_free_oid(OM_uint32 *, gss_OID);

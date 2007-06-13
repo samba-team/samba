@@ -39,6 +39,12 @@ _hx509_cert_assign_key (
 	hx509_private_key /*private_key*/);
 
 int
+_hx509_cert_get_eku (
+	hx509_context /*context*/,
+	hx509_cert /*cert*/,
+	ExtKeyUsage */*e*/);
+
+int
 _hx509_cert_get_keyusage (
 	hx509_context /*context*/,
 	hx509_cert /*c*/,
@@ -105,10 +111,11 @@ _hx509_check_key_usage (
 	unsigned /*flags*/,
 	int /*req_present*/);
 
-struct hx509_collector *
+int
 _hx509_collector_alloc (
 	hx509_context /*context*/,
-	hx509_lock /*lock*/);
+	hx509_lock /*lock*/,
+	struct hx509_collector **/*collector*/);
 
 int
 _hx509_collector_certs_add (
@@ -169,8 +176,28 @@ _hx509_find_extension_subject_key_id (
 int
 _hx509_generate_private_key (
 	hx509_context /*context*/,
-	const heim_oid */*key_oid*/,
+	struct hx509_generate_private_context */*ctx*/,
 	hx509_private_key */*private_key*/);
+
+int
+_hx509_generate_private_key_bits (
+	hx509_context /*context*/,
+	struct hx509_generate_private_context */*ctx*/,
+	unsigned long /*bits*/);
+
+void
+_hx509_generate_private_key_free (struct hx509_generate_private_context **/*ctx*/);
+
+int
+_hx509_generate_private_key_init (
+	hx509_context /*context*/,
+	const heim_oid */*oid*/,
+	struct hx509_generate_private_context **/*ctx*/);
+
+int
+_hx509_generate_private_key_is_ca (
+	hx509_context /*context*/,
+	struct hx509_generate_private_context */*ctx*/);
 
 Certificate *
 _hx509_get_cert (hx509_cert /*cert*/);
@@ -182,7 +209,13 @@ void
 _hx509_ks_file_register (hx509_context /*context*/);
 
 void
+_hx509_ks_keychain_register (hx509_context /*context*/);
+
+void
 _hx509_ks_mem_register (hx509_context /*context*/);
+
+void
+_hx509_ks_null_register (hx509_context /*context*/);
 
 void
 _hx509_ks_pkcs11_register (hx509_context /*context*/);
@@ -212,6 +245,12 @@ _hx509_map_file (
 	const char */*fn*/,
 	void **/*data*/,
 	size_t */*length*/,
+	struct stat */*rsb*/);
+
+int
+_hx509_map_file_os (
+	const char */*fn*/,
+	heim_octet_string */*os*/,
 	struct stat */*rsb*/);
 
 int
@@ -269,9 +308,9 @@ _hx509_pbe_decrypt (
 
 void
 _hx509_pi_printf (
-	int (*/*func*/)(void *, char *),
+	int (*/*func*/)(void *, const char *),
 	void */*ctx*/,
-	char */*fmt*/,
+	const char */*fmt*/,
 	...);
 
 int
@@ -340,6 +379,12 @@ _hx509_query_match_cert (
 	const hx509_query */*q*/,
 	hx509_cert /*cert*/);
 
+void
+_hx509_query_statistic (
+	hx509_context /*context*/,
+	int /*type*/,
+	const hx509_query */*q*/);
+
 int
 _hx509_request_add_dns_name (
 	hx509_context /*context*/,
@@ -392,17 +437,13 @@ _hx509_set_cert_attribute (
 	const heim_oid */*oid*/,
 	const heim_octet_string */*attr*/);
 
-int
-_hx509_set_digest_alg (
-	DigestAlgorithmIdentifier */*id*/,
-	const heim_oid */*oid*/,
-	void */*param*/,
-	size_t /*length*/);
-
 void
 _hx509_unmap_file (
 	void */*data*/,
 	size_t /*len*/);
+
+void
+_hx509_unmap_file_os (heim_octet_string */*os*/);
 
 int
 _hx509_unparse_Name (

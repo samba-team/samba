@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_free.c,v 1.17 2006/12/28 17:14:54 lha Exp $");
+RCSID("$Id: gen_free.c 19539 2006-12-28 17:15:05Z lha $");
 
 static void
 free_primitive (const char *typename, const char *name)

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_utils.c,v 1.3 2006/12/18 13:01:25 lha Exp $");
+RCSID("$Id: gss_utils.c 19965 2007-01-17 16:23:47Z lha $");
 
 OM_uint32
 _gss_copy_oid(OM_uint32 *minor_status,
@@ -38,6 +38,7 @@ _gss_copy_oid(OM_uint32 *minor_status,
 	*minor_status = 0;
 	to_oid->elements = malloc(len);
 	if (!to_oid->elements) {
+		to_oid->length = 0;
 		*minor_status = ENOMEM;
 		return GSS_S_FAILURE;
 	}
@@ -68,6 +69,7 @@ _gss_copy_buffer(OM_uint32 *minor_status,
 	to_buf->value = malloc(len);
 	if (!to_buf->value) {
 		*minor_status = ENOMEM;
+		to_buf->length = 0;
 		return GSS_S_FAILURE;
 	}
 	to_buf->length = len;

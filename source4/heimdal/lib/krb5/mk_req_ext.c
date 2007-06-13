@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: mk_req_ext.c,v 1.33 2006/12/27 12:07:22 lha Exp $");
+RCSID("$Id: mk_req_ext.c 19511 2006-12-27 12:07:22Z lha $");
 
 krb5_error_code
 _krb5_mk_req_internal(krb5_context context,

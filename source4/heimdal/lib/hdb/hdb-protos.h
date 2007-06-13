@@ -42,6 +42,41 @@ hdb_db_create (
 	HDB **/*db*/,
 	const char */*filename*/);
 
+const char *
+hdb_dbinfo_get_acl_file (
+	krb5_context /*context*/,
+	struct hdb_dbinfo */*dbp*/);
+
+const krb5_config_binding *
+hdb_dbinfo_get_binding (
+	krb5_context /*context*/,
+	struct hdb_dbinfo */*dbp*/);
+
+const char *
+hdb_dbinfo_get_dbname (
+	krb5_context /*context*/,
+	struct hdb_dbinfo */*dbp*/);
+
+const char *
+hdb_dbinfo_get_label (
+	krb5_context /*context*/,
+	struct hdb_dbinfo */*dbp*/);
+
+const char *
+hdb_dbinfo_get_mkey_file (
+	krb5_context /*context*/,
+	struct hdb_dbinfo */*dbp*/);
+
+struct hdb_dbinfo *
+hdb_dbinfo_get_next (
+	struct hdb_dbinfo */*dbp*/,
+	struct hdb_dbinfo */*dbprevp*/);
+
+const char *
+hdb_dbinfo_get_realm (
+	krb5_context /*context*/,
+	struct hdb_dbinfo */*dbp*/);
+
 krb5_error_code
 hdb_enctype2key (
 	krb5_context /*context*/,
@@ -58,7 +93,13 @@ hdb_entry2string (
 int
 hdb_entry2value (
 	krb5_context /*context*/,
-	hdb_entry */*ent*/,
+	const hdb_entry */*ent*/,
+	krb5_data */*value*/);
+
+int
+hdb_entry_alias2value (
+	krb5_context /*context*/,
+	const hdb_entry_alias */*alias*/,
 	krb5_data */*value*/);
 
 krb5_error_code
@@ -75,6 +116,11 @@ krb5_error_code
 hdb_entry_get_ConstrainedDelegACL (
 	const hdb_entry */*entry*/,
 	const HDB_Ext_Constrained_delegation_acl **/*a*/);
+
+krb5_error_code
+hdb_entry_get_aliases (
+	const hdb_entry */*entry*/,
+	const HDB_Ext_Aliases **/*a*/);
 
 int
 hdb_entry_get_password (
@@ -125,6 +171,11 @@ hdb_foreach (
 	void */*data*/);
 
 void
+hdb_free_dbinfo (
+	krb5_context /*context*/,
+	struct hdb_dbinfo **/*dbp*/);
+
+void
 hdb_free_entry (
 	krb5_context /*context*/,
 	hdb_entry_ex */*ent*/);
@@ -158,6 +209,11 @@ hdb_generate_key_set_password (
 	const char */*password*/,
 	Key **/*keys*/,
 	size_t */*num_keys*/);
+
+int
+hdb_get_dbinfo (
+	krb5_context /*context*/,
+	struct hdb_dbinfo **/*dbp*/);
 
 krb5_error_code
 hdb_init_db (
@@ -313,6 +369,12 @@ hdb_value2entry (
 	krb5_context /*context*/,
 	krb5_data */*value*/,
 	hdb_entry */*ent*/);
+
+int
+hdb_value2entry_alias (
+	krb5_context /*context*/,
+	krb5_data */*value*/,
+	hdb_entry_alias */*ent*/);
 
 krb5_error_code
 hdb_write_master_key (

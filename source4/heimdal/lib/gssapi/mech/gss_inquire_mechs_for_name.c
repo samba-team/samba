@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_mechs_for_name.c,v 1.3 2006/07/20 02:04:00 lha Exp $");
+RCSID("$Id: gss_inquire_mechs_for_name.c 17844 2006-07-20 02:04:00Z lha $");
 
 OM_uint32
 gss_inquire_mechs_for_name(OM_uint32 *minor_status,

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: rx.h,v 1.5 2006/05/05 10:51:10 lha Exp $ */
+/* $Id: rx.h 17447 2006-05-05 10:52:01Z lha $ */
 
 #ifndef __RX_H__
 #define __RX_H__

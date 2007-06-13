@@ -37,7 +37,7 @@
 #include <dlfcn.h>
 #endif
 
-RCSID("$Id: acache.c,v 1.17 2007/01/08 15:31:01 lha Exp $");
+RCSID("$Id: acache.c 19764 2007-01-08 15:31:01Z lha $");
 
 /* XXX should we fetch these for each open ? */
 static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;

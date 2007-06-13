@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: name.c,v 1.33 2006/12/30 23:04:11 lha Exp $");
+RCSID("$Id: name.c 20891 2007-06-04 22:51:41Z lha $");
 
 /* 
  * name parsing from rfc2253
@@ -41,7 +41,7 @@ RCSID("$Id: name.c,v 1.33 2006/12/30 23:04:11 lha Exp $");
  */
 
 static const struct {
-    char *n;
+    const char *n;
     const heim_oid *(*o)(void);
 } no[] = {
     { "C", oid_id_at_countryName },
@@ -51,6 +51,7 @@ static const struct {
     { "O", oid_id_at_organizationName },
     { "OU", oid_id_at_organizationalUnitName },
     { "S", oid_id_at_stateOrProvinceName },
+    { "STREET", oid_id_at_streetAddress },
     { "UID", oid_id_Userid },
     { "emailAddress", oid_id_pkcs9_emailAddress },
     { "serialNumber", oid_id_at_serialNumber }
@@ -81,25 +82,27 @@ quote_string(const char *f, size_t len, size_t *rlen)
 	    to[j++] = from[i];
 	} else {
 	    int l = snprintf(&to[j], tolen - j - 1,
-			     "#%02x", (unsigned int)from[i]);
+			     "#%02x", (unsigned char)from[i]);
 	    j += l;
 	}
     }
     to[j] = '\0';
+    assert(j < tolen);
     *rlen = j;
     return to;
 }
 
 
 static int
-append_string(char **str, size_t *total_len, char *ss, size_t len, int quote)
+append_string(char **str, size_t *total_len, const char *ss, 
+	      size_t len, int quote)
 {
     char *s, *qs;
 
     if (quote)
 	qs = quote_string(ss, len, &len);
     else
-	qs = ss;
+	qs = rk_UNCONST(ss);
 
     s = realloc(*str, len + *total_len + 1);
     if (s == NULL)
@@ -181,10 +184,10 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss = ds->u.ia5String;
 		break;
 	    case choice_DirectoryString_printableString:
-		ss = ds->u.ia5String;
+		ss = ds->u.printableString;
 		break;
 	    case choice_DirectoryString_utf8String:
-		ss = ds->u.ia5String;
+		ss = ds->u.utf8String;
 		break;
 	    case choice_DirectoryString_bmpString: {
 		uint16_t *bmp = ds->u.bmpString.data;
@@ -200,11 +203,25 @@ _hx509_Name_to_string(const Name *n, char **str)
 		break;
 	    }
 	    case choice_DirectoryString_teletexString:
-		ss = "teletex-string"; /* XXX */
+		ss = malloc(ds->u.teletexString.length + 1);
+		if (ss == NULL)
+		    _hx509_abort("allocation failure"); /* XXX */
+		memcpy(ss, ds->u.teletexString.data, ds->u.teletexString.length);
+		ss[ds->u.teletexString.length] = '\0';
 		break;
-	    case choice_DirectoryString_universalString:
-		ss = "universalString"; /* XXX */
+	    case choice_DirectoryString_universalString: {
+		uint32_t *uni = ds->u.universalString.data;
+		size_t unilen = ds->u.universalString.length;
+		size_t k;
+
+		ss = malloc(unilen + 1);
+		if (ss == NULL)
+		    _hx509_abort("allocation failure"); /* XXX */
+		for (k = 0; k < unilen; k++)
+		    ss[k] = uni[k] & 0xff; /* XXX */
+		ss[k] = '\0';
 		break;
+	    }
 	    default:
 		_hx509_abort("unknown directory type: %d", ds->element);
 		exit(1);
@@ -214,8 +231,12 @@ _hx509_Name_to_string(const Name *n, char **str)
 	    append_string(str, &total_len, "=", 1, 0);
 	    len = strlen(ss);
 	    append_string(str, &total_len, ss, len, 1);
-	    if (ds->element == choice_DirectoryString_bmpString)
+	    if (ds->element == choice_DirectoryString_universalString ||
+		ds->element == choice_DirectoryString_bmpString ||
+		ds->element == choice_DirectoryString_teletexString)
+	    {
 		free(ss);
+	    }
 	    if (j + 1 < n->u.rdnSequence.val[i].len)
 		append_string(str, &total_len, "+", 1, 0);
 	}
@@ -297,6 +318,13 @@ _hx509_name_cmp(const Name *n1, const Name *n2)
     }
     return 0;
 }
+
+int
+hx509_name_cmp(hx509_name n1, hx509_name n2)
+{
+    return _hx509_name_cmp(&n1->der_name, &n2->der_name);
+}
+
 
 int
 _hx509_name_from_Name(const Name *n, hx509_name *name)
@@ -487,6 +515,106 @@ hx509_name_to_Name(const hx509_name from, Name *to)
     return copy_Name(&from->der_name, to);
 }
 
+int
+hx509_name_normalize(hx509_context context, hx509_name name)
+{
+    return 0;
+}
+
+int
+hx509_name_expand(hx509_context context,
+		  hx509_name name,
+		  hx509_env env)
+{
+    Name *n = &name->der_name;
+    int i, j;
+
+    if (env == NULL)
+	return 0;
+
+    if (n->element != choice_Name_rdnSequence) {
+	hx509_set_error_string(context, 0, EINVAL, "RDN not of supported type");
+	return EINVAL;
+    }
+
+    for (i = 0 ; i < n->u.rdnSequence.len; i++) {
+	for (j = 0; j < n->u.rdnSequence.val[i].len; j++) {
+	    /*
+	      THIS SHOULD REALLY BE:
+	      COMP = n->u.rdnSequence.val[i].val[j];
+	      normalize COMP to utf8
+	      check if there are variables
+	        expand variables
+	        convert back to orignal format, store in COMP
+	      free normalized utf8 string
+	    */
+	    DirectoryString *ds = &n->u.rdnSequence.val[i].val[j].value;
+	    char *p, *p2;
+	    struct rk_strpool *strpool = NULL;
+
+	    if (ds->element != choice_DirectoryString_utf8String) {
+		hx509_set_error_string(context, 0, EINVAL, "unsupported type");
+		return EINVAL;
+	    }
+	    p = strstr(ds->u.utf8String, "${");
+	    if (p) {
+		strpool = rk_strpoolprintf(strpool, "%.*s", 
+					   (int)(p - ds->u.utf8String), 
+					   ds->u.utf8String);
+		if (strpool == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
+	    }
+	    while (p != NULL) {
+		/* expand variables */
+		const char *value;
+		p2 = strchr(p, '}');
+		if (p2 == NULL) {
+		    hx509_set_error_string(context, 0, EINVAL, "missing }");
+		    rk_strpoolfree(strpool);
+		    return EINVAL;
+		}
+		p += 2;
+		value = hx509_env_lfind(context, env, p, p2 - p);
+		if (value == NULL) {
+		    hx509_set_error_string(context, 0, EINVAL, 
+					   "variable %.*s missing",
+					   (int)(p2 - p), p);
+		    rk_strpoolfree(strpool);
+		    return EINVAL;
+		}
+		strpool = rk_strpoolprintf(strpool, "%s", value);
+		if (strpool == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
+		p2++;
+
+		p = strstr(p2, "${");
+		if (p)
+		    strpool = rk_strpoolprintf(strpool, "%.*s", 
+					       (int)(p - p2), p2);
+		else
+		    strpool = rk_strpoolprintf(strpool, "%s", p2);
+		if (strpool == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
+	    }
+	    if (strpool) {
+		free(ds->u.utf8String);
+		ds->u.utf8String = rk_strpoolcollect(strpool);
+		if (ds->u.utf8String == NULL) {
+		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+		    return ENOMEM;
+		}
+	    }
+	}
+    }
+    return 0;
+}
+
 
 void
 hx509_name_free(hx509_name *name)
@@ -547,4 +675,92 @@ int
 hx509_name_is_null_p(const hx509_name name)
 {
     return name->der_name.u.rdnSequence.len == 0;
+}
+
+int
+hx509_general_name_unparse(GeneralName *name, char **str)
+{
+    struct rk_strpool *strpool = NULL;
+
+    *str = NULL;
+
+    switch (name->element) {
+    case choice_GeneralName_otherName: {
+	char *str;
+	hx509_oid_sprint(&name->u.otherName.type_id, &str);
+	if (str == NULL)
+	    return ENOMEM;
+	strpool = rk_strpoolprintf(strpool, "otherName: %s", str);
+	free(str);
+	break;
+    }
+    case choice_GeneralName_rfc822Name:
+	strpool = rk_strpoolprintf(strpool, "rfc822Name: %s\n",
+				   name->u.rfc822Name);
+	break;
+    case choice_GeneralName_dNSName:
+	strpool = rk_strpoolprintf(strpool, "dNSName: %s\n",
+				   name->u.dNSName);
+	break;
+    case choice_GeneralName_directoryName: {
+	Name dir;
+	char *s;
+	int ret;
+	memset(&dir, 0, sizeof(dir));
+	dir.element = name->u.directoryName.element;
+	dir.u.rdnSequence = name->u.directoryName.u.rdnSequence;
+	ret = _hx509_unparse_Name(&dir, &s);
+	if (ret)
+	    return ret;
+	strpool = rk_strpoolprintf(strpool, "directoryName: %s", s);
+	free(s);
+	break;
+    }
+    case choice_GeneralName_uniformResourceIdentifier:
+	strpool = rk_strpoolprintf(strpool, "URI: %s", 
+				   name->u.uniformResourceIdentifier);
+	break;
+    case choice_GeneralName_iPAddress: {
+	unsigned char *a = name->u.iPAddress.data;
+
+	strpool = rk_strpoolprintf(strpool, "IPAddress: ");
+	if (strpool == NULL)
+	    break;
+	if (name->u.iPAddress.length == 4)
+	    strpool = rk_strpoolprintf(strpool, "%d.%d.%d.%d", 
+				       a[0], a[1], a[2], a[3]);
+	else if (name->u.iPAddress.length == 16)
+	    strpool = rk_strpoolprintf(strpool, 
+				       "%02X:%02X:%02X:%02X:"
+				       "%02X:%02X:%02X:%02X:"
+				       "%02X:%02X:%02X:%02X:"
+				       "%02X:%02X:%02X:%02X", 
+				       a[0], a[1], a[2], a[3],
+				       a[4], a[5], a[6], a[7],
+				       a[8], a[9], a[10], a[11],
+				       a[12], a[13], a[14], a[15]);
+	else
+	    strpool = rk_strpoolprintf(strpool, 
+				       "unknown IP address of length %lu",
+				       (unsigned long)name->u.iPAddress.length);
+	break;
+    }
+    case choice_GeneralName_registeredID: {
+	char *str;
+	hx509_oid_sprint(&name->u.registeredID, &str);
+	if (str == NULL)
+	    return ENOMEM;
+	strpool = rk_strpoolprintf(strpool, "registeredID: %s", str);
+	free(str);
+	break;
+    }
+    default:
+	return EINVAL;
+    }
+    if (strpool == NULL)
+	return ENOMEM;
+
+    *str = rk_strpoolcollect(strpool);
+
+    return 0;
 }

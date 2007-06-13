@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: db.c,v 1.36 2006/09/12 18:12:37 lha Exp $");
+RCSID("$Id: db.c 20215 2007-02-09 21:59:53Z lha $");
 
 #if HAVE_DB1
 
@@ -67,8 +67,11 @@ DB_lock(krb5_context context, HDB *db, int operation)
 {
     DB *d = (DB*)db->hdb_db;
     int fd = (*d->fd)(d);
-    if(fd < 0)
+    if(fd < 0) {
+	krb5_set_error_string(context,
+			      "Can't lock database: %s", db->hdb_name);
 	return HDB_ERR_CANT_LOCK_DB;
+    }
     return hdb_lock(fd, operation);
 }
 
@@ -77,8 +80,11 @@ DB_unlock(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->hdb_db;
     int fd = (*d->fd)(d);
-    if(fd < 0)
+    if(fd < 0) {
+	krb5_set_error_string(context, 
+			      "Can't unlock database: %s", db->hdb_name);
 	return HDB_ERR_CANT_LOCK_DB;
+    }
     return hdb_unlock(fd);
 }
 
@@ -93,14 +99,22 @@ DB_seq(krb5_context context, HDB *db,
     int code;
 
     code = db->hdb_lock(context, db, HDB_RLOCK);
-    if(code == -1)
+    if(code == -1) {
+	krb5_set_error_string(context, "Database %s in use", db->hdb_name);
 	return HDB_ERR_DB_INUSE;
+    }
     code = (*d->seq)(d, &key, &value, flag);
     db->hdb_unlock(context, db); /* XXX check value */
-    if(code == -1)
-	return errno;
-    if(code == 1)
+    if(code == -1) {
+	code = errno;
+	krb5_set_error_string(context, "Database %s seq error: %s", 
+			      db->hdb_name, strerror(code));
+	return code;
+    }
+    if(code == 1) {
+	krb5_clear_error_string(context);
 	return HDB_ERR_NOENTRY;
+    }
 
     key_data.data = key.data;
     key_data.length = key.size;
@@ -174,10 +188,16 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
 	return code;
     code = (*d->get)(d, &k, &v, 0);
     db->hdb_unlock(context, db);
-    if(code < 0)
-	return errno;
-    if(code == 1)
+    if(code < 0) {
+	code = errno;
+	krb5_set_error_string(context, "Database %s get error: %s", 
+			      db->hdb_name, strerror(code));
+	return code;
+    }
+    if(code == 1) {
+	krb5_clear_error_string(context);
 	return HDB_ERR_NOENTRY;
+    }
     
     krb5_data_copy(reply, v.data, v.size);
     return 0;
@@ -200,10 +220,16 @@ DB__put(krb5_context context, HDB *db, int replace,
 	return code;
     code = (*d->put)(d, &k, &v, replace ? 0 : R_NOOVERWRITE);
     db->hdb_unlock(context, db);
-    if(code < 0)
-	return errno;
-    if(code == 1)
+    if(code < 0) {
+	code = errno;
+	krb5_set_error_string(context, "Database %s put error: %s", 
+			      db->hdb_name, strerror(code));
+	return code;
+    }
+    if(code == 1) {
+	krb5_clear_error_string(context);
 	return HDB_ERR_EXISTS;
+    }
     return 0;
 }
 
@@ -220,8 +246,12 @@ DB__del(krb5_context context, HDB *db, krb5_data key)
 	return code;
     code = (*d->del)(d, &k, 0);
     db->hdb_unlock(context, db);
-    if(code == 1)
-	return HDB_ERR_NOENTRY;
+    if(code == 1) {
+	code = errno;
+	krb5_set_error_string(context, "Database %s put error: %s", 
+			      db->hdb_name, strerror(code));
+	return code;
+    }
     if(code < 0)
 	return errno;
     return 0;

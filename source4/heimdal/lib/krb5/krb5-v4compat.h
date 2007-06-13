@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5-v4compat.h,v 1.7 2006/05/05 09:29:07 lha Exp $ */
+/* $Id: krb5-v4compat.h 17442 2006-05-05 09:31:15Z lha $ */
 
 #ifndef __KRB5_V4COMPAT_H__
 #define __KRB5_V4COMPAT_H__

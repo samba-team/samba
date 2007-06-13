@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_release_buffer.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_release_buffer.c 19962 2007-01-17 15:59:04Z lha $");
 
 OM_uint32
 gss_release_buffer(OM_uint32 *minor_status,
@@ -37,8 +37,7 @@ gss_release_buffer(OM_uint32 *minor_status,
 	*minor_status = 0;
 	if (buffer->value)
 		free(buffer->value);
-	buffer->length = 0;
-	buffer->value = 0;
+	_mg_buffer_zero(buffer);
 
 	return (GSS_S_COMPLETE);
 }

@@ -1,4 +1,4 @@
--- $Id: gssapi.asn1,v 1.3 2006/10/18 21:08:19 lha Exp $
+-- $Id: gssapi.asn1 18565 2006-10-18 21:08:19Z lha $
 
 GSS-API DEFINITIONS ::= BEGIN
 

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_export_sec_context.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_export_sec_context.c 19954 2007-01-17 11:50:23Z lha $");
 
 OM_uint32
 gss_export_sec_context(OM_uint32 *minor_status,
@@ -38,6 +38,8 @@ gss_export_sec_context(OM_uint32 *minor_status,
 	struct _gss_context *ctx = (struct _gss_context *) *context_handle;
 	gssapi_mech_interface m = ctx->gc_mech;
 	gss_buffer_desc buf;
+
+	_mg_buffer_zero(interprocess_token);
 
 	major_status = m->gm_export_sec_context(minor_status,
 	    &ctx->gc_ctx, &buf);
@@ -58,6 +60,7 @@ gss_export_sec_context(OM_uint32 *minor_status,
 			 * GSS_C_NO_CONTEXT, which we did above.
 			 * Return GSS_S_FAILURE.
 			 */
+			_mg_buffer_zero(interprocess_token);
 			*minor_status = ENOMEM;
 			return (GSS_S_FAILURE);
 		}
@@ -67,6 +70,8 @@ gss_export_sec_context(OM_uint32 *minor_status,
 		memcpy(p + 2, m->gm_mech_oid.elements, m->gm_mech_oid.length);
 		memcpy(p + 2 + m->gm_mech_oid.length, buf.value, buf.length);
 		gss_release_buffer(minor_status, &buf);
+	} else {
+		_gss_mg_error(m, major_status, *minor_status);
 	}
 
 	return (major_status);

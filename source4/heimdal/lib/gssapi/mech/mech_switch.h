@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/mech_switch.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
- *	$Id: mech_switch.h,v 1.3 2006/10/05 18:31:53 lha Exp $
+ *	$Id: mech_switch.h 18246 2006-10-05 18:36:07Z lha $
  */
 
 #include <gssapi_mech.h>

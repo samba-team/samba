@@ -41,7 +41,7 @@
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id: principal.c,v 1.100 2006/12/17 22:53:39 lha Exp $");
+RCSID("$Id: principal.c 20223 2007-02-15 04:17:04Z lha $");
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
@@ -110,6 +110,8 @@ krb5_parse_name_flags(krb5_context context,
     int n;
     char c;
     int got_realm = 0;
+    int first_at = 1;
+    int enterprise = (flags & KRB5_PRINCIPAL_PARSE_ENTERPRISE);
   
     *principal = NULL;
 
@@ -122,18 +124,24 @@ krb5_parse_name_flags(krb5_context context,
     }
 #undef RFLAGS
 
-    /* count number of component */
+    /* count number of component,
+     * enterprise names only have one component
+     */
     ncomp = 1;
-    for(p = name; *p; p++){
-	if(*p=='\\'){
-	    if(!p[1]) {
-		krb5_set_error_string (context,
-				       "trailing \\ in principal name");
-		return KRB5_PARSE_MALFORMED;
-	    }
-	    p++;
-	} else if(*p == '/')
-	    ncomp++;
+    if (!enterprise) {
+	for(p = name; *p; p++){
+	    if(*p=='\\'){
+		if(!p[1]) {
+		    krb5_set_error_string (context,
+					   "trailing \\ in principal name");
+		    return KRB5_PARSE_MALFORMED;
+		}
+		p++;
+	    } else if(*p == '/')
+		ncomp++;
+	    else if(*p == '@')
+		break;
+	}
     }
     comp = calloc(ncomp, sizeof(*comp));
     if (comp == NULL) {
@@ -166,7 +174,10 @@ krb5_parse_name_flags(krb5_context context,
 		ret = KRB5_PARSE_MALFORMED;
 		goto exit;
 	    }
-	}else if(c == '/' || c == '@'){
+	}else if(enterprise && first_at) {
+	    if (c == '@')
+		first_at = 0;
+	}else if((c == '/' && !enterprise) || c == '@'){
 	    if(got_realm){
 		krb5_set_error_string (context,
 				       "part after realm in principal name");
@@ -241,7 +252,10 @@ krb5_parse_name_flags(krb5_context context,
 	ret = ENOMEM;
 	goto exit;
     }
-    (*principal)->name.name_type = KRB5_NT_PRINCIPAL;
+    if (enterprise)
+	(*principal)->name.name_type = KRB5_NT_ENTERPRISE_PRINCIPAL;
+    else
+	(*principal)->name.name_type = KRB5_NT_PRINCIPAL;
     (*principal)->name.name_string.val = comp;
     princ_num_comp(*principal) = n;
     (*principal)->realm = realm;

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: symbol.h,v 1.14 2006/12/28 17:15:05 lha Exp $ */
+/* $Id: symbol.h 19539 2006-12-28 17:15:05Z lha $ */
 
 #ifndef _SYMBOL_H
 #define _SYMBOL_H

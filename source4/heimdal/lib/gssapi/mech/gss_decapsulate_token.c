@@ -32,7 +32,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_decapsulate_token.c,v 1.2 2006/10/14 10:04:45 lha Exp $");
+RCSID("$Id: gss_decapsulate_token.c 19951 2007-01-17 10:14:58Z lha $");
 
 OM_uint32
 gss_decapsulate_token(gss_buffer_t input_token,
@@ -45,8 +45,7 @@ gss_decapsulate_token(gss_buffer_t input_token,
     int ret;
     size_t size;
 
-    output_token->length = 0;
-    output_token->value = NULL;
+    _mg_buffer_zero(output_token);
 
     ret = der_get_oid (oid->elements, oid->length, &o, &size);
     if (ret)

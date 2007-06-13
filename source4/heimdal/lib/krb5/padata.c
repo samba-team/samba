@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: padata.c,v 1.5 2005/06/17 04:28:35 lha Exp $");
+RCSID("$Id: padata.c 15469 2005-06-17 04:28:35Z lha $");
 
 PA_DATA *
 krb5_find_padata(PA_DATA *val, unsigned len, int type, int *idx)

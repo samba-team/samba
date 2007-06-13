@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_cred.c,v 1.13 2006/11/13 18:02:21 lha Exp $");
+RCSID("$Id: inquire_cred.c 20688 2007-05-17 18:44:31Z lha $");
 
 OM_uint32 _gsskrb5_inquire_cred
 (OM_uint32 * minor_status,
@@ -80,7 +80,7 @@ OM_uint32 _gsskrb5_inquire_cred
 				    NULL,
 				    NULL);
 	if (ret == GSS_S_COMPLETE)
-	    acred = (gsskrb5_cred)aqcred_init;
+	    icred = (gsskrb5_cred)aqcred_init;
 
 	if (icred == NULL && acred == NULL) {
 	    *minor_status = 0;
@@ -98,7 +98,7 @@ OM_uint32 _gsskrb5_inquire_cred
 	if (icred && icred->principal != NULL) {
 	    gss_name_t name;
 	    
-	    if (acred)
+	    if (acred && acred->principal)
 		name = (gss_name_t)acred->principal;
 	    else
 		name = (gss_name_t)icred->principal;
@@ -152,17 +152,17 @@ OM_uint32 _gsskrb5_inquire_cred
     }
 
     if (mechanisms != NULL) {
-        ret = _gsskrb5_create_empty_oid_set(minor_status, mechanisms);
+        ret = gss_create_empty_oid_set(minor_status, mechanisms);
         if (ret)
 	    goto out;
 	if (acred)
-	    ret = _gsskrb5_add_oid_set_member(minor_status,
-					      &acred->mechanisms->elements[0],
-					      mechanisms);
+	    ret = gss_add_oid_set_member(minor_status,
+					 &acred->mechanisms->elements[0],
+					 mechanisms);
 	if (ret == GSS_S_COMPLETE && icred)
-	    ret = _gsskrb5_add_oid_set_member(minor_status,
-					      &icred->mechanisms->elements[0],
-					      mechanisms);
+	    ret = gss_add_oid_set_member(minor_status,
+					 &icred->mechanisms->elements[0],
+					 mechanisms);
         if (ret)
 	    goto out;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <pkinit_asn1.h>
-RCSID("$Id: ca.c,v 1.12 2007/01/05 18:40:46 lha Exp $");
+RCSID("$Id: ca.c 20904 2007-06-05 01:58:45Z lha $");
 
 struct hx509_ca_tbs {
     hx509_name subject;
@@ -47,10 +47,12 @@ struct hx509_ca_tbs {
 	unsigned int ca:1;
 	unsigned int key:1;
 	unsigned int serial:1;
+	unsigned int domaincontroller:1;
     } flags;
     time_t notBefore;
     time_t notAfter;
     int pathLenConstraint; /* both for CA and Proxy */
+    CRLDistributionPoints crldp;
 };
 
 int
@@ -66,6 +68,8 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
     (*tbs)->eku.len = 0;
     (*tbs)->eku.val = NULL;
     (*tbs)->pathLenConstraint = 0;
+    (*tbs)->crldp.len = 0;
+    (*tbs)->crldp.val = NULL;
 
     return 0;
 }
@@ -80,6 +84,7 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
     free_GeneralNames(&(*tbs)->san);
     free_ExtKeyUsage(&(*tbs)->eku);
     der_free_heim_integer(&(*tbs)->serial);
+    free_CRLDistributionPoints(&(*tbs)->crldp);
 
     hx509_name_free(&(*tbs)->subject);
 
@@ -114,6 +119,89 @@ hx509_ca_tbs_set_notAfter_lifetime(hx509_context context,
     return hx509_ca_tbs_set_notAfter(context, tbs, time(NULL) + delta);
 }
 
+static const struct units templatebits[] = {
+    { "ExtendedKeyUsage", HX509_CA_TEMPLATE_EKU },
+    { "KeyUsage", HX509_CA_TEMPLATE_KU },
+    { "SPKI", HX509_CA_TEMPLATE_SPKI },
+    { "notAfter", HX509_CA_TEMPLATE_NOTAFTER },
+    { "notBefore", HX509_CA_TEMPLATE_NOTBEFORE },
+    { "serial", HX509_CA_TEMPLATE_SERIAL },
+    { "subject", HX509_CA_TEMPLATE_SUBJECT },
+    { NULL, 0 }
+};
+
+const struct units *
+hx509_ca_tbs_template_units(void)
+{
+    return templatebits;
+}
+
+int
+hx509_ca_tbs_set_template(hx509_context context,
+			  hx509_ca_tbs tbs,
+			  int flags,
+			  hx509_cert cert)
+{
+    int ret;
+
+    if (flags & HX509_CA_TEMPLATE_SUBJECT) {
+	if (tbs->subject)
+	    hx509_name_free(&tbs->subject);
+	ret = hx509_cert_get_subject(cert, &tbs->subject);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to get subject from template");
+	    return ret;
+	}
+    }
+    if (flags & HX509_CA_TEMPLATE_SERIAL) {
+	der_free_heim_integer(&tbs->serial);
+	ret = hx509_cert_get_serialnumber(cert, &tbs->serial);
+	tbs->flags.serial = !ret;
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to copy serial number");
+	    return ret;
+	}
+    }
+    if (flags & HX509_CA_TEMPLATE_NOTBEFORE)
+	tbs->notBefore = hx509_cert_get_notBefore(cert);
+    if (flags & HX509_CA_TEMPLATE_NOTAFTER)
+	tbs->notAfter = hx509_cert_get_notAfter(cert);
+    if (flags & HX509_CA_TEMPLATE_SPKI) {
+	free_SubjectPublicKeyInfo(&tbs->spki);
+	ret = hx509_cert_get_SPKI(cert, &tbs->spki);
+	tbs->flags.key = !ret;
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Failed to copy SPKI");
+	    return ret;
+	}
+    }
+    if (flags & HX509_CA_TEMPLATE_KU) {
+	KeyUsage ku;
+	ret = _hx509_cert_get_keyusage(context, cert, &ku);
+	if (ret)
+	    return ret;
+	tbs->key_usage = KeyUsage2int(ku);
+    }
+    if (flags & HX509_CA_TEMPLATE_EKU) {
+	ExtKeyUsage eku;
+	int i;
+	ret = _hx509_cert_get_eku(context, cert, &eku);
+	if (ret)
+	    return ret;
+	for (i = 0; i < eku.len; i++) {
+	    ret = hx509_ca_tbs_add_eku(context, tbs, &eku.val[i]);
+	    if (ret) {
+		free_ExtKeyUsage(&eku);
+		return ret;
+	    }
+	}
+	free_ExtKeyUsage(&eku);
+    }
+    return 0;
+}
+
 int
 hx509_ca_tbs_set_ca(hx509_context context,
 		    hx509_ca_tbs tbs,
@@ -134,6 +222,14 @@ hx509_ca_tbs_set_proxy(hx509_context context,
     return 0;
 }
 
+
+int
+hx509_ca_tbs_set_domaincontroller(hx509_context context,
+				  hx509_ca_tbs tbs)
+{
+    tbs->flags.domaincontroller = 1;
+    return 0;
+}
 
 int
 hx509_ca_tbs_set_spki(hx509_context context,
@@ -160,22 +256,120 @@ hx509_ca_tbs_set_serialnumber(hx509_context context,
 }
 
 int
-hx509_ca_tbs_add_eku(hx509_context contex,
+hx509_ca_tbs_add_eku(hx509_context context,
 		     hx509_ca_tbs tbs,
 		     const heim_oid *oid)
 {
     void *ptr;
     int ret;
+    unsigned i;
+
+    /* search for duplicates */
+    for (i = 0; i < tbs->eku.len; i++) {
+	if (der_heim_oid_cmp(oid, &tbs->eku.val[i]) == 0)
+	    return 0;
+    }
 
     ptr = realloc(tbs->eku.val, sizeof(tbs->eku.val[0]) * (tbs->eku.len + 1));
-    if (ptr == NULL)
+    if (ptr == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
     tbs->eku.val = ptr;
     ret = der_copy_oid(oid, &tbs->eku.val[tbs->eku.len]);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	return ret;
+    }
     tbs->eku.len += 1;
     return 0;
+}
+
+int
+hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
+			    hx509_ca_tbs tbs,
+			    const char *uri,
+			    hx509_name issuername)
+{
+    DistributionPoint dp;
+    int ret;
+
+    memset(&dp, 0, sizeof(dp));
+    
+    dp.distributionPoint = ecalloc(1, sizeof(*dp.distributionPoint));
+
+    {
+	DistributionPointName name;
+	GeneralName gn;
+	size_t size;
+
+	name.element = choice_DistributionPointName_fullName;
+	name.u.fullName.len = 1;
+	name.u.fullName.val = &gn;
+
+	gn.element = choice_GeneralName_uniformResourceIdentifier;
+	gn.u.uniformResourceIdentifier = rk_UNCONST(uri);
+
+	ASN1_MALLOC_ENCODE(DistributionPointName, 
+			   dp.distributionPoint->data, 
+			   dp.distributionPoint->length,
+			   &name, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to encoded DistributionPointName");
+	    goto out;
+	}
+	if (dp.distributionPoint->length != size)
+	    _hx509_abort("internal ASN.1 encoder error");
+    }
+
+    if (issuername) {
+#if 1
+	hx509_set_error_string(context, 0, EINVAL,
+			       "CRLDistributionPoints.name.issuername not yet supported");
+	return EINVAL;
+#else 
+	GeneralNames *crlissuer;
+	GeneralName gn;
+	Name n;
+
+	crlissuer = calloc(1, sizeof(*crlissuer));
+	if (crlissuer == NULL) {
+	    return ENOMEM;
+	}
+	memset(&gn, 0, sizeof(gn));
+
+	gn.element = choice_GeneralName_directoryName;
+	ret = hx509_name_to_Name(issuername, &n);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "out of memory");
+	    goto out;
+	}
+
+	gn.u.directoryName.element = n.element;
+	gn.u.directoryName.u.rdnSequence = n.u.rdnSequence;
+
+	ret = add_GeneralNames(&crlissuer, &gn);
+	free_Name(&n);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "out of memory");
+	    goto out;
+	}
+
+	dp.cRLIssuer = &crlissuer;
+#endif
+    }
+
+    ret = add_CRLDistributionPoints(&tbs->crldp, &dp);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
+	goto out;
+    }
+
+out:
+    free_DistributionPoint(&dp);
+
+    return ret;
 }
 
 int
@@ -282,6 +476,58 @@ out:
     return ret;
 }
     
+/*
+ *
+ */
+
+static int
+add_utf8_san(hx509_context context,
+	     hx509_ca_tbs tbs,
+	     const heim_oid *oid,
+	     const char *string)
+{
+    const PKIXXmppAddr ustring = (const PKIXXmppAddr)string;
+    heim_octet_string os;
+    size_t size;
+    int ret;
+
+    os.length = 0;
+    os.data = NULL;
+
+    ASN1_MALLOC_ENCODE(PKIXXmppAddr, os.data, os.length, &ustring, &size, ret);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Out of memory");
+	goto out;
+    }
+    if (size != os.length)
+	_hx509_abort("internal ASN.1 encoder error");
+    
+    ret = hx509_ca_tbs_add_san_otherName(context,
+					 tbs,
+					 oid,
+					 &os);
+    free(os.data);
+out:
+    return ret;
+}
+
+int
+hx509_ca_tbs_add_san_ms_upn(hx509_context context,
+			    hx509_ca_tbs tbs,
+			    const char *principal)
+{
+    return add_utf8_san(context, tbs, oid_id_pkinit_ms_san(), principal);
+}
+
+int
+hx509_ca_tbs_add_san_jid(hx509_context context,
+			 hx509_ca_tbs tbs,
+			 const char *jid)
+{
+    return add_utf8_san(context, tbs, oid_id_pkix_on_xmppAddr(), jid);
+}
+
+
 int
 hx509_ca_tbs_add_san_hostname(hx509_context context,
 			      hx509_ca_tbs tbs,
@@ -319,6 +565,14 @@ hx509_ca_tbs_set_subject(hx509_context context,
     if (tbs->subject)
 	hx509_name_free(&tbs->subject);
     return hx509_name_copy(context, subject, &tbs->subject);
+}
+
+int
+hx509_ca_tbs_subject_expand(hx509_context context,
+			    hx509_ca_tbs tbs,
+			    hx509_env env)
+{
+    return hx509_name_expand(context, tbs->subject, env);
 }
 
 static int
@@ -410,7 +664,7 @@ ca_sign(hx509_context context,
     time_t notAfter;
     unsigned key_usage;
 
-    sigalg = hx509_signature_rsa_with_sha1();
+    sigalg = _hx509_crypto_default_sig_alg;
 
     memset(&c, 0, sizeof(c));
 
@@ -439,6 +693,7 @@ ca_sign(hx509_context context,
 	KeyUsage ku;
 	memset(&ku, 0, sizeof(ku));
 	ku.keyCertSign = 1;
+	ku.cRLSign = 1;
 	key_usage |= KeyUsage2int(ku);
     }
 
@@ -453,16 +708,25 @@ ca_sign(hx509_context context,
 	hx509_set_error_string(context, 0, ret, "No public key set");
 	return ret;
     }
-    if (tbs->subject == NULL && !tbs->flags.proxy) {
-	ret = EINVAL;
-	hx509_set_error_string(context, 0, ret, "No subject name set");
-	return ret;
+    /*
+     * Don't put restrictions on proxy certificate's subject name, it
+     * will be generated below.
+     */
+    if (!tbs->flags.proxy) {
+	if (tbs->subject == NULL) {
+	    hx509_set_error_string(context, 0, EINVAL, "No subject name set");
+	    return EINVAL;
+	}
+	if (hx509_name_is_null_p(tbs->subject) && tbs->san.len == 0) {
+	    hx509_set_error_string(context, 0, EINVAL, 
+				   "NULL subject and no SubjectAltNames");
+	    return EINVAL;
+	}
     }
     if (tbs->flags.ca && tbs->flags.proxy) {
-	ret = EINVAL;
-	hx509_set_error_string(context, 0, ret, "Can't be proxy and CA "
+	hx509_set_error_string(context, 0, EINVAL, "Can't be proxy and CA "
 			       "at the same time");
-	return ret;
+	return EINVAL;
     }
     if (tbs->flags.proxy) {
 	if (tbs->san.len > 0) {
@@ -549,6 +813,22 @@ ca_sign(hx509_context context,
 	goto out;
     }
     
+    /* Add the text BMP string Domaincontroller to the cert */
+    if (tbs->flags.domaincontroller) {
+	data.data = rk_UNCONST("\x1e\x20\x00\x44\x00\x6f\x00\x6d"
+			       "\x00\x61\x00\x69\x00\x6e\x00\x43"
+			       "\x00\x6f\x00\x6e\x00\x74\x00\x72"
+			       "\x00\x6f\x00\x6c\x00\x6c\x00\x65"
+			       "\x00\x72");
+	data.length = 34;
+
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_ms_cert_enroll_domaincontroller(),
+			    &data);
+	if (ret)
+	    goto out;
+    }
+
     /* add KeyUsage */
     {
 	KeyUsage ku;
@@ -561,7 +841,7 @@ ca_sign(hx509_context context,
 	}
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
-	ret = add_extension(context, tbsc, 1, 
+	ret = add_extension(context, tbsc, 1,
 			    oid_id_x509_ce_keyUsage(), &data);
 	free(data.data);
 	if (ret)
@@ -678,7 +958,8 @@ ca_sign(hx509_context context,
 	}
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
-	ret = add_extension(context, tbsc, 0,
+	/* Critical if this is a CA */
+	ret = add_extension(context, tbsc, tbs->flags.ca,
 			    oid_id_x509_ce_basicConstraints(),
 			    &data);
 	free(data.data);
@@ -728,6 +1009,23 @@ ca_sign(hx509_context context,
 	    goto out;
     }
 
+    if (tbs->crldp.len) {
+
+	ASN1_MALLOC_ENCODE(CRLDistributionPoints, data.data, data.length,
+			   &tbs->crldp, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, FALSE,
+			    oid_id_x509_ce_cRLDistributionPoints(),
+			    &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
 
     ASN1_MALLOC_ENCODE(TBSCertificate, data.data, data.length,tbsc, &size, ret);
     if (ret) {
@@ -772,11 +1070,13 @@ get_AuthorityKeyIdentifier(hx509_context context,
     if (ret == 0) {
 	ai->keyIdentifier = calloc(1, sizeof(*ai->keyIdentifier));
 	if (ai->keyIdentifier == NULL) {
+	    free_SubjectKeyIdentifier(&si);
 	    ret = ENOMEM;
 	    hx509_set_error_string(context, 0, ret, "Out of memory");
 	    goto out;
 	}
 	ret = der_copy_octet_string(&si, ai->keyIdentifier);
+	free_SubjectKeyIdentifier(&si);
 	if (ret) {
 	    hx509_set_error_string(context, 0, ret, "Out of memory");
 	    goto out;
@@ -818,6 +1118,7 @@ get_AuthorityKeyIdentifier(hx509_context context,
 	    goto out;
 	}
 
+	memset(&gn, 0, sizeof(gn));
 	gn.element = choice_GeneralName_directoryName;
 	gn.u.directoryName.element = 
 	    choice_GeneralName_directoryName_rdnSequence;

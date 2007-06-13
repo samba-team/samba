@@ -149,9 +149,9 @@ _kdc_find_etype (
 	Key **/*ret_key*/,
 	krb5_enctype */*ret_etype*/);
 
-PA_DATA*
+const PA_DATA*
 _kdc_find_padata (
-	KDC_REQ */*req*/,
+	const KDC_REQ */*req*/,
 	int */*start*/,
 	int /*type*/);
 
@@ -249,8 +249,8 @@ krb5_error_code
 _kdc_pk_rd_padata (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
-	KDC_REQ */*req*/,
-	PA_DATA */*pa*/,
+	const KDC_REQ */*req*/,
+	const PA_DATA */*pa*/,
 	pk_client_params **/*ret_params*/);
 
 krb5_error_code
@@ -282,8 +282,5 @@ _kdc_windc_client_access (
 	krb5_context /*context*/,
 	struct hdb_entry_ex */*client*/,
 	KDC_REQ */*req*/);
-
-krb5_error_code
-_kdc_windc_init (krb5_context /*context*/);
 
 #endif /* __kdc_private_h__ */

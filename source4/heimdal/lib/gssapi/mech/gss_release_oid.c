@@ -33,7 +33,7 @@
 
 #include "mech_locl.h"
 
-RCSID("$Id: gss_release_oid.c,v 1.1 2006/06/30 09:34:54 lha Exp $");
+RCSID("$Id: gss_release_oid.c 17747 2006-06-30 09:34:54Z lha $");
 
 OM_uint32
 gss_release_oid(OM_uint32 *minor_status, gss_OID *oid)

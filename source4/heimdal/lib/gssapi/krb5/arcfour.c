@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: arcfour.c,v 1.31 2006/11/13 18:01:08 lha Exp $");
+RCSID("$Id: arcfour.c 19031 2006-11-13 18:02:57Z lha $");
 
 /*
  * Implements draft-brezak-win2k-krb-rc4-hmac-04.txt

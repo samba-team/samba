@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_names_for_mech.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_inquire_names_for_mech.c 19960 2007-01-17 15:09:24Z lha $");
 
 OM_uint32
 gss_inquire_names_for_mech(OM_uint32 *minor_status,
@@ -38,6 +38,7 @@ gss_inquire_names_for_mech(OM_uint32 *minor_status,
 	gssapi_mech_interface m = __gss_get_mechanism(mechanism);
 
 	*minor_status = 0;
+	*name_types = GSS_C_NO_OID_SET;
 	if (!m)
 		return (GSS_S_BAD_MECH);
 
@@ -56,15 +57,15 @@ gss_inquire_names_for_mech(OM_uint32 *minor_status,
 		major_status = gss_add_oid_set_member(minor_status,
 		    GSS_C_NT_HOSTBASED_SERVICE, name_types);
 		if (major_status) {
-			OM_uint32 ms;
-			gss_release_oid_set(&ms, name_types);
+			OM_uint32 junk;
+			gss_release_oid_set(&junk, name_types);
 			return (major_status);
 		}
 		major_status = gss_add_oid_set_member(minor_status,
 		    GSS_C_NT_USER_NAME, name_types);
 		if (major_status) {
-			OM_uint32 ms;
-			gss_release_oid_set(&ms, name_types);
+			OM_uint32 junk;
+			gss_release_oid_set(&junk, name_types);
 			return (major_status);
 		}
 	}

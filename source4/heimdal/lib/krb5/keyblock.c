@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keyblock.c,v 1.17 2005/05/18 04:21:31 lha Exp $");
+RCSID("$Id: keyblock.c 15167 2005-05-18 04:21:57Z lha $");
 
 void KRB5_LIB_FUNCTION
 krb5_keyblock_zero(krb5_keyblock *keyblock)

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h,v 1.97 2006/12/15 16:46:51 lha Exp $ */
+/* $Id: krb5_locl.h 20261 2007-02-18 00:32:22Z lha $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -196,9 +196,11 @@ struct _krb5_get_init_creds_opt_private {
     krb5_get_init_creds_tristate req_pac;
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
-    int canonicalize;
     KRB_ERROR *error;
     krb5_get_init_creds_tristate addressless;
+    int flags;
+#define KRB5_INIT_CREDS_CANONICALIZE		1
+#define KRB5_INIT_CREDS_NO_C_CANON_CHECK	2
 };
 
 typedef struct krb5_context_data {
@@ -243,6 +245,10 @@ typedef struct krb5_context_data {
 
 #define KRB5_DEFAULT_CCNAME_FILE "FILE:/tmp/krb5cc_%{uid}"
 #define KRB5_DEFAULT_CCNAME_API "API:"
+
+#define EXTRACT_TICKET_ALLOW_CNAME_MISMATCH		1
+#define EXTRACT_TICKET_ALLOW_SERVER_MISMATCH		2
+#define EXTRACT_TICKET_MATCH_REALM			4
 
 /*
  * Configurable options

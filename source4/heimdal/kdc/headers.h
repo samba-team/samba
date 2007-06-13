@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: headers.h,v 1.22 2007/01/04 00:15:34 lha Exp $ 
+ * $Id: headers.h 19658 2007-01-04 00:15:34Z lha $ 
  */
 
 #ifndef __HEADERS_H__

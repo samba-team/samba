@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: get_in_tkt_with_keytab.c,v 1.9 2005/06/17 04:56:44 lha Exp $");
+RCSID("$Id: get_in_tkt_with_keytab.c 15477 2005-06-17 04:56:44Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_keytab_key_proc (krb5_context context,

@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/context.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
- *	$Id: context.h,v 1.2 2006/06/28 09:00:25 lha Exp $
+ *	$Id: context.h 19925 2007-01-16 10:19:27Z lha $
  */
 
 #include <gssapi_mech.h>
@@ -33,3 +33,9 @@ struct _gss_context {
 	gssapi_mech_interface	gc_mech;
 	gss_ctx_id_t		gc_ctx;
 };
+
+void
+_gss_mg_error(gssapi_mech_interface, OM_uint32, OM_uint32);
+
+OM_uint32
+_gss_mg_get_error(const gss_OID, OM_uint32, OM_uint32, gss_buffer_t);

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: expand_hostname.c,v 1.14 2006/11/04 03:34:57 lha Exp $");
+RCSID("$Id: expand_hostname.c 18906 2006-11-04 03:34:57Z lha $");
 
 static krb5_error_code
 copy_hostname(krb5_context context,

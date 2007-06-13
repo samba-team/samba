@@ -34,7 +34,7 @@
 #include "gen_locl.h"
 #include "lex.h"
 
-RCSID("$Id: symbol.c,v 1.10 2005/07/12 06:27:39 lha Exp $");
+RCSID("$Id: symbol.c 15617 2005-07-12 06:27:42Z lha $");
 
 static Hashtab *htab;
 

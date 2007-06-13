@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds.c,v 1.30 2006/11/23 16:27:36 lha Exp $");
+RCSID("$Id: init_creds.c 20541 2007-04-23 12:19:14Z lha $");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
@@ -386,7 +386,7 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
 	return ENOMEM;
     }
 
-    ret = copy_KRB_ERROR(*error, opt->opt_private->error);
+    ret = copy_KRB_ERROR(opt->opt_private->error, *error);
     if (ret)
 	krb5_clear_error_string(context);
 
@@ -408,3 +408,36 @@ krb5_get_init_creds_opt_set_addressless(krb5_context context,
 	opt->opt_private->addressless = KRB5_INIT_CREDS_TRISTATE_FALSE;
     return 0;
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_canonicalize(krb5_context context,
+					 krb5_get_init_creds_opt *opt,
+					 krb5_boolean req)
+{
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_canonicalize");
+    if (ret)
+	return ret;
+    if (req)
+	opt->opt_private->flags |= KRB5_INIT_CREDS_CANONICALIZE;
+    else
+	opt->opt_private->flags &= ~KRB5_INIT_CREDS_CANONICALIZE;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_win2k(krb5_context context,
+				  krb5_get_init_creds_opt *opt,
+				  krb5_boolean req)
+{
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_win2k");
+    if (ret)
+	return ret;
+    if (req)
+	opt->opt_private->flags |= KRB5_INIT_CREDS_NO_C_CANON_CHECK;
+    else
+	opt->opt_private->flags &= ~KRB5_INIT_CREDS_NO_C_CANON_CHECK;
+    return 0;
+}
+

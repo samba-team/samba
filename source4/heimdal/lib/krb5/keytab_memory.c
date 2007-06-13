@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_memory.c,v 1.8 2005/12/05 18:39:46 lha Exp $");
+RCSID("$Id: keytab_memory.c 16352 2005-12-05 18:39:46Z lha $");
 
 /* memory operations -------------------------------------------- */
 

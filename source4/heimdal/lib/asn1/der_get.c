@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_get.c,v 1.51 2006/12/28 17:14:25 lha Exp $");
+RCSID("$Id: der_get.c 20570 2007-04-27 14:06:27Z lha $");
 
 #include <version.h>
 
@@ -135,8 +135,21 @@ int
 der_get_general_string (const unsigned char *p, size_t len, 
 			heim_general_string *str, size_t *size)
 {
+    const unsigned char *p1;
     char *s;
 
+    p1 = memchr(p, 0, len);
+    if (p1 != NULL) {
+	/* 
+	 * Allow trailing NULs. We allow this since MIT Kerberos sends
+	 * an strings in the NEED_PREAUTH case that includes a
+	 * trailing NUL.
+	 */
+	while (p1 - p < len && *p1 == '\0')
+	    p1++;
+       if (p1 - p != len)
+	    return ASN1_BAD_CHARACTER;
+    }
     if (len > len + 1)
 	return ASN1_BAD_LENGTH;
 
@@ -180,6 +193,8 @@ der_get_bmp_string (const unsigned char *p, size_t len,
     if (len & 1)
 	return ASN1_BAD_FORMAT;
     data->length = len / 2;
+    if (data->length > UINT_MAX/sizeof(data->data[0]))
+	return ERANGE;
     data->data = malloc(data->length * sizeof(data->data[0]));
     if (data->data == NULL && data->length != 0)
 	return ENOMEM;
@@ -202,6 +217,8 @@ der_get_universal_string (const unsigned char *p, size_t len,
     if (len & 3)
 	return ASN1_BAD_FORMAT;
     data->length = len / 4;
+    if (data->length > UINT_MAX/sizeof(data->data[0]))
+	return ERANGE;
     data->data = malloc(data->length * sizeof(data->data[0]));
     if (data->data == NULL && data->length != 0)
 	return ENOMEM;
@@ -366,7 +383,7 @@ int
 der_get_oid (const unsigned char *p, size_t len,
 	     heim_oid *data, size_t *size)
 {
-    int n;
+    size_t n;
     size_t oldlen = len;
 
     if (len < 1)
@@ -375,7 +392,10 @@ der_get_oid (const unsigned char *p, size_t len,
     if (len > len + 1)
 	return ASN1_BAD_LENGTH;
 
-    data->components = malloc((len + 1) * sizeof(*data->components));
+    if (len + 1 > UINT_MAX/sizeof(data->components[0]))
+	return ERANGE;
+
+    data->components = malloc((len + 1) * sizeof(data->components[0]));
     if (data->components == NULL)
 	return ENOMEM;
     data->components[0] = (*p) / 40;

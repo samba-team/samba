@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: copy_ccache.c,v 1.17 2006/11/13 18:01:29 lha Exp $");
+RCSID("$Id: copy_ccache.c 20688 2007-05-17 18:44:31Z lha $");
 
 #if 0
 OM_uint32
@@ -166,10 +166,10 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
 
 
     if (id || keytab) {
-	ret = _gsskrb5_create_empty_oid_set(minor_status, &handle->mechanisms);
+	ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
 	if (ret == GSS_S_COMPLETE)
-	    ret = _gsskrb5_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-					      &handle->mechanisms);
+	    ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+					 &handle->mechanisms);
 	if (ret != GSS_S_COMPLETE) {
 	    kret = *minor_status;
 	    goto out;
@@ -181,6 +181,11 @@ _gsskrb5_import_cred(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 
 out:
+    gss_release_oid_set(minor_status, &handle->mechanisms);
+    if (handle->ccache)
+	krb5_cc_close(context, handle->ccache);
+    if (handle->keytab)
+	krb5_kt_close(context, handle->keytab);
     if (handle->principal)
 	krb5_free_principal(context, handle->principal);
     HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);

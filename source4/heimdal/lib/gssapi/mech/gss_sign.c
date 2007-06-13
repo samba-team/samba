@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_sign.c,v 1.2 2006/06/28 09:00:25 lha Exp $");
+RCSID("$Id: gss_sign.c 17700 2006-06-28 09:00:26Z lha $");
 
 OM_uint32
 gss_sign(OM_uint32 *minor_status,

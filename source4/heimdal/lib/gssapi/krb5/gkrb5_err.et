@@ -2,7 +2,7 @@
 # extended gss krb5 error messages
 #
 
-id "$Id: gkrb5_err.et,v 1.1 2006/11/09 23:52:17 lha Exp $"
+id "$Id: gkrb5_err.et 20049 2007-01-24 00:14:24Z lha $"
 
 error_table gk5
 
@@ -28,3 +28,4 @@ error_code KG_CONTEXT_ESTABLISHED, "Context is already fully established"
 error_code KG_BAD_SIGN_TYPE, "Unknown signature type in token"
 error_code KG_BAD_LENGTH, "Invalid field length in token"
 error_code KG_CTX_INCOMPLETE, "Attempt to use incomplete security context"
+error_code KG_INPUT_TOO_LONG, "Input too long"

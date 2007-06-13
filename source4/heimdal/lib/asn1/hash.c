@@ -37,7 +37,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: hash.c,v 1.11 2006/04/07 22:16:00 lha Exp $");
+RCSID("$Id: hash.c 17016 2006-04-07 22:16:00Z lha $");
 
 static Hashentry *_search(Hashtab * htab,	/* The hash table */
 			  void *ptr);	/* And key */

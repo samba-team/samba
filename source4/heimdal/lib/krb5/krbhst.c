@@ -35,7 +35,7 @@
 #include <resolve.h>
 #include "locate_plugin.h"
 
-RCSID("$Id: krbhst.c,v 1.61 2006/11/30 17:23:08 lha Exp $");
+RCSID("$Id: krbhst.c 19198 2006-11-30 17:23:08Z lha $");
 
 static int
 string_to_proto(const char *string)

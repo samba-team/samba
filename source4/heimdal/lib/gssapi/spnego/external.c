@@ -33,7 +33,7 @@
 #include "spnego/spnego_locl.h"
 #include <gssapi_mech.h>
 
-RCSID("$Id: external.c,v 1.7 2006/10/07 22:27:06 lha Exp $");
+RCSID("$Id: external.c 18336 2006-10-07 22:27:13Z lha $");
 
 /*
  * RFC2478, SPNEGO:

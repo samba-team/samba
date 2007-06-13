@@ -35,7 +35,7 @@
 #include <getarg.h>
 #include "lex.h"
 
-RCSID("$Id: main.c,v 1.16 2006/09/05 12:27:29 lha Exp $");
+RCSID("$Id: main.c 20858 2007-06-03 18:56:41Z lha $");
 
 extern FILE *yyin;
 
@@ -127,5 +127,7 @@ main(int argc, char **argv)
     if(ret != 0 || error_flag != 0)
 	exit(1);
     close_generate ();
+    if (argc != optidx)
+	fclose(yyin);
     return 0;
 }

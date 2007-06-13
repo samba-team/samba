@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_cred_by_oid.c,v 1.2 2006/06/28 16:20:41 lha Exp $");
+RCSID("$Id: gss_inquire_cred_by_oid.c 19960 2007-01-17 15:09:24Z lha $");
 
 OM_uint32
 gss_inquire_cred_by_oid (OM_uint32 *minor_status,
@@ -46,6 +46,7 @@ gss_inquire_cred_by_oid (OM_uint32 *minor_status,
 	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
 
 	*minor_status = 0;
+	*data_set = GSS_C_NO_BUFFER_SET;
 
 	if (cred == NULL)
 		return GSS_S_NO_CRED;
@@ -55,8 +56,11 @@ gss_inquire_cred_by_oid (OM_uint32 *minor_status,
 		int i;
 
 		m = mc->gmc_mech;
-		if (m == NULL)
+		if (m == NULL) {
+	       		gss_release_buffer_set(minor_status, &set);
+			*minor_status = 0;
 			return GSS_S_BAD_MECH;
+		}
 
 		if (m->gm_inquire_cred_by_oid == NULL)
 			continue;
@@ -77,6 +81,7 @@ gss_inquire_cred_by_oid (OM_uint32 *minor_status,
 	if (set == GSS_C_NO_BUFFER_SET)
 		status = GSS_S_FAILURE;
 	*data_set = set;
+	*minor_status = 0;
 	return status;
 }
 

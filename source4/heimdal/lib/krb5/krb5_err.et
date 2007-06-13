@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: krb5_err.et,v 1.14 2006/02/13 11:28:22 lha Exp $"
+id "$Id: krb5_err.et 20760 2007-06-01 03:24:49Z lha $"
 
 error_table krb5
 
@@ -76,6 +76,10 @@ error_code KDC_NOT_TRUSTED,	"KDC not trusted"
 error_code INVALID_SIG,		"Invalid signature"
 error_code DH_KEY_PARAMETERS_NOT_ACCEPTED, "DH parameters not accepted"
 
+index 68
+prefix KRB5_KDC_ERR
+error_code WRONG_REALM,		"Wrong realm"
+
 index 69
 prefix KRB5_AP_ERR
 error_code USER_TO_USER_REQUIRED, "User to user required"
@@ -86,7 +90,8 @@ error_code CANT_VERIFY_CERTIFICATE, "Cannot verify certificate"
 error_code INVALID_CERTIFICATE, "Certificate invalid"
 error_code REVOKED_CERTIFICATE, "Certificate revoked"
 error_code REVOCATION_STATUS_UNKNOWN, "Revocation status unknown"
-error_code CLIENT_NAME_MISMATCH, "Revocation status unknown"
+error_code REVOCATION_STATUS_UNAVAILABLE, "Revocation status unavaible"
+error_code CLIENT_NAME_MISMATCH, "Client name mismatch in certificate"
 error_code INCONSISTENT_KEY_PURPOSE, "Inconsistent key purpose"
 error_code DIGEST_IN_CERT_NOT_ACCEPTED, "Digest in certificate not accepted"
 error_code PA_CHECKSUM_MUST_BE_INCLUDED, "paChecksum must be included"
@@ -103,7 +108,7 @@ error_code PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED, "Public key encryption not suppo
 
 index 128
 prefix
-error_code KRB5_ERR_RCSID,	"$Id: krb5_err.et,v 1.14 2006/02/13 11:28:22 lha Exp $"
+error_code KRB5_ERR_RCSID,	"$Id: krb5_err.et 20760 2007-06-01 03:24:49Z lha $"
 
 error_code KRB5_LIBOS_BADLOCKFLAG,	"Invalid flag for file lock mode"
 error_code KRB5_LIBOS_CANTREADPWD,	"Cannot read password"

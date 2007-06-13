@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_buffer_set.c,v 1.2 2006/10/24 21:53:02 lha Exp $");
+RCSID("$Id: gss_buffer_set.c 18885 2006-10-24 21:53:02Z lha $");
 
 OM_uint32 
 gss_create_empty_buffer_set

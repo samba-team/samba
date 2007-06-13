@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <pkcs10_asn1.h>
-RCSID("$Id: req.c,v 1.7 2007/01/04 20:20:11 lha Exp $");
+RCSID("$Id: req.c 20934 2007-06-06 15:30:02Z lha $");
 
 struct hx509_request_data {
     hx509_name name;
@@ -191,7 +191,7 @@ _hx509_request_to_pkcs10(hx509_context context,
 
     ret = _hx509_create_signature(context,
 				  signer,
-				  hx509_signature_rsa_with_sha1(),
+				  _hx509_crypto_default_sig_alg,
 				  &data,
 				  &r.signatureAlgorithm,
 				  &os);

@@ -33,7 +33,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: init_sec_context.c,v 1.11 2006/12/18 15:42:03 lha Exp $");
+RCSID("$Id: init_sec_context.c 19411 2006-12-18 15:42:03Z lha $");
 
 /*
  * Is target_name an sane target for `mech´.

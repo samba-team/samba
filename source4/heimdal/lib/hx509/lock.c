@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: lock.c,v 1.13 2006/10/14 09:41:05 lha Exp $");
+RCSID("$Id: lock.c 18452 2006-10-14 09:41:05Z lha $");
 
 struct hx509_lock_data {
     struct _hx509_password password;

@@ -33,7 +33,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: accept_sec_context.c,v 1.16 2006/12/19 12:10:35 lha Exp $");
+RCSID("$Id: accept_sec_context.c 20929 2007-06-05 21:19:22Z lha $");
 
 static OM_uint32
 send_reject (OM_uint32 *minor_status,
@@ -92,7 +92,7 @@ send_supported_mechs (OM_uint32 *minor_status,
 		      gss_buffer_t output_token)
 {
     NegotiationTokenWin nt;
-    char hostname[MAXHOSTNAMELEN], *p;
+    char hostname[MAXHOSTNAMELEN + 1], *p;
     gss_buffer_desc name_buf;
     gss_OID name_type;
     gss_name_t target_princ;
@@ -117,11 +117,12 @@ send_supported_mechs (OM_uint32 *minor_status,
     }
 
     memset(&target_princ, 0, sizeof(target_princ));
-    if (gethostname(hostname, sizeof(hostname) - 1) != 0) {
+    if (gethostname(hostname, sizeof(hostname) - 2) != 0) {
 	*minor_status = errno;
 	free_NegotiationTokenWin(&nt);
 	return GSS_S_FAILURE;
     }
+    hostname[sizeof(hostname) - 1] = '\0';
 
     /* Send the constructed SAM name for this host */
     for (p = hostname; *p != '\0' && *p != '.'; p++) {
@@ -662,17 +663,17 @@ acceptor_start
 				     &ctx->mech_time_rec,
 				     &mech_delegated_cred);
 	if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
+	    ctx->preferred_mech_type = preferred_mech_type;
+	    ctx->negotiated_mech_type = preferred_mech_type;
+	    if (ret == GSS_S_COMPLETE)
+		ctx->open = 1;
+
 	    if (delegated_cred_handle)
 		ret = _gss_spnego_alloc_cred(minor_status,
 					     mech_delegated_cred,
 					     delegated_cred_handle);
 	    else
 		gss_release_cred(&ret2, &mech_delegated_cred);
-
-	    ctx->preferred_mech_type = preferred_mech_type;
-	    ctx->negotiated_mech_type = preferred_mech_type;
-	    if (ret == GSS_S_COMPLETE)
-		ctx->open = 1;
 
 	    ret = acceptor_complete(minor_status,
 				    ctx,

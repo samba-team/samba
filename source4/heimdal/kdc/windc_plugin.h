@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: windc_plugin.h,v 1.2 2007/01/04 11:13:51 lha Exp $ */
+/* $Id: windc_plugin.h 19798 2007-01-10 15:24:51Z lha $ */
 
 #ifndef HEIMDAL_KRB5_PAC_PLUGIN_H
 #define HEIMDAL_KRB5_PAC_PLUGIN_H 1
@@ -58,7 +58,9 @@ typedef krb5_error_code
 typedef krb5_error_code 
 (*krb5plugin_windc_pac_verify)(void *, krb5_context,
 			       const krb5_principal,
-			       struct hdb_entry_ex *,  struct hdb_entry_ex *, krb5_pac *);
+			       struct hdb_entry_ex *, 
+			       struct hdb_entry_ex *,
+			       krb5_pac *);
 
 typedef krb5_error_code 
 (*krb5plugin_windc_client_access)(

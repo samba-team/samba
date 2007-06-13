@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pac.c,v 1.13 2007/01/09 11:22:56 lha Exp $");
+RCSID("$Id: pac.c 20845 2007-06-03 14:31:16Z lha $");
 
 struct PAC_INFO_BUFFER {
     uint32_t type;
@@ -56,14 +56,15 @@ struct krb5_pac {
     struct PAC_INFO_BUFFER *logon_name;
 };
 
-#define PAC_ALIGNMENT		8
+#define PAC_ALIGNMENT			8
 
-#define PACTYPE_SIZE		8
-#define PAC_INFO_BUFFER_SIZE	16
+#define PACTYPE_SIZE			8
+#define PAC_INFO_BUFFER_SIZE		16
 
-#define PAC_SERVER_CHECKSUM	6
-#define PAC_PRIVSVR_CHECKSUM	7
-#define PAC_LOGON_NAME		10
+#define PAC_SERVER_CHECKSUM		6
+#define PAC_PRIVSVR_CHECKSUM		7
+#define PAC_LOGON_NAME			10
+#define PAC_CONSTRAINED_DELEGATION	11
 
 #define CHECK(r,f,l)						\
 	do {							\
@@ -252,12 +253,10 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 {
     krb5_error_code ret;
     void *ptr;
-    size_t len, offset, header_end;
+    size_t len, offset, header_end, old_end;
     uint32_t i;
 
-    len = p->pac->numbuffers + 1;
-    if (len < p->pac->numbuffers)
-	return EINVAL;
+    len = p->pac->numbuffers;
 
     ptr = realloc(p->pac,
 		  sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * len));
@@ -272,11 +271,12 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 
     offset = p->data.length + PAC_INFO_BUFFER_SIZE;
 
-    p->pac->buffers[len - 1].type = type;
-    p->pac->buffers[len - 1].buffersize = data->length;
-    p->pac->buffers[len - 1].offset_lo = offset;
-    p->pac->buffers[len - 1].offset_hi = 0;
+    p->pac->buffers[len].type = type;
+    p->pac->buffers[len].buffersize = data->length;
+    p->pac->buffers[len].offset_lo = offset;
+    p->pac->buffers[len].offset_hi = 0;
 
+    old_end = p->data.length;
     len = p->data.length + data->length + PAC_INFO_BUFFER_SIZE;
     if (len < p->data.length) {
 	krb5_set_error_string(context, "integer overrun");
@@ -292,14 +292,17 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 	return ret;
     }
 
-    /* make place for PAC INFO BUFFER header */
+    /* 
+     * make place for new PAC INFO BUFFER header
+     */
     header_end = PACTYPE_SIZE + (PAC_INFO_BUFFER_SIZE * p->pac->numbuffers);
-    memmove((unsigned char *)p->data.data + header_end,
-	    (unsigned char *)p->data.data + header_end + PAC_INFO_BUFFER_SIZE,
-	    PAC_INFO_BUFFER_SIZE);
+    memmove((unsigned char *)p->data.data + header_end + PAC_INFO_BUFFER_SIZE,
+	    (unsigned char *)p->data.data + header_end ,
+	    old_end - header_end);
+    memset((unsigned char *)p->data.data + header_end, 0, PAC_INFO_BUFFER_SIZE);
 
     /*
-     *
+     * copy in new data part
      */
 
     memcpy((unsigned char *)p->data.data + offset,
@@ -444,12 +447,15 @@ verify_checksum(krb5_context context,
 
     ret = krb5_verify_checksum(context, crypto, KRB5_KU_OTHER_CKSUM,
 			       ptr, len, &cksum);
+    free(cksum.checksum.data);
     krb5_crypto_destroy(context, crypto);
     krb5_storage_free(sp);
 
     return ret;
 
 out:
+    if (cksum.checksum.data)
+	free(cksum.checksum.data);
     if (sp)
 	krb5_storage_free(sp);
     if (crypto)
@@ -890,7 +896,6 @@ _krb5_pac_sign(krb5_context context,
 	goto out;
 
     /* Set lengths for checksum */
-
     ret = pac_checksum(context, server_key, &server_cksumtype, &server_size);
     if (ret)
 	goto out;

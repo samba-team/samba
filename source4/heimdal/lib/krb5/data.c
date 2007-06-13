@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: data.c,v 1.21 2006/10/14 09:45:41 lha Exp $");
+RCSID("$Id: data.c 20039 2007-01-23 20:34:01Z lha $");
 
 void KRB5_LIB_FUNCTION
 krb5_data_zero(krb5_data *p)
@@ -117,4 +117,12 @@ krb5_copy_data(krb5_context context,
 	*outdata = NULL;
     }
     return ret;
+}
+
+int KRB5_LIB_FUNCTION
+krb5_data_cmp(const krb5_data *data1, const krb5_data *data2)
+{
+    if (data1->length != data2->length)
+	return data1->length - data2->length;
+    return memcmp(data1->data, data2->data, data1->length);
 }

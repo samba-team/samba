@@ -43,7 +43,7 @@
 
 #include "kcm.h"
 
-RCSID("$Id: kcm.c,v 1.9 2006/05/05 09:28:48 lha Exp $");
+RCSID("$Id: kcm.c 17442 2006-05-05 09:31:15Z lha $");
 
 typedef struct krb5_kcmcache {
     char *name;

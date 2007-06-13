@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c,v 1.82 2006/09/12 17:35:33 lha Exp $");
+RCSID("$Id: cache.c 20503 2007-04-21 22:03:56Z lha $");
 
 /*
  * Add a new ccache type with operations `ops', overwriting any
@@ -473,7 +473,8 @@ krb5_cc_store_cred(krb5_context context,
 
 /*
  * Retrieve the credential identified by `mcreds' (and `whichfields')
- * from `id' in `creds'.
+ * from `id' in `creds'. 'creds' must be free by the caller using
+ * krb5_free_cred_contents.
  * Return 0 or an error code.
  */
 

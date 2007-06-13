@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_names_for_mech.c,v 1.3 2006/10/07 22:15:15 lha Exp $");
+RCSID("$Id: inquire_names_for_mech.c 20688 2007-05-17 18:44:31Z lha $");
 
 
 static gss_OID *name_list[] = {
@@ -61,20 +61,20 @@ OM_uint32 _gsskrb5_inquire_names_for_mech (
 	return GSS_S_BAD_MECH;
     }
 
-    ret = _gsskrb5_create_empty_oid_set(minor_status, name_types);
+    ret = gss_create_empty_oid_set(minor_status, name_types);
     if (ret != GSS_S_COMPLETE)
 	return ret;
     
     for (i = 0; name_list[i] != NULL; i++) {
-	ret = _gsskrb5_add_oid_set_member(minor_status, 
-					  *(name_list[i]),
-					  name_types);
+	ret = gss_add_oid_set_member(minor_status, 
+				     *(name_list[i]),
+				     name_types);
 	if (ret != GSS_S_COMPLETE)
 	    break;
     }
 
     if (ret != GSS_S_COMPLETE)
-	_gsskrb5_release_oid_set(NULL, name_types);
+	gss_release_oid_set(NULL, name_types);
 	
     return GSS_S_COMPLETE;
 }

@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/name.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
- *	$Id: name.h,v 1.4 2006/10/05 18:36:07 lha Exp $
+ *	$Id: name.h 18246 2006-10-05 18:36:07Z lha $
  */
 
 struct _gss_mechanism_name {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_cred.c,v 1.113 2006/11/21 05:14:01 lha Exp $");
+RCSID("$Id: get_cred.c 21004 2007-06-08 01:53:10Z lha $");
 
 /*
  * Take the `body' and encode it into `padata' using the credentials
@@ -542,8 +542,8 @@ again:
 				   KRB5_KU_TGS_REP_ENC_PART_SESSION,
 				   &krbtgt->addresses,
 				   nonce,
-				   TRUE,
-				   TRUE /* flags.b.request_anonymous */,
+				   EXTRACT_TICKET_ALLOW_CNAME_MISMATCH|
+				   EXTRACT_TICKET_ALLOW_SERVER_MISMATCH,
 				   decrypt_tkt_with_subkey,
 				   subkey);
 	krb5_free_kdc_rep(context, &rep);
@@ -659,6 +659,20 @@ krb5_get_kdc_cred(krb5_context context,
     return ret;
 }
 
+static void
+not_found(krb5_context context, krb5_const_principal p)
+{
+    krb5_error_code ret;
+    char *str;
+
+    ret = krb5_unparse_name(context, p, &str);
+    if(ret) {
+	krb5_clear_error_string(context);
+	return;
+    }
+    krb5_set_error_string(context, "Matching credential (%s) not found", str);
+    free(str);
+}
 
 static krb5_error_code
 find_cred(krb5_context context,
@@ -684,17 +698,7 @@ find_cred(krb5_context context,
 	}
 	tgts++;
     }
-    {
-	char *str;
-	ret = krb5_unparse_name(context, server, &str);
-	if(ret == 0) {
-	    krb5_set_error_string(context, "Matching credential "
-				  "(%s) not found", str);
-	    free(str);
-	} else {
-	    krb5_clear_error_string(context);
-	}
-    }
+    not_found(context, server);
     return KRB5_CC_NOTFOUND;
 }
 
@@ -818,7 +822,7 @@ get_cred_from_kdc_flags(krb5_context context,
 	}
     }
     if(krb5_realm_compare(context, in_creds->client, in_creds->server)) {
-	krb5_clear_error_string (context);
+	not_found(context, in_creds->server);
 	return KRB5_CC_NOTFOUND;
     }
     /* XXX this can loop forever */
@@ -972,7 +976,7 @@ krb5_get_credentials_with_flags(krb5_context context,
     }
     free(res_creds);
     if(options & KRB5_GC_CACHED) {
-        krb5_clear_error_string (context);        
+	not_found(context, in_creds->server);
         return KRB5_CC_NOTFOUND;
     }
     if(options & KRB5_GC_USER_USER)
@@ -1175,7 +1179,7 @@ krb5_get_creds(krb5_context context,
     }
     free(res_creds);
     if(options & KRB5_GC_CACHED) {
-        krb5_clear_error_string (context);        
+	not_found(context, in_creds.server);
 	krb5_free_principal(context, in_creds.client);
         return KRB5_CC_NOTFOUND;
     }

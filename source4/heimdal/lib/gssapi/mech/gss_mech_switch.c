@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 #include <heim_threads.h>
-RCSID("$Id: gss_mech_switch.c,v 1.8 2006/12/15 20:05:43 lha Exp $");
+RCSID("$Id: gss_mech_switch.c 20625 2007-05-08 13:55:03Z lha $");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"
@@ -49,6 +49,9 @@ _gss_string_to_oid(const char* s, gss_OID oid)
 	int			byte_count;
 	const char		*p, *q;
 	char			*res;
+
+	oid->length = 0;
+	oid->elements = NULL;
 
 	/*
 	 * First figure out how many numbers in the oid, then
@@ -169,8 +172,10 @@ add_builtin(gssapi_mech_interface mech)
 {
     struct _gss_mech_switch *m;
     OM_uint32 minor_status;
-    if (!mech) 
-        return 0;
+
+    /* not registering any mech is ok */
+    if (mech == NULL)
+	return 0;
 
     m = malloc(sizeof(*m));
     if (m == NULL)
@@ -299,6 +304,7 @@ _gss_load_mech(void)
 		OPTSYM(inquire_sec_context_by_oid);
 		OPTSYM(set_sec_context_option);
 		OPTSYM(set_cred_option);
+		OPTSYM(pseudo_random);
 
 		SLIST_INSERT_HEAD(&_gss_mechs, m, gm_link);
 		continue;

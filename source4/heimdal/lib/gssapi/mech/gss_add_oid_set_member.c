@@ -32,7 +32,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_add_oid_set_member.c,v 1.3 2006/10/22 09:36:13 lha Exp $");
+RCSID("$Id: gss_add_oid_set_member.c 18817 2006-10-22 09:36:13Z lha $");
 
 OM_uint32
 gss_add_oid_set_member (OM_uint32 * minor_status,

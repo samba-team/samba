@@ -32,7 +32,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: compat.c,v 1.9 2006/12/18 17:52:26 lha Exp $");
+RCSID("$Id: compat.c 19415 2006-12-18 17:52:26Z lha $");
 
 /*
  * Apparently Microsoft got the OID wrong, and used

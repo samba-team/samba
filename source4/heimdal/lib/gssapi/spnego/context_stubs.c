@@ -32,7 +32,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: context_stubs.c,v 1.9 2006/12/18 12:59:44 lha Exp $");
+RCSID("$Id: context_stubs.c 21035 2007-06-09 15:32:47Z lha $");
 
 static OM_uint32
 spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
@@ -310,7 +310,7 @@ OM_uint32 _gss_spnego_display_name
 
     *minor_status = 0;
 
-    if (name->mech == GSS_C_NO_NAME)
+    if (name == NULL || name->mech == GSS_C_NO_NAME)
 	return GSS_S_FAILURE;
 
     return gss_display_name(minor_status, name->mech,

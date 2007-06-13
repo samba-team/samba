@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: heimntlm.h,v 1.4 2006/12/20 07:28:37 lha Exp $ */
+/* $Id: heimntlm.h 19469 2006-12-20 07:28:37Z lha $ */
 
 #ifndef HEIM_NTLM_H
 #define HEIM_NTLM_H

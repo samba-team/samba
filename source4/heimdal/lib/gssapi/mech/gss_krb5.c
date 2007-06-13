@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_krb5.c,v 1.21 2006/11/10 00:57:27 lha Exp $");
+RCSID("$Id: gss_krb5.c 20383 2007-04-18 08:49:53Z lha $");
 
 #include <krb5.h>
 #include <roken.h>
@@ -164,7 +164,12 @@ gss_krb5_import_cred(OM_uint32 *minor_status,
 	goto out;
     }
 
-    krb5_storage_to_data(sp, &data);
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret) {
+	*minor_status = ret;
+	major_status = GSS_S_FAILURE;
+	goto out;
+    }
 
     buffer.value = data.data;
     buffer.length = data.length;
@@ -421,37 +426,49 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
  */
 
 OM_uint32
-gss_krb5_set_allowable_enctypes(OM_uint32 *min_status, 
+gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
 				gss_cred_id_t cred,
 				OM_uint32 num_enctypes,
 				int32_t *enctypes)
 {
+    krb5_error_code ret;
     OM_uint32 maj_status;
     gss_buffer_desc buffer;
     krb5_storage *sp;
     krb5_data data;
+    int i;
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	*min_status = ENOMEM;
+	*minor_status = ENOMEM;
 	maj_status = GSS_S_FAILURE;
 	goto out;
     }
 
-    while(*enctypes) {
-	krb5_store_int32(sp, *enctypes);
-	enctypes++;
+    for (i = 0; i < num_enctypes; i++) {
+	ret = krb5_store_int32(sp, enctypes[i]);
+	if (ret) {
+	    *minor_status = ret;
+	    maj_status = GSS_S_FAILURE;
+	    goto out;
+	}
     }
 
-    krb5_storage_to_data(sp, &data);
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret) {
+	*minor_status = ret;
+	maj_status = GSS_S_FAILURE;
+	goto out;
+    }
 
     buffer.value = data.data;
     buffer.length = data.length;
 
-    maj_status = gss_set_cred_option(min_status,
+    maj_status = gss_set_cred_option(minor_status,
 				     &cred,
 				     GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X,
 				     &buffer);
+    krb5_data_free(&data);
 out:
     if (sp)
 	krb5_storage_free(sp);
@@ -488,6 +505,38 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 
     return (GSS_S_COMPLETE);
 }
+
+/*
+ *
+ */
+
+OM_uint32
+gss_krb5_ccache_name(OM_uint32 *minor_status, 
+		     const char *name,
+		     const char **out_name)
+{
+    struct _gss_mech_switch *m;
+    gss_buffer_desc buffer;
+    OM_uint32 junk;
+
+    _gss_load_mech();
+
+    if (out_name)
+	*out_name = NULL;
+
+    buffer.value = rk_UNCONST(name);
+    buffer.length = strlen(name);
+
+    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	if (m->gm_mech.gm_set_sec_context_option == NULL)
+	    continue;
+	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+	    GSS_KRB5_CCACHE_NAME_X, &buffer);
+    }
+
+    return (GSS_S_COMPLETE);
+}
+
 
 /*
  *

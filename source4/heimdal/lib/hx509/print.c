@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: print.c,v 1.15 2006/12/07 20:37:57 lha Exp $");
+RCSID("$Id: print.c 20908 2007-06-05 02:59:33Z lha $");
 
 
 struct hx509_validate_ctx_data {
@@ -40,6 +40,18 @@ struct hx509_validate_ctx_data {
     hx509_vprint_func vprint_func;
     void *ctx;
 };
+
+struct cert_status {
+    unsigned int selfsigned:1;
+    unsigned int isca:1;
+    unsigned int isproxy:1;
+    unsigned int haveSAN:1;
+    unsigned int haveIAN:1;
+    unsigned int haveSKI:1;
+    unsigned int haveAKI:1;
+    unsigned int haveCRLDP:1;
+};
+
 
 /*
  *
@@ -155,10 +167,16 @@ validate_print(hx509_validate_ctx ctx, int flags, const char *fmt, ...)
     va_end(va);
 }
 
+/* 
+ * Dont Care, SHOULD critical, SHOULD NOT critical, MUST critical,
+ * MUST NOT critical
+ */
 enum critical_flag { D_C = 0, S_C, S_N_C, M_C, M_N_C };
 
 static int
-check_Null(hx509_validate_ctx ctx, enum critical_flag cf, const Extension *e)
+check_Null(hx509_validate_ctx ctx,
+	   struct cert_status *status,
+	   enum critical_flag cf, const Extension *e)
 {
     switch(cf) {
     case D_C:
@@ -191,12 +209,95 @@ check_Null(hx509_validate_ctx ctx, enum critical_flag cf, const Extension *e)
 
 static int
 check_subjectKeyIdentifier(hx509_validate_ctx ctx, 
+			   struct cert_status *status,
 			   enum critical_flag cf,
 			   const Extension *e)
 {
-    check_Null(ctx, cf, e);
+    SubjectKeyIdentifier si;
+    size_t size;
+    int ret;
+
+    status->haveSKI = 1;
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_SubjectKeyIdentifier(e->extnValue.data, 
+				      e->extnValue.length,
+				      &si, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding SubjectKeyIdentifier failed: %d", ret);
+	return 1;
+    }
+    if (size != e->extnValue.length) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding SKI ahve extra bits on the end");
+	return 1;
+    }
+    if (si.length == 0)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "SKI is too short (0 bytes)");
+    if (si.length > 20)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "SKI is too long");
+
+    {
+	char *id;
+	hex_encode(si.data, si.length, &id);
+	if (id) {
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			   "\tsubject key id: %s\n", id);
+	    free(id);
+	}
+    }
+
+    free_SubjectKeyIdentifier(&si);
+
     return 0;
 }
+
+static int
+check_authorityKeyIdentifier(hx509_validate_ctx ctx, 
+			     struct cert_status *status,
+			     enum critical_flag cf,
+			     const Extension *e)
+{
+    AuthorityKeyIdentifier ai;
+    size_t size;
+    int ret;
+
+    status->haveAKI = 1;
+    check_Null(ctx, status, cf, e);
+
+    status->haveSKI = 1;
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_AuthorityKeyIdentifier(e->extnValue.data, 
+					e->extnValue.length,
+					&ai, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding AuthorityKeyIdentifier failed: %d", ret);
+	return 1;
+    }
+    if (size != e->extnValue.length) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding SKI ahve extra bits on the end");
+	return 1;
+    }
+
+    if (ai.keyIdentifier) {
+	char *id;
+	hex_encode(ai.keyIdentifier->data, ai.keyIdentifier->length, &id);
+	if (id) {
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			   "\tauthority key id: %s\n", id);
+	    free(id);
+	}
+    }
+
+    return 0;
+}
+
 
 static int
 check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
@@ -206,15 +307,16 @@ check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
     size_t size;
     int ret;
 
-    ret = decode_KRB5PrincipalName(a->data, a->length,
-				   &kn, &size);
+    ret = decode_KRB5PrincipalName(a->data, a->length, &kn, &size);
     if (ret) {
-	printf("Decoding kerberos name in SAN failed: %d", ret);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding kerberos name in SAN failed: %d", ret);
 	return 1;
     }
 
     if (size != a->length) {
-	printf("Decoding kerberos name have extra bits on the end");
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding kerberos name have extra bits on the end");
 	return 1;
     }
 
@@ -233,10 +335,101 @@ check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
 }
 
 static int
-check_dnssrv_san(hx509_validate_ctx ctx, heim_any *a)
+check_utf8_string_san(hx509_validate_ctx ctx, heim_any *a)
+{
+    PKIXXmppAddr jid;
+    size_t size;
+    int ret;
+
+    ret = decode_PKIXXmppAddr(a->data, a->length, &jid, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding JID in SAN failed: %d", ret);
+	return 1;
+    }
+
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", jid);
+    free_PKIXXmppAddr(&jid);
+
+    return 0;
+}
+
+static int
+check_altnull(hx509_validate_ctx ctx, heim_any *a)
 {
     return 0;
 }
+
+static int
+check_CRLDistributionPoints(hx509_validate_ctx ctx, 
+			   struct cert_status *status,
+			   enum critical_flag cf,
+			   const Extension *e)
+{
+    CRLDistributionPoints dp;
+    size_t size;
+    int ret, i;
+
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_CRLDistributionPoints(e->extnValue.data, 
+				       e->extnValue.length,
+				       &dp, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding CRL Distribution Points failed: %d\n", ret);
+	return 1;
+    }
+
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "CRL Distribution Points:\n");
+    for (i = 0 ; i < dp.len; i++) {
+	if (dp.val[i].distributionPoint) {
+	    DistributionPointName dpname;
+	    heim_any *data = dp.val[i].distributionPoint;
+	    int j;
+	    
+	    ret = decode_DistributionPointName(data->data, data->length,
+					       &dpname, NULL);
+	    if (ret) {
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			       "Failed to parse CRL Distribution Point Name: %d\n", ret);
+		continue;
+	    }
+
+	    switch (dpname.element) {
+	    case choice_DistributionPointName_fullName:
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "Fullname:\n");
+		
+		for (j = 0 ; j < dpname.u.fullName.len; j++) {
+		    char *s;
+		    GeneralName *name = &dpname.u.fullName.val[j];
+
+		    ret = hx509_general_name_unparse(name, &s);
+		    if (ret == 0 && s != NULL) {
+			validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "   %s\n", s);
+			free(s);
+		    }
+		}
+		break;
+	    case choice_DistributionPointName_nameRelativeToCRLIssuer:
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			       "Unknown nameRelativeToCRLIssuer");
+		break;
+	    default:
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			       "Unknown DistributionPointName");
+		break;
+	    }
+	    free_DistributionPointName(&dpname);
+	}
+    }
+    free_CRLDistributionPoints(&dp);
+
+    status->haveCRLDP = 1;
+
+    return 0;
+}
+
 
 struct {
     const char *name;
@@ -244,11 +437,15 @@ struct {
     int (*func)(hx509_validate_ctx, heim_any *);
 } check_altname[] = {
     { "pk-init", oid_id_pkinit_san, check_pkinit_san },
-    { "dns-srv", oid_id_pkix_on_dnsSRV, check_dnssrv_san }
+    { "jabber", oid_id_pkix_on_xmppAddr, check_utf8_string_san },
+    { "dns-srv", oid_id_pkix_on_dnsSRV, check_altnull },
+    { "card-id", oid_id_uspkicommon_card_id, check_altnull },
+    { "Microsoft NT-PRINCIPAL-NAME", oid_id_pkinit_ms_san, check_utf8_string_san }
 };
 
 static int
 check_altName(hx509_validate_ctx ctx,
+	      struct cert_status *status,
 	      const char *name,
 	      enum critical_flag cf,
 	      const Extension *e)
@@ -257,20 +454,24 @@ check_altName(hx509_validate_ctx ctx,
     size_t size;
     int ret, i;
 
-    check_Null(ctx, cf, e);
+    check_Null(ctx, status, cf, e);
 
     if (e->extnValue.length == 0) {
-	printf("%sAltName empty, not allowed", name);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "%sAltName empty, not allowed", name);
 	return 1;
     }
     ret = decode_GeneralNames(e->extnValue.data, e->extnValue.length,
 			      &gn, &size);
     if (ret) {
-	printf("\tret = %d while decoding %s GeneralNames\n", ret, name);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "\tret = %d while decoding %s GeneralNames\n", 
+		       ret, name);
 	return 1;
     }
     if (gn.len == 0) {
-	printf("%sAltName generalName empty, not allowed", name);
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "%sAltName generalName empty, not allowed\n", name);
 	return 1;
     }
 
@@ -278,7 +479,9 @@ check_altName(hx509_validate_ctx ctx,
 	switch (gn.val[i].element) {
 	case choice_GeneralName_otherName: {
 	    unsigned j;
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%sAltName otherName ", name);
+
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+			   "%sAltName otherName ", name);
 
 	    for (j = 0; j < sizeof(check_altname)/sizeof(check_altname[0]); j++) {
 		if (der_heim_oid_cmp((*check_altname[j].oid)(), 
@@ -298,41 +501,18 @@ check_altName(hx509_validate_ctx ctx,
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 	    break;
 	}
-	case choice_GeneralName_rfc822Name:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "rfc822Name: %s\n",
-			   gn.val[i].u.rfc822Name);
-	    break;
-	case choice_GeneralName_dNSName:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "dNSName: %s\n",
-			   gn.val[i].u.dNSName);
-	    break;
-	case choice_GeneralName_directoryName: {
-	    Name dir;
+	default: {
 	    char *s;
-	    dir.element = gn.val[i].u.directoryName.element;
-	    dir.u.rdnSequence = gn.val[i].u.directoryName.u.rdnSequence;
-	    ret = _hx509_unparse_Name(&dir, &s);
+	    ret = hx509_general_name_unparse(&gn.val[i], &s);
 	    if (ret) {
-		printf("unable to parse %sAltName directoryName\n", name);
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			       "ret = %d unparsing GeneralName\n", ret);
 		return 1;
 	    }
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "directoryName: %s\n", s);
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s\n", s);
 	    free(s);
 	    break;
 	}
-	case choice_GeneralName_uniformResourceIdentifier:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "uri: %s\n",
-			   gn.val[i].u.uniformResourceIdentifier);
-	    break;
-	case choice_GeneralName_iPAddress:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "ip address\n");
-	    break;
-	case choice_GeneralName_registeredID:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "registered id: ");
-		hx509_oid_print(&gn.val[i].u.registeredID,
-				validate_vprint, ctx);
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
-	    break;
 	}
     }
 
@@ -343,23 +523,28 @@ check_altName(hx509_validate_ctx ctx,
 
 static int
 check_subjectAltName(hx509_validate_ctx ctx,
+		     struct cert_status *status,
 		     enum critical_flag cf,
 		     const Extension *e)
 {
-    return check_altName(ctx, "subject", cf, e);
+    status->haveSAN = 1;
+    return check_altName(ctx, status, "subject", cf, e);
 }
 
 static int
 check_issuerAltName(hx509_validate_ctx ctx,
+		    struct cert_status *status,
 		     enum critical_flag cf,
 		     const Extension *e)
 {
-    return check_altName(ctx, "issuer", cf, e);
+    status->haveIAN = 1;
+    return check_altName(ctx, status, "issuer", cf, e);
 }
 
 
 static int
 check_basicConstraints(hx509_validate_ctx ctx, 
+		       struct cert_status *status,
 		       enum critical_flag cf, 
 		       const Extension *e)
 {
@@ -367,7 +552,7 @@ check_basicConstraints(hx509_validate_ctx ctx,
     size_t size;
     int ret;
 
-    check_Null(ctx, cf, e);
+    check_Null(ctx, status, cf, e);
     
     ret = decode_BasicConstraints(e->extnValue.data, e->extnValue.length,
 				  &b, &size);
@@ -384,6 +569,30 @@ check_basicConstraints(hx509_validate_ctx ctx,
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		       "\tpathLenConstraint: %d\n", *b.pathLenConstraint);
 
+    if (b.cA) {
+	if (*b.cA) {
+	    if (!e->critical)
+		validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			       "Is a CA and not BasicConstraints CRITICAL\n");
+	    status->isca = 1;
+	}
+	else
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			   "cA is FALSE, not allowed to be\n");
+    }
+    free_BasicConstraints(&b);
+
+    return 0;
+}
+
+static int
+check_proxyCertInfo(hx509_validate_ctx ctx, 
+		    struct cert_status *status,
+		    enum critical_flag cf, 
+		    const Extension *e)
+{
+    status->isproxy = 1;
+
     return 0;
 }
 
@@ -391,6 +600,7 @@ struct {
     const char *name;
     const heim_oid *(*oid)(void);
     int (*func)(hx509_validate_ctx ctx, 
+		struct cert_status *status,
 		enum critical_flag cf, 
 		const Extension *);
     enum critical_flag cf;
@@ -401,7 +611,7 @@ struct {
     { ext(keyUsage, Null), S_C },
     { ext(subjectAltName, subjectAltName), M_N_C },
     { ext(issuerAltName, issuerAltName), S_N_C },
-    { ext(basicConstraints, basicConstraints), M_C },
+    { ext(basicConstraints, basicConstraints), D_C },
     { ext(cRLNumber, Null), M_N_C },
     { ext(cRLReason, Null), M_N_C },
     { ext(holdInstructionCode, Null), M_N_C },
@@ -410,14 +620,20 @@ struct {
     { ext(issuingDistributionPoint, Null), M_C },
     { ext(certificateIssuer, Null), M_C },
     { ext(nameConstraints, Null), M_C },
-    { ext(cRLDistributionPoints, Null), S_N_C },
+    { ext(cRLDistributionPoints, CRLDistributionPoints), S_N_C },
     { ext(certificatePolicies, Null) },
     { ext(policyMappings, Null), M_N_C },
-    { ext(authorityKeyIdentifier, Null), M_N_C },
+    { ext(authorityKeyIdentifier, authorityKeyIdentifier), M_N_C },
     { ext(policyConstraints, Null), D_C },
     { ext(extKeyUsage, Null), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
+    { "proxyCertInfo", oid_id_pe_proxyCertInfo, 
+      check_proxyCertInfo, M_C },
+    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim, 
+      check_Null, D_C },
+    { "Netscape cert comment", oid_id_netscape_cert_comment, 
+      check_Null, D_C },
     { NULL }
 };
 
@@ -459,30 +675,44 @@ hx509_validate_cert(hx509_context context,
 {
     Certificate *c = _hx509_get_cert(cert);
     TBSCertificate *t = &c->tbsCertificate;
-    hx509_name name;
+    hx509_name issuer, subject;
     char *str;
+    struct cert_status status;
+    int ret;
+
+    memset(&status, 0, sizeof(status));
 
     if (_hx509_cert_get_version(c) != 3)
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		       "Not version 3 certificate\n");
     
-    if (t->version && *t->version < 2 && t->extensions)
+    if ((t->version == NULL || *t->version < 2) && t->extensions)
 	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
 		       "Not version 3 certificate with extensions\n");
 	
-    _hx509_name_from_Name(&t->subject, &name);
-    hx509_name_to_string(name, &str);
-    hx509_name_free(&name);
+    if (_hx509_cert_get_version(c) >= 3 && t->extensions == NULL)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Version 3 certificate without extensions\n");
+
+    ret = hx509_cert_get_subject(cert, &subject);
+    if (ret) abort();
+    hx509_name_to_string(subject, &str);
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "subject name: %s\n", str);
     free(str);
 
-    _hx509_name_from_Name(&t->issuer, &name);
-    hx509_name_to_string(name, &str);
-    hx509_name_free(&name);
+    ret = hx509_cert_get_issuer(cert, &issuer);
+    if (ret) abort();
+    hx509_name_to_string(issuer, &str);
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "issuer name: %s\n", str);
     free(str);
+
+    if (hx509_name_cmp(subject, issuer) == 0) {
+	status.selfsigned = 1;
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+		       "\tis a self-signed certificate\n");
+    }
 
     validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 		   "Validity:\n");
@@ -528,11 +758,68 @@ hx509_validate_cert(hx509_context context,
 			   "checking extention: %s\n",
 			   check_extension[j].name);
 	    (*check_extension[j].func)(ctx,
+				       &status,
 				       check_extension[j].cf,
 				       &t->extensions->val[i]);
 	}
     } else
 	validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "no extentions\n");
 	
+    if (status.isca) {
+	if (!status.haveSKI)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "CA certificate have no SubjectKeyIdentifier\n");
+
+    } else {
+	if (!status.haveAKI)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Is not CA and doesn't have "
+			   "AuthorityKeyIdentifier\n");
+    }
+	    
+
+    if (!status.haveSKI)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "Doesn't have SubjectKeyIdentifier\n");
+
+    if (status.isproxy && status.isca)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "Proxy and CA at the same time!\n");
+
+    if (status.isproxy) {
+	if (status.haveSAN)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Proxy and have SAN\n");
+	if (status.haveIAN)
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Proxy and have IAN\n");
+    }
+
+    if (hx509_name_is_null_p(subject) && !status.haveSAN)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "NULL subject DN and doesn't have a SAN\n");
+
+    if (!status.selfsigned && !status.haveCRLDP)
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+		       "Not a CA nor PROXY and doesn't have"
+		       "CRL Dist Point\n");
+
+    if (status.selfsigned) {
+	ret = _hx509_verify_signature_bitstring(context,
+						c,
+						&c->signatureAlgorithm,
+						&c->tbsCertificate._save,
+						&c->signatureValue);
+	if (ret == 0)
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, 
+			   "Self-signed certificate was self-signed\n");
+	else
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE, 
+			   "Self-signed certificate NOT really self-signed!\n");
+    }
+
+    hx509_name_free(&subject);
+    hx509_name_free(&issuer);
+
     return 0;
 }

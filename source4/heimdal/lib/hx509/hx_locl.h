@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx_locl.h,v 1.30 2007/01/09 10:52:06 lha Exp $ */
+/* $Id: hx_locl.h 20930 2007-06-06 00:23:42Z lha $ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -71,6 +71,7 @@
 
 struct hx509_keyset_ops;
 struct hx509_collector;
+struct hx509_generate_private_context;
 typedef struct hx509_path hx509_path;
 
 #include <hx509.h>
@@ -144,7 +145,7 @@ struct hx509_query_data {
 };
 
 struct hx509_keyset_ops {
-    char *name;
+    const char *name;
     int flags;
     int (*init)(hx509_context, hx509_certs, void **, 
 		int, const char *, hx509_lock);
@@ -157,7 +158,7 @@ struct hx509_keyset_ops {
     int (*iter)(hx509_context, hx509_certs, void *, void *, hx509_cert *);
     int (*iter_end)(hx509_context, hx509_certs, void *, void *);
     int (*printinfo)(hx509_context, hx509_certs, 
-		     void *, int (*)(void *, char *), void *);
+		     void *, int (*)(void *, const char *), void *);
     int (*getkeys)(hx509_context, hx509_certs, void *, hx509_private_key **);
     int (*addkey)(hx509_context, hx509_certs, void *, hx509_private_key);
 };
@@ -178,7 +179,21 @@ struct hx509_context_data {
 #define HX509_DEFAULT_OCSP_TIME_DIFF	(5*60)
     hx509_error error;
     struct et_list *et_list;
+    char *querystat;
+    hx509_certs default_trust_anchors;
 };
 
 /* _hx509_calculate_path flag field */
 #define HX509_CALCULATE_PATH_NO_ANCHOR 1
+
+extern const AlgorithmIdentifier * _hx509_crypto_default_sig_alg;
+extern const AlgorithmIdentifier * _hx509_crypto_default_digest_alg;
+extern const AlgorithmIdentifier * _hx509_crypto_default_secret_alg;
+
+/*
+ * Configurable options
+ */
+
+#if 0 /* fdef __APPLE__*/
+#define HX509_DEFAULT_ANCHORS "KEYCHAIN:system"
+#endif

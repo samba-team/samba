@@ -35,7 +35,7 @@
 
 /* keytab backend for HDB databases */
 
-RCSID("$Id: keytab.c,v 1.16 2006/10/09 12:36:40 lha Exp $");
+RCSID("$Id: keytab.c 18380 2006-10-09 12:36:40Z lha $");
 
 struct hdb_data {
     char *dbname;
