@@ -273,7 +273,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/dprintf.o \
-	  lib/xfile.o lib/wins_srv.o lib/util_reg.o \
+	  lib/xfile.o lib/wins_srv.o $(UTIL_REG_OBJ) \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
@@ -361,7 +361,8 @@ REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_pri
                registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
                registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o \
 	       registry/reg_smbconf.o registry/reg_api.o \
-	       registry/reg_frontend_hilvl.o
+	       registry/reg_frontend_hilvl.o \
+	       $(UTIL_REG_API_OBJ) $(UTIL_REG_SMBCONF_OBJ)
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
 
@@ -424,7 +425,8 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_wellknown.o passdb/util_builtin.o passdb/pdb_compat.o \
 		passdb/util_unixsids.o passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ \
-		lib/account_pol.o lib/privileges.o lib/util_nscd.o
+		lib/account_pol.o lib/privileges.o lib/privileges_basic.o \
+		lib/util_nscd.o
 
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
@@ -488,6 +490,7 @@ AUTH_WINBIND_OBJ = auth/auth_winbind.o
 AUTH_SCRIPT_OBJ = auth/auth_script.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
+	   lib/util_nttoken.o \
 	   auth/auth_compat.o auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
@@ -657,6 +660,29 @@ TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
              $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 	     $(DISPLAY_SEC_OBJ)
 
+UTIL_REG_OBJ = lib/util_reg.o
+UTIL_REG_API_OBJ = lib/util_reg_api.o
+UTIL_REG_SMBCONF_OBJ = lib/util_reg_smbconf.o 
+UTIL_REG_ALL_OBJ = $(UTIL_REG_OBJ) $(UTIL_REG_API_OBJ) $(UTIL_REG_SMBCONF_OBJ)
+
+# objects to be used when not all of the registry code should be
+# loaded but only the portion needed by reg_api, typically for
+# using smbconf (registry)
+REG_API_OBJ = registry/reg_api.o \
+	      registry/reg_frontend_hilvl.o \
+	      registry/reg_smbconf.o \
+	      registry/reg_db.o \
+	      registry/reg_util.o \
+	      \
+	      registry/reg_cachehook.o \
+	      registry/reg_eventlog.o \
+	      registry/reg_perfcount.o \
+	      registry/reg_dynamic.o \
+	      \
+	      lib/util_nttoken.o \
+	      $(UTIL_REG_API_OBJ) \
+	      $(UTIL_REG_SMBCONF_OBJ)
+
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
@@ -668,19 +694,6 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o
 
-NET_REG_OBJ = registry/reg_api.o \
-	      registry/reg_frontend_hilvl.o \
-	      registry/reg_smbconf.o \
-	      registry/reg_db.o \
-	      registry/reg_util.o \
-	      \
-	      registry/reg_cachehook.o \
-	      registry/reg_eventlog.o \
-	      registry/reg_perfcount.o \
-	      registry/reg_dynamic.o \
-	      \
-	      auth/token_util.o
-  
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
@@ -689,7 +702,7 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(REGFIO_OBJ) $(READLINE_OBJ) \
 	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
-	  $(NET_REG_OBJ)
+	  $(REG_API_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)

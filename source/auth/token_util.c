@@ -28,47 +28,6 @@
 #include "includes.h"
 
 /****************************************************************************
- Duplicate a SID token.
-****************************************************************************/
-
-NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
-{
-	NT_USER_TOKEN *token;
-
-	if (!ptoken)
-		return NULL;
-
-	token = TALLOC_P(mem_ctx, NT_USER_TOKEN);
-	if (token == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	ZERO_STRUCTP(token);
-
-	if (ptoken->user_sids && ptoken->num_sids) {
-		token->user_sids = (DOM_SID *)talloc_memdup(
-			token, ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
-
-		if (token->user_sids == NULL) {
-			DEBUG(0, ("talloc_memdup failed\n"));
-			TALLOC_FREE(token);
-			return NULL;
-		}
-		token->num_sids = ptoken->num_sids;
-	}
-	
-	/* copy the privileges; don't consider failure to be critical here */
-	
-	if ( !se_priv_copy( &token->privileges, &ptoken->privileges ) ) {
-		DEBUG(0,("dup_nt_token: Failure to copy SE_PRIV!.  "
-			 "Continuing with 0 privileges assigned.\n"));
-	}
-
-	return token;
-}
-
-/****************************************************************************
  Check for a SID in an NT_USER_TOKEN
 ****************************************************************************/
 

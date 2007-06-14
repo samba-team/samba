@@ -38,8 +38,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-extern REGISTRY_OPS smbconf_reg_ops;
-
 /* 
  * usage functions
  */
@@ -138,7 +136,7 @@ static char *format_value(TALLOC_CTX *mem_ctx, struct registry_value *value)
                 }
                 break;
         }
-	 case REG_BINARY:
+	case REG_BINARY:
                 result = talloc_asprintf(mem_ctx, "binary (%d bytes)",
 					 (int)value->v.binary.length);
                 break;
@@ -198,6 +196,12 @@ static WERROR smbconf_open_path_q(TALLOC_CTX *ctx, const char *subkeyname,
 {
 	WERROR werr = WERR_OK;
 	char *path = NULL;
+	NT_USER_TOKEN *token;
+
+	if (!(token = registry_create_admin_token(ctx))) {
+		DEBUG(1, ("Error creating admin token\n"));
+		goto done;
+	}
 
 	if (subkeyname == NULL) {
 		path = talloc_strdup(ctx, KEY_SMBCONF);
@@ -207,8 +211,9 @@ static WERROR smbconf_open_path_q(TALLOC_CTX *ctx, const char *subkeyname,
 	}
 
 	werr = reg_open_path(ctx, path, desired_access,
-			     get_root_nt_token(), key);
+			     token, key);
 
+done:
 	TALLOC_FREE(path);
 	return werr;
 }
@@ -1068,7 +1073,6 @@ done:
 int net_conf(int argc, const char **argv)
 {
 	int ret = -1;
-	int saved_errno = 0;
 	struct functable2 func[] = {
 		{"list", net_conf_list, 
 		 "Dump the complete configuration in smb.conf like format."},
@@ -1091,21 +1095,10 @@ int net_conf(int argc, const char **argv)
 		{NULL, NULL, NULL}
 	};
 
-	REGISTRY_HOOK smbconf_reg_hook = {KEY_SMBCONF, &smbconf_reg_ops};
-	
-	if (!regdb_init()) {
-		saved_errno = errno;
-		d_fprintf(stderr, "Can't open the registry");
-		if (saved_errno) {
-			d_fprintf(stderr, ": %s\n", strerror(saved_errno));
-		}
-		else {
-			d_fprintf(stderr, "!\n");
-		}
+	if (!registry_init_regdb()) {
+		d_fprintf(stderr, "Error initializing the registry!\n");
 		goto done;
 	}
-	reghook_cache_init();
-	reghook_cache_add(&smbconf_reg_hook);
 
 	ret = net_run_function2(argc, argv, "net conf", func);
 
