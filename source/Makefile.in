@@ -384,9 +384,11 @@ REGFIO_OBJ = registry/regfio.o
 
 RPC_EPMAPPER_OBJ = librpc/gen_ndr/srv_epmapper.o rpc_server/srv_epmapper_nt.o
 
-RPC_REG_OBJ =  librpc/gen_ndr/srv_winreg.o rpc_server/srv_winreg_nt.o $(REGFIO_OBJ)
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
 
+RPC_REG_OBJ =  rpc_server/srv_winreg_nt.o \
+	       librpc/gen_ndr/srv_winreg.o \
+	       $(REGFIO_OBJ)
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
 RPC_SVC_OBJ = librpc/gen_ndr/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
@@ -615,7 +617,8 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_dfs.o \
 		 rpcclient/cmd_ds.o rpcclient/cmd_echo.o \
 		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
-		 rpcclient/cmd_unixinfo.o $(DISPLAY_SEC_OBJ)
+		 rpcclient/cmd_unixinfo.o \
+		 $(DISPLAY_SEC_OBJ)
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -811,8 +814,9 @@ DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ)
 
-PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ) \
-	    $(LIBNDR_GEN_OBJ) $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
+PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
+	    $(RPCCLIENT_NDR_OBJ) \
+	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
 	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) \
 	    $(LIB_WITH_PROTO_OBJ) \
@@ -826,15 +830,16 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(RPCCLIENT_NDR_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
-			$(RPC_EPMAPPER_OBJ) $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
-			utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ)
+	    $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
+	    utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ) \
+	    $(RPC_EPMAPPER_OBJ) 
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o
-PAM_SMBPASS_OBJ= $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SECRETS_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LDB_OBJ) $(ERRORMAP_OBJ)
 
@@ -1196,11 +1201,11 @@ bin/smbumount@EXEEXT@: $(BINARY_PREREQS) $(UMOUNT_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/mount.cifs@EXEEXT@: $(CIFS_MOUNT_OBJ) bin/.dummy
+bin/mount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_MOUNT_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_MOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ) bin/.dummy
+bin/umount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UMOUNT_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
@@ -1300,7 +1305,7 @@ bin/vfstest@EXEEXT@: $(BINARY_PREREQS) $(VFSTEST_OBJ) @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) $(ACL_LIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) @SMBD_LIBS@ $(NSCD_LIBS)
 
-bin/smbiconv@EXEEXT@: $(SMBICONV_OBJ) @BUILD_POPT@
+bin/smbiconv@EXEEXT@: $(BINARY_PREREQS) $(SMBICONV_OBJ) @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBICONV_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
@@ -1312,11 +1317,11 @@ bin/locktest2@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST2_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ)
+bin/rpctorture@EXEEXT@: $(BINARY_PREREQS) $(RPCTORTURE_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/ndrdump@EXEEXT@: $(NDRDUMP_OBJ)
+bin/ndrdump@EXEEXT@: $(BINARY_PREREQS) $(NDRDUMP_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		@POPTLIBS@ @LDAP_LIBS@
@@ -1950,7 +1955,7 @@ TOPFILES=dynconfig.o
 clean: delheaders python_clean
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
-	        */*.o */*/*.o */*/*/*.o \
+		*/*.o */*/*.o */*/*/*.o \
 	        */*.d */*/*.d */*/*/*.d \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
