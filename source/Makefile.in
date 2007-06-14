@@ -123,10 +123,6 @@ LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
-LIBMSRPC=bin/libmsrpc.a @LIBMSRPC_SHARED@
-LIBMSRPC_MAJOR=0
-LIBMSRPC_MINOR=1
-
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=2
@@ -629,11 +625,6 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		   $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
-
-CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
-			 libmsrpc/libmsrpc.o libmsrpc/libmsrpc_internal.o \
-			 libmsrpc/cac_lsarpc.o libmsrpc/cac_winreg.o libmsrpc/cac_samr.o \
-			 libmsrpc/cac_svcctl.o
 
 LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o $(TDB_BASE_OBJ)
 
@@ -1347,15 +1338,6 @@ bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
-
-bin/libmsrpc.@SHLIBEXT@: $(BINARY_PREREQS) $(CAC_OBJ)
-	@echo Linking libmsrpc shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_OBJ) $(LIBS) \
-	@SONAMEFLAG@`basename $@`.$(LIBMSRPC_MAJOR)
-
-bin/libmsrpc.a: $(BINARY_PREREQS) $(CAC_OBJ)
-	@echo Linking libmsrpc non-shared library $@
-	@-$(AR) -rc $@ $(CAC_OBJ)
 
 # This is probably wrong for anything other than the GNU linker.
 bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ)
