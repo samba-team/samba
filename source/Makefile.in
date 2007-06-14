@@ -20,8 +20,14 @@ smbtorture4_path=@smbtorture4_path@
 LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
+
+# Add $(DEVELOPER_CFLAGS) to $(CFLAGS) to enable extra compiler
+# (GCC) warnings. This is done automtically for --enable-developer
+# and --enable-krb5developer.
+DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
 CFLAGS=@CFLAGS@
 CPPFLAGS=-DHAVE_CONFIG_H @CPPFLAGS@
+
 EXEEXT=@EXEEXT@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AR=@AR@
