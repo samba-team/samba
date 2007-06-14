@@ -4611,7 +4611,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 				pstring fname)
 {
 	BOOL overwrite;
-	/* uint32 root_fid; */  /* Not used */
+	uint32 root_fid;
 	uint32 len;
 	pstring newname;
 	pstring base_name;
@@ -4624,10 +4624,10 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	}
 
 	overwrite = (CVAL(pdata,0) ? True : False);
-	/* root_fid = IVAL(pdata,4); */
+	root_fid = IVAL(pdata,4);
 	len = IVAL(pdata,8);
 
-	if (len > (total_data - 12) || (len == 0)) {
+	if (len > (total_data - 12) || (len == 0) || (root_fid != 0)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
