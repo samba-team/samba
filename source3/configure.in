@@ -435,7 +435,19 @@ AC_ARG_WITH(smbtorture4_path,
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
-    	DEVELOPER_CFLAGS="-gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    fi])
+
+AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
+    [if eval "test x$enable_krb5developer = xyes"; then
+        developer=yes
+	krb5_developer=yes
+    fi])
+
+# Probe the gcc version for extra CFLAGS. We always stash these in
+# DEVELOPER_CFLAGS, so that you can turn them on and off with a simple
+# Makefile edit, avoiding the need to re-run configure.
+if test x"$ac_cv_prog_gcc" = x"yes" ; then
+    	DEVELOPER_CFLAGS="-gstabs -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
 	# Add -Wdeclaration-after-statement if compiler supports it
 	AC_CACHE_CHECK(
           [that the C compiler understands -Wdeclaration-after-statement],
@@ -448,12 +460,12 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
 	    samba_cv_HAVE_Wdeclaration_after_statement=yes,
 	    samba_cv_HAVE_Wdeclaration_after_statement=no,
 	    samba_cv_HAVE_Wdeclaration_after_statement=cross)
-
        ])
-       if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
+
+	if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
 	    DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -Wdeclaration-after-statement"
-       fi
-	# here
+	fi
+
 	#-Werror-implicit-function-declaration
 	AC_CACHE_CHECK(
           [that the C compiler understands -Werror-implicit-function-declaration],
@@ -470,13 +482,13 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
        if test x"$samba_cv_HAVE_Werror_implicit_function_declaration" = x"yes"; then
 	    DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -Werror-implicit-function-declaration"
        fi
-    fi])
 
-AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
-    [if eval "test x$enable_krb5developer = xyes"; then
-        developer=yes
-	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
-    fi])
+	# krb5developer is like developer, except we don't get
+	# -Wstrict-prototypes.
+       if test x"$krb5_developer" ~= x"$yes" ; then
+	    DEVELOPER_CFLAGS="$DEVELOPER_CFLAGS -Wstrict-prototypes"
+       fi
+fi
 
 AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc        Enable heap debugging [default=no]])
 
@@ -6474,8 +6486,9 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 	   AC_MSG_WARN([cannot run when cross-compiling]))
 
 dnl Merge in developer cflags from now on
-if test x"$developer" = x"yes"; then
-    CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
+AC_SUBST(DEVELOPER_CFLAGS)
+if test x"$krb5_developer" = x"yes" -o x"$developer" = x"yes"; then
+    CFLAGS="${CFLAGS} $(DEVELOPER_CFLAGS)"
 fi
 
 builddir=`pwd`
