@@ -653,7 +653,7 @@ static void getgrnam_recv( void *private_data, BOOL success, const DOM_SID *sid,
 		return;
 	}
 
- 	if ( !(type == SID_NAME_DOM_GRP) || (type == SID_NAME_ALIAS) ) {
+ 	if ( (type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) ) {
 		DEBUG(5,("getgrnam_recv: not a group!\n"));
 		request_error(state);
 		return;
