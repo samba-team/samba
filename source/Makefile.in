@@ -378,7 +378,8 @@ RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshu
 
 RPC_REG_OBJ =  rpc_server/srv_winreg.o rpc_server/srv_winreg_nt.o \
 	       registry/reg_frontend_legacy.o \
-	       librpc/gen_ndr/srv_winreg.o $(REGFIO_OBJ)
+	       librpc/gen_ndr/srv_winreg.o \
+	       $(REGFIO_OBJ)
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
@@ -518,7 +519,8 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o $(AFS_OBJ) smbd/msdfs.o \
 	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \
-	       smbd/dmapi.o $(MANGLE_OBJ) @VFS_STATIC@
+	       smbd/dmapi.o \
+	       $(MANGLE_OBJ) @VFS_STATIC@
 
 SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
@@ -821,8 +823,9 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
-            $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) utils/passwd_util.o \
-	    $(LIBGPO_OBJ) $(NSS_INFO_OBJ) $(RPCCLIENT_NDR_OBJ)
+	    $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
+	    utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ) \
+	    $(RPCCLIENT_NDR_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -1162,11 +1165,11 @@ bin/smbumount@EXEEXT@: $(BINARY_PREREQS) $(UMOUNT_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/mount.cifs@EXEEXT@: $(CIFS_MOUNT_OBJ)
+bin/mount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_MOUNT_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_MOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ)
+bin/umount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UMOUNT_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
@@ -1736,7 +1739,7 @@ bin/t_strstr@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t
 bin/t_strappend@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strappend.o -L ./bin -lbigballofmud
 
-bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
+bin/t_stringoverflow@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) torture/t_stringoverflow.o -L./bin -lbigballofmud
 
 bin/t_doschar@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
@@ -1954,7 +1957,8 @@ TOPFILES=dynconfig.o
 
 clean: delheaders python_clean
 	-rm -f $(PRECOMPILED_HEADER)
-	-rm -f core */*~ *~ */*.o */*/*.o */*/*/*.o \
+	-rm -f core */*~ *~ \
+		*/*.o */*/*.o */*/*/*.o \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
@@ -2052,6 +2056,7 @@ realclean: clean delheaders
 	-rm -f script/installbin.sh script/uninstallbin.sh
 
 distclean: realclean
+	-rm -f smbadduser
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps TAGS
