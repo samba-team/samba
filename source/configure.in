@@ -5001,12 +5001,12 @@ LIBMSRPC_SHARED=
 LIBMSRPC=
 AC_MSG_CHECKING(whether to build the libmsrpc shared library)
 AC_ARG_WITH(libmsrpc,
-[  --with-libmsrpc         Build the libmsrpc shared library (default=yes if shared libs supported)],
+[  --with-libmsrpc         Build the libmsrpc shared library (default=no unmaintained)],
 [ case "$withval" in
-  no)
+  *)
      AC_MSG_RESULT(no)
      ;;
-  *)
+  yes)
      if test $BLDSHARED = true; then
         LIBMSRPC_SHARED=bin/libmsrpc.$SHLIBEXT
         LIBMSRPC=libmsrpc
@@ -5021,22 +5021,7 @@ AC_ARG_WITH(libmsrpc,
      INSTALL_LIBMSRPC=installlibmsrpc
      UNINSTALL_LIBMSRPC=uninstalllibmsrpc
      ;;
-  esac ],
-[
-# if unspecified, default is to built it if possible.
-  if test $BLDSHARED = true; then
-     LIBMSRPC_SHARED=bin/libmsrpc.$SHLIBEXT
-     LIBMSRPC=libmsrpc
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBMSRPC=libmsrpc
-  fi]
-  INSTALL_LIBMSRPC=installlibmsrpc
-  UNINSTALL_LIBMSRPC=uninstalllibmsrpc
+  esac ]
 )
 
 
@@ -5048,12 +5033,12 @@ LIBADDNS_SHARED=
 LIBADDNS=
 AC_MSG_CHECKING(whether to build the libaddns shared library)
 AC_ARG_WITH(libaddns,
-[  --with-libaddns         Build the libaddns shared library (default=yes if shared libs supported)],
+[  --with-libaddns         Build the libaddns shared library (default=no undefined API)],
 [ case "$withval" in
-  no)
+  *)
      AC_MSG_RESULT(no)
      ;;
-  *)
+  yes)
      if test $BLDSHARED = true; then
         LIBADDNS_SHARED=bin/libaddns.$SHLIBEXT
         LIBADDNS=libaddns
@@ -5068,22 +5053,7 @@ AC_ARG_WITH(libaddns,
      INSTALL_LIBADDNS=installlibaddns
      UNINSTALL_LIBADDNS=uninstalllibaddns
      ;;
-  esac ],
-[
-# if unspecified, default is to built it if possible.
-  if test $BLDSHARED = true; then
-     LIBADDNS_SHARED=bin/libaddns.$SHLIBEXT
-     LIBADDNS=libaddns
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBADDNS=libaddns
-  fi]
-  INSTALL_LIBADDNS=installlibaddns
-  UNINSTALL_LIBADDNS=uninstalllibaddns
+  esac ]
 )
 
 #################################################
