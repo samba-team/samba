@@ -1781,8 +1781,9 @@ sub main () {
 		if (!$opt_notify && ($async_search->code == LDAP_REFERRAL)) {
 			foreach my $ref ($async_search->referrals) {
 				print "\ngot Referral: [$ref]\n";
+				my ($prot, $host, $base) = split(/\/+/, $ref);
 				$async_ldap_hd->unbind();
-				$async_ldap_hd = get_ldap_hd($ref, 1);
+				$async_ldap_hd = get_ldap_hd($host, 1);
 				if (do_bind($async_ldap_hd, $sasl_bind) == -1) {
 					$async_ldap_hd->unbind();
 					next;
