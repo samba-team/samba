@@ -296,7 +296,7 @@ OBJ_FILES = \
 #######################
 
 [SUBSYSTEM::HEIMDAL_HCRYPTO]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/hcrypto
+CFLAGS = -Iheimdal_build -Iheimdal/lib/hcrypto -Iheimdal/lib
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1
 OBJ_FILES = \
 	../heimdal/lib/hcrypto/aes.o \
@@ -575,14 +575,8 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
 
-include perl_path_wrapper.sh hcrypto-deps.pl heimdal/lib/hcrypto/*.h|
-
-heimdal/lib/hcrypto/hcrypto:
-	@rm -f $@; ln -s ./../hcrypto $@
-
 clean::	
 	@-rm -f bin/compile_et bin/asn1_compile
-	@-rm -f heimdal/lib/krb5/hcrypto/hcrypto
 
 #######################
 # Start SUBSYSTEM HEIMDAL
