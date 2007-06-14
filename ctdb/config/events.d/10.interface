@@ -85,7 +85,7 @@ case $cmd in
      monitor)
 	[ -x /usr/sbin/ethtool ] && {
 	    /usr/sbin/ethtool $CTDB_PUBLIC_INTERFACE | grep 'Link detected: yes' > /dev/null || {
-		echo "`date` ERROR: No link on network interface $CTDB_PUBLIC_INTERFACE"
+		echo "`date` ERROR: No link on the public network interface $CTDB_PUBLIC_INTERFACE"
 		exit 1
 	    }
 	}
