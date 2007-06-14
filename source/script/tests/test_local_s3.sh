@@ -20,4 +20,7 @@ testit "talloctort" $VALGRIND $BINDIR/talloctort || \
 testit "replacetort" $VALGRIND $BINDIR/replacetort || \
     failed=`expr $failed + 1`
 
+testit "tdbtorture" $VALGRIND $BINDIR/tdbtorture || \
+    failed=`expr $failed +1`
+
 testok $0 $failed
