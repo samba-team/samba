@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-#include "torture/nsstest.h"
+#include "nsswitch/nsstest.h"
 
 static const char *so_path = "/lib/libnss_winbind.so";
 static const char *nss_name = "winbind";

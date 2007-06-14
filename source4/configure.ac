@@ -25,7 +25,7 @@ m4_include(lib/util/time.m4)
 m4_include(lib/popt/samba.m4)
 m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
-m4_include(torture/nsstest.m4)
+m4_include(nsswitch/nsstest.m4)
 
 #SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.0,
 #			   [samba_cv_internal_talloc=no],
