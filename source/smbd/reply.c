@@ -4228,6 +4228,48 @@ static BOOL rename_path_prefix_equal(const char *src, const char *dest)
 	return ((memcmp(psrc, pdst, slen) == 0) && pdst[slen] == '/');
 }
 
+/*
+ * Do the notify calls from a rename
+ */
+
+static void notify_rename(connection_struct *conn, BOOL is_dir,
+			  const char *oldpath, const char *newpath)
+{
+	char *olddir, *newdir;
+	const char *oldname, *newname;
+	uint32 mask;
+
+	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
+		: FILE_NOTIFY_CHANGE_FILE_NAME;
+
+	if (!parent_dirname_talloc(NULL, oldpath, &olddir, &oldname)
+	    || !parent_dirname_talloc(NULL, newpath, &newdir, &newname)) {
+		TALLOC_FREE(olddir);
+		return;
+	}
+
+	if (strcmp(olddir, newdir) == 0) {
+		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask, oldpath);
+		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask, newpath);
+	}
+	else {
+		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask, oldpath);
+		notify_fname(conn, NOTIFY_ACTION_ADDED, mask, newpath);
+	}
+	TALLOC_FREE(olddir);
+	TALLOC_FREE(newdir);
+
+	/* this is a strange one. w2k3 gives an additional event for
+	   CHANGE_ATTRIBUTES and CHANGE_CREATION on the new file when renaming
+	   files, but not directories */
+	if (!is_dir) {
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES
+			     |FILE_NOTIFY_CHANGE_CREATION,
+			     newpath);
+	}
+}
+
 /****************************************************************************
  Rename an open file - given an fsp.
 ****************************************************************************/
@@ -4364,6 +4406,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 
 		rename_open_files(conn, lck, newname);
 
+		notify_rename(conn, fsp->is_directory, fsp->fsp_name, newname);
+
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
 		 * on close, probably because in Windows there is a new handle to the
@@ -4400,48 +4444,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		nt_errstr(status), fsp->fsp_name,newname));
 
 	return status;
-}
-
-/*
- * Do the notify calls from a rename
- */
-
-static void notify_rename(connection_struct *conn, BOOL is_dir,
-			  const char *oldpath, const char *newpath)
-{
-	char *olddir, *newdir;
-	const char *oldname, *newname;
-	uint32 mask;
-
-	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
-		: FILE_NOTIFY_CHANGE_FILE_NAME;
-
-	if (!parent_dirname_talloc(NULL, oldpath, &olddir, &oldname)
-	    || !parent_dirname_talloc(NULL, newpath, &newdir, &newname)) {
-		TALLOC_FREE(olddir);
-		return;
-	}
-
-	if (strcmp(olddir, newdir) == 0) {
-		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask, oldpath);
-		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask, newpath);
-	}
-	else {
-		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask, oldpath);
-		notify_fname(conn, NOTIFY_ACTION_ADDED, mask, newpath);
-	}
-	TALLOC_FREE(olddir);
-	TALLOC_FREE(newdir);
-
-	/* this is a strange one. w2k3 gives an additional event for
-	   CHANGE_ATTRIBUTES and CHANGE_CREATION on the new file when renaming
-	   files, but not directories */
-	if (!is_dir) {
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-			     FILE_NOTIFY_CHANGE_ATTRIBUTES
-			     |FILE_NOTIFY_CHANGE_CREATION,
-			     newpath);
-	}
 }
 
 /****************************************************************************
