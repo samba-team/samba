@@ -316,6 +316,16 @@ static BOOL allowable_number_of_smbd_processes(void)
 }
 
 /****************************************************************************
+ Are we idle enough that we could safely exit?
+****************************************************************************/
+
+static BOOL smbd_is_idle(void)
+{
+	/* Currently we define "idle" as having no client connections. */
+	return count_all_current_connections() == 0;
+}
+
+/****************************************************************************
  Open the socket communication.
 ****************************************************************************/
 
@@ -414,10 +424,22 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 					 &r_fds, &w_fds, &idle_timeout,
 					 &maxfd);
 
-		num = sys_select(maxfd+1,&r_fds,&w_fds,NULL,
-				 timeval_is_zero(&idle_timeout) ?
-				 NULL : &idle_timeout);
-		
+		if (timeval_is_zero(&idle_timeout)) {
+			num = sys_select(maxfd + 1, &r_fds, &w_fds,
+					NULL, NULL);
+		} else {
+			num = sys_select(maxfd + 1, &r_fds, &w_fds,
+					NULL, &idle_timeout);
+
+			/* If the idle timeout fired and we are idle, exit
+			 * gracefully. We expect to be running under a process
+			 * controller that will restart us if necessry.
+			 */
+			if (num == 0 && smbd_is_idle()) {
+				exit_server_cleanly("idle timeout");
+			}
+		}
+
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
 				exit_server_cleanly(NULL);
@@ -437,19 +459,6 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
 			continue;
 		}
-
-#if 0
-		Deactivated for now, this needs to become a timed event
-		vl
-
-		/* If the idle timeout fired and we don't have any connected
-		 * users, exit gracefully. We should be running under a process
-		 * controller that will restart us if necessry.
-		 */
-		if (num == 0 && count_all_current_connections() == 0) {
-			exit_server_cleanly("idle timeout");
-		}
-#endif
 
 		/* check if we need to reload services */
 		check_reload(time(NULL));
