@@ -1015,7 +1015,7 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 
 	if (ret != 0) {
 		talloc_free(priv);
-		db->hdb_openp = NULL;
+		db->hdb_openp = 0;
 	} else {
 		talloc_free(mem_ctx);
 	}
@@ -1094,13 +1094,14 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	priv->msgs = talloc_steal(priv, res->msgs);
 	talloc_free(res);
 
-	db->hdb_openp = priv;
+	/* why has hdb_openp changed from (void *) to (int) ??? */
+	db->hdb_openp = (int)priv;
 
 	ret = LDB_seq(context, db, flags, entry);
-	
+
 	if (ret != 0) {
     		talloc_free(priv);
-		db->hdb_openp = NULL;
+		db->hdb_openp = 0;
 	} else {
 		talloc_free(mem_ctx);
 	}
