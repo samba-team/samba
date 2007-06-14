@@ -844,10 +844,6 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 	char *frm = NULL;
 	int i;
 
-	if (!lck) {
-		return False;
-	}
-
 	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
 		servicepath, newname));
 
