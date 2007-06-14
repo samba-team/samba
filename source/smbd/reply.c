@@ -4234,10 +4234,11 @@ static BOOL rename_path_prefix_equal(const char *src, const char *dest)
 
 NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstring newname, uint32 attrs, BOOL replace_if_exists)
 {
-	SMB_STRUCT_STAT sbuf;
+	SMB_STRUCT_STAT sbuf, sbuf1;
 	pstring newname_last_component;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
+	BOOL dst_exists;
 
 	ZERO_STRUCT(sbuf);
 
@@ -4305,10 +4306,20 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return NT_STATUS_OK;
 	}
 
-	if(!replace_if_exists && vfs_object_exist(conn, newname, NULL)) {
+	/*
+	 * Have vfs_object_exist also fill sbuf1
+	 */
+	dst_exists = vfs_object_exist(conn, newname, &sbuf1);
+
+	if(!replace_if_exists && dst_exists) {
 		DEBUG(3,("rename_internals_fsp: dest exists doing rename %s -> %s\n",
 			fsp->fsp_name,newname));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	if (file_find_di_first(file_id_sbuf(&sbuf1)) != NULL) {
+		DEBUG(3, ("rename_internals_fsp: Target file open\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Ensure we have a valid stat struct for the source. */
