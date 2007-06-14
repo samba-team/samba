@@ -4166,15 +4166,13 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
  asynchronously.
 ****************************************************************************/
 
-static void rename_open_files(connection_struct *conn,
-			      struct share_mode_lock *lck,
-			      const char *newname)
+static void rename_open_files(connection_struct *conn, struct share_mode_lock *lck,
+			      struct file_id id, const char *newname)
 {
 	files_struct *fsp;
 	BOOL did_rename = False;
 
-	for(fsp = file_find_di_first(lck->id); fsp;
-	    fsp = file_find_di_next(fsp)) {
+	for(fsp = file_find_di_first(id); fsp; fsp = file_find_di_next(fsp)) {
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
 		/* TODO - create the absolute path and manipulate the newname
@@ -4191,7 +4189,7 @@ static void rename_open_files(connection_struct *conn,
 
 	if (!did_rename) {
 		DEBUG(10,("rename_open_files: no open files on file_id %s for %s\n",
-			  file_id_static_string(&lck->id), newname ));
+			  file_id_static_string(&id), newname ));
 	}
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */
@@ -4237,6 +4235,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 	SMB_STRUCT_STAT sbuf;
 	pstring newname_last_component;
 	NTSTATUS status = NT_STATUS_OK;
+	BOOL dest_exists;
 	struct share_mode_lock *lck = NULL;
 
 	ZERO_STRUCT(sbuf);
@@ -4305,7 +4304,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return NT_STATUS_OK;
 	}
 
-	if(!replace_if_exists && vfs_object_exist(conn, newname, NULL)) {
+	dest_exists = vfs_object_exist(conn,newname,NULL);
+
+	if(!replace_if_exists && dest_exists) {
 		DEBUG(3,("rename_internals_fsp: dest exists doing rename %s -> %s\n",
 			fsp->fsp_name,newname));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
@@ -4344,7 +4345,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
 			fsp->fsp_name,newname));
 
-		rename_open_files(conn, lck, newname);
+		rename_open_files(conn, lck, fsp->file_id, newname);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
@@ -4452,6 +4453,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 	const char *dname;
 	long offset = 0;
 	pstring destname;
+	struct file_id id;
 
 	*directory = *mask = 0;
 
@@ -4601,6 +4603,8 @@ NTSTATUS rename_internals(connection_struct *conn,
 		 * don't do the rename, just return success.
 		 */
 
+		id = file_id_sbuf(&sbuf1);
+
 		if (strcsequal(directory, newname)) {
 			DEBUG(3, ("rename_internals: identical names in "
 				  "rename %s - returning success\n",
@@ -4618,13 +4622,12 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		lck = get_share_mode_lock(NULL, file_id_sbuf(&sbuf1),
-					  NULL, NULL);
+		lck = get_share_mode_lock(NULL, id, NULL, NULL);
 
 		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
 			DEBUG(3,("rename_internals: succeeded doing rename "
 				 "on %s -> %s\n", directory, newname));
-			rename_open_files(conn, lck, newname);
+			rename_open_files(conn, lck, id, newname);
 			TALLOC_FREE(lck);
 			notify_rename(conn, S_ISDIR(sbuf1.st_mode),
 				      directory, newname);
@@ -4735,6 +4738,8 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return status;
 		}
 
+		id = file_id_sbuf(&sbuf1);
+
 		if (strcsequal(fname,destname)) {
 			DEBUG(3,("rename_internals: identical names "
 				 "in wildcard rename %s - success\n",
@@ -4754,11 +4759,10 @@ NTSTATUS rename_internals(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		lck = get_share_mode_lock(NULL, file_id_sbuf(&sbuf1), NULL,
-					  NULL);
+		lck = get_share_mode_lock(NULL, id, NULL, NULL);
 
 		if (!SMB_VFS_RENAME(conn,fname,destname)) {
-			rename_open_files(conn, lck, newname);
+			rename_open_files(conn, lck, id, newname);
 			count++;
 			status = NT_STATUS_OK;
 		}
