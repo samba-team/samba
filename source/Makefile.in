@@ -177,7 +177,8 @@ BIN_PROGS4 = bin/ldbedit@EXEEXT@ bin/ldbsearch@EXEEXT@ bin/ldbadd@EXEEXT@ \
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
-	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@
+	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
+	bin/tdbtorture@EXEEXT@
 
 BIN_PROGS = @EXTRA_BIN_PROGS@ @SMBMOUNT_PROGS@ \
 	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) 
@@ -928,6 +929,10 @@ TDBTOOL_OBJ = lib/tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
 
 TDBDUMP_OBJ = lib/tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
+
+TDBTORTURE_OBJ = lib/tdb/tools/tdbtorture.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+	$(SOCKET_WRAPPER_OBJ)
+
 
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 
@@ -1717,6 +1722,10 @@ bin/tdbtool@EXEEXT@: $(BINARY_PREREQS) $(TDBTOOL_OBJ)
 bin/tdbdump@EXEEXT@: $(BINARY_PREREQS) $(TDBDUMP_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBDUMP_OBJ)
+
+bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBTORTURE_OBJ)
 
 bin/t_strcmp@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
