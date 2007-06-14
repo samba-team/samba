@@ -1,5 +1,6 @@
+#include "config.h"
 
-#line 3 "lex.c"
+#line 3 "lex.yy.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -342,9 +343,6 @@ FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
 typedef int yy_state_type;
 
 extern int yylineno;
-
-int yylineno = 1;
-
 extern char *yytext;
 #define yytext_ptr yytext
 
@@ -523,7 +521,7 @@ char *yytext;
 #include "parse.h"
 #include "lex.h"
 
-RCSID("$Id: lex.l 15143 2005-05-16 08:52:54Z lha $");
+RCSID("$Id: lex.l,v 1.8 2005/05/16 08:52:54 lha Exp $");
 
 static unsigned lineno = 1;
 static int getstring(void);
@@ -532,7 +530,7 @@ static int getstring(void);
 
 #undef ECHO
 
-#line 536 "lex.c"
+#line 533 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -687,7 +685,7 @@ YY_DECL
     
 #line 59 "lex.l"
 
-#line 691 "lex.c"
+#line 688 "lex.yy.c"
 
 	if ( !(yy_init) )
 		{
@@ -851,7 +849,7 @@ YY_RULE_SETUP
 #line 75 "lex.l"
 ECHO;
 	YY_BREAK
-#line 855 "lex.c"
+#line 852 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1661,15 +1659,6 @@ static void yy_fatal_error (yyconst char* msg )
 
 /* Accessor  methods (get/set functions) to struct members. */
 
-/** Get the current line number.
- * 
- */
-int yyget_lineno  (void)
-{
-        
-    return yylineno;
-}
-
 /** Get the input stream.
  * 
  */
@@ -1701,16 +1690,6 @@ int yyget_leng  (void)
 char *yyget_text  (void)
 {
         return yytext;
-}
-
-/** Set the current line number.
- * @param line_number
- * 
- */
-void yyset_lineno (int  line_number )
-{
-    
-    yylineno = line_number;
 }
 
 /** Set the input stream. This does not discard the current
