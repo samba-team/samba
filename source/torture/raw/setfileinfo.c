@@ -424,8 +424,71 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 
 	CHECK_CALL_PATH(MODE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 0);
-#if 1
-	printf("finally the rename_information level\n");
+
+#if 0
+	printf("test unix_basic level\n");
+	CHECK_CALL_FNUM(UNIX_BASIC, NT_STATUS_OK);
+	CHECK_CALL_PATH(UNIX_BASIC, NT_STATUS_OK);
+
+	printf("test unix_link level\n");
+	CHECK_CALL_FNUM(UNIX_LINK, NT_STATUS_OK);
+	CHECK_CALL_PATH(UNIX_LINK, NT_STATUS_OK);
+#endif
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_close(cli->tree, fnum);
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fnum_fname))) {
+		printf("Failed to delete %s - %s\n", fnum_fname, smbcli_errstr(cli->tree));
+	}
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, path_fname))) {
+		printf("Failed to delete %s - %s\n", path_fname, smbcli_errstr(cli->tree));
+	}
+
+	torture_close_connection(cli);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
+ * basic testing of all RAW_SFILEINFO_RENAME call
+ */
+BOOL torture_raw_sfileinfo_rename(struct torture_context *torture)
+{
+	struct smbcli_state *cli;
+	BOOL ret = True;
+	TALLOC_CTX *mem_ctx;
+	int fnum_saved, d_fnum, fnum2, fnum = -1;
+	char *fnum_fname;
+	char *fnum_fname_new;
+	char *path_fname;
+	char *path_fname_new;
+	union smb_fileinfo finfo1, finfo2;
+	union smb_setfileinfo sfinfo;
+	NTSTATUS status, status2;
+	const char *call_name;
+	BOOL check_fnum;
+	int n = time(NULL) % 100;
+	
+	asprintf(&path_fname, BASEDIR "\\fname_test_%d.txt", n);
+	asprintf(&path_fname_new, BASEDIR "\\fname_test_new_%d.txt", n);
+	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
+	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
+
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	mem_ctx = talloc_init("torture_sfileinfo");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	RECREATE_BOTH;
+
+	ZERO_STRUCT(sfinfo);
+
 	smbcli_close(cli->tree, create_complex_file(cli, mem_ctx, fnum_fname_new));
 	smbcli_close(cli->tree, create_complex_file(cli, mem_ctx, path_fname_new));
 
@@ -506,17 +569,6 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 	sfinfo.rename_information.in.root_fid = d_fnum;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_INVALID_PARAMETER);
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
-#endif
-
-#if 0
-	printf("test unix_basic level\n");
-	CHECK_CALL_FNUM(UNIX_BASIC, NT_STATUS_OK);
-	CHECK_CALL_PATH(UNIX_BASIC, NT_STATUS_OK);
-
-	printf("test unix_link level\n");
-	CHECK_CALL_FNUM(UNIX_LINK, NT_STATUS_OK);
-	CHECK_CALL_PATH(UNIX_LINK, NT_STATUS_OK);
-#endif
 
 done:
 	smb_raw_exit(cli->session);
@@ -532,7 +584,6 @@ done:
 	talloc_free(mem_ctx);
 	return ret;
 }
-
 
 /* 
    look for the w2k3 setpathinfo STANDARD bug
