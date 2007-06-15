@@ -25,7 +25,7 @@
 
 #define REGVER_V1       1       /* first db version with write support */
 
-#define VALUE_PREFIX    "SAMBA_REGVAL"
-#define SECDESC_PREFIX  "SAMBA_SECDESC"
+#define REG_VALUE_PREFIX    "SAMBA_REGVAL"
+#define REG_SECDESC_PREFIX  "SAMBA_SECDESC"
 
 #endif /* _REG_DB_H */
