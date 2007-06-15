@@ -353,7 +353,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	/* The above *has* to succeed for winbindd to work. */
 	if (!domain->check_online_event) {
-		smb_panic("set_domain_offline: failed to add online handler.\n");
+		smb_panic("set_domain_offline: failed to add online handler");
 	}
 
 	DEBUG(10,("set_domain_offline: added event handler for domain %s\n",
@@ -496,7 +496,7 @@ void set_domain_online_request(struct winbindd_domain *domain)
 
 		/* The above *has* to succeed for winbindd to work. */
 		if (!domain->check_online_event) {
-			smb_panic("set_domain_online_request: failed to add online handler.\n");
+			smb_panic("set_domain_online_request: failed to add online handler");
 		}
 	}
 

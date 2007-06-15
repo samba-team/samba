@@ -41,7 +41,7 @@ static BOOL proxy_lsa_call(pipes_struct *p, uint8 opnum)
 		return False;
 
 	if (fns[opnum].opnum != opnum) {
-		smb_panic("LSA function table not sorted\n");
+		smb_panic("LSA function table not sorted");
 	}
 
 	return fns[opnum].fn(p);

@@ -284,7 +284,7 @@ oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name,
 					 file_id_static_string(&fsp->file_id),
 					 (unsigned int)fsp->fh->gen_id,
 					 (unsigned int)fsp->oplock_type ));
-				smb_panic("file_find_dif\n");
+				smb_panic("file_find_dif");
 			}
 			return fsp;
 		}

@@ -86,7 +86,7 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 	if (name == NULL) {
 		/* This is too security sensitive, better panic than return a
 		 * result that might be interpreted in a wrong way. */
-		smb_panic("substitutions failed\n");
+		smb_panic("substitutions failed");
 	}
 	
 	/* check to see is we already have a SID */
@@ -136,7 +136,7 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 			}
 			continue;
 		}
-		smb_panic("got invalid prefix from do_groups_check\n");
+		smb_panic("got invalid prefix from do_groups_check");
 	}
 	return False;
 }
@@ -164,7 +164,7 @@ BOOL token_contains_name_in_list(const char *username,
 	}
 
 	if ( (mem_ctx = talloc_new(NULL)) == NULL ) {
-		smb_panic("talloc_new failed\n");
+		smb_panic("talloc_new failed");
 	}
 
 	while (*list != NULL) {

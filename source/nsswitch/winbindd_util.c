@@ -56,7 +56,7 @@ struct winbindd_domain *domain_list(void)
 	/* Initialise list */
 
 	if ((!_domain_list) && (!init_domain_list())) {
-		smb_panic("Init_domain_list failed\n");
+		smb_panic("Init_domain_list failed");
 	}
 
 	return _domain_list;
@@ -857,7 +857,7 @@ struct winbindd_domain *find_our_domain(void)
 			return domain;
 	}
 
-	smb_panic("Could not find our domain\n");
+	smb_panic("Could not find our domain");
 	return NULL;
 }
 
@@ -882,8 +882,9 @@ struct winbindd_domain *find_builtin_domain(void)
 	string_to_sid(&sid, "S-1-5-32");
 	domain = find_domain_from_sid(&sid);
 
-	if (domain == NULL)
-		smb_panic("Could not find BUILTIN domain\n");
+	if (domain == NULL) {
+		smb_panic("Could not find BUILTIN domain");
+	}
 
 	return domain;
 }

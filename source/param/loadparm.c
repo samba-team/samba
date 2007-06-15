@@ -1717,7 +1717,7 @@ TALLOC_CTX *tmp_talloc_ctx(void)
 	}
 
 	if (lp_talloc == NULL) {
-		smb_panic("Could not create temporary talloc context\n");
+		smb_panic("Could not create temporary talloc context");
 	}
 
 	return lp_talloc;
