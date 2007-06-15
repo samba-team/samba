@@ -3133,7 +3133,7 @@ static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
 	/* reg_tdb is from now on used as talloc ctx.
 	 * freeing it closes the tdb (if refcount is 0) */
 
-	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", VALUE_PREFIX, 
+	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", REG_VALUE_PREFIX, 
 				 KEY_SMBCONF, GLOBAL_NAME);
 	normalize_dbkey(keystr);
 
