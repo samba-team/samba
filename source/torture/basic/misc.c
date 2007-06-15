@@ -575,7 +575,7 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 				"Callback READ file:%d (%d/%d) Offset:%d\n",
 				state->nr,state->completed,torture_numops,
 				(state->readcnt*state->lp_params->blocksize));
-		rd.generic.level = RAW_READ_READ    ;
+		rd.generic.level = RAW_READ_READX    ;
 		rd.read.in.file.fnum	= state->fnum 	;
 		rd.read.in.offset	= state->readcnt * 
 					state->lp_params->blocksize;
