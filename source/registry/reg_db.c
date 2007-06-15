@@ -444,7 +444,7 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 			goto fail;
 		}
 		
-		pstr_sprintf( path, "%s/%s/%s", VALUE_PREFIX, key,
+		pstr_sprintf( path, "%s/%s/%s", REG_VALUE_PREFIX, key,
 			      oldkeyname );
 		normalize_reg_path( path );
 
@@ -637,7 +637,7 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 	
-	pstr_sprintf( keystr, "%s/%s", VALUE_PREFIX, key );
+	pstr_sprintf( keystr, "%s/%s", REG_VALUE_PREFIX, key );
 	normalize_reg_path( keystr );
 	
 	data = tdb_fetch_bystring( tdb_reg->tdb, keystr );
@@ -682,7 +682,7 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 	
 	SMB_ASSERT( len == data.dsize );
 	
-	pstr_sprintf( keystr, "%s/%s", VALUE_PREFIX, key );
+	pstr_sprintf( keystr, "%s/%s", REG_VALUE_PREFIX, key );
 	normalize_reg_path( keystr );
 	
 	ret = tdb_trans_store_bystring(tdb_reg->tdb, keystr, data, TDB_REPLACE);
@@ -701,7 +701,7 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 
 	DEBUG(10, ("regdb_get_secdesc: Getting secdesc of key [%s]\n", key));
 
-	if (asprintf(&tdbkey, "%s/%s", SECDESC_PREFIX, key) == -1) {
+	if (asprintf(&tdbkey, "%s/%s", REG_SECDESC_PREFIX, key) == -1) {
 		return WERR_NOMEM;
 	}
 	normalize_dbkey(tdbkey);
@@ -744,7 +744,7 @@ static WERROR regdb_set_secdesc(const char *key,
 
 	ZERO_STRUCT(ps);
 
-	if (!(tdbkey = talloc_asprintf(mem_ctx, "%s/%s", SECDESC_PREFIX,
+	if (!(tdbkey = talloc_asprintf(mem_ctx, "%s/%s", REG_SECDESC_PREFIX,
 				       key))) {
 		goto done;
 	}
