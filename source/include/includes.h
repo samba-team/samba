@@ -681,6 +681,7 @@ typedef int BOOL;
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 #include "reg_objects.h"
+#include "reg_db.h"
 #include "rpc_reg.h"
 #include "rpc_samr.h"
 #include "rpc_srvsvc.h"

@@ -72,6 +72,17 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
+/* the special value for the include parameter
+ * to be interpreted not as a file name but to
+ * trigger loading of the global smb.conf options
+ * from registry. */
+#ifndef INCLUDE_REGISTRY_NAME
+#define INCLUDE_REGISTRY_NAME "registry"
+#endif
+
+static int regdb_last_seqnum = 0;
+static BOOL include_registry_globals = False;
+
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
 #define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
@@ -3038,6 +3049,237 @@ BOOL service_ok(int iService)
 	return (bRetval);
 }
 
+/*
+ * lp_regdb_open - regdb helper function 
+ *
+ * this should be considered an interim solution that becomes
+ * superfluous once the registry code has been rewritten
+ * do allow use of the tdb portion of the registry alone.
+ *
+ * in the meanwhile this provides a lean access
+ * to the registry globals.
+ */
+
+static struct tdb_wrap *lp_regdb_open(void)
+{
+	struct tdb_wrap *reg_tdb = NULL;
+	const char *vstring = "INFO/version";
+	uint32 vers_id;
+
+	become_root();
+	reg_tdb = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, 
+				REG_TDB_FLAGS, O_RDWR, 0600);
+	if (!reg_tdb) {
+		DEBUG(0, ("lp_regdb_open: failed to open %s: %s\n",
+			 lock_path("registry.tdb"), strerror(errno)));
+	}
+	else {
+		DEBUG(10, ("lp_regdb_open: reg tdb opened.\n"));
+	}
+	unbecome_root();
+
+	vers_id = tdb_fetch_int32(reg_tdb->tdb, vstring);
+	if (vers_id != REGVER_V1) {
+		DEBUG(10, ("lp_regdb_open: INFO: registry tdb %s has wrong "
+			  "INFO/version (got %d, expected %d)\n",
+			  lock_path("registry.tdb"), vers_id, REGVER_V1));
+		/* this is apparently not implemented in the tdb */
+	}
+
+	return reg_tdb;
+}
+
+/*
+ * process_registry_globals
+ *
+ * this is the interim version of process_registry globals
+ *
+ * until we can do it as we would like using the api and only
+ * using the tdb portion of the registry (see below),
+ * this just provides the needed functionality of regdb_fetch_values
+ * and regdb_unpack_values, circumventing any fancy stuff, to
+ * give us access to the registry globals.
+ */
+static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
+{
+	BOOL ret = False;
+	struct tdb_wrap *reg_tdb = NULL;
+	WERROR err;
+	char *keystr;
+	TDB_DATA data;
+	/* vars for the tdb unpack loop */
+	int len = 0;
+	int i;
+	int buflen;
+	uint8 *buf;
+	uint32 type;
+	uint32 size;
+	uint32 num_values = 0;
+	uint8 *data_p;
+	pstring valname;
+	char * valstr;
+	struct registry_value *value = NULL;
+
+	include_registry_globals = True;
+
+	ZERO_STRUCT(data);
+
+	reg_tdb = lp_regdb_open();
+	if (!reg_tdb) {
+		DEBUG(1, ("Error opening the registry!\n"));
+		goto done;
+	}
+
+	/* reg_tdb is from now on used as talloc ctx.
+	 * freeing it closes the tdb (if refcount is 0) */
+
+	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", VALUE_PREFIX, 
+				 KEY_SMBCONF, GLOBAL_NAME);
+	normalize_dbkey(keystr);
+
+	DEBUG(10, ("process_registry_shares: fetching key '%s'\n",
+		   keystr));
+
+	data = tdb_fetch_bystring(reg_tdb->tdb, keystr);
+	if (!data.dptr) {
+		ret = True;
+		goto done;
+	}
+
+	buf = data.dptr;
+	buflen = data.dsize;
+
+	/* unpack number of values */
+	len = tdb_unpack(buf, buflen, "d", &num_values);
+	DEBUG(10, ("process_registry_shares: got %d values from tdb\n",
+		   num_values));
+
+	/* unpack the values */
+	for (i=0; i < num_values; i++) {
+		type = REG_NONE;
+		size = 0;
+		data_p = NULL;
+		len += tdb_unpack(buf+len, buflen-len, "fdB",
+				  valname,
+				  &type,
+				  &size,
+				  &data_p);
+		DEBUG(10, ("process_registry_shares: got value '%s'\n",
+			   valname));
+		if (size && data_p) {
+			err = registry_pull_value(reg_tdb, 
+						  &value,
+						  type,
+						  data_p,
+						  size,
+						  size);
+			SAFE_FREE(data_p);
+			if (!W_ERROR_IS_OK(err)) {
+				goto done;
+			}
+			switch(type) {
+			case REG_DWORD:
+				valstr = talloc_asprintf(reg_tdb, "%d", 
+							 value->v.dword);
+				pfunc(valname, valstr);
+				break;
+			case REG_SZ:
+				pfunc(valname, value->v.sz.str);
+				break;
+			default:
+				/* ignore other types */
+				break;
+			}
+		}
+	}
+
+	ret = pfunc("registry shares", "yes");
+	regdb_last_seqnum = tdb_get_seqnum(reg_tdb->tdb);
+
+done:
+	TALLOC_FREE(reg_tdb);
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+#if 0
+/*
+ * this is process_registry_globals as it _should_ be (roughly)
+ * using the reg_api functions...
+ * 
+ */
+static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
+{
+	BOOL ret = False;
+	TALLOC_CTX *ctx = NULL;
+	char *regpath = NULL;
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+	struct registry_value *value = NULL;
+	char *valname = NULL;
+	char *valstr = NULL;
+	uint32 idx = 0;
+	NT_USER_TOKEN *token;
+
+	ctx = talloc_init("process_registry_globals");
+	if (!ctx) {
+		smb_panic("Failed to create talloc context!");
+	}
+
+	include_registry_globals = True;
+
+	if (!registry_init_regdb()) {
+		DEBUG(1, ("Error initializing the registry.\n"));
+		goto done;
+	}
+
+	if (!(token = registry_create_admin_token(ctx))) {
+		DEBUG(1, ("Error creating admin token\n"));
+		goto done;
+	}
+
+	regpath = talloc_asprintf(ctx,"%s\\%s", KEY_SMBCONF, GLOBAL_NAME);
+	werr = reg_open_path(ctx, regpath, REG_KEY_READ, token, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Registry smbconf global section does not exist.\n"));
+		DEBUGADD(1, ("Error opening registry path '%s\\%s: %s\n",
+			     KEY_SMBCONF, GLOBAL_NAME, dos_errstr(werr)));
+		goto done;
+	}
+
+	for (idx = 0;
+	     W_ERROR_IS_OK(werr = reg_enumvalue(ctx, key, idx, &valname,
+			     			&value));
+	     idx++)
+	{
+		DEBUG(5, ("got global registry parameter '%s'\n", valname));
+		switch(value->type) {
+		case REG_DWORD:
+			valstr = talloc_asprintf(ctx, "%d", value->v.dword);
+			pfunc(valname, valstr);
+			TALLOC_FREE(valstr);
+			break;
+		case REG_SZ:
+			pfunc(valname, value->v.sz.str);
+			break;
+		default:
+			/* ignore other types */
+			break;
+		}
+		TALLOC_FREE(value);
+		TALLOC_FREE(valstr);
+	}
+
+	ret = pfunc("registry shares", "yes");
+
+	regdb_last_seqnum = regdb_get_seqnum();
+
+done:
+	talloc_destroy(ctx);
+	return ret;
+}
+#endif /* if 0 */
+
 static struct file_lists {
 	struct file_lists *next;
 	char *name;
@@ -3091,8 +3333,20 @@ static void add_to_file_list(const char *fname, const char *subfname)
 BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
+	struct tdb_wrap *reg_tdb = NULL;
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
+
+	if (include_registry_globals) {
+		reg_tdb = lp_regdb_open();
+		if (reg_tdb && (regdb_last_seqnum != tdb_get_seqnum(reg_tdb->tdb)))
+		{
+			DEBUGADD(6, ("regdb seqnum changed: old = %d, new = %d\n",
+				    regdb_last_seqnum, tdb_get_seqnum(reg_tdb->tdb)));
+			TALLOC_FREE(reg_tdb);
+			return True;
+		}
+	}
 
 	while (f) {
 		pstring n2;
@@ -3193,6 +3447,17 @@ static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
+
+	if (strequal(fname, INCLUDE_REGISTRY_NAME)) {
+		if (bInGlobalSection) {
+			return process_registry_globals(do_parameter);
+		}
+		else {
+			DEBUG(1, ("\"include = registry\" only effective "
+				  "in %s section\n", GLOBAL_NAME));
+			return False;
+		}
+	}
 
 	standard_sub_basic(get_current_username(), current_user_info.domain,
 			   fname,sizeof(fname));

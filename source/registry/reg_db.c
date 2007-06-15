@@ -28,11 +28,6 @@
 static struct tdb_wrap *tdb_reg = NULL;
 static int tdb_refcount;
 
-#define VALUE_PREFIX	"SAMBA_REGVAL"
-#define SECDESC_PREFIX  "SAMBA_SECDESC"
-
-#define REG_TDB_FLAGS TDB_SEQNUM
-
 /* List the deepest path into the registry.  All part components will be created.*/
 
 /* If you want to have a part of the path controlled by the tdb and part by
@@ -85,8 +80,6 @@ static struct builtin_regkey_value builtin_registry_values[] = {
 	{ NULL, NULL, 0, { NULL } }
 };
 
-#define REGVER_V1	1	/* first db version with write support */
-	
 /***********************************************************************
  Open the registry data in the tdb
  ***********************************************************************/
@@ -256,6 +249,8 @@ BOOL regdb_init( void )
 
 	if ( vers_id != REGVER_V1 ) {
 		/* any upgrade code here if needed */
+		DEBUG(10, ("regdb_init: got INFO/version = %d != %d\n",
+			   vers_id, REGVER_V1));
 	}
 
 	/* always setup the necessary keys and values */
