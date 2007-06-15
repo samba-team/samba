@@ -39,7 +39,7 @@ struct event_context *winbind_event_context(void)
 	static struct event_context *ctx;
 
 	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init winbind event context\n");
+		smb_panic("Could not init winbind event context");
 	}
 	return ctx;
 }
@@ -50,7 +50,7 @@ struct messaging_context *winbind_messaging_context(void)
 
 	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
 					   winbind_event_context()))) {
-		smb_panic("Could not init winbind messaging context\n");
+		smb_panic("Could not init winbind messaging context");
 	}
 	return ctx;
 }

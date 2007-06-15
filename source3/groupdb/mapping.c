@@ -50,7 +50,7 @@ static BOOL init_group_mapping(void)
 		backend = groupdb_tdb_init();
 	} else {
 		DEBUG(0,("Unknown groupdb backend '%s'\n", backend_string));
-		smb_panic("Unknown groupdb backend\n");
+		smb_panic("Unknown groupdb backend");
 	}
 	return backend != NULL;
 }

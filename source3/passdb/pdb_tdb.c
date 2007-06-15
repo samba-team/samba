@@ -1568,7 +1568,7 @@ static BOOL tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 
  done:
 	if ((tdb != NULL) && (tdb_close(tdb) != 0)) {
-		smb_panic("tdb_close(idmap_tdb) failed\n");
+		smb_panic("tdb_close(idmap_tdb) failed");
 	}
 
 	return ret;

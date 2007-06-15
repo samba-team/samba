@@ -147,7 +147,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 
 	/* Paranoia check. */
 	if(lp_security() == SEC_SHARE) {
-		smb_panic("Tried to register uid in security=share\n");
+		smb_panic("Tried to register uid in security=share");
 	}
 
 	/* Limit allowed vuids to 16bits - VUID_OFFSET. */

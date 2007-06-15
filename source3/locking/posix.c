@@ -434,7 +434,7 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 	if (dbuf.dptr == NULL) {
 		dbuf.dptr = (uint8 *)SMB_MALLOC_P(int);
 		if (!dbuf.dptr) {
-			smb_panic("increment_windows_lock_ref_count: malloc fail.\n");
+			smb_panic("increment_windows_lock_ref_count: malloc fail");
 		}
 		memset(dbuf.dptr, '\0', sizeof(int));
 		dbuf.dsize = sizeof(int);
@@ -445,7 +445,7 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 	memcpy(dbuf.dptr, &lock_ref_count, sizeof(int));
 	
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("increment_windows_lock_ref_count: tdb_store_fail.\n");
+		smb_panic("increment_windows_lock_ref_count: tdb_store_fail");
 	}
 	SAFE_FREE(dbuf.dptr);
 
@@ -461,7 +461,7 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 	if (!dbuf.dptr) {
-		smb_panic("decrement_windows_lock_ref_count: logic error.\n");
+		smb_panic("decrement_windows_lock_ref_count: logic error");
 	}
 
 	memcpy(&lock_ref_count, dbuf.dptr, sizeof(int));
@@ -469,11 +469,11 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
 	memcpy(dbuf.dptr, &lock_ref_count, sizeof(int));
 
 	if (lock_ref_count < 0) {
-		smb_panic("decrement_windows_lock_ref_count: lock_count logic error.\n");
+		smb_panic("decrement_windows_lock_ref_count: lock_count logic error");
 	}
 
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("decrement_windows_lock_ref_count: tdb_store_fail.\n");
+		smb_panic("decrement_windows_lock_ref_count: tdb_store_fail");
 	}
 	SAFE_FREE(dbuf.dptr);
 
@@ -500,12 +500,12 @@ void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 	lock_ref_count -= dcount;
 
 	if (lock_ref_count < 0) {
-		smb_panic("reduce_windows_lock_ref_count: lock_count logic error.\n");
+		smb_panic("reduce_windows_lock_ref_count: lock_count logic error");
 	}
 	memcpy(dbuf.dptr, &lock_ref_count, sizeof(int));
 	
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("reduce_windows_lock_ref_count: tdb_store_fail.\n");
+		smb_panic("reduce_windows_lock_ref_count: tdb_store_fail");
 	}
 	SAFE_FREE(dbuf.dptr);
 
@@ -565,14 +565,14 @@ static void add_fd_to_close_entry(files_struct *fsp)
 
 	dbuf.dptr = (uint8 *)SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!dbuf.dptr) {
-		smb_panic("add_fd_to_close_entry: Realloc fail !\n");
+		smb_panic("add_fd_to_close_entry: SMB_REALLOC failed");
 	}
 
 	memcpy(dbuf.dptr + dbuf.dsize, &fsp->fh->fd, sizeof(int));
 	dbuf.dsize += sizeof(int);
 
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("add_fd_to_close_entry: tdb_store_fail.\n");
+		smb_panic("add_fd_to_close_entry: tdb_store_fail");
 	}
 
 	DEBUG(10,("add_fd_to_close_entry: added fd %d file %s\n",
@@ -590,7 +590,7 @@ static void delete_close_entries(files_struct *fsp)
 	TDB_DATA kbuf = fd_array_key_fsp(fsp);
 
 	if (tdb_delete(posix_pending_close_tdb, kbuf) == -1) {
-		smb_panic("delete_close_entries: tdb_delete fail !\n");
+		smb_panic("delete_close_entries: tdb_delete failed");
 	}
 }
 
@@ -934,7 +934,7 @@ new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
 				pstring msg;
 
 				slprintf(msg, sizeof(msg)-1, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
-lock: start = %.0f, size = %.0f\n", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size );
+lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size );
 
 				smb_panic(msg);
 			}
