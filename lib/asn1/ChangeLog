@@ -1,3 +1,7 @@
+2007-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1: Add KRB5-AUTHDATA-INITIAL-VERIFIED-CAS.
+
 2007-06-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkinit.asn1: Make the pkinit nonce signed (like the kerberos
