@@ -2785,6 +2785,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	BOOL write_through;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int outsize = 0;
+	NTSTATUS status;
 	START_PROFILE(SMBwritebraw);
 
 	if (srv_is_signing_active()) {
@@ -2889,7 +2890,13 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
  
 	SSVAL(outbuf,smb_vwv0,total_written);
 
-	sync_file(conn, fsp, write_through);
+	status = sync_file(conn, fsp, write_through);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("reply_writebraw: sync_file for %s returned %s\n",
+			fsp->fsp_name, nt_errstr(status) ));
+		END_PROFILE(SMBwritebraw);
+		return ERROR_NT(status);
+	}
 
 	DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
 		fsp->fnum, (double)startpos, (int)numtowrite,(int)total_written));
@@ -2954,7 +2961,13 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 		nwritten = write_file(fsp,data,startpos,numtowrite);
 	}
   
-	sync_file(conn, fsp, False /* write through */);
+	status = sync_file(conn, fsp, False /* write through */);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBwriteunlock);
+		DEBUG(5,("reply_writeunlock: sync_file for %s returned %s\n",
+			fsp->fsp_name, nt_errstr(status) ));
+		return ERROR_NT(status);
+	}
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwriteunlock);
@@ -3001,6 +3014,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	char *data;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int outsize = 0;
+	NTSTATUS status;
 	START_PROFILE(SMBwrite);
 
 	/* If it's an IPC, pass off the pipe handler. */
@@ -3011,6 +3025,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 
 	CHECK_FSP(fsp,conn);
 	if (!CHECK_WRITE(fsp)) {
+		END_PROFILE(SMBwrite);
 		return(ERROR_DOS(ERRDOS,ERRbadaccess));
 	}
 
@@ -3046,7 +3061,13 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	} else
 		nwritten = write_file(fsp,data,startpos,numtowrite);
   
-	sync_file(conn, fsp, False);
+	status = sync_file(conn, fsp, False);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBwrite);
+		DEBUG(5,("reply_write: sync_file for %s returned %s\n",
+			fsp->fsp_name, nt_errstr(status) ));
+		return ERROR_NT(status);
+	}
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwrite);
@@ -3083,6 +3104,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	unsigned int smblen = smb_len(inbuf);
 	char *data;
 	BOOL large_writeX = ((CVAL(inbuf,smb_wct) == 14) && (smblen > 0xFFFF));
+	NTSTATUS status;
 	START_PROFILE(SMBwriteX);
 
 	/* If it's an IPC, pass off the pipe handler. */
@@ -3173,7 +3195,13 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
 		fsp->fnum, (int)numtowrite, (int)nwritten));
 
-	sync_file(conn, fsp, write_through);
+	status = sync_file(conn, fsp, write_through);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBwriteX);
+		DEBUG(5,("reply_write_and_X: sync_file for %s returned %s\n",
+			fsp->fsp_name, nt_errstr(status) ));
+		return ERROR_NT(status);
+	}
 
 	END_PROFILE(SMBwriteX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
@@ -3270,7 +3298,13 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (!fsp) {
 		file_sync_all(conn);
 	} else {
-		sync_file(conn,fsp, True);
+		NTSTATUS status = sync_file(conn, fsp, True);
+		if (!NT_STATUS_IS_OK(status)) {
+			END_PROFILE(SMBflush);
+			DEBUG(5,("reply_flush: sync_file for %s returned %s\n",
+				fsp->fsp_name, nt_errstr(status) ));
+			return ERROR_NT(status);
+		}
 	}
 	
 	DEBUG(3,("flush\n"));
@@ -5884,6 +5918,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	int smb_doff;
 	char *data;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	NTSTATUS status;
 	START_PROFILE(SMBwriteBmpx);
 
 	CHECK_FSP(fsp,conn);
@@ -5913,7 +5948,13 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	nwritten = write_file(fsp,data,startpos,numtowrite);
 
-	sync_file(conn, fsp, write_through);
+	status = sync_file(conn, fsp, write_through);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBwriteBmpx);
+		DEBUG(5,("reply_writebmpx: sync_file for %s returned %s\n",
+			fsp->fsp_name, nt_errstr(status) ));
+		return ERROR_NT(status);
+	}
   
 	if(nwritten < (ssize_t)numtowrite) {
 		END_PROFILE(SMBwriteBmpx);
@@ -5989,6 +6030,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	write_bmpx_struct *wbms;
 	BOOL send_response = False; 
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	NTSTATUS status;
 	START_PROFILE(SMBwriteBs);
 
 	CHECK_FSP(fsp,conn);
@@ -6025,9 +6067,9 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 
 	nwritten = write_file(fsp,data,startpos,numtowrite);
 
-	sync_file(conn, fsp, write_through);
+	status = sync_file(conn, fsp, write_through);
   
-	if (nwritten < (ssize_t)numtowrite) {
+	if (nwritten < (ssize_t)numtowrite || !NT_STATUS_IS_OK(status)) {
 		if(write_through) {
 			/* We are returning an error - we can delete the aux struct */
 			if (wbms)

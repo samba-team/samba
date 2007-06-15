@@ -834,16 +834,23 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 sync a file
 ********************************************************************/
 
-void sync_file(connection_struct *conn, files_struct *fsp, BOOL write_through)
+NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, BOOL write_through)
 {
        	if (fsp->fh->fd == -1)
-		return;
+		return NT_STATUS_INVALID_HANDLE;
 
 	if (lp_strict_sync(SNUM(conn)) &&
 	    (lp_syncalways(SNUM(conn)) || write_through)) {
-		flush_write_cache(fsp, SYNC_FLUSH);
-		SMB_VFS_FSYNC(fsp,fsp->fh->fd);
+		int ret = flush_write_cache(fsp, SYNC_FLUSH);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		ret = SMB_VFS_FSYNC(fsp,fsp->fh->fd);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
 	}
+	return NT_STATUS_OK;
 }
 
 /************************************************************
