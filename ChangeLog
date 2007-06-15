@@ -1,4 +1,27 @@
+2007-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: Use KRB5_AUTHDATA_INITIAL_VERIFIED_CAS.
+
+2007-06-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: tell user when they got a pk-init request with
+	pkinit disabled.
+
 2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/principal.c: Rename UNPARSE_NO_QUOTE to
+	UNPARSE_DISPLAY.
+
+	* lib/krb5/krb5.h: Rename UNPARSE_NO_QUOTE to UNPARSE_DISPLAY.
+
+	* lib/krb5/principal.c: Make no-quote mean replace strange chars
+	with space.
+
+	* lib/krb5/principal.c: Support KRB5_PRINCIPAL_UNPARSE_NO_QUOTE.
+
+	* lib/krb5/krb5.h: Add KRB5_PRINCIPAL_UNPARSE_NO_QUOTE.
+
+	* lib/krb5/test_princ.c: Test quoteing.
 
 	* lib/krb5/pkinit.c: update (c)
 	
