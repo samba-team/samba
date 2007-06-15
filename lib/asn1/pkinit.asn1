@@ -34,8 +34,6 @@ MS-UPN-SAN ::= UTF8String
 pa-pk-as-req INTEGER ::=                  16
 pa-pk-as-rep INTEGER ::=                  17
 
-ad-initial-verified-cas INTEGER ::=        9
-
 td-trusted-certifiers INTEGER ::=        104
 td-invalid-certificates INTEGER ::=      105
 td-dh-parameters INTEGER ::=             109
