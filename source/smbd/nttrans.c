@@ -50,7 +50,7 @@ static const char *known_nt_pipes[] = {
 static char *nttrans_realloc(char **ptr, size_t size)
 {
 	if (ptr==NULL) {
-		smb_panic("nttrans_realloc() called with NULL ptr\n");
+		smb_panic("nttrans_realloc() called with NULL ptr");
 	}
 		
 	*ptr = (char *)SMB_REALLOC(*ptr, size);

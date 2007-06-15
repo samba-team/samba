@@ -54,7 +54,7 @@ struct event_context *nmbd_event_context(void)
 	static struct event_context *ctx;
 
 	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init nmbd event context\n");
+		smb_panic("Could not init nmbd event context");
 	}
 	return ctx;
 }
@@ -65,7 +65,7 @@ struct messaging_context *nmbd_messaging_context(void)
 
 	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
 					   nmbd_event_context()))) {
-		smb_panic("Could not init nmbd messaging context\n");
+		smb_panic("Could not init nmbd messaging context");
 	}
 	return ctx;
 }

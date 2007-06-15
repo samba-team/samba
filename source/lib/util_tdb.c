@@ -802,7 +802,7 @@ int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 	if ((res = tdb_store(tdb, key, dbuf, flag)) != 0) {
 		DEBUG(10, ("tdb_store failed\n"));
 		if (tdb_transaction_cancel(tdb) != 0) {
-			smb_panic("Cancelling transaction failed\n");
+			smb_panic("Cancelling transaction failed");
 		}
 		return res;
 	}
@@ -831,7 +831,7 @@ int tdb_trans_delete(struct tdb_context *tdb, TDB_DATA key)
 	if ((res = tdb_delete(tdb, key)) != 0) {
 		DEBUG(10, ("tdb_delete failed\n"));
 		if (tdb_transaction_cancel(tdb) != 0) {
-			smb_panic("Cancelling transaction failed\n");
+			smb_panic("Cancelling transaction failed");
 		}
 		return res;
 	}

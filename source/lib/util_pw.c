@@ -49,7 +49,7 @@ static void init_pwnam_cache(void)
 	pwnam_cache = TALLOC_ZERO_ARRAY(NULL, struct passwd *,
 					PWNAMCACHE_SIZE);
 	if (pwnam_cache == NULL) {
-		smb_panic("Could not init pwnam_cache\n");
+		smb_panic("Could not init pwnam_cache");
 	}
 
 	return;

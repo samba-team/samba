@@ -66,7 +66,7 @@ struct event_context *smbd_event_context(void)
 	static struct event_context *ctx;
 
 	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init smbd event context\n");
+		smb_panic("Could not init smbd event context");
 	}
 	return ctx;
 }
@@ -77,7 +77,7 @@ struct messaging_context *smbd_messaging_context(void)
 
 	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
 					   smbd_event_context()))) {
-		smb_panic("Could not init smbd messaging context\n");
+		smb_panic("Could not init smbd messaging context");
 	}
 	return ctx;
 }
@@ -610,7 +610,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				 * CLEAR_IF_FIRST flags */
 				if (tdb_reopen_all(1) == -1) {
 					DEBUG(0,("tdb_reopen_all failed.\n"));
-					smb_panic("tdb_reopen_all failed.");
+					smb_panic("tdb_reopen_all failed");
 				}
 
 				return True; 

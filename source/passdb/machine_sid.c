@@ -186,7 +186,7 @@ DOM_SID *get_global_sam_sid(void)
 	   pdb_generate_sam_sid() as needed */
 
 	if (!(global_sam_sid = pdb_generate_sam_sid())) {
-		smb_panic("Could not generate a machine SID\n");
+		smb_panic("could not generate a machine SID");
 	}
 
 	return global_sam_sid;

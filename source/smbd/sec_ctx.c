@@ -192,7 +192,7 @@ BOOL push_sec_ctx(void)
 
 	if (sec_ctx_stack_ndx == MAX_SEC_CTX_DEPTH) {
 		DEBUG(0, ("Security context stack overflow!\n"));
-		smb_panic("Security context stack overflow!\n");
+		smb_panic("Security context stack overflow!");
 	}
 
 	/* Store previous user context */
@@ -374,7 +374,7 @@ BOOL pop_sec_ctx(void)
 
 	if (sec_ctx_stack_ndx == 0) {
 		DEBUG(0, ("Security context stack underflow!\n"));
-		smb_panic("Security context stack underflow!\n");
+		smb_panic("Security context stack underflow!");
 	}
 
 	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];

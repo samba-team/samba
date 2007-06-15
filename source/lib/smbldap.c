@@ -409,9 +409,8 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if (mods == NULL) {
 		mods = SMB_MALLOC_P(LDAPMod *);
 		if (mods == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!\n");
+			smb_panic("smbldap_set_mod: out of memory!");
 			/* notreached. */
-			abort();
 		}
 		mods[0] = NULL;
 	}
@@ -424,15 +423,13 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if (mods[i] == NULL) {
 		mods = SMB_REALLOC_ARRAY (mods, LDAPMod *, i + 2);
 		if (mods == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!\n");
+			smb_panic("smbldap_set_mod: out of memory!");
 			/* notreached. */
-			abort();
 		}
 		mods[i] = SMB_MALLOC_P(LDAPMod);
 		if (mods[i] == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!\n");
+			smb_panic("smbldap_set_mod: out of memory!");
 			/* notreached. */
-			abort();
 		}
 		mods[i]->mod_op = modop;
 		mods[i]->mod_values = NULL;
@@ -450,15 +447,13 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		mods[i]->mod_values = SMB_REALLOC_ARRAY(mods[i]->mod_values, char *, j + 2);
 					       
 		if (mods[i]->mod_values == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!\n");
+			smb_panic("smbldap_set_mod: out of memory!");
 			/* notreached. */
-			abort();
 		}
 
 		if (push_utf8_allocate(&utf8_value, value) == (size_t)-1) {
-			smb_panic("smbldap_set_mod: String conversion failure!\n");
+			smb_panic("smbldap_set_mod: String conversion failure!");
 			/* notreached. */
-			abort();
 		}
 
 		mods[i]->mod_values[j] = utf8_value;

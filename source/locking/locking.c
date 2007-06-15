@@ -479,7 +479,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	int i;
 
 	if (dbuf.dsize < sizeof(struct locking_data)) {
-		smb_panic("PANIC: parse_share_modes: buffer too short.\n");
+		smb_panic("parse_share_modes: buffer too short");
 	}
 
 	data = (struct locking_data *)dbuf.dptr;
@@ -495,7 +495,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
 		DEBUG(0, ("invalid number of share modes: %d\n",
 			  lck->num_share_modes));
-		smb_panic("PANIC: invalid number of share modes");
+		smb_panic("parse_share_modes: invalid number of share modes");
 	}
 
 	lck->share_modes = NULL;
@@ -505,7 +505,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		if (dbuf.dsize < (sizeof(struct locking_data) +
 				  (lck->num_share_modes *
 				   sizeof(struct share_mode_entry)))) {
-			smb_panic("PANIC: parse_share_modes: buffer too short.\n");
+			smb_panic("parse_share_modes: buffer too short");
 		}
 				  
 		lck->share_modes = (struct share_mode_entry *)
@@ -514,7 +514,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 				      sizeof(struct share_mode_entry));
 
 		if (lck->share_modes == NULL) {
-			smb_panic("talloc failed\n");
+			smb_panic("parse_share_modes: talloc failed");
 		}
 	}
 
@@ -528,12 +528,12 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 				((data->u.s.delete_token_size - sizeof(uid_t)) % sizeof(gid_t)) != 0) {
 			DEBUG(0, ("parse_share_modes: invalid token size %d\n",
 				data->u.s.delete_token_size));
-			smb_panic("parse_share_modes: invalid token size\n");
+			smb_panic("parse_share_modes: invalid token size");
 		}
 
 		lck->delete_token = TALLOC_P(lck, UNIX_USER_TOKEN);
 		if (!lck->delete_token) {
-			smb_panic("talloc failed\n");
+			smb_panic("parse_share_modes: talloc failed");
 		}
 
 		/* Copy out the uid and gid. */
@@ -552,7 +552,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 			lck->delete_token->groups = TALLOC_ARRAY(lck->delete_token, gid_t,
 							lck->delete_token->ngroups);
 			if (!lck->delete_token) {
-				smb_panic("talloc failed\n");
+				smb_panic("parse_share_modes: talloc failed");
 			}
 
 			for (i = 0; i < lck->delete_token->ngroups; i++) {
@@ -571,7 +571,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 					sizeof(struct share_mode_entry)) +
 					data->u.s.delete_token_size );
 	if (lck->servicepath == NULL) {
-		smb_panic("talloc_strdup failed\n");
+		smb_panic("parse_share_modes: talloc_strdup failed");
 	}
 
 	lck->filename = talloc_strdup(lck, (const char *)dbuf.dptr + sizeof(*data) +
@@ -580,7 +580,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 					data->u.s.delete_token_size +
 					strlen(lck->servicepath) + 1 );
 	if (lck->filename == NULL) {
-		smb_panic("talloc_strdup failed\n");
+		smb_panic("parse_share_modes: talloc_strdup failed");
 	}
 
 	/*
@@ -637,7 +637,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	result.dptr = TALLOC_ARRAY(lck, uint8, result.dsize);
 
 	if (result.dptr == NULL) {
-		smb_panic("talloc failed\n");
+		smb_panic("talloc failed");
 	}
 
 	data = (struct locking_data *)result.dptr;
@@ -703,7 +703,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0, ("delete_rec returned %s\n",
 					  nt_errstr(status)));
-				smb_panic("Could not delete share entry\n");
+				smb_panic("could not delete share entry");
 			}
 		}
 		goto done;
@@ -712,7 +712,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	status = lck->record->store(lck->record, data, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("store returned %s\n", nt_errstr(status)));
-		smb_panic("Could not store share mode entry\n");
+		smb_panic("could not store share mode entry");
 	}
 
  done:

@@ -812,13 +812,13 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 	blocking_lock_record *blr;
 
 	if (data->data == NULL) {
-		smb_panic("process_blocking_lock_cancel_message: null msg\n");
+		smb_panic("process_blocking_lock_cancel_message: null msg");
 	}
 
 	if (data->length != MSG_BLOCKING_LOCK_CANCEL_SIZE) {
 		DEBUG(0, ("process_blocking_lock_cancel_message: "
 			  "Got invalid msg len %d\n", (int)data->length));
-		smb_panic("process_blocking_lock_cancel_message: bad msg\n");
+		smb_panic("process_blocking_lock_cancel_message: bad msg");
         }
 
 	memcpy(&blr, msg, sizeof(blr));

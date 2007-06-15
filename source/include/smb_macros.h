@@ -49,12 +49,13 @@
 /* assert macros */
 #ifdef DEVELOPER
 #define SMB_ASSERT(b) ( (b) ? (void)0 : \
-        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
-		 __FILE__, __LINE__)), smb_panic("assert failed")))
+        (DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
+		 __FILE__, __LINE__, #b)), smb_panic("assert failed: " #b)))
 #else
 /* redefine the assert macro for non-developer builds */
 #define SMB_ASSERT(b) ( (b) ? (void)0 : \
-        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__))))
+        (DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
+	    __FILE__, __LINE__, #b))))
 #endif
 
 #define SMB_WARN(condition, message) \

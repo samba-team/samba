@@ -2449,15 +2449,16 @@ int smb_mkstemp(char *name_template)
 void *smb_xmalloc_array(size_t size, unsigned int count)
 {
 	void *p;
-	if (size == 0)
-		smb_panic("smb_xmalloc_array: called with zero size.\n");
+	if (size == 0) {
+		smb_panic("smb_xmalloc_array: called with zero size");
+	}
         if (count >= MAX_ALLOC_SIZE/size) {
-                smb_panic("smb_xmalloc: alloc size too large.\n");
+                smb_panic("smb_xmalloc_array: alloc size too large");
         }
 	if ((p = SMB_MALLOC(size*count)) == NULL) {
 		DEBUG(0, ("smb_xmalloc_array failed to allocate %lu * %lu bytes\n",
 			(unsigned long)size, (unsigned long)count));
-		smb_panic("smb_xmalloc_array: malloc fail.\n");
+		smb_panic("smb_xmalloc_array: malloc failed");
 	}
 	return p;
 }
@@ -2497,8 +2498,9 @@ char *smb_xstrdup(const char *s)
 #endif
 #define strdup(s) __ERROR_DONT_USE_STRDUP_DIRECTLY
 #endif
-	if (!s1)
-		smb_panic("smb_xstrdup: malloc fail\n");
+	if (!s1) {
+		smb_panic("smb_xstrdup: malloc failed");
+	}
 	return s1;
 
 }
@@ -2527,8 +2529,9 @@ char *smb_xstrndup(const char *s, size_t n)
 #endif
 #define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
 #endif
-	if (!s1)
-		smb_panic("smb_xstrndup: malloc fail\n");
+	if (!s1) {
+		smb_panic("smb_xstrndup: malloc failed");
+	}
 	return s1;
 }
 
@@ -2544,8 +2547,9 @@ char *smb_xstrndup(const char *s, size_t n)
 	VA_COPY(ap2, ap);
 
 	n = vasprintf(ptr, format, ap2);
-	if (n == -1 || ! *ptr)
+	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");
+	}
 	return n;
 }
 
@@ -2978,7 +2982,7 @@ void *talloc_check_name_abort(const void *ptr, const char *name)
 
 	DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
 		  name, talloc_get_name(ptr)));
-	smb_panic("aborting");
+	smb_panic("talloc type mismatch");
 	/* Keep the compiler happy */
 	return NULL;
 }

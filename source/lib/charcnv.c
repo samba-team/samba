@@ -168,7 +168,7 @@ void init_iconv(void)
 				conv_handles[c1][c2] = smb_iconv_open(n2,n1);
 				if (!conv_handles[c1][c2]) {
 					DEBUG(0,("init_iconv: Conversion from %s to %s failed", n1, n2));
-					smb_panic("init_iconv: conv_handle initialization failed.");
+					smb_panic("init_iconv: conv_handle initialization failed");
 				}
 			}
 		}

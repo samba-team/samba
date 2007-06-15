@@ -107,9 +107,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 	if (sys_setgroups(gid, ngrp_saved, gids_saved) != 0) {
 		/* yikes! */
 		DEBUG(0,("ERROR: getgrouplist: failed to reset group list!\n"));
-		smb_panic("getgrouplist: failed to reset group list!\n");
-		free(gids_saved);
-		return -1;
+		smb_panic("getgrouplist: failed to reset group list!");
 	}
 
 	free(gids_saved);

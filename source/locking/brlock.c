@@ -577,9 +577,9 @@ OR
 	}
 
 	/* Never get here. */
-	smb_panic("brlock_posix_split_merge\n");
+	smb_panic("brlock_posix_split_merge");
 	/* Notreached. */
-	abort();
+
 	/* Keep some compilers happy. */
 	return 0;
 }
@@ -1309,7 +1309,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 			if (br_lck->num_locks) {
 				locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
 				if (!locks_copy) {
-					smb_panic("brl_close_fnum: talloc fail.\n");
+					smb_panic("brl_close_fnum: talloc failed");
 	 			}
 			} else {	
 				locks_copy = NULL;
@@ -1562,7 +1562,7 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("delete_rec returned %s\n",
 				  nt_errstr(status)));
-			smb_panic("Could not delete byte range lock entry\n");
+			smb_panic("Could not delete byte range lock entry");
 		}
 	} else {
 		TDB_DATA data;
@@ -1575,7 +1575,7 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 					       TDB_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
-			smb_panic("Could not store byte range mode entry\n");
+			smb_panic("Could not store byte range mode entry");
 		}
 	}
 

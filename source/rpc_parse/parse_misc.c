@@ -66,7 +66,7 @@ TALLOC_CTX *main_loop_talloc_get(void)
     if (!main_loop_talloc) {
         main_loop_talloc = talloc_init("main loop talloc (mainly parse_misc)");
         if (!main_loop_talloc)
-            smb_panic("main_loop_talloc: malloc fail\n");
+            smb_panic("main_loop_talloc: malloc fail");
     }
 
     return main_loop_talloc;
@@ -499,7 +499,7 @@ void init_unistr(UNISTR *str, const char *buf)
 	if (len) {
 		str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
 		if (str->buffer == NULL)
-			smb_panic("init_unistr: malloc fail\n");
+			smb_panic("init_unistr: malloc fail");
 
 		rpcstr_push(str->buffer, buf, len*sizeof(uint16), STR_TERMINATE);
 	} else {
@@ -535,7 +535,7 @@ static void create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 	if (len) {
 		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(), len);
 		if (str->buffer == NULL)
-			smb_panic("create_rpc_blob: talloc fail\n");
+			smb_panic("create_rpc_blob: talloc fail");
 		str->buf_len = len;
 	} else {
 		str->buffer = NULL;
@@ -642,7 +642,7 @@ void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
 		str->buffer = (uint16 *)TALLOC_ZERO(get_talloc_ctx(),
 						    str->buf_max_len);
 		if (str->buffer == NULL)
-			smb_panic("init_regval_buffer: talloc fail\n");
+			smb_panic("init_regval_buffer: talloc fail");
 		memcpy(str->buffer, buf, str->buf_len);
 	}
 }
@@ -718,7 +718,7 @@ void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 		if (str->uni_max_len) {
 	   		str->buffer = (uint16 *)TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_max_len);
 			if ((str->buffer == NULL)) {
-				smb_panic("copy_unistr2: talloc fail\n");
+				smb_panic("copy_unistr2: talloc fail");
 				return;
 			}
 			/* copy the string */
@@ -752,7 +752,7 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(),
 						   str->str_max_len);
 		if (str->buffer == NULL)
-			smb_panic("init_string2: malloc fail\n");
+			smb_panic("init_string2: malloc fail");
 		memcpy(str->buffer, buf, str_len);
 	}
 }
@@ -828,7 +828,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 
 	str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
 	if (str->buffer == NULL) {
-		smb_panic("init_unistr2: malloc fail\n");
+		smb_panic("init_unistr2: malloc fail");
 		return;
 	}
 
@@ -864,7 +864,7 @@ void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 {
 	uni4->string = TALLOC_P( get_talloc_ctx(), UNISTR2 );
 	if (!uni4->string) {
-		smb_panic("init_unistr4: talloc fail\n");
+		smb_panic("init_unistr4: talloc fail");
 		return;
 	}
 	init_unistr2( uni4->string, buf, flags );
@@ -877,7 +877,7 @@ void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf )
 {
 	uni4->string = TALLOC_P( ctx, UNISTR2 );
 	if (!uni4->string) {
-		smb_panic("init_unistr4_w: talloc fail\n");
+		smb_panic("init_unistr4_w: talloc fail");
 		return;
 	}
 	init_unistr2_w( ctx, uni4->string, buf );
@@ -907,7 +907,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 	if (len + 1) {
 		str->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, len + 1);
 		if (str->buffer == NULL) {
-			smb_panic("init_unistr2_w: talloc fail\n");
+			smb_panic("init_unistr2_w: talloc fail");
 			return;
 		}
 	} else {
@@ -963,7 +963,7 @@ void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 	if (i) {
 		to->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, i);
 		if (to->buffer == NULL)
-			smb_panic("init_unistr2_from_unistr: malloc fail\n");
+			smb_panic("init_unistr2_from_unistr: malloc fail");
 		memcpy(to->buffer, from->buffer, i*sizeof(uint16));
 	} else {
 		to->buffer = NULL;
@@ -992,7 +992,7 @@ void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob)
 		str->buffer = NULL;
 	}
 	if ((str->buffer == NULL) && (blob->length > 0)) {
-		smb_panic("init_unistr2_from_datablob: malloc fail\n");
+		smb_panic("init_unistr2_from_datablob: malloc fail");
 	}
 }
 
@@ -1757,7 +1757,7 @@ void init_unistr3(UNISTR3 *str, const char *buf)
 	if (str->uni_str_len) {
 		str->str.buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_str_len);
 		if (str->str.buffer == NULL)
-			smb_panic("init_unistr3: malloc fail\n");
+			smb_panic("init_unistr3: malloc fail");
 
 		rpcstr_push((char *)str->str.buffer, buf, str->uni_str_len * sizeof(uint16), STR_TERMINATE);
 	} else {

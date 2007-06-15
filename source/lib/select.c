@@ -71,9 +71,9 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 		 */
 
 		if(set_blocking(select_pipe[0],0)==-1)
-			smb_panic("select_pipe[0]: O_NONBLOCK failed.\n");
+			smb_panic("select_pipe[0]: O_NONBLOCK failed");
 		if(set_blocking(select_pipe[1],0)==-1)
-			smb_panic("select_pipe[1]: O_NONBLOCK failed.\n");
+			smb_panic("select_pipe[1]: O_NONBLOCK failed");
 
 		initialised = sys_getpid();
 	}
