@@ -988,7 +988,7 @@ struct hdb_ldb_seq {
 static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
 	krb5_error_code ret;
-	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_openp;
+	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_dbc;
 	TALLOC_CTX *mem_ctx;
 	hdb_entry_ex entry_ex;
 	memset(&entry_ex, '\0', sizeof(entry_ex));
@@ -1015,7 +1015,7 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 
 	if (ret != 0) {
 		talloc_free(priv);
-		db->hdb_openp = 0;
+		db->hdb_dbc = NULL;
 	} else {
 		talloc_free(mem_ctx);
 	}
@@ -1027,7 +1027,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 					hdb_entry_ex *entry)
 {
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
-	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_openp;
+	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_dbc;
 	char *realm;
 	struct ldb_dn *realm_dn = NULL;
 	struct ldb_result *res = NULL;
@@ -1038,7 +1038,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	if (priv) {
 		talloc_free(priv);
-		db->hdb_openp = 0;
+		db->hdb_dbc = NULL;
 	}
 
 	priv = (struct hdb_ldb_seq *) talloc(db, struct hdb_ldb_seq);
@@ -1094,14 +1094,13 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	priv->msgs = talloc_steal(priv, res->msgs);
 	talloc_free(res);
 
-	/* why has hdb_openp changed from (void *) to (int) ??? */
-	db->hdb_openp = (int)priv;
+	db->hdb_dbc = priv;
 
 	ret = LDB_seq(context, db, flags, entry);
 
 	if (ret != 0) {
     		talloc_free(priv);
-		db->hdb_openp = 0;
+		db->hdb_dbc = NULL;
 	} else {
 		talloc_free(mem_ctx);
 	}
@@ -1162,7 +1161,7 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	(*db)->hdb_openp = 0;
+	(*db)->hdb_dbc = NULL;
 	(*db)->hdb_open = LDB_open;
 	(*db)->hdb_close = LDB_close;
 	(*db)->hdb_fetch = LDB_fetch;
