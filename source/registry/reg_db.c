@@ -697,13 +697,6 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 	return ret != -1 ;
 }
 
-void normalize_dbkey(char *key)
-{
-	size_t len = strlen(key);
-	string_sub(key, "\\", "/", len+1);
-	strupper_m(key);
-}
-
 static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 				struct security_descriptor **psecdesc)
 {
