@@ -144,14 +144,16 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 
 	*ppath_contains_wcard = False;
 
+	pstrcpy(pdp->reqpath, p);
+
 	/* Rest is reqpath. */
 	if (pdp->posix_path) {
-		status = check_path_syntax_posix(pdp->reqpath, p);
+		status = check_path_syntax_posix(pdp->reqpath);
 	} else {
 		if (allow_wcards) {
-			status = check_path_syntax_wcard(pdp->reqpath, p, ppath_contains_wcard);
+			status = check_path_syntax_wcard(pdp->reqpath, ppath_contains_wcard);
 		} else {
-			status = check_path_syntax(pdp->reqpath, p);
+			status = check_path_syntax(pdp->reqpath);
 		}
 	}
 
