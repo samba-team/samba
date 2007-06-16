@@ -603,35 +603,11 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
 
 static char *uri_unescape_alloc(const char *uritok)
 {
-	char *t, *ret;
-	const char *p;
-	long int val;
-	char eval[3];
+	char *ret;
 
-	ret = (char *)SMB_MALLOC(strlen(uritok)+1);
-
+	ret = (char *)SMB_STRDUP(uritok);
 	if (!ret) return NULL;
 
-	eval[2] = '\0';
-
-	for (p = uritok, t = ret; *p; p++, t++) {
-		if (*p == '%') { /* unescape hex */
-			p++;
-			eval[0] = *p;
-			p++;
-			eval[1] = *p;
-			val = strtol(eval, NULL, 16);
-			if ((val == LONG_MIN || val == LONG_MAX) && errno == ERANGE) {
-				SAFE_FREE(ret);
-				return NULL;
-			}
-			*t = (char)val;
-		} else {
-			*t = *p;
-		}
-	}
-
-	*t = '\0'; /*terminate*/
-
+	rfc1738_unescape(ret);
 	return ret;
 }
