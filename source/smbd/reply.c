@@ -1790,17 +1790,16 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Check if a user is allowed to rename a file.
 ********************************************************************/
 
-static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype, SMB_STRUCT_STAT *pst, BOOL self_open)
+static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
+			   uint16 dirtype, SMB_STRUCT_STAT *pst)
 {
-	files_struct *fsp;
 	uint32 fmode;
-	NTSTATUS status;
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	fmode = dos_mode(conn,fname,pst);
+	fmode = dos_mode(conn, fsp->fsp_name, pst);
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
@@ -1809,23 +1808,11 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 		return NT_STATUS_OK;
 	}
 
-	status = open_file_ntcreate(conn, fname, pst,
-				DELETE_ACCESS,
-				/* If we're checking our fsp don't deny for delete. */
-				self_open ?
-					FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE :
-					FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				0,
-				NULL, &fsp);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (fsp->access_mask & DELETE_ACCESS) {
+		return NT_STATUS_OK;
 	}
-	close_file(fsp,NORMAL_CLOSE);
-	return NT_STATUS_OK;
+
+	return NT_STATUS_ACCESS_DENIED;
 }
 
 /*******************************************************************
@@ -4393,7 +4380,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	if (file_find_di_first(file_id_sbuf(&sbuf1)) != NULL) {
+	if (dst_exists && file_find_di_first(file_id_sbuf(&sbuf1)) != NULL) {
 		DEBUG(3, ("rename_internals_fsp: Target file open\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -4409,7 +4396,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		}
 	}
 
-	status = can_rename(conn,fsp->fsp_name,attrs,&sbuf,True);
+	status = can_rename(conn, fsp, attrs, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("rename_internals_fsp: Error %s rename %s -> %s\n",
@@ -4501,7 +4488,6 @@ NTSTATUS rename_internals(connection_struct *conn,
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
-	struct share_mode_lock *lck = NULL;
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname;
 	long offset = 0;
@@ -4556,6 +4542,8 @@ NTSTATUS rename_internals(connection_struct *conn,
 	}
 
 	if (!src_has_wild) {
+		files_struct *fsp;
+
 		/*
 		 * No wildcards - just process the one file.
 		 */
@@ -4582,12 +4570,6 @@ NTSTATUS rename_internals(connection_struct *conn,
 			  conn->short_case_preserve, directory, 
 			  newname, last_component_dest, is_short_name));
 
-		/* Ensure the source name is valid for us to access. */
-		status = check_name(conn, directory);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
 		/* The dest name still may have wildcards. */
 		if (dest_has_wild) {
 			if (!resolve_wildcards(directory,newname)) {
@@ -4597,109 +4579,34 @@ NTSTATUS rename_internals(connection_struct *conn,
 			}
 		}
 				
-		/*
-		 * Check for special case with case preserving and not
-		 * case sensitive, if directory and newname are identical,
-		 * and the old last component differs from the original
-		 * last component only by case, then we should allow
-		 * the rename (user is trying to change the case of the
-		 * filename).
-		 */
-		if((conn->case_sensitive == False) && 
-		   (((conn->case_preserve == True) && 
-		     (is_short_name == False)) || 
-		    ((conn->short_case_preserve == True) && 
-		     (is_short_name == True))) &&
-		   strcsequal(directory, newname)) {
-			pstring modified_last_component;
+		ZERO_STRUCT(sbuf1);
+		SMB_VFS_STAT(conn, directory, &sbuf1);
 
-			/*
-			 * Get the last component of the modified name.
-			 * Note that we guarantee that newname contains a '/'
-			 * character above.
-			 */
-			p = strrchr_m(newname,'/');
-			pstrcpy(modified_last_component,p+1);
-			
-			if(strcsequal(modified_last_component, 
-				      last_component_dest) == False) {
-				/*
-				 * Replace the modified last component with
-				 * the original.
-				 */
-				pstrcpy(p+1, last_component_dest);
-			}
-		}
-	
-		/* Ensure the dest name is valid for us to access. */
-		status = check_name(conn, newname);
+		status = S_ISDIR(sbuf1.st_mode) ?
+			open_directory(conn, directory, &sbuf1,
+				       DELETE_ACCESS,
+				       FILE_SHARE_READ|FILE_SHARE_WRITE,
+				       FILE_OPEN, 0, 0, NULL,
+				       &fsp)
+			: open_file_ntcreate(conn, directory, &sbuf1,
+					     DELETE_ACCESS,
+					     FILE_SHARE_READ|FILE_SHARE_WRITE,
+					     FILE_OPEN, 0, 0, 0, NULL,
+					     &fsp);
+
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not open rename source %s: %s\n",
+				  directory, nt_errstr(status)));
 			return status;
 		}
 
-		/*
-		 * The source object must exist, and it may not have a
-		 * conflicting share mode.
-		 */
-		status = can_rename(conn,directory,attrs,&sbuf1,False);
+		status = rename_internals_fsp(conn, fsp, newname, attrs,
+					      replace_if_exists);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("rename_internals: Error %s rename %s -> "
-				 "%s\n", nt_errstr(status), directory,
-				 newname));
-			return status;
-		}
+		close_file(fsp, NORMAL_CLOSE);
 
-		/*
-		 * If the src and dest names are identical - including case,
-		 * don't do the rename, just return success.
-		 */
-
-		if (strcsequal(directory, newname)) {
-			DEBUG(3, ("rename_internals: identical names in "
-				  "rename %s - returning success\n",
-				  directory));
-			return NT_STATUS_OK;
-		}
-
-		if(!replace_if_exists && vfs_object_exist(conn,newname,NULL)) {
-			DEBUG(3,("rename_internals: dest exists doing "
-				 "rename %s -> %s\n", directory, newname));
-			return NT_STATUS_OBJECT_NAME_COLLISION;
-		}
-
-		if (rename_path_prefix_equal(directory, newname)) {
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-
-		lck = get_share_mode_lock(NULL, file_id_sbuf(&sbuf1),
-					  NULL, NULL);
-
-		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
-			DEBUG(3,("rename_internals: succeeded doing rename "
-				 "on %s -> %s\n", directory, newname));
-			if (lck != NULL) {
-				/*
-				 * Only in this case there are open files at
-				 * all.
-				 */
-				rename_open_files(conn, lck, newname);
-			}
-			TALLOC_FREE(lck);
-			notify_rename(conn, S_ISDIR(sbuf1.st_mode),
-				      directory, newname);
-			return NT_STATUS_OK;	
-		}
-
-		TALLOC_FREE(lck);
-		if (errno == ENOTDIR || errno == EISDIR) {
-			status = NT_STATUS_OBJECT_NAME_COLLISION;
-		} else {
-			status = map_nt_error_from_unix(errno);
-		}
-		
-		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
-			nt_errstr(status), directory,newname));
+		DEBUG(3, ("rename_internals: Error %s rename %s -> %s\n",
+			  nt_errstr(status), directory,newname));
 
 		return status;
 	}
@@ -4728,6 +4635,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 	 */
 			
 	while ((dname = ReadDirName(dir_hnd, &offset))) {
+		files_struct *fsp;
 		pstring fname;
 		BOOL sysdir_entry = False;
 
@@ -4757,30 +4665,8 @@ NTSTATUS rename_internals(connection_struct *conn,
 			break;
 		}
 
-		status = NT_STATUS_ACCESS_DENIED;
 		slprintf(fname, sizeof(fname)-1, "%s/%s", directory, dname);
 
-		/* Ensure the source name is valid for us to access. */
-		status = check_name(conn, fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/*
-		 * can_rename does an open_file_ntcreate which needs a valid
-		 * stat in case the file exists
-		 */
-
-		ZERO_STRUCT(sbuf1);
-		SMB_VFS_STAT(conn, fname, &sbuf1);
-
-		status = can_rename(conn,fname,attrs,&sbuf1,False);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(6, ("rename %s refused: %s\n", fname,
-				  nt_errstr(status)));
-			continue;
-		}
 		pstrcpy(destname,newname);
 			
 		if (!resolve_wildcards(fname,destname)) {
@@ -4789,46 +4675,42 @@ NTSTATUS rename_internals(connection_struct *conn,
 			continue;
 		}
 				
-		/* Ensure the dest name is valid for us to access. */
-		status = check_name(conn, destname);
+		ZERO_STRUCT(sbuf1);
+		SMB_VFS_STAT(conn, fname, &sbuf1);
+
+		status = S_ISDIR(sbuf1.st_mode) ?
+			open_directory(conn, fname, &sbuf1,
+				       DELETE_ACCESS,
+				       FILE_SHARE_READ|FILE_SHARE_WRITE,
+				       FILE_OPEN, 0, 0, NULL,
+				       &fsp)
+			: open_file_ntcreate(conn, fname, &sbuf1,
+					     DELETE_ACCESS,
+					     FILE_SHARE_READ|FILE_SHARE_WRITE,
+					     FILE_OPEN, 0, 0, 0, NULL,
+					     &fsp);
+
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3,("rename_internals: open_file_ntcreate "
+				 "returned %s rename %s -> %s\n",
+				 nt_errstr(status), directory, newname));
 			return status;
 		}
 
-		if (strcsequal(fname,destname)) {
-			DEBUG(3,("rename_internals: identical names "
-				 "in wildcard rename %s - success\n",
-				 fname));
-			count++;
-			status = NT_STATUS_OK;
-			continue;
+		status = rename_internals_fsp(conn, fsp, destname, attrs,
+					      replace_if_exists);
+
+		close_file(fsp, NORMAL_CLOSE);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("rename_internals_fsp returned %s for "
+				  "rename %s -> %s\n", nt_errstr(status),
+				  directory, newname));
+			return status;
 		}
 
-		if (!replace_if_exists && vfs_file_exist(conn,destname, NULL)) {
-			DEBUG(6,("file_exist %s\n", destname));
-			status = NT_STATUS_OBJECT_NAME_COLLISION;
-			continue;
-		}
-				
-		if (rename_path_prefix_equal(fname, destname)) {
-			return NT_STATUS_SHARING_VIOLATION;
-		}
+		count++;
 
-		lck = get_share_mode_lock(NULL, file_id_sbuf(&sbuf1), NULL,
-					  NULL);
-
-		if (!SMB_VFS_RENAME(conn,fname,destname)) {
-			if (lck != NULL) {
-				/*
-				 * Only in this case there are open files at
-				 * all.
-				 */
-				rename_open_files(conn, lck, newname);
-			}
-			count++;
-			status = NT_STATUS_OK;
-		}
-		TALLOC_FREE(lck);
 		DEBUG(3,("rename_internals: doing rename on %s -> "
 			 "%s\n",fname,destname));
 	}
