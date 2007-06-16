@@ -1726,6 +1726,7 @@ static int cmd_allinfo(struct smbclient_context *ctx, const char **args)
 	char *fname;
 	union smb_fileinfo finfo;
 	NTSTATUS status;
+	int fnum;
 
 	if (!args[1]) {
 		d_printf("allinfo <filename>\n");
@@ -1809,6 +1810,40 @@ static int cmd_allinfo(struct smbclient_context *ctx, const char **args)
 		d_printf("\tcluster_shift   %ld\n", (long)finfo.compression_info.out.cluster_shift);
 	}
 
+	/* shadow copies if available */
+	fnum = smbcli_open(ctx->cli->tree, fname, O_RDONLY, DENY_NONE);
+	if (fnum != -1) {
+		struct smb_shadow_copy info;
+		int i;
+		info.in.file.fnum = fnum;
+		info.in.max_data = ~0;
+		status = smb_raw_shadow_data(ctx->cli->tree, ctx, &info);
+		if (NT_STATUS_IS_OK(status)) {
+			d_printf("\tshadow_copy: %u volumes  %u names\n",
+				 info.out.num_volumes, info.out.num_names);
+			for (i=0;i<info.out.num_names;i++) {
+				d_printf("\t%s\n", info.out.names[i]);
+				finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+				finfo.generic.in.file.path = talloc_asprintf(ctx, "%s%s", 
+									     info.out.names[i], fname); 
+				status = smb_raw_pathinfo(ctx->cli->tree, ctx, &finfo);
+				if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+					continue;
+				}
+				if (!NT_STATUS_IS_OK(status)) {
+					d_printf("%s - %s\n", finfo.generic.in.file.path, 
+						 nt_errstr(status));
+					return 1;
+				}
+				
+				d_printf("\t\tcreate_time:    %s\n", nt_time_string(ctx, finfo.all_info.out.create_time));
+				d_printf("\t\twrite_time:     %s\n", nt_time_string(ctx, finfo.all_info.out.write_time));
+				d_printf("\t\tchange_time:    %s\n", nt_time_string(ctx, finfo.all_info.out.change_time));
+				d_printf("\t\tsize:           %lu\n", (unsigned long)finfo.all_info.out.size);
+			}
+		}
+	}
+	
 	return 0;
 }
 
