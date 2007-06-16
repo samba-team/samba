@@ -391,7 +391,7 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 			       char ***members, uint32 *n_members )
 {
 	int i, j;	
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	uint32 num_names = 0;
 	uint32 *name_types = NULL;
 	char **names = NULL;
