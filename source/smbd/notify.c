@@ -327,7 +327,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 {
 	struct notify_change *change, *changes;
-	pstring name2;
+	char *tmp;
 
 	if (fsp->notify == NULL) {
 		/*
@@ -335,9 +335,6 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		 */
 		return;
 	}
-
-	pstrcpy(name2, name);
-	string_replace(name2, '/', '\\');
 
 	/*
 	 * Someone has triggered a notify previously, queue the change for
@@ -369,10 +366,13 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 
 	change = &(fsp->notify->changes[fsp->notify->num_changes]);
 
-	if (!(change->name = talloc_strdup(changes, name2))) {
+	if (!(tmp = talloc_strdup(changes, name))) {
 		DEBUG(0, ("talloc_strdup failed\n"));
 		return;
 	}
+
+	string_replace(tmp, '/', '\\');
+	change->name = tmp;	
 
 	change->action = action;
 	fsp->notify->num_changes += 1;

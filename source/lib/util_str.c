@@ -126,8 +126,6 @@ BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	return ret;	
 }
 
-static uint16 tmpbuf[sizeof(pstring)];
-
 void set_first_token(char *ptr)
 {
 	last_ptr = ptr;
@@ -397,6 +395,8 @@ BOOL strisnormal(const char *s, int case_default)
 void string_replace( pstring s, char oldc, char newc )
 {
 	char *p;
+	smb_ucs2_t *tmp;
+	size_t len;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -418,9 +418,13 @@ void string_replace( pstring s, char oldc, char newc )
 	/* With compose characters we must restart from the beginning. JRA. */
 	p = s;
 #endif
-	push_ucs2(NULL, tmpbuf, p, sizeof(tmpbuf), STR_TERMINATE);
-	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-	pull_ucs2(NULL, p, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
+	len = push_ucs2_allocate(&tmp, p);
+	if (len == -1) {
+		return;
+	}
+	string_replace_w(tmp, UCS2_CHAR(oldc), UCS2_CHAR(newc));
+	pull_ucs2(NULL, p, tmp, len/2, -1, STR_TERMINATE);
+	SAFE_FREE(tmp);
 }
 
 /**
@@ -584,12 +588,22 @@ BOOL trim_string(char *s,const char *front,const char *back)
 
 BOOL strhasupper(const char *s)
 {
-	smb_ucs2_t *ptr;
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(ptr=tmpbuf;*ptr;ptr++)
-		if(isupper_w(*ptr))
-			return True;
-	return(False);
+	smb_ucs2_t *tmp, *p;
+	BOOL ret;
+
+	if (push_ucs2_allocate(&tmp, s) == -1) {
+		return False;
+	}
+
+	for(p = tmp; *p != 0; p++) {
+		if(isupper_w(*p)) {
+			break;
+		}
+	}
+
+	ret = (*p != 0);
+	SAFE_FREE(tmp);
+	return ret;
 }
 
 /**
@@ -598,12 +612,22 @@ BOOL strhasupper(const char *s)
 
 BOOL strhaslower(const char *s)
 {
-	smb_ucs2_t *ptr;
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(ptr=tmpbuf;*ptr;ptr++)
-		if(islower_w(*ptr))
-			return True;
-	return(False);
+	smb_ucs2_t *tmp, *p;
+	BOOL ret;
+
+	if (push_ucs2_allocate(&tmp, s) == -1) {
+		return False;
+	}
+
+	for(p = tmp; *p != 0; p++) {
+		if(islower_w(*p)) {
+			break;
+		}
+	}
+
+	ret = (*p != 0);
+	SAFE_FREE(tmp);
+	return ret;
 }
 
 /**
@@ -2628,7 +2652,7 @@ size_t utf16_len_n(const void *src, size_t n)
 char *escape_shell_string(const char *src)
 {
 	size_t srclen = strlen(src);
-	char *ret = SMB_MALLOC((srclen * 2) + 1);
+	char *ret = SMB_MALLOC_ARRAY(char, (srclen * 2) + 1);
 	char *dest = ret;
 	BOOL in_s_quote = False;
 	BOOL in_d_quote = False;
