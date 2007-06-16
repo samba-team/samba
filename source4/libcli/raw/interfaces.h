@@ -2632,4 +2632,19 @@ struct smb_echo {
 	} out;
 };
 
+/*
+  struct for shadow copy volumes
+ */
+struct smb_shadow_copy {
+	struct {
+		union smb_handle file;
+		uint32_t max_data;
+	} in;
+	struct {
+		uint32_t num_volumes;
+		uint32_t num_names;
+		const char **names;
+	} out;
+};
+
 #endif /* __LIBCLI_RAW_INTERFACES_H__ */
