@@ -43,6 +43,10 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 	struct idmap_rid_context *ctx;
 	char *config_option = NULL;
 	const char *range;
+	uid_t low_uid = 0;
+	uid_t high_uid = 0;
+	gid_t low_gid = 0;
+	gid_t high_gid = 0;
 
 	if ( (ctx = TALLOC_ZERO_P(dom, struct idmap_rid_context)) == NULL ) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -65,8 +69,25 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 		ctx->high_id = 0;
 	}
 
-	if ( !ctx->low_id || !ctx->high_id ) {
-		DEBUG(1, ("ERROR: Invalid configuration, ID range missing\n"));
+	/* lets see if the range is defined by the old idmap uid/idmap gid */
+	if (!ctx->low_id && !ctx->high_id) {
+		if (lp_idmap_uid(&low_uid, &high_uid)) {
+			ctx->low_id = low_uid;
+			ctx->high_id = high_uid;
+		}
+
+		if (lp_idmap_gid(&low_gid, &high_gid)) {
+			if ((ctx->low_id != low_gid) ||
+			    (ctx->high_id != high_uid)) {
+				DEBUG(1, ("ERROR: idmap uid irange must match idmap gid range\n"));
+				ret = NT_STATUS_UNSUCCESSFUL;
+				goto failed;
+			}
+		}
+	}
+
+	if (!ctx->low_id || !ctx->high_id) {
+		DEBUG(1, ("ERROR: Invalid configuration, ID range missing or invalid\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
 	}
@@ -75,6 +96,7 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 	ctx->domain_name = talloc_strdup( ctx, dom->name );
 	
 	dom->private_data = ctx;
+	dom->initialized = True;
 
 	talloc_free(config_option);
 	return NT_STATUS_OK;
@@ -150,6 +172,14 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
+	/* Initilization my have been deferred because of an error, retry or fail */
+	if ( ! dom->initialized) {
+		ret = idmap_rid_initialize(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
+
 	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
 	ctx = talloc_new(dom);
@@ -183,6 +213,14 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	TALLOC_CTX *ctx;
 	NTSTATUS ret;
 	int i;
+
+	/* Initilization my have been deferred because of an error, retry or fail */
+	if ( ! dom->initialized) {
+		ret = idmap_rid_initialize(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+	}
 
 	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
