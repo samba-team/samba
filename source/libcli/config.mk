@@ -147,6 +147,7 @@ OBJ_FILES = raw/rawfile.o \
 		raw/rawioctl.o \
 		raw/rawacl.o \
 		raw/rawdate.o \
-		raw/rawlpq.o
+		raw/rawlpq.o \
+		raw/rawshadow.o
 
 include smb2/config.mk

@@ -737,9 +737,9 @@ NTTIME smbcli_pull_nttime(void *base, uint16_t offset)
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the blob is returned
 */
-static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
-				    const DATA_BLOB *blob, const char **dest, 
-				    const uint8_t *src, int byte_len, uint_t flags)
+size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
+			     const DATA_BLOB *blob, const char **dest, 
+			     const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
