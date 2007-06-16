@@ -47,13 +47,12 @@ extern BOOL global_encrypted_passwords_negotiated;
 /* Custom version for processing POSIX paths. */
 #define IS_PATH_SEP(c,posix_only) ((c) == '/' || (!(posix_only) && (c) == '\\'))
 
-NTSTATUS check_path_syntax_internal(pstring destname,
-				    const pstring srcname,
-				    BOOL posix_path,
-				    BOOL *p_last_component_contains_wcard)
+static NTSTATUS check_path_syntax_internal(char *path,
+					   BOOL posix_path,
+					   BOOL *p_last_component_contains_wcard)
 {
-	char *d = destname;
-	const char *s = srcname;
+	char *d = path;
+	const char *s = path;
 	NTSTATUS ret = NT_STATUS_OK;
 	BOOL start_of_name_component = True;
 
@@ -68,7 +67,7 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 			while (IS_PATH_SEP(*s,posix_path)) {
 				s++;
 			}
-			if ((d != destname) && (*s != '\0')) {
+			if ((d != path) && (*s != '\0')) {
 				/* We only care about non-leading or trailing '/' or '\\' */
 				*d++ = '/';
 			}
@@ -88,13 +87,13 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 				 */
 
 				/* If  we just added a '/' - delete it */
-				if ((d > destname) && (*(d-1) == '/')) {
+				if ((d > path) && (*(d-1) == '/')) {
 					*(d-1) = '\0';
 					d--;
 				}
 
 				/* Are we at the start ? Can't go back further if so. */
-				if (d <= destname) {
+				if (d <= path) {
 					ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 					break;
 				}
@@ -102,7 +101,7 @@ NTSTATUS check_path_syntax_internal(pstring destname,
 				/* We know this is safe as '/' cannot be part of a mb sequence. */
 				/* NOTE - if this assumption is invalid we are not in good shape... */
 				/* Decrement d first as d points to the *next* char to write into. */
-				for (d--; d > destname; d--) {
+				for (d--; d > path; d--) {
 					if (*d == '/')
 						break;
 				}
@@ -176,10 +175,10 @@ NTSTATUS check_path_syntax_internal(pstring destname,
  No wildcards allowed.
 ****************************************************************************/
 
-NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
+NTSTATUS check_path_syntax(char *path)
 {
 	BOOL ignore;
-	return check_path_syntax_internal(destname, srcname, False, &ignore);
+	return check_path_syntax_internal(path, False, &ignore);
 }
 
 /****************************************************************************
@@ -188,9 +187,9 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
  a wildcard.
 ****************************************************************************/
 
-NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *p_contains_wcard)
+NTSTATUS check_path_syntax_wcard(char *path, BOOL *p_contains_wcard)
 {
-	return check_path_syntax_internal(destname, srcname, False, p_contains_wcard);
+	return check_path_syntax_internal(path, False, p_contains_wcard);
 }
 
 /****************************************************************************
@@ -199,10 +198,10 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
  set (a safe assumption).
 ****************************************************************************/
 
-NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
+NTSTATUS check_path_syntax_posix(char *path)
 {
 	BOOL ignore;
-	return check_path_syntax_internal(destname, srcname, True, &ignore);
+	return check_path_syntax_internal(path, True, &ignore);
 }
 
 /****************************************************************************
@@ -212,17 +211,15 @@ NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
 size_t srvstr_get_path_wcard(char *inbuf, char *dest, const char *src, size_t dest_len, size_t src_len, int flags,
 				NTSTATUS *err, BOOL *contains_wcard)
 {
-	pstring tmppath;
-	char *tmppath_ptr = tmppath;
 	size_t ret;
 #ifdef DEVELOPER
 	SMB_ASSERT(dest_len == sizeof(pstring));
 #endif
 
 	if (src_len == 0) {
-		ret = srvstr_pull_buf( inbuf, tmppath_ptr, src, dest_len, flags);
+		ret = srvstr_pull_buf( inbuf, dest, src, dest_len, flags);
 	} else {
-		ret = srvstr_pull( inbuf, tmppath_ptr, src, dest_len, src_len, flags);
+		ret = srvstr_pull( inbuf, dest, src, dest_len, src_len, flags);
 	}
 
 	*contains_wcard = False;
@@ -232,15 +229,14 @@ size_t srvstr_get_path_wcard(char *inbuf, char *dest, const char *src, size_t de
 		 * For a DFS path the function parse_dfs_path()
 		 * will do the path processing, just make a copy.
 		 */
-		pstrcpy(dest, tmppath);
 		*err = NT_STATUS_OK;
 		return ret;
 	}
 
 	if (lp_posix_pathnames()) {
-		*err = check_path_syntax_posix(dest, tmppath);
+		*err = check_path_syntax_posix(dest);
 	} else {
-		*err = check_path_syntax_wcard(dest, tmppath, contains_wcard);
+		*err = check_path_syntax_wcard(dest, contains_wcard);
 	}
 
 	return ret;
@@ -252,17 +248,15 @@ size_t srvstr_get_path_wcard(char *inbuf, char *dest, const char *src, size_t de
 
 size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len, size_t src_len, int flags, NTSTATUS *err)
 {
-	pstring tmppath;
-	char *tmppath_ptr = tmppath;
 	size_t ret;
 #ifdef DEVELOPER
 	SMB_ASSERT(dest_len == sizeof(pstring));
 #endif
 
 	if (src_len == 0) {
-		ret = srvstr_pull_buf( inbuf, tmppath_ptr, src, dest_len, flags);
+		ret = srvstr_pull_buf( inbuf, dest, src, dest_len, flags);
 	} else {
-		ret = srvstr_pull( inbuf, tmppath_ptr, src, dest_len, src_len, flags);
+		ret = srvstr_pull( inbuf, dest, src, dest_len, src_len, flags);
 	}
 
 	if (SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) {
@@ -270,15 +264,14 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 		 * For a DFS path the function parse_dfs_path()
 		 * will do the path processing, just make a copy.
 		 */
-		pstrcpy(dest, tmppath);
 		*err = NT_STATUS_OK;
 		return ret;
 	}
 
 	if (lp_posix_pathnames()) {
-		*err = check_path_syntax_posix(dest, tmppath);
+		*err = check_path_syntax_posix(dest);
 	} else {
-		*err = check_path_syntax(dest, tmppath);
+		*err = check_path_syntax(dest);
 	}
 
 	return ret;
