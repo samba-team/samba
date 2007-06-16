@@ -199,7 +199,7 @@ NTSTATUS check_path_syntax_wcard(char *path, BOOL *p_contains_wcard)
  set (a safe assumption).
 ****************************************************************************/
 
-NTSTATUS check_path_syntax_posix(char *name)
+NTSTATUS check_path_syntax_posix(char *path)
 {
 	BOOL ignore;
 	return check_path_syntax_internal(path, True, &ignore);
