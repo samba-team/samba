@@ -2769,35 +2769,6 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
 }
 
 /**
- * pull a dn from an extended dn string
- * @param mem_ctx TALLOC_CTX 
- * @param extended_dn string
- * @param dn pointer to the dn
- * @return boolean inidicating success
- **/
-BOOL ads_get_dn_from_extended_dn(TALLOC_CTX *mem_ctx, 
-				 const char *extended_dn,
-				 char **dn)
-{
-	char *p;
-	pstring tok;
-
-	if (!extended_dn) {
-		return False;
-	}
-
-	while (next_token(&extended_dn, tok, ";", sizeof(tok))) {
-		p = tok;
-	}
-
-	if ((*dn = talloc_strdup(mem_ctx, p)) == NULL) {
-		return False;
-	}
-
-	return True;
-}
-
-/**
  * pull a DOM_SID from an extended dn string
  * @param mem_ctx TALLOC_CTX 
  * @param extended_dn string
