@@ -264,7 +264,6 @@ keychain_init(hx509_context context,
 	      const char *residue, hx509_lock lock)
 {
     struct ks_keychain *ctx;
-    OSStatus ret;
 
     ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL) {
@@ -273,13 +272,20 @@ keychain_init(hx509_context context,
     }
 
     if (residue) {
-	if (strcasecmp(residue, "system-anchors") == 0)
+	if (strcasecmp(residue, "system-anchors") == 0) {
 	    ctx->anchors = 1;
-	    
-	ret = SecKeychainOpen(residue, &ctx->keychain);
-	if (ret != noErr) {
+	} else if (strncasecmp(residue, "FILE:", 5) == 0) {
+	    OSStatus ret;
+
+	    ret = SecKeychainOpen(residue + 5, &ctx->keychain);
+	    if (ret != noErr) {
+		hx509_set_error_string(context, 0, ENOENT, 
+				       "Failed to open %s", residue);
+		return ENOENT;
+	    }
+	} else {
 	    hx509_set_error_string(context, 0, ENOENT, 
-				   "Failed to open %s", residue);
+				   "Unknown subtype %s", residue);
 	    return ENOENT;
 	}
     }
@@ -402,9 +408,9 @@ keychain_iter(hx509_context context,
 {
     SecKeychainAttributeList *attrs = NULL;
     SecKeychainAttributeInfo attrInfo;
-    uint32 attrFormat = 0;
+    uint32 attrFormat[1] = { 0 };
     SecKeychainItemRef itemRef;
-    SecItemAttr item;
+    SecItemAttr item[1];
     struct iter *iter = cursor;
     OSStatus ret;
     UInt32 len;
@@ -425,17 +431,17 @@ keychain_iter(hx509_context context,
      * Pick out certificate and matching "keyid"
      */
 
-    item = kSecPublicKeyHashItemAttr;
+    item[0] = kSecPublicKeyHashItemAttr;
 
     attrInfo.count = 1;
-    attrInfo.tag = &item;
-    attrInfo.format = &attrFormat;
+    attrInfo.tag = item;
+    attrInfo.format = attrFormat;
   
     ret = SecKeychainItemCopyAttributesAndData(itemRef, &attrInfo, NULL,
 					       &attrs, &len, &ptr);
     if (ret)
 	return EINVAL;
-    
+
     ret = hx509_cert_init_data(context, ptr, len, cert);
     if (ret)
 	goto out;
