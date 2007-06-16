@@ -1827,7 +1827,8 @@ static int cmd_allinfo(struct smbclient_context *ctx, const char **args)
 				finfo.generic.in.file.path = talloc_asprintf(ctx, "%s%s", 
 									     info.out.names[i], fname); 
 				status = smb_raw_pathinfo(ctx->cli->tree, ctx, &finfo);
-				if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+				if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND) ||
+				    NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 					continue;
 				}
 				if (!NT_STATUS_IS_OK(status)) {
