@@ -246,7 +246,8 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 					   ctdb->db_directory, 
 					   db_name, ctdb->vnn);
 
-	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, 
+	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 
+				      ctdb->tunable.database_hash_size, 
 				      TDB_CLEAR_IF_FIRST, O_CREAT|O_RDWR, 0666);
 	if (ctdb_db->ltdb == NULL) {
 		DEBUG(0,("Failed to open tdb '%s'\n", ctdb_db->db_path));
