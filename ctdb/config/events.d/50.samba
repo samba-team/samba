@@ -30,6 +30,9 @@ case $cmd in
 	# wait for the Samba tcp ports to become available
 	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
 	ctdb_wait_tcp_ports "Samba" $smb_ports
+
+	# wait for winbind to be ready
+	ctdb_wait_command "winbind" "wbinfo -p"
 	;;
 	
      takeip)

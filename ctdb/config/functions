@@ -26,6 +26,28 @@ service() {
   fi
 }
 
+
+######################################################
+# wait for a command to return a zero exit status
+# usage: ctdb_wait_command SERVICE_NAME <command>
+######################################################
+ctdb_wait_command() {
+  service_name="$1"
+  wait_cmd="$2"
+  [ -z "$wait_cmd" ] && return;
+  all_ok=0
+  echo "`/bin/date` Waiting for service $service_name to start"
+  while [ $all_ok -eq 0 ]; do
+	  $wait_cmd > /dev/null 2>&1 && all_ok=1
+	  ctdb status > /dev/null 2>&1 || {
+  		echo "ctdb daemon has died. Exiting wait for $service_name"
+		exit 1
+	  }
+  done
+  echo "`/bin/date` Local service $service_name is up"
+}
+
+
 ######################################################
 # wait for a set of tcp ports
 # usage: ctdb_wait_tcp_ports SERVICE_NAME <ports...>
@@ -50,7 +72,7 @@ ctdb_wait_tcp_ports() {
 	      fi
 	  done
 	  [ $all_ok -eq 1 ] || sleep 1
-	  /usr/bin/ctdb status > /dev/null 2>&1 || {
+	  ctdb status > /dev/null 2>&1 || {
   		echo "ctdb daemon has died. Exiting tcp wait $service_name"
 		exit 1
 	  }
@@ -77,7 +99,7 @@ ctdb_wait_directories() {
   	      [ -d $d ] || all_ok=0
 	  done
 	  [ $all_ok -eq 1 ] || sleep 1
-	  /usr/bin/ctdb status > /dev/null 2>&1 || {
+	  ctdb status > /dev/null 2>&1 || {
   		echo "ctdb daemon has died. Exiting directory wait for $service_name"
 		exit 1
 	  }
