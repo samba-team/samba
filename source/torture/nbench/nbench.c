@@ -48,7 +48,7 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	BOOL correct = True;
 	double target_rate = lp_parm_double(-1, "torture", "targetrate", 0);	
 
-	if (target_rate != 0) {
+	if (target_rate != 0 && client == 0) {
 		printf("Targetting %.4f MByte/sec\n", target_rate);
 	}
 
@@ -106,13 +106,19 @@ again:
 			exit(1);
 		}
 
-		if (strncmp(params[i-1], "NT_STATUS_", 10) != 0) {
+		if (strncmp(params[i-1], "NT_STATUS_", 10) != 0 &&
+		    strncmp(params[i-1], "0x", 2) != 0) {
 			printf("Badly formed status at line %d\n", nbench_line_count);
 			talloc_free(params);
 			continue;
 		}
 
-		status = nt_status_string_to_code(params[i-1]);
+		/* accept numeric or string status codes */
+		if (strncmp(params[i-1], "0x", 2) == 0) {
+			status = NT_STATUS(strtoul(params[i-1], NULL, 16));
+		} else {
+			status = nt_status_string_to_code(params[i-1]);
+		}
 
 		DEBUG(9,("run_netbench(%d): %s %s\n", client, params[0], params[1]));
 
