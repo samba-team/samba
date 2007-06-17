@@ -65,6 +65,9 @@ case $cmd in
 
 	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
 	ctdb_check_tcp_ports "Samba" $smb_ports
+
+	# check winbind is OK
+	ctdb_check_command "winbind" "wbinfo -p"
 	;;
 
 esac
