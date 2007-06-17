@@ -13,6 +13,9 @@ shift
 
 case $cmd in 
      startup)
+	# create the state directory for samba
+	/bin/mkdir -p /etc/ctdb/state/samba
+
 	# wait for all shared directories to become available
 	smb_dirs=`testparm -s 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
 	ctdb_wait_directories "Samba" $smb_dirs	
@@ -52,6 +55,16 @@ case $cmd in
 	;;
 
      monitor)
+	# Create a dummy file to track when we need to do periodic cleanup
+	# of samba databases
+	[ -f /etc/ctdb/state/samba/periodic_cleanup ] || {
+		touch /etc/ctdb/state/samba/periodic_cleanup
+	}
+	[ `/usr/bin/find /etc/ctdb/state/samba/periodic_cleanup -mmin +1 | wc -l` -eq 1 ] && {
+		# Cleanup the databases
+		touch /etc/ctdb/state/samba/periodic_cleanup
+	}
+
 	testparm -s 2>&1 | egrep '^WARNING|^ERROR|^Unknown' && {
 	    echo "`date` ERROR: testparm shows smb.conf is not clean"
 	    exit 1
