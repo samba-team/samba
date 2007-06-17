@@ -57,6 +57,29 @@ static struct {
 	struct timeval starttime;
 } *children;
 
+void nbio_target_rate(double rate)
+{
+	static double last_bytes;
+	static struct timeval last_time;
+	double tdelay;
+
+	if (last_bytes == 0) {
+		last_bytes = children[nbio_id].bytes;
+		last_time = timeval_current();
+		return;
+	}
+
+	tdelay = (children[nbio_id].bytes - last_bytes)/(1.0e6*rate) - timeval_elapsed(&last_time);
+	if (tdelay > 0) {
+		msleep(tdelay*1000);
+	} else {
+		children[nbio_id].max_latency = MAX(children[nbio_id].max_latency, -tdelay);
+	}
+
+	last_time = timeval_current();
+	last_bytes = children[nbio_id].bytes;
+}
+
 void nbio_time_reset(void)
 {
 	children[nbio_id].starttime = timeval_current();	
@@ -68,7 +91,7 @@ void nbio_time_delay(double targett)
 	if (targett > elapsed) {
 		msleep(1000*(targett - elapsed));
 	} else if (elapsed - targett > children[nbio_id].max_latency) {
-		children[nbio_id].max_latency = elapsed - targett;
+		children[nbio_id].max_latency = MAX(elapsed - targett, children[nbio_id].max_latency);
 	}
 }
 

@@ -46,6 +46,11 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	char *cname;
 	FILE *f;
 	BOOL correct = True;
+	double target_rate = lp_parm_double(-1, "torture", "targetrate", 0);	
+
+	if (target_rate != 0) {
+		printf("Targetting %.4f MByte/sec\n", target_rate);
+	}
 
 	if (torture_nprocs == 1) {
 		if (!read_only && !torture_setup_dir(cli, "\\clients")) {
@@ -86,6 +91,8 @@ again:
 			nbio_time_delay(targett);
 			params++;
 			i--;
+		} else if (target_rate != 0) {
+			nbio_target_rate(target_rate);
 		}
 
 		if (i < 2 || params[0][0] == '#') continue;
