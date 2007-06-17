@@ -455,7 +455,7 @@ if test x"$ac_cv_prog_gcc" = x"yes" ; then
 
 	# krb5developer is like developer, except we don't get
 	# -Wstrict-prototypes.
-       if test x"$krb5_developer" ~= x"$yes" ; then
+       if test x"$krb5_developer" != x"$yes" ; then
 	    DEVELOPER_CFLAGS="$DEVELOPER_CFLAGS -Wstrict-prototypes"
        fi
 fi
