@@ -673,8 +673,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-
-
 	/* verify that we have all the databases any other node has */
 	ret = create_missing_local_databases(ctdb, nodemap, vnn, &dbmap, mem_ctx);
 	if (ret != 0) {
@@ -692,6 +690,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 
+	DEBUG(1, (__location__ " Recovery - created remote databases\n"));
+
 	/* pull all remote databases onto the local node */
 	ret = pull_all_remote_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
 	if (ret != 0) {
@@ -699,7 +699,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-
+	DEBUG(1, (__location__ " Recovery - pulled remote databases\n"));
 
 	/* push all local databases to the remote nodes */
 	ret = push_all_local_databases(ctdb, nodemap, vnn, dbmap, mem_ctx);
@@ -708,7 +708,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-
+	DEBUG(1, (__location__ " Recovery - pushed remote databases\n"));
 
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
@@ -733,6 +733,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
+	DEBUG(1, (__location__ " Recovery - updated vnnmap\n"));
 
 	/* update recmaster to point to us for all nodes */
 	ret = set_recovery_master(ctdb, nodemap, vnn);
@@ -741,6 +742,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
+	DEBUG(1, (__location__ " Recovery - updated recmaster\n"));
 
 	/* repoint all local and remote database records to the local
 	   node as being dmaster
@@ -751,6 +753,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
+	DEBUG(1, (__location__ " Recovery - updated dmaster on all databases\n"));
+
 	/*
 	  update all nodes to have the same flags that we have
 	 */
@@ -760,6 +764,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 	
+	DEBUG(1, (__location__ " Recovery - updated flags\n"));
+
 	/*
 	  run a vacuum operation on empty records
 	 */
@@ -768,6 +774,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(0, (__location__ " Unable to vacuum all databases\n"));
 		return -1;
 	}
+
+	DEBUG(1, (__location__ " Recovery - vacuumed all databases\n"));
 
 	/*
 	  if enabled, tell nodes to takeover their public IPs
@@ -778,7 +786,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
 			return -1;
 		}
+		DEBUG(1, (__location__ " Recovery - done takeover\n"));
 	}
+
 
 	/* disable recovery mode */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);

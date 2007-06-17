@@ -55,6 +55,7 @@ struct ctdb_tunable {
 	uint32_t script_timeout;
 	uint32_t recovery_grace_period;
 	uint32_t recovery_ban_period;
+	uint32_t database_hash_size;
 };
 
 /*

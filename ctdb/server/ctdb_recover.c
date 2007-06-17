@@ -303,6 +303,9 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	rec = (struct ctdb_rec_data *)&reply->data[0];
 
+	DEBUG(3,("starting push of %u records for dbid 0x%x\n",
+		 reply->count, reply->db_id));
+
 	for (i=0;i<reply->count;i++) {
 		TDB_DATA key, data;
 		struct ctdb_ltdb_header *hdr, header;
@@ -338,6 +341,9 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
 	}	    
+
+	DEBUG(3,("finished push of %u records for dbid 0x%x\n",
+		 reply->count, reply->db_id));
 
 	ctdb_lock_all_databases_unmark(ctdb);
 	return 0;

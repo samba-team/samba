@@ -494,6 +494,9 @@ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
 /* record lock stops delete underneath */
 int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off)
 {
+	if (tdb->global_lock.count) {
+		return 0;
+	}
 	return off ? tdb->methods->tdb_brlock(tdb, off, F_RDLCK, F_SETLKW, 0, 1) : 0;
 }
 
@@ -525,6 +528,10 @@ int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off)
 {
 	struct tdb_traverse_lock *i;
 	u32 count = 0;
+
+	if (tdb->global_lock.count) {
+		return 0;
+	}
 
 	if (off == 0)
 		return 0;

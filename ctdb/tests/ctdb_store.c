@@ -29,7 +29,6 @@
 #include <time.h>
 
 static int num_records = 10;
-static int num_nodes;
 
 
 static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
@@ -64,10 +63,14 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 		if (ret != 0) {
 			printf("Failed to store record\n");
 		}
+		if (i % 1000 == 0) {
+			printf("%u\r", i);
+			fflush(stdout);
+		}
 	}
 
+	printf("fetching all %d records\n", num_records);
 	while (1) {
-		printf("fetching all %d records\n", num_records);
 		for (i=0;i<num_records;i++) {
 			key.dptr = (uint8_t *)&i;
 			key.dsize = sizeof(uint32_t); 
@@ -81,6 +84,9 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 			}
 			talloc_free(h);
 		}
+		sleep(1);
+		printf(".");
+		fflush(stdout);
 	}
 
 	talloc_free(tmp_ctx);
@@ -98,7 +104,6 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
-		{ NULL, 'n', POPT_ARG_INT, &num_nodes, 0, "num_nodes", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;

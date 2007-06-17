@@ -1171,6 +1171,8 @@ int ctdb_ctrl_copydb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 	((uint32_t *)(&indata.dptr[0]))[0] = dbid;
 	((uint32_t *)(&indata.dptr[0]))[1] = lmaster;
 
+	DEBUG(3,("pulling dbid 0x%x from %u\n", dbid, sourcenode));
+
 	ret = ctdb_control(ctdb, sourcenode, 0, 
 			   CTDB_CONTROL_PULL_DB, 0, indata, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
@@ -1178,6 +1180,8 @@ int ctdb_ctrl_copydb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 		DEBUG(0,(__location__ " ctdb_control for pulldb failed\n"));
 		return -1;
 	}
+
+	DEBUG(3,("pushing dbid 0x%x to %u\n", dbid, destnode));
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_PUSH_DB, 0, outdata, 
@@ -1187,6 +1191,9 @@ int ctdb_ctrl_copydb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 		DEBUG(0,(__location__ " ctdb_control for pushdb failed\n"));
 		return -1;
 	}
+
+	DEBUG(3,("copydb for dbid 0x%x done for %u to %u\n", 
+		 dbid, sourcenode, destnode));
 
 	return 0;
 }

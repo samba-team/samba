@@ -2,10 +2,12 @@
 
 NUMNODES="$1"
 NODES=$2
+shift
+shift
 
 killall -q ctdbd
 
-CTDB_OPTIONS="--reclock=rec.lock --nlist $NODES --event-script=tests/events --logfile=-  --dbdir=test.db"
+CTDB_OPTIONS="--reclock=rec.lock --nlist $NODES --event-script=tests/events --logfile=-  --dbdir=test.db $*"
 if [ `id -u` -eq 0 ]; then
     CTDB_OPTIONS="$CTDB_OPTIONS --public-addresses=tests/public_addresses --public-interface=lo"
 fi
