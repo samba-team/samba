@@ -11,6 +11,20 @@ shift
 
 [ "$CTDB_MANAGES_SAMBA" = "yes" ] || exit 0
 
+# set default samba cleanup period - in minutes
+[ -z "$SAMBA_CLEANUP_PERIOD" ] && {
+    SAMBA_CLEANUP_PERIOD=10
+}
+
+###########################
+# periodic cleanup function
+periodic_cleanup() {
+    # running smbstatus scrubs any dead entries from the connections
+    # and sessionid database
+    echo "`date` Running periodic cleanup of samba databases"
+    smbstatus -n > /dev/null 2>&1
+}
+
 case $cmd in 
      startup)
 	# create the state directory for samba
@@ -63,8 +77,9 @@ case $cmd in
 	[ -f /etc/ctdb/state/samba/periodic_cleanup ] || {
 		touch /etc/ctdb/state/samba/periodic_cleanup
 	}
-	[ `/usr/bin/find /etc/ctdb/state/samba/periodic_cleanup -mmin +1 | wc -l` -eq 1 ] && {
+	[ `/usr/bin/find /etc/ctdb/state/samba/periodic_cleanup -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
 		# Cleanup the databases
+	    	periodic_cleanup
 		touch /etc/ctdb/state/samba/periodic_cleanup
 	}
 
