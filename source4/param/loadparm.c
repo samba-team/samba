@@ -1017,6 +1017,20 @@ static int lp_ulong(const char *s)
 }
 
 /*******************************************************************
+convenience routine to return unsigned long parameters.
+********************************************************************/
+static double lp_double(const char *s)
+{
+
+	if (!s) {
+		DEBUG(0,("lp_double(%s): is called with NULL!\n",s));
+		return (-1);
+	}
+
+	return strtod(s, NULL);
+}
+
+/*******************************************************************
 convenience routine to return boolean parameters.
 ********************************************************************/
 static BOOL lp_bool(const char *s)
@@ -1108,6 +1122,17 @@ unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *op
 	
 	if (value)
 		return lp_ulong(value);
+
+	return default_v;
+}
+
+
+double lp_parm_double(int lookup_service, const char *type, const char *option, double default_v)
+{
+	const char *value = lp_get_parametric(lookup_service, type, option);
+	
+	if (value)
+		return lp_double(value);
 
 	return default_v;
 }
