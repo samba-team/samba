@@ -88,7 +88,11 @@ again:
 
 		if (i > 0 && isdigit(params[0][0])) {
 			double targett = strtod(params[0], NULL);
-			nbio_time_delay(targett);
+			if (target_rate != 0) {
+				nbio_target_rate(target_rate);
+			} else {
+				nbio_time_delay(targett);
+			}
 			params++;
 			i--;
 		} else if (target_rate != 0) {
