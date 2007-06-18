@@ -1077,6 +1077,7 @@ hx509_crl_alloc(hx509_context context, hx509_crl *crl)
     if (ret) {
 	free(*crl);
 	*crl = NULL;
+	return ret;
     }
     (*crl)->expire = 0;
     return ret;
