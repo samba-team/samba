@@ -229,6 +229,7 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     if (ret) {
 	free((*cert)->data);
 	free(*cert);
+	*cert = NULL;
     }
     return ret;
 }
