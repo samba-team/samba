@@ -158,9 +158,23 @@ sub process_file($$$)
 
 	$private_file->("\n/* The following definitions come from $filename  */\n\n");
 
+	my $comment = undef;
+	my $incomment = 0;
 	while (my $line = <FH>) {	      
 		my $target = \&private;
 		my $is_public = 0;
+
+		if ($line =~ /^\/\*\*/) { 
+			$comment = "";
+			$incomment = 1;
+		}
+
+		if ($incomment) {
+			$comment .= $line;
+			if ($line =~ /\*\//) {
+				$incomment = 0;
+			}
+		} 
 
 		# these are ordered for maximum speed
 		next if ($line =~ /^\s/);
@@ -188,6 +202,8 @@ sub process_file($$$)
 			      /xo);
 
 		next if ($line =~ /^int\s*main/);
+
+		$target->("\n$comment") if (defined($comment)); $comment = undef;
 
 		if ( $line =~ /\(.*\)\s*$/o ) {
 			chomp $line;

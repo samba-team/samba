@@ -45,7 +45,7 @@
 #define TDR_SSVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSSVAL(tdr->data.data,ofs,v); } else SSVAL(tdr->data.data,ofs,v); } while (0)
 #define TDR_SIVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVAL(tdr->data.data,ofs,v); } else SIVAL(tdr->data.data,ofs,v); } while (0)
 
-/*
+/**
   expand the available space in the buffer to 'size'
 */
 NTSTATUS tdr_push_expand(struct tdr_push *tdr, uint32_t size)
@@ -198,10 +198,11 @@ NTSTATUS tdr_print_charset(struct tdr_print *tdr, const char *name, const char *
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   pull a ipv4address
 */
-NTSTATUS tdr_pull_ipv4address(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **address)
+NTSTATUS tdr_pull_ipv4address(struct tdr_pull *tdr, TALLOC_CTX *ctx, 
+							  const char **address)
 {
 	struct ipv4_addr in;
 	TDR_CHECK(tdr_pull_uint32(tdr, ctx, &in.addr));
@@ -211,7 +212,7 @@ NTSTATUS tdr_pull_ipv4address(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char 
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a ipv4address
 */
 NTSTATUS tdr_push_ipv4address(struct tdr_push *tdr, const char **address)
@@ -221,7 +222,7 @@ NTSTATUS tdr_push_ipv4address(struct tdr_push *tdr, const char **address)
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   print a ipv4address
 */
 NTSTATUS tdr_print_ipv4address(struct tdr_print *tdr, const char *name, 
@@ -231,7 +232,7 @@ NTSTATUS tdr_print_ipv4address(struct tdr_print *tdr, const char *name,
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   parse a hyper
 */
 NTSTATUS tdr_pull_hyper(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint64_t *v)
@@ -243,7 +244,7 @@ NTSTATUS tdr_pull_hyper(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint64_t *v)
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a hyper
 */
 NTSTATUS tdr_push_hyper(struct tdr_push *tdr, uint64_t *v)
@@ -255,9 +256,7 @@ NTSTATUS tdr_push_hyper(struct tdr_push *tdr, uint64_t *v)
 	return NT_STATUS_OK;
 }
 
-
-
-/*
+/**
   push a NTTIME
 */
 NTSTATUS tdr_push_NTTIME(struct tdr_push *tdr, NTTIME *t)
@@ -266,7 +265,7 @@ NTSTATUS tdr_push_NTTIME(struct tdr_push *tdr, NTTIME *t)
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   pull a NTTIME
 */
 NTSTATUS tdr_pull_NTTIME(struct tdr_pull *tdr, TALLOC_CTX *ctx, NTTIME *t)
@@ -275,7 +274,7 @@ NTSTATUS tdr_pull_NTTIME(struct tdr_pull *tdr, TALLOC_CTX *ctx, NTTIME *t)
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a time_t
 */
 NTSTATUS tdr_push_time_t(struct tdr_push *tdr, time_t *t)
@@ -283,7 +282,7 @@ NTSTATUS tdr_push_time_t(struct tdr_push *tdr, time_t *t)
 	return tdr_push_uint32(tdr, (uint32_t *)t);
 }
 
-/*
+/**
   pull a time_t
 */
 NTSTATUS tdr_pull_time_t(struct tdr_pull *tdr, TALLOC_CTX *ctx, time_t *t)
