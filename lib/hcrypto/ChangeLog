@@ -1,4 +1,18 @@
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add rand-timer.c
+
+	* rand-fortuna.c: Fall back to gattering data from timer and
+	secret files, this is really the last resort.
+
+	* rand-timer.c: Pick up timing diffrences in the timeing info from
+	realtime timer, only in use as a last resort.
+
+	* version-script.map: Add hc_RAND_timer_method.
+	
 2007-06-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_bn.c: Add <rand.h>.
 
 	* test_crypto.in: Test for random device before running the tests.
 
