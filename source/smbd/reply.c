@@ -4687,7 +4687,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 			DEBUG(3,("rename_internals: open_file_ntcreate "
 				 "returned %s rename %s -> %s\n",
 				 nt_errstr(status), directory, newname));
-			return status;
+			break;
 		}
 
 		status = rename_internals_fsp(conn, fsp, destname, attrs,
@@ -4699,7 +4699,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 			DEBUG(3, ("rename_internals_fsp returned %s for "
 				  "rename %s -> %s\n", nt_errstr(status),
 				  directory, newname));
-			return status;
+			break;
 		}
 
 		count++;
