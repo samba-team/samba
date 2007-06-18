@@ -883,7 +883,7 @@ test_misc_cmp(void)
     }
     /* same */
     {
-	uint32_t data;
+	uint32_t data = (uint32_t)'a';
 	heim_universal_string us1 = { 1, NULL } , us2 = { 1, NULL };
 	us1.data = &data;
 	us2.data = &data;
