@@ -1,5 +1,7 @@
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am.common: Merge from samba config.
+
 	* Makefile.am.common (makedir-in-tree): depend on INFO_DEPS.
 
 	* valgrind-suppressions: Unknown suppression in runtime link
