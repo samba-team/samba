@@ -501,10 +501,8 @@ add_locate(void *ctx, int type, struct sockaddr *addr)
     hostlen = strlen(host);
 
     hi = calloc(1, sizeof(*hi) + hostlen);
-    if(hi == NULL) {
-	free(host);
+    if(hi == NULL)
 	return ENOMEM;
-    }
     
     hi->proto = krbhst_get_default_proto(kd);
     hi->port  = hi->def_port = socket_get_port(addr);
