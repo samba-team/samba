@@ -82,22 +82,6 @@ typedef struct hx509_name_constraints {
  *
  */
 
-void
-_hx509_abort(const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-    printf("\n");
-    fflush(stdout);
-    abort();
-}
-
-/*
- *
- */
-
 int
 hx509_context_init(hx509_context *context)
 {
@@ -2472,3 +2456,24 @@ hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
 
     return ret;
 }
+
+/*
+ * Last to avoid lost __attribute__s due to #undef.
+ */
+
+#undef __attribute__
+#define __attribute__(X)
+
+void
+_hx509_abort(const char *fmt, ...)
+     __attribute__ ((noreturn, format (printf, 1, 2)))
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+    printf("\n");
+    fflush(stdout);
+    abort();
+}
+
