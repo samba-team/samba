@@ -650,7 +650,7 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
     if (der_put_oid((unsigned char *)oid_flat.elements + oid_flat.length - 1, 
 		    oid_flat.length, &oid, &size) != 0) {
 	free(oid.components);
-
+	free(oid_flat.elements);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
