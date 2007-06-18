@@ -1492,8 +1492,7 @@ _krb5_pk_load_id(krb5_context context,
     id = calloc(1, sizeof(*id));
     if (id == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
-	goto out;
+	return ENOMEM;
     }	
 
     ret = hx509_context_init(&id->hx509ctx);
