@@ -246,7 +246,7 @@ check-valgrind:
 # Will break when automake changes...
 #
 
-distdir-in-tree: $(DISTFILES)
+distdir-in-tree: $(DISTFILES) $(INFO_DEPS)
 	list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
 	  if test "$$subdir" != .; then \
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) distdir-in-tree) ; \
