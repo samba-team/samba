@@ -90,7 +90,7 @@ keyBag_parser(hx509_context context,
 				     &ki.privateKeyAlgorithm,
 				     NULL,
 				     &ki.privateKey,
-				     &attr->attrValues);
+				     os);
     free_PKCS8PrivateKeyInfo(&ki);
     return 0;
 }
@@ -431,7 +431,9 @@ p12_init(hx509_context context,
 out:
     _hx509_collector_free(c);
 
-    if (ret) {
+    if (ret && p12) {
+	if (p12->fn)
+	    free(p12->fn);
 	if (p12->certs)
 	    hx509_certs_free(&p12->certs);
 	free(p12);
