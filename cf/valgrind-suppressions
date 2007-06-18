@@ -82,3 +82,12 @@
    obj:/bin/ls
    fun:__libc_start_main
 }
+{
+   Unknown suppression in runtime link editor
+   Memcheck:Cond
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+}
