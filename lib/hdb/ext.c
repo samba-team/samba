@@ -268,6 +268,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 		       const hdb_entry *entry, char **p)
 {
     HDB_extension *ext;
+    char *str;
     int ret;
 
     ext = hdb_find_extension(entry, choice_HDB_extension_data_password);
@@ -314,7 +315,14 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 	}
 	return 0;
     }
-    krb5_set_error_string(context, "password attribute not found");
+
+    ret = krb5_unparse_name(context, entry->principal, &str);
+    if (ret == 0) {
+	krb5_set_error_string(context, "no password attributefor %s", str);
+	free(str);
+    } else 
+	krb5_clear_error_string(context);
+
     return ENOENT;
 }
 
