@@ -1,3 +1,7 @@
+2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken_gethostby.c: set proxy_port to 0 to pacify BEAM.
+
 2007-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* use "roken.h" consitantly
