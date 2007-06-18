@@ -1,3 +1,7 @@
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* can/test_can.in: spoon feed kadmin diffrently
+
 2007-06-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: Also test rename user to anther realm.
