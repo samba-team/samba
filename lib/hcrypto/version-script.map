@@ -185,6 +185,7 @@ HEIMDAL_CRYPTO_1.0 {
 		hc_RAND_set_rand_method;
 		hc_RAND_status;
 		hc_RAND_unix_method;
+		hc_RAND_timer_method;
 		hc_RAND_write_file;
 		hc_RC2_cbc_encrypt;
 		hc_RC2_decryptc;
