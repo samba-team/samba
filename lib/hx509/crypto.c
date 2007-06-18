@@ -1761,15 +1761,17 @@ CMSRC2CBCParam_set(hx509_context context, const heim_octet_string *param,
 	p->maximum_effective_key = 128;
 	break;
     default:
+	free(p);
 	free_CMSRC2CBCParameter(&rc2param);
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
     }
     if (ivec)
 	ret = der_copy_octet_string(&rc2param.iv, ivec);
     free_CMSRC2CBCParameter(&rc2param);
-    if (ret)
+    if (ret) {
+	free(p);
 	hx509_clear_error_string(context);
-    else
+    } else
 	crypto->param = p;
 
     return ret;
