@@ -1,3 +1,14 @@
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc: export get_dbinfo as krb5_kdc_set_dbinfo and call from
+	users. This to allows libkdc users to to specify their own
+	databases
+
+	* lib/krb5/pkinit.c (pk_rd_pa_reply_enckey): simplify handling of
+	content data (and avoid leaking memory).
+
+	* kdc/misc.c (_kdc_db_fetch): set error string for failures.
+	
 2007-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/pkinit.c: Use KRB5_AUTHDATA_INITIAL_VERIFIED_CAS.
