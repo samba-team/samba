@@ -3162,8 +3162,9 @@ decrypt_internal_derived(krb5_context context,
     unsigned long l;
     
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
-    if (len < checksum_sz) {
-	krb5_set_error_string(context, "Encrypted data shorter then checksum");
+    if (len < checksum_sz + et->confoundersize) {
+	krb5_set_error_string(context, "Encrypted data shorter then "
+			      "checksum + confunder");
 	return KRB5_BAD_MSIZE;
     }
 
