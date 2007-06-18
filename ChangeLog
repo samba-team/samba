@@ -1,5 +1,7 @@
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pac.c: make compile.
+	
 	* lib/krb5/pac.c (verify_checksum): memset cksum to avoid using
 	pointer from stack.
 
