@@ -41,5 +41,8 @@
 extern const RAND_METHOD hc_rand_fortuna_method;
 extern const RAND_METHOD hc_rand_unix_method;
 extern const RAND_METHOD hc_rand_egd_method;
+extern const RAND_METHOD hc_rand_timer_method;
+
+const RAND_METHOD * RAND_timer_method(void);
 
 #endif /* _HEIM_RANDI_H */
