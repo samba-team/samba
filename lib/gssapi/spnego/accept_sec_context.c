@@ -842,7 +842,7 @@ acceptor_continue
 
     {
 	gss_buffer_desc ibuf, obuf;
-	int require_mic, get_mic;
+	int require_mic, get_mic = 0;
 	int require_response;
 	heim_octet_string *mic;
 
