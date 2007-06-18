@@ -487,8 +487,8 @@ fortuna_reseed(void)
 	/* add timer info */
 	if ((*hc_rand_timer_method.bytes)(u.buf, sizeof(u.buf)) == 1)
 	    add_entropy(&main_state, u.buf, sizeof(u.buf));
-	/* add /dev/shadow */
-	fd = open("/dev/shadow", O_RDONLY, 0);
+	/* add /etc/shadow */
+	fd = open("/etc/shadow", O_RDONLY, 0);
 	if (fd >= 0) {
 	    ssize_t n;
 	    /* add_entropy will hash the buf */
