@@ -362,6 +362,7 @@ rsa_create_signature(hx509_context context,
     sig->length = RSA_size(signer->private_key.rsa);
     sig->data = malloc(sig->length);
     if (sig->data == NULL) {
+	der_free_octet_string(&indata);
 	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
     }
