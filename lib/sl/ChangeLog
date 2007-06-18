@@ -1,5 +1,7 @@
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* sl.c: make compile.
+
 	* sl.c: Pass in pointer to strlen().
 
 	* sl.c (sl_make_argv): use memmove since we are dealing with
