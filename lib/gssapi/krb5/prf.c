@@ -67,6 +67,7 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
     switch(prf_key) {
     case GSS_C_PRF_KEY_FULL:
 	_gsskrb5i_get_acceptor_subkey(ctx, context, &key);
+	break;
     case GSS_C_PRF_KEY_PARTIAL:
 	_gsskrb5i_get_initiator_subkey(ctx, context, &key);
 	break;
