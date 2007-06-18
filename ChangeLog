@@ -1,5 +1,20 @@
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pac.c (verify_checksum): memset cksum to avoid using
+	pointer from stack.
+
+	* lib/krb5/plugin.c: Don't expose free pointer.
+
+	* lib/krb5/pkinit.c (_krb5_pk_load_id): fail directoy for first
+	calloc.
+	
+	* lib/krb5/pkinit.c (get_reply_key*): don't expose freed memory
+
+	* lib/krb5/krbhst.c: Host is static memory, don't free.
+
+	* lib/krb5/crypto.c (decrypt_internal_derived): make sure length
+	is longer then confounder + checksum.
+
 	* kdc: export get_dbinfo as krb5_kdc_set_dbinfo and call from
 	users. This to allows libkdc users to to specify their own
 	databases
