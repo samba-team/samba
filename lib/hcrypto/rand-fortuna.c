@@ -472,6 +472,35 @@ fortuna_reseed(void)
 	    memset(buf, 0, sizeof(buf));
 	}
     }
+    /*
+     * Fall back to gattering data from timer and secret files, this
+     * is really the last resort.
+     */
+    if (!entropy_p) {
+	/* to save stackspace */
+	union {
+	    unsigned char buf[INIT_BYTES];
+	    unsigned char shad[1001];
+	} u;
+	int fd;
+
+	/* add timer info */
+	if ((*hc_rand_timer_method.bytes)(u.buf, sizeof(u.buf)) == 1)
+	    add_entropy(&main_state, u.buf, sizeof(u.buf));
+	/* add /dev/shadow */
+	fd = open("/dev/shadow", O_RDONLY, 0);
+	if (fd >= 0) {
+	    ssize_t n;
+	    /* add_entropy will hash the buf */
+	    while ((n = read(fd, (char *)u.shad, sizeof(u.shad))) > 0)
+		add_entropy(&main_state, u.shad, sizeof(u.shad));
+	    close(fd);
+	}
+
+	memset(&u, 0, sizeof(u));
+
+	entropy_p = 1; /* sure about this ? */
+    }
     {
 	pid_t pid = getpid();
 	add_entropy(&main_state, (void *)&pid, sizeof(pid));
