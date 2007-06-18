@@ -100,12 +100,13 @@ hx509_certs_init(hx509_context context,
     }
     
     ops = _hx509_ks_type(context, type);
-    free(type);
     if (ops == NULL) {
 	hx509_set_error_string(context, 0, ENOENT, 
 			       "Keyset type %s is not supported", type);
+	free(type);
 	return ENOENT;
     }
+    free(type);
     c = calloc(1, sizeof(*c));
     if (c == NULL) {
 	hx509_clear_error_string(context);
