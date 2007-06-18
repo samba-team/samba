@@ -112,12 +112,13 @@ libhcrypto_la_SOURCES =	\
 	md5.h		\
 	pkcs5.c		\
 	pkcs12.c	\
+	rand-egd.c	\
+	rand-fortuna.c	\
+	rand-timer.c	\
+	rand-unix.c	\
 	rand.c		\
 	rand.h		\
 	randi.h		\
-	rand-fortuna.c	\
-	rand-egd.c	\
-	rand-unix.c	\
 	rc2.c		\
 	rc2.h		\
 	rc4.c		\
