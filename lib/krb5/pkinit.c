@@ -794,6 +794,7 @@ get_reply_key_win(krb5_context context,
     if (ret) {
 	krb5_set_error_string(context, "PKINIT failed copying reply key");
 	free(*key);
+	*key = NULL;
     }
 
     return ret;
@@ -856,6 +857,7 @@ get_reply_key(krb5_context context,
     if (ret) {
 	krb5_set_error_string(context, "PKINIT failed copying reply key");
 	free(*key);
+	*key = NULL;
     }
 
     return ret;
