@@ -232,8 +232,14 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	}
 
 	iv = strchr(type, ',');
-	if (iv)
-	    *iv++ = '\0';
+	if (iv == NULL) {
+	    free(type);
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+				   "IV missing");
+	    return HX509_PARSING_KEY_FAILED;
+	}
+
+	*iv++ = '\0';
 
 	size = strlen(iv);
 	ivdata = malloc(size);
