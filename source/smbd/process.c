@@ -26,10 +26,9 @@ extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
-#define TOTAL_BUFFER_SIZE (BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE+SAFETY_MARGIN)
-
-static char InBuffer[TOTAL_BUFFER_SIZE];
-static char OutBuffer[TOTAL_BUFFER_SIZE];
+static char *InBuffer = NULL;
+static char *OutBuffer = NULL;
+static char *current_inbuf = NULL;
 
 /* 
  * Size of data we can send to client. Set
@@ -210,11 +209,11 @@ BOOL push_deferred_smb_message(uint16 mid,
 
 	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u "
 		  "timeout time [%u.%06u]\n",
-		  (unsigned int) smb_len(InBuffer)+4, (unsigned int)mid,
+		  (unsigned int) smb_len(current_inbuf)+4, (unsigned int)mid,
 		  (unsigned int)end_time.tv_sec,
 		  (unsigned int)end_time.tv_usec));
 
-	return push_queued_message(InBuffer, smb_len(InBuffer)+4,
+	return push_queued_message(current_inbuf, smb_len(current_inbuf)+4,
 				   request_time, end_time,
 				   private_data, priv_len);
 }
@@ -1000,6 +999,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			return(ERROR_DOS(ERRSRV,ERRaccess));
 		}
 
+		current_inbuf = inbuf; /* In case we need to defer this message in open... */
 		outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
 	}
 
@@ -1484,6 +1484,47 @@ char *get_OutBuffer(void)
 	return OutBuffer;
 }
 
+const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
+
+/****************************************************************************
+ Allocate a new InBuffer. Returns the new and old ones.
+****************************************************************************/
+
+static char *NewInBuffer(char **old_inbuf)
+{
+	char *new_inbuf = (char *)SMB_MALLOC(total_buffer_size);
+	if (!new_inbuf) {
+		return NULL;
+	}
+	if (old_inbuf) {
+		*old_inbuf = InBuffer;
+	}
+	InBuffer = new_inbuf;
+#if defined(DEVELOPER)
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
+#endif
+	return InBuffer;
+}
+
+/****************************************************************************
+ Allocate a new OutBuffer. Returns the new and old ones.
+****************************************************************************/
+
+static char *NewOutBuffer(char **old_outbuf)
+{
+	char *new_outbuf = (char *)SMB_MALLOC(total_buffer_size);
+	if (!new_outbuf) {
+		return NULL;
+	}
+	if (old_outbuf) {
+		*old_outbuf = OutBuffer;
+	}
+	OutBuffer = new_outbuf;
+#if defined(DEVELOPER)
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
+#endif
+	return OutBuffer;
+}
 
 /****************************************************************************
  Process commands from the client
@@ -1493,6 +1534,11 @@ void smbd_process(void)
 {
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
+
+	/* Allocate the primary Inbut/Output buffers. */
+
+	if ((NewInBuffer(NULL) == NULL) || (NewOutBuffer(NULL) == NULL)) 
+		return;
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
@@ -1520,8 +1566,7 @@ void smbd_process(void)
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
 #if defined(DEVELOPER)
-		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE,
-			       InBuffer, TOTAL_BUFFER_SIZE);
+		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
 #endif
 
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
@@ -1541,8 +1586,7 @@ void smbd_process(void)
 		 */ 
 		num_echos = smb_echo_count;
 
-		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE,
-			       OutBuffer, TOTAL_BUFFER_SIZE);
+		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
 
 		process_smb(InBuffer, OutBuffer);
 
