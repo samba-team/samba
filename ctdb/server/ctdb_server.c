@@ -193,15 +193,15 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 
 
 /*
-  return the number of enabled nodes
+  return the number of active nodes
 */
-uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb)
+uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb)
 {
 	int i;
 	uint32_t count=0;
 	for (i=0;i<ctdb->vnn_map->size;i++) {
 		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
-		if (!(node->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
+		if (!(node->flags & NODE_FLAGS_INACTIVE)) {
 			count++;
 		}
 	}
