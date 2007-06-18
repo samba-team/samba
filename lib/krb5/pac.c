@@ -409,6 +409,8 @@ verify_checksum(krb5_context context,
     krb5_error_code ret;
     Checksum cksum;
 
+    memset(&cksum, 0, sizof(cksum));
+
     sp = krb5_storage_from_mem((char *)data->data + sig->offset_lo,
 			       sig->buffersize);
     if (sp == NULL) {
