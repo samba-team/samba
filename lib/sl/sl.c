@@ -242,12 +242,12 @@ sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
 	    ;
 	} else if (*p == '"') {
 	    quote = !quote;
-	    memmove(&p[0], &p[1], strlen(&p[1]));
+	    memmove(&p[0], &p[1], strlen(&p[1]) + 1);
 	    continue;
 	} else if (*p == '\\') {
 	    if (p[1] == '\0')
 		goto failed;
-	    memmove(&p[0], &p[1], strlen(&p[1]));
+	    memmove(&p[0], &p[1], strlen(&p[1]) + 1);
 	    p += 2;
 	    continue;
 	} else if (quote || !isspace((unsigned char)*p)) {
