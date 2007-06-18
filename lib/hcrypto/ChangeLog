@@ -1,5 +1,8 @@
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rand-fortuna.c: Use /etc/shadow, not /dev/shadow, pointed out by
+	Andrew Bartlett
+
 	* Makefile.am: add rand-timer.c
 
 	* rand-fortuna.c: Fall back to gattering data from timer and
