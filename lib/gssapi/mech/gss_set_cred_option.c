@@ -64,7 +64,9 @@ gss_set_cred_option (OM_uint32 *minor_status,
 
 			mc = malloc(sizeof(*mc));
 			if (mc == NULL) {
-			    /* XXX free the other mc's */
+			    *cred_handle = (gss_cred_id_t)cred;
+			    gss_release_cred(minor_status, cred_handle);
+			    *minor_status = ENOMEM;
 			    return GSS_S_FAILURE;
 			}
 
