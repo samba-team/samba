@@ -180,7 +180,6 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
     }
 
     padlen = size - flen - 3;
-    assert(padlen >= 8);
 
     *p++ = 2;
     if (RAND_bytes(p, padlen) != 1) {
