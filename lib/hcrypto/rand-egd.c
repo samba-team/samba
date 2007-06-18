@@ -255,7 +255,7 @@ RAND_egd_bytes(const char *filename, int size)
 
     RAND_seed(data, size);
 
-    memset(data, 0, sizeof(data));
+    memset(data, 0, size);
     free(data);
 
     return 1;
