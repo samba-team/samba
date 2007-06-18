@@ -1,3 +1,7 @@
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.c: Free memory in failure case.
+
 2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* *.c: Add hx509_cert_init_data and use everywhere
