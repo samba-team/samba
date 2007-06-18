@@ -43,8 +43,7 @@ OM_uint32 _gsskrb5_release_name
     krb5_context context;
     krb5_principal name = (krb5_principal)*input_name;
 
-    if (minor_status)
-      *minor_status = 0;
+    *minor_status = 0;
 
     GSSAPI_KRB5_INIT (&context);
 
