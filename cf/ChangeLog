@@ -1,3 +1,8 @@
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* valgrind-suppressions: Unknown suppression in runtime link
+	editor
+
 2007-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am.common: Add heimdal-lorikeet target distdir-in-tree
