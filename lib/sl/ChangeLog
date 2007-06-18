@@ -1,5 +1,17 @@
-2007-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* sl.c: Pass in pointer to strlen().
+
+	* sl.c (sl_make_argv): use memmove since we are dealing with
+	overlapping strings.
+
+2007-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: don't clean yacc/lex files in CLEANFILES,
+	maintainers clean will do that for us.
+	
+2007-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* slc-gram.y (main): also fclose yyin.
 	
 2007-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
