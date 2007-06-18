@@ -38,36 +38,39 @@
 
 RCSID("$Id$");
 
-static void
-get_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
+krb5_error_code
+krb5_kdc_set_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
 {
     struct hdb_dbinfo *info, *d;
     krb5_error_code ret;
+    int i;
 
     /* fetch the databases */
     ret = hdb_get_dbinfo(context, &info);
     if (ret)
-	krb5_err(context, 1, ret, "hdb_get_dbinfo");
+	return ret;
     
     d = NULL;
     while ((d = hdb_dbinfo_get_next(info, d)) != NULL) {
 	void *ptr;
 	
 	ptr = realloc(c->db, (c->num_db + 1) * sizeof(*c->db));
-	if (ptr == NULL)
-	    krb5_err(context, 1, ret, "out of memory");
+	if (ptr == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "out of memory");
+	    goto out;
+	}
 	c->db = ptr;
 	
 	ret = hdb_create(context, &c->db[c->num_db], 
 			 hdb_dbinfo_get_dbname(context, d));
 	if(ret)
-	    krb5_err(context, 1, ret, "hdb_create %s", 
-		     hdb_dbinfo_get_dbname(context, d));
+	    goto out;
 	
 	ret = hdb_set_master_keyfile(context, c->db[c->num_db], 
 				     hdb_dbinfo_get_mkey_file(context, d));
 	if (ret)
-	    krb5_err(context, 1, ret, "hdb_set_master_keyfile");
+	    goto out;
 	
 	c->num_db++;
 
@@ -81,10 +84,23 @@ get_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
 		hdb_dbinfo_get_mkey_file(context, d));
     }
     hdb_free_dbinfo(context, &info);
+
+    return 0;
+out:
+    for (i = 0; i < c->num_db; i++)
+	if (c->db[i] && c->db[i]->hdb_destroy)
+	    (*c->db[i]->hdb_destroy)(context, c->db[i]);
+    c->num_db = 0;
+    free(c->db);
+    c->db = NULL;
+ 
+    hdb_free_dbinfo(context, &info);
+
+    return ret;
 }
 
 
-int
+krb5_error_code
 krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 {
     krb5_kdc_configuration *c;
@@ -111,8 +127,6 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
     c->db = NULL;
     c->num_db = 0;
     c->logf = NULL;
-
-    get_dbinfo(context, c);
 
     c->require_preauth =
 	krb5_config_get_bool_default(context, NULL, 

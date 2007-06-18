@@ -84,6 +84,10 @@ main(int argc, char **argv)
 
     kdc_openlog(context, config);
 
+    ret = krb5_kdc_set_dbinfo(context, config);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kdc_set_dbinfo");
+
     if (argc != 2)
 	errx(1, "argc != 2");
 

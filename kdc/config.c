@@ -202,6 +202,10 @@ configure(krb5_context context, int argc, char **argv)
 
     kdc_openlog(context, config);
 
+    ret = krb5_kdc_set_dbinfo(context, config);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kdc_set_dbinfo");
+
     if(max_request_str)
 	max_request = parse_bytes(max_request_str, NULL);
 

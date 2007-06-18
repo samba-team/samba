@@ -8,6 +8,7 @@ HEIMDAL_KDC_1.0 {
 		kdc_openlog;
 		krb5_kdc_windc_init;
 		krb5_kdc_get_config;
+		krb5_kdc_set_dbinfo;
 		krb5_kdc_process_krb5_request;
 		krb5_kdc_process_request;
 		krb5_kdc_save_request;
