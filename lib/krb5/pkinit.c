@@ -955,8 +955,6 @@ pk_rd_pa_reply_enckey(krb5_context context,
     krb5_error_code ret;
     struct krb5_pk_cert *host = NULL;
     size_t size;
-    int length;
-    void *p;
     krb5_data content;
     heim_oid contentType = { 0, NULL };
 
@@ -983,9 +981,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			    "Failed to unenvelope CMS data in PK-INIT reply");
 	return ret;
     }
-
-    p = content.data;
-    length = content.length;
+    der_free_oid(&contentType);
 
 #if 0 /* windows LH with interesting CMS packets, leaks memory */
     {
@@ -1009,7 +1005,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     if (type == COMPAT_WIN2K) {
 	ContentInfo ci;
 
-	ret = decode_ContentInfo(p, length, &ci, &size);
+	ret = decode_ContentInfo(content.data, content.length, &ci, &size);
 	if (ret) {
 	    krb5_set_error_string(context,
 				  "PKINIT: failed decoding ContentInfo: %d",
@@ -1028,14 +1024,17 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
 	krb5_data_free(&content);
-	content = *ci.content;
-	p = ci.content->data;
-	length = ci.content->length;
+	ret = krb5_data_copy(&content, ci.content->data, ci.content->length);
+	free_ContentInfo(&ci);
+	if (ret) {
+	    krb5_set_error_string(context, "PKINIT: out of memory");
+	    goto out;
+	}
     }
 
     ret = _krb5_pk_verify_sign(context, 
-			       p,
-			       length,
+			       content.data,
+			       content.length,
 			       ctx->id,
 			       &contentType,
 			       &content,
