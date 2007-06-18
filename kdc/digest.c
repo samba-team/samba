@@ -865,10 +865,8 @@ _kdc_do_digest(krb5_context context,
 		r.u.response.success = TRUE;
 	    } else {
 		kdc_log(context, config, 0, 
-			"MS-CHAP-V2 hash mismatch for %s %s != %s",
-			ireq.u.digestRequest.username,
-			ireq.u.digestRequest.responseData,
-			mdx);
+			"MS-CHAP-V2 hash mismatch for %s",
+			ireq.u.digestRequest.username);
 		r.u.response.success = FALSE;
 	    }
 	    free(mdx);
