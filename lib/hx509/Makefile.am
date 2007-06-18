@@ -173,6 +173,7 @@ PROGRAM_TESTS = 		\
 
 SCRIPT_TESTS = 			\
 	test_ca			\
+	test_cert		\
 	test_chain		\
 	test_cms		\
 	test_crypto		\
@@ -190,6 +191,11 @@ test_ca: test_ca.in Makefile
 	$(do_subst) < $(srcdir)/test_ca.in > test_ca.tmp
 	chmod +x test_ca.tmp
 	mv test_ca.tmp test_ca
+
+test_cert: test_cert.in Makefile
+	$(do_subst) < $(srcdir)/test_cert.in > test_cert.tmp
+	chmod +x test_cert.tmp
+	mv test_cert.tmp test_cert
 
 test_chain: test_chain.in Makefile
 	$(do_subst) < $(srcdir)/test_chain.in > test_chain.tmp
@@ -245,6 +251,7 @@ EXTRA_DIST = \
 	pkcs10.asn1 \
 	test_ca.in \
 	test_chain.in \
+	test_cert.in \
 	test_cms.in \
 	test_crypto.in \
 	test_nist.in \
