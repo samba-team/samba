@@ -1,5 +1,11 @@
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c: Fail if not finding iv.
+
+	* keyset.c: Avoid useing freed memory.
+
+	* crypto.c: Free memory in failure case.
+
 	* crypto.c: Free memory in failure case.
 
 2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
