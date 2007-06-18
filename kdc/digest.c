@@ -861,15 +861,17 @@ _kdc_do_digest(krb5_context context,
 
 	    r.element = choice_DigestRepInner_response;
 	    ret = strcasecmp(mdx, ireq.u.digestRequest.responseData);
-	    free(mdx);
 	    if (ret == 0) {
 		r.u.response.success = TRUE;
 	    } else {
 		kdc_log(context, config, 0, 
-			"MS-CHAP-V2 reply mismatch for %s",
-			ireq.u.digestRequest.username);
+			"MS-CHAP-V2 hash mismatch for %s %s != %s",
+			ireq.u.digestRequest.username,
+			ireq.u.digestRequest.responseData,
+			mdx);
 		r.u.response.success = FALSE;
 	    }
+	    free(mdx);
 
 	    if (r.u.response.success) {
 		unsigned char hashhash[MD4_DIGEST_LENGTH];
