@@ -577,12 +577,12 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 				(state->readcnt*state->lp_params->blocksize));
 		rd.generic.level = RAW_READ_READX;
 		rd.readx.in.file.fnum	= state->fnum 	;
-		rd.readx.in.offset	= state->readcnt * 
-					state->lp_params->blocksize;
+		rd.readx.in.offset	= state->readcnt*state->lp_params->blocksize; 
 		rd.readx.in.mincnt	= state->lp_params->blocksize;
 		rd.readx.in.maxcnt	= rd.readx.in.mincnt;
 		rd.readx.in.remaining	= 0	;
 		rd.readx.out.data	= state->buffer;
+		rd.readx.in.read_for_execute = False;
 		if(state->readcnt < state->lp_params->writeblocks){
 			state->readcnt++;	
 		}else{
@@ -727,6 +727,7 @@ static void benchrw_callback(struct smbcli_request *req)
 					"file - %s\n", 
 					nt_errstr(req->status));
 			state->mode=ERROR;
+			state->readcnt=0;
 			return;
 		}
 		break;
