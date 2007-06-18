@@ -1,5 +1,11 @@
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* revoke.c: Avoid stomping on NULL.
+
+	* revoke.c: Avoid reusing i.
+
+	* cert.c: Provide __attribute__ for _hx509_abort.
+
 	* ks_file.c: Fail if not finding iv.
 
 	* keyset.c: Avoid useing freed memory.
