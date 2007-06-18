@@ -239,7 +239,7 @@ endif
 #
 
 check-valgrind:
-	env TESTS_ENVIRONMENT="$(top_builddir)/libtool --mode execute valgrind --leak-check=full --quiet --suppressions=$(top_srcdir)/cf/valgrind-suppressions" make check
+	env TESTS_ENVIRONMENT="$(top_builddir)/libtool --mode execute valgrind --leak-check=full --trace-children=yes --quiet -q --num-callers=30 --suppressions=$(top_srcdir)/cf/valgrind-suppressions" make check
 
 #
 # Target to please samba build farm, builds distfiles in-tree.
