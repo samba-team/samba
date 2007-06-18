@@ -78,12 +78,16 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 		return (major_status);
 	}
 
-	name = _gss_make_name(m, mn);
-	if (!name) {
+	if (cred_name) {
+	    name = _gss_make_name(m, mn);
+	    if (!name) {
 		m->gm_release_name(minor_status, &mn);
 		return (GSS_S_NO_CRED);
-	}
+	    }
+	    *cred_name = (gss_name_t) name;
+	} else
+	    m->gm_release_name(minor_status, &mn);
 
-	*cred_name = (gss_name_t) name;
+
 	return (GSS_S_COMPLETE);
 }
