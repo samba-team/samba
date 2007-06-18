@@ -111,7 +111,7 @@ int ROKEN_LIB_FUNCTION
 roken_gethostby_setup(const char *proxy_spec, const char *dns_spec)
 {
     char *proxy_host = NULL;
-    int proxy_port;
+    int proxy_port = 0;
     char *dns_host, *dns_path;
     int dns_port;
     
