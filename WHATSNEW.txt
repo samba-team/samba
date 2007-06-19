@@ -1,11 +1,111 @@
                    ===============================
+                   Release Notes for Samba 3.0.25b
+                             June 20, 2007
+                   ===============================
+
+This is the third production release of the Samba 3.0.25 code 
+base and is the version that servers should be run for for all 
+current bug fixes.  
+
+Major bug fixes included in Samba 3.0.25b are:
+
+  o Offline caching of files with Windows XP/Vista clients.
+  o Improper cleanup of expired or invalid byte range locks 
+    on files.
+  o Crashes is idmap_ldap and idmap_rid.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25a
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 4655: Fix client parsing bug in spoolss EnumPrinterDataEx().
+    * Ensure that proper oplock break requests occur during file open
+      and performing internal checks for compatible open modes.
+    * Fix offline file caching with Windows XP/Vista clients.
+    * Coverity fixes.
+    * Ensure that winbindd reports the correct client connection
+      details in response to a SIGUSR2.
+    * Fix timespec_current() to return the correct nano-second time.
+    * Fix lock logic inconsistencies in tdb_traverse().
+    * Remove restriction on string length for rpcclient commands.
+    * BUG 4683: Fix LSA crash bug.
+    * BUG 3204: Fix file descriptor leak in the parent winbindd when
+      child processes hang.
+    * Avoid calling rename_open_files() when the old and new names 
+      are identical.
+    * BUG 4689: Fix bug in new change notify code caused by not
+      ignoring the max_params_return value and as a resulting
+      returning truncated names.
+    * Fix sync_file() to return NTSTATUS and return this on failure in
+      the write reply path.
+    * BUG 4678,4697: Fix token creation for clear text logins.  
+
+
+o   Jacob Berkman <jberkman@novell.com>
+    * BUG 4566: Pass password data to krb5_prompter.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * BUG 4657: Fix compilation and linking of pam_smbpass.so.
+    * Add more netlogon GetDcName() client calls.
+
+
+o   Steve Langasek <vorlon@debian.org>
+    * Allow SIGTERM to cause nmbd to exit on awaiting an interface 
+      to come up.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix record state check error when reviewing entries in nmbd's
+      WINS database.
+
+
+o   Justin Maggard <jmaggard@infrant.com>
+    * Don't expire a password if it's explicitly set as ACB_PWNOTREQ.
+
+
+o   <mnix@wanm.com.au>
+    * Fix old old bug in cli_smbwrite() (not incrementing data 
+      being sent).
+
+
+o   Jens Nissen <jens.nissen@gmx.net>
+    * BUG 4537: Fix smbtorture deny test2.
+
+
+o   James Peach <jpeach@apple.com>
+    * Fix structure types in the vfs_catia NT_ACL operations.
+
+
+o   Doug Rudoff <doug_rudoff@isilon.com>
+    * Ensure that the the lck struct for invalid locks are correctly
+      saved and therefore cleaned up.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Updates for the packaging/Debian directory.
+    * Add missing 'c' character to the list of shell safe characters.
+    * BUG 4667 (partial): Fix crash bug in idmap_ldap.c.
+    * Fix inconsistencies between creating machine and user accounts.
+    * Fix bug deleting LDAP user accounts that used the account 
+      objectclass as its structural basis.
+    * BUG 2319: Ensure that smbspool correctly decodes %-encoded
+      characters.
+    * BUG 4624: Fix crashes in idmap_rid.
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+                   ===============================
                    Release Notes for Samba 3.0.25a
                              May 25, 2007
                    ===============================
-
-This is the second production release of the Samba 3.0.25 code 
-base and is the version that servers should be run for for all 
-current bug fixes.  
 
 Major bug fixes included in Samba 3.0.25a are:
 
@@ -54,7 +154,7 @@ o   Jeremy Allison <jra@samba.org>
       about that we retry the lock every 10 seconds instead of waiting
       for the standard select timeout.
     * BUG 4637: Fix samlogon reply regression that broke domain logons.
-    * Fix rename on open files and improved cdelete-on-close semantics.
+    * Fix rename on open files and improved delete-on-close semantics.
     * Fix POSIX setfilepathinfo to use lstat.
 
 
@@ -124,9 +224,6 @@ o   James Peach <jpeach@apple.com>
 o   Simo Sorce <idra@samba.org>
     * Short circuit Unix Users and Unix Groups Domain SID checks 
       in smbd to avoid unnecessary calls to winbindd.
-
-
-Release notes for older releases follow:
 
       --------------------------------------------------
                    ==============================
