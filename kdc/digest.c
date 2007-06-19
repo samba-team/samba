@@ -160,6 +160,44 @@ static const unsigned char ms_rfc3079_magic1[27] = {
  *
  */
 
+static krb5_error_code
+get_password_entry(krb5_context context,
+		   krb5_kdc_configuration *config,
+		   const char *username,
+		   char **password)
+{
+    krb5_principal clientprincipal;
+    krb5_error_code ret;
+    hdb_entry_ex *user;
+    HDB *db;
+
+    /* get username */
+    ret = krb5_parse_name(context, username, &clientprincipal);
+    if (ret)
+	return ret;
+
+    ret = _kdc_db_fetch(context, config, clientprincipal,
+			HDB_F_GET_CLIENT, &db, &user);
+    krb5_free_principal(context, clientprincipal);
+    if (ret)
+	return ret;
+
+    ret = hdb_entry_get_password(context, db, &user->entry, password);
+    if (ret || password == NULL) {
+	if (ret == 0) {
+	    ret = EINVAL;
+	    krb5_set_error_string(context, "password missing");
+	}
+	memset(user, 0, sizeof(*user));
+    }
+    _kdc_free_ent (context, user);
+    return ret;
+}
+
+/*
+ *
+ */
+
 krb5_error_code
 _kdc_do_digest(krb5_context context, 
 	       krb5_kdc_configuration *config,
@@ -461,9 +499,6 @@ _kdc_do_digest(krb5_context context,
 	break;
     }
     case choice_DigestReqInner_digestRequest: {
-	krb5_principal clientprincipal;
-	HDB *db;
-
 	sp = krb5_storage_emem();
 	if (sp == NULL) {
 	    ret = ENOMEM;
@@ -571,29 +606,6 @@ _kdc_do_digest(krb5_context context,
 	    }
 	}
 
-	/* get username */
-	ret = krb5_parse_name(context,
-			      ireq.u.digestRequest.username,
-			      &clientprincipal);
-	if (ret)
-	    goto out;
-
-	ret = _kdc_db_fetch(context, config, clientprincipal,
-			    HDB_F_GET_CLIENT, &db, &user);
-
-	krb5_free_principal(context, clientprincipal);
-	if (ret)
-	    goto out;
-
-	ret = hdb_entry_get_password(context, db, &user->entry, &password);
-	if (ret || password == NULL) {
-	    if (ret == 0) {
-		ret = EINVAL;
-		krb5_set_error_string(context, "password missing");
-	    }
-	    goto out;
-	}
-
 	if (strcasecmp(ireq.u.digestRequest.type, "CHAP") == 0) {
 	    MD5_CTX ctx;
 	    unsigned char md[MD5_DIGEST_LENGTH];
@@ -618,6 +630,12 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 	    
+	    ret = get_password_entry(context, config, 
+				     ireq.u.digestRequest.username,
+				     &password);
+	    if (ret)
+		goto out;
+
 	    MD5_Init(&ctx);
 	    MD5_Update(&ctx, &id, 1);
 	    MD5_Update(&ctx, password, strlen(password));
@@ -664,6 +682,12 @@ _kdc_do_digest(krb5_context context,
 	    if (ireq.u.digestRequest.realm == NULL) 
 		goto out;
 	    
+	    ret = get_password_entry(context, config, 
+				     ireq.u.digestRequest.username,
+				     &password);
+	    if (ret)
+		goto out;
+
 	    MD5_Init(&ctx);
 	    MD5_Update(&ctx, ireq.u.digestRequest.username,
 		       strlen(ireq.u.digestRequest.username));
@@ -758,6 +782,7 @@ _kdc_do_digest(krb5_context context,
 
 	} else if (strcasecmp(ireq.u.digestRequest.type, "MS-CHAP-V2") == 0) {
 	    unsigned char md[SHA_DIGEST_LENGTH], challange[SHA_DIGEST_LENGTH];
+	    krb5_principal clientprincipal = NULL;
 	    char *mdx;
 	    const char *username;
 	    struct ntlm_buf answer;
