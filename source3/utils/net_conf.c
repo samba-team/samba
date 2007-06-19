@@ -20,19 +20,9 @@
  */
 
 /*
- * This currently only an interface to the configuration
- * stored inside the samba registry. In the future there
- * might be support for other configuration backends as well.
- */
-
-/*
- * TODO:
- *
- *  - check uid 0 for write operations
- *  - check for valid parameter names and types (loadparm...) ???
- *  - check for correctness of shares (service_ok) ?
- *  - refactor to use _internal functions for pieces of code
- *
+ * This is an interface to the configuration stored inside the 
+ * samba registry. In the future there might be support for other 
+ * configuration backends as well.
  */
 
 #include "includes.h"
