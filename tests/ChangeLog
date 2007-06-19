@@ -1,3 +1,8 @@
+2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* can/test_can.in: readline seems strange, try diffrent way to
+	setup the database.
+
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* can/test_can.in: spoon feed kadmin diffrently
