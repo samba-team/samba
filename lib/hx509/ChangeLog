@@ -1,5 +1,8 @@
 2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: Added peap-server for to make windows peap clients
+	happy.
+
 	* hxtool.c: Unify parse_oid code.
 
 	* hxtool.c: Implement --content-type.
