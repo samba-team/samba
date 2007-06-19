@@ -73,12 +73,11 @@
    obj:/lib/ld-2.5.so
    obj:/lib/ld-2.5.so
    obj:/lib/ld-2.5.so
-   obj:/lib/ld-2.5.so
+
 }
 {
    Unknown suppression in runtime link editor
    Memcheck:Addr4
-   obj:/lib/ld-2.5.so
    obj:/lib/ld-2.5.so
    obj:/lib/ld-2.5.so
    obj:/lib/ld-2.5.so
