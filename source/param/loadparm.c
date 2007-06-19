@@ -3164,6 +3164,11 @@ static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
 				  &type,
 				  &size,
 				  &data_p);
+		if (strcmp(valname,"include")) {
+			DEBUG(10, ("process_registry_globals: Ignoring "
+				   "parameter 'include' in registry.\n"));
+			continue;
+		}
 		DEBUG(10, ("process_registry_shares: got value '%s'\n",
 			   valname));
 		if (size && data_p) {
