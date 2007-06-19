@@ -217,7 +217,8 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 int
 cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 {
-    const heim_oid *contentType;
+    const heim_oid *contentType = NULL;
+    heim_oid contentTypeOpt;
     hx509_peer_info peer = NULL;
     heim_octet_string o;
     hx509_query *q;
@@ -228,7 +229,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     void *p;
     int ret, flags = 0;
 
-    contentType = oid_id_pkcs7_data();
+    memset(&contentTypeOpt, 0, sizeof(contentTypeOpt));
 
     if (argc < 2)
 	errx(1, "argc < 2");
@@ -274,6 +275,17 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (opt->peer_alg_strings.num_strings)
 	peer_strings(context, &peer, &opt->peer_alg_strings);
 
+    if (opt->content_type_string) {
+	ret = der_parse_heim_oid (opt->content_type_string, " .", 
+				  &contentTypeOpt);
+	if  (ret)
+	    errx(1, "der_parse_heim_oid failed on: %s", 
+		 opt->content_type_string);
+	contentType = &contentTypeOpt;
+    } else {
+	contentType = oid_id_pkcs7_data();
+    }
+
     ret = hx509_cms_create_signed_1(context,
 				    flags,
 				    contentType,
@@ -295,6 +307,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
     hx509_peer_info_free(peer);
+    der_free_oid(&contentTypeOpt);
 
     if (opt->content_info_flag) {
 	heim_octet_string wo;
@@ -382,6 +395,8 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 int
 cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 {
+    const heim_oid *contentType = NULL;
+    heim_oid contentTypeOpt;
     heim_octet_string o;
     const heim_oid *enctype = NULL;
     hx509_query *q;
@@ -391,6 +406,8 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     size_t sz;
     void *p;
     hx509_lock lock;
+
+    memset(&contentTypeOpt, 0, sizeof(contentTypeOpt));
 
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
@@ -421,6 +438,17 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
+    if (opt->content_type_string) {
+	ret = der_parse_heim_oid (opt->content_type_string, " .", 
+				  &contentTypeOpt);
+	if  (ret)
+	    errx(1, "der_parse_heim_oid failed on: %s", 
+		 opt->content_type_string);
+	contentType = &contentTypeOpt;
+    } else {
+	contentType = oid_id_pkcs7_data();
+    }
+
     ret = hx509_cms_envelope_1(context, 0, cert, p, sz, enctype, 
 			       oid_id_pkcs7_data(), &o);
     if (ret)
@@ -429,6 +457,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     hx509_cert_free(cert);
     hx509_certs_free(&certs);
     _hx509_unmap_file(p, sz);
+    der_free_oid(&contentTypeOpt);
 
     if (opt->content_info_flag) {
 	heim_octet_string wo;
