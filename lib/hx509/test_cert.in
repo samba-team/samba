@@ -53,6 +53,7 @@ for a in $srcdir/data/*.crt; do
     ${hxtool} print --content FILE:"$a" > /dev/null 2>/dev/null
 done
 
-
+echo "print NULL"
+${hxtool} print --content NULL: > /dev/null || exit 1
 
 exit 0
