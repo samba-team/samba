@@ -82,8 +82,7 @@ static int net_conf_delshare_usage(int argc, const char **argv)
 
 static int net_conf_setparm_usage(int argc, const char **argv)
 {
-	d_printf("USAGE: net conf setparm <section> <param> <type> <value>\n"
-		 "\t(Supported types are 'dword' and 'sz' by now.)\n");
+	d_printf("USAGE: net conf setparm <section> <param> <value>\n");
 	return -1;
 }
 
@@ -918,20 +917,18 @@ static int net_conf_setparm(int argc, const char **argv)
 	struct registry_key *key = NULL;
 	char *service = NULL;
 	char *param = NULL;
-	char *type = NULL;
 	const char *value_str = NULL;
 	TALLOC_CTX *ctx;
 
 	ctx = talloc_init("setparm");
 
-	if (argc != 4) {
+	if (argc != 3) {
 		net_conf_setparm_usage(argc, argv);
 		goto done;
 	}
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
-	type = strdup_lower(argv[2]);
-	value_str = argv[3];
+	value_str = argv[2];
 
 	if (!smbconf_key_exists(ctx, service)) {
 		werr = reg_createkey_internal(ctx, service, &key);
@@ -943,7 +940,7 @@ static int net_conf_setparm(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = reg_setvalue_internal(key, param, type, value_str);
+	werr = reg_setvalue_internal(key, param, "sz", value_str);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
 			  param, dos_errstr(werr));
