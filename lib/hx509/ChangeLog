@@ -1,3 +1,11 @@
+2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c: Implement --content-type.
+
+	* hxtool-commands.in: Add content-type.
+
+	* test_cert.in: more cert and keyset tests.
+
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* revoke.c: Avoid stomping on NULL.
