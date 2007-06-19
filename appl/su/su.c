@@ -440,6 +440,9 @@ main(int argc, char **argv)
     else
 	su_user = argv[optind++];
 
+    if (!issuid() && getuid() != 0)
+	warnx("Not setuid and you are root, expect this to fail");
+
     pwd = k_getpwnam(su_user);
     if(pwd == NULL)
 	errx (1, "unknown login %s", su_user);
