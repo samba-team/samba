@@ -1363,7 +1363,7 @@ eval_types(hx509_context context,
 				       oid_id_pkix_kp_clientAuth());
 	    if (ret)
 		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
-	} else if strcmp(type, "peap-server") == 0) {
+	} else if (strcmp(type, "peap-server") == 0) {
 	    ret = hx509_ca_tbs_add_eku(context, tbs, 
 				       oid_id_pkix_kp_serverAuth());
 	    if (ret)
