@@ -3137,7 +3137,7 @@ static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
 				 KEY_SMBCONF, GLOBAL_NAME);
 	normalize_dbkey(keystr);
 
-	DEBUG(10, ("process_registry_shares: fetching key '%s'\n",
+	DEBUG(10, ("process_registry_globals: fetching key '%s'\n",
 		   keystr));
 
 	data = tdb_fetch_bystring(reg_tdb->tdb, keystr);
@@ -3151,7 +3151,7 @@ static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
 
 	/* unpack number of values */
 	len = tdb_unpack(buf, buflen, "d", &num_values);
-	DEBUG(10, ("process_registry_shares: got %d values from tdb\n",
+	DEBUG(10, ("process_registry_globals: got %d values from tdb\n",
 		   num_values));
 
 	/* unpack the values */
@@ -3169,7 +3169,7 @@ static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
 				   "parameter 'include' in registry.\n"));
 			continue;
 		}
-		DEBUG(10, ("process_registry_shares: got value '%s'\n",
+		DEBUG(10, ("process_registry_globals: got value '%s'\n",
 			   valname));
 		if (size && data_p) {
 			err = registry_pull_value(reg_tdb, 
