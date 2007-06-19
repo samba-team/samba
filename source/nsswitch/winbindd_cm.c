@@ -557,8 +557,8 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
 	
-	werr = rpccli_netlogon_getdcname(netlogon_pipe, mem_ctx, our_domain->dcname,
-					   domain->name, tmp);
+	werr = rpccli_netlogon_getanydcname(netlogon_pipe, mem_ctx, our_domain->dcname,
+					    domain->name, tmp);
 
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
@@ -566,12 +566,12 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	talloc_destroy(mem_ctx);
 
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(10, ("rpccli_netlogon_getdcname failed: %s\n",
+		DEBUG(10, ("rpccli_netlogon_getanydcname failed: %s\n",
 			   dos_errstr(werr)));
 		return False;
 	}
 
-	/* cli_netlogon_getdcname gives us a name with \\ */
+	/* cli_netlogon_getanydcname gives us a name with \\ */
 	p = tmp;
 	if (*p == '\\') {
 		p+=1;
@@ -582,7 +582,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 	fstrcpy(dcname, p);
 
-	DEBUG(10, ("rpccli_netlogon_getdcname returned %s\n", dcname));
+	DEBUG(10, ("rpccli_netlogon_getanydcname returned %s\n", dcname));
 
 	if (!resolve_name(dcname, dc_ip, 0x20)) {
 		return False;

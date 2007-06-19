@@ -47,16 +47,18 @@ diff -uNr samba-3.0.11.orig/source/configure.in samba-3.0.11/source/configure.in
  		AC_CACHE_CHECK([for linux sendfile64 support],samba_cv_HAVE_SENDFILE64,[
  		AC_TRY_LINK([#include <sys/sendfile.h>],
  [\
-@@ -4307,10 +4319,10 @@
+@@ -4307,12 +4319,12 @@
  WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
  
  case "$host_os" in
 -	*linux*)
 +	linux*-gnu* | gnu* | k*bsd*-gnu)
+		NSSSONAMEVERSIONSUFFIX=".2"
  		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
  		;;
 -	*freebsd[[5-9]]*)
 +	freebsd5*|*freebsd[[6-9]]*)
  		# FreeBSD winbind client is implemented as a wrapper around
  		# the Linux version.
+		NSSSONAMEVERSIONSUFFIX=".1"
  		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_freebsd.o \

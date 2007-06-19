@@ -414,7 +414,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	p += 4;
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
-		p += 26;
+		p += 25;
 		SIVAL(p,0,FILE_GENERIC_ALL);
 		/* 
 		 * For pipes W2K3 seems to return
@@ -944,7 +944,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint32 perms = 0;
-		p += 26;
+		p += 25;
 		if (fsp->is_directory || can_write_to_file(conn, fname, &sbuf)) {
 			perms = FILE_GENERIC_ALL;
 		} else {
@@ -1029,7 +1029,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	p += 4;
 	
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
-		p += 26;
+		p += 25;
 		SIVAL(p,0,FILE_GENERIC_ALL);
 		/* 
 		 * For pipes W2K3 seems to return
@@ -1625,7 +1625,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint32 perms = 0;
-		p += 26;
+		p += 25;
 		if (fsp->is_directory || can_write_to_file(conn, fname, &sbuf)) {
 			perms = FILE_GENERIC_ALL;
 		} else {
@@ -1979,8 +1979,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		 * here.
 		 */
 
-		change_notify_reply(inbuf, max_param_count,
-				    fsp->notify);
+		change_notify_reply(inbuf, fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its
@@ -1993,8 +1992,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	 * No changes pending, queue the request
 	 */
 
-	status = change_notify_add_request(inbuf, max_param_count, filter,
-					   recursive, fsp);
+	status = change_notify_add_request(inbuf, filter, recursive, fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}

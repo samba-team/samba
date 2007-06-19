@@ -222,7 +222,7 @@ static char *catia_realpath(vfs_handle_struct *handle,
 
 static size_t catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			       const char *name, uint32 security_info,
-			       struct  security_descriptor **ppdesc)
+			       struct  security_descriptor_info **ppdesc)
 {
         return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info,
 				       ppdesc);
@@ -230,7 +230,7 @@ static size_t catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static BOOL catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, 
 			     const char *name, uint32 security_info_sent,
-			     struct security_descriptor *psd)
+			     struct security_descriptor_info *psd)
 {
         return SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent,
 				       psd);

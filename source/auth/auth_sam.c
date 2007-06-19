@@ -163,7 +163,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
 
-	if (!(pdb_get_acct_ctrl(sampass) & ACB_PWNOEXP)) {
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_PWNOEXP) && !(pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ)) {
 		time_t must_change_time = pdb_get_pass_must_change_time(sampass);
 		time_t last_set_time = pdb_get_pass_last_set_time(sampass);
 

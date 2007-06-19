@@ -2622,7 +2622,7 @@ size_t utf16_len_n(const void *src, size_t n)
  of characters. UNIX charset format.
 *******************************************************************/
 
-#define INCLUDE_LIST "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijklmnopqrstuvwxyz_/ \t.,"
+#define INCLUDE_LIST "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_/ \t.,"
 #define INSIDE_DQUOTE_LIST "$`\n\"\\"
 
 char *escape_shell_string(const char *src)

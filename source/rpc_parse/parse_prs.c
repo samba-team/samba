@@ -1094,6 +1094,9 @@ BOOL prs_string2(BOOL charmode, const char *name, prs_struct *ps, int depth, STR
 				return False;
 		} else {
 			str->buffer = NULL;
+			/* Return early to ensure Coverity isn't confused. */
+			DEBUG(5,("%s%04x %s: \n", tab_depth(depth), ps->data_offset, name));
+			return True;
 		}
 	}
 

@@ -43,6 +43,10 @@ static NTSTATUS idmap_pdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 {
 	int i;
 
+	if (! dom->initialized) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	for (i = 0; ids[i]; i++) {
 
 		/* unmapped by default */
@@ -74,6 +78,10 @@ static NTSTATUS idmap_pdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 static NTSTATUS idmap_pdb_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
 	int i;
+
+	if (! dom->initialized) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	for (i = 0; ids[i]; i++) {
 		enum lsa_SidType type;

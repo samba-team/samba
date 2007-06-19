@@ -111,19 +111,6 @@ diff -uNr samba-3.0.10.orig/source/dynconfig.c samba-3.0.10/source/dynconfig.c
 +	return lp_lockdir();
 +#endif
 +}
-diff -uNr samba-3.0.10.orig/source/groupdb/mapping.c samba-3.0.10/source/groupdb/mapping.c
---- samba-3.0.10.orig/source/groupdb/mapping.c	2004-12-17 03:50:08.000000000 -0800
-+++ samba-3.0.10/source/groupdb/mapping.c	2004-12-17 03:55:29.000000000 -0800
-@@ -140,8 +140,8 @@
- 	
- 	if (tdb)
- 		return True;
- 		
--	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-+	tdb = tdb_open_log(state_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
- 	if (!tdb) {
- 		DEBUG(0,("Failed to open group mapping database\n"));
- 		return False;
 diff -uNr samba-3.0.10.orig/source/include/dynconfig.h samba-3.0.10/source/include/dynconfig.h
 --- samba-3.0.10.orig/source/include/dynconfig.h	2004-12-17 03:50:08.000000000 -0800
 +++ samba-3.0.10/source/include/dynconfig.h	2004-12-17 03:55:29.000000000 -0800
@@ -152,18 +139,6 @@ diff -uNr samba-3.0.10.orig/source/intl/lang_tdb.c samba-3.0.10/source/intl/lang
  	if (stat(msg_path, &st) != 0) {
  		/* the msg file isn't available */
  		DEBUG(10, ("lang_tdb_init: %s: %s\n", msg_path, 
-diff -uNr samba-3.0.21.orig/source/lib/account_pol.c samba-3.0.21/source/lib/account_pol.c
---- samba-3.0.21.orig/source/lib/account_pol.c	2005-12-20 15:28:38.000000000 +0000
-+++ samba-3.0.21/source/lib/account_pol.c	2005-12-23 11:41:08.000000000 +0000
-@@ -262,7 +262,7 @@
- 		return True;
- 	}
- 
--	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-+	tdb = tdb_open_log(state_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
- 	if (!tdb) {
- 		DEBUG(0,("Failed to open account policy database\n"));
- 		return False;
 diff -uNr samba-3.0.10.orig/source/lib/util.c samba-3.0.10/source/lib/util.c
 --- samba-3.0.10.orig/source/lib/util.c	2004-12-17 03:50:08.000000000 -0800
 +++ samba-3.0.10/source/lib/util.c	2004-12-17 03:55:29.000000000 -0800
@@ -229,32 +204,6 @@ diff -uNr samba-3.0.10.orig/source/lib/util.c samba-3.0.10/source/lib/util.c
   * @brief Returns the platform specific shared library extension.
   *
   * @retval Pointer to a static #fstring containing the extension.
-diff -uNr samba-3.0.10.orig/source/lib/util_unistr.c samba-3.0.10/source/lib/util_unistr.c
---- samba-3.0.10.orig/source/lib/util_unistr.c	2004-12-17 03:50:08.000000000 -0800
-+++ samba-3.0.10/source/lib/util_unistr.c	2004-12-17 03:55:29.000000000 -0800
-@@ -54,11 +54,11 @@
- 	}
- 	initialised = 1;
- 
--	upcase_table = map_file(lib_path("upcase.dat"), 0x20000);
-+	upcase_table = map_file(data_path("upcase.dat"), 0x20000);
- 	upcase_table_use_unmap = ( upcase_table != NULL );
- 
--	lowcase_table = map_file(lib_path("lowcase.dat"), 0x20000);
-+	lowcase_table = map_file(data_path("lowcase.dat"), 0x20000);
- 	lowcase_table_use_unmap = ( lowcase_table != NULL );
- 
- #ifdef HAVE_SETLOCALE
- 	/* Get the name of the current locale.  */
-@@ -161,7 +161,7 @@
- 		return;
- 	}
- 
--	valid_file = map_file(lib_path("valid.dat"), 0x10000);
-+	valid_file = map_file(data_path("valid.dat"), 0x10000);
- 	if (valid_file) {
- 		valid_table = valid_file;
- 		mapped_file = 1;
 diff -uNr samba-3.0.10.orig/source/libsmb/samlogon_cache.c samba-3.0.10/source/libsmb/samlogon_cache.c
 --- samba-3.0.10.orig/source/libsmb/samlogon_cache.c	2004-12-17 03:50:08.000000000 -0800
 +++ samba-3.0.10/source/libsmb/samlogon_cache.c	2004-12-17 03:55:29.000000000 -0800
@@ -267,15 +216,6 @@ diff -uNr samba-3.0.10.orig/source/libsmb/samlogon_cache.c samba-3.0.10/source/l
  						   TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
  	}
  
-@@ -67,7 +67,7 @@
-            winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
- 
- 	if (!tdb) {
--		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000,
-+		tdb = tdb_open_log(cache_path("winbindd_cache.tdb"), 5000,
- 				   TDB_DEFAULT, O_RDWR, 0600);
- 		if (!tdb) {
- 			DEBUG(5, ("netsamlogon_clear_cached_user: failed to open cache\n"));
 diff -uNr samba-3.0.10.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0.10/source/nmbd/nmbd_serverlistdb.c
 --- samba-3.0.10.orig/source/nmbd/nmbd_serverlistdb.c	2004-12-17 03:50:09.000000000 -0800
 +++ samba-3.0.10/source/nmbd/nmbd_serverlistdb.c	2004-12-17 03:55:29.000000000 -0800
@@ -321,18 +261,27 @@ diff -uNr samba-3.0.23.orig/source/nsswitch/winbindd_cache.c samba-3.0.23/source
  				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
  				TDB_DEFAULT /*TDB_CLEAR_IF_FIRST*/, O_RDWR|O_CREAT, 0600);
  
-diff -uNr samba-3.0.10.orig/source/nsswitch/winbindd_util.c samba-3.0.10/source/nsswitch/winbindd_util.c
---- samba-3.0.10.orig/source/nsswitch/winbindd_util.c	2004-12-17 03:50:09.000000000 -0800
-+++ samba-3.0.10/source/nsswitch/winbindd_util.c	2004-12-17 03:55:30.000000000 -0800
-@@ -957,7 +957,7 @@
- 	SMB_STRUCT_STAT stbuf;
- 	TDB_CONTEXT *idmap_tdb;
+@@ -2223,9 +2223,9 @@
+ 		tdb_close(wcache->tdb);
+ 		wcache->tdb = NULL;
  
--	pstrcpy(idmap_name, lock_path("winbindd_idmap.tdb"));
-+	pstrcpy(idmap_name, state_path("winbindd_idmap.tdb"));
+-		if (unlink(lock_path("winbindd_cache.tdb")) == -1) {
++		if (unlink(cache_path("winbindd_cache.tdb")) == -1) {
+ 			DEBUG(0,("initialize_winbindd_cache: unlink %s failed %s ",
+-				lock_path("winbindd_cache.tdb"),
++				cache_path("winbindd_cache.tdb"),
+ 				strerror(errno) ));
+ 			return False;
+ 		}
+@@ -2487,7 +2487,7 @@
+ 		return;
  
- 	if (!file_exist(idmap_name, &stbuf)) {
- 		/* nothing to convert return */
+ 	/* when working offline we must not clear the cache on restart */
+-	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
++	wcache->tdb = tdb_open_log(cache_path("winbindd_cache.tdb"),
+ 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
+ 				lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST), 
+ 				O_RDWR|O_CREAT, 0600);
 diff -uNr samba-3.0.10.orig/source/param/loadparm.c samba-3.0.10/source/param/loadparm.c
 --- samba-3.0.10.orig/source/param/loadparm.c	2004-12-17 03:50:09.000000000 -0800
 +++ samba-3.0.10/source/param/loadparm.c	2004-12-17 03:55:30.000000000 -0800
@@ -498,18 +447,6 @@ diff -uNr samba-3.0.23.orig/source/lib/sharesec.c samba-3.0.23/source/lib/shares
  		return False;
  	}
   
-diff -uNr samba-3.0.10.orig/source/sam/idmap_tdb.c samba-3.0.10/source/sam/idmap_tdb.c
---- samba-3.0.10.orig/source/sam/idmap_tdb.c	2004-12-17 03:50:09.000000000 -0800
-+++ samba-3.0.10/source/sam/idmap_tdb.c	2004-12-17 03:55:31.000000000 -0800
-@@ -487,7 +487,7 @@
- 	BOOL tdb_is_new = False;
- 
- 	/* use the old database if present */
--	tdbfile = SMB_STRDUP(lock_path("winbindd_idmap.tdb"));
-+	tdbfile = SMB_STRDUP(state_path("winbindd_idmap.tdb"));
- 	if (!tdbfile) {
- 		DEBUG(0, ("idmap_init: out of memory!\n"));
- 		return NT_STATUS_NO_MEMORY;
 diff -uNr samba-3.0.23.orig/source/smbd/lanman.c samba-3.0.23/source/smbd/lanman.c
 --- samba-3.0.23.orig/source/smbd/lanman.c	2006-07-15 09:50:10.000000000 -0400
 +++ samba-3.0.23/source/smbd/lanman.c	2006-07-15 09:55:31.000000000 -0400
@@ -525,18 +462,6 @@ diff -uNr samba-3.0.23.orig/source/smbd/lanman.c samba-3.0.23/source/smbd/lanman
  		return 0;
  	}
 
-diff -uNr samba-3.0.10.orig/source/utils/net_idmap.c samba-3.0.10/source/utils/net_idmap.c
---- samba-3.0.10.orig/source/utils/net_idmap.c	2004-12-17 03:50:10.000000000 -0800
-+++ samba-3.0.10/source/utils/net_idmap.c	2004-12-17 03:55:32.000000000 -0800
-@@ -126,7 +126,7 @@
- 		return NT_STATUS_UNSUCCESSFUL;
- 	}
- 
--	tdbfile = SMB_STRDUP(lock_path("winbindd_idmap.tdb"));
-+	tdbfile = SMB_STRDUP(state_path("winbindd_idmap.tdb"));
- 	if (!tdbfile) {
- 		DEBUG(0, ("idmap_init: out of memory!\n"));
- 		return NT_STATUS_NO_MEMORY;
 diff -uNr samba-3.0.11.orig/source/printing/nt_printing.c samba-3.0.11/source/printing/nt_printing.c
 --- samba-3.0.11.orig/source/printing/nt_printing.c	2005-03-23 02:51:08.000000000 -0800
 +++ samba-3.0.11/source/printing/nt_printing.c	2005-03-23 02:54:33.000000000 -0800
@@ -549,3 +474,92 @@ diff -uNr samba-3.0.11.orig/source/printing/nt_printing.c samba-3.0.11/source/pr
  		pstrcat(printdb_path, sharename);
  		pstrcat(printdb_path, ".tdb");
  
+diff -uPr samba-3.0.25a.orig/source/groupdb/mapping_tdb.c samba-3.0.25a/source/groupdb/mapping_tdb.c
+--- samba-3.0.25a.orig/source/groupdb/mapping_tdb.c	2007-04-25 09:38:59.000000000 +0000
++++ samba-3.0.25a/source/groupdb/mapping_tdb.c	2007-05-29 00:28:42.000000000 +0000
+@@ -39,7 +39,7 @@
+ 	if (tdb)
+ 		return True;
+ 		
+-	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
++	tdb = tdb_open_log(state_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+ 	if (!tdb) {
+ 		DEBUG(0,("Failed to open group mapping database\n"));
+ 		return False;
+diff -uPr samba-3.0.25a.orig/source/lib/account_pol.c samba-3.0.25a/source/lib/account_pol.c
+--- samba-3.0.25a.orig/source/lib/account_pol.c	2007-03-01 04:54:30.000000000 +0000
++++ samba-3.0.25a/source/lib/account_pol.c	2007-05-29 00:21:35.000000000 +0000
+@@ -213,9 +213,9 @@
+ 		return True;
+ 	}
+ 
+-	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
++	tdb = tdb_open_log(state_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+ 	if (!tdb) { /* the account policies files does not exist or open failed, try to create a new one */
+-		tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
++		tdb = tdb_open_log(state_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+ 		if (!tdb) {
+ 			DEBUG(0,("Failed to open account policy database\n"));
+ 			return False;
+diff -uPr samba-3.0.25a.orig/source/lib/util_unistr.c samba-3.0.25a/source/lib/util_unistr.c
+--- samba-3.0.25a.orig/source/lib/util_unistr.c	2007-03-01 04:54:30.000000000 +0000
++++ samba-3.0.25a/source/lib/util_unistr.c	2007-05-29 00:24:07.000000000 +0000
+@@ -88,11 +88,11 @@
+ 	}
+ 	initialised = 1;
+ 
+-	upcase_table = (smb_ucs2_t *)map_file(lib_path("upcase.dat"),
++	upcase_table = (smb_ucs2_t *)map_file(data_path("upcase.dat"),
+ 					      0x20000);
+ 	upcase_table_use_unmap = ( upcase_table != NULL );
+ 
+-	lowcase_table = (smb_ucs2_t *)map_file(lib_path("lowcase.dat"),
++	lowcase_table = (smb_ucs2_t *)map_file(data_path("lowcase.dat"),
+ 					       0x20000);
+ 	lowcase_table_use_unmap = ( lowcase_table != NULL );
+ 
+@@ -230,7 +230,7 @@
+ 		return;
+ 	}
+ 
+-	valid_file = (uint8 *)map_file(lib_path("valid.dat"), 0x10000);
++	valid_file = (uint8 *)map_file(data_path("valid.dat"), 0x10000);
+ 	if (valid_file) {
+ 		valid_table = valid_file;
+ 		mapped_file = 1;
+diff -uPr samba-3.0.25a.orig/source/libsmb/samlogon_cache.c samba-3.0.25a/source/libsmb/samlogon_cache.c
+--- samba-3.0.25a.orig/source/libsmb/samlogon_cache.c	2007-05-10 22:09:35.000000000 +0000
++++ samba-3.0.25a/source/libsmb/samlogon_cache.c	2007-05-29 00:38:41.000000000 +0000
+@@ -67,7 +67,7 @@
+            winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
+ 
+ 	if (!tdb) {
+-		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 
++		tdb = tdb_open_log(cache_path("winbindd_cache.tdb"), 
+ 				   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
+ 				   TDB_DEFAULT, O_RDWR, 0600);
+ 		if (!tdb) {
+diff -uPr samba-3.0.25a.orig/source/nsswitch/idmap_tdb.c samba-3.0.25a/source/nsswitch/idmap_tdb.c
+--- samba-3.0.25a.orig/source/nsswitch/idmap_tdb.c	2007-05-10 22:09:34.000000000 +0000
++++ samba-3.0.25a/source/nsswitch/idmap_tdb.c	2007-05-29 00:27:55.000000000 +0000
+@@ -247,7 +247,7 @@
+ 	}
+ 
+ 	/* use the old database if present */
+-	tdbfile = talloc_strdup(ctx, lock_path("winbindd_idmap.tdb"));
++	tdbfile = talloc_strdup(ctx, state_path("winbindd_idmap.tdb"));
+ 	if (!tdbfile) {
+ 		DEBUG(0, ("Out of memory!\n"));
+ 		ret = NT_STATUS_NO_MEMORY;
+diff -uPr samba-3.0.25a.orig/source/passdb/pdb_tdb.c samba-3.0.25a/source/passdb/pdb_tdb.c
+--- samba-3.0.25a.orig/source/passdb/pdb_tdb.c	2007-03-01 04:54:41.000000000 +0000
++++ samba-3.0.25a/source/passdb/pdb_tdb.c	2007-05-29 00:38:41.000000000 +0000
+@@ -1559,7 +1559,7 @@
+ 	uint32 rid;
+ 	BOOL ret = False;
+ 
+-	tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0,
++	tdb = tdb_open_log(state_path("winbindd_idmap.tdb"), 0,
+ 			   TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
+ 
+ 	if (tdb == NULL) {

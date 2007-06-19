@@ -1609,6 +1609,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
 
 	if (!fsp->lockdb_clean) {
+		int orig_num_locks = br_lck->num_locks;
 
 		/* This is the first time we've accessed this. */
 		/* Go through and ensure all entries exist - remove any that don't. */
@@ -1621,6 +1622,11 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 			SAFE_FREE(br_lck->lock_data);
 			TALLOC_FREE(br_lck);
 			return NULL;
+		}
+
+                /* Ensure invalid locks are cleaned up in the destructor. */
+		if (orig_num_locks != br_lck->num_locks) {
+			br_lck->modified = True;
 		}
 
 		/*

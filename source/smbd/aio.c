@@ -497,6 +497,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 		ret = errno;
         } else {
 		BOOL write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
+		NTSTATUS status;
 
         	SSVAL(outbuf,smb_vwv2,nwritten);
 		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
@@ -507,7 +508,13 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 
 		DEBUG(3,("handle_aio_write: fnum=%d num=%d wrote=%d\n",
 			 fsp->fnum, (int)numtowrite, (int)nwritten));
-		sync_file(fsp->conn,fsp, write_through);
+		status = sync_file(fsp->conn,fsp, write_through);
+		if (!NT_STATUS_IS_OK(status)) {
+			UNIXERROR(ERRHRD,ERRdiskfull);
+			ret = errno;
+                	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
+				fsp->fsp_name, nt_errstr(status) ));
+		}
 	}
 
 	show_msg(outbuf);

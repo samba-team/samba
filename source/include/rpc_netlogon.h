@@ -33,14 +33,16 @@
 #define NET_SRVPWSET		0x06
 #define NET_SAM_DELTAS		0x07
 #define NET_LOGON_CTRL		0x0c
-#define NET_GETDCNAME		0x0d
+#define NET_GETANYDCNAME	0x0d
 #define NET_AUTH2		0x0f
 #define NET_LOGON_CTRL2		0x0e
 #define NET_SAM_SYNC		0x10
 #define NET_TRUST_DOM_LIST	0x13
 #define NET_DSR_GETDCNAME	0x14
 #define NET_AUTH3		0x1a
+#define NET_DSR_GETDCNAMEEX	0x1b
 #define NET_DSR_GETSITENAME	0x1c
+#define NET_DSR_GETDCNAMEEX2	0x22
 #define NET_SAMLOGON_EX		0x27
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
@@ -417,22 +419,22 @@ typedef struct net_r_logon_ctrl2_info {
 	NTSTATUS status; /* return code */
 } NET_R_LOGON_CTRL2;
 
-/* NET_Q_GETDCNAME - Ask a DC for a trusted DC name */
+/* NET_Q_GETANYDCNAME - Ask a DC for a trusted DC name */
 
-typedef struct net_q_getdcname {
+typedef struct net_q_getanydcname {
 	uint32  ptr_logon_server;
 	UNISTR2 uni_logon_server;
 	uint32  ptr_domainname;
 	UNISTR2 uni_domainname;
-} NET_Q_GETDCNAME;
+} NET_Q_GETANYDCNAME;
 
-/* NET_R_GETDCNAME - Ask a DC for a trusted DC name */
+/* NET_R_GETANYDCNAME - Ask a DC for a trusted DC name */
 
-typedef struct net_r_getdcname {
+typedef struct net_r_getanydcname {
 	uint32  ptr_dcname;
 	UNISTR2 uni_dcname;
 	WERROR status;
-} NET_R_GETDCNAME;
+} NET_R_GETANYDCNAME;
 
 /* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
 typedef struct net_q_trust_dom_info {
@@ -1034,7 +1036,63 @@ typedef struct net_r_sam_deltas_info {
 	NTSTATUS status;
 } NET_R_SAM_DELTAS;
 
-/* NET_Q_DSR_GETDCNAME - Ask a DC for a trusted DC name and its address */
+#define DS_FORCE_REDISCOVERY            0x00000001
+#define DS_DIRECTORY_SERVICE_REQUIRED   0x00000010
+#define DS_DIRECTORY_SERVICE_PREFERRED  0x00000020
+#define DS_GC_SERVER_REQUIRED           0x00000040
+#define DS_PDC_REQUIRED                 0x00000080
+#define DS_BACKGROUND_ONLY              0x00000100
+#define DS_IP_REQUIRED                  0x00000200
+#define DS_KDC_REQUIRED                 0x00000400
+#define DS_TIMESERV_REQUIRED            0x00000800
+#define DS_WRITABLE_REQUIRED            0x00001000
+#define DS_GOOD_TIMESERV_PREFERRED      0x00002000
+#define DS_AVOID_SELF                   0x00004000
+#define DS_ONLY_LDAP_NEEDED             0x00008000
+
+#define DS_IS_FLAT_NAME                 0x00010000
+#define DS_IS_DNS_NAME                  0x00020000
+
+#define DS_RETURN_DNS_NAME              0x40000000
+#define DS_RETURN_FLAT_NAME             0x80000000
+
+#if 0 /* unknown yet */
+#define DS_IP_VERSION_AGNOSTIC
+#define DS_TRY_NEXTCLOSEST_SITE
+#endif
+
+#define DSGETDC_VALID_FLAGS ( \
+    DS_FORCE_REDISCOVERY | \
+    DS_DIRECTORY_SERVICE_REQUIRED | \
+    DS_DIRECTORY_SERVICE_PREFERRED | \
+    DS_GC_SERVER_REQUIRED | \
+    DS_PDC_REQUIRED | \
+    DS_BACKGROUND_ONLY | \
+    DS_IP_REQUIRED | \
+    DS_KDC_REQUIRED | \
+    DS_TIMESERV_REQUIRED | \
+    DS_WRITABLE_REQUIRED | \
+    DS_GOOD_TIMESERV_PREFERRED | \
+    DS_AVOID_SELF | \
+    DS_ONLY_LDAP_NEEDED | \
+    DS_IS_FLAT_NAME | \
+    DS_IS_DNS_NAME | \
+    DS_RETURN_FLAT_NAME  | \
+    DS_RETURN_DNS_NAME )
+
+struct DS_DOMAIN_CONTROLLER_INFO {
+	const char *domain_controller_name;
+	const char *domain_controller_address;
+	int32 domain_controller_address_type;
+	struct GUID *domain_guid;
+	const char *domain_name;
+	const char *dns_forest_name;
+	uint32 flags;
+	const char *dc_site_name;
+	const char *client_site_name;
+};
+
+/* NET_Q_DSR_GETDCNAME */
 typedef struct net_q_dsr_getdcname {
 	uint32 ptr_server_unc;
 	UNISTR2 uni_server_unc;
@@ -1047,7 +1105,7 @@ typedef struct net_q_dsr_getdcname {
 	uint32 flags;
 } NET_Q_DSR_GETDCNAME;
 
-/* NET_R_DSR_GETDCNAME - Ask a DC for a trusted DC name and its address */
+/* NET_R_DSR_GETDCNAME */
 typedef struct net_r_dsr_getdcname {
 	uint32 ptr_dc_unc;
 	UNISTR2 uni_dc_unc;
@@ -1066,6 +1124,41 @@ typedef struct net_r_dsr_getdcname {
 	UNISTR2 uni_client_site_name;
 	WERROR result;
 } NET_R_DSR_GETDCNAME;
+
+/* NET_Q_DSR_GETDCNAMEEX */
+typedef struct net_q_dsr_getdcnameex {
+	uint32 ptr_server_unc;
+	UNISTR2 uni_server_unc;
+	uint32 ptr_domain_name;
+	UNISTR2 uni_domain_name;
+	uint32 ptr_domain_guid;
+	struct GUID *domain_guid;
+	uint32 ptr_site_name;
+	UNISTR2 uni_site_name;
+	uint32 flags;
+} NET_Q_DSR_GETDCNAMEEX;
+
+/* NET_R_DSR_GETDCNAMEEX */
+typedef struct NET_R_DSR_GETDCNAME NET_R_DSR_GETDCNAMEEX;
+
+/* NET_Q_DSR_GETDCNAMEEX2 */
+typedef struct net_q_dsr_getdcnameex2 {
+	uint32 ptr_server_unc;
+	UNISTR2 uni_server_unc;
+	uint32 ptr_client_account;
+	UNISTR2 uni_client_account;
+	uint32 mask;
+	uint32 ptr_domain_name;
+	UNISTR2 uni_domain_name;
+	uint32 ptr_domain_guid;
+	struct GUID *domain_guid;
+	uint32 ptr_site_name;
+	UNISTR2 uni_site_name;
+	uint32 flags;
+} NET_Q_DSR_GETDCNAMEEX2;
+
+/* NET_R_DSR_GETDCNAMEEX */
+typedef struct NET_R_DSR_GETDCNAME NET_R_DSR_GETDCNAMEEX2;
 
 /* NET_Q_DSR_GESITENAME */
 typedef struct net_q_dsr_getsitename {

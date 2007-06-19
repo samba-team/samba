@@ -1652,9 +1652,32 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
+		/* First pass - send break only on batch oplocks. */
+		if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
+			schedule_defer_open(lck, request_time);
+			TALLOC_FREE(lck);
+			fd_close(conn, fsp);
+			file_free(fsp);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
 		status = open_mode_check(conn, fname, lck,
 					 access_mask, share_access,
 					 create_options, &file_existed);
+
+		if (NT_STATUS_IS_OK(status)) {
+			/* We might be going to allow this open. Check oplock
+			 * status again. */
+			/* Second pass - send break for both batch or
+			 * exclusive oplocks. */
+			if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
+				schedule_defer_open(lck, request_time);
+				TALLOC_FREE(lck);
+				fd_close(conn, fsp);
+				file_free(fsp);
+				return NT_STATUS_SHARING_VIOLATION;
+			}
+		}
 
 		if (!NT_STATUS_IS_OK(status)) {
 			struct deferred_open_record state;

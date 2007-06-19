@@ -107,9 +107,9 @@ static char **completion_fn(const char *text, int start, int end)
 	return matches;
 }
 
-static char* next_command (char** cmdstr)
+static char *next_command (char **cmdstr)
 {
-	static pstring 		command;
+	char *command;
 	char			*p;
 	
 	if (!cmdstr || !(*cmdstr))
@@ -118,7 +118,7 @@ static char* next_command (char** cmdstr)
 	p = strchr_m(*cmdstr, ';');
 	if (p)
 		*p = '\0';
-	pstrcpy(command, *cmdstr);
+	command = SMB_STRDUP(*cmdstr);
 	if (p)
 		*cmdstr = p + 1;
 	else
@@ -828,6 +828,7 @@ out_free:
  
                 while((cmd=next_command(&p)) != NULL) {
                         NTSTATUS cmd_result = process_cmd(cli, cmd);
+			SAFE_FREE(cmd);
 			result = NT_STATUS_IS_ERR(cmd_result);
                 }
 		

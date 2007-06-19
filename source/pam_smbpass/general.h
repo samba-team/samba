@@ -113,7 +113,7 @@ static const SMB_Ctrls smb_args[SMB_CTRLS_] = {
 
 struct _pam_failed_auth {
     char *user;                 /* user that's failed to be authenticated */
-    int id;                     /* uid of requested user */
+    uid_t id;                   /* uid of requested user */
     char *agent;                /* attempt from user with name */
     int count;                  /* number of failures so far */
 };

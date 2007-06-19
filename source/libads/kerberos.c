@@ -138,7 +138,8 @@ int kerberos_kinit_password_ext(const char *principal,
 	}
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
-						 kerb_prompter, NULL, 0, NULL, opt)))
+						 kerb_prompter, CONST_DISCARD(char *,password),
+						 0, NULL, opt)))
 	{
 		smb_krb5_get_init_creds_opt_free(ctx, opt);
 		smb_krb5_free_addresses(ctx, addr);

@@ -1356,6 +1356,10 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	NTSTATUS status;
 	struct samu *sampass = NULL;
 	gid_t *gids;
+	char *qualified_name = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	DOM_SID u_sid;
+	enum lsa_SidType type;
 	auth_serversupplied_info *result;
 	
 	if ( !(sampass = samu_new( NULL )) ) {
@@ -1387,6 +1391,56 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 			   nt_errstr(status)));
 		TALLOC_FREE(result);
 		return status;
+	}
+
+	/*
+	 * The SID returned in server_info->sam_account is based
+	 * on our SAM sid even though for a pure UNIX account this should
+	 * not be the case as it doesn't really exist in the SAM db.
+	 * This causes lookups on "[in]valid users" to fail as they
+	 * will lookup this name as a "Unix User" SID to check against
+	 * the user token. Fix this by adding the "Unix User"\unix_username
+	 * SID to the sid array. The correct fix should probably be
+	 * changing the server_info->sam_account user SID to be a
+	 * S-1-22 Unix SID, but this might break old configs where
+	 * plaintext passwords were used with no SAM backend.
+	 */
+
+	mem_ctx = talloc_init("make_server_info_pw_tmp");
+	if (!mem_ctx) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
+					unix_users_domain_name(),
+					unix_username );
+	if (!qualified_name) {
+		TALLOC_FREE(result);
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!lookup_name(mem_ctx, qualified_name, LOOKUP_NAME_ALL,
+						NULL, NULL,
+						&u_sid, &type)) {
+		TALLOC_FREE(result);
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	TALLOC_FREE(mem_ctx);
+
+	if (type != SID_NAME_USER) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (!add_sid_to_array_unique(result, &u_sid,
+					&result->sids,
+					&result->num_sids)) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* For now we throw away the gids and convert via sid_to_gid

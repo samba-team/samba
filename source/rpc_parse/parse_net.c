@@ -480,12 +480,12 @@ BOOL net_io_r_logon_ctrl(const char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps
 }
 
 /*******************************************************************
- Inits an NET_R_GETDCNAME structure.
+ Inits an NET_R_GETANYDCNAME structure.
 ********************************************************************/
-void init_net_q_getdcname(NET_Q_GETDCNAME *r_t, const char *logon_server,
-			  const char *domainname)
+void init_net_q_getanydcname(NET_Q_GETANYDCNAME *r_t, const char *logon_server,
+			     const char *domainname)
 {
-	DEBUG(5,("init_q_getdcname\n"));
+	DEBUG(5,("init_q_getanydcname\n"));
 
 	r_t->ptr_logon_server = (logon_server != NULL);
 	init_unistr2(&r_t->uni_logon_server, logon_server, UNI_STR_TERMINATE);
@@ -494,16 +494,16 @@ void init_net_q_getdcname(NET_Q_GETDCNAME *r_t, const char *logon_server,
 }
 
 /*******************************************************************
- Reads or writes an NET_Q_GETDCNAME structure.
+ Reads or writes an NET_Q_GETANYDCNAME structure.
 ********************************************************************/
 
-BOOL net_io_q_getdcname(const char *desc, NET_Q_GETDCNAME *r_t, prs_struct *ps,
-			int depth)
+BOOL net_io_q_getanydcname(const char *desc, NET_Q_GETANYDCNAME *r_t, prs_struct *ps,
+			   int depth)
 {
 	if (r_t == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "net_io_q_getdcname");
+	prs_debug(ps, depth, desc, "net_io_q_getanydcname");
 	depth++;
 
 	if (!prs_uint32("ptr_logon_server", ps, depth, &r_t->ptr_logon_server))
@@ -528,26 +528,26 @@ BOOL net_io_q_getdcname(const char *desc, NET_Q_GETDCNAME *r_t, prs_struct *ps,
 
 
 /*******************************************************************
- Inits an NET_R_GETDCNAME structure.
+ Inits an NET_R_GETANYDCNAME structure.
 ********************************************************************/
-void init_net_r_getdcname(NET_R_GETDCNAME *r_t, const char *dcname)
+void init_net_r_getanydcname(NET_R_GETANYDCNAME *r_t, const char *dcname)
 {
-	DEBUG(5,("init_r_getdcname\n"));
+	DEBUG(5,("init_r_getanydcname\n"));
 
 	init_unistr2(&r_t->uni_dcname, dcname, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
- Reads or writes an NET_R_GETDCNAME structure.
+ Reads or writes an NET_R_GETANYDCNAME structure.
 ********************************************************************/
 
-BOOL net_io_r_getdcname(const char *desc, NET_R_GETDCNAME *r_t, prs_struct *ps,
-			int depth)
+BOOL net_io_r_getanydcname(const char *desc, NET_R_GETANYDCNAME *r_t, prs_struct *ps,
+			   int depth)
 {
 	if (r_t == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "net_io_r_getdcname");
+	prs_debug(ps, depth, desc, "net_io_r_getanydcname");
 	depth++;
 
 	if (!prs_uint32("ptr_dcname", ps, depth, &r_t->ptr_dcname))
@@ -3333,6 +3333,67 @@ void init_net_q_dsr_getdcname(NET_Q_DSR_GETDCNAME *r_t, const char *server_unc,
 }
 
 /*******************************************************************
+ Inits a NET_Q_DSR_GETDCNAMEEX structure.
+********************************************************************/
+
+void init_net_q_dsr_getdcnameex(NET_Q_DSR_GETDCNAMEEX *r_t, const char *server_unc,
+				const char *domain_name,
+				struct GUID *domain_guid,
+				const char *site_name,
+				uint32_t flags)
+{
+	DEBUG(5, ("init_net_q_dsr_getdcnameex\n"));
+
+	r_t->ptr_server_unc = (server_unc != NULL);
+	init_unistr2(&r_t->uni_server_unc, server_unc, UNI_STR_TERMINATE);
+
+	r_t->ptr_domain_name = (domain_name != NULL);
+	init_unistr2(&r_t->uni_domain_name, domain_name, UNI_STR_TERMINATE);
+
+	r_t->ptr_domain_guid = (domain_guid != NULL);
+	r_t->domain_guid = domain_guid;
+
+	r_t->ptr_site_name = (site_name != NULL);
+	init_unistr2(&r_t->uni_site_name, site_name, UNI_STR_TERMINATE);
+
+	r_t->flags = flags;
+}
+
+/*******************************************************************
+ Inits a NET_Q_DSR_GETDCNAMEEX2 structure.
+********************************************************************/
+
+void init_net_q_dsr_getdcnameex2(NET_Q_DSR_GETDCNAMEEX2 *r_t, const char *server_unc,
+				 const char *domain_name,
+				 const char *client_account,
+				 uint32 mask,
+				 struct GUID *domain_guid,
+				 const char *site_name,
+				 uint32_t flags)
+{
+	DEBUG(5, ("init_net_q_dsr_getdcnameex2\n"));
+
+	r_t->ptr_server_unc = (server_unc != NULL);
+	init_unistr2(&r_t->uni_server_unc, server_unc, UNI_STR_TERMINATE);
+
+	r_t->ptr_client_account = (client_account != NULL);
+	init_unistr2(&r_t->uni_client_account, client_account, UNI_STR_TERMINATE);
+
+	r_t->mask = mask;
+
+	r_t->ptr_domain_name = (domain_name != NULL);
+	init_unistr2(&r_t->uni_domain_name, domain_name, UNI_STR_TERMINATE);
+
+	r_t->ptr_domain_guid = (domain_guid != NULL);
+	r_t->domain_guid = domain_guid;
+
+	r_t->ptr_site_name = (site_name != NULL);
+	init_unistr2(&r_t->uni_site_name, site_name, UNI_STR_TERMINATE);
+
+	r_t->flags = flags;
+}
+
+/*******************************************************************
  Reads or writes an NET_Q_DSR_GETDCNAME structure.
 ********************************************************************/
 
@@ -3402,6 +3463,154 @@ BOOL net_io_q_dsr_getdcname(const char *desc, NET_Q_DSR_GETDCNAME *r_t,
 
 	return True;
 }
+
+/*******************************************************************
+ Reads or writes an NET_Q_DSR_GETDCNAMEEX structure.
+********************************************************************/
+
+BOOL net_io_q_dsr_getdcnameex(const char *desc, NET_Q_DSR_GETDCNAMEEX *r_t,
+			      prs_struct *ps, int depth)
+{
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_dsr_getdcnameex");
+	depth++;
+
+	if (!prs_uint32("ptr_server_unc", ps, depth, &r_t->ptr_server_unc))
+		return False;
+
+	if (!smb_io_unistr2("server_unc", &r_t->uni_server_unc,
+			    r_t->ptr_server_unc, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_domain_name", ps, depth, &r_t->ptr_domain_name))
+		return False;
+
+	if (!smb_io_unistr2("domain_name", &r_t->uni_domain_name,
+			    r_t->ptr_domain_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_domain_guid", ps, depth, &r_t->ptr_domain_guid))
+		return False;
+
+	if (UNMARSHALLING(ps) && (r_t->ptr_domain_guid)) {
+		r_t->domain_guid = PRS_ALLOC_MEM(ps, struct GUID, 1);
+		if (r_t->domain_guid == NULL)
+			return False;
+	}
+
+	if ((r_t->ptr_domain_guid) &&
+	    (!smb_io_uuid("domain_guid", r_t->domain_guid, ps, depth)))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_site_name", ps, depth, &r_t->ptr_site_name))
+		return False;
+
+	if (!smb_io_unistr2("site_name", &r_t->uni_site_name,
+			    r_t->ptr_site_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("flags", ps, depth, &r_t->flags))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an NET_Q_DSR_GETDCNAMEEX2 structure.
+********************************************************************/
+
+BOOL net_io_q_dsr_getdcnameex2(const char *desc, NET_Q_DSR_GETDCNAMEEX2 *r_t,
+			       prs_struct *ps, int depth)
+{
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_dsr_getdcnameex2");
+	depth++;
+
+	if (!prs_uint32("ptr_server_unc", ps, depth, &r_t->ptr_server_unc))
+		return False;
+
+	if (!smb_io_unistr2("server_unc", &r_t->uni_server_unc,
+			    r_t->ptr_server_unc, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_client_account", ps, depth, &r_t->ptr_client_account))
+		return False;
+
+	if (!smb_io_unistr2("client_account", &r_t->uni_client_account,
+			    r_t->ptr_client_account, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("mask", ps, depth, &r_t->mask))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_domain_name", ps, depth, &r_t->ptr_domain_name))
+		return False;
+
+	if (!smb_io_unistr2("domain_name", &r_t->uni_domain_name,
+			    r_t->ptr_domain_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_domain_guid", ps, depth, &r_t->ptr_domain_guid))
+		return False;
+
+	if (UNMARSHALLING(ps) && (r_t->ptr_domain_guid)) {
+		r_t->domain_guid = PRS_ALLOC_MEM(ps, struct GUID, 1);
+		if (r_t->domain_guid == NULL)
+			return False;
+	}
+
+	if ((r_t->ptr_domain_guid) &&
+	    (!smb_io_uuid("domain_guid", r_t->domain_guid, ps, depth)))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_site_name", ps, depth, &r_t->ptr_site_name))
+		return False;
+
+	if (!smb_io_unistr2("site_name", &r_t->uni_site_name,
+			    r_t->ptr_site_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("flags", ps, depth, &r_t->flags))
+		return False;
+
+	return True;
+}
+
+
 
 /*******************************************************************
  Inits a NET_R_DSR_GETDCNAME structure.

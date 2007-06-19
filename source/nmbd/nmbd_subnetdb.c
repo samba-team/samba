@@ -185,12 +185,28 @@ BOOL create_subnets(void)
 	struct in_addr unicast_ip, ipzero;
 
 	if(num_interfaces == 0) {
+		void (*saved_handler)(int);
+
 		DEBUG(0,("create_subnets: No local interfaces !\n"));
 		DEBUG(0,("create_subnets: Waiting for an interface to appear ...\n"));
+
+		/* 
+		 * Whilst we're waiting for an interface, allow SIGTERM to
+		 * cause us to exit.
+		 */
+
+		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
+
 		while (iface_count() == 0) {
 			sleep(5);
 			load_interfaces();
 		}
+
+		/* 
+		 * We got an interface, restore our normal term handler.
+		 */
+
+		CatchSignal( SIGTERM, SIGNAL_CAST saved_handler );
 	}
 
 	num_interfaces = iface_count();

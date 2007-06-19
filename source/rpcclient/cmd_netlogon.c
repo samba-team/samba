@@ -45,9 +45,9 @@ static NTSTATUS cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli, 
-				     TALLOC_CTX *mem_ctx, int argc, 
-				     const char **argv)
+static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli, 
+					TALLOC_CTX *mem_ctx, int argc, 
+					const char **argv)
 {
 	fstring dcname;
 	WERROR result = WERR_GENERAL_FAILURE;
@@ -57,7 +57,7 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 		return WERR_OK;
 	}
 
-	result = rpccli_netlogon_getdcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
+	result = rpccli_netlogon_getanydcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -70,34 +70,204 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static void display_ds_domain_controller_info(TALLOC_CTX *mem_ctx, const struct DS_DOMAIN_CONTROLLER_INFO *info)
+{
+	d_printf("domain_controller_name: %s\n", info->domain_controller_name);
+	d_printf("domain_controller_address: %s\n", info->domain_controller_address);
+	d_printf("domain_controller_address_type: %d\n", info->domain_controller_address_type);
+	d_printf("domain_guid: %s\n", GUID_string(mem_ctx, info->domain_guid));
+	d_printf("domain_name: %s\n", info->domain_name);
+	d_printf("dns_forest_name: %s\n", info->dns_forest_name);
+	d_printf("flags: 0x%08x\n"
+		 "\tIs a PDC:                                   %s\n"
+		 "\tIs a GC of the forest:                      %s\n"
+		 "\tIs an LDAP server:                          %s\n"
+		 "\tSupports DS:                                %s\n"
+		 "\tIs running a KDC:                           %s\n"
+		 "\tIs running time services:                   %s\n"
+		 "\tIs the closest DC:                          %s\n"
+		 "\tIs writable:                                %s\n"
+		 "\tHas a hardware clock:                       %s\n"
+		 "\tIs a non-domain NC serviced by LDAP server: %s\n"
+		 "\tDomainControllerName is a DNS name:         %s\n"
+		 "\tDomainName is a DNS name:                   %s\n"
+		 "\tDnsForestName is a DNS name:                %s\n",
+		 info->flags,
+		 (info->flags & ADS_PDC) ? "yes" : "no",
+		 (info->flags & ADS_GC) ? "yes" : "no",
+		 (info->flags & ADS_LDAP) ? "yes" : "no",
+		 (info->flags & ADS_DS) ? "yes" : "no",
+		 (info->flags & ADS_KDC) ? "yes" : "no",
+		 (info->flags & ADS_TIMESERV) ? "yes" : "no",
+		 (info->flags & ADS_CLOSEST) ? "yes" : "no",
+		 (info->flags & ADS_WRITABLE) ? "yes" : "no",
+		 (info->flags & ADS_GOOD_TIMESERV) ? "yes" : "no",
+		 (info->flags & ADS_NDNC) ? "yes" : "no",
+		 (info->flags & ADS_DNS_CONTROLLER) ? "yes":"no",
+		 (info->flags & ADS_DNS_DOMAIN) ? "yes":"no",
+		 (info->flags & ADS_DNS_FOREST) ? "yes":"no");
+
+	d_printf("dc_site_name: %s\n", info->dc_site_name);
+	d_printf("client_site_name: %s\n", info->client_site_name);
+}
+
 static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx, int argc,
 					 const char **argv)
 {
 	WERROR result;
-	char *dcname, *dcaddress;
+	uint32 flags = DS_RETURN_DNS_NAME;
+	const char *server_name = cli->cli->desthost;
+	const char *domain_name;
+	struct GUID domain_guid = GUID_zero();
+	struct GUID site_guid = GUID_zero();
+	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s domainname\n", argv[0]);
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s [domainname] [domain_name] [domain_guid] [site_guid] [flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	result = rpccli_netlogon_dsr_getdcname(
-		cli, mem_ctx, cli->cli->desthost, argv[1], NULL, NULL,
-		0x40000000, &dcname, &dcaddress, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL);
+	if (argc >= 2)
+		domain_name = argv[1];
+
+	if (argc >= 3) {
+		if (!NT_STATUS_IS_OK(GUID_from_string(argv[2], &domain_guid))) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (argc >= 4) {
+		if (!NT_STATUS_IS_OK(GUID_from_string(argv[3], &site_guid))) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (argc >= 5)
+		sscanf(argv[4], "%x", &flags);
+	
+	result = rpccli_netlogon_dsr_getdcname(cli, mem_ctx, server_name, domain_name, 
+					       &domain_guid, &site_guid, flags,
+					       &info);
 
 	if (W_ERROR_IS_OK(result)) {
-		printf("Domain %s's DC is called %s at IP %s\n",
-		       argv[1], dcname, dcaddress);
+		d_printf("DsGetDcName gave\n");
+		display_ds_domain_controller_info(mem_ctx, info);
 		return WERR_OK;
 	}
 
 	printf("rpccli_netlogon_dsr_getdcname returned %s\n",
-	       nt_errstr(werror_to_ntstatus(result)));
+	       dos_errstr(result));
 
 	return result;
 }
+
+static WERROR cmd_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx, int argc,
+					   const char **argv)
+{
+	WERROR result;
+	uint32 flags = DS_RETURN_DNS_NAME;
+	const char *server_name = cli->cli->desthost;
+	const char *domain_name;
+	const char *site_name = NULL;
+	struct GUID domain_guid = GUID_zero();
+	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s [domainname] [domain_name] [domain_guid] [site_name] [flags]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2)
+		domain_name = argv[1];
+
+	if (argc >= 3) {
+		if (!NT_STATUS_IS_OK(GUID_from_string(argv[2], &domain_guid))) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (argc >= 4)
+		site_name = argv[3];
+
+	if (argc >= 5)
+		sscanf(argv[4], "%x", &flags);
+
+	result = rpccli_netlogon_dsr_getdcnameex(cli, mem_ctx, server_name, domain_name, 
+						 &domain_guid, site_name, flags,
+						 &info);
+
+	if (W_ERROR_IS_OK(result)) {
+		d_printf("DsGetDcNameEx gave\n");
+		display_ds_domain_controller_info(mem_ctx, info);
+		return WERR_OK;
+	}
+
+	printf("rpccli_netlogon_dsr_getdcnameex returned %s\n",
+	       dos_errstr(result));
+
+	return result;
+}
+
+static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx, int argc,
+					    const char **argv)
+{
+	WERROR result;
+	uint32 flags = DS_RETURN_DNS_NAME;
+	const char *server_name = cli->cli->desthost;
+	const char *domain_name;
+	const char *client_account = NULL;
+	uint32 mask = 0;
+	const char *site_name = NULL;
+	struct GUID domain_guid = GUID_zero();
+	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s [domainname] [client_account] [acb_mask] [domain_name] [domain_guid] [site_name] [flags]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2)
+		client_account = argv[1];
+
+	if (argc >= 3)
+		mask = atoi(argv[2]);
+	
+	if (argc >= 4)
+		domain_name = argv[3];
+
+	if (argc >= 5) {
+		if (!NT_STATUS_IS_OK(GUID_from_string(argv[4], &domain_guid))) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (argc >= 6)
+		site_name = argv[5];
+
+	if (argc >= 7)
+		sscanf(argv[6], "%x", &flags);
+
+	result = rpccli_netlogon_dsr_getdcnameex2(cli, mem_ctx, server_name, 
+						  client_account, mask,
+						  domain_name, &domain_guid,
+						  site_name, flags,
+						  &info);
+
+	if (W_ERROR_IS_OK(result)) {
+		d_printf("DsGetDcNameEx2 gave\n");
+		display_ds_domain_controller_info(mem_ctx, info);
+		return WERR_OK;
+	}
+
+	printf("rpccli_netlogon_dsr_getdcnameex2 returned %s\n",
+	       dos_errstr(result));
+
+	return result;
+}
+
 
 static WERROR cmd_netlogon_dsr_getsitename(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx, int argc,
@@ -372,8 +542,10 @@ struct cmd_set netlogon_commands[] = {
 	{ "NETLOGON" },
 
 	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, NULL, "Logon Control 2",     "" },
-	{ "getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
+	{ "getanydcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getanydcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
+	{ "dsr_getdcnameex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcnameex, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
+	{ "dsr_getdcnameex2", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcnameex2, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getsitename", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getsitename, PI_NETLOGON, NULL, "Get sitename",     "" },
 	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, NULL, "Logon Control",       "" },
 	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, NULL, "Sam Synchronisation", "" },
