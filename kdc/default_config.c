@@ -74,13 +74,13 @@ krb5_kdc_set_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
 	
 	c->num_db++;
 
-	kdc_log(context, c, 0, "label: %s\n",
+	kdc_log(context, c, 0, "label: %s",
 		hdb_dbinfo_get_label(context, d));
-	kdc_log(context, c, 0, "\trealm: %s\n",
+	kdc_log(context, c, 0, "\trealm: %s",
 		hdb_dbinfo_get_realm(context, d));
-	kdc_log(context, c, 0, "\tdbname: %s\n",
+	kdc_log(context, c, 0, "\tdbname: %s",
 		hdb_dbinfo_get_dbname(context, d));
-	kdc_log(context, c, 0, "\tmkey_file: %s\n",
+	kdc_log(context, c, 0, "\tmkey_file: %s",
 		hdb_dbinfo_get_mkey_file(context, d));
     }
     hdb_free_dbinfo(context, &info);
