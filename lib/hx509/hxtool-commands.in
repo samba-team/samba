@@ -73,6 +73,12 @@ command = {
 		help = "oid that the peer support"
 	}
 	option = {
+		long = "content-type"
+		type = "string"
+		argument = "oid"
+		help = "content type oid"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
@@ -173,6 +179,12 @@ command = {
 		type = "string"
 		argument = "enctype"
 		help = "enctype"
+	}
+	option = {
+		long = "content-type"
+		type = "string"
+		argument = "oid"
+		help = "content type oid"
 	}
 	option = {
 		long = "content-info"
