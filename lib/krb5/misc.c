@@ -51,6 +51,7 @@ _krb5_s4u2self_to_checksumdata(krb5_context context,
 	krb5_clear_error_string(context);
 	return ENOMEM;
     }
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
     ret = krb5_store_int32(sp, self->name.name_type);
     if (ret)
 	goto out;
