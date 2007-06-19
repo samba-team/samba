@@ -110,6 +110,20 @@ ${hxtool} cms-verify-sd \
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+echo "create signed data  (content type)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	--content-type=1.1.1.1 \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify signed data (content type)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
 echo "create signed data (p12)"
 ${hxtool} cms-create-sd \
 	--pass=PASS:foobar \
@@ -273,6 +287,20 @@ ${hxtool} cms-verify-sd \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	sd.data sd.data.out > /dev/null 2>/dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
+echo "envelope data (content-type)"
+${hxtool} cms-envelope \
+	--certificate=FILE:$srcdir/data/test.crt \
+	--content-type=1.1.1.1 \
+	"$srcdir/data/static-file" \
+	ev.data > /dev/null || exit 1
+
+echo "unenvelope data (content-type)"
+${hxtool} cms-unenvelope \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	ev.data ev.data.out \
+	FILE:$srcdir/data/test.crt,$srcdir/data/test.key > /dev/null || exit 1
+cmp "$srcdir/data/static-file" ev.data.out || exit 1
 
 echo "envelope data (content-info)"
 ${hxtool} cms-envelope \
