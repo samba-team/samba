@@ -86,6 +86,18 @@ certs_strings(hx509_context context, const char *type, hx509_certs certs,
 }
 
 static void
+parse_oid(const char *str, const heim_oid *def, heim_oid *oid)
+{
+    int ret;
+    if (str)
+	ret = der_parse_heim_oid (str, " .", oid);
+    else
+	ret = der_copy_oid(def, oid);
+    if  (ret)
+	errx(1, "parse_oid failed for: %s", str ? str : "default oid");
+}
+
+static void
 peer_strings(hx509_context context,
 	     hx509_peer_info *peer, 
 	     const getarg_strings *s)
@@ -101,11 +113,8 @@ peer_strings(hx509_context context,
     if (val == NULL)
 	err(1, "malloc");
 
-    for (i = 0; i < s->num_strings; i++) {
-	ret = der_parse_heim_oid (s->strings[i], " .", &val[i].algorithm);
-	if  (ret)
-	    errx(1, "der_parse_heim_oid failed on: %s", s->strings[i]);
-    }
+    for (i = 0; i < s->num_strings; i++)
+	parse_oid(s->strings[i], NULL, &val[i].algorithm);
 	    
     ret = hx509_peer_info_set_cms_algs(context, *peer, val, s->num_strings);
     if (ret)
@@ -217,8 +226,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 int
 cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 {
-    const heim_oid *contentType = NULL;
-    heim_oid contentTypeOpt;
+    heim_oid contentType;
     hx509_peer_info peer = NULL;
     heim_octet_string o;
     hx509_query *q;
@@ -229,7 +237,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     void *p;
     int ret, flags = 0;
 
-    memset(&contentTypeOpt, 0, sizeof(contentTypeOpt));
+    memset(&contentType, 0, sizeof(contentType));
 
     if (argc < 2)
 	errx(1, "argc < 2");
@@ -275,20 +283,11 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (opt->peer_alg_strings.num_strings)
 	peer_strings(context, &peer, &opt->peer_alg_strings);
 
-    if (opt->content_type_string) {
-	ret = der_parse_heim_oid (opt->content_type_string, " .", 
-				  &contentTypeOpt);
-	if  (ret)
-	    errx(1, "der_parse_heim_oid failed on: %s", 
-		 opt->content_type_string);
-	contentType = &contentTypeOpt;
-    } else {
-	contentType = oid_id_pkcs7_data();
-    }
+    parse_oid(opt->content_type_string, oid_id_pkcs7_data(), &contentType);
 
     ret = hx509_cms_create_signed_1(context,
 				    flags,
-				    contentType,
+				    &contentType,
 				    p,
 				    sz, 
 				    NULL,
@@ -307,7 +306,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
     hx509_peer_info_free(peer);
-    der_free_oid(&contentTypeOpt);
+    der_free_oid(&contentType);
 
     if (opt->content_info_flag) {
 	heim_octet_string wo;
@@ -395,8 +394,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 int
 cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 {
-    const heim_oid *contentType = NULL;
-    heim_oid contentTypeOpt;
+    heim_oid contentType;
     heim_octet_string o;
     const heim_oid *enctype = NULL;
     hx509_query *q;
@@ -407,7 +405,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     void *p;
     hx509_lock lock;
 
-    memset(&contentTypeOpt, 0, sizeof(contentTypeOpt));
+    memset(&contentType, 0, sizeof(contentType));
 
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
@@ -438,26 +436,17 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
-    if (opt->content_type_string) {
-	ret = der_parse_heim_oid (opt->content_type_string, " .", 
-				  &contentTypeOpt);
-	if  (ret)
-	    errx(1, "der_parse_heim_oid failed on: %s", 
-		 opt->content_type_string);
-	contentType = &contentTypeOpt;
-    } else {
-	contentType = oid_id_pkcs7_data();
-    }
+    parse_oid(opt->content_type_string, oid_id_pkcs7_data(), &contentType);
 
     ret = hx509_cms_envelope_1(context, 0, cert, p, sz, enctype, 
-			       oid_id_pkcs7_data(), &o);
+			       &contentType, &o);
     if (ret)
 	errx(1, "hx509_cms_envelope_1: %d", ret);
 
     hx509_cert_free(cert);
     hx509_certs_free(&certs);
     _hx509_unmap_file(p, sz);
-    der_free_oid(&contentTypeOpt);
+    der_free_oid(&contentType);
 
     if (opt->content_info_flag) {
 	heim_octet_string wo;
