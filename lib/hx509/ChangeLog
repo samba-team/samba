@@ -1,5 +1,7 @@
 2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: Unify parse_oid code.
+
 	* hxtool.c: Implement --content-type.
 
 	* hxtool-commands.in: Add content-type.
