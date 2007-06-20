@@ -659,7 +659,7 @@ acceptor_start
 	    if (ret == GSS_S_COMPLETE)
 		ctx->open = 1;
 
-	    if (delegated_cred_handle)
+	    if (mech_delegated_cred && delegated_cred_handle)
 		ret = _gss_spnego_alloc_cred(minor_status,
 					     mech_delegated_cred,
 					     delegated_cred_handle);
