@@ -49,6 +49,8 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	p = pserver;
 
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
+		NTSTATUS status;
+
 		standard_sub_basic(current_user_info.smb_name, current_user_info.domain,
 				   desthost, sizeof(desthost));
 		strupper_m(desthost);
@@ -72,11 +74,14 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 			return NULL;
 		}
 
-		if (cli_connect(cli, desthost, &dest_ip)) {
+		status = cli_connect(cli, desthost, &dest_ip);
+		if (NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
 			break;
 		}
+		DEBUG(10,("server_cryptkey: failed to connect to server %s. Error %s\n",
+			desthost, nt_errstr(status) ));
 	}
 
 	if (!connected_ok) {

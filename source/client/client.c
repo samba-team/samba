@@ -3796,6 +3796,7 @@ static int do_message_op(void)
 	fstring server_name;
 	char name_type_hex[10];
 	int msg_port;
+	NTSTATUS status;
 
 	make_nmb_name(&calling, calling_name, 0x0);
 	make_nmb_name(&called , desthost, name_type);
@@ -3812,9 +3813,14 @@ static int do_message_op(void)
 
 	msg_port = port ? port : 139;
 
-	if (!(cli=cli_initialise()) || (cli_set_port(cli, msg_port) != msg_port) ||
-	    !cli_connect(cli, server_name, &ip)) {
+	if (!(cli=cli_initialise()) || (cli_set_port(cli, msg_port) != msg_port)) {
 		d_printf("Connection to %s failed\n", desthost);
+		return 1;
+	}
+
+	status = cli_connect(cli, server_name, &ip);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
 		return 1;
 	}
 

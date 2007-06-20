@@ -102,6 +102,7 @@ static struct cli_state *open_nbt_connection(void)
 	struct nmb_name called, calling;
 	struct in_addr ip;
 	struct cli_state *c;
+	NTSTATUS status;
 
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , host, 0x20);
@@ -115,8 +116,9 @@ static struct cli_state *open_nbt_connection(void)
 
 	c->port = port_to_use;
 
-	if (!cli_connect(c, host, &ip)) {
-		printf("Failed to connect with %s\n", host);
+	status = cli_connect(c, host, &ip);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 		return NULL;
 	}
 
@@ -131,8 +133,9 @@ static struct cli_state *open_nbt_connection(void)
 		 * Well, that failed, try *SMBSERVER ... 
 		 * However, we must reconnect as well ...
 		 */
-		if (!cli_connect(c, host, &ip)) {
-			printf("Failed to connect with %s\n", host);
+		status = cli_connect(c, host, &ip);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 			return NULL;
 		}
 

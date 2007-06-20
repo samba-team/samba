@@ -60,12 +60,14 @@ BOOL nmbd_running(void)
    then closing it */
 BOOL smbd_running(void)
 {
+	NTSTATUS status;
 	struct cli_state *cli;
 
 	if ((cli = cli_initialise()) == NULL)
 		return False;
 
-	if (!cli_connect(cli, global_myname(), &loopback_ip)) {
+	status = cli_connect(cli, global_myname(), &loopback_ip);
+	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(cli);
 		return False;
 	}
