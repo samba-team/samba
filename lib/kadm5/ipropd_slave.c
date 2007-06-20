@@ -399,10 +399,11 @@ main(int argc, char **argv)
     krb5_ccache ccache;
     krb5_principal server;
     char **files;
+    int optidx;
 
     const char *master;
     
-    krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    optidx = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
     if(help_flag)
 	krb5_std_usage(0, args, num_args);
@@ -423,8 +424,8 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "reading configuration files");
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc != 1)
 	krb5_std_usage(1, args, num_args);
