@@ -1,5 +1,10 @@
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: Return an error message instead of dropping the
+	packet for more failure cases.
+
+	* lib/krb5/krb5_principal.3: Add KRB5_PRINCIPAL_UNPARSE_DISPLAY.
+
 	* appl/gssmask/gssmask.c (AcquirePKInitCreds): fail more
 	gracefully
 	
