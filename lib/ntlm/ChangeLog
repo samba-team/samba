@@ -1,5 +1,10 @@
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ntlm.c: heim_ntlm_calculate_ntlm2_sess_resp
+
+	* ntlm.c: Change prototype to match other heim_ntlm_calculate
+	functions.
+
 	* test_ntlm.c: Its ok if infotarget2 length is longer.
 
 	* ntlm.c: Merge in changes from Puneet Mehra and make work again.
