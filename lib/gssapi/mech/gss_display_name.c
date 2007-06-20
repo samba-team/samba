@@ -43,6 +43,11 @@ gss_display_name(OM_uint32 *minor_status,
 	if (output_name_type)
 	    *output_name_type = GSS_C_NO_OID;
 
+	if (name == GSS_C_NO_NAME) {
+		*minor_status = 0;
+		return (GSS_S_BAD_NAME);
+	}
+
 	/*
 	 * If we know it, copy the buffer used to import the name in
 	 * the first place. Otherwise, ask all the MNs in turn if
