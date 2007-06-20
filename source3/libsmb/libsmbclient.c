@@ -675,7 +675,8 @@ smbc_server(SMBCCTX *context,
         int port_try_first;
         int port_try_next;
         const char *username_used;
-  
+ 	NTSTATUS status;
+
 	zero_ip(&ip);
 	ZERO_STRUCT(c);
 
@@ -795,17 +796,19 @@ smbc_server(SMBCCTX *context,
 
         c->port = port_try_first;
 
-	if (!cli_connect(c, server_n, &ip)) {
+	status = cli_connect(c, server_n, &ip);
+	if (!NT_STATUS_IS_OK(status)) {
 
                 /* First connection attempt failed.  Try alternate port. */
                 c->port = port_try_next;
 
-                if (!cli_connect(c, server_n, &ip)) {
-                        cli_shutdown(c);
-                        errno = ETIMEDOUT;
-                        return NULL;
-                }
- 	}
+                status = cli_connect(c, server_n, &ip);
+		if (!NT_STATUS_IS_OK(status)) {
+			cli_shutdown(c);
+			errno = ETIMEDOUT;
+			return NULL;
+		}
+	}
 
 	if (!cli_session_request(c, &calling, &called)) {
 		cli_shutdown(c);
