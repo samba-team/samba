@@ -1,5 +1,7 @@
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/init_sec_context.c: Use heim_ntlm_calculate_ntlm2_sess.
+
 	* mech/gss_accept_sec_context.c: Only wrap the delegated cred if
 	we got a delegated mech cred.  From Rafal Malinowski.
 
