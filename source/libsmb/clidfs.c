@@ -69,6 +69,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	pstring servicename;
 	char *sharename;
 	fstring newserver, newshare;
+	NTSTATUS status;
 	
 	/* make a copy so we don't modify the global string 'service' */
 	pstrcpy(servicename, share);
@@ -94,9 +95,13 @@ static struct cli_state *do_connect( const char *server, const char *share,
 		ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port) ||
-	    !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port)) {
 		d_printf("Connection to %s failed\n", server_n);
+		return NULL;
+	}
+	status = cli_connect(c, server_n, &ip);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Connection to %s failed (Error %s)\n", server_n, nt_errstr(status));
 		return NULL;
 	}
 

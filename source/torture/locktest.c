@@ -165,6 +165,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	struct in_addr ip;
 	fstring myname;
 	static int count;
+	NTSTATUS status;
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
@@ -185,8 +186,14 @@ static struct cli_state *connect_one(char *share, int snum)
         zero_ip(&ip);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise()) || !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_initialise())) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
+		return NULL;
+	}
+
+	status = cli_connect(c, server_n, &ip);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Connection to %s failed. Error %s\n", server_n, nt_errstr(status) ));
 		return NULL;
 	}
 
