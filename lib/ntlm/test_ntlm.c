@@ -237,6 +237,44 @@ test_keys(void)
     return 0;
 }
 
+static int
+test_ntlm2_session_resp(void)
+{
+    int ret;
+
+    unsigned char lm_resp[24];
+    const unsigned char lm_resp2[24] = 
+	"\xff\xff\xff\x00\x11\x22\x33\x44"
+	"\x00\x00\x00\x00\x00\x00\x00\x00"
+	"\x00\x00\x00\x00\x00\x00\x00\x00";
+    unsigned char ntlm2_sess_resp[24];
+    const unsigned char ntlm2_sess_resp2[24] = 
+	"\x10\xd5\x50\x83\x2d\x12\xb2\xcc"
+	"\xb7\x9d\x5a\xd1\xf4\xee\xd3\xdf"
+	"\x82\xac\xa4\xc3\x68\x1d\xd4\x55";
+    
+    const unsigned char client_nonce[8] =
+	"\xff\xff\xff\x00\x11\x22\x33\x44";
+    const unsigned char server_challange[8] =
+	"\x01\x23\x45\x67\x89\xab\xcd\xef";
+
+    const unsigned char ntlm_hash[16] =
+	"\xcd\x06\xca\x7c\x7e\x10\xc9\x9b"
+	"\x1d\x33\xb7\x48\x5a\x2e\xd8\x08";
+
+    ret = heim_ntlm_calculate_ntlm2_sess_resp(client_nonce,
+					      server_challange,
+					      ntlm_hash,
+					      lm_resp,
+					      ntlm2_sess_resp);
+
+    if (memcmp(lm_resp, lm_resp2, 24) != 0)
+	errx(1, "lm_resp wrong");
+    if (memcmp(ntlm2_sess_resp, ntlm2_sess_resp2, 24) != 0)
+	errx(1, "ntlm2_sess_resp wrong");
+
+    return 0;
+}
 
 static int version_flag = 0;
 static int help_flag	= 0;
@@ -277,6 +315,7 @@ main(int argc, char **argv)
 
     ret += test_parse();
     ret += test_keys();
+    ret += test_ntlm2_session_resp();
 
     return 0;
 }
