@@ -256,8 +256,8 @@ static OM_uint32 acquire_acceptor_cred
 	if (kret)
 	    goto end;
 	krb5_kt_free_entry(context, &entry);
+	ret = GSS_S_COMPLETE;
     }
-    ret = GSS_S_COMPLETE;
  
 end:
     if (ret != GSS_S_COMPLETE) {
