@@ -1,3 +1,8 @@
+2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ipropd_slave.c: Catch return value from krb5_program_setup. From
+	Steven Luo.
+	
 2007-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* delete_s.c: Write log entry after store is successful, rename
