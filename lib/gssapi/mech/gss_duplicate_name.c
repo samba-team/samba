@@ -79,7 +79,11 @@ OM_uint32 gss_duplicate_name(OM_uint32 *minor_status,
 			
 			major_status = 
 			    mn->gmn_mech->gm_duplicate_name(minor_status,
-				mn->gmn_name, &nmn->gmn_name);
+				mn->gmn_name, &new_mn->gmn_name);
+			if (major_status != GSS_S_COMPLETE) {
+				free(new_mn);
+				continue;
+			}
 			SLIST_INSERT_HEAD(&new_name->gn_mn, new_mn, gmn_link);
 		}
 
