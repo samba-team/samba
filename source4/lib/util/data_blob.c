@@ -130,21 +130,23 @@ _PUBLIC_ void data_blob_clear_free(DATA_BLOB *d)
 /**
 check if two data blobs are equal
 **/
-_PUBLIC_ BOOL data_blob_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
+_PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2)
 {
-	if (d1->length != d2->length) {
-		return False;
+	int ret;
+	if (d1->data == NULL && d2->data != NULL) {
+		return -1;
+	}
+	if (d1->data != NULL && d2->data == NULL) {
+		return 1;
 	}
 	if (d1->data == d2->data) {
-		return True;
+		return d1->length - d2->length;
 	}
-	if (d1->data == NULL || d2->data == NULL) {
-		return False;
+	ret = memcmp(d1->data, d2->data, MIN(d1->length, d2->length));
+	if (ret == 0) {
+		return d1->length - d2->length;
 	}
-	if (memcmp(d1->data, d2->data, d1->length) == 0) {
-		return True;
-	}
-	return False;
+	return ret;
 }
 
 /**

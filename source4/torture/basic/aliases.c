@@ -68,8 +68,8 @@ static bool gen_aliases(struct torture_context *tctx,
 	for (t2b=alias_blobs; t2b; t2b=t2b->next) {
 		for (t2b2=alias_blobs; t2b2; t2b2=t2b2->next) {
 			if (t2b->level >= t2b2->level) continue;
-			if (data_blob_equal(&t2b->params, &t2b2->params) &&
-			    data_blob_equal(&t2b->data, &t2b2->data)) {
+			if (data_blob_cmp(&t2b->params, &t2b2->params) == 0 &&
+			    data_blob_cmp(&t2b->data, &t2b2->data) == 0) {
 				torture_comment(tctx, 
 				"\tLevel %u (0x%x) and level %u (0x%x) are possible aliases\n", 
 				       t2b->level, t2b->level, t2b2->level, t2b2->level);

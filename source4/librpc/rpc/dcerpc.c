@@ -1193,7 +1193,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 
 	blob2 = ndr_push_blob(push);
 
-	if (!data_blob_equal(&blob, &blob2)) {
+	if (data_blob_cmp(&blob, &blob2) != 0) {
 		DEBUG(3,("original:\n"));
 		dump_data(3, blob.data, blob.length);
 		DEBUG(3,("secondary:\n"));
@@ -1276,7 +1276,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 
 	blob2 = ndr_push_blob(push);
 
-	if (!data_blob_equal(&blob, &blob2)) {
+	if (data_blob_cmp(&blob, &blob2) != 0) {
 		DEBUG(3,("original:\n"));
 		dump_data(3, blob.data, blob.length);
 		DEBUG(3,("secondary:\n"));

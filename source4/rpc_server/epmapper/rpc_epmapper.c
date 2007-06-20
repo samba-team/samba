@@ -218,8 +218,8 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 
 	for (i=0;i<count;i++) {
 		if (
-			!data_blob_equal(&r->in.map_tower->tower.floors[0].lhs.lhs_data, 
-			&eps[i].ep.floors[0].lhs.lhs_data) 
+			data_blob_cmp(&r->in.map_tower->tower.floors[0].lhs.lhs_data, 
+			&eps[i].ep.floors[0].lhs.lhs_data) != 0 
 			|| transport != dcerpc_transport_by_tower(&eps[i].ep)) {
 			continue;
 		}
