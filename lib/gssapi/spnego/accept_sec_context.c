@@ -540,7 +540,7 @@ acceptor_start
 	    gss_cred_id_t *delegated_cred_handle
 	   )
 {
-    OM_uint32 ret, ret2, minor;
+    OM_uint32 ret, junk, minor;
     NegotiationToken nt;
     size_t nt_len;
     NegTokenInit *ni;
@@ -667,7 +667,7 @@ acceptor_start
 					     mech_delegated_cred,
 					     delegated_cred_handle);
 	    else
-		gss_release_cred(&ret2, &mech_delegated_cred);
+		gss_release_cred(&junk, &mech_delegated_cred);
 
 	    ret = acceptor_complete(minor_status,
 				    ctx,
@@ -951,11 +951,14 @@ acceptor_continue
 
     if (ret == GSS_S_COMPLETE) {
 	if (src_name != NULL && ctx->mech_src_name != NULL) {
-	    ret2 = gss_duplicate_name(minor_status,
-				      ctx->mech_src_name,
-				      src_name);
-	    if (ret2 != GSS_S_COMPLETE)
-		ret = ret2;
+	    spnego_name name;
+
+	    name = calloc(1, sizeof(*name));
+	    if (name) {
+		name->mech = ctx->mech_src_name;
+		ctx->mech_src_name = NULL;
+		*src_name = (gss_name_t)name;
+	    }
 	}
         if (delegated_cred_handle != NULL) {
 	    *delegated_cred_handle = ctx->delegated_cred_id;
