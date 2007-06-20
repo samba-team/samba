@@ -285,44 +285,34 @@ _gss_ntlm_init_sec_context
 
 	if (1 || type2.targetinfo.length == 0) {
 	    struct ntlm_buf sessionkey;
-	    unsigned char challange[8];
 
 	    if (type2.flags & NTLM_NEG_NTLM2_SESSION) {
-		unsigned char sessionhash[MD5_DIGEST_LENGTH];
-		MD5_CTX md5ctx;
+		unsigned char nonce[8];
 
-		type3.lm.length = 24;
-		type3.lm.data = calloc(1, 24);
-		if (type3.lm.data == NULL) {
-		    _gss_ntlm_delete_sec_context(minor_status, 
-						 context_handle, NULL);
-		    *minor_status = ENOMEM;
-		    return GSS_S_FAILURE;
-		}
-		
-		if (RAND_bytes(type3.lm.data, 8) != 1) {
-		    free(type3.lm.data);
+		if (RAND_bytes(nonce, sizeof(nonce)) != 1) {
 		    _gss_ntlm_delete_sec_context(minor_status, 
 						 context_handle, NULL);
 		    *minor_status = EINVAL;
 		    return GSS_S_FAILURE;
 		}
 
-		MD5_Init(&md5ctx);
-		MD5_Update(&md5ctx, type2.challange, sizeof(type2.challange));
-		MD5_Update(&md5ctx, type3.lm.data, 8);
-		MD5_Final(sessionhash, &md5ctx);
-
-		memcpy(challange, sessionhash, 8);
+		ret = heim_ntlm_calculate_ntlm2_sess(nonce,
+						     type2.challange,
+						     ctx->client.key.data,
+						     &type3.lm,
+						     &type3.ntlm);
 	    } else {
-		memcpy(challange, type2.challange, 8);
+		ret = heim_ntlm_calculate_ntlm1(ctx->client.key.data, 
+						ctx->client.key.length,
+						type2.challange,
+						&type3.ntlm);
+
 	    }
-
-
-	    heim_ntlm_calculate_ntlm1(ctx->client.key.data, 
-				      ctx->client.key.length,
-				      challange,
-				      &type3.ntlm);
+	    if (ret) {
+		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
+		*minor_status = ret;
+		return GSS_S_FAILURE;
+	    }
 
 	    ret = heim_ntlm_build_ntlm1_master(ctx->client.key.data, 
 					       ctx->client.key.length,
@@ -331,6 +321,8 @@ _gss_ntlm_init_sec_context
 	    if (ret) {
 		if (type3.lm.data)
 		    free(type3.lm.data);
+		if (type3.ntlm.data)
+		    free(type3.ntlm.data);
 		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
 		*minor_status = ret;
 		return GSS_S_FAILURE;
@@ -342,6 +334,8 @@ _gss_ntlm_init_sec_context
 	    if (ret) {
 		if (type3.lm.data)
 		    free(type3.lm.data);
+		if (type3.ntlm.data)
+		    free(type3.ntlm.data);
 		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
 		*minor_status = ret;
 		return GSS_S_FAILURE;
@@ -427,6 +421,8 @@ _gss_ntlm_init_sec_context
 	free(type3.sessionkey.data);
 	if (type3.lm.data)
 	    free(type3.lm.data);
+	if (type3.ntlm.data)
+	    free(type3.ntlm.data);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
