@@ -125,7 +125,7 @@ static WERROR reg_generate_diff_key(struct reg_diff *diff, struct registry_key *
 			return error2;
 		}
 
-		if (W_ERROR_IS_OK(error2) && data_blob_equal(&v1->data, &v2->data))
+		if (W_ERROR_IS_OK(error2) && data_blob_cmp(&v1->data, &v2->data) == 0)
 			continue;
 
 		thiskey = diff_find_add_key(diff, oldkey->path);
