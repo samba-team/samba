@@ -1,4 +1,36 @@
+2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_accept_sec_context.c: Only wrap the delegated cred if
+	we got a delegated mech cred.  From Rafal Malinowski.
+
+	* spnego/accept_sec_context.c: Only wrap the delegated cred if we
+	are going to return it to the consumer.  From Rafal Malinowski.
+
+	* spnego/accept_sec_context.c: Fixed memory leak pointed out by
+	Rafal Malinowski, also while here moved to use NegotiationToken
+	for decoding.
+
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/prf.c (_gsskrb5_pseudo_random): add missing break.
+
+	* krb5/release_name.c: Set *minor_status unconditionallty, its
+	done later anyway.
+
+	* spnego/accept_sec_context.c: Init get_mic to 0.
+
+	* mech/gss_set_cred_option.c: Free memory in failure case, found
+	by beam.
+
+	* mech/gss_inquire_context.c: Handle mech_type being NULL.
+
+	* mech/gss_inquire_cred_by_mech.c: Handle cred_name being NULL.
+
+	* mech/gss_krb5.c: Free memory in error case, found by beam.
+
 2007-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/inquire_context.c: Use ctx->gssflags for flags.
 
 	* krb5/display_name.c: Use KRB5_PRINCIPAL_UNPARSE_DISPLAY, this is
 	not ment for machine consumption.
