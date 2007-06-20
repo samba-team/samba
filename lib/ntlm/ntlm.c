@@ -948,25 +948,27 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
 	return ENOMEM;
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
-    CHECK(krb5_store_uint32(sp, 0x01010000), 0);
+    CHECK(krb5_store_uint32(sp, 0x00000101), 0);
     CHECK(krb5_store_uint32(sp, 0), 0);
     /* timestamp le 64 bit ts */
     CHECK(krb5_store_uint32(sp, t & 0xffffffff), 0);
     CHECK(krb5_store_uint32(sp, t >> 32), 0);
+
     CHECK(krb5_storage_write(sp, clientchallange, 8), 8);
+
+    CHECK(krb5_store_uint32(sp, 0), 0);  /* unknown but zero will work */
     CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length), 
 	  infotarget->length);
-    /* unknown */
-    /* CHECK(krb5_store_uint32(sp, 0), 0);  */
+    CHECK(krb5_store_uint32(sp, 0), 0); /* unknown but zero will work */
     
     CHECK(krb5_storage_to_data(sp, &data), 0);
     krb5_storage_free(sp);
     sp = NULL;
 
     HMAC_CTX_init(&c);
-    HMAC_Init_ex(&c, ntlmv2, sizeof(ntlmv2), EVP_md5(), NULL);
-    HMAC_Update(&c, data.data, data.length);
+    HMAC_Init_ex(&c, ntlmv2, 16, EVP_md5(), NULL);
     HMAC_Update(&c, serverchallange, 8);
+    HMAC_Update(&c, data.data, data.length);
     HMAC_Final(&c, ntlmv2answer, &hmaclen);
     HMAC_CTX_cleanup(&c);
 
@@ -1009,6 +1011,7 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     krb5_error_code ret;
     unsigned int hmaclen;
     unsigned char clientanswer[16];
+    unsigned char clientnonce[8];
     unsigned char serveranswer[16];
     krb5_storage *sp;
     HMAC_CTX c;
@@ -1039,7 +1042,7 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     CHECK(krb5_storage_read(sp, clientanswer, 16), 16);
 
     CHECK(krb5_ret_uint32(sp, &temp), 0);
-    CHECK(temp, 0x01010000);
+    CHECK(temp, 0x00000101);
     CHECK(krb5_ret_uint32(sp, &temp), 0);
     CHECK(temp, 0);
     /* timestamp le 64 bit ts */
@@ -1056,9 +1059,12 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     }
 
     /* client challange */
-    CHECK(krb5_storage_read(sp, serveranswer, 8), 8);
+    CHECK(krb5_storage_read(sp, clientnonce, 8), 8);
 
-    infotarget->length = answer->length - 40;
+    CHECK(krb5_ret_uint32(sp, &temp), 0); /* unknown */
+
+    /* should really unparse the infotarget, but lets pick up everything */
+    infotarget->length = answer->length - krb5_storage_seek(sp, 0, SEEK_CUR);
     infotarget->data = malloc(infotarget->length);
     if (infotarget->data == NULL) {
 	ret = ENOMEM;
@@ -1066,14 +1072,14 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     }
     CHECK(krb5_storage_read(sp, infotarget->data, infotarget->length), 
 	  infotarget->length);
-    /* XXX remove the unknown uint32_t */
+    /* XXX remove the unknown ?? */
     krb5_storage_free(sp);
     sp = NULL;
 
     HMAC_CTX_init(&c);
-    HMAC_Init_ex(&c, ntlmv2, sizeof(ntlmv2), EVP_md5(), NULL);
-    HMAC_Update(&c, ((char *)answer->data) + 16, answer->length - 16);
+    HMAC_Init_ex(&c, ntlmv2, 16, EVP_md5(), NULL);
     HMAC_Update(&c, serverchallange, 8);
+    HMAC_Update(&c, ((char *)answer->data) + 16, answer->length - 16);
     HMAC_Final(&c, serveranswer, &hmaclen);
     HMAC_CTX_cleanup(&c);
 
