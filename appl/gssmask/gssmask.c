@@ -851,7 +851,19 @@ HandleOP(CallExtension)
 static int
 HandleOP(AcquirePKInitCreds)
 {
-    errx(1, "AcquirePKInitCreds");
+    int32_t flags;
+    krb5_data pfxdata;
+
+    ret32(c, flags);
+    retdata(c, pfxdata);
+
+    /* get credentials */
+
+    krb5_data_free(&pfxdata);
+
+    put32(c, -1); /* hResource */
+    put32(c, GSMERR_NOT_SUPPORTED);
+    return 0;
 }
 
 /*
