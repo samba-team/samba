@@ -1,3 +1,9 @@
+2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* move ksetpag after initgroups to make it work on Linux when its
+	without syscall hooks to change sys_setgroups preserve the
+	pag. From Alexsander Boström.
+	
 2007-06-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/Makefile.am: don't clean yacc/lex files in CLEANFILES,
