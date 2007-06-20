@@ -1089,3 +1089,37 @@ out:
 	krb5_storage_free(sp);
     return ret;
 }
+
+
+/*
+ * Calculate the NTLM2 Session Response as per pg 24 of Davenport NTLM
+ * document http://davenport.sourceforge.net/ntlm.html
+ */
+int
+heim_ntlm_calculate_ntlm2_sess_resp(const unsigned char clnt_nonce[8],
+				    const unsigned char svr_chal[8],
+				    const unsigned char ntlm_hash[16],
+				    unsigned char lm_resp[24],
+				    unsigned char ntlm2_sess_resp[24])
+{
+    unsigned char ntlm2_sess_hash[MD5_DIGEST_LENGTH];
+    unsigned char res[21];
+    MD5_CTX md5;
+
+    /* first setup the lm resp */
+    memset(lm_resp, 0, 24);
+    memcpy(lm_resp, clnt_nonce, 8);
+
+    MD5_Init(&md5);
+    MD5_Update(&md5, svr_chal, 8); /* session nonce part 1 */
+    MD5_Update(&md5, clnt_nonce, 8); /* session nonce part 2 */
+    MD5_Final(ntlm2_sess_hash, &md5); /* will only use first 8 bytes */
+
+    memset(res, 0, sizeof(res));
+    memcpy(res, ntlm_hash, 16);
+
+    splitandenc(&res[0], ntlm2_sess_hash, ntlm2_sess_resp + 0);
+    splitandenc(&res[7], ntlm2_sess_hash, ntlm2_sess_resp + 8);
+    splitandenc(&res[14], ntlm2_sess_hash, ntlm2_sess_resp + 16);
+    return 0;
+}
