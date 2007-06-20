@@ -427,6 +427,8 @@ extract_data(FState * st, unsigned count, unsigned char *dst)
 static FState	main_state;
 static int	init_done;
 static int	have_entropy;
+#define FORTUNA_RESEED_BYTE	10000
+static unsigned	resend_bytes;
 
 /*
  * Try our best to do an inital seed
@@ -546,6 +548,11 @@ fortuna_bytes(unsigned char *outdata, int size)
 {
     if (!fortuna_init())
 	return 0;
+    resend_bytes += size;
+    if (resend_bytes > FORTUNA_RESEED_BYTE || resend_bytes < size) {
+	resend_bytes = 0;
+	fortuna_reseed();
+    }
     extract_data(&main_state, size, outdata);
     return 1;
 }
