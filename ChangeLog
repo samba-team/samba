@@ -1,3 +1,8 @@
+2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmask.c (AcquirePKInitCreds): fail more
+	gracefully
+	
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pac.c: make compile.
