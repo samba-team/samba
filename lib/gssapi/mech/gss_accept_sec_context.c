@@ -237,9 +237,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 		return (major_status);
 	}
 
-	if (!src_name) {
-		m->gm_release_name(minor_status, &src_mn);
-	} else {
+	if (src_name && src_mn) {
 		/*
 		 * Make a new name and mark it as an MN.
 		 */
@@ -250,6 +248,8 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			return (GSS_S_FAILURE);
 		}
 		*src_name = (gss_name_t) name;
+	} else if (src_mn) {
+	    m->gm_release_name(minor_status, &src_mn);
 	}
 
 	if (mech_ret_flags & GSS_C_DELEG_FLAG) {
