@@ -1,3 +1,8 @@
+2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* wflags.m4: Add --enable-developer and make it cause -Werror to
+	be included.
+	
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am.common: Merge from samba config.
