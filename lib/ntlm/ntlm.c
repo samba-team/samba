@@ -1102,11 +1102,11 @@ out:
  * document http://davenport.sourceforge.net/ntlm.html
  */
 int
-heim_ntlm_calculate_ntlm2_sess_resp(const unsigned char clnt_nonce[8],
-				    const unsigned char svr_chal[8],
-				    const unsigned char ntlm_hash[16],
-				    struct ntlm_buf *lm,
-				    struct ntlm_buf *ntlm)
+heim_ntlm_calculate_ntlm2_sess(const unsigned char clnt_nonce[8],
+			       const unsigned char svr_chal[8],
+			       const unsigned char ntlm_hash[16],
+			       struct ntlm_buf *lm,
+			       struct ntlm_buf *ntlm)
 {
     unsigned char ntlm2_sess_hash[MD5_DIGEST_LENGTH];
     unsigned char res[21], *resp;
