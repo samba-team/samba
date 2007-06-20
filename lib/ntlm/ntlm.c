@@ -1105,16 +1105,29 @@ int
 heim_ntlm_calculate_ntlm2_sess_resp(const unsigned char clnt_nonce[8],
 				    const unsigned char svr_chal[8],
 				    const unsigned char ntlm_hash[16],
-				    unsigned char lm_resp[24],
-				    unsigned char ntlm2_sess_resp[24])
+				    struct ntlm_buf *lm,
+				    struct ntlm_buf *ntlm)
 {
     unsigned char ntlm2_sess_hash[MD5_DIGEST_LENGTH];
-    unsigned char res[21];
+    unsigned char res[21], *resp;
     MD5_CTX md5;
 
+    lm->data = malloc(24);
+    if (lm->data == NULL)
+	return ENOMEM;
+    lm->length = 24;
+
+    ntlm->data = malloc(24);
+    if (ntlm->data == NULL) {
+	free(lm->data);
+	lm->data = NULL;
+	return ENOMEM;
+    }
+    ntlm->length = 24;
+
     /* first setup the lm resp */
-    memset(lm_resp, 0, 24);
-    memcpy(lm_resp, clnt_nonce, 8);
+    memset(lm->data, 0, 24);
+    memcpy(lm->data, clnt_nonce, 8);
 
     MD5_Init(&md5);
     MD5_Update(&md5, svr_chal, 8); /* session nonce part 1 */
@@ -1124,8 +1137,10 @@ heim_ntlm_calculate_ntlm2_sess_resp(const unsigned char clnt_nonce[8],
     memset(res, 0, sizeof(res));
     memcpy(res, ntlm_hash, 16);
 
-    splitandenc(&res[0], ntlm2_sess_hash, ntlm2_sess_resp + 0);
-    splitandenc(&res[7], ntlm2_sess_hash, ntlm2_sess_resp + 8);
-    splitandenc(&res[14], ntlm2_sess_hash, ntlm2_sess_resp + 16);
+    resp = ntlm->data;
+    splitandenc(&res[0], ntlm2_sess_hash, resp + 0);
+    splitandenc(&res[7], ntlm2_sess_hash, resp + 8);
+    splitandenc(&res[14], ntlm2_sess_hash, resp + 16);
+
     return 0;
 }
