@@ -1,5 +1,11 @@
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_display_name.c (gss_display_name): no name ->
+	fail. From Rafal Malinswski.
+
+	* spnego/accept_sec_context.c: Wrap name in a spnego_name instead
+	of just a copy of the underlaying object. From Rafal Malinswski.
+
 	* spnego/accept_sec_context.c: Handle underlaying mech not
 	returning mn.
 
