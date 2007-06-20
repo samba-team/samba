@@ -63,12 +63,14 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
-		goto done;		
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
-		goto done;		
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	for (i = 0; i < size; i++)
@@ -111,6 +113,7 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
+		result = NT_STATUS_NO_MEMORY;
 		goto done;		
 	}
 	
@@ -148,6 +151,7 @@ static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
+		result = NT_STATUS_NO_MEMORY;
 		goto done;		
 	}
 

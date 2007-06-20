@@ -36,7 +36,7 @@ static NTSTATUS cmd_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	rpccli_dfs_GetManagerVersion(cli, mem_ctx, &dfs_exists);
+	result = rpccli_dfs_GetManagerVersion(cli, mem_ctx, &dfs_exists);
 
 	printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
 
