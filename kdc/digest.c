@@ -686,7 +686,7 @@ _kdc_do_digest(krb5_context context,
 				     ireq.u.digestRequest.username,
 				     &password);
 	    if (ret)
-		goto out;
+		goto failed;
 
 	    MD5_Init(&ctx);
 	    MD5_Update(&ctx, ireq.u.digestRequest.username,
@@ -716,7 +716,7 @@ _kdc_do_digest(krb5_context context,
 	    if (A1 == NULL) {
 		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
-		goto out;
+		goto failed;
 	    }
 	    
 	    MD5_Init(&ctx);
@@ -736,7 +736,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
 		free(A1);
-		goto out;
+		goto failed;
 	    }
 
 	    MD5_Init(&ctx);
@@ -791,20 +791,20 @@ _kdc_do_digest(krb5_context context,
 
 	    if ((config->digests_allowed & MS_CHAP_V2) == 0) {
 		kdc_log(context, config, 0, "MS-CHAP-V2 not allowed");
-		goto out;
+		goto failed;
 	    }
 
 	    if (ireq.u.digestRequest.clientNonce == NULL)  {
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 clientNonce missing");
 		ret = EINVAL;
-		goto out;
+		goto failed;
 	    }	    
 	    if (serverNonce.length != 16) {
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 serverNonce wrong length");
 		ret = EINVAL;
-		goto out;
+		goto failed;
 	    }
 
 	    /* strip of the domain component */
@@ -846,7 +846,7 @@ _kdc_do_digest(krb5_context context,
 	    /* NtPasswordHash */
 	    ret = krb5_parse_name(context, username, &clientprincipal);
 	    if (ret)
-		goto out;
+		goto failed;
 	    
 	    ret = _kdc_db_fetch(context, config, clientprincipal,
 				HDB_F_GET_CLIENT, NULL, &user);
@@ -855,7 +855,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 user %s not in database",
 				      username);
-		goto out;
+		goto failed;
 	    }
 
 	    ret = hdb_enctype2key(context, &user->entry, 
@@ -864,7 +864,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 missing arcfour key %s",
 				      username);
-		goto out;
+		goto failed;
 	    }
 
 	    /* ChallengeResponse */
@@ -873,7 +873,7 @@ _kdc_do_digest(krb5_context context,
 					    challange, &answer);
 	    if (ret) {
 		krb5_set_error_string(context, "NTLM missing arcfour key");
-		goto out;
+		goto failed;
 	    }
 	    
 	    hex_encode(answer.data, answer.length, &mdx);
@@ -983,7 +983,7 @@ _kdc_do_digest(krb5_context context,
 
 	if ((config->digests_allowed & (NTLM_V1|NTLM_V1_SESSION|NTLM_V2)) == 0) {
 	    kdc_log(context, config, 0, "NTLM not allowed");
-	    goto out;
+	    goto failed;
 	}
 
 	r.element = choice_DigestRepInner_ntlmInitReply;
@@ -992,14 +992,14 @@ _kdc_do_digest(krb5_context context,
 
 	if ((ireq.u.ntlmInit.flags & NTLM_NEG_UNICODE) == 0) {
 	    kdc_log(context, config, 0, "NTLM client have no unicode");
-	    goto out;
+	    goto failed;
 	}
 
 	if (ireq.u.ntlmInit.flags & NTLM_NEG_NTLM)
 	    r.u.ntlmInitReply.flags |= NTLM_NEG_NTLM;
 	else {
 	    kdc_log(context, config, 0, "NTLM client doesn't support NTLM");
-	    goto out;
+	    goto failed;
 	}
 
 	r.u.ntlmInitReply.flags |= 
@@ -1120,7 +1120,7 @@ _kdc_do_digest(krb5_context context,
 			      ireq.u.ntlmRequest.username,
 			      &clientprincipal);
 	if (ret)
-	    goto out;
+	    goto failed;
 
 	ret = _kdc_db_fetch(context, config, clientprincipal,
 			    HDB_F_GET_CLIENT, NULL, &user);
@@ -1128,20 +1128,23 @@ _kdc_do_digest(krb5_context context,
 	if (ret) {
 	    krb5_set_error_string(context, "NTLM user %s not in database",
 				  ireq.u.ntlmRequest.username);
-	    goto out;
+	    goto failed;
 	}
 
 	ret = get_digest_key(context, config, server, &crypto);
 	if (ret)
-	    goto out;
+	    goto failed;
 
 	ret = krb5_decrypt(context, crypto, KRB5_KU_DIGEST_OPAQUE,
 			   ireq.u.ntlmRequest.opaque.data,
 			   ireq.u.ntlmRequest.opaque.length, &buf);
 	krb5_crypto_destroy(context, crypto);
 	crypto = NULL;
-	if (ret)
-	    goto out;
+	if (ret) {
+	    kdc_log(context, config, 0, 
+		    "Failed to decrypt nonce from %s", from);
+	    goto failed;
+	}
 
 	sp = krb5_storage_from_data(&buf);
 	if (sp == NULL) {
@@ -1210,7 +1213,7 @@ _kdc_do_digest(krb5_context context,
 	    free(targetname);
 	    if (ret) {
 		krb5_set_error_string(context, "NTLM v2 verify failed");
-		goto out;
+		goto failed;
 	    }
 
 	    /* XXX verify infotarget matches client (checksum ?) */
@@ -1230,14 +1233,14 @@ _kdc_do_digest(krb5_context context,
 		if ((config->digests_allowed & NTLM_V1_SESSION) == 0) {
 		    kdc_log(context, config, 0, "NTLM v1-session not allowed");
 		    ret = EINVAL;
-		    goto out;
+		    goto failed;
 		}
 
 		if (ireq.u.ntlmRequest.lm.length != 24) {
 		    krb5_set_error_string(context, "LM hash have wrong length "
 					  "for NTLM session key");
 		    ret = EINVAL;
-		    goto out;
+		    goto failed;
 		}
 		
 		MD5_Init(&md5ctx);
@@ -1248,7 +1251,7 @@ _kdc_do_digest(krb5_context context,
 	    } else {
 		if ((config->digests_allowed & NTLM_V1) == 0) {
 		    kdc_log(context, config, 0, "NTLM v1 not allowed");
-		    goto out;
+		    goto failed;
 		}
 	    }
 	    
@@ -1257,7 +1260,7 @@ _kdc_do_digest(krb5_context context,
 					    challange, &answer);
 	    if (ret) {
 		krb5_set_error_string(context, "NTLM missing arcfour key");
-		goto out;
+		goto failed;
 	    }
 	    
 	    if (ireq.u.ntlmRequest.ntlm.length != answer.length ||
@@ -1266,7 +1269,7 @@ _kdc_do_digest(krb5_context context,
 		free(answer.data);
 		ret = EINVAL;
 		krb5_set_error_string(context, "NTLM hash mismatch");
-		goto out;
+		goto failed;
 	    }
 	    free(answer.data);
 
@@ -1290,7 +1293,7 @@ _kdc_do_digest(krb5_context context,
 				      "NTLM client failed to neg key "
 				      "exchange but still sent key");
 		ret = EINVAL;
-		goto out;
+		goto failed;
 	    }
 	    
 	    len = ireq.u.ntlmRequest.sessionkey->length;
@@ -1298,7 +1301,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context,
 				      "NTLM master key wrong length: %lu",
 				      (unsigned long)len);
-		goto out;
+		goto failed;
 	    }
 	    
 	    RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
@@ -1326,12 +1329,12 @@ _kdc_do_digest(krb5_context context,
 	r.u.ntlmResponse.success = 1;
 	kdc_log(context, config, 0, "NTLM version %d successful for %s",
 		version, ireq.u.ntlmRequest.username);
-
 	break;
     }
     default:
+    failed:
 	r.element = choice_DigestRepInner_error;
-	r.u.error.reason = strdup("unknown operation");
+	r.u.error.reason = strdup("unknown/failed operation");
 	if (r.u.error.reason == NULL) {
 	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
