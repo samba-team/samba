@@ -241,14 +241,13 @@ static int
 test_ntlm2_session_resp(void)
 {
     int ret;
+    struct ntlm_buf lm, ntlm;
 
-    unsigned char lm_resp[24];
-    const unsigned char lm_resp2[24] = 
+    const unsigned char lm_resp[24] = 
 	"\xff\xff\xff\x00\x11\x22\x33\x44"
 	"\x00\x00\x00\x00\x00\x00\x00\x00"
 	"\x00\x00\x00\x00\x00\x00\x00\x00";
-    unsigned char ntlm2_sess_resp[24];
-    const unsigned char ntlm2_sess_resp2[24] = 
+    const unsigned char ntlm2_sess_resp[24] = 
 	"\x10\xd5\x50\x83\x2d\x12\xb2\xcc"
 	"\xb7\x9d\x5a\xd1\xf4\xee\xd3\xdf"
 	"\x82\xac\xa4\xc3\x68\x1d\xd4\x55";
@@ -265,13 +264,19 @@ test_ntlm2_session_resp(void)
     ret = heim_ntlm_calculate_ntlm2_sess_resp(client_nonce,
 					      server_challange,
 					      ntlm_hash,
-					      lm_resp,
-					      ntlm2_sess_resp);
+					      &lm,
+					      &ntlm);
+    if (ret)
+	errx(1, "heim_ntlm_calculate_ntlm2_sess_resp");
 
-    if (memcmp(lm_resp, lm_resp2, 24) != 0)
+    if (lm.length != 24 || memcmp(lm.data, lm_resp, 24) != 0)
 	errx(1, "lm_resp wrong");
-    if (memcmp(ntlm2_sess_resp, ntlm2_sess_resp2, 24) != 0)
+    if (ntlm.length != 24 || memcmp(ntlm.data, ntlm2_sess_resp, 24) != 0)
 	errx(1, "ntlm2_sess_resp wrong");
+    
+    free(lm.data);
+    free(ntlm.data);
+
 
     return 0;
 }
