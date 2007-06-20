@@ -1,5 +1,8 @@
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* spnego/accept_sec_context.c: Make sure src_name is always set to
+	GSS_C_NO_NAME when returning.
+
 	* krb5/acquire_cred.c (acquire_acceptor_cred): don't claim
 	everything is well on failure.  From Phil Fisher.
 
