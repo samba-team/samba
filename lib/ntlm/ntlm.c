@@ -880,8 +880,8 @@ heim_ntlm_ntlmv2_key(const void *key, size_t len,
 	ascii2ucs2le(username, 1, &buf);
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);
-	/* turn target into ucs2-le */
-	ascii2ucs2le(target, 0, &buf);
+	/* uppercase target and turn into ucs2-le */
+	ascii2ucs2le(target, 1, &buf);
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);
     }
