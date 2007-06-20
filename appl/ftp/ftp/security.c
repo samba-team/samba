@@ -586,7 +586,7 @@ sec_userok(char *userstr)
 int
 sec_session(char *user)
 {
-    if(sec_complete)
+    if(sec_complete && mech->session)
 	return (*mech->session)(app_data, user);
     return 0;
 }
