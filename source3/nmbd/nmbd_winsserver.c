@@ -2333,6 +2333,7 @@ void wins_write_database(time_t t, BOOL background)
 		if (tdb_reopen(wins_tdb)) {
 			DEBUG(0,("wins_write_database: tdb_reopen failed. Error was %s\n",
 				strerror(errno)));
+			_exit(0);
 			return;
 		}
 	}
