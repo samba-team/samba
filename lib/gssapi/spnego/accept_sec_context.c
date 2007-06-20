@@ -950,7 +950,7 @@ acceptor_continue
     }
 
     if (ret == GSS_S_COMPLETE) {
-	if (src_name != NULL) {
+	if (src_name != NULL && ctx->mech_src_name != NULL) {
 	    ret2 = gss_duplicate_name(minor_status,
 				      ctx->mech_src_name,
 				      src_name);
