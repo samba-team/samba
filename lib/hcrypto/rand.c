@@ -56,11 +56,7 @@ init_method(void)
 {
     if (selected_meth != NULL)
 	return;
-
-    if ((*hc_rand_unix_method.status)() == 1)
-	selected_meth = &hc_rand_unix_method;
-    else
-	selected_meth = &hc_rand_fortuna_method;
+    selected_meth = &hc_rand_fortuna_method;
 }
 
 void
