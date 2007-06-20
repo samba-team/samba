@@ -3164,7 +3164,7 @@ static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
 				  &type,
 				  &size,
 				  &data_p);
-		if (strcmp(valname,"include")) {
+		if (strwicmp(valname,"include") == 0) {
 			DEBUG(10, ("process_registry_globals: Ignoring "
 				   "parameter 'include' in registry.\n"));
 			continue;
