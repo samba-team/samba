@@ -261,11 +261,11 @@ test_ntlm2_session_resp(void)
 	"\xcd\x06\xca\x7c\x7e\x10\xc9\x9b"
 	"\x1d\x33\xb7\x48\x5a\x2e\xd8\x08";
 
-    ret = heim_ntlm_calculate_ntlm2_sess_resp(client_nonce,
-					      server_challange,
-					      ntlm_hash,
-					      &lm,
-					      &ntlm);
+    ret = heim_ntlm_calculate_ntlm2_sess(client_nonce,
+					 server_challange,
+					 ntlm_hash,
+					 &lm,
+					 &ntlm);
     if (ret)
 	errx(1, "heim_ntlm_calculate_ntlm2_sess_resp");
 
