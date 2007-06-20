@@ -1,3 +1,21 @@
+2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_ntlm.c: Its ok if infotarget2 length is longer.
+
+	* ntlm.c: Merge in changes from Puneet Mehra and make work again.
+
+	* ntlm.c (heim_ntlm_ntlmv2_key): target should be uppercase.
+	From Puneet Mehra.
+
+	* version-script.map: Add heim_ntlm_calculate_ntlm2_sess_resp from
+	Puneet Mehra.
+
+	* ntlm.c: Add heim_ntlm_calculate_ntlm2_sess_resp from Puneet
+	Mehra.
+	
+	* test_ntlm.c: Test heim_ntlm_calculate_ntlm2_sess_resp from
+	Puneet Mehra.
+	
 2007-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: EXTRA_DIST += version-script.map.
