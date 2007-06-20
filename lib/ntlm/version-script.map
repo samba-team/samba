@@ -5,6 +5,7 @@ HEIMDAL_NTLM_1.0 {
 		heim_ntlm_build_ntlm1_master;
 		heim_ntlm_calculate_ntlm1;
 		heim_ntlm_calculate_ntlm2;
+		heim_ntlm_calculate_ntlm2_sess_resp;
 		heim_ntlm_decode_targetinfo;
 		heim_ntlm_decode_type1;
 		heim_ntlm_decode_type2;
