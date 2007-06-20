@@ -1,5 +1,8 @@
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rand.c: Default to fortuna due to weired /dev/*random that
+	failes to deliver random data for us in hi load situations.
+
 	* rand-fortuna.c: Reseed the random generator now and then from
 	external sources.
 
