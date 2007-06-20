@@ -555,6 +555,9 @@ acceptor_start
     int get_mic = 0;
     int first_ok = 0;
 
+    if (src_name)
+	*src_name = GSS_C_NO_NAME;
+
     mech_output_token.value = NULL;
     mech_output_token.length = 0;
     mech_buf.value = NULL;
@@ -738,8 +741,7 @@ out:
 		name->mech = ctx->mech_src_name;
 		ctx->mech_src_name = NULL;
 		*src_name = (gss_name_t)name;
-	    } else
-		*src_name = GSS_C_NO_NAME;
+	    }
 	}
         if (delegated_cred_handle != NULL) {
 	    *delegated_cred_handle = ctx->delegated_cred_id;
