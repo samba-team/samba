@@ -224,7 +224,7 @@ test_keys(void)
     if (memcmp(ntlmv2, ntlmv2_1, sizeof(ntlmv2)) != 0)
 	errx(1, "ntlm master key not same");
 
-    if (infotarget.length != infotarget2.length)
+    if (infotarget.length > infotarget2.length)
 	errx(1, "infotarget length");
 
     if (memcmp(infotarget.data, infotarget2.data, infotarget.length) != 0)
