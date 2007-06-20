@@ -583,6 +583,14 @@ sec_userok(char *userstr)
     return 0;
 }
 
+int
+sec_session(char *user)
+{
+    if(sec_complete)
+	return (*mech->session)(app_data, user);
+    return 0;
+}
+
 char *ftp_command;
 
 void

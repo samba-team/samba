@@ -48,6 +48,7 @@ struct gss_data {
     gss_ctx_id_t context_hdl;
     char *client_name;
     gss_cred_id_t delegated_cred_handle;
+    void *mech_data;
 };
 
 static int
@@ -277,6 +278,7 @@ gss_adat(void *app_data, void *buf, size_t len)
 }
 
 int gss_userok(void*, char*);
+int gss_session(void*, char*);
 
 struct sec_server_mech gss_server_mech = {
     "GSSAPI",
@@ -292,7 +294,8 @@ struct sec_server_mech gss_server_mech = {
     gss_adat,
     NULL, /* pbsz */
     NULL, /* ccc */
-    gss_userok
+    gss_userok,
+    gss_session
 };
 
 #else /* FTP_SERVER */

@@ -280,10 +280,6 @@ main(int argc, char **argv)
 	krb_set_tkt_string(tkfile);
 #endif
     }
-#if defined(KRB4) || defined(KRB5)
-    if(k_hasafs())
-	k_setpag();
-#endif
 
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
@@ -595,9 +591,10 @@ user(char *name)
 	if (logging)
 	    strlcpy(curname, name, sizeof(curname));
 	if(sec_complete) {
-	    if(sec_userok(name) == 0)
+	    if(sec_userok(name) == 0) {
 		do_login(232, name);
-	    else
+		sec_session(name);
+	    } else
 		reply(530, "User %s access denied.", name);
 	} else {
 #ifdef OTP
@@ -727,6 +724,10 @@ int do_login(int code, char *passwd)
 	return -1;
     }
     initgroups(pw->pw_name, pw->pw_gid);
+#if defined(KRB4) || defined(KRB5)
+    if(k_hasafs())
+	k_setpag();
+#endif
 
     /* open wtmp before chroot */
     ftpd_logwtmp(ttyline, pw->pw_name, remotehost);

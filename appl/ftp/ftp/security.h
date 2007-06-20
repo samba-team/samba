@@ -70,6 +70,7 @@ struct sec_server_mech {
     size_t (*pbsz)(void *, size_t);
     int (*ccc)(void*);
     int (*userok)(void*, char*);
+    int (*session)(void*, char*);
 };
 
 #define AUTH_OK		0

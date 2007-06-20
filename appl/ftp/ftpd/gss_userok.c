@@ -41,41 +41,70 @@ RCSID("$Id$");
    What is the correct way to do this? 
    */
 
+struct gss_krb5_data {
+    krb5_context context;
+};
+
 /* XXX sync with gssapi.c */
 struct gss_data {
     gss_ctx_id_t context_hdl;
     char *client_name;
     gss_cred_id_t delegated_cred_handle;
+    void *mech_data;
 };
 
 int gss_userok(void*, char*); /* to keep gcc happy */
+int gss_session(void*, char*); /* to keep gcc happy */
 
 int
 gss_userok(void *app_data, char *username)
 {
     struct gss_data *data = app_data;
-    krb5_context context;
     krb5_error_code ret;
     krb5_principal client;
-    OM_uint32 minor_status;
+    struct gss_krb5_data *kdata;
 
-    ret = krb5_init_context(&context);
-    if (ret)
+    kdata = calloc(1, sizeof(struct gss_krb5_data));
+    if (kdata == NULL)
 	return 1;
+    data->mech_data = kdata;
 
-    ret = krb5_parse_name(context, data->client_name, &client);
-    if(ret) {
-	krb5_free_context(context);
+    ret = krb5_init_context(&(kdata->context));
+    if (ret) {
+	free(kdata);
 	return 1;
     }
-    ret = krb5_kuserok(context, client, username);
+
+    ret = krb5_parse_name(kdata->context, data->client_name, &client);
+    if(ret) {
+	krb5_free_context(kdata->context);
+	free(kdata);
+	return 1;
+    }
+    ret = krb5_kuserok(kdata->context, client, username);
     if (!ret) {
-	krb5_free_principal(context, client);
-	krb5_free_context(context);
+	krb5_free_principal(kdata->context, client);
+	krb5_free_context(kdata->context);
+	free(kdata);
 	return 1;
     }
         
     ret = 0;
+    krb5_free_principal(kdata->context, client);
+    return ret;
+}
+
+int
+gss_session(void *app_data, char *username)
+{
+    struct gss_data *data = app_data;
+    krb5_error_code ret;
+    OM_uint32 minor_status;
+    struct gss_krb5_data *kdata;
+
+    ret = 0;
+
+    kdata = (struct gss_krb5_data *)(data->mech_data);
         
     /* more of krb-depend stuff :-( */
     /* gss_add_cred() ? */
@@ -84,11 +113,11 @@ gss_userok(void *app_data, char *username)
 	const char* ticketfile;
 	struct passwd *kpw;
            
-	ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache);
+	ret = krb5_cc_gen_new(kdata->context, &krb5_fcc_ops, &ccache);
 	if (ret)
 	    goto fail;
 	   
-	ticketfile = krb5_cc_get_name(context, ccache);
+	ticketfile = krb5_cc_get_name(kdata->context, ccache);
         
 	ret = gss_krb5_copy_ccache(&minor_status,
 				   data->delegated_cred_handle,
@@ -116,11 +145,11 @@ gss_userok(void *app_data, char *username)
 	afslog(NULL, 1);
     fail:
 	if (ccache)
-	    krb5_cc_close(context, ccache); 
+	    krb5_cc_close(kdata->context, ccache); 
     }
            
     gss_release_cred(&minor_status, &data->delegated_cred_handle);
-    krb5_free_principal(context, client);
-    krb5_free_context(context);
+    krb5_free_context(kdata->context);
+    free(kdata);
     return ret;
 }
