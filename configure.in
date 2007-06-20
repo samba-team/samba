@@ -55,8 +55,6 @@ AC_PROG_LIBTOOL
 AM_CONDITIONAL(ENABLE_SHARED, test "$enable_shared" = "yes")
 rk_VERSIONSCRIPT
 
-rk_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
-
 rk_TEST_PACKAGE(openldap,
 [#include <lber.h>
 #include <ldap.h>],
@@ -431,6 +429,9 @@ CHECK_COMPILE_ET
 rk_AUTH_MODULES([sia afskauthlib])
 
 rk_DESTDIRS
+
+rk_WFLAGS([-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs])
+
 
 AH_BOTTOM([#ifdef ROKEN_RENAME
 #include "roken_rename.h"
