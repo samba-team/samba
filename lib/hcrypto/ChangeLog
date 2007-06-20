@@ -1,3 +1,12 @@
+2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rand-fortuna.c: Reseed the random generator now and then from
+	external sources.
+
+2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rand-egd.c: Avoid stoping unrelated memory.
+
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rand-fortuna.c: Use /etc/shadow, not /dev/shadow, pointed out by
