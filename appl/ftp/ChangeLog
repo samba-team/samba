@@ -1,5 +1,10 @@
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ftp/security.c: if no mech have no session, its ok, just don't
+	call it.
+
+	* ftp/security.h: provide prototype for sec_userok().
+
 	* move ksetpag after initgroups to make it work on Linux when its
 	without syscall hooks to change sys_setgroups preserve the
 	pag. From Alexsander Boström.
