@@ -4308,6 +4308,9 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			    && (parm_table[*i].ptr ==
 				parm_table[(*i) - 1].ptr))
 				continue;
+			
+			if (is_default(*i) && !allparameters)
+				continue;
 
 			return &parm_table[(*i)++];
 		}
