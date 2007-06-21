@@ -1707,24 +1707,21 @@ server_lookup:
 	    goto out;
     }
 
-    /* check PAC if there is one */
-    {
+    /* check PAC if not cross realm and if there is one */
+    if (!cross_realm) {
 	Key *tkey;
-	krb5_keyblock *tgtkey = NULL;
+	krb5_keyblock *tgtkey;
 
-	if (!cross_realm) {
-	    ret = hdb_enctype2key(context, &krbtgt->entry, 
-				  krbtgt_etype, &tkey);
-	    if(ret) {
-		kdc_log(context, config, 0,
-			"Failed to find key for krbtgt PAC check");
-		goto out;
-	    }
-	    tgtkey = &tkey->key;
+	ret = hdb_enctype2key(context, &krbtgt->entry, 
+			      krbtgt_etype, &tkey);
+	if(ret) {
+	    kdc_log(context, config, 0,
+		    "Failed to find key for krbtgt PAC check");
+	    goto out;
 	}
 
 	ret = check_PAC(context, config, client_principal, 
-			client, server, ekey, tgtkey,
+			client, server, ekey, &tkey->key,
 			tgt, &rspac, &require_signedpath);
 	if (ret) {
 	    kdc_log(context, config, 0,
