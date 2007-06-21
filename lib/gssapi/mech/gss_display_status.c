@@ -85,7 +85,7 @@ static const char *
 routine_error(OM_uint32 v)
 {
     static const char *msgs[] = {
-	NULL,			/* 0 */
+	"Function completed successfully",			/* 0 */
 	"An unsupported mechanism was requested",
 	"An invalid name was supplied",
 	"A supplied name was of an unsupported type",
@@ -109,9 +109,7 @@ routine_error(OM_uint32 v)
 
     v >>= GSS_C_ROUTINE_ERROR_OFFSET;
 
-    if (v == 0)
-	return "";
-    else if (v >= sizeof(msgs)/sizeof(*msgs))
+    if (v >= sizeof(msgs)/sizeof(*msgs))
 	return "unknown routine error";
     else
 	return msgs[v];
