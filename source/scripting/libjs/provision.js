@@ -611,7 +611,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify schema dn: + samdb.errstring() + "\n");
+			message("Failed to both add and modify schema dn:" + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 			assert(modify_ok);
 		}
@@ -744,7 +744,7 @@ function provision_schema(subobj, message, tmp_schema_path, paths)
 	var modify_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify schema dn: + samdb.errstring() + "\n");
+			message("Failed to both add and modify schema dn: " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 			assert(modify_ok);
 		}
@@ -882,16 +882,18 @@ function provision_guess()
 					"extended_dn",
 					"asq",
 					"samldb",
-					"password_hash",
 					"operational",
 					"objectclass",
 					"rdn_name",
 					"show_deleted",
 					"partition");
 	subobj.MODULES_LIST = join(",", modules_list);
-	subobj.DOMAINDN_MOD = "objectguid";
-	subobj.CONFIGDN_MOD = "objectguid";
-	subobj.SCHEMADN_MOD = "objectguid";
+	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash";
+	subobj.CONFIGDN_MOD = "naming_fsmo";
+	subobj.SCHEMADN_MOD = "schema_fsmo";
+	subobj.DOMAINDN_MOD2 = ",objectguid";
+	subobj.CONFIGDN_MOD2 = ",objectguid";
+	subobj.SCHEMADN_MOD2 = ",objectguid";
 
 	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
 	subobj.ACI		= "# no aci for local ldb";

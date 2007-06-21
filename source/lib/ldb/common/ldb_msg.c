@@ -666,7 +666,15 @@ const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *att
 {
 	const char **ret;
 	int i;
-	for (i=0;attrs[i];i++) /* noop */ ;
+	bool found = false;
+	for (i=0;attrs[i];i++) {
+		if (ldb_attr_cmp(attrs[i], new_attr) == 0) {
+			found = true;
+		}
+	}
+	if (found) {
+		return ldb_attr_list_copy(mem_ctx, attrs);
+	}
 	ret = talloc_array(mem_ctx, const char *, i+2);
 	if (ret == NULL) {
 		return NULL;
@@ -686,7 +694,7 @@ const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *att
 int ldb_attr_in_list(const char * const *attrs, const char *attr)
 {
 	int i;
-	for (i=0;attrs[i];i++) {
+	for (i=0;attrs && attrs[i];i++) {
 		if (ldb_attr_cmp(attrs[i], attr) == 0) {
 			return 1;
 		}

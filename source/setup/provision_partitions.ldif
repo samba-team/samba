@@ -5,9 +5,9 @@ partition: ${DOMAINDN}:${DOMAINDN_LDB}
 replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
-modules:${SCHEMADN}:${SCHEMADN_MOD}
-modules:${CONFIGDN}:${CONFIGDN_MOD}
-modules:${DOMAINDN}:${DOMAINDN_MOD}
+modules:${SCHEMADN}:${SCHEMADN_MOD}${SCHEMADN_MOD2}
+modules:${CONFIGDN}:${CONFIGDN_MOD}${CONFIGDN_MOD2}
+modules:${DOMAINDN}:${DOMAINDN_MOD}${DOMAINDN_MOD2}
 
 dn: @MODULES
 @LIST: ${MODULES_LIST}
