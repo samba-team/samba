@@ -1,3 +1,20 @@
+2007-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kgetcred.c: Set KRB5_GC_CONSTRAINED_DELEGATION and parse
+	nametypes.
+
+	* lib/krb5/krb5_principal.3: Document krb5_parse_nametype.
+
+	* lib/krb5/principal.c (krb5_parse_nametype): parse nametype and
+	return their integer values.
+
+	* lib/krb5/krb5.h (krb5_get_creds): Add
+	KRB5_GC_CONSTRAINED_DELEGATION.
+
+	* lib/krb5/get_cred.c (krb5_get_creds): if
+	KRB5_GC_CONSTRAINED_DELEGATION is set, set both request_anonymous
+	and constrained_delegation.
+
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/digest.c: Return an error message instead of dropping the
