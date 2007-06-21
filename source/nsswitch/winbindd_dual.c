@@ -248,9 +248,7 @@ static void async_reply_recv(void *private_data, BOOL success)
 		talloc_get_type_abort(private_data, struct winbindd_async_request);
 	struct winbindd_child *child = state->child;
 
-	if (state->reply_timeout_event) {
-		TALLOC_FREE(state->reply_timeout_event);
-	}
+	TALLOC_FREE(state->reply_timeout_event);
 
 	state->response->length = sizeof(struct winbindd_response);
 
@@ -736,9 +734,7 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 
 	DEBUG(10,("account_lockout_policy_handler called\n"));
 
-	if (child->lockout_policy_event) {
-		TALLOC_FREE(child->lockout_policy_event);
-	}
+	TALLOC_FREE(child->lockout_policy_event);
 
 	if ( !winbindd_can_contact_domain( child->domain ) ) {
 		DEBUG(10,("account_lockout_policy_handler: Removing myself since I "
@@ -1016,9 +1012,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		if (domain != child->domain) {
-			if (domain->check_online_event) {
-				TALLOC_FREE(domain->check_online_event);
-			}
+			TALLOC_FREE(domain->check_online_event);
 		}
 	}
 
