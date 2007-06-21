@@ -3921,14 +3921,6 @@ static int do_message_op(void)
 		/* if the service has not yet been specified lets see if it is available in the popt stack */
 		if (!service_opt && poptPeekArg(pc)) {
 			pstrcpy(service, poptGetArg(pc));
-			/* Convert any '/' characters in the service name to '\' characters */
-			string_replace(service, '/','\\');
-
-			if (count_chars(service,'\\') < 3) {
-				d_printf("\n%s: Not enough '\\' characters in service\n",service);
-				poptPrintUsage(pc, stderr, 0);
-				exit(1);
-			}
 			service_opt = True;
 		}
 
@@ -4016,14 +4008,6 @@ static int do_message_op(void)
 	/* if the service has not yet been specified lets see if it is available in the popt stack */
 	if (!service_opt && poptPeekArg(pc)) {
 		pstrcpy(service, poptGetArg(pc));
-		/* Convert any '/' characters in the service name to '\' characters */
-		string_replace(service, '/','\\');
-
-		if (count_chars(service,'\\') < 3) {
-			d_printf("\n%s: Not enough '\\' characters in service\n",service);
-			poptPrintUsage(pc, stderr, 0);
-			exit(1);
-		}
 		service_opt = True;
 	}
 
@@ -4062,6 +4046,16 @@ static int do_message_op(void)
 	}
 	
 	load_interfaces();
+
+	if (service_opt) {
+		/* Convert any '/' characters in the service name to '\' characters */
+		string_replace(service, '/','\\');
+		if (count_chars(service,'\\') < 3) {
+			d_printf("\n%s: Not enough '\\' characters in service\n",service);
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
+		}
+	}
 	
 	if ( strlen(new_workgroup) != 0 )
 		set_global_myworkgroup( new_workgroup );
