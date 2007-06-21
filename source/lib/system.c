@@ -1006,14 +1006,12 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 	 * and insert it at the front.
 	 */
 	if (gidset[0] != primary_gid) {
-	        gid_t *new_gidset;
-
 	        new_gidset = SMB_MALLOC_ARRAY(gid_t, setlen + 1);
 	        if (new_gidset == NULL) {
 			return -1;
 	        }
 
-		memcpy(new_gidset + 1, gidset, ((setlen + 1) * sizeof(gid_t)));
+		memcpy(new_gidset + 1, gidset, (setlen * sizeof(gid_t)));
 		new_gidset[0] = primary_gid;
 		setlen++;
 	}
