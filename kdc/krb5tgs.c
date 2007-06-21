@@ -475,12 +475,14 @@ check_tgs_flags(krb5_context context,
 	    et->endtime = min(*et->renew_till, et->endtime);
     }	    
     
+#if 0
     /* checks for excess flags */
     if(f.request_anonymous && !config->allow_anonymous){
 	kdc_log(context, config, 0,
 		"Request for anonymous ticket");
 	return KRB5KDC_ERR_BADOPTION;
     }
+#endif
     return 0;
 }
 
@@ -731,10 +733,12 @@ tgs_make_reply(krb5_context context,
 	       &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname, server->entry.principal);
     copy_Realm(&tgt_name->realm, &rep.crealm);
+/*
     if (f.request_anonymous)
 	_kdc_make_anonymous_principalname (&rep.cname);
-    else
-	copy_PrincipalName(&tgt_name->name, &rep.cname);
+    else */
+
+    copy_PrincipalName(&tgt_name->name, &rep.cname);
     rep.ticket.tkt_vno = 5;
 
     ek.caddr = et.caddr;
