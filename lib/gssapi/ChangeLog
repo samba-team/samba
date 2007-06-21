@@ -1,5 +1,7 @@
 2007-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/inquire_cred.c: Implement _gss_ntlm_inquire_cred.
+
 	* mech/gss_display_status.c: Provide message for GSS_S_COMPLETE.
 	
 	* mech/context.c: If the canned string is "", its no use to the
