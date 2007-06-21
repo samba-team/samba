@@ -361,6 +361,7 @@ typedef union {
 #define KRB5_GC_NO_STORE		(1U << 3)
 #define KRB5_GC_FORWARDABLE		(1U << 4)
 #define KRB5_GC_NO_TRANSIT_CHECK	(1U << 5)
+#define KRB5_GC_CONSTRAINED_DELEGATION	(1U << 6)
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
