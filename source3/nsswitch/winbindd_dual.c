@@ -131,7 +131,6 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 	state->response = response;
 	state->continuation = continuation;
 	state->private_data = private_data;
-	state->child_pid = child->pid;
 
 	DLIST_ADD_END(child->requests, state, struct winbindd_async_request *);
 
@@ -305,6 +304,9 @@ static void schedule_async_request(struct winbindd_child *child)
 		}
 		return;
 	}
+
+	/* Now we know who we're sending to - remember the pid. */
+	request->child_pid = child->pid;
 
 	setup_async_write(&child->event, request->request,
 			  sizeof(*request->request),
