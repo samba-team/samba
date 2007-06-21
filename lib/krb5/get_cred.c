@@ -1191,6 +1191,10 @@ krb5_get_creds(krb5_context context,
 	flags.b.forwardable = 1;
     if (options & KRB5_GC_NO_TRANSIT_CHECK)
 	flags.b.disable_transited_check = 1;
+    if (options & KRB5_GC_CONSTRAINED_DELEGATION) {
+	flags.b.request_anonymous = 1; /* XXX ARGH confusion */
+	flags.b.constrained_delegation = 1;
+    }
 
     tgts = NULL;
     ret = get_cred_from_kdc_flags(context, flags, ccache, 
