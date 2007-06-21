@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,9 +41,10 @@ static char *delegation_cred_str;
 static char *etype_str;
 static int transit_flag = 1;
 static int forwardable_flag;
+static char *impersonate_str;
+static char *nametype_str;
 static int version_flag;
 static int help_flag;
-static char *impersonate_str;
 
 struct getargs args[] = {
     { "cache",		'c', arg_string, &cache_str,
@@ -59,6 +60,7 @@ struct getargs args[] = {
       "encryption type to use", "enctype"},
     { "impersonate",	0,   arg_string, &impersonate_str,
       "client to impersonate", "principal"},
+    { "name-type",		0,   arg_flag, &nametype_str },
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -179,11 +181,21 @@ main(int argc, char **argv)
 
 	krb5_cc_close (context, id);
 	krb5_free_principal(context, mc.server);
+
+	krb5_get_creds_opt_add_options(context, opt, 
+				       KRB5_GC_CONSTRAINED_DELEGATION);
     }
 
     ret = krb5_parse_name(context, argv[0], &server);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_parse_name %s", argv[0]);
+
+    if (nametype_str) {
+	ret = krb5_parse_nametype(context, nametype_str,
+				  &server->name.name_type);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_parse_nametype");
+    }
 
     ret = krb5_get_creds(context, opt, cache, server, &out);
     if (ret)
