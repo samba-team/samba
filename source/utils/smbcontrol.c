@@ -982,6 +982,22 @@ static BOOL do_winbind_onlinestatus(struct messaging_context *msg_ctx,
 	return num_replies;
 }
 
+static BOOL do_dump_event_list(struct messaging_context *msg_ctx,
+			       const struct server_id pid,
+			       const int argc, const char **argv)
+{
+	struct server_id myid;
+
+	myid = pid_to_procid(sys_getpid());
+
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> dump-event-list\n");
+		return False;
+	}
+
+	return send_message(msg_ctx, pid, MSG_DUMP_EVENT_LIST, NULL, 0);
+}
+
 
 static BOOL do_reload_config(struct messaging_context *msg_ctx,
 			     const struct server_id pid,
@@ -1079,6 +1095,7 @@ static const struct {
 	{ "online", do_winbind_online, "Ask winbind to go into online state"},
 	{ "offline", do_winbind_offline, "Ask winbind to go into offline state"},
 	{ "onlinestatus", do_winbind_onlinestatus, "Request winbind online status"},
+	{ "dump-event-list", do_dump_event_list, "Dump event list"},
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };
