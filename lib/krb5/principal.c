@@ -1218,3 +1218,37 @@ krb5_sname_to_principal (krb5_context context,
     krb5_free_host_realm(context, realms);
     return ret;
 }
+
+struct {
+    const char *type;
+    int32_t value;
+} nametypes[] = {
+    { "UNKNOWN", KRB5_NT_UNKNOWN },
+    { "PRINCIPAL", KRB5_NT_PRINCIPAL },
+    { "SRV_INST", KRB5_NT_SRV_INST },
+    { "SRV_HST", KRB5_NT_SRV_HST },
+    { "SRV_XHST", KRB5_NT_SRV_XHST },
+    { "UID", KRB5_NT_UID },
+    { "X500_PRINCIPAL", KRB5_NT_X500_PRINCIPAL },
+    { "SMTP_NAME", KRB5_NT_SMTP_NAME },
+    { "ENTERPRISE_PRINCIPAL", KRB5_NT_ENTERPRISE_PRINCIPAL },
+    { "ENT_PRINCIPAL_AND_ID", KRB5_NT_ENT_PRINCIPAL_AND_ID },
+    { "MS_PRINCIPAL", KRB5_NT_MS_PRINCIPAL },
+    { "MS_PRINCIPAL_AND_ID", KRB5_NT_MS_PRINCIPAL_AND_ID },
+    { NULL }
+};
+
+krb5_error_code
+krb5_parse_nametype(krb5_context context, const char *str, int32_t *nametype)
+{
+    size_t i;
+    
+    for(i = 0; nametypes[i].type; i++) {
+	if (strcasecmp(nametypes[i].type, str) == 0) {
+	    *nametype = nametypes[i].value;
+	    return 0;
+	}
+    }
+    krb5_set_error_string(context, "Failed to find name type %s", str);
+    return KRB5_PARSE_MALFORMED;
+}
