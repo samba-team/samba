@@ -758,7 +758,7 @@ static bool test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (created && deleted && 
 	    test_OpenKey(p, mem_ctx, &handle, TEST_KEY1, &newhandle)) {
-		printf("DeleteKey failed (OpenKey after Delete didn't work)\n");
+		printf("DeleteKey failed (OpenKey after Delete worked)\n");
 		ret = false;
 	}
 
