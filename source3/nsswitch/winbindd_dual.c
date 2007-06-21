@@ -97,6 +97,8 @@ struct winbindd_async_request {
 	struct winbindd_response *response;
 	void (*continuation)(void *private_data, BOOL success);
 	struct timed_event *reply_timeout_event;
+	pid_t child_pid; /* pid of the child we're waiting on. Used to detect
+			    a restart of the child (child->pid != child_pid). */
 	void *private_data;
 };
 
@@ -129,6 +131,7 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 	state->response = response;
 	state->continuation = continuation;
 	state->private_data = private_data;
+	state->child_pid = child->pid;
 
 	DLIST_ADD_END(child->requests, state, struct winbindd_async_request *);
 
@@ -174,36 +177,53 @@ static void async_request_timeout_handler(struct event_context *ctx,
 	struct winbindd_async_request *state =
 		talloc_get_type_abort(private_data, struct winbindd_async_request);
 
-	/* Deal with the reply - set to error. */
-
-	async_reply_recv(private_data, False);
-
 	DEBUG(0,("async_request_timeout_handler: child pid %u is not responding. "
 		"Closing connection to it.\n",
-		state->child->pid ));
+		state->child_pid ));
 
-	/* Send kill signal to child. */
-	kill(state->child->pid, SIGTERM);
+	/* Deal with the reply - set to error. */
+	async_reply_recv(private_data, False);
+}
 
-	/* 
-	 * Close the socket to the child.
-	 */
+/**************************************************************
+ Common function called on both async send and recv fail.
+ Cleans up the child and schedules the next request.
+**************************************************************/
 
-	winbind_child_died(state->child->pid);
+static void async_request_fail(struct winbindd_async_request *state)
+{
+	DLIST_REMOVE(state->child->requests, state);
+
+	if (state->reply_timeout_event) {
+		TALLOC_FREE(state->reply_timeout_event);
+	}
+
+	SMB_ASSERT(state->child_pid != (pid_t)0);
+
+	/* If not already reaped, send kill signal to child. */
+	if (state->child->pid == state->child_pid) {
+		kill(state->child_pid, SIGTERM);
+
+		/* 
+		 * Close the socket to the child.
+		 */
+		winbind_child_died(state->child_pid);
+	}
+
+	state->response->length = sizeof(struct winbindd_response);
+	state->response->result = WINBINDD_ERROR;
+	state->continuation(state->private_data, False);
 }
 
 static void async_request_sent(void *private_data_data, BOOL success)
 {
-	uint32_t timeout = 30;
 	struct winbindd_async_request *state =
 		talloc_get_type_abort(private_data_data, struct winbindd_async_request);
 
 	if (!success) {
-		DEBUG(5, ("Could not send async request\n"));
-
-		state->response->length = sizeof(struct winbindd_response);
-		state->response->result = WINBINDD_ERROR;
-		state->continuation(state->private_data, False);
+		DEBUG(5, ("Could not send async request to child pid %u\n",
+			(unsigned int)state->child_pid ));
+		async_request_fail(state);
 		return;
 	}
 
@@ -215,25 +235,14 @@ static void async_request_sent(void *private_data_data, BOOL success)
 			 async_reply_recv, state);
 
 	/* 
-	 * Normal timeouts are 30s, but auth requests may take a long
-	 * time to timeout.
-	 */
-
-	if (state->request->cmd == WINBINDD_PAM_AUTH ||
-			state->request->cmd == WINBINDD_PAM_AUTH_CRAP ) {
-
-		timeout = 300;
-	}
-
-	/* 
-	 * Set up a timeout of 30 seconds for the response.
+	 * Set up a timeout of 300 seconds for the response.
 	 * If we don't get it close the child socket and
 	 * report failure.
 	 */
 
 	state->reply_timeout_event = event_add_timed(winbind_event_context(),
 							NULL,
-							timeval_current_ofs(timeout,0),
+							timeval_current_ofs(300,0),
 							"async_request_timeout",
 							async_request_timeout_handler,
 							state);
@@ -253,20 +262,18 @@ static void async_reply_recv(void *private_data, BOOL success)
 	state->response->length = sizeof(struct winbindd_response);
 
 	if (!success) {
-		DEBUG(5, ("Could not receive async reply\n"));
+		DEBUG(5, ("Could not receive async reply from child pid %u\n",
+			(unsigned int)state->child_pid ));
 
-		cache_cleanup_response(child->pid);
-		DLIST_REMOVE(child->requests, state);
-
-		state->response->result = WINBINDD_ERROR;
-		state->continuation(state->private_data, False);
+		cache_cleanup_response(state->child_pid);
+		async_request_fail(state);
 		return;
 	}
 
-	SMB_ASSERT(cache_retrieve_response(child->pid,
+	SMB_ASSERT(cache_retrieve_response(state->child_pid,
 					   state->response));
 
-	cache_cleanup_response(child->pid);
+	cache_cleanup_response(state->child_pid);
 	
 	DLIST_REMOVE(child->requests, state);
 
@@ -515,7 +522,7 @@ void winbind_child_died(pid_t pid)
 	}
 
 	if (child == NULL) {
-		DEBUG(0, ("Unknown child %d died!\n", pid));
+		DEBUG(5, ("Already reaped child %u died\n", (unsigned int)pid));
 		return;
 	}
 
