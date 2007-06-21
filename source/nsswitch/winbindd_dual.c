@@ -194,9 +194,7 @@ static void async_request_fail(struct winbindd_async_request *state)
 {
 	DLIST_REMOVE(state->child->requests, state);
 
-	if (state->reply_timeout_event) {
-		TALLOC_FREE(state->reply_timeout_event);
-	}
+	TALLOC_FREE(state->reply_timeout_event);
 
 	SMB_ASSERT(state->child_pid != (pid_t)0);
 
