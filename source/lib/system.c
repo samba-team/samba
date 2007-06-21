@@ -1022,7 +1022,7 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 		setlen = max;
 	}
 
-#if defined(BROKEN_GETGROUPS)
+#if defined(HAVE_BROKEN_GETGROUPS)
 	ret = sys_broken_setgroups(setlen, new_gidset ? new_gidset : gidset);
 #else
 	ret = setgroups(setlen, new_gidset ? new_gidset : gidset);
@@ -1063,10 +1063,10 @@ int sys_setgroups(gid_t UNUSED(primary_gid), int setlen, gid_t *gidset)
 	return -1;
 #endif /* HAVE_SETGROUPS */
 
-#if defined(HAVE_BROKEN_GETGROUPS)
-	return sys_broken_setgroups(setlen, gidset);
-#elif defined(USE_BSD_SETGROUPS)
+#if defined(USE_BSD_SETGROUPS)
 	return sys_bsd_setgroups(primary_gid, setlen, gidset);
+#elif defined(HAVE_BROKEN_GETGROUPS)
+	return sys_broken_setgroups(setlen, gidset);
 #else
 	return setgroups(setlen, gidset);
 #endif
