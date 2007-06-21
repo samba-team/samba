@@ -1714,7 +1714,6 @@ server_lookup:
     /* check PAC if not cross realm and if there is one */
     if (!cross_realm) {
 	Key *tkey;
-	krb5_keyblock *tgtkey;
 
 	ret = hdb_enctype2key(context, &krbtgt->entry, 
 			      krbtgt_etype, &tkey);
