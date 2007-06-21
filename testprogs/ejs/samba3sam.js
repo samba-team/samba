@@ -270,7 +270,7 @@ objectClass: user
 cn: X
 codePage: x
 revision: x
-objectCategory: x
+dnsHostName: x
 nextRid: y
 lastLogon: x
 description: x
@@ -282,7 +282,7 @@ objectClass: top
 cn: Y
 codePage: x
 revision: x
-objectCategory: y
+dnsHostName: y
 nextRid: y
 lastLogon: y
 description: x
@@ -292,7 +292,7 @@ objectClass: top
 cn: Z
 codePage: x
 revision: y
-objectCategory: z
+dnsHostName: z
 nextRid: y
 lastLogon: z
 description: y
@@ -342,86 +342,86 @@ description: y
 
 	/* Search remote record by local DN */
 	dn = s4.dn("cn=A");
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 1);
 	assert(res.msgs[0].dn == dn);
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "x");
 
 	/* Search remote record by remote DN */
 	dn = s3.dn("cn=A");
-	attrs = new Array("objectCategory", "lastLogon", "sambaLogonTime");
+	attrs = new Array("dnsHostName", "lastLogon", "sambaLogonTime");
 	res = s3.db.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 1);
 	assert(res.msgs[0].dn == dn);
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == undefined);
 	assert(res.msgs[0].sambaLogonTime == "x");
 
 	/* Search split record by local DN */
 	dn = s4.dn("cn=X");
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 1);
 	assert(res.msgs[0].dn == dn);
-	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].dnsHostName == "x");
 	assert(res.msgs[0].lastLogon == "x");
 
 	/* Search split record by remote DN */
 	dn = s3.dn("cn=X");
-	attrs = new Array("objectCategory", "lastLogon", "sambaLogonTime");
+	attrs = new Array("dnsHostName", "lastLogon", "sambaLogonTime");
 	res = s3.db.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 1);
 	assert(res.msgs[0].dn == dn);
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == undefined);
 	assert(res.msgs[0].sambaLogonTime == "x");
 
 	println("Testing search by attribute");
 
 	/* Search by ignored attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(revision=x)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
-	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=X"));
-	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by kept attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(description=y)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=Z"));
-	assert(res.msgs[0].objectCategory == "z");
+	assert(res.msgs[0].dnsHostName == "z");
 	assert(res.msgs[0].lastLogon == "z");
 	assert(res.msgs[1].dn == s4.dn("cn=C"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "z");
 
 	/* Search by renamed attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(badPwdCount=x)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by converted attribute */
-	attrs = new Array("objectCategory", "lastLogon", "objectSid");
+	attrs = new Array("dnsHostName", "lastLogon", "objectSid");
 	/* TODO:
 	   Using the SID directly in the parse tree leads to conversion
 	   errors, letting the search fail with no results.
@@ -431,23 +431,23 @@ description: y
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=X"));
-	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].dnsHostName == "x");
 	assert(res.msgs[0].lastLogon == "x");
 	assert(res.msgs[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[1].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
 
 	/* Search by generated attribute */
 	/* In most cases, this even works when the mapping is missing
 	 * a `convert_operator' by enumerating the remote db. */
-	attrs = new Array("objectCategory", "lastLogon", "primaryGroupID");
+	attrs = new Array("dnsHostName", "lastLogon", "primaryGroupID");
 	res = ldb.search("(primaryGroupID=512)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 1);
 	assert(res.msgs[0].dn == s4.dn("cn=A"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "x");
 	assert(res.msgs[0].primaryGroupID == "512");
 
@@ -468,23 +468,23 @@ description: y
 	*/
 
 	/* Search by remote name of renamed attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(sambaBadPasswordCount=*)", "", ldb. SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 0);
 
 	/* Search by objectClass */
-	attrs = new Array("objectCategory", "lastLogon", "objectClass");
+	attrs = new Array("dnsHostName", "lastLogon", "objectClass");
 	res = ldb.search("(objectClass=user)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=X"));
-	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].dnsHostName == "x");
 	assert(res.msgs[0].lastLogon == "x");
 	assert(res.msgs[0].objectClass != undefined);
 	assert(res.msgs[0].objectClass[3] == "user");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[1].objectClass != undefined);
 	assert(res.msgs[1].objectClass[0] == "user");
@@ -494,19 +494,19 @@ description: y
 	assert(res.error == 0);
 	assert(res.msgs.length == 3);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[0].objectClass != undefined);
 	for (i=0;i<res.msgs[0].objectClass.length;i++) {
 		assert(res.msgs[0].objectClass[i] != "user");
 	}
 	assert(res.msgs[1].dn == s4.dn("cn=X"));
-	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[1].objectClass != undefined);
 	assert(res.msgs[1].objectClass[3] == "user");
 	assert(res.msgs[2].dn == s4.dn("cn=A"));
-	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].dnsHostName == undefined);
 	assert(res.msgs[2].lastLogon == "x");
 	assert(res.msgs[2].objectClass != undefined);
 	assert(res.msgs[2].objectClass[0] == "user");
@@ -514,43 +514,43 @@ description: y
 	println("Testing search by parse tree");
 
 	/* Search by conjunction of local attributes */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(&(codePage=x)(revision=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
-	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=X"));
-	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by conjunction of remote attributes */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(&(lastLogon=x)(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=X"));
-	assert(res.msgs[0].objectCategory == "x");
+	assert(res.msgs[0].dnsHostName == "x");
 	assert(res.msgs[0].lastLogon == "x");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 	
 	/* Search by conjunction of local and remote attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(&(codePage=x)(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
-	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=X"));
-	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by conjunction of local and remote attribute w/o match */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(&(codePage=x)(nextRid=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 0);
@@ -559,203 +559,203 @@ description: y
 	assert(res.msgs.length == 0);
 
 	/* Search by disjunction of local attributes */
-	attrs = new Array("objectCategory", "lastLogon");
-	res = ldb.search("(|(revision=x)(objectCategory=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
+	attrs = new Array("dnsHostName", "lastLogon");
+	res = ldb.search("(|(revision=x)(dnsHostName=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
-	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=X"));
-	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 
 	/* Search by disjunction of remote attributes */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(|(badPwdCount=x)(lastLogon=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 3);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=X"));
-	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[2].dn == s4.dn("cn=A"));
-	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].dnsHostName == undefined);
 	assert(res.msgs[2].lastLogon == "x");
 
 	/* Search by disjunction of local and remote attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(|(revision=x)(lastLogon=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 3);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
-	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=B"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "y");
 	assert(res.msgs[2].dn == s4.dn("cn=X"));
-	assert(res.msgs[2].objectCategory == "x");
+	assert(res.msgs[2].dnsHostName == "x");
 	assert(res.msgs[2].lastLogon == "x");
 
 	/* Search by disjunction of local and remote attribute w/o match */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(|(codePage=y)(nextRid=z))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 0);
 
 	/* Search by negated local attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(revision=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 4);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[2].dn == s4.dn("cn=Z"));
-	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].dnsHostName == "z");
 	assert(res.msgs[2].lastLogon == "z");
 	assert(res.msgs[3].dn == s4.dn("cn=C"));
-	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].dnsHostName == undefined);
 	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated remote attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 2);
 	assert(res.msgs[0].dn == s4.dn("cn=Z"));
-	assert(res.msgs[0].objectCategory == "z");
+	assert(res.msgs[0].dnsHostName == "z");
 	assert(res.msgs[0].lastLogon == "z");
 	assert(res.msgs[1].dn == s4.dn("cn=C"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "z");
 
 	/* Search by negated conjunction of local attributes */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(&(codePage=x)(revision=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 4);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[2].dn == s4.dn("cn=Z"));
-	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].dnsHostName == "z");
 	assert(res.msgs[2].lastLogon == "z");
 	assert(res.msgs[3].dn == s4.dn("cn=C"));
-	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].dnsHostName == undefined);
 	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated conjunction of remote attributes */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(&(lastLogon=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 4);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
-	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=B"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "y");
 	assert(res.msgs[2].dn == s4.dn("cn=Z"));
-	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].dnsHostName == "z");
 	assert(res.msgs[2].lastLogon == "z");
 	assert(res.msgs[3].dn == s4.dn("cn=C"));
-	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].dnsHostName == undefined);
 	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated conjunction of local and remote attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(&(codePage=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 4);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[2].dn == s4.dn("cn=Z"));
-	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].dnsHostName == "z");
 	assert(res.msgs[2].lastLogon == "z");
 	assert(res.msgs[3].dn == s4.dn("cn=C"));
-	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].dnsHostName == undefined);
 	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated disjunction of local attributes */
-	attrs = new Array("objectCategory", "lastLogon");
-	res = ldb.search("(!(|(revision=x)(objectCategory=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
+	attrs = new Array("dnsHostName", "lastLogon");
+	res = ldb.search("(!(|(revision=x)(dnsHostName=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
-	assert(res.msgs[1].objectCategory == undefined);
+	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[2].dn == s4.dn("cn=Z"));
-	assert(res.msgs[2].objectCategory == "z");
+	assert(res.msgs[2].dnsHostName == "z");
 	assert(res.msgs[2].lastLogon == "z");
 	assert(res.msgs[3].dn == s4.dn("cn=C"));
-	assert(res.msgs[3].objectCategory == undefined);
+	assert(res.msgs[3].dnsHostName == undefined);
 	assert(res.msgs[3].lastLogon == "z");
 
 	/* Search by negated disjunction of remote attributes */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(|(badPwdCount=x)(lastLogon=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 3);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
-	assert(res.msgs[0].objectCategory == "y");
+	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=Z"));
-	assert(res.msgs[1].objectCategory == "z");
+	assert(res.msgs[1].dnsHostName == "z");
 	assert(res.msgs[1].lastLogon == "z");
 	assert(res.msgs[2].dn == s4.dn("cn=C"));
-	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].dnsHostName == undefined);
 	assert(res.msgs[2].lastLogon == "z");
 
 	/* Search by negated disjunction of local and remote attribute */
-	attrs = new Array("objectCategory", "lastLogon");
+	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(|(revision=x)(lastLogon=y)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 3);
 	assert(res.msgs[0].dn == s4.dn("cn=A"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "x");
 	assert(res.msgs[1].dn == s4.dn("cn=Z"));
-	assert(res.msgs[1].objectCategory == "z");
+	assert(res.msgs[1].dnsHostName == "z");
 	assert(res.msgs[1].lastLogon == "z");
 	assert(res.msgs[2].dn == s4.dn("cn=C"));
-	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].dnsHostName == undefined);
 	assert(res.msgs[2].lastLogon == "z");
 
 	/* Search by complex parse tree */
-	attrs = new Array("objectCategory", "lastLogon");
-	res = ldb.search("(|(&(revision=x)(objectCategory=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
+	attrs = new Array("dnsHostName", "lastLogon");
+	res = ldb.search("(|(&(revision=x)(dnsHostName=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 5);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
-	assert(res.msgs[0].objectCategory == undefined);
+	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
 	assert(res.msgs[1].dn == s4.dn("cn=X"));
-	assert(res.msgs[1].objectCategory == "x");
+	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[2].dn == s4.dn("cn=A"));
-	assert(res.msgs[2].objectCategory == undefined);
+	assert(res.msgs[2].dnsHostName == undefined);
 	assert(res.msgs[2].lastLogon == "x");
 	assert(res.msgs[3].dn == s4.dn("cn=Z"));
-	assert(res.msgs[3].objectCategory == "z");
+	assert(res.msgs[3].dnsHostName == "z");
 	assert(res.msgs[3].lastLogon == "z");
 	assert(res.msgs[4].dn == s4.dn("cn=C"));
-	assert(res.msgs[4].objectCategory == undefined);
+	assert(res.msgs[4].dnsHostName == undefined);
 	assert(res.msgs[4].lastLogon == "z");
 
 	/* Clean up */

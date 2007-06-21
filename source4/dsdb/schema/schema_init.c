@@ -323,6 +323,34 @@ WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CT
 	talloc_steal(mem_ctx, (p)->elem); \
 } while (0)
 
+#define GET_STRING_LIST_LDB(msg, attr, mem_ctx, p, elem, strict) do {	\
+	int get_string_list_counter;					\
+	struct ldb_message_element *get_string_list_el = ldb_msg_find_element(msg, attr); \
+	if (get_string_list_el == NULL) {				\
+		if (strict) {						\
+			d_printf("%s: %s == NULL\n", __location__, attr); \
+			return WERR_INVALID_PARAM;			\
+		} else {						\
+			(p)->elem = NULL;				\
+			break;						\
+		}							\
+	}								\
+	(p)->elem = talloc_array(mem_ctx, const char *, get_string_list_el->num_values + 1); \
+        for (get_string_list_counter=0;					\
+	     get_string_list_counter < get_string_list_el->num_values;	\
+	     get_string_list_counter++) {				\
+		(p)->elem[get_string_list_counter] = talloc_strndup((p)->elem, \
+								    (const char *)get_string_list_el->values[get_string_list_counter].data, \
+								    get_string_list_el->values[get_string_list_counter].length); \
+		if (!(p)->elem[get_string_list_counter]) {		\
+			d_printf("%s: talloc_strndup failed for %s\n", __location__, attr); \
+			return WERR_NOMEM;				\
+		}							\
+		(p)->elem[get_string_list_counter+1] = NULL;		\
+	}								\
+	talloc_steal(mem_ctx, (p)->elem);				\
+} while (0)
+
 #define GET_BOOL_LDB(msg, attr, p, elem, strict) do { \
 	const char *str; \
 	str = samdb_result_string(msg, attr, NULL);\
@@ -466,13 +494,14 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 
 	obj->systemAuxiliaryClass	= NULL;
 	obj->systemPossSuperiors	= NULL;
-	obj->systemMustContain		= NULL;
-	obj->systemMayContain		= NULL;
 
 	obj->auxiliaryClass		= NULL;
 	obj->possSuperiors		= NULL;
-	obj->mustContain		= NULL;
-	obj->mayContain			= NULL;
+
+	GET_STRING_LIST_LDB(msg, "systemMustContain", mem_ctx, obj, systemMustContain, False);
+	GET_STRING_LIST_LDB(msg, "systemMayContain", mem_ctx, obj, systemMayContain, False);
+	GET_STRING_LIST_LDB(msg, "mustContain", mem_ctx, obj, mustContain, False);
+	GET_STRING_LIST_LDB(msg, "mayContain", mem_ctx, obj, mayContain, False);
 
 	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
 
@@ -930,6 +959,23 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema 
 	return NULL;
 }
 
+const struct dsdb_class *dsdb_class_by_cn(const struct dsdb_schema *schema,
+					  const char *cn)
+{
+	struct dsdb_class *cur;
+
+	if (!cn) return NULL;
+
+	/* TODO: add binary search */
+	for (cur = schema->classes; cur; cur = cur->next) {
+		if (strcasecmp(cur->cn, cn) != 0) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
+
 const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
 				       uint32_t id)
 {
@@ -964,6 +1010,22 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	return LDB_SUCCESS;
 }
 
+static struct dsdb_schema *global_schema;
+
+int dsdb_set_global_schema(struct ldb_context *ldb)
+{
+	int ret;
+	if (!global_schema) {
+	  return LDB_SUCCESS;
+	}
+	ret = ldb_set_opaque(ldb, "dsdb_schema", global_schema);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
 const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 {
 	const void *p;
@@ -981,6 +1043,26 @@ const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 	}
 
 	return schema;
+}
+
+void dsdb_make_schema_global(struct ldb_context *ldb)
+{
+	const void *p;
+	const struct dsdb_schema *schema;
+
+	/* see if we have a cached copy */
+	p = ldb_get_opaque(ldb, "dsdb_schema");
+	if (!p) {
+		return;
+	}
+
+	schema = talloc_get_type(p, struct dsdb_schema);
+	if (!schema) {
+		return;
+	}
+
+	talloc_steal(NULL, schema);
+	global_schema = schema;
 }
 
 WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df)

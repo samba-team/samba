@@ -37,6 +37,7 @@
 #include "ldb/include/ldb_private.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
+#include "dsdb/samdb/samdb.h"
 
 /* Kludge ACL rules:
  *
@@ -105,13 +106,74 @@ struct kludge_acl_context {
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	enum user_is user_type;
+	bool allowedAttributes;
+	bool allowedAttributesEffective;
+	const char **attrs;
 };
+
+/* read all objectClasses */
+
+static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_message *msg,
+							 const char *attrName) 
+{
+	struct ldb_message_element *oc_el = ldb_msg_find_element(msg, "objectClass");
+	struct ldb_message_element *allowedAttributes;
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	const struct dsdb_class *class;
+	int i, j, ret;
+	ret = ldb_msg_add_empty(msg, attrName, 0, &allowedAttributes);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
+	for (i=0; i < oc_el->num_values; i++) {
+		class = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
+		if (!class) {
+			/* We don't know this class?  what is going on? */
+			continue;
+		}
+		for (j=0; class->mayContain && class->mayContain[j]; j++) {
+			ldb_msg_add_string(msg, attrName, class->mayContain[j]);
+		}
+		for (j=0; class->mustContain && class->mustContain[j]; j++) {
+			ldb_msg_add_string(msg, attrName, class->mustContain[j]);
+		}
+		for (j=0; class->systemMayContain && class->systemMayContain[j]; j++) {
+			ldb_msg_add_string(msg, attrName, class->systemMayContain[j]);
+		}
+		for (j=0; class->systemMustContain && class->systemMustContain[j]; j++) {
+			ldb_msg_add_string(msg, attrName, class->systemMustContain[j]);
+		}
+	}
+		
+	if (allowedAttributes->num_values > 1) {
+		qsort(allowedAttributes->values, 
+		      allowedAttributes->num_values, 
+		      sizeof(*allowedAttributes->values),
+		      data_blob_cmp);
+	
+		for (i=1 ; i < allowedAttributes->num_values; i++) {
+			struct ldb_val *val1 = &allowedAttributes->values[i-1];
+			struct ldb_val *val2 = &allowedAttributes->values[i];
+			if (data_blob_cmp(val1, val2) == 0) {
+				memmove(val1, val2, (allowedAttributes->num_values - i) * sizeof( struct ldb_val)); 
+				allowedAttributes->num_values--;
+				i--;
+			}
+		}
+	}
+
+	return 0;
+
+}
+
+/* find all attributes allowed by all these objectClasses */
 
 static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct kludge_acl_context *ac;
 	struct kludge_private_data *data;
-	int i;
+	int i, ret;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, "NULL Context or Result in callback");
@@ -121,12 +183,28 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	ac = talloc_get_type(context, struct kludge_acl_context);
 	data = talloc_get_type(ac->module->private_data, struct kludge_private_data);
 
-	if (ares->type == LDB_REPLY_ENTRY
-	    && data && data->password_attrs) /* if we are not initialized just get through */
+	if (ares->type != LDB_REPLY_ENTRY) {
+		return ac->up_callback(ldb, ac->up_context, ares);
+	}
+
+	if (ac->allowedAttributes) {
+		ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributes");
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	if (data && data->password_attrs) /* if we are not initialized just get through */
 	{
 		switch (ac->user_type) {
 		case SYSTEM:
 		case ADMINISTRATOR:
+			if (ac->allowedAttributesEffective) {
+				ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributesEffective");
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
 			break;
 		default:
 			/* remove password attributes */
@@ -134,6 +212,12 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 				ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
 			}
 		}
+	}
+
+	if ((ac->allowedAttributes || ac->allowedAttributesEffective) && 
+	    (!ldb_attr_in_list(ac->attrs, "objectClass") && 
+	     !ldb_attr_in_list(ac->attrs, "*"))) {
+		ldb_msg_remove_attr(ares->message, "objectClass");
 	}
 
 	return ac->up_callback(ldb, ac->up_context, ares);
@@ -163,6 +247,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->up_context = req->context;
 	ac->up_callback = req->callback;
 	ac->user_type = what_is_user(module);
+	ac->attrs = req->op.search.attrs;
 
 	down_req = talloc_zero(req, struct ldb_request);
 	if (down_req == NULL) {
@@ -174,7 +259,15 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	down_req->op.search.scope = req->op.search.scope;
 	down_req->op.search.tree = req->op.search.tree;
 	down_req->op.search.attrs = req->op.search.attrs;
-	
+
+	ac->allowedAttributes = ldb_attr_in_list(req->op.search.attrs, "allowedAttributes");
+
+	ac->allowedAttributesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedAttributesEffective");
+
+	if (ac->allowedAttributes || ac->allowedAttributesEffective) {
+		down_req->op.search.attrs
+			= ldb_attr_list_copy_add(down_req, down_req->op.search.attrs, "objectClass");
+	}
 
 	/*  FIXME: I hink we should copy the tree and keep the original
 	 *  unmodified. SSS */

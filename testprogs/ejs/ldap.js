@@ -25,7 +25,7 @@ if (options.ARGV.length != 1) {
 
 var host = options.ARGV[0];
 
-function basic_tests(ldb, gc_ldb, base_dn, configuration_dn)
+function basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 {
 	println("Running basic tests");
 
@@ -473,6 +473,33 @@ objectClass: user
 	assert(res.error == 0);
 	assert (res.msgs.length > 0);
 
+	println("Testing objectCategory canonacolisation");
+	var attrs = new Array("cn");
+	var res = ldb.search("objectCategory=ntDsDSA", configuration_dn, ldb.SCOPE_SUBTREE, attrs);
+	assert(res.error == 0);
+	if (res.msgs.length == 0) {
+		println("Didn't find any records with objectCategory=ntDsDSA");
+	}
+	assert(res.msgs.length != 0);
+	
+	var attrs = new Array("cn");
+	var res = ldb.search("objectCategory=CN=ntDs-DSA," + schema_dn, configuration_dn, ldb.SCOPE_SUBTREE, attrs);
+	assert(res.error == 0);
+	if (res.msgs.length == 0) {
+		println("Didn't find any records with objectCategory=CN=ntDs-DSA," + schema_dn);
+	}
+	assert(res.msgs.length != 0);
+	
+	println("Testing objectClass attribute order on "+ base_dn);
+	var attrs = new Array("objectclass");
+	var res = ldb.search("objectClass=domain", base_dn, ldb.SCOPE_BASE, attrs);
+	assert(res.error == 0);
+	assert(res.msgs.length == 1);
+
+	assert(res.msgs[0].objectClass[0] == "top");
+	assert(res.msgs[0].objectClass[1] == "domain");
+	assert(res.msgs[0].objectClass[2] == "domainDNS");
+	
 }
 
 function basedn_tests(ldb, gc_ldb)
@@ -522,6 +549,15 @@ function find_configurationdn(ldb)
     return res.msgs[0].configurationNamingContext;
 }
 
+function find_schemadn(ldb)
+{
+    var attrs = new Array("schemaNamingContext");
+    var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+    assert(res.error == 0);
+    assert(res.msgs.length == 1);
+    return res.msgs[0].schemaNamingContext;
+}
+
 /* use command line creds if available */
 ldb.credentials = options.get_credentials();
 gc_ldb.credentials = options.get_credentials();
@@ -529,6 +565,7 @@ gc_ldb.credentials = options.get_credentials();
 var ok = ldb.connect("ldap://" + host);
 var base_dn = find_basedn(ldb);
 var configuration_dn = find_configurationdn(ldb);
+var schema_dn = find_schemadn(ldb);
 
 printf("baseDN: %s\n", base_dn);
 
@@ -537,7 +574,7 @@ if (!ok) {
 	gc_ldb = undefined;
 }
 
-basic_tests(ldb, gc_ldb, base_dn, configuration_dn)
+basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 
 basedn_tests(ldb, gc_ldb)
 

@@ -35,6 +35,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/samba/ldif_handlers.h"
 #include "db_wrap.h"
+#include "dsdb/samdb/samdb.h"
 
 static struct tdb_wrap *tdb_list;
 
@@ -125,6 +126,10 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	if (ldb_set_opaque(ldb, "credentials", credentials)) {
 		talloc_free(ldb);
 		return NULL;
+	}
+	
+	if (strcmp(lp_sam_url(), url) == 0) {
+		dsdb_set_global_schema(ldb);
 	}
 
 	ret = ldb_register_samba_handlers(ldb);

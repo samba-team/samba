@@ -299,66 +299,53 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 					    const struct ldb_val *in, struct ldb_val *out)
 {
 	struct ldb_dn *dn1 = NULL;
-	char *oc1, *oc2;
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	const struct dsdb_class *class;
 
+	if (!schema) {
+		*out = data_blob_talloc(mem_ctx, in->data, in->length);
+		return LDB_SUCCESS;
+	}
 	dn1 = ldb_dn_new(mem_ctx, ldb, (char *)in->data);
 	if ( ! ldb_dn_validate(dn1)) {
-		oc1 = talloc_strndup(mem_ctx, (char *)in->data, in->length);
-	} else if (ldb_dn_get_comp_num(dn1) >= 1 && strcasecmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
+		const char *lDAPDisplayName = talloc_strndup(mem_ctx, (char *)in->data, in->length);
+		class = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
+		talloc_free(lDAPDisplayName);
+	} else if (ldb_dn_get_comp_num(dn1) >= 1 && ldb_attr_cmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
 		const struct ldb_val *val = ldb_dn_get_rdn_val(dn1);
-		oc1 = talloc_strndup(mem_ctx, (char *)val->data, val->length);
+		const char *cn = talloc_strndup(mem_ctx, (char *)val->data, val->length);
+		class = dsdb_class_by_cn(schema, cn);
+		talloc_free(cn);
 	} else {
+		talloc_free(dn1);
 		return -1;
 	}
-
-	oc2 = ldb_casefold(ldb, mem_ctx, oc1);
-	out->data = (void *)oc2;
-	out->length = strlen(oc2);
-	talloc_free(oc1);
 	talloc_free(dn1);
-	return 0;
+
+	if (!class) {
+		return -1;
+	}
+	
+	*out = data_blob_string_const(talloc_strdup(mem_ctx, class->lDAPDisplayName));
+
+	return LDB_SUCCESS;
 }
 
 static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx,
 					  const struct ldb_val *v1,
 					  const struct ldb_val *v2)
 {
-	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
-	const char *oc1, *oc2;
 
-	dn1 = ldb_dn_new(mem_ctx, ldb, (char *)v1->data);
-	if ( ! ldb_dn_validate(dn1)) {
-		oc1 = talloc_strndup(mem_ctx, (char *)v1->data, v1->length);
-	} else if (ldb_dn_get_comp_num(dn1) >= 1 && strcasecmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
-		const struct ldb_val *val = ldb_dn_get_rdn_val(dn1);
-		oc1 = talloc_strndup(mem_ctx, (char *)val->data, val->length);
+	int ret1, ret2;
+	struct ldb_val v1_canon, v2_canon;
+	ret1 = ldif_canonicalise_objectCategory(ldb, mem_ctx, v1, &v1_canon);
+	ret2 = ldif_canonicalise_objectCategory(ldb, mem_ctx, v2, &v2_canon);
+
+	if (ret1 == LDB_SUCCESS && ret2 == LDB_SUCCESS) {
+		return ldb_attr_cmp(v1_canon.data, v2_canon.data);
 	} else {
-		oc1 = NULL;
+		return strcasecmp(v1->data, v2->data);
 	}
-
-	dn2 = ldb_dn_new(mem_ctx, ldb, (char *)v2->data);
-	if ( ! ldb_dn_validate(dn2)) {
-		oc2 = talloc_strndup(mem_ctx, (char *)v2->data, v2->length);
-	} else if (ldb_dn_get_comp_num(dn2) >= 2 && strcasecmp(ldb_dn_get_rdn_name(dn2), "cn") == 0) {
-		const struct ldb_val *val = ldb_dn_get_rdn_val(dn2);
-		oc2 = talloc_strndup(mem_ctx, (char *)val->data, val->length);
-	} else {
-		oc2 = NULL;
-	}
-
-	oc1 = ldb_casefold(ldb, mem_ctx, oc1);
-	oc2 = ldb_casefold(ldb, mem_ctx, oc2);
-	if (!oc1 && oc2) {
-		return -1;
-	} 
-	if (oc1 && !oc2) {
-		return 1;
-	}	
-	if (!oc1 && !oc2) {
-		return -1;
-	}
-
-	return strcmp(oc1, oc2);
 }
 
 #define LDB_SYNTAX_SAMBA_SID			"LDB_SYNTAX_SAMBA_SID"

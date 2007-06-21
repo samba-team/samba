@@ -54,6 +54,10 @@ static int schema_fsmo_init(struct ldb_module *module)
 		NULL
 	};
 
+	if (dsdb_get_schema(module->ldb)) {
+	  return ldb_next_init(module);
+	}
+
 	schema_dn = samdb_schema_dn(module->ldb);
 	if (!schema_dn) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
