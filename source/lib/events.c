@@ -391,3 +391,27 @@ int cancel_named_event(struct event_context *event_ctx,
 	}
 	return 0;
 }
+
+void dump_event_list(struct event_context *event_ctx)
+{
+	struct timed_event *te;
+	struct timeval evt, now;
+
+	if (!event_ctx) {
+		return;
+	}
+
+	now = timeval_current();
+
+	DEBUG(10,("dump_event_list:\n"));
+
+	for (te = event_ctx->timed_events; te; te = te->next) {
+
+		evt = timeval_until(&now, &te->when);
+
+		DEBUGADD(10,("Event \"%s\" %lx handled in %d seconds\n",
+			   te->event_name,
+			   (unsigned long)te,
+			   (int)evt.tv_sec));
+	}
+}
