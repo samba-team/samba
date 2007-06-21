@@ -386,6 +386,7 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 	TALLOC_CTX *mem_ctx;
 	char *name, *end;
 	int num_subkeys;
+	struct registry_key *tmp_key;
 
 	if (!(mem_ctx = talloc_init("reg_createkey"))) return WERR_NOMEM;
 
@@ -394,18 +395,30 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 		goto error;
 	}
 
-	if ((end = strrchr(name, '\\')) != NULL) {
-		struct registry_key *tmp;
+	/* check if the key has subkeys */
+	err = reg_openkey(mem_ctx, parent, name, REG_KEY_READ, &tmp_key);
+	if (!W_ERROR_IS_OK(err)) {
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(err = fill_subkey_cache(tmp_key))) {
+		goto error;
+	}
+	if (tmp_key->subkeys->num_subkeys > 0) {
+		err = WERR_ACCESS_DENIED;
+		goto error;
+	}
 
+	/* no subkeys - proceed with delete */
+	if ((end = strrchr(name, '\\')) != NULL) {
 		*end = '\0';
 
 		err = reg_openkey(mem_ctx, parent, name,
-				  SEC_RIGHTS_CREATE_SUBKEY, &tmp);
+				  SEC_RIGHTS_CREATE_SUBKEY, &tmp_key);
 		if (!W_ERROR_IS_OK(err)) {
 			goto error;
 		}
 
-		parent = tmp;
+		parent = tmp_key;
 		name = end+1;
 	}
 
