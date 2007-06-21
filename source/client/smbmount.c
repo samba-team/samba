@@ -152,7 +152,7 @@ static struct cli_state *do_connection(char *the_service)
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise()) || (cli_set_port(c, smb_port) != smb_port) ||
-	    !cli_connect(c, server_n, &ip)) {
+	    !NT_STATUS_IS_OK(cli_connect(c, server_n, &ip))) {
 		DEBUG(0,("%d: Connection to %s failed\n", sys_getpid(), server_n));
 		if (c) {
 			cli_shutdown(c);
