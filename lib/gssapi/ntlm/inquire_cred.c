@@ -44,15 +44,32 @@ OM_uint32 _gss_ntlm_inquire_cred
             gss_OID_set * mechanisms
            )
 {
+    OM_uint32 ret, junk;
+
     if (minor_status)
 	*minor_status = 0;
     if (name)
 	*name = GSS_C_NO_NAME;
     if (lifetime)
-	*lifetime = 0;
+	*lifetime = GSS_C_INDEFINITE;
     if (cred_usage)
 	*cred_usage = 0;
     if (mechanisms)
 	*mechanisms = GSS_C_NO_OID_SET;
-    return GSS_S_FAILURE;
+
+    if (mechanisms) {
+        ret = gss_create_empty_oid_set(minor_status, mechanisms);
+        if (ret)
+	    goto out;
+	ret = gss_add_oid_set_member(minor_status,
+				     GSS_NTLM_MECHANISM,
+				     mechanisms);
+        if (ret)
+	    goto out;
+    }
+
+    return GSS_S_COMPLETE;
+out:
+    gss_release_oid_set(&junk, mechanisms);
+    return ret;
 }
