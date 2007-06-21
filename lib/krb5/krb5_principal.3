@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2007 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -46,6 +46,7 @@
 .Nm krb5_make_principal ,
 .Nm krb5_parse_name ,
 .Nm krb5_parse_name_flags ,
+.Nm krb5_parse_nametype ,
 .Nm krb5_princ_realm ,
 .Nm krb5_princ_set_realm ,
 .Nm krb5_principal_compare ,
@@ -108,7 +109,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_boolean
 .Fn krb5_principal_compare "krb5_context context" "krb5_const_principal princ1" "krb5_const_principal princ2"
 .Ft krb5_boolean
-.Fn krb5_principal_compare_any_realm "krb5_context context" "krb5_const_principal princ1 "krb5_const_principal princ2"
+.Fn krb5_principal_compare_any_realm "krb5_context context" "krb5_const_principal princ1" "krb5_const_principal princ2"
 .Ft "const char *"
 .Fn krb5_principal_get_comp_string "krb5_context context" "krb5_const_principal principal" "unsigned int component"
 .Ft "const char *"
@@ -127,6 +128,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_sock_to_principal "krb5_context context" "int socket" "const char *sname" "int32_t type" "krb5_principal *principal"
 .Ft krb5_error_code
 .Fn krb5_get_default_principal "krb5_context context" "krb5_principal *princ"
+.Ft krb5_error_code
+.Fn krb5_parse_nametype "krb5_context context" "const char *str" "int32_t *type"
 .Sh DESCRIPTION
 .Li krb5_principal
 holds the name of a user or service in Kerberos.
@@ -363,6 +366,12 @@ The function may try to resolve the name in DNS.
 .Fn krb5_get_default_principal
 tries to find out what's a reasonable default principal by looking at
 the environment it is running in.
+.Pp
+.Fn krb5_parse_nametype
+parses and returns the name type integer value in
+.Fa type .
+On failure the function returns an error code and set the error
+string.
 .\" .Sh EXAMPLES
 .Sh SEE ALSO
 .Xr krb5_425_conv_principal 3 ,
