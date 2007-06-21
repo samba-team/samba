@@ -98,6 +98,9 @@
 #define MSG_WINBIND_TRY_TO_GO_ONLINE	0x0406
 #define MSG_WINBIND_FAILED_TO_GO_ONLINE 0x0407
 
+/* event messages */
+#define MSG_DUMP_EVENT_LIST		0x0500
+
 /*
  * Special flags passed to message_send. Allocated from the top, lets see when
  * it collides with the message types in the lower 16 bits :-)
