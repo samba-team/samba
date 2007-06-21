@@ -1120,6 +1120,9 @@ int main(int argc, char **argv, char **envp)
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_WINBIND_ONLINESTATUS, winbind_msg_onlinestatus);
 
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DUMP_EVENT_LIST, winbind_msg_dump_event_list);
+
 	poptFreeContext(pc);
 
 	netsamlogon_cache_init(); /* Non-critical */

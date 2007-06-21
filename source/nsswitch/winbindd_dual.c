@@ -698,6 +698,29 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	}
 }
 
+void winbind_msg_dump_event_list(struct messaging_context *msg_ctx,
+				 void *private_data,
+				 uint32_t msg_type,
+				 struct server_id server_id,
+				 DATA_BLOB *data)
+{
+	struct winbindd_child *child;
+
+	DEBUG(10,("winbind_msg_dump_event_list received\n"));
+
+	dump_event_list(winbind_event_context());
+
+	for (child = children; child != NULL; child = child->next) {
+
+		DEBUG(10,("winbind_msg_dump_event_list: sending message to pid %u\n",
+			(unsigned int)child->pid));
+
+		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
+				   MSG_DUMP_EVENT_LIST,
+				   NULL, 0);
+	}
+
+}
 
 static void account_lockout_policy_handler(struct event_context *ctx,
 					   struct timed_event *te,
@@ -885,6 +908,18 @@ static void child_msg_onlinestatus(struct messaging_context *msg_ctx,
 	talloc_destroy(mem_ctx);
 }
 
+static void child_msg_dump_event_list(struct messaging_context *msg,
+				      void *private_data,
+				      uint32_t msg_type,
+				      struct server_id server_id,
+				      DATA_BLOB *data)
+{
+	DEBUG(5,("child_msg_dump_event_list received\n"));
+
+	dump_event_list(winbind_event_context());
+}
+
+
 static BOOL fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
@@ -958,6 +993,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			     MSG_WINBIND_ONLINE, NULL);
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_WINBIND_ONLINESTATUS, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_DUMP_EVENT_LIST, NULL);
 
 	/* Handle online/offline messages. */
 	messaging_register(winbind_messaging_context(), NULL,
@@ -966,6 +1003,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			   MSG_WINBIND_ONLINE, child_msg_online);
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
 
 	if ( child->domain ) {
 		child->domain->startup = True;
