@@ -137,9 +137,9 @@ static int objectclass_sort(struct ldb_module *module,
 		/* this is the root of the tree.  We will start
 		 * looking for subclasses from here */
 		if (ldb_attr_cmp("top", current->objectclass) == 0) {
-			DLIST_ADD(parent_class, current);
+			DLIST_ADD_END(parent_class, current, struct class_list *);
 		} else {
-			DLIST_ADD(unsorted, current);
+			DLIST_ADD_END(unsorted, current, struct class_list *);
 		}
 	}
 
