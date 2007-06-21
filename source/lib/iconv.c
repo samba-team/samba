@@ -544,6 +544,8 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 	uint8 *uc = (uint8 *)*outbuf;
 
 	while (in_left >= 1 && out_left >= 2) {
+		unsigned int codepoint;
+
 		if ((c[0] & 0x80) == 0) {
 			uc[0] = c[0];
 			uc[1] = 0;
@@ -560,8 +562,14 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 				errno = EILSEQ;
 				goto error;
 			}
-			uc[1] = (c[0]>>2) & 0x7;
-			uc[0] = (c[0]<<6) | (c[1]&0x3f);
+			codepoint = (c[1]&0x3f) | ((c[0]&0x1f)<<6);
+			if (codepoint < 0x80) {
+				/* don't accept UTF-8 characters that are not minimally packed */
+				errno = EILSEQ;
+				goto error;
+			}
+			uc[1] = codepoint >> 8;
+			uc[0] = codepoint & 0xff;
 			c  += 2;
 			in_left  -= 2;
 			out_left -= 2;
@@ -576,8 +584,14 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 				errno = EILSEQ;
 				goto error;
 			}
-			uc[1] = ((c[0]&0xF)<<4) | ((c[1]>>2)&0xF);
-			uc[0] = (c[1]<<6) | (c[2]&0x3f);
+			codepoint = (c[2]&0x3f) | ((c[1]&0x3f)<<6) | ((c[0]&0xf)<<12);
+			if (codepoint < 0x800) {
+				/* don't accept UTF-8 characters that are not minimally packed */
+				errno = EILSEQ;
+				goto error;
+			}
+			uc[1] = codepoint >> 8;
+			uc[0] = codepoint & 0xff;
 			c  += 3;
 			in_left  -= 3;
 			out_left -= 2;
@@ -586,7 +600,6 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 		}
 
 		if ((c[0] & 0xf8) == 0xf0) {
-			unsigned int codepoint;
 			if (in_left < 4 ||
 			    (c[1] & 0xc0) != 0x80 || 
 			    (c[2] & 0xc0) != 0x80 ||
@@ -599,16 +612,10 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 				((c[2]&0x3f)<<6) | 
 				((c[1]&0x3f)<<12) |
 				((c[0]&0x7)<<18);
-			if (codepoint < 0x10000) {
-				/* accept UTF-8 characters that are not
-				   minimally packed, but pack the result */
-				uc[0] = (codepoint & 0xFF);
-				uc[1] = (codepoint >> 8);
-				c += 4;
-				in_left -= 4;
-				out_left -= 2;
-				uc += 2;
-				continue;
+			if (codepoint < 0x10000 || codepoint > 0x10ffff) {
+				/* don't accept UTF-8 characters that are not minimally packed */
+				errno = EILSEQ;
+				goto error;
 			}
 
 			codepoint -= 0x10000;
