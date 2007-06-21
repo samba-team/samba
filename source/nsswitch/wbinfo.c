@@ -1459,37 +1459,16 @@ int main(int argc, char **argv, char **envp)
 				break;
 			}
 		case 'K': {
-				BOOL got_error = False;
 				uint32 flags =  WBFLAG_PAM_KRB5 |
 						WBFLAG_PAM_CACHED_LOGIN |
 						WBFLAG_PAM_FALLBACK_AFTER_KRB5 |
 						WBFLAG_PAM_INFO3_TEXT;
-				fstring tok;
-				int i;
-				const char *arg[] = { NULL, NULL };
-				const char *cctypes[] = { "FILE", 
-							  "KCM", 
-							  "KCM:0", 
-							  "Garbage", 
-							  NULL, 
-							  "0"};
 
-				arg[0] = string_arg;
-
-				while (next_token(arg, tok, LIST_SEP, sizeof(tok))) {
-
-					for (i=0; i < ARRAY_SIZE(cctypes); i++) {
-						if (!wbinfo_auth_krb5(tok, cctypes[i], flags)) {
-							d_fprintf(stderr, "Could not authenticate user [%s] with "
-								"Kerberos (ccache: %s)\n", tok, cctypes[i]);
-							got_error = True;
-						}
-					}
-				}
-
-				if (got_error)
+				if (!wbinfo_auth_krb5(string_arg, "FILE", flags)) {
+					d_fprintf(stderr, "Could not authenticate user [%s] with "
+						"Kerberos (ccache: %s)\n", string_arg, "FILE");
 					goto done;
-
+				}
 				break;
 			}
 		case 'k':
