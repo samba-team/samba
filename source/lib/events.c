@@ -395,6 +395,7 @@ int cancel_named_event(struct event_context *event_ctx,
 void dump_event_list(struct event_context *event_ctx)
 {
 	struct timed_event *te;
+	struct fd_event *fe;
 	struct timeval evt, now;
 
 	if (!event_ctx) {
@@ -409,9 +410,17 @@ void dump_event_list(struct event_context *event_ctx)
 
 		evt = timeval_until(&now, &te->when);
 
-		DEBUGADD(10,("Event \"%s\" %lx handled in %d seconds\n",
+		DEBUGADD(10,("Timed Event \"%s\" %lx handled in %d seconds\n",
 			   te->event_name,
 			   (unsigned long)te,
 			   (int)evt.tv_sec));
+	}
+
+	for (fe = event_ctx->fd_events; fe; fe = fe->next) {
+
+		DEBUGADD(10,("FD Event %d %lx, flags: 0x%04x\n",
+			   fe->fd,
+			   (unsigned long)fe,
+			   fe->flags));
 	}
 }
