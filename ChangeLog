@@ -1,5 +1,7 @@
 2007-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/krb5tgs.c: disable anonyous tgs requests
+
 	* kdc/krb5tgs.c: Don't check PAC on cross realm for now.
 
 	* kuser/kgetcred.c: Set KRB5_GC_CONSTRAINED_DELEGATION and parse
