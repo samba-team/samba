@@ -152,6 +152,8 @@ void release_file_oplock(files_struct *fsp)
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	
 	flush_write_cache(fsp, OPLOCK_RELEASE_FLUSH);
+
+	TALLOC_FREE(fsp->oplock_timeout);
 }
 
 /****************************************************************************
@@ -341,12 +343,8 @@ static void oplock_timeout_handler(struct event_context *ctx,
 {
 	files_struct *fsp = (files_struct *)private_data;
 
-	/* Ensure we always remove this event. */
-	if (fsp->oplock_timeout != NULL) {
-		/* Remove the timed event handler. */
-		TALLOC_FREE(fsp->oplock_timeout);
-		fsp->oplock_timeout = NULL;
-	}
+	/* Remove the timed event handler. */
+	TALLOC_FREE(fsp->oplock_timeout);
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n", fsp->fsp_name));
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
