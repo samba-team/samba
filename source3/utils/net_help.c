@@ -234,8 +234,9 @@ static int net_usage(int argc, const char **argv)
 		 "  net changesecretpw\tto change the machine password in the local secrets database only\n"\
 		 "                    \tthis requires the -f flag as a safety barrier\n"\
 		 "  net status\t\tShow server status\n"\
-		"  net usersidlist\tto get a list of all users with their SIDs\n"
-		"  net usershare\t\tto add, delete and list locally user-modifiable shares\n"
+		 "  net usersidlist\tto get a list of all users with their SIDs\n"
+		 "  net usershare\t\tto add, delete and list locally user-modifiable shares\n"
+		 "  net conf\t\tto view and edit samba's registry based configuration\n"
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
