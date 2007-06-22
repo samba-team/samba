@@ -1223,7 +1223,11 @@ out:
 			}
 		} else {
 			/* build tgt service by default */
-			client_realm = krb5_princ_realm(context, client);
+			client_realm = krb5_princ_realm(context, creds_in.client);
+			if (!client_realm) {
+				ret = ENOMEM;
+				goto done;
+			}
 			ret = krb5_make_principal(context, &creds_in.server, *client_realm, KRB5_TGS_NAME, *client_realm, NULL);
 			if (ret) {
 				goto done;
