@@ -1,3 +1,8 @@
+2007-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/check-context.in: disable dns canon on test, break on some
+	buildfarm hosts.
+	
 2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* can/test_can.in: readline seems strange, try diffrent way to
