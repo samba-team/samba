@@ -691,7 +691,6 @@ WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 	TALLOC_CTX *mem_ctx = NULL;
 	WERROR werr = WERR_OK;
 	struct registry_key *key;
-	uint32 idx = 0;
 	char *subkey_name = NULL;
 
 	mem_ctx = talloc_new(ctx);
@@ -706,14 +705,8 @@ WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 		goto done;
 	}
 
-	/* NOTE: we *must not* increment idx in this loop since
-	 * the list of subkeys shrinks with each loop body. 
-	 * so this way, we repeatedly delete the *first* entry
-	 * of a shrinking list. */
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumkey(mem_ctx, key, idx,
-			     		      &subkey_name, NULL));
-	    ) 
+	while (W_ERROR_IS_OK(werr = reg_enumkey(mem_ctx, key, 0,
+						&subkey_name, NULL))) 
 	{
 		werr = reg_deletekey_recursive(mem_ctx, key, subkey_name);
 		if (!W_ERROR_IS_OK(werr)) {
