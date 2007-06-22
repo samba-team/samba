@@ -55,6 +55,11 @@ o   Guenther Deschner <gd@samba.org>
     * Add more netlogon GetDcName() client calls.
 
 
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 4720: Fix smbclient connections to share names containing 
+      multibyte characters.
+
+
 o   Steve Langasek <vorlon@debian.org>
     * Allow SIGTERM to cause nmbd to exit on awaiting an interface 
       to come up.
