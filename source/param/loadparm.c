@@ -3070,7 +3070,7 @@ static struct tdb_wrap *lp_regdb_open(void)
 	reg_tdb = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, 
 				REG_TDB_FLAGS, O_RDWR, 0600);
 	if (!reg_tdb) {
-		DEBUG(0, ("lp_regdb_open: failed to open %s: %s\n",
+		DEBUG(1, ("lp_regdb_open: failed to open %s: %s\n",
 			 lock_path("registry.tdb"), strerror(errno)));
 		goto done;
 	}
