@@ -439,6 +439,9 @@ void file_free(files_struct *fsp)
 		TALLOC_FREE(fsp->notify);
 	}
 
+	/* Ensure this event will never fire. */
+	TALLOC_FREE(fsp->oplock_timeout);
+
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
 
