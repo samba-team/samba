@@ -1,0 +1,16 @@
+<samba:parameter name="config file"
+                 context="G"
+		 type="bool"
+		 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This turns on or off support for share definitions read from
+	registry. Shares in defined in <term>smb.conf</term> take
+	precedence over shares with the same name defined in
+	registry. See the section on registry-based configuration
+	for details. 
+	</para>
+</description>
+<value type="example">/usr/local/samba/lib/smb.conf.%m</value>
+</samba:parameter>
