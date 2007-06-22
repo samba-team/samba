@@ -123,6 +123,10 @@ static BOOL elog_validate_logname( const char *name )
 	int i;
 	const char **elogs = lp_eventlog_list();
 	
+	if (!elogs) {
+		return False;
+	}
+
 	for ( i=0; elogs[i]; i++ ) {
 		if ( strequal( name, elogs[i] ) )
 			return True;
