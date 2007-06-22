@@ -54,6 +54,12 @@ static int net_conf_listshares_usage(int argc, const char **argv)
 	return -1;
 }
 
+static int net_conf_drop_usage(int argc, const char **argv)
+{
+	d_printf("USAGE: net conf drop\n");
+	return -1;
+}
+
 static int net_conf_showshare_usage(int argc, const char **argv)
 {
 	d_printf("USAGE: net conf showshare <sharename>\n");
@@ -366,6 +372,56 @@ static WERROR list_values(TALLOC_CTX *ctx, struct registry_key *key)
 
 done:
 	return werr; 
+}
+
+static WERROR drop_smbconf_internal(TALLOC_CTX *ctx)
+{
+	char *path, *p;
+	WERROR werr = WERR_OK;
+	NT_USER_TOKEN *token;
+	struct registry_key *parent_key = NULL;
+	struct registry_key *new_key = NULL;
+	TALLOC_CTX* tmp_ctx = NULL;
+	enum winreg_CreateAction action;
+
+	tmp_ctx = talloc_new(ctx);
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	if (!(token = registry_create_admin_token(tmp_ctx))) {
+		/* what is the appropriate error code here? */
+		werr = WERR_CAN_NOT_COMPLETE; 
+		goto done;
+	}
+
+	path = talloc_strdup(tmp_ctx, KEY_SMBCONF);
+	if (path == NULL) {
+		d_fprintf(stderr, "ERROR: out of memory!\n");
+		werr = WERR_NOMEM;
+		goto done;
+	}
+	p = strrchr(path, '\\');
+	*p = '\0';
+	werr = reg_open_path(tmp_ctx, path, REG_KEY_WRITE, token, &parent_key);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = reg_deletekey_recursive(tmp_ctx, parent_key, p+1);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+	
+	werr = reg_createkey(tmp_ctx, parent_key, p+1, REG_KEY_WRITE, 
+			     &new_key, &action);
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
 }
 
 static int import_process_service(TALLOC_CTX *ctx, 
@@ -705,6 +761,29 @@ int net_conf_listshares(int argc, const char **argv)
 
 done:
 	TALLOC_FREE(ctx);
+	return ret;
+}
+
+int net_conf_drop(int argc, const char **argv)
+{
+	int ret = -1;
+	WERROR werr;
+
+	if (argc != 0) {
+		net_conf_drop_usage(argc, argv);
+		goto done;
+	}
+
+	werr = drop_smbconf_internal(NULL);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error deleting configuration: %s\n",
+			  dos_errstr(werr));
+		goto done;
+	}
+
+	ret = 0;
+
+done:
 	return ret;
 }
 
@@ -1067,6 +1146,8 @@ int net_conf(int argc, const char **argv)
 		 "Import configuration from file in smb.conf format."},
 		{"listshares", net_conf_listshares, 
 		 "List the registry shares."},
+		{"drop", net_conf_drop,
+		 "Delete the complete configuration from registry."},
 		{"showshare", net_conf_showshare, 
 		 "Show the definition of a registry share."},
 		{"addshare", net_conf_addshare, 
