@@ -579,8 +579,12 @@ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 	if (dbuf.dptr == NULL) {
 		dbuf.dptr = (unsigned char *)malloc(new_dbuf.dsize);
 	} else {
-		dbuf.dptr = (unsigned char *)realloc(dbuf.dptr,
+		unsigned char *new_dptr = (unsigned char *)realloc(dbuf.dptr,
 						     dbuf.dsize + new_dbuf.dsize);
+		if (new_dptr == NULL) {
+			free(dbuf.dptr);
+		}
+		dbuf.dptr = new_dptr;
 	}
 
 	if (dbuf.dptr == NULL) {
