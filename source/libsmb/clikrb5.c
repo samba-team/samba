@@ -1159,22 +1159,22 @@ out:
 		goto done;
 	}
 
+	if (client_string) {
+		ret = smb_krb5_parse_name(context, client_string, &client);
+		if (ret) {
+			goto done;
+		}
+	} else {
+		ret = krb5_cc_get_principal(context, ccache, &client);
+		if (ret) {
+			goto done;
+		}
+	}
+
 #ifdef HAVE_KRB5_GET_RENEWED_CREDS	/* MIT */
 	{
 		krb5_creds creds;
-	
-		if (client_string) {
-			ret = smb_krb5_parse_name(context, client_string, &client);
-			if (ret) {
-				goto done;
-			}
-		} else {
-			ret = krb5_cc_get_principal(context, ccache, &client);
-			if (ret) {
-				goto done;
-			}
-		}
-	
+
 		ret = krb5_get_renewed_creds(context, &creds, client, ccache, CONST_DISCARD(char *, service_string));
 		if (ret) {
 			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
@@ -1204,16 +1204,9 @@ out:
 
 		memset(&creds_in, 0, sizeof(creds_in));
 
-		if (client_string) {
-			ret = smb_krb5_parse_name(context, client_string, &creds_in.client);
-			if (ret) {
-				goto done;
-			}
-		} else {
-			ret = krb5_cc_get_principal(context, ccache, &creds_in.client);
-			if (ret) {
-				goto done;
-			}
+		ret = krb5_copy_principal(context, client, &creds_in.client);
+		if (ret) {
+			goto done;
 		}
 
 		if (service_string) {
