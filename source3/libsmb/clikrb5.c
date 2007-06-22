@@ -1151,6 +1151,11 @@ out:
 		ccache_string = krb5_cc_default_name(context);
 	}
 
+	if (!ccache_string) {
+		ret = EINVAL;
+		goto done;
+	}
+
 	DEBUG(10,("smb_krb5_renew_ticket: using %s as ccache\n", ccache_string));
 
 	/* FIXME: we should not fall back to defaults */
@@ -1174,6 +1179,8 @@ out:
 #ifdef HAVE_KRB5_GET_RENEWED_CREDS	/* MIT */
 	{
 		krb5_creds creds;
+
+		ZERO_STRUCT(creds);
 
 		ret = krb5_get_renewed_creds(context, &creds, client, ccache, CONST_DISCARD(char *, service_string));
 		if (ret) {
@@ -1202,7 +1209,7 @@ out:
 		krb5_realm *client_realm;
 		krb5_creds *creds;
 
-		memset(&creds_in, 0, sizeof(creds_in));
+		ZERO_STRUCT(creds_in);
 
 		ret = krb5_copy_principal(context, client, &creds_in.client);
 		if (ret) {
@@ -1252,7 +1259,7 @@ out:
 		krb5_free_creds(context, creds);
 	}
 #else
-#error NO_SUITABKE_KRB5_TICKET_RENEW_FUNCTION_AVAILABLE
+#error NO_SUITABLE_KRB5_TICKET_RENEW_FUNCTION_AVAILABLE
 #endif
 
 
@@ -1260,15 +1267,14 @@ done:
 	if (client) {
 		krb5_free_principal(context, client);
 	}
-	if (context) {
-		krb5_free_context(context);
-	}
 	if (ccache) {
 		krb5_cc_close(context, ccache);
 	}
+	if (context) {
+		krb5_free_context(context);
+	}
 
 	return ret;
-    
 }
 
  krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr)
