@@ -1,6 +1,6 @@
 <samba:parameter name="include"
 	         context="G"
-			 type="string"
+		 type="string"
 		 hide="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
@@ -12,6 +12,16 @@
 	<para>
 	It takes the standard substitutions, except <parameter moreinfo="none">%u</parameter>, 
 	<parameter moreinfo="none">%P</parameter> and <parameter moreinfo="none">%S</parameter>.
+	</para>
+	
+	<para>
+	The parameter <parameter>include = registry</parameter> has
+	a special meaning: It does <emphasis>not</emphasis> include
+	a file named <term>registry</term> from the current working
+	directory, but instead reads the global configuration options 
+	from the registry. See the section on registry-based
+	configuration for details. Note that this option
+	automatically activates registry shares.
 	</para>
 </description>
 
