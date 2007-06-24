@@ -260,6 +260,8 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 
     if (opt->detached_signature_flag)
 	flags |= HX509_CMS_SIGATURE_DETACHED;
+    if (opt->id_by_name_flag)
+	flags |= HX509_CMS_SIGATURE_ID_NAME;
 
     ret = hx509_query_alloc(context, &q);
     if (ret)
