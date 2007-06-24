@@ -3123,6 +3123,10 @@ struct server_id interpret_pid(const char *pid_string)
 		result.vnn = vnn;
 		result.pid = pid;
 	}
+	else if (sscanf(pid_string, "%u", &pid) == 1) {
+		result.vnn = NONCLUSTER_VNN;
+		result.pid = pid;
+	}
 	else {
 		result.vnn = NONCLUSTER_VNN;
 		result.pid = -1;
