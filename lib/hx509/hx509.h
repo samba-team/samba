@@ -122,5 +122,12 @@ typedef enum {
 
 /* flags hx509_cms_create_signed* */
 #define HX509_CMS_SIGATURE_DETACHED 1
+#define HX509_CMS_SIGATURE_ID_NAME 2
+
+/* hx509_verify_hostname nametype */
+typedef enum  {
+    HX509_HN_HOSTNAME,
+    HX509_HN_DNSSRV
+} hx509_hostname_type;
 
 #include <hx509-protos.h>
