@@ -88,6 +88,11 @@ command = {
 		type = "flag"
 		help = "create a detached signature"
 	}
+	option = {
+		long = "id-by-name"
+		type = "flag"
+		help = "use subject name for CMS Identifier"
+	}
 	min_args="2"
 	max_args="2"
 	argument="in-file out-file"
