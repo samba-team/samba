@@ -61,6 +61,20 @@ ${hxtool} cms-verify-sd \
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+echo "create signed data (id-by-name)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	--id-by-name \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify signed data"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
 echo "verify signed data (EE cert as anchor)"
 ${hxtool} cms-verify-sd \
 	--missing-revoke \
