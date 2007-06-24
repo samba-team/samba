@@ -1,4 +1,10 @@
+2007-06-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: Adapt to hx509_verify_hostname change.
+
 2007-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: Drop unused variable.
 
 	* kdc/krb5tgs.c: disable anonyous tgs requests
 
