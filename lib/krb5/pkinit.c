@@ -931,6 +931,7 @@ pk_verify_host(krb5_context context,
     if (hi) {
 	ret = hx509_verify_hostname(ctx->id->hx509ctx, host->cert, 
 				    ctx->require_hostname_match,
+				    HX509_HN_HOSTNAME,
 				    hi->hostname,
 				    hi->ai->ai_addr, hi->ai->ai_addrlen);
 
