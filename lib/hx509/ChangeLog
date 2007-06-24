@@ -1,3 +1,20 @@
+2007-06-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_cms.in: Test --id-by-name.
+
+	* hxtool-commands.in: add cms-create-sd --id-by-name
+
+	* hxtool.c: Use HX509_CMS_SIGATURE_ID_NAME.
+
+	* cms.c: Implement and use HX509_CMS_SIGATURE_ID_NAME.
+
+	* hx509.h: Add HX509_CMS_SIGATURE_ID_NAME, use subject name for
+	CMS.Identifier.  hx509_hostname_type: add hostname type for
+	matching.
+
+	* cert.c (match_general_name): more strict rfc822Name matching.
+	(hx509_verify_hostname): add hostname type for matching.
+
 2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hxtool.c: Make compile again.
