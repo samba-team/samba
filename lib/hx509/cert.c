@@ -1317,13 +1317,15 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
 	return 0;
     }
     case choice_GeneralName_dNSName: {
-	size_t len1, len2;
+	size_t lenc, lenn;
 
-	len1 = strlen(c->u.dNSName);
-	len2 = strlen(n->u.dNSName);
-	if (len1 > len2)
+	lenc = strlen(c->u.dNSName);
+	lenn = strlen(n->u.dNSName);
+	if (lenc > lenn)
 	    return HX509_NAME_CONSTRAINT_ERROR;
-	if (strcasecmp(&n->u.dNSName[len2 - len1], c->u.dNSName) != 0)
+	if (strcasecmp(&n->u.dNSName[lenn - lenc], c->u.dNSName) != 0)
+	    return HX509_NAME_CONSTRAINT_ERROR;
+	if (lenc != lenn && n->u.dNSName[lenn - lenc - 1] != '.')
 	    return HX509_NAME_CONSTRAINT_ERROR;
 	*match = 1;
 	return 0;
@@ -1865,16 +1867,32 @@ hx509_verify_signature(hx509_context context,
     return _hx509_verify_signature(context, signer->data, alg, data, sig);
 }
 
+#define HX509_VHN_F_REQUIRE_MATCH 1
+
 int
 hx509_verify_hostname(hx509_context context,
 		      const hx509_cert cert,
-		      int require_match,
+		      int flags,
+		      hx509_hostname_type type,
 		      const char *hostname,
 		      const struct sockaddr *sa,
 		      /* XXX krb5_socklen_t */ int sa_size) 
 {
     if (sa && sa_size <= 0)
 	return EINVAL;
+
+    if (hostname) {
+/*	int ret, match = 0, same = 0; */
+	GeneralName n;
+
+	memset(&n, 0, sizeof(n));
+
+	n.element = choice_GeneralName_dNSName;
+	n.u.dNSName = rk_UNCONST(hostname);
+
+/*	ret = match_alt_name(&n, cert->data, &same, &match); */
+    }
+
     return 0;
 }
 
