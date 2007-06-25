@@ -123,7 +123,8 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
     c->enable_524 = FALSE;
     c->enable_v4_cross_realm = FALSE;
     c->enable_pkinit = FALSE;
-    c->enable_pkinit_princ_in_cert = TRUE;
+    c->pkinit_princ_in_cert = TRUE;
+    c->pkinit_require_binding = TRUE;
     c->db = NULL;
     c->num_db = 0;
     c->logf = NULL;
@@ -318,9 +319,9 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	krb5_config_free_strings(pool_list);
 	krb5_config_free_strings(revoke_list);
 
-	c->enable_pkinit_princ_in_cert = 
+	c->pkinit_princ_in_cert = 
 	    krb5_config_get_bool_default(context, NULL,
-					 c->enable_pkinit_princ_in_cert,
+					 c->pkinit_princ_in_cert,
 					 "kdc",
 					 "pkinit_principal_in_certificate",
 					 NULL);
