@@ -39,61 +39,6 @@ struct ks_file {
     char *fn;
 };
 
-struct header {
-    char *header;
-    char *value;
-    struct header *next;
-};
-
-static int
-add_headers(struct header **headers, const char *header, const char *value)
-{
-    struct header *h;
-    h = calloc(1, sizeof(*h));
-    if (h == NULL)
-	return ENOMEM;
-    h->header = strdup(header);
-    if (h->header == NULL) {
-	free(h);
-	return ENOMEM;
-    }
-    h->value = strdup(value);
-    if (h->value == NULL) {
-	free(h->header);
-	free(h);
-	return ENOMEM;
-    }
-
-    h->next = *headers;
-    *headers = h;
-
-    return 0;
-}
-
-static void
-free_headers(struct header *headers)
-{
-    struct header *h;
-    while (headers) {
-	h = headers;
-	headers = headers->next;
-	free(h->header);
-	free(h->value);
-	free(h);
-    }
-}
-
-static const char *
-find_header(const struct header *headers, const char *header)
-{
-    while(headers) {
-	if (strcmp(header, headers->header) == 0)
-	    return headers->value;
-	headers = headers->next;
-    }
-    return NULL;
-}
-
 /*
  *
  */
@@ -101,7 +46,7 @@ find_header(const struct header *headers, const char *header)
 static int
 parse_certificate(hx509_context context, const char *fn, 
 		  struct hx509_collector *c, 
-		  const struct header *headers,
+		  const hx509_pem_header *headers,
 		  const void *data, size_t len)
 {
     hx509_cert cert;
@@ -184,13 +129,13 @@ out:
 static int
 parse_rsa_private_key(hx509_context context, const char *fn,
 		      struct hx509_collector *c, 
-		      const struct header *headers,
+		      const hx509_pem_header *headers,
 		      const void *data, size_t len)
 {
     int ret = 0;
     const char *enc;
 
-    enc = find_header(headers, "Proc-Type");
+    enc = hx509_pem_find_header(headers, "Proc-Type");
     if (enc) {
 	const char *dek;
 	char *type, *iv;
@@ -218,7 +163,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	    return HX509_PARSING_KEY_FAILED;
 	}
 
-	dek = find_header(headers, "DEK-Info");
+	dek = hx509_pem_find_header(headers, "DEK-Info");
 	if (dek == NULL) {
 	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 				   "Encrypted RSA missing DEK-Info");
@@ -334,7 +279,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 struct pem_formats {
     const char *name;
     int (*func)(hx509_context, const char *, struct hx509_collector *, 
-		const struct header *, const void *, size_t);
+		const hx509_pem_header *, const void *, size_t);
 } formats[] = {
     { "CERTIFICATE", parse_certificate },
     { "RSA PRIVATE KEY", parse_rsa_private_key }
@@ -342,152 +287,27 @@ struct pem_formats {
 
 
 static int
-parse_pem_file(hx509_context context, 
-	       const char *fn,
-	       struct hx509_collector *c,
-	       int *found_data)
+pem_func(hx509_context context, const char *type,
+	 const hx509_pem_header *header,
+	 const void *data, size_t len, void *ctx)
 {
-    struct header *headers = NULL;
-    char *type = NULL;
-    void *data = NULL;
-    size_t len = 0;
-    char buf[1024];
-    int ret;
-    FILE *f;
+    struct hx509_collector *c = ctx;
+    int ret, j;
 
-
-    enum { BEFORE, SEARCHHEADER, INHEADER, INDATA, DONE } where;
-
-    where = BEFORE;
-    *found_data = 0;
-
-    if ((f = fopen(fn, "r")) == NULL) {
-	hx509_set_error_string(context, 0, ENOENT, 
-			       "Failed to open PEM file \"%s\": %s", 
-			       fn, strerror(errno));
-	return ENOENT;
-    }
-    ret = 0;
-
-    while (fgets(buf, sizeof(buf), f) != NULL) {
-	char *p;
-	int i;
-
-	i = strcspn(buf, "\n");
-	if (buf[i] == '\n') {
-	    buf[i] = '\0';
-	    if (i > 0)
-		i--;
-	}
-	if (buf[i] == '\r') {
-	    buf[i] = '\0';
-	    if (i > 0)
-		i--;
-	}
-	    
-	switch (where) {
-	case BEFORE:
-	    if (strncmp("-----BEGIN ", buf, 11) == 0) {
-		type = strdup(buf + 11);
-		if (type == NULL)
-		    break;
-		p = strchr(type, '-');
-		if (p)
-		    *p = '\0';
-		*found_data = 1;
-		where = SEARCHHEADER;
-	    }
+    for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
+	const char *q = formats[j].name;
+	if (strcasecmp(type, q) == 0) {
+	    ret = (*formats[j].func)(context, NULL, c,  header, data, len);
 	    break;
-	case SEARCHHEADER:
-	    p = strchr(buf, ':');
-	    if (p == NULL) {
-		where = INDATA;
-		goto indata;
-	    }
-	    /* FALLTHOUGH */
-	case INHEADER:
-	    if (buf[0] == '\0') {
-		where = INDATA;
-		break;
-	    }
-	    p = strchr(buf, ':');
-	    if (p) {
-		*p++ = '\0';
-		while (isspace((int)*p))
-		    p++;
-		add_headers(&headers, buf, p);
-	    }
-	    break;
-	case INDATA:
-	indata:
-
-	    if (strncmp("-----END ", buf, 9) == 0) {
-		where = DONE;
-		break;
-	    }
-
-	    p = emalloc(i);
-	    i = base64_decode(buf, p);
-	    if (i < 0) {
-		free(p);
-		goto out;
-	    }
-	    
-	    data = erealloc(data, len + i);
-	    memcpy(((char *)data) + len, p, i);
-	    free(p);
-	    len += i;
-	    break;
-	case DONE:
-	    abort();
-	}
-
-	if (where == DONE) {
-	    int j;
-
-	    for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
-		const char *q = formats[j].name;
-		if (strcasecmp(type, q) == 0) {
-		    ret = (*formats[j].func)(context, fn, c, 
-					     headers, data, len);
-		    break;
-		}
-	    }
-	    if (j == sizeof(formats)/sizeof(formats[0])) {
-		ret = HX509_UNSUPPORTED_OPERATION;
-		hx509_set_error_string(context, 0, ret,
-				       "Found no matching PEM format for %s",
-				       type);
-	    }
-	out:
-	    free(data);
-	    data = NULL;
-	    len = 0;
-	    free(type);
-	    type = NULL;
-	    where = BEFORE;
-	    free_headers(headers);
-	    headers = NULL;
-	    if (ret)
-		break;
 	}
     }
-
-    fclose(f);
-
-    if (where != BEFORE) {
-	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-			       "File ends before end of PEM end tag");
-	ret = HX509_PARSING_KEY_FAILED;
+    if (j == sizeof(formats)/sizeof(formats[0])) {
+	ret = HX509_UNSUPPORTED_OPERATION;
+	hx509_set_error_string(context, 0, ret,
+			       "Found no matching PEM format for %s", type);
+	return ret;
     }
-    if (data)
-	free(data);
-    if (type)
-	free(type);
-    if (headers)
-	free_headers(headers);
-
-    return ret;
+    return 0;
 }
 
 /*
@@ -542,17 +362,26 @@ file_init(hx509_context context,
 	goto out;
 
     for (p = f->fn; p != NULL; p = pnext) {
-	int found_data;
+	FILE *f;
 
 	pnext = strchr(p, ',');
 	if (pnext)
 	    *pnext++ = '\0';
 	
-	ret = parse_pem_file(context, p, c, &found_data);
-	if (ret)
-	    goto out;
 
-	if (!found_data) {
+	if ((f = fopen(p, "r")) == NULL) {
+	    ret = ENOENT;
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to open PEM file \"%s\": %s", 
+				   p, strerror(errno));
+	    goto out;
+	}
+
+	ret = hx509_pem_read(context, f, pem_func, c);
+	fclose(f);		     
+	if (ret != 0 && ret != HX509_PARSING_KEY_FAILED)
+	    goto out;
+	else if (ret == HX509_PARSING_KEY_FAILED) {
 	    size_t length;
 	    void *ptr;
 	    int i;
