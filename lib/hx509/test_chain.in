@@ -103,6 +103,20 @@ ${hxtool} verify --missing-revoke \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
+echo "max depth 2 (ok)"
+${hxtool} verify --missing-revoke \
+	--max-depth=2 \
+	cert:FILE:$srcdir/data/sub-cert.crt \
+	chain:FILE:$srcdir/data/sub-ca.crt \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
+echo "max depth 1 (fail)"
+${hxtool} verify --missing-revoke \
+	--max-depth=1 \
+	cert:FILE:$srcdir/data/sub-cert.crt \
+	chain:FILE:$srcdir/data/sub-ca.crt \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
 echo "ocsp non-ca responder"
 ${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
