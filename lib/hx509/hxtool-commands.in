@@ -230,6 +230,16 @@ command = {
 		type = "flag"
 		help = "verbose logging"
 	}
+	option = {
+		long = "max-depth"
+		type = "integer"
+		help = "maximum search length of certificate trust anchor"
+	}
+	option = {
+		long = "hostname"
+		type = "string"
+		help = "match hostname to certificate"
+	}
 	argument = "cert:foo chain:cert1 chain:cert2 anchor:anchor1 anchor:anchor2"
 	help = "Verify certificate chain"
 }
