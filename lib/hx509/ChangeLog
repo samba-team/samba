@@ -1,5 +1,7 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add version script.
+
 	* version-script.map: Limited exported symbols.
 
 	* test_ca.in: test --hostname.
