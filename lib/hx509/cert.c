@@ -355,6 +355,12 @@ hx509_verify_set_time(hx509_verify_ctx ctx, time_t t)
 }
 
 void
+hx509_verify_set_max_depth(hx509_verify_ctx ctx, unsigned int max_depth)
+{
+    ctx->max_depth = max_depth;
+}
+
+void
 hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
 {
     if (boolean)
@@ -1867,7 +1873,7 @@ hx509_verify_signature(hx509_context context,
     return _hx509_verify_signature(context, signer->data, alg, data, sig);
 }
 
-#define HX509_VHN_F_REQUIRE_MATCH 1
+#define HX509_VHN_F_ALLOW_NO_MATCH 1
 
 int
 hx509_verify_hostname(hx509_context context,
@@ -1878,22 +1884,42 @@ hx509_verify_hostname(hx509_context context,
 		      const struct sockaddr *sa,
 		      /* XXX krb5_socklen_t */ int sa_size) 
 {
+    GeneralNames san;
+    int ret, i, j;
+
     if (sa && sa_size <= 0)
 	return EINVAL;
 
-    if (hostname) {
-/*	int ret, match = 0, same = 0; */
-	GeneralName n;
+    memset(&san, 0, sizeof(san));
 
-	memset(&n, 0, sizeof(n));
+    i = 0;
+    do {
+	ret = find_extension_subject_alt_name(cert->data, &i, &san);
+	if (ret == HX509_EXTENSION_NOT_FOUND) {
+	    ret = 0;
+	    break;
+	} else if (ret != 0)
+	    break;
 
-	n.element = choice_GeneralName_dNSName;
-	n.u.dNSName = rk_UNCONST(hostname);
+	for (j = 0; j < san.len; j++) {
+	    switch (san.val[j].element) {
+	    case choice_GeneralName_dNSName:
+		if (strcasecmp(san.val[j].u.dNSName, hostname) == 0) {
+		    free_GeneralNames(&san);
+		    return 0;
+		}
+		break;
+	    default:
+		break;
+	    }
+	}
+	free_GeneralNames(&san);
+    } while (1);
 
-/*	ret = match_alt_name(&n, cert->data, &same, &match); */
-    }
+    if ((flags & HX509_VHN_F_ALLOW_NO_MATCH) == 0)
+	ret = HX509_NAME_CONSTRAINT_ERROR;
 
-    return 0;
+    return ret;
 }
 
 int
