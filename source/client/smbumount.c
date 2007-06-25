@@ -32,7 +32,9 @@
 static void
 usage(void)
 {
-        printf("usage: smbumount mountpoint\n");
+        printf("usage: smbumount mountpoint\n\n");
+	printf("Please be aware that smbfs is deprecated in favor of "
+	       "cifs\n");
 }
 
 static int

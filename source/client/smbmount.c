@@ -669,6 +669,9 @@ static void usage(void)
 
 	printf("Version %s\n\n",SAMBA_VERSION_STRING);
 
+	printf("Please be aware that smbfs is deprecated in favor of "
+	       "cifs\n\n");
+
 	printf(
 "Options:\n\
       username=<arg>                  SMB username\n\
