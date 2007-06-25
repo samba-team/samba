@@ -56,4 +56,14 @@ done
 echo "print NULL"
 ${hxtool} print --content NULL: > /dev/null || exit 1
 
+echo "copy dance"
+${hxtool} certificate-copy \
+    FILE:${srcdir}/data/test.crt PEM-FILE:cert-pem.tmp || exit 1
+
+${hxtool} certificate-copy PEM-FILE:cert-pem.tmp DER-FILE:cert-der.tmp || exit 1
+${hxtool} certificate-copy DER-FILE:cert-der.tmp PEM-FILE:cert-pem2.tmp || exit 1
+
+cmp cert-pem.tmp cert-pem2.tmp || exit 1
+
+
 exit 0
