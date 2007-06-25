@@ -126,7 +126,7 @@ typedef enum {
 
 /* hx509_verify_hostname nametype */
 typedef enum  {
-    HX509_HN_HOSTNAME,
+    HX509_HN_HOSTNAME = 0,
     HX509_HN_DNSSRV
 } hx509_hostname_type;
 
