@@ -610,48 +610,6 @@ file_free(hx509_certs certs, void *data)
     return 0;
 }
 
-static void
-pem_header(FILE *f, const char *type, const char *str)
-{
-    fprintf(f, "-----%s %s-----\n", type, str);
-}
-
-static int
-dump_pem_file(hx509_context context, const char *header,
-	      FILE *f, const void *data, size_t size)
-{
-    const char *p = data;
-    size_t length;
-    char *line;
-
-#define ENCODE_LINE_LENGTH	54
-    
-    pem_header(f, "BEGIN", header);
-
-    while (size > 0) {
-	ssize_t l;
-	
-	length = size;
-	if (length > ENCODE_LINE_LENGTH)
-	    length = ENCODE_LINE_LENGTH;
-	
-	l = base64_encode(p, length, &line);
-	if (l < 0) {
-	    hx509_set_error_string(context, 0, ENOMEM,
-				   "malloc - out of memory");
-	    return ENOMEM;
-	}
-	size -= length;
-	fprintf(f, "%s\n", line);
-	p += length;
-	free(line);
-    }
-
-    pem_header(f, "END", header);
-
-    return 0;
-}
-
 static int
 store_private_key(hx509_context context, FILE *f, hx509_private_key key)
 {
@@ -660,8 +618,8 @@ store_private_key(hx509_context context, FILE *f, hx509_private_key key)
 
     ret = _hx509_private_key_export(context, key, &data);
     if (ret == 0)
-	dump_pem_file(context, _hx509_private_pem_name(key), f,
-		      data.data, data.length);
+	hx509_pem_write(context, _hx509_private_pem_name(key), NULL, f,
+			data.data, data.length);
     free(data.data);
     return ret;
 }
@@ -677,7 +635,7 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     if (ret)
 	return ret;
     
-    dump_pem_file(context, "CERTIFICATE", f, data.data, data.length);
+    hx509_pem_write(context, "CERTIFICATE", NULL, f, data.data, data.length);
     free(data.data);
 
     if (_hx509_cert_private_key_exportable(c))
