@@ -90,6 +90,11 @@ if FRAMEWORK_SECURITY
 libhx509_la_LDFLAGS += -framework Security -framework CoreFoundation
 endif
 
+if versionscript
+libhx509_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+$(libheimntlm_la_OBJECTS): $(srcdir)/version-script.map
+
 libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_hcrypto)
 nodist_libhx509_la_SOURCES = $(BUILT_SOURCES)
 
