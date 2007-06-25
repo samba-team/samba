@@ -34,9 +34,12 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
+typedef enum { USE_PEM, USE_DER } outformat;
+
 struct ks_file {
     hx509_certs certs;
     char *fn;
+    outformat format;
 };
 
 /*
@@ -315,9 +318,9 @@ pem_func(hx509_context context, const char *type,
  */
 
 static int
-file_init(hx509_context context,
-	  hx509_certs certs, void **data, int flags, 
-	  const char *residue, hx509_lock lock)
+file_init_common(hx509_context context,
+		 hx509_certs certs, void **data, int flags, 
+		 const char *residue, hx509_lock lock, outformat format)
 {
     char *p, *pnext;
     struct ks_file *f = NULL;
@@ -335,6 +338,7 @@ file_init(hx509_context context,
 	hx509_clear_error_string(context);
 	return ENOMEM;
     }
+    f->format = format;
 
     f->fn = strdup(residue);
     if (f->fn == NULL) {
@@ -430,6 +434,22 @@ out:
 }
 
 static int
+file_init_pem(hx509_context context,
+	      hx509_certs certs, void **data, int flags, 
+	      const char *residue, hx509_lock lock)
+{
+    return file_init_common(context, certs, data, flags, residue, lock, USE_PEM);
+}
+
+static int
+file_init_der(hx509_context context,
+	      hx509_certs certs, void **data, int flags, 
+	      const char *residue, hx509_lock lock)
+{
+    return file_init_common(context, certs, data, flags, residue, lock, USE_DER);
+}
+
+static int
 file_free(hx509_certs certs, void *data)
 {
     struct ks_file *f = data;
@@ -439,24 +459,15 @@ file_free(hx509_certs certs, void *data)
     return 0;
 }
 
-static int
-store_private_key(hx509_context context, FILE *f, hx509_private_key key)
-{
-    heim_octet_string data;
-    int ret;
-
-    ret = _hx509_private_key_export(context, key, &data);
-    if (ret == 0)
-	hx509_pem_write(context, _hx509_private_pem_name(key), NULL, f,
-			data.data, data.length);
-    free(data.data);
-    return ret;
-}
+struct store_ctx {
+    FILE *f;
+    outformat format;
+};
 
 static int
 store_func(hx509_context context, void *ctx, hx509_cert c)
 {
-    FILE *f = (FILE *)ctx;
+    struct store_ctx *sc = ctx;
     heim_octet_string data;
     int ret;
 
@@ -464,11 +475,26 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     if (ret)
 	return ret;
     
-    hx509_pem_write(context, "CERTIFICATE", NULL, f, data.data, data.length);
-    free(data.data);
-
-    if (_hx509_cert_private_key_exportable(c))
-	store_private_key(context, f, _hx509_cert_private_key(c));
+    switch (sc->format) {
+    case USE_DER:
+	fwrite(data.data, data.length, 1, sc->f);
+	free(data.data);
+	break;
+    case USE_PEM:
+	hx509_pem_write(context, "CERTIFICATE", NULL, sc->f, 
+			data.data, data.length);
+	free(data.data);
+	if (_hx509_cert_private_key_exportable(c)) {
+	    hx509_private_key key = _hx509_cert_private_key(c);
+	    ret = _hx509_private_key_export(context, key, &data);
+	    if (ret)
+		break;
+	    hx509_pem_write(context, _hx509_private_pem_name(key), NULL, sc->f,
+			    data.data, data.length);
+	    free(data.data);
+	}
+	break;
+    }
 
     return 0;
 }
@@ -478,18 +504,19 @@ file_store(hx509_context context,
 	   hx509_certs certs, void *data, int flags, hx509_lock lock)
 {
     struct ks_file *f = data;
-    FILE *fh;
+    struct store_ctx sc;
     int ret;
 
-    fh = fopen(f->fn, "w");
-    if (fh == NULL) {
+    sc.f = fopen(f->fn, "w");
+    if (sc.f == NULL) {
 	hx509_set_error_string(context, 0, ENOENT,
 			       "Failed to open file %s for writing");
 	return ENOENT;
     }
+    sc.format = f->format;
 
-    ret = hx509_certs_iter(context, f->certs, store_func, fh);
-    fclose(fh);
+    ret = hx509_certs_iter(context, f->certs, store_func, &sc);
+    fclose(sc.f);
     return ret;
 }
 
@@ -549,7 +576,7 @@ file_addkey(hx509_context context,
 static struct hx509_keyset_ops keyset_file = {
     "FILE",
     0,
-    file_init,
+    file_init_pem,
     file_store,
     file_free,
     file_add,
@@ -562,8 +589,43 @@ static struct hx509_keyset_ops keyset_file = {
     file_addkey
 };
 
+static struct hx509_keyset_ops keyset_pemfile = {
+    "PEM-FILE",
+    0,
+    file_init_pem,
+    file_store,
+    file_free,
+    file_add,
+    NULL,
+    file_iter_start,
+    file_iter,
+    file_iter_end,
+    NULL,
+    file_getkeys,
+    file_addkey
+};
+
+static struct hx509_keyset_ops keyset_derfile = {
+    "DER-FILE",
+    0,
+    file_init_der,
+    file_store,
+    file_free,
+    file_add,
+    NULL,
+    file_iter_start,
+    file_iter,
+    file_iter_end,
+    NULL,
+    file_getkeys,
+    file_addkey
+};
+
+
 void
 _hx509_ks_file_register(hx509_context context)
 {
     _hx509_ks_register(context, &keyset_file);
+    _hx509_ks_register(context, &keyset_pemfile);
+    _hx509_ks_register(context, &keyset_derfile);
 }
