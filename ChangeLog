@@ -1,5 +1,10 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/default_config.c: Add [kdc]pkinit_require_binding option.
+
+	* kdc/pkinit.c (pk_mk_pa_reply_enckey): only allow non-bound reply
+	if its not required.
+
 	* kdc/default_config.c: rename pkinit_princ_in_cert and add
 	pkinit_require_binding
 
