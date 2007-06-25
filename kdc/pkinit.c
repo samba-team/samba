@@ -1385,7 +1385,7 @@ _kdc_pk_check_client(krb5_context context,
 	    "Trying to authorize PK-INIT subject DN %s", 
 	    *subject_name);
 
-    if (config->enable_pkinit_princ_in_cert) {
+    if (config->pkinit_princ_in_cert) {
 	ret = match_rfc_san(context, config,
 			    client_params->cert,
 			    client->entry.principal);
