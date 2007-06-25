@@ -51,6 +51,16 @@ struct ctdb_tcp_list {
 };
 
 
+/*
+  list of clients to kill on IP release
+ */
+struct ctdb_client_ip {
+	struct ctdb_client_ip *prev, *next;
+	struct ctdb_context *ctdb;
+	struct sockaddr_in ip;
+	uint32_t client_id;
+};
+
 
 /*
   send a gratuitous arp
@@ -211,6 +221,27 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/*
+  kill any clients that are registered with a IP that is being released
+ */
+static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in *sin)
+{
+	struct ctdb_client_ip *ip;
+
+	for (ip=ctdb->client_ip_list; ip; ip=ip->next) {
+		if (ip->ip.sin_addr.s_addr == sin->sin_addr.s_addr) {
+			struct ctdb_client *client = ctdb_reqid_find(ctdb, 
+								     ip->client_id, 
+								     struct ctdb_client);
+			if (client->pid != 0) {
+				DEBUG(0,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
+					 (unsigned)client->pid, inet_ntoa(sin->sin_addr),
+					      ip->client_id));
+				kill(client->pid, SIGKILL);
+			}
+		}
+	}
+}
 
 /*
   called when releaseip event finishes
@@ -233,6 +264,10 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	data.dsize = strlen(ip)+1;
 
 	ctdb_daemon_send_message(ctdb, ctdb->vnn, CTDB_SRVID_RELEASE_IP, data);
+
+	/* kill clients that have registered with this IP */
+	release_kill_clients(ctdb, state->sin);
+	
 
 	/* tell other nodes about any tcp connections we were holding with this IP */
 	for (tcp=ctdb->tcp_list;tcp;tcp=tcp->next) {
@@ -528,6 +563,15 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 
 
 /*
+  destroy a ctdb_client_ip structure
+ */
+static int ctdb_client_ip_destructor(struct ctdb_client_ip *ip)
+{
+	DLIST_REMOVE(ip->ctdb->client_ip_list, ip);
+	return 0;
+}
+
+/*
   called by a client to inform us of a TCP connection that it is managing
   that should tickled with an ACK when IP takeover is done
  */
@@ -540,6 +584,16 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, u
 	struct ctdb_control_tcp_vnn t;
 	int ret;
 	TDB_DATA data;
+	struct ctdb_client_ip *ip;
+
+	ip = talloc(client, struct ctdb_client_ip);
+	CTDB_NO_MEMORY(ctdb, ip);
+
+	ip->ctdb = ctdb;
+	ip->ip = p->dest;
+	ip->client_id = client_id;
+	talloc_set_destructor(ip, ctdb_client_ip_destructor);
+	DLIST_ADD(ctdb->client_ip_list, ip);
 
 	tcp = talloc(client, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);

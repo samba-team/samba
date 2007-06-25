@@ -101,6 +101,7 @@ struct ctdb_client {
 	int fd;
 	struct ctdb_queue *queue;
 	uint32_t client_id;
+	pid_t pid;
 	struct ctdb_tcp_list *tcp_list;
 };
 
@@ -267,7 +268,6 @@ struct ctdb_takeover {
 	TALLOC_CTX *last_ctx;
 };
 
-
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -306,6 +306,7 @@ struct ctdb_context {
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_takeover takeover;
 	struct ctdb_tcp_list *tcp_list;
+	struct ctdb_client_ip *client_ip_list;
 };
 
 struct ctdb_db_context {
@@ -926,7 +927,7 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb);
 
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 
-uint32_t ctdb_get_num_enabled_nodes(struct ctdb_context *ctdb);
+uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_monitoring(struct ctdb_context *ctdb);

@@ -373,7 +373,7 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 
 	if (key.dsize == 0 && data.dsize == 0) {
 		state->null_count++;
-		if (state->null_count != ctdb_get_num_enabled_nodes(ctdb)) {
+		if (state->null_count != ctdb_get_num_active_nodes(ctdb)) {
 			return 0;
 		}
 	}

@@ -211,6 +211,14 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 		DEBUG(2,(__location__ " Registered message handler for srvid=%llu\n", 
 			 (unsigned long long)srvid));
 	}
+
+	/* this is a hack for Samba - we now know the pid of the Samba client */
+	if ((srvid & 0xFFFFFFFF) == srvid &&
+	    kill(srvid, 0) == 0) {
+		client->pid = srvid;
+		DEBUG(0,(__location__ " Registered PID %u for client %u\n",
+			 (unsigned)client->pid, client_id));
+	}
 	return res;
 }
 
