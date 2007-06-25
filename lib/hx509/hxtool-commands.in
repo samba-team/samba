@@ -84,6 +84,11 @@ command = {
 		help = "wrapped out-data in a ContentInfo"
 	}
 	option = {
+		long = "pem"
+		type = "flag"
+		help = "wrap out-data in PEM armor"
+	}
+	option = {
 		long = "detached-signature"
 		type = "flag"
 		help = "create a detached signature"
