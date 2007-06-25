@@ -1,5 +1,11 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c: Use hx509_crypto_random_iv.
+
+	* crypto.c: Split out the iv creation from hx509_crypto_encrypt
+	since _hx509_pbe_encrypt needs to use the iv from the s2k
+	function.
+
 	* test_cert.in: Test PEM and DER FILE writing functionallity.
 
 	* ks_file.c: Add writing DER certificates.
