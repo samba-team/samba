@@ -980,3 +980,206 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 
 	return NT_STATUS_INTERNAL_ERROR;
 }
+
+
+/*********************************************************************
+ * the following is a generic validation mechanism for tdbs.
+ *********************************************************************/
+
+/* 
+ * internal validation function, executed by the child.  
+ */
+static int tdb_validate_child(const char *tdb_path,
+			      tdb_validate_data_func validate_fn, 
+			      int pfd)
+{
+	int ret = -1;
+	int tfd = -1;
+	int num_entries = 0;
+	TDB_CONTEXT *tdb = NULL;
+	struct tdb_validation_status v_status;
+	
+	v_status.tdb_error = False;
+	v_status.bad_freelist = False;
+	v_status.bad_entry = False;
+	v_status.unknown_key = False;
+	v_status.success = True;
+
+	tdb = tdb_open_log(tdb_path,
+			WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
+			lp_winbind_offline_logon() 
+				?  TDB_DEFAULT 
+				: (TDB_DEFAULT | TDB_CLEAR_IF_FIRST),
+			O_RDWR|O_CREAT, 0600);
+	if (!tdb) {
+		v_status.tdb_error = True;
+		v_status.success = False;
+		goto out;
+	}
+
+	tfd = tdb_fd(tdb);
+
+	/* Check the cache freelist is good. */
+	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
+		DEBUG(0,("tdb_validate_child: bad freelist in cache %s\n",
+			tdb_path));
+		v_status.bad_freelist = True;
+		v_status.success = False;
+		goto out;
+	}
+
+	DEBUG(10,("tdb_validate_child: cache %s freelist has %d entries\n",
+		tdb_path, num_entries));
+
+	/* Now traverse the cache to validate it. */
+	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
+	if (num_entries == -1 || !(v_status.success)) {
+		DEBUG(0,("tdb_validate_child: cache %s traverse failed\n",
+			tdb_path));
+		if (!(v_status.success)) {
+			if (v_status.bad_entry) {
+				DEBUGADD(0, (" -> bad entry found\n"));
+			}
+			if (v_status.unknown_key) {
+				DEBUGADD(0, (" -> unknown key encountered\n"));
+			}
+		}
+		goto out;
+	}
+
+	DEBUG(10,("tdb_validate_child: cache %s is good "
+		"with %d entries\n", tdb_path, num_entries));
+	ret = 0; /* Cache is good. */
+
+out:
+	if (tdb) {
+		if (ret == 0) {
+			tdb_close(tdb);
+		} 
+		else if (tfd != -1) {
+			close(tfd);
+		}
+	}
+
+	DEBUG(10, ("tdb_validate_child: writing status to pipe\n"));
+	write (pfd, (const char *)&v_status, sizeof(v_status));
+	close(pfd);
+
+	return ret;
+}
+
+int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
+{
+	pid_t child_pid = -1;
+	int child_status = 0;
+	int wait_pid = 0;
+	int ret = -1;
+	int pipe_fds[2];
+	struct tdb_validation_status v_status;
+	int bytes_read = 0;
+	
+	/* fork and let the child do the validation. 
+	 * benefit: no need to twist signal handlers and panic functions.
+	 * just let the child panic. we catch the signal. 
+	 * communicate the extended status struct over a pipe. */
+
+	if (pipe(pipe_fds) != 0) {
+		DEBUG(0, ("tdb_validate: unable to create pipe, "
+			  "error %s", strerror(errno)));
+		smb_panic("winbind_validate_cache: unable to create pipe.");
+	}
+
+	DEBUG(10, ("tdb_validate: forking to let child do validation.\n"));
+	child_pid = sys_fork();
+	if (child_pid == 0) {
+		DEBUG(10, ("tdb_validate (validation child): created\n"));
+		close(pipe_fds[0]); /* close reading fd */
+		DEBUG(10, ("tdb_validate (validation child): "
+			   "calling tdb_validate_child\n"));
+		exit(tdb_validate_child(tdb_path, validate_fn, pipe_fds[1]));
+	}
+	else if (child_pid < 0) {
+		smb_panic("tdb_validate: fork for validation failed.");
+	}
+
+	/* parent */
+
+	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n", 
+		   child_pid));
+	close(pipe_fds[1]); /* close writing fd */
+
+	v_status.success = True;
+	v_status.bad_entry = False;
+	v_status.unknown_key = False;
+
+	DEBUG(10, ("tdb_validate: reading from pipe.\n"));
+	bytes_read = read(pipe_fds[0], (void *)&v_status, sizeof(v_status));
+	close(pipe_fds[0]);
+
+	if (bytes_read != sizeof(v_status)) {
+		DEBUG(10, ("tdb_validate: read %d bytes from pipe "
+			   "but expected %d", bytes_read, (int)sizeof(v_status)));
+		DEBUGADD(10, (" -> assuming child crashed\n"));
+		v_status.success = False;
+	}
+	else {
+		DEBUG(10,    ("tdb_validate: read status from child\n"));
+		DEBUGADD(10, (" *  tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
+		DEBUGADD(10, (" *  bad freelist: %s\n", v_status.bad_freelist ? "yes" : "no"));
+		DEBUGADD(10, (" *  bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
+		DEBUGADD(10, (" *  unknown key: %s\n", v_status.unknown_key ? "yes" : "no"));
+		DEBUGADD(10, (" => overall success: %s\n", v_status.success ? "yes" : "no"));
+	}
+
+	if (!v_status.success) {
+		DEBUG(10, ("tdb_validate: validation not successful.\n"));
+		DEBUGADD(10, ("removing tdb %s.\n", tdb_path));
+		unlink(tdb_path);
+	}
+
+	DEBUG(10, ("tdb_validate: waiting for child to finish...\n"));
+	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
+		if (errno == EINTR) {
+			DEBUG(10, ("tdb_validate: got signal during "
+				   "waitpid, retrying\n"));
+			errno = 0;
+			continue;
+		}
+		DEBUG(0, ("tdb_validate: waitpid failed with "
+                          "errno %s\n", strerror(errno)));
+		smb_panic("tdb_validate: waitpid failed.");
+	}
+	if (wait_pid != child_pid) {
+		DEBUG(0, ("tdb_validate: waitpid returned pid %d, "
+			  "but %d was expexted\n", wait_pid, child_pid));
+		smb_panic("tdb_validate: waitpid returned "
+			     "unexpected PID.");
+	}
+
+		
+	DEBUG(10, ("tdb_validate: validating child returned.\n"));
+	if (WIFEXITED(child_status)) {
+		DEBUG(10, ("tdb_validate: child exited, code %d.\n",
+			   WEXITSTATUS(child_status)));
+		ret = WEXITSTATUS(child_status);
+	}
+	if (WIFSIGNALED(child_status)) {
+		DEBUG(10, ("tdb_validate: child terminated "
+			   "by signal %d\n", WTERMSIG(child_status)));
+#ifdef WCOREDUMP
+		if (WCOREDUMP(child_status)) {
+			DEBUGADD(10, ("core dumped\n"));
+		}
+#endif
+		ret = WTERMSIG(child_status);
+	}
+	if (WIFSTOPPED(child_status)) {
+		DEBUG(10, ("tdb_validate: child was stopped "
+			   "by signal %d\n",
+			   WSTOPSIG(child_status)));
+		ret = WSTOPSIG(child_status);
+	}
+
+	return ret;
+}
+
