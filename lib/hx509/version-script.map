@@ -182,6 +182,7 @@ HEIMDAL_X509_1.0 {
 		hx509_verify_set_strict_rfc3280_verification;
 		hx509_verify_set_time;
 		hx509_verify_signature;
+		hx509_pem_write;
 	local:
 		*;
 };
