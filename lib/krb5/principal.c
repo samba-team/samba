@@ -1219,7 +1219,7 @@ krb5_sname_to_principal (krb5_context context,
     return ret;
 }
 
-struct {
+static const struct {
     const char *type;
     int32_t value;
 } nametypes[] = {
