@@ -1,3 +1,13 @@
+2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/default_config.c: rename pkinit_princ_in_cert and add
+	pkinit_require_binding
+
+	* kdc/kdc.h: rename pkinit_princ_in_cert and add
+	pkinit_require_binding
+
+	* kdc/pkinit.c: rename pkinit_princ_in_cert
+
 2007-06-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: Adapt to hx509_verify_hostname change.
