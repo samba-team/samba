@@ -485,6 +485,13 @@ hx509_cms_envelope_1(hx509_context context,
 	goto out;
     }
 
+    ret = hx509_crypto_random_iv(crypto, &ivec);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to create a random iv");
+	goto out;
+    }
+
     ret = hx509_crypto_encrypt(crypto,
 			       data,
 			       length,
