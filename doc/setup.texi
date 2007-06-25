@@ -1283,6 +1283,7 @@ Write about the kdc.
 	pkinit_pool = PKCS12:/path/to/useful-intermediate-certs.pfx
 	pkinit_pool = FILE:/path/to/other-useful-intermediate-certs.pem
 	pkinit_allow_proxy_certificate = false
+	pkinit_win2k_require_binding = yes
 @end example
 
 @subsection Using pki-mapping file
