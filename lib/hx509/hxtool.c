@@ -236,6 +236,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     size_t sz;
     void *p;
     int ret, flags = 0;
+    char *signer_name = NULL;
 
     memset(&contentType, 0, sizeof(contentType));
 
@@ -301,6 +302,20 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_cms_create_signed: %d", ret);
 
+    {
+	hx509_name name;
+	
+	ret = hx509_cert_get_subject(cert, &name);
+	if (ret)
+	    errx(1, "hx509_cert_get_subject");
+	
+	ret = hx509_name_to_string(name, &signer_name);
+	hx509_name_free(&name);
+	if (ret)
+	    errx(1, "hx509_name_to_string");
+    }
+
+
     hx509_certs_free(&anchors);
     hx509_certs_free(&pool);
     hx509_cert_free(cert);
@@ -321,10 +336,37 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	o = wo;
     }
 
-    ret = _hx509_write_file(argv[1], o.data, o.length);
-    if (ret)
-	errx(1, "hx509_write_file: %d", ret);
+    if (opt->pem_flag) {
+	char *headers[3];
+	FILE *f;
 
+	if (opt->detached_signature_flag)
+	    headers[0] = "Content-disposition: detached";
+	else
+	    headers[0] = "Content-disposition: inline";
+	asprintf(&headers[1], "Signer: %s", signer_name);
+	if (headers[1] == NULL)
+	    errx(1, "out of memory");
+	headers[2] = NULL;
+
+	f = fopen(argv[1], "w");
+	if (f == NULL)
+	    err(1, "open %s", argv[1]);
+	
+	ret = hx509_pem_write(context, "CMS SIGNEDDATA", headers, f, 
+			      o.data, o.length);
+	fclose(f);
+	free(headers[1]);
+	if (ret)
+	    errx(1, "hx509_pem_write: %d", ret);
+
+    } else {
+	ret = _hx509_write_file(argv[1], o.data, o.length);
+	if (ret)
+	    errx(1, "hx509_write_file: %d", ret);
+    }
+
+    free(signer_name);
     free(o.data);
 
     return 0;
