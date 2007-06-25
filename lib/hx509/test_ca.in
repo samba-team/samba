@@ -147,6 +147,24 @@ ${hxtool} issue-certificate \
 	  --req="pkcs10-request.der" \
 	  --certificate="FILE:cert-ee.pem" || exit 1
 
+echo "verify certificate hostname (ok)"
+${hxtool} verify --missing-revoke \
+	--hostname=www.test.h5l.se \
+	cert:FILE:cert-ee.pem \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+echo "verify certificate hostname (fail)"
+${hxtool} verify --missing-revoke \
+	--hostname=www2.test.h5l.se \
+	cert:FILE:cert-ee.pem \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
+echo "verify certificate hostname (fail)"
+${hxtool} verify --missing-revoke \
+	--hostname=2www.test.h5l.se \
+	cert:FILE:cert-ee.pem \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
 echo "issue certificate (email)"
 ${hxtool} issue-certificate \
 	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
