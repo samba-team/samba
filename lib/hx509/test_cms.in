@@ -138,6 +138,21 @@ ${hxtool} cms-verify-sd \
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+echo "create signed data (pem)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	--pem \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "create signed data (pem, detached)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	--detached-signature \
+	--pem \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
 echo "create signed data (p12)"
 ${hxtool} cms-create-sd \
 	--pass=PASS:foobar \
