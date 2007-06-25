@@ -41,6 +41,16 @@ struct tdb_wrap {
 	struct tdb_wrap *next, *prev;
 };
 
+struct tdb_validation_status {
+	BOOL tdb_error;
+	BOOL bad_freelist;
+	BOOL bad_entry;
+	BOOL unknown_key;
+	BOOL success;
+};
+
+typedef int (*tdb_validate_data_func)(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state);
+
 TDB_LIST_NODE *tdb_search_keys(struct tdb_context*, const char*);
 void tdb_search_list_free(TDB_LIST_NODE*);
 int32 tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32 *oldval, int32 change_val);
