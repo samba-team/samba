@@ -134,3 +134,52 @@ _hx509_write_file(const char *fn, const void *data, size_t length)
 
     return 0;
 }
+
+static void
+header(FILE *f, const char *type, const char *str)
+{
+    fprintf(f, "-----%s %s-----\n", type, str);
+}
+
+int
+hx509_pem_write(hx509_context context, const char *type, 
+		char **headers, FILE *f,
+		const void *data, size_t size)
+{
+    const char *p = data;
+    size_t length;
+    char *line;
+    int i;
+
+#define ENCODE_LINE_LENGTH	54
+    
+    header(f, "BEGIN", type);
+
+    for(i = 0; headers && headers[i]; i++)
+	fprintf(f, "%s\n", headers[i]);
+    if (i > 0)
+	fprintf(f, "\n");
+
+    while (size > 0) {
+	ssize_t l;
+	
+	length = size;
+	if (length > ENCODE_LINE_LENGTH)
+	    length = ENCODE_LINE_LENGTH;
+	
+	l = base64_encode(p, length, &line);
+	if (l < 0) {
+	    hx509_set_error_string(context, 0, ENOMEM,
+				   "malloc - out of memory");
+	    return ENOMEM;
+	}
+	size -= length;
+	fprintf(f, "%s\n", line);
+	p += length;
+	free(line);
+    }
+
+    header(f, "END", type);
+
+    return 0;
+}
