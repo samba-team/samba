@@ -183,6 +183,10 @@ HEIMDAL_X509_1.0 {
 		hx509_verify_set_time;
 		hx509_verify_signature;
 		hx509_pem_write;
+		_hx509_map_file;
+		_hx509_map_file_os;
+		_hx509_unmap_file;
+		_hx509_unmap_file_os;
 	local:
 		*;
 };
