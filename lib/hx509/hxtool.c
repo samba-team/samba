@@ -59,6 +59,10 @@ usage(int code)
     exit(code);
 }
 
+/*
+ *
+ */
+
 static void
 lock_strings(hx509_lock lock, getarg_strings *pass)
 {
@@ -70,6 +74,10 @@ lock_strings(hx509_lock lock, getarg_strings *pass)
 		 pass->strings[i], ret);
     }
 }
+
+/*
+ *
+ */
 
 static void
 certs_strings(hx509_context context, const char *type, hx509_certs certs,
@@ -85,6 +93,10 @@ certs_strings(hx509_context context, const char *type, hx509_certs certs,
     }
 }
 
+/*
+ *
+ */
+
 static void
 parse_oid(const char *str, const heim_oid *def, heim_oid *oid)
 {
@@ -96,6 +108,10 @@ parse_oid(const char *str, const heim_oid *def, heim_oid *oid)
     if  (ret)
 	errx(1, "parse_oid failed for: %s", str ? str : "default oid");
 }
+
+/*
+ *
+ */
 
 static void
 peer_strings(hx509_context context,
@@ -125,6 +141,9 @@ peer_strings(hx509_context context,
     free(val);
 }
 
+/*
+ *
+ */
 
 int
 cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
@@ -337,26 +356,21 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     }
 
     if (opt->pem_flag) {
-	char *headers[3];
+	hx509_pem_header *header = NULL;
 	FILE *f;
 
-	if (opt->detached_signature_flag)
-	    headers[0] = "Content-disposition: detached";
-	else
-	    headers[0] = "Content-disposition: inline";
-	asprintf(&headers[1], "Signer: %s", signer_name);
-	if (headers[1] == NULL)
-	    errx(1, "out of memory");
-	headers[2] = NULL;
+	hx509_pem_add_header(&header, "Content-disposition", 
+			     opt->detached_signature_flag ? "detached" : "inline");
+	hx509_pem_add_header(&header, "Signer", signer_name);
 
 	f = fopen(argv[1], "w");
 	if (f == NULL)
 	    err(1, "open %s", argv[1]);
 	
-	ret = hx509_pem_write(context, "CMS SIGNEDDATA", headers, f, 
+	ret = hx509_pem_write(context, "CMS SIGNEDDATA", header, f, 
 			      o.data, o.length);
 	fclose(f);
-	free(headers[1]);
+	hx509_pem_free_header(header);
 	if (ret)
 	    errx(1, "hx509_pem_write: %d", ret);
 
