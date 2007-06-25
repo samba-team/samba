@@ -330,7 +330,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	    krb5_config_get_bool_default(context, NULL,
 					 c->pkinit_require_binding,
 					 "kdc",
-					 "pkinit_require_binding",
+					 "pkinit_win2k_require_binding",
 					 NULL);
     }
 
