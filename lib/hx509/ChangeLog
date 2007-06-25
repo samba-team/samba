@@ -1,5 +1,9 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c: Match is first component is in a CN=.
+
+	* test_ca.in: Test hostname if first CN.
+
 	* Makefile.am: Add version script.
 
 	* version-script.map: Limited exported symbols.
