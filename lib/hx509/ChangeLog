@@ -1,5 +1,7 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* version-script.map: Limited exported symbols.
+
 	* test_ca.in: test --hostname.
 
 	* test_chain.in: test max-depth
