@@ -73,12 +73,12 @@ typedef struct krb5_kdc_configuration {
     krb5_boolean enable_524;
 
     krb5_boolean enable_pkinit;
-    krb5_boolean enable_pkinit_princ_in_cert;
+    krb5_boolean pkinit_princ_in_cert;
     char *pkinit_kdc_ocsp_file;
+    int pkinit_dh_min_bits;
+    int pkinit_require_binding;
 
     krb5_log_facility *logf;
-
-    int pkinit_dh_min_bits;
 
     int enable_digest;
     int digests_allowed;
