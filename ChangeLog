@@ -1,5 +1,8 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/default_config.c: Rename require_binding to
+	win2k_require_binding to match client configuration.
+
 	* kdc/default_config.c: Add [kdc]pkinit_require_binding option.
 
 	* kdc/pkinit.c (pk_mk_pa_reply_enckey): only allow non-bound reply
