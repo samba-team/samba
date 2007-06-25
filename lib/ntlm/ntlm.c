@@ -52,6 +52,12 @@ RCSID("$Id$");
 #include <heimntlm.h>
 
 
+/*
+ * Source of NTLM information:
+ * http://davenport.sourceforge.net/ntlm.html
+ */
+
+
 struct sec_buffer {
     uint16_t length;
     uint16_t allocated;
@@ -760,6 +766,10 @@ splitandenc(unsigned char *hash,
     memset(key, 0, sizeof(key));
 }
 
+/*
+ * String-to-key function for NTLM
+ */
+
 int
 heim_ntlm_nt_key(const char *password, struct ntlm_buf *key)
 {
@@ -783,6 +793,10 @@ heim_ntlm_nt_key(const char *password, struct ntlm_buf *key)
     _ntlm_free_buf(&buf);
     return 0;
 }
+
+/*
+ * Calculate NTLMv1 response hash
+ */
 
 int
 heim_ntlm_calculate_ntlm1(void *key, size_t len,
@@ -808,6 +822,10 @@ heim_ntlm_calculate_ntlm1(void *key, size_t len,
 
     return 0;
 }
+
+/*
+ * Calculate NTLMv1 master key
+ */
 
 int
 heim_ntlm_build_ntlm1_master(void *key, size_t len,
@@ -914,6 +932,10 @@ nt2unixtime(uint64_t t)
 }
 
 
+/*
+ * Calculate NTLMv2 response
+ */
+
 int
 heim_ntlm_calculate_ntlm2(const void *key, size_t len,
 			  const char *username,
@@ -997,6 +1019,10 @@ out:
 }
 
 static const int authtimediff = 3600 * 2; /* 2 hours */
+
+/*
+ * Verify NTLMv2 response.
+ */
 
 int
 heim_ntlm_verify_ntlm2(const void *key, size_t len,
@@ -1098,9 +1124,9 @@ out:
 
 
 /*
- * Calculate the NTLM2 Session Response as per pg 24 of Davenport NTLM
- * document http://davenport.sourceforge.net/ntlm.html
+ * Calculate the NTLM2 Session Response
  */
+
 int
 heim_ntlm_calculate_ntlm2_sess(const unsigned char clnt_nonce[8],
 			       const unsigned char svr_chal[8],
