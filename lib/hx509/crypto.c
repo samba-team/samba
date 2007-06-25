@@ -2012,10 +2012,29 @@ hx509_crypto_get_params(hx509_context context,
 }
 
 int
+hx509_crypto_random_iv(hx509_crypto crypto, heim_octet_string *ivec)
+{
+    ivec->length = EVP_CIPHER_iv_length(crypto->c);
+    ivec->data = malloc(ivec->length);
+    if (ivec->data == NULL) {
+	ivec->length = 0;
+	return ENOMEM;
+    }
+
+    if (RAND_bytes(ivec->data, ivec->length) <= 0) {
+	free(ivec->data);
+	ivec->data = NULL;
+	ivec->length = 0;
+	return HX509_CRYPTO_INTERNAL_ERROR;
+    }
+    return 0;
+}
+
+int
 hx509_crypto_encrypt(hx509_crypto crypto,
 		     const void *data,
 		     const size_t length,
-		     heim_octet_string *ivec,
+		     const heim_octet_string *ivec,
 		     heim_octet_string **ciphertext)
 {
     EVP_CIPHER_CTX evp;
@@ -2024,19 +2043,9 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 
     *ciphertext = NULL;
 
+    assert(EVP_CIPHER_iv_length(crypto->c) == ivec->length);
+
     EVP_CIPHER_CTX_init(&evp);
-
-    ivec->length = EVP_CIPHER_iv_length(crypto->c);
-    ivec->data = malloc(ivec->length);
-    if (ivec->data == NULL) {
-	ret = ENOMEM;
-	goto out;
-    }
-
-    if (RAND_bytes(ivec->data, ivec->length) <= 0) {
-	ret = HX509_CRYPTO_INTERNAL_ERROR;
-	goto out;
-    }
 
     ret = EVP_CipherInit_ex(&evp, crypto->c, NULL,
 			    crypto->key.data, ivec->data, 1);
@@ -2085,10 +2094,6 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 
  out:
     if (ret) {
-	if (ivec->data) {
-	    free(ivec->data);
-	    memset(ivec, 0, sizeof(*ivec));
-	}
 	if (*ciphertext) {
 	    if ((*ciphertext)->data) {
 		free((*ciphertext)->data);
@@ -2289,6 +2294,24 @@ find_string2key(const heim_oid *oid,
     return NULL;
 }
 
+/*
+ *
+ */
+
+int
+_hx509_pbe_encrypt(hx509_context context,
+		   hx509_lock lock,
+		   const AlgorithmIdentifier *ai,
+		   const heim_octet_string *content,
+		   heim_octet_string *econtent)
+{
+    hx509_clear_error_string(context);
+    return EINVAL;
+}
+
+/*
+ *
+ */
 
 int
 _hx509_pbe_decrypt(hx509_context context,
