@@ -1,5 +1,8 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: Add example for pkinit_win2k_require_binding
+	in [kdc] section.
+
 	* kdc/default_config.c: Rename require_binding to
 	win2k_require_binding to match client configuration.
 
