@@ -220,7 +220,7 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
 
 int
 hx509_cert_init_data(hx509_context context, 
-		     const void *ptr,
+	     const void *ptr,
 		     size_t len,
 		     hx509_cert *cert)
 {
@@ -1915,6 +1915,35 @@ hx509_verify_hostname(hx509_context context,
 	}
 	free_GeneralNames(&san);
     } while (1);
+
+    {
+	Name *name = &cert->data->tbsCertificate.subject;
+
+	/* match if first component is a CN= */
+	if (name->u.rdnSequence.len > 0
+	    && name->u.rdnSequence.val[0].len == 1
+	    && der_heim_oid_cmp(&name->u.rdnSequence.val[0].val[0].type,
+				oid_id_at_commonName()) == 0)
+	{
+	    DirectoryString *ds = &name->u.rdnSequence.val[0].val[0].value;
+
+	    switch (ds->element) {
+	    case choice_DirectoryString_printableString:
+		if (strcasecmp(ds->u.printableString, hostname) == 0)
+		    return 0;
+		break;
+	    case choice_DirectoryString_ia5String:
+		if (strcasecmp(ds->u.ia5String, hostname) == 0)
+		    return 0;
+		break;
+	    case choice_DirectoryString_utf8String:
+		if (strcasecmp(ds->u.utf8String, hostname) == 0)
+		    return 0;
+	    default:
+		break;
+	    }
+	}
+    }
 
     if ((flags & HX509_VHN_F_ALLOW_NO_MATCH) == 0)
 	ret = HX509_NAME_CONSTRAINT_ERROR;
