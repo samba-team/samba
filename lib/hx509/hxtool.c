@@ -651,6 +651,8 @@ certificate_copy(struct certificate_copy_options *opt, int argc, char **argv)
 struct verify {
     hx509_verify_ctx ctx;
     hx509_certs chain;
+    const char *hostname;
+    int errors;
 };
 
 static int
@@ -664,10 +666,20 @@ verify_f(hx509_context hxcontext, void *ctx, hx509_cert c)
 	char *s = hx509_get_error_string(hxcontext, ret);
 	printf("verify_path: %s: %d\n", s, ret);
 	free(s);
+	v->errors++;
     } else
 	printf("path ok\n");
 
-    return ret;
+    if (v->hostname) {
+	ret = hx509_verify_hostname(hxcontext, c, 0, HX509_HN_HOSTNAME,
+				    v->hostname, NULL, 0);
+	if (ret) {
+	    printf("verify_hostname: %d\n", ret);
+	    v->errors++;
+	}
+    }
+
+    return 0;
 }
 
 int
@@ -678,6 +690,8 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     hx509_verify_ctx ctx;
     struct verify v;
     int ret;
+
+    memset(&v, 0, sizeof(v));
 
     if (opt->missing_revoke_flag)
 	hx509_context_set_missing_revoke(context, 1);
@@ -706,6 +720,11 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
 	hx509_verify_set_time(ctx, t);
     }
+
+    if (opt->hostname_string)
+	v.hostname = opt->hostname_string;
+    if (opt->max_depth_integer)
+	hx509_verify_set_max_depth(ctx, opt->max_depth_integer);
 
     ret = hx509_revoke_init(context, &revoke_ctx);
     if (ret)
@@ -761,7 +780,7 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     v.ctx = ctx;
     v.chain = chain;
 
-    ret = hx509_certs_iter(context, certs, verify_f, &v);
+    hx509_certs_iter(context, certs, verify_f, &v);
 
     hx509_verify_destroy_ctx(ctx);
 
@@ -771,7 +790,12 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
     hx509_revoke_free(&revoke_ctx);
 
-    return ret;
+    if (v.errors) {
+	printf("failed verifing %d checks\n", v.errors);
+	return 1;
+    }
+
+    return 0;
 }
 
 int
