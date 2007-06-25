@@ -677,6 +677,7 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
 
 static krb5_error_code
 pk_mk_pa_reply_enckey(krb5_context context,
+		      krb5_kdc_configuration *config,
 		      pk_client_params *client_params,
 		      const KDC_REQ *req,
 		      const krb5_data *req_buffer,
@@ -701,8 +702,11 @@ pk_mk_pa_reply_enckey(krb5_context context,
     switch (client_params->type) {
     case PKINIT_COMPAT_WIN2K: {
 	int i = 0;
-	if (_kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_09_BINDING) == NULL)
+	if (_kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_09_BINDING) == NULL
+	    && config->pkinit_require_binding == 0)
+	{
 	    do_win2k = 1;
+	}
 	break;
     }
     case PKINIT_COMPAT_27:
@@ -1016,6 +1020,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		goto out;
 	    }
 	    ret = pk_mk_pa_reply_enckey(context,
+					config,
 					client_params,
 					req,
 					req_buffer,
@@ -1111,6 +1116,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    goto out;
 	}
 	ret = pk_mk_pa_reply_enckey(context,
+				    config,
 				    client_params,
 				    req,
 				    req_buffer,
