@@ -1,5 +1,11 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: Update to new hx509_pem_write().
+
+	* test_cms.in: test creation of PEM signeddata.
+
+	* hx509.h: PEM struct/function declarations.
+
 	* ks_file.c: Use PEM encoding/decoding functions.
 
 	* file.c: PEM encode/decoding functions.
