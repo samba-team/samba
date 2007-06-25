@@ -325,6 +325,13 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 					 "kdc",
 					 "pkinit_principal_in_certificate",
 					 NULL);
+
+	c->pkinit_require_binding = 
+	    krb5_config_get_bool_default(context, NULL,
+					 c->pkinit_require_binding,
+					 "kdc",
+					 "pkinit_require_binding",
+					 NULL);
     }
 
     c->pkinit_dh_min_bits =
