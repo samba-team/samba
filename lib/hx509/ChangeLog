@@ -1,5 +1,9 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_cert.in: Test PEM and DER FILE writing functionallity.
+
+	* ks_file.c: Add writing DER certificates.
+
 	* hxtool.c: Update to new hx509_pem_write().
 
 	* test_cms.in: test creation of PEM signeddata.
