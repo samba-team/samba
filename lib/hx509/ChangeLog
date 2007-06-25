@@ -1,5 +1,21 @@
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c: Use PEM encoding/decoding functions.
+
+	* file.c: PEM encode/decoding functions.
+
+	* ks_file.c: Use hx509_pem_write.
+
+	* version-script.map: Export some semi-private functions.
+
+	* hxtool.c: Enable writing out signed data as a pem attachment.
+
+	* hxtool-commands.in (cms-create-signed): add --pem
+
+	* file.c (hx509_pem_write): Add.
+
+	* test_ca.in: Issue and test null subject cert.
+
 	* cert.c: Match is first component is in a CN=.
 
 	* test_ca.in: Test hostname if first CN.
