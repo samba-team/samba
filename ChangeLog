@@ -1,3 +1,11 @@
+2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_cred.c: Add krb5_get_renewed_creds.
+
+	* lib/krb5/krb5_get_credentials.3: add krb5_get_renewed_creds
+
+	* lib/krb5/pkinit.c: Use hx509_cms_unwrap_ContentInfo.
+	
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: Add example for pkinit_win2k_require_binding
