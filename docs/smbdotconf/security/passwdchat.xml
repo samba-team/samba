@@ -30,7 +30,7 @@
 
     <para>The string can contain the macro <parameter moreinfo="none">%n</parameter> which is substituted 
     for the new password.  The chat sequence can also contain the standard 
-    macros \n, \r, \t and \s to 
+    macros \\n, \\r, \\t and \\s to 
     give line-feed, carriage-return, tab and space.  The chat sequence string can also contain 
     a '*' which matches any sequence of characters. Double quotes can be used to collect strings with spaces 
     in them into a single string.</para>
@@ -41,7 +41,7 @@
 
     <para>If the <smbconfoption name="pam password change"/> parameter is set to <constant>yes</constant>, the
 	chat pairs may be matched in any order, and success is determined by the PAM result, not any particular
-	output. The \n macro is ignored for PAM conversions.
+	output. The \\n macro is ignored for PAM conversions.
     </para>
 
 </description>
