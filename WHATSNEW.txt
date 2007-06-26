@@ -15,6 +15,20 @@ Major bug fixes included in Samba 3.0.25b are:
   o Crashes is idmap_ldap and idmap_rid.
 
 
+Changes to 'net idmap dump'
+---------------------------
+
+A change in command line syntax and behavior was introduced in the
+3.0.25 release series where the command 
+
+  $ net idmap dump /.../path/to/idmap.tdb
+
+would overwrite the tdb instead of dumping its contents to standard 
+output as was the case in releases priro to Samba 3.0.25.  The 
+changed has been reverted in 3.0.25b and the semantics from 3.0.24
+and earlier releases have been restored.  
+
+
 ######################################################################
 Changes
 #######
