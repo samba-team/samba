@@ -1218,7 +1218,7 @@ pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
 	ret = _hx509_request_print(context, stdout, p, length);
 	_hx509_unmap_file(p, length);
 	if (ret)
-	    errx(1, "failed to print file %s: %d", argv[i], ret);
+	    hx509_err(context, 1, ret, "Failed to print file %s", argv[ i]);
     }
 
     return 0;
