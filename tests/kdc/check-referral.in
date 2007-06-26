@@ -115,7 +115,7 @@ echo "Test AS-REQ"
 echo "Getting client (no canon)"; > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
-echo "checking that we go back right principal"
+echo "checking that we got back right principal"
 ${klist} | grep "Principal: foo@${R}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
@@ -124,7 +124,7 @@ echo "Getting client client tickets (default realm, enterprisename)"; > messages
 ${kinit} --canonicalize \
 	--password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
-echo "checking that we go back right principal"
+echo "checking that we got back right principal"
 ${klist} | grep "Principal: foo@${R}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
@@ -133,7 +133,7 @@ echo "Getting client alias1 tickets"; > messages.log
 ${kinit} --canonicalize \
 	--password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
-echo "checking that we go back right principal"
+echo "checking that we got back right principal"
 ${klist} | grep "Principal: foo@${R}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
@@ -143,7 +143,7 @@ echo "Getting client alias2 tickets"; > messages.log
 ${kinit} --canonicalize \
 	--password-file=${objdir}/foopassword alias2@${R}@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
-echo "checking that we go back right principal"
+echo "checking that we got back right principal"
 ${klist} | grep "Principal: foo@${R}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
@@ -172,7 +172,7 @@ echo "Test TGS-REQ"
 #${kgetcred} --server ${service}@${R} ||
 #	{ ec=1 ; eval "${testfailed}"; }
 #${klist}
-#echo "checking that we go back right principal"
+#echo "checking that we got back right principal"
 #${klist} | grep "${service}@${R2}" > /dev/null || \
 #	{ ec=1 ; eval "${testfailed}"; }
 #${kdestroy}
@@ -184,7 +184,7 @@ echo "Test TGS-REQ"
 #${kgetcred} --server ${service}@${R2} ||
 #	{ ec=1 ; eval "${testfailed}"; }
 #${klist}
-#echo "checking that we go back right principal"
+#echo "checking that we got back right principal"
 #${klist} | grep "${service}@${R2}" > /dev/null || \
 #	{ ec=1 ; eval "${testfailed}"; }
 #${kdestroy}
