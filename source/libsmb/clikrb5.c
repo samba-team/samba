@@ -1095,7 +1095,7 @@ out:
  krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,	/* FILE:/tmp/krb5cc_0 */
 				       const char *client_string,	/* gd@BER.SUSE.DE */
 				       const char *service_string,	/* krbtgt/BER.SUSE.DE@BER.SUSE.DE */
-				       time_t *new_start_time)
+				       time_t *expire_time)
 {
 	krb5_error_code ret;
 	krb5_context context = NULL;
@@ -1150,8 +1150,8 @@ out:
 	
 		ret = krb5_cc_store_cred(context, ccache, &creds);
 
-		if (new_start_time) {
-			*new_start_time = (time_t) creds.times.renew_till;
+		if (expire_time) {
+			*expire_time = (time_t) creds.times.endtime;
 		}
 
 		krb5_free_cred_contents(context, &creds);
@@ -1184,7 +1184,11 @@ out:
 			}
 		} else {
 			/* build tgt service by default */
-			client_realm = krb5_princ_realm(context, client);
+			client_realm = krb5_princ_realm(context, creds_in.client);
+			if (!client_realm) {
+				ret = ENOMEM;
+				goto done;
+			}
 			ret = krb5_make_principal(context, &creds_in.server, *client_realm, KRB5_TGS_NAME, *client_realm, NULL);
 			if (ret) {
 				goto done;
@@ -1208,8 +1212,8 @@ out:
 	
 		ret = krb5_cc_store_cred(context, ccache, creds);
 
-		if (new_start_time) {
-			*new_start_time = (time_t) creds->times.renew_till;
+		if (expire_time) {
+			*expire_time = (time_t) creds->times.endtime;
 		}
 						
 		krb5_free_cred_contents(context, &creds_in);

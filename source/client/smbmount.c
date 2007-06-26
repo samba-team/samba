@@ -152,7 +152,7 @@ static struct cli_state *do_connection(char *the_service)
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise()) || (cli_set_port(c, smb_port) != smb_port) ||
-	    !cli_connect(c, server_n, &ip)) {
+	    !NT_STATUS_IS_OK(cli_connect(c, server_n, &ip))) {
 		DEBUG(0,("%d: Connection to %s failed\n", sys_getpid(), server_n));
 		if (c) {
 			cli_shutdown(c);
@@ -668,6 +668,9 @@ static void usage(void)
 	printf("Usage: mount.smbfs service mountpoint [-o options,...]\n");
 
 	printf("Version %s\n\n",SAMBA_VERSION_STRING);
+
+	printf("Please be aware that smbfs is deprecated in favor of "
+	       "cifs\n\n");
 
 	printf(
 "Options:\n\

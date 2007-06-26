@@ -190,6 +190,10 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 	int i;
 	int numsources;
 
+	if (!elogs) {
+		return False;
+	}
+
 	for ( i = 0; elogs[i]; i++ ) {
 		if ( strequal( elogs[i], eventlog ) )
 			break;

@@ -249,9 +249,7 @@ static void check_domain_online_handler(struct event_context *ctx,
 	DEBUG(10,("check_domain_online_handler: called for domain %s\n",
 		domain->name ));
 
-	if (domain->check_online_event) {
-		TALLOC_FREE(domain->check_online_event);
-	}
+	TALLOC_FREE(domain->check_online_event);
 
 	/* Are we still in "startup" mode ? */
 
@@ -303,9 +301,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 	DEBUG(10,("set_domain_offline: called for domain %s\n",
 		domain->name ));
 
-	if (domain->check_online_event) {
-		TALLOC_FREE(domain->check_online_event);
-	}
+	TALLOC_FREE(domain->check_online_event);
 
 	if (domain->internal) {
 		DEBUG(3,("set_domain_offline: domain %s is internal - logic error.\n",
@@ -400,9 +396,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 
 	/* Ensure we have no online timeout checks. */
 	domain->check_online_timeout = 0;
-	if (domain->check_online_event) {
-		TALLOC_FREE(domain->check_online_event);
-	}
+	TALLOC_FREE(domain->check_online_event);
 
 	/* Ensure we ignore any pending child messages. */
 	message_deregister(MSG_WINBIND_TRY_TO_GO_ONLINE);

@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.25b
-                             June 20, 2007
+                             June 26, 2007
                    ===============================
 
 This is the third production release of the Samba 3.0.25 code 
@@ -44,16 +44,24 @@ o   Jeremy Allison <jra@samba.org>
     * Fix sync_file() to return NTSTATUS and return this on failure in
       the write reply path.
     * BUG 4678,4697: Fix token creation for clear text logins.  
+    * BUG 4725: Don't crash when no eventlog names are defined in
+      smb.conf.
+    * Ensure we will always release any timeout handler on fsp close 
+      or removal of oplock.
 
 
 o   Jacob Berkman <jberkman@novell.com>
     * BUG 4566: Pass password data to krb5_prompter.
 
 
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 4579: Fix "wbinfo -t" when running winbindd on a Samba DC.
+
+
 o   Guenther Deschner <gd@samba.org>
     * BUG 4657: Fix compilation and linking of pam_smbpass.so.
     * Add more netlogon GetDcName() client calls.
-
+    * Fix event based krb5 ticket refreshing in winbindd.
 
 o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
     * BUG 4720: Fix smbclient connections to share names containing 
