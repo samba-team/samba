@@ -1,5 +1,7 @@
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* version-script.map: Add initialize_hx_error_table_r.
+
 	* req.c: Move _hx509_request_print here.
 
 	* hxtool.c: use _hx509_request_print
