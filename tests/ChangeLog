@@ -1,5 +1,7 @@
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-pkinit.in: Fix hxtool issue-certificate --req.
+
 	* kdc/check-referral.in: Spelling.
 	
 2007-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
