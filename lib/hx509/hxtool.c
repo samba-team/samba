@@ -1202,23 +1202,23 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 }
 
 int
-pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
+request_print(struct request_print_options *opt, int argc, char **argv)
 {
-    size_t length;
     int ret, i;
-    void *p;
 
-    printf("pkcs10 print\n");
+    printf("request print\n");
 
     for (i = 0; i < argc; i++) {
-	ret = _hx509_map_file(argv[i], &p, &length, NULL);
-	if (ret)
-	    err(1, "map_file: %s: %d", argv[i], ret);
+	hx509_request req;
 
-	ret = _hx509_request_print(context, stdout, p, length);
-	_hx509_unmap_file(p, length);
+	ret = _hx509_request_parse(context, argv[i], &req);
 	if (ret)
-	    hx509_err(context, 1, ret, "Failed to print file %s", argv[ i]);
+	    hx509_err(context, 1, ret, "parse_request: %s", argv[i]);
+
+	ret = _hx509_request_print(context, req, stdout);
+	_hx509_request_free(&req);
+	if (ret)
+	    hx509_err(context, 1, ret, "Failed to print file %s", argv[i]);
     }
 
     return 0;
@@ -1575,31 +1575,18 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     }
 
     if (opt->req_string) {
-	CertificationRequest req;
-	CertificationRequestInfo *rinfo;
-	void *p;
-	size_t len, size;
+	hx509_request req;
 
-	ret = _hx509_map_file(opt->req_string, &p, &len, NULL);
+	ret = _hx509_request_parse(context, opt->req_string, &req);
 	if (ret)
-	    err(1, "map_file: %s: %d", opt->req_string, ret);
-
-	ret = decode_CertificationRequest(p, len, &req, &size);
-	_hx509_unmap_file(p, len);
+	    hx509_err(context, 1, ret, "parse_request: %s", opt->req_string);
+	ret = _hx509_request_get_name(context, req, &subject);
 	if (ret)
-	    errx(1, "failed to parse req file %s: %d", opt->req_string, ret);
-
-	rinfo = &req.certificationRequestInfo;
-
-	ret = _hx509_name_from_Name(&rinfo->subject, &subject);
+	    hx509_err(context, 1, ret, "get name");
+	ret = _hx509_request_get_SubjectPublicKeyInfo(context, req, &spki);
 	if (ret)
-	    errx(1, "_hx509_name_from_Name %d", ret);
-
-	ret = copy_SubjectPublicKeyInfo(&rinfo->subjectPKInfo, &spki);
-	if (ret)
-	    errx(1, "copy_SubjectPublicKeyInfo: %d", ret);
-
-	free_CertificationRequest(&req);
+	    hx509_err(context, 1, ret, "get spki");
+	_hx509_request_free(&req);
     }
 
     if (opt->generate_key_string) {
