@@ -42,7 +42,7 @@ typedef struct _SMB_ACL4_INT_T
 
 extern struct current_user current_user;
 extern int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-extern BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
+extern NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
 	uint32 security_info_sent, SEC_DESC *psd);
 
 static SMB_ACL4_INT_T *get_validated_aclint(SMB4ACL_T *acl)
@@ -559,7 +559,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 	return acl;
 }
 
-BOOL smb_set_nt_acl_nfs4(files_struct *fsp,
+NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info_sent,
 	SEC_DESC *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native)
@@ -569,7 +569,6 @@ BOOL smb_set_nt_acl_nfs4(files_struct *fsp,
 	BOOL	result;
 
 	SMB_STRUCT_STAT sbuf;
-	BOOL need_chown = False;
 	uid_t newUID = (uid_t)-1;
 	gid_t newGID = (gid_t)-1;
 
@@ -580,43 +579,37 @@ BOOL smb_set_nt_acl_nfs4(files_struct *fsp,
 	{
 		DEBUG(9, ("security_info_sent (0x%x) ignored\n",
 			security_info_sent));
-		return True; /* won't show error - later to be refined... */
+		return NT_STATUS_OK; /* won't show error - later to be refined... */
 	}
 
 	/* Special behaviours */
 	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp, &params))
-		return False;
+		return NT_STATUS_NO_MEMORY;
 
 	if (smbacl4_GetFileOwner(fsp, &sbuf))
-		return False;
+		return map_nt_error_from_unix(errno);
 
 	if (params.do_chown) {
 		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
-		if (!unpack_nt_owners(SNUM(fsp->conn), &newUID, &newGID, security_info_sent, psd))
-		{
+		NTSTATUS status = unpack_nt_owners(SNUM(fsp->conn), &newUID, &newGID, security_info_sent, psd);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(8, ("unpack_nt_owners failed"));
-			return False;
+			return status;
 		}
 		if (((newUID != (uid_t)-1) && (sbuf.st_uid != newUID)) ||
-			((newGID != (gid_t)-1) && (sbuf.st_gid != newGID))) {
-			need_chown = True;
-		}
-		if (need_chown) {
-			if ((newUID == (uid_t)-1 || newUID == current_user.ut.uid)) {
-				if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
-					DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
-						fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, strerror(errno) ));
-					return False;
+				((newGID != (gid_t)-1) && (sbuf.st_gid != newGID))) {
+			if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
+				DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
+					fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, strerror(errno) ));
+				if (errno == EPERM) {
+					return NT_STATUS_INVALID_OWNER;
 				}
-				DEBUG(10,("chown %s, %u, %u succeeded.\n",
-					fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
-				if (smbacl4_GetFileOwner(fsp, &sbuf))
-					return False;
-				need_chown = False;
-			} else { /* chown is needed, but _after_ changing acl */
-				sbuf.st_uid = newUID; /* OWNER@ in case of e_special */
-				sbuf.st_gid = newGID; /* GROUP@ in case of e_special */
+				return map_nt_error_from_unix(errno);
 			}
+			DEBUG(10,("chown %s, %u, %u succeeded.\n",
+				fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
+			if (smbacl4_GetFileOwner(fsp, &sbuf))
+				return map_nt_error_from_unix(errno);
 		}
 	}
 
@@ -624,7 +617,7 @@ BOOL smb_set_nt_acl_nfs4(files_struct *fsp,
 	{
 		acl = smbacl4_win2nfs4(psd->dacl, &params, sbuf.st_uid, sbuf.st_gid);
 		if (!acl)
-			return False;
+			return map_nt_error_from_unix(errno);
 
 		smbacl4_dump_nfs4acl(10, acl);
 
@@ -632,25 +625,11 @@ BOOL smb_set_nt_acl_nfs4(files_struct *fsp,
 		if (result!=True)
 		{
 			DEBUG(10, ("set_nfs4_native failed with %s\n", strerror(errno)));
-			return False;
+			return map_nt_error_from_unix(errno);
 		}
 	} else
 		DEBUG(10, ("no dacl found; security_info_sent = 0x%x\n", security_info_sent));
 
-	/* Any chown pending? */
-	if (need_chown) {
-		DEBUG(3,("chown#2 %s. uid = %u, gid = %u.\n",
-			fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
-		if (try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
-			DEBUG(2,("chown#2 %s, %u, %u failed. Error = %s.\n",
-				fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID,
-				strerror(errno)));
-			return False;
-		}
-		DEBUG(10,("chown#2 %s, %u, %u succeeded.\n",
-			fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
-	}
-
 	DEBUG(10, ("smb_set_nt_acl_nfs4 succeeded\n"));
-	return True;
+	return NT_STATUS_OK;
 }

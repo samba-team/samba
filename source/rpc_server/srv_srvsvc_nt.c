@@ -2063,7 +2063,6 @@ error_exit:
 WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
 									SRV_R_NET_FILE_SET_SECDESC *r_u)
 {
-	BOOL ret;
 	pstring filename;
 	pstring qualname;
 	DATA_BLOB null_pw;
@@ -2138,9 +2137,9 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 		}
 	}
 
-	ret = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
+	nt_status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
 
-	if (ret == False) {
+	if (!NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;

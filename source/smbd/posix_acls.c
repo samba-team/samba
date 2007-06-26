@@ -923,7 +923,7 @@ static mode_t map_nt_perms( uint32 *mask, int type)
  Unpack a SEC_DESC into a UNIX owner and group.
 ****************************************************************************/
 
-BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	DOM_SID owner_sid;
 	DOM_SID grp_sid;
@@ -933,7 +933,7 @@ BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_
 
 	if(security_info_sent == 0) {
 		DEBUG(0,("unpack_nt_owners: no security info sent !\n"));
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -961,9 +961,11 @@ BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " owner sid for %s\n",
 					 sid_string_static(&owner_sid)));
-				return False;
+				return NT_STATUS_INVALID_OWNER;
 			}
 		}
+		DEBUG(3,("unpack_nt_owners: owner sid mapped to uid %u\n",
+			 (unsigned int)*puser ));
  	}
 
 	/*
@@ -981,14 +983,16 @@ BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " group sid.\n"));
-				return False;
+				return NT_STATUS_INVALID_OWNER;
 			}
 		}
-	}
+		DEBUG(3,("unpack_nt_owners: group sid mapped to gid %u\n",
+			 (unsigned int)*pgrp));
+ 	}
 
 	DEBUG(5,("unpack_nt_owners: owner_sids validated.\n"));
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3049,6 +3053,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 
 	/* Case (4). */
 	if (!lp_dos_filemode(SNUM(conn))) {
+		errno = EPERM;
 		return -1;
 	}
 
@@ -3082,7 +3087,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
  This should be the only external function needed for the UNIX style set ACL.
 ****************************************************************************/
 
-BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	connection_struct *conn = fsp->conn;
 	uid_t user = (uid_t)-1;
@@ -3094,15 +3099,13 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	canon_ace *dir_ace_list = NULL;
 	BOOL acl_perms = False;
 	mode_t orig_mode = (mode_t)0;
-	uid_t orig_uid;
-	gid_t orig_gid;
-	BOOL need_chown = False;
+	NTSTATUS status;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
 	if (!CAN_WRITE(conn)) {
 		DEBUG(10,("set acl rejected on read-only share\n"));
-		return False;
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
 	/*
@@ -3111,40 +3114,29 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	if(fsp->is_directory || fsp->fh->fd == -1) {
 		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0)
-			return False;
+			return map_nt_error_from_unix(errno);
 	} else {
 		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0)
-			return False;
+			return map_nt_error_from_unix(errno);
 	}
 
 	/* Save the original elements we check against. */
 	orig_mode = sbuf.st_mode;
-	orig_uid = sbuf.st_uid;
-	orig_gid = sbuf.st_gid;
 
 	/*
 	 * Unpack the user/group/world id's.
 	 */
 
-	if (!unpack_nt_owners( SNUM(conn), &user, &grp, security_info_sent, psd)) {
-		return False;
+	status = unpack_nt_owners( SNUM(conn), &user, &grp, security_info_sent, psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
 	 * Do we need to chown ?
 	 */
 
-	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (gid_t)-1) && (orig_gid != grp))) {
-		need_chown = True;
-	}
-
-	/*
-	 * Chown before setting ACL only if we don't change the user, or
-	 * if we change to the current user, but not if we want to give away
-	 * the file.
-	 */
-
-	if (need_chown && (user == (uid_t)-1 || user == current_user.ut.uid)) {
+	if (((user != (uid_t)-1) && (sbuf.st_uid != user)) || (( grp != (gid_t)-1) && (sbuf.st_gid != grp))) {
 
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -3152,7 +3144,10 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		if(try_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
 			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error = %s.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
-			return False;
+			if (errno == EPERM) {
+				return NT_STATUS_INVALID_OWNER;
+			}
+			return map_nt_error_from_unix(errno);
 		}
 
 		/*
@@ -3162,7 +3157,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 		if(fsp->is_directory) {
 			if(SMB_VFS_STAT(fsp->conn, fsp->fsp_name, &sbuf) != 0) {
-				return False;
+				return map_nt_error_from_unix(errno);
 			}
 		} else {
 
@@ -3174,16 +3169,11 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 				ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf);
   
 			if(ret != 0)
-				return False;
+				return map_nt_error_from_unix(errno);
 		}
 
 		/* Save the original elements we check against. */
 		orig_mode = sbuf.st_mode;
-		orig_uid = sbuf.st_uid;
-		orig_gid = sbuf.st_gid;
-
-		/* We did it, don't try again */
-		need_chown = False;
 	}
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
@@ -3198,7 +3188,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			DEBUG(3,("set_nt_acl: cannot set permissions\n"));
 			free_canon_ace_list(file_ace_list);
 			free_canon_ace_list(dir_ace_list); 
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		/*
@@ -3221,7 +3211,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 					DEBUG(3,("set_nt_acl: failed to set file acl on file %s (%s).\n", fsp->fsp_name, strerror(errno) ));
 					free_canon_ace_list(file_ace_list);
 					free_canon_ace_list(dir_ace_list); 
-					return False;
+					return map_nt_error_from_unix(errno);
 				}
 			}
 
@@ -3231,7 +3221,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 						DEBUG(3,("set_nt_acl: failed to set default acl on directory %s (%s).\n", fsp->fsp_name, strerror(errno) ));
 						free_canon_ace_list(file_ace_list);
 						free_canon_ace_list(dir_ace_list); 
-						return False;
+						return map_nt_error_from_unix(errno);
 					}
 				} else {
 
@@ -3256,7 +3246,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 							DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
 							free_canon_ace_list(file_ace_list);
 							free_canon_ace_list(dir_ace_list);
-							return False;
+							return map_nt_error_from_unix(errno);
 						}
 					}
 				}
@@ -3279,7 +3269,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 					free_canon_ace_list(dir_ace_list);
 					DEBUG(3,("set_nt_acl: failed to convert file acl to posix permissions for file %s.\n",
 						fsp->fsp_name ));
-					return False;
+					return NT_STATUS_ACCESS_DENIED;
 				}
 
 				if (orig_mode != posix_perms) {
@@ -3304,7 +3294,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 								fsp->fsp_name, (unsigned int)posix_perms, strerror(errno) ));
 							free_canon_ace_list(file_ace_list);
 							free_canon_ace_list(dir_ace_list);
-							return False;
+							return map_nt_error_from_unix(errno);
 						}
 					}
 				}
@@ -3315,20 +3305,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		free_canon_ace_list(dir_ace_list); 
 	}
 
-	/* Any chown pending? */
-	if (need_chown) {
-
-		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
-			fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
-
-		if(try_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
-			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error = %s.\n",
-				fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
-			return False;
-		}
-	}
-
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

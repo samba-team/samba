@@ -943,9 +943,9 @@ static size_t vfswrap_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp, c
 	return result;
 }
 
-static BOOL vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
 {
-	BOOL result;
+	NTSTATUS result;
 
 	START_PROFILE(fset_nt_acl);
 	result = set_nt_acl(fsp, security_info_sent, psd);
@@ -953,9 +953,9 @@ static BOOL vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, in
 	return result;
 }
 
-static BOOL vfswrap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS vfswrap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
-	BOOL result;
+	NTSTATUS result;
 
 	START_PROFILE(set_nt_acl);
 	result = set_nt_acl(fsp, security_info_sent, psd);

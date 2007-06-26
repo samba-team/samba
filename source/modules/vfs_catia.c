@@ -238,7 +238,7 @@ static size_t catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				       ppdesc);
 }
 
-static BOOL catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, 
+static NTSTATUS catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, 
 			     const char *name, uint32 security_info_sent,
 			     struct security_descriptor_info *psd)
 {

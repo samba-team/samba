@@ -1056,7 +1056,7 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret;
+	NTSTATUS status;
 	
 	if (sd_len == 0 || !lp_nt_acl_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
@@ -1106,16 +1106,10 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 	
-	ret = SMB_VFS_FSET_NT_ACL( fsp, fsp->fh->fd, security_info_sent, psd);
-	
-	if (!ret) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	status = SMB_VFS_FSET_NT_ACL( fsp, fsp->fh->fd, security_info_sent, psd);
 	
 	talloc_destroy(mem_ctx);
-	
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************************

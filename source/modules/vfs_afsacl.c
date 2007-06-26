@@ -883,7 +883,7 @@ static void merge_unknown_aces(struct afs_acl *src, struct afs_acl *dst)
 	}
 }
 
-static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent,
 			   struct security_descriptor *psd)
 {
@@ -980,7 +980,7 @@ static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	free_afs_acl(&old_afs_acl);
 	free_afs_acl(&new_afs_acl);
 
-	return (ret == 0);
+	return (ret == 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 static size_t afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
@@ -998,7 +998,7 @@ static size_t afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	return afs_get_nt_acl(fsp, security_info, ppdesc);
 }
 
-BOOL afsacl_fset_nt_acl(vfs_handle_struct *handle,
+NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 int fd, uint32 security_info_sent,
 			 SEC_DESC *psd)
@@ -1006,7 +1006,7 @@ BOOL afsacl_fset_nt_acl(vfs_handle_struct *handle,
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
-BOOL afsacl_set_nt_acl(vfs_handle_struct *handle,
+NTSTATUS afsacl_set_nt_acl(vfs_handle_struct *handle,
 		       files_struct *fsp,
 		       const char *name, uint32 security_info_sent,
 		       SEC_DESC *psd)

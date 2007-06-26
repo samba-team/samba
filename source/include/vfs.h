@@ -71,6 +71,7 @@
  * timestamp resolition. JRA. */
 /* Changed to version21 to add chflags operation -- jpeach */
 /* Changed to version22 to add lchown operation -- jra */
+/* Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra. */
 #define SMB_VFS_INTERFACE_VERSION 22
 
 
@@ -300,8 +301,8 @@ struct vfs_ops {
 		
 		size_t (*fget_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd,  uint32 security_info, struct security_descriptor **ppdesc);
 		size_t (*get_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name,  uint32 security_info, struct security_descriptor **ppdesc);
-		BOOL (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor *psd);
-		BOOL (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd);
+		NTSTATUS (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor *psd);
+		NTSTATUS (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd);
 		
 		/* POSIX ACL operations. */
 		

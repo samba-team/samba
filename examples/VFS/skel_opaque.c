@@ -295,18 +295,18 @@ static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static BOOL skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
+static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
 	fd, uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static BOOL skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const
+static NTSTATUS skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const
 	char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
-	return False;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static int skel_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t mode)
