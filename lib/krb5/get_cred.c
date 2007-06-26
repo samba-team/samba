@@ -1210,3 +1210,62 @@ krb5_get_creds(krb5_context context,
 	krb5_cc_store_cred(context, ccache, *out_creds);
     return ret;
 }
+
+/*
+ *
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_renewed_creds(krb5_context context,
+		       krb5_creds *creds,
+		       krb5_const_principal client,
+		       krb5_ccache ccache,
+		       const char *in_tkt_service)
+{
+    krb5_error_code ret;
+    krb5_kdc_flags flags;
+    krb5_creds in, *template;
+
+    memset(&in, 0, sizeof(in));
+
+    ret = krb5_copy_principal(context, client, &in.client);
+    if (ret)
+	return ret;
+
+    if (in_tkt_service) {
+	ret = krb5_parse_name(context, in_tkt_service, &in.server);
+	if (ret) {
+	    krb5_free_principal(context, in.client);
+	    return ret;
+	}
+    } else {
+	const char *realm = krb5_principal_get_realm(context, client);
+	
+	ret = krb5_make_principal(context, &in.server, realm, KRB5_TGS_NAME,
+				  realm, NULL);
+	if (ret) {
+	    krb5_free_principal(context, in.client);
+	    return ret;
+	}
+    }
+
+    flags.i = 0;
+    flags.b.renewable = flags.b.renew = 1;
+
+    /*
+     * Get template from old credential cache for the same entry, if
+     * this failes, no worries.
+     */
+    ret = krb5_get_credentials(context, KRB5_GC_CACHED, ccache, &in, &template);
+    if (ret == 0) {
+	flags.b.forwardable = template->flags.b.forwardable;
+	flags.b.proxiable = template->flags.b.proxiable;
+	krb5_free_creds (context, template);
+    }
+
+    ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &in, &creds);
+    krb5_free_principal(context, in.client);
+    krb5_free_principal(context, in.server);
+
+    return ret;
+}
