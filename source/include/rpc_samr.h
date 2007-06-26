@@ -262,7 +262,19 @@ typedef struct sam_user_info_25
 	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 	uint32 fields_present;
 
-	uint32 unknown_5[5];
+	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
+	/* uint8 pad[2] */
+	uint32 ptr_logon_hrs; /* pointer to logon hours */
+
+	/* Was unknown_5. */
+	uint16 bad_password_count;
+	uint16 logon_count;
+
+	uint8 padding1[6];
+		
+	uint8 passmustchange; /* 0x00 must change = 0x01 */
+
+	uint8 padding2;
 
 	uint8 pass[532];
 
@@ -276,6 +288,8 @@ typedef struct sam_user_info_25
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
 	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
+	LOGON_HRS logon_hrs;
+
 } SAM_USER_INFO_25;
 
 /* SAM_USER_INFO_26 */
