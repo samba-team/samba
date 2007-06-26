@@ -1,3 +1,7 @@
+2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* version-script.map: add missing ;
+
 2007-06-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cms.c: Use hx509_crypto_random_iv.
