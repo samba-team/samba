@@ -79,7 +79,7 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 		if (lp_idmap_gid(&low_gid, &high_gid)) {
 			if ((ctx->low_id != low_gid) ||
 			    (ctx->high_id != high_uid)) {
-				DEBUG(1, ("ERROR: idmap uid irange must match idmap gid range\n"));
+				DEBUG(1, ("ERROR: idmap uid range must match idmap gid range\n"));
 				ret = NT_STATUS_UNSUCCESSFUL;
 				goto failed;
 			}
