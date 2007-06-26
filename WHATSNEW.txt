@@ -76,7 +76,9 @@ o   Steve Langasek <vorlon@debian.org>
 o   Volker Lendecke <vl@samba.org>
     * Fix record state check error when reviewing entries in nmbd's
       WINS database.
-
+    * Revert 'net idmap dump' behavior to 3.0.24 behavior to fix change 
+      in command line syntax that would overwrite winbindd_idmap.tdb.
+      
 
 o   Justin Maggard <jmaggard@infrant.com>
     * Don't expire a password if it's explicitly set as ACB_PWNOTREQ.
