@@ -409,7 +409,7 @@ command = {
 	help = "Create a CRMF or PKCS10 request"
 }
 command = {
-	name = "pkcs10-print"
+	name = "request-print"
 	option = {
 		long = "verbose"
 		type = "flag"
@@ -417,7 +417,7 @@ command = {
 	}
 	min_args="1"
 	argument="requests ..."
-	help = "Print PKCS10 requests"
+	help = "Print requests"
 }
 command = {
 	name = "query"
@@ -603,7 +603,7 @@ command = {
 	option = {
 		long = "req"
 		type = "string"
-		help = "pkcs10 request"
+		help = "certificate request"
 	}
 	option = {
 		long = "certificate-private-key"
