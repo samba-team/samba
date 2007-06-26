@@ -45,7 +45,7 @@ HEIMDAL_X509_1.0 {
 		hx509_cert_init;
 		hx509_cert_init_data;
 		hx509_cert_keyusage_print;
-		hx509_cert
+		hx509_cert;
 		hx509_cert_ref;
 		hx509_cert_set_friendly_name;
 		hx509_certs_add;
