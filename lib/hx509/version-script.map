@@ -202,6 +202,7 @@ HEIMDAL_X509_1.0 {
 		_hx509_request_to_pkcs10;
 		_hx509_request_to_pkcs10;
 		_hx509_request_free;
+		_hx509_request_print;
 		_hx509_private_key_ref;
 		_hx509_private_key_free;
 		_hx509_private_key2SPKI;
@@ -213,8 +214,6 @@ HEIMDAL_X509_1.0 {
 		_hx509_cert_assign_key;
 		_hx509_cert_private_key;
 		_hx509_name_from_Name;
-		decode_CertificationRequest;
-		free_CertificationRequest;
 	local:
 		*;
 };
