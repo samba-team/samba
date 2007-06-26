@@ -16,7 +16,7 @@ Major bug fixes included in Samba 3.0.25b are:
 
 
 Changes to 'net idmap dump'
----------------------------
+===========================
 
 A change in command line syntax and behavior was introduced in the
 3.0.25 release series where the command 
@@ -24,7 +24,7 @@ A change in command line syntax and behavior was introduced in the
   $ net idmap dump /.../path/to/idmap.tdb
 
 would overwrite the tdb instead of dumping its contents to standard 
-output as was the case in releases priro to Samba 3.0.25.  The 
+output as was the case in releases prior to Samba 3.0.25.  The 
 changed has been reverted in 3.0.25b and the semantics from 3.0.24
 and earlier releases have been restored.  
 
