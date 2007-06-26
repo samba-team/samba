@@ -1005,12 +1005,7 @@ static int tdb_validate_child(const char *tdb_path,
 	v_status.unknown_key = False;
 	v_status.success = True;
 
-	tdb = tdb_open_log(tdb_path,
-			WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
-			lp_winbind_offline_logon() 
-				?  TDB_DEFAULT 
-				: (TDB_DEFAULT | TDB_CLEAR_IF_FIRST),
-			O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
 		v_status.tdb_error = True;
 		v_status.success = False;
@@ -1182,4 +1177,3 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 
 	return ret;
 }
-
