@@ -53,8 +53,8 @@ ${hxtool} request-create \
 	 --key=FILE:$srcdir/data/key.der \
 	 request.out || exit 1
 
-${hxtool} pkcs10-print \
-	 request.out > /dev/null || exit 1
+${hxtool} request-print \
+	 PKCS10:request.out > /dev/null || exit 1
 
 ${hxtool} request-create \
 	 --subject="CN=Love,DC=it,DC=su,DC=se" \
