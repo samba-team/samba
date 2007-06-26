@@ -205,13 +205,37 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 					ADS_ATTR_SFU_SHELL_OID,
 					ADS_ATTR_SFU_GECOS_OID};
 
+	const char *oids_sfu20[] = { 	ADS_ATTR_SFU20_UIDNUMBER_OID,
+					ADS_ATTR_SFU20_GIDNUMBER_OID,
+					ADS_ATTR_SFU20_HOMEDIR_OID,
+					ADS_ATTR_SFU20_SHELL_OID,
+					ADS_ATTR_SFU20_GECOS_OID};
+
 	const char *oids_rfc2307[] = {	ADS_ATTR_RFC2307_UIDNUMBER_OID,
 					ADS_ATTR_RFC2307_GIDNUMBER_OID,
 					ADS_ATTR_RFC2307_HOMEDIR_OID,
 					ADS_ATTR_RFC2307_SHELL_OID,
 					ADS_ATTR_RFC2307_GECOS_OID };
 
-	DEBUG(10,("ads_check_posix_schema_mapping\n"));
+	DEBUG(10,("ads_check_posix_schema_mapping for schema mode: %d\n", map_type));
+
+	switch (map_type) {
+	
+		case WB_POSIX_MAP_TEMPLATE:
+		case WB_POSIX_MAP_UNIXINFO:
+			DEBUG(10,("ads_check_posix_schema_mapping: nothing to do\n"));
+			return ADS_ERROR(LDAP_SUCCESS);
+
+		case WB_POSIX_MAP_SFU:
+		case WB_POSIX_MAP_SFU20:
+		case WB_POSIX_MAP_RFC2307:
+			break;
+
+		default:
+			DEBUG(0,("ads_check_posix_schema_mapping: "
+				 "unknown enum %d\n", map_type));
+			return ADS_ERROR(LDAP_PARAM_ERROR);
+	}
 
 	if ( (ctx = talloc_init("ads_check_posix_schema_mapping")) == NULL ) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -228,14 +252,25 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (map_type == WB_POSIX_MAP_SFU) {
-		status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_sfu, 
-						   ARRAY_SIZE(oids_sfu), 
-						   &oids_out, &names_out, &num_names);
-	} else { 
-		status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_rfc2307, 
-						   ARRAY_SIZE(oids_rfc2307), 
-						   &oids_out, &names_out, &num_names);
+	switch (map_type) {
+		case WB_POSIX_MAP_SFU:
+			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_sfu, 
+							   ARRAY_SIZE(oids_sfu), 
+							   &oids_out, &names_out, &num_names);
+			break;
+		case WB_POSIX_MAP_SFU20:
+			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_sfu20, 
+							   ARRAY_SIZE(oids_sfu20), 
+							   &oids_out, &names_out, &num_names);
+			break;
+		case WB_POSIX_MAP_RFC2307:
+			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_rfc2307, 
+							   ARRAY_SIZE(oids_rfc2307), 
+							   &oids_out, &names_out, &num_names);
+			break;
+		default:
+			status = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			break;
 	}
 
 	if (!ADS_ERR_OK(status)) {
@@ -249,31 +284,36 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 		DEBUGADD(10,("\tOID %s has name: %s\n", oids_out[i], names_out[i]));
 
 		if (strequal(ADS_ATTR_RFC2307_UIDNUMBER_OID, oids_out[i]) ||
-		    strequal(ADS_ATTR_SFU_UIDNUMBER_OID, oids_out[i])) {
+		    strequal(ADS_ATTR_SFU_UIDNUMBER_OID, oids_out[i]) ||
+		    strequal(ADS_ATTR_SFU20_UIDNUMBER_OID, oids_out[i])) {
 			schema->posix_uidnumber_attr = talloc_strdup(schema, names_out[i]);
 			continue;		       
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_GIDNUMBER_OID, oids_out[i]) ||
-		    strequal(ADS_ATTR_SFU_GIDNUMBER_OID, oids_out[i])) {
+		    strequal(ADS_ATTR_SFU_GIDNUMBER_OID, oids_out[i]) ||
+		    strequal(ADS_ATTR_SFU20_GIDNUMBER_OID, oids_out[i])) {
 			schema->posix_gidnumber_attr = talloc_strdup(schema, names_out[i]);
 			continue;		
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_HOMEDIR_OID, oids_out[i]) ||
-		    strequal(ADS_ATTR_SFU_HOMEDIR_OID, oids_out[i])) {
+		    strequal(ADS_ATTR_SFU_HOMEDIR_OID, oids_out[i]) ||
+		    strequal(ADS_ATTR_SFU20_HOMEDIR_OID, oids_out[i])) {
 			schema->posix_homedir_attr = talloc_strdup(schema, names_out[i]);
 			continue;			
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_SHELL_OID, oids_out[i]) ||
-		    strequal(ADS_ATTR_SFU_SHELL_OID, oids_out[i])) {
+		    strequal(ADS_ATTR_SFU_SHELL_OID, oids_out[i]) ||
+		    strequal(ADS_ATTR_SFU20_SHELL_OID, oids_out[i])) {
 			schema->posix_shell_attr = talloc_strdup(schema, names_out[i]);
 			continue;			
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_GECOS_OID, oids_out[i]) ||
-		    strequal(ADS_ATTR_SFU_GECOS_OID, oids_out[i])) {
+		    strequal(ADS_ATTR_SFU_GECOS_OID, oids_out[i]) ||
+		    strequal(ADS_ATTR_SFU20_GECOS_OID, oids_out[i])) {
 			schema->posix_gecos_attr = talloc_strdup(schema, names_out[i]);
 		}
 	}
@@ -293,9 +333,7 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 	status = ADS_ERROR(LDAP_SUCCESS);
 	
 done:
-	if (ctx) {
-		talloc_destroy(ctx);
-	}
+	TALLOC_FREE(ctx);
 
 	return status;
 }
