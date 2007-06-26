@@ -8,8 +8,8 @@
     group list information is returned for an anonymous connection.
     and mirrors the effects of the
 <programlisting>
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\
-           Control\LSA\RestrictAnonymous
+HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\
+           Control\\LSA\\RestrictAnonymous
 </programlisting>
 	registry key in Windows 2000 and Windows NT.  When set to 0, user
 	and group list information is returned to anyone who asks.  When set
