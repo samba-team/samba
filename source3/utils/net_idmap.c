@@ -28,50 +28,51 @@
 	} } while(0)
 
 /***********************************************************
+ Helper function for net_idmap_dump. Dump one entry.
+ **********************************************************/
+static int net_idmap_dump_one_entry(TDB_CONTEXT *tdb,
+				    TDB_DATA key,
+				    TDB_DATA data,
+				    void *unused)
+{
+	if (strcmp((char *)key.dptr, "USER HWM") == 0) {
+		printf("USER HWM %d\n", IVAL(data.dptr,0));
+		return 0;
+	}
+
+	if (strcmp((char *)key.dptr, "GROUP HWM") == 0) {
+		printf("GROUP HWM %d\n", IVAL(data.dptr,0));
+		return 0;
+	}
+
+	if (strncmp((char *)key.dptr, "S-", 2) != 0)
+		return 0;
+
+	printf("%s %s\n", data.dptr, key.dptr);
+	return 0;
+}
+
+/***********************************************************
  Dump the current idmap
  **********************************************************/
 static int net_idmap_dump(int argc, const char **argv)
 {
-	TALLOC_CTX *ctx;
-	char *filename;
+	TDB_CONTEXT *idmap_tdb;
 
-	if (argc != 1) {
-		return net_help_idmap(argc, argv);
-	}
+	if ( argc != 1 )
+		return net_help_idmap( argc, argv );
 
-	if (! winbind_ping()) {
-		d_fprintf(stderr, "To use net idmap Winbindd must be running.\n");
+	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
+
+	if (idmap_tdb == NULL) {
+		d_fprintf(stderr, "Could not open idmap: %s\n", argv[0]);
 		return -1;
 	}
 
-	ctx = talloc_new(NULL);
-	ALLOC_CHECK(ctx);
+	tdb_traverse(idmap_tdb, net_idmap_dump_one_entry, NULL);
 
-	filename = talloc_strdup(ctx, argv[0]);
-	ALLOC_CHECK(filename);
+	tdb_close(idmap_tdb);
 
-	/* filename must be absolute */
-	if (*filename != '/') {
-		char path[4096];
-		
-		filename = getcwd(path, 4095);
-		if ( ! filename) {
-			d_fprintf(stderr, "Failed to obtain full output file path");
-			talloc_free(ctx);
-			return -1;
-		}
-
-		filename = talloc_asprintf(ctx, "%s/%s", path, argv[0]);
-		ALLOC_CHECK(filename);
-	}
-
-	if ( ! winbind_idmap_dump_maps(ctx, filename)) {
-		d_fprintf(stderr, "Failed to obtain idmap data from winbindd\n");
-		talloc_free(ctx);
-		return -1;
-	}
-
-	talloc_free(ctx);
 	return 0;
 }
 
