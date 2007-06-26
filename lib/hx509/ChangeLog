@@ -1,5 +1,15 @@
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_ca.in: Adapt to new request handling.
+
+	* req.c: Allow export some of the request parameters.
+
+	* hxtool-commands.in: Adapt to new request handling.
+
+	* hxtool.c: Adapt to new request handling.
+
+	* test_req.in: Adapt to new request handling.
+
 	* version-script.map: Add initialize_hx_error_table_r.
 
 	* req.c: Move _hx509_request_print here.
