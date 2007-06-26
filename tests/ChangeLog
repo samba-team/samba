@@ -1,5 +1,8 @@
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ldap/check-ldap.in: Add one more principal and list the
+	database.
+
 	* kdc/check-pkinit.in: Fix hxtool issue-certificate --req.
 
 	* kdc/check-referral.in: Spelling.
