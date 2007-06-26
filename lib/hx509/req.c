@@ -215,3 +215,58 @@ out:
 
     return ret;
 }
+
+int
+_hx509_request_print(hx509_context context, FILE *f, const void *data, size_t len)
+{
+    CertificationRequest req;
+    CertificationRequestInfo *rinfo;
+    size_t size;
+    int ret;
+
+    ret = decode_CertificationRequest(data, len, &req, &size);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to decode request");
+	return ret;
+    }
+
+    rinfo = &req.certificationRequestInfo;
+
+    {
+	char *subject;
+	hx509_name n;
+	
+	ret = _hx509_name_from_Name(&rinfo->subject, &n);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Failed to extract name");
+	    free_CertificationRequest(&req);
+	    return ret;
+	}
+	ret = hx509_name_to_string(n, &subject);
+	hx509_name_free(&n);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Failed to print name");
+	    free_CertificationRequest(&req);
+	    return ret;
+	}
+	
+	fprintf(f, "name: %s\n", subject);
+	free(subject);
+    }
+    
+    if (rinfo->attributes && rinfo->attributes->len) {
+	int j;
+
+	fprintf(f, "Attributes:\n");
+	
+	for (j = 0; j < rinfo->attributes->len; j++) {
+	    char *str;
+	    hx509_oid_sprint(&rinfo->attributes->val[j].type, &str);
+	    fprintf(f, "\toid: %s\n", str);
+	    free(str);
+	}
+    }
+    free_CertificationRequest(&req);
+    return 0;
+}
+
