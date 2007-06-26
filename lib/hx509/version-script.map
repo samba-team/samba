@@ -33,7 +33,7 @@ HEIMDAL_X509_1.0 {
 		hx509_cert_find_subjectAltName_otherName;
 		hx509_cert_free;
 		hx509_cert_get_SPKI;
-		hx509_cert_attribute
+		hx509_cert_attribute;
 		hx509_cert_get_attribute;
 		hx509_cert_get_base_subject;
 		hx509_cert_get_friendly_name;
