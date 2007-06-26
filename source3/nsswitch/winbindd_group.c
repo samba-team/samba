@@ -543,7 +543,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	n_glist = 1;	
 
 	for ( i=0; i<max_depth && glist; i++ ) {
-		size_t n_members = 0;
+		uint32 n_members = 0;
 		char **members = NULL;
 		NTSTATUS nt_status;		
 
