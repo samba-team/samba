@@ -194,6 +194,8 @@ HEIMDAL_X509_1.0 {
 		_hx509_certs_keys_free;
 		_hx509_certs_keys_get;
 		_hx509_request_init;
+		_hx509_request_add_dns_name;
+		_hx509_request_add_email;
 		_hx509_request_set_name;
 		_hx509_request_set_email;
 		_hx509_request_set_SubjectPublicKeyInfo;
