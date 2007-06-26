@@ -125,7 +125,7 @@ static BOOL zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
  * set the local file's acls obtaining it in NT form
  * using the NFSv4 format conversion
  */
-static BOOL zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent,
 			   struct security_descriptor *psd)
 {
@@ -149,7 +149,7 @@ static size_t zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	return zfs_get_nt_acl(fsp, security_info, ppdesc);
 }
 
-static BOOL zfsacl_fset_nt_acl(vfs_handle_struct *handle,
+static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 int fd, uint32 security_info_sent,
 			 SEC_DESC *psd)
@@ -157,7 +157,7 @@ static BOOL zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 	return zfs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
-static BOOL zfsacl_set_nt_acl(vfs_handle_struct *handle,
+static NTSTATUS zfsacl_set_nt_acl(vfs_handle_struct *handle,
 		       files_struct *fsp,
 		       const char *name, uint32 security_info_sent,
 		       SEC_DESC *psd)

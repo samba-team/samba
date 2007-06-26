@@ -334,14 +334,14 @@ static BOOL gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	return True;
 }
 
-static BOOL gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	struct gpfs_acl *acl;
-	BOOL	result = False;
+	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
 
 	acl = gpfs_getacl_alloc(fsp->fsp_name, GPFS_ACL_TYPE_ACCESS);
 	if (acl == NULL)
-		return False;
+		return result;
 
 	if (acl->acl_version&GPFS_ACL_VERSION_NFS4)
 	{
@@ -355,12 +355,12 @@ static BOOL gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_
 	return result;
 }
 
-static BOOL gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
 
-static BOOL gpfsacl_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS gpfsacl_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
