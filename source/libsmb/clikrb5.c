@@ -1140,6 +1140,10 @@ out:
 	krb5_context context = NULL;
 	krb5_ccache ccache = NULL;
 	krb5_principal client = NULL;
+	krb5_creds creds, creds_in, *creds_out = NULL;
+
+	ZERO_STRUCT(creds);
+	ZERO_STRUCT(creds_in);
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
@@ -1178,38 +1182,16 @@ out:
 
 #ifdef HAVE_KRB5_GET_RENEWED_CREDS	/* MIT */
 	{
-		krb5_creds creds;
-
-		ZERO_STRUCT(creds);
-
 		ret = krb5_get_renewed_creds(context, &creds, client, ccache, CONST_DISCARD(char *, service_string));
 		if (ret) {
 			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
 			goto done;
 		}
-
-		/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
-		ret = krb5_cc_initialize(context, ccache, client);
-		if (ret) {
-			goto done;
-		}
-	
-		ret = krb5_cc_store_cred(context, ccache, &creds);
-
-		if (expire_time) {
-			*expire_time = (time_t) creds.times.endtime;
-		}
-
-		krb5_free_cred_contents(context, &creds);
 	}
 #elif defined(HAVE_KRB5_GET_KDC_CRED)	/* Heimdal */
 	{
 		krb5_kdc_flags flags;
-		krb5_creds creds_in;
-		krb5_realm *client_realm;
-		krb5_creds *creds;
-
-		ZERO_STRUCT(creds_in);
+		krb5_realm *client_realm = NULL;
 
 		ret = krb5_copy_principal(context, client, &creds_in.client);
 		if (ret) {
@@ -1237,33 +1219,39 @@ out:
 		flags.i = 0;
 		flags.b.renewable = flags.b.renew = True;
 
-		ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &creds_in, &creds);
+		ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &creds_in, &creds_out);
 		if (ret) {
 			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
 			goto done;
 		}
-		
-		/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
-		ret = krb5_cc_initialize(context, ccache, creds_in.client);
-		if (ret) {
-			goto done;
-		}
-	
-		ret = krb5_cc_store_cred(context, ccache, creds);
 
-		if (expire_time) {
-			*expire_time = (time_t) creds->times.endtime;
-		}
-						
-		krb5_free_cred_contents(context, &creds_in);
-		krb5_free_creds(context, creds);
+		creds = *creds_out;
 	}
 #else
 #error NO_SUITABLE_KRB5_TICKET_RENEW_FUNCTION_AVAILABLE
 #endif
 
+	/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
+	ret = krb5_cc_initialize(context, ccache, client);
+	if (ret) {
+		goto done;
+	}
+	
+	ret = krb5_cc_store_cred(context, ccache, &creds);
+
+	if (expire_time) {
+		*expire_time = (time_t) creds.times.endtime;
+	}
 
 done:
+	krb5_free_cred_contents(context, &creds_in);
+
+	if (creds_out) {
+		krb5_free_creds(context, creds_out);
+	} else {
+		krb5_free_cred_contents(context, &creds);
+	}
+
 	if (client) {
 		krb5_free_principal(context, client);
 	}
