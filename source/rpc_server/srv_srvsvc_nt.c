@@ -2147,7 +2147,6 @@ error_exit:
 
 WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecurity *r)
 {
-	BOOL ret;
 	DATA_BLOB null_pw;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
@@ -2215,9 +2214,9 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 		}
 	}
 
-	ret = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name, r->in.securityinformation, r->in.sd_buf.sd);
+	nt_status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name, r->in.securityinformation, r->in.sd_buf.sd);
 
-	if (ret == False) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", r->in.file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;

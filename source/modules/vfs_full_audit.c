@@ -191,10 +191,10 @@ static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct
 static size_t smb_full_audit_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			       const char *name, uint32 security_info,
 			       SEC_DESC **ppdesc);
-static BOOL smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			      int fd, uint32 security_info_sent,
 			      SEC_DESC *psd);
-static BOOL smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			     const char *name, uint32 security_info_sent,
 			     SEC_DESC *psd);
 static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
@@ -1497,30 +1497,30 @@ static size_t smb_full_audit_get_nt_acl(vfs_handle_struct *handle, files_struct 
 	return result;
 }
 
-static BOOL smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			      int fd, uint32 security_info_sent,
 			      SEC_DESC *psd)
 {
-	BOOL result;
+	NTSTATUS result;
 
 	result = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, fd, security_info_sent,
 					  psd);
 
-	do_log(SMB_VFS_OP_FSET_NT_ACL, result, handle, "%s", fsp->fsp_name);
+	do_log(SMB_VFS_OP_FSET_NT_ACL, NT_STATUS_IS_OK(result), handle, "%s", fsp->fsp_name);
 
 	return result;
 }
 
-static BOOL smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			     const char *name, uint32 security_info_sent,
 			     SEC_DESC *psd)
 {
-	BOOL result;
+	NTSTATUS result;
 
 	result = SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent,
 					 psd);
 
-	do_log(SMB_VFS_OP_SET_NT_ACL, result, handle, "%s", fsp->fsp_name);
+	do_log(SMB_VFS_OP_SET_NT_ACL, NT_STATUS_IS_OK(result), handle, "%s", fsp->fsp_name);
 
 	return result;
 }

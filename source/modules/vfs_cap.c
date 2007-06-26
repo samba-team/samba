@@ -184,7 +184,7 @@ static char *cap_realpath(vfs_handle_struct *handle, const char *path, char *res
 	return SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 }
 
-static BOOL cap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd)
+static NTSTATUS cap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd)
 {
         pstring capname;
 	capencode(capname, name);
