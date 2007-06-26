@@ -104,6 +104,18 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
 	TMP_CLEAN_TREE=`echo -e "${BZR_INFO}" | grep 'clean:' |sed -e 's/clean: \([a-zA-Z]*\).*/\1/'`
     fi
 
+    if test x"${HAVEVER}" != x"yes";then
+	HAVEGIT=no
+        GIT_INFO=`git show --abbrev-commit HEAD 2>/dev/null`
+	TMP_REVISION=`echo -e "${GIT_INFO}" | grep 'commit ' |sed -e 's/commit \([0-9a-f]*\).*/\1/'`
+	if test -n "$TMP_REVISION";then
+	    HAVEGIT=yes
+            HAVEVER=yes
+	fi
+	TMP_MIRRORED_REVISION=`echo -e "${GIT_INFO}" | grep 'git-svn-id' |sed -e 's#^[ ^t]*git-svn-id: svn+ssh://svn.samba.org/data/svn/samba/branches/\(SAMBA_[34]_[0-9]\(_[0-9]\+\)\?@[0-9]*\).*#\1#'`
+    fi
+	
+
     if test x"${HAVESVN}" = x"yes";then
 	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-${TMP_REVISION}"
 	echo "#define SAMBA_VERSION_SVN_REVISION ${TMP_REVISION}" >> $OUTPUT_FILE
@@ -130,6 +142,14 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
 	fi
 
 	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-BZR-${TMP_BZR_REVISION_STR}"
+    elif test x"${HAVEGIT}" = x"yes";then
+	TMP_GIT_REVISION_STR="${TMP_REVISION}"
+
+	if test -n "$TMP_MIRRORED_REVISION"; then
+	    TMP_GIT_REVISION_STR="${TMP_GIT_REVISION_STR}-[SVN-${TMP_MIRRORED_REVISION}]"
+	fi
+
+	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-GIT-${TMP_GIT_REVISION_STR}"
     else
 	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-UNKNOWN"
     fi
