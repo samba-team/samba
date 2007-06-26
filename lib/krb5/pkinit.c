@@ -554,18 +554,13 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = _krb5_pk_mk_ContentInfo(context, &sd_buf, oid_id_pkcs7_signedData(), 
-				  &content_info);
+    ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(), &sd_buf, &buf);
     krb5_data_free(&sd_buf);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context,
+			      "ContentInfo wrapping of signedData failed");
 	goto out;
-
-    ASN1_MALLOC_ENCODE(ContentInfo, buf.data, buf.length,
-		       &content_info, &size, ret);
-    if (ret)
-	goto out;
-    if (buf.length != size)
-	krb5_abortx(context, "Internal ASN1 encoder error");
+    }
 
     if (ctx->type == COMPAT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
@@ -945,7 +940,8 @@ pk_verify_host(krb5_context context,
 static krb5_error_code
 pk_rd_pa_reply_enckey(krb5_context context,
 		      int type,
-                      const ContentInfo *rep,
+		      const heim_octet_string *indata,
+		      const heim_oid *dataType,
 		      const char *realm,
 		      krb5_pk_init_ctx ctx,
 		      krb5_enctype etype,
@@ -957,25 +953,19 @@ pk_rd_pa_reply_enckey(krb5_context context,
 {
     krb5_error_code ret;
     struct krb5_pk_cert *host = NULL;
-    size_t size;
     krb5_data content;
     heim_oid contentType = { 0, NULL };
 
-    if (der_heim_oid_cmp(oid_id_pkcs7_envelopedData(), &rep->contentType)) {
+    if (der_heim_oid_cmp(oid_id_pkcs7_envelopedData(), dataType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
-	return EINVAL;
-    }
-
-    if (rep->content == NULL) {
-	krb5_set_error_string(context, "PKINIT: No content in reply");
 	return EINVAL;
     }
 
     ret = hx509_cms_unenvelope(ctx->id->hx509ctx,
 			       ctx->id->certs,
 			       HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT,
-			       rep->content->data,
-			       rep->content->length,
+			       indata->data,
+			       indata->length,
 			       NULL,
 			       &contentType,
 			       &content);
@@ -1006,29 +996,21 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     /* win2k uses ContentInfo */
     if (type == COMPAT_WIN2K) {
-	ContentInfo ci;
+	heim_oid type;
+	heim_octet_string out;
 
-	ret = decode_ContentInfo(content.data, content.length, &ci, &size);
-	if (ret) {
-	    krb5_set_error_string(context,
-				  "PKINIT: failed decoding ContentInfo: %d",
-				  ret);
-	    goto out;
-	}
-
-	if (der_heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData())) {
+	ret = hx509_cms_unwrap_ContentInfo(&content, &type, &out, NULL);
+	if (der_heim_oid_cmp(&type, oid_id_pkcs7_signedData())) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_string(context, "PKINIT: Invalid content type");
+	    der_free_oid(&type);
+	    der_free_octet_string(&out);
 	    goto out;
 	}
-	if (ci.content == NULL) {
-	    ret = EINVAL; /* XXX */
-	    krb5_set_error_string(context, "PKINIT: Invalid content type");
-	    goto out;
-	}
+	der_free_oid(&type);
 	krb5_data_free(&content);
-	ret = krb5_data_copy(&content, ci.content->data, ci.content->length);
-	free_ContentInfo(&ci);
+	ret = krb5_data_copy(&content, out.data, out.length);
+	der_free_octet_string(&out);
 	if (ret) {
 	    krb5_set_error_string(context, "PKINIT: out of memory");
 	    goto out;
@@ -1093,7 +1075,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
 static krb5_error_code
 pk_rd_pa_reply_dh(krb5_context context,
-                  const ContentInfo *rep,
+		  const heim_octet_string *indata,
+		  const heim_oid *dataType,
 		  const char *realm,
 		  krb5_pk_init_ctx ctx,
 		  krb5_enctype etype,
@@ -1117,19 +1100,14 @@ pk_rd_pa_reply_dh(krb5_context context,
     krb5_data_zero(&content);
     memset(&kdc_dh_info, 0, sizeof(kdc_dh_info));
 
-    if (der_heim_oid_cmp(oid_id_pkcs7_signedData(), &rep->contentType)) {
+    if (der_heim_oid_cmp(oid_id_pkcs7_signedData(), dataType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
 	return EINVAL;
     }
 
-    if (rep->content == NULL) {
-	krb5_set_error_string(context, "PKINIT: No content in reply");
-	return EINVAL;
-    }
-
     ret = _krb5_pk_verify_sign(context, 
-			       rep->content->data,
-			       rep->content->length,
+			       indata->data,
+			       indata->length,
 			       ctx->id,
 			       &contentType,
 			       &content,
@@ -1281,19 +1259,18 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 {
     krb5_pk_init_ctx ctx = c;
     krb5_error_code ret;
-    ContentInfo ci;
     size_t size;
 
     /* Check for IETF PK-INIT first */
     if (ctx->type == COMPAT_IETF) {
 	PA_PK_AS_REP rep;
+	heim_octet_string os, data;
+	heim_oid oid;
 	
 	if (pa->padata_type != KRB5_PADATA_PK_AS_REP) {
 	    krb5_set_error_string(context, "PKINIT: wrong padata recv");
 	    return EINVAL;
 	}
-
-	memset(&rep, 0, sizeof(rep));
 
 	ret = decode_PA_PK_AS_REP(pa->padata_value.data,
 				  pa->padata_value.length,
@@ -1306,49 +1283,42 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 
 	switch (rep.element) {
 	case choice_PA_PK_AS_REP_dhInfo:
-	    ret = decode_ContentInfo(rep.u.dhInfo.dhSignedData.data,
-				     rep.u.dhInfo.dhSignedData.length,
-				     &ci,
-				     &size);
-	    if (ret) {
-		krb5_set_error_string(context,
-				      "PKINIT: decoding failed DH "
-				      "ContentInfo: %d", ret);
-
-		free_PA_PK_AS_REP(&rep);
-		break;
-	    }
-	    ret = pk_rd_pa_reply_dh(context, &ci, realm, ctx, etype, hi,
-				    ctx->clientDHNonce,
-				    rep.u.dhInfo.serverDHNonce,
-				    nonce, pa, key);
-	    free_ContentInfo(&ci);
-	    free_PA_PK_AS_REP(&rep);
-
+	    os = rep.u.dhInfo.dhSignedData;
 	    break;
 	case choice_PA_PK_AS_REP_encKeyPack:
-	    ret = decode_ContentInfo(rep.u.encKeyPack.data,
-				     rep.u.encKeyPack.length,
-				     &ci,
-				     &size);
-	    free_PA_PK_AS_REP(&rep);
-	    if (ret) {
-		krb5_set_error_string(context,
-				      "PKINIT: -25 decoding failed "
-				      "ContentInfo: %d", ret);
-		break;
-	    }
-	    ret = pk_rd_pa_reply_enckey(context, COMPAT_IETF, &ci, realm, ctx,
-					etype, hi, nonce, req_buffer, pa, key);
-	    free_ContentInfo(&ci);
-	    return ret;
+	    os = rep.u.encKeyPack;
+	    break;
 	default:
 	    free_PA_PK_AS_REP(&rep);
 	    krb5_set_error_string(context, "PKINIT: -27 reply "
 				  "invalid content type");
-	    ret = EINVAL;
-	    break;
+	    return EINVAL;
 	}
+
+	ret = hx509_cms_unwrap_ContentInfo(&os, &oid, &data, NULL);
+	if (ret) {
+	    free_PA_PK_AS_REP(&rep);
+	    krb5_set_error_string(context, "PKINIT: failed to unwrap CI");
+	    return ret;
+	}
+
+	switch (rep.element) {
+	case choice_PA_PK_AS_REP_dhInfo:
+	    ret = pk_rd_pa_reply_dh(context, &data, &oid, realm, ctx, etype, hi,
+				    ctx->clientDHNonce,
+				    rep.u.dhInfo.serverDHNonce,
+				    nonce, pa, key);
+	    break;
+	case choice_PA_PK_AS_REP_encKeyPack:
+	    ret = pk_rd_pa_reply_enckey(context, COMPAT_IETF, &data, &oid, realm, 
+					ctx, etype, hi, nonce, req_buffer, pa, key);
+	    break;
+	default:
+	    krb5_abortx(context, "pk-init as-rep case not possible to happen");
+	}
+	der_free_octet_string(&data);
+	der_free_oid(&oid);
+	free_PA_PK_AS_REP(&rep);
 
     } else if (ctx->type == COMPAT_WIN2K) {
 	PA_PK_AS_REP_Win2k w2krep;
@@ -1377,23 +1347,25 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	krb5_clear_error_string(context);
 	
 	switch (w2krep.element) {
-	case choice_PA_PK_AS_REP_Win2k_encKeyPack:
-	    ret = decode_ContentInfo(w2krep.u.encKeyPack.data,
-				     w2krep.u.encKeyPack.length,
-				     &ci,
-				     &size);
+	case choice_PA_PK_AS_REP_Win2k_encKeyPack: {
+	    heim_octet_string data;
+	    heim_oid oid;
+	    
+	    ret = hx509_cms_unwrap_ContentInfo(&w2krep.u.encKeyPack, 
+					       &oid, &data, NULL);
 	    free_PA_PK_AS_REP_Win2k(&w2krep);
 	    if (ret) {
-		krb5_set_error_string(context,
-				      "PKINIT: decoding failed "
-				      "ContentInfo: %d",
-				      ret);
+		krb5_set_error_string(context, "PKINIT: failed to unwrap CI");
 		return ret;
 	    }
-	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &ci, realm, ctx,
-					etype, hi, nonce, req_buffer, pa, key);
-	    free_ContentInfo(&ci);
+
+	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &data, &oid, realm,
+					ctx, etype, hi, nonce, req_buffer, pa, key);
+	    der_free_octet_string(&data);
+	    der_free_oid(&oid);
+
 	    break;
+	}
 	default:
 	    free_PA_PK_AS_REP_Win2k(&w2krep);
 	    krb5_set_error_string(context, "PKINIT: win2k reply invalid "
