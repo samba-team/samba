@@ -85,12 +85,32 @@ _hx509_request_set_name(hx509_context context,
 }
 
 int
+_hx509_request_get_name(hx509_context context,
+			hx509_request req,
+			hx509_name *name)
+{
+    if (req->name == NULL) {
+	hx509_set_error_string(context, 0, EINVAL, "Request have no name");
+	return EINVAL;
+    }
+    return hx509_name_copy(context, req->name, name);
+}
+
+int
 _hx509_request_set_SubjectPublicKeyInfo(hx509_context context,
 					hx509_request req,
 					const SubjectPublicKeyInfo *key)
 {
     free_SubjectPublicKeyInfo(&req->key);
     return copy_SubjectPublicKeyInfo(key, &req->key);
+}
+
+int
+_hx509_request_get_SubjectPublicKeyInfo(hx509_context context,
+					hx509_request req,
+					SubjectPublicKeyInfo *key)
+{
+    return copy_SubjectPublicKeyInfo(&req->key, key);
 }
 
 int
@@ -217,56 +237,89 @@ out:
 }
 
 int
-_hx509_request_print(hx509_context context, FILE *f, const void *data, size_t len)
+_hx509_request_parse(hx509_context context, 
+		     const char *path,
+		     hx509_request *req)
 {
-    CertificationRequest req;
+    CertificationRequest r;
     CertificationRequestInfo *rinfo;
-    size_t size;
+    hx509_name subject;
+    size_t len, size;
+    void *p;
     int ret;
 
-    ret = decode_CertificationRequest(data, len, &req, &size);
+    if (strncmp(path, "PKCS10:", 7) != 0) {
+	hx509_set_error_string(context, 0, HX509_UNSUPPORTED_OPERATION,
+			       "unsupport type in %s", path);
+	return HX509_UNSUPPORTED_OPERATION;
+    }
+    path += 7;
+
+    /* XXX PEM request */
+
+    ret = _hx509_map_file(path, &p, &len, NULL);
     if (ret) {
-	hx509_set_error_string(context, 0, ret, "Failed to decode request");
+	hx509_set_error_string(context, 0, ret, "Failed to map file %s", path);
 	return ret;
     }
 
-    rinfo = &req.certificationRequestInfo;
+    ret = decode_CertificationRequest(p, len, &r, &size);
+    _hx509_unmap_file(p, len);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to decode %s", path);
+	return ret;
+    }
 
-    {
+    ret = _hx509_request_init(context, req);
+    if (ret) {
+	free_CertificationRequest(&r);
+	return ret;
+    }
+
+    rinfo = &r.certificationRequestInfo;
+
+    ret = _hx509_request_set_SubjectPublicKeyInfo(context, *req,
+						  &rinfo->subjectPKInfo);
+    if (ret) {
+	free_CertificationRequest(&r);
+	_hx509_request_free(req);
+	return ret;
+    }
+
+    ret = _hx509_name_from_Name(&rinfo->subject, &subject);
+    if (ret) {
+	free_CertificationRequest(&r);
+	_hx509_request_free(req);
+	return ret;
+    }
+    ret = _hx509_request_set_name(context, *req, subject);
+    hx509_name_free(&subject);
+    free_CertificationRequest(&r);
+    if (ret) {
+	_hx509_request_free(req);
+	return ret;
+    }
+
+    return 0;
+}
+
+
+int
+_hx509_request_print(hx509_context context, hx509_request req, FILE *f)
+{
+    int ret;
+
+    if (req->name) {
 	char *subject;
-	hx509_name n;
-	
-	ret = _hx509_name_from_Name(&rinfo->subject, &n);
-	if (ret) {
-	    hx509_set_error_string(context, 0, ret, "Failed to extract name");
-	    free_CertificationRequest(&req);
-	    return ret;
-	}
-	ret = hx509_name_to_string(n, &subject);
-	hx509_name_free(&n);
+	ret = hx509_name_to_string(req->name, &subject);
 	if (ret) {
 	    hx509_set_error_string(context, 0, ret, "Failed to print name");
-	    free_CertificationRequest(&req);
 	    return ret;
 	}
-	
-	fprintf(f, "name: %s\n", subject);
+        fprintf(f, "name: %s\n", subject);
 	free(subject);
     }
     
-    if (rinfo->attributes && rinfo->attributes->len) {
-	int j;
-
-	fprintf(f, "Attributes:\n");
-	
-	for (j = 0; j < rinfo->attributes->len; j++) {
-	    char *str;
-	    hx509_oid_sprint(&rinfo->attributes->val[j].type, &str);
-	    fprintf(f, "\toid: %s\n", str);
-	    free(str);
-	}
-    }
-    free_CertificationRequest(&req);
     return 0;
 }
 
