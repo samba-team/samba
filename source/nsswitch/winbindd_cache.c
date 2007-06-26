@@ -3279,14 +3279,32 @@ static void validate_panic(const char *const why)
 
 int winbindd_validate_cache(void)
 {
-	int ret;
+	int ret = -1;
+	const char *tdb_path = lock_path("winbindd_cache.tdb");
+	TDB_CONTEXT *tdb = NULL;
 
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;
 
+
+	tdb = tdb_open_log(tdb_path, 
+			   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
+			   ( lp_winbind_offline_logon() 
+			     ? TDB_DEFAULT 
+			     : TDB_DEFAULT | TDB_CLEAR_IF_FIRST ),
+			   O_RDWR|O_CREAT, 
+			   0600);
+	if (!tdb) {
+		DEBUG(0, ("winbindd_validate_cache: "
+			  "error opening/initializing tdb\n"));
+		goto done;
+	}
+	tdb_close(tdb);
+
 	ret = tdb_validate(lock_path("winbindd_cache.tdb"),
 			   cache_traverse_validate_fn);
 
+done:
 	DEBUG(10, ("winbindd_validate_cache: restoring panic function\n"));
 	smb_panic_fn = smb_panic;
 	return ret;
