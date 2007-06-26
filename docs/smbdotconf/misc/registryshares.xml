@@ -6,7 +6,7 @@
 <description>
 	<para>
 	This turns on or off support for share definitions read from
-	registry. Shares in defined in <term>smb.conf</term> take
+	registry. Shares in defined in <emphasis>smb.conf</emphasis> take
 	precedence over shares with the same name defined in
 	registry. See the section on registry-based configuration
 	for details. 

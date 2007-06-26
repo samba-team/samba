@@ -15,9 +15,10 @@
 	</para>
 	
 	<para>
-	The parameter <parameter>include = registry</parameter> has
+	Since Samba version 3.0.26, setting 
+	<smbconfoption name="include">registry</smbconfoption> has
 	a special meaning: It does <emphasis>not</emphasis> include
-	a file named <term>registry</term> from the current working
+	a file named <emphasis>registry</emphasis> from the current working
 	directory, but instead reads the global configuration options 
 	from the registry. See the section on registry-based
 	configuration for details. Note that this option

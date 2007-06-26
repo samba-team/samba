@@ -724,17 +724,18 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<listitem><para>Share definitions stored in registry are used.
 		This is triggered by setting the global parameter
 		<parameter>registry shares</parameter> to
-		<term>yes</term> in <term>smb.conf</term>.
+		<quote>yes</quote> in <emphasis>smb.conf</emphasis>.
 		</para>
-		<para>Note: Shares defined in <term>smb.conf</term> always take priority over 
+
+		<para>Note: Shares defined in <emphasis>smb.conf</emphasis> always take priority over 
 		shares of the same name defined in registry.
 		</para></listitem>
 
-		<listitem><para>Global <term>smb.conf</term> options stored in
+		<listitem><para>Global <emphasis>smb.conf</emphasis> options stored in
 		registry are used. This
 		is triggered by a new special meaning of the
-		parameter <parameter>include = registry</parameter> in
-		the [global] section of <term>smb.conf</term>. 
+		parameter <smbconfoption name="include">registry</smbconfoption> in
+		the [global] section of <emphasis>smb.conf</emphasis>. 
 		This reads the content of
 		the global configuration section from the regsitry
 		and includes the result with the same priorities as
@@ -746,7 +747,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 	<para>	
 		Even when global registry options are used, the initial source of
-		configuration is still the <term>smb.conf</term> file. 
+		configuration is still the <emphasis>smb.conf</emphasis> file. 
 		It is this possible though, to produce a registry-only configuration 
 		with a minimal configuration file like this:
 <programlisting>
@@ -755,8 +756,10 @@ chmod 1770 /usr/local/samba/lib/usershares
 </programlisting>
 		This is also currently the only supported configuration with global
 		registry options activated. More precisely, it is only supported to 
-		specify options in <term>smb.conf</term> <emph>before</emph> the
-		occurrence of <parameter>include = registry</parameter>.
+		specify options in <emphasis>smb.conf</emphasis>
+		<emphasis>before</emphasis> the
+		occurrence of 
+		<smbconfoption name="include">registry</smbconfoption>.
 	</para>
 
 	<para>
@@ -769,22 +772,24 @@ chmod 1770 /usr/local/samba/lib/usershares
 		do not see the configuration they loaded once it is active. This
 		phenomenon can of course also be triggered by specifying
 		<parameter>lock directory</parameter> after the
-		<parameter>include = registry</parameter> directive. This is why
+		<smbconfoption name="include">registry</smbconfoption> directive. 
+		This is why
 		this type of configuration is classified "unsupported" above.
 	</para>
 
 	<para>
 		The registry configuration can be accessed with
-		tools like <term>regedit</term> or <term>net rpc
-		registry</term> in the key
-		<term>HKLM\Software\Samba\smbconf</term>.
+		tools like <emphasis>regedit</emphasis> or <emphasis>net rpc
+		registry</emphasis> in the key
+		<emphasis><literal>HKLM\Software\Samba\smbconf</literal></emphasis>.
 
-		More conveniently, the <term>conf</term> subcommand of the
+		More conveniently, the <emphasis>conf</emphasis> subcommand of the
 		<citerefentry><refentrytitle>net</refentrytitle> 
 		<manvolnum>7</manvolnum></citerefentry> utility
 		offers a dedicated interface to read and write the
 		registry based configuration locally, i.e. directly
-		on the server. 
+		accessing the database file, circumventing the
+		server.
 	</para>
 
 </refsect1>
