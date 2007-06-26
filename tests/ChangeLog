@@ -1,3 +1,7 @@
+2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-referral.in: Spelling.
+	
 2007-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/check-context.in: disable dns canon on test, break on some
