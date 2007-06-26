@@ -1917,7 +1917,8 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
     lock_strings(lock, &opt->pass_strings);
 
     ret = hx509_crl_alloc(context, &crl);
-    if (ret) _hx509_abort("hx509_crl_alloc");
+    if (ret)
+	errx(1, "crl alloc");
 
     if (opt->signer_string == NULL)
 	errx(1, "signer missing");
