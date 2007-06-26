@@ -1,5 +1,9 @@
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* req.c: Move _hx509_request_print here.
+
+	* hxtool.c: use _hx509_request_print
+
 	* version-script.map: Export more crap^W semiprivate functions.
 
 	* hxtool.c: don't _hx509_abort
