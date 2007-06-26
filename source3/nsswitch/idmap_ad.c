@@ -680,7 +680,7 @@ static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
  */
 
 /************************************************************************
- Initialize the {sfu,rfc2307} state
+ Initialize the {sfu,sfu20,rfc2307} state
  ***********************************************************************/
 
 static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
@@ -701,10 +701,6 @@ static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
 	return NT_STATUS_OK;
 }
 
-/************************************************************************
- Initialize the {sfu,rfc2307} state
- ***********************************************************************/
-
 static NTSTATUS nss_sfu20_init( struct nss_domain_entry *e )
 {
 	/* Sanity check if we have previously been called with a
@@ -722,6 +718,7 @@ static NTSTATUS nss_sfu20_init( struct nss_domain_entry *e )
 
 	return NT_STATUS_OK;
 }
+
 static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 {
 	/* Sanity check if we have previously been called with a
