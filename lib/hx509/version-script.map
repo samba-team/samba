@@ -2,6 +2,7 @@
 
 HEIMDAL_X509_1.0 {
 	global:
+		initialize_hx_error_table_r;
 		hx509_bitstring_print;
 		hx509_ca_sign;
 		hx509_ca_sign_self;
