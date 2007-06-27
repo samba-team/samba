@@ -343,7 +343,7 @@ import "security.idl";
 	 * Level 2: Ask domain and trusted domains, no builtin and wkn
 	 * Level 3: Only ask domain
 	 * Level 4: W2k3ad: Only ask AD trusts
-	 * Level 5: Don't lookup anything
+	 * Level 5: Only ask transitive forest trusts
 	 * Level 6: Like 4
 	 */
 
@@ -352,7 +352,7 @@ import "security.idl";
 		LSA_LOOKUP_NAMES_DOMAINS_ONLY = 2,
 		LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY = 3,
 		LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY = 4,
-		LSA_LOOKUP_NAMES_NONE = 5,
+		LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY = 5,
 		LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2 = 6
 	} lsa_LookupNamesLevel;
 
