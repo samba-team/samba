@@ -116,7 +116,7 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 
 	if (!cli_open_policy_hnd() ||
 	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, cli_ipc->mem_ctx, 
-						  &pol, 1, &str, NULL, &sids, 
+						  &pol, 1, &str, NULL, 1, &sids, 
 						  &types))) {
 		result = False;
 		goto done;

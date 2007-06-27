@@ -206,8 +206,8 @@ NTSTATUS net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SI
 						&csp->pol,
 						1,
 						&full_name,
-					        NULL, &sids,
-						&types);
+					        NULL, 1,
+						&sids, &types);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;

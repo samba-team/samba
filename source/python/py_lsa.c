@@ -187,7 +187,7 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 
 	ntstatus = rpccli_lsa_lookup_names(
 		hnd->cli, mem_ctx, &hnd->pol, num_names, names, 
-		NULL, &sids, &name_types);
+		NULL, 1, &sids, &name_types);
 
 	if (!NT_STATUS_IS_OK(ntstatus) && NT_STATUS_V(ntstatus) != 0x107) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
