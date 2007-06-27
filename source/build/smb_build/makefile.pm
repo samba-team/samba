@@ -247,14 +247,26 @@ sub array2oneperline($)
 	return $output;
 }
 
+sub _prepare_list_ex($$$$$)
+{
+	my ($self,$ctx,$var,$pre,$post) = @_;
+	my @tmparr = ();
+
+	push(@tmparr, $pre) if defined($pre);
+	push(@tmparr, @{$ctx->{$var}}) if defined($ctx->{$var});
+	push(@tmparr, $post) if defined($post);
+
+	my $tmplist = array2oneperline(\@tmparr);
+	return if ($tmplist eq "");
+
+	$self->output("$ctx->{TYPE}\_$ctx->{NAME}_$var =$tmplist\n");
+}
+
 sub _prepare_list($$$)
 {
 	my ($self,$ctx,$var) = @_;
 
-	my $tmplist = array2oneperline($ctx->{$var});
-	return if ($tmplist eq "");
-
-	$self->output("$ctx->{TYPE}\_$ctx->{NAME}_$var =$tmplist\n");
+	$self->_prepare_list_ex($ctx, $var, undef, undef);
 }
 
 sub Integrated($$)
@@ -302,7 +314,7 @@ sub SharedLibrary($$)
 		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
 	$self->_prepare_list($ctx, "DEPEND_LIST");
-	$self->_prepare_list($ctx, "LINK_FLAGS");
+	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 
