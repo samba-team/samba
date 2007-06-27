@@ -481,6 +481,8 @@ test_heim_integer (void)
     };
     int i, ret;
     int ntests = sizeof(tests) / sizeof(tests[0]);
+    size_t size;
+    heim_integer i2;
 
     for (i = 0; i < ntests; ++i) {
 	tests[i].val = &values[i];
@@ -497,7 +499,18 @@ test_heim_integer (void)
 			test_cmp_heim_integer);
     for (i = 0; i < ntests; ++i) 
 	free (tests[i].name);
-    return ret;
+    if (ret)
+	return ret;
+
+    /* test zero length integer (BER format) */
+    ret = der_get_heim_integer(NULL, 0, &i2, &size);
+    if (ret)
+	errx(1, "der_get_heim_integer");
+    if (i2.length != 0)
+	errx(1, "der_get_heim_integer wrong length");
+    der_free_heim_integer(&i2);
+
+    return 0;
 }
 
 static int
@@ -655,7 +668,6 @@ static int
 check_heim_integer_same(const char *p, const char *norm_p, heim_integer *i)
 {
     heim_integer i2;
-    size_t size;
     char *str;
     int ret;
 
@@ -683,12 +695,6 @@ check_heim_integer_same(const char *p, const char *norm_p, heim_integer *i)
     if (der_heim_integer_cmp(i, &i2) != 0)
 	errx(1, "der_heim_integer_cmp: norm");
 
-    der_free_heim_integer(&i2);
-
-    /* test zero length integer (BER format) */
-    ret = der_get_heim_integer(NULL, 0, &i2, &size);
-    if (ret)
-	errx(1, "der_get_heim_integer");
     der_free_heim_integer(&i2);
 
     return 0;
