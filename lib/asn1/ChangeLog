@@ -1,5 +1,8 @@
 2007-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* der_get.c (der_get_time): avoid using wrapping of octet_string
+	and realloc.
+
 	* der_get.c: No need to undef timetm, we don't use it any more.
 
 	* timegm.c: Fix spelling caused by too much query-replace.
