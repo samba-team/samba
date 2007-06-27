@@ -1,3 +1,7 @@
+2007-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-der.c: Test zero length integer.
+
 2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: Init data to something.
