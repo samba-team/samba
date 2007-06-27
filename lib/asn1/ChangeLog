@@ -1,5 +1,7 @@
 2007-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gen.c: Include <limits.h> for UINT_MAX.
+
 	* gen_decode.c: Check for multipication overrun.
 
 	* gen_encode.c: Paranoia check in buffer overun in output
