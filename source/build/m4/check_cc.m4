@@ -71,11 +71,10 @@ if test -n "$VISIBILITY_CFLAGS"; then
 	OLD_CFLAGS="$CFLAGS"
 
 	CFLAGS="$CFLAGS $VISIBILITY_CFLAGS"
-	AC_TRY_LINK([],
-	[
+	AC_TRY_LINK([
 		void vis_foo1(void) {}
 		__attribute__((visibility("default"))) void vis_foo2(void) {}
-		#include "${srcdir-.}/build/tests/trivial.c"
+	],[
 	],[
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_VISIBILITY_ATTR,1,[Whether the C compiler supports the visibility attribute])
