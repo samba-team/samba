@@ -655,6 +655,7 @@ static int
 check_heim_integer_same(const char *p, const char *norm_p, heim_integer *i)
 {
     heim_integer i2;
+    size_t size;
     char *str;
     int ret;
 
@@ -682,6 +683,12 @@ check_heim_integer_same(const char *p, const char *norm_p, heim_integer *i)
     if (der_heim_integer_cmp(i, &i2) != 0)
 	errx(1, "der_heim_integer_cmp: norm");
 
+    der_free_heim_integer(&i2);
+
+    /* test zero length integer (BER format) */
+    ret = der_get_heim_integer(NULL, 0, &i2, &size);
+    if (ret)
+	errx(1, "der_get_heim_integer");
     der_free_heim_integer(&i2);
 
     return 0;
