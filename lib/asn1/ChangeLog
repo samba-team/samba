@@ -1,5 +1,9 @@
 2007-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* der_get.c: No need to undef timetm, we don't use it any more.
+
+	* timegm.c: Fix spelling caused by too much query-replace.
+
 	* gen.c: Include <limits.h> for UINT_MAX.
 
 	* gen_decode.c: Check for multipication overrun.
