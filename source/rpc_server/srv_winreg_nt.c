@@ -661,7 +661,12 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 			topkeypath ));
 		return WERR_BADFILE;
 	}
-	pstrcpy( registry_key.name, topkeypath );
+
+	registry_key.name = talloc_strdup( regfile->mem_ctx, topkeypath );
+	if ( !registry_key.name ) {
+		DEBUG(0,("reg_load_tree: Talloc failed for reg_key.name!\n"));
+		return WERR_NOMEM;
+	}
 	
 	/* now start parsing the values and subkeys */
 
