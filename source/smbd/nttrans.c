@@ -696,6 +696,17 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 	}
 
+#if 0
+	/* We need to support SeSecurityPrivilege for this. */
+	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY)) && 
+			!user_has_privileges(current_user.nt_user_token,
+				&se_security)) {
+		restore_case_semantics(conn, file_attributes);
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_PRIVILEGE_NOT_HELD);
+	}
+#endif
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -1371,6 +1382,16 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 		}
 	}
+
+#if 0
+	/* We need to support SeSecurityPrivilege for this. */
+	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY)) && 
+			!user_has_privileges(current_user.nt_user_token,
+				&se_security)) {
+		restore_case_semantics(conn, file_attributes);
+		return ERROR_NT(NT_STATUS_PRIVILEGE_NOT_HELD);
+	}
+#endif
 
 	if (ea_len) {
 		pdata = data + sd_len;
