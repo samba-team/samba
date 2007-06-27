@@ -559,6 +559,55 @@ test_heim_integer (void)
 }
 
 static int
+test_cmp_boolean (void *a, void *b)
+{
+    return !!*(int *)a != !!*(int *)b;
+}
+
+static int
+test_boolean (void)
+{
+    struct test_case tests[] = {
+	{NULL, 1, "\xff"},
+	{NULL, 1, "\x00"}
+    };
+
+    int values[] = { 1, 0 };
+    int i, ret;
+    int ntests = sizeof(tests) / sizeof(tests[0]);
+    size_t size;
+    heim_integer i2;
+
+    for (i = 0; i < ntests; ++i) {
+	tests[i].val = &values[i];
+	asprintf (&tests[i].name, "heim_boolean %d", i);
+	if (tests[i].name == NULL)
+	    errx(1, "malloc");
+    }
+
+    ret = generic_test (tests, ntests, sizeof(int),
+			(generic_encode)der_put_boolean,
+			(generic_length)der_length_boolean,
+			(generic_decode)der_get_boolean,
+			(generic_free)NULL,
+			test_cmp_boolean);
+    for (i = 0; i < ntests; ++i) 
+	free (tests[i].name);
+    if (ret)
+	return ret;
+
+    /* test zero length integer (BER format) */
+    ret = der_get_heim_integer(NULL, 0, &i2, &size);
+    if (ret)
+	errx(1, "der_get_heim_integer");
+    if (i2.length != 0)
+	errx(1, "der_get_heim_integer wrong length");
+    der_free_heim_integer(&i2);
+
+    return 0;
+}
+
+static int
 check_fail_unsigned(void)
 {
     struct test_case tests[] = {
@@ -1016,6 +1065,7 @@ main(int argc, char **argv)
     ret += test_oid ();
     ret += test_bit_string();
     ret += test_heim_integer();
+    ret += test_boolean();
 
     ret += check_fail_unsigned();
     ret += check_fail_integer();
