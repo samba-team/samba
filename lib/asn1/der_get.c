@@ -336,7 +336,6 @@ generalizedtime2time (const char *s, time_t *t)
     *t = _der_timegm (&tm);
     return 0;
 }
-#undef timegm
 
 static int
 der_get_time (const unsigned char *p, size_t len, 
