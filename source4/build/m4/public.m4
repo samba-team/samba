@@ -34,6 +34,26 @@ ENABLE = YES
 "
 ])
 
+dnl SMB_LIBRARY(name,description,obj_files,required_subsystems,version,so_version,cflags,ldflags)
+AC_DEFUN([SMB_LIBRARY],
+[
+SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
+###################################
+# Start Library $1
+@<:@LIBRARY::$1@:>@
+DESCRIPTION = $2
+OBJ_FILES = $3
+PRIVATE_DEPENDENCIES = $4
+VERSION = $5
+SO_VERSION = $6 
+CFLAGS = $7
+LDFLAGS = $8
+ENABLE = YES
+# End Library $1
+###################################
+"
+])
+
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
 AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG], 
 [
