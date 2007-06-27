@@ -1,0 +1,87 @@
+##
+## Coding conventions in the Samba 3.0 tree
+##
+
+===========
+Quick Start
+===========
+
+Coding style guidelines are about reducing the number of unnecessary
+reformatting patches and making things easier developers to work together.
+You don't have to like them or even agree with them, but once put in place
+we all have to abide by them (or vote to change them).  However, coding
+style should never outweigh coding itself and so the the guidelines
+described here are hopefully easier enough to follow as they are very
+common and supported by tools and editors.
+
+The basic style, also mentioned in the SAMBA_4_0/prog_guide.txt is the
+Linux kernel coding style (See Documentation/CodingStyle in the kernel
+source tree).  The closely matches what most Samba developers use already
+anyways.
+
+But to save you the trouble of reading the Linux kernel style guide, here
+are the highlights.
+
+
+* Maximum Line Width is 80 Characters
+  The reason is not for people with low-res screens but rather sticking
+  to 80 columns prevents you from easily nesting more than one level of
+  if statements or other code blocks.  Use source/script/count_80_col.pl
+  to check your changes.
+
+* Use 8 Space Tabs to Indent
+  No whitespace filler.
+
+* No Trailing Whitespace
+  Use source/script/strip_trail_ws.pl to clean you files before committing.
+
+* Follow the K&R guidelines.  We won't go throw them all here.  You have
+  a copy of "The C Programming Language" anyways right?  You can also use
+  the format_indent.sh script found in source/script/ if all else fails.
+
+
+
+============
+Editor Hints
+============
+
+Emacs
+-----
+Add the follow to your $HOME/.emacs file:
+
+  (add-hook 'c-mode-hook
+	(lambda ()
+		(c-set-style "linux")
+		(c-toggle-auto-state)))
+
+
+Vi
+--
+(Thanks to SATOH Fumiyasu <fumiyas@osstech.jp> for these hints):
+
+For the basic vi eitor including with all variants of *nix, add the 
+following to $HOME/.exrc:
+
+  set tabstop=8
+  set shiftwidth=8
+
+For Vim, the following settings in $HOME/.vimrc will also deal with 
+disaplaying trailing whitespace:
+
+  if has("syntax") && (&t_Co > 2 || has("gui_running"))
+	syntax on
+	function! ActivateInvisibleCharIndicator()
+		syntax match TrailingSpace "[ \t]\+$" display containedin=ALL
+		highlight TrailingSpace ctermbg=Red
+	endf
+	autocmd BufNewFile,BufRead * call ActivateInvisibleCharIndicator()
+  endif
+
+
+===================
+Statement Reference
+===================
+
+To be filled later in as needed.
+
+
