@@ -25,10 +25,10 @@
 
 /* Check DFS is supported by the remote server */
 
-static NTSTATUS cmd_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                              int argc, const char **argv)
+static NTSTATUS cmd_dfs_version(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+				int argc, const char **argv)
 {
-	uint32 dfs_exists;
+	enum dfs_ManagerVersion version;
 	NTSTATUS result;
 
 	if (argc != 1) {
@@ -36,11 +36,19 @@ static NTSTATUS cmd_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_dfs_GetManagerVersion(cli, mem_ctx, &dfs_exists);
+	result = rpccli_dfs_GetManagerVersion(cli, mem_ctx, &version);
 
-	printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
-	return result;
+	if (version > 0) {
+		printf("dfs is present (%d)\n", version);
+	} else {
+		printf("dfs is not present\n");
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
@@ -182,7 +190,6 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	NTSTATUS result;
 	uint32 total = 0;
-	uint32 unknown = 0;
 
 	if (argc > 2) {
 		printf("Usage: %s [info_level]\n", argv[0]);
@@ -206,7 +213,7 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_dfs_Enum(cli, mem_ctx, str.level, 0xFFFFFFFF, &str,
-				 &unknown, &total);
+				 &total);
 
 	if (NT_STATUS_IS_OK(result))
 		display_dfs_enumstruct(&str);
@@ -296,7 +303,7 @@ struct cmd_set dfs_commands[] = {
 
 	{ "DFS" },
 
-	{ "dfsexist",  RPC_RTYPE_NTSTATUS, cmd_dfs_exist,   NULL, PI_NETDFS, NULL, "Query DFS support",    "" },
+	{ "dfsversion",  RPC_RTYPE_NTSTATUS, cmd_dfs_version,   NULL, PI_NETDFS, NULL, "Query DFS support",    "" },
 	{ "dfsadd",    RPC_RTYPE_NTSTATUS, cmd_dfs_add,     NULL, PI_NETDFS, NULL, "Add a DFS share",      "" },
 	{ "dfsremove", RPC_RTYPE_NTSTATUS, cmd_dfs_remove,  NULL, PI_NETDFS, NULL, "Remove a DFS share",   "" },
 	{ "dfsgetinfo",RPC_RTYPE_NTSTATUS, cmd_dfs_getinfo, NULL, PI_NETDFS, NULL, "Query DFS share info", "" },

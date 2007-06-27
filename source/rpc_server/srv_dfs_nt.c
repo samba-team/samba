@@ -32,10 +32,11 @@
 
 void _dfs_GetManagerVersion(pipes_struct *p, struct dfs_GetManagerVersion *r)
 {
-	if(lp_host_msdfs()) 
-		*r->out.exist_flag = 1;
-	else
-		*r->out.exist_flag = 0;
+	if (lp_host_msdfs()) {
+		*r->out.version = DFS_MANAGER_VERSION_NT4;
+	} else {
+		*r->out.version = 0;
+	}
 }
 
 WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
@@ -109,22 +110,22 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 		return WERR_ACCESS_DENIED;
 	}
 
-	if (r->in.server && r->in.share) {
-		pstrcpy(altpath, r->in.server);
+	if (r->in.servername && r->in.sharename) {
+		pstrcpy(altpath, r->in.servername);
 		pstrcat(altpath, "\\");
-		pstrcat(altpath, r->in.share);
+		pstrcat(altpath, r->in.sharename);
 		strlower_m(altpath);
 	}
 
 	DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
-		r->in.path, r->in.server, r->in.share));
+		r->in.dfs_entry_path, r->in.servername, r->in.sharename));
 
-	if(!NT_STATUS_IS_OK(get_referred_path(p->mem_ctx, r->in.path, &jn, &consumedcnt, &self_ref))) {
+	if(!NT_STATUS_IS_OK(get_referred_path(p->mem_ctx, r->in.dfs_entry_path, &jn, &consumedcnt, &self_ref))) {
 		return WERR_DFS_NO_SUCH_VOL;
 	}
 
 	/* if no server-share pair given, remove the msdfs link completely */
-	if(!r->in.server && !r->in.share) {
+	if(!r->in.servername && !r->in.sharename) {
 		if(!remove_msdfs_link(&jn)) {
 			vfs_ChDir(p->conn,p->conn->connectpath);
 			return WERR_DFS_NO_SUCH_VOL;
@@ -324,11 +325,11 @@ WERROR _dfs_GetInfo(pipes_struct *p, struct dfs_GetInfo *r)
 	BOOL self_ref = False;
 	BOOL ret;
 
-	if(!create_junction(r->in.path, &jn))
+	if(!create_junction(r->in.dfs_entry_path, &jn))
 		return WERR_DFS_NO_SUCH_SERVER;
   
 	/* The following call can change the cwd. */
-	if(!NT_STATUS_IS_OK(get_referred_path(p->mem_ctx, r->in.path, &jn, &consumedcnt, &self_ref)) || consumedcnt < strlen(r->in.path)) {
+	if(!NT_STATUS_IS_OK(get_referred_path(p->mem_ctx, r->in.dfs_entry_path, &jn, &consumedcnt, &self_ref)) || consumedcnt < strlen(r->in.dfs_entry_path)) {
 		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_NO_SUCH_VOL;
 	}
