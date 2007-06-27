@@ -37,8 +37,8 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_GetManagerVersion, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.exist_flag = talloc_zero(mem_ctx, uint32_t);
-	if (r.out.exist_flag == NULL) {
+	r.out.version = talloc_zero(mem_ctx, enum dfs_ManagerVersion);
+	if (r.out.version == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -693,6 +693,8 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &r);
 	
+	ZERO_STRUCT(r.out);
+	r.out.unknown2 = r.in.unknown2;
 	r.out.result = _dfs_AddFtRoot(p, &r);
 	
 	if (p->rng_fault_state) {
@@ -757,6 +759,8 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &r);
 	
+	ZERO_STRUCT(r.out);
+	r.out.unknown = r.in.unknown;
 	r.out.result = _dfs_RemoveFtRoot(p, &r);
 	
 	if (p->rng_fault_state) {
