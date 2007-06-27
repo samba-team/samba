@@ -631,7 +631,7 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
  * Level 2: Ask domain and trusted domains, no builtin and wkn
  * Level 3: Only ask domain
  * Level 4: W2k3ad: Only ask AD trusts
- * Level 5: Don't lookup anything
+ * Level 5: Only ask transitive forest trusts
  * Level 6: Like 4
  */
 
