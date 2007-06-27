@@ -1,5 +1,7 @@
 2007-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: Test boolean.
+
 	* check-der.c: test universal strings.
 
 	* check-der.c: Test failure cases for der_get_tag.
