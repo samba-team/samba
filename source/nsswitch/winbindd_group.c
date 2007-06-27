@@ -456,7 +456,7 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 		TALLOC_FREE( tmp_ctx );
 	}
 
-	new_glist = &new_groups;
+	*new_glist = new_groups;
 	*n_new_glist = (uint32)new_groups_size;	
 	
  out:
