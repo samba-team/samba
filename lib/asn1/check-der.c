@@ -297,6 +297,51 @@ test_bmp_string (void)
 }
 
 static int
+cmp_universal_string (void *a, void *b)
+{
+    heim_universal_string *oa = (heim_universal_string *)a;
+    heim_universal_string *ob = (heim_universal_string *)b;
+
+    return der_heim_universal_string_cmp(oa, ob);
+}
+
+static uint32_t universal_d1[] = { 32 };
+static uint32_t universal_d2[] = { 32, 32 };
+
+static int
+test_universal_string (void)
+{
+    heim_universal_string s1 = { 1, universal_d1 };
+    heim_universal_string s2 = { 2, universal_d2 };
+
+    struct test_case tests[] = {
+	{NULL, 4, "\x00\x00\x00\x20"},
+	{NULL, 8, "\x00\x00\x00\x20\x00\x00\x00\x20"}
+    };
+    int ntests = sizeof(tests) / sizeof(*tests);
+    int ret;
+
+    tests[0].val = &s1;
+    asprintf (&tests[0].name, "a universal string");
+    if (tests[0].name == NULL)
+	errx(1, "malloc");
+    tests[1].val = &s2;
+    asprintf (&tests[1].name, "second universal string");
+    if (tests[1].name == NULL)
+	errx(1, "malloc");
+
+    ret = generic_test (tests, ntests, sizeof(heim_universal_string),
+			(generic_encode)der_put_universal_string,
+			(generic_length)der_length_universal_string,
+			(generic_decode)der_get_universal_string,
+			(generic_free)der_free_universal_string,
+			cmp_universal_string);
+    free(tests[0].name);
+    free(tests[1].name);
+    return ret;
+}
+
+static int
 cmp_general_string (void *a, void *b)
 {
     char **sa = (char **)a;
@@ -965,6 +1010,7 @@ main(int argc, char **argv)
     ret += test_unsigned ();
     ret += test_octet_string ();
     ret += test_bmp_string ();
+    ret += test_universal_string ();
     ret += test_general_string ();
     ret += test_generalized_time ();
     ret += test_oid ();
