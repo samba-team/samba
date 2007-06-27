@@ -1,5 +1,10 @@
 2007-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gen_decode.c: Check for multipication overrun.
+
+	* gen_encode.c: Paranoia check in buffer overun in output
+	function.
+
 	* check-der.c: Test boolean.
 
 	* check-der.c: test universal strings.
