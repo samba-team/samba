@@ -394,19 +394,31 @@ decode_type (const char *name, const Type *t, int optional,
 		 "{\n"
 		 "size_t %s_origlen = len;\n"
 		 "size_t %s_oldret = ret;\n"
+		 "size_t %s_olen = 0;\n"
 		 "void *%s_tmp;\n"
 		 "ret = 0;\n"
 		 "(%s)->len = 0;\n"
-		 "(%s)->val = NULL;\n"
+		 "(%s)->val = NULL;\n",
+		 tmpstr,
+		 tmpstr,
+		 tmpstr,
+		 tmpstr,
+		 name,
+		 name);
+
+	fprintf (codefile,
 		 "while(ret < %s_origlen) {\n"
-		 "%s_tmp = realloc((%s)->val, "
-		 "    sizeof(*((%s)->val)) * ((%s)->len + 1));\n"
-		 "if (%s_tmp == NULL) { %s; }\n"
+		 "size_t %s_nlen = %s_olen + sizeof(*((%s)->val));\n"
+		 "if (%s_olen > %s_nlen) { e = ASN1_OVERFLOW; %s; }\n"
+		 "%s_olen = %s_nlen;\n"
+		 "%s_tmp = realloc((%s)->val, %s_olen);\n"
+		 "if (%s_tmp == NULL) { e = ENOMEM; %s; }\n"
 		 "(%s)->val = %s_tmp;\n",
-		 tmpstr, tmpstr, tmpstr,
-		 name, name,
+		 tmpstr,
+		 tmpstr, tmpstr, name,
+		 tmpstr, tmpstr, forwstr,
 		 tmpstr, tmpstr,
-		 name, name, name,
+		 tmpstr, name, tmpstr,
 		 tmpstr, forwstr, 
 		 name, tmpstr);
 
