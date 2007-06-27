@@ -908,6 +908,21 @@ test_misc_cmp(void)
     return 0;
 }
 
+static int
+corner_generalized_time(void)
+{
+    const char *str = "760520140000Z";
+    size_t size;
+    time_t t;
+    int ret;
+
+    ret = der_get_generalized_time((const unsigned char*)str, strlen(str),
+				   &t, &size);
+    if (ret)
+	return 1;
+    return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -939,6 +954,7 @@ main(int argc, char **argv)
     ret += test_heim_oid_format();
     ret += check_trailing_nul();
     ret += test_misc_cmp();
+    ret += corner_generalized_time();
 
     return ret;
 }
