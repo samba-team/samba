@@ -339,13 +339,30 @@ import "security.idl";
 		uint32 max_size;
 	} lsa_RefDomainList;
 
+	/* Level 1: Ask everywhere
+	 * Level 2: Ask domain and trusted domains, no builtin and wkn
+	 * Level 3: Only ask domain
+	 * Level 4: W2k3ad: Only ask AD trusts
+	 * Level 5: Don't lookup anything
+	 * Level 6: Like 4
+	 */
+
+	typedef enum {
+		LSA_LOOKUP_NAMES_ALL = 1,
+		LSA_LOOKUP_NAMES_DOMAINS_ONLY = 2,
+		LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY = 3,
+		LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY = 4,
+		LSA_LOOKUP_NAMES_NONE = 5,
+		LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2 = 6
+	} lsa_LookupNamesLevel;
+
 	[public] NTSTATUS lsa_LookupNames (
 		[in]         policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
 		[out,unique] lsa_RefDomainList *domains,
 		[in,out]     lsa_TransSidArray *sids,
-		[in]         uint16 level,
+		[in]         lsa_LookupNamesLevel level,
 		[in,out]     uint32 *count
 		);
 
@@ -856,7 +873,7 @@ import "security.idl";
 		[in,size_is(num_names)]  lsa_String names[],
 		[out,unique]        lsa_RefDomainList *domains,
 		[in,out] lsa_TransSidArray2 *sids,
-		[in]         uint16 level,
+		[in]         lsa_LookupNamesLevel level,
 		[in,out] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
@@ -909,7 +926,7 @@ import "security.idl";
 		[in,size_is(num_names)]  lsa_String names[],
 		[out,unique]        lsa_RefDomainList *domains,
 		[in,out] lsa_TransSidArray3 *sids,
-		[in]         uint16 level,
+		[in]         lsa_LookupNamesLevel level,
 		[in,out] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
@@ -997,7 +1014,7 @@ import "security.idl";
 		[in,size_is(num_names)]  lsa_String names[],
 		[out,unique]        lsa_RefDomainList *domains,
 		[in,out] lsa_TransSidArray3 *sids,
-		[in]         uint16 level,
+		[in]         lsa_LookupNamesLevel level,
 		[in,out] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
