@@ -448,6 +448,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 POLICY_HND *pol, int num_names, 
 				 const char **names,
 				 const char ***dom_names,
+				 int level,
 				 DOM_SID **sids,
 				 enum lsa_SidType **types)
 {
@@ -464,7 +465,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(ref);
 	r.dom_ref = &ref;
 
-	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
+	init_q_lookup_names(mem_ctx, &q, pol, num_names, names, level);
 
 	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPNAMES,
 			q, r,
