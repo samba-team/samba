@@ -293,6 +293,11 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		"int eret;\n");
 
 	fprintf(codefile,
+		"if ((%s)->len > UINT_MAX/sizeof(val[0]))\n"
+		"return ERANGE;\n",
+		name);
+
+	fprintf(codefile,
 		"val = malloc(sizeof(val[0]) * (%s)->len);\n"
 		"if (val == NULL && (%s)->len != 0) return ENOMEM;\n",
 		name, name);
