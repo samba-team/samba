@@ -314,7 +314,8 @@ sub SharedLibrary($$)
 		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
 	$self->_prepare_list($ctx, "DEPEND_LIST");
-	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
+#	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 
