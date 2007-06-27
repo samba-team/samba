@@ -923,6 +923,38 @@ corner_generalized_time(void)
     return 0;
 }
 
+static int
+corner_tag(void)
+{
+    struct {
+	int ok;
+	const char *ptr;
+	size_t len;
+    } tests[] = { 
+	{ 1, "\x00", 1 },
+	{ 0, "\xff", 1 },
+	{ 0, "\xff\xff\xff\xff\xff\xff\xff\xff", 8 }
+    };
+    int i, ret;
+    Der_class cl;
+    Der_type ty;
+    unsigned int tag;
+    size_t size;
+
+    for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+	ret = der_get_tag((const unsigned char*)tests[i].ptr, 
+			  tests[i].len, &cl, &ty, &tag, &size);
+	if (ret) {
+	    if (tests[i].ok)
+		errx(1, "failed while shouldn't");
+	} else {
+	    if (!tests[i].ok)
+		errx(1, "passed while shouldn't");
+	}
+    }
+    return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -955,6 +987,7 @@ main(int argc, char **argv)
     ret += check_trailing_nul();
     ret += test_misc_cmp();
     ret += corner_generalized_time();
+    ret += corner_tag();
 
     return ret;
 }
