@@ -253,6 +253,7 @@ generate_header_of_codefile(const char *name)
 	     "#include <time.h>\n"
 	     "#include <string.h>\n"
 	     "#include <errno.h>\n"
+	     "#include <limits.h>\n"
 	     "#include <krb5-types.h>\n",
 	     orig_filename);
 
