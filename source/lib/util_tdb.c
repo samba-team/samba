@@ -990,7 +990,7 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
  * internal validation function, executed by the child.  
  */
 static int tdb_validate_child(const char *tdb_path,
-			      tdb_validate_data_func validate_fn, 
+			      tdb_validate_data_func validate_fn,
 			      int pfd)
 {
 	int ret = -1;
@@ -998,7 +998,7 @@ static int tdb_validate_child(const char *tdb_path,
 	int num_entries = 0;
 	TDB_CONTEXT *tdb = NULL;
 	struct tdb_validation_status v_status;
-	
+
 	v_status.tdb_error = False;
 	v_status.bad_freelist = False;
 	v_status.bad_entry = False;
@@ -1050,7 +1050,7 @@ out:
 	if (tdb) {
 		if (ret == 0) {
 			tdb_close(tdb);
-		} 
+		}
 		else if (tfd != -1) {
 			close(tfd);
 		}
@@ -1072,10 +1072,10 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 	int pipe_fds[2];
 	struct tdb_validation_status v_status;
 	int bytes_read = 0;
-	
-	/* fork and let the child do the validation. 
+
+	/* fork and let the child do the validation.
 	 * benefit: no need to twist signal handlers and panic functions.
-	 * just let the child panic. we catch the signal. 
+	 * just let the child panic. we catch the signal.
 	 * communicate the extended status struct over a pipe. */
 
 	if (pipe(pipe_fds) != 0) {
@@ -1099,7 +1099,7 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 
 	/* parent */
 
-	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n", 
+	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n",
 		   child_pid));
 	close(pipe_fds[1]); /* close writing fd */
 
@@ -1151,7 +1151,6 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 			     "unexpected PID.");
 	}
 
-		
 	DEBUG(10, ("tdb_validate: validating child returned.\n"));
 	if (WIFEXITED(child_status)) {
 		DEBUG(10, ("tdb_validate: child exited, code %d.\n",
