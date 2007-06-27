@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_dfs.h"
 
-NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t *exist_flag)
+NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, enum dfs_ManagerVersion *version)
 {
 	struct dfs_GetManagerVersion r;
 	NTSTATUS status;
@@ -30,7 +30,7 @@ NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return variables */
-	*exist_flag = *r.out.exist_flag;
+	*version = *r.out.version;
 	
 	/* Return result */
 	return NT_STATUS_OK;
@@ -70,15 +70,15 @@ NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *path, const char *server, const char *share)
+NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename)
 {
 	struct dfs_Remove r;
 	NTSTATUS status;
 	
 	/* In parameters */
-	r.in.path = path;
-	r.in.server = server;
-	r.in.share = share;
+	r.in.dfs_entry_path = dfs_entry_path;
+	r.in.servername = servername;
+	r.in.sharename = sharename;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Remove, &r);
@@ -102,12 +102,17 @@ NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename, uint32_t level, union dfs_Info *info)
 {
 	struct dfs_SetInfo r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.dfs_entry_path = dfs_entry_path;
+	r.in.servername = servername;
+	r.in.sharename = sharename;
+	r.in.level = level;
+	r.in.info = info;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_SetInfo, &r);
@@ -131,15 +136,15 @@ NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *path, const char *server, const char *share, uint32_t level, union dfs_Info *info)
+NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename, uint32_t level, union dfs_Info *info)
 {
 	struct dfs_GetInfo r;
 	NTSTATUS status;
 	
 	/* In parameters */
-	r.in.path = path;
-	r.in.server = server;
-	r.in.share = share;
+	r.in.dfs_entry_path = dfs_entry_path;
+	r.in.servername = servername;
+	r.in.sharename = sharename;
 	r.in.level = level;
 	
 	if (DEBUGLEVEL >= 10)
@@ -165,7 +170,7 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *unknown, uint32_t *total)
+NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
 {
 	struct dfs_Enum r;
 	NTSTATUS status;
@@ -174,7 +179,6 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint3
 	r.in.level = level;
 	r.in.bufsize = bufsize;
 	r.in.info = info;
-	r.in.unknown = unknown;
 	r.in.total = total;
 	
 	if (DEBUGLEVEL >= 10)
@@ -321,12 +325,21 @@ NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli, TALLOC_CTX 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *dns_servername, const char *dfsname, const char *rootshare, const char *comment, const char *dfs_config_dn, uint8_t unknown1, uint32_t flags, struct dfs_UnknownStruct **unknown2)
 {
 	struct dfs_AddFtRoot r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.dns_servername = dns_servername;
+	r.in.dfsname = dfsname;
+	r.in.rootshare = rootshare;
+	r.in.comment = comment;
+	r.in.dfs_config_dn = dfs_config_dn;
+	r.in.unknown1 = unknown1;
+	r.in.flags = flags;
+	r.in.unknown2 = unknown2;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &r);
@@ -345,17 +358,26 @@ NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	}
 	
 	/* Return variables */
+	if ( unknown2 ) {
+		*unknown2 = *r.out.unknown2;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *dns_servername, const char *dfsname, const char *rootshare, uint32_t flags, struct dfs_UnknownStruct **unknown)
 {
 	struct dfs_RemoveFtRoot r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.dns_servername = dns_servername;
+	r.in.dfsname = dfsname;
+	r.in.rootshare = rootshare;
+	r.in.flags = flags;
+	r.in.unknown = unknown;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &r);
@@ -374,17 +396,24 @@ NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	}
 	
 	/* Return variables */
+	if ( unknown ) {
+		*unknown = *r.out.unknown;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, const char *comment, uint32_t flags)
 {
 	struct dfs_AddStdRoot r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.rootshare = rootshare;
+	r.in.comment = comment;
+	r.in.flags = flags;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRoot, &r);
@@ -408,12 +437,15 @@ NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, uint32_t flags)
 {
 	struct dfs_RemoveStdRoot r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.rootshare = rootshare;
+	r.in.flags = flags;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_RemoveStdRoot, &r);
@@ -437,12 +469,14 @@ NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, uint32_t flags)
 {
 	struct dfs_ManagerInitialize r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.flags = flags;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_ManagerInitialize, &r);
@@ -466,12 +500,16 @@ NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, const char *comment, const char *store)
 {
 	struct dfs_AddStdRootForced r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.rootshare = rootshare;
+	r.in.comment = comment;
+	r.in.store = store;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRootForced, &r);
@@ -553,12 +591,14 @@ NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare)
 {
 	struct dfs_FlushFtTable r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.rootshare = rootshare;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_FlushFtTable, &r);
@@ -640,13 +680,13 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
+NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
 {
 	struct dfs_EnumEx r;
 	NTSTATUS status;
 	
 	/* In parameters */
-	r.in.name = name;
+	r.in.dfs_name = dfs_name;
 	r.in.level = level;
 	r.in.bufsize = bufsize;
 	r.in.info = info;

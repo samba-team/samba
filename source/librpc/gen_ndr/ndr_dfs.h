@@ -59,16 +59,37 @@ NTSTATUS dcerpc_server_netdfs_init(void);
 #define DCERPC_DFS_SETINFO2 (0x16)
 
 #define DCERPC_NETDFS_CALL_COUNT (23)
+void ndr_print_dfs_ManagerVersion(struct ndr_print *ndr, const char *name, enum dfs_ManagerVersion r);
 void ndr_print_dfs_Info0(struct ndr_print *ndr, const char *name, const struct dfs_Info0 *r);
 void ndr_print_dfs_Info1(struct ndr_print *ndr, const char *name, const struct dfs_Info1 *r);
+NTSTATUS ndr_push_dfs_VolumeState(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+NTSTATUS ndr_pull_dfs_VolumeState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_dfs_VolumeState(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_dfs_Info2(struct ndr_print *ndr, const char *name, const struct dfs_Info2 *r);
+NTSTATUS ndr_push_dfs_StorageState(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+NTSTATUS ndr_pull_dfs_StorageState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_dfs_StorageState(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_dfs_StorageInfo(struct ndr_print *ndr, const char *name, const struct dfs_StorageInfo *r);
 void ndr_print_dfs_Info3(struct ndr_print *ndr, const char *name, const struct dfs_Info3 *r);
 void ndr_print_dfs_Info4(struct ndr_print *ndr, const char *name, const struct dfs_Info4 *r);
+NTSTATUS ndr_push_dfs_PropertyFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+NTSTATUS ndr_pull_dfs_PropertyFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_dfs_PropertyFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_dfs_Info5(struct ndr_print *ndr, const char *name, const struct dfs_Info5 *r);
+void ndr_print_dfs_Target_PriorityClass(struct ndr_print *ndr, const char *name, enum dfs_Target_PriorityClass r);
+void ndr_print_dfs_Target_Priority(struct ndr_print *ndr, const char *name, const struct dfs_Target_Priority *r);
+void ndr_print_dfs_StorageInfo2(struct ndr_print *ndr, const char *name, const struct dfs_StorageInfo2 *r);
+void ndr_print_dfs_Info6(struct ndr_print *ndr, const char *name, const struct dfs_Info6 *r);
+void ndr_print_dfs_Info7(struct ndr_print *ndr, const char *name, const struct dfs_Info7 *r);
 void ndr_print_dfs_Info100(struct ndr_print *ndr, const char *name, const struct dfs_Info100 *r);
 void ndr_print_dfs_Info101(struct ndr_print *ndr, const char *name, const struct dfs_Info101 *r);
 void ndr_print_dfs_Info102(struct ndr_print *ndr, const char *name, const struct dfs_Info102 *r);
+void ndr_print_dfs_Info103(struct ndr_print *ndr, const char *name, const struct dfs_Info103 *r);
+void ndr_print_dfs_Info104(struct ndr_print *ndr, const char *name, const struct dfs_Info104 *r);
+void ndr_print_dfs_Info105(struct ndr_print *ndr, const char *name, const struct dfs_Info105 *r);
+void ndr_print_dfs_Info106(struct ndr_print *ndr, const char *name, const struct dfs_Info106 *r);
 void ndr_print_dfs_Info200(struct ndr_print *ndr, const char *name, const struct dfs_Info200 *r);
+void ndr_print_dfs_VolumeFlavor(struct ndr_print *ndr, const char *name, enum dfs_VolumeFlavor r);
 void ndr_print_dfs_Info300(struct ndr_print *ndr, const char *name, const struct dfs_Info300 *r);
 void ndr_print_dfs_Info(struct ndr_print *ndr, const char *name, const union dfs_Info *r);
 void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray1 *r);
@@ -79,6 +100,9 @@ void ndr_print_dfs_EnumArray200(struct ndr_print *ndr, const char *name, const s
 void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray300 *r);
 void ndr_print_dfs_EnumInfo(struct ndr_print *ndr, const char *name, const union dfs_EnumInfo *r);
 void ndr_print_dfs_EnumStruct(struct ndr_print *ndr, const char *name, const struct dfs_EnumStruct *r);
+void ndr_print_dfs_UnknownStruct(struct ndr_print *ndr, const char *name, const struct dfs_UnknownStruct *r);
+NTSTATUS ndr_push_dfs_GetManagerVersion(struct ndr_push *ndr, int flags, const struct dfs_GetManagerVersion *r);
+NTSTATUS ndr_pull_dfs_GetManagerVersion(struct ndr_pull *ndr, int flags, struct dfs_GetManagerVersion *r);
 void ndr_print_dfs_GetManagerVersion(struct ndr_print *ndr, const char *name, int flags, const struct dfs_GetManagerVersion *r);
 void ndr_print_dfs_Add(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Add *r);
 void ndr_print_dfs_Remove(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Remove *r);
@@ -100,6 +124,8 @@ void ndr_print_dfs_SetDcAddress(struct ndr_print *ndr, const char *name, int fla
 void ndr_print_dfs_FlushFtTable(struct ndr_print *ndr, const char *name, int flags, const struct dfs_FlushFtTable *r);
 void ndr_print_dfs_Add2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Add2 *r);
 void ndr_print_dfs_Remove2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Remove2 *r);
+NTSTATUS ndr_push_dfs_EnumEx(struct ndr_push *ndr, int flags, const struct dfs_EnumEx *r);
+NTSTATUS ndr_pull_dfs_EnumEx(struct ndr_pull *ndr, int flags, struct dfs_EnumEx *r);
 void ndr_print_dfs_EnumEx(struct ndr_print *ndr, const char *name, int flags, const struct dfs_EnumEx *r);
 void ndr_print_dfs_SetInfo2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_SetInfo2 *r);
 #endif /* _HEADER_NDR_netdfs */
