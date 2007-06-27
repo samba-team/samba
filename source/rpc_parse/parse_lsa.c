@@ -1567,7 +1567,8 @@ makes a structure.
 ********************************************************************/
 
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
-			 POLICY_HND *hnd, int num_names, const char **names)
+			 POLICY_HND *hnd, int num_names, const char **names, 
+			 int level)
 {
 	unsigned int i;
 
@@ -1578,7 +1579,7 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 	q_l->pol = *hnd;
 	q_l->num_entries = num_names;
 	q_l->num_entries2 = num_names;
-	q_l->lookup_level = 1;
+	q_l->lookup_level = level;
 
 	if (num_names) {
 		if ((q_l->uni_name = TALLOC_ZERO_ARRAY(mem_ctx, UNISTR2, num_names)) == NULL) {

@@ -76,7 +76,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 		return result;
 
 	result = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &pol, 1, &name,
-					 NULL, &sids, &sid_types);
+					 NULL, 1, &sids, &sid_types);
 	
 	if ( NT_STATUS_IS_OK(result) )
 		sid_copy( sid, &sids[0] );
