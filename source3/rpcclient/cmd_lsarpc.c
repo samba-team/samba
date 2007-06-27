@@ -262,6 +262,57 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Resolve a list of names to a list of sids */
+
+static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli, 
+					   TALLOC_CTX *mem_ctx, int argc, 
+					   const char **argv)
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	DOM_SID *sids;
+	enum lsa_SidType *types;
+	int i, level;
+
+	if (argc < 3) {
+		printf("Usage: %s [level] [name1 [name2 [...]]]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	level = atoi(argv[1]);
+
+	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 2, 
+				      (const char**)(argv + 2), NULL, level, &sids, &types);
+
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
+		goto done;
+
+	result = NT_STATUS_OK;
+
+	/* Print results */
+
+	for (i = 0; i < (argc - 2); i++) {
+		fstring sid_str;
+		sid_to_string(sid_str, &sids[i]);
+		printf("%s %s (%s: %d)\n", argv[i + 2], sid_str,
+		       sid_type_lookup(types[i]), types[i]);
+	}
+
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
+
+ done:
+	return result;
+}
+
+
 /* Resolve a list of SIDs to a list of names */
 
 static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
@@ -1047,6 +1098,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaquery", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_query_info_policy,  NULL, PI_LSARPC, NULL, "Query info policy",                    "" },
 	{ "lookupsids",          RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids,        NULL, PI_LSARPC, NULL, "Convert SIDs to names",                "" },
 	{ "lookupnames",         RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names,       NULL, PI_LSARPC, NULL, "Convert names to SIDs",                "" },
+	{ "lookupnames_level",   RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names_level, NULL, PI_LSARPC, NULL, "Convert names to SIDs",                "" },
 	{ "enumtrust", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_trust_dom,     NULL, PI_LSARPC, NULL, "Enumerate trusted domains",            "Usage: [preferred max number] [enum context (0)]" },
 	{ "enumprivs", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privilege,     NULL, PI_LSARPC, NULL, "Enumerate privileges",                 "" },
 	{ "getdispname",         RPC_RTYPE_NTSTATUS, cmd_lsa_get_dispname,       NULL, PI_LSARPC, NULL, "Get the privilege name",               "" },
