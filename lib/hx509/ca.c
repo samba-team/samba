@@ -1002,7 +1002,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_pe_proxyCertInfo(),
+			    oid_id_pkix_pe_proxyCertInfo(),
 			    &data);
 	free(data.data);
 	if (ret)
