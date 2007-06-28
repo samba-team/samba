@@ -299,7 +299,8 @@ gen_files_rfc2459 =					\
 	asn1_id_pkix_kp_timeStamping.x			\
 	asn1_id_pkix_kp_OCSPSigning.x			\
 	asn1_id_pkix_pe.x				\
-	asn1_id_pe_proxyCertInfo.x			\
+	asn1_id_pkix_pe_authorityInfoAccess.x		\
+	asn1_id_pkix_pe_proxyCertInfo.x			\
 	asn1_id_pkix_ppl.x				\
 	asn1_id_pkix_ppl_anyLanguage.x			\
 	asn1_id_pkix_ppl_inheritAll.x			\
