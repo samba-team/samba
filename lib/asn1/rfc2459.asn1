@@ -453,7 +453,9 @@ id-pkix-kp-OCSPSigning OBJECT IDENTIFIER ::= { id-pkix-kp 9 }
 
 id-pkix-pe OBJECT IDENTIFIER ::= { id-pkix 1 }
 
-id-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
+id-pkix-pe-authorityInfoAccess OBJECT IDENTIFIER ::= { id-pkix-pe 1 }
+
+id-pkix-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
 
 id-pkix-ppl  OBJECT IDENTIFIER ::= { id-pkix 21 }
 
