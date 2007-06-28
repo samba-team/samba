@@ -1,3 +1,19 @@
+2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c: Add sha2 types.
+
+	* ref/pkcs11.h: Sync with scute.
+
+	* ref/pkcs11.h: Add sha2 CKM's.
+
+	* print.c: Print authorityInfoAccess.
+
+	* cert.c: Rename proxyCertInfo oid.
+
+	* ca.c: Rename proxyCertInfo oid.
+
+	* print.c: Rename proxyCertInfo oid.
+	
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_ca.in: Adapt to new request handling.
