@@ -449,11 +449,18 @@ id-pkix-kp-emailProtection OBJECT IDENTIFIER ::= { id-pkix-kp 4 }
 id-pkix-kp-timeStamping OBJECT IDENTIFIER ::= { id-pkix-kp 8 }
 id-pkix-kp-OCSPSigning OBJECT IDENTIFIER ::= { id-pkix-kp 9 }
 
--- RFC 3820 Proxy Certificate Profile
-
 id-pkix-pe OBJECT IDENTIFIER ::= { id-pkix 1 }
 
 id-pkix-pe-authorityInfoAccess OBJECT IDENTIFIER ::= { id-pkix-pe 1 }
+
+AccessDescription  ::=  SEQUENCE {
+	accessMethod          OBJECT IDENTIFIER,
+	accessLocation        GeneralName
+}
+
+AuthorityInfoAccessSyntax ::= SEQUENCE -- SIZE (1..MAX) -- OF AccessDescription
+
+-- RFC 3820 Proxy Certificate Profile
 
 id-pkix-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
 
