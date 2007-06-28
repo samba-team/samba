@@ -1,5 +1,5 @@
 /* pkcs11.h
-   Copyright 2006 g10 Code GmbH
+   Copyright 2006, 2007 g10 Code GmbH
    Copyright 2006 Andreas Jellinghaus
 
    This file is free software; as a special exception the author gives
@@ -498,6 +498,12 @@ typedef unsigned long ck_mechanism_type_t;
 #define CKM_X9_42_DH_DERIVE		(0x31)
 #define CKM_X9_42_DH_HYBRID_DERIVE	(0x32)
 #define CKM_X9_42_MQV_DERIVE		(0x33)
+#define CKM_SHA256_RSA_PKCS		(0x40)
+#define CKM_SHA384_RSA_PKCS		(0x41)
+#define CKM_SHA512_RSA_PKCS		(0x42)
+#define CKM_SHA256_RSA_PKCS_PSS		(0x43)
+#define CKM_SHA384_RSA_PKCS_PSS		(0x44)
+#define CKM_SHA512_RSA_PKCS_PSS		(0x45)
 #define CKM_RC2_KEY_GEN			(0x100)
 #define CKM_RC2_ECB			(0x101)
 #define	CKM_RC2_CBC			(0x102)
