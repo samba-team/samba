@@ -3166,10 +3166,7 @@ static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
 				  &type,
 				  &size,
 				  &data_p);
-		if ((strwicmp(valname,"include") == 0) ||
-		    (strwicmp(valname, "lock directory") == 0) ||
-		    (strwicmp(valname, "lock dir") == 0)) 
-		{
+		if (registry_smbconf_valname_forbidden(valname)) {
 			DEBUG(10, ("process_registry_globals: Ignoring "
 				   "parameter '%s' in registry.\n", valname));
 			continue;

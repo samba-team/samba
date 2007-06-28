@@ -117,3 +117,25 @@ void normalize_dbkey(char *key)
 	string_sub(key, "\\", "/", len+1);
 	strupper_m(key);
 }
+
+/*
+ * check whether a given value name is forbidden in registry (smbconf)
+ */
+BOOL registry_smbconf_valname_forbidden(const char *valname)
+{
+	/* hard code the list of forbidden names here for now */
+	const char *forbidden_valnames[] = {
+		"include",
+		"lock directory",
+		"lock dir",
+		NULL
+	};
+	const char **forbidden = NULL;
+
+	for (forbidden = forbidden_valnames; *forbidden != NULL; forbidden++) {
+		if (strwicmp(valname, *forbidden) == 0) {
+			return True;
+		}
+	}
+	return False;
+}
