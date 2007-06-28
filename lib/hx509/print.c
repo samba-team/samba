@@ -628,7 +628,7 @@ struct {
     { ext(extKeyUsage, Null), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
-    { "proxyCertInfo", oid_id_pe_proxyCertInfo, 
+    { "proxyCertInfo", oid_id_pkix_pe_proxyCertInfo, 
       check_proxyCertInfo, M_C },
     { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim, 
       check_Null, D_C },
