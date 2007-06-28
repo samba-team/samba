@@ -1,5 +1,9 @@
 2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add AuthorityInfoAccessSyntax.
+
+	* rfc2459.asn1: Add AuthorityInfoAccessSyntax.
+
 	* rfc2459.asn1: Add authorityInfoAccess, rename proxyCertInfo.
 	
 	* Makefile.am: Add authorityInfoAccess, rename proxyCertInfo.
