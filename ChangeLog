@@ -1,3 +1,7 @@
+2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/digest.c: On success, print username, not ip-adress.
+
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/get_cred.c: Add krb5_get_renewed_creds.
