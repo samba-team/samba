@@ -37,14 +37,6 @@ extern struct winbindd_methods passdb_methods;
  **/
 
 
-/**
- * Used to clobber name fields that have an undefined value.
- *
- * Correct code should never look at a field that has this value.
- **/
-
-static const fstring name_deadbeef = "<deadbeef>";
-
 /* The list of trusted domains.  Note that the list can be deleted and
    recreated using the init_domain_list() function so pointers to
    individual winbindd_domain structures cannot be made.  Keep a copy of
