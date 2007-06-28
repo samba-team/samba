@@ -785,7 +785,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 		More conveniently, the <emphasis>conf</emphasis> subcommand of the
 		<citerefentry><refentrytitle>net</refentrytitle> 
-		<manvolnum>7</manvolnum></citerefentry> utility
+		<manvolnum>8</manvolnum></citerefentry> utility
 		offers a dedicated interface to read and write the
 		registry based configuration locally, i.e. directly
 		accessing the database file, circumventing the
