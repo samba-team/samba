@@ -536,24 +536,29 @@ static BOOL create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		union samr_UserInfo u_info;
 		DATA_BLOB session_key;
 
-		encode_pw_buffer(u_info.info24.password.data, password,
+
+		ZERO_STRUCT(u_info);
+		encode_pw_buffer(u_info.info23.password.data, password,
 				 STR_UNICODE);
-		u_info.info24.pw_len =	strlen_m(password)*2;
 
 		status = dcerpc_fetch_session_key(samr_pipe, &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("dcerpc_fetch_session_key failed\n");
 			goto done;
 		}
-		arcfour_crypt_blob(u_info.info24.password.data, 516,
+		arcfour_crypt_blob(u_info.info23.password.data, 516,
 				   &session_key);
+		u_info.info23.info.password_expired = 0;
+		u_info.info23.info.fields_present = SAMR_FIELD_PASSWORD | 
+						    SAMR_FIELD_PASSWORD2 |
+						    SAMR_FIELD_EXPIRED_FLAG;
 		sui2.in.user_handle = wks_handle;
 		sui2.in.info = &u_info;
-		sui2.in.level = 24;
+		sui2.in.level = 23;
 
 		status = dcerpc_samr_SetUserInfo2(samr_pipe, tmp_ctx, &sui2);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("samr_SetUserInfo(24) failed: %s\n",
+			d_printf("samr_SetUserInfo(23) failed: %s\n",
 				 nt_errstr(status));
 			goto done;
 		}
