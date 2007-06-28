@@ -1,3 +1,9 @@
+2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rfc2459.asn1: Add authorityInfoAccess, rename proxyCertInfo.
+	
+	* Makefile.am: Add authorityInfoAccess, rename proxyCertInfo.
+
 2007-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_get.c (der_get_time): avoid using wrapping of octet_string
