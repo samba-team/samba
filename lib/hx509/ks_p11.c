@@ -1129,8 +1129,17 @@ p11_printinfo(hx509_context context,
 		MECHNAME(CKM_RSA_X_509, "rsa-x-509");
 		MECHNAME(CKM_MD5_RSA_PKCS, "md5-rsa-pkcs");
 		MECHNAME(CKM_SHA1_RSA_PKCS, "sha1-rsa-pkcs");
+		MECHNAME(CKM_SHA256_RSA_PKCS, "sha256-rsa-pkcs");
+		MECHNAME(CKM_SHA384_RSA_PKCS, "sha384-rsa-pkcs");
+		MECHNAME(CKM_SHA512_RSA_PKCS, "sha512-rsa-pkcs");
 		MECHNAME(CKM_RIPEMD160_RSA_PKCS, "ripemd160-rsa-pkcs");
 		MECHNAME(CKM_RSA_PKCS_OAEP, "rsa-pkcs-oaep");
+		MECHNAME(CKM_SHA512_HMAC, "sha512-hmac");
+		MECHNAME(CKM_SHA512, "sha512");
+		MECHNAME(CKM_SHA384_HMAC, "sha384-hmac");
+		MECHNAME(CKM_SHA384, "sha384");
+		MECHNAME(CKM_SHA256_HMAC, "sha256-hmac");
+		MECHNAME(CKM_SHA256, "sha256");
 		MECHNAME(CKM_SHA_1, "sha1");
 		MECHNAME(CKM_MD5, "md5");
 		MECHNAME(CKM_MD2, "md2");
