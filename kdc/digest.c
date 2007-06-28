@@ -975,7 +975,7 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	kdc_log(context, config, 0, "Digest %s request successful %s",
-		ireq.u.digestRequest.type, from);
+		ireq.u.digestRequest.type, ireq.u.digestRequest.username);
 
 	break;
     }
