@@ -898,7 +898,7 @@ is_proxy_cert(hx509_context context,
     if (rinfo)
 	memset(rinfo, 0, sizeof(*rinfo));
 
-    e = find_extension(cert, oid_id_pe_proxyCertInfo(), &i);
+    e = find_extension(cert, oid_id_pkix_pe_proxyCertInfo(), &i);
     if (e == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_EXTENSION_NOT_FOUND;
