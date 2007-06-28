@@ -222,6 +222,8 @@ gen_files_rfc2459 =					\
 	asn1_DirectoryString.x				\
 	asn1_Attribute.x				\
 	asn1_AttributeTypeAndValue.x			\
+	asn1_AuthorityInfoAccessSyntax.x		\
+	asn1_AccessDescription.x			\
 	asn1_RelativeDistinguishedName.x		\
 	asn1_RDNSequence.x				\
 	asn1_Name.x					\
