@@ -178,8 +178,17 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 	}
 
 	if (registry_smbconf_valname_forbidden(valname)) {
-		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n", 
+		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
 			  valname);
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (!strequal(key->key->name, GLOBAL_NAME) &&
+	    lp_parameter_is_global(valname))
+	{
+		d_fprintf(stderr, "Global paramter '%s' not allowed in "
+			  "service definition.\n", valname);
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}

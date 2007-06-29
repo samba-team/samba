@@ -2790,6 +2790,24 @@ BOOL lp_parameter_valid(const char *pszParmName)
 }
 
 /***************************************************************************
+ Check whether the given name is the name of a global parameter.
+ Returns True for strings belonging to parameters of class
+ P_GLOBAL, False for all other strings, also for parametric options
+ and strings not belonging to any option.
+***************************************************************************/
+
+BOOL lp_parameter_is_global(const char *pszParmName)
+{
+	int num = map_parameter(pszParmName);
+
+	if (num >= 0) {
+		return (parm_table[num].p_class == P_GLOBAL);
+	}
+
+	return False;
+}
+
+/***************************************************************************
  Map a parameter's string representation to something we can use. 
  Returns False if the parameter string is not recognised, else TRUE.
 ***************************************************************************/
