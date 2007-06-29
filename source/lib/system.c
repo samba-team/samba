@@ -1366,21 +1366,25 @@ SMB_STRUCT_WPASSWD *wsys_getpwuid(uid_t uid)
 #endif /* NOT CURRENTLY USED - JRA */
 
 /**************************************************************************
- Extract a command into an arg list. Uses a static pstring for storage.
- Caller frees returned arg list (which contains pointers into the static pstring).
+ Extract a command into an arg list.
 ****************************************************************************/
 
-static char **extract_args(const char *command)
+static char **extract_args(TALLOC_CTX *mem_ctx, const char *command)
 {
-	static pstring trunc_cmd;
+	char *trunc_cmd;
+	char *saveptr;
 	char *ptr;
 	int argcl;
 	char **argl = NULL;
 	int i;
 
-	pstrcpy(trunc_cmd, command);
+	if (!(trunc_cmd = talloc_strdup(mem_ctx, command))) {
+		DEBUG(0, ("talloc failed\n"));
+		goto nomem;
+	}
 
-	if(!(ptr = strtok(trunc_cmd, " \t"))) {
+	if(!(ptr = strtok_r(trunc_cmd, " \t", &saveptr))) {
+		TALLOC_FREE(trunc_cmd);
 		errno = EINVAL;
 		return NULL;
 	}
@@ -1389,27 +1393,46 @@ static char **extract_args(const char *command)
 	 * Count the args.
 	 */
 
-	for( argcl = 1; ptr; ptr = strtok(NULL, " \t"))
+	for( argcl = 1; ptr; ptr = strtok_r(NULL, " \t", &saveptr))
 		argcl++;
 
-	if((argl = (char **)SMB_MALLOC((argcl + 1) * sizeof(char *))) == NULL)
-		return NULL;
+	TALLOC_FREE(trunc_cmd);
+
+	if (!(argl = TALLOC_ARRAY(mem_ctx, char *, argcl + 1))) {
+		goto nomem;
+	}
 
 	/*
 	 * Now do the extraction.
 	 */
 
-	pstrcpy(trunc_cmd, command);
+	if (!(trunc_cmd = talloc_strdup(mem_ctx, command))) {
+		goto nomem;
+	}
 
-	ptr = strtok(trunc_cmd, " \t");
+	ptr = strtok_r(trunc_cmd, " \t", &saveptr);
 	i = 0;
-	argl[i++] = ptr;
 
-	while((ptr = strtok(NULL, " \t")) != NULL)
-		argl[i++] = ptr;
+	if (!(argl[i++] = talloc_strdup(argl, ptr))) {
+		goto nomem;
+	}
+
+	while((ptr = strtok_r(NULL, " \t", &saveptr)) != NULL) {
+
+		if (!(argl[i++] = talloc_strdup(argl, ptr))) {
+			goto nomem;
+		}
+	}
 
 	argl[i++] = NULL;
 	return argl;
+
+ nomem:
+	DEBUG(0, ("talloc failed\n"));
+	TALLOC_FREE(trunc_cmd);
+	TALLOC_FREE(argl);
+	errno = ENOMEM;
+	return NULL;
 }
 
 /**************************************************************************
@@ -1483,7 +1506,7 @@ int sys_popen(const char *command)
 	 * Extract the command and args into a NULL terminated array.
 	 */
 
-	if(!(argl = extract_args(command)))
+	if(!(argl = extract_args(NULL, command)))
 		goto err_exit;
 
 	entry->child_pid = sys_fork();
@@ -1525,7 +1548,7 @@ int sys_popen(const char *command)
 	 */
 
 	close (child_end);
-	SAFE_FREE(argl);
+	TALLOC_FREE(argl);
 
 	/* Link into popen_chain. */
 	entry->next = popen_chain;
