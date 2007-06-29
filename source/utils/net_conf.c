@@ -256,7 +256,7 @@ static WERROR reg_delkey_internal(TALLOC_CTX *ctx, const char *keyname)
 		goto done;
 	}
 
-	werr = reg_deletekey(key, keyname);
+	werr = reg_deletekey_recursive(key, key, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting registry key %s\\%s: %s\n",
 			  KEY_SMBCONF, keyname, dos_errstr(werr));
