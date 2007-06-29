@@ -179,6 +179,7 @@ void init_iconv(void)
 		 * codepage changes? */
 		/* XXX: Is the did_reload test too strict? */
 		conv_silent = True;
+		init_doschar_table();
 		init_valid_table();
 		conv_silent = False;
 	}
