@@ -2777,6 +2777,18 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 	return (True);
 }
 
+
+/***************************************************************************
+ Check whether the given parameter name is valid.
+ Parametric options (names containing a colon) are considered valid.
+***************************************************************************/
+
+BOOL lp_parameter_valid(const char *pszParmName)
+{
+	return ((map_parameter(pszParmName) != -1) ||
+		(strchr(pszParmName, ':') != NULL));
+}
+
 /***************************************************************************
  Map a parameter's string representation to something we can use. 
  Returns False if the parameter string is not recognised, else TRUE.
