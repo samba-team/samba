@@ -1210,6 +1210,10 @@ krb5_enctype smb_get_enctype_from_kt_entry(const krb5_keytab_entry *kt_entry);
 krb5_error_code smb_krb5_enctype_to_string(krb5_context context, 
  					    krb5_enctype enctype, 
 					    char **etype_s);
+krb5_error_code smb_krb5_open_keytab(krb5_context context, 
+ 				      const char *keytab_name, 
+				      BOOL write_access, 
+				      krb5_keytab *keytab);
 
 #endif /* HAVE_KRB5 */
 
