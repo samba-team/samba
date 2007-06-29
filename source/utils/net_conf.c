@@ -167,6 +167,20 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 	else {
 		d_fprintf(stderr, "Only value types DWORD and SZ are"
 			  "currently implemented for setting values.\n");
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (!lp_parameter_valid(valname)) {
+		d_fprintf(stderr, "Invalid parameter '%s' given.\n", valname);
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (registry_smbconf_valname_forbidden(valname)) {
+		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n", 
+			  valname);
+		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
 
