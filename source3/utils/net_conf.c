@@ -145,7 +145,7 @@ static char *format_value(TALLOC_CTX *mem_ctx, struct registry_value *value)
 /*
  * add a value to a key. 
  */
-static WERROR reg_setvalue_internal(struct registry_key *key, 
+static WERROR reg_setvalue_internal(struct registry_key *key,
 				    const char *valname,
 				    const char *valtype,
 				    const char *valstr)
@@ -165,7 +165,8 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 		val.v.sz.len = strlen(valstr) + 1;
 	}
 	else {
-		d_fprintf(stderr, "Sorry, only value types DWORD and SZ implementd currently for setting values.\n");
+		d_fprintf(stderr, "Only value types DWORD and SZ are"
+			  "currently implemented for setting values.\n");
 		goto done;
 	}
 
