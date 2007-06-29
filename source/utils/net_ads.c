@@ -2423,12 +2423,13 @@ static int net_ads_keytab_usage(int argc, const char **argv)
 "  FLUSH     Flushes out all keytab entries\n"\
 "  HELP      Prints this help message\n"\
 "  LIST      List the keytab\n"\
-"The ADD command will take arguments, the other commands\n"\
+"The ADD and LIST command will take arguments, the other commands\n"\
 "will not take any arguments.   The arguments given to ADD\n"\
 "should be a list of principals to add.  For example, \n"\
 "   net ads keytab add srv1 srv2\n"\
 "will add principals for the services srv1 and srv2 to the\n"\
 "system's keytab.\n"\
+"The LIST command takes a keytabname.\n"\
 "\n"
 		);
 	return -1;
@@ -2479,15 +2480,21 @@ static int net_ads_keytab_create(int argc, const char **argv)
 
 static int net_ads_keytab_list(int argc, const char **argv)
 {
-	return ads_keytab_list();
+	const char *keytab = NULL;
+
+	if (argc >= 1) {
+		keytab = argv[0];
+	}
+
+	return ads_keytab_list(keytab);
 }
 
 
 int net_ads_keytab(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"CREATE", net_ads_keytab_create},
 		{"ADD", net_ads_keytab_add},
+		{"CREATE", net_ads_keytab_create},
 		{"FLUSH", net_ads_keytab_flush},
 		{"HELP", net_ads_keytab_usage},
 		{"LIST", net_ads_keytab_list},

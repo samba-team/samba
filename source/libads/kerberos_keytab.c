@@ -801,7 +801,7 @@ done:
  List system keytab.
 ***********************************************************************/
 
-int ads_keytab_list(void)
+int ads_keytab_list(const char *keytab_name)
 {
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
@@ -819,7 +819,7 @@ int ads_keytab_list(void)
 		return ret;
 	}
 
-	ret = smb_krb5_open_keytab(context, NULL, False, &keytab);
+	ret = smb_krb5_open_keytab(context, keytab_name, False, &keytab);
 	if (ret) {
 		DEBUG(1,("ads_keytab_list: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
 		goto out;
