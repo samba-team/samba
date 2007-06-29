@@ -125,19 +125,41 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_LIST_TRUSTDOM:
 		return wbsrv_samba3_list_trustdom(s3call);
 
+	case WINBINDD_GETPWNAM:
+		return wbsrv_samba3_getpwnam(s3call);
+
+	case WINBINDD_GETPWUID:
+		return wbsrv_samba3_getpwuid(s3call);
+
+	case WINBINDD_SETPWENT:
+		return wbsrv_samba3_setpwent(s3call);
+
+	case WINBINDD_GETPWENT:
+		return wbsrv_samba3_getpwent(s3call);
+
+	case WINBINDD_ENDPWENT:
+		return wbsrv_samba3_endpwent(s3call);
+
+	case WINBINDD_GETGRNAM:
+		return wbsrv_samba3_getgrnam(s3call);
+
+	case WINBINDD_GETGRGID:
+		return wbsrv_samba3_getgrgid(s3call);
+
+	case WINBINDD_GETGROUPS:
+		return wbsrv_samba3_getgroups(s3call);
+
+	case WINBINDD_SETGRENT:
+		return wbsrv_samba3_setgrent(s3call);
+
+	case WINBINDD_GETGRENT:
+		return wbsrv_samba3_getgrent(s3call);
+
+	case WINBINDD_ENDGRENT:
+		return wbsrv_samba3_endgrent(s3call);
+
 		/* Unimplemented commands */
 
-	case WINBINDD_GETPWNAM:
-	case WINBINDD_GETPWUID:
-	case WINBINDD_GETGRNAM:
-	case WINBINDD_GETGRGID:
-	case WINBINDD_GETGROUPS:
-	case WINBINDD_SETPWENT:
-	case WINBINDD_ENDPWENT:
-	case WINBINDD_GETPWENT:
-	case WINBINDD_SETGRENT:
-	case WINBINDD_ENDGRENT:
-	case WINBINDD_GETGRENT:
 	case WINBINDD_PAM_CHAUTHTOK:
 	case WINBINDD_PAM_LOGOFF:
 	case WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP:
