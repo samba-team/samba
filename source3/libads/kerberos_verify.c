@@ -81,9 +81,9 @@ static BOOL ads_keytab_verify_ticket(krb5_context context,
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(kt_cursor);
 
-	ret = krb5_kt_default(context, &keytab);
+	ret = smb_krb5_open_keytab(context, NULL, False, &keytab);
 	if (ret) {
-		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_default failed (%s)\n", error_message(ret)));
+		DEBUG(1, ("ads_keytab_verify_ticket: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
 		goto out;
 	}
 
