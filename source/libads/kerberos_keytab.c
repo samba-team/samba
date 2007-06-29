@@ -546,10 +546,11 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		DEBUG(1,("ads_keytab_create_default: could not krb5_init_context: %s\n",error_message(ret)));
 		return ret;
 	}
-	ret = krb5_kt_default(context, &keytab);
+
+	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_create_default: krb5_kt_default failed (%s)\n",error_message(ret)));
-		goto done;
+		DEBUG(1,("ads_keytab_create_default: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
+		goto out;
 	}
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
