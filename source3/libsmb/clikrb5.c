@@ -951,10 +951,10 @@ get_key_from_keytab(krb5_context context,
 	   may be in the middle of a keytab enumeration when this is
 	   called. JRA. */
 
-	ret = krb5_kt_default(context, &keytab);
+	ret = smb_krb5_open_keytab(context, NULL, False, &keytab);
 	if (ret) {
-		DEBUG(0,("get_key_from_keytab: failed to open keytab: %s\n", error_message(ret)));
-		return ret;
+		DEBUG(1,("get_key_from_keytab: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
+		goto out;
 	}
 
 	if ( DEBUGLEVEL >= 10 ) {
