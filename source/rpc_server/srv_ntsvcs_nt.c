@@ -27,13 +27,9 @@
 /********************************************************************
 ********************************************************************/
 
-static char* get_device_path( const char *device )
+static char* get_device_path(TALLOC_CTX *mem_ctx, const char *device )
 {
-	static pstring path;
-
-	pstr_sprintf( path, "ROOT\\Legacy_%s\\0000", device );
-
-	return path;
+	return talloc_asprintf(mem_ctx, "ROOT\\Legacy_%s\\0000", device);
 }
 
 /********************************************************************
@@ -52,15 +48,20 @@ WERROR _ntsvcs_get_version( pipes_struct *p, NTSVCS_Q_GET_VERSION *q_u, NTSVCS_R
 WERROR _ntsvcs_get_device_list_size( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST_SIZE *q_u, NTSVCS_R_GET_DEVICE_LIST_SIZE *r_u )
 {
 	fstring device;
-	const char *devicepath;
+	char *devicepath;
 
 	if ( !q_u->devicename )
 		return WERR_ACCESS_DENIED;
 
 	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
-	devicepath = get_device_path( device );
+
+	if (!(devicepath = get_device_path(p->mem_ctx, device))) {
+		return WERR_NOMEM;
+	}
 
 	r_u->size = strlen(devicepath) + 2;
+
+	TALLOC_FREE(devicepath);
 
 	return WERR_OK;
 }
@@ -72,17 +73,21 @@ WERROR _ntsvcs_get_device_list_size( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST_S
 WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u )
 {
 	fstring device;
-	const char *devicepath;
+	char *devicepath;
 
 	if ( !q_u->devicename )
 		return WERR_ACCESS_DENIED;
 
 	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
-	devicepath = get_device_path( device );
+
+	if (!(devicepath = get_device_path(p->mem_ctx, device))) {
+		return WERR_NOMEM;
+	}
 
 	/* This has to be DOUBLE NULL terminated */
 
 	init_unistr2( &r_u->devicepath, devicepath, UNI_STR_DBLTERMINATE );
+	TALLOC_FREE(devicepath);
 	r_u->needed = r_u->devicepath.uni_str_len;
 
 	return WERR_OK;
