@@ -662,3 +662,82 @@ static void list_trustdom_recv_doms(struct composite_context *ctx)
  done:
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
+
+/* NSS calls */
+
+NTSTATUS wbsrv_samba3_getpwnam(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_getpwnam called\n"));
+	s3call->response.result = WINBINDD_ERROR;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_getpwuid(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_getpwuid called\n"));
+	s3call->response.result = WINBINDD_ERROR;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_setpwent(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_setpwent called\n"));
+	s3call->response.result = WINBINDD_OK;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_getpwent(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_getpwent called\n"));
+	s3call->response.result = WINBINDD_ERROR;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_endpwent(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_endpwent called\n"));
+	s3call->response.result = WINBINDD_OK;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_getgrnam(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_getgrnam called\n"));
+	s3call->response.result = WINBINDD_ERROR;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_getgrgid(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_getgrgid called\n"));
+	s3call->response.result = WINBINDD_ERROR;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_getgroups(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_getgroups called\n"));
+	s3call->response.result = WINBINDD_ERROR;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_setgrent(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_setgrent called\n"));
+	s3call->response.result = WINBINDD_OK;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_getgrent(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_getgrent called\n"));
+	s3call->response.result = WINBINDD_ERROR;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_endgrent(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(5, ("wbsrv_samba3_endgrent called\n"));
+	s3call->response.result = WINBINDD_OK;
+	return NT_STATUS_OK;
+}
