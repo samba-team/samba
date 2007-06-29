@@ -550,7 +550,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
 	if (ret) {
 		DEBUG(1,("ads_keytab_create_default: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
-		goto out;
+		goto done;
 	}
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
