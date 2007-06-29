@@ -102,7 +102,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
  Load from a pipe into memory.
 ****************************************************************************/
 
-char *file_pload(char *syscmd, size_t *size)
+static char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
 	char *p;
