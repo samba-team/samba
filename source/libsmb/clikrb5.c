@@ -954,7 +954,7 @@ get_key_from_keytab(krb5_context context,
 	ret = smb_krb5_open_keytab(context, NULL, False, &keytab);
 	if (ret) {
 		DEBUG(1,("get_key_from_keytab: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
-		goto out;
+		return ret;
 	}
 
 	if ( DEBUGLEVEL >= 10 ) {
