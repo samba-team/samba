@@ -5,7 +5,7 @@
    Copyright (C) Remus Koos 2001
    Copyright (C) Luke Howard 2003
    Copyright (C) Jim McDonough (jmcd@us.ibm.com) 2003
-   Copyright (C) Guenther Deschner 2003
+   Copyright (C) Guenther Deschner 2003,2007
    Copyright (C) Rakesh Patel 2004
    Copyright (C) Dan Perry 2004
    Copyright (C) Jeremy Allison 2004
@@ -35,6 +35,136 @@
 #define MAX_KEYTAB_NAME_LEN 1100
 #endif
 
+/**********************************************************************
+ * Open a krb5 keytab with flags, handles readonly or readwrite access and
+ * allows to process non-default keytab names.
+ * @param context krb5_context 
+ * @param keytab_name_req string
+ * @param write_access BOOL if writable keytab is required
+ * @param krb5_keytab pointer to krb5_keytab (close with krb5_kt_close())
+ * @return krb5_error_code
+**********************************************************************/
+
+ krb5_error_code smb_krb5_open_keytab(krb5_context context,
+				      const char *keytab_name_req,
+				      BOOL write_access,
+				      krb5_keytab *keytab)
+{
+	krb5_error_code ret = 0;
+	TALLOC_CTX *mem_ctx;
+	char keytab_string[MAX_KEYTAB_NAME_LEN];
+	BOOL found_valid_name = False;
+	const char *pragma = "FILE";
+	const char *tmp = NULL;
+
+	if (!write_access && !keytab_name_req) {
+		/* caller just wants to read the default keytab readonly, so be it */
+		return krb5_kt_default(context, keytab);
+	}
+
+	mem_ctx = talloc_init("smb_krb5_open_keytab");
+	if (!mem_ctx) {
+		return ENOMEM;
+	}
+
+#ifdef HAVE_WRFILE_KEYTAB 
+	if (write_access) {
+		pragma = "WRFILE";
+	}
+#endif
+
+	if (keytab_name_req) {
+
+		if (strlen(keytab_name_req) > MAX_KEYTAB_NAME_LEN) {
+			ret = KRB5_CONFIG_NOTENUFSPACE;
+			goto out;
+		}
+
+		if ((strncmp(keytab_name_req, "WRFILE:/", 8) == 0) || 
+		    (strncmp(keytab_name_req, "FILE:/", 6) == 0)) {
+		    	tmp = keytab_name_req;
+			goto resolve;
+		}
+
+		if (keytab_name_req[0] != '/') {
+			ret = KRB5_KT_BADNAME;
+			goto out;
+		}
+
+		tmp = talloc_asprintf(mem_ctx, "%s:%s", pragma, keytab_name_req);
+		if (!tmp) {
+			ret = ENOMEM;
+			goto out;
+		}
+
+		goto resolve;
+	}
+
+	/* we need to handle more complex keytab_strings, like:
+	 * "ANY:FILE:/etc/krb5.keytab,krb4:/etc/srvtab" */
+
+	ret = krb5_kt_default_name(context, &keytab_string[0], MAX_KEYTAB_NAME_LEN - 2);
+	if (ret) {
+		goto out;
+	}
+
+	DEBUG(10,("smb_krb5_open_keytab: krb5_kt_default_name returned %s\n", keytab_string));
+
+	tmp = talloc_strdup(mem_ctx, keytab_string);
+	if (!tmp) {
+		ret = ENOMEM;
+		goto out;
+	}
+		
+	if (strncmp(tmp, "ANY:", 4) == 0) {
+		tmp += 4;
+	}
+
+	memset(&keytab_string, '\0', sizeof(keytab_string));
+
+	while (next_token(&tmp, keytab_string, ",", sizeof(keytab_string))) {
+
+		if (strncmp(keytab_string, "WRFILE:", 7) == 0) {
+			found_valid_name = True;
+			tmp = keytab_string;
+			tmp += 7;
+		}
+
+		if (strncmp(keytab_string, "FILE:", 5) == 0) {
+			found_valid_name = True;
+			tmp = keytab_string;
+			tmp += 5;
+		}
+
+		if (found_valid_name) {
+
+			if (tmp[0] != '/') {
+				ret = KRB5_KT_BADNAME;
+				goto out;
+			}
+
+			tmp = talloc_asprintf(mem_ctx, "%s:%s", pragma, tmp);
+			if (!tmp) {
+				ret = ENOMEM;
+				goto out;
+			}
+			break;
+		}
+	}
+		
+	if (!found_valid_name) {
+		ret = KRB5_KT_UNKNOWN_TYPE;
+		goto out;
+	}
+
+ resolve:
+ 	DEBUG(10,("smb_krb5_open_keytab: resolving: %s\n", tmp));
+	ret = krb5_kt_resolve(context, tmp, keytab);
+
+ out:
+ 	TALLOC_FREE(mem_ctx);
+ 	return ret;
+}
 
 /**********************************************************************
 **********************************************************************/
@@ -231,7 +361,6 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	char *princ_s = NULL, *short_princ_s = NULL;
 	char *password_s = NULL;
 	char *my_fqdn;
-	char keytab_name[MAX_KEYTAB_NAME_LEN];          
 	TALLOC_CTX *ctx = NULL;
 	char *machine_name;
 
@@ -245,22 +374,10 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		DEBUG(1,("ads_keytab_add_entry: could not krb5_init_context: %s\n",error_message(ret)));
 		return -1;
 	}
-	
-#ifdef HAVE_WRFILE_KEYTAB       /* MIT */
-	keytab_name[0] = 'W';
-	keytab_name[1] = 'R';
-	ret = krb5_kt_default_name(context, (char *) &keytab_name[2], MAX_KEYTAB_NAME_LEN - 4);
-#else                           /* Heimdal */
-	ret = krb5_kt_default_name(context, (char *) &keytab_name[0], MAX_KEYTAB_NAME_LEN - 2);
-#endif
+
+	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry: krb5_kt_default_name failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-	DEBUG(2,("ads_keytab_add_entry: Using default system keytab: %s\n", (char *) &keytab_name));
-	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
-	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry: krb5_kt_resolve failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_add_entry: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
 		goto out;
 	}
 
@@ -383,7 +500,6 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
-	char keytab_name[MAX_KEYTAB_NAME_LEN];
 
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(cursor);
@@ -394,21 +510,10 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		DEBUG(1,("ads_keytab_flush: could not krb5_init_context: %s\n",error_message(ret)));
 		return ret;
 	}
-#ifdef HAVE_WRFILE_KEYTAB
-	keytab_name[0] = 'W';
-	keytab_name[1] = 'R';
-	ret = krb5_kt_default_name(context, (char *) &keytab_name[2], MAX_KEYTAB_NAME_LEN - 4);
-#else
-	ret = krb5_kt_default_name(context, (char *) &keytab_name[0], MAX_KEYTAB_NAME_LEN - 2);
-#endif
+
+	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_flush: krb5_kt_default failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-	DEBUG(3,("ads_keytab_flush: Using default keytab: %s\n", (char *) &keytab_name));
-	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
-	if (ret) {
-		DEBUG(1,("ads_keytab_flush: krb5_kt_resolve failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_flush: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
 		goto out;
 	}
 
@@ -703,7 +808,6 @@ int ads_keytab_list(void)
 	krb5_keytab keytab = NULL;
 	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
-	char keytab_name[MAX_KEYTAB_NAME_LEN];
 
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(cursor);
@@ -714,21 +818,10 @@ int ads_keytab_list(void)
 		DEBUG(1,("ads_keytab_list: could not krb5_init_context: %s\n",error_message(ret)));
 		return ret;
 	}
-#if 0 /* HAVE_WRFILE_KEYTAB */
-	keytab_name[0] = 'W';
-	keytab_name[1] = 'R';
-	ret = krb5_kt_default_name(context, (char *) &keytab_name[2], MAX_KEYTAB_NAME_LEN - 4);
-#else
-	ret = krb5_kt_default_name(context, (char *) &keytab_name[0], MAX_KEYTAB_NAME_LEN - 2);
-#endif
+
+	ret = smb_krb5_open_keytab(context, NULL, False, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_list: krb5_kt_default failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-	DEBUG(3,("ads_keytab_list: Using default keytab: %s\n", (char *) &keytab_name));
-	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
-	if (ret) {
-		DEBUG(1,("ads_keytab_list: krb5_kt_resolve failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_list: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
 		goto out;
 	}
 
