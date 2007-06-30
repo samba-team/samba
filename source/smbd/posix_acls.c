@@ -3263,7 +3263,7 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 
 	/* Finally append any inherited ACEs. */
 	for (j = 0; j < parent_sd->dacl->num_aces; j++) {
-		SEC_ACE *se = &parent_sd->dacl->aces[i];
+		SEC_ACE *se = &parent_sd->dacl->aces[j];
 		uint32 i_flags = se->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
 					SEC_ACE_FLAG_CONTAINER_INHERIT|
 					SEC_ACE_FLAG_INHERIT_ONLY);
