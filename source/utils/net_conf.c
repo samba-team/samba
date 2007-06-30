@@ -171,7 +171,7 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 		goto done;
 	}
 
-	if (!lp_parameter_valid(valname)) {
+	if (!lp_parameter_is_valid(valname)) {
 		d_fprintf(stderr, "Invalid parameter '%s' given.\n", valname);
 		werr = WERR_INVALID_PARAM;
 		goto done;

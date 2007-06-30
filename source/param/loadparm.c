@@ -2783,7 +2783,7 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
  Parametric options (names containing a colon) are considered valid.
 ***************************************************************************/
 
-BOOL lp_parameter_valid(const char *pszParmName)
+BOOL lp_parameter_is_valid(const char *pszParmName)
 {
 	return ((map_parameter(pszParmName) != -1) ||
 		(strchr(pszParmName, ':') != NULL));
