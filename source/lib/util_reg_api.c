@@ -53,18 +53,32 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 		smb_ucs2_t *tmp;
 		uint32 num_ucs2 = length / 2;
 
-		if ((length % 2) != 0) {
+		if (length == 1) {
+			/* win2k regedit gives us a string of 1 byte when
+			 * creating a new value of type REG_SZ. this workaround
+			 * replaces the input by using the same string as
+			 * winxp delivers. */
+			length = 2;
+			if (!(tmp = SMB_MALLOC_ARRAY(smb_ucs2_t, 2))) {
+				err = WERR_NOMEM;
+				goto error;
+			}
+			tmp[0] = 2;
+			tmp[1] = 0;
+		}
+		else if ((length % 2) != 0) {
 			err = WERR_INVALID_PARAM;
 			goto error;
 		}
+		else {
+			if (!(tmp = SMB_MALLOC_ARRAY(smb_ucs2_t, num_ucs2+1))) {
+				err = WERR_NOMEM;
+				goto error;
+			}
 
-		if (!(tmp = SMB_MALLOC_ARRAY(smb_ucs2_t, num_ucs2+1))) {
-			err = WERR_NOMEM;
-			goto error;
+			memcpy((void *)tmp, (const void *)data, length);
+			tmp[num_ucs2] = 0;
 		}
-
-		memcpy((void *)tmp, (const void *)data, length);
-		tmp[num_ucs2] = 0;
 
 		value->v.sz.len = convert_string_talloc(
 			value, CH_UTF16LE, CH_UNIX, tmp, length+2,
