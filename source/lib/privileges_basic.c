@@ -364,15 +364,10 @@ BOOL user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege)
 
 int count_all_privileges( void )
 {
-	static int count;
-	
-	if ( count )
-		return count;
-
-	/* loop over the array and count it */	
-	for ( count=0; !se_priv_equal(&privs[count].se_priv, &se_priv_end); count++ ) ;
-
-	return count;
+	/*
+	 * The -1 is due to the weird SE_END record...
+	 */
+	return (sizeof(privs) / sizeof(privs[0])) - 1;
 }
 
 
@@ -404,9 +399,8 @@ LUID_ATTR get_privilege_luid( SE_PRIV *mask )
  Convert a LUID to a named string
 ****************************************************************************/
 
-char* luid_to_privilege_name(const LUID *set)
+const char *luid_to_privilege_name(const LUID *set)
 {
-	static fstring name;
 	int i;
 
 	if (set->high != 0)
@@ -414,8 +408,7 @@ char* luid_to_privilege_name(const LUID *set)
 
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 		if ( set->low == privs[i].luid.low ) {
-			fstrcpy( name, privs[i].name );
-			return name;
+			return privs[i].name;
 		}
 	}
 	

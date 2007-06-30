@@ -3172,7 +3172,7 @@ void init_q_enum_acct_rights(LSA_Q_ENUM_ACCT_RIGHTS *in,
 NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *out, PRIVILEGE_SET *privileges )
 {
 	uint32 i;
-	char *privname;
+	const char *privname;
 	const char **privname_array = NULL;
 	int num_priv = 0;
 
