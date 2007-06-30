@@ -42,6 +42,19 @@ static int smbconf_fetch_values( const char *key, REGVAL_CTR *val )
 
 static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 {
+	int i;
+	int num_values = regval_ctr_numvals(val);
+
+	for (i=0; i < num_values; i++) {
+		REGISTRY_VALUE *theval = regval_ctr_specific_value(val, i);
+		const char *valname = regval_name(theval);
+
+		if (registry_smbconf_valname_forbidden(valname)) {
+			DEBUG(0, ("smbconf_store_values: value '%s' forbidden "
+			      "in registry.\n", valname));
+			return False;
+		}
+	}
 	return regdb_ops.store_values(key, val);
 }
 
