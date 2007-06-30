@@ -52,8 +52,10 @@ HMAC_Init_ex(HMAC_CTX *ctx,
 
     if (ctx->md != md) {
 	ctx->md = md;
-	if (ctx->buf)
+	if (ctx->buf) {
+	    memset(ctx->buf, 0, ctx->key_length);
 	    free (ctx->buf);
+	}
 	ctx->key_length = EVP_MD_size(ctx->md);
 	ctx->buf = malloc(ctx->key_length);
     }
@@ -67,10 +69,14 @@ HMAC_Init_ex(HMAC_CTX *ctx,
 	keylen = EVP_MD_size(ctx->md);
     }
 
-    if (ctx->opad)
+    if (ctx->opad) {
+	memset(ctx->opad, 0, ctx->key_length);
 	free(ctx->opad);
-    if (ctx->ipad)
+    }
+    if (ctx->ipad) {
+	memset(ctx->ipad, 0, ctx->key_length);
 	free(ctx->ipad);
+    }
 
     ctx->opad = malloc(EVP_MD_block_size(ctx->md));
     ctx->ipad = malloc(EVP_MD_block_size(ctx->md));
