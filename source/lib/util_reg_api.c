@@ -51,7 +51,6 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 		 */
 
 		smb_ucs2_t *tmp;
-		uint32 num_ucs2 = length / 2;
 
 		if (length == 1) {
 			/* win2k regedit gives us a string of 1 byte when
@@ -71,6 +70,7 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 			goto error;
 		}
 		else {
+			uint32 num_ucs2 = length / 2;
 			if (!(tmp = SMB_MALLOC_ARRAY(smb_ucs2_t, num_ucs2+1))) {
 				err = WERR_NOMEM;
 				goto error;
