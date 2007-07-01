@@ -231,32 +231,6 @@ void lang_msg_free(const char *msgstr)
 	free((void *)msgstr);
 }
 
-
-/*
-  when the _() translation macro is used there is no obvious place to free
-  the resulting string and there is no easy way to give a static pointer.
-  All we can do is rotate between some static buffers and hope a single d_printf() 
-  doesn't have more calls to _() than the number of buffers 
-*/
-const char *lang_msg_rotate(const char *msgid)
-{
-#define NUM_LANG_BUFS 16
-	char *msgstr;
-	static pstring bufs[NUM_LANG_BUFS];
-	static int next;
-
-	msgstr = (char *)lang_msg(msgid);
-	if (!msgstr) return msgid;
-
-	pstrcpy(bufs[next], msgstr);
-	msgstr = bufs[next];
-
-	next = (next+1) % NUM_LANG_BUFS;
-	
-	return msgstr;
-}
-
-
 /* 
    return the current language - needed for language file mappings 
 */
