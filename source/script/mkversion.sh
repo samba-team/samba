@@ -107,7 +107,7 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
     if test x"${HAVEVER}" != x"yes";then
 	HAVEGIT=no
         GIT_INFO=`git show --abbrev-commit HEAD 2>/dev/null`
-	TMP_REVISION=`echo -e "${GIT_INFO}" | grep 'commit ' |sed -e 's/commit \([0-9a-f]*\).*/\1/'`
+	TMP_REVISION=`echo -e "${GIT_INFO}" | grep 'commit ' | sed 1q |sed -e 's/commit \([0-9a-f]*\).*/\1/'`
 	if test -n "$TMP_REVISION";then
 	    HAVEGIT=yes
             HAVEVER=yes
