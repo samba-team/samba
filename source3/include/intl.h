@@ -21,5 +21,4 @@
 
 /* ideally we would have a static mapping, but that precludes
    dynamic loading. This is a reasonable compromise */
-#define _(x) lang_msg_rotate(x)
 #define N_(x) (x)
