@@ -175,7 +175,7 @@ nodist_libkrb5_la_SOURCES =			\
 
 libkrb5_la_LDFLAGS = -version-info 22:0:0
 
-$(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
+$(libkrb5_la_OBJECTS) $(verify_krb5_conf_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 
 $(srcdir)/krb5-protos.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -E KRB5_LIB_FUNCTION -q -P comment -o krb5-protos.h $(dist_libkrb5_la_SOURCES) || rm -f krb5-protos.h
