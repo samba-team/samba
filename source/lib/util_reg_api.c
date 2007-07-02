@@ -80,6 +80,12 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 			tmp[num_ucs2] = 0;
 		}
 
+		if (length + 2 < length) {
+			/* Integer wrap. */
+			err = WERR_INVALID_PARAM;
+			goto error;
+		}
+
 		value->v.sz.len = convert_string_talloc(
 			value, CH_UTF16LE, CH_UNIX, tmp, length+2,
 			&value->v.sz.str, False);
