@@ -269,17 +269,19 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
 
-        if(name == NULL || *name=='\0') {
-                DEBUG(3,("rpc: name_to_sid name=%s\n", domain_name));
-                full_name = talloc_asprintf(mem_ctx, "%s", domain_name);
-        } else {
-                DEBUG(3,("rpc: name_to_sid name=%s\\%s\n", domain_name, name));
-                full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
-        }
+	if (name == NULL || *name=='\0') {
+		full_name = talloc_asprintf(mem_ctx, "%s", domain_name);
+	} else if (domain_name == NULL || *domain_name == '\0') {
+		full_name = talloc_asprintf(mem_ctx, "%s", name);
+	} else {
+		full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
+	}
 	if (!full_name) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	DEBUG(3,("rpc: name_to_sid name=%s\n", full_name));
 
 	ws_name_return( full_name, WB_REPLACE_CHAR );
 
