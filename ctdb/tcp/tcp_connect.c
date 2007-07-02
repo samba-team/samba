@@ -41,7 +41,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 
 	/* start a new connect cycle to try to re-establish the
 	   link */
-	ctdb_queue_set_fd(tnode->queue, -1);
+	ctdb_queue_set_fd(tnode->out_queue, -1);
 	tnode->fd = -1;
 	event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
 			ctdb_tcp_node_connect, node);
@@ -80,7 +80,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
         setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
         setsockopt(tnode->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 
-	ctdb_queue_set_fd(tnode->queue, tnode->fd);
+	ctdb_queue_set_fd(tnode->out_queue, tnode->fd);
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
@@ -190,14 +190,28 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	struct sockaddr_in addr;
 	socklen_t len;
-	int fd;
+	int fd, nodeid;
 	struct ctdb_incoming *in;
 	int one = 1;
+	const char *incoming_node;
 
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
 	if (fd == -1) return;
+
+	incoming_node = inet_ntoa(addr.sin_addr);
+	for (nodeid=0;nodeid<ctdb->num_nodes;nodeid++) {
+		if (!strcmp(incoming_node, ctdb->nodes[nodeid]->address.address)) {
+			DEBUG(0, ("Incoming connection from node:%d %s\n",nodeid,incoming_node));
+			break;
+		}
+	}
+	if (nodeid>=ctdb->num_nodes) {
+		DEBUG(0, ("Refused connection from unknown node %s\n", incoming_node));
+		close(fd);
+		return;
+	}
 
 	in = talloc_zero(ctcp, struct ctdb_incoming);
 	in->fd = fd;

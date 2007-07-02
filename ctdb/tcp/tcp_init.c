@@ -41,7 +41,7 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 	tnode->fd = -1;
 	node->private_data = tnode;
 
-	tnode->queue = ctdb_queue_setup(node->ctdb, ctcp, tnode->fd, CTDB_TCP_ALIGNMENT,
+	tnode->out_queue = ctdb_queue_setup(node->ctdb, ctcp, tnode->fd, CTDB_TCP_ALIGNMENT,
 					ctdb_tcp_tnode_cb, node);
 	
 	return 0;

@@ -86,5 +86,5 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
 						      struct ctdb_tcp_node);
-	return ctdb_queue_send(tnode->queue, data, length);
+	return ctdb_queue_send(tnode->out_queue, data, length);
 }
