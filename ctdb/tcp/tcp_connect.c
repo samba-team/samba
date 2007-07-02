@@ -190,14 +190,28 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	struct sockaddr_in addr;
 	socklen_t len;
-	int fd;
+	int fd, nodeid;
 	struct ctdb_incoming *in;
 	int one = 1;
+	const char *incoming_node;
 
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
 	if (fd == -1) return;
+
+	incoming_node = inet_ntoa(addr.sin_addr);
+	for (nodeid=0;nodeid<ctdb->num_nodes;nodeid++) {
+		if (!strcmp(incoming_node, ctdb->nodes[nodeid]->address.address)) {
+			DEBUG(0, ("Incoming connection from node:%d %s\n",nodeid,incoming_node));
+			break;
+		}
+	}
+	if (nodeid>=ctdb->num_nodes) {
+		DEBUG(0, ("Refused connection from unknown node %s\n", incoming_node));
+		close(fd);
+		return;
+	}
 
 	in = talloc_zero(ctcp, struct ctdb_incoming);
 	in->fd = fd;
