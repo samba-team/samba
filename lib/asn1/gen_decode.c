@@ -202,6 +202,32 @@ find_tag (const Type *t,
     }
 }
 
+static void
+range_check(const char *name,
+	    const char *length,
+	    const char *forwstr, 
+	    struct range *r)
+{
+    if (r->min == r->max + 2 || r->min < r->max)
+	fprintf (codefile,
+		 "if ((%s)->%s > %d) {\n"
+		 "e = ASN1_MAX_CONSTRAINT; %s;\n"
+		 "}\n",
+		 name, length, r->max, forwstr);
+    if (r->min - 1 == r->max || r->min < r->max)
+	fprintf (codefile,
+		 "if ((%s)->%s < %d) {\n"
+		 "e = ASN1_MIN_CONSTRAINT; %s;\n"
+		 "}\n",
+		 name, length, r->min, forwstr);
+    if (r->max == r->min)
+	fprintf (codefile,
+		 "if ((%s)->%s != %d) {\n"
+		 "e = ASN1_EXACT_CONSTRAINT; %s;\n"
+		 "}\n",
+		 name, length, r->min, forwstr);
+}
+
 static int
 decode_type (const char *name, const Type *t, int optional, 
 	     const char *forwstr, const char *tmpstr)
@@ -262,6 +288,8 @@ decode_type (const char *name, const Type *t, int optional,
 	break;
     case TOctetString:
 	decode_primitive ("octet_string", name, forwstr);
+	if (t->range)
+	    range_check(name, "length", forwstr, t->range);
 	break;
     case TBitString: {
 	Member *m;
@@ -437,6 +465,8 @@ decode_type (const char *name, const Type *t, int optional,
 		 "}\n",
 		 name,
 		 tmpstr, tmpstr);
+	if (t->range)
+	    range_check(name, "len", forwstr, t->range);
 	free (n);
 	free (sname);
 	break;
