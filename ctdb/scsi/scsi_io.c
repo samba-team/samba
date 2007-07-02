@@ -3,6 +3,20 @@
    functions
 
    Copyright   ronnie sahlberg 2007
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 /* very incomplete and needs to be enhanced with noice command line options
@@ -26,6 +40,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <scsi/sg.h>
+#include "popt.h"
 
 
 #define SCSI_TIMEOUT 5000 /* ms */
@@ -121,11 +136,6 @@ printf("\n");
 #endif
 
 	return 0;
-}
-
-void usage(void)
-{
-	printf("Usage:  scsi <device>\n");
 }
 
 typedef struct _value_string_t {
@@ -877,28 +887,95 @@ int open_scsi_device(const char *dev)
 	return fd;
 }
 
-int main(int argc, char *argv[])
-{
-	int fd;
+typedef int (*scsi_func_t)(int fd);
+typedef struct _cmds_t {
+	const char *cmd;
+	scsi_func_t func;
+	const char *comment;
+} cmds_t;
+cmds_t cmds[] = {
+	{"inq",		scsi_inquiry,	"Standard INQUIRY output"},
+	{"vpd",		scsi_inquiry_supported_vpd_pages,	"Supported VPD Pages"},
+	{"usn",		scsi_inquiry_unit_serial_number,	"Unit serial number"},
+	{"readkeys",	scsi_persistent_reserve_in_read_keys,	"Read SCSI Reservation Keys"},
+	{"readrsvr",	scsi_persistent_reserve_in_read_reservation, "Read SCSI Reservation Data"},
+	{"reportcap",	scsi_persistent_reserve_in_report_capabilities, "Report reservation Capabilities"},
+};
 
-	if(argc!=2){
+void usage(void)
+{
+	int i;
+	printf("Usage:  scsi_io --command <command> --device <device>\n");
+	printf("Commands:\n");
+	for (i=0;i<sizeof(cmds)/sizeof(cmds[0]);i++){
+		printf("	%s	%s\n", cmds[i].cmd, cmds[i].comment);
+	}	
+}
+
+
+int main(int argc, const char *argv[])
+{
+	int i, fd;
+	int opt;
+	char *command = NULL;
+	char *device = NULL;
+	scsi_func_t func=NULL;
+	struct poptOption popt_options[] = {
+		POPT_AUTOHELP
+//		{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0, "timelimit", "integer" },
+		{ "command",      'n', POPT_ARG_STRING, &command, 0, "command", "command" },
+		{ "device",      'n', POPT_ARG_STRING, &device, 0, "device", "device" },
+//		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
+		POPT_TABLEEND
+	};
+	poptContext pc;
+
+	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
+
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			fprintf(stderr, "Invalid option %s: %s\n", 
+				poptBadOption(pc, 0), poptStrerror(opt));
+			_exit(1);
+		}
+	}
+
+	if (!command) {
+		printf("Must specify the command\n");
 		usage();
 		_exit(10);
 	}
-	fd=open_scsi_device(argv[1]);
-	if(fd<0){
-		printf("Could not open SCSI device %s\n",argv[1]);
+
+	if (!device) {
+		printf("Must specify the device\n");
+		usage();
 		_exit(10);
 	}
 
-	scsi_inquiry(fd);
-	scsi_inquiry_supported_vpd_pages(fd);
-	scsi_inquiry_unit_serial_number(fd);
-	scsi_persistent_reserve_in_read_keys(fd);
-	scsi_persistent_reserve_in_read_reservation(fd);
-	scsi_persistent_reserve_in_report_capabilities(fd);
-	scsi_persistent_reserve_in_read_full_status(fd);
+	fd=open_scsi_device(device);
+	if(fd<0){
+		printf("Could not open SCSI device %s\n",device);
+		usage();
+		_exit(10);
+	}
+
+	for (i=0;i<sizeof(cmds)/sizeof(cmds[0]);i++){
+		if(!strcmp(cmds[i].cmd, command)) {
+			func = cmds[i].func;
+			break;
+		}		
+	}
+	if (!func) {
+		printf("Unrecognized command : %s\n", command);
+		usage();
+		_exit(10);
+	}
+
+	func(fd);
+
 #if 0
+	scsi_persistent_reserve_in_read_full_status(fd);
 	scsi_persistent_reserve_out_register_and_ignore_existing_key(fd);
 	scsi_persistent_reserve_in_read_keys(fd);
 
