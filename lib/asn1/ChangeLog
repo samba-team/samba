@@ -1,5 +1,7 @@
 2007-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rfc2459.asn1: Re-add size limits. 
+	
 	* k5.asn1: Add size limits from RFC 4120.
 
 	* gen_decode.c: Check range on SEQ OF and OCTET STRING.
