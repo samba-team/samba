@@ -31,7 +31,7 @@
 #define SCSI_TIMEOUT 5000 /* ms */
 
 
-char *sensetable[16]={
+const char *sensetable[16]={
 	"no sense",
 	"recovered error",
 	"not ready",
@@ -50,7 +50,7 @@ char *sensetable[16]={
 	"unknown"
 };
 
-int scsi_io(int fd, unsigned char *cdb, unsigned char cdb_size, int xfer_dir, unsigned char *data, unsigned int *data_size, char *sense, unsigned int *sense_len)
+int scsi_io(int fd, unsigned char *cdb, unsigned char cdb_size, int xfer_dir, unsigned char *data, unsigned int *data_size, unsigned char *sense, unsigned int *sense_len)
 {
 	sg_io_hdr_t io_hdr;
 
@@ -130,7 +130,7 @@ void usage(void)
 
 typedef struct _value_string_t {
 	int	value;
-	char	*string;
+	const char	*string;
 } value_string_t;
 
 
@@ -158,7 +158,7 @@ value_string_t vpd_pages[] = {
 	{0,NULL}
 };
 
-char *val_to_str(value_string_t *vs, int v)
+const char *val_to_str(value_string_t *vs, int v)
 {
 	while(vs && vs->string){
 		if(vs->value==v){
@@ -207,7 +207,7 @@ void print_sense_data(unsigned char *sense, int sense_len)
 
 int scsi_inquiry(int fd)
 {
-	char cdb[]={0x12,0,0,0,0,0};
+	unsigned char cdb[]={0x12,0,0,0,0,0};
 
 	unsigned int data_size=96;
 	unsigned char data[data_size];
@@ -310,7 +310,7 @@ int scsi_inquiry(int fd)
 
 int scsi_inquiry_supported_vpd_pages(int fd)
 {
-	char cdb[]={0x12,0x01,0,0,0,0};
+	unsigned char cdb[]={0x12,0x01,0,0,0,0};
 
 	unsigned int data_size=0xff;
 	unsigned char data[data_size];
@@ -351,7 +351,7 @@ int scsi_inquiry_supported_vpd_pages(int fd)
 
 int scsi_inquiry_unit_serial_number(int fd)
 {
-	char cdb[]={0x12,0x01,0x80,0,0,0};
+	unsigned char cdb[]={0x12,0x01,0x80,0,0,0};
 
 	unsigned int data_size=0x00ff;
 	unsigned char data[data_size];
@@ -389,7 +389,7 @@ int scsi_inquiry_unit_serial_number(int fd)
 
 int scsi_persistent_reserve_in_read_keys(int fd)
 {
-	char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=0x00ff;
 	unsigned char data[data_size];
@@ -422,14 +422,14 @@ int scsi_persistent_reserve_in_read_keys(int fd)
 	prgeneration<<=8;prgeneration|=data[1];
 	prgeneration<<=8;prgeneration|=data[2];
 	prgeneration<<=8;prgeneration|=data[3];
-	printf("PRGeneration:%d\n", prgeneration);
+	printf("PRGeneration:%lu\n", prgeneration);
 
 	/* Additional Length */
 	additional_length=data[4];
 	additional_length<<=8;additional_length|=data[5];
 	additional_length<<=8;additional_length|=data[6];
 	additional_length<<=8;additional_length|=data[7];
-	printf("Additional Length:%d\n", additional_length);
+	printf("Additional Length:%lu\n", additional_length);
 
 	/* print the registered keys */
 	for(i=0;i<additional_length;i+=8){
@@ -449,7 +449,7 @@ int scsi_persistent_reserve_in_read_keys(int fd)
 
 int scsi_persistent_reserve_in_read_reservation(int fd)
 {
-	char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=0x00ff;
 	unsigned char data[data_size];
@@ -482,14 +482,14 @@ int scsi_persistent_reserve_in_read_reservation(int fd)
 	prgeneration<<=8;prgeneration|=data[1];
 	prgeneration<<=8;prgeneration|=data[2];
 	prgeneration<<=8;prgeneration|=data[3];
-	printf("PRGeneration:%d\n", prgeneration);
+	printf("PRGeneration:%lu\n", prgeneration);
 
 	/* Additional Length */
 	additional_length=data[4];
 	additional_length<<=8;additional_length|=data[5];
 	additional_length<<=8;additional_length|=data[6];
 	additional_length<<=8;additional_length|=data[7];
-	printf("Additional Length:%d\n", additional_length);
+	printf("Additional Length:%lu\n", additional_length);
 
 	if(additional_length==16){
 		printf("Key:%02x%02x%02x%02x%02x%02x%02x%02x\n",
@@ -509,7 +509,7 @@ int scsi_persistent_reserve_in_read_reservation(int fd)
 
 int scsi_persistent_reserve_in_report_capabilities(int fd)
 {
-	char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=0x00ff;
 	unsigned char data[data_size];
@@ -574,7 +574,7 @@ int scsi_persistent_reserve_in_report_capabilities(int fd)
 
 int scsi_persistent_reserve_in_read_full_status(int fd)
 {
-	char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5e,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=0x00ff;
 	unsigned char data[data_size];
@@ -607,14 +607,14 @@ int scsi_persistent_reserve_in_read_full_status(int fd)
 	prgeneration<<=8;prgeneration|=data[1];
 	prgeneration<<=8;prgeneration|=data[2];
 	prgeneration<<=8;prgeneration|=data[3];
-	printf("PRGeneration:%d\n", prgeneration);
+	printf("PRGeneration:%lu\n", prgeneration);
 
 	/* Additional Length */
 	additional_length=data[4];
 	additional_length<<=8;additional_length|=data[5];
 	additional_length<<=8;additional_length|=data[6];
 	additional_length<<=8;additional_length|=data[7];
-	printf("Additional Length:%d\n", additional_length);
+	printf("Additional Length:%lu\n", additional_length);
 
 /*XXX*/
 
@@ -623,7 +623,7 @@ int scsi_persistent_reserve_in_read_full_status(int fd)
 
 int scsi_persistent_reserve_out_clear(int fd)
 {
-	char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=24;
 	unsigned char data[data_size];
@@ -682,7 +682,7 @@ int scsi_persistent_reserve_out_clear(int fd)
 
 int scsi_persistent_reserve_out_reserve(int fd)
 {
-	char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=24;
 	unsigned char data[data_size];
@@ -741,7 +741,7 @@ int scsi_persistent_reserve_out_reserve(int fd)
 
 int scsi_persistent_reserve_out_register_and_ignore_existing_key(int fd)
 {
-	char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=24;
 	unsigned char data[data_size];
@@ -800,7 +800,7 @@ int scsi_persistent_reserve_out_register_and_ignore_existing_key(int fd)
 
 int scsi_persistent_reserve_out_unregister_key(int fd)
 {
-	char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
+	unsigned char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
 
 	unsigned int data_size=24;
 	unsigned char data[data_size];
@@ -883,12 +883,12 @@ int main(int argc, char *argv[])
 
 	if(argc!=2){
 		usage();
-		exit(10);
+		_exit(10);
 	}
 	fd=open_scsi_device(argv[1]);
 	if(fd<0){
 		printf("Could not open SCSI device %s\n",argv[1]);
-		exit(10);
+		_exit(10);
 	}
 
 	scsi_inquiry(fd);
