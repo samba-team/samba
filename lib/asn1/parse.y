@@ -65,7 +65,7 @@ struct string_list {
 %union {
     int constant;
     struct value *value;
-    struct range range;
+    struct range *range;
     char *name;
     Type *type;
     Member *member;
@@ -214,7 +214,7 @@ struct string_list {
 %type <members> NamedNumberList
 
 %type <objid> objid objid_list objid_element objid_opt
-%type <range> range
+%type <range> range size
 
 %type <sl> referencenames
 
@@ -223,6 +223,8 @@ struct string_list {
 %type <constraint_spec> GeneralConstraint
 %type <constraint_spec> ContentsConstraint
 %type <constraint_spec> UserDefinedConstraint
+
+
 
 %start ModuleDefinition
 
@@ -337,13 +339,40 @@ BooleanType	: kw_BOOLEAN
 
 range		: '(' Value RANGE Value ')'
 		{
-			if($2->type != integervalue || 
-			   $4->type != integervalue)
-				error_message("Non-integer value used in range");
-			$$.min = $2->u.integervalue;
-			$$.max = $4->u.integervalue;
+		    if($2->type != integervalue)
+			error_message("Non-integer used in first part of range");
+		    if($2->type != integervalue)
+			error_message("Non-integer in second part of range");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $2->u.integervalue;
+		    $$->max = $4->u.integervalue;
+		}
+		| '(' Value RANGE kw_MAX ')'
+		{		
+		    if($2->type != integervalue)
+			error_message("Non-integer in first part of range");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $2->u.integervalue;
+		    $$->max = $2->u.integervalue - 1;
+		}
+		| '(' kw_MIN RANGE Value ')'
+		{		
+		    if($4->type != integervalue)
+			error_message("Non-integer in second part of range");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $4->u.integervalue + 2;
+		    $$->max = $4->u.integervalue;
+		}
+		| '(' Value ')'
+		{
+		    if($2->type != integervalue)
+			error_message("Non-integer used in limit");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $2->u.integervalue;
+		    $$->max = $2->u.integervalue;
 		}
 		;
+
 
 IntegerType	: kw_INTEGER
 		{
@@ -353,8 +382,7 @@ IntegerType	: kw_INTEGER
 		| kw_INTEGER range
 		{
 			$$ = new_type(TInteger);
-			$$->range = emalloc(sizeof(*$$->range));
-			*($$->range) = $2;
+			$$->range = $2;
 			$$ = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, $$);
 		}
 		| kw_INTEGER '{' NamedNumberList '}'
@@ -439,6 +467,13 @@ NullType	: kw_NULL
 		}
 		;
 
+size		:
+		{ $$ = NULL; }
+		| kw_SIZE range
+		{ $$ = $2; }
+		;
+
+
 SequenceType	: kw_SEQUENCE '{' /* ComponentTypeLists */ ComponentTypeList '}'
 		{
 		  $$ = new_type(TSequence);
@@ -453,10 +488,11 @@ SequenceType	: kw_SEQUENCE '{' /* ComponentTypeLists */ ComponentTypeList '}'
 		}
 		;
 
-SequenceOfType	: kw_SEQUENCE kw_OF Type
+SequenceOfType	: kw_SEQUENCE size kw_OF Type
 		{
 		  $$ = new_type(TSequenceOf);
-		  $$->subtype = $3;
+		  $$->range = $2;
+		  $$->subtype = $4;
 		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
 		}
 		;
