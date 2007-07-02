@@ -1,3 +1,13 @@
+2007-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1: Add size limits from RFC 4120.
+
+	* gen_decode.c: Check range on SEQ OF and OCTET STRING.
+
+	* asn1_err.et (min|max|exact) constraints.
+
+	* parse.y: Parse size limitations to SEQ OF.
+
 2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add AuthorityInfoAccessSyntax.
