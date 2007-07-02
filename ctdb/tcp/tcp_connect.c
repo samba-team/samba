@@ -41,7 +41,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 
 	/* start a new connect cycle to try to re-establish the
 	   link */
-	ctdb_queue_set_fd(tnode->queue, -1);
+	ctdb_queue_set_fd(tnode->out_queue, -1);
 	tnode->fd = -1;
 	event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
 			ctdb_tcp_node_connect, node);
@@ -80,7 +80,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
         setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
         setsockopt(tnode->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 
-	ctdb_queue_set_fd(tnode->queue, tnode->fd);
+	ctdb_queue_set_fd(tnode->out_queue, tnode->fd);
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
