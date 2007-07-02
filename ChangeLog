@@ -1,3 +1,11 @@
+2007-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/digest.c: Try harder to provide better error message for
+	digest messages.
+
+	* lib/krb5/Makefile.am: verify_krb5_conf_OBJECTS depends on
+	krb5-pr*.h, make -j finds this.
+	
 2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/digest.c: On success, print username, not ip-adress.
