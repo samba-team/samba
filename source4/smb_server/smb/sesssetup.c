@@ -243,7 +243,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		}
 
 		/* TODO: should we use just "anonymous" here? */
-		status = auth_context_create(req, lp_auth_methods(), 
+		status = auth_context_create(req, 
 					     req->smb_conn->connection->event.ctx,
 					     req->smb_conn->connection->msg_ctx,
 					     &auth_context);

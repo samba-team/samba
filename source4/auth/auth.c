@@ -348,11 +348,12 @@ NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
 
 /***************************************************************************
  Make a auth_info struct for the auth subsystem
+ - Allow the caller to specify the methods to use
 ***************************************************************************/
-NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, const char **methods, 
-			     struct event_context *ev,
-			     struct messaging_context *msg,
-			     struct auth_context **auth_ctx)
+NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
+				     struct event_context *ev,
+				     struct messaging_context *msg,
+				     struct auth_context **auth_ctx)
 {
 	int i;
 	struct auth_context *ctx;
@@ -406,6 +407,30 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, const char **methods,
 
 	return NT_STATUS_OK;
 }
+/***************************************************************************
+ Make a auth_info struct for the auth subsystem
+ - Uses default auth_methods, depending on server role and smb.conf settings
+***************************************************************************/
+NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
+			     struct event_context *ev,
+			     struct messaging_context *msg,
+			     struct auth_context **auth_ctx)
+{
+	const char **auth_methods = NULL;
+	switch (lp_server_role()) {
+	case ROLE_STANDALONE:
+		auth_methods = lp_parm_string_list(-1, "auth methods", "standalone", NULL);
+		break;
+	case ROLE_DOMAIN_MEMBER:
+		auth_methods = lp_parm_string_list(-1, "auth methods", "member server", NULL);
+		break;
+	case ROLE_DOMAIN_CONTROLLER:
+		auth_methods = lp_parm_string_list(-1, "auth methods", "domain controller", NULL);
+		break;
+	}
+	return auth_context_create_methods(mem_ctx, auth_methods, ev, msg, auth_ctx);
+}
+
 
 /* the list of currently registered AUTH backends */
 static struct auth_backend {

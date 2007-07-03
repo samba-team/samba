@@ -835,7 +835,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	nt_status = auth_context_create(gensec_ntlmssp_state, lp_auth_methods(), 
+	nt_status = auth_context_create(gensec_ntlmssp_state, 
 					gensec_security->event_ctx,
 					gensec_security->msg_ctx,
 					&gensec_ntlmssp_state->auth_context);

@@ -44,7 +44,7 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 
-	nt_status = auth_context_create(smb_conn, lp_auth_methods(), 
+	nt_status = auth_context_create(smb_conn, 
 					smb_conn->connection->event.ctx,
 					smb_conn->connection->msg_ctx,
 					&smb_conn->negotiate.auth_context);
