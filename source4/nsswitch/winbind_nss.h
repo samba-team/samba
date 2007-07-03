@@ -39,8 +39,7 @@
  * Linux (glibc)
  */
 
-#include <nss.h>
-typedef enum nss_status NSS_STATUS;
+#include "nsswitch/winbind_nss_linux.h"
 
 #elif HAVE_NS_API_H
 

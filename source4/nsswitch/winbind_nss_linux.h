@@ -24,12 +24,8 @@
 #ifndef _WINBIND_NSS_LINUX_H
 #define _WINBIND_NSS_LINUX_H
 
-#if HAVE_NSS_H
-
 #include <nss.h>
 
 typedef enum nss_status NSS_STATUS;
-
-#endif /* HAVE_NSS_H */
 
 #endif /* _WINBIND_NSS_LINUX_H */
