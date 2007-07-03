@@ -595,6 +595,28 @@ static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 
 /*
+  called when ctdb_wait_timeout should finish
+ */
+static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te, 
+			      struct timeval yt, void *p)
+{
+	uint32_t *timed_out = (uint32_t *)p;
+	(*timed_out) = 1;
+}
+
+/*
+  wait for a given number of seconds
+ */
+static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
+{
+	uint32_t timed_out = 0;
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(secs, 0), ctdb_wait_handler, &timed_out);
+	while (!timed_out) {
+		event_loop_once(ctdb->ev);
+	}
+}
+
+/*
   we are the recmaster, and recovery is needed - start a recovery run
  */
 static int do_recovery(struct ctdb_recoverd *rec, 
@@ -802,6 +824,15 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, CTDB_SRVID_RECONFIGURE, tdb_null);
 
 	DEBUG(0, (__location__ " Recovery complete\n"));
+
+	/* We just finished a recovery successfully. 
+	   We now wait for rerecovery_timeout before we allow 
+	   another recovery to take place.
+	*/
+	DEBUG(0, (__location__ " New recoveries supressed for the rerecovery timeout\n"));
+	ctdb_wait_timeout(ctdb, ctdb->tunable.rerecovery_timeout);
+	DEBUG(0, (__location__ " Rerecovery timeout elapsed. Recovery reactivated.\n"));
+
 	return 0;
 }
 
@@ -981,28 +1012,6 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	return;
 }
 
-
-/*
-  called when ctdb_wait_timeout should finish
- */
-static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te, 
-			      struct timeval yt, void *p)
-{
-	uint32_t *timed_out = (uint32_t *)p;
-	(*timed_out) = 1;
-}
-
-/*
-  wait for a given number of seconds
- */
-static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
-{
-	uint32_t timed_out = 0;
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(secs, 0), ctdb_wait_handler, &timed_out);
-	while (!timed_out) {
-		event_loop_once(ctdb->ev);
-	}
-}
 
 /*
   force the start of the election process
