@@ -1,0 +1,4 @@
+{
+	global: smbc_*;
+	local: *;
+};
