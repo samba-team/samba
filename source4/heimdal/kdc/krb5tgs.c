@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: krb5tgs.c 21041 2007-06-10 06:21:12Z lha $");
+RCSID("$Id: krb5tgs.c 21262 2007-06-21 15:18:37Z lha $");
 
 /*
  * return the realm of a krbtgt-ticket or NULL
@@ -475,12 +475,14 @@ check_tgs_flags(krb5_context context,
 	    et->endtime = min(*et->renew_till, et->endtime);
     }	    
     
+#if 0
     /* checks for excess flags */
     if(f.request_anonymous && !config->allow_anonymous){
 	kdc_log(context, config, 0,
 		"Request for anonymous ticket");
 	return KRB5KDC_ERR_BADOPTION;
     }
+#endif
     return 0;
 }
 
@@ -731,10 +733,12 @@ tgs_make_reply(krb5_context context,
 	       &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname, server->entry.principal);
     copy_Realm(&tgt_name->realm, &rep.crealm);
+/*
     if (f.request_anonymous)
 	_kdc_make_anonymous_principalname (&rep.cname);
-    else
-	copy_PrincipalName(&tgt_name->name, &rep.cname);
+    else */
+
+    copy_PrincipalName(&tgt_name->name, &rep.cname);
     rep.ticket.tkt_vno = 5;
 
     ek.caddr = et.caddr;
@@ -1707,24 +1711,20 @@ server_lookup:
 	    goto out;
     }
 
-    /* check PAC if there is one */
-    {
+    /* check PAC if not cross realm and if there is one */
+    if (!cross_realm) {
 	Key *tkey;
-	krb5_keyblock *tgtkey = NULL;
 
-	if (!cross_realm) {
-	    ret = hdb_enctype2key(context, &krbtgt->entry, 
-				  krbtgt_etype, &tkey);
-	    if(ret) {
-		kdc_log(context, config, 0,
-			"Failed to find key for krbtgt PAC check");
-		goto out;
-	    }
-	    tgtkey = &tkey->key;
+	ret = hdb_enctype2key(context, &krbtgt->entry, 
+			      krbtgt_etype, &tkey);
+	if(ret) {
+	    kdc_log(context, config, 0,
+		    "Failed to find key for krbtgt PAC check");
+	    goto out;
 	}
 
 	ret = check_PAC(context, config, client_principal, 
-			client, server, ekey, tgtkey,
+			client, server, ekey, &tkey->key,
 			tgt, &rspac, &require_signedpath);
 	if (ret) {
 	    kdc_log(context, config, 0,

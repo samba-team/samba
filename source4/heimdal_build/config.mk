@@ -325,6 +325,7 @@ OBJ_FILES = \
 	../heimdal/lib/hcrypto/rand-egd.o \
 	../heimdal/lib/hcrypto/rand-unix.o \
 	../heimdal/lib/hcrypto/rand-fortuna.o \
+	../heimdal/lib/hcrypto/rand-timer.o \
 	../heimdal/lib/hcrypto/hmac.o
 # End SUBSYSTEM HEIMDAL_HCRYPTO
 #######################

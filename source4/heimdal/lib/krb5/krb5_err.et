@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: krb5_err.et 20760 2007-06-01 03:24:49Z lha $"
+id "$Id: krb5_err.et 21050 2007-06-12 02:00:40Z lha $"
 
 error_table krb5
 
@@ -35,8 +35,10 @@ error_code KEY_EXPIRED,		"Password has expired"
 error_code PREAUTH_FAILED,	"Preauthentication failed"
 error_code PREAUTH_REQUIRED,	"Additional pre-authentication required"
 error_code SERVER_NOMATCH,	"Requested server and ticket don't match"
+error_code KDC_ERR_MUST_USE_USER2USER, "Server principal valid for user2user only"
+error_code PATH_NOT_ACCEPTED,   "KDC Policy rejects transited path"
+error_code SVC_UNAVAILABLE, 	"A service is not available"
 
-# 27-30 are reserved
 index 31
 prefix KRB5KRB_AP
 error_code ERR_BAD_INTEGRITY,	"Decrypt integrity check failed"
@@ -108,7 +110,7 @@ error_code PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED, "Public key encryption not suppo
 
 index 128
 prefix
-error_code KRB5_ERR_RCSID,	"$Id: krb5_err.et 20760 2007-06-01 03:24:49Z lha $"
+error_code KRB5_ERR_RCSID,	"$Id: krb5_err.et 21050 2007-06-12 02:00:40Z lha $"
 
 error_code KRB5_LIBOS_BADLOCKFLAG,	"Invalid flag for file lock mode"
 error_code KRB5_LIBOS_CANTREADPWD,	"Cannot read password"

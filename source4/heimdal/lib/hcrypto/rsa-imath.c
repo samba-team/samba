@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rsa-imath.c 19750 2007-01-06 13:45:25Z lha $");
+RCSID("$Id: rsa-imath.c 21154 2007-06-18 21:58:12Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -180,7 +180,6 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
     }
 
     padlen = size - flen - 3;
-    assert(padlen >= 8);
 
     *p++ = 2;
     if (RAND_bytes(p, padlen) != 1) {

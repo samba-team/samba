@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand-egd.c 20093 2007-01-31 12:44:28Z lha $");
+RCSID("$Id: rand-egd.c 21156 2007-06-18 22:00:59Z lha $");
 
 #include <sys/types.h>
 #ifdef HAVE_SYS_UN_H
@@ -255,7 +255,7 @@ RAND_egd_bytes(const char *filename, int size)
 
     RAND_seed(data, size);
 
-    memset(data, 0, sizeof(data));
+    memset(data, 0, size);
     free(data);
 
     return 1;

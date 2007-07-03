@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_accept_sec_context.c 20626 2007-05-08 13:56:49Z lha $");
+RCSID("$Id: gss_accept_sec_context.c 21237 2007-06-20 11:21:09Z lha $");
 
 static OM_uint32
 parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
@@ -237,9 +237,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 		return (major_status);
 	}
 
-	if (!src_name) {
-		m->gm_release_name(minor_status, &src_mn);
-	} else {
+	if (src_name && src_mn) {
 		/*
 		 * Make a new name and mark it as an MN.
 		 */
@@ -250,13 +248,15 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			return (GSS_S_FAILURE);
 		}
 		*src_name = (gss_name_t) name;
+	} else if (src_mn) {
+	    m->gm_release_name(minor_status, &src_mn);
 	}
 
 	if (mech_ret_flags & GSS_C_DELEG_FLAG) {
 		if (!delegated_cred_handle) {
 			m->gm_release_cred(minor_status, &delegated_mc);
 			*ret_flags &= ~GSS_C_DELEG_FLAG;
-		} else {
+		} else if (delegated_mc) {
 			struct _gss_cred *dcred;
 			struct _gss_mechanism_cred *dmc;
 

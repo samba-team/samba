@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_krb5.c 20383 2007-04-18 08:49:53Z lha $");
+RCSID("$Id: gss_krb5.c 21123 2007-06-18 20:05:26Z lha $");
 
 #include <krb5.h>
 #include <roken.h>
@@ -650,7 +650,7 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
     if (der_put_oid((unsigned char *)oid_flat.elements + oid_flat.length - 1, 
 		    oid_flat.length, &oid, &size) != 0) {
 	free(oid.components);
-
+	free(oid_flat.elements);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }

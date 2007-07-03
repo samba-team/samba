@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pac.c 20845 2007-06-03 14:31:16Z lha $");
+RCSID("$Id: pac.c 21149 2007-06-18 21:50:22Z lha $");
 
 struct PAC_INFO_BUFFER {
     uint32_t type;
@@ -408,6 +408,8 @@ verify_checksum(krb5_context context,
     uint32_t type;
     krb5_error_code ret;
     Checksum cksum;
+
+    memset(&cksum, 0, sizeof(cksum));
 
     sp = krb5_storage_from_mem((char *)data->data + sig->offset_lo,
 			       sig->buffersize);

@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c 21039 2007-06-10 06:20:31Z lha $");
+RCSID("$Id: pkinit.c 21290 2007-06-25 14:13:23Z lha $");
 
 #ifdef PKINIT
 
@@ -380,6 +380,7 @@ _kdc_pk_rd_padata(krb5_context context,
     *ret_params = NULL;
     
     if (!config->enable_pkinit) {
+	kdc_log(context, config, 0, "PK-INIT request but PK-INIT not enabled");
 	krb5_clear_error_string(context);
 	return 0;
     }
@@ -676,6 +677,7 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
 
 static krb5_error_code
 pk_mk_pa_reply_enckey(krb5_context context,
+		      krb5_kdc_configuration *config,
 		      pk_client_params *client_params,
 		      const KDC_REQ *req,
 		      const krb5_data *req_buffer,
@@ -700,8 +702,11 @@ pk_mk_pa_reply_enckey(krb5_context context,
     switch (client_params->type) {
     case PKINIT_COMPAT_WIN2K: {
 	int i = 0;
-	if (_kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_09_BINDING) == NULL)
+	if (_kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_09_BINDING) == NULL
+	    && config->pkinit_require_binding == 0)
+	{
 	    do_win2k = 1;
+	}
 	break;
     }
     case PKINIT_COMPAT_27:
@@ -1015,6 +1020,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		goto out;
 	    }
 	    ret = pk_mk_pa_reply_enckey(context,
+					config,
 					client_params,
 					req,
 					req_buffer,
@@ -1110,6 +1116,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    goto out;
 	}
 	ret = pk_mk_pa_reply_enckey(context,
+				    config,
 				    client_params,
 				    req,
 				    req_buffer,
@@ -1384,7 +1391,7 @@ _kdc_pk_check_client(krb5_context context,
 	    "Trying to authorize PK-INIT subject DN %s", 
 	    *subject_name);
 
-    if (config->enable_pkinit_princ_in_cert) {
+    if (config->pkinit_princ_in_cert) {
 	ret = match_rfc_san(context, config,
 			    client_params->cert,
 			    client->entry.principal);
@@ -1508,7 +1515,8 @@ _kdc_add_inital_verified_cas(krb5_context context,
 	krb5_abortx(context, "internal asn.1 encoder error");
 
     ret = _kdc_tkt_add_if_relevant_ad(context, tkt, 
-				      ad_initial_verified_cas, &data);
+				      KRB5_AUTHDATA_INITIAL_VERIFIED_CAS,
+				      &data);
     krb5_data_free(&data);
     return ret;
 }

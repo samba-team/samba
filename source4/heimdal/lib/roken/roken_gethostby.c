@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: roken_gethostby.c 21005 2007-06-08 01:54:35Z lha $");
+RCSID("$Id: roken_gethostby.c 21157 2007-06-18 22:03:13Z lha $");
 #endif
 
 #include <roken.h>
@@ -111,7 +111,7 @@ int ROKEN_LIB_FUNCTION
 roken_gethostby_setup(const char *proxy_spec, const char *dns_spec)
 {
     char *proxy_host = NULL;
-    int proxy_port;
+    int proxy_port = 0;
     char *dns_host, *dns_path;
     int dns_port;
     

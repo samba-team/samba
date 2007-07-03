@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: cms.c 20937 2007-06-06 20:50:55Z lha $");
+RCSID("$Id: cms.c 21319 2007-06-25 19:46:52Z lha $");
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
@@ -115,24 +115,42 @@ hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
     return 0;
 }
 
+#define CMS_ID_SKI	0
+#define CMS_ID_NAME	1
+
 static int
-fill_CMSIdentifier(const hx509_cert cert, CMSIdentifier *id)
+fill_CMSIdentifier(const hx509_cert cert,
+		   int type,
+		   CMSIdentifier *id)
 {
-    hx509_name name;
     int ret;
 
-    id->element = choice_CMSIdentifier_issuerAndSerialNumber;
-    ret = hx509_cert_get_issuer(cert, &name);
-    if (ret)
-	return ret;
-    ret = copy_Name(&name->der_name,
-		    &id->u.issuerAndSerialNumber.issuer);
-    hx509_name_free(&name);
-    if (ret)
-	return ret;
+    switch (type) {
+    case CMS_ID_SKI:
+	id->element = choice_CMSIdentifier_subjectKeyIdentifier;
+	ret = _hx509_find_extension_subject_key_id(_hx509_get_cert(cert),
+						   &id->u.subjectKeyIdentifier);
+	if (ret == 0)
+	    break;
+	/* FALL THOUGH */
+    case CMS_ID_NAME: {
+	hx509_name name;
 
-    ret = hx509_cert_get_serialnumber(cert,
-				      &id->u.issuerAndSerialNumber.serialNumber);
+	id->element = choice_CMSIdentifier_issuerAndSerialNumber;
+	ret = hx509_cert_get_issuer(cert, &name);
+	if (ret)
+	    return ret;
+	ret = hx509_name_to_Name(name, &id->u.issuerAndSerialNumber.issuer);
+	hx509_name_free(&name);
+	if (ret)
+	    return ret;
+
+	ret = hx509_cert_get_serialnumber(cert, &id->u.issuerAndSerialNumber.serialNumber);
+	break;
+    }
+    default:
+	_hx509_abort("CMS fill identifier with unknown type");
+    }
     return ret;
 }
 
@@ -467,6 +485,13 @@ hx509_cms_envelope_1(hx509_context context,
 	goto out;
     }
 
+    ret = hx509_crypto_random_iv(crypto, &ivec);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to create a random iv");
+	goto out;
+    }
+
     ret = hx509_crypto_encrypt(crypto,
 			       data,
 			       length,
@@ -518,7 +543,7 @@ hx509_cms_envelope_1(hx509_context context,
     ri = &ed.recipientInfos.val[0];
 
     ri->version = 0;
-    ret = fill_CMSIdentifier(cert, &ri->rid);
+    ret = fill_CMSIdentifier(cert, CMS_ID_SKI, &ri->rid);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to set CMS identifier info "
@@ -585,22 +610,12 @@ any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 	return 0;
 
     for (i = 0; i < sd->certificates->len; i++) {
-	Certificate cert;
 	hx509_cert c;
 
-	const void *p = sd->certificates->val[i].data;
-	size_t size, length = sd->certificates->val[i].length;
-
-	ret = decode_Certificate(p, length, &cert, &size);
-	if (ret) {
-	    hx509_set_error_string(context, 0, ret,
-				   "Failed to decode certificate %d "
-				   "in SignedData.certificates", i);
-	    return ret;
-	}
-
-	ret = hx509_cert_init(context, &cert, &c);
-	free_Certificate(&cert);
+	ret = hx509_cert_init_data(context, 
+				   sd->certificates->val[i].data, 
+				   sd->certificates->val[i].length,
+				   &c);
 	if (ret)
 	    return ret;
 	ret = hx509_certs_add(context, certs, c);
@@ -951,6 +966,7 @@ hx509_cms_create_signed_1(hx509_context context,
     int ret;
     size_t size;
     hx509_path path;
+    int cmsidflag = CMS_ID_SKI;
 
     memset(&sd, 0, sizeof(sd));
     memset(&name, 0, sizeof(name));
@@ -959,6 +975,9 @@ hx509_cms_create_signed_1(hx509_context context,
 
     content.data = rk_UNCONST(data);
     content.length = length;
+
+    if (flags & HX509_CMS_SIGATURE_ID_NAME)
+	cmsidflag = CMS_ID_NAME;
 
     if (_hx509_cert_private_key(cert) == NULL) {
 	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING,
@@ -1014,7 +1033,7 @@ hx509_cms_create_signed_1(hx509_context context,
 
     signer_info->version = 1;
 
-    ret = fill_CMSIdentifier(cert, &signer_info->sid);
+    ret = fill_CMSIdentifier(cert, cmsidflag, &signer_info->sid);
     if (ret) {
 	hx509_clear_error_string(context);
 	goto out;

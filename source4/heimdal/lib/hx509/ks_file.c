@@ -32,67 +32,15 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_file.c 20776 2007-06-01 22:02:01Z lha $");
+RCSID("$Id: ks_file.c 21314 2007-06-25 18:45:07Z lha $");
+
+typedef enum { USE_PEM, USE_DER } outformat;
 
 struct ks_file {
     hx509_certs certs;
     char *fn;
+    outformat format;
 };
-
-struct header {
-    char *header;
-    char *value;
-    struct header *next;
-};
-
-static int
-add_headers(struct header **headers, const char *header, const char *value)
-{
-    struct header *h;
-    h = calloc(1, sizeof(*h));
-    if (h == NULL)
-	return ENOMEM;
-    h->header = strdup(header);
-    if (h->header == NULL) {
-	free(h);
-	return ENOMEM;
-    }
-    h->value = strdup(value);
-    if (h->value == NULL) {
-	free(h->header);
-	free(h);
-	return ENOMEM;
-    }
-
-    h->next = *headers;
-    *headers = h;
-
-    return 0;
-}
-
-static void
-free_headers(struct header *headers)
-{
-    struct header *h;
-    while (headers) {
-	h = headers;
-	headers = headers->next;
-	free(h->header);
-	free(h->value);
-	free(h);
-    }
-}
-
-static const char *
-find_header(const struct header *headers, const char *header)
-{
-    while(headers) {
-	if (strcmp(header, headers->header) == 0)
-	    return headers->value;
-	headers = headers->next;
-    }
-    return NULL;
-}
 
 /*
  *
@@ -101,24 +49,13 @@ find_header(const struct header *headers, const char *header)
 static int
 parse_certificate(hx509_context context, const char *fn, 
 		  struct hx509_collector *c, 
-		  const struct header *headers,
+		  const hx509_pem_header *headers,
 		  const void *data, size_t len)
 {
     hx509_cert cert;
-    Certificate t;
-    size_t size;
     int ret;
 
-    ret = decode_Certificate(data, len, &t, &size);
-    if (ret) {
-	hx509_set_error_string(context, 0, ret, 
-			       "Failed to parse certificate in %s",
-			       fn);
-	return ret;
-    }
-
-    ret = hx509_cert_init(context, &t, &cert);
-    free_Certificate(&t);
+    ret = hx509_cert_init_data(context, data, len, &cert);
     if (ret)
 	return ret;
 
@@ -195,13 +132,13 @@ out:
 static int
 parse_rsa_private_key(hx509_context context, const char *fn,
 		      struct hx509_collector *c, 
-		      const struct header *headers,
+		      const hx509_pem_header *headers,
 		      const void *data, size_t len)
 {
     int ret = 0;
     const char *enc;
 
-    enc = find_header(headers, "Proc-Type");
+    enc = hx509_pem_find_header(headers, "Proc-Type");
     if (enc) {
 	const char *dek;
 	char *type, *iv;
@@ -229,7 +166,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	    return HX509_PARSING_KEY_FAILED;
 	}
 
-	dek = find_header(headers, "DEK-Info");
+	dek = hx509_pem_find_header(headers, "DEK-Info");
 	if (dek == NULL) {
 	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 				   "Encrypted RSA missing DEK-Info");
@@ -243,8 +180,14 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	}
 
 	iv = strchr(type, ',');
-	if (iv)
-	    *iv++ = '\0';
+	if (iv == NULL) {
+	    free(type);
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+				   "IV missing");
+	    return HX509_PARSING_KEY_FAILED;
+	}
+
+	*iv++ = '\0';
 
 	size = strlen(iv);
 	ivdata = malloc(size);
@@ -339,7 +282,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 struct pem_formats {
     const char *name;
     int (*func)(hx509_context, const char *, struct hx509_collector *, 
-		const struct header *, const void *, size_t);
+		const hx509_pem_header *, const void *, size_t);
 } formats[] = {
     { "CERTIFICATE", parse_certificate },
     { "RSA PRIVATE KEY", parse_rsa_private_key }
@@ -347,152 +290,27 @@ struct pem_formats {
 
 
 static int
-parse_pem_file(hx509_context context, 
-	       const char *fn,
-	       struct hx509_collector *c,
-	       int *found_data)
+pem_func(hx509_context context, const char *type,
+	 const hx509_pem_header *header,
+	 const void *data, size_t len, void *ctx)
 {
-    struct header *headers = NULL;
-    char *type = NULL;
-    void *data = NULL;
-    size_t len = 0;
-    char buf[1024];
-    int ret;
-    FILE *f;
+    struct hx509_collector *c = ctx;
+    int ret, j;
 
-
-    enum { BEFORE, SEARCHHEADER, INHEADER, INDATA, DONE } where;
-
-    where = BEFORE;
-    *found_data = 0;
-
-    if ((f = fopen(fn, "r")) == NULL) {
-	hx509_set_error_string(context, 0, ENOENT, 
-			       "Failed to open PEM file \"%s\": %s", 
-			       fn, strerror(errno));
-	return ENOENT;
-    }
-    ret = 0;
-
-    while (fgets(buf, sizeof(buf), f) != NULL) {
-	char *p;
-	int i;
-
-	i = strcspn(buf, "\n");
-	if (buf[i] == '\n') {
-	    buf[i] = '\0';
-	    if (i > 0)
-		i--;
-	}
-	if (buf[i] == '\r') {
-	    buf[i] = '\0';
-	    if (i > 0)
-		i--;
-	}
-	    
-	switch (where) {
-	case BEFORE:
-	    if (strncmp("-----BEGIN ", buf, 11) == 0) {
-		type = strdup(buf + 11);
-		if (type == NULL)
-		    break;
-		p = strchr(type, '-');
-		if (p)
-		    *p = '\0';
-		*found_data = 1;
-		where = SEARCHHEADER;
-	    }
+    for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
+	const char *q = formats[j].name;
+	if (strcasecmp(type, q) == 0) {
+	    ret = (*formats[j].func)(context, NULL, c,  header, data, len);
 	    break;
-	case SEARCHHEADER:
-	    p = strchr(buf, ':');
-	    if (p == NULL) {
-		where = INDATA;
-		goto indata;
-	    }
-	    /* FALLTHOUGH */
-	case INHEADER:
-	    if (buf[0] == '\0') {
-		where = INDATA;
-		break;
-	    }
-	    p = strchr(buf, ':');
-	    if (p) {
-		*p++ = '\0';
-		while (isspace((int)*p))
-		    p++;
-		add_headers(&headers, buf, p);
-	    }
-	    break;
-	case INDATA:
-	indata:
-
-	    if (strncmp("-----END ", buf, 9) == 0) {
-		where = DONE;
-		break;
-	    }
-
-	    p = emalloc(i);
-	    i = base64_decode(buf, p);
-	    if (i < 0) {
-		free(p);
-		goto out;
-	    }
-	    
-	    data = erealloc(data, len + i);
-	    memcpy(((char *)data) + len, p, i);
-	    free(p);
-	    len += i;
-	    break;
-	case DONE:
-	    abort();
-	}
-
-	if (where == DONE) {
-	    int j;
-
-	    for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
-		const char *q = formats[j].name;
-		if (strcasecmp(type, q) == 0) {
-		    ret = (*formats[j].func)(context, fn, c, 
-					     headers, data, len);
-		    break;
-		}
-	    }
-	    if (j == sizeof(formats)/sizeof(formats[0])) {
-		ret = HX509_UNSUPPORTED_OPERATION;
-		hx509_set_error_string(context, 0, ret,
-				       "Found no matching PEM format for %s",
-				       type);
-	    }
-	out:
-	    free(data);
-	    data = NULL;
-	    len = 0;
-	    free(type);
-	    type = NULL;
-	    where = BEFORE;
-	    free_headers(headers);
-	    headers = NULL;
-	    if (ret)
-		break;
 	}
     }
-
-    fclose(f);
-
-    if (where != BEFORE) {
-	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-			       "File ends before end of PEM end tag");
-	ret = HX509_PARSING_KEY_FAILED;
+    if (j == sizeof(formats)/sizeof(formats[0])) {
+	ret = HX509_UNSUPPORTED_OPERATION;
+	hx509_set_error_string(context, 0, ret,
+			       "Found no matching PEM format for %s", type);
+	return ret;
     }
-    if (data)
-	free(data);
-    if (type)
-	free(type);
-    if (headers)
-	free_headers(headers);
-
-    return ret;
+    return 0;
 }
 
 /*
@@ -500,9 +318,9 @@ parse_pem_file(hx509_context context,
  */
 
 static int
-file_init(hx509_context context,
-	  hx509_certs certs, void **data, int flags, 
-	  const char *residue, hx509_lock lock)
+file_init_common(hx509_context context,
+		 hx509_certs certs, void **data, int flags, 
+		 const char *residue, hx509_lock lock, outformat format)
 {
     char *p, *pnext;
     struct ks_file *f = NULL;
@@ -520,6 +338,7 @@ file_init(hx509_context context,
 	hx509_clear_error_string(context);
 	return ENOMEM;
     }
+    f->format = format;
 
     f->fn = strdup(residue);
     if (f->fn == NULL) {
@@ -547,17 +366,26 @@ file_init(hx509_context context,
 	goto out;
 
     for (p = f->fn; p != NULL; p = pnext) {
-	int found_data;
+	FILE *f;
 
 	pnext = strchr(p, ',');
 	if (pnext)
 	    *pnext++ = '\0';
 	
-	ret = parse_pem_file(context, p, c, &found_data);
-	if (ret)
-	    goto out;
 
-	if (!found_data) {
+	if ((f = fopen(p, "r")) == NULL) {
+	    ret = ENOENT;
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to open PEM file \"%s\": %s", 
+				   p, strerror(errno));
+	    goto out;
+	}
+
+	ret = hx509_pem_read(context, f, pem_func, c);
+	fclose(f);		     
+	if (ret != 0 && ret != HX509_PARSING_KEY_FAILED)
+	    goto out;
+	else if (ret == HX509_PARSING_KEY_FAILED) {
 	    size_t length;
 	    void *ptr;
 	    int i;
@@ -606,6 +434,22 @@ out:
 }
 
 static int
+file_init_pem(hx509_context context,
+	      hx509_certs certs, void **data, int flags, 
+	      const char *residue, hx509_lock lock)
+{
+    return file_init_common(context, certs, data, flags, residue, lock, USE_PEM);
+}
+
+static int
+file_init_der(hx509_context context,
+	      hx509_certs certs, void **data, int flags, 
+	      const char *residue, hx509_lock lock)
+{
+    return file_init_common(context, certs, data, flags, residue, lock, USE_DER);
+}
+
+static int
 file_free(hx509_certs certs, void *data)
 {
     struct ks_file *f = data;
@@ -615,66 +459,15 @@ file_free(hx509_certs certs, void *data)
     return 0;
 }
 
-static void
-pem_header(FILE *f, const char *type, const char *str)
-{
-    fprintf(f, "-----%s %s-----\n", type, str);
-}
-
-static int
-dump_pem_file(hx509_context context, const char *header,
-	      FILE *f, const void *data, size_t size)
-{
-    const char *p = data;
-    size_t length;
-    char *line;
-
-#define ENCODE_LINE_LENGTH	54
-    
-    pem_header(f, "BEGIN", header);
-
-    while (size > 0) {
-	ssize_t l;
-	
-	length = size;
-	if (length > ENCODE_LINE_LENGTH)
-	    length = ENCODE_LINE_LENGTH;
-	
-	l = base64_encode(p, length, &line);
-	if (l < 0) {
-	    hx509_set_error_string(context, 0, ENOMEM,
-				   "malloc - out of memory");
-	    return ENOMEM;
-	}
-	size -= length;
-	fprintf(f, "%s\n", line);
-	p += length;
-	free(line);
-    }
-
-    pem_header(f, "END", header);
-
-    return 0;
-}
-
-static int
-store_private_key(hx509_context context, FILE *f, hx509_private_key key)
-{
-    heim_octet_string data;
-    int ret;
-
-    ret = _hx509_private_key_export(context, key, &data);
-    if (ret == 0)
-	dump_pem_file(context, _hx509_private_pem_name(key), f,
-		      data.data, data.length);
-    free(data.data);
-    return ret;
-}
+struct store_ctx {
+    FILE *f;
+    outformat format;
+};
 
 static int
 store_func(hx509_context context, void *ctx, hx509_cert c)
 {
-    FILE *f = (FILE *)ctx;
+    struct store_ctx *sc = ctx;
     heim_octet_string data;
     int ret;
 
@@ -682,11 +475,26 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     if (ret)
 	return ret;
     
-    dump_pem_file(context, "CERTIFICATE", f, data.data, data.length);
-    free(data.data);
-
-    if (_hx509_cert_private_key_exportable(c))
-	store_private_key(context, f, _hx509_cert_private_key(c));
+    switch (sc->format) {
+    case USE_DER:
+	fwrite(data.data, data.length, 1, sc->f);
+	free(data.data);
+	break;
+    case USE_PEM:
+	hx509_pem_write(context, "CERTIFICATE", NULL, sc->f, 
+			data.data, data.length);
+	free(data.data);
+	if (_hx509_cert_private_key_exportable(c)) {
+	    hx509_private_key key = _hx509_cert_private_key(c);
+	    ret = _hx509_private_key_export(context, key, &data);
+	    if (ret)
+		break;
+	    hx509_pem_write(context, _hx509_private_pem_name(key), NULL, sc->f,
+			    data.data, data.length);
+	    free(data.data);
+	}
+	break;
+    }
 
     return 0;
 }
@@ -696,18 +504,19 @@ file_store(hx509_context context,
 	   hx509_certs certs, void *data, int flags, hx509_lock lock)
 {
     struct ks_file *f = data;
-    FILE *fh;
+    struct store_ctx sc;
     int ret;
 
-    fh = fopen(f->fn, "w");
-    if (fh == NULL) {
+    sc.f = fopen(f->fn, "w");
+    if (sc.f == NULL) {
 	hx509_set_error_string(context, 0, ENOENT,
 			       "Failed to open file %s for writing");
 	return ENOENT;
     }
+    sc.format = f->format;
 
-    ret = hx509_certs_iter(context, f->certs, store_func, fh);
-    fclose(fh);
+    ret = hx509_certs_iter(context, f->certs, store_func, &sc);
+    fclose(sc.f);
     return ret;
 }
 
@@ -767,7 +576,7 @@ file_addkey(hx509_context context,
 static struct hx509_keyset_ops keyset_file = {
     "FILE",
     0,
-    file_init,
+    file_init_pem,
     file_store,
     file_free,
     file_add,
@@ -780,8 +589,43 @@ static struct hx509_keyset_ops keyset_file = {
     file_addkey
 };
 
+static struct hx509_keyset_ops keyset_pemfile = {
+    "PEM-FILE",
+    0,
+    file_init_pem,
+    file_store,
+    file_free,
+    file_add,
+    NULL,
+    file_iter_start,
+    file_iter,
+    file_iter_end,
+    NULL,
+    file_getkeys,
+    file_addkey
+};
+
+static struct hx509_keyset_ops keyset_derfile = {
+    "DER-FILE",
+    0,
+    file_init_der,
+    file_store,
+    file_free,
+    file_add,
+    NULL,
+    file_iter_start,
+    file_iter,
+    file_iter_end,
+    NULL,
+    file_getkeys,
+    file_addkey
+};
+
+
 void
 _hx509_ks_file_register(hx509_context context)
 {
     _hx509_ks_register(context, &keyset_file);
+    _hx509_ks_register(context, &keyset_pemfile);
+    _hx509_ks_register(context, &keyset_derfile);
 }

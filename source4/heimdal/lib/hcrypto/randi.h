@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: randi.h 20027 2007-01-21 09:54:00Z lha $
+ * $Id: randi.h 21101 2007-06-18 03:53:46Z lha $
  */
 
 #ifndef _HEIM_RANDI_H
@@ -41,5 +41,8 @@
 extern const RAND_METHOD hc_rand_fortuna_method;
 extern const RAND_METHOD hc_rand_unix_method;
 extern const RAND_METHOD hc_rand_egd_method;
+extern const RAND_METHOD hc_rand_timer_method;
+
+const RAND_METHOD * RAND_timer_method(void);
 
 #endif /* _HEIM_RANDI_H */

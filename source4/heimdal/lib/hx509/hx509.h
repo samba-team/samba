@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx509.h 20798 2007-06-02 03:28:55Z lha $ */
+/* $Id: hx509.h 21310 2007-06-25 18:26:06Z lha $ */
 
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
 typedef struct hx509_cert_data *hx509_cert;
@@ -84,6 +84,16 @@ typedef struct hx509_octet_string_list {
     heim_octet_string *val;
 } hx509_octet_string_list;
 
+typedef struct hx509_pem_header {
+    struct hx509_pem_header *next;
+    char *header;
+    char *value;
+} hx509_pem_header;
+
+typedef int
+(*hx509_pem_read_func)(hx509_context, const char *, const hx509_pem_header *,
+		       const void *, size_t, void *ctx);
+
 /*
  * Options passed to hx509_query_match_option.
  */
@@ -122,5 +132,12 @@ typedef enum {
 
 /* flags hx509_cms_create_signed* */
 #define HX509_CMS_SIGATURE_DETACHED 1
+#define HX509_CMS_SIGATURE_ID_NAME 2
+
+/* hx509_verify_hostname nametype */
+typedef enum  {
+    HX509_HN_HOSTNAME = 0,
+    HX509_HN_DNSSRV
+} hx509_hostname_type;
 
 #include <hx509-protos.h>

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c 20262 2007-02-18 00:33:01Z lha $");
+RCSID("$Id: init_creds_pw.c 21061 2007-06-12 17:56:30Z lha $");
 
 typedef struct krb5_get_init_creds_ctx {
     KDCOptions flags;
@@ -1221,8 +1221,8 @@ init_cred_loop(krb5_context context,
     krb5_data resp;
     size_t len;
     size_t size;
-    int send_to_kdc_flags = 0;
     krb5_krbhst_info *hi = NULL;
+    krb5_sendto_ctx stctx = NULL;
 
 
     memset(&md, 0, sizeof(md));
@@ -1237,6 +1237,11 @@ init_cred_loop(krb5_context context,
 				 ctx->addrs, ctx->etypes, &ctx->as_req);
     if (ret)
 	return ret;
+
+    ret = krb5_sendto_ctx_alloc(context, &stctx);
+    if (ret)
+	goto out;
+    krb5_sendto_ctx_set_func(stctx, _krb5_kdc_retry, NULL);
 
     /* Set a new nonce. */
     krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
@@ -1281,10 +1286,9 @@ init_cred_loop(krb5_context context,
 	if(len != ctx->req_buffer.length)
 	    krb5_abortx(context, "internal error in ASN.1 encoder");
 
-	ret = krb5_sendto_kdc_flags (context, &ctx->req_buffer, 
-				     &creds->client->realm, &resp,
-				     send_to_kdc_flags);
-	if (ret)
+	ret = krb5_sendto_context (context, stctx, &ctx->req_buffer,
+				   creds->client->realm, &resp);
+    	if (ret)
 	    goto out;
 
 	memset (&rep, 0, sizeof(rep));
@@ -1329,16 +1333,6 @@ init_cred_loop(krb5_context context,
 		krb5_free_error_contents(context, &error);
 		if (ret)
 		    goto out;
-	    } else if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG) {
-		if (send_to_kdc_flags & KRB5_KRBHST_FLAGS_LARGE_MSG) {
-		    if (ret_as_reply)
-			rep.error = error;
-		    else
-			krb5_free_error_contents(context, &error);
-		    goto out;
-		}
-		krb5_free_error_contents(context, &error);
-		send_to_kdc_flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
 	    } else {
 		_krb5_get_init_creds_opt_set_krb5_error(context,
 							init_cred_opts,
@@ -1437,6 +1431,8 @@ init_cred_loop(krb5_context context,
 	}
     }
 out:
+    if (stctx)
+	krb5_sendto_ctx_free(context, stctx);
     krb5_data_free(&ctx->req_buffer);
     free_METHOD_DATA(&md);
     memset(&md, 0, sizeof(md));

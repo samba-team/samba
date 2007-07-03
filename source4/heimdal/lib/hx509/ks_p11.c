@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_p11.c 20920 2007-06-05 05:47:06Z lha $");
+RCSID("$Id: ks_p11.c 21085 2007-06-13 06:39:53Z lha $");
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -682,7 +682,6 @@ collect_cert(hx509_context context,
 {
     struct hx509_collector *collector = ptr;
     hx509_cert cert;
-    Certificate t;
     int ret;
 
     if ((CK_LONG)query[0].ulValueLen == -1 ||
@@ -691,16 +690,8 @@ collect_cert(hx509_context context,
 	return 0;
     }
 
-
-    ret = decode_Certificate(query[1].pValue, query[1].ulValueLen,
-			     &t, NULL);
-    if (ret) {
-	hx509_clear_error_string(context);
-	return 0;
-    }
-
-    ret = hx509_cert_init(context, &t, &cert);
-    free_Certificate(&t);
+    ret = hx509_cert_init_data(context, query[1].pValue, 
+			       query[1].ulValueLen, &cert);
     if (ret)
 	return ret;
 

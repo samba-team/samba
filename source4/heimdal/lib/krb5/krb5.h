@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h 20245 2007-02-17 00:09:57Z lha $ */
+/* $Id: krb5.h 21252 2007-06-21 04:18:28Z lha $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -361,6 +361,7 @@ typedef union {
 #define KRB5_GC_NO_STORE		(1U << 3)
 #define KRB5_GC_FORWARDABLE		(1U << 4)
 #define KRB5_GC_NO_TRANSIT_CHECK	(1U << 5)
+#define KRB5_GC_CONSTRAINED_DELEGATION	(1U << 6)
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
@@ -753,8 +754,17 @@ enum {
 /* flags for krb5_unparse_name_flags */
 enum {
     KRB5_PRINCIPAL_UNPARSE_SHORT = 1,
-    KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2
+    KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2,
+    KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4
 };
+
+typedef struct krb5_sendto_ctx *krb5_sendto_ctx;
+
+#define KRB5_SENDTO_DONE	0
+#define KRB5_SENDTO_RESTART	1
+#define KRB5_SENDTO_CONTINUE	2
+
+typedef krb5_error_code (*krb5_sendto_ctx_func)(krb5_context, krb5_sendto_ctx, void *, const krb5_data *, int *);
 
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_cred.c 21004 2007-06-08 01:53:10Z lha $");
+RCSID("$Id: get_cred.c 21327 2007-06-26 10:54:15Z lha $");
 
 /*
  * Take the `body' and encode it into `padata' using the credentials
@@ -411,7 +411,6 @@ get_cred_kdc_usage(krb5_context context,
     krb5_keyblock *subkey = NULL;
     size_t len;
     Ticket second_ticket_data;
-    int send_to_kdc_flags = 0;
     METHOD_DATA padata;
     
     krb5_data_zero(&resp);
@@ -511,11 +510,18 @@ get_cred_kdc_usage(krb5_context context,
     /*
      * Send and receive
      */
-again:
-    ret = krb5_sendto_kdc_flags (context, &enc, 
-				 &krbtgt->server->name.name_string.val[1],
-				 &resp,
-				 send_to_kdc_flags);
+    {
+	krb5_sendto_ctx stctx;
+	ret = krb5_sendto_ctx_alloc(context, &stctx);
+	if (ret)
+	    return ret;
+	krb5_sendto_ctx_set_func(stctx, _krb5_kdc_retry, NULL);
+
+	ret = krb5_sendto_context (context, stctx, &enc,
+				   krbtgt->server->name.name_string.val[1],
+				   &resp);
+	krb5_sendto_ctx_free(context, stctx);
+    }
     if(ret)
 	goto out;
 
@@ -550,12 +556,6 @@ again:
     } else if(krb5_rd_error(context, &resp, &error) == 0) {
 	ret = krb5_error_from_rd_error(context, &error, in_creds);
 	krb5_free_error_contents(context, &error);
-
-	if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG && !(send_to_kdc_flags & KRB5_KRBHST_FLAGS_LARGE_MSG)) {
-	    send_to_kdc_flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
-	    krb5_data_free(&resp);
-	    goto again;
-	}
     } else if(resp.data && ((char*)resp.data)[0] == 4) {
 	ret = KRB5KRB_AP_ERR_V4_REPLY;
 	krb5_clear_error_string(context);
@@ -1191,6 +1191,10 @@ krb5_get_creds(krb5_context context,
 	flags.b.forwardable = 1;
     if (options & KRB5_GC_NO_TRANSIT_CHECK)
 	flags.b.disable_transited_check = 1;
+    if (options & KRB5_GC_CONSTRAINED_DELEGATION) {
+	flags.b.request_anonymous = 1; /* XXX ARGH confusion */
+	flags.b.constrained_delegation = 1;
+    }
 
     tgts = NULL;
     ret = get_cred_from_kdc_flags(context, flags, ccache, 
@@ -1204,5 +1208,64 @@ krb5_get_creds(krb5_context context,
     free(tgts);
     if(ret == 0 && (options & KRB5_GC_NO_STORE) == 0)
 	krb5_cc_store_cred(context, ccache, *out_creds);
+    return ret;
+}
+
+/*
+ *
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_renewed_creds(krb5_context context,
+		       krb5_creds *creds,
+		       krb5_const_principal client,
+		       krb5_ccache ccache,
+		       const char *in_tkt_service)
+{
+    krb5_error_code ret;
+    krb5_kdc_flags flags;
+    krb5_creds in, *template;
+
+    memset(&in, 0, sizeof(in));
+
+    ret = krb5_copy_principal(context, client, &in.client);
+    if (ret)
+	return ret;
+
+    if (in_tkt_service) {
+	ret = krb5_parse_name(context, in_tkt_service, &in.server);
+	if (ret) {
+	    krb5_free_principal(context, in.client);
+	    return ret;
+	}
+    } else {
+	const char *realm = krb5_principal_get_realm(context, client);
+	
+	ret = krb5_make_principal(context, &in.server, realm, KRB5_TGS_NAME,
+				  realm, NULL);
+	if (ret) {
+	    krb5_free_principal(context, in.client);
+	    return ret;
+	}
+    }
+
+    flags.i = 0;
+    flags.b.renewable = flags.b.renew = 1;
+
+    /*
+     * Get template from old credential cache for the same entry, if
+     * this failes, no worries.
+     */
+    ret = krb5_get_credentials(context, KRB5_GC_CACHED, ccache, &in, &template);
+    if (ret == 0) {
+	flags.b.forwardable = template->flags.b.forwardable;
+	flags.b.proxiable = template->flags.b.proxiable;
+	krb5_free_creds (context, template);
+    }
+
+    ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &in, &creds);
+    krb5_free_principal(context, in.client);
+    krb5_free_principal(context, in.server);
+
     return ret;
 }

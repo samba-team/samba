@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: crypto.c 20981 2007-06-07 20:05:50Z lha $");
+RCSID("$Id: crypto.c 21130 2007-06-18 20:45:21Z lha $");
 
 #undef CRYPTO_DEBUG
 #ifdef CRYPTO_DEBUG
@@ -3162,8 +3162,9 @@ decrypt_internal_derived(krb5_context context,
     unsigned long l;
     
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
-    if (len < checksum_sz) {
-	krb5_set_error_string(context, "Encrypted data shorter then checksum");
+    if (len < checksum_sz + et->confoundersize) {
+	krb5_set_error_string(context, "Encrypted data shorter then "
+			      "checksum + confunder");
 	return KRB5_BAD_MSIZE;
     }
 

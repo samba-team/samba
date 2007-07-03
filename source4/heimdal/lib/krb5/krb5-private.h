@@ -149,6 +149,14 @@ _krb5_kcm_noop (
 	krb5_context /*context*/,
 	krb5_ccache /*id*/);
 
+krb5_error_code
+_krb5_kdc_retry (
+	krb5_context /*context*/,
+	krb5_sendto_ctx /*ctx*/,
+	void */*data*/,
+	const krb5_data */*reply*/,
+	int */*action*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_krb_cr_err_reply (
 	krb5_context /*context*/,

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_context.c 19958 2007-01-17 13:56:18Z lha $");
+RCSID("$Id: gss_inquire_context.c 21125 2007-06-18 20:11:07Z lha $");
 
 OM_uint32
 gss_inquire_context(OM_uint32 *minor_status,
@@ -79,7 +79,8 @@ gss_inquire_context(OM_uint32 *minor_status,
 	if (src_name) {
 		name = _gss_make_name(m, src_mn);
 		if (!name) {
-			*mech_type = GSS_C_NO_OID;
+			if (mech_type)
+				*mech_type = GSS_C_NO_OID;
 			m->gm_release_name(minor_status, &src_mn);
 			*minor_status = 0;
 			return (GSS_S_FAILURE);
@@ -90,8 +91,10 @@ gss_inquire_context(OM_uint32 *minor_status,
 	if (targ_name) {
 		name = _gss_make_name(m, targ_mn);
 		if (!name) {
-			*mech_type = GSS_C_NO_OID;
-			gss_release_name(minor_status, src_name);
+			if (mech_type)
+				*mech_type = GSS_C_NO_OID;
+			if (src_name)
+				gss_release_name(minor_status, src_name);
 			m->gm_release_name(minor_status, &targ_mn);
 			*minor_status = 0;
 			return (GSS_S_FAILURE);

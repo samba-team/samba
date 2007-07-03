@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: revoke.c 20871 2007-06-03 21:22:51Z lha $");
+RCSID("$Id: revoke.c 21153 2007-06-18 21:55:46Z lha $");
 
 struct revoke_crl {
     char *path;
@@ -572,10 +572,10 @@ hx509_revoke_verify(hx509_context context,
 		continue;
 	}
 
-	for (i = 0; i < ocsp->ocsp.tbsResponseData.responses.len; i++) {
+	for (j = 0; j < ocsp->ocsp.tbsResponseData.responses.len; j++) {
 	    heim_octet_string os;
 
-	    ret = der_heim_integer_cmp(&ocsp->ocsp.tbsResponseData.responses.val[i].certID.serialNumber,
+	    ret = der_heim_integer_cmp(&ocsp->ocsp.tbsResponseData.responses.val[j].certID.serialNumber,
 				   &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
@@ -594,13 +594,13 @@ hx509_revoke_verify(hx509_context context,
 
 	    ret = _hx509_verify_signature(context,
 					  NULL,
-					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.hashAlgorithm,
+					  &ocsp->ocsp.tbsResponseData.responses.val[j].certID.hashAlgorithm,
 					  &os,
-					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.issuerKeyHash);
+					  &ocsp->ocsp.tbsResponseData.responses.val[j].certID.issuerKeyHash);
 	    if (ret != 0)
 		continue;
 
-	    switch (ocsp->ocsp.tbsResponseData.responses.val[i].certStatus.element) {
+	    switch (ocsp->ocsp.tbsResponseData.responses.val[j].certStatus.element) {
 	    case choice_OCSPCertStatus_good:
 		break;
 	    case choice_OCSPCertStatus_revoked:
@@ -609,13 +609,13 @@ hx509_revoke_verify(hx509_context context,
 	    }
 
 	    /* don't allow the update to be in the future */
-	    if (ocsp->ocsp.tbsResponseData.responses.val[i].thisUpdate > 
+	    if (ocsp->ocsp.tbsResponseData.responses.val[j].thisUpdate > 
 		now + context->ocsp_time_diff)
 		continue;
 
 	    /* don't allow the next updte to be in the past */
-	    if (ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate) {
-		if (*ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate < now)
+	    if (ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate) {
+		if (*ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate < now)
 		    continue;
 	    } else
 		/* Should force a refetch, but can we ? */;
@@ -1077,6 +1077,7 @@ hx509_crl_alloc(hx509_context context, hx509_crl *crl)
     if (ret) {
 	free(*crl);
 	*crl = NULL;
+	return ret;
     }
     (*crl)->expire = 0;
     return ret;

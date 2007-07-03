@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: acquire_cred.c 20688 2007-05-17 18:44:31Z lha $");
+RCSID("$Id: acquire_cred.c 21221 2007-06-20 08:42:10Z lha $");
 
 OM_uint32
 __gsskrb5_ccache_lifetime(OM_uint32 *minor_status,
@@ -256,8 +256,8 @@ static OM_uint32 acquire_acceptor_cred
 	if (kret)
 	    goto end;
 	krb5_kt_free_entry(context, &entry);
+	ret = GSS_S_COMPLETE;
     }
-    ret = GSS_S_COMPLETE;
  
 end:
     if (ret != GSS_S_COMPLETE) {

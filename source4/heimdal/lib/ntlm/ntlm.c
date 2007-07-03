@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <config.h>
 
-RCSID("$Id: ntlm.c 20816 2007-06-03 04:36:31Z lha $");
+RCSID("$Id: ntlm.c 21317 2007-06-25 19:22:02Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +50,12 @@ RCSID("$Id: ntlm.c 20816 2007-06-03 04:36:31Z lha $");
 #include "crypto-headers.h"
 
 #include <heimntlm.h>
+
+
+/*
+ * Source of NTLM information:
+ * http://davenport.sourceforge.net/ntlm.html
+ */
 
 
 struct sec_buffer {
@@ -760,6 +766,10 @@ splitandenc(unsigned char *hash,
     memset(key, 0, sizeof(key));
 }
 
+/*
+ * String-to-key function for NTLM
+ */
+
 int
 heim_ntlm_nt_key(const char *password, struct ntlm_buf *key)
 {
@@ -783,6 +793,10 @@ heim_ntlm_nt_key(const char *password, struct ntlm_buf *key)
     _ntlm_free_buf(&buf);
     return 0;
 }
+
+/*
+ * Calculate NTLMv1 response hash
+ */
 
 int
 heim_ntlm_calculate_ntlm1(void *key, size_t len,
@@ -808,6 +822,10 @@ heim_ntlm_calculate_ntlm1(void *key, size_t len,
 
     return 0;
 }
+
+/*
+ * Calculate NTLMv1 master key
+ */
 
 int
 heim_ntlm_build_ntlm1_master(void *key, size_t len,
@@ -880,8 +898,8 @@ heim_ntlm_ntlmv2_key(const void *key, size_t len,
 	ascii2ucs2le(username, 1, &buf);
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);
-	/* turn target into ucs2-le */
-	ascii2ucs2le(target, 0, &buf);
+	/* uppercase target and turn into ucs2-le */
+	ascii2ucs2le(target, 1, &buf);
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);
     }
@@ -913,6 +931,10 @@ nt2unixtime(uint64_t t)
     return (time_t)t;
 }
 
+
+/*
+ * Calculate NTLMv2 response
+ */
 
 int
 heim_ntlm_calculate_ntlm2(const void *key, size_t len,
@@ -948,25 +970,27 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
 	return ENOMEM;
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
-    CHECK(krb5_store_uint32(sp, 0x01010000), 0);
+    CHECK(krb5_store_uint32(sp, 0x00000101), 0);
     CHECK(krb5_store_uint32(sp, 0), 0);
     /* timestamp le 64 bit ts */
     CHECK(krb5_store_uint32(sp, t & 0xffffffff), 0);
     CHECK(krb5_store_uint32(sp, t >> 32), 0);
+
     CHECK(krb5_storage_write(sp, clientchallange, 8), 8);
+
+    CHECK(krb5_store_uint32(sp, 0), 0);  /* unknown but zero will work */
     CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length), 
 	  infotarget->length);
-    /* unknown */
-    /* CHECK(krb5_store_uint32(sp, 0), 0);  */
+    CHECK(krb5_store_uint32(sp, 0), 0); /* unknown but zero will work */
     
     CHECK(krb5_storage_to_data(sp, &data), 0);
     krb5_storage_free(sp);
     sp = NULL;
 
     HMAC_CTX_init(&c);
-    HMAC_Init_ex(&c, ntlmv2, sizeof(ntlmv2), EVP_md5(), NULL);
-    HMAC_Update(&c, data.data, data.length);
+    HMAC_Init_ex(&c, ntlmv2, 16, EVP_md5(), NULL);
     HMAC_Update(&c, serverchallange, 8);
+    HMAC_Update(&c, data.data, data.length);
     HMAC_Final(&c, ntlmv2answer, &hmaclen);
     HMAC_CTX_cleanup(&c);
 
@@ -996,6 +1020,10 @@ out:
 
 static const int authtimediff = 3600 * 2; /* 2 hours */
 
+/*
+ * Verify NTLMv2 response.
+ */
+
 int
 heim_ntlm_verify_ntlm2(const void *key, size_t len,
 		       const char *username,
@@ -1009,6 +1037,7 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     krb5_error_code ret;
     unsigned int hmaclen;
     unsigned char clientanswer[16];
+    unsigned char clientnonce[8];
     unsigned char serveranswer[16];
     krb5_storage *sp;
     HMAC_CTX c;
@@ -1039,7 +1068,7 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     CHECK(krb5_storage_read(sp, clientanswer, 16), 16);
 
     CHECK(krb5_ret_uint32(sp, &temp), 0);
-    CHECK(temp, 0x01010000);
+    CHECK(temp, 0x00000101);
     CHECK(krb5_ret_uint32(sp, &temp), 0);
     CHECK(temp, 0);
     /* timestamp le 64 bit ts */
@@ -1056,9 +1085,12 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     }
 
     /* client challange */
-    CHECK(krb5_storage_read(sp, serveranswer, 8), 8);
+    CHECK(krb5_storage_read(sp, clientnonce, 8), 8);
 
-    infotarget->length = answer->length - 40;
+    CHECK(krb5_ret_uint32(sp, &temp), 0); /* unknown */
+
+    /* should really unparse the infotarget, but lets pick up everything */
+    infotarget->length = answer->length - krb5_storage_seek(sp, 0, SEEK_CUR);
     infotarget->data = malloc(infotarget->length);
     if (infotarget->data == NULL) {
 	ret = ENOMEM;
@@ -1066,14 +1098,14 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     }
     CHECK(krb5_storage_read(sp, infotarget->data, infotarget->length), 
 	  infotarget->length);
-    /* XXX remove the unknown uint32_t */
+    /* XXX remove the unknown ?? */
     krb5_storage_free(sp);
     sp = NULL;
 
     HMAC_CTX_init(&c);
-    HMAC_Init_ex(&c, ntlmv2, sizeof(ntlmv2), EVP_md5(), NULL);
-    HMAC_Update(&c, ((char *)answer->data) + 16, answer->length - 16);
+    HMAC_Init_ex(&c, ntlmv2, 16, EVP_md5(), NULL);
     HMAC_Update(&c, serverchallange, 8);
+    HMAC_Update(&c, ((char *)answer->data) + 16, answer->length - 16);
     HMAC_Final(&c, serveranswer, &hmaclen);
     HMAC_CTX_cleanup(&c);
 
@@ -1088,4 +1120,53 @@ out:
     if (sp)
 	krb5_storage_free(sp);
     return ret;
+}
+
+
+/*
+ * Calculate the NTLM2 Session Response
+ */
+
+int
+heim_ntlm_calculate_ntlm2_sess(const unsigned char clnt_nonce[8],
+			       const unsigned char svr_chal[8],
+			       const unsigned char ntlm_hash[16],
+			       struct ntlm_buf *lm,
+			       struct ntlm_buf *ntlm)
+{
+    unsigned char ntlm2_sess_hash[MD5_DIGEST_LENGTH];
+    unsigned char res[21], *resp;
+    MD5_CTX md5;
+
+    lm->data = malloc(24);
+    if (lm->data == NULL)
+	return ENOMEM;
+    lm->length = 24;
+
+    ntlm->data = malloc(24);
+    if (ntlm->data == NULL) {
+	free(lm->data);
+	lm->data = NULL;
+	return ENOMEM;
+    }
+    ntlm->length = 24;
+
+    /* first setup the lm resp */
+    memset(lm->data, 0, 24);
+    memcpy(lm->data, clnt_nonce, 8);
+
+    MD5_Init(&md5);
+    MD5_Update(&md5, svr_chal, 8); /* session nonce part 1 */
+    MD5_Update(&md5, clnt_nonce, 8); /* session nonce part 2 */
+    MD5_Final(ntlm2_sess_hash, &md5); /* will only use first 8 bytes */
+
+    memset(res, 0, sizeof(res));
+    memcpy(res, ntlm_hash, 16);
+
+    resp = ntlm->data;
+    splitandenc(&res[0], ntlm2_sess_hash, resp + 0);
+    splitandenc(&res[7], ntlm2_sess_hash, resp + 8);
+    splitandenc(&res[14], ntlm2_sess_hash, resp + 16);
+
+    return 0;
 }

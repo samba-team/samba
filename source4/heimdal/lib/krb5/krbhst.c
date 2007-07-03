@@ -35,7 +35,7 @@
 #include <resolve.h>
 #include "locate_plugin.h"
 
-RCSID("$Id: krbhst.c 19198 2006-11-30 17:23:08Z lha $");
+RCSID("$Id: krbhst.c 21131 2007-06-18 20:48:09Z lha $");
 
 static int
 string_to_proto(const char *string)
@@ -501,10 +501,8 @@ add_locate(void *ctx, int type, struct sockaddr *addr)
     hostlen = strlen(host);
 
     hi = calloc(1, sizeof(*hi) + hostlen);
-    if(hi == NULL) {
-	free(host);
+    if(hi == NULL)
 	return ENOMEM;
-    }
     
     hi->proto = krbhst_get_default_proto(kd);
     hi->port  = hi->def_port = socket_get_port(addr);

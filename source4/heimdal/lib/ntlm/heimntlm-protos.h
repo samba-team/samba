@@ -34,6 +34,14 @@ heim_ntlm_calculate_ntlm2 (
 	struct ntlm_buf */*answer*/);
 
 int
+heim_ntlm_calculate_ntlm2_sess (
+	const unsigned char clnt_nonce[8],
+	const unsigned char svr_chal[8],
+	const unsigned char ntlm_hash[16],
+	struct ntlm_buf */*lm*/,
+	struct ntlm_buf */*ntlm*/);
+
+int
 heim_ntlm_decode_targetinfo (
 	struct ntlm_buf */*data*/,
 	int /*ucs2*/,

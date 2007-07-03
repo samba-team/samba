@@ -237,6 +237,13 @@ hx509_cert_init (
 	hx509_cert */*cert*/);
 
 int
+hx509_cert_init_data (
+	hx509_context /*context*/,
+	const void */*ptr*/,
+	size_t /*len*/,
+	hx509_cert */*cert*/);
+
+int
 hx509_cert_keyusage_print (
 	hx509_context /*context*/,
 	hx509_cert /*c*/,
@@ -479,7 +486,7 @@ hx509_crypto_encrypt (
 	hx509_crypto /*crypto*/,
 	const void */*data*/,
 	const size_t /*length*/,
-	heim_octet_string */*ivec*/,
+	const heim_octet_string */*ivec*/,
 	heim_octet_string **/*ciphertext*/);
 
 const heim_oid *
@@ -506,6 +513,11 @@ hx509_crypto_init (
 
 const char *
 hx509_crypto_provider (hx509_crypto /*crypto*/);
+
+int
+hx509_crypto_random_iv (
+	hx509_crypto /*crypto*/,
+	heim_octet_string */*ivec*/);
 
 int
 hx509_crypto_select (
@@ -740,6 +752,36 @@ hx509_peer_info_set_cms_algs (
 	const AlgorithmIdentifier */*val*/,
 	size_t /*len*/);
 
+int
+hx509_pem_add_header (
+	hx509_pem_header **/*headers*/,
+	const char */*header*/,
+	const char */*value*/);
+
+const char *
+hx509_pem_find_header (
+	const hx509_pem_header */*h*/,
+	const char */*header*/);
+
+void
+hx509_pem_free_header (hx509_pem_header */*headers*/);
+
+int
+hx509_pem_read (
+	hx509_context /*context*/,
+	FILE */*f*/,
+	hx509_pem_read_func /*func*/,
+	void */*ctx*/);
+
+int
+hx509_pem_write (
+	hx509_context /*context*/,
+	const char */*type*/,
+	hx509_pem_header */*headers*/,
+	FILE */*f*/,
+	const void */*data*/,
+	size_t /*size*/);
+
 void
 hx509_print_func (
 	hx509_vprint_func /*func*/,
@@ -931,13 +973,19 @@ hx509_verify_attach_revoke (
 	hx509_revoke_ctx /*revoke_ctx*/);
 
 void
+hx509_verify_ctx_f_allow_default_trustanchors (
+	hx509_verify_ctx /*ctx*/,
+	int /*boolean*/);
+
+void
 hx509_verify_destroy_ctx (hx509_verify_ctx /*ctx*/);
 
 int
 hx509_verify_hostname (
 	hx509_context /*context*/,
 	const hx509_cert /*cert*/,
-	int /*require_match*/,
+	int /*flags*/,
+	hx509_hostname_type /*type*/,
 	const char */*hostname*/,
 	const struct sockaddr */*sa*/,
 	int /*sa_size*/);
@@ -953,6 +1001,11 @@ hx509_verify_path (
 	hx509_verify_ctx /*ctx*/,
 	hx509_cert /*cert*/,
 	hx509_certs /*pool*/);
+
+void
+hx509_verify_set_max_depth (
+	hx509_verify_ctx /*ctx*/,
+	unsigned int /*max_depth*/);
 
 void
 hx509_verify_set_proxy_certificate (

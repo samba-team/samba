@@ -1,7 +1,7 @@
 #include "mech/mech_locl.h"
 #include "heim_threads.h"
 
-RCSID("$Id: context.c 19924 2007-01-16 10:17:01Z lha $");
+RCSID("$Id: context.c 21248 2007-06-21 00:45:13Z lha $");
 
 struct mg_thread_ctx {
     gss_OID mech;
@@ -79,7 +79,7 @@ _gss_mg_get_error(const gss_OID mech, OM_uint32 type,
 
     switch (type) {
     case GSS_C_GSS_CODE: {
-	if (value != mg->maj_stat)
+	if (value != mg->maj_stat || mg->maj_error.length == 0)
 	    break;
 	string->value = malloc(mg->maj_error.length);
 	string->length = mg->maj_error.length;
@@ -87,7 +87,7 @@ _gss_mg_get_error(const gss_OID mech, OM_uint32 type,
 	return GSS_S_COMPLETE;
     }
     case GSS_C_MECH_CODE: {
-	if (value != mg->min_stat)
+	if (value != mg->min_stat || mg->min_error.length == 0)
 	    break;
 	string->value = malloc(mg->min_error.length);
 	string->length = mg->min_error.length;

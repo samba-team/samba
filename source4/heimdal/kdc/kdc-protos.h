@@ -37,7 +37,7 @@ kdc_openlog (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/);
 
-int
+krb5_error_code
 krb5_kdc_get_config (
 	krb5_context /*context*/,
 	krb5_kdc_configuration **/*config*/);
@@ -73,6 +73,11 @@ krb5_kdc_save_request (
 	size_t /*len*/,
 	const krb5_data */*reply*/,
 	const struct sockaddr */*sa*/);
+
+krb5_error_code
+krb5_kdc_set_dbinfo (
+	krb5_context /*context*/,
+	struct krb5_kdc_configuration */*c*/);
 
 void
 krb5_kdc_update_time (struct timeval */*tv*/);

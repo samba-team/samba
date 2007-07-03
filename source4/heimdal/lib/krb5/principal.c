@@ -41,7 +41,7 @@
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id: principal.c 20223 2007-02-15 04:17:04Z lha $");
+RCSID("$Id: principal.c 21285 2007-06-25 12:30:55Z lha $");
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
@@ -281,15 +281,19 @@ krb5_parse_name(krb5_context context,
 
 static const char quotable_chars[] = " \n\t\b\\/@";
 static const char replace_chars[] = " ntb\\/@";
+static const char nq_chars[] = "    \\/@";
 
 #define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
 
 static size_t
-quote_string(const char *s, char *out, size_t idx, size_t len)
+quote_string(const char *s, char *out, size_t idx, size_t len, int display)
 {
     const char *p, *q;
     for(p = s; *p && idx < len; p++){
-	if((q = strchr(quotable_chars, *p))){
+	q = strchr(quotable_chars, *p);
+	if (q && display) {
+	    add_char(out, idx, len, replace_chars[q - quotable_chars]);
+	} else if (q) {
 	    add_char(out, idx, len, '\\');
 	    add_char(out, idx, len, replace_chars[q - quotable_chars]);
 	}else
@@ -312,6 +316,7 @@ unparse_name_fixed(krb5_context context,
     int i;
     int short_form = (flags & KRB5_PRINCIPAL_UNPARSE_SHORT) != 0;
     int no_realm = (flags & KRB5_PRINCIPAL_UNPARSE_NO_REALM) != 0;
+    int display = (flags & KRB5_PRINCIPAL_UNPARSE_DISPLAY) != 0;
 
     if (!no_realm && princ_realm(principal) == NULL) {
 	krb5_set_error_string(context, "Realm missing from principal, "
@@ -322,7 +327,7 @@ unparse_name_fixed(krb5_context context,
     for(i = 0; i < princ_num_comp(principal); i++){
 	if(i)
 	    add_char(name, idx, len, '/');
-	idx = quote_string(princ_ncomp(principal, i), name, idx, len);
+	idx = quote_string(princ_ncomp(principal, i), name, idx, len, display);
 	if(idx == len) {
 	    krb5_set_error_string(context, "Out of space printing principal");
 	    return ERANGE;
@@ -341,7 +346,7 @@ unparse_name_fixed(krb5_context context,
     }
     if(!short_form && !no_realm) {
 	add_char(name, idx, len, '@');
-	idx = quote_string(princ_realm(principal), name, idx, len);
+	idx = quote_string(princ_realm(principal), name, idx, len, display);
 	if(idx == len) {
 	    krb5_set_error_string(context, 
 				  "Out of space printing realm of principal");
@@ -1212,4 +1217,38 @@ krb5_sname_to_principal (krb5_context context,
 	free(host);
     krb5_free_host_realm(context, realms);
     return ret;
+}
+
+static const struct {
+    const char *type;
+    int32_t value;
+} nametypes[] = {
+    { "UNKNOWN", KRB5_NT_UNKNOWN },
+    { "PRINCIPAL", KRB5_NT_PRINCIPAL },
+    { "SRV_INST", KRB5_NT_SRV_INST },
+    { "SRV_HST", KRB5_NT_SRV_HST },
+    { "SRV_XHST", KRB5_NT_SRV_XHST },
+    { "UID", KRB5_NT_UID },
+    { "X500_PRINCIPAL", KRB5_NT_X500_PRINCIPAL },
+    { "SMTP_NAME", KRB5_NT_SMTP_NAME },
+    { "ENTERPRISE_PRINCIPAL", KRB5_NT_ENTERPRISE_PRINCIPAL },
+    { "ENT_PRINCIPAL_AND_ID", KRB5_NT_ENT_PRINCIPAL_AND_ID },
+    { "MS_PRINCIPAL", KRB5_NT_MS_PRINCIPAL },
+    { "MS_PRINCIPAL_AND_ID", KRB5_NT_MS_PRINCIPAL_AND_ID },
+    { NULL }
+};
+
+krb5_error_code
+krb5_parse_nametype(krb5_context context, const char *str, int32_t *nametype)
+{
+    size_t i;
+    
+    for(i = 0; nametypes[i].type; i++) {
+	if (strcasecmp(nametypes[i].type, str) == 0) {
+	    *nametype = nametypes[i].value;
+	    return 0;
+	}
+    }
+    krb5_set_error_string(context, "Failed to find name type %s", str);
+    return KRB5_PARSE_MALFORMED;
 }
