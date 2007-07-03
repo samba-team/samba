@@ -391,7 +391,7 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
 {
 	SMB_STRUCT_STAT st;
 	struct timespec ts[2];
-	int status, err;
+	int ret, err;
 
 	if (SMB_VFS_NEXT_STAT(handle, fname, &st) != 0) {
 		DEBUG(0,("recycle: stat for %s returned %s\n",
@@ -402,10 +402,10 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
 	ts[1] = touch_mtime ? ts[0] : get_mtimespec(&st); /* mtime */
 
 	become_root();
-	status = SMB_VFS_NEXT_NTIMES(handle, fname, ts);
+	ret = SMB_VFS_NEXT_NTIMES(handle, fname, ts);
 	err = errno;
 	unbecome_root();
-	if (status == -1 ) {
+	if (ret == -1 ) {
 		DEBUG(0, ("recycle: touching %s failed, reason = %s\n",
 			  fname, strerror(err)));
 	}
