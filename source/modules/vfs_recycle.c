@@ -386,20 +386,28 @@ static BOOL matchparam(const char **haystack_list, const char *needle)
 /**
  * Touch access or modify date
  **/
-static void recycle_do_touch(vfs_handle_struct *handle, const char *fname, BOOL touch_mtime)
+static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
+			     BOOL touch_mtime)
 {
 	SMB_STRUCT_STAT st;
 	struct timespec ts[2];
-	
+	int status, err;
+
 	if (SMB_VFS_NEXT_STAT(handle, fname, &st) != 0) {
-		DEBUG(0,("recycle: stat for %s returned %s\n", fname, strerror(errno)));
+		DEBUG(0,("recycle: stat for %s returned %s\n",
+			 fname, strerror(errno)));
 		return;
 	}
 	ts[0] = timespec_current(); /* atime */
 	ts[1] = touch_mtime ? ts[0] : get_mtimespec(&st); /* mtime */
 
-	if (SMB_VFS_NEXT_NTIMES(handle, fname, ts) == -1 ) {
-		DEBUG(0, ("recycle: touching %s failed, reason = %s\n", fname, strerror(errno)));
+	become_root();
+	status = SMB_VFS_NEXT_NTIMES(handle, fname, ts);
+	err = errno;
+	unbecome_root();
+	if (status == -1 ) {
+		DEBUG(0, ("recycle: touching %s failed, reason = %s\n",
+			  fname, strerror(err)));
 	}
 }
 
