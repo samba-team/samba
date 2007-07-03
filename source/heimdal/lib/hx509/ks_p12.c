@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_p12.c 20909 2007-06-05 03:09:13Z lha $");
+RCSID("$Id: ks_p12.c 21146 2007-06-18 21:37:25Z lha $");
 
 struct ks_pkcs12 {
     hx509_certs certs;
@@ -90,7 +90,7 @@ keyBag_parser(hx509_context context,
 				     &ki.privateKeyAlgorithm,
 				     NULL,
 				     &ki.privateKey,
-				     &attr->attrValues);
+				     os);
     free_PKCS8PrivateKeyInfo(&ki);
     return 0;
 }
@@ -132,7 +132,6 @@ certBag_parser(hx509_context context,
 	       const PKCS12_Attributes *attrs)
 {
     heim_octet_string os;
-    Certificate t;
     hx509_cert cert;
     PKCS12_CertBag cb;
     int ret;
@@ -154,13 +153,8 @@ certBag_parser(hx509_context context,
     if (ret)
 	return ret;
 
-    ret = decode_Certificate(os.data, os.length, &t, NULL);
+    ret = hx509_cert_init_data(context, os.data, os.length, &cert);
     der_free_octet_string(&os);
-    if (ret)
-	return ret;
-
-    ret = hx509_cert_init(context, &t, &cert);
-    free_Certificate(&t);
     if (ret)
 	return ret;
 
@@ -437,7 +431,9 @@ p12_init(hx509_context context,
 out:
     _hx509_collector_free(c);
 
-    if (ret) {
+    if (ret && p12) {
+	if (p12->fn)
+	    free(p12->fn);
 	if (p12->certs)
 	    hx509_certs_free(&p12->certs);
 	free(p12);

@@ -34,7 +34,7 @@
 #include "kdc_locl.h"
 #include <hex.h>
 
-RCSID("$Id: digest.c 20877 2007-06-04 04:07:26Z lha $");
+RCSID("$Id: digest.c 21241 2007-06-20 11:30:19Z lha $");
 
 #define MS_CHAP_V2	0x20
 #define CHAP_MD5	0x10
@@ -155,6 +155,44 @@ static const unsigned char ms_rfc3079_magic1[27] = {
     0x68, 0x65, 0x20, 0x4d, 0x50, 0x50, 0x45, 0x20, 0x4d,
     0x61, 0x73, 0x74, 0x65, 0x72, 0x20, 0x4b, 0x65, 0x79
 };
+
+/*
+ *
+ */
+
+static krb5_error_code
+get_password_entry(krb5_context context,
+		   krb5_kdc_configuration *config,
+		   const char *username,
+		   char **password)
+{
+    krb5_principal clientprincipal;
+    krb5_error_code ret;
+    hdb_entry_ex *user;
+    HDB *db;
+
+    /* get username */
+    ret = krb5_parse_name(context, username, &clientprincipal);
+    if (ret)
+	return ret;
+
+    ret = _kdc_db_fetch(context, config, clientprincipal,
+			HDB_F_GET_CLIENT, &db, &user);
+    krb5_free_principal(context, clientprincipal);
+    if (ret)
+	return ret;
+
+    ret = hdb_entry_get_password(context, db, &user->entry, password);
+    if (ret || password == NULL) {
+	if (ret == 0) {
+	    ret = EINVAL;
+	    krb5_set_error_string(context, "password missing");
+	}
+	memset(user, 0, sizeof(*user));
+    }
+    _kdc_free_ent (context, user);
+    return ret;
+}
 
 /*
  *
@@ -461,9 +499,6 @@ _kdc_do_digest(krb5_context context,
 	break;
     }
     case choice_DigestReqInner_digestRequest: {
-	krb5_principal clientprincipal;
-	HDB *db;
-
 	sp = krb5_storage_emem();
 	if (sp == NULL) {
 	    ret = ENOMEM;
@@ -571,29 +606,6 @@ _kdc_do_digest(krb5_context context,
 	    }
 	}
 
-	/* get username */
-	ret = krb5_parse_name(context,
-			      ireq.u.digestRequest.username,
-			      &clientprincipal);
-	if (ret)
-	    goto out;
-
-	ret = _kdc_db_fetch(context, config, clientprincipal,
-			    HDB_F_GET_CLIENT, &db, &user);
-
-	krb5_free_principal(context, clientprincipal);
-	if (ret)
-	    goto out;
-
-	ret = hdb_entry_get_password(context, db, &user->entry, &password);
-	if (ret || password == NULL) {
-	    if (ret == 0) {
-		ret = EINVAL;
-		krb5_set_error_string(context, "password missing");
-	    }
-	    goto out;
-	}
-
 	if (strcasecmp(ireq.u.digestRequest.type, "CHAP") == 0) {
 	    MD5_CTX ctx;
 	    unsigned char md[MD5_DIGEST_LENGTH];
@@ -618,6 +630,12 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 	    
+	    ret = get_password_entry(context, config, 
+				     ireq.u.digestRequest.username,
+				     &password);
+	    if (ret)
+		goto out;
+
 	    MD5_Init(&ctx);
 	    MD5_Update(&ctx, &id, 1);
 	    MD5_Update(&ctx, password, strlen(password));
@@ -664,6 +682,12 @@ _kdc_do_digest(krb5_context context,
 	    if (ireq.u.digestRequest.realm == NULL) 
 		goto out;
 	    
+	    ret = get_password_entry(context, config, 
+				     ireq.u.digestRequest.username,
+				     &password);
+	    if (ret)
+		goto failed;
+
 	    MD5_Init(&ctx);
 	    MD5_Update(&ctx, ireq.u.digestRequest.username,
 		       strlen(ireq.u.digestRequest.username));
@@ -692,7 +716,7 @@ _kdc_do_digest(krb5_context context,
 	    if (A1 == NULL) {
 		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
-		goto out;
+		goto failed;
 	    }
 	    
 	    MD5_Init(&ctx);
@@ -712,7 +736,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context, "out of memory");
 		ret = ENOMEM;
 		free(A1);
-		goto out;
+		goto failed;
 	    }
 
 	    MD5_Init(&ctx);
@@ -758,6 +782,7 @@ _kdc_do_digest(krb5_context context,
 
 	} else if (strcasecmp(ireq.u.digestRequest.type, "MS-CHAP-V2") == 0) {
 	    unsigned char md[SHA_DIGEST_LENGTH], challange[SHA_DIGEST_LENGTH];
+	    krb5_principal clientprincipal = NULL;
 	    char *mdx;
 	    const char *username;
 	    struct ntlm_buf answer;
@@ -766,20 +791,20 @@ _kdc_do_digest(krb5_context context,
 
 	    if ((config->digests_allowed & MS_CHAP_V2) == 0) {
 		kdc_log(context, config, 0, "MS-CHAP-V2 not allowed");
-		goto out;
+		goto failed;
 	    }
 
 	    if (ireq.u.digestRequest.clientNonce == NULL)  {
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 clientNonce missing");
 		ret = EINVAL;
-		goto out;
+		goto failed;
 	    }	    
 	    if (serverNonce.length != 16) {
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 serverNonce wrong length");
 		ret = EINVAL;
-		goto out;
+		goto failed;
 	    }
 
 	    /* strip of the domain component */
@@ -821,7 +846,7 @@ _kdc_do_digest(krb5_context context,
 	    /* NtPasswordHash */
 	    ret = krb5_parse_name(context, username, &clientprincipal);
 	    if (ret)
-		goto out;
+		goto failed;
 	    
 	    ret = _kdc_db_fetch(context, config, clientprincipal,
 				HDB_F_GET_CLIENT, NULL, &user);
@@ -830,7 +855,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 user %s not in database",
 				      username);
-		goto out;
+		goto failed;
 	    }
 
 	    ret = hdb_enctype2key(context, &user->entry, 
@@ -839,7 +864,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context, 
 				      "MS-CHAP-V2 missing arcfour key %s",
 				      username);
-		goto out;
+		goto failed;
 	    }
 
 	    /* ChallengeResponse */
@@ -848,7 +873,7 @@ _kdc_do_digest(krb5_context context,
 					    challange, &answer);
 	    if (ret) {
 		krb5_set_error_string(context, "NTLM missing arcfour key");
-		goto out;
+		goto failed;
 	    }
 	    
 	    hex_encode(answer.data, answer.length, &mdx);
@@ -861,15 +886,15 @@ _kdc_do_digest(krb5_context context,
 
 	    r.element = choice_DigestRepInner_response;
 	    ret = strcasecmp(mdx, ireq.u.digestRequest.responseData);
-	    free(mdx);
 	    if (ret == 0) {
 		r.u.response.success = TRUE;
 	    } else {
 		kdc_log(context, config, 0, 
-			"MS-CHAP-V2 reply mismatch for %s",
+			"MS-CHAP-V2 hash mismatch for %s",
 			ireq.u.digestRequest.username);
 		r.u.response.success = FALSE;
 	    }
+	    free(mdx);
 
 	    if (r.u.response.success) {
 		unsigned char hashhash[MD4_DIGEST_LENGTH];
@@ -958,7 +983,7 @@ _kdc_do_digest(krb5_context context,
 
 	if ((config->digests_allowed & (NTLM_V1|NTLM_V1_SESSION|NTLM_V2)) == 0) {
 	    kdc_log(context, config, 0, "NTLM not allowed");
-	    goto out;
+	    goto failed;
 	}
 
 	r.element = choice_DigestRepInner_ntlmInitReply;
@@ -967,14 +992,14 @@ _kdc_do_digest(krb5_context context,
 
 	if ((ireq.u.ntlmInit.flags & NTLM_NEG_UNICODE) == 0) {
 	    kdc_log(context, config, 0, "NTLM client have no unicode");
-	    goto out;
+	    goto failed;
 	}
 
 	if (ireq.u.ntlmInit.flags & NTLM_NEG_NTLM)
 	    r.u.ntlmInitReply.flags |= NTLM_NEG_NTLM;
 	else {
 	    kdc_log(context, config, 0, "NTLM client doesn't support NTLM");
-	    goto out;
+	    goto failed;
 	}
 
 	r.u.ntlmInitReply.flags |= 
@@ -1095,7 +1120,7 @@ _kdc_do_digest(krb5_context context,
 			      ireq.u.ntlmRequest.username,
 			      &clientprincipal);
 	if (ret)
-	    goto out;
+	    goto failed;
 
 	ret = _kdc_db_fetch(context, config, clientprincipal,
 			    HDB_F_GET_CLIENT, NULL, &user);
@@ -1103,20 +1128,23 @@ _kdc_do_digest(krb5_context context,
 	if (ret) {
 	    krb5_set_error_string(context, "NTLM user %s not in database",
 				  ireq.u.ntlmRequest.username);
-	    goto out;
+	    goto failed;
 	}
 
 	ret = get_digest_key(context, config, server, &crypto);
 	if (ret)
-	    goto out;
+	    goto failed;
 
 	ret = krb5_decrypt(context, crypto, KRB5_KU_DIGEST_OPAQUE,
 			   ireq.u.ntlmRequest.opaque.data,
 			   ireq.u.ntlmRequest.opaque.length, &buf);
 	krb5_crypto_destroy(context, crypto);
 	crypto = NULL;
-	if (ret)
-	    goto out;
+	if (ret) {
+	    kdc_log(context, config, 0, 
+		    "Failed to decrypt nonce from %s", from);
+	    goto failed;
+	}
 
 	sp = krb5_storage_from_data(&buf);
 	if (sp == NULL) {
@@ -1185,7 +1213,7 @@ _kdc_do_digest(krb5_context context,
 	    free(targetname);
 	    if (ret) {
 		krb5_set_error_string(context, "NTLM v2 verify failed");
-		goto out;
+		goto failed;
 	    }
 
 	    /* XXX verify infotarget matches client (checksum ?) */
@@ -1205,14 +1233,14 @@ _kdc_do_digest(krb5_context context,
 		if ((config->digests_allowed & NTLM_V1_SESSION) == 0) {
 		    kdc_log(context, config, 0, "NTLM v1-session not allowed");
 		    ret = EINVAL;
-		    goto out;
+		    goto failed;
 		}
 
 		if (ireq.u.ntlmRequest.lm.length != 24) {
 		    krb5_set_error_string(context, "LM hash have wrong length "
 					  "for NTLM session key");
 		    ret = EINVAL;
-		    goto out;
+		    goto failed;
 		}
 		
 		MD5_Init(&md5ctx);
@@ -1223,7 +1251,7 @@ _kdc_do_digest(krb5_context context,
 	    } else {
 		if ((config->digests_allowed & NTLM_V1) == 0) {
 		    kdc_log(context, config, 0, "NTLM v1 not allowed");
-		    goto out;
+		    goto failed;
 		}
 	    }
 	    
@@ -1232,7 +1260,7 @@ _kdc_do_digest(krb5_context context,
 					    challange, &answer);
 	    if (ret) {
 		krb5_set_error_string(context, "NTLM missing arcfour key");
-		goto out;
+		goto failed;
 	    }
 	    
 	    if (ireq.u.ntlmRequest.ntlm.length != answer.length ||
@@ -1241,7 +1269,7 @@ _kdc_do_digest(krb5_context context,
 		free(answer.data);
 		ret = EINVAL;
 		krb5_set_error_string(context, "NTLM hash mismatch");
-		goto out;
+		goto failed;
 	    }
 	    free(answer.data);
 
@@ -1265,7 +1293,7 @@ _kdc_do_digest(krb5_context context,
 				      "NTLM client failed to neg key "
 				      "exchange but still sent key");
 		ret = EINVAL;
-		goto out;
+		goto failed;
 	    }
 	    
 	    len = ireq.u.ntlmRequest.sessionkey->length;
@@ -1273,7 +1301,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context,
 				      "NTLM master key wrong length: %lu",
 				      (unsigned long)len);
-		goto out;
+		goto failed;
 	    }
 	    
 	    RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
@@ -1301,12 +1329,12 @@ _kdc_do_digest(krb5_context context,
 	r.u.ntlmResponse.success = 1;
 	kdc_log(context, config, 0, "NTLM version %d successful for %s",
 		version, ireq.u.ntlmRequest.username);
-
 	break;
     }
     default:
+    failed:
 	r.element = choice_DigestRepInner_error;
-	r.u.error.reason = strdup("unknown operation");
+	r.u.error.reason = strdup("unknown/failed operation");
 	if (r.u.error.reason == NULL) {
 	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;

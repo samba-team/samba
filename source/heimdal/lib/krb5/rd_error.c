@@ -33,11 +33,11 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: rd_error.c 20304 2007-04-11 11:15:05Z lha $");
+RCSID("$Id: rd_error.c 21057 2007-06-12 17:22:31Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_error(krb5_context context,
-	      krb5_data *msg,
+	      const krb5_data *msg,
 	      KRB_ERROR *result)
 {
     

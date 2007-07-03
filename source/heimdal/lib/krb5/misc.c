@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: misc.c 17616 2006-06-06 14:57:47Z lha $");
+RCSID("$Id: misc.c 21174 2007-06-19 10:10:58Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_s4u2self_to_checksumdata(krb5_context context, 
@@ -51,6 +51,7 @@ _krb5_s4u2self_to_checksumdata(krb5_context context,
 	krb5_clear_error_string(context);
 	return ENOMEM;
     }
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
     ret = krb5_store_int32(sp, self->name.name_type);
     if (ret)
 	goto out;

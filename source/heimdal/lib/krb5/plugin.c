@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: plugin.c 19789 2007-01-09 17:46:01Z lha $");
+RCSID("$Id: plugin.c 21134 2007-06-18 21:02:23Z lha $");
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -96,6 +96,7 @@ loadlib(krb5_context context,
     (*e)->dsohandle = dlopen(lib, RTLD_LAZY);
     if ((*e)->dsohandle == NULL) {
 	free(*e);
+	*e = NULL;
 	krb5_set_error_string(context, "Failed to load %s: %s", 
 			      lib, dlerror());
 	return ENOMEM;

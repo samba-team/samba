@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand.c 20126 2007-02-01 22:08:41Z lha $");
+RCSID("$Id: rand.c 21198 2007-06-20 05:10:41Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,11 +56,7 @@ init_method(void)
 {
     if (selected_meth != NULL)
 	return;
-
-    if ((*hc_rand_unix_method.status)() == 1)
-	selected_meth = &hc_rand_unix_method;
-    else
-	selected_meth = &hc_rand_fortuna_method;
+    selected_meth = &hc_rand_fortuna_method;
 }
 
 void

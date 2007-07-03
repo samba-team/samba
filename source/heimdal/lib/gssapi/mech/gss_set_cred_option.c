@@ -31,7 +31,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_set_cred_option.c 20626 2007-05-08 13:56:49Z lha $");
+RCSID("$Id: gss_set_cred_option.c 21126 2007-06-18 20:19:59Z lha $");
 
 OM_uint32
 gss_set_cred_option (OM_uint32 *minor_status,
@@ -64,7 +64,9 @@ gss_set_cred_option (OM_uint32 *minor_status,
 
 			mc = malloc(sizeof(*mc));
 			if (mc == NULL) {
-			    /* XXX free the other mc's */
+			    *cred_handle = (gss_cred_id_t)cred;
+			    gss_release_cred(minor_status, cred_handle);
+			    *minor_status = ENOMEM;
 			    return GSS_S_FAILURE;
 			}
 

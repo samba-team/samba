@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <pkcs10_asn1.h>
-RCSID("$Id: req.c 20934 2007-06-06 15:30:02Z lha $");
+RCSID("$Id: req.c 21344 2007-06-26 14:22:34Z lha $");
 
 struct hx509_request_data {
     hx509_name name;
@@ -85,12 +85,32 @@ _hx509_request_set_name(hx509_context context,
 }
 
 int
+_hx509_request_get_name(hx509_context context,
+			hx509_request req,
+			hx509_name *name)
+{
+    if (req->name == NULL) {
+	hx509_set_error_string(context, 0, EINVAL, "Request have no name");
+	return EINVAL;
+    }
+    return hx509_name_copy(context, req->name, name);
+}
+
+int
 _hx509_request_set_SubjectPublicKeyInfo(hx509_context context,
 					hx509_request req,
 					const SubjectPublicKeyInfo *key)
 {
     free_SubjectPublicKeyInfo(&req->key);
     return copy_SubjectPublicKeyInfo(key, &req->key);
+}
+
+int
+_hx509_request_get_SubjectPublicKeyInfo(hx509_context context,
+					hx509_request req,
+					SubjectPublicKeyInfo *key)
+{
+    return copy_SubjectPublicKeyInfo(&req->key, key);
 }
 
 int
@@ -215,3 +235,91 @@ out:
 
     return ret;
 }
+
+int
+_hx509_request_parse(hx509_context context, 
+		     const char *path,
+		     hx509_request *req)
+{
+    CertificationRequest r;
+    CertificationRequestInfo *rinfo;
+    hx509_name subject;
+    size_t len, size;
+    void *p;
+    int ret;
+
+    if (strncmp(path, "PKCS10:", 7) != 0) {
+	hx509_set_error_string(context, 0, HX509_UNSUPPORTED_OPERATION,
+			       "unsupport type in %s", path);
+	return HX509_UNSUPPORTED_OPERATION;
+    }
+    path += 7;
+
+    /* XXX PEM request */
+
+    ret = _hx509_map_file(path, &p, &len, NULL);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to map file %s", path);
+	return ret;
+    }
+
+    ret = decode_CertificationRequest(p, len, &r, &size);
+    _hx509_unmap_file(p, len);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to decode %s", path);
+	return ret;
+    }
+
+    ret = _hx509_request_init(context, req);
+    if (ret) {
+	free_CertificationRequest(&r);
+	return ret;
+    }
+
+    rinfo = &r.certificationRequestInfo;
+
+    ret = _hx509_request_set_SubjectPublicKeyInfo(context, *req,
+						  &rinfo->subjectPKInfo);
+    if (ret) {
+	free_CertificationRequest(&r);
+	_hx509_request_free(req);
+	return ret;
+    }
+
+    ret = _hx509_name_from_Name(&rinfo->subject, &subject);
+    if (ret) {
+	free_CertificationRequest(&r);
+	_hx509_request_free(req);
+	return ret;
+    }
+    ret = _hx509_request_set_name(context, *req, subject);
+    hx509_name_free(&subject);
+    free_CertificationRequest(&r);
+    if (ret) {
+	_hx509_request_free(req);
+	return ret;
+    }
+
+    return 0;
+}
+
+
+int
+_hx509_request_print(hx509_context context, hx509_request req, FILE *f)
+{
+    int ret;
+
+    if (req->name) {
+	char *subject;
+	ret = hx509_name_to_string(req->name, &subject);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Failed to print name");
+	    return ret;
+	}
+        fprintf(f, "name: %s\n", subject);
+	free(subject);
+    }
+    
+    return 0;
+}
+

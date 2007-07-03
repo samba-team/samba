@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_inquire_cred_by_mech.c 19960 2007-01-17 15:09:24Z lha $");
+RCSID("$Id: gss_inquire_cred_by_mech.c 21124 2007-06-18 20:08:24Z lha $");
 
 OM_uint32
 gss_inquire_cred_by_mech(OM_uint32 *minor_status,
@@ -78,12 +78,16 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 		return (major_status);
 	}
 
-	name = _gss_make_name(m, mn);
-	if (!name) {
+	if (cred_name) {
+	    name = _gss_make_name(m, mn);
+	    if (!name) {
 		m->gm_release_name(minor_status, &mn);
 		return (GSS_S_NO_CRED);
-	}
+	    }
+	    *cred_name = (gss_name_t) name;
+	} else
+	    m->gm_release_name(minor_status, &mn);
 
-	*cred_name = (gss_name_t) name;
+
 	return (GSS_S_COMPLETE);
 }

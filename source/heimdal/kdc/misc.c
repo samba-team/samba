@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: misc.c 17951 2006-08-28 14:41:49Z lha $");
+RCSID("$Id: misc.c 21106 2007-06-18 10:18:11Z lha $");
 
 struct timeval _kdc_now;
 
@@ -46,12 +46,14 @@ _kdc_db_fetch(krb5_context context,
 	      hdb_entry_ex **h)
 {
     hdb_entry_ex *ent;
-    krb5_error_code ret = HDB_ERR_NOENTRY;
+    krb5_error_code ret;
     int i;
 
     ent = calloc (1, sizeof (*ent));
-    if (ent == NULL)
+    if (ent == NULL) {
+	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;
+    }
 
     for(i = 0; i < config->num_db; i++) {
 	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
@@ -74,7 +76,8 @@ _kdc_db_fetch(krb5_context context,
 	}
     }
     free(ent);
-    return ret;
+    krb5_set_error_string(context, "no such entry found in hdb");
+    return  HDB_ERR_NOENTRY;
 }
 
 void

@@ -4,6 +4,10 @@
 
 #include <stdarg.h>
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
 int
 _hx509_Certificate_cmp (
 	const Certificate */*p*/,
@@ -20,7 +24,8 @@ _hx509_Time2time_t (const Time */*t*/);
 void
 _hx509_abort (
 	const char */*fmt*/,
-	...);
+	...)
+    __attribute__ ((noreturn, format (printf, 1, 2)));
 
 int
 _hx509_calculate_path (
@@ -103,6 +108,9 @@ _hx509_certs_keys_get (
 	hx509_context /*context*/,
 	hx509_certs /*certs*/,
 	hx509_private_key **/*keys*/);
+
+hx509_certs
+_hx509_certs_ref (hx509_certs /*certs*/);
 
 int
 _hx509_check_key_usage (
@@ -306,6 +314,14 @@ _hx509_pbe_decrypt (
 	const heim_octet_string */*econtent*/,
 	heim_octet_string */*content*/);
 
+int
+_hx509_pbe_encrypt (
+	hx509_context /*context*/,
+	hx509_lock /*lock*/,
+	const AlgorithmIdentifier */*ai*/,
+	const heim_octet_string */*content*/,
+	heim_octet_string */*econtent*/);
+
 void
 _hx509_pi_printf (
 	int (*/*func*/)(void *, const char *),
@@ -407,9 +423,33 @@ void
 _hx509_request_free (hx509_request */*req*/);
 
 int
+_hx509_request_get_SubjectPublicKeyInfo (
+	hx509_context /*context*/,
+	hx509_request /*req*/,
+	SubjectPublicKeyInfo */*key*/);
+
+int
+_hx509_request_get_name (
+	hx509_context /*context*/,
+	hx509_request /*req*/,
+	hx509_name */*name*/);
+
+int
 _hx509_request_init (
 	hx509_context /*context*/,
 	hx509_request */*req*/);
+
+int
+_hx509_request_parse (
+	hx509_context /*context*/,
+	const char */*path*/,
+	hx509_request */*req*/);
+
+int
+_hx509_request_print (
+	hx509_context /*context*/,
+	hx509_request /*req*/,
+	FILE */*f*/);
 
 int
 _hx509_request_set_SubjectPublicKeyInfo (

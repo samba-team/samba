@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: pkcs12.c 20661 2007-05-10 21:57:58Z lha $");
+RCSID("$Id: pkcs12.c 21155 2007-06-18 21:59:44Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,8 +93,11 @@ PKCS12_key_gen(const void *key, size_t keylen,
     while (1) {
 	BIGNUM *bnB, *bnOne;
 
-	if (!EVP_DigestInit_ex(&ctx, md, NULL))
+	if (!EVP_DigestInit_ex(&ctx, md, NULL)) {
+	    free(I);
+	    free(v);
 	    return 0;
+	}
 	for (i = 0; i < vlen; i++)
 	    EVP_DigestUpdate(&ctx, &idc, 1);
 	EVP_DigestUpdate(&ctx, I, size_I);

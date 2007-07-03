@@ -36,10 +36,9 @@
 #include <getarg.h>
 #include <parse_bytes.h>
 
-RCSID("$Id: default_config.c 20532 2007-04-23 07:46:57Z lha $");
+RCSID("$Id: default_config.c 21296 2007-06-25 14:49:11Z lha $");
 
-
-int
+krb5_error_code
 krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 {
     krb5_kdc_configuration *c;
@@ -62,7 +61,8 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
     c->enable_524 = FALSE;
     c->enable_v4_cross_realm = FALSE;
     c->enable_pkinit = FALSE;
-    c->enable_pkinit_princ_in_cert = TRUE;
+    c->pkinit_princ_in_cert = TRUE;
+    c->pkinit_require_binding = TRUE;
     c->db = NULL;
     c->num_db = 0;
     c->logf = NULL;
@@ -257,11 +257,18 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	krb5_config_free_strings(pool_list);
 	krb5_config_free_strings(revoke_list);
 
-	c->enable_pkinit_princ_in_cert = 
+	c->pkinit_princ_in_cert = 
 	    krb5_config_get_bool_default(context, NULL,
-					 c->enable_pkinit_princ_in_cert,
+					 c->pkinit_princ_in_cert,
 					 "kdc",
 					 "pkinit_principal_in_certificate",
+					 NULL);
+
+	c->pkinit_require_binding = 
+	    krb5_config_get_bool_default(context, NULL,
+					 c->pkinit_require_binding,
+					 "kdc",
+					 "pkinit_win2k_require_binding",
 					 NULL);
     }
 

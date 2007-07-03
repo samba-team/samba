@@ -33,7 +33,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rand-fortuna.c 20029 2007-01-21 09:55:42Z lha $");
+RCSID("$Id: rand-fortuna.c 21196 2007-06-20 05:08:58Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -427,6 +427,8 @@ extract_data(FState * st, unsigned count, unsigned char *dst)
 static FState	main_state;
 static int	init_done;
 static int	have_entropy;
+#define FORTUNA_RESEED_BYTE	10000
+static unsigned	resend_bytes;
 
 /*
  * Try our best to do an inital seed
@@ -471,6 +473,35 @@ fortuna_reseed(void)
 	    entropy_p = 1;
 	    memset(buf, 0, sizeof(buf));
 	}
+    }
+    /*
+     * Fall back to gattering data from timer and secret files, this
+     * is really the last resort.
+     */
+    if (!entropy_p) {
+	/* to save stackspace */
+	union {
+	    unsigned char buf[INIT_BYTES];
+	    unsigned char shad[1001];
+	} u;
+	int fd;
+
+	/* add timer info */
+	if ((*hc_rand_timer_method.bytes)(u.buf, sizeof(u.buf)) == 1)
+	    add_entropy(&main_state, u.buf, sizeof(u.buf));
+	/* add /etc/shadow */
+	fd = open("/etc/shadow", O_RDONLY, 0);
+	if (fd >= 0) {
+	    ssize_t n;
+	    /* add_entropy will hash the buf */
+	    while ((n = read(fd, (char *)u.shad, sizeof(u.shad))) > 0)
+		add_entropy(&main_state, u.shad, sizeof(u.shad));
+	    close(fd);
+	}
+
+	memset(&u, 0, sizeof(u));
+
+	entropy_p = 1; /* sure about this ? */
     }
     {
 	pid_t pid = getpid();
@@ -517,6 +548,11 @@ fortuna_bytes(unsigned char *outdata, int size)
 {
     if (!fortuna_init())
 	return 0;
+    resend_bytes += size;
+    if (resend_bytes > FORTUNA_RESEED_BYTE || resend_bytes < size) {
+	resend_bytes = 0;
+	fortuna_reseed();
+    }
     extract_data(&main_state, size, outdata);
     return 1;
 }

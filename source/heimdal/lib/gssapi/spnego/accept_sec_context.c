@@ -33,7 +33,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: accept_sec_context.c 20929 2007-06-05 21:19:22Z lha $");
+RCSID("$Id: accept_sec_context.c 21243 2007-06-20 15:16:22Z lha $");
 
 static OM_uint32
 send_reject (OM_uint32 *minor_status,
@@ -540,12 +540,12 @@ acceptor_start
 	    gss_cred_id_t *delegated_cred_handle
 	   )
 {
-    OM_uint32 ret, ret2, minor;
-    NegTokenInit ni;
-    size_t ni_len;
+    OM_uint32 ret, junk, minor;
+    NegotiationToken nt;
+    size_t nt_len;
+    NegTokenInit *ni;
     int i;
     gss_buffer_desc data;
-    size_t len, taglen;
     gss_buffer_t mech_input_token = GSS_C_NO_BUFFER;
     gss_buffer_desc mech_output_token;
     gss_buffer_desc mech_buf;
@@ -554,6 +554,9 @@ acceptor_start
     gssspnego_cred acceptor_cred = (gssspnego_cred)acceptor_cred_handle;
     int get_mic = 0;
     int first_ok = 0;
+
+    if (src_name)
+	*src_name = GSS_C_NO_NAME;
 
     mech_output_token.value = NULL;
     mech_output_token.length = 0;
@@ -582,39 +585,30 @@ acceptor_start
     if (ret)
 	return ret;
 
-    ret = der_match_tag_and_length(data.value, data.length,
-				   ASN1_C_CONTEXT, CONS,
-				   0,
-				   &len, &taglen);
-    if (ret) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-
-    if (len > data.length - taglen) {
-	*minor_status = ASN1_OVERRUN;
-	return GSS_S_FAILURE;
-    }
-
-    ret = decode_NegTokenInit((const unsigned char *)data.value + taglen, 
-				  len, &ni, &ni_len);
+    ret = decode_NegotiationToken(data.value, data.length, &nt, &nt_len);
+    gss_release_buffer(minor_status, &data);
     if (ret) {
 	*minor_status = ret;
 	return GSS_S_DEFECTIVE_TOKEN;
     }
+    if (nt.element != choice_NegotiationToken_negTokenInit) {
+	*minor_status = 0;
+	return GSS_S_DEFECTIVE_TOKEN;
+    }
+    ni = &nt.u.negTokenInit;
 
-    if (ni.mechTypes.len < 1) {
-	free_NegTokenInit(&ni);
+    if (ni->mechTypes.len < 1) {
+	free_NegotiationToken(&nt);
 	*minor_status = 0;
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-    ret = copy_MechTypeList(&ni.mechTypes, &ctx->initiator_mech_types);
+    ret = copy_MechTypeList(&ni->mechTypes, &ctx->initiator_mech_types);
     if (ret) {
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-	free_NegTokenInit(&ni);
+	free_NegotiationToken(&nt);
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
@@ -627,17 +621,17 @@ acceptor_start
      */
 
     ret = select_mech(minor_status,
-		      &ni.mechTypes.val[0], 
+		      &ni->mechTypes.val[0], 
 		      0,
 		      &preferred_mech_type);
 
-    if (ret == 0 && ni.mechToken != NULL) {
+    if (ret == 0 && ni->mechToken != NULL) {
 	gss_cred_id_t mech_delegated_cred = GSS_C_NO_CREDENTIAL;
 	gss_cred_id_t mech_cred;
 	gss_buffer_desc ibuf;
 
-	ibuf.length = ni.mechToken->length;
-	ibuf.value = ni.mechToken->data;
+	ibuf.length = ni->mechToken->length;
+	ibuf.value = ni->mechToken->data;
 	mech_input_token = &ibuf;
 
 	if (acceptor_cred != NULL)
@@ -668,12 +662,12 @@ acceptor_start
 	    if (ret == GSS_S_COMPLETE)
 		ctx->open = 1;
 
-	    if (delegated_cred_handle)
+	    if (mech_delegated_cred && delegated_cred_handle)
 		ret = _gss_spnego_alloc_cred(minor_status,
 					     mech_delegated_cred,
 					     delegated_cred_handle);
 	    else
-		gss_release_cred(&ret2, &mech_delegated_cred);
+		gss_release_cred(&junk, &mech_delegated_cred);
 
 	    ret = acceptor_complete(minor_status,
 				    ctx,
@@ -681,7 +675,7 @@ acceptor_start
 				    &mech_buf,
 				    mech_input_token,
 				    &mech_output_token,
-				    ni.mechListMIC,
+				    ni->mechListMIC,
 				    output_token);
 	    if (ret != GSS_S_COMPLETE)
 		goto out;
@@ -697,9 +691,9 @@ acceptor_start
     if (!first_ok) {
 
 	/* Call glue layer to find first mech we support */
-	for (i = 1; i < ni.mechTypes.len; ++i) {
+	for (i = 1; i < ni->mechTypes.len; ++i) {
 	    ret = select_mech(minor_status,
-			      &ni.mechTypes.val[i],
+			      &ni->mechTypes.val[i],
 			      1,
 			      &preferred_mech_type);
 	    if (ret == 0)
@@ -707,7 +701,7 @@ acceptor_start
 	}
 	if (preferred_mech_type == GSS_C_NO_OID) {
 	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-	    free_NegTokenInit(&ni);
+	    free_NegotiationToken(&nt);
 	    return GSS_S_BAD_MECH;
 	}
 
@@ -735,7 +729,8 @@ out:
 	free(mech_buf.value);
 	mech_buf.value = NULL;
     }
-    free_NegTokenInit(&ni);
+    free_NegotiationToken(&nt);
+
 
     if (ret == GSS_S_COMPLETE) {
 	if (src_name != NULL && ctx->mech_src_name != NULL) {
@@ -746,8 +741,7 @@ out:
 		name->mech = ctx->mech_src_name;
 		ctx->mech_src_name = NULL;
 		*src_name = (gss_name_t)name;
-	    } else
-		*src_name = GSS_C_NO_NAME;
+	    }
 	}
         if (delegated_cred_handle != NULL) {
 	    *delegated_cred_handle = ctx->delegated_cred_id;
@@ -790,10 +784,9 @@ acceptor_continue
 	   )
 {
     OM_uint32 ret, ret2, minor;
-    NegTokenResp na;
-    size_t na_len;
-    gss_buffer_desc data;
-    size_t len, taglen;
+    NegotiationToken nt;
+    size_t nt_len;
+    NegTokenResp *na;
     unsigned int negResult = accept_incomplete;
     gss_buffer_t mech_input_token = GSS_C_NO_BUFFER;
     gss_buffer_t mech_output_token = GSS_C_NO_BUFFER;
@@ -810,45 +803,34 @@ acceptor_continue
      * context token (negTokenInit).
      */
 
-    data.value  = input_token_buffer->value;
-    data.length = input_token_buffer->length;
-
-    ret = der_match_tag_and_length(data.value, data.length,
-				   ASN1_C_CONTEXT, CONS,
-				   1,
-				   &len, &taglen);
-    if (ret) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-
-    if (len > data.length - taglen) {
-	*minor_status = ASN1_OVERRUN;
-	return GSS_S_FAILURE;
-    }
-
-    ret = decode_NegTokenResp((const unsigned char *)data.value + taglen, 
-			      len, &na, &na_len);
+    ret = decode_NegotiationToken(input_token_buffer->value, 
+				  input_token_buffer->length,
+				  &nt, &nt_len);
     if (ret) {
 	*minor_status = ret;
 	return GSS_S_DEFECTIVE_TOKEN;
     }
+    if (nt.element != choice_NegotiationToken_negTokenResp) {
+	*minor_status = 0;
+	return GSS_S_DEFECTIVE_TOKEN;
+    }
+    na = &nt.u.negTokenResp;
 
-    if (na.negResult != NULL) {
-	negResult = *(na.negResult);
+    if (na->negResult != NULL) {
+	negResult = *(na->negResult);
     }
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
     {
 	gss_buffer_desc ibuf, obuf;
-	int require_mic, get_mic;
+	int require_mic, get_mic = 0;
 	int require_response;
 	heim_octet_string *mic;
 
-	if (na.responseToken != NULL) {
-	    ibuf.length = na.responseToken->length;
-	    ibuf.value = na.responseToken->data;
+	if (na->responseToken != NULL) {
+	    ibuf.length = na->responseToken->length;
+	    ibuf.value = na->responseToken->data;
 	    mech_input_token = &ibuf;
 	} else {
 	    ibuf.value = NULL;
@@ -901,7 +883,7 @@ acceptor_continue
 		mech_output_token = &obuf;
 	    }
 	    if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
-		free_NegTokenResp(&na);
+		free_NegotiationToken(&nt);
 		send_reject (minor_status, output_token);
 		HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 		return ret;
@@ -919,7 +901,7 @@ acceptor_continue
 
 	ctx->require_mic = require_mic;
 
-	mic = na.mechListMIC;
+	mic = na->mechListMIC;
 	if (mic != NULL)
 	    require_mic = 1;
 
@@ -930,7 +912,7 @@ acceptor_continue
 				    &mech_buf,
 				    mech_input_token,
 				    mech_output_token,
-				    na.mechListMIC,
+				    na->mechListMIC,
 				    output_token);
 
 	if (ctx->mech_flags & GSS_C_DCE_STYLE)
@@ -964,16 +946,19 @@ acceptor_continue
 	    gss_release_buffer(&minor, mech_output_token);
 	if (mech_buf.value != NULL)
 	    free(mech_buf.value);
-	free_NegTokenResp(&na);
+	free_NegotiationToken(&nt);
     }
 
     if (ret == GSS_S_COMPLETE) {
-	if (src_name != NULL) {
-	    ret2 = gss_duplicate_name(minor_status,
-				      ctx->mech_src_name,
-				      src_name);
-	    if (ret2 != GSS_S_COMPLETE)
-		ret = ret2;
+	if (src_name != NULL && ctx->mech_src_name != NULL) {
+	    spnego_name name;
+
+	    name = calloc(1, sizeof(*name));
+	    if (name) {
+		name->mech = ctx->mech_src_name;
+		ctx->mech_src_name = NULL;
+		*src_name = (gss_name_t)name;
+	    }
 	}
         if (delegated_cred_handle != NULL) {
 	    *delegated_cred_handle = ctx->delegated_cred_id;

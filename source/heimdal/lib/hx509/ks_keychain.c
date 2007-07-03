@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_keychain.c 20945 2007-06-06 22:17:17Z lha $");
+RCSID("$Id: ks_keychain.c 21097 2007-06-16 07:00:49Z lha $");
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 
@@ -254,6 +254,7 @@ set_private_key(hx509_context context,
  */
 
 struct ks_keychain {
+    int anchors;
     SecKeychainRef keychain;
 };
 
@@ -263,7 +264,6 @@ keychain_init(hx509_context context,
 	      const char *residue, hx509_lock lock)
 {
     struct ks_keychain *ctx;
-    OSStatus ret;
 
     ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL) {
@@ -272,13 +272,20 @@ keychain_init(hx509_context context,
     }
 
     if (residue) {
-	if (strcasecmp(residue, "system") == 0)
-	    residue = "/System/Library/Keychains/X509Anchors";
+	if (strcasecmp(residue, "system-anchors") == 0) {
+	    ctx->anchors = 1;
+	} else if (strncasecmp(residue, "FILE:", 5) == 0) {
+	    OSStatus ret;
 
-	ret = SecKeychainOpen(residue, &ctx->keychain);
-	if (ret != noErr) {
+	    ret = SecKeychainOpen(residue + 5, &ctx->keychain);
+	    if (ret != noErr) {
+		hx509_set_error_string(context, 0, ENOENT, 
+				       "Failed to open %s", residue);
+		return ENOENT;
+	    }
+	} else {
 	    hx509_set_error_string(context, 0, ENOENT, 
-				   "Failed to open %s", residue);
+				   "Unknown subtype %s", residue);
 	    return ENOENT;
 	}
     }
@@ -307,6 +314,8 @@ keychain_free(hx509_certs certs, void *data)
  */
 
 struct iter {
+    hx509_certs certs;
+    void *cursor;
     SecKeychainSearchRef searchRef;
 };
 
@@ -316,7 +325,6 @@ keychain_iter_start(hx509_context context,
 {
     struct ks_keychain *ctx = data;
     struct iter *iter;
-    OSStatus ret;
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
@@ -324,15 +332,66 @@ keychain_iter_start(hx509_context context,
 	return ENOMEM;
     }
 
-    ret = SecKeychainSearchCreateFromAttributes(ctx->keychain,
-						kSecCertificateItemClass,
-						NULL,
-						&iter->searchRef);
-    if (ret) {
-	free(iter);
-	hx509_set_error_string(context, 0, ret, 
-			       "Failed to start search for attributes");
-	return ENOMEM;
+    if (ctx->anchors) {
+        CFArrayRef anchors;
+	int ret;
+	int i;
+
+	ret = hx509_certs_init(context, "MEMORY:ks-file-create", 
+			       0, NULL, &iter->certs);
+	if (ret) {
+	    free(iter);
+	    return ret;
+	}
+
+	ret = SecTrustCopyAnchorCertificates(&anchors);
+	if (ret != 0) {
+	    hx509_certs_free(&iter->certs);
+	    free(iter);
+	    hx509_set_error_string(context, 0, ENOMEM, 
+				   "Can't get trust anchors from Keychain");
+	    return ENOMEM;
+	}
+	for (i = 0; i < CFArrayGetCount(anchors); i++) {
+	    SecCertificateRef cr; 
+	    hx509_cert cert;
+	    CSSM_DATA cssm;
+
+	    cr = (SecCertificateRef)CFArrayGetValueAtIndex(anchors, i);
+
+	    SecCertificateGetData(cr, &cssm);
+
+	    ret = hx509_cert_init_data(context, cssm.Data, cssm.Length, &cert);
+	    if (ret)
+		continue;
+
+	    ret = hx509_certs_add(context, iter->certs, cert);
+	    hx509_cert_free(cert);
+	}
+	CFRelease(anchors);
+    }
+
+    if (iter->certs) {
+	int ret;
+	ret = hx509_certs_start_seq(context, iter->certs, &iter->cursor);
+	if (ret) {
+	    hx509_certs_free(&iter->certs);
+	    free(iter);
+	    return ret;
+	}
+    } else {
+	OSStatus ret;
+
+	ret = SecKeychainSearchCreateFromAttributes(ctx->keychain,
+						    kSecCertificateItemClass,
+						    NULL,
+						    &iter->searchRef);
+	if (ret) {
+	    free(iter);
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to start search for attributes");
+	    return ENOMEM;
+	}
     }
 
     *cursor = iter;
@@ -349,15 +408,16 @@ keychain_iter(hx509_context context,
 {
     SecKeychainAttributeList *attrs = NULL;
     SecKeychainAttributeInfo attrInfo;
-    uint32 attrFormat = 0;
+    uint32 attrFormat[1] = { 0 };
     SecKeychainItemRef itemRef;
-    SecItemAttr item;
+    SecItemAttr item[1];
     struct iter *iter = cursor;
-    Certificate t;
     OSStatus ret;
     UInt32 len;
     void *ptr = NULL;
-    size_t size;
+
+    if (iter->certs)
+	return hx509_certs_next_cert(context, iter->certs, iter->cursor, cert);
 
     *cert = NULL;
 
@@ -371,26 +431,18 @@ keychain_iter(hx509_context context,
      * Pick out certificate and matching "keyid"
      */
 
-    item = kSecPublicKeyHashItemAttr;
+    item[0] = kSecPublicKeyHashItemAttr;
 
     attrInfo.count = 1;
-    attrInfo.tag = &item;
-    attrInfo.format = &attrFormat;
+    attrInfo.tag = item;
+    attrInfo.format = attrFormat;
   
     ret = SecKeychainItemCopyAttributesAndData(itemRef, &attrInfo, NULL,
 					       &attrs, &len, &ptr);
     if (ret)
 	return EINVAL;
-    
-    ret = decode_Certificate(ptr, len, &t, &size);
-    CFRelease(itemRef);
-    if (ret) {
-	hx509_set_error_string(context, 0, ret, "Failed to parse certificate");
-	goto out;
-    }
 
-    ret = hx509_cert_init(context, &t, cert);
-    free_Certificate(&t);
+    ret = hx509_cert_init_data(context, ptr, len, cert);
     if (ret)
 	goto out;
 
@@ -449,7 +501,14 @@ keychain_iter_end(hx509_context context,
 {
     struct iter *iter = cursor;
 
-    CFRelease(iter->searchRef);
+    if (iter->certs) {
+	int ret;
+	ret = hx509_certs_end_seq(context, iter->certs, iter->cursor);
+	hx509_certs_free(&iter->certs);
+    } else {
+	CFRelease(iter->searchRef);
+    }
+
     memset(iter, 0, sizeof(*iter));
     free(iter);
     return 0;

@@ -59,7 +59,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_display_status.c 20084 2007-01-31 12:12:08Z lha $");
+RCSID("$Id: gss_display_status.c 21247 2007-06-21 00:37:27Z lha $");
 
 static const char *
 calling_error(OM_uint32 v)
@@ -85,7 +85,7 @@ static const char *
 routine_error(OM_uint32 v)
 {
     static const char *msgs[] = {
-	NULL,			/* 0 */
+	"Function completed successfully",			/* 0 */
 	"An unsupported mechanism was requested",
 	"An invalid name was supplied",
 	"A supplied name was of an unsupported type",
@@ -109,9 +109,7 @@ routine_error(OM_uint32 v)
 
     v >>= GSS_C_ROUTINE_ERROR_OFFSET;
 
-    if (v == 0)
-	return "";
-    else if (v >= sizeof(msgs)/sizeof(*msgs))
+    if (v >= sizeof(msgs)/sizeof(*msgs))
 	return "unknown routine error";
     else
 	return msgs[v];

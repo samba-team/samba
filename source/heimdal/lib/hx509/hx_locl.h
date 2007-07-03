@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx_locl.h 20930 2007-06-06 00:23:42Z lha $ */
+/* $Id: hx_locl.h 21083 2007-06-13 02:11:19Z lha $ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -194,6 +194,6 @@ extern const AlgorithmIdentifier * _hx509_crypto_default_secret_alg;
  * Configurable options
  */
 
-#if 0 /* fdef __APPLE__*/
-#define HX509_DEFAULT_ANCHORS "KEYCHAIN:system"
+#ifdef __APPLE__
+#define HX509_DEFAULT_ANCHORS "KEYCHAIN:system-anchors"
 #endif

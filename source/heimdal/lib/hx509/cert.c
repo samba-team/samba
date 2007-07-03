@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: cert.c 20915 2007-06-05 03:58:56Z lha $");
+RCSID("$Id: cert.c 21294 2007-06-25 14:37:15Z lha $");
 #include "crypto-headers.h"
 #include <rtbl.h>
 
@@ -43,6 +43,7 @@ struct hx509_verify_ctx_data {
 #define HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE	2
 #define HX509_VERIFY_CTX_F_REQUIRE_RFC3280		4
 #define HX509_VERIFY_CTX_F_CHECK_TRUST_ANCHORS		8
+#define HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS		16
     time_t time_now;
     unsigned int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
@@ -51,6 +52,7 @@ struct hx509_verify_ctx_data {
 
 #define REQUIRE_RFC3280(ctx) ((ctx)->flags & HX509_VERIFY_CTX_F_REQUIRE_RFC3280)
 #define CHECK_TA(ctx) ((ctx)->flags & HX509_VERIFY_CTX_F_CHECK_TRUST_ANCHORS)
+#define ALLOW_DEF_TA(ctx) (((ctx)->flags & HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS) == 0)
 
 struct _hx509_cert_attrs {
     size_t len;
@@ -75,22 +77,6 @@ typedef struct hx509_name_constraints {
 
 #define GeneralSubtrees_SET(g,var) \
 	(g)->len = (var)->len, (g)->val = (var)->val;
-
-/*
- *
- */
-
-void
-_hx509_abort(const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-    printf("\n");
-    fflush(stdout);
-    abort();
-}
 
 /*
  *
@@ -227,7 +213,34 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     if (ret) {
 	free((*cert)->data);
 	free(*cert);
+	*cert = NULL;
     }
+    return ret;
+}
+
+int
+hx509_cert_init_data(hx509_context context, 
+	     const void *ptr,
+		     size_t len,
+		     hx509_cert *cert)
+{
+    Certificate t;
+    size_t size;
+    int ret;
+
+    ret = decode_Certificate(ptr, len, &t, &size);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to decode certificate");
+	return ret;
+    }
+    if (size != len) {
+	hx509_set_error_string(context, 0, HX509_EXTRA_DATA_AFTER_STRUCTURE,
+			       "Extra data after certificate");
+	return HX509_EXTRA_DATA_AFTER_STRUCTURE;
+    }
+
+    ret = hx509_cert_init(context, &t, cert);
+    free_Certificate(&t);
     return ret;
 }
 
@@ -291,10 +304,10 @@ hx509_cert
 hx509_cert_ref(hx509_cert cert)
 {
     if (cert->ref <= 0)
-	_hx509_abort("refcount <= 0");
+	_hx509_abort("cert refcount <= 0");
     cert->ref++;
     if (cert->ref == 0)
-	_hx509_abort("refcount == 0");
+	_hx509_abort("cert refcount == 0");
     return cert;
 }
 
@@ -342,6 +355,12 @@ hx509_verify_set_time(hx509_verify_ctx ctx, time_t t)
 }
 
 void
+hx509_verify_set_max_depth(hx509_verify_ctx ctx, unsigned int max_depth)
+{
+    ctx->max_depth = max_depth;
+}
+
+void
 hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
 {
     if (boolean)
@@ -357,6 +376,15 @@ hx509_verify_set_strict_rfc3280_verification(hx509_verify_ctx ctx, int boolean)
 	ctx->flags |= HX509_VERIFY_CTX_F_REQUIRE_RFC3280;
     else
 	ctx->flags &= ~HX509_VERIFY_CTX_F_REQUIRE_RFC3280;
+}
+
+void
+hx509_verify_ctx_f_allow_default_trustanchors(hx509_verify_ctx ctx, int boolean)
+{
+    if (boolean)
+	ctx->flags &= ~HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
+    else
+	ctx->flags |= HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
 }
 
 static const Extension *
@@ -1295,13 +1323,15 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
 	return 0;
     }
     case choice_GeneralName_dNSName: {
-	size_t len1, len2;
+	size_t lenc, lenn;
 
-	len1 = strlen(c->u.dNSName);
-	len2 = strlen(n->u.dNSName);
-	if (len1 > len2)
+	lenc = strlen(c->u.dNSName);
+	lenn = strlen(n->u.dNSName);
+	if (lenc > lenn)
 	    return HX509_NAME_CONSTRAINT_ERROR;
-	if (strcasecmp(&n->u.dNSName[len2 - len1], c->u.dNSName) != 0)
+	if (strcasecmp(&n->u.dNSName[lenn - lenc], c->u.dNSName) != 0)
+	    return HX509_NAME_CONSTRAINT_ERROR;
+	if (lenc != lenn && n->u.dNSName[lenn - lenc - 1] != '.')
 	    return HX509_NAME_CONSTRAINT_ERROR;
 	*match = 1;
 	return 0;
@@ -1488,15 +1518,15 @@ hx509_verify_path(hx509_context context,
     /*
      *
      */
-    ret = hx509_certs_init(context, "MEMORY:trust-anchors", 0, NULL, &anchors);
-    if (ret)
-	goto out;
-    ret = hx509_certs_merge(context, anchors, ctx->trust_anchors);
-    if (ret)
-	goto out;
-    ret = hx509_certs_merge(context, anchors, context->default_trust_anchors);
-    if (ret)
-	goto out;
+    if (ctx->trust_anchors)
+	anchors = _hx509_certs_ref(ctx->trust_anchors);
+    else if (context->default_trust_anchors && ALLOW_DEF_TA(ctx))
+	anchors = _hx509_certs_ref(context->default_trust_anchors);
+    else {
+	ret = hx509_certs_init(context, "MEMORY:no-TA", 0, NULL, &anchors);
+	if (ret)
+	    goto out;
+    }
 
     /*
      * Calculate the path from the certificate user presented to the
@@ -1843,17 +1873,82 @@ hx509_verify_signature(hx509_context context,
     return _hx509_verify_signature(context, signer->data, alg, data, sig);
 }
 
+#define HX509_VHN_F_ALLOW_NO_MATCH 1
+
 int
 hx509_verify_hostname(hx509_context context,
 		      const hx509_cert cert,
-		      int require_match,
+		      int flags,
+		      hx509_hostname_type type,
 		      const char *hostname,
 		      const struct sockaddr *sa,
 		      /* XXX krb5_socklen_t */ int sa_size) 
 {
+    GeneralNames san;
+    int ret, i, j;
+
     if (sa && sa_size <= 0)
 	return EINVAL;
-    return 0;
+
+    memset(&san, 0, sizeof(san));
+
+    i = 0;
+    do {
+	ret = find_extension_subject_alt_name(cert->data, &i, &san);
+	if (ret == HX509_EXTENSION_NOT_FOUND) {
+	    ret = 0;
+	    break;
+	} else if (ret != 0)
+	    break;
+
+	for (j = 0; j < san.len; j++) {
+	    switch (san.val[j].element) {
+	    case choice_GeneralName_dNSName:
+		if (strcasecmp(san.val[j].u.dNSName, hostname) == 0) {
+		    free_GeneralNames(&san);
+		    return 0;
+		}
+		break;
+	    default:
+		break;
+	    }
+	}
+	free_GeneralNames(&san);
+    } while (1);
+
+    {
+	Name *name = &cert->data->tbsCertificate.subject;
+
+	/* match if first component is a CN= */
+	if (name->u.rdnSequence.len > 0
+	    && name->u.rdnSequence.val[0].len == 1
+	    && der_heim_oid_cmp(&name->u.rdnSequence.val[0].val[0].type,
+				oid_id_at_commonName()) == 0)
+	{
+	    DirectoryString *ds = &name->u.rdnSequence.val[0].val[0].value;
+
+	    switch (ds->element) {
+	    case choice_DirectoryString_printableString:
+		if (strcasecmp(ds->u.printableString, hostname) == 0)
+		    return 0;
+		break;
+	    case choice_DirectoryString_ia5String:
+		if (strcasecmp(ds->u.ia5String, hostname) == 0)
+		    return 0;
+		break;
+	    case choice_DirectoryString_utf8String:
+		if (strcasecmp(ds->u.utf8String, hostname) == 0)
+		    return 0;
+	    default:
+		break;
+	    }
+	}
+    }
+
+    if ((flags & HX509_VHN_F_ALLOW_NO_MATCH) == 0)
+	ret = HX509_NAME_CONSTRAINT_ERROR;
+
+    return ret;
 }
 
 int
@@ -2434,3 +2529,24 @@ hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
 
     return ret;
 }
+
+/*
+ * Last to avoid lost __attribute__s due to #undef.
+ */
+
+#undef __attribute__
+#define __attribute__(X)
+
+void
+_hx509_abort(const char *fmt, ...)
+     __attribute__ ((noreturn, format (printf, 1, 2)))
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+    printf("\n");
+    fflush(stdout);
+    abort();
+}
+

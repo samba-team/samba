@@ -2244,6 +2244,14 @@ krb5_get_pw_salt (
 	krb5_salt */*salt*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_renewed_creds (
+	krb5_context /*context*/,
+	krb5_creds */*creds*/,
+	krb5_const_principal /*client*/,
+	krb5_ccache /*ccache*/,
+	const char */*in_tkt_service*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_server_rcache (
 	krb5_context /*context*/,
 	const krb5_data */*piece*/,
@@ -2868,6 +2876,12 @@ krb5_parse_name_flags (
 	int /*flags*/,
 	krb5_principal */*principal*/);
 
+krb5_error_code
+krb5_parse_nametype (
+	krb5_context /*context*/,
+	const char */*str*/,
+	int32_t */*nametype*/);
+
 const char* KRB5_LIB_FUNCTION
 krb5_passwd_result_to_string (
 	krb5_context /*context*/,
@@ -3071,7 +3085,7 @@ krb5_rd_cred2 (
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_error (
 	krb5_context /*context*/,
-	krb5_data */*msg*/,
+	const krb5_data */*msg*/,
 	KRB_ERROR */*result*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -3345,6 +3359,43 @@ krb5_sendto (
 	const krb5_data */*send_data*/,
 	krb5_krbhst_handle /*handle*/,
 	krb5_data */*receive*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_sendto_context (
+	krb5_context /*context*/,
+	krb5_sendto_ctx /*ctx*/,
+	const krb5_data */*send_data*/,
+	const krb5_realm /*realm*/,
+	krb5_data */*receive*/);
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_add_flags (
+	krb5_sendto_ctx /*ctx*/,
+	int /*flags*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_sendto_ctx_alloc (
+	krb5_context /*context*/,
+	krb5_sendto_ctx */*ctx*/);
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_free (
+	krb5_context /*context*/,
+	krb5_sendto_ctx /*ctx*/);
+
+int KRB5_LIB_FUNCTION
+krb5_sendto_ctx_get_flags (krb5_sendto_ctx /*ctx*/);
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_set_func (
+	krb5_sendto_ctx /*ctx*/,
+	krb5_sendto_ctx_func /*func*/,
+	void */*data*/);
+
+void KRB5_LIB_FUNCTION
+krb5_sendto_ctx_set_type (
+	krb5_sendto_ctx /*ctx*/,
+	int /*type*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_sendto_kdc (

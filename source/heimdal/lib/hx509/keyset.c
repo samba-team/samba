@@ -32,9 +32,10 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: keyset.c 20911 2007-06-05 03:41:17Z lha $");
+RCSID("$Id: keyset.c 21140 2007-06-18 21:24:19Z lha $");
 
 struct hx509_certs_data {
+    int ref;
     struct hx509_keyset_ops *ops;
     void *ops_data;
 };
@@ -99,18 +100,20 @@ hx509_certs_init(hx509_context context,
     }
     
     ops = _hx509_ks_type(context, type);
-    free(type);
     if (ops == NULL) {
 	hx509_set_error_string(context, 0, ENOENT, 
 			       "Keyset type %s is not supported", type);
+	free(type);
 	return ENOENT;
     }
+    free(type);
     c = calloc(1, sizeof(*c));
     if (c == NULL) {
 	hx509_clear_error_string(context);
 	return ENOMEM;
     }
     c->ops = ops;
+    c->ref = 1;
 
     ret = (*ops->init)(context, c, &c->ops_data, flags, residue, lock);
     if (ret) {
@@ -140,10 +143,26 @@ hx509_certs_store(hx509_context context,
 }
 
 
+hx509_certs
+_hx509_certs_ref(hx509_certs certs)
+{
+    if (certs->ref <= 0)
+	_hx509_abort("certs refcount <= 0");
+    certs->ref++;
+    if (certs->ref == 0)
+	_hx509_abort("certs refcount == 0");
+    return certs;
+}
+
 void
 hx509_certs_free(hx509_certs *certs)
 {
     if (*certs) {
+	if ((*certs)->ref <= 0)
+	    _hx509_abort("refcount <= 0");
+	if (--(*certs)->ref > 0)
+	    return;
+
 	(*(*certs)->ops->free)(*certs, (*certs)->ops_data);
 	free(*certs);
 	*certs = NULL;
