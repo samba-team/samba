@@ -864,7 +864,7 @@ sed "s/DOMSID/${DOMSID}/g" &lt; $file.tmp2 &gt; $file.tmp1
 <example id="sbehap-ldapreconfc">
 <title>LDAP Pre-configuration Script: <filename>SMBLDAP-ldif-preconfig.sh</filename> &smbmdash; Part C</title>
 <screen>
-cat &gt;&gt;EOL
+cat &lt;&lt;EOL
 The name of your Internet domain is now needed in a special format
 as follows, if your domain name is mydomain.org, what we need is
 the information in the form of:
