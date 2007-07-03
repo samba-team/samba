@@ -1019,6 +1019,7 @@ static BOOL check_passwd_history(struct samu *sampass, const char *plaintext)
 NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, BOOL as_root, uint32 *samr_reject_reason)
 {
 	uint32 min_len;
+	uint32 refuse;
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);
 	time_t can_change_time = pdb_get_pass_can_change_time(hnd);
@@ -1034,6 +1035,21 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 			*samr_reject_reason = REJECT_REASON_OTHER;
 		}
 		return NT_STATUS_ACCOUNT_RESTRICTION;
+	}
+
+	/* check to see if it is a Machine account and if the policy
+	 * denies machines to change the password. *
+	 * Should we deny also SRVTRUST and/or DOMSTRUST ? .SSS. */
+	if (pdb_get_acct_ctrl(hnd) & ACB_WSTRUST) {
+		if (pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &refuse) && refuse) {
+			DEBUG(1, ("Machine %s cannot change password now, "
+				  "denied by Refuse Machine Password Change policy\n",
+				  username));
+			if (samr_reject_reason) {
+				*samr_reject_reason = REJECT_REASON_OTHER;
+			}
+			return NT_STATUS_ACCOUNT_RESTRICTION;
+		}
 	}
 
 	/* removed calculation here, becuase passdb now calculates
