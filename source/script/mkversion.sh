@@ -91,7 +91,7 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
 	TMP_MIRRORED_REVISION=`echo -e "${SVK_INFO}" | grep 'Mirrored From:.*samba\.org.*' |sed -e 's/Mirrored From: .* Rev\..* \([0-9]*\).*/\1/'`
     fi
 
-    if test x"${HAVEVER}" != x"yes";then
+    if test x"${HAVEVER}" != x"yes" -a -d "${SOURCE_DIR}../.bzr";then
     	HAVEBZR=no
 	BZR_INFO=`bzr version-info --check-clean ${SOURCE_DIR} 2>/dev/null`
 	TMP_REVISION=`echo -e "${BZR_INFO}" | grep 'revno:' |sed -e 's/revno: \([0-9]*\).*/\1/'`
@@ -104,7 +104,7 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
 	TMP_CLEAN_TREE=`echo -e "${BZR_INFO}" | grep 'clean:' |sed -e 's/clean: \([a-zA-Z]*\).*/\1/'`
     fi
 
-    if test x"${HAVEVER}" != x"yes";then
+    if test x"${HAVEVER}" != x"yes" -a -d "${SOURCE_DIR}../.git";then
 	HAVEGIT=no
         GIT_INFO=`git show --abbrev-commit HEAD 2>/dev/null`
 	TMP_REVISION=`echo -e "${GIT_INFO}" | grep 'commit ' | sed 1q |sed -e 's/commit \([0-9a-f]*\).*/\1/'`
