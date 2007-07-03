@@ -63,7 +63,7 @@ static int init_sockets_smbd(const char *smb_ports, int listenset[FD_SETSIZE])
 
 			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 				unsigned port = atoi(tok);
-				if (port == 0) {
+				if (port == 0 || port > 0xffff) {
 					continue;
 				}
 				s = listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
@@ -101,7 +101,7 @@ static int init_sockets_smbd(const char *smb_ports, int listenset[FD_SETSIZE])
 		
 		for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 			unsigned port = atoi(tok);
-			if (port == 0) continue;
+			if (port == 0  || port > 0xffff) continue;
 			/* open an incoming socket */
 			s = open_socket_in(SOCK_STREAM, port, 0,
 					   interpret_addr(lp_socket_address()),True);
