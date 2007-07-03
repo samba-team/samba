@@ -321,6 +321,18 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 			},
 		},
 	},
+	/* invocationId */
+	{
+		.local_name = "invocationId",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "invocationId", 
+				.convert_local = guid_always_string,
+				.convert_remote = encode_guid,
+			},
+		},
+	},
 	/* objectSid */
 	{
 		.local_name = "objectSid",
