@@ -56,7 +56,7 @@ static int ejs_doauth(MprVarHandle eid,
 		msg = messaging_client_init(tmp_ctx, ev);
 	}
 
-	nt_status = auth_context_create(tmp_ctx, auth_types, ev, msg, &auth_context);
+	nt_status = auth_context_create_methods(tmp_ctx, auth_types, ev, msg, &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(auth, "report", mprString("Auth System Failure"));

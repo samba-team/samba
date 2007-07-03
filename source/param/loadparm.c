@@ -398,7 +398,6 @@ static struct parm_struct parm_table[] = {
 	{"Security Options", P_SEP, P_SEPARATOR},
 	
 	{"security", P_ENUM, P_GLOBAL, &Globals.security, NULL, enum_security, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"auth methods", P_LIST, P_GLOBAL, &Globals.AuthMethods, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"encrypt passwords", P_BOOL, P_GLOBAL, &Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -609,7 +608,9 @@ static void init_globals(void)
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo", NULL);
 	do_parameter("server services", "smb rpc nbt wrepl ldap cldap web kdc drepl winbind", NULL);
 	do_parameter("ntptr providor", "simple_ldb", NULL);
-	do_parameter("auth methods", "anonymous sam_ignoredomain", NULL);
+	do_parameter("auth methods:domain controller", "anonymous sam_ignoredomain", NULL);
+	do_parameter("auth methods:member server", "anonymous sam winbind", NULL);
+	do_parameter("auth methods:standalone", "anonymous sam_ignoredomain", NULL);
 	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
 	do_parameter("sam database", "sam.ldb", NULL);
 	do_parameter("secrets database", "secrets.ldb", NULL);

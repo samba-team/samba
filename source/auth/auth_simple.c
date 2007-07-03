@@ -48,7 +48,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = auth_context_create(tmp_ctx, lp_auth_methods(),
+	nt_status = auth_context_create(tmp_ctx, 
 					ev, msg,
 					&auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {

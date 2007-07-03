@@ -276,8 +276,6 @@ sub provision($$$$$$)
 	mkdir($_, 0777) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
 		$tmpdir);
 
-	my $auth_methods = "anonymous sam_ignoredomain";
-	$auth_methods = "anonymous sam winbind" if $server_role eq "member server";
 
 	my $localdomain = $domain;
 	$localdomain = $netbiosname if $server_role eq "member server";
@@ -304,7 +302,6 @@ sub provision($$$$$$)
 	panic action = $srcdir/script/gdb_backtrace \%PID% \%PROG%
 	wins support = yes
 	server role = $server_role
-	auth methods = $auth_methods
 	max xmit = 32K
 	server max protocol = SMB2
 	notify:inotify = false
