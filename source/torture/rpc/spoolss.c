@@ -64,6 +64,8 @@ struct test_spoolss_context {
 	}\
 } while(0)
 
+/* not every compiler supports __typeof__() */
+#if (__GNUC__ >= 3)
 #define _CHECK_FIELD_SIZE(c,r,e,type) do {\
 	if (sizeof(__typeof__(c.e)) != sizeof(type)) { \
 		printf(__location__ ":" #c "." #e "field is not " #type "\n"); \
@@ -76,6 +78,9 @@ struct test_spoolss_context {
 		ret = False; \
 	}\
 } while(0)
+#else
+#define _CHECK_FIELD_SIZE(c,r,e,type) do {} while(0)
+#endif
 
 #if 0 /* unused */
 #define COMPARE_UINT16(c,r,e) do {\
