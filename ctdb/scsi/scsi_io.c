@@ -45,6 +45,12 @@
 
 #define SCSI_TIMEOUT 5000 /* ms */
 
+static char *command = NULL;
+static char *device  = NULL;
+static char *key     = NULL;
+static char *rmkey     = NULL;
+static int scope = -1;
+static int type  = -1;
 
 const char *sensetable[16]={
 	"no sense",
@@ -641,10 +647,27 @@ int scsi_persistent_reserve_out_clear(int fd)
 	unsigned int sense_len=32;
 	unsigned char sense[sense_len];
 	unsigned char service_action=3;
-	unsigned char scope=0;
-	unsigned char type=8;
 	int res;
 
+	long long k;
+
+	if (scope==-1) {
+		printf("Must specify scope\n");
+		printf("scsi_io --device=<DEVICE> --command=clear --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (type==-1) {
+		printf("Must specify type\n");
+		printf("scsi_io --device=<DEVICE> --command=clear --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (!key) {
+		printf("Must specify key\n");
+		printf("scsi_io --device=<DEVICE> --command=clear --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+
+	sscanf(key, "%llx", &k);
 	cdb[1]=service_action;
 	cdb[2]=(scope<<4)|type;
 	cdb[7]=(data_size>>8)&0xff;
@@ -653,14 +676,14 @@ int scsi_persistent_reserve_out_clear(int fd)
 	memset(data, 0, data_size);
 
 	/* Reservation Key */
-	data[0]='C';
-	data[1]='T';
-	data[2]='D';
-	data[3]='B';
-	data[4]='#';
-	data[5]='0';
-	data[6]=' ';
-	data[7]=' ';
+	data[0]=(k>>56)&0xff;
+	data[1]=(k>>48)&0xff;
+	data[2]=(k>>40)&0xff;
+	data[3]=(k>>32)&0xff;
+	data[4]=(k>>24)&0xff;
+	data[5]=(k>>16)&0xff;
+	data[6]=(k>> 8)&0xff;
+	data[7]=(k    )&0xff;
 
 	/* Service Action Key */
 	data[8]=0;
@@ -700,9 +723,27 @@ int scsi_persistent_reserve_out_reserve(int fd)
 	unsigned int sense_len=32;
 	unsigned char sense[sense_len];
 	unsigned char service_action=1;
-	unsigned char scope=0;
-	unsigned char type=8;
 	int res;
+	long long k;
+
+	if (scope==-1) {
+		printf("Must specify scope\n");
+		printf("scsi_io --device=<DEVICE> --command=reserve --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (type==-1) {
+		printf("Must specify type\n");
+		printf("scsi_io --device=<DEVICE> --command=reserve --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (!key) {
+		printf("Must specify key\n");
+		printf("scsi_io --device=<DEVICE> --command=reserve --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+
+	sscanf(key, "%llx", &k);
+
 
 	cdb[1]=service_action;
 	cdb[2]=(scope<<4)|type;
@@ -712,14 +753,14 @@ int scsi_persistent_reserve_out_reserve(int fd)
 	memset(data, 0, data_size);
 
 	/* Reservation Key */
-	data[0]='C';
-	data[1]='T';
-	data[2]='D';
-	data[3]='B';
-	data[4]='#';
-	data[5]='0';
-	data[6]=' ';
-	data[7]=' ';
+	data[0]=(k>>56)&0xff;
+	data[1]=(k>>48)&0xff;
+	data[2]=(k>>40)&0xff;
+	data[3]=(k>>32)&0xff;
+	data[4]=(k>>24)&0xff;
+	data[5]=(k>>16)&0xff;
+	data[6]=(k>> 8)&0xff;
+	data[7]=(k    )&0xff;
 
 	/* Service Action Key */
 	data[8]=0;
@@ -749,6 +790,89 @@ int scsi_persistent_reserve_out_reserve(int fd)
 	return 0;
 }
 
+int scsi_persistent_reserve_out_preempt(int fd)
+{
+	unsigned char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
+
+	unsigned int data_size=24;
+	unsigned char data[data_size];
+
+	unsigned int sense_len=32;
+	unsigned char sense[sense_len];
+	unsigned char service_action=4;
+	int res;
+	long long k;
+
+	if (scope==-1) {
+		printf("Must specify scope\n");
+		printf("scsi_io --device=<DEVICE> --command=preempt --scope=<SCOPE> --type=<TYPE> --key=<KEY> --rmkey=<KEY>\n");
+		_exit(10);
+	}
+	if (type==-1) {
+		printf("Must specify type\n");
+		printf("scsi_io --device=<DEVICE> --command=preempt --scope=<SCOPE> --type=<TYPE> --key=<KEY> --rmkey=<KEY>\n");
+		_exit(10);
+	}
+	if (!key) {
+		printf("Must specify key\n");
+		printf("scsi_io --device=<DEVICE> --command=preempt --scope=<SCOPE> --type=<TYPE> --key=<KEY> --rmkey=<KEY>\n");
+		_exit(10);
+	}
+	if (!rmkey) {
+		printf("Must specify rmkey\n");
+		printf("scsi_io --device=<DEVICE> --command=preempt --scope=<SCOPE> --type=<TYPE> --key=<KEY> --rmkey=<KEY>\n");
+		_exit(10);
+	}
+
+
+
+	cdb[1]=service_action;
+	cdb[2]=(scope<<4)|type;
+	cdb[7]=(data_size>>8)&0xff;
+	cdb[8]=data_size&0xff;
+
+	memset(data, 0, data_size);
+
+	/* Reservation Key */
+	sscanf(key, "%llx", &k);
+	data[0]=(k>>56)&0xff;
+	data[1]=(k>>48)&0xff;
+	data[2]=(k>>40)&0xff;
+	data[3]=(k>>32)&0xff;
+	data[4]=(k>>24)&0xff;
+	data[5]=(k>>16)&0xff;
+	data[6]=(k>> 8)&0xff;
+	data[7]=(k    )&0xff;
+
+	/* Service Action Key */
+	sscanf(rmkey, "%llx", &k);
+	data[8] =(k>>56)&0xff;
+	data[9] =(k>>48)&0xff;
+	data[10]=(k>>40)&0xff;
+	data[11]=(k>>32)&0xff;
+	data[12]=(k>>24)&0xff;
+	data[13]=(k>>16)&0xff;
+	data[14]=(k>> 8)&0xff;
+	data[15]=(k    )&0xff;
+
+	/* Spec_ip_ti=0 all_tg_pt=1 aptpl=0 */
+	data[20]=0x04;
+
+	printf("PRESISTENT RESERVE IN: RESERVE\n");
+
+	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_TO_DEV, data, &data_size, sense, &sense_len);
+	if(res){
+		printf("SCSI_IO failed\n");
+		return -1;
+	}
+	if(sense_len){
+		print_sense_data(sense, sense_len);
+		return -1;
+	}
+
+	return 0;
+}
+
 int scsi_persistent_reserve_out_register_and_ignore_existing_key(int fd)
 {
 	unsigned char cdb[]={0x5f,0,0,0,0,0,0,0,0,0};
@@ -759,9 +883,26 @@ int scsi_persistent_reserve_out_register_and_ignore_existing_key(int fd)
 	unsigned int sense_len=32;
 	unsigned char sense[sense_len];
 	unsigned char service_action=6;
-	unsigned char scope=0;
-	unsigned char type=8;
 	int res;
+	long long k;
+
+	if (scope==-1) {
+		printf("Must specify scope\n");
+		printf("scsi_io --device=<DEVICE> --command=registerkey --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (type==-1) {
+		printf("Must specify type\n");
+		printf("scsi_io --device=<DEVICE> --command=registerkey --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (!key) {
+		printf("Must specify key\n");
+		printf("scsi_io --device=<DEVICE> --command=registerkey --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+
+	sscanf(key, "%llx", &k);
 
 	cdb[1]=service_action;
 	cdb[2]=(scope<<4)|type;
@@ -781,14 +922,14 @@ int scsi_persistent_reserve_out_register_and_ignore_existing_key(int fd)
 	data[7]=0;
 
 	/* Service Action Key */
-	data[8]='C';
-	data[9]='T';
-	data[10]='D';
-	data[11]='B';
-	data[12]='#';
-	data[13]='0';
-	data[14]=' ';
-	data[15]=' ';
+	data[8] =(k>>56)&0xff;
+	data[9] =(k>>48)&0xff;
+	data[10]=(k>>40)&0xff;
+	data[11]=(k>>32)&0xff;
+	data[12]=(k>>24)&0xff;
+	data[13]=(k>>16)&0xff;
+	data[14]=(k>> 8)&0xff;
+	data[15]=(k    )&0xff;
 
 	/* Spec_ip_ti=0 all_tg_pt=1 aptpl=0 */
 	data[20]=0x04;
@@ -818,9 +959,26 @@ int scsi_persistent_reserve_out_unregister_key(int fd)
 	unsigned int sense_len=32;
 	unsigned char sense[sense_len];
 	unsigned char service_action=6;
-	unsigned char scope=0;
-	unsigned char type=8;
 	int res;
+	long long k;
+
+	if (scope==-1) {
+		printf("Must specify scope\n");
+		printf("scsi_io --device=<DEVICE> --command=unregisterkey --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (type==-1) {
+		printf("Must specify type\n");
+		printf("scsi_io --device=<DEVICE> --command=unregisterkey --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+	if (!key) {
+		printf("Must specify key\n");
+		printf("scsi_io --device=<DEVICE> --command=unregisterkey --scope=<SCOPE> --type=<TYPE> --key=<KEY>\n");
+		_exit(10);
+	}
+
+	sscanf(key, "%llx", &k);
 
 	cdb[1]=service_action;
 	cdb[2]=(scope<<4)|type;
@@ -830,14 +988,14 @@ int scsi_persistent_reserve_out_unregister_key(int fd)
 	memset(data, 0, data_size);
 
 	/* Reservation Key */
-	data[0]='C';
-	data[1]='T';
-	data[2]='D';
-	data[3]='B';
-	data[4]='#';
-	data[5]='0';
-	data[6]=' ';
-	data[7]=' ';
+	data[0]=(k>>56)&0xff;
+	data[1]=(k>>48)&0xff;
+	data[2]=(k>>40)&0xff;
+	data[3]=(k>>32)&0xff;
+	data[4]=(k>>24)&0xff;
+	data[5]=(k>>16)&0xff;
+	data[6]=(k>> 8)&0xff;
+	data[7]=(k    )&0xff;
 
 	/* Service Action Key */
 	data[8]=0;
@@ -900,6 +1058,11 @@ cmds_t cmds[] = {
 	{"readkeys",	scsi_persistent_reserve_in_read_keys,	"Read SCSI Reservation Keys"},
 	{"readrsvr",	scsi_persistent_reserve_in_read_reservation, "Read SCSI Reservation Data"},
 	{"reportcap",	scsi_persistent_reserve_in_report_capabilities, "Report reservation Capabilities"},
+	{"registerkey",	scsi_persistent_reserve_out_register_and_ignore_existing_key,	"Register and ignore existing key"},
+	{"unregisterkey", scsi_persistent_reserve_out_unregister_key, "Unregister a key"},
+	{"clear",	scsi_persistent_reserve_out_clear, "Clear all reservations and registrations"},
+	{"reserve",	scsi_persistent_reserve_out_reserve, "Reserve"},
+	{"preempt",	scsi_persistent_reserve_out_preempt, "Preempt (remove someone elses registration)"},
 };
 
 void usage(void)
@@ -917,14 +1080,15 @@ int main(int argc, const char *argv[])
 {
 	int i, fd;
 	int opt;
-	char *command = NULL;
-	char *device = NULL;
 	scsi_func_t func=NULL;
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-//		{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0, "timelimit", "integer" },
-		{ "command",      'n', POPT_ARG_STRING, &command, 0, "command", "command" },
-		{ "device",      'n', POPT_ARG_STRING, &device, 0, "device", "device" },
+		{ "scope", 's', POPT_ARG_INT, &scope, 0, "scope", "integer" },
+		{ "type", 't', POPT_ARG_INT, &type, 0, "type", "integer" },
+		{ "key",      'k', POPT_ARG_STRING, &key, 0, "key", "key" },
+		{ "rmkey",      'r', POPT_ARG_STRING, &rmkey, 0, "rmkey", "rmkey" },
+		{ "command",      'c', POPT_ARG_STRING, &command, 0, "command", "command" },
+		{ "device",      'd', POPT_ARG_STRING, &device, 0, "device", "device" },
 //		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
 		POPT_TABLEEND
 	};
