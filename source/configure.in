@@ -282,6 +282,7 @@ AC_SUBST(SHELL)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD)
+AC_SUBST(DSO_EXPORTS)
 AC_SUBST(HOST_OS)
 AC_SUBST(PICFLAG)
 AC_SUBST(PIE_CFLAGS)
@@ -515,6 +516,9 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
  	if test "$ac_cv_gnu_ld_date" -lt 20030217; then
  		ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
  	fi
+	if test "$ac_cv_gnu_ld_date" -gt 20030101; then
+		ac_cv_gnu_ld_version_script=yes
+	fi
         else
            AC_MSG_CHECKING(GNU ld release version)
            changequote(,)dnl
@@ -529,6 +533,9 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
            AC_MSG_RESULT(${ac_cv_gnu_ld_vernr_minor})
            if test "$ac_cv_gnu_ld_vernr_major" -lt 2 || test "$ac_cv_gnu_ld_vernr_minor" -lt 14; then
              ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
+           fi
+           if test "$ac_cv_gnu_ld_vernr_major" -gt 2 || test "$ac_cv_gnu_l= d_vernr_major"=2 && test "$ac_cv_gnu_ld_vernr_minor" -ge 12; then
+             ac_cv_gnu_ld_version_script=yes
            fi
         fi
 fi
@@ -1731,6 +1738,7 @@ SONAMEFLAG="#"
 SHLD="\${CC} \${CFLAGS}"
 PICFLAG="${PIE_CFLAGS}"
 SHLIBEXT="so"
+DSO_EXPORTS=""
 
 # this bit needs to be modified for each OS that supports share libs
 # You need to specify how to create a shared library and
@@ -1919,7 +1927,11 @@ if test "$enable_shared" != "yes"; then
 	BLDSHARED=false
 fi
 
-  AC_MSG_RESULT($BLDSHARED)
+if test "$enable_shared" = yes -a "${ac_cv_gnu_ld_version_script}" = yes; then
+	DSO_EXPORTS=\$\(DSO_EXPORTS_CMD\)
+fi
+
+AC_MSG_RESULT($BLDSHARED)
 
 AC_MSG_CHECKING([LDFLAGS])
 AC_MSG_RESULT([$LDFLAGS])
@@ -6301,7 +6313,7 @@ AC_SUBST(builddir)
 SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
 
-AC_OUTPUT(Makefile script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
+AC_OUTPUT(Makefile library-versions script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
 
 #################################################
 # Print very concise instructions on building/use

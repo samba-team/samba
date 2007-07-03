@@ -1,0 +1,9 @@
+##
+## Basic script for defining the major and minor librrary revision numbers
+## Makefile_target:major:minor
+##
+bin/libsmbclient.@SHLIBEXT@:0:1
+bin/libsmbsharemodes.@SHLIBEXT@:0:2
+bin/libaddns.@SHLIBEXT@:0:1
+bin/libmsrpc.@SHLIBEXT@:0:1
+

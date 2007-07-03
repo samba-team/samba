@@ -21,6 +21,12 @@ LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
 
+## Dynamic shared libraries build settings
+DSO_EXPORTS_CMD=-Wl,--version-script,exports/`basename $@ | sed 's/@SHLIBEXT@$$/syms/'`
+DSO_EXPORTS=@DSO_EXPORTS@
+SONAME_VER=`grep ^$@ $(srcdir)/library-versions | cut -d: -f2`
+SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) 
+
 # Add $(DEVELOPER_CFLAGS) to $(CFLAGS) to enable extra compiler
 # (GCC) warnings. This is done automtically for --enable-developer
 # and --enable-krb5developer.
@@ -120,16 +126,8 @@ LOCKDIR = @lockdir@
 PIDDIR = @piddir@
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
-LIBSMBCLIENT_MAJOR=0
-LIBSMBCLIENT_MINOR=1
-
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
-LIBSMBSHAREMODES_MAJOR=0
-LIBSMBSHAREMODES_MINOR=2
-
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
-LIBADDNS_MAJOR=0
-LIBADDNS_MINOR=1
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
@@ -1312,9 +1310,9 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@
 
 bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking libaddns shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBADDNS_OBJ) $(LIBS) \
+	@$(SHLD_DSO) -o $@ $(LIBADDNS_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(UUID_LIBS)\
-		@SONAMEFLAG@`basename $@`.$(LIBADDNS_MAJOR)
+		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
 bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking libaddns non-shared library $@
@@ -1322,9 +1320,9 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ) $(LIBS) \
+	@$(SHLD_DSO) -o $@ $(LIBSMBCLIENT_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
+		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
 bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient non-shared library $@
@@ -1332,9 +1330,9 @@ bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 
 bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_OBJ) $(LIBS) \
+	@$(SHLD_DSO) -o $@ $(LIBSMBSHAREMODES_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
+		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
 bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes non-shared library $@
