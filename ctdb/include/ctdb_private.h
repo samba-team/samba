@@ -1031,4 +1031,6 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 
 void ctdb_start_freeze(struct ctdb_context *ctdb);
 
+bool parse_ip_port(const char *s, struct sockaddr_in *ip);
+
 #endif
