@@ -316,7 +316,7 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (!parse_ip_port(argv[0], &src)) {
-		printf("Bad IP:port '%s'\n", argv[1]);
+		printf("Bad IP:port '%s'\n", argv[0]);
 		return -1;
 	}
 
@@ -350,7 +350,7 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (!parse_ip_port(argv[0], &src)) {
-		printf("Bad IP:port '%s'\n", argv[1]);
+		printf("Bad IP:port '%s'\n", argv[0]);
 		return -1;
 	}
 
