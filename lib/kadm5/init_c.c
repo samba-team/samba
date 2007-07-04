@@ -234,20 +234,27 @@ get_new_cache(krb5_context context,
 
 static krb5_error_code
 get_cache_principal(krb5_context context,
-		    krb5_ccache id,
+		    krb5_ccache *id,
 		    krb5_principal *client)
 {
     krb5_error_code ret;
     const char *name, *inst;
     krb5_principal p1, p2;
-    
-    ret = krb5_cc_get_principal(context, id, &p1);
+
+    ret = krb5_cc_default(context, id);
     if(ret)
 	return ret;
+    
+    ret = krb5_cc_get_principal(context, *id, &p1);
+    if(ret) {
+	krb5_cc_close(context, *id);
+	return ret;
+    }
 
     ret = krb5_make_principal(context, &p2, NULL, 
 			      "kadmin", "admin", NULL);
     if (ret) {
+	krb5_cc_close(context, *id);
 	krb5_free_principal(context, p1);
 	return ret;
     }
@@ -264,7 +271,7 @@ get_cache_principal(krb5_context context,
 
 	/* check for initial ticket kadmin/admin */
 	ret = krb5_get_credentials_with_flags(context, KRB5_GC_CACHED, flags,
-					      id, &in, &out);
+					      *id, &in, &out);
 	krb5_free_principal(context, p2);
 	if (ret == 0) {
 	    if (out->flags.b.initial) {
@@ -275,6 +282,8 @@ get_cache_principal(krb5_context context,
 	    krb5_free_creds(context, out);
 	}
     }
+    krb5_cc_close(context, *id);
+    *id = NULL;
 
     name = krb5_principal_get_comp_string(context, p1, 0);
     inst = krb5_principal_get_comp_string(context, p1, 1);
@@ -319,54 +328,42 @@ _kadm5_c_get_cred_cache(krb5_context context,
 	    return ret;
     }
 
-    if(password != NULL || prompter != NULL) {
+    if(ccache != NULL) {
+	id = ccache;
+	ret = krb5_cc_get_principal(context, id, &client);
+	if(ret)
+	    return ret;
+    } else {
 	/* get principal from default cache, ok if this doesn't work */
-	ret = krb5_cc_default(context, &id);
-	if(ret == 0) {
-	    ret = get_cache_principal(context, id, &default_client);
-	    if (ret) {
-		krb5_cc_close(context, id);
-		id = NULL;
-	    }
-	}
 
-	if (client != NULL) {
-	    /* A client was specified by the caller. */
-	    if (default_client != NULL) {
-		krb5_free_principal(context, default_client);
-		default_client = NULL;
-	    }
-	}
-	else if (default_client != NULL)
-	    /* No client was specified by the caller, but we have a
-	     * client from the default credentials cache.
-	     */
-	    client = default_client;
-	else {
-	    /* No client was specified by the caller and we cannot determine
-	     * the client from a credentials cache.
+	ret = get_cache_principal(context, &id, &default_client);
+	if (ret) {
+	    /* 
+	     * No client was specified by the caller and we cannot
+	     * determine the client from a credentials cache.
 	     */
 	    const char *user;
 
 	    user = get_default_username ();
 
-	    if(user == NULL)
+	    if(user == NULL) {
+		krb5_set_error_string(context, "Unable to find local user name");
 		return KADM5_FAILURE;
+	    }
 	    ret = krb5_make_principal(context, &client, 
 				      NULL, user, "admin", NULL);
 	    if(ret)
 		return ret;
-	    if (id != NULL) {
-		krb5_cc_close(context, id);
-		id = NULL;
-	    }
 	}
-    } else if(ccache != NULL) {
-	id = ccache;
-	ret = krb5_cc_get_principal(context, id, &client);
-	if(ret)
-	    return ret;
     }
+
+
+    /*
+     * No client was specified by the caller, but we have a client
+     * from the default credentials cache.
+     */
+    if (client == NULL && default_client != NULL)
+	client = default_client;
 
     
     if(id && (default_client == NULL || 
