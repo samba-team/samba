@@ -88,15 +88,11 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 */
 mode_t pvfs_fileperms(struct pvfs_state *pvfs, uint32_t attrib)
 {
-	mode_t mode = S_IRUSR;
+	mode_t mode = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
 
-	if (attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		mode |= S_IXUSR;
-	}
-
-	if (!(attrib & FILE_ATTRIBUTE_READONLY) ||
-	    (pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
-		mode |= S_IWUSR;
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE) &&
+	    (attrib & FILE_ATTRIBUTE_READONLY)) {
+		mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
 	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
@@ -104,18 +100,27 @@ mode_t pvfs_fileperms(struct pvfs_state *pvfs, uint32_t attrib)
 		    (pvfs->flags & PVFS_FLAG_MAP_ARCHIVE)) {
 			mode |= S_IXUSR;
 		}
-		
 		if ((attrib & FILE_ATTRIBUTE_SYSTEM) &&
 		    (pvfs->flags & PVFS_FLAG_MAP_SYSTEM)) {
 			mode |= S_IXGRP;
 		}
-		
 		if ((attrib & FILE_ATTRIBUTE_HIDDEN) &&
 		    (pvfs->flags & PVFS_FLAG_MAP_HIDDEN)) {
 			mode |= S_IXOTH;
 		}
 	}
 
+	if (attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		mode |= (S_IFDIR | S_IWUSR);
+		mode |= (S_IXUSR | S_IXGRP | S_IXOTH);                 
+		mode &= pvfs->options.dir_mask;
+		mode |= pvfs->options.force_dir_mode;
+	} else {
+		mode &= pvfs->options.create_mask;
+		mode |= pvfs->options.force_create_mode;
+	}
+
 	return mode;
 }
+
 

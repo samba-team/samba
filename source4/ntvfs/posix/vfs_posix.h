@@ -86,6 +86,14 @@ struct pvfs_state {
 
 	/* the acl backend */
 	const struct pvfs_acl_ops *acl_ops;
+
+	/* non-flag share options */
+	struct {
+		mode_t dir_mask;
+		mode_t force_dir_mode;
+		mode_t create_mask;
+		mode_t force_create_mode;
+	} options;
 };
 
 /* this is the basic information needed about a file from the filesystem */

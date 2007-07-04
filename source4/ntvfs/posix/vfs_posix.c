@@ -60,6 +60,19 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (share_bool_option(scfg, PVFS_AIO, False))
 		pvfs->flags |= PVFS_FLAG_LINUX_AIO;
 
+	/* file perm options */
+	pvfs->options.create_mask       = share_int_option(scfg,
+							   SHARE_CREATE_MASK,
+							   SHARE_CREATE_MASK_DEFAULT);
+	pvfs->options.dir_mask          = share_int_option(scfg,
+							   SHARE_DIR_MASK,
+							   SHARE_DIR_MASK_DEFAULT);
+	pvfs->options.force_dir_mode    = share_int_option(scfg,
+							   SHARE_FORCE_DIR_MODE,
+							   SHARE_FORCE_DIR_MODE_DEFAULT);
+	pvfs->options.force_create_mode = share_int_option(scfg,
+							   SHARE_FORCE_CREATE_MODE,
+							   SHARE_FORCE_CREATE_MODE_DEFAULT);
 	/* this must be a power of 2 */
 	pvfs->alloc_size_rounding = share_int_option(scfg,
 							PVFS_ALLOCATION_ROUNDING,
