@@ -1061,7 +1061,7 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 		return;
 	}
 
-	talloc_steal(NULL, schema);
+	talloc_steal(talloc_autofree_context(), schema);
 	global_schema = schema;
 }
 
