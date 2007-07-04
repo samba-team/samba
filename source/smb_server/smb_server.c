@@ -32,6 +32,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/share.h"
+#include "dsdb/samdb/samdb.h"
 
 static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 {
@@ -192,6 +193,19 @@ static NTSTATUS smb_add_socket(struct event_context *event_context,
 	return NT_STATUS_OK;
 }
 
+
+/*
+  pre-open some of our ldb databases, to prevent an explosion of memory usage
+  when we fork
+ */
+static void smbsrv_preopen_ldb(struct task_server *task)
+{
+	/* yes, this looks strange. It is a hack to preload the
+	   schema. I'd like to share most of the ldb context with the
+	   child too. That will come later */
+	talloc_free(samdb_connect(task, NULL));
+}
+
 /*
   open the smb server sockets
 */
@@ -219,6 +233,8 @@ static void smbsrv_task_init(struct task_server *task)
 		status = smb_add_socket(task->event_ctx, task->model_ops, lp_socket_address());
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
+
+	smbsrv_preopen_ldb(task);
 
 	return;
 failed:
