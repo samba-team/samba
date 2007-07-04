@@ -34,7 +34,7 @@
 static struct sys_notify_backend *backends;
 static uint32_t num_backends;
 
-#define NOTIFY_BACKEND	"notify-backend"
+#define NOTIFY_BACKEND	"notify:backend"
 
 /*
   initialise a system change notify backend
