@@ -116,7 +116,7 @@ do {                             \
 
 #define SECONDS_PER_DAY 86400
 
-#define DAYS_TO_WARN_BEFORE_PWD_EXPIRES 5
+#define DEFAULT_DAYS_TO_WARN_BEFORE_PWD_EXPIRES 14
 
 #include "winbind_client.h"
 
