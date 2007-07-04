@@ -129,14 +129,15 @@ message("set DOMAIN SID: %s\n", subobj["DOMAINSID"]);
 
 if (ldapbackend) {
 	if (!ldapmodule) {
-		subobj["LDAPMODULE"] = "entryUUID";
+		subobj.LDAPMODULE = "entryUUID";
 	}
-	subobj["DOMAINDN_LDB"] = subobj["LDAPBACKEND"];
-	subobj["DOMAINDN_MOD2"] = subobj["LDAPMODULE"] + ",paged_searches";
-	subobj["CONFIGDN_LDB"] = subobj["LDAPBACKEND"];
-	subobj["CONFIGDN_MOD2"] = subobj["LDAPMODULE"] + ",paged_searches";
-	subobj["SCHEMADN_LDB"] = subobj["LDAPBACKEND"];
-	subobj["SCHEMADN_MOD2"] = subobj["LDAPMODULE"] + ",paged_searches";
+	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
+	subobj.DOMAINDN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
+	subobj.CONFIGDN_LDB = subobj.LDAPBACKEND;
+	subobj.CONFIGDN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
+	subobj.SCHEMADN_LDB = subobj.LDAPBACKEND;
+	subobj.SCHEMADN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
+	message("LDAP module: %s backend: %s\n", subobj.LDAPMODULE, subobj.LDAPBACKEND);
 }
 
 if (!provision_validate(subobj, message)) {

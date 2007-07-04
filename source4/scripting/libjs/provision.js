@@ -450,12 +450,9 @@ function provision_fix_subobj(subobj, paths)
 				      subobj.DNSDOMAIN);
 	rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.DOMAINDN     = "DC=" + join(",DC=", rdn_list);
-	subobj.DOMAINDN_LDB = "users.ldb";
 	subobj.ROOTDN       = subobj.DOMAINDN;
 	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
-	subobj.CONFIGDN_LDB = "configuration.ldb";
 	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
-	subobj.SCHEMADN_LDB = "schema.ldb";
 
 	var rdns = split(",", subobj.DOMAINDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
@@ -888,6 +885,9 @@ function provision_guess()
 					"show_deleted",
 					"partition");
 	subobj.MODULES_LIST = join(",", modules_list);
+	subobj.DOMAINDN_LDB = "users.ldb";
+	subobj.CONFIGDN_LDB = "configuration.ldb";
+	subobj.SCHEMADN_LDB = "schema.ldb";
 	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash";
 	subobj.CONFIGDN_MOD = "naming_fsmo";
 	subobj.SCHEMADN_MOD = "schema_fsmo";
