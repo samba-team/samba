@@ -225,3 +225,40 @@ void set_close_on_exec(int fd)
         fcntl(fd, F_SETFD, v | FD_CLOEXEC);
 }
 
+
+/*
+  parse a ip:port pair
+ */
+bool parse_ip_port(const char *s, struct sockaddr_in *ip)
+{
+	const char *p;
+	char *endp = NULL;
+	unsigned port;
+	char buf[16];
+
+	ip->sin_family = AF_INET;
+
+	p = strchr(s, ':');
+	if (p == NULL) {
+		return false;
+	}
+
+	if (p - s > 15) {
+		return false;
+	}
+
+	port = strtoul(p+1, &endp, 10);
+	if (endp == NULL || *endp != 0) {
+		/* trailing garbage */
+		return false;
+	}
+	ip->sin_port = htons(port);
+
+	strlcpy(buf, s, 1+p-s);
+
+	if (inet_aton(buf, &ip->sin_addr) == 0) {
+		return false;
+	}
+
+	return true;
+}

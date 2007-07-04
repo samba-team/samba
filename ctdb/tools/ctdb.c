@@ -311,17 +311,19 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	int i, ret;
 	struct sockaddr_in src, dst;
 
-	if (argc < 4) {
+	if (argc < 2) {
 		usage();
 	}
 
-	src.sin_family=AF_INET;
-	src.sin_port=htons(atoi(argv[1]));
-	inet_aton(argv[0], &src.sin_addr);
+	if (!parse_ip_port(argv[0], &src)) {
+		printf("Bad IP:port '%s'\n", argv[1]);
+		return -1;
+	}
 
-	dst.sin_family=AF_INET;
-	dst.sin_port=htons(atoi(argv[3]));
-	inet_aton(argv[2], &dst.sin_addr);
+	if (!parse_ip_port(argv[1], &dst)) {
+		printf("Bad IP:port '%s'\n", argv[1]);
+		return -1;
+	}
 
 	for (i=0;i<5;i++) {
 		ret = ctdb_sys_kill_tcp(ctdb->ev, &src, &dst);
@@ -856,7 +858,7 @@ static const struct {
 	{ "recover",         control_recover,           true,  "force recovery" },
 	{ "freeze",          control_freeze,            true,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
-	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection", "<srcip> <srcport> <dstip> <dstport>" },
+	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection", "<srcip:port> <dstip:port>" },
 };
 
 /*
