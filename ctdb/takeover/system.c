@@ -438,3 +438,108 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 
 	return 0;
 }
+
+
+static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te, 
+			      struct timeval yt, void *p)
+{
+	uint32_t *timed_out = (uint32_t *)p;
+	(*timed_out) = 1;
+}
+
+/* This function is used to kill (RST) the specified tcp connection.
+
+   This function is not asynchronous and will block until the operation
+   was successful or it timesout.
+ */
+int ctdb_sys_kill_tcp(struct event_context *ev,
+		      const struct sockaddr_in *dst, 
+		      const struct sockaddr_in *src)
+{
+	int s, ret;
+	uint32_t timedout;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+#define RCVPKTSIZE 100
+	char pkt[RCVPKTSIZE];
+	struct ether_header *eth;
+	struct iphdr *ip;
+	struct tcphdr *tcp;
+
+	/* Open a socket to capture all traffic */
+	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	if (s == -1){
+		DEBUG(0,(__location__ " failed to open raw socket\n"));
+		return -1;
+	}
+
+	/* We wait for up to 1 second for the ACK coming back */
+	timedout = 0;
+	event_add_timed(ev, tmp_ctx, timeval_current_ofs(1, 0), ctdb_wait_handler, &timedout);
+
+	/* Send a tickle ack to probe what the real seq/ack numbers are */
+	ctdb_sys_send_tcp(dst, src, 0, 0, 0);
+
+	/* Wait until we either time out or we succeeds in sending the RST */
+	while (timedout==0) {
+		event_loop_once(ev);
+
+		ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
+		if (ret<40) {
+			continue;
+		}
+
+		/* Ethernet */
+		eth = (struct ether_header *)pkt;
+		/* We only want IP packets */
+		if (ntohs(eth->ether_type) != ETHERTYPE_IP) {
+			continue;
+		}
+	
+		/* IP */
+		ip = (struct iphdr *)&pkt[14];
+		/* We only want IPv4 packets */
+		if (ip->version != 4) {
+			continue;
+		}
+		/* Dont look at fragments */
+		if ((ntohs(ip->frag_off)&0x1fff) != 0) {
+			continue;
+		}
+		/* we only want TCP */
+		if (ip->protocol != IPPROTO_TCP) {
+			continue;
+		}
+
+		/* We only want packets sent from the guy we tickled */
+		if (ip->saddr != dst->sin_addr.s_addr) {
+			continue;
+		}
+		/* We only want packets sent to us */
+		if (ip->daddr != src->sin_addr.s_addr) {
+			continue;
+		}
+
+		/* TCP */
+		tcp = (struct tcphdr *)&pkt[14+ip->ihl*4];
+		/* We only want replies from the port we tickled */
+		if (tcp->source != dst->sin_port) {
+			continue;
+		}
+		if (tcp->dest != src->sin_port) {
+			continue;
+		}
+
+		ctdb_sys_send_tcp(dst, src, tcp->ack_seq, tcp->seq, 1);
+
+		close(s);
+		talloc_free(tmp_ctx);
+
+		return 0;
+	}
+
+	close(s);
+	talloc_free(tmp_ctx);
+	DEBUG(0,(__location__ " timedout waiting for tickle ack reply\n"));
+
+	return -1;
+}
