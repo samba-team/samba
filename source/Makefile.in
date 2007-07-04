@@ -22,10 +22,10 @@ CC=@CC@
 SHLD=@SHLD@
 
 ## Dynamic shared libraries build settings
-DSO_EXPORTS_CMD=-Wl,--version-script,exports/`basename $@ | sed 's/@SHLIBEXT@$$/syms/'`
+DSO_EXPORTS_CMD=-Wl,--version-script,$(srcdir)/exports/`basename $@ | sed 's/@SHLIBEXT@$$/syms/'`
 DSO_EXPORTS=@DSO_EXPORTS@
-SONAME_VER=`grep ^$@ $(srcdir)/library-versions | cut -d: -f2`
-SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) 
+SONAME_VER=`grep ^$@ $(builddir)/library-versions | cut -d: -f2`
+SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) -o $@
 
 # Add $(DEVELOPER_CFLAGS) to $(CFLAGS) to enable extra compiler
 # (GCC) warnings. This is done automtically for --enable-developer
@@ -1310,7 +1310,7 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@
 
 bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking libaddns shared library $@
-	@$(SHLD_DSO) -o $@ $(LIBADDNS_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD_DSO) $(LIBADDNS_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(UUID_LIBS)\
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
@@ -1320,7 +1320,7 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient shared library $@
-	@$(SHLD_DSO) -o $@ $(LIBSMBCLIENT_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
@@ -1330,7 +1330,7 @@ bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 
 bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes shared library $@
-	@$(SHLD_DSO) -o $@ $(LIBSMBSHAREMODES_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD_DSO) $(LIBSMBSHAREMODES_OBJ) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
