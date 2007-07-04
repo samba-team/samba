@@ -484,7 +484,7 @@ int ctdb_sys_kill_tcp(struct event_context *ev,
 		event_loop_once(ev);
 
 		ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
-		if (ret<40) {
+		if (ret < sizeof(*eth)+sizeof(*ip)) {
 			continue;
 		}
 
@@ -496,7 +496,7 @@ int ctdb_sys_kill_tcp(struct event_context *ev,
 		}
 	
 		/* IP */
-		ip = (struct iphdr *)&pkt[14];
+		ip = (struct iphdr *)(eth+1);
 		/* We only want IPv4 packets */
 		if (ip->version != 4) {
 			continue;
@@ -519,8 +519,15 @@ int ctdb_sys_kill_tcp(struct event_context *ev,
 			continue;
 		}
 
+		/* make sure its not a short packet */
+		if (offsetof(struct tcphdr, ack_seq) + 4 + 
+		    (ip->ihl*4) + sizeof(*eth) > ret) {
+			continue;
+		}
+
 		/* TCP */
-		tcp = (struct tcphdr *)&pkt[14+ip->ihl*4];
+		tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
+		
 		/* We only want replies from the port we tickled */
 		if (tcp->source != dst->sin_port) {
 			continue;
