@@ -304,6 +304,38 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  kill a tcp connection
+ */
+static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct sockaddr_in src, dst;
+
+	if (argc < 4) {
+		usage();
+	}
+
+	src.sin_family=AF_INET;
+	src.sin_port=htons(atoi(argv[1]));
+	inet_aton(argv[0], &src.sin_addr);
+
+	dst.sin_family=AF_INET;
+	dst.sin_port=htons(atoi(argv[3]));
+	inet_aton(argv[2], &dst.sin_addr);
+
+	for (i=0;i<5;i++) {
+		ret = ctdb_sys_kill_tcp(ctdb->ev, &src, &dst);
+
+		printf("ret:%d\n", ret);
+		if (ret==0) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+/*
   display public ip status
  */
 static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -824,6 +856,7 @@ static const struct {
 	{ "recover",         control_recover,           true,  "force recovery" },
 	{ "freeze",          control_freeze,            true,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
+	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection", "<srcip> <srcport> <dstip> <dstport>" },
 };
 
 /*
