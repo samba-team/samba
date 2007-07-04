@@ -1,3 +1,8 @@
+2007-07-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* spnego/spnego.asn1: Indent and make NegTokenInit and
+	NegTokenResp extendable.
+
 2007-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/inquire_cred.c: Implement _gss_ntlm_inquire_cred.
