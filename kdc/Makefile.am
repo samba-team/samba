@@ -31,6 +31,7 @@ libkdc_la_SOURCES = 		\
 	kdc-private.h	 	\
 	kdc-protos.h	 	\
 	default_config.c 	\
+	set_dbinfo.c	 	\
 	digest.c		\
 	kdc_locl.h		\
 	kerberos5.c		\

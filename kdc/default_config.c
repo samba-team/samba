@@ -39,68 +39,6 @@
 RCSID("$Id$");
 
 krb5_error_code
-krb5_kdc_set_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
-{
-    struct hdb_dbinfo *info, *d;
-    krb5_error_code ret;
-    int i;
-
-    /* fetch the databases */
-    ret = hdb_get_dbinfo(context, &info);
-    if (ret)
-	return ret;
-    
-    d = NULL;
-    while ((d = hdb_dbinfo_get_next(info, d)) != NULL) {
-	void *ptr;
-	
-	ptr = realloc(c->db, (c->num_db + 1) * sizeof(*c->db));
-	if (ptr == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_string(context, "out of memory");
-	    goto out;
-	}
-	c->db = ptr;
-	
-	ret = hdb_create(context, &c->db[c->num_db], 
-			 hdb_dbinfo_get_dbname(context, d));
-	if(ret)
-	    goto out;
-	
-	ret = hdb_set_master_keyfile(context, c->db[c->num_db], 
-				     hdb_dbinfo_get_mkey_file(context, d));
-	if (ret)
-	    goto out;
-	
-	c->num_db++;
-
-	kdc_log(context, c, 0, "label: %s",
-		hdb_dbinfo_get_label(context, d));
-	kdc_log(context, c, 0, "\trealm: %s",
-		hdb_dbinfo_get_realm(context, d));
-	kdc_log(context, c, 0, "\tdbname: %s",
-		hdb_dbinfo_get_dbname(context, d));
-	kdc_log(context, c, 0, "\tmkey_file: %s",
-		hdb_dbinfo_get_mkey_file(context, d));
-    }
-    hdb_free_dbinfo(context, &info);
-
-    return 0;
-out:
-    for (i = 0; i < c->num_db; i++)
-	if (c->db[i] && c->db[i]->hdb_destroy)
-	    (*c->db[i]->hdb_destroy)(context, c->db[i]);
-    c->num_db = 0;
-    free(c->db);
-    c->db = NULL;
- 
-    hdb_free_dbinfo(context, &info);
-
-    return ret;
-}
-
-
-krb5_error_code
 krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 {
     krb5_kdc_configuration *c;
