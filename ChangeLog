@@ -1,3 +1,7 @@
+2007-07-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc: Split out krb5_kdc_set_dbinfo, From Andrew Bartlett
+
 2007-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/digest.c: Try harder to provide better error message for
