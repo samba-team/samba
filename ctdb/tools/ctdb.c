@@ -338,6 +338,37 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 /*
+  send a tcp tickle ack
+ */
+static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct sockaddr_in src, dst;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	if (!parse_ip_port(argv[0], &src)) {
+		printf("Bad IP:port '%s'\n", argv[1]);
+		return -1;
+	}
+
+	if (!parse_ip_port(argv[1], &dst)) {
+		printf("Bad IP:port '%s'\n", argv[1]);
+		return -1;
+	}
+
+	ret = ctdb_sys_send_tcp(&src, &dst, 0, 0, 0);
+	if (ret==0) {
+		return 0;
+	}
+	printf("Error while sending tickle ack\n");
+
+	return -1;
+}
+
+/*
   display public ip status
  */
 static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -859,6 +890,7 @@ static const struct {
 	{ "freeze",          control_freeze,            true,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
 	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection", "<srcip:port> <dstip:port>" },
+	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 };
 
 /*
