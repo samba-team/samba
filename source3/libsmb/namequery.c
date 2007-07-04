@@ -145,15 +145,11 @@ char *saf_fetch( const char *domain )
 
 static int generate_trn_id(void)
 {
-	static int trn_id;
+	uint16 id;
 
-	if (trn_id == 0) {
-		sys_srandom(sys_getpid());
-	}
+	generate_random_buffer((uint8 *)&id, sizeof(id));
 
-	trn_id = sys_random();
-
-	return trn_id % (unsigned)0x7FFF;
+	return id % (unsigned)0x7FFF;
 }
 
 /****************************************************************************
