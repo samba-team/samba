@@ -1491,24 +1491,12 @@ const char *get_conf_item_string(const pam_handle_t *pamh,
 {
 	int i = 0;
 	const char *parm_opt = NULL;
-	char *key = NULL;
 
 	if (!(ctrl & config_flag)) {
 		goto out;
 	}
 
 	/* let the pam opt take precedence over the pam_winbind.conf option */
-
-	if (d != NULL) {
-
-		if (!asprintf(&key, "global:%s", item)) {
-			goto out;
-		}
-
-		parm_opt = iniparser_getstr(d, key);
-		SAFE_FREE(key);
-	}
-
 	for ( i=0; i<argc; i++ ) {
 
 		if ((strncmp(argv[i], item, strlen(item)) == 0)) {
@@ -1524,6 +1512,15 @@ const char *get_conf_item_string(const pam_handle_t *pamh,
 	}
 
 	if (d != NULL) {
+		char *key = NULL;
+
+		if (!asprintf(&key, "global:%s", item)) {
+			goto out;
+		}
+
+		parm_opt = iniparser_getstr(d, key);
+		SAFE_FREE(key);
+
 		_pam_log_debug(pamh, ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
 	}
 out:
@@ -1537,8 +1534,7 @@ int get_config_item_int(const pam_handle_t *pamh,
 			      dictionary *d,
 			      const char *item)
 {
-	int parm_opt = -1, i = 0;
-	char *key = NULL;
+	int i, parm_opt = -1;
 
 	/* let the pam opt take precedence over the pam_winbind.conf option */
 	for (i = 0; i < argc; i++) {
@@ -1561,6 +1557,8 @@ int get_config_item_int(const pam_handle_t *pamh,
 	}
 
 	if (d != NULL) {
+		char *key = NULL;
+
 		if (!asprintf(&key, "global:%s", item)) {
 			goto out;
 		}
