@@ -289,9 +289,13 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 		return status;
 	}
 
+	/* we will close the socket using the events system */
+	socket_set_flags(stream_socket->sock, SOCKET_FLAG_NOCLOSE);
+
 	event_add_fd(event_context, stream_socket->sock, 
 		     socket_get_fd(stream_socket->sock), 
-		     EVENT_FD_READ, stream_accept_handler, stream_socket);
+		     EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+		     stream_accept_handler, stream_socket);
 
 	stream_socket->private          = talloc_reference(stream_socket, private);
 	stream_socket->ops              = stream_ops;
