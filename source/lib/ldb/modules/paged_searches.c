@@ -412,6 +412,7 @@ static int ps_init(struct ldb_module *module)
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return LDB_ERR_OTHER;
 	}
 	module->private_data = data;
@@ -424,7 +425,7 @@ static int ps_init(struct ldb_module *module)
 	}
 
 	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_new(req, module->ldb, NULL);
+	req->op.search.base = ldb_dn_new(req, module->ldb, "");
 	req->op.search.scope = LDB_SCOPE_BASE;
 
 	req->op.search.tree = ldb_parse_tree(req, "objectClass=*");
