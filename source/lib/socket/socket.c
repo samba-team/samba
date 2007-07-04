@@ -166,6 +166,7 @@ _PUBLIC_ NTSTATUS socket_accept(struct socket_context *sock, struct socket_conte
 
 	if (NT_STATUS_IS_OK(status)) {
 		talloc_set_destructor(*new_sock, socket_destructor);
+		(*new_sock)->flags = 0;
 	}
 
 	return status;
