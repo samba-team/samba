@@ -53,7 +53,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	$(CTDB_TAKEOVER_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
 TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store @INFINIBAND_BINS@
-BINS = bin/ctdb bin/scsi_io
+BINS = bin/ctdb bin/scsi_io bin/socketkiller
 SBINS = bin/ctdbd
 
 DIRS = lib bin
@@ -86,6 +86,10 @@ bin/scsi_io: $(CLIENT_OBJS) scsi/scsi_io.o
 bin/ctdb: $(CLIENT_OBJS) tools/ctdb.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+bin/socketkiller: $(CLIENT_OBJS) tools/socketkiller.o 
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tools/socketkiller.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/ctdb_bench.o 
 	@echo Linking $@
