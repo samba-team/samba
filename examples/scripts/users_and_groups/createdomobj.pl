@@ -116,7 +116,7 @@ if (@ARGV) {
 	exit 1;
 }
 
-# rpc open/close functions:
+# utility functions:
 
 sub open_rpc_pipe {
 	print "opening rpc pipe\n";
@@ -129,20 +129,22 @@ sub close_rpc_pipe {
 	close(IPC);
 }
 
+sub do_create {
+	my $target_name = shift;
+	print "creating $target_type $target_name\n";
+	print IPC "$rpc_cmd $target_name\n";
+}
+
 # main:
 
 open_rpc_pipe();
 
 if ("x$startnum" eq "x") {
-	my $target_name = $prefix;
-	print "creating $target_type $target_name\n";
-	print IPC "$rpc_cmd $target_name\n";
+	do_create($prefix);
 }
 else {
 	for (my $num = 1; $num <= $num_targets; ++$num) {
-		my $target_name = sprintf "%s%.05d", $prefix, $startnum + $num - 1;
-		print "creating $target_type $target_name\n";
-		print IPC "$rpc_cmd $target_name\n";
+		do_create(sprintf "%s%.05d", $prefix, $startnum + $num - 1);
 		if (($num) % 500 == 0) {
 			printf("500 ".$target_type."s created\n");
 			close_rpc_pipe();
@@ -151,5 +153,6 @@ else {
 		}
 	}
 }
+
 close_rpc_pipe();
 
