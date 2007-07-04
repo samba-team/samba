@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 	/* wait for up to 5 seconds before giving up */
 	alarm(5);
 
-	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
 	send_tcp(&dst, &src, 0, 0, 0);
 
