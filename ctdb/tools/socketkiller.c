@@ -65,7 +65,7 @@ static uint16_t tcp_checksum(uint16_t *data, size_t n, struct iphdr *ip)
 	return sum2;
 }
 
-int send_tcp(const struct sockaddr_in *dest, const struct sockaddr_in *src, uint32_t seq, uint32_t ack, int rst)
+static int send_tcp(const struct sockaddr_in *dest, const struct sockaddr_in *src, uint32_t seq, uint32_t ack, int rst)
 {
 	int s, ret;
 	uint32_t one = 1;
@@ -130,7 +130,7 @@ int send_tcp(const struct sockaddr_in *dest, const struct sockaddr_in *src, uint
 }
 
 
-void usage(void)
+static void usage(void)
 {
 	printf("Usage: socketkiller <SRCIP> <SRCPORT> <DSTIP> <DSTPORT>\n");
 }
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 	/* wait for up to 5 seconds before giving up */
 	alarm(5);
 
-	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
 
 	send_tcp(&dst, &src, 0, 0, 0);
 
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		/* We only want packets sent from the guy we ticked */
+		/* We only want packets sent from the guy we tickled */
 		if (ip->saddr != dst.sin_addr.s_addr) {
 			continue;
 		}
