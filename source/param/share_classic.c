@@ -90,6 +90,9 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 		return lp_fstype(s->snum);
 	}
 
+	DEBUG(0,("request for unknown share string option '%s'\n",
+		 opt_name));
+
 	return defval;
 }
 
@@ -117,18 +120,32 @@ int sclassic_int_option(struct share_config *scfg, const char *opt_name, int def
 	}
 
 	if (strcmp(opt_name, SHARE_CSC_POLICY) == 0) {
-		ret = lp_csc_policy(s->snum);
-		if (ret == -1) {
-			return defval;
-		}
+		return lp_csc_policy(s->snum);
 	}
 
 	if (strcmp(opt_name, SHARE_MAX_CONNECTIONS) == 0) {
-		ret = lp_max_connections(s->snum);
-		if (ret == -1) {
-			return defval;
-		}
+		return lp_max_connections(s->snum);
 	}
+
+	if (strcmp(opt_name, SHARE_CREATE_MASK) == 0) {
+		return lp_create_mask(s->snum);
+	}
+
+	if (strcmp(opt_name, SHARE_DIR_MASK) == 0) {
+		return lp_dir_mask(s->snum);
+	}
+
+	if (strcmp(opt_name, SHARE_FORCE_DIR_MODE) == 0) {
+		return lp_force_dir_mode(s->snum);
+	}
+
+	if (strcmp(opt_name, SHARE_FORCE_CREATE_MODE) == 0) {
+		return lp_force_create_mode(s->snum);
+	}
+
+
+	DEBUG(0,("request for unknown share int option '%s'\n",
+		 opt_name));
 
 	return defval;
 }
@@ -193,6 +210,9 @@ BOOL sclassic_bool_option(struct share_config *scfg, const char *opt_name, BOOL 
 		return lp_ci_filesystem(s->snum);
 	}
 
+	DEBUG(0,("request for unknown share bool option '%s'\n",
+		 opt_name));
+
 	return defval;
 }
 
@@ -227,6 +247,9 @@ const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct share_confi
 	if (strcmp(opt_name, SHARE_NTVFS_HANDLER) == 0) {
 		return lp_ntvfs_handler(s->snum);
 	}
+
+	DEBUG(0,("request for unknown share list option '%s'\n",
+		 opt_name));
 
 	return NULL;
 }

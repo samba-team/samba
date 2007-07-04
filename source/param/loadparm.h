@@ -30,7 +30,7 @@
 
 /* the following are used by loadparm for option lists */
 typedef enum {
-	P_BOOL,P_INTEGER,P_BYTES,P_LIST,P_STRING,P_USTRING,P_ENUM,P_SEP
+	P_BOOL,P_INTEGER,P_OCTAL,P_BYTES,P_LIST,P_STRING,P_USTRING,P_ENUM,P_SEP
 } parm_type;
 
 typedef enum {

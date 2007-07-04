@@ -92,6 +92,11 @@ struct share_ops {
 #define SHARE_MSDFS_ROOT	"msdfs-root"
 #define SHARE_CI_FILESYSTEM	"ci-filesystem"
 
+#define SHARE_DIR_MASK             "directory mask"
+#define SHARE_CREATE_MASK          "create mask"
+#define SHARE_FORCE_CREATE_MODE    "force create mode"
+#define SHARE_FORCE_DIR_MODE       "force directory mode"
+
 /* defaults */
 
 #define SHARE_HOST_ALLOW_DEFAULT	NULL
@@ -102,6 +107,13 @@ struct share_ops {
 #define SHARE_AVAILABLE_DEFAULT		True
 #define SHARE_BROWSEABLE_DEFAULT	True
 #define SHARE_MAX_CONNECTIONS_DEFAULT	0
+
+#define SHARE_DIR_MASK_DEFAULT                   0755
+#define SHARE_CREATE_MASK_DEFAULT                0744
+#define SHARE_FORCE_CREATE_MODE_DEFAULT          0000
+#define SHARE_FORCE_DIR_MODE_DEFAULT             0000
+
+
 
 /* I'd like to see the following options go away
  * and always use EAs and SECDESCs */

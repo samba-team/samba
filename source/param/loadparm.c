@@ -223,6 +223,10 @@ typedef struct
 	int bMap_hidden;
 	int bMap_archive;
 	int bStrictLocking;
+	int iCreate_mask;
+	int iCreate_force_mode;
+	int iDir_mask;
+	int iDir_force_mode;
 	int *copymap;
 	int bMSDfsRoot;
 	int bStrictSync;
@@ -259,6 +263,10 @@ static service sDefault = {
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
 	True,			/* bStrictLocking */
+	0744,			/* iCreate_mask */
+	0000,			/* iCreate_force_mode */
+	0755,			/* iDir_mask */
+	0000,			/* iDir_force_mode */	
 	NULL,			/* copymap */
 	False,			/* bMSDfsRoot */
 	False,			/* bStrictSync */
@@ -418,6 +426,11 @@ static struct parm_struct parm_table[] = {
 	{"client use spnego principal", P_BOOL, P_GLOBAL, &Globals.client_use_spnego_principal, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"read only", P_BOOL, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE},
+
+	{"create mask", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+	{"force create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_force_mode, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+	{"directory mask", P_OCTAL, P_LOCAL, &sDefault.iDir_mask, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+	{"force directory mode", P_OCTAL, P_LOCAL, &sDefault.iDir_force_mode, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 
 	{"hosts allow", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
@@ -932,6 +945,10 @@ _PUBLIC_ FN_LOCAL_BOOL(lp_ci_filesystem, bCIFileSystem)
 _PUBLIC_ FN_LOCAL_BOOL(lp_map_system, bMap_system)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
+_PUBLIC_ FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
+_PUBLIC_ FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
+_PUBLIC_ FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
+_PUBLIC_ FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 
@@ -1489,6 +1506,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, int *
 					break;
 
 				case P_INTEGER:
+				case P_OCTAL:
 				case P_ENUM:
 					*(int *)dest_ptr = *(int *)src_ptr;
 					break;
@@ -1894,6 +1912,10 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			*(int *)parm_ptr = atoi(pszParmValue);
 			break;
 
+		case P_OCTAL:
+			*(int *)parm_ptr = strtol(pszParmValue, NULL, 8);
+			break;
+
 		case P_BYTES:
 		{
 			uint64_t val;
@@ -2088,6 +2110,10 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			fprintf(f, "%d", *(int *)ptr);
 			break;
 
+		case P_OCTAL:
+			fprintf(f, "0%o", *(int *)ptr);
+			break;
+
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
@@ -2120,6 +2146,7 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((int *)ptr1) == *((int *)ptr2));
 
 		case P_INTEGER:
+		case P_OCTAL:
 		case P_BYTES:
 		case P_ENUM:
 			return (*((int *)ptr1) == *((int *)ptr2));
@@ -2209,6 +2236,7 @@ static BOOL is_default(int i)
 			return parm_table[i].def.bvalue ==
 				*(int *)parm_table[i].ptr;
 		case P_INTEGER:
+		case P_OCTAL:
 		case P_BYTES:
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
