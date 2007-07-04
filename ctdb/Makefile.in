@@ -83,9 +83,9 @@ bin/scsi_io: $(CLIENT_OBJS) scsi/scsi_io.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ scsi/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb: $(CLIENT_OBJS) tools/ctdb.o 
+bin/ctdb: $(CLIENT_OBJS) tools/ctdb.o takeover/system.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o takeover/system.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/socketkiller: $(CLIENT_OBJS) tools/socketkiller.o 
 	@echo Linking $@
