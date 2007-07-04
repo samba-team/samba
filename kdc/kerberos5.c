@@ -85,6 +85,22 @@ _kdc_find_padata(const KDC_REQ *req, int *start, int type)
 }
 
 /*
+ * Detect if `key' is the using the the precomputed `default_salt'.
+ */
+
+static krb5_boolean
+is_default_salt_p(const krb5_salt *default_salt, const Key *key)
+{
+    if (key->salt == NULL)
+	return TRUE;
+    if (default_salt->salttype != key->salt->type)
+	return FALSE;
+    if (krb5_data_cmp(&default_salt->saltvalue, &key->salt->salt))
+	return FALSE;
+    return TRUE;
+}
+
+/*
  * return the first appropriate key of `princ' in `ret_key'.  Look for
  * all the etypes in (`etypes', `len'), stopping as soon as we find
  * one, but preferring one that has default salt
@@ -97,6 +113,9 @@ _kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
 {
     int i;
     krb5_error_code ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+    krb5_salt def_salt;
+
+    krb5_get_pw_salt (context, princ->entry.principal, &def_salt);
 
     for(i = 0; ret != 0 && i < len ; i++) {
 	Key *key = NULL;
@@ -112,10 +131,13 @@ _kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
 	    *ret_key   = key;
 	    *ret_etype = etypes[i];
 	    ret = 0;
-	    if (key->salt == NULL)
+	    if (is_default_salt_p(&def_salt, key)) {
+		krb5_free_salt (context, def_salt);
 		return ret;
+	    }
 	}
     }
+    krb5_free_salt (context, def_salt);
     return ret;
 }
 
