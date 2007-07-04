@@ -1016,7 +1016,7 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 {
 	int ret;
 	if (!global_schema) {
-	  return LDB_SUCCESS;
+		return LDB_SUCCESS;
 	}
 	ret = ldb_set_opaque(ldb, "dsdb_schema", global_schema);
 	if (ret != LDB_SUCCESS) {
@@ -1063,6 +1063,8 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 
 	talloc_steal(talloc_autofree_context(), schema);
 	global_schema = schema;
+
+	dsdb_set_global_schema(ldb);
 }
 
 WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df)
