@@ -174,15 +174,19 @@ static uint16_t tcp_checksum(uint16_t *data, size_t n, struct iphdr *ip)
 }
 
 /*
-  send tcp ack packet from the specified IP/port to the specified
+  Send tcp segment from the specified IP/port to the specified
   destination IP/port. 
 
   This is used to trigger the receiving host into sending its own ACK,
   which should trigger early detection of TCP reset by the client
   after IP takeover
+
+  This can also be used to send RST segments (if rst is true) and also
+  if correct seq and ack numbers are provided.
  */
-int ctdb_sys_send_ack(const struct sockaddr_in *dest, 
-		      const struct sockaddr_in *src)
+int ctdb_sys_send_tcp(const struct sockaddr_in *dest, 
+		      const struct sockaddr_in *src,
+		      uint32_t seq, uint32_t ack, int rst)
 {
 	int s, ret;
 	uint32_t one = 1;
@@ -224,7 +228,12 @@ int ctdb_sys_send_ack(const struct sockaddr_in *dest,
 
 	pkt.tcp.source   = src->sin_port;
 	pkt.tcp.dest     = dest->sin_port;
+	pkt.tcp.seq      = seq;
+	pkt.tcp.ack_seq  = ack;
 	pkt.tcp.ack      = 1;
+	if (rst) {
+		pkt.tcp.rst      = 1;
+	}
 	pkt.tcp.doff     = sizeof(pkt.tcp)/4;
 	pkt.tcp.window   = htons(1234);
 	pkt.tcp.check    = tcp_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp), &pkt.ip);
