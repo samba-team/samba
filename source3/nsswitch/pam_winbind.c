@@ -264,6 +264,10 @@ static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char 
 		ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 	}
 
+	if (iniparser_getint(d, "global:warn_pwd_expire", 0)) {
+		ctrl |= WINBIND_WARN_PWD_EXPIRE;
+	}
+
 config_from_pam:
 	/* step through arguments */
 	for (i=argc,v=argv; i-- > 0; ++v) {
@@ -1532,9 +1536,14 @@ int get_config_item_int(const pam_handle_t *pamh,
 			      const char **argv,
 			      int ctrl,
 			      dictionary *d,
-			      const char *item)
+			      const char *item,
+			      int config_flag)
 {
 	int i, parm_opt = -1;
+
+	if (!(ctrl & config_flag)) {
+		goto out;
+	}
 
 	/* let the pam opt take precedence over the pam_winbind.conf option */
 	for (i = 0; i < argc; i++) {
@@ -1597,7 +1606,7 @@ int get_warn_pwd_expire_from_config(const pam_handle_t *pamh,
 {
 	int ret;
 	ret = get_config_item_int(pamh, argc, argv, ctrl, d,
-				  "warn_pwd_expire");
+				  "warn_pwd_expire", WINBIND_WARN_PWD_EXPIRE);
 	/* no or broken setting */
 	if (ret <= 0) {
 		return DEFAULT_DAYS_TO_WARN_BEFORE_PWD_EXPIRES;
