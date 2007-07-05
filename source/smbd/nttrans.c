@@ -562,7 +562,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
+			srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname,
+					smb_buf(inbuf), sizeof(fname), 0,
+					STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(status);
@@ -604,14 +606,18 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, rel_fname, smb_buf(inbuf), sizeof(rel_fname), 0, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), rel_fname,
+				smb_buf(inbuf), sizeof(rel_fname), 0,
+				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
 		pstrcat(fname, rel_fname);
 	} else {
-		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname,
+				smb_buf(inbuf), sizeof(fname), 0,
+				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
@@ -1011,7 +1017,9 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 
 	flags = IVAL(params,0);
 
-	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, params+53,
+			sizeof(fname), parameter_count-53, STR_TERMINATE,
+			&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1288,7 +1296,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		}
 
 		if(!dir_fsp->is_directory) {
-			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+			srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname,
+					params+53, sizeof(fname),
+					parameter_count-53, STR_TERMINATE,
+					&status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -1322,14 +1333,19 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		{
 			pstring tmpname;
-			srvstr_get_path(inbuf, tmpname, params+53, sizeof(tmpname), parameter_count-53, STR_TERMINATE, &status);
+			srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), tmpname,
+					params+53, sizeof(tmpname),
+					parameter_count-53, STR_TERMINATE,
+					&status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
 			pstrcat(fname, tmpname);
 		}
 	} else {
-		srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, params+53,
+				sizeof(fname), parameter_count-53,
+				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -1842,7 +1858,9 @@ int reply_ntrename(connection_struct *conn,
 	init_smb_request(&req, (uint8 *)inbuf);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &src_has_wcard);
+	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), oldname, p,
+				   sizeof(oldname), 0, STR_TERMINATE, &status,
+				   &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1860,7 +1878,9 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p++;
-	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &dest_has_wcard);
+	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), newname, p,
+				   sizeof(newname), 0, STR_TERMINATE, &status,
+				   &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -2054,8 +2074,9 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), parameter_count - 4,
-			STR_TERMINATE, &status, &dest_has_wcard);
+	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), new_name, params+4,
+			      sizeof(new_name), parameter_count - 4,
+			      STR_TERMINATE, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
