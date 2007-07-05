@@ -491,7 +491,7 @@ objectClass: user
 	assert(res.msgs.length != 0);
 	
 	println("Testing objectClass attribute order on "+ base_dn);
-	var attrs = new Array("objectclass");
+	var attrs = new Array("objectClass");
 	var res = ldb.search("objectClass=domain", base_dn, ldb.SCOPE_BASE, attrs);
 	assert(res.error == 0);
 	assert(res.msgs.length == 1);
