@@ -555,7 +555,8 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 	}
 
 	/* decode into the return buffer.  Buffer length supplied */
- 	*new_pw_len = pull_string(NULL, new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
+	*new_pw_len = pull_string(NULL, 0, new_pwrd,
+				  &in_buffer[512 - byte_len], new_pwrd_size,
 				  byte_len, string_flags);
 
 #ifdef DEBUG_PASSWORD
