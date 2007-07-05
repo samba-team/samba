@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = db kdc gss ldap can
+SUBDIRS = db kdc gss ldap can java
 
 if ENABLE_SHARED
 if HAVE_DLOPEN
