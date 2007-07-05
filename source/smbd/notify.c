@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+/* Max size we can send to client in a notify response. */
+extern int max_send;
+
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
@@ -145,6 +148,15 @@ void change_notify_reply(const char *request_buf,
 	}
 
 	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
+
+	if (buflen > max_send) {
+		/*
+		 * We exceed what the client is willing to accept. Send
+		 * nothing.
+		 */
+		change_notify_reply_packet(request_buf, NT_STATUS_OK);
+		goto done;
+	}
 
 	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
