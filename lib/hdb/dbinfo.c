@@ -41,6 +41,7 @@ struct hdb_dbinfo {
     char *dbname;
     char *mkey_file;
     char *acl_file;
+    char *log_file;
     const krb5_config_binding *binding;
     struct hdb_dbinfo *next;
 };
@@ -77,6 +78,9 @@ get_dbinfo(krb5_context context,
     p = krb5_config_get_string(context, db_binding, "acl_file", NULL);
     if(p)
 	di->acl_file = strdup(p);
+    p = krb5_config_get_string(context, db_binding, "log_file", NULL);
+    if(p)
+	di->log_file = strdup(p);
 
     di->binding = db_binding;
 
@@ -202,6 +206,12 @@ const char *
 hdb_dbinfo_get_acl_file(krb5_context context, struct hdb_dbinfo *dbp)
 {
     return dbp->acl_file;
+}
+
+const char *
+hdb_dbinfo_get_log_file(krb5_context context, struct hdb_dbinfo *dbp)
+{
+    return dbp->log_file;
 }
 
 const krb5_config_binding *
