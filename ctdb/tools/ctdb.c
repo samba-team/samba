@@ -316,7 +316,7 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (!parse_ip_port(argv[0], &src)) {
-		printf("Bad IP:port '%s'\n", argv[1]);
+		printf("Bad IP:port '%s'\n", argv[0]);
 		return -1;
 	}
 
@@ -350,7 +350,7 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (!parse_ip_port(argv[0], &src)) {
-		printf("Bad IP:port '%s'\n", argv[1]);
+		printf("Bad IP:port '%s'\n", argv[0]);
 		return -1;
 	}
 
@@ -907,7 +907,7 @@ static void usage(void)
 "   -t <timelimit>     set timelimit for control in seconds (default %u)\n", options.timelimit);
 	printf("Controls:\n");
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
-		printf("  %-15s %-20s  %s\n", 
+		printf("  %-15s %-27s  %s\n", 
 		       ctdb_commands[i].name, 
 		       ctdb_commands[i].args?ctdb_commands[i].args:"",
 		       ctdb_commands[i].msg);
