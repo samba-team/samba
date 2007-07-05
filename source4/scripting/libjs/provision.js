@@ -448,7 +448,7 @@ function provision_fix_subobj(subobj, paths)
 	subobj.DNSNAME      = sprintf("%s.%s", 
 				      strlower(subobj.HOSTNAME), 
 				      subobj.DNSDOMAIN);
-	rdn_list = split(".", subobj.DNSDOMAIN);
+	var rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.DOMAINDN     = "DC=" + join(",DC=", rdn_list);
 	subobj.ROOTDN       = subobj.DOMAINDN;
 	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
@@ -461,6 +461,8 @@ function provision_fix_subobj(subobj, paths)
 	subobj.SECRETS_KEYTAB	= paths.keytab;
 
 	subobj.LDAPDIR = paths.ldapdir;
+	var ldap_path_list = split("/", paths.ldapdir);
+	subobj.LDAPI_URI = "ldapi://" + join("%2F", ldap_path_list) + "%2Fldapi";
 
 	return true;
 }
@@ -583,7 +585,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.DOMAINDN_LDB + ": " + samdb.errstring() + "\n");
+			message("%s", "Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.DOMAINDN_LDB + ": " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 		};
 		assert(modify_ok);
@@ -595,7 +597,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_configuration_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify configuration dn: " + samdb.errstring() + "\n");
+			message("%s", "Failed to both add and modify " + subobj.CONFIGDN + " in target " + subobj.CONFIGDN_LDB + ": " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 			assert(modify_ok);
 		}
@@ -608,7 +610,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var modify_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
 	if (!modify_ok) {
 		if (!add_ok) {
-			message("Failed to both add and modify schema dn:" + samdb.errstring() + "\n");
+			message("%s", "Failed to both add and modify " + subobj.SCHEMADN + " in target " + subobj.SCHEMADN_LDB + ": " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 			assert(modify_ok);
 		}
