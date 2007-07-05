@@ -90,7 +90,7 @@ for (r in options) {
 var paths = provision_default_paths(subobj);
 provision_fix_subobj(subobj, paths);
 message("Provisioning LDAP backend for %s in realm %s into %s\n", subobj.HOSTNAME, subobj.REALM, subobj.LDAPDIR);
-message("Using %s password: %s\n", subobj.LDAP_MANAGERDN, subobj.LDAP_MANAGERPASS);
+message("Using %s password: %s\n", subobj.LDAPMANAGERDN, subobj.LDAPMANAGERPASS);
 var tmp_schema_ldb = subobj.LDAPDIR + "/schema-tmp.ldb";
 sys.mkdir(subobj.LDAPDIR, 0700);
 
