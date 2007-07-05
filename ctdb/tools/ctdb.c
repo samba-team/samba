@@ -907,7 +907,7 @@ static void usage(void)
 "   -t <timelimit>     set timelimit for control in seconds (default %u)\n", options.timelimit);
 	printf("Controls:\n");
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
-		printf("  %-15s %-20s  %s\n", 
+		printf("  %-15s %-27s  %s\n", 
 		       ctdb_commands[i].name, 
 		       ctdb_commands[i].args?ctdb_commands[i].args:"",
 		       ctdb_commands[i].msg);
