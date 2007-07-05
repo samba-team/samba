@@ -67,29 +67,6 @@ privilege: SeInteractiveLogonRight
 privilege: SeNetworkLogonRight
 privilege: SeRemoteInteractiveLogonRight
 
-
-dn: CN=${NETBIOSNAME},CN=Domain Controllers,${DOMAINDN}
-objectClass: computer
-cn: ${NETBIOSNAME}
-userAccountControl: 532480
-localPolicyFlags: 0
-primaryGroupID: 516
-accountExpires: 9223372036854775807
-sAMAccountName: ${NETBIOSNAME}$
-sAMAccountType: 805306369
-operatingSystem: Samba
-operatingSystemVersion: 4.0
-dNSHostName: ${DNSNAME}
-isCriticalSystemObject: TRUE
-sambaPassword: ${MACHINEPASS}
-servicePrincipalName: HOST/${DNSNAME}
-servicePrincipalName: HOST/${NETBIOSNAME}
-servicePrincipalName: HOST/${DNSNAME}/${REALM}
-servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
-servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
-servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
-${HOSTGUID_ADD}
-
 dn: CN=Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group

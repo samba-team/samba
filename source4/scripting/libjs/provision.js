@@ -700,6 +700,11 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	message("Setting up sam.ldb users and groups\n");
 	setup_add_ldif("provision_users.ldif", info, samdb, false);
 
+	if (lp.get("server role") == "domain controller") {
+		message("Setting up self join\n");
+		setup_add_ldif("provision_self_join.ldif", info, samdb, false);
+	}
+
 	if (setup_name_mappings(info, samdb) == false) {
 		return false;
 	}
@@ -769,6 +774,11 @@ function provision_schema(subobj, message, tmp_schema_path, paths)
 /* Write out a DNS zone file, from the info in the current database */
 function provision_dns(subobj, message, paths, session_info, credentials)
 {
+	var lp = loadparm_init();
+	if (lp.get("server role") != "domain controller") {
+		message("No DNS zone required for role %s\n", lp.get("server role"));
+		return;
+	}
 	message("Setting up DNS zone: " + subobj.DNSDOMAIN + " \n");
 	var ldb = ldb_init();
 	ldb.session_info = session_info;
