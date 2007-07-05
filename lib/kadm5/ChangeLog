@@ -1,3 +1,8 @@
+2007-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* context_s.c: Use hdb_get_dbinfo to pick up configuration.
+	ctx->config.realm can be NULL, check for that, from Bjorn S.
+	
 2007-07-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_c.c: Try harder to use the right principal.
