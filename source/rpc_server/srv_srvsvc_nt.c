@@ -2089,11 +2089,11 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 		goto error_exit;
 	}
 
-	nt_status = open_file_stat(conn, r->in.file, &st, &fsp);
+	nt_status = open_file_stat(conn, NULL, r->in.file, &st, &fsp);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
-			nt_status = open_directory(conn, r->in.file, &st,
+			nt_status = open_directory(conn, NULL, r->in.file, &st,
 					READ_CONTROL_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
@@ -2194,12 +2194,12 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 	}
 
 
-	nt_status = open_file_stat(conn, r->in.file, &st, &fsp);
+	nt_status = open_file_stat(conn, NULL, r->in.file, &st, &fsp);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
-			nt_status = open_directory(conn, r->in.file, &st,
+			nt_status = open_directory(conn, NULL, r->in.file, &st,
 						FILE_READ_ATTRIBUTES,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
