@@ -121,13 +121,19 @@ var ldapbase = (options["ldap-base"] != undefined);
 var ldapbackend = (options["ldap-backend"] != undefined);
 var ldapmodule = (options["ldap-module"] != undefined);
 var partitions_only = (options["partitions-only"] != undefined);
+var paths = provision_default_paths(subobj);
 if (options["aci"] != undefined) {
 	message("set ACI: %s\n", subobj["ACI"]);
 }
 
 message("set DOMAIN SID: %s\n", subobj["DOMAINSID"]);
 
+provision_fix_subobj(subobj, paths);
+
 if (ldapbackend) {
+	if (options["ldap-backend"] == "ldapi") {
+		subobj.LDAPBACKEND = subobj.LDAPI_URI;
+	}
 	if (!ldapmodule) {
 		subobj.LDAPMODULE = "entryUUID";
 	}
@@ -137,7 +143,7 @@ if (ldapbackend) {
 	subobj.CONFIGDN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
 	subobj.SCHEMADN_LDB = subobj.LDAPBACKEND;
 	subobj.SCHEMADN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
-	message("LDAP module: %s backend: %s\n", subobj.LDAPMODULE, subobj.LDAPBACKEND);
+	message("LDAP module: %s on backend: %s\n", subobj.LDAPMODULE, subobj.LDAPBACKEND);
 }
 
 if (!provision_validate(subobj, message)) {
@@ -146,7 +152,6 @@ if (!provision_validate(subobj, message)) {
 
 var system_session = system_session();
 var creds = options.get_credentials();
-var paths = provision_default_paths(subobj);
 message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
 if (ldapbase) {

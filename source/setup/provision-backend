@@ -98,6 +98,7 @@ provision_schema(subobj, message, tmp_schema_ldb, paths);
 
 var mapping;
 var ext;
+var slapd_command;
 if (options["ldap-backend-type"] == "fedora-ds") {
 	mapping = "schema-map-fedora-ds-1.0";
 	ext = "ldif";
@@ -110,6 +111,8 @@ if (options["ldap-backend-type"] == "fedora-ds") {
 	}
 	setup_file("fedorads.inf", message, subobj.LDAPDIR + "/fedorads.inf", subobj);
 	setup_file("fedorads-partitions.ldif", message, subobj.LDAPDIR + "/fedorads-partitions.ldif", subobj);
+
+	slapd_command = "(see documentation)";
 } else if (options["ldap-backend-type"] == "openldap") {
 	provision_ldapbase(subobj, message, paths);
 	mapping = "schema-map-openldap-2.3";
@@ -133,10 +136,16 @@ if (options["ldap-backend-type"] == "fedora-ds") {
 	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
 	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
 	if (options["ldap-backend-port"] != undefined) {
-		message("NOTE: OpenLDAP TCP ports are controlled on the command line, not in the generated config file\n");
+		message("\nStart slapd with: \n");
+		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h ldap://0.0.0.0:" + options["ldap-backend-port"] + " -h " + subobj.LDAPI_URI;
+	} else {
+		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h " + subobj.LDAPI_URI;
 	}
 }
-message("ad2oLschema --option=convert:target=" + options["ldap-backend-type"] + " -I " + lp.get("setup directory") + "/" + mapping + " -H tdb://" + tmp_schema_ldb + " -O " + subobj.LDAPDIR + "/backend-schema." + ext + "\n");
+var schema_command = "ad2oLschema --option=convert:target=" + options["ldap-backend-type"] + " -I " + lp.get("setup directory") + "/" + mapping + " -H tdb://" + tmp_schema_ldb + " -O " + subobj.LDAPDIR + "/backend-schema." + ext;
+
+message("\nCreate a suitable schema file with:\n%s\n", schema_command);
+message("\nStart slapd with: \n%s\n", slapd_command);
 
 message("All OK\n");
 return 0;
