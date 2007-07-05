@@ -644,6 +644,7 @@ static BOOL is_delete_request(files_struct *fsp) {
 
 static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 			      files_struct *fsp,
+			      uint16 mid,
 			      int pass_number,
 			      int oplock_request)
 {
@@ -728,7 +729,7 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 
 	DEBUG(10, ("Sending break request to PID %s\n",
 		   procid_str_static(&exclusive->pid)));
-	exclusive->op_mid = get_current_mid();
+	exclusive->op_mid = mid;
 
 	/* Create the message. */
 	share_mode_entry_to_message(msg, exclusive);
@@ -768,9 +769,9 @@ static BOOL request_timed_out(struct timeval request_time,
 static void defer_open(struct share_mode_lock *lck,
 		       struct timeval request_time,
 		       struct timeval timeout,
+		       uint16 mid,
 		       struct deferred_open_record *state)
 {
-	uint16 mid = get_current_mid();
 	int i;
 
 	/* Paranoia check */
@@ -1065,7 +1066,9 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 
 }
 
-static void schedule_defer_open(struct share_mode_lock *lck, struct timeval request_time)
+static void schedule_defer_open(struct share_mode_lock *lck,
+				struct timeval request_time,
+				uint16 mid)
 {
 	struct deferred_open_record state;
 
@@ -1096,7 +1099,7 @@ static void schedule_defer_open(struct share_mode_lock *lck, struct timeval requ
 	state.id = lck->id;
 
 	if (!request_timed_out(request_time, timeout)) {
-		defer_open(lck, request_time, timeout, &state);
+		defer_open(lck, request_time, timeout, mid, &state);
 	}
 }
 
@@ -1443,8 +1446,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		/* First pass - send break only on batch oplocks. */
-		if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
-			schedule_defer_open(lck, request_time);
+		if ((req != NULL)
+		    && delay_for_oplocks(lck, fsp, req->mid, 1,
+					 oplock_request)) {
+			schedule_defer_open(lck, request_time, req->mid);
 			TALLOC_FREE(lck);
 			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
@@ -1461,8 +1466,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * status again. */
 			/* Second pass - send break for both batch or
 			 * exclusive oplocks. */
-			if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
-				schedule_defer_open(lck, request_time);
+			if ((req != NULL)
+			     && delay_for_oplocks(lck, fsp, req->mid, 2,
+						  oplock_request)) {
+				schedule_defer_open(lck, request_time,
+						    req->mid);
 				TALLOC_FREE(lck);
 				file_free(fsp);
 				return NT_STATUS_SHARING_VIOLATION;
@@ -1576,10 +1584,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				state.delayed_for_oplocks = False;
 				state.id = id;
 
-				if (!request_timed_out(request_time,
-						       timeout)) {
+				if ((req != NULL)
+				    && !request_timed_out(request_time,
+							  timeout)) {
 					defer_open(lck, request_time, timeout,
-						   &state);
+						   req->mid, &state);
 				}
 			}
 
@@ -1667,8 +1676,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		/* First pass - send break only on batch oplocks. */
-		if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
-			schedule_defer_open(lck, request_time);
+		if ((req != NULL)
+		    && delay_for_oplocks(lck, fsp, req->mid, 1,
+					 oplock_request)) {
+			schedule_defer_open(lck, request_time, req->mid);
 			TALLOC_FREE(lck);
 			fd_close(conn, fsp);
 			file_free(fsp);
@@ -1684,8 +1695,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * status again. */
 			/* Second pass - send break for both batch or
 			 * exclusive oplocks. */
-			if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
-				schedule_defer_open(lck, request_time);
+			if ((req != NULL)
+			    && delay_for_oplocks(lck, fsp, req->mid, 2,
+						 oplock_request)) {
+				schedule_defer_open(lck, request_time,
+						    req->mid);
 				TALLOC_FREE(lck);
 				fd_close(conn, fsp);
 				file_free(fsp);
@@ -1709,8 +1723,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * "goto top of this function", but don't tell
 			 * anybody... */
 
-			defer_open(lck, request_time, timeval_zero(),
-				   &state);
+			if (req != NULL) {
+				defer_open(lck, request_time, timeval_zero(),
+					   req->mid, &state);
+			}
 			TALLOC_FREE(lck);
 			return status;
 		}
