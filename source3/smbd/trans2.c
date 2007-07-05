@@ -740,9 +740,12 @@ int send_trans2_replies(const char *inbuf,
  Reply to a TRANSACT2_OPEN.
 ****************************************************************************/
 
-static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, int bufsize,  
-				char **pparams, int total_params, char **ppdata, int total_data,
-				unsigned int max_data_bytes)
+static int call_trans2open(connection_struct *conn,
+			   struct smb_request *req,
+			   char *inbuf, char *outbuf, int bufsize,
+			   char **pparams, int total_params,
+			   char **ppdata, int total_data,
+			   unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -859,7 +862,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	status = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn, req, fname, &sbuf,
 		access_mask,
 		share_mode,
 		create_disposition,
@@ -4299,6 +4302,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_size(connection_struct *conn,
+				  struct smb_request *req,
 				files_struct *fsp,
 				const char *fname,
 				SMB_STRUCT_STAT *psbuf,
@@ -4328,7 +4332,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = open_file_ntcreate(conn, fname, psbuf,
+	status = open_file_ntcreate(conn, req, fname, psbuf,
 				FILE_WRITE_DATA,
 				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				FILE_OPEN,
@@ -4603,6 +4607,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_file_rename_information(connection_struct *conn,
+					    struct smb_request *req,
 				char *inbuf,
 				char *outbuf,
 				const char *pdata,
@@ -4664,7 +4669,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, newname ));
-		status = rename_internals(conn, fname, base_name, 0, overwrite, False, dest_has_wcard);
+		status = rename_internals(conn, req, fname, base_name, 0,
+					  overwrite, False, dest_has_wcard);
 	}
 
 	return status;
@@ -4955,6 +4961,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
+					     struct smb_request *req,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
@@ -5007,7 +5014,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 
 	/* Pathname or stat or directory file. */
 
-	status = open_file_ntcreate(conn, fname, psbuf,
+	status = open_file_ntcreate(conn, req, fname, psbuf,
 				FILE_WRITE_DATA,
 				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				FILE_OPEN,
@@ -5035,6 +5042,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
+					      struct smb_request *req,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
@@ -5059,7 +5067,7 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
 		"file %s to %.0f\n", fname, (double)size ));
 
-	return smb_set_file_size(conn,
+	return smb_set_file_size(conn, req,
 				fsp,
 				fname,
 				psbuf,
@@ -5155,6 +5163,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
+					struct smb_request *req,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
@@ -5306,7 +5315,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 	/* Deal with any size changes. */
 
-	status = smb_set_file_size(conn,
+	status = smb_set_file_size(conn, req,
 				fsp,
 				fname,
 				psbuf,
@@ -5329,6 +5338,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
+					struct smb_request *req,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
@@ -5346,7 +5356,7 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 	/* Start by setting all the fields that are common between UNIX_BASIC
 	 * and UNIX_INFO2.
 	 */
-	status = smb_set_file_unix_basic(conn, pdata, total_data,
+	status = smb_set_file_unix_basic(conn, req, pdata, total_data,
 				fsp, fname, psbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -5390,6 +5400,7 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_posix_mkdir(connection_struct *conn,
+				struct smb_request *req,
 				char **ppdata,
 				int total_data,
 				const char *fname,
@@ -5422,7 +5433,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	DEBUG(10,("smb_posix_mkdir: file %s, mode 0%o\n",
 		fname, (unsigned int)unixmode ));
 
-	status = open_directory(conn,
+	status = open_directory(conn, req,
 				fname,
 				psbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
@@ -5484,6 +5495,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_posix_open(connection_struct *conn,
+			       struct smb_request *req,
 				char **ppdata,
 				int total_data,
 				const char *fname,
@@ -5519,7 +5531,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	wire_open_mode = IVAL(pdata,4);
 
 	if (wire_open_mode == (SMB_O_CREAT|SMB_O_DIRECTORY)) {
-		return smb_posix_mkdir(conn,
+		return smb_posix_mkdir(conn, req,
 					ppdata,
 					total_data,
 					fname,
@@ -5587,7 +5599,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		(unsigned int)wire_open_mode,
 		(unsigned int)unixmode ));
 
-	status = open_file_ntcreate(conn,
+	status = open_file_ntcreate(conn, req,
 				fname,
 				psbuf,
 				access_mask,
@@ -5671,6 +5683,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_posix_unlink(connection_struct *conn,
+				 struct smb_request *req,
 				const char *pdata,
 				int total_data,
 				const char *fname,
@@ -5701,7 +5714,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		fname));
 
 	if (VALID_STAT_OF_DIR(*psbuf)) {
-		status = open_directory(conn,
+		status = open_directory(conn, req,
 					fname,
 					psbuf,
 					DELETE_ACCESS,
@@ -5714,7 +5727,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	} else {
 		char del = 1;
 
-		status = open_file_ntcreate(conn,
+		status = open_file_ntcreate(conn, req,
 				fname,
 				psbuf,
 				DELETE_ACCESS,
@@ -5752,7 +5765,10 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
 
-static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+static int call_trans2setfilepathinfo(connection_struct *conn,
+				      struct smb_request *req,
+				      char *inbuf, char *outbuf, int length,
+				      int bufsize,
 					unsigned int tran_call,
 					char **pparams, int total_params, char **ppdata, int total_data,
 					unsigned int max_data_bytes)
@@ -5933,7 +5949,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_ALLOCATION_INFORMATION:
 		case SMB_SET_FILE_ALLOCATION_INFO:
 		{
-			status = smb_set_file_allocation_info(conn,
+			status = smb_set_file_allocation_info(conn, req,
 								pdata,
 								total_data,
 								fsp,
@@ -5945,7 +5961,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		case SMB_FILE_END_OF_FILE_INFORMATION:
 		case SMB_SET_FILE_END_OF_FILE_INFO:
 		{
-			status = smb_set_file_end_of_file_info(conn,
+			status = smb_set_file_end_of_file_info(conn, req,
 								pdata,
 								total_data,
 								fsp,
@@ -6004,7 +6020,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_SET_FILE_UNIX_BASIC:
 		{
-			status = smb_set_file_unix_basic(conn,
+			status = smb_set_file_unix_basic(conn, req,
 							pdata,
 							total_data,
 							fsp,
@@ -6015,7 +6031,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_SET_FILE_UNIX_INFO2:
 		{
-			status = smb_set_file_unix_info2(conn,
+			status = smb_set_file_unix_info2(conn, req,
 							pdata,
 							total_data,
 							fsp,
@@ -6055,7 +6071,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 		case SMB_FILE_RENAME_INFORMATION:
 		{
-			status = smb_file_rename_information(conn,
+			status = smb_file_rename_information(conn, req,
 							inbuf,
 							outbuf,
 							pdata,
@@ -6099,7 +6115,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
 
-			status = smb_posix_open(conn,
+			status = smb_posix_open(conn, req,
 						ppdata,
 						total_data,
 						fname,
@@ -6115,7 +6131,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
 
-			status = smb_posix_unlink(conn,
+			status = smb_posix_unlink(conn, req,
 						pdata,
 						total_data,
 						fname,
@@ -6451,9 +6467,9 @@ int reply_findnclose(connection_struct *conn,
 	return(outsize);
 }
 
-int handle_trans2(connection_struct *conn,
-		  struct trans_state *state,
-		  char *inbuf, char *outbuf, int size, int bufsize)
+static int handle_trans2(connection_struct *conn, struct smb_request *req,
+			 struct trans_state *state,
+			 char *inbuf, char *outbuf, int size, int bufsize)
 {
 	int outsize;
 
@@ -6467,7 +6483,7 @@ int handle_trans2(connection_struct *conn,
 	{
 		START_PROFILE(Trans2_open);
 		outsize = call_trans2open(
-			conn, inbuf, outbuf, bufsize, 
+			conn, req, inbuf, outbuf, bufsize,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
@@ -6541,7 +6557,7 @@ int handle_trans2(connection_struct *conn,
 	{
 		START_PROFILE(Trans2_setpathinfo);
 		outsize = call_trans2setfilepathinfo(
-			conn, inbuf, outbuf, size, bufsize, state->call,
+			conn, req, inbuf, outbuf, size, bufsize, state->call,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
@@ -6749,7 +6765,10 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 	if ((state->received_param == state->total_param) &&
 	    (state->received_data == state->total_data)) {
 
-		outsize = handle_trans2(conn, state, inbuf, outbuf,
+		struct smb_request req;
+		init_smb_request(&req, (uint8 *)inbuf);
+
+		outsize = handle_trans2(conn, &req, state, inbuf, outbuf,
 					size, bufsize);
 		SAFE_FREE(state->data);
 		SAFE_FREE(state->param);
@@ -6788,6 +6807,7 @@ int reply_transs2(connection_struct *conn,
 	int outsize = 0;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
+	struct smb_request req;
 
 	START_PROFILE(SMBtranss2);
 
@@ -6873,7 +6893,10 @@ int reply_transs2(connection_struct *conn,
 	 */
 	SCVAL(outbuf,smb_com,SMBtrans2);
 
-	outsize = handle_trans2(conn, state, inbuf, outbuf, size, bufsize);
+	init_smb_request(&req, (uint8 *)inbuf);
+
+	outsize = handle_trans2(conn, &req, state, inbuf, outbuf, size,
+				bufsize);
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);

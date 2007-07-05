@@ -879,7 +879,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	/* Pseudo-open the file (note - no fd's created). */
 
 	if(S_ISDIR(pst->st_mode)) {
-		 status = open_directory(conn, name, pst,
+		 status = open_directory(conn, NULL, name, pst,
 			READ_CONTROL_ACCESS,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
@@ -887,7 +887,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 			FILE_ATTRIBUTE_DIRECTORY,
 			NULL, &fsp);
 	} else {
-		status = open_file_stat(conn, name, pst, &fsp);
+		status = open_file_stat(conn, NULL, name, pst, &fsp);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -943,7 +943,7 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	if(S_ISDIR(pst->st_mode)) {
 		return True;
 	} else {
-		status = open_file_ntcreate(conn, name, pst,
+		status = open_file_ntcreate(conn, NULL, name, pst,
 			FILE_WRITE_ATTRIBUTES,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
