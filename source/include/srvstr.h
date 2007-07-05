@@ -18,14 +18,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define srvstr_pull(base_ptr, dest, src, dest_len, src_len, flags) \
-    pull_string(base_ptr, dest, src, dest_len, src_len, flags)
+#define srvstr_pull(base_ptr, smb_flags2, dest, src, dest_len, src_len, flags) \
+    pull_string(base_ptr, smb_flags2, dest, src, dest_len, src_len, flags)
 
 /* pull a string from the smb_buf part of a packet. In this case the
    string can either be null terminated or it can be terminated by the
    end of the smbbuf area 
 */
 
-#define srvstr_pull_buf(inbuf, dest, src, dest_len, flags) \
-    pull_string(inbuf, dest, src, dest_len, smb_bufrem(inbuf, src), flags)
+#define srvstr_pull_buf(inbuf, smb_flags2, dest, src, dest_len, flags) \
+    pull_string(inbuf, smb_flags2, dest, src, dest_len, smb_bufrem(inbuf, src), flags)
 

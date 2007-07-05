@@ -4530,7 +4530,8 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), total_data, STR_TERMINATE);
+	srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), link_target, pdata,
+		    sizeof(link_target), total_data, STR_TERMINATE);
 
 	/* !widelinks forces the target path to be within the share. */
 	/* This means we can interpret the target as a pathname. */
@@ -6366,7 +6367,8 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 	if(!lp_host_msdfs())
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
-	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), total_params - 2, STR_TERMINATE);
+	srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), pathname, &params[2],
+		    sizeof(pathname), total_params - 2, STR_TERMINATE);
 	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata,&status)) < 0)
 		return ERROR_NT(status);
     

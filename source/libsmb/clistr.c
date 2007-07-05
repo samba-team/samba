@@ -43,7 +43,9 @@ size_t clistr_pull_fn(const char *function, unsigned int line,
 		   int dest_len, int src_len, 
 		   int flags)
 {
-	return pull_string_fn(function, line, cli->inbuf, dest, src, dest_len, src_len, flags);
+	return pull_string_fn(function, line, cli->inbuf,
+			      SVAL(cli->inbuf, smb_flg2), dest, src, dest_len,
+			      src_len, flags);
 }
 
 

@@ -218,9 +218,11 @@ size_t srvstr_get_path_wcard(char *inbuf, char *dest, const char *src, size_t de
 #endif
 
 	if (src_len == 0) {
-		ret = srvstr_pull_buf( inbuf, dest, src, dest_len, flags);
+		ret = srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), dest, src,
+				      dest_len, flags);
 	} else {
-		ret = srvstr_pull( inbuf, dest, src, dest_len, src_len, flags);
+		ret = srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), dest, src,
+				  dest_len, src_len, flags);
 	}
 
 	*contains_wcard = False;
@@ -255,9 +257,11 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 #endif
 
 	if (src_len == 0) {
-		ret = srvstr_pull_buf( inbuf, dest, src, dest_len, flags);
+		ret = srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), dest, src,
+				      dest_len, flags);
 	} else {
-		ret = srvstr_pull( inbuf, dest, src, dest_len, src_len, flags);
+		ret = srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), dest, src,
+				  dest_len, src_len, flags);
 	}
 
 	if (SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) {
@@ -391,10 +395,13 @@ int reply_tcon(connection_struct *conn,
 	*service_buf = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, service_buf, p, sizeof(service_buf), STR_TERMINATE) + 1;
-	pwlen = srvstr_pull_buf(inbuf, password, p, sizeof(password), STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), service_buf, p,
+			     sizeof(service_buf), STR_TERMINATE) + 1;
+	pwlen = srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), password, p,
+				sizeof(password), STR_TERMINATE) + 1;
 	p += pwlen;
-	p += srvstr_pull_buf(inbuf, dev, p, sizeof(dev), STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), dev, p, sizeof(dev),
+			     STR_TERMINATE) + 1;
 
 	p = strrchr_m(service_buf,'\\');
 	if (p) {
@@ -478,7 +485,8 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		p = smb_buf(inbuf) + passlen + 1;
 	}
 
-	p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
+	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), path, p,
+			     sizeof(path), STR_TERMINATE);
 
 	/*
 	 * the service name can be either: \\server\share
@@ -495,7 +503,8 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	else
 		fstrcpy(service,path);
 		
-	p += srvstr_pull(inbuf, client_devicetype, p, sizeof(client_devicetype), 6, STR_ASCII);
+	p += srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), client_devicetype, p,
+			 sizeof(client_devicetype), 6, STR_ASCII);
 
 	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 

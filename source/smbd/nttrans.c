@@ -382,7 +382,8 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	char *p = NULL;
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 
-	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
+	srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), fname, smb_buf(inbuf),
+			sizeof(fname), STR_TERMINATE);
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0) {
 		return ret;
