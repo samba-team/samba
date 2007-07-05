@@ -409,6 +409,30 @@ CTDB version 1
       </para>
     </refsect2>
 
+    <refsect2><title>killtcp &lt;srcip:port&gt; &lt;dstip:port&gt;</title>
+      <para>
+        This command will kill the specified TCP connection by issuing a
+        TCP RST to the srcip:port endpoint.
+      </para>
+    </refsect2>
+
+    <refsect2><title>tickle &lt;srcip:port&gt; &lt;dstip:port&gt;</title>
+      <para>
+        This command will will send a TCP tickle to the source host for the
+        specified TCP connection.
+	A TCP tickle is a TCP ACK packet with an invalid sequence and 
+	acknowledge number and will when received by the source host result
+        in it sending an immediate correct ACK back to the other end.
+      </para>
+      <para>
+        TCP tickles are useful to "tickle" clients after a IP failover has 
+        occured since this will make the client immediately recognize the 
+        TCP connection has been disrupted and that the client will need
+        to reestablish. This greatly speeds up the time it takes for a client
+        to detect and reestablish after an IP failover in the ctdb cluster.
+      </para>
+    </refsect2>
+
   </refsect1>
 
 
