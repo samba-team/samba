@@ -500,6 +500,7 @@ AC_CONFIG_FILES(Makefile 		\
 	tests/kdc/Makefile		\
 	tests/ldap/Makefile		\
 	tests/gss/Makefile		\
+	tests/java/Makefile		\
 	tests/plugin/Makefile		\
 	packages/Makefile		\
 	packages/mac/Makefile		\
