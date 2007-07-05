@@ -53,45 +53,6 @@ set_funcs(kadm5_server_context *c)
     SET(c, rename_principal);
 }
 
-struct database_spec {
-    char *dbpath;
-    char *logfile;
-    char *mkeyfile;
-    char *aclfile;
-};
-
-static void
-set_field(krb5_context context, const krb5_config_binding *binding, 
-	  const char *dbname, const char *name, const char *ext, 
-	  char **variable)
-{
-    const char *p;
-
-    if (*variable != NULL)
-	free (*variable);
-
-    p = krb5_config_get_string(context, binding, name, NULL);
-    if(p)
-	*variable = strdup(p);
-    else {
-	const char *p1;
-	p = strrchr(dbname, '.');
-	p1 = strrchr(dbname, '/');
-	if (p1) {
-	    p1++;
-	    if (p1 > p)
-		p = p1 + strlen(p1);
-	}
-	if(p1 == NULL)
-	    asprintf(variable, "%s/%s.%s", HDB_DB_DIR, dbname, ext);
-	else
-	    asprintf(variable, "%.*s/%.*s.%s",
-		     (int)(p1 - dbname), dbname, 
-		     (int)(p - p1), p1,
-		     ext);
-    }
-}
-
 static void
 set_socket_name(const char *dbname, struct sockaddr_un *un)
 {
@@ -107,77 +68,58 @@ set_socket_name(const char *dbname, struct sockaddr_un *un)
 		 (int)(p - dbname), dbname);
 }
 
-static void
-set_config(kadm5_server_context *ctx,
-	   const krb5_config_binding *binding)
-{
-    const char *p;
-    if(ctx->config.dbname == NULL) {
-	p = krb5_config_get_string(ctx->context, binding, "dbname", NULL);
-	if(p)
-	    ctx->config.dbname = strdup(p);
-	else
-	    ctx->config.dbname = strdup(HDB_DEFAULT_DB);
-    }
-    if(ctx->log_context.log_file == NULL)
-	set_field(ctx->context, binding, ctx->config.dbname, 
-		  "log_file", "log", &ctx->log_context.log_file);
-    set_socket_name(ctx->config.dbname, &ctx->log_context.socket_name);
-    if(ctx->config.acl_file == NULL)
-	set_field(ctx->context, binding, ctx->config.dbname, 
-		  "acl_file", "acl", &ctx->config.acl_file);
-    if(ctx->config.stash_file == NULL)
-	set_field(ctx->context, binding, ctx->config.dbname, 
-		  "mkey_file", "mkey", &ctx->config.stash_file);
-}
-
 static kadm5_ret_t
 find_db_spec(kadm5_server_context *ctx)
 {
-    const krb5_config_binding *top_binding = NULL;
-    const krb5_config_binding *db_binding;
-    const krb5_config_binding *default_binding = NULL;
     krb5_context context = ctx->context;
+    struct hdb_dbinfo *info, *d;
+    krb5_error_code ret;
 
-    while((db_binding =
-	   krb5_config_get_next(context,
-				NULL,
-				&top_binding, 
-				krb5_config_list, 
-				"kdc", 
-				"database",
-				NULL))) {
-	const char *p;
-	p = krb5_config_get_string(context, db_binding, "realm", NULL);
-	if(p == NULL) {
-	    if(default_binding) {
-		krb5_warnx(context, "WARNING: more than one realm-less "
-			   "database specification");
-		krb5_warnx(context, "WARNING: using the first encountered");
-	    } else
-		default_binding = db_binding;
-	    continue;
-	}
-	if(strcmp(ctx->config.realm, p) != 0)
-	    continue;
+    if (ctx->config.realm) {
+	/* fetch the databases */
+	ret = hdb_get_dbinfo(context, &info);
+	if (ret)
+	    return ret;
 	
-	set_config(ctx, db_binding);
-	return 0;
+	d = NULL;
+	while ((d = hdb_dbinfo_get_next(info, d)) != NULL) {
+	    const char *p = hdb_dbinfo_get_realm(context, d);
+	    
+	    if(strcmp(ctx->config.realm, p) != 0)
+		continue;
+	    
+	    ctx->config.dbname = strdup(p);
+	    
+	    p = hdb_dbinfo_get_acl_file(context, d);
+	    if (p)
+		ctx->config.acl_file = strdup(p);
+	    
+	    p = hdb_dbinfo_get_mkey_file(context, d);
+	    if (p)
+		ctx->config.stash_file = strdup(p);
+	    
+	    p = hdb_dbinfo_get_log_file(context, d);
+	    if (p)
+		ctx->log_context.log_file = strdup(p);
+	    break;
+	}
+	hdb_free_dbinfo(context, &info);
     }
-    if(default_binding)
-	set_config(ctx, default_binding);
-    else {
-	ctx->config.dbname        = strdup(HDB_DEFAULT_DB);
-	ctx->config.acl_file      = strdup(HDB_DB_DIR "/kadmind.acl");
-	ctx->config.stash_file    = strdup(HDB_DB_DIR "/m-key");
+
+    /* If any of the values was unset, pick up the default value */
+
+    if (ctx->config.dbname == NULL)
+	ctx->config.dbname = strdup(HDB_DEFAULT_DB);
+    if (ctx->config.acl_file == NULL)
+	ctx->config.acl_file = strdup(HDB_DB_DIR "/kadmind.acl");
+    if (ctx->config.stash_file == NULL)
+	ctx->config.stash_file = strdup(HDB_DB_DIR "/m-key");
+    if (ctx->log_context.log_file == NULL)
 	ctx->log_context.log_file = strdup(HDB_DB_DIR "/log");
-	memset(&ctx->log_context.socket_name, 0, 
-	       sizeof(ctx->log_context.socket_name));
-	ctx->log_context.socket_name.sun_family = AF_UNIX;
-	strlcpy(ctx->log_context.socket_name.sun_path, 
-		KADM5_LOG_SIGNAL, 
-		sizeof(ctx->log_context.socket_name.sun_path));
-    }
+
+    set_socket_name(ctx->config.dbname, 
+		    &ctx->log_context.socket_name);
+
     return 0;
 }
 
