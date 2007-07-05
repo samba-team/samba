@@ -6,8 +6,8 @@ ServerRoot=   ${LDAPDIR}
 [slapd]
 ldapifilepath=${LDAPDIR}/ldapi
 Suffix= ${DOMAINDN}
-RootDN= cn=Manager,${DOMAINDN}
-RootDNPwd= ${LDAPMANAGERPASS}
+RootDN= ${LDAP_MANAGERDN}
+RootDNPwd= ${LDAP_MANAGERPASS}
 ServerIdentifier= samba4
 ${SERVERPORT}
 

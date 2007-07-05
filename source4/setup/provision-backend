@@ -90,7 +90,7 @@ for (r in options) {
 var paths = provision_default_paths(subobj);
 provision_fix_subobj(subobj, paths);
 message("Provisioning LDAP backend for %s in realm %s into %s\n", subobj.HOSTNAME, subobj.REALM, subobj.LDAPDIR);
-message("Using LDAP Manager password: %s\n", subobj.LDAPMANAGERPASS);
+message("Using %s password: %s\n", subobj.LDAP_MANAGERDN, subobj.LDAP_MANAGERPASS);
 var tmp_schema_ldb = subobj.LDAPDIR + "/schema-tmp.ldb";
 sys.mkdir(subobj.LDAPDIR, 0700);
 
@@ -137,7 +137,7 @@ if (options["ldap-backend-type"] == "fedora-ds") {
 	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
 	if (options["ldap-backend-port"] != undefined) {
 		message("\nStart slapd with: \n");
-		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h ldap://0.0.0.0:" + options["ldap-backend-port"] + " -h " + subobj.LDAPI_URI;
+		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h \"ldap://0.0.0.0:" + options["ldap-backend-port"] + " " + subobj.LDAPI_URI "\"";
 	} else {
 		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h " + subobj.LDAPI_URI;
 	}

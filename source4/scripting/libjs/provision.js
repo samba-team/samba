@@ -464,6 +464,8 @@ function provision_fix_subobj(subobj, paths)
 	var ldap_path_list = split("/", paths.ldapdir);
 	subobj.LDAPI_URI = "ldapi://" + join("%2F", ldap_path_list) + "%2Fldapi";
 
+	subobj.LDAP_MANAGERDN = "cn=Manager," + subobj.DOMAINDN;
+
 	return true;
 }
 
@@ -852,7 +854,7 @@ function provision_guess()
 	subobj.KRBTGTPASS   = randpass(12);
 	subobj.MACHINEPASS  = randpass(12);
 	subobj.ADMINPASS    = randpass(12);
-	subobj.LDAPMANAGERPASS     = randpass(12);
+	subobj.LDAP_MANAGERPASS     = randpass(12);
 	subobj.DEFAULTSITE  = "Default-First-Site-Name";
 	subobj.NEWGUID      = randguid;
 	subobj.NTTIME       = nttime;
