@@ -69,10 +69,16 @@ static int naming_fsmo_init(struct ldb_module *module)
 			 LDB_SCOPE_BASE,
 			 NULL, naming_attrs,
 			 &naming_res);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
+		talloc_free(mem_ctx);
+		return ldb_next_init(module);
+	}
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "naming_fsmo_init: failed to search the cross-ref container: %d:%s\n",
-			      ret, ldb_strerror(ret));
+			      "naming_fsmo_init: failed to search the cross-ref container: %s: %s\n",
+			      ldb_strerror(ret), ldb_errstring(module->ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
