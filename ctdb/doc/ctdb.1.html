@@ -208,18 +208,18 @@ CTDB version 1
 	A TCP tickle is a TCP ACK packet with an invalis sequence and 
 	acknowledge number and will when received by the source host result
         in it sending an immediate correct ACK back to the other end.
-
+      </p><p>
         TCP tickles are useful to "tickle" clients after a ip failover has 
         occured since this will make the client immediately recognize the 
         tcp connection has been disrupted and that the client will need
         to reestablish. This greatly speeds up the time it takes for a client
         to detect and reestablish after an ip failover in the ctdb cluster.
-      </p></div></div><div class="refsect1" lang="en"><a name="id2528665"></a><h2>Debugging Commands</h2><p>
+      </p></div></div><div class="refsect1" lang="en"><a name="id2528668"></a><h2>Debugging Commands</h2><p>
       These commands are primarily used for CTDB development and testing and
       should not be used for normal administration.
-    </p><div class="refsect2" lang="en"><a name="id2528675"></a><h3>process-exists &lt;pid&gt;</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2528678"></a><h3>process-exists &lt;pid&gt;</h3><p>
         This command checks if a specific process exists on the CTDB host. This is mainly used by Samba to check if remote instances of samba are still running or not.
-      </p></div><div class="refsect2" lang="en"><a name="id2528687"></a><h3>getdbmap</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528691"></a><h3>getdbmap</h3><p>
         This command lists all clustered TDB databases that the CTDB daemon has attahced to.
       </p><p>
 	Example: ctdb getdbmap
@@ -231,21 +231,21 @@ dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
 dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0
 dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0
 dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0
-      </pre></div><div class="refsect2" lang="en"><a name="id2528715"></a><h3>catdb &lt;dbname&gt;</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528718"></a><h3>catdb &lt;dbname&gt;</h3><p>
         This command will dump a clustered TDB database to the screen. This is a debugging command.
-      </p></div><div class="refsect2" lang="en"><a name="id2528726"></a><h3>getmonmode</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528729"></a><h3>getmonmode</h3><p>
         This command returns the monutoring mode of a node. The monitoring mode is either ACTIVE or DISABLED. Normally a node will continously monitor that all other nodes that are expected are in fact connected and that they respond to commands.
       </p><p>
         ACTIVE - This is the normal mode. The node is actively monitoring all other nodes, both that the transport is connected and also that the node responds to commands. If a node becomes unavailable, it will be marked as DISCONNECTED and a recovery is initiated to restore the cluster.
       </p><p>
         DISABLED - This node is not monitoring that other nodes are available. In this mode a node failure will not be detected and no recovery will be performed. This mode is useful when for debugging purposes one wants to attach GDB to a ctdb process but wants to prevent the rest of the cluster from marking this node as DISCONNECTED and do a recovery.
-      </p></div><div class="refsect2" lang="en"><a name="id2528756"></a><h3>setmonmode &lt;0|1&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528760"></a><h3>setmonmode &lt;0|1&gt;</h3><p>
         This command can be used to explicitely disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
-      </p></div><div class="refsect2" lang="en"><a name="id2528772"></a><h3>attach &lt;dbname&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528776"></a><h3>attach &lt;dbname&gt;</h3><p>
         This is a debugging command. This command will make the CTDB daemon create a new CTDB database and attach to it.
-      </p></div><div class="refsect2" lang="en"><a name="id2528783"></a><h3>dumpmemory</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528787"></a><h3>dumpmemory</h3><p>
         This is a debugging command. This command will make the ctdb daemon to write a fill memory allocation map to the log file.
-      </p></div><div class="refsect2" lang="en"><a name="id2528794"></a><h3>freeze</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528798"></a><h3>freeze</h3><p>
         This command will lock all the local TDB databases causing clients 
         that are accessing these TDBs such as samba3 to block until the
         databases are thawed.
@@ -253,12 +253,12 @@ dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0
         This is primarily used by the recovery daemon to stop all samba
         daemons from accessing any databases while the database is recovered
         and rebuilt.
-      </p></div><div class="refsect2" lang="en"><a name="id2528813"></a><h3>thaw</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528816"></a><h3>thaw</h3><p>
         Thaw a previously frozen node.
-      </p></div></div><div class="refsect1" lang="en"><a name="id2528824"></a><h2>SEE ALSO</h2><p>
+      </p></div></div><div class="refsect1" lang="en"><a name="id2528827"></a><h2>SEE ALSO</h2><p>
       ctdbd(1), onnode(1)
       <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2528836"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2528840"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

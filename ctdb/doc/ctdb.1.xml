@@ -423,7 +423,8 @@ CTDB version 1
 	A TCP tickle is a TCP ACK packet with an invalis sequence and 
 	acknowledge number and will when received by the source host result
         in it sending an immediate correct ACK back to the other end.
-
+      </para>
+      <para>
         TCP tickles are useful to "tickle" clients after a ip failover has 
         occured since this will make the client immediately recognize the 
         tcp connection has been disrupted and that the client will need
