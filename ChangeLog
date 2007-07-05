@@ -1,5 +1,7 @@
 2007-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* configure.in: add tests/java/Makefile
+
 	* lib/hdb/dbinfo.c: Add hdb_dbinfo_get_log_file.
 
 2007-07-04  Love Hörnquist Åstrand  <lha@it.su.se>
