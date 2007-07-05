@@ -576,6 +576,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		/* One more round */
 		TALLOC_FREE(glist);
 		glist = new_glist;
+		n_glist = n_new_glist;
 	}
 	TALLOC_FREE( glist );	
 	 

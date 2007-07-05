@@ -1017,7 +1017,11 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			DEBUG(10,("ads: lookup_groupmem: got sid %s from cache\n",
 				 sid_string_static(&sid)));
 			sid_copy(&(*sid_mem)[*num_names], &sid);
-			(*names)[*num_names] = CONST_DISCARD(char *,name);
+			(*names)[*num_names] = talloc_asprintf(*names, "%s%c%s",
+							       domain_name,
+							       *lp_winbind_separator(),
+							       name );
+
 			(*name_types)[*num_names] = name_type;
 			(*num_names)++;
 		}
@@ -1055,7 +1059,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			/* Copy the entries over from the "_nocache" arrays 
 			 * to the result arrays, skipping the gaps the 
 			 * lookup_sids call left. */
-			*num_names = 0;
 			for (i=0; i < num_nocache; i++) {
 				if (((names_nocache)[i] != NULL) && 
 				    ((name_types_nocache)[i] != SID_NAME_UNKNOWN)) 
