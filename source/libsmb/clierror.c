@@ -331,7 +331,9 @@ static const struct {
 #ifdef ECOMM
 	{NT_STATUS_NET_WRITE_FAULT, ECOMM},
 #endif
-
+#ifdef EXDEV
+	{NT_STATUS_NOT_SAME_DEVICE, EXDEV},
+#endif
 	{NT_STATUS(0), 0}
 };
 
