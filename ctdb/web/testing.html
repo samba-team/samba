@@ -19,9 +19,9 @@ Once all CTDB nodes have started, verify that they are correctly
 talking to each other.<p>
 
 There should be one TCP connection from the private ip address on each
-node to TCP port 9001 on each of the other nodes in the cluster.
+node to TCP port 4379 on each of the other nodes in the cluster.
 <pre>
-  onnode all netstat -tn | grep 9001
+  onnode all netstat -tn | grep 4379
 </pre>
 
 
