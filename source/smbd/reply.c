@@ -228,7 +228,7 @@ size_t srvstr_get_path_wcard(char *inbuf, uint16 smb_flags2, char *dest,
 
 	*contains_wcard = False;
 
-	if (SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) {
+	if (smb_flags2 & FLAGS2_DFS_PATHNAMES) {
 		/* 
 		 * For a DFS path the function parse_dfs_path()
 		 * will do the path processing, just make a copy.
