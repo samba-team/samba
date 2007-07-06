@@ -97,8 +97,8 @@ fi
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
 %{_sysconfdir}/ctdb/events.d/50.samba
-%{_sysconfdir}/ctdb/events.d/59.nfslock
 %{_sysconfdir}/ctdb/events.d/60.nfs
+%{_sysconfdir}/ctdb/events.d/61.nfstickle
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
