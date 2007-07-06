@@ -570,7 +570,12 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(&(member=%s)(objectCategory=group))", escaped_dn))) {
+	ldap_exp = talloc_asprintf(mem_ctx,
+		"(&(member=%s)(objectCategory=group)(groupType:dn:%s:=%d))",
+		escaped_dn,
+		ADS_LDAP_MATCHING_RULE_BIT_AND,
+		GROUP_TYPE_SECURITY_ENABLED);
+	if (!ldap_exp) {
 		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
 		SAFE_FREE(escaped_dn);
 		status = NT_STATUS_NO_MEMORY;
