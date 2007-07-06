@@ -50,6 +50,17 @@ struct notify_mid_map {
 	uint16 mid;
 };
 
+static BOOL notify_change_record_identical(struct notify_change *c1,
+					struct notify_change *c2)
+{
+	/* Note this is deliberately case sensitive. */
+	if (c1->action == c2->action &&
+			strcmp(c1->name, c2->name) == 0) {
+		return True;
+	}
+	return False;
+}
+
 static BOOL notify_marshall_changes(int num_changes,
 				    struct notify_change *changes,
 				    prs_struct *ps)
@@ -58,10 +69,19 @@ static BOOL notify_marshall_changes(int num_changes,
 	UNISTR uni_name;
 
 	for (i=0; i<num_changes; i++) {
-		struct notify_change *c = &changes[i];
+		struct notify_change *c;
 		size_t namelen;
 		uint32 u32_tmp;	/* Temp arg to prs_uint32 to avoid
 				 * signed/unsigned issues */
+
+		/* Coalesce any identical records. */
+		while (i+1 < num_changes &&
+			notify_change_record_identical(&changes[i],
+						&changes[i+1])) {
+			i++;
+		}
+
+		c = &changes[i];
 
 		namelen = convert_string_allocate(
 			NULL, CH_UNIX, CH_UTF16LE, c->name, strlen(c->name)+1,
