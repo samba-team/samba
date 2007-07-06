@@ -34,7 +34,7 @@ case $cmd in
 			# send three, in case of lost packets
 			echo "`date` Sending NFS tickle ack for $ip to $dip:$dport"
 			for i in `seq 1 3`; do
-				sendip -p ipv4 -p tcp -is $ip -ts 2049 -td $dport -tfa 1 $dip -tfs 0 -tw 1234 -tfp 0 -tn 0
+				ctdb tickle $dip:$dport $ip:2049
 			done
 		done
 	done
