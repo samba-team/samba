@@ -5,6 +5,7 @@
 loadconfig nfs
 
 [ "$CTDB_MANAGES_NFS" = "yes" ] || exit 0
+[ -z "$STATD_SHARED_DIRECTORY" ] && exit 0
 
 cmd="$1"
 shift
@@ -14,6 +15,9 @@ PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 case $cmd in 
      startup)
 	mkdir -p /etc/ctdb/state/nfs
+	/bin/mkdir -p /etc/ctdb/state/statd/ip
+	ctdb_wait_directories "nfslock" "$STATD_SHARED_DIRECTORY"
+
 
 	# wait for all nfs exported directories to become available
 	nfs_dirs=`grep -v '^#' < /etc/exports | cut -d' ' -f1`
@@ -21,11 +25,27 @@ case $cmd in
 
 	# make sure nfs is stopped before we start it, or it may get a bind error
 	service nfs stop > /dev/null 2>&1
+	service nfslock stop > /dev/null 2>&1
+
+	service nfslock start
 	service nfs start
 	;;
 
      shutdown)
 	service nfs stop
+	service nfslock stop
+	exit 0
+	;;
+
+     takeip)
+	ip=$2
+
+	echo $ip >> /etc/ctdb/state/statd/restart
+
+	# having a list of what IPs we have allows statd to do the right 
+	# thing via /etc/ctdb/statd-callout
+	/bin/touch /etc/ctdb/state/statd/ip/$ip
+	exit 0
 	;;
 
      releaseip)
@@ -34,6 +54,9 @@ case $cmd in
 	maskbits=$3
 
 	echo $ip >> /etc/ctdb/state/nfs/restart
+
+	echo $ip >> /etc/ctdb/state/statd/restart
+	/bin/rm -f /etc/ctdb/state/statd/ip/$ip
 	exit 0
 	;;
 
@@ -42,9 +65,18 @@ case $cmd in
 	# are closed
 	[ -f /etc/ctdb/state/nfs/restart ] && {
 		( service nfs status > /dev/null 2>&1 && 
-                      service nfs restart > /dev/null 2>&1 ) &
+                      service nfs restart > /dev/null 2>&1 &&
+		      service nfslock restart > /dev/null 2>&1 ) &
 	} > /dev/null 2>&1
 	/bin/rm -f /etc/ctdb/state/nfs/restart
+
+	# if we have taken or released any ips we must send out
+	# statd notifications to recover lost nfs locks
+	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/state/statd/restart ] && {
+		/etc/ctdb/statd-callout notify &
+	} >/dev/null 2>&1
+
+	/bin/rm -f /etc/ctdb/state/statd/restart
 	;;
 
       monitor)
@@ -55,6 +87,11 @@ case $cmd in
 	# and that its directories are available
 	nfs_dirs=`grep -v '^#' < /etc/exports | cut -d' ' -f1`
 	ctdb_check_directories "nfs" $nfs_dirs
+
+	# check that lockd responds to rpc requests
+	ctdb_check_rpc "statd" 100024 1
+	ctdb_check_rpc "lockd" 100021 1
+	ctdb_check_directories "statd" $STATD_SHARED_DIRECTORY
 	;;
 
 esac
