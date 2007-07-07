@@ -49,15 +49,6 @@ SIG_ATOMIC_T got_sig_term = 0;
 extern BOOL global_machine_password_needs_changing;
 extern int max_send;
 
-/****************************************************************************
- Function to return the current request mid from Inbuffer.
-****************************************************************************/
-
-uint16 get_current_mid(void)
-{
-	return SVAL(InBuffer,smb_mid);
-}
-
 /*
  * Initialize a struct smb_request from an inbuf
  */
