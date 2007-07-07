@@ -449,7 +449,84 @@ done:
 	return werr;
 }
 
-static int import_process_service(TALLOC_CTX *ctx, 
+static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
+			 struct share_params *share)
+{
+	char *valstr = NULL;
+	int i = 0;
+	void *ptr = parm->ptr;
+
+	if (parm->p_class == P_LOCAL && share->service >= 0) {
+		ptr = lp_local_ptr(share->service, ptr);
+	}
+
+	switch (parm->type) {
+	case P_CHAR:
+		valstr = talloc_asprintf(ctx, "%c", *(char *)ptr);
+		break;
+	case P_STRING:
+	case P_USTRING:
+		valstr = talloc_asprintf(ctx, "%s", *(char **)ptr);
+		break;
+	case P_GSTRING:
+	case P_UGSTRING:
+		valstr = talloc_asprintf(ctx, "%s", (char *)ptr);
+		break;
+	case P_BOOL:
+		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(*(BOOL *)ptr));
+		break;
+	case P_BOOLREV:
+		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(!*(BOOL *)ptr));
+		break;
+	case P_ENUM:
+        	for (i = 0; parm->enum_list[i].name; i++) {
+        	        if (*(int *)ptr == parm->enum_list[i].value)
+			{
+				valstr = talloc_asprintf(ctx, "%s",
+        	                         parm->enum_list[i].name);
+        	                break;
+        	        }
+        	}
+		break;
+	case P_OCTAL:
+		valstr = talloc_asprintf(ctx, "%s", octal_string(*(int *)ptr));
+		break;
+	case P_LIST:
+		valstr = talloc_strdup(ctx, "");
+		if ((char ***)ptr && *(char ***)ptr) {
+			char **list = *(char ***)ptr;
+			for (; *list; list++) {
+				/* surround strings with whitespace
+				 * in double quotes */
+				if (strchr_m(*list, ' '))
+				{
+					valstr = talloc_asprintf_append(
+						valstr, "\"%s\"%s",
+						*list,
+						 ((*(list+1))?", ":""));
+				}
+				else {
+					valstr = talloc_asprintf_append(
+						valstr, "%s%s", *list,
+						 ((*(list+1))?", ":""));
+				}
+			}
+		}
+		break;
+	case P_INTEGER:
+		valstr = talloc_asprintf(ctx, "%d", *(int *)ptr);
+		break;
+	case P_SEP:
+		break;
+	default:
+		valstr = talloc_asprintf(ctx, "<type unimplemented>\n");
+		break;
+	}
+
+	return valstr;
+}
+
+static int import_process_service(TALLOC_CTX *ctx,
 				  struct share_params *share)
 {
 	int ret = -1;
@@ -458,7 +535,6 @@ static int import_process_service(TALLOC_CTX *ctx,
 	const char *servicename;
 	struct registry_key *key;
 	WERROR werr;
-	const char *valtype = NULL;
 	char *valstr = NULL;
 
 	servicename = (share->service == GLOBAL_SECTION_SNUM)?
@@ -482,93 +558,19 @@ static int import_process_service(TALLOC_CTX *ctx,
 
 	while ((parm = lp_next_parameter(share->service, &pnum, 0)))
 	{
-		void *ptr = parm->ptr;
-		int i = 0;
-
-		if ((share->service < 0 && parm->p_class == P_LOCAL) 
+		if ((share->service < 0 && parm->p_class == P_LOCAL)
 		    && !(parm->flags & FLAG_GLOBAL))
 			continue;
 
-		if (parm->p_class == P_LOCAL && share->service >= 0) {
-			ptr = lp_local_ptr(share->service, ptr);
-		}
-
-		valtype = "sz";
-
-		switch (parm->type) {
-		case P_CHAR:
-			valstr = talloc_asprintf(ctx, "%c", *(char *)ptr);
-			break;
-		case P_STRING:
-		case P_USTRING:
-			valstr = talloc_asprintf(ctx, "%s", *(char **)ptr);
-			break;
-		case P_GSTRING:
-		case P_UGSTRING:
-			valstr = talloc_asprintf(ctx, "%s", (char *)ptr);
-			break;
-		case P_BOOL:
-			valstr = talloc_asprintf(ctx, "%s", 
-						BOOLSTR(*(BOOL *)ptr));
-			break;
-		case P_BOOLREV:
-			valstr = talloc_asprintf(ctx, "%s", 
-						BOOLSTR(!*(BOOL *)ptr));
-			break;
-		case P_ENUM:
-                	for (i = 0; parm->enum_list[i].name; i++) {
-                	        if (*(int *)ptr == 
-				    parm->enum_list[i].value) 
-				{
-					valstr = talloc_asprintf(ctx, "%s",
-                	                         parm->enum_list[i].name);
-                	                break;
-                	        }
-                	}
-			break;
-		case P_OCTAL:
-			valstr = talloc_asprintf(ctx, "%s", octal_string(*(int *)ptr));
-			break;
-		case P_LIST:
-			valstr = talloc_strdup(ctx, "");
-			if ((char ***)ptr && *(char ***)ptr) {
-				char **list = *(char ***)ptr;
-				for (; *list; list++) {
-					/* surround strings with whitespace 
-					 * in double quotes */
-					if (strchr_m(*list, ' '))
-					{
-						valstr = talloc_asprintf_append(
-							valstr, "\"%s\"%s", 
-							*list, 
-							 ((*(list+1))?", ":""));
-					}
-					else {
-						valstr = talloc_asprintf_append(
-							valstr, "%s%s", *list, 
-							 ((*(list+1))?", ":""));
-					}
-				}
-			}
-			break;
-		case P_INTEGER:
-			valtype = "dword";
-			valstr = talloc_asprintf(ctx, "%d", *(int *)ptr);
-			break;
-		case P_SEP:
-			break;
-		default:
-			valstr = talloc_asprintf(ctx, "<type unimplemented>\n");
-			break;
-		}
+		valstr = parm_valstr(ctx, parm, share);
 
 		if (parm->type != P_SEP) {
 			if (opt_testmode) {
 				d_printf("\t%s = %s\n", parm->label, valstr);
 			}
 			else {
-				werr = reg_setvalue_internal(key, parm->label, 
-							     valtype, valstr);
+				werr = reg_setvalue_internal(key, parm->label,
+							     "sz", valstr);
 				if (!W_ERROR_IS_OK(werr)) {
 					goto done;
 				}
