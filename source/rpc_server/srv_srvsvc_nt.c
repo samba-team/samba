@@ -2001,11 +2001,11 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		goto error_exit;
 	}
 
-	nt_status = open_file_stat(conn, filename, &st, &fsp);
+	nt_status = open_file_stat(conn, NULL, filename, &st, &fsp);
 	if ( !NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
-		if (errno == EISDIR)
-			nt_status = open_directory(conn, filename, &st,
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
+			nt_status = open_directory(conn, NULL, filename, &st,
 					READ_CONTROL_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
@@ -2117,12 +2117,12 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	}
 
 
-	nt_status = open_file_stat(conn, filename, &st, &fsp);
+	nt_status = open_file_stat(conn, NULL, filename, &st, &fsp);
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		/* Perhaps it is a directory */
-		if (errno == EISDIR)
-			nt_status = open_directory(conn, filename, &st,
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
+			nt_status = open_directory(conn, NULL, filename, &st,
 						FILE_READ_ATTRIBUTES,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,

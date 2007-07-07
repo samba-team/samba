@@ -25,7 +25,6 @@
 extern struct generic_mapping file_generic_mapping;
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
-extern uint16 global_smbpid;
 extern BOOL global_client_failed_oplock_break;
 
 struct deferred_open_record {
@@ -201,6 +200,7 @@ static void change_dir_owner_to_parent(connection_struct *conn,
 
 static NTSTATUS open_file(files_struct *fsp,
 			  connection_struct *conn,
+			  struct smb_request *req,
 			  const char *parent_dir,
 			  const char *name,
 			  const char *path,
@@ -359,8 +359,8 @@ static NTSTATUS open_file(files_struct *fsp,
 
 	fsp->mode = psbuf->st_mode;
 	fsp->file_id = file_id_sbuf(psbuf);
-	fsp->vuid = current_user.vuid;
-	fsp->file_pid = global_smbpid;
+	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
+	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = True;
 	fsp->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
 	if (!CAN_WRITE(conn)) {
@@ -875,6 +875,8 @@ static BOOL open_match_attributes(connection_struct *conn,
 static files_struct *fcb_or_dos_open(connection_struct *conn,
 				     const char *fname, 
 				     struct file_id id,
+				     uint16 file_pid,
+				     uint16 vuid,
 				     uint32 access_mask,
 				     uint32 share_access,
 				     uint32 create_options)
@@ -897,8 +899,8 @@ static files_struct *fcb_or_dos_open(connection_struct *conn,
 			  (unsigned int)fsp->access_mask ));
 
 		if (fsp->fh->fd != -1 &&
-		    fsp->vuid == current_user.vuid &&
-		    fsp->file_pid == global_smbpid &&
+		    fsp->vuid == vuid &&
+		    fsp->file_pid == file_pid &&
 		    (fsp->fh->private_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
 						 NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 		    (fsp->access_mask & FILE_WRITE_DATA) &&
@@ -1107,6 +1109,7 @@ static void schedule_defer_open(struct share_mode_lock *lck, struct timeval requ
 ****************************************************************************/
 
 NTSTATUS open_file_ntcreate(connection_struct *conn,
+			    struct smb_request *req,
 			    const char *fname,
 			    SMB_STRUCT_STAT *psbuf,
 			    uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
@@ -1133,7 +1136,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	int info;
 	uint32 existing_dos_attributes = 0;
 	struct pending_message_list *pml = NULL;
-	uint16 mid = get_current_mid();
 	struct timeval request_time = timeval_zero();
 	struct share_mode_lock *lck = NULL;
 	uint32 open_access_mask = access_mask;
@@ -1183,7 +1185,17 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		   create_disposition, create_options, unx_mode,
 		   oplock_request));
 
-	if ((pml = get_open_deferred_message(mid)) != NULL) {
+	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {
+		DEBUG(0, ("No smb request but not an internal only open!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * Only non-internal opens can be deferred at all
+	 */
+
+	if ((req != NULL)
+	    && ((pml = get_open_deferred_message(req->mid)) != NULL)) {
 		struct deferred_open_record *state =
 			(struct deferred_open_record *)pml->private_data.data;
 
@@ -1198,12 +1210,12 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
-			del_deferred_open_entry(lck, mid);
+			del_deferred_open_entry(lck, req->mid);
 			TALLOC_FREE(lck);
 		}
 
 		/* Ensure we don't reprocess this message. */
-		remove_deferred_open_smb_message(mid);
+		remove_deferred_open_smb_message(req->mid);
 	}
 
 	status = check_name(conn, fname);
@@ -1481,9 +1493,19 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
 				files_struct *fsp_dup;
 
+				if (req == NULL) {
+					DEBUG(0, ("DOS open without an SMB "
+						  "request!\n"));
+					TALLOC_FREE(lck);
+					file_free(fsp);
+					return NT_STATUS_INTERNAL_ERROR;
+				}
+
 				/* Use the client requested access mask here,
 				 * not the one we open with. */
 				fsp_dup = fcb_or_dos_open(conn, fname, id,
+							  req->smbpid,
+							  req->vuid,
 							  access_mask,
 							  share_access,
 							  create_options);
@@ -1605,7 +1627,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp, conn, parent_dir, newname, fname, psbuf,
+	fsp_open = open_file(fsp, conn, req, parent_dir, newname, fname, psbuf,
 			     flags|flags2, unx_mode, access_mask,
 			     open_access_mask);
 
@@ -1866,7 +1888,9 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	/* If this is a successful open, we must remove any deferred open
 	 * records. */
-	del_deferred_open_entry(lck, mid);
+	if (req != NULL) {
+		del_deferred_open_entry(lck, req->mid);
+	}
 	TALLOC_FREE(lck);
 
 	conn->num_files_open++;
@@ -1896,8 +1920,8 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 
 	/* note! we must use a non-zero desired access or we don't get
            a real file descriptor. Oh what a twisted web we weave. */
-	status = open_file(fsp, conn, NULL, NULL, fname, psbuf, O_WRONLY, 0,
-			   FILE_WRITE_DATA, FILE_WRITE_DATA);
+	status = open_file(fsp, conn, NULL, NULL, NULL, fname, psbuf, O_WRONLY,
+			   0, FILE_WRITE_DATA, FILE_WRITE_DATA);
 
 	/* 
 	 * This is not a user visible file open.
@@ -2009,6 +2033,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS open_directory(connection_struct *conn,
+			struct smb_request *req,
 			const char *fname,
 			SMB_STRUCT_STAT *psbuf,
 			uint32 access_mask,
@@ -2125,8 +2150,8 @@ NTSTATUS open_directory(connection_struct *conn,
 	
 	fsp->mode = psbuf->st_mode;
 	fsp->file_id = file_id_sbuf(psbuf);
-	fsp->vuid = current_user.vuid;
-	fsp->file_pid = global_smbpid;
+	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
+	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;
@@ -2204,7 +2229,7 @@ NTSTATUS create_directory(connection_struct *conn, const char *directory)
 
 	SET_STAT_INVALID(sbuf);
 	
-	status = open_directory(conn, directory, &sbuf,
+	status = open_directory(conn, NULL, directory, &sbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_CREATE,
@@ -2224,8 +2249,9 @@ NTSTATUS create_directory(connection_struct *conn, const char *directory)
  Open a pseudo-file (no locking checks - a 'stat' open).
 ****************************************************************************/
 
-NTSTATUS open_file_stat(connection_struct *conn, const char *fname,
-			SMB_STRUCT_STAT *psbuf, files_struct **result)
+NTSTATUS open_file_stat(connection_struct *conn, struct smb_request *req,
+			const char *fname, SMB_STRUCT_STAT *psbuf,
+			files_struct **result)
 {
 	files_struct *fsp = NULL;
 	NTSTATUS status;
@@ -2252,8 +2278,8 @@ NTSTATUS open_file_stat(connection_struct *conn, const char *fname,
 	
 	fsp->mode = psbuf->st_mode;
 	fsp->file_id = file_id_sbuf(psbuf);
-	fsp->vuid = current_user.vuid;
-	fsp->file_pid = global_smbpid;
+	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
+	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;

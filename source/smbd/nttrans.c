@@ -499,6 +499,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	struct timespec m_timespec;
 	BOOL extended_oplock_granted = False;
 	NTSTATUS status;
+	struct smb_request req;
 
 	START_PROFILE(SMBntcreateX);
 
@@ -513,6 +514,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			(unsigned int)create_disposition,
 			(unsigned int)create_options,
 			(unsigned int)root_dir_fid ));
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
 	/*
 	 * If it's an IPC, use the pipe handler.
@@ -720,7 +723,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 
 		oplock_request = 0;
-		status = open_directory(conn, fname, &sbuf,
+		status = open_directory(conn, &req, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -758,7 +761,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		status = open_file_ntcreate(conn,fname,&sbuf,
+		status = open_file_ntcreate(conn, &req, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -801,7 +804,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				}
 	
 				oplock_request = 0;
-				status = open_directory(conn, fname, &sbuf,
+				status = open_directory(conn, &req, fname,
+							&sbuf,
 							access_mask,
 							share_access,
 							create_disposition,
@@ -1193,6 +1197,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	char *pdata = NULL;
 	NTSTATUS status;
 	size_t param_len;
+	struct smb_request req;
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1220,6 +1225,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)parameter_count));
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
 	flags = IVAL(params,0);
 	access_mask = IVAL(params,8);
@@ -1389,6 +1396,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			!user_has_privileges(current_user.nt_user_token,
 				&se_security)) {
 		restore_case_semantics(conn, file_attributes);
+		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_PRIVILEGE_NOT_HELD);
 	}
 #endif
@@ -1424,7 +1432,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 */
 
 		oplock_request = 0;
-		status = open_directory(conn, fname, &sbuf,
+		status = open_directory(conn, &req, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -1442,7 +1450,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * Ordinary file case.
 		 */
 
-		status = open_file_ntcreate(conn,fname,&sbuf,
+		status = open_file_ntcreate(conn,&req,fname,&sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -1465,7 +1473,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				}
 	
 				oplock_request = 0;
-				status = open_directory(conn, fname, &sbuf,
+				status = open_directory(conn, &req, fname,
+							&sbuf,
 							access_mask,
 							share_access,
 							create_disposition,
@@ -1685,7 +1694,9 @@ int reply_ntcancel(connection_struct *conn,
  Copy a file.
 ****************************************************************************/
 
-static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *newname, uint32 attrs)
+static NTSTATUS copy_internals(connection_struct *conn,
+			       struct smb_request *req,
+			       char *oldname, char *newname, uint32 attrs)
 {
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	pstring last_component_oldname;
@@ -1751,7 +1762,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n", oldname, newname));
 
-        status = open_file_ntcreate(conn,oldname,&sbuf1,
+        status = open_file_ntcreate(conn, req, oldname, &sbuf1,
 			FILE_READ_DATA, /* Read-only. */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_OPEN,
@@ -1764,7 +1775,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return status;
 	}
 
-        status = open_file_ntcreate(conn,newname,&sbuf2,
+        status = open_file_ntcreate(conn, req, newname, &sbuf2,
 			FILE_WRITE_DATA, /* Read-only. */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_CREATE,
@@ -1828,8 +1839,11 @@ int reply_ntrename(connection_struct *conn,
 	BOOL dest_has_wcard = False;
 	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	uint16 rename_type = SVAL(inbuf,smb_vwv1);
+	struct smb_request req;
 
 	START_PROFILE(SMBntrename);
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
 	p = smb_buf(inbuf) + 1;
 	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &src_has_wcard);
@@ -1878,7 +1892,9 @@ int reply_ntrename(connection_struct *conn,
 	
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = rename_internals(conn, oldname, newname, attrs, False, src_has_wcard, dest_has_wcard);
+			status = rename_internals(conn, &req, oldname, newname,
+						  attrs, False, src_has_wcard,
+						  dest_has_wcard);
 			break;
 		case RENAME_FLAG_HARD_LINK:
 			if (src_has_wcard || dest_has_wcard) {
@@ -1893,7 +1909,8 @@ int reply_ntrename(connection_struct *conn,
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
-				status = copy_internals(conn, oldname, newname, attrs);
+				status = copy_internals(conn, &req, oldname,
+							newname, attrs);
 			}
 			break;
 		case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
@@ -2030,6 +2047,9 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	BOOL replace_if_exists = False;
 	BOOL dest_has_wcard = False;
 	NTSTATUS status;
+	struct smb_request req;
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
         if(parameter_count < 5) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
@@ -2044,7 +2064,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 		return ERROR_NT(status);
 	}
 
-	status = rename_internals(conn, fsp->fsp_name,
+	status = rename_internals(conn, &req, fsp->fsp_name,
 				  new_name, 0, replace_if_exists, False, dest_has_wcard);
 
 	if (!NT_STATUS_IS_OK(status)) {

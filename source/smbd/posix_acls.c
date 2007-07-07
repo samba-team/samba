@@ -3195,13 +3195,14 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 			parent_name);
 
 	status = open_directory(fsp->conn,
+				NULL,
 				parent_name,
 				&sbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_OPEN,
 				0,
-				0,
+				INTERNAL_OPEN_ONLY,
 				&info,
 				&parent_fsp);
 

@@ -58,6 +58,18 @@ uint16 get_current_mid(void)
 	return SVAL(InBuffer,smb_mid);
 }
 
+/*
+ * Initialize a struct smb_request from an inbuf
+ */
+
+void init_smb_request(struct smb_request *req, const uint8 *inbuf)
+{
+	req->flags2 = SVAL(inbuf, smb_flg2);
+	req->smbpid = SVAL(inbuf, smb_pid);
+	req->mid    = SVAL(inbuf, smb_mid);
+	req->vuid   = SVAL(inbuf, smb_uid);
+}
+
 /****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.

@@ -1262,7 +1262,11 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	uint32 create_disposition;
 	uint32 create_options = 0;
 	NTSTATUS status;
+	struct smb_request req;
+
 	START_PROFILE(SMBopen);
+
+	init_smb_request(&req, (uint8 *)inbuf);
  
 	deny_mode = SVAL(inbuf,smb_vwv0);
 
@@ -1299,7 +1303,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 	}
 
-	status = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn, &req, fname, &sbuf,
 			access_mask,
 			share_mode,
 			create_disposition,
@@ -1382,8 +1386,11 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	uint32 share_mode;
 	uint32 create_disposition;
 	uint32 create_options = 0;
+	struct smb_request req;
 
 	START_PROFILE(SMBopenX);
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
@@ -1433,7 +1440,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 	}
 
-	status = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn, &req, fname, &sbuf,
 			access_mask,
 			share_mode,
 			create_disposition,
@@ -1575,8 +1582,11 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	uint32 share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
 	uint32 create_disposition;
 	uint32 create_options = 0;
+	struct smb_request req;
 
 	START_PROFILE(SMBcreate);
+
+	init_smb_request(&req, (uint8 *)inbuf);
  
 	com = SVAL(inbuf,smb_com);
 
@@ -1622,7 +1632,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	}
 
 	/* Open file using ntcreate. */
-	status = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn, &req, fname, &sbuf,
 				access_mask,
 				share_mode,
 				create_disposition,
@@ -1677,8 +1687,11 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	char *p, *s;
 	NTSTATUS status;
 	unsigned int namelen;
+	struct smb_request req;
 
 	START_PROFILE(SMBctemp);
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1721,7 +1734,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	SMB_VFS_STAT(conn,fname,&sbuf);
 
 	/* We should fail if file does not exist. */
-	status = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn, &req, fname, &sbuf,
 				FILE_GENERIC_READ | FILE_GENERIC_WRITE,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
@@ -1812,8 +1825,8 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
  * unlink a file with all relevant access checks
  *******************************************************************/
 
-static NTSTATUS do_unlink(connection_struct *conn, char *fname,
-			  uint32 dirtype, BOOL can_defer)
+static NTSTATUS do_unlink(connection_struct *conn, struct smb_request *req,
+			  char *fname, uint32 dirtype)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -1905,13 +1918,13 @@ static NTSTATUS do_unlink(connection_struct *conn, char *fname,
 	/* On open checks the open itself will check the share mode, so
 	   don't do it here as we'll get it wrong. */
 
-	status = open_file_ntcreate(conn, fname, &sbuf,
+	status = open_file_ntcreate(conn, req, fname, &sbuf,
 				    DELETE_ACCESS,
 				    FILE_SHARE_NONE,
 				    FILE_OPEN,
 				    0,
 				    FILE_ATTRIBUTE_NORMAL,
-				    can_defer ? 0 : INTERNAL_OPEN_ONLY,
+				    req != NULL ? 0 : INTERNAL_OPEN_ONLY,
 				    NULL, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1934,8 +1947,8 @@ static NTSTATUS do_unlink(connection_struct *conn, char *fname,
  code.
 ****************************************************************************/
 
-NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
-			  char *name, BOOL has_wild, BOOL can_defer)
+NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
+			  uint32 dirtype, char *name, BOOL has_wild)
 {
 	pstring directory;
 	pstring mask;
@@ -1985,7 +1998,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			return status;
 		}
 
-		status = do_unlink(conn,directory,dirtype,can_defer);
+		status = do_unlink(conn, req, directory, dirtype);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -2049,7 +2062,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 				return status;
 			}
 
-			status = do_unlink(conn, fname, dirtype, can_defer);
+			status = do_unlink(conn, req, fname, dirtype);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -2080,8 +2093,11 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	uint32 dirtype;
 	NTSTATUS status;
 	BOOL path_contains_wcard = False;
+	struct smb_request req;
 
 	START_PROFILE(SMBunlink);
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
 	dirtype = SVAL(inbuf,smb_vwv0);
 	
@@ -2102,8 +2118,8 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
-	status = unlink_internals(conn, dirtype, name, path_contains_wcard,
-				  True);
+	status = unlink_internals(conn, &req, dirtype, name,
+				  path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
@@ -4465,7 +4481,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
  code. 
 ****************************************************************************/
 
-NTSTATUS rename_internals(connection_struct *conn,
+NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 				pstring name,
 				pstring newname,
 				uint32 attrs,
@@ -4576,12 +4592,12 @@ NTSTATUS rename_internals(connection_struct *conn,
 		SMB_VFS_STAT(conn, directory, &sbuf1);
 
 		status = S_ISDIR(sbuf1.st_mode) ?
-			open_directory(conn, directory, &sbuf1,
+			open_directory(conn, req, directory, &sbuf1,
 				       DELETE_ACCESS,
 				       FILE_SHARE_READ|FILE_SHARE_WRITE,
 				       FILE_OPEN, 0, 0, NULL,
 				       &fsp)
-			: open_file_ntcreate(conn, directory, &sbuf1,
+			: open_file_ntcreate(conn, req, directory, &sbuf1,
 					     DELETE_ACCESS,
 					     FILE_SHARE_READ|FILE_SHARE_WRITE,
 					     FILE_OPEN, 0, 0, 0, NULL,
@@ -4672,12 +4688,12 @@ NTSTATUS rename_internals(connection_struct *conn,
 		SMB_VFS_STAT(conn, fname, &sbuf1);
 
 		status = S_ISDIR(sbuf1.st_mode) ?
-			open_directory(conn, fname, &sbuf1,
+			open_directory(conn, req, fname, &sbuf1,
 				       DELETE_ACCESS,
 				       FILE_SHARE_READ|FILE_SHARE_WRITE,
 				       FILE_OPEN, 0, 0, NULL,
 				       &fsp)
-			: open_file_ntcreate(conn, fname, &sbuf1,
+			: open_file_ntcreate(conn, req, fname, &sbuf1,
 					     DELETE_ACCESS,
 					     FILE_SHARE_READ|FILE_SHARE_WRITE,
 					     FILE_OPEN, 0, 0, 0, NULL,
@@ -4731,8 +4747,11 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	NTSTATUS status;
 	BOOL src_has_wcard = False;
 	BOOL dest_has_wcard = False;
+	struct smb_request req;
 
 	START_PROFILE(SMBmv);
+
+	init_smb_request(&req, (uint8 *)inbuf);
 
 	p = smb_buf(inbuf) + 1;
 	p += srvstr_get_path_wcard(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, &src_has_wcard);
@@ -4767,7 +4786,8 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 	
-	status = rename_internals(conn, name, newname, attrs, False, src_has_wcard, dest_has_wcard);
+	status = rename_internals(conn, &req, name, newname, attrs, False,
+				  src_has_wcard, dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
@@ -4831,7 +4851,7 @@ NTSTATUS copy_file(connection_struct *conn,
 		}
 	}
 
-	status = open_file_ntcreate(conn,src,&src_sbuf,
+	status = open_file_ntcreate(conn, NULL, src, &src_sbuf,
 			FILE_GENERIC_READ,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
@@ -4849,7 +4869,7 @@ NTSTATUS copy_file(connection_struct *conn,
 		ZERO_STRUCTP(&sbuf2);
 	}
 
-	status = open_file_ntcreate(conn,dest,&sbuf2,
+	status = open_file_ntcreate(conn, NULL, dest, &sbuf2,
 			FILE_GENERIC_WRITE,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			new_create_disposition,

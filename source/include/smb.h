@@ -679,6 +679,13 @@ struct current_user {
 	NT_USER_TOKEN *nt_user_token;
 };
 
+struct smb_request {
+	uint16 flags2;
+	uint16 smbpid;
+	uint16 mid;
+	uint16 vuid;
+};
+
 /* Defines for the sent_oplock_break field above. */
 #define NO_BREAK_SENT 0
 #define BREAK_TO_NONE_SENT 1
