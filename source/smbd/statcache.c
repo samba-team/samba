@@ -165,6 +165,9 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	size_t namelen;
 	BOOL sizechanged = False;
 	unsigned int num_components = 0;
+	char *translated_path;
+	size_t translated_path_length;
+	TDB_DATA data_val;
 
 	if (!lp_stat_cache())
 		return False;
@@ -207,82 +210,87 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	}
 
 	while (1) {
-		TDB_DATA data_val;
 		char *sp;
 
 		data_val = tdb_fetch_bystring(tdb_stat_cache, chk_name);
-		if(data_val.dptr == NULL || data_val.dsize == 0) {
-			DEBUG(10,("stat_cache_lookup: lookup failed for name [%s]\n", chk_name ));
+
+		if (data_val.dptr != NULL && data_val.dsize != 0) {
+			break;
+		}
+
+		DEBUG(10,("stat_cache_lookup: lookup failed for name [%s]\n", chk_name ));
+		/*
+		 * Didn't find it - remove last component for next try.
+		 */
+		if (!(sp = strrchr_m(chk_name, '/'))) {
 			/*
-			 * Didn't find it - remove last component for next try.
+			 * We reached the end of the name - no match.
 			 */
-			sp = strrchr_m(chk_name, '/');
-			if (sp) {
-				*sp = '\0';
-				/*
-				 * Count the number of times we have done this,
-				 * we'll need it when reconstructing the string.
-				 */
-				if (sizechanged)
-					num_components++;
-
-			} else {
-				/*
-				 * We reached the end of the name - no match.
-				 */
-				DO_PROFILE_INC(statcache_misses);
-				SAFE_FREE(chk_name);
-				return False;
-			}
-			if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
-					|| (strcmp(chk_name, "..") == 0)) {
-				DO_PROFILE_INC(statcache_misses);
-				SAFE_FREE(chk_name);
-				return False;
-			}
-		} else {
-			BOOL retval;
-			char *translated_path = (char *)data_val.dptr;
-			size_t translated_path_length = data_val.dsize - 1;
-
-			DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] -> [%s]\n", chk_name, translated_path ));
-			DO_PROFILE_INC(statcache_hits);
-			if(SMB_VFS_STAT(conn,translated_path, pst) != 0) {
-				/* Discard this entry - it doesn't exist in the filesystem.  */
-				tdb_delete_bystring(tdb_stat_cache, chk_name);
-				SAFE_FREE(chk_name);
-				SAFE_FREE(data_val.dptr);
-				return False;
-			}
-
-			if (!sizechanged) {
-				memcpy(name, translated_path, MIN(sizeof(pstring)-1, translated_path_length));
-			} else if (num_components == 0) {
-				pstrcpy(name, translated_path);
-			} else {
-				sp = strnrchr_m(name, '/', num_components);
-				if (sp) {
-					pstring last_component;
-					pstrcpy(last_component, sp);
-					pstrcpy(name, translated_path);
-					pstrcat(name, last_component);
-				} else {
-					pstrcpy(name, translated_path);
-				}
-			}
-
-			/* set pointer for 'where to start' on fixing the rest of the name */
-			*start = &name[translated_path_length];
-			if(**start == '/')
-				++*start;
-
-			pstrcpy(dirpath, translated_path);
-			retval = (namelen == translated_path_length) ? True : False;
+			DO_PROFILE_INC(statcache_misses);
 			SAFE_FREE(chk_name);
-			SAFE_FREE(data_val.dptr);
-			return retval;
+			return False;
+		}
+
+		*sp = '\0';
+
+		/*
+		 * Count the number of times we have done this, we'll
+		 * need it when reconstructing the string.
+		 */
+		if (sizechanged)
+			num_components++;
+
+		if ((*chk_name == '\0')
+		    || ISDOT(chk_name) || ISDOTDOT(chk_name)) {
+			DO_PROFILE_INC(statcache_misses);
+			SAFE_FREE(chk_name);
+			return False;
 		}
 	}
+
+	translated_path = (char *)data_val.dptr;
+	translated_path_length = data_val.dsize - 1;
+
+	DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] "
+		  "-> [%s]\n", chk_name, translated_path ));
+	DO_PROFILE_INC(statcache_hits);
+
+	if (SMB_VFS_STAT(conn, translated_path, pst) != 0) {
+		/* Discard this entry - it doesn't exist in the filesystem. */
+		tdb_delete_bystring(tdb_stat_cache, chk_name);
+		SAFE_FREE(chk_name);
+		SAFE_FREE(data_val.dptr);
+		return False;
+	}
+
+	if (!sizechanged) {
+		memcpy(name, translated_path,
+		       MIN(sizeof(pstring)-1, translated_path_length));
+	} else if (num_components == 0) {
+		pstrcpy(name, translated_path);
+	} else {
+		char *sp;
+
+		sp = strnrchr_m(name, '/', num_components);
+		if (sp) {
+			pstring last_component;
+			pstrcpy(last_component, sp);
+			pstrcpy(name, translated_path);
+			pstrcat(name, last_component);
+		} else {
+			pstrcpy(name, translated_path);
+		}
+	}
+
+	/* set pointer for 'where to start' on fixing the rest of the name */
+	*start = &name[translated_path_length];
+	if (**start == '/')
+		++*start;
+
+	pstrcpy(dirpath, translated_path);
+	SAFE_FREE(chk_name);
+	SAFE_FREE(data_val.dptr);
+	return (namelen == translated_path_length);
 }
 
 /***************************************************************************
