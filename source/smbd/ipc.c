@@ -470,8 +470,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	state->one_way = BITSETW(inbuf+smb_vwv5,1);
 
 	memset(state->name, '\0',sizeof(state->name));
-	srvstr_pull_buf(inbuf, state->name, smb_buf(inbuf),
-			sizeof(state->name), STR_TERMINATE);
+	srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), state->name,
+			smb_buf(inbuf), sizeof(state->name), STR_TERMINATE);
 	
 	if ((dscnt > state->total_data) || (pscnt > state->total_param))
 		goto bad_param;

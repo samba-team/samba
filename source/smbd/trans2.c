@@ -803,7 +803,9 @@ static int call_trans2open(connection_struct *conn,
 		return(ERROR_DOS(ERRSRV,ERRaccess));
 	}
 
-	srvstr_get_path(inbuf, fname, pname, sizeof(fname), total_params - 28, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, pname,
+			sizeof(fname), total_params - 28, STR_TERMINATE,
+			&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1731,7 +1733,9 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
-	srvstr_get_path_wcard(inbuf, directory, params+12, sizeof(directory), total_params - 12, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
+	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), directory,
+			      params+12, sizeof(directory), total_params - 12,
+			      STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ERROR_NT(ntstatus);
 	}
@@ -1996,7 +2000,10 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	*mask = *directory = *resume_name = 0;
 
-	srvstr_get_path_wcard(inbuf, resume_name, params+12, sizeof(resume_name), total_params - 12, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
+	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), resume_name,
+			      params+12, sizeof(resume_name),
+			      total_params - 12, STR_TERMINATE, &ntstatus,
+			      &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
 		   complain (it thinks we're asking for the directory above the shared
@@ -3347,7 +3354,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 		}
 
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), total_params - 6, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, &params[6],
+				sizeof(fname), total_params - 6,
+				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -4476,7 +4485,8 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), total_data, STR_TERMINATE);
+	srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), link_target, pdata,
+		    sizeof(link_target), total_data, STR_TERMINATE);
 
 	/* !widelinks forces the target path to be within the share. */
 	/* This means we can interpret the target as a pathname. */
@@ -4532,7 +4542,8 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), total_data, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), oldname, pdata,
+			sizeof(oldname), total_data, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4582,7 +4593,9 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path_wcard(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status, &dest_has_wcard);
+	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), newname, &pdata[12],
+			      sizeof(newname), len, 0, &status,
+			      &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -5795,7 +5808,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		info_level = SVAL(params,0);    
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), total_params - 6, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, &params[6],
+				sizeof(fname), total_params - 6, STR_TERMINATE,
+				&status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -6133,7 +6148,9 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), total_params - 4, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), directory, &params[4],
+			sizeof(directory), total_params - 4, STR_TERMINATE,
+			&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -6312,7 +6329,8 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 	if(!lp_host_msdfs())
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
-	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), total_params - 2, STR_TERMINATE);
+	srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), pathname, &params[2],
+		    sizeof(pathname), total_params - 2, STR_TERMINATE);
 	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata,&status)) < 0)
 		return ERROR_NT(status);
     

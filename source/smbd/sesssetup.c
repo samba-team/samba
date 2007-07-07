@@ -1055,9 +1055,12 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 #endif
 
 	p2 = inbuf + smb_vwv13 + data_blob_len;
-	p2 += srvstr_pull_buf(inbuf, native_os, p2, sizeof(native_os), STR_TERMINATE);
-	p2 += srvstr_pull_buf(inbuf, native_lanman, p2, sizeof(native_lanman), STR_TERMINATE);
-	p2 += srvstr_pull_buf(inbuf, primary_domain, p2, sizeof(primary_domain), STR_TERMINATE);
+	p2 += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), native_os, p2,
+			      sizeof(native_os), STR_TERMINATE);
+	p2 += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), native_lanman, p2,
+			      sizeof(native_lanman), STR_TERMINATE);
+	p2 += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), primary_domain, p2,
+			      sizeof(primary_domain), STR_TERMINATE);
 	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n", 
 		native_os, native_lanman, primary_domain));
 
@@ -1281,7 +1284,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			plaintext_password.data[passlen1] = 0;
 		}
 
-		srvstr_pull_buf(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), STR_TERMINATE);
+		srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), user,
+				smb_buf(inbuf)+passlen1, sizeof(user),
+				STR_TERMINATE);
 		*domain = 0;
 
 	} else {
@@ -1361,21 +1366,28 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 			if (unic && (passlen2 == 0) && passlen1) {
 				/* Only a ascii plaintext password was sent. */
-				srvstr_pull(inbuf, pass, smb_buf(inbuf), sizeof(pass),
-					passlen1, STR_TERMINATE|STR_ASCII);
+				srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), pass,
+					    smb_buf(inbuf), sizeof(pass),
+					    passlen1, STR_TERMINATE|STR_ASCII);
 			} else {
-				srvstr_pull(inbuf, pass, smb_buf(inbuf), 
-					sizeof(pass),  unic ? passlen2 : passlen1, 
-					STR_TERMINATE);
+				srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), pass,
+					    smb_buf(inbuf), sizeof(pass),
+					    unic ? passlen2 : passlen1,
+					    STR_TERMINATE);
 			}
 			plaintext_password = data_blob(pass, strlen(pass)+1);
 		}
 		
 		p += passlen1 + passlen2;
-		p += srvstr_pull_buf(inbuf, user, p, sizeof(user), STR_TERMINATE);
-		p += srvstr_pull_buf(inbuf, domain, p, sizeof(domain), STR_TERMINATE);
-		p += srvstr_pull_buf(inbuf, native_os, p, sizeof(native_os), STR_TERMINATE);
-		p += srvstr_pull_buf(inbuf, native_lanman, p, sizeof(native_lanman), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), user, p,
+				     sizeof(user), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), domain, p,
+				     sizeof(domain), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), native_os,
+				     p, sizeof(native_os), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2),
+				     native_lanman, p, sizeof(native_lanman),
+				     STR_TERMINATE);
 
 		/* not documented or decoded by Ethereal but there is one more string 
 		   in the extra bytes which is the same as the PrimaryDomain when using 
@@ -1385,7 +1397,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		
 		byte_count = SVAL(inbuf, smb_vwv13);
 		if ( PTR_DIFF(p, save_p) < byte_count)
-			p += srvstr_pull_buf(inbuf, primary_domain, p, sizeof(primary_domain), STR_TERMINATE);
+			p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2),
+					     primary_domain, p,
+					     sizeof(primary_domain),
+					     STR_TERMINATE);
 		else 
 			fstrcpy( primary_domain, "null" );
 
