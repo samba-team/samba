@@ -101,6 +101,21 @@ userAccountControl: 4096
 		}
 	}
 
+	    ok = ldb.modify("
+dn: cn=ldaptest2computer,cn=computers," + base_dn + "
+changetype: modify
+replace: servicePrincipalName
+servicePrincipalName: host/ldaptest2computer
+servicePrincipalName: host/ldaptest2computer
+servicePrincipalName: cifs/ldaptest2computer
+");
+
+//LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS
+		if (ok.error != 20) {
+			println("Expected error LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS, got :" + ok.errstr);
+			assert(ok.error == 20);
+		}
+
 	ok = ldb.add("
 dn: cn=ldaptestuser2,cn=users," + base_dn + "
 objectClass: person
