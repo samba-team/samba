@@ -147,7 +147,6 @@ static char *format_value(TALLOC_CTX *mem_ctx, struct registry_value *value)
  */
 static WERROR reg_setvalue_internal(struct registry_key *key,
 				    const char *valname,
-				    const char *valtype,
 				    const char *valstr)
 {
 	struct registry_value val;
@@ -155,21 +154,9 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 
 	ZERO_STRUCT(val);
 
-	if (strequal(valtype, "dword")) {
-		val.type = REG_DWORD;
-		val.v.dword = strtoul(valstr, NULL, 10);
-	}
-	else if (strequal(valtype, "sz")) {
-		val.type = REG_SZ;
-		val.v.sz.str = CONST_DISCARD(char *, valstr);
-		val.v.sz.len = strlen(valstr) + 1;
-	}
-	else {
-		d_fprintf(stderr, "Only value types DWORD and SZ are"
-			  "currently implemented for setting values.\n");
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
+	val.type = REG_SZ;
+	val.v.sz.str = CONST_DISCARD(char *, valstr);
+	val.v.sz.len = strlen(valstr) + 1;
 
 	if (!lp_parameter_is_valid(valname)) {
 		d_fprintf(stderr, "Invalid parameter '%s' given.\n", valname);
@@ -577,7 +564,7 @@ static int import_process_service(TALLOC_CTX *ctx,
 			}
 			else {
 				werr = reg_setvalue_internal(key, parm->label,
-							     "sz", valstr);
+							     valstr);
 				if (!W_ERROR_IS_OK(werr)) {
 					goto done;
 				}
@@ -979,21 +966,21 @@ int net_conf_addshare(int argc, const char **argv)
 
 	/* add config params as values */
 
-	werr = reg_setvalue_internal(newkey, "path", "sz", path);
+	werr = reg_setvalue_internal(newkey, "path", path);
 	if (!W_ERROR_IS_OK(werr))
 		goto done;
 
 	if (comment != NULL) {
-		werr = reg_setvalue_internal(newkey, "comment", "sz", comment);
+		werr = reg_setvalue_internal(newkey, "comment", comment);
 		if (!W_ERROR_IS_OK(werr))
 			goto done;
 	}
 
-	werr = reg_setvalue_internal(newkey, "guest ok", "sz", guest_ok);
+	werr = reg_setvalue_internal(newkey, "guest ok", guest_ok);
 	if (!W_ERROR_IS_OK(werr))
 		goto done;
 	
-	werr = reg_setvalue_internal(newkey, "writeable", "sz", writeable);
+	werr = reg_setvalue_internal(newkey, "writeable", writeable);
 	if (!W_ERROR_IS_OK(werr))
 		goto done;
 
@@ -1053,7 +1040,7 @@ static int net_conf_setparm(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = reg_setvalue_internal(key, param, "sz", value_str);
+	werr = reg_setvalue_internal(key, param, value_str);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
 			  param, dos_errstr(werr));
