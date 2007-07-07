@@ -690,8 +690,6 @@ int net_conf_import(int argc, const char **argv)
 	DEBUG(3,("net_conf_import: reading configuration from file %s.\n",
 		filename));
 
-	/* TODO: check for existence and readability */
-
 	if (!lp_load(filename, 
 		     False,     /* global_only */
 		     True,      /* save_defaults */
