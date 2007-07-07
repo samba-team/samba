@@ -536,6 +536,13 @@ static int import_process_service(TALLOC_CTX *ctx,
 	struct registry_key *key;
 	WERROR werr;
 	char *valstr = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	tmp_ctx = talloc_new(ctx);
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
 
 	servicename = (share->service == GLOBAL_SECTION_SNUM)?
 		GLOBAL_NAME : lp_servicename(share->service);
@@ -544,13 +551,13 @@ static int import_process_service(TALLOC_CTX *ctx,
 		d_printf("[%s]\n", servicename);
 	}
 	else {
-		if (smbconf_key_exists(ctx, servicename)) {
-			werr = reg_delkey_internal(ctx, servicename);
+		if (smbconf_key_exists(tmp_ctx, servicename)) {
+			werr = reg_delkey_internal(tmp_ctx, servicename);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
 		}
-		werr = reg_createkey_internal(ctx, servicename, &key);
+		werr = reg_createkey_internal(tmp_ctx, servicename, &key);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -562,7 +569,7 @@ static int import_process_service(TALLOC_CTX *ctx,
 		    && !(parm->flags & FLAG_GLOBAL))
 			continue;
 
-		valstr = parm_valstr(ctx, parm, share);
+		valstr = parm_valstr(tmp_ctx, parm, share);
 
 		if (parm->type != P_SEP) {
 			if (opt_testmode) {
@@ -583,7 +590,9 @@ static int import_process_service(TALLOC_CTX *ctx,
 	}
 
 	ret = 0;
+
 done:
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
