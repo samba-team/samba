@@ -184,11 +184,12 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 		goto done;
 	}
 
-	if (!strequal(key->key->name, GLOBAL_NAME) &&
+	if (!strequal(strrchr_m(key->key->name, '\\')+1, GLOBAL_NAME) &&
 	    lp_parameter_is_global(valname))
 	{
 		d_fprintf(stderr, "Global paramter '%s' not allowed in "
-			  "service definition.\n", valname);
+			  "service definition ('%s').\n", valname,
+			  strrchr_m(key->key->name, '\\')+1);
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
