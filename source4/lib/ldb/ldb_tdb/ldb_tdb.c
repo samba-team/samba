@@ -591,7 +591,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message *msg2;
 	unsigned i, j;
-	int ret;
+	int ret, idx;
 
 	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
@@ -631,9 +631,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		case LDB_FLAG_MOD_ADD:
 			/* add this element to the message. fail if it
 			   already exists */
-			ret = find_element(msg2, el->name);
+			idx = find_element(msg2, el->name);
 
-			if (ret == -1) {
+			if (idx == -1) {
 				if (msg_add_element(ldb, msg2, el) != 0) {
 					ret = LDB_ERR_OTHER;
 					goto failed;
@@ -641,14 +641,21 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 				continue;
 			}
 
-			el2 = &msg2->elements[ret];
+			el2 = &msg2->elements[idx];
 
-			/* An attribute with this name already exists, add all
-			 * values if they don't already exist. */
+			/* An attribute with this name already exists,
+			 * add all values if they don't already exist
+			 * (check both the other elements to be added,
+			 * and those already in the db). */
 
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_msg_find_val(el2, &el->values[j])) {
-					ldb_set_errstring(module->ldb, "Type or value exists");
+					ldb_asprintf_errstring(module->ldb, "%s: value #%d already exists", el->name, j);
+					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+					goto failed;
+				}
+				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
+					ldb_asprintf_errstring(module->ldb, "%s: value #%d provided more than once", el->name, j);
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto failed;
 				}
@@ -675,11 +682,19 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		case LDB_FLAG_MOD_REPLACE:
 			/* replace all elements of this attribute name with the elements
 			   listed. The attribute not existing is not an error */
-			msg_delete_attribute(module, ldb, msg2, msg->elements[i].name);
+			msg_delete_attribute(module, ldb, msg2, el->name);
+
+			for (j=0;j<el->num_values;j++) {
+				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
+					ldb_asprintf_errstring(module->ldb, "%s: value #%d provided more than once", el->name, j);
+					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+					goto failed;
+				}
+			}
 
 			/* add the replacement element, if not empty */
-			if (msg->elements[i].num_values != 0 &&
-			    msg_add_element(ldb, msg2, &msg->elements[i]) != 0) {
+			if (el->num_values != 0 &&
+			    msg_add_element(ldb, msg2, el) != 0) {
 				ret = LDB_ERR_OTHER;
 				goto failed;
 			}
