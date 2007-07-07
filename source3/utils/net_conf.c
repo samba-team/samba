@@ -527,7 +527,7 @@ static int import_process_service(TALLOC_CTX *ctx,
                 	}
 			break;
 		case P_OCTAL:
-			talloc_asprintf(ctx, "%s", octal_string(*(int *)ptr));
+			valstr = talloc_asprintf(ctx, "%s", octal_string(*(int *)ptr));
 			break;
 		case P_LIST:
 			valstr = talloc_strdup(ctx, "");
@@ -553,7 +553,7 @@ static int import_process_service(TALLOC_CTX *ctx,
 			break;
 		case P_INTEGER:
 			valtype = "dword";
-			talloc_asprintf(ctx, "%d", *(int *)ptr);
+			valstr = talloc_asprintf(ctx, "%d", *(int *)ptr);
 			break;
 		case P_SEP:
 			break;
