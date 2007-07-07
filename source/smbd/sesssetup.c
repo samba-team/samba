@@ -1027,6 +1027,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint16 smbpid = SVAL(inbuf,smb_pid);
+	uint16 smb_flag2 = SVAL(inbuf, smb_flg2);
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -1055,11 +1056,11 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 #endif
 
 	p2 = inbuf + smb_vwv13 + data_blob_len;
-	p2 += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), native_os, p2,
+	p2 += srvstr_pull_buf(inbuf, smb_flag2, native_os, p2,
 			      sizeof(native_os), STR_TERMINATE);
-	p2 += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), native_lanman, p2,
+	p2 += srvstr_pull_buf(inbuf, smb_flag2, native_lanman, p2,
 			      sizeof(native_lanman), STR_TERMINATE);
-	p2 += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), primary_domain, p2,
+	p2 += srvstr_pull_buf(inbuf, smb_flag2, primary_domain, p2,
 			      sizeof(primary_domain), STR_TERMINATE);
 	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n", 
 		native_os, native_lanman, primary_domain));
@@ -1234,6 +1235,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	static BOOL done_sesssetup = False;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+	uint16 smb_flag2 = SVAL(inbuf, smb_flg2);
 
 	NTSTATUS nt_status;
 
@@ -1247,12 +1249,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	ZERO_STRUCT(nt_resp);
 	ZERO_STRUCT(plaintext_password);
 
-	DEBUG(3,("wct=%d flg2=0x%x\n", CVAL(inbuf, smb_wct), SVAL(inbuf, smb_flg2)));
+	DEBUG(3,("wct=%d flg2=0x%x\n", CVAL(inbuf, smb_wct), smb_flag2));
 
 	/* a SPNEGO session setup has 12 command words, whereas a normal
 	   NT1 session setup has 13. See the cifs spec. */
 	if (CVAL(inbuf, smb_wct) == 12 &&
-	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
+	    (smb_flag2 & FLAGS2_EXTENDED_SECURITY)) {
 		if (!global_spnego_negotiated) {
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at SPNEGO session setup when it was not negoitiated.\n"));
 			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
@@ -1284,7 +1286,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			plaintext_password.data[passlen1] = 0;
 		}
 
-		srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), user,
+		srvstr_pull_buf(inbuf, smb_flag2, user,
 				smb_buf(inbuf)+passlen1, sizeof(user),
 				STR_TERMINATE);
 		*domain = 0;
@@ -1354,7 +1356,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
 			pstring pass;
-			BOOL unic=SVAL(inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS;
+			BOOL unic= smb_flag2 & FLAGS2_UNICODE_STRINGS;
 
 #if 0
 			/* This was the previous fix. Not sure if it's still valid. JRA. */
@@ -1366,11 +1368,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 			if (unic && (passlen2 == 0) && passlen1) {
 				/* Only a ascii plaintext password was sent. */
-				srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), pass,
+				srvstr_pull(inbuf, smb_flag2, pass,
 					    smb_buf(inbuf), sizeof(pass),
 					    passlen1, STR_TERMINATE|STR_ASCII);
 			} else {
-				srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), pass,
+				srvstr_pull(inbuf, smb_flag2, pass,
 					    smb_buf(inbuf), sizeof(pass),
 					    unic ? passlen2 : passlen1,
 					    STR_TERMINATE);
@@ -1379,13 +1381,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		}
 		
 		p += passlen1 + passlen2;
-		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), user, p,
+		p += srvstr_pull_buf(inbuf, smb_flag2, user, p,
 				     sizeof(user), STR_TERMINATE);
-		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), domain, p,
+		p += srvstr_pull_buf(inbuf, smb_flag2, domain, p,
 				     sizeof(domain), STR_TERMINATE);
-		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), native_os,
+		p += srvstr_pull_buf(inbuf, smb_flag2, native_os,
 				     p, sizeof(native_os), STR_TERMINATE);
-		p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2),
+		p += srvstr_pull_buf(inbuf, smb_flag2,
 				     native_lanman, p, sizeof(native_lanman),
 				     STR_TERMINATE);
 
@@ -1397,7 +1399,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		
 		byte_count = SVAL(inbuf, smb_vwv13);
 		if ( PTR_DIFF(p, save_p) < byte_count)
-			p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2),
+			p += srvstr_pull_buf(inbuf, smb_flag2,
 					     primary_domain, p,
 					     sizeof(primary_domain),
 					     STR_TERMINATE);
