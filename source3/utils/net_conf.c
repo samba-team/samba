@@ -583,6 +583,19 @@ done:
 	return ret;
 }
 
+/* return True iff there are nondefault globals */
+static BOOL globals_exist(void)
+{
+	int i = 0;
+	struct parm_struct *parm;
+
+	while ((parm = lp_next_parameter(GLOBAL_SECTION_SNUM, &i, 0)) != NULL) {
+		if (parm->type != P_SEP) {
+			return True;
+		}
+	}
+	return False;
+}
 
 /*
  * the conf functions 
@@ -689,7 +702,7 @@ int net_conf_import(int argc, const char **argv)
 	DEBUG(3,("net_conf_import: reading configuration from file %s.\n",
 		filename));
 
-	if (!lp_load(filename, 
+	if (!lp_load(filename,
 		     False,     /* global_only */
 		     True,      /* save_defaults */
 		     False,     /* add_ipc */
@@ -700,10 +713,13 @@ int net_conf_import(int argc, const char **argv)
 	}
 
 	if (opt_testmode) {
-		d_printf("\nTEST MODE - would import the following configuration:\n\n");
+		d_printf("\nTEST MODE - "
+			 "would import the following configuration:\n\n");
 	}
 
-	if ((servicename == NULL) || strequal(servicename, GLOBAL_NAME)) {
+	if (((servicename == NULL) && globals_exist()) ||
+	    strequal(servicename, GLOBAL_NAME))
+	{
 		service_found = True;
 		if (import_process_service(ctx, &global_share) != 0) {
 			goto done;
@@ -720,8 +736,8 @@ int net_conf_import(int argc, const char **argv)
 		goto done;
 	}
 	while ((share = next_share(shares)) != NULL) {
-		if ((servicename == NULL) 
-		    || strequal(servicename, lp_servicename(share->service))) 
+		if ((servicename == NULL)
+		    || strequal(servicename, lp_servicename(share->service)))
 		{
 			service_found = True;
 			if (import_process_service(ctx, share)!= 0) {
@@ -729,16 +745,16 @@ int net_conf_import(int argc, const char **argv)
 			}
 		}
 	}
-	
+
 	if ((servicename != NULL) && !service_found) {
-		d_printf("Share %s not found in file %s\n", 
+		d_printf("Share %s not found in file %s\n",
 			 servicename, filename);
 		goto done;
 
 	}
 
 	ret = 0;
-	
+
 done:
 	TALLOC_FREE(ctx);
 	return ret;
