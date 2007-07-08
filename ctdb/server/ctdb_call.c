@@ -311,8 +311,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	if (ctdb_lmaster(ctdb, &key) != ctdb->vnn) {
-		DEBUG(0,("vnn %u dmaster request to non-lmaster lmaster=%u\n",
-			 ctdb->vnn, ctdb_lmaster(ctdb, &key)));
+		DEBUG(0,("vnn %u dmaster request to non-lmaster lmaster=%u gen=%u curgen=%u\n",
+			 ctdb->vnn, ctdb_lmaster(ctdb, &key), 
+			 hdr->generation, ctdb->vnn_map->generation));
 		ctdb_fatal(ctdb, "ctdb_req_dmaster to non-lmaster");
 	}
 
@@ -321,9 +322,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 
 	/* its a protocol error if the sending node is not the current dmaster */
 	if (header.dmaster != hdr->srcnode) {
-		DEBUG(0,("vnn %u dmaster request non-master %u dmaster=%u key %08x dbid 0x%08x\n",
+		DEBUG(0,("vnn %u dmaster request non-master %u dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u\n",
 			 ctdb->vnn, hdr->srcnode, header.dmaster, ctdb_hash(&key),
-			 ctdb_db->db_id));
+			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation));
 		ctdb_fatal(ctdb, "ctdb_req_dmaster from non-master");
 		return;
 	}
