@@ -994,7 +994,6 @@ static int tdb_validate_child(const char *tdb_path,
 			      int pfd)
 {
 	int ret = -1;
-	int tfd = -1;
 	int num_entries = 0;
 	TDB_CONTEXT *tdb = NULL;
 	struct tdb_validation_status v_status;
@@ -1011,8 +1010,6 @@ static int tdb_validate_child(const char *tdb_path,
 		v_status.success = False;
 		goto out;
 	}
-
-	tfd = tdb_fd(tdb);
 
 	/* Check the cache freelist is good. */
 	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
@@ -1048,12 +1045,7 @@ static int tdb_validate_child(const char *tdb_path,
 
 out:
 	if (tdb) {
-		if (ret == 0) {
-			tdb_close(tdb);
-		}
-		else if (tfd != -1) {
-			close(tfd);
-		}
+		tdb_close(tdb);
 	}
 
 	DEBUG(10, ("tdb_validate_child: writing status to pipe\n"));
