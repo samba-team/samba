@@ -785,7 +785,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 					  ctdb->takeover.interface, 
 					  node->public_address,
 					  node->public_netmask_bits);
-			if (inet_aton(node->public_address, &in) == 0) {
+			if (inet_aton(node->public_address, &in) != 0) {
 				release_kill_clients(ctdb, in);
 			}
 		}
