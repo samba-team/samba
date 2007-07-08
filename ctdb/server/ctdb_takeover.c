@@ -510,8 +510,8 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	   have.  This will be a NOOP on nodes that don't currently
 	   hold the given alias */
 	for (i=0;i<nodemap->num;i++) {
-		/* don't talk to unconnected nodes */
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+		/* don't talk to unconnected nodes, but do talk to banned nodes */
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 
