@@ -224,19 +224,19 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 /*
   kill any clients that are registered with a IP that is being released
  */
-static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in *sin)
+static void release_kill_clients(struct ctdb_context *ctdb, struct in_addr in)
 {
 	struct ctdb_client_ip *ip;
 
 	for (ip=ctdb->client_ip_list; ip; ip=ip->next) {
-		if (ip->ip.sin_addr.s_addr == sin->sin_addr.s_addr) {
+		if (ip->ip.sin_addr.s_addr == in.s_addr) {
 			struct ctdb_client *client = ctdb_reqid_find(ctdb, 
 								     ip->client_id, 
 								     struct ctdb_client);
 			if (client->pid != 0) {
 				DEBUG(0,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
-					 (unsigned)client->pid, inet_ntoa(sin->sin_addr),
-					      ip->client_id));
+					 (unsigned)client->pid, inet_ntoa(in),
+					 ip->client_id));
 				kill(client->pid, SIGKILL);
 			}
 		}
@@ -266,7 +266,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	ctdb_daemon_send_message(ctdb, ctdb->vnn, CTDB_SRVID_RELEASE_IP, data);
 
 	/* kill clients that have registered with this IP */
-	release_kill_clients(ctdb, state->sin);
+	release_kill_clients(ctdb, state->sin->sin_addr);
 	
 
 	/* tell other nodes about any tcp connections we were holding with this IP */
@@ -510,8 +510,8 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	   have.  This will be a NOOP on nodes that don't currently
 	   hold the given alias */
 	for (i=0;i<nodemap->num;i++) {
-		/* don't talk to unconnected nodes */
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+		/* don't talk to unconnected nodes, but do talk to banned nodes */
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 
@@ -780,10 +780,14 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];
 		if (ctdb_sys_have_ip(node->public_address)) {
+			struct in_addr in;
 			ctdb_event_script(ctdb, "releaseip %s %s %u",
 					  ctdb->takeover.interface, 
 					  node->public_address,
 					  node->public_netmask_bits);
+			if (inet_aton(node->public_address, &in) != 0) {
+				release_kill_clients(ctdb, in);
+			}
 		}
 	}
 }
