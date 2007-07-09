@@ -50,7 +50,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 	LDAPMessage *res = NULL;
 	const char *filter;
 	char *dn = NULL;
-	struct GROUP_POLICY_OBJECT *gpo_list;
+	struct GROUP_POLICY_OBJECT *gpo_list = NULL;
 	uint32 uac = 0;
 	uint32 flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo;
@@ -127,8 +127,8 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 			GPO_VERSION_USER(gpo->version),
 			GPO_VERSION_MACHINE(gpo->version));
 
-		result = ads_gpo_explode_filesyspath(ads, mem_ctx, gpo->file_sys_path,
-						     &server, &share, &nt_path, &unix_path);
+		result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+						 &server, &share, &nt_path, &unix_path);
 		if (!NT_STATUS_IS_OK(result)) {
 			printf("got: %s\n", nt_errstr(result));
 		}

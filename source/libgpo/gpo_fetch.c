@@ -24,13 +24,12 @@
  explode the GPO CIFS URI into their components
 ****************************************************************/
 
-NTSTATUS ads_gpo_explode_filesyspath(ADS_STRUCT *ads, 
-				     TALLOC_CTX *mem_ctx, 
-				     const char *file_sys_path, 
-				     char **server, 
-				     char **service, 
-				     char **nt_path,
-				     char **unix_path)
+NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx, 
+				 const char *file_sys_path, 
+				 char **server, 
+				 char **service, 
+				 char **nt_path,
+				 char **unix_path)
 {
 	fstring tok;
 	pstring path;
@@ -39,6 +38,10 @@ NTSTATUS ads_gpo_explode_filesyspath(ADS_STRUCT *ads,
 	*service = NULL;
 	*nt_path = NULL;
 	*unix_path = NULL;
+
+	if (!file_sys_path) {
+		return NT_STATUS_OK;
+	}
 
 	if (!next_token(&file_sys_path, tok, "\\", sizeof(tok))) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -76,9 +79,8 @@ NTSTATUS ads_gpo_explode_filesyspath(ADS_STRUCT *ads,
  prepare the local disc storage for "unix_path"
 ****************************************************************/
 
-NTSTATUS ads_gpo_prepare_local_store(ADS_STRUCT *ads, 
-				     TALLOC_CTX *mem_ctx, 
-				     const char *unix_path)
+static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx, 
+					const char *unix_path)
 {
 	const char *top_dir = lock_path(GPO_CACHE_DIR);
 	char *current_dir;
@@ -115,21 +117,20 @@ NTSTATUS ads_gpo_prepare_local_store(ADS_STRUCT *ads,
  download a full GPO via CIFS
 ****************************************************************/
 
-NTSTATUS ads_fetch_gpo_files(ADS_STRUCT *ads, 
-			    TALLOC_CTX *mem_ctx, 
-			    struct cli_state *cli, 
-			    struct GROUP_POLICY_OBJECT *gpo)
+NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx, 
+			 struct cli_state *cli, 
+			 struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
 	char *server, *service, *nt_path, *unix_path, *nt_ini_path, *unix_ini_path;
 
-	result = ads_gpo_explode_filesyspath(ads, mem_ctx, gpo->file_sys_path, 
-					     &server, &service, &nt_path, &unix_path);
+	result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path, 
+					 &server, &service, &nt_path, &unix_path);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
 	}
 
-	result = ads_gpo_prepare_local_store(ads, mem_ctx, unix_path);
+	result = gpo_prepare_local_store(mem_ctx, unix_path);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
 	}
@@ -161,23 +162,26 @@ NTSTATUS ads_fetch_gpo_files(ADS_STRUCT *ads,
  get the locally stored gpt.ini version number
 ****************************************************************/
 
-NTSTATUS ads_gpo_get_sysvol_gpt_version(ADS_STRUCT *ads, 
-					TALLOC_CTX *mem_ctx, 
-					const char *unix_path, 
-					uint32 *sysvol_version,
-					char **display_name)
+NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx, 
+				    const char *unix_path, 
+				    uint32 *sysvol_version,
+				    char **display_name)
 {
 	NTSTATUS status;
-	uint32 version;
+	uint32 version = 0;
 	char *local_path = NULL;
 	char *name = NULL;
+
+	if (!unix_path) {
+		return NT_STATUS_OK;
+	}
 
 	local_path = talloc_asprintf(mem_ctx, "%s/%s", unix_path, GPT_INI);
 	NT_STATUS_HAVE_NO_MEMORY(local_path);
 
 	status = parse_gpt_ini(mem_ctx, local_path, &version, &name);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("ads_gpo_get_sysvol_gpt_version: failed to parse ini [%s]: %s\n", 
+		DEBUG(10,("gpo_get_sysvol_gpt_version: failed to parse ini [%s]: %s\n", 
 			unix_path, nt_errstr(status)));
 		return status;
 	}
