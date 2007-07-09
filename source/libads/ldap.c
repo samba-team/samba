@@ -3272,4 +3272,64 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	return ADS_ERROR_LDAP(LDAP_SUCCESS);
 }
 
+ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
+			       TALLOC_CTX *mem_ctx,
+			       const char *samaccountname,
+			       uint32 *uac_ret,
+			       const char **dn_ret)
+{
+	ADS_STATUS status;
+	const char *attrs[] = { "userAccountControl", NULL };
+	const char *filter;
+	LDAPMessage *res = NULL;
+	char *dn = NULL;
+	uint32 uac = 0;
+
+	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))",
+		samaccountname);
+	if (filter == NULL) {
+		goto out;
+	}
+
+	status = ads_do_search_all(ads, ads->config.bind_path,
+				   LDAP_SCOPE_SUBTREE,
+				   filter, attrs, &res);
+	
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	if (ads_count_replies(ads, res) != 1) {
+		printf("no result\n");
+		goto out;
+	}
+
+	dn = ads_get_dn(ads, res);
+	if (dn == NULL) {
+		status = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
+	}
+
+	if (!ads_pull_uint32(ads, res, "userAccountControl", &uac)) {
+		status = ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
+		goto out;
+	}
+
+	if (uac_ret) {
+		*uac_ret = uac;
+	}
+
+	if (dn_ret) {
+		*dn_ret = talloc_strdup(mem_ctx, dn);
+		if (!*dn_ret) {
+			status = ADS_ERROR(LDAP_NO_MEMORY);
+			goto out;
+		}
+	}
+ out:
+	ads_memfree(ads, dn);
+	ads_msgfree(ads, res);
+
+	return status;
+}
 #endif

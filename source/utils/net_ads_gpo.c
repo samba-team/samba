@@ -46,10 +46,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	const char *attrs[] = { "userAccountControl", NULL };
-	LDAPMessage *res = NULL;
-	const char *filter;
-	char *dn = NULL;
+	const char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list = NULL;
 	uint32 uac = 0;
 	uint32 flags = 0;
@@ -66,35 +63,14 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 		return -1;
 	}
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))", argv[0]);
-	if (filter == NULL) {
-		goto out;
-	}
-
 	status = ads_startup(False, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
-	status = ads_do_search_all(ads, ads->config.bind_path,
-				   LDAP_SCOPE_SUBTREE,
-				   filter, attrs, &res);
-	
+	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	if (ads_count_replies(ads, res) != 1) {
-		printf("no result\n");
-		goto out;
-	}
-
-	dn = ads_get_dn(ads, res);
-	if (dn == NULL) {
-		goto out;
-	}
-
-	if (!ads_pull_uint32(ads, res, "userAccountControl", &uac)) {
+		printf("failed to find samaccount for %s\n", argv[0]);
 		goto out;
 	}
 
@@ -139,9 +115,6 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 	}
 
  out:
-	ads_memfree(ads, dn);
-	ads_msgfree(ads, res);
-
 	ads_destroy(&ads);
 	talloc_destroy(mem_ctx);
 	return 0;
@@ -225,10 +198,7 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
-	LDAPMessage *res = NULL;
-	const char *filter;
-	char *dn = NULL;
+	const char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list;
 	uint32 uac = 0;
 	uint32 flags = 0;
@@ -243,35 +213,13 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 		goto out;
 	}
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))", argv[0]);
-	if (filter == NULL) {
-		goto out;
-	}
-
 	status = ads_startup(False, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
-	status = ads_do_search_all(ads, ads->config.bind_path,
-				   LDAP_SCOPE_SUBTREE,
-				   filter, attrs, &res);
-	
+	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	if (ads_count_replies(ads, res) != 1) {
-		printf("no result\n");
-		goto out;
-	}
-
-	dn = ads_get_dn(ads, res);
-	if (dn == NULL) {
-		goto out;
-	}
-
-	if (!ads_pull_uint32(ads, res, "userAccountControl", &uac)) {
 		goto out;
 	}
 
@@ -289,15 +237,12 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 	}
 
 	/* FIXME: allow to process just a single extension */
-	status = gpo_process_gpo_list(ads, mem_ctx, &gpo_list, NULL, flags); 
+	status = gpo_process_gpo_list(ads, mem_ctx, gpo_list, NULL, flags); 
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
 out:
-	ads_memfree(ads, dn);
-	ads_msgfree(ads, res);
-
 	ads_destroy(&ads);
 	talloc_destroy(mem_ctx);
 	return 0;
