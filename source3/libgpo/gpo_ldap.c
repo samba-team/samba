@@ -28,13 +28,23 @@
 
 ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			    const char *extension_raw,
-			    struct GP_EXT *gp_ext)
+			    struct GP_EXT **gp_ext)
 {
+	struct GP_EXT *ext = NULL;
 	char **ext_list;
 	char **ext_strings = NULL;
 	int i;
 
+	if (!extension_raw) {
+		goto parse_error;
+	}
+
 	DEBUG(20,("ads_parse_gp_ext: %s\n", extension_raw));
+
+	ext = TALLOC_ZERO_P(mem_ctx, struct GP_EXT);
+	if (!ext) {
+		goto parse_error;
+	}
 
 	ext_list = str_list_make_talloc(mem_ctx, extension_raw, "]");
 	if (ext_list == NULL) {
@@ -45,27 +55,27 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 		/* no op */
 	}
 
-	gp_ext->num_exts = i;
+	ext->num_exts = i;
 	
-	if (gp_ext->num_exts) {
-		gp_ext->extensions = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
-		gp_ext->extensions_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
-		gp_ext->snapins = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
-		gp_ext->snapins_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_ext->num_exts);
+	if (ext->num_exts) {
+		ext->extensions = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
+		ext->extensions_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
+		ext->snapins = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
+		ext->snapins_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
 	} else {
-		gp_ext->extensions = NULL;
-		gp_ext->extensions_guid = NULL;
-		gp_ext->snapins = NULL;
-		gp_ext->snapins_guid = NULL;
+		ext->extensions = NULL;
+		ext->extensions_guid = NULL;
+		ext->snapins = NULL;
+		ext->snapins_guid = NULL;
 	}
 
-	if (gp_ext->extensions == NULL || gp_ext->extensions_guid == NULL || 
-	    gp_ext->snapins == NULL || gp_ext->snapins_guid == NULL || 
-	    gp_ext->gp_extension == NULL) {
+	ext->gp_extension = talloc_strdup(mem_ctx, extension_raw);
+
+	if (ext->extensions == NULL || ext->extensions_guid == NULL || 
+	    ext->snapins == NULL || ext->snapins_guid == NULL || 
+	    ext->gp_extension == NULL) {
 		goto parse_error;
 	}
-
-	gp_ext->gp_extension = talloc_strdup(mem_ctx, extension_raw);
 
 	for (i = 0; ext_list[i] != NULL; i++) {
 
@@ -95,11 +105,11 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			q++;
 		}
 
-		gp_ext->extensions[i] = talloc_strdup(mem_ctx, cse_gpo_guid_string_to_name(q));
-		gp_ext->extensions_guid[i] = talloc_strdup(mem_ctx, q);
+		ext->extensions[i] = talloc_strdup(mem_ctx, cse_gpo_guid_string_to_name(q));
+		ext->extensions_guid[i] = talloc_strdup(mem_ctx, q);
 
 		/* we might have no name for the guid */
-		if (gp_ext->extensions_guid[i] == NULL) {
+		if (ext->extensions_guid[i] == NULL) {
 			goto parse_error;
 		}
 		
@@ -112,11 +122,11 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			}
 
 			/* FIXME: theoretically there could be more than one snapin per extension */
-			gp_ext->snapins[i] = talloc_strdup(mem_ctx, cse_snapin_gpo_guid_string_to_name(m));
-			gp_ext->snapins_guid[i] = talloc_strdup(mem_ctx, m);
+			ext->snapins[i] = talloc_strdup(mem_ctx, cse_snapin_gpo_guid_string_to_name(m));
+			ext->snapins_guid[i] = talloc_strdup(mem_ctx, m);
 
 			/* we might have no name for the guid */
-			if (gp_ext->snapins_guid[i] == NULL) {
+			if (ext->snapins_guid[i] == NULL) {
 				goto parse_error;
 			}
 		}
@@ -128,6 +138,8 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	if (ext_strings) {
 		str_list_free_talloc(mem_ctx, &ext_strings); 
 	}
+
+	*gp_ext = ext;
 
 	return ADS_ERROR(LDAP_SUCCESS);
 
@@ -146,15 +158,15 @@ parse_error:
  parse the raw link string into a GP_LINK structure
 ****************************************************************/
 
-ADS_STATUS ads_parse_gplink(TALLOC_CTX *mem_ctx, 
-			    const char *gp_link_raw,
-			    uint32 options,
-			    struct GP_LINK *gp_link)
+static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx, 
+				   const char *gp_link_raw,
+				   uint32 options,
+				   struct GP_LINK *gp_link)
 {
 	char **link_list;
 	int i;
 	
-	DEBUG(10,("ads_parse_gplink: gPLink: %s\n", gp_link_raw));
+	DEBUG(10,("gpo_parse_gplink: gPLink: %s\n", gp_link_raw));
 
 	link_list = str_list_make_talloc(mem_ctx, gp_link_raw, "]");
 	if (link_list == NULL) {
@@ -186,7 +198,7 @@ ADS_STATUS ads_parse_gplink(TALLOC_CTX *mem_ctx,
 
 		char *p, *q;
 
-		DEBUGADD(10,("ads_parse_gplink: processing link #%d\n", i));
+		DEBUGADD(10,("gpo_parse_gplink: processing link #%d\n", i));
 
 		q = link_list[i];
 		if (q[0] == '[') {
@@ -207,8 +219,8 @@ ADS_STATUS ads_parse_gplink(TALLOC_CTX *mem_ctx,
 
 		gp_link->link_opts[i] = atoi(p + 1);
 
-		DEBUGADD(10,("ads_parse_gplink: link: %s\n", gp_link->link_names[i]));
-		DEBUGADD(10,("ads_parse_gplink: opt: %d\n", gp_link->link_opts[i]));
+		DEBUGADD(10,("gpo_parse_gplink: link: %s\n", gp_link->link_names[i]));
+		DEBUGADD(10,("gpo_parse_gplink: opt: %d\n", gp_link->link_opts[i]));
 
 	}
 
@@ -262,7 +274,7 @@ ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);	
 	}
 
-	/* perfectly leggal to have no options */
+	/* perfectly legal to have no options */
 	if (!ads_pull_uint32(ads, res, "gPOptions", &gp_options)) {
 		DEBUG(10,("ads_get_gpo_link: no 'gPOptions' attribute found\n"));
 		gp_options = 0;
@@ -270,7 +282,7 @@ ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 
 	ads_msgfree(ads, res);
 
-	return ads_parse_gplink(mem_ctx, gp_link, gp_options, gp_link_struct); 
+	return gpo_parse_gplink(mem_ctx, gp_link, gp_options, gp_link_struct); 
 }
 
 /****************************************************************
@@ -518,14 +530,14 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
  add a gplink to the GROUP_POLICY_OBJECT linked list
 ****************************************************************/
 
-ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
-				  TALLOC_CTX *mem_ctx, 
-				  struct GROUP_POLICY_OBJECT **gpo_list,
-				  const char *link_dn,
-				  struct GP_LINK *gp_link,
-				  enum GPO_LINK_TYPE link_type,
-				  BOOL only_add_forced_gpos,
-				  struct GPO_SID_TOKEN *token)
+static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
+					 TALLOC_CTX *mem_ctx, 
+					 struct GROUP_POLICY_OBJECT **gpo_list,
+					 const char *link_dn,
+					 struct GP_LINK *gp_link,
+					 enum GPO_LINK_TYPE link_type,
+					 BOOL only_add_forced_gpos,
+					 struct GPO_SID_TOKEN *token)
 {
 	ADS_STATUS status;
 	int i;
@@ -581,10 +593,10 @@ ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
-ADS_STATUS ads_get_gpo_sid_token(ADS_STRUCT *ads,
-				TALLOC_CTX *mem_ctx,
-				const char *dn,
-				struct GPO_SID_TOKEN **token)
+static ADS_STATUS ads_get_gpo_sid_token(ADS_STRUCT *ads,
+					TALLOC_CTX *mem_ctx,
+					const char *dn,
+					struct GPO_SID_TOKEN **token)
 {
 	ADS_STATUS status;
 	DOM_SID object_sid;
@@ -684,11 +696,11 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 		status = ads_get_gpo_link(ads, mem_ctx, site_dn, &gp_link);
 		if (ADS_ERR_OK(status)) {
-		
+
 			if (DEBUGLEVEL >= 100) {
 				dump_gplink(ads, mem_ctx, &gp_link);
 			}
-			
+
 			status = add_gplink_to_gpo_list(ads, mem_ctx, gpo_list, 
 							site_dn, &gp_link, GP_LINK_SITE, 
 							add_only_forced_gpos,
@@ -696,11 +708,11 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 			if (!ADS_ERR_OK(status)) {
 				return status;
 			}
-	
+
 			if (flags & GPO_LIST_FLAG_SITEONLY) {
 				return ADS_ERROR(LDAP_SUCCESS);
 			}
-	
+
 			/* inheritance can't be blocked at the site level */
 		}
 	}
