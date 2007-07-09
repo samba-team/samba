@@ -802,7 +802,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
  it is below dir in the heirachy. This uses realpath.
 ********************************************************************/
 
-NTSTATUS reduce_name(connection_struct *conn, const pstring fname)
+NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 {
 #ifdef REALPATH_TAKES_NULL
 	BOOL free_resolved_name = True;
