@@ -140,6 +140,60 @@ cn: LDAPtestUSER2
 		}
 	}
 
+	ok = ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
+
+	ok = ldb.rename("cn=ldaptestuser2,cn=users," + base_dn, "cn=ldaptestuser3,cn=users," + base_dn);
+	if (ok.error != 0) {
+		println("Could not rename cn=ldaptestuser2,cn=users," + base_dn + " into cn=ldaptestuser3,cn=users," + base_dn + ": " + ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	// ensure we cannot add it again
+	ok = ldb.add("
+dn: cn=ldaptestuser3,cn=users," + base_dn + "
+objectClass: person
+objectClass: user
+cn: LDAPtestUSER3
+");
+//LDB_ERR_ENTRY_ALREADY_EXISTS
+	if (ok.error != 68) {
+		println("expected error LDB_ERR_ENTRY_ALREADY_EXISTS, got: " + ok.errstr);
+		assert(ok.error == 68);
+	}
+
+	// rename back
+	ok = ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestuser2,cn=users," + base_dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	// ensure we cannnot rename it twice
+	ok = ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestuser2,cn=users," + base_dn);
+//LDB_ERR_NO_SUCH_OBJECT
+	assert(ok.error == 32);
+
+	// ensure can now use that name
+	ok = ldb.add("
+dn: cn=ldaptestuser3,cn=users," + base_dn + "
+objectClass: person
+objectClass: user
+cn: LDAPtestUSER3
+");
+	
+	// ensure we now cannnot rename
+	ok = ldb.rename("cn=ldaptestuser2,cn=users," + base_dn, "cn=ldaptestuser3,cn=users," + base_dn);
+//LDB_ERR_ENTRY_ALREADY_EXISTS
+	if (ok.error != 68) {
+		println("expected error LDB_ERR_ENTRY_ALREADY_EXISTS, got: " + ok.errstr);
+		assert(ok.error == 68);
+	}
+	assert(ok.error == 68);
+	ok = ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestuser3,cn=configuration," + base_dn);
+	assert(ok.error == 71);
+
+	ok = ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
+
 	ok = ldb.add("
 dn: cn=ldaptestutf8user èùéìòà ,cn=users," + base_dn + "
 objectClass: user
