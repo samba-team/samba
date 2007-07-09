@@ -1118,12 +1118,6 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 		DEBUGADD(10, (" => overall success: %s\n", v_status.success ? "yes" : "no"));
 	}
 
-	if (!v_status.success) {
-		DEBUG(10, ("tdb_validate: validation not successful.\n"));
-		DEBUGADD(10, ("removing tdb %s.\n", tdb_path));
-		unlink(tdb_path);
-	}
-
 	DEBUG(10, ("tdb_validate: waiting for child to finish...\n"));
 	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
 		if (errno == EINTR) {
