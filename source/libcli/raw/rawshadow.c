@@ -46,6 +46,9 @@ _PUBLIC_ NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree,
 	nt.ntioctl.in.blob      = data_blob(NULL, 0);
 
 	status = smb_raw_ioctl(tree, mem_ctx, &nt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	
 	blob = nt.ntioctl.out.blob;
 
