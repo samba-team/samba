@@ -3304,6 +3304,12 @@ int winbindd_validate_cache(void)
 	ret = tdb_validate(lock_path("winbindd_cache.tdb"),
 			   cache_traverse_validate_fn);
 
+	if (ret != 0) {
+		DEBUG(10, ("winbindd_validate_cache: validation not successful.\n"));
+		DEBUGADD(10, ("removing tdb %s.\n", tdb_path));
+		unlink(tdb_path);
+	}
+
 done:
 	DEBUG(10, ("winbindd_validate_cache: restoring panic function\n"));
 	smb_panic_fn = smb_panic;
