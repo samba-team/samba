@@ -730,7 +730,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	sort_acl(old->dacl);
 
 	/* Create new security descriptor and set it */
-#if 0
+
 	/* We used to just have "WRITE_DAC_ACCESS" without WRITE_OWNER.
 	   But if we're sending an owner, even if it's the same as the one
 	   that already exists then W2K3 insists we open with WRITE_OWNER access.
@@ -742,12 +742,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			   NULL, old->dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
-#else
-	sd = make_sec_desc(ctx,old->revision, old->type, NULL, NULL,
-			   NULL, old->dacl, &sd_size);
 
-	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS);
-#endif
 	if (fnum == -1) {
 		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
