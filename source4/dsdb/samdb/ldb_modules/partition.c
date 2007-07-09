@@ -120,25 +120,6 @@ static struct dsdb_control_current_partition *find_partition(struct partition_pr
 	return NULL;
 };
 
-static struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn)
-{
-	struct dsdb_control_current_partition *partition;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
-							      struct partition_private_data);
-
-	/* Skip the lot if 'data' isn't here yet (initialistion) */
-	if (!data) {
-		return module;
-	}
-
-	partition = find_partition(data, dn);
-	if (!partition) {
-		return module;
-	}
-
-	return make_module_for_next_request(req, module->ldb, partition->module);
-};
-
 /*
   fire the caller's callback for every entry, but only send 'done' once.
 */
@@ -442,10 +423,31 @@ static int partition_delete(struct ldb_module *module, struct ldb_request *req)
 static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	/* Find backend */
-	struct ldb_module *backend = find_backend(module, req, req->op.rename.olddn);
-	struct ldb_module *backend2 = find_backend(module, req, req->op.rename.newdn);
+	struct dsdb_control_current_partition *backend, *backend2;
+	
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
 
-	if (backend->next != backend2->next) {
+	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	if (!data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	backend = find_partition(data, req->op.rename.olddn);
+	backend2 = find_partition(data, req->op.rename.newdn);
+
+	if ((backend && !backend2) || (!backend && backend2)) {
+		return LDB_ERR_AFFECTS_MULTIPLE_DSAS;
+	}
+
+	if (backend != backend2) {
+		ldb_asprintf_errstring(module->ldb, 
+				       "Cannot rename from %s in %s to %s in %s: %s",
+				       ldb_dn_get_linearized(req->op.rename.olddn),
+				       ldb_dn_get_linearized(backend->dn),
+				       ldb_dn_get_linearized(req->op.rename.newdn),
+				       ldb_dn_get_linearized(backend2->dn),
+				       ldb_strerror(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
 		return LDB_ERR_AFFECTS_MULTIPLE_DSAS;
 	}
 

@@ -857,9 +857,8 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 		goto done;
 	}
 
-	tret = ltdb_add_internal(module, msg);
-	if (tret != LDB_SUCCESS) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
+	ret = ltdb_add_internal(module, msg);
+	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
 

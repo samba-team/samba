@@ -621,6 +621,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		result = LDAP_OTHER;
 		goto reply;
 	}
+	newdn = parentdn;
 
 reply:
 	modifydn_r = ldapsrv_init_reply(call, LDAP_TAG_ModifyDNResponse);
