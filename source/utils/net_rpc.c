@@ -4163,7 +4163,11 @@ static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
 {
 	token->num_sids = 4;
 
-	token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4);
+	if (!(token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4))) {
+		d_fprintf(stderr, "malloc failed\n");
+		token->num_sids = 0;
+		return;
+	}
 
 	token->user_sids[0] = *user_sid;
 	sid_copy(&token->user_sids[1], &global_sid_World);
