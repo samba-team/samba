@@ -82,6 +82,7 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 
 		if (length + 2 < length) {
 			/* Integer wrap. */
+			SAFE_FREE(tmp);
 			err = WERR_INVALID_PARAM;
 			goto error;
 		}
