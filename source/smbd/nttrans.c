@@ -1772,7 +1772,7 @@ static NTSTATUS copy_internals(connection_struct *conn,
 	}
 
 	/* Ensure this is within the share. */
-	status = reduce_name(conn, oldname);
+	status = check_reduced_name(conn, oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
