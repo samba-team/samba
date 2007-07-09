@@ -725,6 +725,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			restore_case_semantics(conn, file_attributes);
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
