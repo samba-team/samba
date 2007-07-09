@@ -7403,8 +7403,13 @@ WERROR enumports_hook( int *count, char ***lines )
 	/* if no hook then just fill in the default port */
 	
 	if ( !*cmd ) {
-		qlines = SMB_MALLOC_ARRAY( char*, 2 );
-		qlines[0] = SMB_STRDUP( SAMBA_PRINTER_PORT_NAME );
+		if (!(qlines = SMB_MALLOC_ARRAY( char*, 2 ))) {
+			return WERR_NOMEM;
+		}
+		if (!(qlines[0] = SMB_STRDUP( SAMBA_PRINTER_PORT_NAME ))) {
+			SAFE_FREE(qlines);
+			return WERR_NOMEM;
+		}
 		qlines[1] = NULL;
 		numlines = 1;
 	}
