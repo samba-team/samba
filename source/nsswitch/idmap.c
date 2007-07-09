@@ -306,7 +306,7 @@ NTSTATUS idmap_init(void)
 
 		if ( dom_list ) {			
 			DEBUG(0, ("WARNING: idmap backend and idmap domains are "
-				  "mutually excusive!\n"));
+				  "mutually exclusive!\n"));
 			DEBUGADD(0,("idmap backend option will be IGNORED!\n"));
 		} else {
 			compat = 1;
