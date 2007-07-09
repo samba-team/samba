@@ -275,49 +275,49 @@ BOOL is_ntfs_stream_name(const char *fname)
 	return (strchr_m(fname, ':') != NULL) ? True : False;
 }
 
-/****************************************************************************
- Save case statics.
-****************************************************************************/
+struct case_semantics_state {
+	connection_struct *conn;
+	BOOL case_sensitive;
+	BOOL case_preserve;
+	BOOL short_case_preserve;
+};
 
-static BOOL saved_case_sensitive;
-static BOOL saved_case_preserve;
-static BOOL saved_short_case_preserve;
+/****************************************************************************
+ Restore case semantics.
+****************************************************************************/
+static int restore_case_semantics(struct case_semantics_state *state)
+{
+	state->conn->case_sensitive = state->case_sensitive;
+	state->conn->case_preserve = state->case_preserve;
+	state->conn->short_case_preserve = state->short_case_preserve;
+	return 0;
+}
 
 /****************************************************************************
  Save case semantics.
 ****************************************************************************/
-
-static uint32 set_posix_case_semantics(connection_struct *conn, uint32 file_attributes)
+static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
+							     connection_struct *conn)
 {
-	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
-		return file_attributes;
+	struct case_semantics_state *result;
+
+	if (!(result = talloc(mem_ctx, struct case_semantics_state))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
 	}
 
-	saved_case_sensitive = conn->case_sensitive;
-	saved_case_preserve = conn->case_preserve;
-	saved_short_case_preserve = conn->short_case_preserve;
+	result->case_sensitive = conn->case_sensitive;
+	result->case_preserve = conn->case_preserve;
+	result->short_case_preserve = conn->short_case_preserve;
 
 	/* Set to POSIX. */
 	conn->case_sensitive = True;
 	conn->case_preserve = True;
 	conn->short_case_preserve = True;
 
-	return (file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
-}
+	talloc_set_destructor(result, restore_case_semantics);
 
-/****************************************************************************
- Restore case semantics.
-****************************************************************************/
-
-static void restore_case_semantics(connection_struct *conn, uint32 file_attributes)
-{
-	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
-		return;
-	}
-
-	conn->case_sensitive = saved_case_sensitive;
-	conn->case_preserve = saved_case_preserve;
-	conn->short_case_preserve = saved_short_case_preserve;
+	return result;
 }
 
 /****************************************************************************
@@ -487,7 +487,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 	uint32 access_mask = IVAL(inbuf,smb_ntcreate_DesiredAccess);
 	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
-	uint32 new_file_attributes;
 	uint32 share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
@@ -507,6 +506,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	BOOL extended_oplock_granted = False;
 	NTSTATUS status;
 	struct smb_request req;
+	struct case_semantics_state *case_state = NULL;
 
 	START_PROFILE(SMBntcreateX);
 
@@ -676,18 +676,21 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Check if POSIX semantics are wanted.
 	 */
 		
-	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(NULL, conn);
+		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
+	}
 		
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(status);
 	}
 	/* All file access must go through check_name() */
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(status);
 	}
@@ -706,7 +709,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	    && (access_mask & DELETE_ACCESS)) {
 		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
 				!can_delete_file_in_directory(conn, fname)) {
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 		}
@@ -714,10 +717,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 #if 0
 	/* We need to support SeSecurityPrivilege for this. */
-	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY)) && 
+	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
 			!user_has_privileges(current_user.nt_user_token,
 				&se_security)) {
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_PRIVILEGE_NOT_HELD);
 	}
@@ -731,7 +734,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -742,10 +745,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					share_access,
 					create_disposition,
 					create_options,
-					new_file_attributes,
+					file_attributes,
 					&info, &fsp);
 
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 
 		if(!NT_STATUS_IS_OK(status)) {
 			if (!use_nt_status() && NT_STATUS_EQUAL(
@@ -780,7 +783,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					share_access,
 					create_disposition,
 					create_options,
-					new_file_attributes,
+					file_attributes,
 					oplock_request,
 					&info, &fsp);
 
@@ -812,7 +815,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				 */
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					restore_case_semantics(conn, file_attributes);
+					TALLOC_FREE(case_state);
 					END_PROFILE(SMBntcreateX);
 					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
@@ -824,11 +827,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 							share_access,
 							create_disposition,
 							create_options,
-							new_file_attributes,
+							file_attributes,
 							&info, &fsp);
 
 				if(!NT_STATUS_IS_OK(status)) {
-					restore_case_semantics(conn, file_attributes);
+					TALLOC_FREE(case_state);
 					if (!use_nt_status() && NT_STATUS_EQUAL(
 						    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 						status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
@@ -837,7 +840,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					return ERROR_NT(status);
 				}
 			} else {
-				restore_case_semantics(conn, file_attributes);
+				TALLOC_FREE(case_state);
 				END_PROFILE(SMBntcreateX);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
@@ -848,7 +851,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		} 
 	}
 		
-	restore_case_semantics(conn, file_attributes);
+	TALLOC_FREE(case_state);
 
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
@@ -1198,7 +1201,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 flags;
 	uint32 access_mask;
 	uint32 file_attributes;
-	uint32 new_file_attributes;
 	uint32 share_access;
 	uint32 create_disposition;
 	uint32 create_options;
@@ -1214,6 +1216,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	NTSTATUS status;
 	size_t param_len;
 	struct smb_request req;
+	struct case_semantics_state *case_state = NULL;
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1372,12 +1375,15 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	/*
 	 * Check if POSIX semantics are wanted.
 	 */
+
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(NULL, conn);
+		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
+	}
 		
-	new_file_attributes = set_posix_case_semantics(conn, file_attributes);
-    
 	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
 		}
@@ -1386,13 +1392,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 		return ERROR_NT(status);
 	}
 	/* All file access must go through check_name() */
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 		return ERROR_NT(status);
 	}
 
@@ -1410,17 +1416,17 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	    && (access_mask & DELETE_ACCESS)) {
 		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
 				!can_delete_file_in_directory(conn, fname)) {
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 		}
 	}
 
 #if 0
 	/* We need to support SeSecurityPrivilege for this. */
-	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY)) && 
+	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
 			!user_has_privileges(current_user.nt_user_token,
 				&se_security)) {
-		restore_case_semantics(conn, file_attributes);
+		TALLOC_FREE(case_state);
 		return ERROR_NT(NT_STATUS_PRIVILEGE_NOT_HELD);
 	}
 #endif
@@ -1432,7 +1438,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		ea_list = read_nttrans_ea_list(tmp_talloc_ctx(), pdata,
 					       ea_len);
 		if (!ea_list ) {
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	}
@@ -1445,7 +1451,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
@@ -1461,10 +1467,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					share_access,
 					create_disposition,
 					create_options,
-					new_file_attributes,
+					file_attributes,
 					&info, &fsp);
 		if(!NT_STATUS_IS_OK(status)) {
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			return ERROR_NT(status);
 		}
 
@@ -1479,7 +1485,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					share_access,
 					create_disposition,
 					create_options,
-					new_file_attributes,
+					file_attributes,
 					oplock_request,
 					&info, &fsp);
 
@@ -1492,7 +1498,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				 */
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					restore_case_semantics(conn, file_attributes);
+					TALLOC_FREE(case_state);
 					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
 	
@@ -1503,14 +1509,14 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 							share_access,
 							create_disposition,
 							create_options,
-							new_file_attributes,
+							file_attributes,
 							&info, &fsp);
 				if(!NT_STATUS_IS_OK(status)) {
-					restore_case_semantics(conn, file_attributes);
+					TALLOC_FREE(case_state);
 					return ERROR_NT(status);
 				}
 			} else {
-				restore_case_semantics(conn, file_attributes);
+				TALLOC_FREE(case_state);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
 					return -1;
@@ -1542,7 +1548,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(ctx);
 			close_file(fsp,ERROR_CLOSE);
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			return ERROR_NT(status);
 		}
 		fsp->access_mask = saved_access_mask;
@@ -1552,12 +1558,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		status = set_ea(conn, fsp, fname, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			close_file(fsp,ERROR_CLOSE);
-			restore_case_semantics(conn, file_attributes);
+			TALLOC_FREE(case_state);
 			return ERROR_NT(status);
 		}
 	}
 
-	restore_case_semantics(conn, file_attributes);
+	TALLOC_FREE(case_state);
 
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
