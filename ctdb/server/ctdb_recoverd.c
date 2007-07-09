@@ -385,11 +385,6 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 	for (i=0;i<nodemap->num;i++) {
 		struct ctdb_node_flag_change c;
 		TDB_DATA data;
-		uint32_t flags = nodemap->nodes[i].flags;
-
-		if (flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
 
 		c.vnn = nodemap->nodes[i].vnn;
 		c.flags = nodemap->nodes[i].flags;
@@ -1325,17 +1320,9 @@ again:
 					    vnnmap, nodemap->nodes[j].vnn);
 				goto again;
 			}
-			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) != 
-			    (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
-				DEBUG(0, (__location__ " Remote node:%u has different nodemap disconnected flag for %d (0x%x vs 0x%x)\n", 
-					  nodemap->nodes[j].vnn, i,
-					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
-				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
-					    vnnmap, nodemap->nodes[j].vnn);
-				goto again;
-			} else if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_BANNED) != 
-			    (nodemap->nodes[i].flags & NODE_FLAGS_BANNED)) {
-				DEBUG(0, (__location__ " Remote node:%u has different nodemap banned flag for %d (0x%x vs 0x%x)\n", 
+			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
+			    (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
+				DEBUG(0, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
 					  nodemap->nodes[j].vnn, i,
 					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
 				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
