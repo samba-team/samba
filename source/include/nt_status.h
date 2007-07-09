@@ -72,6 +72,12 @@ typedef uint32 WERROR;
 	}\
 } while (0)
 
+#define W_ERROR_NOT_OK_RETURN(x) do { \
+	if (!W_ERROR_IS_OK(x)) {\
+		return x;\
+	}\
+} while (0)
+
 /* The top byte in an NTSTATUS code is used as a type field.
  * Windows only uses value 0xC0 as an indicator for an NT error
  * and 0x00 for success.
