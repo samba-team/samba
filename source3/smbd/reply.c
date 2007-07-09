@@ -2590,9 +2590,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 	if (startpos > sbuf.st_size) {
 		smb_maxcnt = 0;
-	}
-
-	if (smb_maxcnt > (sbuf.st_size - startpos)) {
+	} else if (smb_maxcnt > (sbuf.st_size - startpos)) {
 		smb_maxcnt = (sbuf.st_size - startpos);
 	}
 
