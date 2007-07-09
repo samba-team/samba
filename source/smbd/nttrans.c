@@ -1371,6 +1371,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
     
 	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		restore_case_semantics(conn, file_attributes);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
 		}
