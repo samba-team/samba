@@ -151,6 +151,7 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 {
 	struct registry_value val;
 	WERROR werr = WERR_OK;
+	char *subkeyname;
 
 	ZERO_STRUCT(val);
 
@@ -171,12 +172,20 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 		goto done;
 	}
 
-	if (!strequal(strrchr_m(key->key->name, '\\')+1, GLOBAL_NAME) &&
+	subkeyname = strrchr_m(key->key->name, '\\');
+	if ((subkeyname == NULL) || (*(subkeyname +1) == '\0')) {
+		d_fprintf(stderr, "Invalid registry key '%s' given as "
+			  "smbconf section.\n", key->key->name);
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+	subkeyname++;
+	if (!strequal(subkeyname, GLOBAL_NAME) &&
 	    lp_parameter_is_global(valname))
 	{
 		d_fprintf(stderr, "Global paramter '%s' not allowed in "
 			  "service definition ('%s').\n", valname,
-			  strrchr_m(key->key->name, '\\')+1);
+			  subkeyname);
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
