@@ -780,9 +780,11 @@ void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 	if(fsp->wcp) {
 		/* The cache *must* have been flushed before we do this. */
 		if (fsp->wcp->data_size != 0) {
-			pstring msg;
-			slprintf(msg, sizeof(msg)-1, "set_filelen_write_cache: size change \
-on file %s with write cache size = %lu\n", fsp->fsp_name, (unsigned long)fsp->wcp->data_size );
+			char *msg;
+			asprintf(&msg, "set_filelen_write_cache: size change "
+				 "on file %s with write cache size = %lu\n",
+				 fsp->fsp_name,
+				 (unsigned long)fsp->wcp->data_size);
 			smb_panic(msg);
 		}
 		fsp->wcp->file_size = file_size;
