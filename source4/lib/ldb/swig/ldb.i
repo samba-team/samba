@@ -37,8 +37,9 @@ typedef long long int64_t;
 
 /* Include headers */
 
-#include "lib/ldb/include/ldb.h"
+#include "lib/replace/replace.h"
 #include "lib/talloc/talloc.h"
+#include "lib/ldb/include/ldb.h"
 
 %}
 
@@ -179,7 +180,6 @@ struct ldb_message {
 	struct ldb_dn *dn;
 	unsigned int num_elements;
 	struct ldb_message_element *elements;
-	void *private_data;
 };
 
 /*
@@ -213,11 +213,11 @@ const char *ldb_strerror(int ldb_err);
 
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
-int ldb_search(struct ldb_context *ldb, const struct ldb_dn *base, enum ldb_scope scope, const char *expression, const char * const *attrs, struct ldb_result **OUT);
+int ldb_search(struct ldb_context *ldb, struct ldb_dn *base, enum ldb_scope scope, const char *expression, const char * const *attrs, struct ldb_result **OUT);
 
-int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
+int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn);
 
-int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
+int ldb_rename(struct ldb_context *ldb, struct ldb_dn *olddn, struct ldb_dn *newdn);
 
 int ldb_add(struct ldb_context *ldb, const struct ldb_message *message);
 
@@ -227,11 +227,11 @@ struct ldb_message *ldb_msg_new(void *mem_ctx);
 
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, const char *attr_name);
 
-int ldb_msg_add_value(struct ldb_message *msg, const char *attr_name, const struct ldb_val *INPUT);
+int ldb_msg_add_value(struct ldb_message *msg, const char *attr_name, const struct ldb_val *val, struct ldb_message_element **return_el);
 
 void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
 
-int ldb_msg_sanity_check(struct ldb_message *msg);
+int ldb_msg_sanity_check(struct ldb_context *ldb, const struct ldb_message *msg);
 
 /* DN operations */
 
