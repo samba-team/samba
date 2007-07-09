@@ -1073,15 +1073,15 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	   can communicate with the node or not.
 	*/
 	c->flags &= ~NODE_FLAGS_DISCONNECTED;
+	if (nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED) {
+		c->flags |= NODE_FLAGS_DISCONNECTED;
+	}
 
-	/* check whether the flags (except for the DISCONNECTED flag have changed */
-	if ((nodemap->nodes[i].flags&(~NODE_FLAGS_DISCONNECTED)) != c->flags) {
+	if (nodemap->nodes[i].flags != c->flags) {
 		DEBUG(0,("Node %u has changed flags - now 0x%x\n", c->vnn, c->flags));
 	}
 
-	/* Update the flags but leave the DISCONNECTED flag as is */
-	nodemap->nodes[i].flags = c->flags 
-	  | (nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED);
+	nodemap->nodes[i].flags = c->flags;
 
 	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), 
 				     CTDB_CURRENT_NODE, &ctdb->recovery_master);
