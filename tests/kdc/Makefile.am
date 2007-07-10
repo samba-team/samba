@@ -7,13 +7,22 @@ noinst_DATA = krb5.conf krb5-pkinit.conf krb5-pkinit-win.conf
 check_PROGRAMS = ap-req
 check_SCRIPTS = $(SCRIPT_TESTS) 
 
-SCRIPT_TESTS = check-kdc check-digest check-pkinit check-uu check-referral
+SCRIPT_TESTS = \
+	check-digest \
+	check-kadmin \
+	check-kdc \
+	check-pkinit \
+	check-referral \
+	check-uu
+
 TESTS = $(SCRIPT_TESTS)
 
 port = 49188
+admport = 49189
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]port[@],$(port),g' \
+	-e 's,[@]admport[@],$(admport),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g' \
 	-e 's,[@]EGREP[@],$(EGREP),g' 
 
@@ -23,6 +32,11 @@ check-kdc: check-kdc.in Makefile
 	$(do_subst) < $(srcdir)/check-kdc.in > check-kdc.tmp
 	chmod +x check-kdc.tmp
 	mv check-kdc.tmp check-kdc
+
+check-kadmin: check-kadmin.in Makefile
+	$(do_subst) < $(srcdir)/check-kadmin.in > check-kadmin.tmp
+	chmod +x check-kadmin.tmp
+	mv check-kadmin.tmp check-kadmin
 
 check-uu: check-uu.in Makefile
 	$(do_subst) < $(srcdir)/check-uu.in > check-uu.tmp
@@ -61,18 +75,14 @@ CLEANFILES= \
 	barpassword \
 	cache.krb5 \
 	cdigest-reply \
-	check-digest.tmp \
-	check-kdc.tmp \
-	check-referral.tmp \
-	check-uu.tmp \
-	check-pkinit.tmp \
+	*.tmp \
 	client-cache \
 	current-db* \
 	digest-reply \
 	foopassword \
-	krb5.conf krb5.conf.tmp \
-	krb5-pkinit.conf krb5-pkinit.conf.tmp \
-	krb5-pkinit-win.conf krb5-pkinit-win.conf.tmp \
+	krb5.conf \
+	krb5-pkinit.conf \
+	krb5-pkinit-win.conf \
 	messages.log \
 	o2cache.krb5 \
 	o2digest-reply \
