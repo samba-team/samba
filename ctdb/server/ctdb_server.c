@@ -237,11 +237,13 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		   same generation instance as this node
 		*/
 		if (ctdb->vnn_map->generation != hdr->generation) {
-			DEBUG(0,(__location__ " ctdb request %u"
+			DEBUG(0,(__location__ " ctdb operation %u"
+				" request %u"
 				" length %u from node %u to %u had an"
 				" invalid generation id:%u while our"
 				" generation id is:%u\n", 
-				 hdr->reqid, hdr->length, 
+				 hdr->operation, hdr->reqid,
+				 hdr->length, 
 				 hdr->srcnode, hdr->destnode, 
 				 hdr->generation, ctdb->vnn_map->generation));
 			goto done;
