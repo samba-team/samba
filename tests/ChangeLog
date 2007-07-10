@@ -1,5 +1,7 @@
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kadmin.in: Send kill outout to /dev/null.
+
 	* kdc/krb5.conf.in: Add bits needed for kadmind server test.
 
 	* kdc/Makefile.am: Add check-kadmin.
