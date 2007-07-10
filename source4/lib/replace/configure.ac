@@ -19,6 +19,4 @@ if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wno-format-y2k"
 fi
 
-AC_SUBST(LDFLAGS)
-
 AC_OUTPUT(Makefile)
