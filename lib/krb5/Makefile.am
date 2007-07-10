@@ -173,7 +173,7 @@ dist_libkrb5_la_SOURCES =			\
 nodist_libkrb5_la_SOURCES =			\
 	$(ERR_FILES)
 
-libkrb5_la_LDFLAGS = -version-info 22:0:0
+libkrb5_la_LDFLAGS = -version-info 23:0:1
 
 $(libkrb5_la_OBJECTS) $(verify_krb5_conf_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 
