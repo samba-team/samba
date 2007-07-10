@@ -76,7 +76,7 @@ NTSTATUS ndr_push_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const stru
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->state));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->controls_accepted));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->win32_exit_code));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->win32_exit_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->service_exit_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->check_point));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->wait_hint));
@@ -93,7 +93,7 @@ NTSTATUS ndr_pull_SERVICE_STATUS(struct ndr_pull *ndr, int ndr_flags, struct SER
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->state));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->controls_accepted));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->win32_exit_code));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->win32_exit_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->service_exit_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->check_point));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->wait_hint));
@@ -110,7 +110,7 @@ _PUBLIC_ void ndr_print_SERVICE_STATUS(struct ndr_print *ndr, const char *name, 
 	ndr_print_uint32(ndr, "type", r->type);
 	ndr_print_uint32(ndr, "state", r->state);
 	ndr_print_uint32(ndr, "controls_accepted", r->controls_accepted);
-	ndr_print_uint32(ndr, "win32_exit_code", r->win32_exit_code);
+	ndr_print_WERROR(ndr, "win32_exit_code", r->win32_exit_code);
 	ndr_print_uint32(ndr, "service_exit_code", r->service_exit_code);
 	ndr_print_uint32(ndr, "check_point", r->check_point);
 	ndr_print_uint32(ndr, "wait_hint", r->wait_hint);

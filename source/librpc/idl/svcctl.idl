@@ -22,7 +22,7 @@
 		uint32 type;
 		uint32 state;
 		uint32 controls_accepted;
-		uint32 win32_exit_code;
+		WERROR win32_exit_code;
 		uint32 service_exit_code;
 		uint32 check_point;
 		uint32 wait_hint;

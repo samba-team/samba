@@ -1139,7 +1139,7 @@ typedef struct net_q_dsr_getdcnameex {
 } NET_Q_DSR_GETDCNAMEEX;
 
 /* NET_R_DSR_GETDCNAMEEX */
-typedef struct NET_R_DSR_GETDCNAME NET_R_DSR_GETDCNAMEEX;
+typedef struct net_r_dsr_getdcnameex NET_R_DSR_GETDCNAMEEX;
 
 /* NET_Q_DSR_GETDCNAMEEX2 */
 typedef struct net_q_dsr_getdcnameex2 {
@@ -1157,8 +1157,8 @@ typedef struct net_q_dsr_getdcnameex2 {
 	uint32 flags;
 } NET_Q_DSR_GETDCNAMEEX2;
 
-/* NET_R_DSR_GETDCNAMEEX */
-typedef struct NET_R_DSR_GETDCNAME NET_R_DSR_GETDCNAMEEX2;
+/* NET_R_DSR_GETDCNAMEEX2 */
+typedef struct net_r_dsr_getdcnameex2 NET_R_DSR_GETDCNAMEEX2;
 
 /* NET_Q_DSR_GESITENAME */
 typedef struct net_q_dsr_getsitename {

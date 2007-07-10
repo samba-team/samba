@@ -27,7 +27,7 @@ struct SERVICE_STATUS {
 	uint32_t type;
 	uint32_t state;
 	uint32_t controls_accepted;
-	uint32_t win32_exit_code;
+	WERROR win32_exit_code;
 	uint32_t service_exit_code;
 	uint32_t check_point;
 	uint32_t wait_hint;
