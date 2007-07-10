@@ -43,7 +43,7 @@ struct idx_state {
 	struct wins_state *state;
 };
 
-struct nbt_name generate_name(TALLOC_CTX *tctx, int idx)
+static struct nbt_name generate_name(TALLOC_CTX *tctx, int idx)
 {
 	struct nbt_name name;
 	name.name       = talloc_asprintf(tctx, "WINSBench%6u", idx);

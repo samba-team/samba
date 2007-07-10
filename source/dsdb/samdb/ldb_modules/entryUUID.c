@@ -306,7 +306,7 @@ static struct ldb_val timestamp_to_usn(struct ldb_module *module, TALLOC_CTX *ct
 }
 
 
-const struct ldb_map_attribute entryUUID_attributes[] = 
+static const struct ldb_map_attribute entryUUID_attributes[] = 
 {
 	/* objectGUID */
 	{
@@ -498,7 +498,7 @@ const struct ldb_map_objectclass entryUUID_objectclasses[] =
 
 /* These things do not show up in wildcard searches in OpenLDAP, but
  * we need them to show up in the AD-like view */
-const char * const entryUUID_wildcard_attributes[] = {
+static const char * const entryUUID_wildcard_attributes[] = {
 	"objectGUID", 
 	"whenCreated", 
 	"whenChanged",
@@ -507,7 +507,7 @@ const char * const entryUUID_wildcard_attributes[] = {
 	NULL
 };
 
-const struct ldb_map_attribute nsuniqueid_attributes[] = 
+static const struct ldb_map_attribute nsuniqueid_attributes[] = 
 {
 	/* objectGUID */
 	{
@@ -648,7 +648,7 @@ const struct ldb_map_attribute nsuniqueid_attributes[] =
 
 /* These things do not show up in wildcard searches in OpenLDAP, but
  * we need them to show up in the AD-like view */
-const char * const nsuniqueid_wildcard_attributes[] = {
+static const char * const nsuniqueid_wildcard_attributes[] = {
 	"objectGUID", 
 	"whenCreated", 
 	"whenChanged",
