@@ -76,6 +76,8 @@ ${kadmin} -l \
 
 ${kadmin} -l add -p foo --use-defaults foo/admin@${R} || exit 1
 
+echo foo > ${objdir}/foopassword
+
 ${kadmind} -d &
 kadmpid=$!
 sleep 1
