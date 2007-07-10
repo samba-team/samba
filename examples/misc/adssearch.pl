@@ -487,6 +487,7 @@ if (!$password) {
 my %attr_handler = (
 	"Token-Groups-No-GC-Acceptable" => \&dump_sid,	#wrong name
 	"accountExpires"		=> \&dump_nttime,
+	"attributeSecurityGUID"		=> \&dump_guid,
 	"badPasswordTime"		=> \&dump_nttime,			
 	"creationTime"			=> \&dump_nttime,
 	"currentTime"			=> \&dump_timestr,
@@ -528,6 +529,7 @@ my %attr_handler = (
 	"pwdLastSet"			=> \&dump_nttime,
 	"pwdProperties"			=> \&dump_pwdproperties,
 	"sAMAccountType"		=> \&dump_atype,
+	"schemaIDGUID"			=> \&dump_guid,
 	"sDRightsEffective"		=> \&dump_sdeffective,
 	"securityIdentifier"		=> \&dump_sid,
 	"serverState"			=> \&dump_serverstate,
