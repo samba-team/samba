@@ -54,7 +54,9 @@ OM_uint32 gss_duplicate_name(OM_uint32 *minor_status,
 		new_name = (struct _gss_name *) *dest_name;
 		
 		SLIST_FOREACH(mn, &name->gn_mn, gmn_link) {
-			_gss_find_mn(new_name, mn->gmn_mech_oid);
+		    struct _gss_mechanism_name *mn2;
+		    _gss_find_mn(minor_status, new_name, 
+				 mn->gmn_mech_oid, &mn2);
 		}
 	} else {
 		new_name = malloc(sizeof(struct _gss_name));
