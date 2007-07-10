@@ -919,8 +919,10 @@ gethostlist(krb5_context context, const char *realm,
 
     while(krb5_krbhst_next(context, handle, &hostinfo) == 0)
 	nhost++;
-    if(nhost == 0)
+    if(nhost == 0) {
+	krb5_set_error_string(context, "No KDC found for realm %s", realm);
 	return KRB5_KDC_UNREACH;
+    }
     *hostlist = calloc(nhost + 1, sizeof(**hostlist));
     if(*hostlist == NULL) {
 	krb5_krbhst_free(context, handle);
