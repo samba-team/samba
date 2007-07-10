@@ -3,18 +3,18 @@
 
    Copyright (C) Andrew Tridgell  2007
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
@@ -28,30 +28,35 @@
  */
 
 static struct {
-	const char *nlist;
-	const char *transport;
-	const char *myaddress;
-	int self_connect;
-	const char *db_dir;
+	const char *socketname;
 	int torture;
+	const char *events;
 } ctdb_cmdline = {
-	.nlist = NULL,
-	.transport = "tcp",
-	.myaddress = NULL,
-	.self_connect = 0,
-	.db_dir = NULL,
-	.torture = 0
+	.socketname = CTDB_PATH,
+	.torture = 0,
 };
+
+enum {OPT_EVENTSYSTEM=1};
+
+static void ctdb_cmdline_callback(poptContext con, 
+				  enum poptCallbackReason reason,
+				  const struct poptOption *opt,
+				  const char *arg, const void *data)
+{
+	switch (opt->val) {
+	case OPT_EVENTSYSTEM:
+		event_set_default_backend(arg);
+		break;
+	}
+}
 
 
 struct poptOption popt_ctdb_cmdline[] = {
-	{ "nlist", 0, POPT_ARG_STRING, &ctdb_cmdline.nlist, 0, "node list file", "filename" },
-	{ "listen", 0, POPT_ARG_STRING, &ctdb_cmdline.myaddress, 0, "address to listen on", "address" },
-	{ "transport", 0, POPT_ARG_STRING, &ctdb_cmdline.transport, 0, "protocol transport", NULL },
-	{ "self-connect", 0, POPT_ARG_NONE, &ctdb_cmdline.self_connect, 0, "enable self connect", "boolean" },
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)ctdb_cmdline_callback },	
+	{ "socket", 0, POPT_ARG_STRING, &ctdb_cmdline.socketname, 0, "local socket name", "filename" },
 	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
-	{ "dbdir", 0, POPT_ARG_STRING, &ctdb_cmdline.db_dir, 0, "directory for the tdb files", NULL },
 	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
+	{ "events", 0, POPT_ARG_STRING, NULL, OPT_EVENTSYSTEM, "event system", NULL },
 	{ NULL }
 };
 
@@ -64,11 +69,6 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 	struct ctdb_context *ctdb;
 	int ret;
 
-	if (ctdb_cmdline.nlist == NULL || ctdb_cmdline.myaddress == NULL) {
-		printf("You must provide a node list with --nlist and an address with --listen\n");
-		exit(1);
-	}
-
 	/* initialise ctdb */
 	ctdb = ctdb_init(ev);
 	if (ctdb == NULL) {
@@ -76,36 +76,14 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 		exit(1);
 	}
 
-	if (ctdb_cmdline.self_connect) {
-		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
-	}
 	if (ctdb_cmdline.torture) {
 		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
 	}
 
-	ret = ctdb_set_transport(ctdb, ctdb_cmdline.transport);
+	/* tell ctdb the socket address */
+	ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
 	if (ret == -1) {
-		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	/* tell ctdb what address to listen on */
-	ret = ctdb_set_address(ctdb, ctdb_cmdline.myaddress);
-	if (ret == -1) {
-		printf("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	/* tell ctdb what nodes are available */
-	ret = ctdb_set_nlist(ctdb, ctdb_cmdline.nlist);
-	if (ret == -1) {
-		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
-
-	ret = ctdb_set_tdb_dir(ctdb, ctdb_cmdline.db_dir);
-	if (ret == -1) {
-		printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
+		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
@@ -116,7 +94,7 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 /*
   startup a client only ctdb context
  */
-struct ctdb_context *ctdb_cmdline_client(struct event_context *ev, const char *ctdb_socket)
+struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 {
 	struct ctdb_context *ctdb;
 	int ret;
@@ -128,11 +106,24 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev, const char *c
 		exit(1);
 	}
 
-	ctdb->daemon.name = talloc_strdup(ctdb, ctdb_socket);
+	/* tell ctdb the socket address */
+	ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
+	if (ret == -1) {
+		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
+		exit(1);
+	}
 
 	ret = ctdb_socket_connect(ctdb);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to connect to daemon\n"));
+		talloc_free(ctdb);
+		return NULL;
+	}
+
+	/* get our vnn */
+	ctdb->vnn = ctdb_ctrl_getvnn(ctdb, timeval_zero(), CTDB_CURRENT_NODE);
+	if (ctdb->vnn == (uint32_t)-1) {
+		DEBUG(0,(__location__ " Failed to get ctdb vnn\n"));
 		talloc_free(ctdb);
 		return NULL;
 	}

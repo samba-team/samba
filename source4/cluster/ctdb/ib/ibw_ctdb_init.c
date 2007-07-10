@@ -37,7 +37,8 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 	memset(&my_addr, 0, sizeof(struct sockaddr_in));
 	my_addr.sin_port = htons(ctdb->address.port);
 	my_addr.sin_family = PF_INET;
-	inet_pton(AF_INET, ctdb->address.address, &my_addr.sin_addr);
+	if (ctdb_ibw_get_address(ctdb, ctdb->address.address, &my_addr.sin_addr))
+		return -1;
 
 	if (ibw_bind(ictx, &my_addr)) {
 		DEBUG(0, ("ctdb_ibw_listen: ibw_bind failed\n"));
@@ -47,29 +48,6 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 	if (ibw_listen(ictx, backlog)) {
 		DEBUG(0, ("ctdb_ibw_listen: ibw_listen failed\n"));
 		return -1;
-	}
-
-	return 0;
-}
-
-/*
- * Start infiniband
- */
-static int ctdb_ibw_start(struct ctdb_context *ctdb)
-{
-	int i;
-
-	/* listen on our own address */
-	if (ctdb_ibw_listen(ctdb, 10)) /* TODO: backlog as param */
-		return -1;
-
-	/* everything async here */
-	for (i=0;i<ctdb->num_nodes;i++) {
-		struct ctdb_node *node = ctdb->nodes[i];
-		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
-			ctdb_same_address(&ctdb->address, &node->address))
-			continue;
-		ctdb_ibw_node_connect(node);
 	}
 
 	return 0;
@@ -88,6 +66,51 @@ static int ctdb_ibw_add_node(struct ctdb_node *node)
 	node->private_data = (void *)cn;
 
 	return (cn->conn!=NULL ? 0 : -1);
+}
+
+/*
+ * initialise infiniband
+ */
+static int ctdb_ibw_initialise(struct ctdb_context *ctdb)
+{
+	int i, ret;
+
+	ret = ctdb_ibw_init(ctdb);
+	if (ret != 0) {
+		return ret;
+	}
+
+	for (i=0; i<ctdb->num_nodes; i++) {
+		if (ctdb_ibw_add_node(ctdb->nodes[i]) != 0) {
+			DEBUG(0, ("methods->add_node failed at %d\n", i));
+			return -1;
+		}
+	}
+
+	/* listen on our own address */
+	if (ctdb_ibw_listen(ctdb, 10)) /* TODO: backlog as param */
+		return -1;
+
+	return 0;
+}
+
+
+/*
+ * Start infiniband
+ */
+static int ctdb_ibw_start(struct ctdb_context *ctdb)
+{
+	int i, ret;
+
+	/* everything async here */
+	for (i=0;i<ctdb->num_nodes;i++) {
+		struct ctdb_node *node = ctdb->nodes[i];
+		if (!ctdb_same_address(&ctdb->address, &node->address)) {
+			ctdb_ibw_node_connect(node);
+		}
+	}
+
+	return 0;
 }
 
 static int ctdb_ibw_send_pkt(struct ibw_conn *conn, uint8_t *data, uint32_t length)
@@ -176,9 +199,10 @@ static int ctdb_ibw_stop(struct ctdb_context *cctx)
 #endif /* __NOTDEF__ */
 
 static const struct ctdb_methods ctdb_ibw_methods = {
+	.initialise= ctdb_ibw_initialise,
 	.start     = ctdb_ibw_start,
-	.add_node  = ctdb_ibw_add_node,
 	.queue_pkt = ctdb_ibw_queue_pkt,
+	.add_node = ctdb_ibw_add_node,
 	.allocate_pkt = ctdb_ibw_allocate_pkt,
 
 //	.stop = ctdb_ibw_stop

@@ -3,18 +3,18 @@
 
    Copyright (C) Andrew Tridgell  2006
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
@@ -43,7 +43,7 @@ static double end_timer(void)
 
 static int timelimit = 10;
 static int num_records = 10;
-static int num_msgs = 1;
+static int num_nodes;
 
 enum my_functions {FUNC_INCR=1, FUNC_FETCH=2};
 
@@ -83,14 +83,14 @@ static int msg_plus, msg_minus;
 /*
   handler for messages in bench_ring()
 */
-static void ring_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 				 TDB_DATA data, void *private_data)
 {
 	int incr = *(int *)data.dptr;
 	int *count = (int *)private_data;
 	int dest;
 	(*count)++;
-	dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
+	dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
 	ctdb_send_message(ctdb, dest, srvid, data);
 	if (incr == 1) {
 		msg_plus++;
@@ -107,7 +107,6 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 	int vnn=ctdb_get_vnn(ctdb);
 
 	if (vnn == 0) {
-		int i;
 		/* two messages are injected into the ring, moving
 		   in opposite directions */
 		int dest, incr;
@@ -116,15 +115,13 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 		data.dptr = (uint8_t *)&incr;
 		data.dsize = sizeof(incr);
 
-		for (i=0;i<num_msgs;i++) {
-			incr = 1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
-			ctdb_send_message(ctdb, dest, 0, data);
-
-			incr = -1;
-			dest = (ctdb_get_vnn(ctdb) + incr) % ctdb_get_num_nodes(ctdb);
-			ctdb_send_message(ctdb, dest, 0, data);
-		}
+		incr = 1;
+		dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
+		ctdb_send_message(ctdb, dest, 0, data);
+		
+		incr = -1;
+		dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
+		ctdb_send_message(ctdb, dest, 0, data);
 	}
 	
 	start_timer();
@@ -142,6 +139,16 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 	       msg_count/end_timer(), msg_plus, msg_minus);
 }
 
+/*
+  handler for reconfigure message
+*/
+static void reconfigure_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+				TDB_DATA data, void *private_data)
+{
+	int *ready = (int *)private_data;
+	*ready = 1;
+}
+
 
 /*
   main program
@@ -156,7 +163,7 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
-		{ "num-msgs", 'n', POPT_ARG_INT, &num_msgs, 0, "num_msgs", "integer" },
+		{ NULL, 'n', POPT_ARG_INT, &num_nodes, 0, "num_nodes", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -165,6 +172,7 @@ int main(int argc, const char *argv[])
 	int ret;
 	poptContext pc;
 	struct event_context *ev;
+	int cluster_ready=0;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -187,10 +195,13 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	/* initialise ctdb */
-	ctdb = ctdb_cmdline_init(ev);
+	ctdb = ctdb_cmdline_client(ev);
+
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
+				 &cluster_ready);
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	ctdb_db = ctdb_attach(ctdb, "test.tdb");
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
@@ -200,19 +211,19 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
-	/* start the protocol running */
-	ret = ctdb_start(ctdb);
+	if (ctdb_set_message_handler(ctdb, 0, ring_message_handler,&msg_count))
+		goto error;
 
-	ctdb_set_message_handler(ctdb, 0, ring_message_handler,&msg_count);
-
-	/* wait until all nodes are connected (should not be needed
-	   outside of test code) */
-	ctdb_connect_wait(ctdb);
+	printf("Waiting for cluster\n");
+	while (1) {
+		uint32_t recmode=1;
+		ctdb_ctrl_getrecmode(ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
+		if (recmode == 0) break;
+		event_loop_once(ev);
+	}
 
 	bench_ring(ctdb, ev);
        
-	/* shut it down */
-	ctdb_shutdown(ctdb);
-
+error:
 	return 0;
 }
