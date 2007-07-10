@@ -8,7 +8,7 @@ include_HEADERS = heimntlm.h heimntlm-protos.h
 
 libheimntlm_la_SOURCES	= ntlm.c 
 
-libheimntlm_la_LDFLAGS = -version-info 0:0:0
+libheimntlm_la_LDFLAGS = -version-info 1:0:1
 
 if versionscript
 libheimntlm_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
