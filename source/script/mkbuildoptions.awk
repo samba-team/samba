@@ -16,8 +16,7 @@ BEGIN {
 	print "   GNU General Public License for more details.";
 	print "   ";
 	print "   You should have received a copy of the GNU General Public License";
-	print "   along with this program; if not, write to the Free Software";
-	print "   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.";
+	print "   along with this program; if not, see <http://www.gnu.org/licenses/>."
 	print "*/";
 	print "";
 	print "#include \"includes.h\"";
