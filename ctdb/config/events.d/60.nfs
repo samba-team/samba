@@ -70,8 +70,8 @@ case $cmd in
 			srcport=`echo $src | cut -d: -f2`
 			destip=`echo $dest | cut -d: -f1`
 			destport=`echo $dest | cut -d: -f2`
-			ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 &
-			ctdb killtcp $destip:$destport $srcip:$srcport >/dev/null 2>&1 &
+			ctdb killtcp $srcip:$srcport $destip:$destport 1 >/dev/null 2>&1 
+			ctdb killtcp $destip:$destport $srcip:$srcport 1 >/dev/null 2>&1
 		done
 	} > /dev/null 2>&1
 	/bin/rm -f /etc/ctdb/state/nfs/restart
