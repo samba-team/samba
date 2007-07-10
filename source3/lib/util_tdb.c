@@ -989,8 +989,7 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
  * internal validation function, executed by the child.  
  */
 static int tdb_validate_child(const char *tdb_path,
-			      tdb_validate_data_func validate_fn,
-			      int pfd)
+			      tdb_validate_data_func validate_fn)
 {
 	int ret = -1;
 	int num_entries = 0;
@@ -1047,9 +1046,12 @@ out:
 		tdb_close(tdb);
 	}
 
-	DEBUG(10, ("tdb_validate_child: writing status to pipe\n"));
-	write (pfd, (const char *)&v_status, sizeof(v_status));
-	close(pfd);
+	DEBUG(10,    ("tdb_validate_child: summary of validation status:\n"));
+	DEBUGADD(10, (" *  tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
+	DEBUGADD(10, (" *  bad freelist: %s\n", v_status.bad_freelist ? "yes" : "no"));
+	DEBUGADD(10, (" *  bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
+	DEBUGADD(10, (" *  unknown key: %s\n", v_status.unknown_key ? "yes" : "no"));
+	DEBUGADD(10, (" => overall success: %s\n", v_status.success ? "yes" : "no"));
 
 	return ret;
 }
@@ -1060,29 +1062,19 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 	int child_status = 0;
 	int wait_pid = 0;
 	int ret = -1;
-	int pipe_fds[2];
-	struct tdb_validation_status v_status;
-	int bytes_read = 0;
 
 	/* fork and let the child do the validation.
 	 * benefit: no need to twist signal handlers and panic functions.
-	 * just let the child panic. we catch the signal.
-	 * communicate the extended status struct over a pipe. */
-
-	if (pipe(pipe_fds) != 0) {
-		DEBUG(0, ("tdb_validate: unable to create pipe, "
-			  "error %s", strerror(errno)));
-		smb_panic("tdb_validate: unable to create pipe.");
-	}
+	 * just let the child panic. we catch the signal. */
 
 	DEBUG(10, ("tdb_validate: forking to let child do validation.\n"));
 	child_pid = sys_fork();
 	if (child_pid == 0) {
+		/* child code */
 		DEBUG(10, ("tdb_validate (validation child): created\n"));
-		close(pipe_fds[0]); /* close reading fd */
 		DEBUG(10, ("tdb_validate (validation child): "
 			   "calling tdb_validate_child\n"));
-		exit(tdb_validate_child(tdb_path, validate_fn, pipe_fds[1]));
+		exit(tdb_validate_child(tdb_path, validate_fn));
 	}
 	else if (child_pid < 0) {
 		smb_panic("tdb_validate: fork for validation failed.");
@@ -1092,30 +1084,6 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 
 	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n",
 		   child_pid));
-	close(pipe_fds[1]); /* close writing fd */
-
-	v_status.success = True;
-	v_status.bad_entry = False;
-	v_status.unknown_key = False;
-
-	DEBUG(10, ("tdb_validate: reading from pipe.\n"));
-	bytes_read = read(pipe_fds[0], (void *)&v_status, sizeof(v_status));
-	close(pipe_fds[0]);
-
-	if (bytes_read != sizeof(v_status)) {
-		DEBUG(10, ("tdb_validate: read %d bytes from pipe "
-			   "but expected %d", bytes_read, (int)sizeof(v_status)));
-		DEBUGADD(10, (" -> assuming child crashed\n"));
-		v_status.success = False;
-	}
-	else {
-		DEBUG(10,    ("tdb_validate: read status from child\n"));
-		DEBUGADD(10, (" *  tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
-		DEBUGADD(10, (" *  bad freelist: %s\n", v_status.bad_freelist ? "yes" : "no"));
-		DEBUGADD(10, (" *  bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
-		DEBUGADD(10, (" *  unknown key: %s\n", v_status.unknown_key ? "yes" : "no"));
-		DEBUGADD(10, (" => overall success: %s\n", v_status.success ? "yes" : "no"));
-	}
 
 	DEBUG(10, ("tdb_validate: waiting for child to finish...\n"));
 	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
