@@ -82,6 +82,20 @@ static void ads_disp_perms(uint32 type)
 	puts("");
 }
 
+static void ads_disp_sec_ace_object(struct security_ace_object *object)
+{
+	if (object->flags & SEC_ACE_OBJECT_PRESENT) {
+		printf("Object type: SEC_ACE_OBJECT_PRESENT\n");
+		printf("Object GUID: %s\n", smb_uuid_string_static(
+			object->type.type));
+	}
+	if (object->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
+		printf("Object type: SEC_ACE_OBJECT_INHERITED_PRESENT\n");
+		printf("Object GUID: %s\n", smb_uuid_string_static(
+			object->inherited_type.inherited_type));
+	}
+}
+
 /* display ACE */
 static void ads_disp_ace(SEC_ACE *sec_ace)
 {
@@ -118,6 +132,10 @@ static void ads_disp_ace(SEC_ACE *sec_ace)
 
 	printf("access SID:  %s\naccess type: %s\n", 
                sid_string_static(&sec_ace->trustee), access_type);
+
+	if (sec_ace_object(sec_ace->type)) {
+		ads_disp_sec_ace_object(&sec_ace->object.object);
+	}
 
 	ads_disp_perms(sec_ace->access_mask);
 }
