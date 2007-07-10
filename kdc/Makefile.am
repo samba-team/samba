@@ -50,7 +50,7 @@ libkdc_la_SOURCES = 		\
 
 $(libkdc_la_OBJECTS): $(srcdir)/kdc-protos.h $(srcdir)/kdc-private.h
 
-libkdc_la_LDFLAGS = -version-info 1:0:0
+libkdc_la_LDFLAGS = -version-info 2:0:0
 
 if versionscript
 libkdc_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
