@@ -1,3 +1,20 @@
+2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krbhst.c: Set error string when there is no KDC for a
+	realm.
+
+	* lib/krb5/Makefile.am: New library version.
+
+	* kdc/Makefile.am: New library version.
+
+	* lib/krb5/krb5_locl.h: Add default_cc_name_env.
+
+	* lib/krb5/cache.c (enviroment_changed): return non-zero if
+	enviroment that will determine default krb5cc name has changed.
+	(krb5_cc_default_name): also check if cached value is uptodate.
+
+	* lib/krb5/krb5_locl.h: Drop pkinit_flags.
+
 2007-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* configure.in: add tests/java/Makefile
