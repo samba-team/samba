@@ -24,8 +24,7 @@ echo " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the "
 echo " * GNU General Public License for more details. "
 echo " *  "
 echo " * You should have received a copy of the GNU General Public License "
-echo " * along with this program; if not, write to the Free Software "
-echo " * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. "
+echo " * along with this program; if not, see <http://www.gnu.org/licenses/>."
 echo " */"
 
 echo '#include "includes.h"'
