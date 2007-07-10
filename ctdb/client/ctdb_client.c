@@ -1612,8 +1612,8 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 	char *keystr, *datastr;
 	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
 
-	keystr  = hex_encode(ctdb, key.dptr, key.dsize);
-	datastr = hex_encode(ctdb, data.dptr+sizeof(*h), data.dsize-sizeof(*h));
+	keystr  = hex_encode_talloc(ctdb, key.dptr, key.dsize);
+	datastr = hex_encode_talloc(ctdb, data.dptr+sizeof(*h), data.dsize-sizeof(*h));
 
 	fprintf(f, "dmaster: %u\n", h->dmaster);
 	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);

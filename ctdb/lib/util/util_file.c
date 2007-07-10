@@ -102,7 +102,7 @@ _PUBLIC_ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *me
 	return file_lines_parse(p, size, numlines, mem_ctx);
 }
 
-char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
+char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 {
 	int i;
 	char *hex_buffer;
