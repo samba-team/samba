@@ -1,3 +1,9 @@
+NOTE! The samba.c source in this directory has been removed pending
+approval from SGI to use it under the GPLv3 license.
+
+Please see Samba 3.0.xx for a copy of this code under the GPLv2
+license if required.
+
 samba PMDA
 ===========
 
