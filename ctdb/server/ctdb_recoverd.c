@@ -385,11 +385,6 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 	for (i=0;i<nodemap->num;i++) {
 		struct ctdb_node_flag_change c;
 		TDB_DATA data;
-		uint32_t flags = nodemap->nodes[i].flags;
-
-		if (flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
 
 		c.vnn = nodemap->nodes[i].vnn;
 		c.flags = nodemap->nodes[i].flags;
@@ -1073,6 +1068,15 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
+	/* Dont let messages from remote nodes change the DISCONNECTED flag. 
+	   This flag is handled locally based on whether the local node
+	   can communicate with the node or not.
+	*/
+	c->flags &= ~NODE_FLAGS_DISCONNECTED;
+	if (nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED) {
+		c->flags |= NODE_FLAGS_DISCONNECTED;
+	}
+
 	if (nodemap->nodes[i].flags != c->flags) {
 		DEBUG(0,("Node %u has changed flags - now 0x%x\n", c->vnn, c->flags));
 	}
@@ -1327,7 +1331,7 @@ again:
 			}
 			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
 			    (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-				DEBUG(0, (__location__ " Remote node:%u has different nodemap flags for %d (0x%x vs 0x%x)\n", 
+				DEBUG(0, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
 					  nodemap->nodes[j].vnn, i,
 					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
 				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 

@@ -308,10 +308,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
+	int i, ret, numrst;
 	struct sockaddr_in src, dst;
 
-	if (argc < 2) {
+	if (argc < 3) {
 		usage();
 	}
 
@@ -325,7 +325,9 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	for (i=0;i<5;i++) {
+	numrst = strtoul(argv[2], NULL, 0);
+
+	for (i=0;i<numrst;i++) {
 		ret = ctdb_sys_kill_tcp(ctdb->ev, &src, &dst);
 
 		printf("ret:%d\n", ret);
@@ -889,7 +891,7 @@ static const struct {
 	{ "recover",         control_recover,           true,  "force recovery" },
 	{ "freeze",          control_freeze,            true,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
-	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection", "<srcip:port> <dstip:port>" },
+	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection. Try <num> times.", "<srcip:port> <dstip:port> <num>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 };
 
