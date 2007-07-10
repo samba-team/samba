@@ -876,8 +876,7 @@ AC_REQUIRE([AC_PROG_MAKE_SET])])
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 # AM_AUTOMAKE_VERSION(VERSION)
 # ----------------------------
