@@ -245,6 +245,22 @@ _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_he
 }
 
 /**
+ * talloc version of hex_encode()
+ */
+_PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
+{
+	int i;
+	char *hex_buffer;
+
+	hex_buffer = talloc_array(mem_ctx, char, (len*2)+1);
+
+	for (i = 0; i < len; i++)
+		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
+
+	return hex_buffer;
+}
+
+/**
  Set a string value, allocing the space for the string
 **/
 static BOOL string_init(char **dest,const char *src)
