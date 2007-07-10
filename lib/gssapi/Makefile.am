@@ -186,7 +186,7 @@ nodist_libgssapi_la_SOURCES  = \
 	gkrb5_err.h \
 	$(BUILT_SOURCES)
 
-libgssapi_la_LDFLAGS = -version-info 1:0:0
+libgssapi_la_LDFLAGS = -version-info 2:0:0
 
 if versionscript
 libgssapi_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
