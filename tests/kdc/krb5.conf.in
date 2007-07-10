@@ -10,10 +10,18 @@
 [realms]
 	TEST.H5L.SE = {
 		kdc = localhost:@port@
+		admin_server = localhost:@admport@
+	}
+	SUB.TEST.H5L.SE = {
+		kdc = localhost:@port@
 	}
 	TEST2.H5L.SE = {
 		kdc = localhost:@port@
 	}
+
+[domain_realms]
+	.sub.test.h5l.se = SUB.TEST.H5L.SE
+	
 
 [kdc]
 	enable-digest = true
@@ -31,6 +39,7 @@
 		dbname = @objdir@/current-db
 		realm = TEST.H5L.SE
 		mkey_file = @objdir@/mkey.file
+		acl_file = @srcdir@/heimdal.acl
 	}
 
 [logging]
