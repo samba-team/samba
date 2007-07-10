@@ -20,7 +20,6 @@
 
 #include "includes.h"
 
-uint16 global_smbpid;
 extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
@@ -909,10 +908,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		exit_server_cleanly("Non-SMB packet");
 		return(-1);
 	}
-
-	/* yuck! this is an interim measure before we get rid of our
-		current inbuf/outbuf system */
-	global_smbpid = SVAL(inbuf,smb_pid);
 
 	if (smb_messages[type].fn == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
