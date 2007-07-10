@@ -18,32 +18,33 @@
 */
 
 #include "includes.h"
+#include "libcli/nbt/libnbt.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
 #include "torture/ui.h"
 #include "libcli/resolve/resolve.h"
 
 bool torture_nbt_get_name(struct torture_context *tctx, 
-								 struct nbt_name *name, 
-								 const char **address)
+			  struct nbt_name *name, 
+			  const char **address)
 {
 	make_nbt_name_server(name, strupper_talloc(tctx, 
-						 torture_setting_string(tctx, "host", NULL)));
+						   torture_setting_string(tctx, "host", NULL)));
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-							   resolve_name(name, tctx, address, NULL), 
-							   talloc_asprintf(tctx, 
-							   "Failed to resolve %s", name->name));
-
+				   resolve_name(name, tctx, address, NULL), 
+				   talloc_asprintf(tctx, 
+						   "Failed to resolve %s", name->name));
+	
 	return true;
 }
 
 NTSTATUS torture_nbt_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(
-											talloc_autofree_context(),
-											"NBT");
+		talloc_autofree_context(),
+		"NBT");
 	/* nbt tests */
 	torture_suite_add_suite(suite, torture_nbt_register());
 	torture_suite_add_suite(suite, torture_nbt_wins());
