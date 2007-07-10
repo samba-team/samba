@@ -13,7 +13,7 @@ otptest_LDADD = libotp.la
 include_HEADERS = otp.h
 
 lib_LTLIBRARIES = libotp.la
-libotp_la_LDFLAGS = -version-info 1:4:1
+libotp_la_LDFLAGS = -version-info 1:5:1
 libotp_la_LIBADD  = $(LIB_hcrypto) $(LIB_roken) $(LIB_NDBM)
 
 if HAVE_DB3
