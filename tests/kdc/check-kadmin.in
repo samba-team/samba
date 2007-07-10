@@ -102,7 +102,7 @@ env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} add -p foo --use-defaults kaka@${R} || exit 1
 
 echo "killing kdc (${kdcpid} ${kadmpid})"
-kill ${kdcpid} ${kadmpid}
+kill ${kdcpid} ${kadmpid} > /dev/null 2>/dev/null
 
 trap "" EXIT
 
