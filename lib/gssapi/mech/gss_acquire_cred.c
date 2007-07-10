@@ -50,7 +50,7 @@ gss_acquire_cred(OM_uint32 *minor_status,
 	int i;
 
 	*minor_status = 0;
-	if (actual_mechs)
+	if (output_cred_handle)
 	    *output_cred_handle = GSS_C_NO_CREDENTIAL;
 	if (actual_mechs)
 	    *actual_mechs = GSS_C_NO_OID_SET;
@@ -106,8 +106,9 @@ gss_acquire_cred(OM_uint32 *minor_status,
 			continue;
 
 		if (desired_name != GSS_C_NO_NAME) {
-			mn = _gss_find_mn(name, &mechs->elements[i]);
-			if (!mn)
+			major_status = _gss_find_mn(minor_status, name,
+						    &mechs->elements[i], &mn);
+			if (major_status != GSS_S_COMPLETE)
 				continue;
 		}
 
