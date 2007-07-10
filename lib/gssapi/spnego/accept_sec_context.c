@@ -559,9 +559,9 @@ acceptor_start
     mech_output_token.length = 0;
     mech_buf.value = NULL;
 
-    if (input_token_buffer->length == 0) {
+    if (input_token_buffer->length == 0)
 	return send_supported_mechs (minor_status, output_token);
-
+	
     ret = _gss_spnego_alloc_sec_context(minor_status, context_handle);
     if (ret != GSS_S_COMPLETE)
 	return ret;
