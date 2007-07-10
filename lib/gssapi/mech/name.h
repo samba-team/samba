@@ -41,7 +41,8 @@ struct _gss_name {
 	struct _gss_mechanism_name_list gn_mn;	/* list of MNs */
 };
 
-struct _gss_mechanism_name *
-	_gss_find_mn(struct _gss_name *name, gss_OID mech);
+OM_uint32
+	_gss_find_mn(OM_uint32 *, struct _gss_name *, gss_OID, 
+	      struct _gss_mechanism_name **);
 struct _gss_name *
 	_gss_make_name(gssapi_mech_interface m, gss_name_t new_mn);
