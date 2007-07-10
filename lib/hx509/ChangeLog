@@ -1,5 +1,7 @@
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* peer.c: update (c), indent.
+
 	* Makefile.am: New library version.
 
 2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
