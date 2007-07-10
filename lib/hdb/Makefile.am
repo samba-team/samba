@@ -50,7 +50,7 @@ endif
 
 
 lib_LTLIBRARIES = libhdb.la $(ldap_so)
-libhdb_la_LDFLAGS = -version-info 9:0:0
+libhdb_la_LDFLAGS = -version-info 10:0:1
 
 noinst_PROGRAMS = test_dbinfo
 
