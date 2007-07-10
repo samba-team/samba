@@ -47,16 +47,18 @@ which causes problems on some clients.<br>
 This file should look something like :
 <pre>
   CTDB_MANAGES_NFS=yes
-  CTDB_MANAGES_NFSLOCK=yes
+  LOCKD_TCPPORT=599
+  LOCKD_UDPPORT=599
   STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
-  STATD_HOSTNAME=\"ctdb -P $STATD_SHARED_DIRECTORY/192.168.1.1 -H /etc/ctdb/statd-callout -p 97\"
+  STATD_HOSTNAME="ctdb -P $STATD_SHARED_DIRECTORY/192.168.1.1 -H /etc/ctdb/statd-callout -p 97"
 </pre>
 
 The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
 
-The CTDB_MANAGES_NFSLOCK line tells the events scripts that CTDB is also to manage the nfs lock manager.<br>
+With this set to yes, CTDB will start/stop/restart these services as required.<br><br>
 
-With these set to yes, CTDB will start/stop/restart these services as required.<br><br>
+You need to make sure that the lock manager runs on the same port on all nodes in the cluster since some clients will have "issues" and take very long to recover if the port suddenly changes.<br>
+599 above is only an example. You can run the lock manager on any available port as long as you use the same port on all nodes.<br><br>
 
 STATD_SHARED_DIRECTORY is the shared directory where statd and the statd-callout script expects that the state variables and lists of clients to notify are found.<br>
 
