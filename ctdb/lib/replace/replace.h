@@ -13,7 +13,7 @@
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+   version 3 of the License, or (at your option) any later version.
 
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -21,8 +21,7 @@
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef _LIBREPLACE_REPLACE_H
@@ -228,7 +227,11 @@ char *rep_dlerror(void);
 
 #ifndef HAVE_DLOPEN
 #define dlopen rep_dlopen
+#ifdef DLOPEN_TAKES_UNSIGNED_FLAGS
+void *rep_dlopen(const char *name, unsigned int flags);
+#else
 void *rep_dlopen(const char *name, int flags);
+#endif
 #endif
 
 #ifndef HAVE_DLSYM
@@ -255,6 +258,14 @@ int rep_socketpair(int d, int type, int protocol, int sv[2]);
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+#endif
+
+#ifndef _DEPRECATED_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
 #endif
 #endif
 
@@ -321,6 +332,12 @@ char *rep_strptime(const char *buf, const char *format, struct tm *tm);
 #ifndef RTLD_LAZY
 #define RTLD_LAZY 0
 #endif
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
 
 #ifndef HAVE_SECURE_MKSTEMP
 #define mkstemp(path) rep_mkstemp(path)
@@ -330,6 +347,16 @@ int rep_mkstemp(char *temp);
 #ifndef HAVE_MKDTEMP
 #define mkdtemp rep_mkdtemp
 char *rep_mkdtemp(char *template);
+#endif
+
+#ifndef HAVE_PREAD
+#define pread rep_pread
+ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
+#endif
+
+#ifndef HAVE_PWRITE
+#define pwrite rep_pwrite
+ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
 #endif
 
 #ifdef HAVE_LIMITS_H
