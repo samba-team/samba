@@ -1010,22 +1010,22 @@ static int tdb_validate_child(const char *tdb_path,
 		goto out;
 	}
 
-	/* Check the cache freelist is good. */
+	/* Check if the tdb's freelist is good. */
 	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
-		DEBUG(0,("tdb_validate_child: bad freelist in cache %s\n",
+		DEBUG(0,("tdb_validate_child: bad freelist in tdb %s\n",
 			tdb_path));
 		v_status.bad_freelist = True;
 		v_status.success = False;
 		goto out;
 	}
 
-	DEBUG(10,("tdb_validate_child: cache %s freelist has %d entries\n",
+	DEBUG(10,("tdb_validate_child: tdb %s freelist has %d entries\n",
 		tdb_path, num_entries));
 
-	/* Now traverse the cache to validate it. */
+	/* Now traverse the tdb to validate it. */
 	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
 	if (num_entries == -1 || !(v_status.success)) {
-		DEBUG(0,("tdb_validate_child: cache %s traverse failed\n",
+		DEBUG(0,("tdb_validate_child: tdb %s traverse failed\n",
 			tdb_path));
 		if (!(v_status.success)) {
 			if (v_status.bad_entry) {
@@ -1038,7 +1038,7 @@ static int tdb_validate_child(const char *tdb_path,
 		goto out;
 	}
 
-	DEBUG(10,("tdb_validate_child: cache %s is good "
+	DEBUG(10,("tdb_validate_child: tdb %s is good "
 		"with %d entries\n", tdb_path, num_entries));
 	ret = 0; /* Cache is good. */
 
@@ -1072,7 +1072,7 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 	if (pipe(pipe_fds) != 0) {
 		DEBUG(0, ("tdb_validate: unable to create pipe, "
 			  "error %s", strerror(errno)));
-		smb_panic("winbind_validate_cache: unable to create pipe.");
+		smb_panic("tdb_validate: unable to create pipe.");
 	}
 
 	DEBUG(10, ("tdb_validate: forking to let child do validation.\n"));
