@@ -1,5 +1,8 @@
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* spnego/accept_sec_context.c: remove checks that are done by the
+	previous function.
+
 	* Makefile.am: New library version.
 
 2007-07-04  Love Hörnquist Åstrand  <lha@it.su.se>
