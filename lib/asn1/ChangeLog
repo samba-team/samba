@@ -1,3 +1,7 @@
+2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: New library version.
+
 2007-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: Re-add size limits. 
