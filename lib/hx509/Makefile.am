@@ -3,7 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libhx509.la
-libhx509_la_LDFLAGS = -version-info 1:0:0
+libhx509_la_LDFLAGS = -version-info 2:0:1
 
 BUILT_SOURCES =				\
 	$(gen_files_ocsp:.x=.c)		\
