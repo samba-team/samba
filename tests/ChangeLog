@@ -1,5 +1,9 @@
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: Add check-kadmin.
+
+	* kdc/check-kadmin.in: Simple test for server based kadmin.
+
 	* kdc/heimdal.acl: ACL file for check-admin test.
 
 2007-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
