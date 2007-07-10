@@ -4631,6 +4631,9 @@ AC_CHECK_HEADER(asm/types.h,[
 # For quotas on Veritas VxFS filesystems
 AC_CHECK_HEADERS(sys/fs/vx_quota.h)
 
+# For quotas on Linux XFS filesystems
+AC_CHECK_HEADERS(linux/dqblk_xfs.h)
+
 # For sys/quota.h and linux/quota.h
 AC_CHECK_HEADERS(sys/quota.h)
 
