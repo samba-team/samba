@@ -236,7 +236,6 @@ typedef struct krb5_context_data {
     char error_buf[256];
     krb5_addresses *ignore_addresses;
     char *default_cc_name;
-    int pkinit_flags;
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
     int dns_canonicalize_hostname;
