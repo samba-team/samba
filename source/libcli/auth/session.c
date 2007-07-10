@@ -29,7 +29,7 @@
   before calling, the out blob must be initialised to be the same size
   as the in blob
 */
-void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key,
+static void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key,
 		     BOOL forward)
 {
 	int i, k;

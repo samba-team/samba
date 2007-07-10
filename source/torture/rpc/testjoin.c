@@ -420,7 +420,7 @@ struct policy_handle *torture_join_samr_user_policy(struct test_join *join)
 	return &join->user_handle;
 }
 
-NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain *libnet_r)
+static NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain *libnet_r)
 {
 	int rtn;
 	TALLOC_CTX *tmp_ctx;
@@ -549,6 +549,7 @@ const char *torture_join_dom_dns_name(struct test_join *join)
 }
 
 
+#if 0 /* Left as the documentation of the join process, but see new implementation in libnet_become_dc.c */
 struct test_join_ads_dc {
 	struct test_join *join;
 };
@@ -668,14 +669,5 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 /* W2K3: see libnet/libnet_become_dc.c */
 	return join;
 }
-		
-void torture_leave_domain_ads_dc(struct test_join_ads_dc *join)
-{
-/* W2K3: see libnet/libnet_unbecome_dc.c */
 
-	if (join->join) {
-		torture_leave_domain(join->join);
-	}
-
-	talloc_free(join);
-}
+#endif
