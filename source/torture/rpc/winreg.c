@@ -29,6 +29,8 @@
 #define TEST_KEY_BASE "smbtorture test"
 #define TEST_KEY1 TEST_KEY_BASE "\\spottyfoot"
 #define TEST_KEY2 TEST_KEY_BASE "\\with a SD (#1)"
+#define TEST_KEY3 TEST_KEY_BASE "\\with a subkey"
+#define TEST_SUBKEY TEST_KEY3 "\\subkey"
 
 static void init_initshutdown_String(TALLOC_CTX *mem_ctx, struct initshutdown_String *name, const char *s)
 {
@@ -362,6 +364,35 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DeleteKey failed - %s\n", win_errstr(r.out.result));
+		return false;
+	}
+
+	return true;
+}
+
+/* DeleteKey on a key with subkey(s) should
+ * return WERR_ACCESS_DENIED. */
+static bool test_DeleteKeyWithSubkey(struct dcerpc_pipe *p, 
+				     TALLOC_CTX* mem_ctx,
+				     struct policy_handle *handle, const char *key)
+{
+	NTSTATUS status;
+	struct winreg_DeleteKey r;
+
+	printf("\ntesting DeleteKeyWithSubkey\n");
+
+	r.in.handle = handle;
+	init_winreg_String(&r.in.key, key);
+
+	status = dcerpc_winreg_DeleteKey(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteKeyWithSubkey failed  - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if (!W_ERROR_EQUAL(r.out.result, WERR_ACCESS_DENIED)) {
+		printf("DeleteKeyWithSubkey failed - %s\n", win_errstr(r.out.result));
 		return false;
 	}
 
@@ -709,6 +740,7 @@ static bool test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	struct policy_handle handle, newhandle;
 	bool ret = true, created = false, created2 = false, deleted = false;
+	bool created3 = false, created_subkey = false;
 	struct winreg_OpenHKLM r;
 	NTSTATUS status;
 
@@ -725,6 +757,8 @@ static bool test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	test_Cleanup(p, mem_ctx, &handle, TEST_KEY1);
 	test_Cleanup(p, mem_ctx, &handle, TEST_KEY2);
+	test_Cleanup(p, mem_ctx, &handle, TEST_SUBKEY);
+	test_Cleanup(p, mem_ctx, &handle, TEST_KEY3);
 	test_Cleanup(p, mem_ctx, &handle, TEST_KEY_BASE);
 
 	if (!test_CreateKey(p, mem_ctx, &handle, TEST_KEY1, NULL)) {
@@ -782,6 +816,38 @@ static bool test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (created && !test_DeleteKey(p, mem_ctx, &handle, TEST_KEY2)) {
+		printf("DeleteKey failed\n");
+		ret = false;
+	}
+
+	if (created && test_CreateKey(p, mem_ctx, &handle, TEST_KEY3, NULL)) {
+		created3 = true;
+	}
+
+	if (created3 && 
+	    test_CreateKey(p, mem_ctx, &handle, TEST_SUBKEY, NULL)) 
+	{
+		created_subkey = true;
+	}
+
+	if (created_subkey && 
+	    !test_DeleteKeyWithSubkey(p, mem_ctx, &handle, TEST_KEY3)) 
+	{
+		printf("DeleteKeyWithSubkey failed "
+		       "(DeleteKey didn't return ACCESS_DENIED)\n");
+		ret = false;
+	}
+
+	if (created_subkey && 
+	    !test_DeleteKey(p, mem_ctx, &handle, TEST_SUBKEY))
+	{
+		printf("DeleteKey failed\n");
+		ret = false;
+	}
+
+	if (created3 &&
+	    !test_DeleteKey(p, mem_ctx, &handle, TEST_KEY3))
+	{
 		printf("DeleteKey failed\n");
 		ret = false;
 	}
