@@ -1011,34 +1011,22 @@ static int tdb_validate_child(const char *tdb_path,
 
 	/* Check if the tdb's freelist is good. */
 	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
-		DEBUG(0,("tdb_validate_child: bad freelist in tdb %s\n",
-			tdb_path));
 		v_status.bad_freelist = True;
 		v_status.success = False;
 		goto out;
 	}
 
 	DEBUG(10,("tdb_validate_child: tdb %s freelist has %d entries\n",
-		tdb_path, num_entries));
+		  tdb_path, num_entries));
 
 	/* Now traverse the tdb to validate it. */
 	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
 	if (num_entries == -1 || !(v_status.success)) {
-		DEBUG(0,("tdb_validate_child: tdb %s traverse failed\n",
-			tdb_path));
-		if (!(v_status.success)) {
-			if (v_status.bad_entry) {
-				DEBUGADD(0, (" -> bad entry found\n"));
-			}
-			if (v_status.unknown_key) {
-				DEBUGADD(0, (" -> unknown key encountered\n"));
-			}
-		}
 		goto out;
 	}
 
-	DEBUG(10,("tdb_validate_child: tdb %s is good "
-		"with %d entries\n", tdb_path, num_entries));
+	DEBUG(10,("tdb_validate_child: tdb %s is good with %d entries\n",
+		  tdb_path, num_entries));
 	ret = 0; /* Cache is good. */
 
 out:
@@ -1046,12 +1034,12 @@ out:
 		tdb_close(tdb);
 	}
 
-	DEBUG(10,    ("tdb_validate_child: summary of validation status:\n"));
-	DEBUGADD(10, (" *  tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
-	DEBUGADD(10, (" *  bad freelist: %s\n", v_status.bad_freelist ? "yes" : "no"));
-	DEBUGADD(10, (" *  bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
-	DEBUGADD(10, (" *  unknown key: %s\n", v_status.unknown_key ? "yes" : "no"));
-	DEBUGADD(10, (" => overall success: %s\n", v_status.success ? "yes" : "no"));
+	DEBUG(10,   ("tdb_validate_child: summary of validation status:\n"));
+	DEBUGADD(10,(" * tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
+	DEBUGADD(10,(" * bad freelist: %s\n",v_status.bad_freelist?"yes":"no"));
+	DEBUGADD(10,(" * bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
+	DEBUGADD(10,(" * unknown key: %s\n", v_status.unknown_key?"yes":"no"));
+	DEBUGADD(10,(" => overall success: %s\n", v_status.success?"yes":"no"));
 
 	return ret;
 }
@@ -1082,26 +1070,24 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 
 	/* parent */
 
-	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n",
-		   child_pid));
+	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n",child_pid));
 
 	DEBUG(10, ("tdb_validate: waiting for child to finish...\n"));
 	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
 		if (errno == EINTR) {
-			DEBUG(10, ("tdb_validate: got signal during "
-				   "waitpid, retrying\n"));
+			DEBUG(10, ("tdb_validate: got signal during waitpid, "
+				   "retrying\n"));
 			errno = 0;
 			continue;
 		}
-		DEBUG(0, ("tdb_validate: waitpid failed with "
-                          "errno %s\n", strerror(errno)));
+		DEBUG(0, ("tdb_validate: waitpid failed with errno %s\n",
+			  strerror(errno)));
 		smb_panic("tdb_validate: waitpid failed.");
 	}
 	if (wait_pid != child_pid) {
 		DEBUG(0, ("tdb_validate: waitpid returned pid %d, "
-			  "but %d was expexted\n", wait_pid, child_pid));
-		smb_panic("tdb_validate: waitpid returned "
-			     "unexpected PID.");
+			  "but %d was expected\n", wait_pid, child_pid));
+		smb_panic("tdb_validate: waitpid returned unexpected PID.");
 	}
 
 	DEBUG(10, ("tdb_validate: validating child returned.\n"));
@@ -1111,8 +1097,8 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 		ret = WEXITSTATUS(child_status);
 	}
 	if (WIFSIGNALED(child_status)) {
-		DEBUG(10, ("tdb_validate: child terminated "
-			   "by signal %d\n", WTERMSIG(child_status)));
+		DEBUG(10, ("tdb_validate: child terminated by signal %d\n", 
+			   WTERMSIG(child_status)));
 #ifdef WCOREDUMP
 		if (WCOREDUMP(child_status)) {
 			DEBUGADD(10, ("core dumped\n"));
@@ -1121,8 +1107,7 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 		ret = WTERMSIG(child_status);
 	}
 	if (WIFSTOPPED(child_status)) {
-		DEBUG(10, ("tdb_validate: child was stopped "
-			   "by signal %d\n",
+		DEBUG(10, ("tdb_validate: child was stopped by signal %d\n",
 			   WSTOPSIG(child_status)));
 		ret = WSTOPSIG(child_status);
 	}
