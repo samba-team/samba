@@ -85,10 +85,13 @@ find_db_spec(kadm5_server_context *ctx)
 	while ((d = hdb_dbinfo_get_next(info, d)) != NULL) {
 	    const char *p = hdb_dbinfo_get_realm(context, d);
 	    
-	    if(strcmp(ctx->config.realm, p) != 0)
+	    /* match default (realm-less) */
+	    if(p != NULL && strcmp(ctx->config.realm, p) != 0)
 		continue;
 	    
-	    ctx->config.dbname = strdup(p);
+	    p = hdb_dbinfo_get_dbname(context, d);
+	    if (p)
+		ctx->config.dbname = strdup(p);
 	    
 	    p = hdb_dbinfo_get_acl_file(context, d);
 	    if (p)
