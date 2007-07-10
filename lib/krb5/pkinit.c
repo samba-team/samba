@@ -645,8 +645,6 @@ _krb5_pk_mk_padata(krb5_context context,
 						req_body->realm,
 						"pkinit_win2k",
 						NULL);
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
-	win2k_compat = 1;
 
     if (win2k_compat) {
 	ctx->require_binding = 
