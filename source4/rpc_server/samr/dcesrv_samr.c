@@ -1236,7 +1236,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	/* This must be one of these values *only* */
 	if (r->in.acct_flags == ACB_NORMAL) {
-		container = "Users";
+		container = "CN=Users";
 		obj_class = "user";
 
 	} else if (r->in.acct_flags == ACB_WSTRUST) {
@@ -1244,7 +1244,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_FOOBAR;
 		}
 		cn_name[cn_name_len - 1] = '\0';
-		container = "Computers";
+		container = "CN=Computers";
 		obj_class = "computer";
 
 	} else if (r->in.acct_flags == ACB_SVRTRUST) {
@@ -1252,11 +1252,11 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_FOOBAR;		
 		}
 		cn_name[cn_name_len - 1] = '\0';
-		container = "Domain Controllers";
+		container = "OU=Domain Controllers";
 		obj_class = "computer";
 
 	} else if (r->in.acct_flags == ACB_DOMTRUST) {
-		container = "Users";
+		container = "CN=Users";
 		obj_class = "user";
 
 	} else {
@@ -1266,7 +1266,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	/* add core elements to the ldb_message for the user */
 	msg->dn = ldb_dn_copy(mem_ctx, d_state->domain_dn);
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=%s", cn_name, container)) {
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s,%s", cn_name, container)) {
 		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_FOOBAR;
 	}

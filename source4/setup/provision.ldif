@@ -1,6 +1,6 @@
-dn: CN=Domain Controllers,${DOMAINDN}
+dn: OU=Domain Controllers,${DOMAINDN}
 objectClass: top
-objectClass: container
+objectClass: organizationalUnit
 cn: Domain Controllers
 description: Default container for domain controllers
 instanceType: 4
