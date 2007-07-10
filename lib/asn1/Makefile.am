@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 YFLAGS = -d -t
 
 lib_LTLIBRARIES = libasn1.la
-libasn1_la_LDFLAGS = -version-info 7:0:0
+libasn1_la_LDFLAGS = -version-info 8:0:0
 
 libasn1_la_LIBADD = \
 	@LIB_com_err@ \
