@@ -1,5 +1,9 @@
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.c: krb5-v4compat.h defines prototypes for
+	v4 (semiprivate functions) in libkrb5, don't include
+	krb5-private.h any longer.
+
 	* lib/krb5/krbhst.c: Set error string when there is no KDC for a
 	realm.
 
