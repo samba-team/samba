@@ -5,14 +5,14 @@ Changes in release 0.9
  * Make session key for the krbtgt be selected by the best encryption
    type of the client.
 
- * Better interoperability for PK-INIT.
+ * Better interoperability with other PK-INIT implementations.
 
  * Inital support for Mac OS X Keychain for hx509.
 
  * Alias support for inital ticket requests.
 
  * Add symbol versioning to selected libraries on platforms that uses
-   GNU link editor: gssapi, hcrypto, heimntlm, and libkdc.
+   GNU link editor: gssapi, hcrypto, heimntlm, hx509, and libkdc.
 
  * New version of imath included in hcrypto.
 
