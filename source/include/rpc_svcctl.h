@@ -122,15 +122,11 @@
 
 /* utility structures for RPCs */
 
-typedef struct {
-	uint32 type;
-	uint32 state;
-	uint32 controls_accepted;
-	WERROR win32_exit_code;
-	uint32 service_exit_code;
-	uint32 check_point;
-	uint32 wait_hint;
-} SERVICE_STATUS;
+/*
+ * "struct SERVICE_STATUS" comes from librpc/gen_ndr/svcctl.h
+ */
+
+typedef struct SERVICE_STATUS SERVICE_STATUS;
 
 typedef struct {
 	SERVICE_STATUS status;
