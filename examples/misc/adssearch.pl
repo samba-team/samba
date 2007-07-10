@@ -77,6 +77,7 @@ my (
 	$opt_port,
 	$opt_realm,
 	$opt_saslmech,
+	$opt_search_opt,
 	$opt_scope, 
 	$opt_simpleauth,
 	$opt_starttls,
@@ -108,6 +109,7 @@ GetOptions(
 	'saslmech|Y=s'	=> \$opt_saslmech,
 	'schema|c'	=> \$opt_dump_schema,
 	'scope|s=s'	=> \$opt_scope,
+	'searchopt:i'	=> \$opt_search_opt,
 	'simpleauth|x'	=> \$opt_simpleauth,
 	'tls|Z'		=> \$opt_starttls,
 	'user|U=s'	=> \$opt_user,
@@ -1464,6 +1466,21 @@ sub gen_controls {
 			critical => 'true',
 			value => $opt_display_extendeddn ? $ctl_extended_dn_val : "");
 
+	# setup search options
+	my $search_opt = Convert::ASN1->new;
+	$search_opt->prepare(
+		q<	searchopt ::= SEQUENCE {
+				flags     INTEGER
+			}
+		>
+	);
+
+	my $tmp = $search_opt->encode( flags => $opt_search_opt);
+	my $ctl_search_opt = Net::LDAP::Control->new( 
+		type => $ads_controls{'LDAP_SERVER_SEARCH_OPTIONS_OID'},
+		critical => 'true',
+		value => $tmp);
+
 	# setup notify control
 	my $ctl_notification = Net::LDAP::Control->new( 
 		type => $ads_controls{'LDAP_SERVER_NOTIFICATION_OID'},
@@ -1504,6 +1521,11 @@ sub gen_controls {
 	if ($opt_domain_scope) {
 		push(@ctrls, $ctl_domscope);
 		push(@ctrls_s, "LDAP_SERVER_DOMAIN_SCOPE_OID");
+	}
+
+	if ($opt_search_opt) {
+		push(@ctrls, $ctl_search_opt);
+		push(@ctrls_s, "LDAP_SERVER_SEARCH_OPTIONS_OID");
 	}
 
 	return @ctrls;
