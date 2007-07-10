@@ -65,7 +65,6 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "(|(objectClass=*)(distinguishedName=*))", NULL },
 		{ "nosync", 0,   POPT_ARG_NONE, &options.nosync, 0, "non-synchronous transactions", NULL },
 		{ "sorted", 'S', POPT_ARG_NONE, &options.sorted, 0, "sort attributes", NULL },
-		{ "sasl-mechanism", 0, POPT_ARG_STRING, &options.sasl_mechanism, 0, "choose SASL mechanism", "MECHANISM" },
 		{ "input", 'I', POPT_ARG_STRING, &options.input, 0, "Input File", "Input" },
 		{ "output", 'O', POPT_ARG_STRING, &options.output, 0, "Output File", "Output" },
 		{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },

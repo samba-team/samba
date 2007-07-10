@@ -33,13 +33,12 @@
  *              -P --machine-pass
  *                 --simple-bind-dn
  *                 --password
- *                 --use-security-mechanisms
  */
 
 
 static BOOL dont_ask;
 
-enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS, OPT_GENSEC_MECHS };
+enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS };
 
 /*
   disable asking for a password
@@ -121,10 +120,6 @@ static void popt_common_credentials_callback(poptContext con,
 						   : CRED_DONT_USE_KERBEROS);
 		break;
 	}
-	case OPT_GENSEC_MECHS:
-		/* Convert a list of strings into a list of available authentication standards */
-		
-		break;
 		
 	case OPT_SIMPLE_BIND_DN:
 		cli_credentials_set_bind_dn(cmdline_credentials, arg);
@@ -144,6 +139,5 @@ struct poptOption popt_common_credentials[] = {
 	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
 	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
 	{ "kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KERBEROS, "Use Kerberos" },
-	{ "use-security-mechanisms", 0, POPT_ARG_STRING, NULL, OPT_GENSEC_MECHS, "Restricted list of authentication mechanisms available for use with this authentication"},
 	{ NULL }
 };
