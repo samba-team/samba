@@ -453,10 +453,12 @@ ObjectIdentifierType: kw_OBJECT kw_IDENTIFIER
 				     TE_EXPLICIT, new_type(TOID));
 		}
 		;
-OctetStringType	: kw_OCTET kw_STRING
+OctetStringType	: kw_OCTET kw_STRING size
 		{
-			$$ = new_tag(ASN1_C_UNIV, UT_OctetString, 
-				     TE_EXPLICIT, new_type(TOctetString));
+		    Type *t = new_type(TOctetString);
+		    t->range = $3;
+		    $$ = new_tag(ASN1_C_UNIV, UT_OctetString, 
+				 TE_EXPLICIT, t);
 		}
 		;
 
