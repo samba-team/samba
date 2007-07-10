@@ -33,7 +33,9 @@
 
 #ifdef HAVE_LINUX_XFS_QUOTAS
 #include "samba_linux_quota.h"
-#include "samba_xfs_quota.h"
+#ifdef HAVE_LINUX_DQBLK_XFS_H
+#include <linux/dqblk_xfs.h>
+#endif
 #define HAVE_GROUP_QUOTA
 #else /* IRIX */
 #include <sys/quota.h> 

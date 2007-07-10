@@ -61,7 +61,6 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
  */
 
 #include "samba_linux_quota.h"
-#include "samba_xfs_quota.h"
 
 typedef struct _LINUX_SMB_DISK_QUOTA {
 	SMB_BIG_UINT bsize;
@@ -72,6 +71,10 @@ typedef struct _LINUX_SMB_DISK_QUOTA {
 	SMB_BIG_UINT isoftlimit; /* inode soft limit. */
 	SMB_BIG_UINT curinodes; /* Current used inodes. */
 } LINUX_SMB_DISK_QUOTA;
+
+
+#ifdef HAVE_LINUX_DQBLK_XFS_H
+#include <linux/dqblk_xfs.h>
 
 /****************************************************************************
  Abstract out the XFS Quota Manager quota get call.
@@ -102,6 +105,15 @@ static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, gid_t egrp_id, LI
 
 	return ret;
 }
+#else
+static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, gid_t egrp_id, LINUX_SMB_DISK_QUOTA *dp)
+{
+	DEBUG(0,("XFS quota support not available\n"));
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
 
 /****************************************************************************
  Abstract out the old and new Linux quota get calls.
