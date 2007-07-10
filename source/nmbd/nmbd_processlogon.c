@@ -33,18 +33,6 @@ struct sam_database_info {
 };
 
 /****************************************************************************
-Send a message to smbd to do a sam delta sync
-**************************************************************************/
-
-static void send_repl_message(uint32 low_serial)
-{
-        DEBUG(3, ("sending replication message, serial = 0x%04x\n", 
-                  low_serial));
-        message_send_all(nmbd_messaging_context(), MSG_SMB_SAM_REPL,
-			 &low_serial, sizeof(low_serial), NULL);
-}
-
-/****************************************************************************
 Process a domain logon packet
 **************************************************************************/
 
@@ -505,102 +493,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 		replication event is required. */
 
 		case SAM_UAS_CHANGE:
-			{
-				struct sam_database_info *db_info;
-				char *q = buf + 2;
-				int i, db_count;
-				uint32 low_serial;
-          
-				/* Header */
-          
-				if (PTR_DIFF(q + 16, buf) >= len) {
-					DEBUG(0,("process_logon_packet: bad packet\n"));
-					return;
-				}
-
-				low_serial = IVAL(q, 0); q += 4;     /* Low serial number */
-
-				q += 4;                   /* Date/time */
-				q += 4;                   /* Pulse */
-				q += 4;                   /* Random */
-          
-				/* Domain info */
-          
-				q = skip_string(buf,len,q);    /* PDC name */
-
-				if (!q || PTR_DIFF(q, buf) >= len) {
-					DEBUG(0,("process_logon_packet: bad packet\n"));
-					return;
-				}
-
-				q = skip_string(buf,len,q);    /* Domain name */
-
-				if (!q || PTR_DIFF(q, buf) >= len) {
-					DEBUG(0,("process_logon_packet: bad packet\n"));
-					return;
-				}
-
-				q = skip_unibuf(q, PTR_DIFF(buf + len, q)); /* Unicode PDC name */
-
-				if (PTR_DIFF(q, buf) >= len) {
-					DEBUG(0,("process_logon_packet: bad packet\n"));
-					return;
-				}
-
-				q = skip_unibuf(q, PTR_DIFF(buf + len, q)); /* Unicode domain name */
-          
-				/* Database info */
-          
-				if (PTR_DIFF(q + 2, buf) >= len) {
-					DEBUG(0,("process_logon_packet: bad packet\n"));
-					return;
-				}
-
-				db_count = SVAL(q, 0); q += 2;
-
-				if (PTR_DIFF(q + (db_count*20), buf) >= len) {
-					DEBUG(0,("process_logon_packet: bad packet\n"));
-					return;
-				}
-
-				db_info = SMB_MALLOC_ARRAY(struct sam_database_info, db_count);
-
-				if (db_info == NULL) {
-					DEBUG(3, ("out of memory allocating info for %d databases\n", db_count));
-					return;
-				}
-          
-				for (i = 0; i < db_count; i++) {
-					db_info[i].index = IVAL(q, 0);
-					db_info[i].serial_lo = IVAL(q, 4);
-					db_info[i].serial_hi = IVAL(q, 8);
-					db_info[i].date_lo = IVAL(q, 12);
-					db_info[i].date_hi = IVAL(q, 16);
-					q += 20;
-				}
-
-				/* Domain SID */
-
-#if 0
-				/* We must range check this. */
-				q += IVAL(q, 0) + 4;  /* 4 byte length plus data */
-          
-				q += 2;               /* Alignment? */
-
-				/* Misc other info */
-
-				q += 4;               /* NT version (0x1) */
-				q += 2;               /* LMNT token (0xff) */
-				q += 2;               /* LM20 token (0xff) */
-#endif
-
-				SAFE_FREE(db_info);        /* Not sure whether we need to do anything useful with these */
-
-				/* Send message to smbd */
-
-				send_repl_message(low_serial);
-				break;
-			}
+			DEBUG(5, ("Got SAM_UAS_CHANGE\n"));
+			break;
 
 		default:
 			DEBUG(3,("process_logon_packet: Unknown domain request %d\n",code));
