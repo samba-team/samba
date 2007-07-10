@@ -53,7 +53,7 @@ of accessing the Subversion server on this host.
 </para>
 
 <sect3>
-<title>Access via SVNweb</title>
+<title>Access via ViewCVS</title>
 
 
 <para>
@@ -66,7 +66,7 @@ listing between any two versions on the repository.
 
 <para>
 Use the URL
-<ulink noescape="1" url="http://svnweb.samba.org/">http://svnweb.samba.org/</ulink>.
+<ulink noescape="1" url="http://viewcvs.samba.org/">http://viewcvs.samba.org/</ulink>.
 </para>
 </sect3>
 
