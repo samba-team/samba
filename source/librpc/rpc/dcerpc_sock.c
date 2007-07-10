@@ -300,7 +300,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 }
 
 
-struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
+static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 						       struct dcerpc_connection *cn,
 						       struct socket_address *server,
 						       const char *target_hostname,
@@ -337,28 +337,13 @@ struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 }
 
 
-NTSTATUS dcerpc_pipe_open_socket_recv(struct composite_context *c)
+static NTSTATUS dcerpc_pipe_open_socket_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
 
 	talloc_free(c);
 	return status;
 }
-
-/* 
-   open a rpc connection using the generic socket library
-*/
-NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *conn,
-				 struct socket_address *server,
-				 const char *target_hostname,
-				 enum dcerpc_transport_t transport)
-{
-	struct composite_context *c;
-	
-	c = dcerpc_pipe_open_socket_send(conn, conn, server, target_hostname, transport);
-	return dcerpc_pipe_open_socket_recv(c);
-}
-
 
 struct pipe_tcp_state {
 	const char *server;
@@ -510,20 +495,6 @@ NTSTATUS dcerpc_pipe_open_tcp_recv(struct composite_context *c)
 }
 
 
-/*
-  Open rpc pipe on tcp/ip transport - sync version
-*/
-NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_connection *conn, const char *server,
-			      const char *target_hostname,
-			      uint32_t port)
-{
-	struct composite_context *c;
-
-	c = dcerpc_pipe_open_tcp_send(conn, server, target_hostname, port);
-	return dcerpc_pipe_open_tcp_recv(c);
-}
-
-
 struct pipe_unix_state {
 	const char *path;
 	struct socket_address *srvaddr;
@@ -535,7 +506,7 @@ struct pipe_unix_state {
   Stage 2 of dcerpc_pipe_open_unix_stream_send: receive result of pipe open
   request on unix socket.
 */
-void continue_unix_open_socket(struct composite_context *ctx)
+static void continue_unix_open_socket(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
@@ -598,16 +569,6 @@ NTSTATUS dcerpc_pipe_open_unix_stream_recv(struct composite_context *c)
 }
 
 
-/*
-  Open a rpc pipe on a unix socket - sync version
-*/
-NTSTATUS dcerpc_pipe_open_unix_stream(struct dcerpc_connection *conn, const char *path)
-{
-	struct composite_context *c = dcerpc_pipe_open_unix_stream_send(conn, path);
-	return dcerpc_pipe_open_unix_stream_recv(c);
-}
-
-
 struct pipe_np_state {
 	char *full_path;
 	struct socket_address *srvaddr;
@@ -618,7 +579,7 @@ struct pipe_np_state {
 /*
   Stage 2 of dcerpc_pipe_open_pipe_send: receive socket open request
 */
-void continue_np_open_socket(struct composite_context *ctx)
+static void continue_np_open_socket(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
