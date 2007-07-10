@@ -36,14 +36,6 @@ RCSID("$Id$");
 
 #include "krb5-v4compat.h"
 
-struct krb5_pk_identity;
-struct krb5_pk_cert;
-struct ContentInfo;
-struct _krb5_krb_auth_data;
-struct krb5_dh_moduli;
-struct krb5_plugin;
-enum plugin_type;
-#include "krb5-private.h"
 #include "heimntlm.h"
 
 int forwardable_flag	= -1;
