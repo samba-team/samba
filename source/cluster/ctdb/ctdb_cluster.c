@@ -112,7 +112,7 @@ struct ctdb_handler_state {
 /*
   dispatch incoming ctdb messages
 */
-static void ctdb_message_handler(struct ctdb_context *ctdb, uint32_t srvid, 
+static void ctdb_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 				 TDB_DATA data, void *private)
 {
 	struct ctdb_handler_state *s = talloc_get_type(private, 
@@ -196,22 +196,10 @@ static struct cluster_ops cluster_ctdb_ops = {
 /* initialise ctdb */
 void cluster_ctdb_init(struct event_context *ev, const char *model)
 {
-	const char *nlist;
-	const char *address;
-	const char *transport;
 	struct cluster_state *state;
-	int ret, lacount, i;
-	const char *db_list[] = { "brlock", "opendb" };
 
-	nlist = lp_parm_string(-1, "ctdb", "nlist");
-	if (nlist == NULL) return;
-
-	address = lp_parm_string(-1, "ctdb", "address");
-	if (address == NULL) return;
-
-	transport = lp_parm_string(-1, "ctdb", "transport");
-	if (transport == NULL) {
-		transport = "tcp";
+	if (!lp_parm_bool(-1, "ctdb", "enable", False)) {
+		return;
 	}
 
 	state = talloc(ev, struct cluster_state);
@@ -224,51 +212,6 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
 
 	cluster_ctdb_ops.private = state;
 
-	ret = ctdb_set_transport(state->ctdb, transport);
-	if (ret == -1) {
-		DEBUG(0,("ctdb_set_transport failed - %s\n",
-			 ctdb_errstr(state->ctdb)));
-		goto failed;
-	}
-
-	if (lp_parm_bool(-1, "ctdb", "selfconnect", False)) {
-		DEBUG(0,("Enabling ctdb selfconnect\n"));
-		ctdb_set_flags(state->ctdb, CTDB_FLAG_SELF_CONNECT);
-	}
-
-	lacount = lp_parm_int(-1, "ctdb", "maxlacount", -1);
-	if (lacount != -1) {
-		ctdb_set_max_lacount(state->ctdb, lacount);
-	}
-
-	/* tell ctdb what address to listen on */
-        ret = ctdb_set_address(state->ctdb, address);
-        if (ret == -1) {
-                DEBUG(0,("ctdb_set_address failed - %s\n", ctdb_errstr(state->ctdb)));
-		goto failed;
-        }
-
-	ret = ctdb_set_tdb_dir(state->ctdb, lp_lockdir());
-	if (ret == -1) {
-		DEBUG(0,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(state->ctdb)));
-		goto failed;
-	}
-
-        /* tell ctdb what nodes are available */
-        ret = ctdb_set_nlist(state->ctdb, nlist);
-        if (ret == -1) {
-                DEBUG(0,("ctdb_set_nlist failed - %s\n", ctdb_errstr(state->ctdb)));
-		goto failed;
-        }
-
-	/* attach all the databases we will need */
-	for (i=0;i<ARRAY_SIZE(db_list);i++) {
-		struct ctdb_db_context *ctdb_db;
-		ctdb_db = ctdb_attach(state->ctdb, db_list[i], TDB_INTERNAL, 
-				      O_RDWR|O_CREAT|O_TRUNC, 0666);
-		if (ctdb_db == NULL) goto failed;
-	}
-
 	cluster_set_ops(&cluster_ctdb_ops);
 
 	/* nasty hack for now ... */
@@ -277,21 +220,9 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
 		brl_ctdb_init_ops();
 	}
 
-	/* start the protocol running */
-	ret = ctdb_start(state->ctdb);
-        if (ret == -1) {
-                DEBUG(0,("ctdb_start failed - %s\n", ctdb_errstr(state->ctdb)));
-		goto failed;
-        }
-
-	/* wait until all nodes are connected (should not be needed
-	   outside of test code) */
-	ctdb_connect_wait(state->ctdb);
-
 	return;
 	
 failed:
 	DEBUG(0,("cluster_ctdb_init failed\n"));
 	talloc_free(state);
 }
-

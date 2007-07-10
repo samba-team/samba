@@ -35,6 +35,9 @@ struct ctdb_ibw_node {
 	int	qcnt;
 };
 
+int ctdb_ibw_get_address(struct ctdb_context *ctdb,
+	const char *address, struct in_addr *addr);
+
 int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn);
 int ctdb_ibw_receive_handler(struct ibw_conn *conn, void *buf, int n);
 
@@ -43,3 +46,5 @@ void ctdb_ibw_node_connect_event(struct event_context *ev, struct timed_event *t
 	struct timeval t, void *private_data);
 
 int ctdb_flush_cn_queue(struct ctdb_ibw_node *cn);
+
+int ctdb_ibw_init(struct ctdb_context *ctdb);

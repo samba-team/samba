@@ -7,34 +7,58 @@ datarootdir = @datarootdir@
 includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
-VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@
+sbindir = @sbindir@
+mandir = @mandir@
+localstatedir = @localstatedir@
+VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
+etcdir = @sysconfdir@
 builddir = @builddir@
+DESTDIR = /
 EXTRA_OBJ=@EXTRA_OBJ@
+XSLTPROC = /usr/bin/xsltproc
+INSTALLCMD = @INSTALL@
 
-CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib/util -I$(srcdir) \
+POPT_LIBS = @POPT_LIBS@
+POPT_CFLAGS = @POPT_CFLAGS@
+POPT_OBJ = @POPT_OBJ@
+
+CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
-	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
+	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
+	-DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
 
-LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ -lpopt @INFINIBAND_LIBS@
+LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@
 
-EVENTS_OBJ = lib/events/events.o lib/events/events_standard.o
+UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o \
+	lib/util/util_time.o lib/util/util_file.o
 
-CTDB_COMMON_OBJ = common/ctdb.o common/ctdb_daemon.o common/ctdb_client.o common/ctdb_io.o common/util.o common/ctdb_util.o \
-	common/ctdb_call.o common/ctdb_ltdb.o common/ctdb_lockwait.o common/ctdb_message.o \
-	common/cmdline.o lib/util/idtree.o lib/util/db_wrap.o lib/util/debug.o
+CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
+	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
+	lib/util/debug.o common/system.o
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
-CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ)
+CTDB_CLIENT_OBJ = client/ctdb_client.o \
+	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) @TALLOC_OBJ@ @TDB_OBJ@ \
+	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @EVENTS_OBJ@ 
 
-OBJS = @TDBOBJ@ @TALLOCOBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ)
+CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
+	server/ctdb_recoverd.o server/ctdb_recover.o server/ctdb_freeze.o \
+	server/ctdb_tunables.o server/ctdb_monitor.o server/ctdb_server.o \
+	server/ctdb_control.o server/ctdb_call.o server/ctdb_ltdb_server.o \
+	server/ctdb_traverse.o server/eventscript.o server/ctdb_takeover.o \
+	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
-BINS = bin/ctdbd bin/ctdbd_test bin/ctdb_test bin/ctdb_bench bin/ctdb_messaging bin/ctdb_fetch bin/ctdb_fetch1 bin/lockwait bin/ctdb_status @INFINIBAND_BINS@
+TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store @INFINIBAND_BINS@
+BINS = bin/ctdb bin/scsi_io
+SBINS = bin/ctdbd
 
 DIRS = lib bin
 
-all: showflags dirs $(OBJS) $(BINS)
+.SUFFIXES: .c .o .h .1 .1.xml .1.html
+
+all: showflags dirs doc $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
@@ -49,55 +73,86 @@ showflags:
 dirs:
 	@mkdir -p $(DIRS)
 
-bin/ctdb_test: $(OBJS) tests/ctdb_test.o
+bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_test.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
 
-bin/ctdbd: $(OBJS) direct/ctdbd.o 
+bin/scsi_io: $(CTDB_CLIENT_OBJ) scsi/scsi_io.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ direct/ctdbd.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ scsi/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_status: $(OBJS) tools/ctdb_status.o 
+bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tools/ctdb_status.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdbd_test: $(OBJS) direct/ctdbd_test.o
+bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/ctdb_bench.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ direct/ctdbd_test.o 
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_bench: $(OBJS) tests/ctdb_bench.o 
+bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/ctdb_fetch.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_fetch: $(OBJS) tests/ctdb_fetch.o 
+bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/ctdb_store.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_store.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_fetch1: $(OBJS) tests/ctdb_fetch1.o 
+bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch1.o $(OBJS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_messaging: $(OBJS) tests/ctdb_messaging.o 
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_messaging.o $(OBJS) $(LIB_FLAGS)
+.1.xml.1:
+	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
-bin/ibwrapper_test: $(OBJS) ib/ibwrapper_test.o
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(OBJS) $(LIB_FLAGS)
+.1.xml.1.html:
+	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
-bin/lockwait: $(OBJS) tests/lockwait.o 
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/lockwait.o $(OBJS) $(LIB_FLAGS)
+doc: doc/ctdb.1 doc/ctdb.1.html \
+	doc/ctdbd.1 doc/ctdbd.1.html \
+	doc/onnode.1 doc/onnode.1.html
 
 clean:
-	rm -f *.o */*.o */*/*.o
-	rm -f $(BINS)
+	rm -f *.o */*.o */*/*.o */*~
+	rm -f $(BINS) $(SBINS) $(TEST_BINS)
 
 distclean: clean
 	rm -f *~ */*~
 	rm -rf bin
 	rm -f config.log config.status config.cache config.h
 	rm -f Makefile
+
+install: all
+	mkdir -p $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(sbindir)
+	mkdir -p $(DESTDIR)$(includedir)
+	mkdir -p $(DESTDIR)$(etcdir)/ctdb
+	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
+	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
+	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
+	${INSTALLCMD} -m 755 config/events $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 755 config/functions $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/50.samba $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/60.nfs $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/61.nfstickle $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 tools/onnode.ssh $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m 755 tools/onnode.rsh $(DESTDIR)$(bindir)
+	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
+	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -m 644 doc/ctdb.1 $(DESTDIR)$(mandir)/man1; fi
+	if [ -f doc/ctdbd.1 ];then ${INSTALLCMD} -m 644 doc/ctdbd.1 $(DESTDIR)$(mandir)/man1; fi
+	if [ -f doc/onnode.1 ];then ${INSTALLCMD} -m 644 doc/onnode.1 $(DESTDIR)$(mandir)/man1; fi
+	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode
+
+test: all
+	tests/run_tests.sh
+
+valgrindtest: all
+	VALGRIND="valgrind -q --trace-children=yes" tests/run_tests.sh
+
 
 realdistclean: distclean
 	rm -f configure config.h.in

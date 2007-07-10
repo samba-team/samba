@@ -28,6 +28,21 @@
 #include "ibwrapper.h"
 #include "ibw_ctdb.h"
 
+int ctdb_ibw_get_address(struct ctdb_context *ctdb,
+	const char *address, struct in_addr *addr)
+{
+	if (inet_pton(AF_INET, address, addr) <= 0) {
+		struct hostent *he = gethostbyname(address);
+		if (he == NULL || he->h_length > sizeof(*addr)) {
+			ctdb_set_error(ctdb, "invalid nework address '%s'\n", 
+				       address);
+			return -1;
+		}
+		memcpy(addr, he->h_addr, he->h_length);
+	}
+	return 0;
+}
+
 int ctdb_ibw_node_connect(struct ctdb_node *node)
 {
 	struct ctdb_ibw_node *cn = talloc_get_type(node->private_data, struct ctdb_ibw_node);
@@ -38,9 +53,12 @@ int ctdb_ibw_node_connect(struct ctdb_node *node)
 	struct sockaddr_in sock_out;
 
 	memset(&sock_out, 0, sizeof(struct sockaddr_in));
-	inet_pton(AF_INET, node->address.address, &sock_out.sin_addr);
 	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
+	if (ctdb_ibw_get_address(node->ctdb, node->address.address, &sock_out.sin_addr)) {
+		DEBUG(0, ("ctdb_ibw_node_connect failed\n"));
+		return -1;
+	}
 
 	rc = ibw_connect(cn->conn, &sock_out, node);
 	if (rc) {
