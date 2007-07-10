@@ -737,7 +737,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	   and W2K. JRA.
 	*/
 
-	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->grp_sid,
+	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->group_sid,
 			   NULL, old->dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
