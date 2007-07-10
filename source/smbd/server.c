@@ -165,27 +165,6 @@ static void msg_sam_sync(struct messaging_context *msg,
         DEBUG(10, ("** sam sync message received, ignoring\n"));
 }
 
-/****************************************************************************
- Process a sam sync replicate message - not sure whether to do this here or
- somewhere else.
-****************************************************************************/
-
-static void msg_sam_repl(struct messaging_context *msg,
-			 void *private_data,
-			 uint32_t msg_type,
-			 struct server_id server_id,
-			 DATA_BLOB *data)
-{
-        uint32 low_serial;
-
-        if (data->length != sizeof(low_serial))
-                return;
-
-        low_serial = *((uint32 *)data->data);
-
-        DEBUG(3, ("received sam replication message, serial = 0x%04x\n",
-                  low_serial));
-}
 
 /****************************************************************************
  Open the socket communication - inetd.
@@ -461,8 +440,6 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_SAM_SYNC, msg_sam_sync);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_SAM_REPL, msg_sam_repl);
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SHUTDOWN, msg_exit_server);
 	messaging_register(smbd_messaging_context(), NULL,
