@@ -436,11 +436,6 @@ typedef struct krb5_config_binding krb5_config_binding;
 
 typedef krb5_config_binding krb5_config_section;
 
-enum {
-    KRB5_PKINIT_WIN2K		= 1,	/* wire compatible with Windows 2k */
-    KRB5_PKINIT_PACKET_CABLE	= 2	/* use packet cable standard */
-};
-
 typedef struct krb5_ticket {
     EncTicketPart ticket;
     krb5_principal client;
