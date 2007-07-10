@@ -1,3 +1,7 @@
+2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: New library version.
+
 2007-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kafs.h: Add VIOCSETTOK2
