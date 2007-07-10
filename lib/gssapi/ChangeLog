@@ -1,3 +1,7 @@
+2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: New library version.
+
 2007-07-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* mech/gss_oid_to_str.c: Refuse to print GSS_C_NULL_OID, from
