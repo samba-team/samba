@@ -1,5 +1,9 @@
-2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: New library version.
+
+2007-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* sl.c: make compile.
 
 	* sl.c: Pass in pointer to strlen().
