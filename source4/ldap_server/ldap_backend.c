@@ -118,7 +118,7 @@ void ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
 	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
 }
 
-NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
+static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 {
 	struct ldapsrv_reply *reply;
 	struct ldap_ExtendedResponse *r;
