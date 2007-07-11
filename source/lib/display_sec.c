@@ -135,13 +135,20 @@ void display_acl_type(uint16 type)
 		fstrcat(typestr, "SEC_DESC_DACL_TRUSTED ");
 	if (type & SEC_DESC_SERVER_SECURITY)	/* 0x0080 */
 		fstrcat(typestr, "SEC_DESC_SERVER_SECURITY ");
-	if (type & 0x0100) fstrcat(typestr, "0x0100 ");
-	if (type & 0x0200) fstrcat(typestr, "0x0200 ");
-	if (type & 0x0400) fstrcat(typestr, "0x0400 ");
-	if (type & 0x0800) fstrcat(typestr, "0x0800 ");
-	if (type & 0x1000) fstrcat(typestr, "0x1000 ");
-	if (type & 0x2000) fstrcat(typestr, "0x2000 ");
-	if (type & 0x4000) fstrcat(typestr, "0x4000 ");
+	if (type & SEC_DESC_DACL_AUTO_INHERIT_REQ) /* 0x0100 */
+		fstrcat(typestr, "SEC_DESC_DACL_AUTO_INHERIT_REQ ");
+	if (type & SEC_DESC_SACL_AUTO_INHERIT_REQ) /* 0x0200 */
+		fstrcat(typestr, "SEC_DESC_SACL_AUTO_INHERIT_REQ ");
+	if (type & SEC_DESC_DACL_AUTO_INHERITED) /* 0x0400 */
+		fstrcat(typestr, "SEC_DESC_DACL_AUTO_INHERITED ");
+	if (type & SEC_DESC_SACL_AUTO_INHERITED) /* 0x0800 */
+		fstrcat(typestr, "SEC_DESC_SACL_AUTO_INHERITED ");
+	if (type & SEC_DESC_DACL_PROTECTED)	/* 0x1000 */
+		fstrcat(typestr, "SEC_DESC_DACL_PROTECTED ");
+	if (type & SEC_DESC_SACL_PROTECTED)	/* 0x2000 */
+		fstrcat(typestr, "SEC_DESC_SACL_PROTECTED ");
+	if (type & SEC_DESC_RM_CONTROL_VALID)	/* 0x4000 */
+		fstrcat(typestr, "SEC_DESC_RM_CONTROL_VALID ");
 	if (type & SEC_DESC_SELF_RELATIVE)	/* 0x8000 */
 		fstrcat(typestr, "SEC_DESC_SELF_RELATIVE ");
 	
