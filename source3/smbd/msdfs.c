@@ -389,7 +389,8 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 
 	pstrcpy(localpath, pdp->reqpath);
 	status = unix_convert(conn, localpath, search_flag, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,
+					NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 		return status;
 	}
 
