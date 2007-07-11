@@ -46,8 +46,6 @@ static struct perm_mask_str {
 	{SEC_RIGHTS_CHANGE_PASSWD,	"[Change Password]"},	
 	{SEC_RIGHTS_RESET_PASSWD,	"[Reset Password]"},
 
-	{SEC_RIGHTS_APPLY_GROUP_POLICY,	"[Apply Group Policy]"},
-
 	{0,				0}
 };
 
