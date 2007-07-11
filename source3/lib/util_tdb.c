@@ -1051,6 +1051,8 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 	int wait_pid = 0;
 	int ret = -1;
 
+	DEBUG(5, ("tdb_validate called for tdb '%s'\n", tdb_path));
+
 	/* fork and let the child do the validation.
 	 * benefit: no need to twist signal handlers and panic functions.
 	 * just let the child panic. we catch the signal. */
@@ -1111,6 +1113,9 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 			   WSTOPSIG(child_status)));
 		ret = WSTOPSIG(child_status);
 	}
+
+	DEBUG(5, ("tdb_validate returning code '%d' for tdb '%s'\n", ret,
+		  tdb_path));
 
 	return ret;
 }
