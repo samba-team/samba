@@ -347,6 +347,43 @@ _kdc_encode_reply(krb5_context context,
     return 0;
 }
 
+/*
+ * Return 1 if the client have only older enctypes, this is for
+ * determining if the server should send ETYPE_INFO2 or not.
+ */
+
+static int
+older_enctype(krb5_enctype enctype)
+{
+    switch (enctype) {
+    case ETYPE_DES_CBC_CRC:
+    case ETYPE_DES_CBC_MD4:
+    case ETYPE_DES_CBC_MD5:
+    case ETYPE_DES3_CBC_SHA1:
+    case ETYPE_ARCFOUR_HMAC_MD5:
+    case ETYPE_ARCFOUR_HMAC_MD5_56:
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+static int
+only_older_enctype_p(const KDC_REQ *req)
+{
+    int i;
+
+    for(i = 0; i < req->req_body.etype.len; i++) {
+	if (!older_enctype(req->req_body.etype.val[i]))
+	    return 0;
+    }
+    return 1;
+}
+
+/*
+ *
+ */
+
 static krb5_error_code
 make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 {
@@ -417,14 +454,18 @@ get_pa_etype_info(krb5_context context,
 	return ENOMEM;
     memset(pa.val, 0, pa.len * sizeof(*pa.val));
 
-    for(j = 0; j < etypes_len; j++) {
-	for (i = 0; i < n; i++)
-	    if (pa.val[i].etype == etypes[j])
+    for(i = 0; i < client->keys.len; i++) {
+	for (j = 0; j < n; j++)
+	    if (pa.val[j].etype == client->keys.val[i].key.keytype)
 		goto skip1;
-	for(i = 0; i < client->keys.len; i++) {
+	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
  		if (krb5_enctype_valid(context, etypes[j]) != 0)
  		    continue;
+		if (!older_enctype(etypes[j]))
+ 		    continue;
+		if (n >= pa.len)
+		    krb5_abortx(context, "internal error: n >= p.len");
 		if((ret = make_etype_info_entry(context, 
 						&pa.val[n++], 
 						&client->keys.val[i])) != 0) {
@@ -442,6 +483,10 @@ get_pa_etype_info(krb5_context context,
 	}
 	if (krb5_enctype_valid(context, client->keys.val[i].key.keytype) != 0)
 	    continue;
+	if (!older_enctype(etypes[j]))
+	    continue;
+	if (n >= pa.len)
+	    krb5_abortx(context, "internal error: n >= p.len");
 	if((ret = make_etype_info_entry(context, 
 					&pa.val[n++], 
 					&client->keys.val[i])) != 0) {
@@ -451,16 +496,8 @@ get_pa_etype_info(krb5_context context,
     skip2:;
     }
     
-    if(n != pa.len) {
-	char *name;
-	ret = krb5_unparse_name(context, client->principal, &name);
-	if (ret)
-	    name = rk_UNCONST("<unparse_name failed>");
-	kdc_log(context, config, 0, 
-		"internal error in get_pa_etype_info(%s): %d != %d", 
-		name, n, pa.len);
-	if (ret == 0)
-	    free(name);
+    if(n < pa.len) {
+	/* stripped out newer enctypes */
  	pa.len = n;
     }
 
@@ -550,33 +587,9 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 }
 
 /*
- * Return 1 if the client have only older enctypes, this is for
- * determining if the server should send ETYPE_INFO2 or not.
- */
-
-static int
-only_older_enctype_p(const KDC_REQ *req)
-{
-    int i;
-
-    for(i = 0; i < req->req_body.etype.len; i++) {
-	switch (req->req_body.etype.val[i]) {
-	case ETYPE_DES_CBC_CRC:
-	case ETYPE_DES_CBC_MD4:
-	case ETYPE_DES_CBC_MD5:
-	case ETYPE_DES3_CBC_SHA1:
-	case ETYPE_ARCFOUR_HMAC_MD5:
-	case ETYPE_ARCFOUR_HMAC_MD5_56:
-	    break;
-	default:
-	    return 0;
-	}
-    }
-    return 1;
-}
-
-/*
- *
+ * Return an ETYPE-INFO2. Enctypes are storted the same way as in the
+ * database (client supported enctypes first, then the unsupported
+ * enctypes).
  */
 
 static krb5_error_code
@@ -600,11 +613,11 @@ get_pa_etype_info2(krb5_context context,
 	return ENOMEM;
     memset(pa.val, 0, pa.len * sizeof(*pa.val));
 
-    for(j = 0; j < etypes_len; j++) {
-	for (i = 0; i < n; i++)
-	    if (pa.val[i].etype == etypes[j])
+    for(i = 0; i < client->keys.len; i++) {
+	for (j = 0; j < n; j++)
+	    if (pa.val[j].etype == client->keys.val[i].key.keytype)
 		goto skip1;
-	for(i = 0; i < client->keys.len; i++) {
+	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
 		if (krb5_enctype_valid(context, etypes[j]) != 0)
 		    continue;
@@ -617,6 +630,7 @@ get_pa_etype_info2(krb5_context context,
 	}
     skip1:;
     }
+    /* send enctypes that the cliene doesn't know about too */
     for(i = 0; i < client->keys.len; i++) {
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
