@@ -339,12 +339,12 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 }
 
 /*
- * Return non-zero if enviroment that will determine default krb5cc
+ * Return non-zero if envirnoment that will determine default krb5cc
  * name has changed.
  */
 
 static int
-enviroment_changed(krb5_context context)
+environment_changed(krb5_context context)
 {
     const char *e;
 
@@ -422,7 +422,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 const char* KRB5_LIB_FUNCTION
 krb5_cc_default_name(krb5_context context)
 {
-    if (context->default_cc_name == NULL || enviroment_changed(context))
+    if (context->default_cc_name == NULL || environment_changed(context))
 	krb5_cc_set_default_name(context, NULL);
 
     return context->default_cc_name;
