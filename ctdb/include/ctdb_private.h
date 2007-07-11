@@ -1032,4 +1032,11 @@ void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_port(const char *s, struct sockaddr_in *ip);
 
+int ctdb_kill_tcp_callback(struct ctdb_context *ctdb, 
+			       struct timeval timeout,
+			       TALLOC_CTX *mem_ctx,
+			       void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *),
+			       struct sockaddr_in *dst, 
+			       struct sockaddr_in *src);
+
 #endif

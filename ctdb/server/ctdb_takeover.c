@@ -820,3 +820,129 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_c
 
 	return 0;
 }
+
+
+
+
+struct ctdb_kill_tcp_state {
+	struct ctdb_context *ctdb;
+	pid_t child;
+	void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *);
+	int fd[2];
+	/* in case we need them in the callback */
+        struct sockaddr_in dst;
+        struct sockaddr_in src;
+};
+
+/*
+  destroy a running kill tcp
+ */
+static int ctdb_kill_tcp_destructor(struct ctdb_kill_tcp_state *state)
+{
+	DEBUG(0,("kill tcp destructor\n"));
+	kill(state->child, SIGKILL);
+	waitpid(state->child, NULL, 0);
+	return 0;
+}
+
+/* called when the kill tcp child is finished */
+static void ctdb_kill_tcp_handler(struct event_context *ev, struct fd_event *fde, 
+				      uint16_t flags, void *p)
+{
+	struct ctdb_kill_tcp_state *state = 
+		talloc_get_type(p, struct ctdb_kill_tcp_state);
+	int status = -1;
+	void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *) = state->callback;
+	struct ctdb_context *ctdb = state->ctdb;
+
+	waitpid(state->child, &status, 0);
+	if (status != -1) {
+		status = WEXITSTATUS(status);
+	}
+
+	DEBUG(0,("kill tcp handler  status %d\n",status));
+	talloc_set_destructor(state, NULL);
+	talloc_free(state);
+	if (callback) {
+		callback(ctdb, status, &state->dst, &state->src);
+	}
+}
+
+/* called when kill tcp times out */
+static void ctdb_kill_tcp_timeout(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t, void *p)
+{
+	struct ctdb_kill_tcp_state *state = talloc_get_type(p, struct ctdb_kill_tcp_state);
+	void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *) = state->callback;
+	struct ctdb_context *ctdb = state->ctdb;
+
+	DEBUG(0,("kill tcp timed out\n"));
+	talloc_free(state);
+	if (callback) {
+		callback(ctdb, -1, &state->dst, &state->src);
+	}
+}
+
+/*
+  run killtcp in the background calling the callback once it has
+  finished
+ */
+int ctdb_kill_tcp_callback(struct ctdb_context *ctdb, 
+			       struct timeval timeout,
+			       TALLOC_CTX *mem_ctx,
+			       void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *),
+			       struct sockaddr_in *dst, 
+			       struct sockaddr_in *src)
+{
+	struct ctdb_kill_tcp_state *state;
+	int ret;
+
+	state = talloc(mem_ctx, struct ctdb_kill_tcp_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	DEBUG(0,("kill tcp callback\n"));
+
+	state->ctdb = ctdb;
+	state->callback = callback;
+	state->src = *src;
+	state->dst = *dst;
+	
+	ret = pipe(state->fd);
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+
+	state->child = fork();
+
+	if (state->child == (pid_t)-1) {
+		close(state->fd[0]);
+		close(state->fd[1]);
+		talloc_free(state);
+		return -1;
+	}
+
+	if (state->child == 0) {
+		close(state->fd[0]);
+		ctdb_set_realtime(true);
+		set_close_on_exec(state->fd[1]);
+		ret = ctdb_sys_kill_tcp(ctdb->ev, dst, src);
+		_exit(ret);
+	}
+
+	talloc_set_destructor(state, ctdb_kill_tcp_destructor);
+
+	close(state->fd[1]);
+
+
+	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+		     ctdb_kill_tcp_handler, state);
+
+	if (!timeval_is_zero(&timeout)) {
+		event_add_timed(ctdb->ev, state, timeout, ctdb_kill_tcp_timeout, state);
+	}
+
+	return 0;
+}
+
+
