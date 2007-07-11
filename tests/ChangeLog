@@ -1,3 +1,7 @@
+2007-07-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* java/krb5.conf.in: Move the AES enctypes first.
+
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kadmin.in: Send kill outout to /dev/null.
