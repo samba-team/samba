@@ -109,25 +109,20 @@ out:
 const char *ads_get_attrname_by_guid(ADS_STRUCT *ads, 
 				     const char *schema_path, 
 				     TALLOC_CTX *mem_ctx, 
-				     const char *schema_guid)
+				     const struct GUID *schema_guid)
 {
 	ADS_STATUS rc;
 	LDAPMessage *res = NULL;
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", NULL };
 	const char *result = NULL;
-	struct GUID guid;
 	char *guid_bin = NULL;
 
 	if (!ads || !mem_ctx || !schema_guid) {
 		goto done;
 	}
 
-	if (!NT_STATUS_IS_OK(GUID_from_string(schema_guid, &guid))) {
-		goto done;
-	}
-
-	guid_bin = guid_binstring(&guid);
+	guid_bin = guid_binstring(schema_guid);
 	if (!guid_bin) {
 		goto done;
 	}
