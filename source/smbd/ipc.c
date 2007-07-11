@@ -530,6 +530,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 			DEBUG(0,("reply_trans: setup malloc fail for %u "
 				 "bytes !\n", (unsigned int)
 				 (state->setup_count * sizeof(uint16))));
+			SAFE_FREE(state->data);
+			SAFE_FREE(state->param);
 			TALLOC_FREE(state);
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
