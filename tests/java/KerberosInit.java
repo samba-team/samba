@@ -72,9 +72,11 @@ public class KerberosInit {
             lc = new LoginContext("kinit", new KerberosInit().getHandler());
         } catch (LoginException e) {
             System.err.println("Cannot create LoginContext. " + e.getMessage());
+	    e.printStackTrace();
             System.exit(1);
         } catch (SecurityException e) {
             System.err.println("Cannot create LoginContext. " + e.getMessage());
+	    e.printStackTrace();
             System.exit(1);
         } 
 
@@ -82,6 +84,7 @@ public class KerberosInit {
             lc.login();
         } catch (LoginException e) {
             System.err.println("Authentication failed:" + e.getMessage());
+	    e.printStackTrace();
             System.exit(1);
         }
 
