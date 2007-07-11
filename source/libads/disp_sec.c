@@ -80,7 +80,7 @@ static void ads_disp_perms(uint32 type)
 	puts("");
 }
 
-static void ads_disp_sec_ace_object(struct security_ace_object *object)
+static void ads_disp_sec_ace_object(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_ace_object *object)
 {
 	if (object->flags & SEC_ACE_OBJECT_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_PRESENT\n");
@@ -95,7 +95,7 @@ static void ads_disp_sec_ace_object(struct security_ace_object *object)
 }
 
 /* display ACE */
-static void ads_disp_ace(SEC_ACE *sec_ace)
+static void ads_disp_ace(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_ACE *sec_ace)
 {
 	const char *access_type = "UNKNOWN";
 
@@ -132,7 +132,7 @@ static void ads_disp_ace(SEC_ACE *sec_ace)
                sid_string_static(&sec_ace->trustee), access_type);
 
 	if (sec_ace_object(sec_ace->type)) {
-		ads_disp_sec_ace_object(&sec_ace->object.object);
+		ads_disp_sec_ace_object(ads, mem_ctx, &sec_ace->object.object);
 	}
 
 	ads_disp_perms(sec_ace->access_mask);
@@ -153,7 +153,7 @@ static void ads_disp_acl(SEC_ACL *sec_acl, const char *type)
 }
 
 /* display SD */
-void ads_disp_sd(SEC_DESC *sd)
+void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_DESC *sd)
 {
 	int i;
 	
@@ -165,11 +165,11 @@ void ads_disp_sd(SEC_DESC *sd)
 
 	ads_disp_acl(sd->sacl, "system");
 	for (i = 0; i < sd->sacl->num_aces; i ++)
-		ads_disp_ace(&sd->sacl->aces[i]);
+		ads_disp_ace(ads, mem_ctx, &sd->sacl->aces[i]);
 	
 	ads_disp_acl(sd->dacl, "user");
 	for (i = 0; i < sd->dacl->num_aces; i ++)
-		ads_disp_ace(&sd->dacl->aces[i]);
+		ads_disp_ace(ads, mem_ctx, &sd->dacl->aces[i]);
 
 	printf("-------------- End Of Security Descriptor\n");
 }

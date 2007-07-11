@@ -1837,7 +1837,9 @@ static void dump_sd(ADS_STRUCT *ads, const char *filed, struct berval **values)
 		talloc_destroy(ctx);
 		return;
 	}
-	if (psd) ads_disp_sd(psd);
+	if (psd) {
+		ads_disp_sd(ads, ctx, psd);
+	}
 
 	prs_mem_free(&ps);
 	talloc_destroy(ctx);
