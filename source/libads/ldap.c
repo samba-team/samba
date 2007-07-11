@@ -3340,4 +3340,97 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 
 	return status;
 }
+
+/**
+ * find our configuration path 
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param config_path Pointer to the config path
+ * @return status of search
+ **/
+ADS_STATUS ads_config_path(ADS_STRUCT *ads, 
+			   TALLOC_CTX *mem_ctx, 
+			   char **config_path)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	const char *config_context = NULL;
+	const char *attrs[] = { "configurationNamingContext", NULL };
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, 
+			       "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	config_context = ads_pull_string(ads, mem_ctx, res, 
+					 "configurationNamingContext");
+	ads_msgfree(ads, res);
+	if (!config_context) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	if (config_path) {
+		*config_path = talloc_strdup(mem_ctx, config_context);
+		if (!*config_path) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
+
+	return ADS_ERROR(LDAP_SUCCESS);
+}
+
+/**
+ * find the displayName of an extended right 
+ * @param ads connection to ads server
+ * @param config_path The config path
+ * @param mem_ctx Pointer to talloc context
+ * @param GUID struct of the rightsGUID
+ * @return status of search
+ **/
+const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads, 
+						const char *config_path, 
+						TALLOC_CTX *mem_ctx, 
+						const struct GUID *rights_guid)
+{
+	ADS_STATUS rc;
+	LDAPMessage *res = NULL;
+	char *expr = NULL;
+	const char *attrs[] = { "displayName", NULL };
+	const char *result = NULL;
+	const char *path;
+
+	if (!ads || !mem_ctx || !rights_guid) {
+		goto done;
+	}
+
+	expr = talloc_asprintf(mem_ctx, "(rightsGuid=%s)", 
+			       smb_uuid_string_static(*rights_guid));
+	if (!expr) {
+		goto done;
+	}
+
+	path = talloc_asprintf(mem_ctx, "cn=Extended-Rights,%s", config_path);
+	if (!path) {
+		goto done;
+	}
+
+	rc = ads_do_search_retry(ads, path, LDAP_SCOPE_SUBTREE, 
+				 expr, attrs, &res);
+	if (!ADS_ERR_OK(rc)) {
+		goto done;
+	}
+
+	if (ads_count_replies(ads, res) != 1) {
+		goto done;
+	}
+
+	result = ads_pull_string(ads, mem_ctx, res, "displayName");
+
+ done:
+	ads_msgfree(ads, res);
+	return result;
+	
+}
+
 #endif
