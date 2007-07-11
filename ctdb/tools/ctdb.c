@@ -338,7 +338,7 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int s, ret;
 	struct sockaddr_in src, dst;
 
 	if (argc < 2) {
@@ -355,7 +355,14 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = ctdb_sys_send_tcp(&src, &dst, 0, 0, 0);
+	s = ctdb_sys_open_sending_socket();
+	if (s == -1) {
+		printf("Failed to open socket for sending tickle\n");
+		return 0;
+	}
+
+	ret = ctdb_sys_send_tcp(s, &src, &dst, 0, 0, 0);
+	close(s);
 	if (ret==0) {
 		return 0;
 	}

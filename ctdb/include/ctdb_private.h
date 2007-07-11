@@ -990,12 +990,10 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
 bool ctdb_sys_have_ip(const char *ip);
-int ctdb_sys_send_tcp(const struct sockaddr_in *dest, 
+int ctdb_sys_send_tcp(int fd,
+		      const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src,
 		      uint32_t seq, uint32_t ack, int rst);
-int ctdb_sys_kill_tcp(struct event_context *ev,
-		      const struct sockaddr_in *dest, 
-		      const struct sockaddr_in *src);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
@@ -1061,10 +1059,12 @@ struct ctdb_killtcp_connection {
 struct ctdb_kill_tcp {
 	struct ctdb_context *ctdb;
 	int capture_fd;
+	int sending_fd;
 	struct fd_event *fde;
 	struct ctdb_killtcp_connection *connections;
 };
 int ctdb_sys_open_capture_socket(void);
+int ctdb_sys_open_sending_socket(void);
 int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst);
 int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp);
 

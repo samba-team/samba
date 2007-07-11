@@ -69,7 +69,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 {
 	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
 							struct ctdb_takeover_arp);
-	int ret;
+	int s, ret;
 	struct ctdb_tcp_list *tcp;
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->ctdb->takeover.interface);
@@ -77,25 +77,32 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 		DEBUG(0,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
 	}
 
+	s = ctdb_sys_open_sending_socket();
+	if (s == -1) {
+		DEBUG(0,(__location__ " failed to open raw socket for sending tickles\n"));
+		return;
+	}
+
 	for (tcp=arp->tcp_list;tcp;tcp=tcp->next) {
 		DEBUG(2,("sending tcp tickle ack for %u->%s:%u\n",
 			 (unsigned)ntohs(tcp->daddr.sin_port), 
 			 inet_ntoa(tcp->saddr.sin_addr),
 			 (unsigned)ntohs(tcp->saddr.sin_port)));
-		ret = ctdb_sys_send_tcp(&tcp->saddr, &tcp->daddr, 0, 0, 0);
+		ret = ctdb_sys_send_tcp(s, &tcp->saddr, &tcp->daddr, 0, 0, 0);
 		if (ret != 0) {
 			DEBUG(0,(__location__ " Failed to send tcp tickle ack for %s\n",
 				 inet_ntoa(tcp->saddr.sin_addr)));
 		}
 	}
 
+	close(s);
 	arp->count++;
 
 	if (arp->count == CTDB_ARP_REPEAT) {
 		talloc_free(arp);
 		return;
 	}
-	
+
 	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover.last_ctx, 
 			timeval_current_ofs(CTDB_ARP_INTERVAL, 0), 
 			ctdb_control_send_arp, arp);
@@ -869,7 +876,7 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
 
 			continue;
 		}
-		ctdb_sys_send_tcp(&conn->dst, &conn->src, 0, 0, 0);
+		ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, &conn->src, 0, 0, 0);
 	}
 
 	/* If there are no more connections to kill we can remove the
@@ -891,8 +898,14 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
  */
 static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
-	close(killtcp->capture_fd);
-	killtcp->capture_fd    = -1;
+	if (killtcp->capture_fd != -1) {
+		close(killtcp->capture_fd);
+		killtcp->capture_fd    = -1;
+	}
+	if (killtcp->sending_fd != -1) {
+		close(killtcp->sending_fd);
+		killtcp->sending_fd    = -1;
+	}
 	killtcp->ctdb->killtcp = NULL;
 
 	return 0;
@@ -921,6 +934,7 @@ int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *s
 
 		killtcp->ctdb        = ctdb;
 		killtcp->capture_fd  = -1;
+		killtcp->sending_fd  = -1;
 		killtcp->connections = NULL;
 		ctdb->killtcp        = killtcp;
 		talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
@@ -934,11 +948,17 @@ int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *s
 			DEBUG(0,(__location__ " Failed to open capturing socket for killtcp\n"));
 			goto failed;
 		}
-
-		set_nonblocking(killtcp->capture_fd);
-		set_close_on_exec(killtcp->capture_fd);
 	}
 
+	/* If we dont have a socket to send from yet we must create it
+	 */
+	if (killtcp->sending_fd == -1) {
+		killtcp->sending_fd = ctdb_sys_open_sending_socket();
+		if (killtcp->sending_fd == -1) {
+			DEBUG(0,(__location__ " Failed to open sending socket for killtcp\n"));
+			goto failed;
+		}
+	}
 
 	conn = talloc(killtcp, struct ctdb_killtcp_connection);
 	CTDB_NO_MEMORY(ctdb, conn);
