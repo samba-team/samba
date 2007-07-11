@@ -83,6 +83,7 @@ trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 
 echo "Run"
 java \
+  -Dsun.security.krb5.debug=true \
   -Djava.security.krb5.conf="${objdir}"/krb5.conf \
   -Djava.security.auth.login.config="${srcdir}/jaas.conf" \
   KerberosInit || exit 1
