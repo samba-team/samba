@@ -19,6 +19,8 @@
 
 #include "includes.h"
 
+#ifdef HAVE_LDAP
+
 static struct perm_mask_str {
 	uint32  mask;
 	const char   *str;
@@ -215,4 +217,4 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_DESC *sd)
 	printf("-------------- End Of Security Descriptor\n");
 }
 
-
+#endif
