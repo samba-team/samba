@@ -3271,6 +3271,15 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	return ADS_ERROR_LDAP(LDAP_SUCCESS);
 }
 
+/**
+ * Find a sAMAccoutName in LDAP
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param samaccountname to search
+ * @param uac_ret uint32 pointer userAccountControl attribute value
+ * @param dn_ret pointer to dn
+ * @return status of token query
+ **/
 ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 			       TALLOC_CTX *mem_ctx,
 			       const char *samaccountname,
