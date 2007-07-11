@@ -839,7 +839,7 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
  **/
 ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 				int scope, const char *expr, const char **attrs,
-				BOOL(*fn)(char *, void **, void *), 
+				BOOL(*fn)(ADS_STRUCT *, char *, void **, void *), 
 				void *data_area)
 {
 	struct berval *cookie = NULL;
@@ -1777,7 +1777,7 @@ done:
 /*
   dump a binary result from ldap
 */
-static void dump_binary(const char *field, struct berval **values)
+static void dump_binary(ADS_STRUCT *ads, const char *field, struct berval **values)
 {
 	int i, j;
 	for (i=0; values[i]; i++) {
@@ -1789,7 +1789,7 @@ static void dump_binary(const char *field, struct berval **values)
 	}
 }
 
-static void dump_guid(const char *field, struct berval **values)
+static void dump_guid(ADS_STRUCT *ads, const char *field, struct berval **values)
 {
 	int i;
 	UUID_FLAT guid;
@@ -1803,7 +1803,7 @@ static void dump_guid(const char *field, struct berval **values)
 /*
   dump a sid result from ldap
 */
-static void dump_sid(const char *field, struct berval **values)
+static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 {
 	int i;
 	for (i=0; values[i]; i++) {
@@ -1816,7 +1816,7 @@ static void dump_sid(const char *field, struct berval **values)
 /*
   dump ntSecurityDescriptor
 */
-static void dump_sd(const char *filed, struct berval **values)
+static void dump_sd(ADS_STRUCT *ads, const char *filed, struct berval **values)
 {
 	prs_struct ps;
 	
@@ -1859,12 +1859,12 @@ static void dump_string(const char *field, char **values)
   used for debugging
 */
 
-static BOOL ads_dump_field(char *field, void **values, void *data_area)
+static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *data_area)
 {
 	const struct {
 		const char *name;
 		BOOL string;
-		void (*handler)(const char *, struct berval **);
+		void (*handler)(ADS_STRUCT *, const char *, struct berval **);
 	} handlers[] = {
 		{"objectGUID", False, dump_guid},
 		{"netbootGUID", False, dump_guid},
@@ -1888,7 +1888,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 		if (StrCaseCmp(handlers[i].name, field) == 0) {
 			if (!values) /* first time, indicate string or not */
 				return handlers[i].string;
-			handlers[i].handler(field, (struct berval **) values);
+			handlers[i].handler(ads, field, (struct berval **) values);
 			break;
 		}
 	}
@@ -1924,7 +1924,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
  * @param data_area user-defined area to pass to function
  **/
  void ads_process_results(ADS_STRUCT *ads, LDAPMessage *res,
-			  BOOL(*fn)(char *, void **, void *),
+			  BOOL(*fn)(ADS_STRUCT *, char *, void **, void *),
 			  void *data_area)
 {
 	LDAPMessage *msg;
@@ -1949,19 +1949,19 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 			BOOL string; 
 
 			pull_utf8_talloc(ctx, &field, utf8_field);
-			string = fn(field, NULL, data_area);
+			string = fn(ads, field, NULL, data_area);
 
 			if (string) {
 				utf8_vals = ldap_get_values(ads->ld,
 					       	 (LDAPMessage *)msg, field);
 				str_vals = ads_pull_strvals(ctx, 
 						  (const char **) utf8_vals);
-				fn(field, (void **) str_vals, data_area);
+				fn(ads, field, (void **) str_vals, data_area);
 				ldap_value_free(utf8_vals);
 			} else {
 				ber_vals = ldap_get_values_len(ads->ld, 
 						 (LDAPMessage *)msg, field);
-				fn(field, (void **) ber_vals, data_area);
+				fn(ads, field, (void **) ber_vals, data_area);
 
 				ldap_value_free_len(ber_vals);
 			}
@@ -1969,7 +1969,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 		}
 		ber_free(b, 0);
 		talloc_free_children(ctx);
-		fn(NULL, NULL, data_area); /* completed an entry */
+		fn(ads, NULL, NULL, data_area); /* completed an entry */
 
 	}
 	talloc_destroy(ctx);
