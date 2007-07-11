@@ -159,6 +159,8 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->config.ldap_server_name);
 		SAFE_FREE((*ads)->config.server_site_name);
 		SAFE_FREE((*ads)->config.client_site_name);
+		SAFE_FREE((*ads)->config.schema_path);
+		SAFE_FREE((*ads)->config.config_path);
 		
 		ZERO_STRUCTP(*ads);
 

@@ -58,6 +58,8 @@ typedef struct {
 		char *client_site_name;
 		time_t current_time;
 		int tried_closest_dc;
+		char *schema_path;
+		char *config_path;
 	} config;
 } ADS_STRUCT;
 
