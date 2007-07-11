@@ -1060,7 +1060,7 @@ struct ctdb_killtcp_connection {
 */
 struct ctdb_kill_tcp {
 	struct ctdb_context *ctdb;
-	int fd;
+	int capture_fd;
 	struct fd_event *fde;
 	struct ctdb_killtcp_connection *connections;
 };

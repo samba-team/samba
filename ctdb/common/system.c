@@ -412,7 +412,7 @@ int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp)
 	struct tcphdr *tcp;
 	struct ctdb_killtcp_connection *conn;
 
-	ret = recv(killtcp->fd, pkt, RCVPKTSIZE, MSG_TRUNC);
+	ret = recv(killtcp->capture_fd, pkt, RCVPKTSIZE, MSG_TRUNC);
 	if (ret < sizeof(*eth)+sizeof(*ip)) {
 		return -1;
 	}

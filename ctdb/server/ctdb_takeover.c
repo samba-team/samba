@@ -891,8 +891,8 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
  */
 static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
-	close(killtcp->fd);
-	killtcp->fd = -1;
+	close(killtcp->capture_fd);
+	killtcp->capture_fd    = -1;
 	killtcp->ctdb->killtcp = NULL;
 
 	return 0;
@@ -920,7 +920,7 @@ int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *s
 		CTDB_NO_MEMORY(ctdb, killtcp);
 
 		killtcp->ctdb        = ctdb;
-		killtcp->fd          = -1;
+		killtcp->capture_fd  = -1;
 		killtcp->connections = NULL;
 		ctdb->killtcp        = killtcp;
 		talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
@@ -928,15 +928,15 @@ int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *s
 
 	/* If we dont have a socket to listen on yet we must create it
 	 */
-	if (killtcp->fd == -1) {
-		killtcp->fd = ctdb_sys_open_capture_socket();
-		if (killtcp->fd == -1) {
-			DEBUG(0,(__location__ " Failed to open listening socket for killtcp\n"));
+	if (killtcp->capture_fd == -1) {
+		killtcp->capture_fd = ctdb_sys_open_capture_socket();
+		if (killtcp->capture_fd == -1) {
+			DEBUG(0,(__location__ " Failed to open capturing socket for killtcp\n"));
 			goto failed;
 		}
 
-		set_nonblocking(killtcp->fd);
-		set_close_on_exec(killtcp->fd);
+		set_nonblocking(killtcp->capture_fd);
+		set_close_on_exec(killtcp->capture_fd);
 	}
 
 
@@ -950,7 +950,7 @@ int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *s
 	DLIST_ADD(killtcp->connections, conn);
 
 
-	killtcp->fde = event_add_fd(ctdb->ev, killtcp, killtcp->fd, 
+	killtcp->fde = event_add_fd(ctdb->ev, killtcp, killtcp->capture_fd, 
 				EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 				capture_tcp_handler, killtcp);
 
