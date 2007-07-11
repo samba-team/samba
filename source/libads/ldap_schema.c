@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    ads (active directory) utility library
-   Copyright (C) Guenther Deschner 2005-2006
+   Copyright (C) Guenther Deschner 2005-2007
    Copyright (C) Gerald (Jerry) Carter 2006
    
    This program is free software; you can redistribute it and/or modify
@@ -106,6 +106,56 @@ out:
 	return status;
 }
 
+const char *ads_get_attrname_by_guid(ADS_STRUCT *ads, 
+				     const char *schema_path, 
+				     TALLOC_CTX *mem_ctx, 
+				     const char *schema_guid)
+{
+	ADS_STATUS rc;
+	LDAPMessage *res = NULL;
+	char *expr = NULL;
+	const char *attrs[] = { "lDAPDisplayName", NULL };
+	const char *result = NULL;
+	struct GUID guid;
+	char *guid_bin = NULL;
+
+	if (!ads || !mem_ctx || !schema_guid) {
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(GUID_from_string(schema_guid, &guid))) {
+		goto done;
+	}
+
+	guid_bin = guid_binstring(&guid);
+	if (!guid_bin) {
+		goto done;
+	}
+
+	expr = talloc_asprintf(mem_ctx, "(schemaIDGUID=%s)", guid_bin);
+	if (!expr) {
+		goto done;
+	}
+
+	rc = ads_do_search_retry(ads, schema_path, LDAP_SCOPE_SUBTREE, 
+				 expr, attrs, &res);
+	if (!ADS_ERR_OK(rc)) {
+		goto done;
+	}
+
+	if (ads_count_replies(ads, res) != 1) {
+		goto done;
+	}
+
+	result = ads_pull_string(ads, mem_ctx, res, "lDAPDisplayName");
+
+ done:
+	SAFE_FREE(guid_bin);
+	ads_msgfree(ads, res);
+	return result;
+	
+}
+
 const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, const char *schema_path, TALLOC_CTX *mem_ctx, const char * OID)
 {
 	ADS_STATUS rc;
@@ -147,7 +197,6 @@ failed:
 	ads_msgfree(ads, res);
 	return NULL;
 }
-
 /*********************************************************************
 *********************************************************************/
 

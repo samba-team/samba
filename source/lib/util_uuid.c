@@ -133,3 +133,19 @@ BOOL smb_string_to_uuid(const char *in, struct GUID* uu)
 out:
         return ret;
 }
+
+/*****************************************************************
+ Return the binary string representation of a GUID.
+ Caller must free.
+*****************************************************************/
+
+char *guid_binstring(const struct GUID *guid)
+{
+	UUID_FLAT guid_flat;
+
+	smb_uuid_pack(*guid, &guid_flat);
+
+	return binary_string_rfc2254((char *)guid_flat.info, UUID_FLAT_SIZE);
+}
+
+
