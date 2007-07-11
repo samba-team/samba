@@ -80,17 +80,45 @@ static void ads_disp_perms(uint32 type)
 	puts("");
 }
 
-static void ads_disp_sec_ace_object(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_ace_object *object)
+static const char *ads_interprete_guid_from_object(ADS_STRUCT *ads, 
+						   TALLOC_CTX *mem_ctx, 
+						   const struct GUID *guid)
+{
+	const char *ret = NULL;
+
+	ret = ads_get_attrname_by_guid(ads, ads->config.schema_path, 
+				       mem_ctx, guid);
+	if (ret) {
+		return talloc_asprintf(mem_ctx, "LDAP attribute: \"%s\"", ret);
+	}
+
+	ret = ads_get_extended_right_name_by_guid(ads, ads->config.config_path,
+						  mem_ctx, guid);
+
+	if (ret) {
+		return talloc_asprintf(mem_ctx, "Extended right: \"%s\"", ret);
+	}
+
+	return ret;
+}
+
+static void ads_disp_sec_ace_object(ADS_STRUCT *ads, 
+				    TALLOC_CTX *mem_ctx, 
+				    struct security_ace_object *object)
 {
 	if (object->flags & SEC_ACE_OBJECT_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_PRESENT\n");
-		printf("Object GUID: %s\n", smb_uuid_string_static(
-			object->type.type));
+		printf("Object GUID: %s (%s)\n", smb_uuid_string_static(
+			object->type.type), 
+			ads_interprete_guid_from_object(ads, mem_ctx, 
+				&object->type.type));
 	}
 	if (object->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
 		printf("Object type: SEC_ACE_OBJECT_INHERITED_PRESENT\n");
-		printf("Object GUID: %s\n", smb_uuid_string_static(
-			object->inherited_type.inherited_type));
+		printf("Object GUID: %s (%s)\n", smb_uuid_string_static(
+			object->inherited_type.inherited_type),
+			ads_interprete_guid_from_object(ads, mem_ctx, 
+				&object->inherited_type.inherited_type));
 	}
 }
 
@@ -156,7 +184,20 @@ static void ads_disp_acl(SEC_ACL *sec_acl, const char *type)
 void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_DESC *sd)
 {
 	int i;
-	
+	char *tmp_path = NULL;
+
+	if (!ads->config.schema_path) {
+		if (ADS_ERR_OK(ads_schema_path(ads, mem_ctx, &tmp_path))) {
+			ads->config.schema_path = SMB_STRDUP(tmp_path);
+		}
+	}
+
+	if (!ads->config.config_path) {
+		if (ADS_ERR_OK(ads_config_path(ads, mem_ctx, &tmp_path))) {
+			ads->config.config_path = SMB_STRDUP(tmp_path);
+		}
+	}
+
 	printf("-------------- Security Descriptor (revision: %d, type: 0x%02x)\n", 
                sd->revision,
                sd->type);

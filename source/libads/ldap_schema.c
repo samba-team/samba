@@ -195,7 +195,7 @@ failed:
 /*********************************************************************
 *********************************************************************/
 
-static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **schema_path)
+ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **schema_path)
 {
 	ADS_STATUS status;
 	LDAPMessage *res;
