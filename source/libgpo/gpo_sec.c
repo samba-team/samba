@@ -19,33 +19,60 @@
 
 #include "includes.h"
 
-	/* When modifiying security filtering with gpmc.msc (on w2k3) the
-	 * following ACE is created in the DACL:
+/****************************************************************
+****************************************************************/
 
-------- ACE (type: 0x05, flags: 0x02, size: 0x38, mask: 0x100, object flags: 0x1)
-access SID: $SID 
-access type: ALLOWED OBJECT
-Permissions:
-	[Apply Group Policy] (0x00000100)
+static BOOL gpo_sd_check_agp_object_guid(const struct security_ace_object *object)
+{
+	struct GUID ext_right_apg_guid;
+	NTSTATUS status;
 
-------- ACE (type: 0x00, flags: 0x02, size: 0x24, mask: 0x20014)
-access SID:  $SID
-access type: ALLOWED
-Permissions:
-	[List Contents] (0x00000004)
-	[Read All Properties] (0x00000010)
-	[Read Permissions] (0x00020000)
+	if (!object) {
+		return False;
+	}
 
-	 * by default all "Authenticated Users" (S-1-5-11) have an ALLOW
-	 * OBJECT ace with SEC_RIGHTS_APPLY_GROUP_POLICY mask */
+	status = GUID_from_string(ADS_EXTENDED_RIGHT_APPLY_GROUP_POLICY,
+				  &ext_right_apg_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
 
+	switch (object->flags) {
+		case SEC_ACE_OBJECT_PRESENT:
+			if (GUID_equal(&object->type.type,
+				       &ext_right_apg_guid)) {
+				return True;
+			}
+		case  SEC_ACE_OBJECT_INHERITED_PRESENT:
+			if (GUID_equal(&object->inherited_type.inherited_type,
+				       &ext_right_apg_guid)) {
+				return True;
+			}
+		default:
+			break;
+	}
+
+	return False;
+}
+
+/****************************************************************
+****************************************************************/
+
+static BOOL gpo_sd_check_agp_object(const SEC_ACE *ace)
+{
+	if (sec_ace_object(ace->type)) {
+		return gpo_sd_check_agp_object_guid(&ace->object.object);
+	}
+
+	return False;
+}
 
 /****************************************************************
 ****************************************************************/
 
 static BOOL gpo_sd_check_agp_access_bits(uint32 access_mask)
 {
-	return (access_mask & SEC_RIGHTS_APPLY_GROUP_POLICY);
+	return (access_mask & SEC_RIGHTS_EXTENDED);
 }
 
 #if 0
@@ -93,7 +120,8 @@ static BOOL gpo_sd_check_trustee_in_sid_token(const DOM_SID *trustee,
 static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace, 
 					       const struct GPO_SID_TOKEN *token) 
 {
-	if (gpo_sd_check_agp_access_bits(ace->access_mask) &&
+	if (gpo_sd_check_agp_object(ace) &&
+	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
 	    gpo_sd_check_trustee_in_sid_token(&ace->trustee, token)) {
 		DEBUG(10,("gpo_sd_check_ace_denied_object: Access denied as of ace for %s\n", 
 			sid_string_static(&ace->trustee)));
@@ -109,7 +137,8 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace,
 static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace, 
 						const struct GPO_SID_TOKEN *token) 
 {
-	if (gpo_sd_check_agp_access_bits(ace->access_mask) && 
+	if (gpo_sd_check_agp_object(ace) &&
+	    gpo_sd_check_agp_access_bits(ace->access_mask) && 
 	    gpo_sd_check_trustee_in_sid_token(&ace->trustee, token)) {
 		DEBUG(10,("gpo_sd_check_ace_allowed_object: Access granted as of ace for %s\n", 
 			sid_string_static(&ace->trustee)));
