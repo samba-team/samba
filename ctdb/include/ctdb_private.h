@@ -407,6 +407,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
 		    CTDB_CONTROL_MODIFY_FLAGS            = 52,
 		    CTDB_CONTROL_GET_ALL_TUNABLES        = 53,
+		    CTDB_CONTROL_KILL_TCP                = 54,
 };
 
 /*
@@ -440,6 +441,14 @@ struct ctdb_control_set_call {
 struct ctdb_control_tcp {
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
+};
+
+/*
+  struct for kill_tcp control
+ */
+struct ctdb_control_kill_tcp {
+	struct sockaddr_in src;
+	struct sockaddr_in dst;
 };
 
 /*
@@ -997,6 +1006,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
+int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
