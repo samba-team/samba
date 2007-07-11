@@ -997,6 +997,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     if (ret == 0 && have_arcfour == 0) {
 	unsigned *etypes;
 	Key *keys;
+	int i;
 
 	keys = realloc(ent->entry.keys.val,
 		       (ent->entry.keys.len + 1) * sizeof(ent->entry.keys.val[0]));
@@ -1031,16 +1032,24 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    ent->entry.etypes->len = 0;
 	}
 
-	etypes = realloc(ent->entry.etypes->val, 
-			 (ent->entry.etypes->len + 1) * sizeof(ent->entry.etypes->val[0]));
-	if (etypes == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    ret = ENOMEM;
-	    goto out;			    
+	for (i = 0; i < ent->entry.etypes->len; i++)
+	    if (ent->entry.etypes->val[i] == ETYPE_ARCFOUR_HMAC_MD5)
+		break;
+	/* If there is no ARCFOUR enctype, add one */
+	if (i == ent->entry.etypes->len) {
+	    etypes = realloc(ent->entry.etypes->val, 
+			     (ent->entry.etypes->len + 1) * 
+			     sizeof(ent->entry.etypes->val[0]));
+	    if (etypes == NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto out;			    
+	    }
+	    ent->entry.etypes->val = etypes;
+	    ent->entry.etypes->val[ent->entry.etypes->len] = 
+		ETYPE_ARCFOUR_HMAC_MD5;
+	    ent->entry.etypes->len++;
 	}
-	ent->entry.etypes->val = etypes;
-	ent->entry.etypes->val[ent->entry.etypes->len] = ETYPE_ARCFOUR_HMAC_MD5;
-	ent->entry.etypes->len++;
     }
 
     ret = LDAP_get_generalized_time_value(db, msg, "createTimestamp",
@@ -1204,17 +1213,17 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     if (ret == 0) {
 	/* parse the [UXW...] string:
 	       
-	'N'    No password	 
-	'D'    Disabled	 
-	'H'    Homedir required	 
-	'T'    Temp account.	 
-	'U'    User account (normal) 	 
-	'M'    MNS logon user account - what is this ? 	 
-	'W'    Workstation account	 
-	'S'    Server account 	 
-	'L'    Locked account	 
-	'X'    No Xpiry on password 	 
-	'I'    Interdomain trust account	 
+	   'N'    No password	 
+	   'D'    Disabled	 
+	   'H'    Homedir required	 
+	   'T'    Temp account.	 
+	   'U'    User account (normal) 	 
+	   'M'    MNS logon user account - what is this ? 	 
+	   'W'    Workstation account	 
+	   'S'    Server account 	 
+	   'L'    Locked account	 
+	   'X'    No Xpiry on password 	 
+	   'I'    Interdomain trust account	 
 	    
 	*/	 
 	    
@@ -1281,7 +1290,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 
     ret = 0;
 
- out:
+out:
     if (unparsed_name)
 	free(unparsed_name);
 
