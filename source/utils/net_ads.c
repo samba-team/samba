@@ -397,7 +397,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 
 
 
-static BOOL usergrp_display(char *field, void **values, void *data_area)
+static BOOL usergrp_display(ADS_STRUCT *ads, char *field, void **values, void *data_area)
 {
 	char **disp_fields = (char **) data_area;
 
