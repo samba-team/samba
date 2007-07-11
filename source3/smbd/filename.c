@@ -396,10 +396,15 @@ NTSTATUS unix_convert(connection_struct *conn,
 					 * these two errors.
 					 */
 
-					/* ENOENT and ENOTDIR both map to NT_STATUS_OBJECT_PATH_NOT_FOUND
-					   in the filename walk. */
+					/*
+					 * ENOENT, ENOTDIR and ELOOP all map
+					 * to NT_STATUS_OBJECT_PATH_NOT_FOUND
+					 * in the filename walk.
+					 */
 
-					if (errno == ENOENT || errno == ENOTDIR) {
+					if (errno == ENOENT ||
+							errno == ENOTDIR ||
+							errno == ELOOP) {
 						result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 					else {
@@ -410,9 +415,13 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 				/* ENOENT is the only valid error here. */
 				if (errno != ENOENT) {
-					/* ENOENT and ENOTDIR both map to NT_STATUS_OBJECT_PATH_NOT_FOUND
-					   in the filename walk. */
-					if (errno == ENOTDIR) {
+					/*
+					 * ENOTDIR and ELOOP both map to
+					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
+					 * in the filename walk.
+					 */
+					if (errno == ENOTDIR ||
+							errno == ELOOP) {
 						result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 					else {
