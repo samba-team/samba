@@ -1,5 +1,7 @@
 2007-07-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/cache.c: Spelling.
+
 	* kdc/kerberos5.c: Don't send newer enctypes in ETYPE-INFO.
 	(get_pa_etype_info2): return the enctypes as sorted in the
 	database
