@@ -402,7 +402,7 @@ int ctdb_sys_open_capture_socket(void)
 	return s;
 }
 
-int sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp)
+int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp)
 {
 	int ret;
 #define RCVPKTSIZE 100

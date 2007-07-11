@@ -1055,7 +1055,7 @@ struct ctdb_kill_tcp {
 	struct ctdb_killtcp_connection *connections;
 };
 int ctdb_sys_open_capture_socket(void);
-int killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst);
-int sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp);
+int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst);
+int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp);
 
 #endif

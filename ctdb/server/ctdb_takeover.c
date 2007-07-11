@@ -829,7 +829,7 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
 
 	if (flags & EVENT_FD_READ) {
-		sys_read_tcp_packet(killtcp);
+		ctdb_sys_read_tcp_packet(killtcp);
 	}
 }
 
@@ -891,7 +891,7 @@ static int ctdb_killtcp_connection_destructor(struct ctdb_killtcp_connection *co
 	return 0;
 }
 
-int killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst)
+int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst)
 {
 	struct ctdb_kill_tcp *killtcp=ctdb->killtcp;;
 	struct ctdb_killtcp_connection *conn;
