@@ -446,7 +446,7 @@ struct ctdb_control_tcp {
 /*
   struct for kill_tcp control
  */
-struct ctdb_control_kill_tcp {
+struct ctdb_control_killtcp {
 	struct sockaddr_in src;
 	struct sockaddr_in dst;
 };
@@ -1067,5 +1067,11 @@ struct ctdb_kill_tcp {
 int ctdb_sys_open_capture_socket(void);
 int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst);
 int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp);
+
+int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_killtcp *killtcp);
+
 
 #endif

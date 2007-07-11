@@ -687,7 +687,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
  */
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_kill_tcp *killtcp = (struct ctdb_control_kill_tcp *)indata.dptr;
+	struct ctdb_control_killtcp *killtcp = (struct ctdb_control_killtcp *)indata.dptr;
 
 	ctdb_killtcp_add_connection(ctdb, &killtcp->src, &killtcp->dst);
 
