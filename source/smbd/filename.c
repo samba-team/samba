@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1999-2004
    Copyright (C) Ying Chen 2000
+   Copyright (C) Volker Lendecke 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,21 +26,8 @@
 
 #include "includes.h"
 
-static BOOL scan_directory(connection_struct *conn, const char *path, char *name,size_t maxlength);
-
-/****************************************************************************
- Check if two filenames are equal.
- This needs to be careful about whether we are case sensitive.
-****************************************************************************/
-
-static BOOL fname_equal(const char *name1, const char *name2, BOOL case_sensitive)
-{
-	/* Normal filename handling */
-	if (case_sensitive)
-		return(strcmp(name1,name2) == 0);
-
-	return(strequal(name1,name2));
-}
+static BOOL scan_directory(connection_struct *conn, const char *path,
+			   char *name, char **found_name);
 
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
@@ -117,21 +105,20 @@ for nlinks = 0, which can never be true for any file).
 ****************************************************************************/
 
 NTSTATUS unix_convert(connection_struct *conn,
-			pstring name,
+		        pstring orig_path,
 			BOOL allow_wcard_last_component,
-			char *saved_last_component, 
+			char *saved_last_component,
 			SMB_STRUCT_STAT *pst)
 {
 	SMB_STRUCT_STAT st;
 	char *start, *end;
-	pstring dirpath;
-	pstring orig_path;
+	char *dirpath = NULL;
+	char *name = NULL;
 	BOOL component_was_mangled = False;
 	BOOL name_has_wildcard = False;
+	NTSTATUS result;
 
 	SET_STAT_INVALID(*pst);
-
-	*dirpath = 0;
 
 	if(saved_last_component) {
 		*saved_last_component = 0;
@@ -143,19 +130,19 @@ NTSTATUS unix_convert(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(5, ("unix_convert called on file \"%s\"\n", name));
+	DEBUG(5, ("unix_convert called on file \"%s\"\n", orig_path));
 
-	/* 
+	/*
 	 * Conversion to basic unix format is already done in check_path_syntax().
 	 */
 
-	/* 
+	/*
 	 * Names must be relative to the root of the service - any leading /.
 	 * and trailing /'s should have been trimmed by check_path_syntax().
 	 */
 
 #ifdef DEVELOPER
-	SMB_ASSERT(*name != '/');
+	SMB_ASSERT(*orig_path != '/');
 #endif
 
 	/*
@@ -166,23 +153,27 @@ NTSTATUS unix_convert(connection_struct *conn,
 	 * As we know this is valid we can return true here.
 	 */
 
-	if (!*name) {
-		name[0] = '.';
-		name[1] = '\0';
+	if (!*orig_path) {
+		if (!(name = SMB_STRDUP("."))) {
+			result = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
 		if (SMB_VFS_STAT(conn,name,&st) == 0) {
 			*pst = st;
 		}
 		DEBUG(5,("conversion finished \"\" -> %s\n",name));
-		return NT_STATUS_OK;
+		goto done;
 	}
 
-	if (name[0] == '.' && (name[1] == '/' || name[1] == '\0')) {
+	if (orig_path[0] == '.' && (orig_path[1] == '/' || orig_path[1] == '\0')) {
 		/* Start of pathname can't be "." only. */
-		if (name[1] == '\0' || name[2] == '\0') {
-			return NT_STATUS_OBJECT_NAME_INVALID;
+		if (orig_path[1] == '\0' || orig_path[2] == '\0') {
+			result = NT_STATUS_OBJECT_NAME_INVALID;
 		} else {
-			return determine_path_error(&name[2], allow_wcard_last_component);
+			result =determine_path_error(
+				&orig_path[2], allow_wcard_last_component);
 		}
+		goto fail;
 	}
 
 	/*
@@ -190,12 +181,17 @@ NTSTATUS unix_convert(connection_struct *conn,
 	 */
 
 	if(saved_last_component) {
-		end = strrchr_m(name, '/');
+		end = strrchr_m(orig_path, '/');
 		if (end) {
 			pstrcpy(saved_last_component, end + 1);
 		} else {
-			pstrcpy(saved_last_component, name);
+			pstrcpy(saved_last_component, orig_path);
 		}
+	}
+
+	if (!(name = SMB_STRDUP(orig_path))) {
+		DEBUG(0, ("strdup failed\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
@@ -210,16 +206,27 @@ NTSTATUS unix_convert(connection_struct *conn,
 	if (conn->case_sensitive && !conn->case_preserve && !conn->short_case_preserve) {
 		strnorm(name, lp_defaultcase(SNUM(conn)));
 	}
-	
-	start = name;
-	pstrcpy(orig_path, name);
 
-	if(!conn->case_sensitive && stat_cache_lookup(conn, name, dirpath, &start, &st)) {
+	start = name;
+
+	if(!conn->case_sensitive
+	   && stat_cache_lookup(conn, &name, &dirpath, &start, &st)) {
 		*pst = st;
-		return NT_STATUS_OK;
+		goto done;
 	}
 
-	/* 
+	/*
+	 * Make sure "dirpath" is an allocated string, we use this for
+	 * building the directories with asprintf and free it.
+	 */
+
+	if ((dirpath == NULL) && (!(dirpath = SMB_STRDUP("")))) {
+		DEBUG(0, ("strdup failed\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	/*
 	 * stat the name - if it exists then we are all done!
 	 */
 
@@ -239,24 +246,24 @@ NTSTATUS unix_convert(connection_struct *conn,
 		stat_cache_add(orig_path, name, conn->case_sensitive);
 		DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 		*pst = st;
-		return NT_STATUS_OK;
+		goto done;
 	}
 
 	DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n", name, dirpath, start));
 
-	/* 
+	/*
 	 * A special case - if we don't have any mangling chars and are case
 	 * sensitive then searching won't help.
 	 */
 
-	if (conn->case_sensitive && 
+	if (conn->case_sensitive &&
 			!mangle_is_mangled(name, conn->params) &&
 			!*lp_mangled_map(conn->params)) {
-		return NT_STATUS_OK;
+		goto done;
 	}
 
-	/* 
-	 * is_mangled() was changed to look at an entire pathname, not 
+	/*
+	 * is_mangled() was changed to look at an entire pathname, not
 	 * just a component. JRA.
 	 */
 
@@ -264,23 +271,23 @@ NTSTATUS unix_convert(connection_struct *conn,
 		component_was_mangled = True;
 	}
 
-	/* 
-	 * Now we need to recursively match the name against the real 
+	/*
+	 * Now we need to recursively match the name against the real
 	 * directory structure.
 	 */
 
-	/* 
+	/*
 	 * Match each part of the path name separately, trying the names
 	 * as is first, then trying to scan the directory for matching names.
 	 */
 
 	for (; start ; start = (end?end+1:(char *)NULL)) {
-		/* 
+		/*
 		 * Pinpoint the end of this section of the filename.
 		 */
 		end = strchr(start, '/'); /* mb safe. '/' can't be in any encoded char. */
 
-		/* 
+		/*
 		 * Chop the name at this point.
 		 */
 		if (end) {
@@ -296,9 +303,12 @@ NTSTATUS unix_convert(connection_struct *conn,
 		if (ISDOT(start)) {
 			if (!end)  {
 				/* Error code at the end of a pathname. */
-				return NT_STATUS_OBJECT_NAME_INVALID;
+				result = NT_STATUS_OBJECT_NAME_INVALID;
+			} else {
+				result = determine_path_error(end+1,
+						allow_wcard_last_component);
 			}
-			return determine_path_error(end+1, allow_wcard_last_component);
+			goto fail;
 		}
 
 		/* The name cannot have a wildcard if it's not
@@ -308,15 +318,17 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 		/* Wildcard not valid anywhere. */
 		if (name_has_wildcard && !allow_wcard_last_component) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
+			result = NT_STATUS_OBJECT_NAME_INVALID;
+			goto fail;
 		}
 
 		/* Wildcards never valid within a pathname. */
 		if (name_has_wildcard && end) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
+			result = NT_STATUS_OBJECT_NAME_INVALID;
+			goto fail;
 		}
 
-		/* 
+		/*
 		 * Check if the name exists up to this point.
 		 */
 
@@ -331,14 +343,15 @@ NTSTATUS unix_convert(connection_struct *conn,
 				 */
 				DEBUG(5,("Not a dir %s\n",start));
 				*end = '/';
-				/* 
+				/*
 				 * We need to return the fact that the intermediate
 				 * name resolution failed. This is used to return an
 				 * error of ERRbadpath rather than ERRbadfile. Some
 				 * Windows applications depend on the difference between
 				 * these two errors.
 				 */
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				goto fail;
 			}
 
 			if (!end) {
@@ -352,20 +365,10 @@ NTSTATUS unix_convert(connection_struct *conn,
 			}
 
 		} else {
-			pstring rest;
+			char *found_name = NULL;
 
 			/* Stat failed - ensure we don't use it. */
 			SET_STAT_INVALID(st);
-			*rest = 0;
-
-			/*
-			 * Remember the rest of the pathname so it can be restored
-			 * later.
-			 */
-
-			if (end) {
-				pstrcpy(rest,end+1);
-			}
 
 			/* Reset errno so we can detect directory open errors. */
 			errno = 0;
@@ -375,7 +378,9 @@ NTSTATUS unix_convert(connection_struct *conn,
 			 */
 
 			if (name_has_wildcard || 
-			    !scan_directory(conn, dirpath, start, sizeof(pstring) - 1 - (start - name))) {
+			    !scan_directory(conn, dirpath, start, &found_name)) {
+				char *unmangled;
+
 				if (end) {
 					/*
 					 * An intermediate part of the name can't be found.
@@ -383,7 +388,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 					DEBUG(5,("Intermediate not found %s\n",start));
 					*end = '/';
 
-					/* 
+					/*
 					 * We need to return the fact that the intermediate
 					 * name resolution failed. This is used to return an
 					 * error of ERRbadpath rather than ERRbadfile. Some
@@ -395,19 +400,25 @@ NTSTATUS unix_convert(connection_struct *conn,
 					   in the filename walk. */
 
 					if (errno == ENOENT || errno == ENOTDIR) {
-						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+						result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
-					return map_nt_error_from_unix(errno);
+					else {
+						result = map_nt_error_from_unix(errno);
+					}
+					goto fail;
 				}
-	      
+
 				/* ENOENT is the only valid error here. */
 				if (errno != ENOENT) {
 					/* ENOENT and ENOTDIR both map to NT_STATUS_OBJECT_PATH_NOT_FOUND
 					   in the filename walk. */
 					if (errno == ENOTDIR) {
-						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+						result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
-					return map_nt_error_from_unix(errno);
+					else {
+						result = map_nt_error_from_unix(errno);
+					}
+					goto fail;
 				}
 
 				/*
@@ -427,26 +438,79 @@ NTSTATUS unix_convert(connection_struct *conn,
 				 * base of the filename.
 				 */
 
-				if (mangle_is_mangled(start, conn->params)) {
-					mangle_check_cache( start, sizeof(pstring) - 1 - (start - name), conn->params);
+				if (mangle_is_mangled(start, conn->params)
+				    && mangle_check_cache_alloc(start, &unmangled,
+								conn->params)) {
+					char *tmp;
+					size_t start_ofs = start - name;
+
+					if (*dirpath != '\0') {
+						asprintf(&tmp, "%s/%s", dirpath,
+							 unmangled);
+						SAFE_FREE(unmangled);
+					}
+					else {
+						tmp = unmangled;
+					}
+					if (tmp == NULL) {
+						DEBUG(0, ("malloc failed\n"));
+						result = NT_STATUS_NO_MEMORY;
+					}
+					SAFE_FREE(name);
+					name = tmp;
+					start = name + start_ofs;
+					end = start + strlen(start);
 				}
 
 				DEBUG(5,("New file %s\n",start));
-				return NT_STATUS_OK;
+				goto done;
 			}
 
-			/* 
+
+			/*
 			 * Restore the rest of the string. If the string was mangled the size
 			 * may have changed.
 			 */
 			if (end) {
-				end = start + strlen(start);
-				if (!safe_strcat(start, "/", sizeof(pstring) - 1 - (start - name)) ||
-				    !safe_strcat(start, rest, sizeof(pstring) - 1 - (start - name))) {
-					return map_nt_error_from_unix(ENAMETOOLONG);
+				char *tmp;
+				size_t start_ofs = start - name;
+
+				if (*dirpath != '\0') {
+					asprintf(&tmp, "%s/%s/%s", dirpath,
+						 found_name, end+1);
 				}
+				else {
+					asprintf(&tmp, "%s/%s", found_name,
+						 end+1);
+				}
+				if (tmp == NULL) {
+					DEBUG(0, ("asprintf failed\n"));
+					result = NT_STATUS_NO_MEMORY;
+				}
+				SAFE_FREE(name);
+				name = tmp;
+				start = name + start_ofs;
+				end = start + strlen(found_name);
 				*end = '\0';
 			} else {
+				char *tmp;
+				size_t start_ofs = start - name;
+
+				if (*dirpath != '\0') {
+					asprintf(&tmp, "%s/%s", dirpath,
+						 found_name);
+				}
+				else {
+					tmp = SMB_STRDUP(found_name);
+				}
+				if (tmp == NULL) {
+					DEBUG(0, ("malloc failed\n"));
+					result = NT_STATUS_NO_MEMORY;
+				}
+				SAFE_FREE(name);
+				name = tmp;
+				start = name + start_ofs;
+
 				/*
 				 * We just scanned for, and found the end of the path.
 				 * We must return a valid stat struct if it exists.
@@ -459,40 +523,56 @@ NTSTATUS unix_convert(connection_struct *conn,
 					SET_STAT_INVALID(st);
 				}
 			}
+
+			SAFE_FREE(found_name);
 		} /* end else */
 
 #ifdef DEVELOPER
 		if (VALID_STAT(st) && get_delete_on_close_flag(file_id_sbuf(&st))) {
-			return NT_STATUS_DELETE_PENDING;
+			result = NT_STATUS_DELETE_PENDING;
+			goto fail;
 		}
 #endif
 
 		/* 
 		 * Add to the dirpath that we have resolved so far.
 		 */
-		if (*dirpath) {
-			pstrcat(dirpath,"/");
-		}
 
-		pstrcat(dirpath,start);
+		if (*dirpath != '\0') {
+			char *tmp;
+
+			if (asprintf(&tmp, "%s/%s", dirpath, start) == -1) {
+				DEBUG(0, ("asprintf failed\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
+			SAFE_FREE(dirpath);
+			dirpath = tmp;
+		}
+		else {
+			SAFE_FREE(dirpath);
+			if (!(dirpath = SMB_STRDUP(start))) {
+				DEBUG(0, ("strdup failed\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 
 		/*
 		 * Don't cache a name with mangled or wildcard components
 		 * as this can change the size.
 		 */
-		
+
 		if(!component_was_mangled && !name_has_wildcard) {
 			stat_cache_add(orig_path, dirpath, conn->case_sensitive);
 		}
-	
-		/* 
+
+		/*
 		 * Restore the / that we wiped out earlier.
 		 */
 		if (end) {
 			*end = '/';
 		}
 	}
-  
+
 	/*
 	 * Don't cache a name with mangled or wildcard components
 	 * as this can change the size.
@@ -502,12 +582,19 @@ NTSTATUS unix_convert(connection_struct *conn,
 		stat_cache_add(orig_path, name, conn->case_sensitive);
 	}
 
-	/* 
+	/*
 	 * The name has been resolved.
 	 */
 
 	DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
-	return NT_STATUS_OK;
+
+ done:
+	result = NT_STATUS_OK;
+	pstrcpy(orig_path, name);
+ fail:
+	SAFE_FREE(name);
+	SAFE_FREE(dirpath);
+	return result;
 }
 
 /****************************************************************************
@@ -539,21 +626,37 @@ NTSTATUS check_name(connection_struct *conn, const pstring name)
 }
 
 /****************************************************************************
+ Check if two filenames are equal.
+ This needs to be careful about whether we are case sensitive.
+****************************************************************************/
+
+static BOOL fname_equal(const char *name1, const char *name2, BOOL case_sensitive)
+{
+	/* Normal filename handling */
+	if (case_sensitive)
+		return(strcmp(name1,name2) == 0);
+
+	return(strequal(name1,name2));
+}
+
+/****************************************************************************
  Scan a directory to find a filename, matching without case sensitivity.
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static BOOL scan_directory(connection_struct *conn, const char *path, char *name, size_t maxlength)
+static BOOL scan_directory(connection_struct *conn, const char *path,
+			   char *name, char **found_name)
 {
 	struct smb_Dir *cur_dir;
 	const char *dname;
 	BOOL mangled;
+	char *unmangled_name = NULL;
 	long curpos;
 
 	mangled = mangle_is_mangled(name, conn->params);
 
 	/* handle null paths */
-	if (*path == 0)
+	if ((path == NULL) || (*path == 0))
 		path = ".";
 
 	/*
@@ -572,12 +675,15 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	 */
 
 	if (mangled && !conn->case_sensitive) {
-		mangled = !mangle_check_cache( name, maxlength, conn->params);
+		mangled = !mangle_check_cache_alloc(name, &unmangled_name,
+						    conn->params);
+		name = unmangled_name;
 	}
 
 	/* open the directory */
 	if (!(cur_dir = OpenDir(conn, path, NULL, 0))) {
 		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
+		SAFE_FREE(unmangled_name);
 		return(False);
 	}
 
@@ -603,12 +709,14 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 
 		if ((mangled && mangled_equal(name,dname,conn->params)) || fname_equal(name, dname, conn->case_sensitive)) {
 			/* we've found the file, change it's name and return */
-			safe_strcpy(name, dname, maxlength);
+			*found_name = SMB_STRDUP(dname);
+			SAFE_FREE(unmangled_name);
 			CloseDir(cur_dir);
 			return(True);
 		}
 	}
 
+	SAFE_FREE(unmangled_name);
 	CloseDir(cur_dir);
 	errno = ENOENT;
 	return(False);

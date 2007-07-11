@@ -112,6 +112,21 @@ BOOL mangle_check_cache(char *s, size_t maxlen,
 	return mangle_fns->check_cache(s, maxlen, p);
 }
 
+BOOL mangle_check_cache_alloc(const char *name, char **presult,
+			      const struct share_params *p)
+{
+	pstring tmp;
+	char *result;
+	pstrcpy(tmp, name);
+
+	if (!mangle_check_cache(tmp, sizeof(pstring), p)
+	    || !(result = SMB_STRDUP(tmp))) {
+		return False;
+	}
+	*presult = result;
+	return True;
+}
+
 /* 
    map a long filename to a 8.3 name. 
  */

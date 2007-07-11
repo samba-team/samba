@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1999-2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
+   Copyright (C) Volker Lendecke 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,9 +40,8 @@ static TDB_CONTEXT *tdb_stat_cache;
  *
  */
 
-void stat_cache_add( const char *full_orig_name, const char *orig_translated_path, BOOL case_sensitive)
+void stat_cache_add( const char *full_orig_name, const char *translated_path, BOOL case_sensitive)
 {
-	char *translated_path;
 	size_t translated_path_length;
 	TDB_DATA data_val;
 	char *original_path;
@@ -61,10 +61,10 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	 * Don't cache trivial valid directory entries such as . and ..
 	 */
 
-	if((*full_orig_name == '\0') || (full_orig_name[0] == '.' && 
-				((full_orig_name[1] == '\0') ||
-				 (full_orig_name[1] == '.' && full_orig_name[2] == '\0'))))
+	if ((*full_orig_name == '\0')
+	    || ISDOT(full_orig_name) || ISDOTDOT(full_orig_name)) {
 		return;
+	}
 
 	/*
 	 * If we are in case insentive mode, we don't need to
@@ -72,7 +72,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	 * would be a waste.
 	 */
 
-	if(case_sensitive && (strcmp(full_orig_name, orig_translated_path) == 0))
+	if (case_sensitive && (strcmp(full_orig_name, translated_path) == 0))
 		return;
 
 	/*
@@ -80,14 +80,15 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	 * translated path.
 	 */
 
-	translated_path = SMB_STRDUP(orig_translated_path);
-	if (!translated_path)
-		return;
+	/*
+	 * To save a strdup we don't necessarily 0-terminate the translated
+	 * path in the tdb. Instead, we do it directly after the tdb_fetch in
+	 * stat_cache_lookup.
+	 */
 
 	translated_path_length = strlen(translated_path);
 
 	if(translated_path[translated_path_length-1] == '/') {
-		translated_path[translated_path_length-1] = '\0';
 		translated_path_length--;
 	}
 
@@ -98,7 +99,6 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	}
 
 	if (!original_path) {
-		SAFE_FREE(translated_path);
 		return;
 	}
 
@@ -114,7 +114,6 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 			DEBUG(0, ("OOPS - tried to store stat cache entry for weird length paths [%s] %lu and [%s] %lu)!\n",
 				  original_path, (unsigned long)original_path_length, translated_path, (unsigned long)translated_path_length));
 			SAFE_FREE(original_path);
-			SAFE_FREE(translated_path);
 			return;
 		}
 
@@ -140,7 +139,6 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	}
 
 	SAFE_FREE(original_path);
-	SAFE_FREE(translated_path);
 }
 
 /**
@@ -148,7 +146,8 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
  *
  * @param conn    A connection struct to do the stat() with.
  * @param name    The path we are attempting to cache, modified by this routine
- *                to be correct as far as the cache can tell us
+ *                to be correct as far as the cache can tell us. We assume that
+ *		  it is a malloc'ed string, we free it if necessary.
  * @param dirpath The path as far as the stat cache told us.
  * @param start   A pointer into name, for where to 'start' in fixing the rest of the name up.
  * @param psd     A stat buffer, NOT from the cache, but just a side-effect.
@@ -157,7 +156,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
  *
  */
 
-BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath, 
+BOOL stat_cache_lookup(connection_struct *conn, char **pname, char **dirpath,
 		       char **start, SMB_STRUCT_STAT *pst)
 {
 	char *chk_name;
@@ -167,10 +166,12 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	char *translated_path;
 	size_t translated_path_length;
 	TDB_DATA data_val;
+	char *name;
 
 	if (!lp_stat_cache())
 		return False;
  
+	name = *pname;
 	namelen = strlen(name);
 
 	*start = name;
@@ -180,10 +181,9 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	/*
 	 * Don't lookup trivial valid directory entries.
 	 */
-	if((*name == '\0') || (name[0] == '.' && 
-				((name[1] == '\0') ||
-				 (name[1] == '.' && name[1] == '\0'))))
+	if ((*name == '\0') || ISDOT(name) || ISDOTDOT(name)) {
 		return False;
+	}
 
 	if (conn->case_sensitive) {
 		chk_name = SMB_STRDUP(name);
@@ -250,6 +250,12 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	translated_path = (char *)data_val.dptr;
 	translated_path_length = data_val.dsize - 1;
 
+	/*
+	 * In stat_cache_add we did not necessarily 0-terminate the translated
+	 * path. Do it here, where we do have a freshly malloc'ed blob.
+	 */
+	translated_path[translated_path_length] = '\0';
+
 	DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] "
 		  "-> [%s]\n", chk_name, translated_path ));
 	DO_PROFILE_INC(statcache_hits);
@@ -264,31 +270,43 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 
 	if (!sizechanged) {
 		memcpy(name, translated_path,
-		       MIN(sizeof(pstring)-1, translated_path_length));
-	} else if (num_components == 0) {
-		pstrcpy(name, translated_path);
-	} else {
-		char *sp;
-
-		sp = strnrchr_m(name, '/', num_components);
-		if (sp) {
-			pstring last_component;
-			pstrcpy(last_component, sp);
-			pstrcpy(name, translated_path);
-			pstrcat(name, last_component);
-		} else {
-			pstrcpy(name, translated_path);
-		}
+		       MIN(namelen, translated_path_length));
 	}
+	else {
+		if (num_components == 0) {
+			name = SMB_STRNDUP(translated_path,
+					   translated_path_length);
+		} else {
+			char *sp;
+
+			sp = strnrchr_m(name, '/', num_components);
+			if (sp) {
+				asprintf(&name, "%.*s%s",
+					 (int)translated_path_length,
+					 translated_path, sp);
+			} else {
+				name = SMB_STRNDUP(translated_path,
+						   translated_path_length);
+			}
+		}
+		if (name == NULL) {
+			/*
+			 * TODO: Get us out of here with a real error message
+			 */
+			smb_panic("malloc failed");
+		}
+		SAFE_FREE(*pname);
+		*pname = name;
+	}
+
 
 	/* set pointer for 'where to start' on fixing the rest of the name */
 	*start = &name[translated_path_length];
 	if (**start == '/')
 		++*start;
 
-	pstrcpy(dirpath, translated_path);
+	*dirpath = translated_path;
 	SAFE_FREE(chk_name);
-	SAFE_FREE(data_val.dptr);
 	return (namelen == translated_path_length);
 }
 
