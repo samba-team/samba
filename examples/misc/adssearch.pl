@@ -837,7 +837,8 @@ sub get_base_from_rootdse {
 
 	my $server = shift || "";
 	$dse = shift || get_dse($server,$async_ldap_hd) || return -1;
-	return $dse->get_value('defaultNamingContext');
+	return $dse->get_value($opt_dump_schema ? 'schemaNamingContext':
+						  'defaultNamingContext');
 }
 
 sub get_realm_from_rootdse {
@@ -1499,7 +1500,7 @@ sub gen_controls {
 		critical => 'true',
 		value => "");
 
-	if (defined($opt_paging)) {
+	if (defined($opt_paging) || $opt_dump_schema) {
 		push(@ctrls, $ctl_paged);
 		push(@ctrls_s, "LDAP_PAGED_RESULT_OID_STRING" );
 	}
@@ -1787,9 +1788,9 @@ sub main () {
 
 	if ($opt_dump_schema) {
 		print "Dumping Schema:\n";
-		my $ads_schema = $async_ldap_hd->schema;
-		$ads_schema->dump;
-		exit 0;
+#		my $ads_schema = $async_ldap_hd->schema;
+#		$ads_schema->dump;
+#		exit 0;
 	}
 
 	while (1) {
