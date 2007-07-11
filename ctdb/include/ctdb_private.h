@@ -307,6 +307,7 @@ struct ctdb_context {
 	struct ctdb_takeover takeover;
 	struct ctdb_tcp_list *tcp_list;
 	struct ctdb_client_ip *client_ip_list;
+	struct ctdb_kill_tcp *killtcp;
 };
 
 struct ctdb_db_context {
@@ -1032,11 +1033,29 @@ void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_port(const char *s, struct sockaddr_in *ip);
 
-int ctdb_kill_tcp_callback(struct ctdb_context *ctdb, 
-			       struct timeval timeout,
-			       TALLOC_CTX *mem_ctx,
-			       void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *),
-			       struct sockaddr_in *dst, 
-			       struct sockaddr_in *src);
+
+/*
+  list of tcp connections to kill
+ */
+struct ctdb_killtcp_connection {
+	struct ctdb_killtcp_connection *prev, *next;
+	struct ctdb_context *ctdb;
+	struct sockaddr_in src;
+	struct sockaddr_in dst;
+	int count;
+};
+
+/* structure containing the listening socket and the list of tcp connections
+   that the ctdb daemon is to kill
+*/
+struct ctdb_kill_tcp {
+	struct ctdb_context *ctdb;
+	int fd;
+	struct fd_event *fde;
+	struct ctdb_killtcp_connection *connections;
+};
+int ctdb_sys_open_capture_socket(void);
+int killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst);
+int sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp);
 
 #endif

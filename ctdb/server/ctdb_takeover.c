@@ -823,126 +823,133 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_c
 
 
 
+static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde, 
+			     uint16_t flags, void *private_data)
+{
+	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
 
-struct ctdb_kill_tcp_state {
-	struct ctdb_context *ctdb;
-	pid_t child;
-	void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *);
-	int fd[2];
-	/* in case we need them in the callback */
-        struct sockaddr_in dst;
-        struct sockaddr_in src;
-};
+	if (flags & EVENT_FD_READ) {
+		sys_read_tcp_packet(killtcp);
+	}
+}
+
+
+/* called every second until all sentenced connections have been reset
+ */
+static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t, void *private_data)
+{
+	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
+	struct ctdb_killtcp_connection *conn, tmpcon;
+
+
+	/* loop over all connections and see if we find one that matches */
+	for(conn = killtcp->connections; conn; conn = conn->next) {
+		conn->count++;
+		if (conn->count > 5) {
+			tmpcon.next=conn->next;
+			talloc_free(conn);
+			conn=&tmpcon;
+
+			continue;
+		}
+		ctdb_sys_send_tcp(&conn->dst, &conn->src, 0, 0, 0);
+	}
+
+	/* If there are no more connections to kill we can remove the
+	   entire killtcp structure
+	 */
+	if (killtcp->connections == NULL) {
+		talloc_free(killtcp);
+		return;
+	}
+
+	/* try tickling them again in a seconds time
+	 */
+	event_add_timed(killtcp->ctdb->ev, killtcp, timeval_current_ofs(1, 0), 
+			ctdb_tickle_sentenced_connections, killtcp);
+}
 
 /*
-  destroy a running kill tcp
+  destroy the killtcp structure
  */
-static int ctdb_kill_tcp_destructor(struct ctdb_kill_tcp_state *state)
+static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
-	DEBUG(0,("kill tcp destructor\n"));
-	kill(state->child, SIGKILL);
-	waitpid(state->child, NULL, 0);
+	close(killtcp->fd);
+	killtcp->fd = -1;
+	killtcp->ctdb->killtcp = NULL;
+
 	return 0;
 }
 
-/* called when the kill tcp child is finished */
-static void ctdb_kill_tcp_handler(struct event_context *ev, struct fd_event *fde, 
-				      uint16_t flags, void *p)
-{
-	struct ctdb_kill_tcp_state *state = 
-		talloc_get_type(p, struct ctdb_kill_tcp_state);
-	int status = -1;
-	void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *) = state->callback;
-	struct ctdb_context *ctdb = state->ctdb;
-
-	waitpid(state->child, &status, 0);
-	if (status != -1) {
-		status = WEXITSTATUS(status);
-	}
-
-	DEBUG(0,("kill tcp handler  status %d\n",status));
-	talloc_set_destructor(state, NULL);
-	talloc_free(state);
-	if (callback) {
-		callback(ctdb, status, &state->dst, &state->src);
-	}
-}
-
-/* called when kill tcp times out */
-static void ctdb_kill_tcp_timeout(struct event_context *ev, struct timed_event *te, 
-				      struct timeval t, void *p)
-{
-	struct ctdb_kill_tcp_state *state = talloc_get_type(p, struct ctdb_kill_tcp_state);
-	void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *) = state->callback;
-	struct ctdb_context *ctdb = state->ctdb;
-
-	DEBUG(0,("kill tcp timed out\n"));
-	talloc_free(state);
-	if (callback) {
-		callback(ctdb, -1, &state->dst, &state->src);
-	}
-}
-
 /*
-  run killtcp in the background calling the callback once it has
-  finished
+  destroy a killtcp connection structure
  */
-int ctdb_kill_tcp_callback(struct ctdb_context *ctdb, 
-			       struct timeval timeout,
-			       TALLOC_CTX *mem_ctx,
-			       void (*callback)(struct ctdb_context *, int, struct sockaddr_in *, struct sockaddr_in *),
-			       struct sockaddr_in *dst, 
-			       struct sockaddr_in *src)
+static int ctdb_killtcp_connection_destructor(struct ctdb_killtcp_connection *conn)
 {
-	struct ctdb_kill_tcp_state *state;
-	int ret;
+	DLIST_REMOVE(conn->ctdb->killtcp->connections, conn);
+	return 0;
+}
 
-	state = talloc(mem_ctx, struct ctdb_kill_tcp_state);
-	CTDB_NO_MEMORY(ctdb, state);
-
-	DEBUG(0,("kill tcp callback\n"));
-
-	state->ctdb = ctdb;
-	state->callback = callback;
-	state->src = *src;
-	state->dst = *dst;
+int killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst)
+{
+	struct ctdb_kill_tcp *killtcp=ctdb->killtcp;;
+	struct ctdb_killtcp_connection *conn;
 	
-	ret = pipe(state->fd);
-	if (ret != 0) {
-		talloc_free(state);
-		return -1;
+	/* If this is the first connection to kill we must allocate
+	   a new structure
+	 */
+	if (killtcp == NULL) {
+		killtcp = talloc(ctdb, struct ctdb_kill_tcp);
+		CTDB_NO_MEMORY(ctdb, killtcp);
+
+		killtcp->ctdb        = ctdb;
+		killtcp->fd          = -1;
+		killtcp->connections = NULL;
+		ctdb->killtcp        = killtcp;
+		talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
 	}
 
-	state->child = fork();
+	/* If we dont have a socket to listen on yet we must create it
+	 */
+	if (killtcp->fd == -1) {
+		killtcp->fd = ctdb_sys_open_capture_socket();
+		if (killtcp->fd == -1) {
+			DEBUG(0,(__location__ " Failed to open listening socket for killtcp\n"));
+			goto failed;
+		}
 
-	if (state->child == (pid_t)-1) {
-		close(state->fd[0]);
-		close(state->fd[1]);
-		talloc_free(state);
-		return -1;
+		set_nonblocking(killtcp->fd);
+		set_close_on_exec(killtcp->fd);
 	}
 
-	if (state->child == 0) {
-		close(state->fd[0]);
-		ctdb_set_realtime(true);
-		set_close_on_exec(state->fd[1]);
-		ret = ctdb_sys_kill_tcp(ctdb->ev, dst, src);
-		_exit(ret);
-	}
 
-	talloc_set_destructor(state, ctdb_kill_tcp_destructor);
-
-	close(state->fd[1]);
+	conn = talloc(killtcp, struct ctdb_killtcp_connection);
+	CTDB_NO_MEMORY(ctdb, conn);
+	conn->src   = *src;
+	conn->dst   = *dst;
+	conn->ctdb  = ctdb;
+	conn->count = 0;
+	talloc_set_destructor(conn, ctdb_killtcp_connection_destructor);
+	DLIST_ADD(killtcp->connections, conn);
 
 
-	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-		     ctdb_kill_tcp_handler, state);
+	killtcp->fde = event_add_fd(ctdb->ev, killtcp, killtcp->fd, 
+				EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+				capture_tcp_handler, killtcp);
 
-	if (!timeval_is_zero(&timeout)) {
-		event_add_timed(ctdb->ev, state, timeout, ctdb_kill_tcp_timeout, state);
-	}
+
+	/* We also need to set up some events to tickle all these connections
+	   until they are all reset
+	 */
+	event_add_timed(ctdb->ev, killtcp, timeval_current_ofs(0, 0), 
+			ctdb_tickle_sentenced_connections, killtcp);
+
 
 	return 0;
+
+failed:
+	talloc_free(ctdb->killtcp);
+	ctdb->killtcp = NULL;
+	return -1;
 }
-
-

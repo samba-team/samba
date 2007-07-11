@@ -383,3 +383,99 @@ int ctdb_sys_kill_tcp(struct event_context *ev,
 
 	return -1;
 }
+
+
+
+/* This function is used to open a raw socket to capture from
+ */
+int ctdb_sys_open_capture_socket(void)
+{
+	int s;
+
+	/* Open a socket to capture all traffic */
+	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	if (s == -1){
+		DEBUG(0,(__location__ " failed to open raw socket\n"));
+		return -1;
+	}
+
+	return s;
+}
+
+int sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp)
+{
+	int ret;
+#define RCVPKTSIZE 100
+	char pkt[RCVPKTSIZE];
+	struct ether_header *eth;
+	struct iphdr *ip;
+	struct tcphdr *tcp;
+	struct ctdb_killtcp_connection *conn;
+
+	ret = recv(killtcp->fd, pkt, RCVPKTSIZE, MSG_TRUNC);
+	if (ret < sizeof(*eth)+sizeof(*ip)) {
+		return -1;
+	}
+
+	/* Ethernet */
+	eth = (struct ether_header *)pkt;
+	/* We only want IP packets */
+	if (ntohs(eth->ether_type) != ETHERTYPE_IP) {
+		return -1;
+	}
+	
+	/* IP */
+	ip = (struct iphdr *)(eth+1);
+
+	/* We only want IPv4 packets */
+	if (ip->version != 4) {
+		return -1;
+	}
+	/* Dont look at fragments */
+	if ((ntohs(ip->frag_off)&0x1fff) != 0) {
+		return -1;
+	}
+	/* we only want TCP */
+	if (ip->protocol != IPPROTO_TCP) {
+		return -1;
+	}
+	/* make sure its not a short packet */
+	if (offsetof(struct tcphdr, ack_seq) + 4 + 
+	    (ip->ihl*4) + sizeof(*eth) > ret) {
+		return -1;
+	}
+	/* TCP */
+	tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
+		
+
+	/* loop over all connections and see if we find one that matches */
+	for(conn = killtcp->connections; conn; conn = conn->next) {
+		/* We only want packets sent from a guy we have tickled */
+		if (ip->saddr != conn->dst.sin_addr.s_addr) {
+			continue;
+		}
+		/* We only want packets sent to us */
+		if (ip->daddr != conn->src.sin_addr.s_addr) {
+			continue;
+		}
+		/* We only want replies from a port we tickled */
+		if (tcp->source != conn->dst.sin_port) {
+			continue;
+		}
+		if (tcp->dest != conn->src.sin_port) {
+			continue;
+		}
+
+		/* This one has been tickled !
+		   now reset him and remove him from the list.
+		 */
+		ctdb_sys_send_tcp(&conn->dst, &conn->src, tcp->ack_seq, tcp->seq, 1);
+		talloc_free(conn);
+
+		return 0;
+	}
+
+	return -1;
+}
+
+
