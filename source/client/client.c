@@ -343,6 +343,19 @@ static int cmd_cd(void)
 	return rc;
 }
 
+/****************************************************************************
+ Change directory.
+****************************************************************************/
+
+static int cmd_cd_oneup(void)
+{
+	pstring buf;
+
+	pstrcpy(buf, "..");
+	return do_cd(buf);
+}
+
+
 /*******************************************************************
  Decide if a file should be operated on.
 ********************************************************************/
@@ -3259,7 +3272,8 @@ static struct
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
   {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},
-  
+  {"..",cmd_cd_oneup,"change the remote directory (up one level)",{COMPL_REMOTE,COMPL_NONE}},
+
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {NULL,NULL,NULL,{COMPL_NONE,COMPL_NONE}}
