@@ -20,11 +20,11 @@
 	kdc = 0-/FILE:@objdir@/messages.log
 	default = 0-/FILE:@objdir@/messages.log
 
-# Check with default and non default salting
-# This to check if the kdc return default salting
+# Have both default and non default salting for single DES encryptes,
+# this to check if the kdc return default salting.
 [kadmin]
-        default_keys = des:pw-salt
-	default_keys = des3-cbc-sha1:pw-salt
-	default_keys = aes128-cts-hmac-sha1-96:pw-salt
 	default_keys = aes256-cts-hmac-sha1-96:pw-salt
+	default_keys = aes128-cts-hmac-sha1-96:pw-salt
+	default_keys = des3-cbc-sha1:pw-salt
+        default_keys = des:pw-salt
 	default_keys = des:pw-salt:
