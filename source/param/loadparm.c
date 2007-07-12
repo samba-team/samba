@@ -147,7 +147,6 @@ typedef struct
 	int cli_maxprotocol;
 	int cli_minprotocol;
 	int security;
-	char **AuthMethods;
 	int paranoid_server_security;
 	int max_wins_ttl;
 	int min_wins_ttl;
@@ -915,7 +914,6 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_minprotocol, &Globals.srv_minprotocol)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_maxprotocol, &Globals.cli_maxprotocol)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, &Globals.cli_minprotocol)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_security, &Globals.security)
-_PUBLIC_ FN_GLOBAL_LIST(lp_auth_methods, &Globals.AuthMethods)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 _PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &Globals.jsInclude)
