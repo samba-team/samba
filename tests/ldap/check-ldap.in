@@ -97,6 +97,13 @@ ${kadmin} \
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p foo --use-defaults bar@${R} || exit 1
 
+${kadmin} cpw --random-password bar@${R} > /dev/null || exit 1
+${kadmin} cpw --random-password bar@${R} > /dev/null || exit 1
+${kadmin} cpw --random-password bar@${R} > /dev/null || exit 1
+
+${kadmin} cpw --random-password suser@${R} > /dev/null|| exit 1
+${kadmin} cpw --password=foo suser@${R} || exit 1
+
 ${kadmin} list '*' > /dev/null || exit 1
 
 echo foo > ${objdir}/foopassword
