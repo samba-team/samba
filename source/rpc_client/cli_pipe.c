@@ -781,7 +781,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	          &rparam, &rparam_len,            /* return params, len */
 	          &prdata, &rdata_len))            /* return data, len */
 	{
-		DEBUG(0, ("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x"
+		DEBUG(0, ("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x "
 			"returned critical error. Error was %s\n",
 			cli->cli->desthost,
 			cli->pipe_name,
