@@ -196,7 +196,7 @@ void ctdb_set_realtime(bool enable)
 {
 #if HAVE_SCHED_SETSCHEDULER
 	struct sched_param p;
-	p.__sched_priority = 1;
+	p.sched_priority = 1;
 
 	if (enable) {
 		if (sched_setscheduler(getpid(), SCHED_FIFO, &p) == -1) {
