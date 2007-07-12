@@ -307,12 +307,14 @@ import_name(const char *kname, const char *host, gss_name_t *target_name)
 {
     OM_uint32 maj_stat, min_stat;
     gss_buffer_desc name;
+    char *str;
 
-    name.length = asprintf((char**)&name.value, "%s@%s", kname, host);
-    if (name.length == -1) {
+    name.length = asprintf(&str, "%s@%s", kname, host);
+    if (str == NULL) {
 	printf("Out of memory\n");
 	return AUTH_ERROR;
     }
+    name.value = str;
 
     maj_stat = gss_import_name(&min_stat,
 			       &name,
