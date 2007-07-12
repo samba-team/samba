@@ -1,4 +1,11 @@
+2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kpasswd/kpasswdd.c: Fix pointer vs strict alias rules.
+
 2007-07-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c: When using sambaNTPassword, avoid adding
+	more then one enctype 23 to krb5EncryptionType.
 
 	* lib/krb5/cache.c: Spelling.
 
