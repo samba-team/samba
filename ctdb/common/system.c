@@ -24,7 +24,7 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "lib/events/events.h"
-#include <net/ethernet.h>
+#include <netinet/if_ether.h>
 #include <net/if_arp.h>
 
 
