@@ -308,6 +308,7 @@ struct ctdb_context {
 	struct ctdb_tcp_list *tcp_list;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_setsched;
+	void *saved_scheduler_param;
 };
 
 struct ctdb_db_context {
@@ -948,7 +949,8 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
 int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
-void ctdb_set_realtime(bool enable);
+void ctdb_set_scheduler(struct ctdb_context *ctdb);
+void ctdb_restore_scheduler(struct ctdb_context *ctdb);
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 

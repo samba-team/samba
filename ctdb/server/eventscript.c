@@ -167,7 +167,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 	if (state->child == 0) {
 		close(state->fd[0]);
 		if (ctdb->do_setsched) {
-			ctdb_set_realtime(false);
+			ctdb_restore_scheduler(ctdb);
 		}
 		set_close_on_exec(state->fd[1]);
 		va_start(ap, fmt);
