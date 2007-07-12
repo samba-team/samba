@@ -3,15 +3,15 @@
 
 srcdir=@srcdir@
 
-rm -rf db
+rm -rf db schema
 mkdir db
 
 # kill of old slapd if running
 sh ${srcdir}/slapd-stop > /dev/null
 
-SCHEMA_NEEDED="hdb core nis cosine inetorgperson openldap"
+SCHEMA_NEEDED="hdb core nis cosine inetorgperson openldap samba"
 
-SCHEMA_PATHS="${srcdir}/../../lib/hdb /etc/ldap/schema /etc/openldap/schema /private/etc/openldap/schema"
+SCHEMA_PATHS="${srcdir}/../../lib/hdb ${srcdir} /etc/ldap/schema /etc/openldap/schema /private/etc/openldap/schema"
 
 test -d schema || mkdir schema
 
@@ -31,7 +31,7 @@ done
 
 touch modules.conf || exit 1
 
-slapadd -f ${srcdir}/slapd.conf < ${srcdir}/init.ldif || exit 0
+slapadd -d 0 -f ${srcdir}/slapd.conf < ${srcdir}/init.ldif || exit 0
 
 echo "starting slapd"
 slapd -d0 -f ${srcdir}/slapd.conf -h ldapi://.%2Fldap-socket &
