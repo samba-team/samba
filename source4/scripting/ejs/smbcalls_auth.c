@@ -55,7 +55,11 @@ static int ejs_doauth(MprVarHandle eid,
 		msg = messaging_client_init(tmp_ctx, ev);
 	}
 
-	nt_status = auth_context_create_methods(tmp_ctx, auth_types, ev, msg, &auth_context);
+	if (auth_types) {
+		nt_status = auth_context_create_methods(tmp_ctx, auth_types, ev, msg, &auth_context);
+	} else {
+		nt_status = auth_context_create(tmp_ctx, ev, msg, &auth_context);
+	}
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(auth, "report", mprString("Auth System Failure"));
@@ -173,7 +177,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	if (domain && (strcmp("SYSTEM USER", domain) == 0)) {
 		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, auth_types_unix);
 	} else {
-		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, lp_auth_methods());
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, NULL);
 	}
 
 	mpr_Return(eid, auth);
