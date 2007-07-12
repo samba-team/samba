@@ -55,9 +55,13 @@ proto (int sock, const char *hostname, const char *service)
     OM_uint32 maj_stat, min_stat;
     gss_name_t server;
     gss_buffer_desc name_token;
+    char *str;
 
-    name_token.length = asprintf ((char **)&name_token.value,
+    name_token.length = asprintf (&str,
 				  "%s@%s", service, hostname);
+    if (str == NULL)
+	errx(1, "out of memory");
+    name_token.value = str;
 
     maj_stat = gss_import_name (&min_stat,
 				&name_token,
