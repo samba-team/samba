@@ -307,6 +307,7 @@ struct ctdb_context {
 	struct ctdb_takeover takeover;
 	struct ctdb_tcp_list *tcp_list;
 	struct ctdb_client_ip *client_ip_list;
+	bool do_setsched;
 };
 
 struct ctdb_db_context {

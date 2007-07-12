@@ -644,8 +644,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 	block_signal(SIGPIPE);
 
-	/* try to set us up as realtime */
-	ctdb_set_realtime(true);
+	if (ctdb->do_setsched) {
+		/* try to set us up as realtime */
+		ctdb_set_realtime(true);
+	}
 
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);

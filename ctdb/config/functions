@@ -43,6 +43,7 @@ ctdb_wait_command() {
   		echo "ctdb daemon has died. Exiting wait for $service_name"
 		exit 1
 	  }
+	  [ $all_ok -eq 1 ] || sleep 1
   done
   echo "`/bin/date` Local service $service_name is up"
 }

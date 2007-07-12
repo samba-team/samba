@@ -47,6 +47,7 @@ static struct {
 	const char *logfile;
 	const char *recovery_lock_file;
 	const char *db_dir;
+	int         no_setsched;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -108,6 +109,7 @@ int main(int argc, const char *argv[])
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
+		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -223,6 +225,8 @@ int main(int argc, const char *argv[])
 		ctdb_set_logfile(ctdb, name);
 		talloc_free(name);
 	}
+
+	ctdb->do_setsched = !!options.no_setsched;
 
 	/* start the protocol running (as a child) */
 	return ctdb_start_daemon(ctdb, interactive?False:True);
