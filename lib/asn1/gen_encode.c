@@ -121,12 +121,12 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	break;
     case TInteger:
 	if(t->members) {
-	    char *s;
-	    asprintf(&s, "(const int*)%s", name);
-	    if(s == NULL)
-		errx(1, "out of memory");
-	    encode_primitive ("integer", s);
-	    free(s);
+	    fprintf(codefile,
+		    "{\n"
+		    "int enumint = (int)*%s;\n",
+		    name);
+	    encode_primitive ("integer", "&enumint");
+	    fprintf(codefile, "}\n;");
 	} else if (t->range == NULL) {
 	    encode_primitive ("heim_integer", name);
 	} else if (t->range->min == INT_MIN && t->range->max == INT_MAX) {

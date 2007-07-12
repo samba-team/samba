@@ -262,12 +262,14 @@ decode_type (const char *name, const Type *t, int optional,
     }
     case TInteger:
 	if(t->members) {
-	    char *s;
-	    asprintf(&s, "(int*)%s", name);
-	    if (s == NULL)
-		errx (1, "out of memory");
-	    decode_primitive ("integer", s, forwstr);
-	    free(s);
+	    fprintf(codefile,
+		    "{\n"
+		    "int enumint;\n");
+	    decode_primitive ("integer", "&enumint", forwstr);
+	    fprintf(codefile,
+		    "*%s = enumint;\n"
+		    "}\n",
+		    name);
 	} else if (t->range == NULL) {
 	    decode_primitive ("heim_integer", name, forwstr);
 	} else if (t->range->min == INT_MIN && t->range->max == INT_MAX) {
