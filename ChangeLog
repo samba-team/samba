@@ -1,5 +1,9 @@
 2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/v4_glue.c (_krb5_krb_rd_req): if ticket contains
+	address 0, its ticket less and don't really care about
+	from_addr. return better error codes.
+
 	* kpasswd/kpasswdd.c: Fix pointer vs strict alias rules.
 
 2007-07-11  Love Hörnquist Åstrand  <lha@it.su.se>
