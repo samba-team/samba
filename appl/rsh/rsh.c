@@ -300,6 +300,7 @@ send_krb5_auth(int s,
     krb5_auth_context auth_context = NULL;
     const char *protocol_string = NULL;
     krb5_flags ap_opts;
+    char *str;
 
     status = krb5_sname_to_principal(context,
 				     hostname,
@@ -319,16 +320,17 @@ send_krb5_auth(int s,
 				&do_encrypt);
     }
 
-    cksum_data.length = asprintf ((char **)&cksum_data.data,
+    cksum_data.length = asprintf (&str,
 				  "%u:%s%s%s",
 				  ntohs(socket_get_port(thataddr)),
 				  do_encrypt ? "-x " : "",
 				  cmd,
 				  remote_user);
-    if (cksum_data.length == -1) {
+    if (str == NULL) {
 	warnx ("%s: failed to allocate command", hostname);
 	return 1;
     }
+    cksum_data.data = str;
 
     ap_opts = 0;
 
