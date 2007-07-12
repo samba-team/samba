@@ -4955,17 +4955,24 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		allocation_size = smb_roundup(conn, allocation_size);
 	}
 
-	if(allocation_size == get_file_size(*psbuf)) {
-		return NT_STATUS_OK;
-	}
- 
 	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new allocation size to %.0f\n",
 			fname, (double)allocation_size ));
- 
+
 	if (fsp && fsp->fh->fd != -1) {
 		/* Open file handle. */
-		if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
-			return map_nt_error_from_unix(errno);
+		/* Only change if needed. */
+		if (allocation_size != get_file_size(*psbuf)) {
+			if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
+				return map_nt_error_from_unix(errno);
+			}
+		}
+		/* But always update the time. */
+		if (null_timespec(fsp->pending_modtime)) {
+			/*
+			 * This is equivalent to a write. Ensure it's seen immediately
+			 * if there are no pending writes.
+			 */
+			set_filetime(fsp->conn, fsp->fsp_name, timespec_current());
 		}
 		return NT_STATUS_OK;
 	}
@@ -4980,16 +4987,26 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 				FILE_ATTRIBUTE_NORMAL,
 				FORCE_OPLOCK_BREAK_TO_NONE,
 				NULL, &new_fsp);
- 
+
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
 		return status;
 	}
-	if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
-		status = map_nt_error_from_unix(errno);
-		close_file(new_fsp,NORMAL_CLOSE);
-		return status;
+
+	/* Only change if needed. */
+	if (allocation_size != get_file_size(*psbuf)) {
+		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
+			status = map_nt_error_from_unix(errno);
+			close_file(new_fsp,NORMAL_CLOSE);
+			return status;
+		}
 	}
+
+	/* Changing the allocation size should set the last mod time. */
+	/* Don't need to call set_filetime as this will be flushed on
+	 * close. */
+
+	fsp_set_pending_modtime(new_fsp, timespec_current());
 
 	close_file(new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
