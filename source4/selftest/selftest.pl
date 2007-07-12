@@ -505,7 +505,9 @@ die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
 die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
 
 $ENV{PREFIX} = $prefix;
+$ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
+$ENV{SRCDIR_ABS} = $srcdir_abs;
 
 my $tls_enabled = not $opt_quick;
 my $from_build_farm = (defined($ENV{RUN_FROM_BUILD_FARM}) and 
