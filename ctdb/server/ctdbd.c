@@ -226,7 +226,7 @@ int main(int argc, const char *argv[])
 		talloc_free(name);
 	}
 
-	ctdb->do_setsched = !!options.no_setsched;
+	ctdb->do_setsched = !options.no_setsched;
 
 	/* start the protocol running (as a child) */
 	return ctdb_start_daemon(ctdb, interactive?False:True);
