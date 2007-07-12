@@ -1,3 +1,11 @@
+2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/sys_term.c: GLIBC made the choice that ut_tv should be
+	shared between 32 and 64 bit platforms so now we can no longer use
+	struct timeval functions to compare or set/get data that uses
+	pointer (gettimeofday for example) since ut_tv is now not a struct
+	timeval but rather a struct { int32_t tv_sec; int32_t tv_usec; };
+
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnet/telnet_locl.h: Include roken.h before the local
