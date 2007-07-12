@@ -1,3 +1,7 @@
+2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* try to avoid aliasing of pointers enum {} vs int
+
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test.asn1: Test SIZE attribute for SEQ and OCTET STRING
