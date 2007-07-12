@@ -1,3 +1,7 @@
+2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftp/gssapi.c: Fix pointer vs strict alias rules.
+
 2007-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/security.c: if no mech have no session, its ok, just don't
