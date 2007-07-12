@@ -46,10 +46,12 @@ str2data (krb5_data *d,
 	  ...)
 {
     va_list args;
+    char *str;
 
     va_start(args, fmt);
-    d->length = vasprintf ((char **)&d->data, fmt, args);
+    d->length = vasprintf (&str, fmt, args);
     va_end(args);
+    d->data = str;
 }
 
 /*
