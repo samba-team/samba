@@ -155,7 +155,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	struct ldb_request *lreq;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
-	const char *errstr = NULL;
+	const char *scope_str, *errstr = NULL;
 	int success_limit = 1;
 	int result = -1;
 	int ldb_ret = -1;
@@ -176,25 +176,26 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	switch (req->scope) {
 		case LDAP_SEARCH_SCOPE_BASE:
-			DEBUG(10,("SearchRequest: scope: [BASE]\n"));
+			scope_str = "BASE";
 			scope = LDB_SCOPE_BASE;
 			success_limit = 0;
 			break;
 		case LDAP_SEARCH_SCOPE_SINGLE:
-			DEBUG(10,("SearchRequest: scope: [ONE]\n"));
+			scope_str = "ONE";
 			scope = LDB_SCOPE_ONELEVEL;
 			success_limit = 0;
 			break;
 		case LDAP_SEARCH_SCOPE_SUB:
-			DEBUG(10,("SearchRequest: scope: [SUB]\n"));
+			scope_str = "SUB";
 			scope = LDB_SCOPE_SUBTREE;
 			success_limit = 0;
 			break;
 	        default:
 			result = LDAP_PROTOCOL_ERROR;
 			errstr = "Invalid scope";
-			break;
+			goto reply;
 	}
+	DEBUG(10,("SearchRequest: scope: [%s]\n", scope_str));
 
 	if (req->num_attributes >= 1) {
 		attrs = talloc_array(local_ctx, const char *, req->num_attributes+1);
@@ -207,8 +208,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		attrs[i] = NULL;
 	}
 
-	DEBUG(5,("ldb_request dn=%s filter=%s\n", 
-		 req->basedn, ldb_filter_from_tree(call, req->tree)));
+	DEBUG(5,("ldb_request %s dn=%s filter=%s\n", 
+		 scope_str, req->basedn, ldb_filter_from_tree(call, req->tree)));
 
 	lreq = talloc(local_ctx, struct ldb_request);
 	NT_STATUS_HAVE_NO_MEMORY(lreq);

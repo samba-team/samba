@@ -1,7 +1,16 @@
 #!/bin/sh
 
+if [ $# -lt 2 ]; then
+cat <<EOF
+Usage: test_ldb.sh PROTOCOL SERVER [OPTIONS]
+EOF
+exit 1;
+fi
+
+
 p=$1
 SERVER=$2
+PREFIX=$3
 shift 2
 options="$*"
 
@@ -28,6 +37,8 @@ BASEDN=`bin/ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s bas
 echo "BASEDN is $BASEDN"
 
 check "Listing Users" bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER '(objectclass=user)' sAMAccountName || failed=`expr $failed + 1`
+
+check "Listing Users (sorted)" bin/ldbsearch -S $options $CONFIGURATION -H $p://$SERVER '(objectclass=user)' sAMAccountName || failed=`expr $failed + 1`
 
 check "Listing Groups" bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER '(objectclass=group)' sAMAccountName || failed=`expr $failed + 1`
 
