@@ -1438,7 +1438,6 @@ rmut(void)
 	utxp->ut_exit.e_exit = 0;
 #endif
 #endif
-	gettimeofday(&utxp->ut_tv, NULL);
 	gettimeofday (&tv, NULL);
 	utxp->ut_tv.tv_sec = tv.tv_sec;
 	utxp->ut_tv.tv_usec = tv.tv_usec;
