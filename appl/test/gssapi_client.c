@@ -110,13 +110,15 @@ proto (int sock, const char *hostname, const char *service)
     u_char init_buf[4];
     u_char acct_buf[4];
     gss_OID mech_oid;
+    char *str;
 
     mech_oid = select_mech(mech);
 
-    name_token.length = asprintf ((char **)&name_token.value,
+    name_token.length = asprintf (&str,
 				  "%s@%s", service, hostname);
-    if (name_token.length == -1)
+    if (str == NULL)
 	errx(1, "malloc - out of memory");
+    name_token.value = str;
 	
     maj_stat = gss_import_name (&min_stat,
 				&name_token,
