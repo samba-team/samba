@@ -1,5 +1,11 @@
-2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsh.c: Fix pointer vs strict alias rules.
+
+	* rshd.c: Fix pointer vs strict alias rules.
+
+2007-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* rshd.c: Declare iruserok if needed, based on bug report from
 	David Love.
 	
