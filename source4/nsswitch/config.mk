@@ -16,3 +16,19 @@ PRIVATE_DEPENDENCIES = \
 		LIBREPLACE_EXT
 # End BINARY nsstest
 #################################
+
+#################################
+# Start BINARY wbinfo
+[BINARY::wbinfo]
+INSTALLDIR = BINDIR
+OBJ_FILES = \
+		wbinfo.o
+PRIVATE_DEPENDENCIES = \
+		LIBSAMBA-UTIL \
+		LIBREPLACE_EXT \
+		LIBCLI_AUTH \
+		LIBPOPT \
+		POPT_SAMBA \
+		LIBWINBIND-CLIENT
+# End BINARY nsstest
+#################################
