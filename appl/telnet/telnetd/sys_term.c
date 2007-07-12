@@ -1276,6 +1276,7 @@ start_login(const char *host, int autologin, char *name)
     {
 	int pid = getpid();
 	struct utmpx utmpx;
+	struct timeval tv;
 	char *clean_tty;
 	
 	/*
@@ -1293,7 +1294,10 @@ start_login(const char *host, int autologin, char *name)
 	
 	utmpx.ut_type = LOGIN_PROCESS;
 	
-	gettimeofday (&utmpx.ut_tv, NULL);
+	gettimeofday (&tv, NULL);
+	utmpx.ut_tv.tv_sec = tv.tv_sec;
+	utmpx.ut_tv.tv_usec = tv.tv_usec;
+
 	if (pututxline(&utmpx) == NULL)
 	    fatal(net, "pututxline failed");
     }
@@ -1414,6 +1418,7 @@ rmut(void)
     non_save_utxp = getutxline(&utmpx);
     if (non_save_utxp) {
 	struct utmpx *utxp;
+	struct timeval tv;
 	char user0;
 
 	utxp = malloc(sizeof(struct utmpx));
@@ -1434,6 +1439,10 @@ rmut(void)
 #endif
 #endif
 	gettimeofday(&utxp->ut_tv, NULL);
+	gettimeofday (&tv, NULL);
+	utxp->ut_tv.tv_sec = tv.tv_sec;
+	utxp->ut_tv.tv_usec = tv.tv_usec;
+
 	pututxline(utxp);
 #ifdef WTMPX_FILE
 	utxp->ut_user[0] = user0;
