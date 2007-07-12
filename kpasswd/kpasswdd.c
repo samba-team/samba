@@ -123,18 +123,20 @@ make_result (krb5_data *data,
 	     uint16_t result_code,
 	     const char *expl)
 {
+    char *str;
     krb5_data_zero (data);
 
-    data->length = asprintf ((char **)&data->data,
+    data->length = asprintf (&str,
 			     "%c%c%s",
 			     (result_code >> 8) & 0xFF,
 			     result_code & 0xFF,
 			     expl);
 
-    if (data->data == NULL) {
+    if (str == NULL) {
 	krb5_warnx (context, "Out of memory generating error reply");
 	return 1;
-   }
+    }
+    data->data = str;
     return 0;
 }
 
