@@ -323,6 +323,7 @@ recv_krb5_auth (int s, u_char *buf,
     krb5_error_code status;
     krb5_data cksum_data;
     krb5_principal server;
+    char *str;
 
     if (memcmp (buf, "\x00\x00\x00\x13", 4) != 0)
 	return -1;
@@ -381,13 +382,14 @@ recv_krb5_auth (int s, u_char *buf,
 		       krb5_get_err_text(context, status));
 
     
-    cksum_data.length = asprintf ((char **)&cksum_data.data,
+    cksum_data.length = asprintf (&str,
 				  "%u:%s%s",
 				  ntohs(socket_get_port (thisaddr)),
 				  *cmd,
 				  *server_username);
-    if (cksum_data.length == -1)
+    if (str == NULL)
 	syslog_and_die ("asprintf: out of memory");
+    cksum_data.data = str;
 
     status = krb5_verify_authenticator_checksum(context, 
 						auth_context,
