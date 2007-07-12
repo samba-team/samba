@@ -4,6 +4,9 @@
  * Copyright (C) Jiri Sasek, 2007
  * based on the foobar.c module which is copyrighted by Volker Lendecke
  *
+ * Many thanks to Axel Apitz for help to fix the special ace's handling
+ * issues.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
@@ -71,7 +74,19 @@ static size_t zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 		aceprop.aceFlags = (uint32) acebuf[i].a_flags;
 		aceprop.aceMask  = (uint32) acebuf[i].a_access_mask;
 		aceprop.who.id   = (uint32) acebuf[i].a_who;
-		aceprop.flags    = 0;
+
+		if(aceprop.aceFlags & ACE_OWNER) {
+			aceprop.flags = SMB_ACE4_ID_SPECIAL;
+			aceprop.who.special_id = SMB_ACE4_WHO_OWNER;
+		} else if(aceprop.aceFlags & ACE_GROUP) {
+			aceprop.flags = SMB_ACE4_ID_SPECIAL;
+			aceprop.who.special_id = SMB_ACE4_WHO_GROUP;
+		} else if(aceprop.aceFlags & ACE_EVERYONE) {
+			aceprop.flags = SMB_ACE4_ID_SPECIAL;
+			aceprop.who.special_id = SMB_ACE4_WHO_EVERYONE;
+		} else {
+			aceprop.flags	= 0;
+		}
 		if(smb_add_ace4(pacl, &aceprop) == NULL) return 0;
 	}
 
@@ -103,6 +118,23 @@ static BOOL zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 		acebuf[i].a_flags       = aceprop->aceFlags;
 		acebuf[i].a_access_mask = aceprop->aceMask;
 		acebuf[i].a_who         = aceprop->who.id;
+		if(aceprop->flags & SMB_ACE4_ID_SPECIAL) {
+			switch(aceprop->who.special_id) {
+			case SMB_ACE4_WHO_EVERYONE:
+				acebuf[i].a_flags |= ACE_EVERYONE;
+				break;
+			case SMB_ACE4_WHO_OWNER:
+				acebuf[i].a_flags |= ACE_OWNER;
+				break;
+			case SMB_ACE4_WHO_GROUP:
+				acebuf[i].a_flags |= ACE_GROUP;
+				break;
+			default:
+				DEBUG(8, ("unsupported special_id %d\n", \
+					aceprop->who.special_id));
+				continue; /* don't add it !!! */
+			}
+		}
 	}
 	SMB_ASSERT(i == naces);
 
@@ -178,8 +210,23 @@ static vfs_op_tuple zfsacl_ops[] = {
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
+/* != 0 if this module will be compiled as static */
+
+#define STATIC 0
+
+#if STATIC
 NTSTATUS vfs_zfsacl_init(void);
-NTSTATUS vfs_zfsacl_init(void)
+#else
+NTSTATUS init_module(void);
+#endif
+
+NTSTATUS
+#if STATIC
+	vfs_zfsacl_init
+#else
+	init_module
+#endif
+		(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "zfsacl",
 				zfsacl_ops);
