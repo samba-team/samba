@@ -27,14 +27,15 @@ static int net_ads_gpo_usage(int argc, const char **argv)
 	d_printf(
 		"net ads gpo <COMMAND>\n"\
 "<COMMAND> can be either:\n"\
-"  ADDLINK      Link a container to a GPO\n"\
-/* "  APPLY        Apply all GPOs\n"\ */
-/* "  DELETELINK   Delete a gPLink from a container\n"\ */
-"  REFRESH      Lists all GPOs assigned to an account and downloads them\n"\
+"  APPLY        Apply GPOs for machine/user\n"\
 "  GETGPO       Lists specified GPO\n"\
-"  GETLINK      Lists gPLink of a containter\n"\
 "  HELP         Prints this help message\n"\
-"  LIST         Lists all GPOs\n"\
+"  LINKADD      Link a container to a GPO\n"\
+/* "  LINKDELETE   Delete a gPLink from a container\n"\ */
+"  LINKGET      Lists gPLink of a containter\n"\
+"  LIST         Lists all GPOs for machine/user\n"\
+"  LISTALL      Lists all GPOs on a DC\n"\
+"  REFRESH      Lists all GPOs assigned to an account and downloads them\n"\
 "\n"
 		);
 	return -1;
@@ -119,7 +120,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 	return 0;
 }
 
-static int net_ads_gpo_list(int argc, const char **argv)
+static int net_ads_gpo_list_all(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -137,10 +138,11 @@ static int net_ads_gpo_list(int argc, const char **argv)
 		"name",
 		"gPCMachineExtensionNames",
 		"gPCUserExtensionNames",
+		"ntSecurityDescriptor",
 		NULL
 	};
 
-	mem_ctx = talloc_init("net_ads_gpo_list");
+	mem_ctx = talloc_init("net_ads_gpo_list_all");
 	if (mem_ctx == NULL) {
 		return -1;
 	}
@@ -150,9 +152,13 @@ static int net_ads_gpo_list(int argc, const char **argv)
 		goto out;
 	}
 
-	status = ads_do_search_all(ads, ads->config.bind_path,
-				   LDAP_SCOPE_SUBTREE,
-				   "(objectclass=groupPolicyContainer)", attrs, &res);
+	status = ads_do_search_all_sd_flags(ads, ads->config.bind_path,
+					    LDAP_SCOPE_SUBTREE,
+					    "(objectclass=groupPolicyContainer)",
+					    attrs,
+					    DACL_SECURITY_INFORMATION,
+					    &res);
+
 	if (!ADS_ERR_OK(status)) {
 		d_printf("search failed: %s\n", ads_errstr(status));
 		goto out;
@@ -172,12 +178,12 @@ static int net_ads_gpo_list(int argc, const char **argv)
 		status = ads_parse_gpo(ads, mem_ctx, msg, dn, &gpo);
 
 		if (!ADS_ERR_OK(status)) {
-			d_printf("parse failed: %s\n", ads_errstr(status));
+			d_printf("ads_parse_gpo failed: %s\n", ads_errstr(status));
 			ads_memfree(ads, dn);
 			goto out;
 		}	
 
-		dump_gpo(mem_ctx, &gpo, 1);
+		dump_gpo(ads, mem_ctx, &gpo, 0);
 		ads_memfree(ads, dn);
 	}
 
@@ -190,8 +196,62 @@ out:
 	return 0;
 }
 
-#if 0 /* not yet */
+static int net_ads_gpo_list(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	TALLOC_CTX *mem_ctx;
+	const char *dn = NULL;
+	uint32 uac = 0;
+	uint32 flags = 0;
+	struct GROUP_POLICY_OBJECT *gpo_list;
 
+	if (argc < 1) {
+		printf("usage: net ads gpo list <username|machinename>\n");
+		return -1;
+	}
+
+	mem_ctx = talloc_init("net_ads_gpo_list");
+	if (mem_ctx == NULL) {
+		goto out;
+	}
+
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
+		flags |= GPO_LIST_FLAG_MACHINE;
+	}
+
+	printf("%s: '%s' has dn: '%s'\n", 
+		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
+		argv[0], dn);
+
+	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, &gpo_list);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	dump_gpo_list(ads, mem_ctx, gpo_list, 0);
+
+out:
+	ads_msgfree(ads, res);
+
+	talloc_destroy(mem_ctx);
+	ads_destroy(&ads);
+	
+	return 0;
+}
+
+#if 0 /* not yet */
 static int net_ads_gpo_apply(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -249,7 +309,7 @@ out:
 
 #endif
 
-static int net_ads_gpo_get_link(int argc, const char **argv)
+static int net_ads_gpo_link_get(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -257,7 +317,7 @@ static int net_ads_gpo_get_link(int argc, const char **argv)
 	struct GP_LINK gp_link;
 
 	if (argc < 1) {
-		printf("usage: net ads gpo getlink <linkname>\n");
+		printf("usage: net ads gpo linkget <linkname>\n");
 		return -1;
 	}
 
@@ -286,7 +346,7 @@ out:
 	return 0;
 }
 
-static int net_ads_gpo_add_link(int argc, const char **argv)
+static int net_ads_gpo_link_add(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -294,7 +354,7 @@ static int net_ads_gpo_add_link(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 
 	if (argc < 2) {
-		printf("usage: net ads gpo addlink <linkdn> <gpodn> [options]\n");
+		printf("usage: net ads gpo linkadd <linkdn> <gpodn> [options]\n");
 		printf("note: DNs must be provided properly escaped.\n      See RFC 4514 for details\n");
 		return -1;
 	}
@@ -315,7 +375,7 @@ static int net_ads_gpo_add_link(int argc, const char **argv)
 
 	status = ads_add_gpo_link(ads, mem_ctx, argv[0], argv[1], gpo_opt);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("add link failed: %s\n", ads_errstr(status));
+		d_printf("link add failed: %s\n", ads_errstr(status));
 		goto out;
 	}
 
@@ -328,7 +388,7 @@ out:
 
 #if 0 /* broken */
 
-static int net_ads_gpo_delete_link(int argc, const char **argv)
+static int net_ads_gpo_link_delete(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -396,7 +456,7 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 		goto out;
 	}	
 
-	dump_gpo(mem_ctx, &gpo, 1);
+	dump_gpo(ads, mem_ctx, &gpo, 1);
 
 out:
 	talloc_destroy(mem_ctx);
@@ -408,14 +468,15 @@ out:
 int net_ads_gpo(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"LIST", net_ads_gpo_list},
-		{"REFRESH", net_ads_gpo_refresh},
-		{"ADDLINK", net_ads_gpo_add_link},
-		/* {"DELETELINK", net_ads_gpo_delete_link}, */
-		{"GETLINK", net_ads_gpo_get_link},
+		/* {"APPLY", net_ads_gpo_apply}, */
 		{"GETGPO", net_ads_gpo_get_gpo},
 		{"HELP", net_ads_gpo_usage},
-		/* {"APPLY", net_ads_gpo_apply}, */
+		{"LINKADD", net_ads_gpo_link_add},
+		/* {"LINKDELETE", net_ads_gpo_link_delete}, */
+		{"LINKGET", net_ads_gpo_link_get},
+		{"LIST", net_ads_gpo_list},
+		{"LISTALL", net_ads_gpo_list_all},
+		{"REFRESH", net_ads_gpo_refresh},
 		{NULL, NULL}
 	};
 
