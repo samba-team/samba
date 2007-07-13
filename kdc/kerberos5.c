@@ -995,7 +995,9 @@ _kdc_as_rep(krb5_context context,
 	if (b->cname->name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 	    if (b->cname->name_string.len != 1) {
 		kdc_log(context, config, 0,
-			"AS-REQ malformed canon request from %s", from);
+			"AS-REQ malformed canon request from %s, "
+			"enterprise name with %d name components", 
+			from, b->cname->name_string.len);
 		ret = KRB5_PARSE_MALFORMED;
 		goto out;
 	    }
@@ -1431,6 +1433,12 @@ _kdc_as_rep(krb5_context context,
     copy_Realm(&server->entry.principal->realm, &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname, 
 				  server->entry.principal);
+    /* java 1.6 expects the name to be the same type, lets allow that
+     * uncomplicated name-types. */
+#define CNT(sp,t) (((sp)->sname->name_type) == KRB5_NT_##t)
+    if (CNT(b, UNKNOWN) || CNT(b, PRINCIPAL) || CNT(b, SRV_INST) || CNT(b, SRV_HST) || CNT(b, SRV_XHST))
+	rep.ticket.sname.name_type = b->sname->name_type;
+#undef CNT
 
     et.flags.initial = 1;
     if(client->entry.flags.forwardable && server->entry.flags.forwardable)
