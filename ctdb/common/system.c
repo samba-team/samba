@@ -219,7 +219,7 @@ int ctdb_sys_send_tcp(int s,
 		pkt.tcp.rst      = 1;
 	}
 	pkt.tcp.doff     = sizeof(pkt.tcp)/4;
-	pkt.tcp.window   = htons(1234);
+	pkt.tcp.window   = htons(1234); /* this makes it easier to spot in a sniffer */
 	pkt.tcp.check    = tcp_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp), &pkt.ip);
 
 	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
@@ -256,15 +256,16 @@ bool ctdb_sys_have_ip(const char *ip)
 	return ret == 0;
 }
 
-/* This function is used to open a raw socket to capture from
+/* 
+   This function is used to open a raw socket to capture from
  */
 int ctdb_sys_open_capture_socket(void)
 {
 	int s;
 
 	/* Open a socket to capture all traffic */
-	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-	if (s == -1){
+	s = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	if (s == -1) {
 		DEBUG(0,(__location__ " failed to open raw socket\n"));
 		return -1;
 	}
@@ -275,7 +276,8 @@ int ctdb_sys_open_capture_socket(void)
 	return s;
 }
 
-/* This function is used to open a raw socket to send tickles from
+/* 
+   This function is used to open a raw socket to send tickles from
  */
 int ctdb_sys_open_sending_socket(void)
 {
@@ -303,8 +305,11 @@ int ctdb_sys_open_sending_socket(void)
 	return s;
 }
 
-
-int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp)
+/*
+  called when the raw socket becomes readable
+ */
+int ctdb_sys_read_tcp_packet(int s, struct sockaddr_in *src, struct sockaddr_in *dst,
+			     uint32_t *ack_seq, uint32_t *seq)
 {
 	int ret;
 #define RCVPKTSIZE 100
@@ -312,15 +317,15 @@ int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp)
 	struct ether_header *eth;
 	struct iphdr *ip;
 	struct tcphdr *tcp;
-	struct ctdb_killtcp_connection *conn;
 
-	ret = recv(killtcp->capture_fd, pkt, RCVPKTSIZE, MSG_TRUNC);
+	ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
 	if (ret < sizeof(*eth)+sizeof(*ip)) {
 		return -1;
 	}
 
 	/* Ethernet */
 	eth = (struct ether_header *)pkt;
+
 	/* We only want IP packets */
 	if (ntohs(eth->ether_type) != ETHERTYPE_IP) {
 		return -1;
@@ -341,43 +346,25 @@ int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp)
 	if (ip->protocol != IPPROTO_TCP) {
 		return -1;
 	}
+
 	/* make sure its not a short packet */
 	if (offsetof(struct tcphdr, ack_seq) + 4 + 
 	    (ip->ihl*4) + sizeof(*eth) > ret) {
 		return -1;
 	}
+
 	/* TCP */
 	tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
-		
 
-	/* loop over all connections and see if we find one that matches */
-	for(conn = killtcp->connections; conn; conn = conn->next) {
-		/* We only want packets sent from a guy we have tickled */
-		if (ip->saddr != conn->dst.sin_addr.s_addr) {
-			continue;
-		}
-		/* We only want packets sent to us */
-		if (ip->daddr != conn->src.sin_addr.s_addr) {
-			continue;
-		}
-		/* We only want replies from a port we tickled */
-		if (tcp->source != conn->dst.sin_port) {
-			continue;
-		}
-		if (tcp->dest != conn->src.sin_port) {
-			continue;
-		}
+	/* tell the caller which one we've found */
+	src->sin_addr.s_addr = ip->saddr;
+	src->sin_port        = tcp->source;
+	dst->sin_addr.s_addr = ip->daddr;
+	dst->sin_port        = tcp->dest;
+	*ack_seq             = tcp->ack_seq;
+	*seq                 = tcp->seq;
 
-		/* This one has been tickled !
-		   now reset him and remove him from the list.
-		 */
-		ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, &conn->src, tcp->ack_seq, tcp->seq, 1);
-		talloc_free(conn);
-
-		return 0;
-	}
-
-	return -1;
+	return 0;
 }
 
 

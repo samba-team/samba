@@ -307,6 +307,8 @@ struct ctdb_context {
 	struct ctdb_takeover takeover;
 	struct ctdb_tcp_list *tcp_list;
 	struct ctdb_client_ip *client_ip_list;
+	bool do_setsched;
+	void *saved_scheduler_param;
 	struct ctdb_kill_tcp *killtcp;
 };
 
@@ -957,7 +959,8 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
 int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
-void ctdb_set_realtime(bool enable);
+void ctdb_set_scheduler(struct ctdb_context *ctdb);
+void ctdb_restore_scheduler(struct ctdb_context *ctdb);
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
@@ -1041,32 +1044,10 @@ void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_port(const char *s, struct sockaddr_in *ip);
 
-
-/*
-  list of tcp connections to kill
- */
-struct ctdb_killtcp_connection {
-	struct ctdb_killtcp_connection *prev, *next;
-	struct ctdb_context *ctdb;
-	struct sockaddr_in src;
-	struct sockaddr_in dst;
-	int count;
-};
-
-/* structure containing the listening socket and the list of tcp connections
-   that the ctdb daemon is to kill
-*/
-struct ctdb_kill_tcp {
-	struct ctdb_context *ctdb;
-	int capture_fd;
-	int sending_fd;
-	struct fd_event *fde;
-	struct ctdb_killtcp_connection *connections;
-};
 int ctdb_sys_open_capture_socket(void);
 int ctdb_sys_open_sending_socket(void);
-int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, struct sockaddr_in *src, struct sockaddr_in *dst);
-int ctdb_sys_read_tcp_packet(struct ctdb_kill_tcp *killtcp);
+int ctdb_sys_read_tcp_packet(int s, struct sockaddr_in *src, struct sockaddr_in *dst,
+			     uint32_t *ack_seq, uint32_t *seq);
 
 int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 

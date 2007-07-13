@@ -41,8 +41,6 @@ loadconfig ctdb
 # check networking is up (for redhat)
 [ "${NETWORKING}" = "no" ] && exit 0
 
-CTDB_OPTIONS=""
-
 [ -z "$CTDB_RECOVERY_LOCK" ] && {
     echo "You must configure the location of the CTDB_RECOVERY_LOCK"
     exit 1
