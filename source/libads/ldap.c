@@ -3310,7 +3310,7 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 	}
 
 	if (ads_count_replies(ads, res) != 1) {
-		printf("no result\n");
+		status = ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 		goto out;
 	}
 
