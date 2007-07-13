@@ -211,13 +211,23 @@ void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo, int debuglev
 	DEBUGADD(lvl,("dspath:\t\t%s\n", gpo->ds_path));
 
 	DEBUGADD(lvl,("options:\t\t%d ", gpo->options));
-	if (gpo->options & GPFLAGS_USER_SETTINGS_DISABLED) {
-		DEBUGADD(lvl,("GPFLAGS_USER_SETTINGS_DISABLED ")); 
+	switch (gpo->options) {
+		case GPFLAGS_ALL_ENABLED:
+			DEBUGADD(lvl,("GPFLAGS_ALL_ENABLED\n"));
+			break;
+		case GPFLAGS_USER_SETTINGS_DISABLED:
+			DEBUGADD(lvl,("GPFLAGS_USER_SETTINGS_DISABLED\n"));
+			break;
+		case GPFLAGS_MACHINE_SETTINGS_DISABLED:
+			DEBUGADD(lvl,("GPFLAGS_MACHINE_SETTINGS_DISABLED\n"));
+			break;
+		case GPFLAGS_ALL_DISABLED:
+			DEBUGADD(lvl,("GPFLAGS_ALL_DISABLED\n"));
+			break;
+		default:
+			DEBUGADD(lvl,("unknown option: %d\n", gpo->options));
+			break;
 	}
-	if (gpo->options & GPFLAGS_MACHINE_SETTINGS_DISABLED) {
-		DEBUGADD(lvl,("GPFLAGS_MACHINE_SETTINGS_DISABLED")); 
-	}
-	DEBUGADD(lvl,("\n"));
 
 	DEBUGADD(lvl,("link:\t\t\t%s\n", gpo->link));
 	DEBUGADD(lvl,("link_type:\t\t%d ", gpo->link_type));
