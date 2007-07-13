@@ -506,55 +506,22 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 {
 	ADS_STATUS status;
 	struct GROUP_POLICY_OBJECT *gpo_list;
-	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
-	char *filter, *dn;
-	LDAPMessage *res = NULL;
-	uint32 uac;
+	const char *dn = NULL;
+	uint32 uac = 0;
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))", hostname);
-	if (filter == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	status = ads_do_search_all(ads, ads->config.bind_path,
-				   LDAP_SCOPE_SUBTREE,
-				   filter, attrs, &res);
-	
+	status = ads_find_samaccount(ads, mem_ctx, hostname, &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
 
-	if (ads_count_replies(ads, res) != 1) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
-	}
-
-	dn = ads_get_dn(ads, res);
-	if (dn == NULL) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	if (!ads_pull_uint32(ads, res, "userAccountControl", &uac)) {
-		ads_msgfree(ads, res);
-		ads_memfree(ads, dn);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	ads_msgfree(ads, res);
-
 	if (!(uac & UF_WORKSTATION_TRUST_ACCOUNT)) {
-		ads_memfree(ads, dn);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
 	status = ads_get_gpo_list(ads, mem_ctx, dn, GPO_LIST_FLAG_MACHINE, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
-		ads_memfree(ads, dn);
 		return status;
 	}
-
-	ads_memfree(ads, dn);
 
 	status = gpo_process_gpo_list(ads, mem_ctx, gpo_list, 
 				      cse_gpo_name_to_guid_string("Security"), 
