@@ -69,7 +69,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 {
 	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
 							struct ctdb_takeover_arp);
-	int ret;
+	int s, ret;
 	struct ctdb_tcp_list *tcp;
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->ctdb->takeover.interface);
@@ -77,25 +77,32 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 		DEBUG(0,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
 	}
 
+	s = ctdb_sys_open_sending_socket();
+	if (s == -1) {
+		DEBUG(0,(__location__ " failed to open raw socket for sending tickles\n"));
+		return;
+	}
+
 	for (tcp=arp->tcp_list;tcp;tcp=tcp->next) {
 		DEBUG(2,("sending tcp tickle ack for %u->%s:%u\n",
 			 (unsigned)ntohs(tcp->daddr.sin_port), 
 			 inet_ntoa(tcp->saddr.sin_addr),
 			 (unsigned)ntohs(tcp->saddr.sin_port)));
-		ret = ctdb_sys_send_tcp(&tcp->saddr, &tcp->daddr, 0, 0, 0);
+		ret = ctdb_sys_send_tcp(s, &tcp->saddr, &tcp->daddr, 0, 0, 0);
 		if (ret != 0) {
 			DEBUG(0,(__location__ " Failed to send tcp tickle ack for %s\n",
 				 inet_ntoa(tcp->saddr.sin_addr)));
 		}
 	}
 
+	close(s);
 	arp->count++;
 
 	if (arp->count == CTDB_ARP_REPEAT) {
 		talloc_free(arp);
 		return;
 	}
-	
+
 	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover.last_ctx, 
 			timeval_current_ofs(CTDB_ARP_INTERVAL, 0), 
 			ctdb_control_send_arp, arp);
@@ -679,6 +686,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 	return 0;
 }
 
+
 /*
   called by a daemon to inform us of a TCP connection that one of its
   clients managing that should tickled with an ACK when IP takeover is
@@ -795,12 +803,14 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 /*
   get list of public IPs
  */
-int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata)
+int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, 
+				    struct ctdb_req_control *c, TDB_DATA *outdata)
 {
 	int i, len;
 	struct ctdb_all_public_ips *ips;
 
-	len = offsetof(struct ctdb_all_public_ips, ips) + ctdb->num_nodes*sizeof(struct ctdb_public_ip);
+	len = offsetof(struct ctdb_all_public_ips, ips) + 
+		ctdb->num_nodes*sizeof(struct ctdb_public_ip);
 
 	ips = talloc_zero_size(outdata, len);
 	CTDB_NO_MEMORY(ctdb, ips);
@@ -814,9 +824,233 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_c
 		ips->ips[i].takeover_vnn = ctdb->nodes[i]->takeover_vnn;
 		ips->ips[i].sin.sin_family = AF_INET;
 		if (ctdb->nodes[i]->public_address) {
-			inet_aton(ctdb->nodes[i]->public_address, &ips->ips[i].sin.sin_addr);
+			inet_aton(ctdb->nodes[i]->public_address, 
+				  &ips->ips[i].sin.sin_addr);
 		}
 	}
+
+	return 0;
+}
+
+
+
+
+/*
+  list of tcp connections to kill
+ */
+struct ctdb_killtcp_connection {
+	struct ctdb_killtcp_connection *prev, *next;
+	struct ctdb_context *ctdb;
+	struct sockaddr_in src;
+	struct sockaddr_in dst;
+	int count;
+};
+
+/* 
+   structure containing the listening socket and the list of tcp connections
+   that the ctdb daemon is to kill
+*/
+struct ctdb_kill_tcp {
+	struct ctdb_context *ctdb;
+	int capture_fd;
+	int sending_fd;
+	struct fd_event *fde;
+	struct ctdb_killtcp_connection *connections;
+};
+
+/*
+  called when we get a read event on the raw socket
+ */
+static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde, 
+				uint16_t flags, void *private_data)
+{
+	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
+	struct sockaddr_in src, dst;
+	struct ctdb_killtcp_connection *conn;
+	uint32_t ack_seq, seq;
+
+	if (!(flags & EVENT_FD_READ)) {
+		return;
+	}
+
+	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd, &src, &dst,
+				     &ack_seq, &seq) != 0) {
+		/* probably a non-tcp ACK packet */
+		return;
+	}
+
+	/* loop over all connections and see if we find one that matches */
+	for (conn = killtcp->connections; conn; conn = conn->next) {
+		/* We only want packets sent from a guy we have tickled */
+		if (src.sin_addr.s_addr != conn->dst.sin_addr.s_addr) {
+			continue;
+		}
+		/* We only want packets sent to us */
+		if (dst.sin_addr.s_addr != conn->src.sin_addr.s_addr) {
+			continue;
+		}
+		/* We only want replies from a port we tickled */
+		if (src.sin_port != conn->dst.sin_port) {
+			continue;
+		}
+		if (dst.sin_port != conn->src.sin_port) {
+			continue;
+		}
+
+		/* This one has been tickled !
+		   now reset him and remove him from the list.
+		 */
+		ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, 
+				  &conn->src, ack_seq, seq, 1);
+		talloc_free(conn);
+		break;
+	}
+}
+
+
+/* called every second until all sentenced connections have been reset
+ */
+static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct timed_event *te, 
+					      struct timeval t, void *private_data)
+{
+	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
+	struct ctdb_killtcp_connection *conn, *next;
+
+	/* loop over all connections sending tickle ACKs */
+	for (conn = killtcp->connections; conn; conn = next) {
+		next = conn->next;
+		conn->count++;
+		if (conn->count > 5) {
+			talloc_free(conn);
+			continue;
+		}
+		ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, &conn->src, 0, 0, 0);
+	}
+
+	/* If there are no more connections to kill we can remove the
+	   entire killtcp structure
+	 */
+	if (killtcp->connections == NULL) {
+		talloc_free(killtcp);
+		return;
+	}
+
+	/* try tickling them again in a seconds time
+	 */
+	event_add_timed(killtcp->ctdb->ev, killtcp, timeval_current_ofs(1, 0), 
+			ctdb_tickle_sentenced_connections, killtcp);
+}
+
+/*
+  destroy the killtcp structure
+ */
+static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
+{
+	if (killtcp->sending_fd != -1) {
+		close(killtcp->sending_fd);
+		killtcp->sending_fd = -1;
+	}
+	killtcp->ctdb->killtcp = NULL;
+	return 0;
+}
+
+/*
+  destroy a killtcp connection structure
+ */
+static int ctdb_killtcp_connection_destructor(struct ctdb_killtcp_connection *conn)
+{
+	DLIST_REMOVE(conn->ctdb->killtcp->connections, conn);
+	return 0;
+}
+
+/*
+  add a tcp socket to the list of connections we will kill on failover
+ */
+static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, 
+				       struct sockaddr_in *src, struct sockaddr_in *dst)
+{
+	struct ctdb_kill_tcp *killtcp = ctdb->killtcp;
+	struct ctdb_killtcp_connection *conn;
+	
+	/* If this is the first connection to kill we must allocate
+	   a new structure
+	 */
+	if (killtcp == NULL) {
+		killtcp = talloc(ctdb, struct ctdb_kill_tcp);
+		CTDB_NO_MEMORY(ctdb, killtcp);
+
+		killtcp->ctdb        = ctdb;
+		killtcp->capture_fd  = -1;
+		killtcp->sending_fd  = -1;
+		killtcp->connections = NULL;
+		ctdb->killtcp        = killtcp;
+		talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
+	}
+
+	conn = talloc(killtcp, struct ctdb_killtcp_connection);
+	CTDB_NO_MEMORY(ctdb, conn);
+	conn->src   = *src;
+	conn->dst   = *dst;
+	conn->ctdb  = ctdb;
+	conn->count = 0;
+	talloc_set_destructor(conn, ctdb_killtcp_connection_destructor);
+	DLIST_ADD(killtcp->connections, conn);
+
+	/* 
+	   If we dont have a socket to send from yet we must create it
+	 */
+	if (killtcp->sending_fd == -1) {
+		killtcp->sending_fd = ctdb_sys_open_sending_socket();
+		if (killtcp->sending_fd == -1) {
+			DEBUG(0,(__location__ " Failed to open sending socket for killtcp\n"));
+			goto failed;
+		}
+	}
+
+	/* 
+	   If we dont have a socket to listen on yet we must create it
+	 */
+	if (killtcp->capture_fd == -1) {
+		killtcp->capture_fd = ctdb_sys_open_capture_socket();
+		if (killtcp->capture_fd == -1) {
+			DEBUG(0,(__location__ " Failed to open capturing socket for killtcp\n"));
+			goto failed;
+		}
+	}
+
+
+	if (killtcp->fde == NULL) {
+		killtcp->fde = event_add_fd(ctdb->ev, killtcp, killtcp->capture_fd, 
+					    EVENT_FD_READ | EVENT_FD_AUTOCLOSE, 
+					    capture_tcp_handler, killtcp);
+
+		/* We also need to set up some events to tickle all these connections
+		   until they are all reset
+		*/
+		event_add_timed(ctdb->ev, killtcp, timeval_current_ofs(0, 0), 
+				ctdb_tickle_sentenced_connections, killtcp);
+	}
+
+	/* tickle him once now */
+	ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, &conn->src, 0, 0, 0);
+
+	return 0;
+
+failed:
+	talloc_free(ctdb->killtcp);
+	ctdb->killtcp = NULL;
+	return -1;
+}
+
+/*
+  called by a daemon to inform us of a TCP connection that one of its
+  clients managing that should reset when IP takeover is done
+ */
+int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_killtcp *killtcp = (struct ctdb_control_killtcp *)indata.dptr;
+
+	ctdb_killtcp_add_connection(ctdb, &killtcp->src, &killtcp->dst);
 
 	return 0;
 }

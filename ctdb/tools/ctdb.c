@@ -307,32 +307,27 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret, numrst;
-	struct sockaddr_in src, dst;
+	int ret;
+	struct ctdb_control_killtcp killtcp;
 
-	if (argc < 3) {
+	if (argc < 2) {
 		usage();
 	}
 
-	if (!parse_ip_port(argv[0], &src)) {
+	if (!parse_ip_port(argv[0], &killtcp.src)) {
 		printf("Bad IP:port '%s'\n", argv[0]);
 		return -1;
 	}
 
-	if (!parse_ip_port(argv[1], &dst)) {
+	if (!parse_ip_port(argv[1], &killtcp.dst)) {
 		printf("Bad IP:port '%s'\n", argv[1]);
 		return -1;
 	}
 
-	numrst = strtoul(argv[2], NULL, 0);
-
-	for (i=0;i<numrst;i++) {
-		ret = ctdb_sys_kill_tcp(ctdb->ev, &src, &dst);
-
-		printf("ret:%d\n", ret);
-		if (ret==0) {
-			return 0;
-		}
+	ret = ctdb_ctrl_killtcp(ctdb, TIMELIMIT(), options.vnn, &killtcp);
+	if (ret != 0) {
+		printf("Unable to killtcp from node %u\n", options.vnn);
+		return ret;
 	}
 
 	return -1;
@@ -343,7 +338,7 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int s, ret;
 	struct sockaddr_in src, dst;
 
 	if (argc < 2) {
@@ -360,7 +355,14 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = ctdb_sys_send_tcp(&src, &dst, 0, 0, 0);
+	s = ctdb_sys_open_sending_socket();
+	if (s == -1) {
+		printf("Failed to open socket for sending tickle\n");
+		return 0;
+	}
+
+	ret = ctdb_sys_send_tcp(s, &src, &dst, 0, 0, 0);
+	close(s);
 	if (ret==0) {
 		return 0;
 	}
@@ -890,7 +892,7 @@ static const struct {
 	{ "recover",         control_recover,           true,  "force recovery" },
 	{ "freeze",          control_freeze,            true,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
-	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection. Try <num> times.", "<srcip:port> <dstip:port> <num>" },
+	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 };
 

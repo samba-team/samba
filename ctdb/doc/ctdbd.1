@@ -1,6 +1,6 @@
 .\"     Title: ctdbd
 .\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.72.0 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
 .\"      Date: 07/10/2007
 .\"    Manual: 
 .\"    Source: 
@@ -31,91 +31,91 @@ ctdbd is the main component in clustered Samba that provides a high\-awailabilit
 .SH "OPTIONS"
 .PP
 \-? \-\-help
-.RS 4
+.RS 3n
 Print some help text to the screen.
 .RE
 .PP
 \-\-usage
-.RS 4
+.RS 3n
 Print useage information to the screen.
 .RE
 .PP
 \-\-reclock=<filename>
-.RS 4
+.RS 3n
 This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery\-master. This file must be stored on shared storage.
 .RE
 .PP
 \-\-nlist=<filename>
-.RS 4
+.RS 3n
 This file contains a list of the private ip addresses of every node in the cluster. There is one line/ip address for each node. This file must be the same for all nodes in the cluster.
 .sp
 This file is usually /etc/ctdb/nodes .
 .RE
 .PP
 \-\-dbdir=<directory>
-.RS 4
+.RS 3n
 This is the directory on local storage where ctdbd keeps the local copy of the TDB databases. This directory is local for each node and should not be stored on the shared cluster filesystem.
 .sp
 This directory would usually be /var/ctdb .
 .RE
 .PP
 \-i \-\-interactive
-.RS 4
+.RS 3n
 By default ctdbd will detach itself from the shell and run in the background as a daemon. This option makes ctdbd to start in interactive mode.
 .RE
 .PP
 \-\-public_addresses=<filename>
-.RS 4
+.RS 3n
 When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains one entry for each node in the cluster.
 .sp
 This is usually the file /etc/ctdb/public_addresses
 .RE
 .PP
 \-\-public\-interface=<interface>
-.RS 4
+.RS 3n
 When used with IP takeover this option specifies which physical interface should be used to attach the public addresses to.
 .RE
 .PP
 \-\-event\-script=<filename>
-.RS 4
+.RS 3n
 This option is used to specify which events script that ctdbd will use to manage services when the cluster configuration changes.
 .sp
 This will normally be /etc/ctdb/events which is part of the ctdb distribution.
 .RE
 .PP
 \-\-logfile=<filename>
-.RS 4
+.RS 3n
 This is the file where ctdbd will write its log. This is usually /var/log/log.ctdb .
 .RE
 .PP
 \-\-listen=<address>
-.RS 4
+.RS 3n
 This specifies which ip address ctdb will bind to. By default ctdbd will bind to the first address it finds in the /etc/ctdb/nodes file and which is also present on the local system in which case you do not need to provide this option.
 .sp
 This option is only required when you want to run multiple ctdbd daemons/nodes on the same physical host in which case there would be multiple entries in /etc/ctdb/nodes what would match a local interface.
 .RE
 .PP
 \-\-transport=<STRING>
-.RS 4
+.RS 3n
 This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
 .sp
 Suported transports are "tcp" and "infiniband".
 .RE
 .PP
 \-\-socket=<filename>
-.RS 4
+.RS 3n
 This specifies the name of the domain socket that ctdbd will create. This socket is used for local clients to attach to and communicate with the ctdbd daemon.
 .sp
 The default is /tmp/ctdb.socket . You only need to use this option if you plan to run multiple ctdbd daemons on the same physical host.
 .RE
 .PP
 \-d \-\-debug=<DEBUGLEVEL>
-.RS 4
+.RS 3n
 This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
 .RE
 .PP
 \-\-torture
-.RS 4
+.RS 3n
 This option is only used for development and testing of ctdbd. It adds artificial errors and failures to the common codepaths in ctdbd to verify that ctdbd can recover correctly for failures.
 .sp
 You do NOT want to use this option unless you are developing and testing new functionality in ctdbd.
@@ -136,7 +136,7 @@ Since the private addresses are only available to the network when the correspon
       Example /etc/ctdb/nodes for a four node cluster:
       
 .sp
-.RS 4
+.RS 3n
 .nf
         10.1.1.1
         10.1.1.2
@@ -160,7 +160,7 @@ The list of public addresses also contain the netmask for that address. the reas
       Example /etc/ctdb/public_addresses for a four node cluster:
       
 .sp
-.RS 4
+.RS 3n
 .nf
         11.1.1.1/24
         11.1.1.2/24
@@ -192,7 +192,7 @@ ctdb(1), onnode(1)
 \fI\%http://ctdb.samba.org/\fR
 .SH "COPYRIGHT/LICENSE"
 .sp
-.RS 4
+.RS 3n
 .nf
 Copyright (C) Andrew Tridgell 2007
 Copyright (C) Ronnie sahlberg 2007

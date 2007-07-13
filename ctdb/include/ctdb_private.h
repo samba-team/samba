@@ -309,6 +309,7 @@ struct ctdb_context {
 	struct ctdb_client_ip *client_ip_list;
 	bool do_setsched;
 	void *saved_scheduler_param;
+	struct ctdb_kill_tcp *killtcp;
 };
 
 struct ctdb_db_context {
@@ -408,6 +409,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
 		    CTDB_CONTROL_MODIFY_FLAGS            = 52,
 		    CTDB_CONTROL_GET_ALL_TUNABLES        = 53,
+		    CTDB_CONTROL_KILL_TCP                = 54,
 };
 
 /*
@@ -441,6 +443,14 @@ struct ctdb_control_set_call {
 struct ctdb_control_tcp {
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
+};
+
+/*
+  struct for kill_tcp control
+ */
+struct ctdb_control_killtcp {
+	struct sockaddr_in src;
+	struct sockaddr_in dst;
 };
 
 /*
@@ -983,12 +993,10 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
 bool ctdb_sys_have_ip(const char *ip);
-int ctdb_sys_send_tcp(const struct sockaddr_in *dest, 
+int ctdb_sys_send_tcp(int fd,
+		      const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src,
 		      uint32_t seq, uint32_t ack, int rst);
-int ctdb_sys_kill_tcp(struct event_context *ev,
-		      const struct sockaddr_in *dest, 
-		      const struct sockaddr_in *src);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
@@ -999,6 +1007,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
+int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1034,5 +1043,16 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_port(const char *s, struct sockaddr_in *ip);
+
+int ctdb_sys_open_capture_socket(void);
+int ctdb_sys_open_sending_socket(void);
+int ctdb_sys_read_tcp_packet(int s, struct sockaddr_in *src, struct sockaddr_in *dst,
+			     uint32_t *ack_seq, uint32_t *seq);
+
+int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_killtcp *killtcp);
+
 
 #endif

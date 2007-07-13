@@ -2095,6 +2095,32 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 
 
 /*
+  kill a tcp connection
+ */
+int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_killtcp *killtcp)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_control_killtcp);
+	data.dptr  = (unsigned char *)killtcp;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_KILL_TCP, 0, data, NULL,
+			   NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for killtcp failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*
   initialise the ctdb daemon for client applications
 
   NOTE: In current code the daemon does not fork. This is for testing purposes only

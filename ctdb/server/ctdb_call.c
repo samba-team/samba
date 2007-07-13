@@ -223,7 +223,8 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
   must be called with the chainlock held. This function releases the chainlock
 */
 static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db, 
-				uint32_t reqid, TDB_DATA key, TDB_DATA data,
+				struct ctdb_req_header *hdr,
+				TDB_DATA key, TDB_DATA data,
 				uint64_t rsn)
 {
 	struct ctdb_call_state *state;
@@ -242,18 +243,18 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
-	state = ctdb_reqid_find(ctdb, reqid, struct ctdb_call_state);
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 
 	if (state == NULL) {
-		DEBUG(0,("vnn %u Invalid reqid %u in ctdb_become_dmaster\n",
-			 ctdb->vnn, reqid));
+		DEBUG(0,("vnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
+			 ctdb->vnn, hdr->reqid, hdr->srcnode));
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return;
 	}
 
-	if (reqid != state->reqid) {
+	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphan in ctdb_become_dmaster with reqid:%u\n",reqid));
+		DEBUG(0, ("Dropped orphan in ctdb_become_dmaster with reqid:%u\n from node %u", hdr->reqid, hdr->srcnode));
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return;
 	}
@@ -334,7 +335,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	/* check if the new dmaster is the lmaster, in which case we
 	   skip the dmaster reply */
 	if (c->dmaster == ctdb->vnn) {
-		ctdb_become_dmaster(ctdb_db, hdr->reqid, key, data, c->rsn);
+		ctdb_become_dmaster(ctdb_db, hdr, key, data, c->rsn);
 	} else {
 		ctdb_send_dmaster_reply(ctdb_db, &header, key, data, c->dmaster, hdr->reqid);
 		ctdb_ltdb_unlock(ctdb_db, key);
@@ -505,7 +506,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	ctdb_become_dmaster(ctdb_db, hdr->reqid, key, data, c->rsn);
+	ctdb_become_dmaster(ctdb_db, hdr, key, data, c->rsn);
 }
 
 

@@ -24,7 +24,7 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "lib/events/events.h"
-#include <net/ethernet.h>
+#include <netinet/if_ether.h>
 #include <net/if_arp.h>
 
 
@@ -183,12 +183,12 @@ static uint16_t tcp_checksum(uint16_t *data, size_t n, struct iphdr *ip)
   This can also be used to send RST segments (if rst is true) and also
   if correct seq and ack numbers are provided.
  */
-int ctdb_sys_send_tcp(const struct sockaddr_in *dest, 
+int ctdb_sys_send_tcp(int s,
+		      const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src,
 		      uint32_t seq, uint32_t ack, int rst)
 {
-	int s, ret;
-	uint32_t one = 1;
+	int ret;
 	struct {
 		struct iphdr ip;
 		struct tcphdr tcp;
@@ -197,21 +197,6 @@ int ctdb_sys_send_tcp(const struct sockaddr_in *dest,
 	/* for now, we only handle AF_INET addresses */
 	if (src->sin_family != AF_INET || dest->sin_family != AF_INET) {
 		DEBUG(0,(__location__ " not an ipv4 address\n"));
-		return -1;
-	}
-
-	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
-	if (s == -1) {
-		DEBUG(0,(__location__ " failed to open raw socket (%s)\n",
-			 strerror(errno)));
-		return -1;
-	}
-
-	ret = setsockopt(s, SOL_IP, IP_HDRINCL, &one, sizeof(one));
-	if (ret != 0) {
-		DEBUG(0,(__location__ " failed to setup IP headers (%s)\n",
-			 strerror(errno)));
-		close(s);
 		return -1;
 	}
 
@@ -234,17 +219,15 @@ int ctdb_sys_send_tcp(const struct sockaddr_in *dest,
 		pkt.tcp.rst      = 1;
 	}
 	pkt.tcp.doff     = sizeof(pkt.tcp)/4;
-	pkt.tcp.window   = htons(1234);
+	pkt.tcp.window   = htons(1234); /* this makes it easier to spot in a sniffer */
 	pkt.tcp.check    = tcp_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp), &pkt.ip);
 
 	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
 	if (ret != sizeof(pkt)) {
 		DEBUG(0,(__location__ " failed sendto (%s)\n", strerror(errno)));
-		close(s);
 		return -1;
 	}
 
-	close(s);
 	return 0;
 }
 
@@ -273,113 +256,115 @@ bool ctdb_sys_have_ip(const char *ip)
 	return ret == 0;
 }
 
-static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te, 
-			      struct timeval yt, void *p)
+/* 
+   This function is used to open a raw socket to capture from
+ */
+int ctdb_sys_open_capture_socket(void)
 {
-	uint32_t *timed_out = (uint32_t *)p;
-	(*timed_out) = 1;
+	int s;
+
+	/* Open a socket to capture all traffic */
+	s = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	if (s == -1) {
+		DEBUG(0,(__location__ " failed to open raw socket\n"));
+		return -1;
+	}
+
+	set_nonblocking(s);
+	set_close_on_exec(s);
+
+	return s;
 }
 
-/* This function is used to kill (RST) the specified tcp connection.
-
-   This function is not asynchronous and will block until the operation
-   was successful or it timesout.
+/* 
+   This function is used to open a raw socket to send tickles from
  */
-int ctdb_sys_kill_tcp(struct event_context *ev,
-		      const struct sockaddr_in *dst, 
-		      const struct sockaddr_in *src)
+int ctdb_sys_open_sending_socket(void)
 {
 	int s, ret;
-	uint32_t timedout;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	uint32_t one = 1;
+
+	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+	if (s == -1) {
+		DEBUG(0,(__location__ " failed to open raw socket (%s)\n",
+			 strerror(errno)));
+		return -1;
+	}
+
+	ret = setsockopt(s, SOL_IP, IP_HDRINCL, &one, sizeof(one));
+	if (ret != 0) {
+		DEBUG(0,(__location__ " failed to setup IP headers (%s)\n",
+			 strerror(errno)));
+		close(s);
+		return -1;
+	}
+
+	set_nonblocking(s);
+	set_close_on_exec(s);
+
+	return s;
+}
+
+/*
+  called when the raw socket becomes readable
+ */
+int ctdb_sys_read_tcp_packet(int s, struct sockaddr_in *src, struct sockaddr_in *dst,
+			     uint32_t *ack_seq, uint32_t *seq)
+{
+	int ret;
 #define RCVPKTSIZE 100
 	char pkt[RCVPKTSIZE];
 	struct ether_header *eth;
 	struct iphdr *ip;
 	struct tcphdr *tcp;
 
-	/* Open a socket to capture all traffic */
-	s=socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-	if (s == -1){
-		DEBUG(0,(__location__ " failed to open raw socket\n"));
+	ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
+	if (ret < sizeof(*eth)+sizeof(*ip)) {
 		return -1;
 	}
 
-	/* We wait for up to 1 second for the ACK coming back */
-	timedout = 0;
-	event_add_timed(ev, tmp_ctx, timeval_current_ofs(1, 0), ctdb_wait_handler, &timedout);
+	/* Ethernet */
+	eth = (struct ether_header *)pkt;
 
-	/* Send a tickle ack to probe what the real seq/ack numbers are */
-	ctdb_sys_send_tcp(dst, src, 0, 0, 0);
-
-	/* Wait until we either time out or we succeeds in sending the RST */
-	while (timedout==0) {
-		event_loop_once(ev);
-
-		ret = recv(s, pkt, RCVPKTSIZE, MSG_TRUNC);
-		if (ret < sizeof(*eth)+sizeof(*ip)) {
-			continue;
-		}
-
-		/* Ethernet */
-		eth = (struct ether_header *)pkt;
-		/* We only want IP packets */
-		if (ntohs(eth->ether_type) != ETHERTYPE_IP) {
-			continue;
-		}
+	/* We only want IP packets */
+	if (ntohs(eth->ether_type) != ETHERTYPE_IP) {
+		return -1;
+	}
 	
-		/* IP */
-		ip = (struct iphdr *)(eth+1);
-		/* We only want IPv4 packets */
-		if (ip->version != 4) {
-			continue;
-		}
-		/* Dont look at fragments */
-		if ((ntohs(ip->frag_off)&0x1fff) != 0) {
-			continue;
-		}
-		/* we only want TCP */
-		if (ip->protocol != IPPROTO_TCP) {
-			continue;
-		}
+	/* IP */
+	ip = (struct iphdr *)(eth+1);
 
-		/* We only want packets sent from the guy we tickled */
-		if (ip->saddr != dst->sin_addr.s_addr) {
-			continue;
-		}
-		/* We only want packets sent to us */
-		if (ip->daddr != src->sin_addr.s_addr) {
-			continue;
-		}
-
-		/* make sure its not a short packet */
-		if (offsetof(struct tcphdr, ack_seq) + 4 + 
-		    (ip->ihl*4) + sizeof(*eth) > ret) {
-			continue;
-		}
-
-		/* TCP */
-		tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
-		
-		/* We only want replies from the port we tickled */
-		if (tcp->source != dst->sin_port) {
-			continue;
-		}
-		if (tcp->dest != src->sin_port) {
-			continue;
-		}
-
-		ctdb_sys_send_tcp(dst, src, tcp->ack_seq, tcp->seq, 1);
-
-		close(s);
-		talloc_free(tmp_ctx);
-
-		return 0;
+	/* We only want IPv4 packets */
+	if (ip->version != 4) {
+		return -1;
+	}
+	/* Dont look at fragments */
+	if ((ntohs(ip->frag_off)&0x1fff) != 0) {
+		return -1;
+	}
+	/* we only want TCP */
+	if (ip->protocol != IPPROTO_TCP) {
+		return -1;
 	}
 
-	close(s);
-	talloc_free(tmp_ctx);
-	DEBUG(0,(__location__ " timedout waiting for tickle ack reply\n"));
+	/* make sure its not a short packet */
+	if (offsetof(struct tcphdr, ack_seq) + 4 + 
+	    (ip->ihl*4) + sizeof(*eth) > ret) {
+		return -1;
+	}
 
-	return -1;
+	/* TCP */
+	tcp = (struct tcphdr *)((ip->ihl*4) + (char *)ip);
+
+	/* tell the caller which one we've found */
+	src->sin_addr.s_addr = ip->saddr;
+	src->sin_port        = tcp->source;
+	dst->sin_addr.s_addr = ip->daddr;
+	dst->sin_port        = tcp->dest;
+	*ack_seq             = tcp->ack_seq;
+	*seq                 = tcp->seq;
+
+	return 0;
 }
+
+

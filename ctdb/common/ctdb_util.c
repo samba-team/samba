@@ -196,7 +196,6 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 {
 #if HAVE_SCHED_SETSCHEDULER	
 	struct sched_param p;
-
 	if (ctdb->saved_scheduler_param == NULL) {
 		ctdb->saved_scheduler_param = talloc_size(ctdb, sizeof(p));
 	}
@@ -210,7 +209,8 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 	p.sched_priority = 1;
 
 	if (sched_setscheduler(0, SCHED_FIFO, &p) == -1) {
-		DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", strerror(errno)));
+		DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", 
+			 strerror(errno)));
 	} else {
 		DEBUG(0,("Set scheduler to SCHED_FIFO\n"));
 	}
