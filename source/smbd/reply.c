@@ -380,30 +380,40 @@ int reply_special(char *inbuf,char *outbuf)
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
+	TALLOC_CTX *ctx;
 	const char *service;
-	pstring service_buf;
-	pstring password;
-	pstring dev;
+	char *service_buf = NULL;
+	char *password = NULL;
+	char *dev = NULL;
 	int outsize = 0;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
 	NTSTATUS nt_status;
 	char *p;
 	DATA_BLOB password_blob;
-	
+
 	START_PROFILE(SMBtcon);
 
-	*service_buf = *password = *dev = 0;
+	ctx = talloc_init("reply_tcon");
+	if (!ctx) {
+		END_PROFILE(SMBtcon);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), service_buf, p,
-			     sizeof(service_buf), STR_TERMINATE) + 1;
-	pwlen = srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), password, p,
-				sizeof(password), STR_TERMINATE) + 1;
+	p += srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2),
+			&service_buf, p, STR_TERMINATE) + 1;
+	pwlen = srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2),
+			&password, p, STR_TERMINATE) + 1;
 	p += pwlen;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), dev, p, sizeof(dev),
-			     STR_TERMINATE) + 1;
+	p += srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2),
+			&dev, p, STR_TERMINATE) + 1;
 
+	if (service_buf == NULL || password == NULL || dev == NULL) {
+		TALLOC_FREE(ctx);
+		END_PROFILE(SMBtcon);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 	p = strrchr_m(service_buf,'\\');
 	if (p) {
 		service = p+1;
@@ -416,21 +426,23 @@ int reply_tcon(connection_struct *conn,
 	conn = make_connection(service,password_blob,dev,vuid,&nt_status);
 
 	data_blob_clear_free(&password_blob);
-  
+
 	if (!conn) {
+		TALLOC_FREE(ctx);
 		END_PROFILE(SMBtcon);
 		return ERROR_NT(nt_status);
 	}
-  
+
 	outsize = set_message(outbuf,2,0,True);
 	SSVAL(outbuf,smb_vwv0,max_recv);
 	SSVAL(outbuf,smb_vwv1,conn->cnum);
 	SSVAL(outbuf,smb_tid,conn->cnum);
-  
-	DEBUG(3,("tcon service=%s cnum=%d\n", 
+
+	DEBUG(3,("tcon service=%s cnum=%d\n",
 		 service, conn->cnum));
-  
+
 	END_PROFILE(SMBtcon);
+	TALLOC_FREE(ctx);
 	return(outsize);
 }
 
@@ -441,23 +453,22 @@ int reply_tcon(connection_struct *conn,
 
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-	fstring service;
+	char *service = NULL;
 	DATA_BLOB password;
 
+	TALLOC_CTX *ctx = NULL;
 	/* what the cleint thinks the device is */
-	fstring client_devicetype;
+	char *client_devicetype = NULL;
 	/* what the server tells the client the share represents */
 	const char *server_devicetype;
 	NTSTATUS nt_status;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
-	pstring path;
+	char *path = NULL;
 	char *p, *q;
 	uint16 tcon_flags = SVAL(inbuf,smb_vwv2);
-	
-	START_PROFILE(SMBtconX);	
 
-	*service = *client_devicetype = 0;
+	START_PROFILE(SMBtconX);
 
 	/* we might have to close an old one */
 	if ((SVAL(inbuf,smb_vwv2) & 0x1) && conn) {
@@ -467,7 +478,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if (passlen > MAX_PASS_LEN) {
 		return ERROR_DOS(ERRDOS,ERRbuftoosmall);
 	}
- 
+
 	if (global_encrypted_passwords_negotiated) {
 		password = data_blob(smb_buf(inbuf),passlen);
 		if (lp_security() == SEC_SHARE) {
@@ -486,34 +497,53 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		p = smb_buf(inbuf) + passlen + 1;
 	}
 
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), path, p,
-			     sizeof(path), STR_TERMINATE);
+	ctx = talloc_init("reply_tcon_and_X");
+	if (!ctx) {
+		END_PROFILE(SMBtconX);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+	p += srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2), &path, p,
+			     STR_TERMINATE);
+
+	if (path == NULL) {
+		TALLOC_FREE(ctx);
+		END_PROFILE(SMBtconX);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	/*
 	 * the service name can be either: \\server\share
 	 * or share directly like on the DELL PowerVault 705
 	 */
-	if (*path=='\\') {	
+	if (*path=='\\') {
 		q = strchr_m(path+2,'\\');
 		if (!q) {
+			TALLOC_FREE(ctx);
 			END_PROFILE(SMBtconX);
 			return(ERROR_DOS(ERRDOS,ERRnosuchshare));
 		}
-		fstrcpy(service,q+1);
+		service = q+1;
+	} else {
+		service = path;
 	}
-	else
-		fstrcpy(service,path);
-		
-	p += srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), client_devicetype, p,
-			 sizeof(client_devicetype), 6, STR_ASCII);
+
+	p += srvstr_pull_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2), &client_devicetype, p,
+			 6, STR_ASCII);
+
+	if (client_devicetype == NULL) {
+		TALLOC_FREE(ctx);
+		END_PROFILE(SMBtconX);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 
 	conn = make_connection(service,password,client_devicetype,vuid,&nt_status);
-	
+
 	data_blob_clear_free(&password);
 
 	if (!conn) {
+		TALLOC_FREE(ctx);
 		END_PROFILE(SMBtconX);
 		return ERROR_NT(nt_status);
 	}
@@ -522,19 +552,19 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		server_devicetype = "IPC";
 	else if ( IS_PRINT(conn) )
 		server_devicetype = "LPT1:";
-	else 
+	else
 		server_devicetype = "A:";
 
 	if (Protocol < PROTOCOL_NT1) {
 		set_message(outbuf,2,0,True);
 		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, server_devicetype, -1, 
+		p += srvstr_push(outbuf, p, server_devicetype, -1,
 				 STR_TERMINATE|STR_ASCII);
 		set_message_end(outbuf,p);
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
 		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
-		
+
 		if (tcon_flags & TCONX_FLAG_EXTENDED_RESPONSE) {
 			/* Return permissions. */
 			uint32 perm1 = 0;
@@ -562,25 +592,26 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 				 STR_TERMINATE|STR_ASCII);
 		p += srvstr_push(outbuf, p, fstype, -1, 
 				 STR_TERMINATE);
-		
+
 		set_message_end(outbuf,p);
-		
+
 		/* what does setting this bit do? It is set by NT4 and
 		   may affect the ability to autorun mounted cdroms */
 		SSVAL(outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS|
 				(lp_csc_policy(SNUM(conn)) << 2));
-		
+
 		init_dfsroot(conn, inbuf, outbuf);
 	}
 
-  
+
 	DEBUG(3,("tconX service=%s \n",
 		 service));
-  
+
 	/* set the incoming and outgoing tid to the just created one */
 	SSVAL(inbuf,smb_tid,conn->cnum);
 	SSVAL(outbuf,smb_tid,conn->cnum);
 
+	TALLOC_FREE(ctx);
 	END_PROFILE(SMBtconX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
