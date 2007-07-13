@@ -1383,7 +1383,7 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 					CH_UNIX,
 					src,
 					src_len,
-					(void **)&dest,
+					(void *)&dest,
 					True);
 	if (dest_len == (size_t)-1) {
 		return 0;
