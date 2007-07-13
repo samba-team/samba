@@ -856,6 +856,7 @@ struct ctdb_kill_tcp {
 	int sending_fd;
 	struct fd_event *fde;
 	struct ctdb_killtcp_connection *connections;
+	void *private_data;
 };
 
 /*
@@ -873,8 +874,10 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd, &src, &dst,
-				     &ack_seq, &seq) != 0) {
+	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd,
+				killtcp->private_data,
+				&src, &dst,
+				&ack_seq, &seq) != 0) {
 		/* probably a non-tcp ACK packet */
 		return;
 	}
@@ -1011,7 +1014,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	   If we dont have a socket to listen on yet we must create it
 	 */
 	if (killtcp->capture_fd == -1) {
-		killtcp->capture_fd = ctdb_sys_open_capture_socket();
+		killtcp->capture_fd = ctdb_sys_open_capture_socket(ctdb->takeover.interface, &killtcp->private_data);
 		if (killtcp->capture_fd == -1) {
 			DEBUG(0,(__location__ " Failed to open capturing socket for killtcp\n"));
 			goto failed;

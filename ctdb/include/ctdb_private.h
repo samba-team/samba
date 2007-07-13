@@ -1044,9 +1044,10 @@ void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_port(const char *s, struct sockaddr_in *ip);
 
-int ctdb_sys_open_capture_socket(void);
+int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
+int ctdb_sys_close_capture_socket(void *private_data);
 int ctdb_sys_open_sending_socket(void);
-int ctdb_sys_read_tcp_packet(int s, struct sockaddr_in *src, struct sockaddr_in *dst,
+int ctdb_sys_read_tcp_packet(int s, void *private_data, struct sockaddr_in *src, struct sockaddr_in *dst,
 			     uint32_t *ack_seq, uint32_t *seq);
 
 int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 

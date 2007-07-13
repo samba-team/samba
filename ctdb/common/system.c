@@ -259,7 +259,7 @@ bool ctdb_sys_have_ip(const char *ip)
 /* 
    This function is used to open a raw socket to capture from
  */
-int ctdb_sys_open_capture_socket(void)
+int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 {
 	int s;
 
@@ -274,6 +274,16 @@ int ctdb_sys_open_capture_socket(void)
 	set_close_on_exec(s);
 
 	return s;
+}
+
+/* 
+   This function is used to do any additional cleanup required when closing
+   a capture socket.
+   Note that the socket itself is closed automatically in the caller.
+ */
+int ctdb_sys_close_capture_socket(void *private_data)
+{
+	return 0;
 }
 
 /* 
@@ -308,8 +318,9 @@ int ctdb_sys_open_sending_socket(void)
 /*
   called when the raw socket becomes readable
  */
-int ctdb_sys_read_tcp_packet(int s, struct sockaddr_in *src, struct sockaddr_in *dst,
-			     uint32_t *ack_seq, uint32_t *seq)
+int ctdb_sys_read_tcp_packet(int s, void *private_data, 
+			struct sockaddr_in *src, struct sockaddr_in *dst,
+			uint32_t *ack_seq, uint32_t *seq)
 {
 	int ret;
 #define RCVPKTSIZE 100
