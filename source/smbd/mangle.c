@@ -119,7 +119,7 @@ BOOL mangle_check_cache_alloc(const char *name, char **presult,
 	char *result;
 	pstrcpy(tmp, name);
 
-	if (!mangle_check_cache(tmp, sizeof(pstring), p)
+	if (!mangle_check_cache(tmp, sizeof(pstring)-1, p)
 	    || !(result = SMB_STRDUP(tmp))) {
 		return False;
 	}
