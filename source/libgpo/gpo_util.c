@@ -103,6 +103,9 @@ static struct snapin_table gpo_cse_snapin_extensions[] = {
 	{ NULL, NULL, NULL }
 };
 
+/****************************************************************
+****************************************************************/
+
 static const char *name_to_guid_string(const char *name, struct gpo_table *table)
 {
 	int i;
@@ -116,6 +119,9 @@ static const char *name_to_guid_string(const char *name, struct gpo_table *table
 	return NULL;
 }
 
+/****************************************************************
+****************************************************************/
+
 static const char *guid_string_to_name(const char *guid_string, struct gpo_table *table)
 {
 	int i;
@@ -128,6 +134,9 @@ static const char *guid_string_to_name(const char *guid_string, struct gpo_table
 	
 	return NULL;
 }
+
+/****************************************************************
+****************************************************************/
 
 static const char *snapin_guid_string_to_name(const char *guid_string, 
 					      struct snapin_table *table)
@@ -153,20 +162,32 @@ static const char *default_gpo_guid_string_to_name(const char *guid)
 }
 #endif
 
+/****************************************************************
+****************************************************************/
+
 const char *cse_gpo_guid_string_to_name(const char *guid)
 {
 	return guid_string_to_name(guid, gpo_cse_extensions);
 }
 
-static const char *cse_gpo_name_to_guid_string(const char *name)
+/****************************************************************
+****************************************************************/
+
+const char *cse_gpo_name_to_guid_string(const char *name)
 {
 	return name_to_guid_string(name, gpo_cse_extensions);
 }
+
+/****************************************************************
+****************************************************************/
 
 const char *cse_snapin_gpo_guid_string_to_name(const char *guid)
 {
 	return snapin_guid_string_to_name(guid, gpo_cse_snapin_extensions);
 }
+
+/****************************************************************
+****************************************************************/
 
 void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel)
 {
@@ -190,7 +211,10 @@ void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel)
 	}
 }
 
-void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo, int debuglevel) 
+/****************************************************************
+****************************************************************/
+
+void dump_gpo(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo, int debuglevel) 
 {
 	int lvl = debuglevel;
 
@@ -278,19 +302,24 @@ void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo, int debuglev
 		}
 		dump_gp_ext(gp_ext, lvl);
 	}
+
+	DEBUGADD(lvl,("security descriptor:\n"));
+
+	ads_disp_sd(ads, mem_ctx, gpo->security_descriptor);
 }
 
 /****************************************************************
 ****************************************************************/
 
-void dump_gpo_list(TALLOC_CTX *mem_ctx, 
+void dump_gpo_list(ADS_STRUCT *ads, 
+		   TALLOC_CTX *mem_ctx, 
 		   struct GROUP_POLICY_OBJECT *gpo_list, 
 		   int debuglevel)
 {
 	struct GROUP_POLICY_OBJECT *gpo = NULL;
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
-		dump_gpo(mem_ctx, gpo, debuglevel);
+		dump_gpo(ads, mem_ctx, gpo, debuglevel);
 	}
 }
 
@@ -349,7 +378,7 @@ void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 				DEBUG(lvl,("get gpo for %s failed: %s\n", gp_link->link_names[i], ads_errstr(status)));
 				return;
 			}
-			dump_gpo(mem_ctx, &gpo, lvl);
+			dump_gpo(ads, mem_ctx, &gpo, lvl);
 		}
 	}
 }
