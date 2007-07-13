@@ -89,7 +89,8 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 		/* its a share parameter */
 		int snum = lp_servicenumber(argv[0]);
 		if (snum == -1) {
-			return -1;
+			mpr_Return(eid, mprCreateUndefinedVar());
+			return 0;
 		}
 		if (strchr(argv[1], ':')) {
 			/* its a parametric option on a share */
@@ -98,16 +99,23 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 							  strcspn(argv[1], ":"));
 			const char *option = strchr(argv[1], ':') + 1;
 			const char *value;
-			if (type == NULL || option == NULL) return -1;
+			if (type == NULL || option == NULL) {
+				mpr_Return(eid, mprCreateUndefinedVar());
+				return 0;
+			}
 			value = lp_get_parametric(snum, type, option);
-			if (value == NULL) return -1;
+			if (value == NULL) {
+				mpr_Return(eid, mprCreateUndefinedVar());
+				return 0;
+			}
 			mpr_ReturnString(eid, value);
 			return 0;
 		}
 
 		parm = lp_parm_struct(argv[1]);
 		if (parm == NULL || parm->class == P_GLOBAL) {
-			return -1;
+			mpr_Return(eid, mprCreateUndefinedVar());
+			return 0;
 		}
 		parm_ptr = lp_parm_ptr(snum, parm);
 	} else if (strchr(argv[0], ':')) {
@@ -116,20 +124,30 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 						  argv[0], strcspn(argv[0], ":"));
 		const char *option = strchr(argv[0], ':') + 1;
 		const char *value;
-		if (type == NULL || option == NULL) return -1;
+		if (type == NULL || option == NULL) {
+			mpr_Return(eid, mprCreateUndefinedVar());
+			return 0;
+		}
 		value = lp_get_parametric(-1, type, option);
-		if (value == NULL) return -1;
+		if (value == NULL) {
+			mpr_Return(eid, mprCreateUndefinedVar());
+			return 0;
+		}
 		mpr_ReturnString(eid, value);
 		return 0;
 	} else {
 		/* its a global parameter */
 		parm = lp_parm_struct(argv[0]);
-		if (parm == NULL) return -1;
+		if (parm == NULL) {
+			mpr_Return(eid, mprCreateUndefinedVar());
+			return 0;
+		}
 		parm_ptr = lp_parm_ptr(-1, parm);
 	}
 
 	if (parm == NULL || parm_ptr == NULL) {
-		return -1;
+		mpr_Return(eid, mprCreateUndefinedVar());
+		return 0;
 	}
 
 	/* construct and return the right type of ejs object */
@@ -142,6 +160,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 		mpr_Return(eid, mprCreateBoolVar(*(BOOL *)parm_ptr));
 		break;
 	case P_INTEGER:
+	case P_OCTAL:
 	case P_BYTES:
 		mpr_Return(eid, mprCreateIntegerVar(*(int *)parm_ptr));
 		break;
@@ -152,12 +171,14 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 				return 0;
 			}
 		}
-		return -1;	
+		mpr_Return(eid, mprCreateUndefinedVar());
+		return 0;	
 	case P_LIST: 
 		mpr_Return(eid, mprList(parm->label, *(const char ***)parm_ptr));
 		break;
 	case P_SEP:
-		return -1;
+		mpr_Return(eid, mprCreateUndefinedVar());
+		return 0;
 	}
 	return 0;
 }

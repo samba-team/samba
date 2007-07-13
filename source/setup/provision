@@ -14,7 +14,9 @@ options = GetOptions(ARGV,
 		'realm=s',
 		'domain=s',
 		'domain-guid=s',
+		'domain-guid=s',
 		'domain-sid=s',
+		'policy-guid=s',
 		'host-name=s',
 		'host-ip=s',
 		'host-guid=s',
@@ -69,6 +71,7 @@ provision [options]
  --host-name	HOSTNAME	set hostname
  --host-ip	IPADDRESS	set ipaddress
  --host-guid	GUID		set hostguid (otherwise random)
+ --policy-guid  GUID            set group policy guid (otherwise random)
  --invocationid	GUID		set invocationid (otherwise random)
  --adminpass	PASSWORD	choose admin password (otherwise random)
  --krbtgtpass	PASSWORD	choose krbtgt password (otherwise random)
