@@ -278,10 +278,13 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_BUSY)) {
 		/* EAGAIN */
 		goto again;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		/* EAGAIN */
+		goto again;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("packet_fd_read failed: %s\n", nt_errstr(status)));
+		DEBUG(0, ("packet_fd_read failed: %s\n", nt_errstr(status)));
 		cluster_fatal("ctdbd died\n");
 	}
 
@@ -297,7 +300,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Could not read packet: %s\n", nt_errstr(status)));
+		DEBUG(0, ("Could not read packet: %s\n", nt_errstr(status)));
 		cluster_fatal("ctdbd died\n");
 	}
 
@@ -1088,11 +1091,19 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 
 		status = packet_fd_read_sync(conn->pkt);
 
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			/*
+			 * There might be more in the queue
+			 */
+			continue;
+		}
+
 		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 			status = NT_STATUS_OK;
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("packet_fd_read_sync failed: %s\n", nt_errstr(status)));
 			cluster_fatal("ctdbd died\n");
 		}
 	}
