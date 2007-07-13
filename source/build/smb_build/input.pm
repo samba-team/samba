@@ -168,7 +168,7 @@ sub calc_unique_deps($$$$$$$$)
 	my ($name, $INPUT, $deps, $udeps, $withlibs, $forward, $pubonly, $busy) = @_;
 
 	foreach my $n (@$deps) {
-		die("Dependency unknown: $n") unless (defined($INPUT->{$n}));
+		die("Dependency unknown: $n (for $name)") unless (defined($INPUT->{$n}));
 		die("Recursive dependency: $n, list: " . join(',', @$busy)) if (grep (/^$n$/, @$busy));
 		next if (grep /^$n$/, @$udeps);
 		my $dep = $INPUT->{$n};
