@@ -45,7 +45,7 @@ struct GROUP_POLICY_OBJECT {
 	const char *display_name;
 	const char *name;
 	const char *link;
-	uint32 link_type; /* GPO_LINK_TYPE */
+	enum GPO_LINK_TYPE link_type;
 	const char *user_extensions;
 	const char *machine_extensions;
 	SEC_DESC *security_descriptor;
