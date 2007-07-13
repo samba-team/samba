@@ -88,6 +88,10 @@ static const char *ads_interprete_guid_from_object(ADS_STRUCT *ads,
 {
 	const char *ret = NULL;
 
+	if (!ads || !mem_ctx) {
+		return NULL;
+	}
+
 	ret = ads_get_attrname_by_guid(ads, ads->config.schema_path, 
 				       mem_ctx, guid);
 	if (ret) {
@@ -188,13 +192,17 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_DESC *sd)
 	int i;
 	char *tmp_path = NULL;
 
-	if (!ads->config.schema_path) {
+	if (!sd) {
+		return;
+	}
+
+	if (ads && !ads->config.schema_path) {
 		if (ADS_ERR_OK(ads_schema_path(ads, mem_ctx, &tmp_path))) {
 			ads->config.schema_path = SMB_STRDUP(tmp_path);
 		}
 	}
 
-	if (!ads->config.config_path) {
+	if (ads && !ads->config.config_path) {
 		if (ADS_ERR_OK(ads_config_path(ads, mem_ctx, &tmp_path))) {
 			ads->config.config_path = SMB_STRDUP(tmp_path);
 		}
@@ -203,16 +211,25 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_DESC *sd)
 	printf("-------------- Security Descriptor (revision: %d, type: 0x%02x)\n", 
                sd->revision,
                sd->type);
-	printf("owner SID: %s\n", sid_string_static(sd->owner_sid));
-	printf("group SID: %s\n", sid_string_static(sd->group_sid));
+
+	printf("owner SID: %s\n", sd->owner_sid ? 
+		sid_string_static(sd->owner_sid) : "(null)");
+	printf("group SID: %s\n", sd->group_sid ?
+		sid_string_static(sd->group_sid) : "(null)");
 
 	ads_disp_acl(sd->sacl, "system");
-	for (i = 0; i < sd->sacl->num_aces; i ++)
-		ads_disp_ace(ads, mem_ctx, &sd->sacl->aces[i]);
+	if (sd->sacl) {
+		for (i = 0; i < sd->sacl->num_aces; i ++) {
+			ads_disp_ace(ads, mem_ctx, &sd->sacl->aces[i]);
+		}
+	}
 	
 	ads_disp_acl(sd->dacl, "user");
-	for (i = 0; i < sd->dacl->num_aces; i ++)
-		ads_disp_ace(ads, mem_ctx, &sd->dacl->aces[i]);
+	if (sd->dacl) {
+		for (i = 0; i < sd->dacl->num_aces; i ++) {
+			ads_disp_ace(ads, mem_ctx, &sd->dacl->aces[i]);
+		}
+	}
 
 	printf("-------------- End Of Security Descriptor\n");
 }
