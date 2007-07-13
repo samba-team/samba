@@ -1,5 +1,5 @@
 /* 
-   ctdb recovery code
+   ctdb system specific code to manage raw sockets
 
    Copyright (C) Ronnie Sahlberg  2007
    Copyright (C) Andrew Tridgell  2007
