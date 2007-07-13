@@ -33,7 +33,9 @@ struct gpo_table {
 struct snapin_table {
 	const char *name;
 	const char *guid_string;
-	ADS_STATUS (*snapin_fn)(ADS_STRUCT *, TALLOC_CTX *mem_ctx, const char *, const char *);
+	ADS_STATUS (*snapin_fn)(ADS_STRUCT *, TALLOC_CTX *mem_ctx, 
+				struct GROUP_POLICY_OBJECT *gpo, 
+				const char *, const char *);
 };
 
 #if 0 /* unused */
@@ -347,6 +349,7 @@ void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 
 ADS_STATUS process_extension_with_snapin(ADS_STRUCT *ads,
 					 TALLOC_CTX *mem_ctx,
+					 struct GROUP_POLICY_OBJECT *gpo,
 					 const char *extension_guid,
 					 const char *snapin_guid)
 {
@@ -356,7 +359,7 @@ ADS_STATUS process_extension_with_snapin(ADS_STRUCT *ads,
 	
 		if (strcmp(gpo_cse_snapin_extensions[i].guid_string, snapin_guid) == 0) {
 		
-			return gpo_cse_snapin_extensions[i].snapin_fn(ads, mem_ctx, 
+			return gpo_cse_snapin_extensions[i].snapin_fn(ads, mem_ctx, gpo, 
 								      extension_guid, snapin_guid);
 		}
 	}
@@ -416,7 +419,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			continue;
 		}
 
-		status = process_extension_with_snapin(ads, mem_ctx,
+		status = process_extension_with_snapin(ads, mem_ctx, gpo,
 						       gp_ext->extensions_guid[i], 
 						       gp_ext->snapins_guid[i]);
 		if (!ADS_ERR_OK(status)) {
@@ -454,7 +457,8 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 }
 
 ADS_STATUS gpo_snapin_handler_none(ADS_STRUCT *ads, 
-				   TALLOC_CTX *mem_ctx, 
+				   TALLOC_CTX *mem_ctx,
+				   struct GROUP_POLICY_OBJECT *gpo,
 				   const char *extension_guid, 
 				   const char *snapin_guid)
 {
@@ -464,7 +468,8 @@ ADS_STATUS gpo_snapin_handler_none(ADS_STRUCT *ads,
 }
 
 ADS_STATUS gpo_snapin_handler_security_settings(ADS_STRUCT *ads, 
-						TALLOC_CTX *mem_ctx, 
+						TALLOC_CTX *mem_ctx,
+						struct GROUP_POLICY_OBJECT *gpo,
 						const char *extension_guid, 
 						const char *snapin_guid)
 {
