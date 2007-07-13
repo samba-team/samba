@@ -389,6 +389,19 @@ function provision_default_paths(subobj)
 	paths.ldap_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + ".ldif";
 	paths.ldap_config_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-config.ldif";
 	paths.ldap_schema_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-schema.ldif";
+
+	paths.netlogon = lp.get("netlogon", "path");
+	
+	if (paths.netlogon == undefined) {
+		paths.netlogon = lp.get("lock dir") + "/netlogon";
+	}
+
+	paths.sysvol = lp.get("sysvol", "path");
+
+	if (paths.sysvol == undefined) {
+		paths.sysvol = lp.get("lock dir") + "/sysvol";
+	}
+	
 	return paths;
 }
 
@@ -465,6 +478,9 @@ function provision_fix_subobj(subobj, paths)
 	subobj.LDAPI_URI = "ldapi://" + join("%2F", ldap_path_list) + "%2Fldapi";
 
 	subobj.LDAPMANAGERDN = "cn=Manager," + subobj.DOMAINDN;
+
+	subobj.NETLOGONPATH = paths.netlogon;
+	subobj.SYSVOLPATH = paths.sysvol;
 
 	return true;
 }
@@ -703,6 +719,16 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	if (lp.get("server role") == "domain controller") {
 		message("Setting up self join\n");
 		setup_add_ldif("provision_self_join.ldif", info, samdb, false);
+		setup_add_ldif("provision_group_policy.ldif", info, samdb, false);
+
+		sys.mkdir(paths.sysvol, 0755);
+		sys.mkdir(paths.sysvol + "/"+ subobj.DNSDOMAIN, 0755);
+		sys.mkdir(paths.sysvol + "/"+ subobj.DNSDOMAIN + "/Policies", 0755);
+		sys.mkdir(paths.sysvol + "/"+ subobj.DNSDOMAIN + "/Policies/{" + subobj.POLICYGUID + "}", 0755);
+		sys.mkdir(paths.sysvol + "/"+ subobj.DNSDOMAIN + "/Policies/{" + subobj.POLICYGUID + "}/Machine", 0755);
+		sys.mkdir(paths.sysvol + "/"+ subobj.DNSDOMAIN + "/Policies/{" + subobj.POLICYGUID + "}/User", 0755);
+
+		sys.mkdir(paths.netlogon, 0755);
 	}
 
 	if (setup_name_mappings(info, samdb) == false) {
