@@ -711,7 +711,8 @@ my @exported_envvars = (
 	"DC_PASSWORD",
 
 	# misc stuff
-	"KRB5_CONFIG"
+	"KRB5_CONFIG",
+	"WINBINDD_SOCKET_DIR"
 );
 
 sub setup_env($)
