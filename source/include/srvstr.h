@@ -20,6 +20,10 @@
 #define srvstr_pull(base_ptr, smb_flags2, dest, src, dest_len, src_len, flags) \
     pull_string(base_ptr, smb_flags2, dest, src, dest_len, src_len, flags)
 
+/* talloc version of above. */
+#define srvstr_pull_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
+    pull_string_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags)
+
 /* pull a string from the smb_buf part of a packet. In this case the
    string can either be null terminated or it can be terminated by the
    end of the smbbuf area 
@@ -28,3 +32,6 @@
 #define srvstr_pull_buf(inbuf, smb_flags2, dest, src, dest_len, flags) \
     pull_string(inbuf, smb_flags2, dest, src, dest_len, smb_bufrem(inbuf, src), flags)
 
+/* talloc version of above. */
+#define srvstr_pull_buf_talloc(ctx, inbuf, smb_flags2, dest, src, flags) \
+    pull_string_talloc(ctx, inbuf, smb_flags2, dest, src, smb_bufrem(inbuf, src), flags)
