@@ -1,5 +1,17 @@
-2007-07-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: add check-kadmin.in
+	
+2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ldap/slapd.conf: add samba.schema.
+
+	* ldap/slapd-init.in: Add samba schema.
+
+	* ldap/init.ldif: Samba entry to do testing with.
+
+2007-07-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* java/check-kinit.in: Only print when there is an error.
 
 	* java/krb5.conf.in: Move the AES enctypes first.
