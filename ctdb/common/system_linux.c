@@ -1,5 +1,5 @@
 /* 
-   ctdb system specific code to manage raw sockets
+   ctdb system specific code to manage raw sockets on linux
 
    Copyright (C) Ronnie Sahlberg  2007
    Copyright (C) Andrew Tridgell  2007
