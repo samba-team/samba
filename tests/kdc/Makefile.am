@@ -110,6 +110,7 @@ EXTRA_DIST = \
 	check-uu.in \
 	check-pkinit.in \
 	check-digest.in \
+	heimdal.acl \
 	krb5.conf.in \
 	krb5-pkinit.conf.in \
 	wait-kdc.sh \
