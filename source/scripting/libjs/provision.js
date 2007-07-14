@@ -390,18 +390,18 @@ function provision_default_paths(subobj)
 	paths.ldap_config_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-config.ldif";
 	paths.ldap_schema_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-schema.ldif";
 
-	paths.netlogon = lp.get("netlogon", "path");
-	
-	if (paths.netlogon == undefined) {
-		paths.netlogon = lp.get("lock dir") + "/netlogon";
-	}
-
 	paths.sysvol = lp.get("sysvol", "path");
 
 	if (paths.sysvol == undefined) {
 		paths.sysvol = lp.get("lock dir") + "/sysvol";
 	}
 	
+	paths.netlogon = lp.get("netlogon", "path");
+	
+	if (paths.netlogon == undefined) {
+		paths.netlogon = paths.sysvol + "/" + subobj.DNSDOMAIN + "/scripts";
+	}
+
 	return paths;
 }
 
