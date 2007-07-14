@@ -22,7 +22,7 @@ service() {
   elif [ -x /etc/init.d/$service_name ]; then
       /etc/init.d/$service_name "$op"
   elif [ -x /etc/rc.d/init.d/$service_name ]; then
-      /etc/init.d/$service_name "$op"
+      /etc/rc.d/init.d/$service_name "$op"
   fi
 }
 
