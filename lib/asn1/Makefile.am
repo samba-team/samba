@@ -412,7 +412,12 @@ gen_files_test =					\
 	asn1_TESTLargeTag.x				\
 	asn1_TESTSeq.x					\
 	asn1_TESTUSERCONSTRAINED.x			\
-	asn1_TESTSeqOf.x
+	asn1_TESTSeqOf.x				\
+	asn1_TESTOSSize1.x				\
+	asn1_TESTSeqSizeOf1.x				\
+	asn1_TESTSeqSizeOf2.x				\
+	asn1_TESTSeqSizeOf3.x				\
+	asn1_TESTSeqSizeOf4.x
 
 gen_files_digest =					\
 	asn1_DigestError.x				\
@@ -433,13 +438,14 @@ gen_files_kx509 =					\
 	asn1_Kx509Response.x				\
 	asn1_Kx509Request.x
 
-noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
+noinst_PROGRAMS = asn1_compile asn1_print asn1_gen asn1_parse
 
 TESTS = check-der check-gen check-timegm
 check_PROGRAMS = $(TESTS)
 
 asn1_gen_SOURCES = asn1_gen.c
 asn1_print_SOURCES = asn1_print.c
+asn1_parse_SOURCES = asn1_parse.c
 check_der_SOURCES = check-der.c check-common.c check-common.h
 
 dist_check_gen_SOURCES = check-gen.c check-common.c check-common.h
@@ -494,6 +500,7 @@ check_der_LDADD = \
 
 check_gen_LDADD = $(check_der_LDADD)
 asn1_print_LDADD = $(check_der_LDADD)
+asn1_parse_LDADD = $(check_der_LDADD)
 asn1_gen_LDADD = $(check_der_LDADD)
 check_timegm_LDADD = $(check_der_LDADD)
 
