@@ -849,6 +849,82 @@ out:
     return ret;
 }
 
+#define test_seq_of(type, ok, ptr)					\
+{									\
+    heim_octet_string os;						\
+    size_t size;							\
+    type decode;							\
+    ASN1_MALLOC_ENCODE(type, os.data, os.length, ptr, &size, ret);	\
+    if (ret)								\
+	return ret;							\
+    if (os.length != size)						\
+	abort();							\
+    ret = decode_##type(os.data, os.length, &decode, &size);		\
+    free(os.data);							\
+    if (ret) {								\
+	if (ok)								\
+	    return 1;							\
+    } else {								\
+	free_##type(&decode);						\
+	if (!ok)							\
+	    return 1;							\
+	if (size != 0)							\
+            return 1;							\
+    }									\
+    return 0;								\
+}
+
+static int
+check_seq_of_size(void)
+{
+    TESTInteger integers[4] = { 1, 2, 3, 4 };
+    int ret;
+
+    {
+	TESTSeqSizeOf1 ssof1f1 = { 1, integers };
+	TESTSeqSizeOf1 ssof1ok1 = { 2, integers };
+	TESTSeqSizeOf1 ssof1f2 = { 3, integers };
+
+	test_seq_of(TESTSeqSizeOf1, 0, &ssof1f1);
+	test_seq_of(TESTSeqSizeOf1, 1, &ssof1ok1);
+	test_seq_of(TESTSeqSizeOf1, 0, &ssof1f2);
+    }
+    {
+	TESTSeqSizeOf2 ssof2f1 = { 0, NULL };
+	TESTSeqSizeOf2 ssof2ok1 = { 1, integers };
+	TESTSeqSizeOf2 ssof2ok2 = { 2, integers };
+	TESTSeqSizeOf2 ssof2f2 = { 3, integers };
+	
+	test_seq_of(TESTSeqSizeOf2, 0, &ssof2f1);
+	test_seq_of(TESTSeqSizeOf2, 1, &ssof2ok1);
+	test_seq_of(TESTSeqSizeOf2, 1, &ssof2ok2);
+	test_seq_of(TESTSeqSizeOf2, 0, &ssof2f2);
+    }
+    {
+	TESTSeqSizeOf3 ssof3f1 = { 0, NULL };
+	TESTSeqSizeOf3 ssof3ok1 = { 1, integers };
+	TESTSeqSizeOf3 ssof3ok2 = { 2, integers };
+	
+	test_seq_of(TESTSeqSizeOf3, 0, &ssof3f1);
+	test_seq_of(TESTSeqSizeOf3, 1, &ssof3ok1);
+	test_seq_of(TESTSeqSizeOf3, 1, &ssof3ok2);
+    }
+    {
+	TESTSeqSizeOf4 ssof4ok1 = { 0, NULL };
+	TESTSeqSizeOf4 ssof4ok2 = { 1, integers };
+	TESTSeqSizeOf4 ssof4ok3 = { 2, integers };
+	TESTSeqSizeOf4 ssof4f1  = { 3, integers };
+	
+	test_seq_of(TESTSeqSizeOf4, 1, &ssof4ok1);
+	test_seq_of(TESTSeqSizeOf4, 1, &ssof4ok2); 
+	test_seq_of(TESTSeqSizeOf4, 1, &ssof4ok3);
+	test_seq_of(TESTSeqSizeOf4, 0, &ssof4f1);
+   }
+
+    return 0;
+}
+
+
 
 int
 main(int argc, char **argv)
@@ -873,6 +949,7 @@ main(int argc, char **argv)
     ret += check_fail_choice();
 
     ret += check_seq();
+    ret += check_seq_of_size();
 
     return ret;
 }
