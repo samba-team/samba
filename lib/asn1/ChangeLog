@@ -1,3 +1,9 @@
+2007-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-gen.c: test SEQ OF SIZE (...)
+
+	* Makefile.am: Include more sizeof tests.
+
 2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* try to avoid aliasing of pointers enum {} vs int
