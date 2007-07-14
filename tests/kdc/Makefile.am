@@ -104,6 +104,7 @@ CLEANFILES= \
 
 
 EXTRA_DIST = \
+	check-kadmin.in \
 	check-kdc.in \
 	check-referral.in \
 	check-uu.in \
