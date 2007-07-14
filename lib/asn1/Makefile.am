@@ -438,14 +438,13 @@ gen_files_kx509 =					\
 	asn1_Kx509Response.x				\
 	asn1_Kx509Request.x
 
-noinst_PROGRAMS = asn1_compile asn1_print asn1_gen asn1_parse
+noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
 
 TESTS = check-der check-gen check-timegm
 check_PROGRAMS = $(TESTS)
 
 asn1_gen_SOURCES = asn1_gen.c
 asn1_print_SOURCES = asn1_print.c
-asn1_parse_SOURCES = asn1_parse.c
 check_der_SOURCES = check-der.c check-common.c check-common.h
 
 dist_check_gen_SOURCES = check-gen.c check-common.c check-common.h
@@ -500,7 +499,6 @@ check_der_LDADD = \
 
 check_gen_LDADD = $(check_der_LDADD)
 asn1_print_LDADD = $(check_der_LDADD)
-asn1_parse_LDADD = $(check_der_LDADD)
 asn1_gen_LDADD = $(check_der_LDADD)
 check_timegm_LDADD = $(check_der_LDADD)
 
