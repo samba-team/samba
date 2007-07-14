@@ -30,6 +30,7 @@ krb5.conf: krb5.conf.in Makefile
 CLEANFILES= \
 	$(TESTS) \
 	*.tmp \
+	*.class \
 	current-db* \
 	krb5.conf \
 	messages.log
