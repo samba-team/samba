@@ -69,8 +69,10 @@ ctdb_wait_tcp_ports() {
 	          /usr/bin/netcat -z 127.0.0.1 $p || all_ok=0
 	      elif [ -x /usr/bin/nc ]; then
 	          /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
+	      elif [ -x /usr/bin/netstat ]; then
+	          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p .*LISTEN") || all_ok=0
 	      else 
-		  echo "`date` netcat not found - cannot check tcp ports"
+		  echo "`date` - No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
 		  return
 	      fi
 	  done
