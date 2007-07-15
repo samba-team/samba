@@ -703,6 +703,7 @@ HEIMDAL_KRB5_1.0 {
 		# testing
 		_krb5_aes_cts_encrypt;
 		_krb5_n_fold;
+		_krb5_expand_default_cc_name;
 	local:
 		*;
 };
