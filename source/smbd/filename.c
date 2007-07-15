@@ -237,10 +237,12 @@ NTSTATUS unix_convert(connection_struct *conn,
 		if (p) {
 			if (p[2] == '/') {
 				/* Error code within a pathname. */
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				goto fail;
 			} else if (p[2] == '\0') {
 				/* Error code at the end of a pathname. */
-				return NT_STATUS_OBJECT_NAME_INVALID;
+				result = NT_STATUS_OBJECT_NAME_INVALID;
+				goto fail;
 			}
 		}
 		stat_cache_add(orig_path, name, conn->case_sensitive);
