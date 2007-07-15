@@ -1,5 +1,9 @@
 2007-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5-v4compat.h: Include "krb_err.h".
+
+	* lib/krb5/v4_glue.c: return more interesting error codes.
+
 	* lib/krb5/plugin.c: Prefix enum plugin_type.
 
 	* lib/krb5/krb5_locl.h: Expose plugin structures.
