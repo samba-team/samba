@@ -2944,6 +2944,7 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 					uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
 					if (!puid) {
 						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
+						return False;
 					}
 					own_grp = (unsigned int)*puid;
 					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)puid,tagtype);
@@ -2963,6 +2964,7 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 					gid_t *pgid= (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
 					if (!pgid) {
 						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
+						return False;
 					}
 					own_grp = (unsigned int)*pgid;
 					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)pgid,tagtype);
