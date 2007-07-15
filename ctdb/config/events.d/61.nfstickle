@@ -9,6 +9,7 @@ loadconfig nfs
 cmd="$1"
 shift
 
+[ "$CTDB_MANAGES_NFS" = "yes" ] || exit 0
 [ -z "$NFS_TICKLE_SHARED_DIRECTORY" ] && exit 0
 
 [ -x /usr/bin/sendip ] || exit 0
