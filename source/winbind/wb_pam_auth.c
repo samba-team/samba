@@ -128,6 +128,7 @@ static void pam_auth_crap_recv_domain(struct composite_context *ctx)
 	struct wbsrv_domain *domain;
 
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
+	if (!composite_is_ok(state->ctx)) return;
 	state->creds_state =
 		cli_credentials_get_netlogon_creds(domain->schannel_creds);
 
