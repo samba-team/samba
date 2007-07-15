@@ -457,6 +457,14 @@ static void ctdb_takeover_find_node(struct ctdb_context *ctdb, struct ctdb_node_
 	static int start_node=0;
 	int j;
 
+	/* If we add facilities to add/remove nodes to a cluster at runtime
+	   we must make sure that start_node is suddently not beyond the
+	   end of the nodelist
+	*/
+	if (start_node >= nodemap->num) {
+		start_node = 0;
+	}
+
 	j=start_node;
 	while (1) {
 		if (!(nodemap->nodes[j].flags & mask_flags) &&
