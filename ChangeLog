@@ -1,5 +1,13 @@
 2007-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/plugin.c: Prefix enum plugin_type.
+
+	* lib/krb5/krb5_locl.h: Expose plugin structures.
+	
+	* lib/krb5/krb5.h: Add plugin structures.
+
+	* lib/krb5/krb_err.et: V4 errors.
+
 	* lib/krb5/version-script.map: First version of version script.
 
 2007-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
