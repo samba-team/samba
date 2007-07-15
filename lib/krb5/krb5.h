@@ -761,6 +761,12 @@ typedef struct krb5_sendto_ctx *krb5_sendto_ctx;
 
 typedef krb5_error_code (*krb5_sendto_ctx_func)(krb5_context, krb5_sendto_ctx, void *, const krb5_data *, int *);
 
+struct krb5_plugin;
+enum krb5_plugin_type {
+    PLUGIN_TYPE_DATA = 1,
+    PLUGIN_TYPE_FUNC
+};
+
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
 struct sockaddr;
