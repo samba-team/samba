@@ -295,6 +295,7 @@ int winbind_open_pipe_sock(void)
 	static pid_t our_pid;
 	struct winbindd_request request;
 	struct winbindd_response response;
+	const char *winbindd_socket_dir_env;
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
@@ -307,7 +308,21 @@ int winbind_open_pipe_sock(void)
 		return winbindd_fd;
 	}
 
-	if ((winbindd_fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR)) == -1) {
+#ifdef DEVELOPER
+	winbindd_socket_dir_env = getenv(WINBINDD_SOCKET_DIR_ENV);
+
+	if (!winbindd_socket_dir_env)
+	{
+		winbindd_socket_dir_env = WINBINDD_SOCKET_DIR;
+	}
+#else
+	winbindd_socket_dir_env = WINBINDD_SOCKET_DIR;
+#endif
+
+	winbindd_fd = winbind_named_pipe_sock(winbindd_socket_dir_env);
+
+	if (winbindd_fd == -1)
+	{
 		return -1;
 	}
 

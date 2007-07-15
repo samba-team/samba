@@ -40,6 +40,10 @@
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
+#ifdef DEVELOPER
+#define WINBINDD_SOCKET_DIR_ENV "WINBINDD_SOCKET_DIR"
+#endif
+
 /* Update this when you change the interface.  */
 
 #define WINBIND_INTERFACE_VERSION 18
