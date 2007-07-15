@@ -671,6 +671,7 @@ HEIMDAL_KRB5_1.0 {
 		_krb5_krb_dest_tkt;
 		_krb5_krb_life_to_time;
 		_krb5_krb_decomp_ticket;
+		_krb5_krb_decomp_ticket;
 		_krb5_krb_create_ticket;
 		_krb5_krb_create_ciph;
 		_krb5_krb_create_auth_reply;
@@ -697,7 +698,7 @@ HEIMDAL_KRB5_1.0 {
 		_krb5_plugin_get_next;
 		_krb5_plugin_free;
 		_krb5_AES_string_to_default_iterator;
-		_krb5_krb_decomp_ticket;
+		_krb5_get_host_realm_int;
 	local:
 		*;
 };
