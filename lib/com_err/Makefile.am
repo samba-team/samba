@@ -13,6 +13,10 @@ YFLAGS = -d
 lib_LTLIBRARIES = libcom_err.la
 libcom_err_la_LDFLAGS = -version-info 2:3:1
 
+if versionscript
+libcom_err_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+
 bin_PROGRAMS = compile_et
 
 include_HEADERS = com_err.h com_right.h
@@ -32,3 +36,5 @@ snprintf.c:
 	$(LN_S) $(srcdir)/../roken/snprintf.c .
 strlcpy.c:
 	$(LN_S) $(srcdir)/../roken/strlcpy.c .
+
+EXTRA_DIST = version-script.map
