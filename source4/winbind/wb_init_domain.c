@@ -161,9 +161,10 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	state->domain->netlogon_pipe = NULL;
 
 	if ((!cli_credentials_is_anonymous(state->domain->schannel_creds)) &&
-	    ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
-	     (dom_sid_equal(state->domain->info->sid,
-			    state->service->primary_sid)))) {
+	    ((lp_server_role() == ROLE_DOMAIN_MEMBER) ||
+	     (lp_server_role() == ROLE_DOMAIN_CONTROLLER)) &&
+	    (dom_sid_equal(state->domain->info->sid,
+			   state->service->primary_sid))) {
 		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL;
 
 		/* For debugging, it can be a real pain if all the traffic is encrypted */
@@ -233,6 +234,7 @@ static bool retry_with_schannel(struct init_domain_state *state,
 				void (*continuation)(struct composite_context *))
 {
 	struct composite_context *ctx;
+	state->ctx->status = NT_STATUS_OK;
 	if (state->domain->netlogon_binding->flags & DCERPC_SCHANNEL 
 	    && !(binding->flags & DCERPC_SCHANNEL)) {
 		/* Opening a policy handle failed, perhaps it was
