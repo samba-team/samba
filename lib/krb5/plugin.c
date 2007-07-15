@@ -45,7 +45,7 @@ struct krb5_plugin {
 };
 
 struct plugin {
-    enum plugin_type type;
+    enum krb5_plugin_type type;
     void *name;
     void *symbol;
     struct plugin *next;
