@@ -1,3 +1,7 @@
+2007-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/version-script.map: First version of version script.
+
 2007-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c: Java 1.6 expects the name to be the same type,
