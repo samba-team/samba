@@ -693,6 +693,7 @@ HEIMDAL_KRB5_1.0 {
 		_krb5_pk_octetstring2key;
 		_krb5_pk_allow_proxy_certificate;
 		_krb5_pac_sign;
+		_krb5_plugin_register;
 		_krb5_plugin_find;
 		_krb5_plugin_get_symbol;
 		_krb5_plugin_get_next;
