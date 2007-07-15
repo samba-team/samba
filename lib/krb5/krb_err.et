@@ -7,7 +7,7 @@ id "$Id: krb_err.et,v 1.7 1998/03/29 14:19:52 bg Exp $"
 
 error_table krb
 
-prefix KRBET
+prefix KRB4ET
 ec KSUCCESS,		"Kerberos 4 successful"
 ec KDC_NAME_EXP,	"Kerberos 4 principal expired"
 ec KDC_SERVICE_EXP,	"Kerberos 4 service expired"
