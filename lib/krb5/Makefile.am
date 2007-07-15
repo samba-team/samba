@@ -58,7 +58,7 @@ libkrb5_la_LIBADD = \
 
 lib_LTLIBRARIES = libkrb5.la
 
-ERR_FILES = krb5_err.c heim_err.c k524_err.c
+ERR_FILES = krb5_err.c krb_err.c heim_err.c k524_err.c
 
 libkrb5_la_CPPFLAGS = -DBUILD_KRB5_LIB $(AM_CPPFLAGS)
 
@@ -258,11 +258,21 @@ krb5_HEADERS = locate_plugin.h
 
 build_HEADERZ = $(krb5_HEADERS) # XXX
 
-CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h k524_err.c k524_err.h
+CLEANFILES = \
+	krb5_err.c krb5_err.h \
+	krb_err.c krb_err.h \
+	heim_err.c heim_err.h \
+	k524_err.c k524_err.h
 
-$(libkrb5_la_OBJECTS): krb5_err.h heim_err.h k524_err.h
+$(libkrb5_la_OBJECTS): krb5_err.h krb_err.h heim_err.h k524_err.h
 
-EXTRA_DIST = krb5_err.et heim_err.et k524_err.et $(man_MANS)
+EXTRA_DIST = \
+	krb5_err.et \
+	krb_err.et \
+	heim_err.et \
+	k524_err.et \
+	$(man_MANS) \
+	version-script.map
 
 #sysconf_DATA = krb5.moduli
 
