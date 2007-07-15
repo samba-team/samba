@@ -699,6 +699,9 @@ HEIMDAL_KRB5_1.0 {
 		_krb5_plugin_free;
 		_krb5_AES_string_to_default_iterator;
 		_krb5_get_host_realm_int;
+
+		# testing
+		_krb5_aes_cts_encrypt;
 	local:
 		*;
 };
