@@ -148,12 +148,6 @@ struct krb5_dh_moduli;
 /* v4 glue */
 struct _krb5_krb_auth_data;
 
-struct krb5_plugin;
-enum plugin_type {
-    PLUGIN_TYPE_DATA = 1,
-    PLUGIN_TYPE_FUNC
-};
-
 #include <der.h>
 
 #include <krb5.h>
