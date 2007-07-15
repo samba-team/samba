@@ -36,6 +36,8 @@
 #ifndef __KRB5_V4COMPAT_H__
 #define __KRB5_V4COMPAT_H__
 
+#include "krb_err.h"
+
 /* 
  * This file must only be included with v4 compat glue stuff in
  * heimdal sources.
