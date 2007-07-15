@@ -175,6 +175,10 @@ nodist_libkrb5_la_SOURCES =			\
 
 libkrb5_la_LDFLAGS = -version-info 23:0:1
 
+if versionscript
+libkrb5_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+
 $(libkrb5_la_OBJECTS) $(verify_krb5_conf_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 
 $(srcdir)/krb5-protos.h:
