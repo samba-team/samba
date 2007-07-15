@@ -515,6 +515,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 				if (tmp == NULL) {
 					DEBUG(0, ("malloc failed\n"));
 					result = NT_STATUS_NO_MEMORY;
+					goto fail;
 				}
 				SAFE_FREE(name);
 				name = tmp;
