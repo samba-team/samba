@@ -351,12 +351,12 @@ storage_to_etext(krb5_context context,
 
     size = krb5_storage_seek(sp, 0, SEEK_END);
     if (size < 0)
-	return EINVAL;
+	return KRB4ET_RD_AP_UNDEC;
     size = 8 - (size & 7);
 
     ret = krb5_storage_write(sp, eightzeros, size);
     if (ret != size)
-	return EINVAL;
+	return KRB4ET_RD_AP_UNDEC;
 
     ret = krb5_storage_to_data(sp, &data);
     if (ret)
@@ -435,7 +435,7 @@ _krb5_krb_create_ticket(krb5_context context,
 			     session->keyvalue.data, 
 			     session->keyvalue.length);
     if (ret != session->keyvalue.length) {
-	ret = EINVAL;
+	ret = KRB4ET_INTK_PROT;
 	goto error;
     }
 
@@ -487,7 +487,7 @@ _krb5_krb_create_ciph(krb5_context context,
 			     session->keyvalue.data, 
 			     session->keyvalue.length);
     if (ret != session->keyvalue.length) {
-	ret = EINVAL;
+	ret = KRB4ET_INTK_PROT;
 	goto error;
     }
 
@@ -497,7 +497,7 @@ _krb5_krb_create_ciph(krb5_context context,
     RCHECK(ret, krb5_store_int8(sp, ticket->length), error);
     ret = krb5_storage_write(sp, ticket->data, ticket->length);
     if (ret != ticket->length) {
-	ret = EINVAL;
+	ret = KRB4ET_INTK_PROT;
 	goto error;
     }
     RCHECK(ret, krb5_store_int32(sp, kdc_time), error);
@@ -550,7 +550,7 @@ _krb5_krb_create_auth_reply(krb5_context context,
     RCHECK(ret, krb5_store_int16(sp, cipher->length), error);
     ret = krb5_storage_write(sp, cipher->data, cipher->length);
     if (ret != cipher->length) {
-	ret = EINVAL;
+	ret = KRB4ET_INTK_PROT;
 	goto error;
     }
 
@@ -623,7 +623,7 @@ get_v4_stringz(krb5_storage *sp, char **str, size_t max_len)
     if (strlen(*str) > max_len) {
 	free(*str);
 	*str = NULL;
-	return EINVAL;
+	return KRB4ET_INTK_PROT;
     }
     return 0;
 }
@@ -662,7 +662,7 @@ _krb5_krb_decomp_ticket(krb5_context context,
 	return ENOMEM;
     }
 
-    krb5_storage_set_eof_code(sp, EINVAL); /* XXX */
+    krb5_storage_set_eof_code(sp, KRB4ET_INTK_PROT);
 
     RCHECK(ret, krb5_ret_int8(sp, &ad->k_flags), error);
     RCHECK(ret, get_v4_stringz(sp, &ad->pname, ANAME_SZ), error);
@@ -672,7 +672,7 @@ _krb5_krb_decomp_ticket(krb5_context context,
 	
     size = krb5_storage_read(sp, des_key, sizeof(des_key));
     if (size != sizeof(des_key)) {
-	ret = EINVAL; /* XXX */
+	ret = KRB4ET_INTK_PROT;
 	goto error;
     }
 
@@ -770,7 +770,7 @@ _krb5_krb_rd_req(krb5_context context,
 	return ENOMEM;
     }
 
-    krb5_storage_set_eof_code(sp, EINVAL); /* XXX */
+    krb5_storage_set_eof_code(sp, KRB4ET_INTK_PROT);
 
     ret = krb5_ret_int8(sp, &pvno);
     if (ret) {
@@ -779,7 +779,7 @@ _krb5_krb_rd_req(krb5_context context,
     }
 
     if (pvno != KRB_PROT_VERSION) {
-	ret = EINVAL; /* XXX */
+	ret = KRB4ET_RD_AP_VERSION;
 	krb5_set_error_string(context, "Failed v4 pvno not 4");
 	goto error;
     }
@@ -794,7 +794,7 @@ _krb5_krb_rd_req(krb5_context context,
     type &= ~1;
     
     if(type != AUTH_MSG_APPL_REQUEST && type != AUTH_MSG_APPL_REQUEST_MUTUAL) {
-	ret = EINVAL; /* RD_AP_MSG_TYPE */
+	ret = KRB4ET_RD_AP_MSG_TYPE;
 	krb5_set_error_string(context, "Not a valid v4 request type");
 	goto error;
     }
@@ -807,7 +807,7 @@ _krb5_krb_rd_req(krb5_context context,
 
     size = krb5_storage_read(sp, ticket.data, ticket.length);
     if (size != ticket.length) {
-	ret = EINVAL;
+	ret = KRB4ET_INTK_PROT;
 	krb5_set_error_string(context, "Failed reading v4 ticket");
 	goto error;
     }
@@ -822,7 +822,7 @@ _krb5_krb_rd_req(krb5_context context,
 
     size = krb5_storage_read(sp, eaut.data, eaut.length);
     if (size != eaut.length) {
-	ret = EINVAL;
+	ret = KRB4ET_INTK_PROT;
 	krb5_set_error_string(context, "Failed reading v4 authenticator");
 	goto error;
     }
@@ -858,20 +858,20 @@ _krb5_krb_rd_req(krb5_context context,
 	strcmp(ad->pinst, r_instance) != 0 ||
 	strcmp(ad->prealm, r_realm) != 0) {
 	krb5_set_error_string(context, "v4 principal mismatch");
-	ret = EINVAL; /* RD_AP_INCON */
+	ret = KRB4ET_RD_AP_INCON;
 	goto error;
     }
     
     if (from_addr && ad->address && from_addr != ad->address) {
 	krb5_set_error_string(context, "v4 bad address in ticket");
-	ret = EINVAL; /* RD_AP_BADD */
+	ret = KRB4ET_RD_AP_BADD;
 	goto error;
     }
 
     gettimeofday(&tv, NULL);
     delta_t = abs((int)(tv.tv_sec - r_time_sec));
     if (delta_t > CLOCK_SKEW) {
-        ret = EINVAL; /* RD_AP_TIME */
+        ret = KRB4ET_RD_AP_TIME;
 	krb5_set_error_string(context, "v4 clock skew");
 	goto error;
     }
@@ -881,13 +881,13 @@ _krb5_krb_rd_req(krb5_context context,
     tkt_age = tv.tv_sec - ad->time_sec;
     
     if ((tkt_age < 0) && (-tkt_age > CLOCK_SKEW)) {
-        ret = EINVAL; /* RD_AP_NYV */
+        ret = KRB4ET_RD_AP_NYV;
 	krb5_set_error_string(context, "v4 clock skew for expiration");
 	goto error;
     }
 
     if (tv.tv_sec > _krb5_krb_life_to_time(ad->time_sec, ad->life)) {
-	ret = EINVAL; /* RD_AP_EXP */
+	ret = KRB4ET_RD_AP_EXP;
 	krb5_set_error_string(context, "v4 ticket expired");
 	goto error;
     }
