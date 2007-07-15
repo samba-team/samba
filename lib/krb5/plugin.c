@@ -78,7 +78,7 @@ _krb5_plugin_get_next(struct krb5_plugin *p)
 
 static krb5_error_code
 loadlib(krb5_context context,
-	enum plugin_type type,
+	enum krb5_plugin_type type,
 	const char *name,
 	const char *lib,
 	struct krb5_plugin **e)
@@ -116,7 +116,7 @@ loadlib(krb5_context context,
 
 krb5_error_code
 _krb5_plugin_register(krb5_context context,
-		      enum plugin_type type,
+		      enum krb5_plugin_type type,
 		      const char *name, 
 		      void *symbol)
 {
@@ -146,7 +146,7 @@ _krb5_plugin_register(krb5_context context,
 
 krb5_error_code
 _krb5_plugin_find(krb5_context context,
-		  enum plugin_type type,
+		  enum krb5_plugin_type type,
 		  const char *name, 
 		  struct krb5_plugin **list)
 {
