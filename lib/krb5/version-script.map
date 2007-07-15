@@ -645,6 +645,16 @@ HEIMDAL_KRB5_1.0 {
 		krb5_write_safe_message;
 		krb5_xfree;
 
+		# com_err error tables
+		initialize_krb5_error_table_r;
+		initialize_krb5_error_table;
+		initialize_krb_error_table_r;
+		initialize_krb_error_table;
+		initialize_heim_error_table_r;
+		initialize_heim_error_table;
+		initialize_k524_error_table_r;
+		initialize_k524_error_table;
+
 		# variables
 		krb5_mcc_ops;
 		krb5_acc_ops;
