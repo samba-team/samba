@@ -12,7 +12,6 @@ cmd="$1"
 shift
 
 [ -z "$CTDB_PUBLIC_INTERFACE" ] && {
-    [ "$cmd" = "startup" ] && {
 	echo "Event script $0 : CTDB_PUBLIC_INTERFACE not set. Nothing to do."
     }
     exit 0
