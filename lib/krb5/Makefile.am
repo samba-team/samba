@@ -280,6 +280,8 @@ EXTRA_DIST = \
 
 krb5_err.h: krb5_err.et
 
+krb_err.h: krb_err.et
+
 heim_err.h: heim_err.et
 
 k524_err.h: k524_err.et
