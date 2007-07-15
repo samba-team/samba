@@ -13,7 +13,7 @@
 2007-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c: Java 1.6 expects the name to be the same type,
-	lets allow that uncomplicated name-types.
+	lets allow that for uncomplicated name-types.
 
 2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
