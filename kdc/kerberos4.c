@@ -275,7 +275,6 @@ _kdc_do_version4(krb5_context context,
 	ret = _kdc_get_des_key(context, server, TRUE, FALSE, &skey);
 	if(ret){
 	    kdc_log(context, config, 0, "no suitable DES key for server");
-	    /* XXX */
 	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "no suitable DES key for server");
 	    goto out1;
@@ -410,7 +409,6 @@ _kdc_do_version4(krb5_context context,
 	if(ret){
 	    kdc_log(context, config, 0, 
 		    "no suitable DES key for krbtgt (krb4)");
-	    /* XXX */
 	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "no suitable DES key for krbtgt");
 	    goto out2;
@@ -517,7 +515,6 @@ _kdc_do_version4(krb5_context context,
 				server, server_name,
 				FALSE);
 	if (ret) {
-	    /* good error code? */
 	    make_err_reply(context, reply, KRB4ET_KDC_NAME_EXP,
 			   "operation not allowed");
 	    goto out2;
@@ -527,7 +524,6 @@ _kdc_do_version4(krb5_context context,
 	if(ret){
 	    kdc_log(context, config, 0, 
 		    "no suitable DES key for server (krb4)");
-	    /* XXX */
 	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "no suitable DES key for server");
 	    goto out2;
