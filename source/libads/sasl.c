@@ -75,7 +75,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			cred.bv_val = (char *)msg1.data;
 			cred.bv_len = msg1.length;
 			scred = NULL;
-			rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
+			rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
 			data_blob_free(&msg1);
 			if ((rc != LDAP_SASL_BIND_IN_PROGRESS) && (rc != 0)) {
 				if (scred) {
@@ -157,7 +157,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 	cred.bv_val = (char *)blob.data;
 	cred.bv_len = blob.length;
 
-	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
+	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
 
 	data_blob_free(&blob);
 	data_blob_free(&session_key);
@@ -183,7 +183,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	BOOL got_kerberos_mechanism = False;
 #endif
 
-	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", NULL, NULL, NULL, &scred);
+	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", NULL, NULL, NULL, &scred);
 
 	if (rc != LDAP_SASL_BIND_IN_PROGRESS) {
 		status = ADS_ERROR(rc);
@@ -397,7 +397,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 		cred.bv_val = (char *)output_token.value;
 		cred.bv_len = output_token.length;
 
-		rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+		rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSSAPI", &cred, NULL, NULL, 
 				      &scred);
 		if (rc != LDAP_SASL_BIND_IN_PROGRESS) {
 			status = ADS_ERROR(rc);
@@ -471,7 +471,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	cred.bv_val = (char *)input_token.value;
 	cred.bv_len = input_token.length;
 
-	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSSAPI", &cred, NULL, NULL, 
 			      &scred);
 	status = ADS_ERROR(rc);
 
@@ -515,7 +515,7 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) return status;
 
-	values = ldap_get_values(ads->ld, res, "supportedSASLMechanisms");
+	values = ldap_get_values(ads->ldap.ld, res, "supportedSASLMechanisms");
 
 	/* try our supported mechanisms in order */
 	for (i=0;sasl_mechanisms[i].name;i++) {
