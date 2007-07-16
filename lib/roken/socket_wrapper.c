@@ -1837,40 +1837,11 @@ _PUBLIC_ int swrap_close(int fd)
 	return ret;
 }
 
-_PUBLIC_ int swrap_dup(int oldd)
+static int
+dup_internal(const struct socket_info *si_oldd, int fd)
 {
-	struct socket_info *si;
+	struct socket_info *si_newd;
 
-	si = find_socket_info(oldd);
-	if (si == NULL)
-		return real_dup(oldd);
-
-	abort(); /* write code here */
-}
-
-
-_PUBLIC_ int swrap_dup2(int oldd, int newd)
-{
-	struct socket_info *si_newd, *si_oldd;
-	int fd;
-
-	if (newd == oldd)
-	    return newd;
-
-	si_oldd = find_socket_info(oldd);
-	si_newd = find_socket_info(newd);
-
-	if (si_oldd == NULL && si_newd == NULL)
-		return real_dup2(oldd, newd);
-
-	fd = real_dup2(si_oldd->fd, newd);
-	if (fd < 0)
-		return fd;
-
-	/* close new socket first */
-	if (si_newd)
-	       	swrap_close(newd);
-	   
 	si_newd = (struct socket_info *)calloc(1, sizeof(struct socket_info));
 
 	si_newd->fd = fd;
@@ -1896,4 +1867,47 @@ _PUBLIC_ int swrap_dup2(int oldd, int newd)
 	SWRAP_DLIST_ADD(sockets, si_newd);
 
 	return fd;
+}
+
+
+_PUBLIC_ int swrap_dup(int oldd)
+{
+	struct socket_info *si;
+	int fd;
+
+	si = find_socket_info(oldd);
+	if (si == NULL)
+		return real_dup(oldd);
+
+	fd = real_dup(si->fd);
+	if (fd < 0)
+		return fd;
+
+	return dup_internal(si, fd);
+}
+
+
+_PUBLIC_ int swrap_dup2(int oldd, int newd)
+{
+	struct socket_info *si_newd, *si_oldd;
+	int fd;
+
+	if (newd == oldd)
+	    return newd;
+
+	si_oldd = find_socket_info(oldd);
+	si_newd = find_socket_info(newd);
+
+	if (si_oldd == NULL && si_newd == NULL)
+		return real_dup2(oldd, newd);
+
+	fd = real_dup2(si_oldd->fd, newd);
+	if (fd < 0)
+		return fd;
+
+	/* close new socket first */
+	if (si_newd)
+	       	swrap_close(newd);
+
+	return dup_internal(si_oldd, fd);
 }
