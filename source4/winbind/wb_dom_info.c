@@ -45,7 +45,7 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *result, *ctx;
 	struct get_dom_info_state *state;
-	struct dom_sid *dup_sid;
+	struct dom_sid *dom_sid;
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
 
@@ -57,11 +57,17 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	state->info = talloc_zero(state, struct wb_dom_info);
 	if (state->info == NULL) goto failed;
 
-	dup_sid = dom_sid_dup(state, sid);
-	if (dup_sid == NULL) goto failed;
+	state->info->name = talloc_strdup(state->info, domain_name);
+	if (state->info->name == NULL) goto failed;
+
+	state->info->sid = dom_sid_dup(state->info, sid);
+	if (state->info->sid == NULL) goto failed;
+
+	dom_sid = dom_sid_dup(mem_ctx, sid);
+	if (dom_sid == NULL) goto failed;
 
 	ctx = finddcs_send(mem_ctx, domain_name, NBT_NAME_LOGON, 
-			   dup_sid, lp_name_resolve_order(), service->task->event_ctx, 
+			   dom_sid, lp_name_resolve_order(), service->task->event_ctx, 
 			   service->task->msg_ctx);
 	if (ctx == NULL) goto failed;
 

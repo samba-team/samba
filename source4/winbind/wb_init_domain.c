@@ -202,7 +202,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct init_domain_state);
 
-	state->ctx->status = dcerpc_pipe_connect_b_recv(ctx, state, 
+	state->ctx->status = dcerpc_pipe_connect_b_recv(ctx, state->domain, 
 						   &state->domain->netlogon_pipe);
 	
 	if (!composite_is_ok(state->ctx)) {
@@ -224,13 +224,17 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 
 	/* this will make the secondary connection on the same IPC$ share, 
 	   secured with SPNEGO or NTLMSSP */
-	ctx = dcerpc_secondary_connection_send(state->domain->netlogon_pipe,
-					       state->domain->lsa_binding);
+	ctx = dcerpc_secondary_auth_connection_send(state->domain->netlogon_pipe,
+						    state->domain->lsa_binding,
+						    &dcerpc_table_lsarpc,
+						    state->domain->schannel_creds
+		);
 	composite_continue(state->ctx, ctx, init_domain_recv_lsa_pipe, state);
 }
 
 static bool retry_with_schannel(struct init_domain_state *state, 
 				struct dcerpc_binding *binding,
+				const struct dcerpc_interface_table *table,
 				void (*continuation)(struct composite_context *))
 {
 	struct composite_context *ctx;
@@ -246,8 +250,10 @@ static bool retry_with_schannel(struct init_domain_state *state,
 
 		/* Try again, likewise on the same IPC$ share, 
 		   secured with SCHANNEL */
-		ctx = dcerpc_secondary_connection_send(state->domain->netlogon_pipe,
-						       binding);
+		ctx = dcerpc_secondary_auth_connection_send(state->domain->netlogon_pipe,
+							    binding,
+							    table, 
+							    state->domain->schannel_creds);
 		composite_continue(state->ctx, ctx, continuation, state);		
 		return true;
 	} else {
@@ -264,10 +270,11 @@ static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct init_domain_state);
 
-	state->ctx->status = dcerpc_secondary_connection_recv(ctx, 
-							      &state->domain->lsa_pipe);
+	state->ctx->status = dcerpc_secondary_auth_connection_recv(ctx, state->domain,
+								   &state->domain->lsa_pipe);
 	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_LOGON_FAILURE)) {
 		if (retry_with_schannel(state, state->domain->lsa_binding, 
+					&dcerpc_table_lsarpc,
 					init_domain_recv_lsa_pipe)) {
 			return;
 		}
@@ -307,6 +314,7 @@ static void init_domain_recv_lsa_policy(struct rpc_request *req)
 	if ((!NT_STATUS_IS_OK(state->ctx->status)
 	      || !NT_STATUS_IS_OK(state->lsa_openpolicy.out.result))) {
 		if (retry_with_schannel(state, state->domain->lsa_binding, 
+					&dcerpc_table_lsarpc,
 					init_domain_recv_lsa_pipe)) {
 			return;
 		}

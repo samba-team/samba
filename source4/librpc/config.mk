@@ -476,7 +476,8 @@ OBJ_FILES = \
 		rpc/dcerpc_smb.o \
 		rpc/dcerpc_smb2.o \
 		rpc/dcerpc_sock.o \
-		rpc/dcerpc_connect.o
+		rpc/dcerpc_connect.o \
+		rpc/dcerpc_secondary.o
 PRIVATE_DEPENDENCIES = \
 		samba-socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
 		LIBNDR NDR_DCERPC RPC_NDR_EPMAPPER \
