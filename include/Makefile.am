@@ -64,6 +64,7 @@ CLEANFILES =			\
 	heimntlm.h		\
 	heimntlm-protos.h	\
 	kafs.h			\
+	krb_err.h		\
 	krb5-protos.h		\
 	krb5-private.h		\
 	krb5-types.h		\
