@@ -2,12 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-if do_roken_rename
-ES = snprintf.c strlcpy.c
-endif
-
-AM_CPPFLAGS += $(ROKEN_RENAME)
-
 YFLAGS = -d
 
 lib_LTLIBRARIES = libcom_err.la
@@ -23,6 +17,11 @@ include_HEADERS = com_err.h com_right.h
 
 compile_et_SOURCES = compile_et.c compile_et.h parse.y lex.l lex.h
 
+if do_roken_rename
+ES = snprintf.c strlcpy.c
+endif
+
+libcom_err_la_CPPFLAGS = $(ROKEN_RENAME)
 libcom_err_la_SOURCES = error.c com_err.c roken_rename.h $(ES)
 
 $(compile_et_OBJECTS): parse.h parse.c ## XXX broken automake 1.4s
