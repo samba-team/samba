@@ -149,6 +149,8 @@
 #define real_send send
 #define real_socket socket
 #define real_close close
+#define real_dup dup
+#define real_dup2 dup2
 #endif
 
 #ifdef HAVE_GETTIMEOFDAY_TZ
@@ -1833,4 +1835,65 @@ _PUBLIC_ int swrap_close(int fd)
 	free(si);
 
 	return ret;
+}
+
+_PUBLIC_ int swrap_dup(int oldd)
+{
+	struct socket_info *si;
+
+	si = find_socket_info(oldd);
+	if (si == NULL)
+		return real_dup(oldd);
+
+	abort(); /* write code here */
+}
+
+
+_PUBLIC_ int swrap_dup2(int oldd, int newd)
+{
+	struct socket_info *si_newd, *si_oldd;
+	int fd;
+
+	if (newd == oldd)
+	    return newd;
+
+	si_oldd = find_socket_info(oldd);
+	si_newd = find_socket_info(newd);
+
+	if (si_oldd == NULL && si_newd == NULL)
+		return real_dup2(oldd, newd);
+
+	fd = real_dup2(si_oldd->fd, newd);
+	if (fd < 0)
+		return fd;
+
+	/* close new socket first */
+	if (si_newd)
+	       	swrap_close(newd);
+	   
+	si_newd = (struct socket_info *)calloc(1, sizeof(struct socket_info));
+
+	si_newd->fd = fd;
+
+	si_newd->family = si_oldd->family;
+	si_newd->type = si_oldd->type;
+	si_newd->protocol = si_oldd->protocol;
+	si_newd->bound = si_oldd->bound;
+	si_newd->bcast = si_oldd->bcast;
+	if (si_oldd->path)
+		si_newd->path = strdup(si_oldd->path);
+	if (si_oldd->tmp_path)
+		si_newd->tmp_path = strdup(si_oldd->tmp_path);
+	si_newd->myname =
+	    sockaddr_dup(si_oldd->myname, si_oldd->myname_len);
+	si_newd->myname_len = si_oldd->myname_len;
+	si_newd->peername = 
+	    sockaddr_dup(si_oldd->peername, si_oldd->peername_len);
+	si_newd->peername_len = si_oldd->peername_len;
+
+	si_newd->io = si_oldd->io;
+
+	SWRAP_DLIST_ADD(sockets, si_newd);
+
+	return fd;
 }
