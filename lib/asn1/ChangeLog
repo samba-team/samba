@@ -1,3 +1,8 @@
+2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse.y: Passe object id is its part of the module defintion
+	statement.
+
 2007-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-gen.c: test SEQ OF SIZE (...)
