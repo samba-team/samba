@@ -28,22 +28,21 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/winbind.h"
 
 /* Oh, there is so much to keep an eye on when authenticating a user.  Oh my! */
 struct pam_auth_crap_state {
 	struct composite_context *ctx;
 	struct event_context *event_ctx;
-	uint32_t logon_parameters;
-	const char *domain_name;
-	const char *user_name;
-	char *unix_username;
-	const char *workstation;
-	DATA_BLOB chal, nt_resp, lm_resp;
 
-        struct creds_CredentialState *creds_state;
-        struct netr_Authenticator auth, auth2;
+	struct winbind_SamLogon *req;
+	char *unix_username;
+
         struct netr_NetworkInfo ninfo;
         struct netr_LogonSamLogon r;
+
+	const char *user_name;
+	const char *domain_name;
 
 	struct netr_UserSessionKey user_session_key;
 	struct netr_LMSessionKey lm_key;
@@ -54,8 +53,7 @@ struct pam_auth_crap_state {
  * NTLM authentication.
 */
 
-static void pam_auth_crap_recv_domain(struct composite_context *ctx);
-static void pam_auth_crap_recv_samlogon(struct rpc_request *req);
+static void pam_auth_crap_recv_logon(struct composite_context *ctx);
 
 struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 						    struct wbsrv_service *service,
@@ -69,6 +67,8 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *result, *ctx;
 	struct pam_auth_crap_state *state;
+	struct netr_NetworkInfo *ninfo;
+	DATA_BLOB tmp_nt_resp, tmp_lm_resp;
 
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
@@ -78,35 +78,43 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 	state->ctx = result;
 	result->private_data = state;
 
-	state->logon_parameters = logon_parameters;
+	state->req = talloc(state, struct winbind_SamLogon);
 
-	state->domain_name = talloc_strdup(state, domain);
-	if (state->domain_name == NULL) goto failed;
+	state->req->in.logon_level = 2;
+	state->req->in.validation_level = 3;
+	ninfo = state->req->in.logon.network = talloc(state, struct netr_NetworkInfo);
+	if (ninfo == NULL) goto failed;
+	
+	ninfo->identity_info.account_name.string =  talloc_strdup(state, user);
+	ninfo->identity_info.domain_name.string =  talloc_strdup(state, domain);
+	ninfo->identity_info.parameter_control = logon_parameters;
+	ninfo->identity_info.logon_id_low = 0;
+	ninfo->identity_info.logon_id_high = 0;
+	ninfo->identity_info.workstation.string = talloc_strdup(state, workstation);
 
-	state->user_name = talloc_strdup(state, user);
-	if (state->user_name == NULL) goto failed;
+	SMB_ASSERT(chal.length == sizeof(ninfo->challenge));
+	memcpy(ninfo->challenge, chal.data,
+	       sizeof(ninfo->challenge));
+
+	tmp_nt_resp = data_blob_talloc(ninfo, nt_resp.data, nt_resp.length);
+	if ((nt_resp.data != NULL) &&
+	    (tmp_nt_resp.data == NULL)) goto failed;
+
+	tmp_lm_resp = data_blob_talloc(ninfo, lm_resp.data, lm_resp.length);
+	if ((lm_resp.data != NULL) &&
+	    (tmp_lm_resp.data == NULL)) goto failed;
+
+	ninfo->nt.length = tmp_nt_resp.length;
+	ninfo->nt.data = tmp_nt_resp.data;
+	ninfo->lm.length = tmp_lm_resp.length;
+	ninfo->lm.data = tmp_lm_resp.data;
 
 	state->unix_username = NULL;
 
-	state->workstation = talloc_strdup(state, workstation);
-	if (state->workstation == NULL) goto failed;
-
-	state->chal = data_blob_talloc(state, chal.data, chal.length);
-	if ((chal.data != NULL) && (state->chal.data == NULL)) goto failed;
-
-	state->nt_resp = data_blob_talloc(state, nt_resp.data, nt_resp.length);
-	if ((nt_resp.data != NULL) &&
-	    (state->nt_resp.data == NULL)) goto failed;
-
-	state->lm_resp = data_blob_talloc(state, lm_resp.data, lm_resp.length);
-	if ((lm_resp.data != NULL) &&
-	    (state->lm_resp.data == NULL)) goto failed;
-
-	ctx = wb_sid2domain_send(state, service, service->primary_sid);
+	ctx = wb_sam_logon_send(mem_ctx, service, state->req);
 	if (ctx == NULL) goto failed;
 
-	ctx->async.fn = pam_auth_crap_recv_domain;
-	ctx->async.private_data = state;
+	composite_continue(result, ctx, pam_auth_crap_recv_logon, state);
 	return result;
 
  failed:
@@ -119,95 +127,19 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 
     Send of a SamLogon request to authenticate a user.
 */
-static void pam_auth_crap_recv_domain(struct composite_context *ctx)
+static void pam_auth_crap_recv_logon(struct composite_context *ctx)
 {
+	DATA_BLOB tmp_blob;
+	struct netr_SamBaseInfo *base;
 	struct pam_auth_crap_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct pam_auth_crap_state);
-	struct rpc_request *req;
-	struct wbsrv_domain *domain;
 
-	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
+	state->ctx->status = wb_sam_logon_recv(ctx, state, state->req);
 	if (!composite_is_ok(state->ctx)) return;
-	state->creds_state =
-		cli_credentials_get_netlogon_creds(domain->schannel_creds);
-
-	creds_client_authenticator(state->creds_state, &state->auth);
-
-	state->ninfo.identity_info.account_name.string = state->user_name;
-	state->ninfo.identity_info.domain_name.string =  state->domain_name;
-	state->ninfo.identity_info.parameter_control = state->logon_parameters;
-	state->ninfo.identity_info.logon_id_low = 0;
-	state->ninfo.identity_info.logon_id_high = 0;
-	state->ninfo.identity_info.workstation.string = state->workstation;
-
-	SMB_ASSERT(state->chal.length == sizeof(state->ninfo.challenge));
-	memcpy(state->ninfo.challenge, state->chal.data,
-	       sizeof(state->ninfo.challenge));
-
-	state->ninfo.nt.length = state->nt_resp.length;
-	state->ninfo.nt.data = state->nt_resp.data;
-	state->ninfo.lm.length = state->lm_resp.length;
-	state->ninfo.lm.data = state->lm_resp.data;
-
-	state->r.in.server_name = talloc_asprintf(
-		state, "\\\\%s", dcerpc_server_name(domain->netlogon_pipe));
-	if (composite_nomem(state->r.in.server_name, state->ctx)) return;
-
-	ZERO_STRUCT(state->auth2);
-
-	state->r.in.computer_name =
-		cli_credentials_get_workstation(domain->schannel_creds);
-	state->r.in.credential = &state->auth;
-	state->r.in.return_authenticator = &state->auth2;
-	state->r.in.logon_level = 2;
-	state->r.in.validation_level = 3;
-	state->r.in.logon.network = &state->ninfo;
-	state->r.out.return_authenticator = NULL;
-
-	req = dcerpc_netr_LogonSamLogon_send(domain->netlogon_pipe, state,
-					     &state->r);
-	composite_continue_rpc(state->ctx, req, pam_auth_crap_recv_samlogon,
-			       state);
-}
-
-/* 
-   NTLM Authentication 
-   
-   Check the SamLogon reply, decrypt and parse out the session keys and the
-   info3 structure.
-*/
-static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
-{
-	struct pam_auth_crap_state *state =
-		talloc_get_type(req->async.private_data,
-				struct pam_auth_crap_state);
-	struct netr_SamBaseInfo *base;
-	DATA_BLOB tmp_blob;
-
-	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(state->ctx)) return;
-
-	if ((state->r.out.return_authenticator == NULL) ||
-	    (!creds_client_check(state->creds_state,
-				 &state->r.out.return_authenticator->cred))) {
-		DEBUG(0, ("Credentials check failed!\n"));
-		composite_error(state->ctx, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-
-	state->ctx->status = state->r.out.result;
-	if (!composite_is_ok(state->ctx)) return;
-
-	/* Decrypt the session keys before we reform the info3, so the
-	 * person on the other end of winbindd pipe doesn't have to.
-	 * They won't have the encryption key anyway */
-	creds_decrypt_samlogon(state->creds_state,
-			       state->r.in.validation_level,
-			       &state->r.out.validation);
 
 	state->ctx->status = ndr_push_struct_blob(
-		&tmp_blob, state, state->r.out.validation.sam3,
+		&tmp_blob, state, state->req->out.validation.sam3,
 		(ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
 	if (!composite_is_ok(state->ctx)) return;
 
@@ -220,25 +152,7 @@ static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
 	SIVAL(state->info3.data, 0, 1);
 	memcpy(state->info3.data+4, tmp_blob.data, tmp_blob.length);
 
-	/* We actually only ask for level 3, and assume it above, but 
-         * anyway... */
-
-	base = NULL;
-	switch(state->r.in.validation_level) {
-	case 2:
-		base = &state->r.out.validation.sam2->base;
-		break;
-	case 3:
-		base = &state->r.out.validation.sam3->base;
-		break;
-	case 6:
-		base = &state->r.out.validation.sam6->base;
-		break;
-	}
-	if (base == NULL) {
-		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
-		return;
-	}
+	base = &state->req->out.validation.sam3->base;
 
 	state->user_session_key = base->key;
 	state->lm_key = base->LMSessKey;

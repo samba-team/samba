@@ -67,8 +67,10 @@ struct composite_context *wb_connect_samr_send(TALLOC_CTX *mem_ctx,
 
 	/* this will make the secondary connection on the same IPC$ share, 
 	   secured with SPNEGO, NTLMSSP or SCHANNEL */
-	ctx = dcerpc_secondary_connection_send(domain->netlogon_pipe,
-					       domain->samr_binding);
+	ctx = dcerpc_secondary_auth_connection_send(domain->netlogon_pipe,
+						    domain->samr_binding,
+						    &dcerpc_table_samr,
+						    domain->schannel_creds);
 	composite_continue(state->ctx, ctx, connect_samr_recv_pipe, state);
 	return result;
 	
@@ -84,8 +86,8 @@ static void connect_samr_recv_pipe(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct connect_samr_state);
 
-	state->ctx->status = dcerpc_secondary_connection_recv(ctx, 
-							      &state->samr_pipe);
+	state->ctx->status = dcerpc_secondary_auth_connection_recv(ctx, state, 
+								   &state->samr_pipe);
 	if (!composite_is_ok(state->ctx)) return;
 			
 	state->connect_handle = talloc(state, struct policy_handle);
