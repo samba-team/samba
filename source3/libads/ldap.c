@@ -224,8 +224,8 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 		
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.netbios_domain);
 
-	ads->ldap_port = LDAP_PORT;
-	ads->ldap_ip = *interpret_addr2(srv);
+	ads->ldap.port = LDAP_PORT;
+	ads->ldap.ip = *interpret_addr2(srv);
 	SAFE_FREE(srv);
 	
 	/* Store our site name. */
@@ -372,8 +372,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 
-	ads->last_attempt = time(NULL);
-	ads->ld = NULL;
+	ads->ldap.last_attempt = time(NULL);
+	ads->ldap.ld = NULL;
 
 	/* try with a user specified server */
 
@@ -390,7 +390,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	return ADS_ERROR_NT(ntstatus);
 
 got_connection:
-	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap_ip)));
+	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap.ip)));
 
 	if (!ads->auth.user_name) {
 		/* Must use the userPrincipalName value here or sAMAccountName
@@ -404,7 +404,7 @@ got_connection:
 	}
 
 	if (!ads->auth.kdc_server) {
-		ads->auth.kdc_server = SMB_STRDUP(inet_ntoa(ads->ldap_ip));
+		ads->auth.kdc_server = SMB_STRDUP(inet_ntoa(ads->ldap.ip));
 	}
 
 #if KRB5_DNS_HACK
@@ -426,7 +426,7 @@ got_connection:
 	
 	/* Otherwise setup the TCP LDAP session */
 
-	if ( (ads->ld = ldap_open_with_timeout(ads->config.ldap_server_name, 
+	if ( (ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name, 
 		LDAP_PORT, lp_ldap_timeout())) == NULL )
 	{
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
@@ -434,13 +434,13 @@ got_connection:
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
-		saf_store( ads->server.workgroup, inet_ntoa(ads->ldap_ip));
-		saf_store( ads->server.realm, inet_ntoa(ads->ldap_ip));
+		saf_store( ads->server.workgroup, inet_ntoa(ads->ldap.ip));
+		saf_store( ads->server.realm, inet_ntoa(ads->ldap.ip));
 	}
 
-	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-	status = ADS_ERROR(smb_ldap_start_tls(ads->ld, version));
+	status = ADS_ERROR(smb_ldap_start_tls(ads->ldap.ld, version));
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
@@ -455,11 +455,11 @@ got_connection:
 	/* Now do the bind */
 	
 	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
-		return ADS_ERROR(ldap_simple_bind_s( ads->ld, NULL, NULL));
+		return ADS_ERROR(ldap_simple_bind_s( ads->ldap.ld, NULL, NULL));
 	}
 
 	if (ads->auth.flags & ADS_AUTH_SIMPLE_BIND) {
-		return ADS_ERROR(ldap_simple_bind_s( ads->ld, ads->auth.user_name, ads->auth.password));
+		return ADS_ERROR(ldap_simple_bind_s( ads->ldap.ld, ads->auth.user_name, ads->auth.password));
 	}
 
 	return ads_sasl_bind(ads);
@@ -471,9 +471,9 @@ got_connection:
  **/
 void ads_disconnect(ADS_STRUCT *ads)
 {
-	if (ads->ld) {
-		ldap_unbind(ads->ld);
-		ads->ld = NULL;
+	if (ads->ldap.ld) {
+		ldap_unbind(ads->ldap.ld);
+		ads->ldap.ld = NULL;
 	}
 }
 
@@ -616,7 +616,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	}
 		
 	/* Paged results only available on ldap v3 or later */
-	ldap_get_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+	ldap_get_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 	if (version < LDAP_VERSION3) {
 		rc =  LDAP_NOT_SUPPORTED;
 		goto done;
@@ -693,9 +693,9 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	   leaving this in despite the control that says don't generate
 	   referrals, in case the server doesn't support it (jmcd)
 	*/
-	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+	ldap_set_option(ads->ldap.ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_with_timeout(ads->ld, utf8_path, scope, utf8_expr, 
+	rc = ldap_search_with_timeout(ads->ldap.ld, utf8_path, scope, utf8_expr, 
 				      search_attrs, 0, controls,
 				      NULL, LDAP_NO_LIMIT,
 				      (LDAPMessage **)res);
@@ -709,7 +709,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	rc = ldap_parse_result(ads->ld, *res, NULL, NULL, NULL,
+	rc = ldap_parse_result(ads->ldap.ld, *res, NULL, NULL, NULL,
 					NULL, &rcontrols,  0);
 
 	if (!rcontrols) {
@@ -928,9 +928,9 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	}
 
 	/* see the note in ads_do_paged_search - we *must* disable referrals */
-	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+	ldap_set_option(ads->ldap.ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_with_timeout(ads->ld, utf8_path, scope, utf8_expr,
+	rc = ldap_search_with_timeout(ads->ldap.ld, utf8_path, scope, utf8_expr,
 				      search_attrs, 0, NULL, NULL, 
 				      LDAP_NO_LIMIT,
 				      (LDAPMessage **)res);
@@ -1007,7 +1007,7 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
 {
 	char *utf8_dn, *unix_dn;
 
-	utf8_dn = ldap_get_dn(ads->ld, msg);
+	utf8_dn = ldap_get_dn(ads->ldap.ld, msg);
 
 	if (!utf8_dn) {
 		DEBUG (5, ("ads_get_dn: ldap_get_dn failed\n"));
@@ -1237,7 +1237,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
-	ret = ldap_modify_ext_s(ads->ld, utf8_dn,
+	ret = ldap_modify_ext_s(ads->ldap.ld, utf8_dn,
 				(LDAPMod **) mods, controls, NULL);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
@@ -1265,7 +1265,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
 
-	ret = ldap_add_s(ads->ld, utf8_dn, (LDAPMod**)mods);
+	ret = ldap_add_s(ads->ldap.ld, utf8_dn, (LDAPMod**)mods);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
@@ -1285,7 +1285,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	ret = ldap_delete_s(ads->ld, utf8_dn);
+	ret = ldap_delete_s(ads->ldap.ld, utf8_dn);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
@@ -1765,7 +1765,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 		goto done;
 	}
 
-	ldap_status = ldap_rename_s(ads->ld, computer_dn, computer_rdn, 
+	ldap_status = ldap_rename_s(ads->ldap.ld, computer_dn, computer_rdn, 
 				    org_unit, 1, NULL, NULL);
 	rc = ADS_ERROR(ldap_status);
 
@@ -1952,10 +1952,10 @@ static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 		char *utf8_field;
 		BerElement *b;
 	
-		for (utf8_field=ldap_first_attribute(ads->ld,
+		for (utf8_field=ldap_first_attribute(ads->ldap.ld,
 						     (LDAPMessage *)msg,&b); 
 		     utf8_field;
-		     utf8_field=ldap_next_attribute(ads->ld,
+		     utf8_field=ldap_next_attribute(ads->ldap.ld,
 						    (LDAPMessage *)msg,b)) {
 			struct berval **ber_vals;
 			char **str_vals, **utf8_vals;
@@ -1966,14 +1966,14 @@ static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 			string = fn(ads, field, NULL, data_area);
 
 			if (string) {
-				utf8_vals = ldap_get_values(ads->ld,
+				utf8_vals = ldap_get_values(ads->ldap.ld,
 					       	 (LDAPMessage *)msg, field);
 				str_vals = ads_pull_strvals(ctx, 
 						  (const char **) utf8_vals);
 				fn(ads, field, (void **) str_vals, data_area);
 				ldap_value_free(utf8_vals);
 			} else {
-				ber_vals = ldap_get_values_len(ads->ld, 
+				ber_vals = ldap_get_values_len(ads->ldap.ld, 
 						 (LDAPMessage *)msg, field);
 				fn(ads, field, (void **) ber_vals, data_area);
 
@@ -1997,7 +1997,7 @@ static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
  **/
 int ads_count_replies(ADS_STRUCT *ads, void *res)
 {
-	return ldap_count_entries(ads->ld, (LDAPMessage *)res);
+	return ldap_count_entries(ads->ldap.ld, (LDAPMessage *)res);
 }
 
 /**
@@ -2008,7 +2008,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  **/
  LDAPMessage *ads_first_entry(ADS_STRUCT *ads, LDAPMessage *res)
 {
-	return ldap_first_entry(ads->ld, res);
+	return ldap_first_entry(ads->ldap.ld, res);
 }
 
 /**
@@ -2019,7 +2019,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  **/
  LDAPMessage *ads_next_entry(ADS_STRUCT *ads, LDAPMessage *res)
 {
-	return ldap_next_entry(ads->ld, res);
+	return ldap_next_entry(ads->ldap.ld, res);
 }
 
 /**
@@ -2038,7 +2038,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	char *ux_string;
 	size_t rc;
 
-	values = ldap_get_values(ads->ld, msg, field);
+	values = ldap_get_values(ads->ldap.ld, msg, field);
 	if (!values)
 		return NULL;
 	
@@ -2069,7 +2069,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	char **ret = NULL;
 	int i;
 
-	values = ldap_get_values(ads->ld, msg, field);
+	values = ldap_get_values(ads->ldap.ld, msg, field);
 	if (!values)
 		return NULL;
 
@@ -2132,9 +2132,9 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	expected_range_attrib = talloc_asprintf(mem_ctx, "%s;Range=", field);
 
 	/* look for Range result */
-	for (attr = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &ptr); 
+	for (attr = ldap_first_attribute(ads->ldap.ld, (LDAPMessage *)msg, &ptr); 
 	     attr; 
-	     attr = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, ptr)) {
+	     attr = ldap_next_attribute(ads->ldap.ld, (LDAPMessage *)msg, ptr)) {
 		/* we ignore the fact that this is utf8, as all attributes are ascii... */
 		if (strnequal(attr, expected_range_attrib, strlen(expected_range_attrib))) {
 			range_attr = attr;
@@ -2234,7 +2234,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 {
 	char **values;
 
-	values = ldap_get_values(ads->ld, msg, field);
+	values = ldap_get_values(ads->ldap.ld, msg, field);
 	if (!values)
 		return False;
 	if (!values[0]) {
@@ -2259,7 +2259,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	char **values;
 	UUID_FLAT flat_guid;
 
-	values = ldap_get_values(ads->ld, msg, "objectGUID");
+	values = ldap_get_values(ads->ldap.ld, msg, "objectGUID");
 	if (!values)
 		return False;
 	
@@ -2289,7 +2289,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	struct berval **values;
 	BOOL ret = False;
 
-	values = ldap_get_values_len(ads->ld, msg, field);
+	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 
 	if (!values)
 		return False;
@@ -2317,7 +2317,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	BOOL ret;
 	int count, i;
 
-	values = ldap_get_values_len(ads->ld, msg, field);
+	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 
 	if (!values)
 		return 0;
@@ -2364,7 +2364,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	struct berval **values;
 	BOOL ret = False;
 
-	values = ldap_get_values_len(ads->ld, msg, field);
+	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 
 	if (!values) return False;
 
@@ -2481,7 +2481,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 
         /* establish a new ldap tcp session if necessary */
 
-	if ( !ads->ld ) {
+	if ( !ads->ldap.ld ) {
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
 			ads->server.ldap_server )) == NULL )
 		{
@@ -2542,7 +2542,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
 
         /* establish a new ldap tcp session if necessary */
 
-	if ( !ads->ld ) {
+	if ( !ads->ldap.ld ) {
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
 			ads->server.ldap_server )) == NULL )
 		{
@@ -3100,7 +3100,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 	hostnameDN = ads_get_dn(ads, (LDAPMessage *)msg);
 
-	rc = ldap_delete_ext_s(ads->ld, hostnameDN, pldap_control, NULL);
+	rc = ldap_delete_ext_s(ads->ldap.ld, hostnameDN, pldap_control, NULL);
 	if (rc) {
 		DEBUG(3,("ldap_delete_ext_s failed with error code %d\n", rc));
 	}else {

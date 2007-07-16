@@ -43,7 +43,7 @@
 	if (ads_count_replies(ads, *res) != 1) {
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
-	srv_dn = ldap_get_dn(ads->ld, *res);
+	srv_dn = ldap_get_dn(ads->ldap.ld, *res);
 	if (srv_dn == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
