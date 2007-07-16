@@ -89,6 +89,8 @@ void set_profile_level(int level, struct server_id src)
 #endif /* WITH_PROFILE */
 }
 
+#ifdef WITH_PROFILE
+
 /****************************************************************************
 receive a set profile level message
 ****************************************************************************/
@@ -134,7 +136,6 @@ static void reqprofile_message(struct messaging_context *msg_ctx,
 /*******************************************************************
   open the profiling shared memory area
   ******************************************************************/
-#ifdef WITH_PROFILE
 
 #ifdef HAVE_CLOCK_GETTIME
 
