@@ -3356,7 +3356,7 @@ if test x"$with_ldap_support" != x"no"; then
   # SASL wrapping hooks
   AC_CHECK_FUNC_EXT(ber_sockbuf_add_io,$LDAP_LIBS)
   if test x"$ac_cv_func_ext_ber_sockbuf_add_io" = x"yes"; then
-  	AC_DEFINE(HAVE_ADS_SASL_WRAPPING, 1, [Support for SASL wrapping])
+  	AC_DEFINE(HAVE_LDAP_SASL_WRAPPING, 1, [Support for SASL wrapping])
   fi
 
   ########################################################

@@ -61,11 +61,11 @@ typedef struct {
 		time_t last_attempt; /* last attempt to reconnect */
 		int port;
 
-#ifdef HAVE_ADS_SASL_WRAPPING
+#ifdef HAVE_LDAP_SASL_WRAPPING
 		Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
-#endif /* HAVE_ADS_SASL_WRAPPING */
+#endif /* HAVE_LDAP_SASL_WRAPPING */
 	} ldap;
-#endif /* HAVE_ADS */
+#endif /* HAVE_LDAP */
 } ADS_STRUCT;
 
 /* used to remember the names of the posix attributes in AD */
