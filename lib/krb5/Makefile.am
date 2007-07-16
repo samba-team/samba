@@ -256,7 +256,7 @@ nodist_include_HEADERS = krb5_err.h heim_err.h k524_err.h
 krb5dir = $(includedir)/krb5
 krb5_HEADERS = locate_plugin.h
 
-build_HEADERZ = $(krb5_HEADERS) # XXX
+build_HEADERZ = $(krb5_HEADERS) krb_err.h # XXX
 
 CLEANFILES = \
 	krb5_err.c krb5_err.h \
