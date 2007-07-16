@@ -1,3 +1,14 @@
+2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5-v4compat.h: Drop duplicate error codes.
+
+	* kdc/kerberos4.c: switch to ET errors.
+
+	* lib/krb5/Makefile.am: Add krb_err.h to build_HEADERZ.
+
+	* lib/krb5/v4_glue.c: If its a Kerberos 4 error-code, remove the
+	et BASE.
+
 2007-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5-v4compat.h: Include "krb_err.h".
