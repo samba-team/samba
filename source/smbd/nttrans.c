@@ -299,6 +299,7 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
 		return NULL;
 	}
 
+	result->conn = conn;
 	result->case_sensitive = conn->case_sensitive;
 	result->case_preserve = conn->case_preserve;
 	result->short_case_preserve = conn->short_case_preserve;
