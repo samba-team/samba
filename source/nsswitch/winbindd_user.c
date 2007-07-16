@@ -245,6 +245,12 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 		struct winbindd_domain *domain = NULL;
 		
 		domain = find_lookup_domain_from_sid(&s->user_sid);
+		if (domain == NULL) {
+			DEBUG(5, ("find_lookup_domain_from_sid(%s) failed\n",
+				  sid_string_static(&s->user_sid)));
+			request_error(s->state);
+			return;			
+		}
 		winbindd_lookup_name_by_sid(s->state->mem_ctx, domain,
 					    &s->user_sid, &domain_name,
 					    &user_name, &type );		
