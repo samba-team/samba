@@ -1637,6 +1637,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	br_lck->read_only = read_only;
+	br_lck->lock_data = NULL;
 
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
 
