@@ -65,7 +65,7 @@ rm -rf autom4te*.cache
 
 if test x"${AUTOGEN_SKIP_SWAT}" != x"yes"; then
 	echo "$0: building Web Application Framework (SWAT)"
-	make -C ../webapps/swat distclean build || exit 1
+	(cd ../webapps/swat; make distclean build || exit 1)
 fi
 
 echo "Now run ./configure and then make."
