@@ -54,7 +54,7 @@ typedef struct {
 	} config;
 
 	/* info about the current LDAP connection */
-#ifdef HAVE_ADS
+#ifdef HAVE_LDAP
 	struct {
 		LDAP *ld;
 		struct in_addr ip; /* the ip of the active connection, if any */
