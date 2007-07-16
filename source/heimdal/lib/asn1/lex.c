@@ -1,5 +1,6 @@
+#include "config.h"
 
-#line 3 "lex.c"
+#line 3 "lex.yy.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -342,9 +343,6 @@ FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
 typedef int yy_state_type;
 
 extern int yylineno;
-
-int yylineno = 1;
-
 extern char *yytext;
 #define yytext_ptr yytext
 
@@ -826,7 +824,7 @@ char *yytext;
  * SUCH DAMAGE. 
  */
 
-/* $Id: lex.l 18738 2006-10-21 11:57:22Z lha $ */
+/* $Id: lex.l,v 1.31 2006/10/21 11:57:22 lha Exp $ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -851,7 +849,7 @@ static unsigned lineno = 1;
 static void unterminated(const char *, unsigned);
 
 /* This is for broken old lexes (solaris 10 and hpux) */
-#line 855 "lex.c"
+#line 852 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -1006,7 +1004,7 @@ YY_DECL
     
 #line 68 "lex.l"
 
-#line 1010 "lex.c"
+#line 1007 "lex.yy.c"
 
 	if ( !(yy_init) )
 		{
@@ -1675,7 +1673,7 @@ YY_RULE_SETUP
 #line 274 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1679 "lex.c"
+#line 1676 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2485,15 +2483,6 @@ static void yy_fatal_error (yyconst char* msg )
 
 /* Accessor  methods (get/set functions) to struct members. */
 
-/** Get the current line number.
- * 
- */
-int yyget_lineno  (void)
-{
-        
-    return yylineno;
-}
-
 /** Get the input stream.
  * 
  */
@@ -2525,16 +2514,6 @@ int yyget_leng  (void)
 char *yyget_text  (void)
 {
         return yytext;
-}
-
-/** Set the current line number.
- * @param line_number
- * 
- */
-void yyset_lineno (int  line_number )
-{
-    
-    yylineno = line_number;
 }
 
 /** Set the input stream. This does not discard the current
