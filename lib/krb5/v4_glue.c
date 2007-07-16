@@ -599,6 +599,9 @@ _krb5_krb_cr_err_reply(krb5_context context,
     RCHECK(ret, krb5_store_int8(sp, AUTH_MSG_ERR_REPLY), error);
     RCHECK(ret, put_nir(sp, name, inst, realm), error);
     RCHECK(ret, krb5_store_int32(sp, time_ws), error);
+    /* If its a Kerberos 4 error-code, remove the et BASE */
+    if (e >= ERROR_TABLE_BASE_krb && e <= ERROR_TABLE_BASE_krb + 255)
+	e -= ERROR_TABLE_BASE_krb;
     RCHECK(ret, krb5_store_int32(sp, e), error);
     RCHECK(ret, krb5_store_stringz(sp, e_string), error);
 
