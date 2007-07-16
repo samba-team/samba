@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-#ifdef HAVE_ADS_SASL_WRAPPING
+#ifdef HAVE_LDAP_SASL_WRAPPING
 
 static int ads_saslwrap_setup(Sockbuf_IO_Desc *sbiod, void *arg)
 {
@@ -106,4 +106,4 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads)
 	return ADS_SUCCESS;
 }
 
-#endif /* HAVE_ADS_SASL_WRAPPING */
+#endif /* HAVE_LDAP_SASL_WRAPPING */
