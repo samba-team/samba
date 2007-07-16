@@ -1641,14 +1641,18 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
 
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
-	br_lck->lock_data = SMB_MALLOC_ARRAY(struct lock_struct, br_lck->num_locks);
-	if ((br_lck->num_locks != 0) && (br_lck->lock_data == NULL)) {
-		DEBUG(0, ("malloc failed\n"));
-		TALLOC_FREE(br_lck);
-		return NULL;
-	}
 
-	memcpy(br_lck->lock_data, data.dptr, data.dsize);
+	if (br_lck->num_locks != 0) {
+		br_lck->lock_data = SMB_MALLOC_ARRAY(struct lock_struct,
+						     br_lck->num_locks);
+		if (br_lck->lock_data == NULL) {
+			DEBUG(0, ("malloc failed\n"));
+			TALLOC_FREE(br_lck);
+			return NULL;
+		}
+
+		memcpy(br_lck->lock_data, data.dptr, data.dsize);
+	}
 	
 	if (!fsp->lockdb_clean) {
 		int orig_num_locks = br_lck->num_locks;
