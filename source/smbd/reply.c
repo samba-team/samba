@@ -528,7 +528,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	p += srvstr_pull_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2), &client_devicetype, p,
-			 6, STR_ASCII);
+			 MIN(6,smb_bufrem(inbuf, p)), STR_ASCII);
 
 	if (client_devicetype == NULL) {
 		TALLOC_FREE(ctx);
