@@ -27,7 +27,6 @@
 
 /* look in server.c for some explanation of these variables */
 extern enum protocol_types Protocol;
-extern int max_send;
 extern int max_recv;
 unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
