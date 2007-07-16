@@ -1,3 +1,7 @@
+2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add version-script.map to EXTRA_DIST
+
 2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add depenency on asn1_compile for asn1 built files.
