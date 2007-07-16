@@ -66,6 +66,7 @@ rm -f ${keytabfile}
 rm -f current-db*
 rm -f out-*
 rm -f mkey.file*
+rm -f messages.log
 
 echo Creating database
 ${kadmin} -l \
@@ -99,7 +100,8 @@ ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} foo/admin@${R} || exit 1
 
 env KRB5CCNAME=${cache} \
-${kadmin} -p foo/admin@${R} add -p foo --use-defaults kaka@${R} || exit 1
+${kadmin} -p foo/admin@${R} add -p foo --use-defaults kaka@${R} || 
+	{ cat messages.log ; exit 1; }
 
 echo "killing kdc (${kdcpid} ${kadmpid})"
 kill ${kdcpid} ${kadmpid} > /dev/null 2>/dev/null
