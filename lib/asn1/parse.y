@@ -230,7 +230,7 @@ struct string_list {
 
 %%
 
-ModuleDefinition: IDENTIFIER kw_DEFINITIONS TagDefault ExtensionDefault
+ModuleDefinition: IDENTIFIER objid_opt kw_DEFINITIONS TagDefault ExtensionDefault
 			EEQUAL kw_BEGIN ModuleBody kw_END
 		{
 			checkundefined();
