@@ -54,16 +54,18 @@ typedef struct {
 	} config;
 
 	/* info about the current LDAP connection */
+#ifdef HAVE_ADS
 	struct {
-#ifdef HAVE_LDAP
 		LDAP *ld;
-#else
-		void *ld; /* the active ldap structure */
-#endif
 		struct in_addr ip; /* the ip of the active connection, if any */
 		time_t last_attempt; /* last attempt to reconnect */
 		int port;
+
+#ifdef HAVE_ADS_SASL_WRAPPING
+		Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
+#endif /* HAVE_ADS_SASL_WRAPPING */
 	} ldap;
+#endif /* HAVE_ADS */
 } ADS_STRUCT;
 
 /* used to remember the names of the posix attributes in AD */
