@@ -1,5 +1,7 @@
 2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/set_dbinfo.c: Print acl file too.
+
 	* kdc/kerberos4.c: Error codes are just fine, remove XXX now.
 
 	* lib/krb5/krb5-v4compat.h: Drop duplicate error codes.
