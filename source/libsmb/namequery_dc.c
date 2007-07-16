@@ -123,7 +123,11 @@ static BOOL ads_dc_name(const char *domain,
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	strupper_m(srv_name);
+#ifdef HAVE_ADS
 	*dc_ip = ads->ldap.ip;
+#else
+	ZERO_STRUCT(*dc_ip);
+#endif
 	ads_destroy(&ads);
 	
 	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",

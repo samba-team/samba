@@ -309,7 +309,8 @@ LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_parse.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
 LIBGPO_OBJ = $(LIBGPO_OBJ0)
 
-LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
+LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o \
+	     libads/sasl.o libads/sasl_wrapping.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
 	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \

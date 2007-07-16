@@ -3352,6 +3352,14 @@ if test x"$with_ldap_support" != x"no"; then
   AC_CHECK_LIB_EXT(lber, LDAP_LIBS, ber_scanf)
 
   ########################################################
+  # If ber_sockbuf_add_io() is available we can add
+  # SASL wrapping hooks
+  AC_CHECK_FUNC_EXT(ber_sockbuf_add_io,$LDAP_LIBS)
+  if test x"$ac_cv_func_ext_ber_sockbuf_add_io" = x"yes"; then
+  	AC_DEFINE(HAVE_ADS_SASL_WRAPPING, 1, [Support for SASL wrapping])
+  fi
+
+  ########################################################
   # now see if we can find the ldap libs in standard paths
   AC_CHECK_LIB_EXT(ldap, LDAP_LIBS, ldap_init)
 
