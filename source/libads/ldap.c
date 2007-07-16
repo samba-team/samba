@@ -465,6 +465,18 @@ got_connection:
 	return ads_sasl_bind(ads);
 }
 
+/**
+ * Disconnect the LDAP server
+ * @param ads Pointer to an existing ADS_STRUCT
+ **/
+void ads_disconnect(ADS_STRUCT *ads)
+{
+	if (ads->ld) {
+		ldap_unbind(ads->ld);
+		ads->ld = NULL;
+	}
+}
+
 /*
   Duplicate a struct berval into talloc'ed memory
  */
