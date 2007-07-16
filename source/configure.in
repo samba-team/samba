@@ -3355,7 +3355,15 @@ if test x"$with_ldap_support" != x"no"; then
   # If ber_sockbuf_add_io() is available we can add
   # SASL wrapping hooks
   AC_CHECK_FUNC_EXT(ber_sockbuf_add_io,$LDAP_LIBS)
-  if test x"$ac_cv_func_ext_ber_sockbuf_add_io" = x"yes"; then
+
+  AC_CACHE_CHECK([for LDAP_OPT_SOCKBUF],samba_cv_HAVE_LDAP_OPT_SOCKBUF,[
+		 AC_TRY_COMPILE([#include <ldap.h>],
+				[int val = LDAP_OPT_SOCKBUF;],
+      			samba_cv_HAVE_LDAP_OPT_SOCKBUF=yes,
+			samba_cv_HAVE_LDAP_OPT_SOCKBUF=no)])
+
+  if test x"$ac_cv_func_ext_ber_sockbuf_add_io" = x"yes" -a \
+  	  x"$samba_cv_HAVE_LDAP_OPT_SOCKBUF" = x"yes"; then
   	AC_DEFINE(HAVE_LDAP_SASL_WRAPPING, 1, [Support for SASL wrapping])
   fi
 
