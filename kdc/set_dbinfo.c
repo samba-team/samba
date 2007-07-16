@@ -80,6 +80,8 @@ krb5_kdc_set_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
 		hdb_dbinfo_get_dbname(context, d));
 	kdc_log(context, c, 0, "\tmkey_file: %s",
 		hdb_dbinfo_get_mkey_file(context, d));
+	kdc_log(context, c, 0, "\tacl_file: %s",
+		hdb_dbinfo_get_acl_file(context, d));
     }
     hdb_free_dbinfo(context, &info);
 
