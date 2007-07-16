@@ -75,11 +75,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		DEBUG(3,("Reopening ads connection to realm '%s' after error %s\n", 
 			 ads->config.realm, ads_errstr(status)));
 			 
-		if (ads->ld) {
-			ldap_unbind(ads->ld); 
-		}
-		
-		ads->ld = NULL;
+		ads_disconnect(ads);
 		status = ads_connect(ads);
 		
 		if (!ADS_ERR_OK(status)) {
