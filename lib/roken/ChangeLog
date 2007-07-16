@@ -1,3 +1,9 @@
+2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* socket_wrapper.c: Add dup(dummy stub) and dup2(real).
+
+	* socket_wrapper.h: Add dup(dummy stub) and dup2(real).
+
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: New library version.
