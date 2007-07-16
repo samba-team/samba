@@ -131,6 +131,8 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 	}
 
 done:
+
+	SAFE_FREE(out_data);
 	return result;
 }
 
