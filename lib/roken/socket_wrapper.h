@@ -51,6 +51,8 @@ int swrap_ioctl(int s, int req, void *ptr);
 ssize_t swrap_recv(int s, void *buf, size_t len, int flags);
 ssize_t swrap_send(int s, const void *buf, size_t len, int flags);
 int swrap_close(int);
+int swrap_dup(int);
+int swrap_dup2(int, int);
 
 #ifdef SOCKET_WRAPPER_REPLACE
 
@@ -128,6 +130,17 @@ int swrap_close(int);
 #undef close
 #endif
 #define close(s)			swrap_close(s)
+
+#ifdef dup
+#undef dup
+#endif
+#define dup(oldd)			swrap_dup(oldd)
+
+#ifdef dup2
+#undef dup2
+#endif
+#define dup2(oldd, newd)		swrap_dup2(oldd, newd)
+
 #endif
 
 #endif /* __SOCKET_WRAPPER_H__ */
