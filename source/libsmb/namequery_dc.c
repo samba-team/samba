@@ -106,7 +106,7 @@ static BOOL ads_dc_name(const char *domain,
 			create_local_private_krb5_conf_for_domain(realm,
 								domain,
 								sitename,
-								ads->ldap_ip);
+								ads->ldap.ip);
 		}
 #endif
 		break;
@@ -123,7 +123,7 @@ static BOOL ads_dc_name(const char *domain,
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	strupper_m(srv_name);
-	*dc_ip = ads->ldap_ip;
+	*dc_ip = ads->ldap.ip;
 	ads_destroy(&ads);
 	
 	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",

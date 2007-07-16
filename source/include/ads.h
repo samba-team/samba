@@ -15,16 +15,7 @@ enum wb_posix_mapping {
 	WB_POSIX_MAP_UNIXINFO	= 4
 };
 
-typedef struct {
-#ifdef HAVE_LDAP
-	LDAP *ld;
-#else
-	void *ld; /* the active ldap structure */
-#endif
-	struct in_addr ldap_ip; /* the ip of the active connection, if any */
-	time_t last_attempt; /* last attempt to reconnect */
-	int ldap_port;
-	
+typedef struct {	
 	int is_mine;	/* do I own this structure's memory? */
 	
 	/* info needed to find the server */
@@ -61,6 +52,18 @@ typedef struct {
 		char *schema_path;
 		char *config_path;
 	} config;
+
+	/* info about the current LDAP connection */
+	struct {
+#ifdef HAVE_LDAP
+		LDAP *ld;
+#else
+		void *ld; /* the active ldap structure */
+#endif
+		struct in_addr ip; /* the ip of the active connection, if any */
+		time_t last_attempt; /* last attempt to reconnect */
+		int port;
+	} ldap;
 } ADS_STRUCT;
 
 /* used to remember the names of the posix attributes in AD */

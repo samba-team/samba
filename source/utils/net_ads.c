@@ -80,13 +80,13 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 {
 	struct cldap_netlogon_reply reply;
 
-	if ( !ads_cldap_netlogon( inet_ntoa(ads->ldap_ip), ads->server.realm, &reply ) ) {
+	if ( !ads_cldap_netlogon( inet_ntoa(ads->ldap.ip), ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, "CLDAP query failed!\n");
 		return -1;
 	}
 
 	d_printf("Information for Domain Controller: %s\n\n", 
-		inet_ntoa(ads->ldap_ip));
+		inet_ntoa(ads->ldap.ip));
 
 	d_printf("Response Type: ");
 	switch (reply.type) {
@@ -160,7 +160,7 @@ static int net_ads_lookup(int argc, const char **argv)
 
 	if (!ads->config.realm) {
 		ads->config.realm = CONST_DISCARD(char *, opt_target_workgroup);
-		ads->ldap_port = 389;
+		ads->ldap.port = 389;
 	}
 
 	return net_ads_cldap_netlogon(ads);
@@ -189,11 +189,11 @@ static int net_ads_info(int argc, const char **argv)
 		d_fprintf( stderr, "Failed to get server's current time!\n");
 	}
 
-	d_printf("LDAP server: %s\n", inet_ntoa(ads->ldap_ip));
+	d_printf("LDAP server: %s\n", inet_ntoa(ads->ldap.ip));
 	d_printf("LDAP server name: %s\n", ads->config.ldap_server_name);
 	d_printf("Realm: %s\n", ads->config.realm);
 	d_printf("Bind Path: %s\n", ads->config.bind_path);
-	d_printf("LDAP port: %d\n", ads->ldap_port);
+	d_printf("LDAP port: %d\n", ads->ldap.port);
 	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
 
 	d_printf("KDC server: %s\n", ads->auth.kdc_server );
@@ -380,10 +380,10 @@ static int net_ads_workgroup(int argc, const char **argv)
 	
 	if (!ads->config.realm) {
 		ads->config.realm = CONST_DISCARD(char *, opt_target_workgroup);
-		ads->ldap_port = 389;
+		ads->ldap.port = 389;
 	}
 	
-	if ( !ads_cldap_netlogon( inet_ntoa(ads->ldap_ip), ads->server.realm, &reply ) ) {
+	if ( !ads_cldap_netlogon( inet_ntoa(ads->ldap.ip), ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, "CLDAP query failed!\n");
 		return -1;
 	}
@@ -545,7 +545,7 @@ static int ads_user_info(int argc, const char **argv)
 		return -1;
 	}
 	
-	grouplist = ldap_get_values((LDAP *)ads->ld,
+	grouplist = ldap_get_values((LDAP *)ads->ldap.ld,
 				    (LDAPMessage *)res, "memberOf");
 
 	if (grouplist) {
@@ -831,7 +831,7 @@ static int net_ads_leave(int argc, const char **argv)
 
 	/* make RPC calls here */
 
-	if ( !NT_STATUS_IS_OK(connect_to_ipc_krb5(&cli, &ads->ldap_ip, 
+	if ( !NT_STATUS_IS_OK(connect_to_ipc_krb5(&cli, &ads->ldap.ip, 
 		ads->config.ldap_server_name)) )
 	{
 		goto done;
@@ -1338,7 +1338,7 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 		char *root_dn;
 		ADS_STATUS ads_status;
 		
-		if ( !ads->ld ) {
+		if ( !ads->ldap.ld ) {
 			ads_status = ads_connect( ads );
 			if ( !ADS_ERR_OK(ads_status) ) {
 				DEBUG(0,("net_update_dns_internal: Failed to connect to our DC!\n"));
@@ -1568,7 +1568,7 @@ int net_ads_join(int argc, const char **argv)
 	password = talloc_strdup(ctx, tmp_password);
 	
 	nt_status = net_join_domain(ctx, ads->config.ldap_server_name, 
-				    &ads->ldap_ip, &short_domain_name, &domain_sid, password);
+				    &ads->ldap.ip, &short_domain_name, &domain_sid, password);
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(1, ("call of net_join_domain failed: %s\n", 
 			  get_friendly_nt_error_msg(nt_status)));
@@ -1603,7 +1603,7 @@ int net_ads_join(int argc, const char **argv)
 
 	/* Verify that everything is ok */
 
-	if ( net_rpc_join_ok(short_domain_name, ads->config.ldap_server_name, &ads->ldap_ip) != 0 ) {
+	if ( net_rpc_join_ok(short_domain_name, ads->config.ldap_server_name, &ads->ldap.ip) != 0 ) {
 		d_fprintf(stderr, "Failed to verify membership in domain!\n");
 		goto fail;
 	}	
@@ -1985,7 +1985,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		return -1;
 	}
 
-	srv_dn = ldap_get_dn((LDAP *)ads->ld, (LDAPMessage *)res);
+	srv_dn = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 
 	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn[0]);

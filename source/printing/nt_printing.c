@@ -3040,7 +3040,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	/* We use ldap_get_dn here as we need the answer
 	 * in utf8 to call ldap_explode_dn(). JRA. */
 
-	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ld, (LDAPMessage *)res);
+	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
 	if (!srv_dn_utf8) {
 		ads_destroy(&ads);
 		return WERR_SERVER_UNAVAILABLE;
