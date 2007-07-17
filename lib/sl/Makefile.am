@@ -19,8 +19,10 @@ libss_la_LDFLAGS = -version-info 1:6:1
 libsl_la_LIBADD = @LIB_readline@
 libss_la_LIBADD = @LIB_readline@ @LIB_com_err@
 
-libsl_la_SOURCES = sl_locl.h sl.c $(ES)
-libss_la_SOURCES = $(libsl_la_SOURCES) ss.c ss.h
+dist_libsl_la_SOURCES = sl_locl.h sl.c
+nodist_libsl_la_SOURCES = $(ES)
+dist_libss_la_SOURCES = $(dist_libsl_la_SOURCES) ss.c ss.h
+nodist_libss_la_SOURCES = $(ES)
 
 TESTS = test_sl
 check_PROGRAMS = $(TESTS)	
