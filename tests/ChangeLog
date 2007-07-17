@@ -1,5 +1,10 @@
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* java/Makefile.am: EXTRA_DIST += have_java.sh
+
+	* java/check-kinit.in: Make failing to compile a java program a
+	no-fatal error.
+
 	* java/check-kinit.in: Disable test if we use socket wrapper.
 
 2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
