@@ -1,5 +1,7 @@
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/db3.c: avoid type-punned pointer warning.
+
 	* kdc/kx509.c: Use unsigned char * as argument to HMAC_Update to
 	please OpenSSL and gcc.
 
