@@ -1862,6 +1862,12 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
+#if 0
+	/* We used to deny renames on the
+	 * source open for non-delete open.
+	 * Turns out this is not the case.
+	 * VL please test but this matches
+	 * Windows behaviour. JRA. */
 	if (S_ISDIR(pst->st_mode)) {
 		return NT_STATUS_OK;
 	}
@@ -1871,6 +1877,9 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 	}
 
 	return NT_STATUS_ACCESS_DENIED;
+#else
+	return NT_STATUS_OK;
+#endif
 }
 
 /*******************************************************************
