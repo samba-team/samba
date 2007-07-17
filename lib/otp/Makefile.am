@@ -22,7 +22,7 @@ else
 ndbm_wrap =
 endif
 
-libotp_la_SOURCES = \
+dist_libotp_la_SOURCES = \
 	otp.c \
 	otp_challenge.c \
 	otp_db.c \
@@ -32,9 +32,9 @@ libotp_la_SOURCES = \
 	otp_verify.c \
 	otp_locl.h \
 	otp_md.h \
-	roken_rename.h \
-	$(ndbm_wrap) \
-	$(ROKEN_SRCS)
+	roken_rename.h
+
+nodist_libotp_la_SOURCES = $(ndbm_wrap) $(ROKEN_SRCS)
 
 if do_roken_rename
 ROKEN_SRCS = snprintf.c strcasecmp.c strncasecmp.c strlwr.c strlcpy.c strlcat.c
