@@ -15,12 +15,12 @@ heimdal_TEXINFOS = \
 	apps.texi \
 	heimdal.texi \
 	install.texi \
-	install.texi \
 	intro.texi \
 	kerberos4.texi \
 	migration.texi \
 	misc.texi \
 	programming.texi \
+	version.texi \
 	setup.texi \
 	setup.texi \
 	whatis.texi \
