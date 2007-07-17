@@ -37,6 +37,7 @@ m4_define([test_headers], [
 		])
 m4_define([test_body], [
 		void *schedule = 0;
+		EVP_CIPHER_iv_length(0);
 		MD4_CTX md4;
 		MD5_CTX md5;
 		SHA_CTX sha1;
