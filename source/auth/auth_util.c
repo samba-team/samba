@@ -1405,8 +1405,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	uid_t uid;
 	gid_t gid;
 
-	size_t i;
-
 	auth_serversupplied_info *result;
 
 	/* 
@@ -1584,37 +1582,13 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	result->num_sids = 0;
 	result->sids = NULL;
 
-	/* and create (by appending rids) the 'domain' sids */
-	
-	for (i = 0; i < info3->num_groups2; i++) {
-		DOM_SID sid;
-		if (!sid_compose(&sid, &info3->dom_sid.sid,
-				 info3->gids[i].g_rid)) {
-			DEBUG(3,("could not append additional group rid "
-				 "0x%x\n", info3->gids[i].g_rid));
-			TALLOC_FREE(result);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		if (!add_sid_to_array(result, &sid, &result->sids,
-				 &result->num_sids)) {
-			TALLOC_FREE(result);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	/* Copy 'other' sids.  We need to do sid filtering here to
- 	   prevent possible elevation of privileges.  See:
-
-           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
-         */
-
-	for (i = 0; i < info3->num_other_sids; i++) {
-		if (!add_sid_to_array(result, &info3->other_sids[i].sid,
+	nt_status = sid_array_from_info3(result, info3,
 					 &result->sids,
-					 &result->num_sids)) {
-			TALLOC_FREE(result);
-			return NT_STATUS_NO_MEMORY;
-		}
+					 &result->num_sids,
+					 False);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(result);
+		return nt_status;
 	}
 
 	result->login_server = unistr2_tdup(result, 
