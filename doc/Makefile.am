@@ -22,6 +22,5 @@ heimdal_TEXINFOS = \
 	programming.texi \
 	version.texi \
 	setup.texi \
-	setup.texi \
 	whatis.texi \
 	win2k.texi

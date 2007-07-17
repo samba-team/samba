@@ -15,7 +15,8 @@
 @c %**end of header
 
 @set UPDATED $Date$
-@include version.texi
+@set VERSION 1.0
+@set EDITION 1.0
 
 @ifinfo
 @dircategory Security
