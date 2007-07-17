@@ -3300,8 +3300,8 @@ int winbindd_validate_cache(void)
 	}
 	tdb_close(tdb);
 
-	ret = tdb_validate(lock_path("winbindd_cache.tdb"),
-			   cache_traverse_validate_fn);
+	ret = tdb_validate_and_backup(lock_path("winbindd_cache.tdb"),
+				      cache_traverse_validate_fn);
 
 	if (ret != 0) {
 		DEBUG(10, ("winbindd_validate_cache: validation not successful.\n"));
