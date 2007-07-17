@@ -38,9 +38,10 @@ srcdir="@srcdir@"
 objdir="@objdir@"
 port="@port@"
 
-# If there is no useful db support compile in, disable test
+# Disable test if: no data, no java, or socket wrapper
 ../db/have-db || exit 77
 sh ${srcdir}/have-java.sh || exit 77
+[ X"$SOCKET_WRAPPER_DIR" != X ] && exit 77
 
 R=TEST.H5L.SE
 
