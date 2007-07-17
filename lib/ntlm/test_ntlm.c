@@ -318,8 +318,11 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
+    printf("test_parse\n");
     ret += test_parse();
+    printf("test_keys\n");
     ret += test_keys();
+    printf("test_ntlm2_session_resp\n");
     ret += test_ntlm2_session_resp();
 
     return 0;
