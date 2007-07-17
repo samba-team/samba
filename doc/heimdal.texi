@@ -14,10 +14,8 @@
 @syncodeindex pg cp
 @c %**end of header
 
-@c @include version.texi
 @set UPDATED $Date$
-@set EDITION 0.1
-@set VERSION 0.8
+@include version.texi
 
 @ifinfo
 @dircategory Security
