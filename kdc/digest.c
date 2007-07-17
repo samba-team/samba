@@ -1227,7 +1227,7 @@ _kdc_do_digest(krb5_context context,
 	    version = 1;
 
 	    if (flags & NTLM_NEG_NTLM2_SESSION) {
-		char sessionhash[MD5_DIGEST_LENGTH];
+		unsigned char sessionhash[MD5_DIGEST_LENGTH];
 		MD5_CTX md5ctx;
 		
 		if ((config->digests_allowed & NTLM_V1_SESSION) == 0) {
