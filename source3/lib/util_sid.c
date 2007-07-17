@@ -669,3 +669,68 @@ BOOL is_null_sid(const DOM_SID *sid)
 	static const DOM_SID null_sid = {0};
 	return sid_equal(sid, &null_sid);
 }
+
+NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
+			      const NET_USER_INFO_3 *info3,
+			      DOM_SID **user_sids,
+			      size_t *num_user_sids,
+			      BOOL include_user_group_rid)
+{
+	DOM_SID sid;
+	DOM_SID *sid_array = NULL;
+	size_t num_sids = 0;
+	int i;
+
+	if (include_user_group_rid) {
+
+		if (!sid_compose(&sid, &(info3->dom_sid.sid),
+				 info3->user_rid)
+		    || !add_sid_to_array(mem_ctx, &sid,
+					 &sid_array, &num_sids)) {
+			DEBUG(3,("could not add user SID from rid 0x%x\n",
+				 info3->user_rid));			
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (!sid_compose(&sid, &(info3->dom_sid.sid),
+				 info3->group_rid)
+		    || !add_sid_to_array(mem_ctx, &sid, 
+					 &sid_array, &num_sids)) {
+			DEBUG(3,("could not append additional group rid 0x%x\n",
+				 info3->group_rid));			
+			
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	for (i = 0; i < info3->num_groups2; i++) {
+		if (!sid_compose(&sid, &(info3->dom_sid.sid),
+				 info3->gids[i].g_rid)
+		    || !add_sid_to_array(mem_ctx, &sid,
+					 &sid_array, &num_sids)) {
+			DEBUG(3,("could not append additional group rid 0x%x\n",
+				 info3->gids[i].g_rid));	
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	/* Copy 'other' sids.  We need to do sid filtering here to
+ 	   prevent possible elevation of privileges.  See:
+
+           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
+         */
+
+	for (i = 0; i < info3->num_other_sids; i++) {
+		if (!add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+				      &sid_array, &num_sids)) {
+			DEBUG(3, ("could not add SID to array: %s\n",
+				  sid_string_static(&info3->other_sids[i].sid)));
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	*user_sids = sid_array;
+	*num_user_sids = num_sids;
+
+	return NT_STATUS_OK;
+}
