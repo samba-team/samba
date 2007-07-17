@@ -170,9 +170,75 @@ eagain:
 	return -1;
 }
 
+static ber_slen_t ads_saslwrap_prepare_outbuf(ADS_STRUCT *ads, uint32 len)
+{
+	ads->ldap.out.ofs	= 4;
+	ads->ldap.out.left	= 4;
+	ads->ldap.out.size	= 4 + ads->ldap.out.sig_size + len;
+	ads->ldap.out.buf	= talloc_array(ads->ldap.mem_ctx,
+					       uint8, ads->ldap.out.size);
+	if (!ads->ldap.out.buf) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static void ads_saslwrap_shrink_outbuf(ADS_STRUCT *ads)
+{
+	talloc_free(ads->ldap.out.buf);
+
+	ads->ldap.out.buf	= NULL;
+	ads->ldap.out.size	= 0;
+	ads->ldap.out.ofs	= 0;
+	ads->ldap.out.left	= 0;
+}
+
 static ber_slen_t ads_saslwrap_write(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_t len)
 {
-	return LBER_SBIOD_WRITE_NEXT(sbiod, buf, len);
+	ADS_STRUCT *ads = (ADS_STRUCT *)sbiod->sbiod_pvt;
+	ber_slen_t ret, rlen;
+
+	/* if the buffer is empty, we need to wrap in incoming buffer */
+	if (ads->ldap.out.left == 0) {
+		ADS_STATUS status;
+
+		if (len == 0) {
+			errno = EINVAL;
+			return -1;
+		}
+
+		rlen = MIN(len, ads->ldap.out.max);
+
+		ret = ads_saslwrap_prepare_outbuf(ads, rlen);
+		if (ret < 0) return ret;
+		
+		status = ads->ldap.wrap_ops->wrap(ads, buf, rlen);
+		if (!ADS_ERR_OK(status)) {
+			errno = EACCES;
+			return -1;
+		}
+
+		RSIVAL(ads->ldap.out.buf, 0, ads->ldap.out.size - 4);
+	} else {
+		rlen = -1;
+	}
+
+	ret = LBER_SBIOD_WRITE_NEXT(sbiod,
+				    ads->ldap.out.buf + ads->ldap.out.ofs,
+				    ads->ldap.out.left);
+	if (ret < 0) return ret;
+	ads->ldap.out.ofs += ret;
+	ads->ldap.out.left -= ret;
+
+	if (ads->ldap.out.left == 0) {
+		ads_saslwrap_shrink_outbuf(ads);
+	}
+
+	if (rlen > 0) return rlen;
+
+	errno = EAGAIN;
+	return -1;
 }
 
 static int ads_saslwrap_ctrl(Sockbuf_IO_Desc *sbiod, int opt, void *arg)
