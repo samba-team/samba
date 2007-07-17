@@ -1238,6 +1238,8 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 		goto done;
 	}
 
+	DEBUG(10, ("tdb_backup: successfully copied %d entries\n", count1));
+
 	/* make sure the new tdb has reached stable storage
 	 * then rename it to its destination */
 	fsync(tdb_fd(dst_tdb));
