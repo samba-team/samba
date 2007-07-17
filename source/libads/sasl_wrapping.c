@@ -37,16 +37,143 @@ static int ads_saslwrap_remove(Sockbuf_IO_Desc *sbiod)
 	return 0;
 }
 
+static ber_slen_t ads_saslwrap_prepare_inbuf(ADS_STRUCT *ads)
+{
+	ads->ldap.in.ofs	= 0;
+	ads->ldap.in.needed	= 0;
+	ads->ldap.in.left	= 0;
+	ads->ldap.in.size	= 4 + ads->ldap.in.min;
+	ads->ldap.in.buf	= talloc_array(ads->ldap.mem_ctx,
+					       uint8, ads->ldap.in.size);
+	if (!ads->ldap.in.buf) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static ber_slen_t ads_saslwrap_grow_inbuf(ADS_STRUCT *ads)
+{
+	if (ads->ldap.in.size == (4 + ads->ldap.in.needed)) {
+		return 0;
+	}
+
+	ads->ldap.in.size	= 4 + ads->ldap.in.needed;
+	ads->ldap.in.buf	= talloc_realloc(ads->ldap.mem_ctx,
+						 ads->ldap.in.buf,
+						 uint8, ads->ldap.in.size);
+	if (!ads->ldap.in.buf) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static void ads_saslwrap_shrink_inbuf(ADS_STRUCT *ads)
+{
+	talloc_free(ads->ldap.in.buf);
+
+	ads->ldap.in.buf	= NULL;
+	ads->ldap.in.size	= 0;
+	ads->ldap.in.ofs	= 0;
+	ads->ldap.in.needed	= 0;
+	ads->ldap.in.left	= 0;
+}
+
 static ber_slen_t ads_saslwrap_read(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_t len)
 {
-	return LBER_SBIOD_READ_NEXT(sbiod, buf, len);
+	ADS_STRUCT *ads = (ADS_STRUCT *)sbiod->sbiod_pvt;
+	ber_slen_t ret;
+
+	/* If ofs < 4 it means we don't have read the length header yet */
+	if (ads->ldap.in.ofs < 4) {
+		ret = ads_saslwrap_prepare_inbuf(ads);
+		if (ret < 0) return ret;
+
+		ret = LBER_SBIOD_READ_NEXT(sbiod,
+					   ads->ldap.in.buf + ads->ldap.in.ofs,
+					   4 - ads->ldap.in.ofs);
+		if (ret < 0) return ret;
+		ads->ldap.in.ofs += ret;
+
+		if (ads->ldap.in.ofs < 4) goto eagain;
+
+		ads->ldap.in.needed = RIVAL(ads->ldap.in.buf, 4);
+		if (ads->ldap.in.needed > ads->ldap.in.max) {
+			errno = EINVAL;
+			return -1;
+		}
+		if (ads->ldap.in.needed < ads->ldap.in.min) {
+			errno = EINVAL;
+			return -1;
+		}
+
+		ret = ads_saslwrap_grow_inbuf(ads);
+		if (ret < 0) return ret;
+	}
+
+	/*
+	 * if there's more data needed from the remote end,
+	 * we need to read more
+	 */
+	if (ads->ldap.in.needed > 0) {
+		ret = LBER_SBIOD_READ_NEXT(sbiod,
+					   ads->ldap.in.buf + ads->ldap.in.ofs,
+					   ads->ldap.in.needed);
+		if (ret < 0) return ret;
+		ads->ldap.in.ofs += ret;
+		ads->ldap.in.needed -= ret;
+
+		if (ads->ldap.in.needed > 0) goto eagain;
+	}
+
+	/*
+	 * if we have a complete packet and have not yet unwrapped it
+	 * we need to call the mech specific unwrap() hook
+	 */
+	if (ads->ldap.in.needed == 0 && ads->ldap.in.left == 0) {
+		ADS_STATUS status;
+		status = ads->ldap.wrap_ops->unwrap(ads);
+		if (!ADS_ERR_OK(status)) {
+			errno = EACCES;
+			return -1;
+		}
+	}
+
+	/*
+	 * if we have unwrapped data give it to the caller
+	 */
+	if (ads->ldap.in.left > 0) {
+		ret = MIN(ads->ldap.in.left, len);
+		memcpy(buf, ads->ldap.in.buf + ads->ldap.in.ofs, ret);
+		ads->ldap.in.ofs += ret;
+		ads->ldap.in.left -= ret;
+
+		/*
+		 * if no more is left shrink the inbuf,
+		 * this will trigger reading a new SASL packet
+		 * from the remote stream in the next call
+		 */
+		if (ads->ldap.in.left == 0) {
+			ads_saslwrap_shrink_inbuf(ads);
+		}
+
+		return ret;
+	}
+
+	/*
+	 * if we don't have anything for the caller yet,
+	 * tell him to ask again
+	 */
+eagain:
+	errno = EAGAIN;
+	return -1;
 }
 
 static ber_slen_t ads_saslwrap_write(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_t len)
 {
 	return LBER_SBIOD_WRITE_NEXT(sbiod, buf, len);
 }
-
 
 static int ads_saslwrap_ctrl(Sockbuf_IO_Desc *sbiod, int opt, void *arg)
 {
