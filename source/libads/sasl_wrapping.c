@@ -98,7 +98,7 @@ static ber_slen_t ads_saslwrap_read(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_t
 
 		if (ads->ldap.in.ofs < 4) goto eagain;
 
-		ads->ldap.in.needed = RIVAL(ads->ldap.in.buf, 4);
+		ads->ldap.in.needed = RIVAL(ads->ldap.in.buf, 0);
 		if (ads->ldap.in.needed > ads->ldap.in.max) {
 			errno = EINVAL;
 			return -1;
@@ -172,8 +172,8 @@ eagain:
 
 static ber_slen_t ads_saslwrap_prepare_outbuf(ADS_STRUCT *ads, uint32 len)
 {
-	ads->ldap.out.ofs	= 4;
-	ads->ldap.out.left	= 4;
+	ads->ldap.out.ofs	= 0;
+	ads->ldap.out.left	= 0;
 	ads->ldap.out.size	= 4 + ads->ldap.out.sig_size + len;
 	ads->ldap.out.buf	= talloc_array(ads->ldap.mem_ctx,
 					       uint8, ads->ldap.out.size);
@@ -219,7 +219,7 @@ static ber_slen_t ads_saslwrap_write(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_
 			return -1;
 		}
 
-		RSIVAL(ads->ldap.out.buf, 0, ads->ldap.out.size - 4);
+		RSIVAL(ads->ldap.out.buf, 0, ads->ldap.out.left - 4);
 	} else {
 		rlen = -1;
 	}
@@ -243,7 +243,22 @@ static ber_slen_t ads_saslwrap_write(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_
 
 static int ads_saslwrap_ctrl(Sockbuf_IO_Desc *sbiod, int opt, void *arg)
 {
-	return LBER_SBIOD_CTRL_NEXT(sbiod, opt, arg);
+	ADS_STRUCT *ads = (ADS_STRUCT *)sbiod->sbiod_pvt;
+	int ret;
+
+	switch (opt) {
+	case LBER_SB_OPT_DATA_READY:
+		if (ads->ldap.in.left > 0) {
+			return 1;
+		}
+		ret = LBER_SBIOD_CTRL_NEXT(sbiod, opt, arg);
+		break;
+	default:
+		ret = LBER_SBIOD_CTRL_NEXT(sbiod, opt, arg);
+		break;
+	}
+
+	return ret;
 }
 
 static int ads_saslwrap_close(Sockbuf_IO_Desc *sbiod)
@@ -260,7 +275,9 @@ static const Sockbuf_IO ads_saslwrap_sockbuf_io = {
 	ads_saslwrap_close	/* sbi_close */
 };
 
-ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads)
+ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
+				   const struct ads_saslwrap_ops *ops,
+				   void *private_data)
 {
 	ADS_STATUS status;
 	Sockbuf *sb;
@@ -279,6 +296,9 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads)
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
+
+	ads->ldap.wrap_ops		= ops;
+	ads->ldap.wrap_private_data	= private_data;
 
 	return ADS_SUCCESS;
 }
