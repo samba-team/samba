@@ -174,6 +174,8 @@ void change_notify_reply(const char *request_buf, uint32 max_param,
 		goto done;
 	}
 
+	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
+
 	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
 		goto done;
