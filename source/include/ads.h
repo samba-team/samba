@@ -34,7 +34,7 @@ struct ads_struct;
 
 struct ads_saslwrap_ops {
 	const char *name;
-	ADS_STATUS (*wrap)(struct ads_struct *);
+	ADS_STATUS (*wrap)(struct ads_struct *, uint8 *buf, uint32 len);
 	ADS_STATUS (*unwrap)(struct ads_struct *);
 	ADS_STATUS (*disconnect)(struct ads_struct *);
 };
@@ -101,10 +101,10 @@ typedef struct ads_struct {
 		} in;
 		struct {
 			uint32 ofs;
-			uint32 needed;
 			uint32 left;
 			uint32 max;
 			uint32 min;
+			uint32 sig_size;
 			uint32 size;
 			uint8 *buf;
 		} out;
