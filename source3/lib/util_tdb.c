@@ -1021,7 +1021,11 @@ static int tdb_validate_child(const char *tdb_path,
 
 	/* Now traverse the tdb to validate it. */
 	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
-	if (num_entries == -1 || !(v_status.success)) {
+	if (!v_status.success) {
+		goto out;
+	} else if (num_entries == -1) {
+		v_status.tdb_error = True;
+		v_status.success = False;
 		goto out;
 	}
 
