@@ -114,9 +114,10 @@ dbm_get (DB *db, int flags)
 #ifdef HAVE_DB3
     if(cursor == NULL) 
 	db->cursor(db, NULL, &cursor, 0);
-    if(cursor->c_get(cursor, &key, &value, flags) != 0) 
+    if(cursor->c_get(cursor, &key, &value, flags) != 0) {
 	datum.dptr = NULL;
-    else 
+	datum.0 = NULL;
+    } else 
 	DBT2DATUM(&value, &datum);
 #else
     db->seq(db, &key, &value, flags);
