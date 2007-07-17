@@ -1044,6 +1044,9 @@ out:
 	return ret;
 }
 
+/*
+ * tdb validation function returns 0 if tdb is ok, != 0 if it isn't.
+ */
 int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 {
 	pid_t child_pid = -1;
@@ -1099,7 +1102,7 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 		ret = WEXITSTATUS(child_status);
 	}
 	if (WIFSIGNALED(child_status)) {
-		DEBUG(10, ("tdb_validate: child terminated by signal %d\n", 
+		DEBUG(10, ("tdb_validate: child terminated by signal %d\n",
 			   WTERMSIG(child_status)));
 #ifdef WCOREDUMP
 		if (WCOREDUMP(child_status)) {
@@ -1117,5 +1120,240 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 	DEBUG(5, ("tdb_validate returning code '%d' for tdb '%s'\n", ret,
 		  tdb_path));
 
+	return ret;
+}
+
+/*
+ * tdb backup function and helpers for tdb_validate wrapper with backup
+ * handling.
+ */
+
+/* this structure eliminates the need for a global overall status for
+ * the traverse-copy */
+struct tdb_copy_data {
+	struct tdb_context *dst;
+	BOOL success;
+};
+
+static int traverse_copy_fn(struct tdb_context *tdb, TDB_DATA key,
+			    TDB_DATA dbuf, void *private_data)
+{
+	struct tdb_copy_data *data = (struct tdb_copy_data *)private_data;
+
+	if (tdb_store(data->dst, key, dbuf, TDB_INSERT) != 0) {
+		DEBUG(4, ("Failed to insert into %s\n", tdb_name(data->dst)));
+		data->success = False;
+		return 1;
+	}
+	return 0;
+}
+
+static int tdb_copy(struct tdb_context *src, struct tdb_context *dst)
+{
+	struct tdb_copy_data data;
+	int count;
+
+	data.dst = dst;
+	data.success = True;
+
+	count = tdb_traverse(src, traverse_copy_fn, (void *)(&data));
+	if ((count < 0) || (data.success == False)) {
+		return -1;
+	}
+	return count;
+}
+
+static int tdb_verify_basic(struct tdb_context *tdb)
+{
+	return tdb_traverse(tdb, NULL, NULL);
+}
+
+/* this backup function is essentially taken from lib/tdb/tools/tdbbackup.tdb
+ */
+static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
+		      const char *dst_path, int hash_size)
+{
+	struct tdb_context *src_tdb = NULL;
+	struct tdb_context *dst_tdb = NULL;
+	char *tmp_path = NULL;
+	struct stat st;
+	int count1, count2;
+	int ret = -1;
+
+	if (stat(src_path, &st) != 0) {
+		DEBUG(3, ("Could not stat '%s': %s\n", src_path,
+			  strerror(errno)));
+		goto done;
+	}
+
+	/* open old tdb RDWR - so we can lock it */
+	src_tdb = tdb_open(src_path, 0, TDB_DEFAULT, O_RDWR, 0);
+	if (src_tdb == NULL) {
+		DEBUG(3, ("Failed to open tdb '%s'\n", src_path));
+		goto done;
+	}
+
+	if (tdb_lockall(src_tdb) != 0) {
+		DEBUG(3, ("Failed to lock tdb '%s'\n", src_path));
+		goto done;
+	}
+
+	tmp_path = talloc_asprintf(ctx, "%s%s", dst_path, ".tmp");
+	unlink(tmp_path);
+	dst_tdb = tdb_open(tmp_path,
+			   hash_size ? hash_size : tdb_hash_size(src_tdb),
+			   TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL,
+			   st.st_mode & 0777);
+	if (dst_tdb == NULL) {
+		DEBUG(3, ("Error creating tdb '%s': %s\n", tmp_path,
+			  strerror(errno)));
+		unlink(tmp_path);
+		goto done;
+	}
+
+	count1 = tdb_copy(src_tdb, dst_tdb);
+	if (count1 < 0) {
+		DEBUG(3, ("Failed to copy tdb '%s'\n", src_path));
+		tdb_close(dst_tdb);
+		goto done;
+	}
+
+	/* reopen ro and do basic verification */
+	tdb_close(dst_tdb);
+	dst_tdb = tdb_open(tmp_path, 0, TDB_DEFAULT, O_RDONLY, 0);
+	if (!dst_tdb) {
+		DEBUG(3, ("Failed to reopen tdb '%s': %s\n", tmp_path,
+			  strerror(errno)));
+		goto done;
+	}
+	count2 = tdb_verify_basic(dst_tdb);
+	if (count2 != count1) {
+		DEBUG(3, ("Failed to verify result of copying tdb '%s'.\n",
+			  src_path));
+		tdb_close(dst_tdb);
+		goto done;
+	}
+
+	/* make sure the new tdb has reached stable storage
+	 * then rename it to its destination */
+	fsync(tdb_fd(dst_tdb));
+	tdb_close(dst_tdb);
+	unlink(dst_path);
+	if (rename(tmp_path, dst_path) != 0) {
+		DEBUG(3, ("Failed to rename '%s' to '%s': %s\n",
+			  tmp_path, dst_path, strerror(errno)));
+		goto done;
+	}
+
+	/* success */
+	ret = 0;
+
+done:
+	if (src_tdb != NULL) {
+		tdb_close(src_tdb);
+	}
+	if (tmp_path != NULL) {
+		unlink(tmp_path);
+		TALLOC_FREE(tmp_path);
+	}
+	return ret;
+}
+
+/*
+ * do a backup of a tdb, moving the destination out of the way first
+ */
+static int tdb_backup_with_rotate(TALLOC_CTX *ctx, const char *src_path,
+		      		  const char *dst_path, int hash_size,
+				  const char *rotate_suffix)
+{
+	char *rotate_path;
+	int ret = -1;
+
+	rotate_path = talloc_asprintf(ctx, "%s%s", dst_path, rotate_suffix);
+	if ((rename(dst_path, rotate_path) != 0) && (errno != ENOENT)) {
+		DEBUG(0, ("tdb_backup_with_rotate: error renaming "
+			  "%s to %s: %s\n", dst_path, rotate_path,
+			  strerror(errno)));
+		goto done;
+	}
+	ret = tdb_backup(ctx, src_path, dst_path, hash_size);
+
+done:
+	TALLOC_FREE(rotate_path);
+	return ret;
+}
+
+/*
+ * validation function with backup handling:
+ *
+ *  - calls tdb_validate
+ *  - if the tdb is ok, create a backup "name.bak", possibly moving
+ *    existing backup to name.bak.old
+ *  - if the tdb is corrupt, check if there is a valid backup.
+ *    if so, move corrupt tdb  to "name.corrupt",
+ *    and restore the backup
+ *    (give up if there is no backup or if it is invalid)
+ */
+int tdb_validate_and_backup(const char *tdb_path,
+			    tdb_validate_data_func validate_fn)
+{
+	int ret = -1;
+	const char *backup_suffix = ".bak";
+	const char *corrupt_suffix = ".corrupt";
+	const char *rotate_suffix = ".old";
+	char *tdb_path_backup;
+	struct stat st;
+	TALLOC_CTX *ctx = NULL;
+
+	ctx = talloc_new(NULL);
+	if (ctx == NULL) {
+		DEBUG(0, ("tdb_validate_and_backup: out of memory\n"));
+		goto done;
+	}
+
+	tdb_path_backup = talloc_asprintf(ctx, "%s%s", tdb_path, backup_suffix);
+
+	ret = tdb_validate(tdb_path, validate_fn);
+
+	if (ret == 0) {
+		DEBUG(1, ("tdb '%s' is valid\n", tdb_path));
+		ret = tdb_backup_with_rotate(ctx, tdb_path, tdb_path_backup, 0,
+					     rotate_suffix);
+		if (ret != 0) {
+			DEBUG(1, ("Error creating backup of tdb '%s'\n",
+				  tdb_path));
+			goto done;
+		}
+		DEBUG(1, ("Created backup '%s' of tdb '%s'\n", tdb_path_backup,
+			  tdb_path));
+	} else {
+		DEBUG(1, ("tdb '%s' is invalid\n", tdb_path));
+		if (stat(tdb_path_backup, &st) != 0) {
+			DEBUG(3, ("Could not stat '%s': %s\n", tdb_path_backup,
+				  strerror(errno)));
+			DEBUG(1, ("No backup found. Giving up.\n"));
+			goto done;
+		}
+		ret = tdb_validate(tdb_path_backup, validate_fn);
+		if (ret != 0) {
+			DEBUG(1, ("Backup '%s' found but it is invalid.\n",
+				  tdb_path_backup));
+			goto done;
+		}
+		DEBUG(1, ("valid backup '%s' found\n", tdb_path_backup));
+		ret = tdb_backup_with_rotate(ctx, tdb_path_backup, tdb_path, 0,
+					     corrupt_suffix);
+		if (ret != 0) {
+			DEBUG(1, ("Error restoring backup from '%s'\n",
+				  tdb_path_backup));
+			goto done;
+		}
+		DEBUG(1, ("Restored tdb backup from '%s'\n", tdb_path_backup));
+		DEBUGADD(1, ("Corrupt tdb stored as '%s%s'\n", tdb_path,
+			     corrupt_suffix));
+	}
+
+done:
+	TALLOC_FREE(ctx);
 	return ret;
 }
