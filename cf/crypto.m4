@@ -37,7 +37,6 @@ m4_define([test_headers], [
 		])
 m4_define([test_body], [
 		void *schedule = 0;
-		EVP_CIPHER_iv_length(0);
 		MD4_CTX md4;
 		MD5_CTX md5;
 		SHA_CTX sha1;
@@ -47,6 +46,7 @@ m4_define([test_body], [
 		MD5_Init(&md5);
 		SHA1_Init(&sha1);
 		SHA256_Init(&sha256);
+		EVP_CIPHER_iv_length(0);
 		#ifdef HAVE_OPENSSL
 		RAND_status();
 		UI_UTIL_read_pw_string(0,0,0,0);
