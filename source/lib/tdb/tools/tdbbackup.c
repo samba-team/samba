@@ -163,7 +163,7 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 	}
 	
 	/* traverse the new tdb to confirm */
-	count2 = tdb_traverse(tdb_new, test_fn, 0);
+	count2 = tdb_traverse(tdb_new, test_fn, NULL);
 	if (count2 != count1) {
 		fprintf(stderr,"failed to copy %s\n", old_name);
 		tdb_close(tdb_new);
