@@ -38,4 +38,5 @@ CLEANFILES= \
 
 EXTRA_DIST = \
 	check-kinit.in \
+	have-java.sh \
 	krb5.conf.in
