@@ -3111,7 +3111,7 @@ static NTSTATUS append_ugw_ace(files_struct *fsp,
 {
 	mode_t perms;
 	SEC_ACCESS acc;
-	int acl_type;
+	int nt_acl_type;
 	DOM_SID trustee;
 
 	switch (ugw) {
@@ -3140,13 +3140,13 @@ static NTSTATUS append_ugw_ace(files_struct *fsp,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 	acc = map_canon_ace_perms(SNUM(fsp->conn),
-				&acl_type,
+				&nt_acl_type,
 				perms,
 				fsp->is_directory);
 
 	init_sec_ace(se,
 		&trustee,
-		acl_type,
+		nt_acl_type,
 		acc,
 		0);
 	return NT_STATUS_OK;
