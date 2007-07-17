@@ -20,7 +20,6 @@ heimdal_TEXINFOS = \
 	migration.texi \
 	misc.texi \
 	programming.texi \
-	version.texi \
 	setup.texi \
 	whatis.texi \
 	win2k.texi
