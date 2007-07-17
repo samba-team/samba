@@ -92,29 +92,12 @@ static BOOL gpo_sd_check_read_access_bits(uint32 access_mask)
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_trustee_in_sid_token(const DOM_SID *trustee,
-					      const struct nt_user_token *token)
-{
-	int i;
-
-	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(trustee, &token->user_sids[i])) {
-			return True;
-		}
-	}
-
-	return False;
-}
-
-/****************************************************************
-****************************************************************/
-
 static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace, 
 					       const struct nt_user_token *token) 
 {
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
-	    gpo_sd_check_trustee_in_sid_token(&ace->trustee, token)) {
+	    nt_token_check_sid(&ace->trustee, token)) {
 		DEBUG(10,("gpo_sd_check_ace_denied_object: Access denied as of ace for %s\n", 
 			sid_string_static(&ace->trustee)));
 		return NT_STATUS_ACCESS_DENIED;
@@ -131,7 +114,7 @@ static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace,
 {
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) && 
-	    gpo_sd_check_trustee_in_sid_token(&ace->trustee, token)) {
+	    nt_token_check_sid(&ace->trustee, token)) {
 		DEBUG(10,("gpo_sd_check_ace_allowed_object: Access granted as of ace for %s\n", 
 			sid_string_static(&ace->trustee)));
 		return NT_STATUS_OK;
