@@ -129,6 +129,9 @@ cmp_with_sprintf_long (void)
 
 #ifdef HAVE_LONG_LONG
 
+/* XXX doesn't work as expected on lp64 platforms with sizeof(long
+ * long) == sizeof(long) */
+
 static int
 cmp_with_sprintf_long_long (void)
 {
