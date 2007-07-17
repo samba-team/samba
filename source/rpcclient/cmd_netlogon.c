@@ -50,13 +50,50 @@ static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli,
 {
 	fstring dcname;
 	WERROR result = WERR_GENERAL_FAILURE;
+	int old_timeout;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s domainname\n", argv[0]);
 		return WERR_OK;
 	}
 
+	/* Make sure to wait for our DC's reply */
+	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
+
 	result = rpccli_netlogon_getanydcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
+
+	cli_set_timeout(cli->cli, old_timeout);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* Display results */
+
+	printf("%s\n", dcname);
+
+ done:
+	return result;
+}
+
+static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli, 
+				     TALLOC_CTX *mem_ctx, int argc, 
+				     const char **argv)
+{
+	fstring dcname;
+	WERROR result = WERR_GENERAL_FAILURE;
+	int old_timeout;
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: %s domainname\n", argv[0]);
+		return WERR_OK;
+	}
+
+	/* Make sure to wait for our DC's reply */
+	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
+
+	result = rpccli_netlogon_getdcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
+
+	cli_set_timeout(cli->cli, old_timeout);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -542,6 +579,7 @@ struct cmd_set netlogon_commands[] = {
 
 	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, NULL, "Logon Control 2",     "" },
 	{ "getanydcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getanydcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
+	{ "getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcname, PI_NETLOGON, NULL, "Get trusted PDC name",     "" },
 	{ "dsr_getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getdcnameex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcnameex, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getdcnameex2", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcnameex2, PI_NETLOGON, NULL, "Get trusted DC name",     "" },

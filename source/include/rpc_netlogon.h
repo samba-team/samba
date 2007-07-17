@@ -31,6 +31,7 @@
 #define NET_AUTH		0x05
 #define NET_SRVPWSET		0x06
 #define NET_SAM_DELTAS		0x07
+#define NET_GETDCNAME		0x0b
 #define NET_LOGON_CTRL		0x0c
 #define NET_GETANYDCNAME	0x0d
 #define NET_AUTH2		0x0f
@@ -435,6 +436,23 @@ typedef struct net_r_getanydcname {
 	UNISTR2 uni_dcname;
 	WERROR status;
 } NET_R_GETANYDCNAME;
+
+
+/* NET_Q_GETDCNAME - Ask a DC for a trusted DC name */
+
+typedef struct net_q_getdcname {
+	UNISTR2 uni_logon_server;
+	uint32  ptr_domainname;
+	UNISTR2 uni_domainname;
+} NET_Q_GETDCNAME;
+
+/* NET_R_GETDCNAME - Ask a DC for a trusted DC name */
+
+typedef struct net_r_getdcname {
+	uint32  ptr_dcname;
+	UNISTR2 uni_dcname;
+	WERROR status;
+} NET_R_GETDCNAME;
 
 /* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
 typedef struct net_q_trust_dom_info {
