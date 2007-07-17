@@ -1,3 +1,7 @@
+2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: split source files in dist and nodist.
+
 2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Only do roken rename for the library.
