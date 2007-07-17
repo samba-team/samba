@@ -370,6 +370,8 @@ function setup_file(template, message, fname, subobj)
 
 function provision_default_paths(subobj)
 {
+	/* subobj.DNSDOMAIN isn't available at this point */
+	var dnsdomain = strlower(subobj.REALM);
 	var lp = loadparm_init();
 	var paths = new Object();
 	paths.smbconf = lp.get("config file");
@@ -383,12 +385,12 @@ function provision_default_paths(subobj)
 	paths.samdb = lp.get("sam database");
 	paths.secrets = lp.get("secrets database");
 	paths.keytab = "secrets.keytab";
-	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
+	paths.dns = lp.get("private dir") + "/" + dnsdomain + ".zone";
 	paths.winsdb = "wins.ldb";
 	paths.ldapdir = lp.get("private dir") + "/ldap";
-	paths.ldap_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + ".ldif";
-	paths.ldap_config_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-config.ldif";
-	paths.ldap_schema_basedn_ldif = paths.ldapdir + "/" + subobj.DNSDOMAIN + "-schema.ldif";
+	paths.ldap_basedn_ldif = paths.ldapdir + "/" + dnsdomain + ".ldif";
+	paths.ldap_config_basedn_ldif = paths.ldapdir + "/" + dnsdomain + "-config.ldif";
+	paths.ldap_schema_basedn_ldif = paths.ldapdir + "/" + dnsdomain + "-schema.ldif";
 
 	paths.sysvol = lp.get("sysvol", "path");
 
@@ -399,7 +401,7 @@ function provision_default_paths(subobj)
 	paths.netlogon = lp.get("netlogon", "path");
 	
 	if (paths.netlogon == undefined) {
-		paths.netlogon = paths.sysvol + "/" + subobj.DNSDOMAIN + "/scripts";
+		paths.netlogon = paths.sysvol + "/" + dnsdomain + "/scripts";
 	}
 
 	return paths;
