@@ -1,5 +1,9 @@
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ndbm_wrap.c (dbm_get): set dsize to 0 on failure.
+
+	* Makefile.am: add ndbm_wrap.[ch] to EXTRA_DIST
+
 	* ndbm_wrap.c (dbm_fetch): set dsize to 0 on failure.
 
 2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
