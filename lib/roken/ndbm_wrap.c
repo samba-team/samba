@@ -96,8 +96,10 @@ dbm_fetch (DBM *db, datum dkey)
 #ifdef HAVE_DB3
 	       NULL, 
 #endif
-	       &key, &value, 0) != 0) 
+	       &key, &value, 0) != 0) {
 	dvalue.dptr = NULL;
+	dvalue.dsize = 0;
+    }
     else
 	DBT2DATUM(&value, &dvalue);
 
