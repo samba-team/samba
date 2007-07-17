@@ -5669,7 +5669,10 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	uint16 flags = 0;
+	char del = 1;
 	int info = 0;
+	int i;
+	struct share_mode_lock *lck = NULL;
 
 	if (total_data < 2) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -5697,12 +5700,11 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 					DELETE_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 					FILE_OPEN,
-					FILE_DELETE_ON_CLOSE,
+					0,
 					FILE_FLAG_POSIX_SEMANTICS|0777,
-					&info,				
+					&info,
 					&fsp);
 	} else {
-		char del = 1;
 
 		status = open_file_ntcreate(conn, req,
 				fname,
@@ -5715,26 +5717,59 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				0, /* No oplock, but break existing ones. */
 				&info,
 				&fsp);
-		/* 
-		 * For file opens we must set the delete on close
-		 * after the open.
-		 */
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		status = smb_set_file_disposition_info(conn,
-							&del,
-							1,
-							fsp,
-							fname,
-							psbuf);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	/*
+	 * Don't lie to client. If we can't really delete due to
+	 * non-POSIX opens return SHARING_VIOLATION.
+	 */
+
+	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	if (lck == NULL) {
+		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
+			"lock for file %s\n", fsp->fsp_name));
+		close_file(fsp, NORMAL_CLOSE);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*
+	 * See if others still have the file open. If this is the case, then
+	 * don't delete. If all opens are POSIX delete we can set the delete
+	 * on close disposition.
+	 */
+	for (i=0; i<lck->num_share_modes; i++) {
+		struct share_mode_entry *e = &lck->share_modes[i];
+		if (is_valid_share_mode_entry(e)) {
+			if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
+				continue;
+			}
+			/* Fail with sharing violation. */
+			close_file(fsp, NORMAL_CLOSE);
+			TALLOC_FREE(lck);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+	}
+
+	/*
+	 * Set the delete on close.
+	 */
+	status = smb_set_file_disposition_info(conn,
+						&del,
+						1,
+						fsp,
+						fname,
+						psbuf);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		close_file(fsp, NORMAL_CLOSE);
+		TALLOC_FREE(lck);
+		return status;
+	}
+	TALLOC_FREE(lck);
 	return close_file(fsp, NORMAL_CLOSE);
 }
 
