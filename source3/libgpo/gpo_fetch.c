@@ -181,7 +181,7 @@ NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
 	status = parse_gpt_ini(mem_ctx, local_path, &version, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("gpo_get_sysvol_gpt_version: failed to parse ini [%s]: %s\n", 
-			unix_path, nt_errstr(status)));
+			local_path, nt_errstr(status)));
 		return status;
 	}
 
