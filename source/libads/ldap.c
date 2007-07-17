@@ -2662,8 +2662,8 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 {
 	ADS_STATUS status;
 	LDAPMessage *res;
-	const char *parent, *config_context, *filter;
-	const char *attrs[] = { "configurationNamingContext", NULL };
+	const char *parent, *filter;
+	char *config_context = NULL;
 	char *dn;
 
 	/* shortcut a query */
@@ -2671,26 +2671,18 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 		return ads_site_dn(ads, mem_ctx, site_dn);
 	}
 
-	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	status = ads_config_path(ads, mem_ctx, &config_context);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
 
-	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
-	if (config_context == NULL) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
 	filter = talloc_asprintf(mem_ctx, "(cn=%s)", computer_name);
 	if (filter == NULL) {
-		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	ads_msgfree(ads, res);
-
-	status = ads_do_search(ads, config_context, LDAP_SCOPE_SUBTREE, filter, NULL, &res);
+	status = ads_do_search(ads, config_context, LDAP_SCOPE_SUBTREE, 
+			       filter, NULL, &res);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
@@ -2739,34 +2731,27 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
 {
 	ADS_STATUS status;
 	LDAPMessage *res;
-	const char *config_context, *base;
-	const char *attrs[] = { "configurationNamingContext", NULL };
-	const char *attrs2[] = { "uPNSuffixes", NULL };
+	const char *base;
+	char *config_context = NULL;
+	const char *attrs[] = { "uPNSuffixes", NULL };
 
-	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	status = ads_config_path(ads, mem_ctx, &config_context);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
-
-	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
-	if (config_context == NULL) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	ads_msgfree(ads, res);
 
 	base = talloc_asprintf(mem_ctx, "cn=Partitions,%s", config_context);
 	if (base == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	status = ads_search_dn(ads, &res, base, attrs2); 
+	status = ads_search_dn(ads, &res, base, attrs);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
 
 	if (ads_count_replies(ads, res) != 1) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
