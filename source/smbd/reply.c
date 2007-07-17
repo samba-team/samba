@@ -4445,9 +4445,12 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	if (dst_exists && file_find_di_first(file_id_sbuf(&sbuf1)) != NULL) {
-		DEBUG(3, ("rename_internals_fsp: Target file open\n"));
-		return NT_STATUS_ACCESS_DENIED;
+	if (dst_exists) {
+		files_struct *dst_fsp = file_find_di_first(file_id_sbuf(&sbuf1));
+		if (dst_fsp && !(dst_fsp->share_access & FILE_SHARE_DELETE)) {
+			DEBUG(3, ("rename_internals_fsp: Target file open\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	/* Ensure we have a valid stat struct for the source. */
