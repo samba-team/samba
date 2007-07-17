@@ -57,7 +57,8 @@ rm -f out-*
 rm -f mkey.file*
 
 echo "Compile"
-javac -d "${objdir}" "${srcdir}/KerberosInit.java" || exit 1
+javac -d "${objdir}" "${srcdir}/KerberosInit.java" || \
+    { echo "Failed to compile java program: $?" ; exit 77; }
 
 echo Creating database
 ${kadmin} \
