@@ -12,7 +12,7 @@ Changes in release 0.9
  * Alias support for inital ticket requests.
 
  * Add symbol versioning to selected libraries on platforms that uses
-   GNU link editor: gssapi, hcrypto, heimntlm, hx509, and libkdc.
+   GNU link editor: gssapi, hcrypto, heimntlm, hx509, krb5, and libkdc.
 
  * New version of imath included in hcrypto.
 
