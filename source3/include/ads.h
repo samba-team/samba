@@ -15,7 +15,31 @@ enum wb_posix_mapping {
 	WB_POSIX_MAP_UNIXINFO	= 4
 };
 
-typedef struct {	
+/* there are 5 possible types of errors the ads subsystem can produce */
+enum ads_error_type {ENUM_ADS_ERROR_KRB5, ENUM_ADS_ERROR_GSS, 
+		     ENUM_ADS_ERROR_LDAP, ENUM_ADS_ERROR_SYSTEM, ENUM_ADS_ERROR_NT};
+
+typedef struct {
+	enum ads_error_type error_type;
+	union err_state{		
+		int rc;
+		NTSTATUS nt_status;
+	} err;
+	/* For error_type = ENUM_ADS_ERROR_GSS minor_status describe GSS API error */
+	/* Where rc represents major_status of GSS API error */
+	int minor_status;
+} ADS_STATUS;
+
+struct ads_struct;
+
+struct ads_saslwrap_ops {
+	const char *name;
+	ADS_STATUS (*wrap)(struct ads_struct *);
+	ADS_STATUS (*unwrap)(struct ads_struct *);
+	ADS_STATUS (*disconnect)(struct ads_struct *);
+};
+
+typedef struct ads_struct {
 	int is_mine;	/* do I own this structure's memory? */
 	
 	/* info needed to find the server */
@@ -63,6 +87,27 @@ typedef struct {
 
 #ifdef HAVE_LDAP_SASL_WRAPPING
 		Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
+		TALLOC_CTX *mem_ctx;
+		const struct ads_saslwrap_ops *wrap_ops;
+		void *wrap_private_data;
+		struct {
+			uint32 ofs;
+			uint32 needed;
+			uint32 left;
+			uint32 max;
+			uint32 min;
+			uint32 size;
+			uint8 *buf;
+		} in;
+		struct {
+			uint32 ofs;
+			uint32 needed;
+			uint32 left;
+			uint32 max;
+			uint32 min;
+			uint32 size;
+			uint8 *buf;
+		} out;
 #endif /* HAVE_LDAP_SASL_WRAPPING */
 	} ldap;
 #endif /* HAVE_LDAP */
@@ -80,20 +125,6 @@ struct posix_schema {
 };
 
 
-/* there are 5 possible types of errors the ads subsystem can produce */
-enum ads_error_type {ENUM_ADS_ERROR_KRB5, ENUM_ADS_ERROR_GSS, 
-		     ENUM_ADS_ERROR_LDAP, ENUM_ADS_ERROR_SYSTEM, ENUM_ADS_ERROR_NT};
-
-typedef struct {
-	enum ads_error_type error_type;
-	union err_state{		
-		int rc;
-		NTSTATUS nt_status;
-	} err;
-	/* For error_type = ENUM_ADS_ERROR_GSS minor_status describe GSS API error */
-	/* Where rc represents major_status of GSS API error */
-	int minor_status;
-} ADS_STATUS;
 
 #ifdef HAVE_ADS
 typedef LDAPMod **ADS_MODLIST;
