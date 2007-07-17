@@ -279,7 +279,7 @@ build_context(struct client *ipeer, struct client *apeer,
 	      int32_t flags, int32_t hCred,
 	      int32_t *iContext, int32_t *aContext, int32_t *hDelegCred)
 {
-    int32_t val, ic = 0, ac = 0, deleg = 0;
+    int32_t val = GSMERR_ERROR, ic = 0, ac = 0, deleg = 0;
     krb5_data itoken, otoken;
     int iDone = 0, aDone = 0;
     int step = 0;
