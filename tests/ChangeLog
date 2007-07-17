@@ -1,3 +1,11 @@
+2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* java/check-kinit.in: Disable test if we use socket wrapper.
+
+2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kadmin.in: Give more hints of what went wrong.
+
 2007-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/Makefile.am: add check-kadmin.in
