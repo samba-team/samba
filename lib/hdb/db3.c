@@ -244,6 +244,7 @@ DB__del(krb5_context context, HDB *db, krb5_data key)
 static krb5_error_code
 DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
+    DBC *dbc = NULL;
     char *fn;
     krb5_error_code ret;
     DB *d;
@@ -294,11 +295,12 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     }
     free(fn);
 
-    ret = (*d->cursor)(d, NULL, (DBC **)&db->hdb_dbc, 0);
+    ret = (*d->cursor)(d, NULL, &dbc, 0);
     if (ret) {
 	krb5_set_error_string(context, "d->cursor: %s", strerror(ret));
         return ret;
     }
+    db->hdb_dbc = dbc;
 
     if((flags & O_ACCMODE) == O_RDONLY)
 	ret = hdb_check_db_format(context, db);
