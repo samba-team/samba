@@ -1,5 +1,7 @@
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: roken_rename.h is a dist_ source k
+
 	* Makefile.am: split source files in dist and nodist.
 
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
