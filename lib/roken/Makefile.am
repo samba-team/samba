@@ -184,4 +184,9 @@ roken.h: make-roken$(EXEEXT)
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
 
-EXTRA_DIST = roken.awk roken.h.in $(man_MANS) test-mem.h
+EXTRA_DIST = \
+	roken.awk roken.h.in \
+	$(man_MANS) \
+	test-mem.h \
+	ndbm_wrap.c \
+	ndbm_wrap.h
