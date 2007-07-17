@@ -81,8 +81,9 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads)
 	}
 
 	/* debugging for the layer above SASL */
-	rc = ber_sockbuf_add_io(sb, io, LBER_SBIOD_LEVEL_TRANSPORT,
-				(void *)"ads_sasl_wrapping_above" );
+	rc = ber_sockbuf_add_io(sb, &ber_sockbuf_io_debug,
+				LBER_SBIOD_LEVEL_TRANSPORT,
+				(void *)"ads_sasl_wrapping_above");
 	status = ADS_ERROR_LDAP(rc);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -96,8 +97,9 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads)
 	}
 
 	/* debugging for the layer below SASL */
-	rc = ber_sockbuf_add_io(sb, io, LBER_SBIOD_LEVEL_TRANSPORT,
-				(void *)"ads_sasl_wrapping_below" );
+	rc = ber_sockbuf_add_io(sb, &ber_sockbuf_io_debug,
+				LBER_SBIOD_LEVEL_TRANSPORT,
+				(void *)"ads_sasl_wrapping_below");
 	status = ADS_ERROR_LDAP(rc);
 	if (!ADS_ERR_OK(status)) {
 		return status;
