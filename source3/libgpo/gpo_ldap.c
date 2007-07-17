@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
- *  Copyright (C) Guenther Deschner 2005
+ *  Copyright (C) Guenther Deschner 2005,2007
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -427,7 +427,6 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	/* sure ??? */
 	if (!ads_pull_uint32(ads, res, "flags", &gpo->options)) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
@@ -441,7 +440,6 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	gpo->name = ads_pull_string(ads, mem_ctx, res, "name");
 	ADS_ERROR_HAVE_NO_MEMORY(gpo->name);
 
-	/* ???, this is optional to have and what does it depend on, the 'flags' ?) */
 	gpo->machine_extensions = ads_pull_string(ads, mem_ctx, res, "gPCMachineExtensionNames");
 	gpo->user_extensions = ads_pull_string(ads, mem_ctx, res, "gPCUserExtensionNames");
 
@@ -536,7 +534,7 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 					 struct GP_LINK *gp_link,
 					 enum GPO_LINK_TYPE link_type,
 					 BOOL only_add_forced_gpos,
-					 struct GPO_SID_TOKEN *token)
+					 const struct nt_user_token *token)
 {
 	ADS_STATUS status;
 	int i;
@@ -592,10 +590,10 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
-static ADS_STATUS ads_get_gpo_sid_token(ADS_STRUCT *ads,
-					TALLOC_CTX *mem_ctx,
-					const char *dn,
-					struct GPO_SID_TOKEN **token)
+ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
+			     TALLOC_CTX *mem_ctx,
+			     const char *dn,
+			     struct nt_user_token **token)
 {
 	ADS_STATUS status;
 	DOM_SID object_sid;
@@ -604,11 +602,8 @@ static ADS_STATUS ads_get_gpo_sid_token(ADS_STRUCT *ads,
 	size_t num_ad_token_sids = 0;
 	DOM_SID *token_sids;
 	size_t num_token_sids = 0;
-	struct GPO_SID_TOKEN *new_token = NULL;
+	struct nt_user_token *new_token = NULL;
 	int i;
-
-	new_token = TALLOC_ZERO_P(mem_ctx, struct GPO_SID_TOKEN);
-	ADS_ERROR_HAVE_NO_MEMORY(new_token);
 
 	status = ads_get_tokensids(ads, mem_ctx, dn, 
 				   &object_sid, &primary_group_sid,
@@ -617,11 +612,13 @@ static ADS_STATUS ads_get_gpo_sid_token(ADS_STRUCT *ads,
 		return status;
 	}
 
-	new_token->object_sid = object_sid;
-	new_token->primary_group_sid = primary_group_sid;
-
 	token_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, 1);
 	ADS_ERROR_HAVE_NO_MEMORY(token_sids);
+
+	if (!add_sid_to_array_unique(mem_ctx, &primary_group_sid, &token_sids, 
+				     &num_token_sids)) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 
 	for (i = 0; i < num_ad_token_sids; i++) {
 		
@@ -635,21 +632,16 @@ static ADS_STATUS ads_get_gpo_sid_token(ADS_STRUCT *ads,
 		}
 	}
 
-	/* Add S-1-5-11 to token */
-	if (!add_sid_to_array_unique(mem_ctx, &global_sid_Authenticated_Users,
-				     &token_sids, &num_token_sids)) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-
-	new_token->token_sids = token_sids;
-	new_token->num_token_sids = num_token_sids;
+	new_token = create_local_nt_token(mem_ctx, &object_sid, False, 
+					  num_token_sids, token_sids);
+	ADS_ERROR_HAVE_NO_MEMORY(new_token);
 
 	*token = new_token;
 
+	debug_nt_user_token(DBGC_CLASS, 5, *token);
+
 	return ADS_ERROR_LDAP(LDAP_SUCCESS);
 }
-
 
 /****************************************************************
  get the full list of GROUP_POLICY_OBJECTs for a given dn
@@ -665,15 +657,19 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 	
 	ADS_STATUS status;
 	struct GP_LINK gp_link;
-	struct GPO_SID_TOKEN *token = NULL;
+	struct nt_user_token *token = NULL;
 	const char *parent_dn, *site_dn, *tmp_dn;
 	BOOL add_only_forced_gpos = False;
 
 	ZERO_STRUCTP(gpo_list);
 
+	if (!dn) {
+		return ADS_ERROR(LDAP_PARAM_ERROR);
+	}
+
 	DEBUG(10,("ads_get_gpo_list: getting GPO list for [%s]\n", dn));
 
-	status = ads_get_gpo_sid_token(ads, mem_ctx, dn, &token);
+	status = ads_get_sid_token(ads, mem_ctx, dn, &token);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
