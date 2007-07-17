@@ -43,7 +43,7 @@ static BOOL gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 				       &ext_right_apg_guid)) {
 				return True;
 			}
-		case  SEC_ACE_OBJECT_INHERITED_PRESENT:
+		case SEC_ACE_OBJECT_INHERITED_PRESENT:
 			if (GUID_equal(&object->inherited_type.inherited_type,
 				       &ext_right_apg_guid)) {
 				return True;
@@ -60,11 +60,11 @@ static BOOL gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 
 static BOOL gpo_sd_check_agp_object(const SEC_ACE *ace)
 {
-	if (sec_ace_object(ace->type)) {
-		return gpo_sd_check_agp_object_guid(&ace->object.object);
+	if (!sec_ace_object(ace->type)) {
+		return False;
 	}
 
-	return False;
+	return gpo_sd_check_agp_object_guid(&ace->object.object);
 }
 
 /****************************************************************
@@ -92,21 +92,13 @@ static BOOL gpo_sd_check_read_access_bits(uint32 access_mask)
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_trustee_in_sid_token(const DOM_SID *trustee, 
-					      const struct GPO_SID_TOKEN *token)
+static BOOL gpo_sd_check_trustee_in_sid_token(const DOM_SID *trustee,
+					      const struct nt_user_token *token)
 {
 	int i;
 
-	if (sid_equal(trustee, &token->object_sid)) {
-		return True;
-	}
-
-	if (sid_equal(trustee, &token->primary_group_sid)) {
-		return True;
-	}
-
-	for (i = 0; i < token->num_token_sids; i++) {
-		if (sid_equal(trustee, &token->token_sids[i])) {
+	for (i = 0; i < token->num_sids; i++) {
+		if (sid_equal(trustee, &token->user_sids[i])) {
 			return True;
 		}
 	}
@@ -118,7 +110,7 @@ static BOOL gpo_sd_check_trustee_in_sid_token(const DOM_SID *trustee,
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace, 
-					       const struct GPO_SID_TOKEN *token) 
+					       const struct nt_user_token *token) 
 {
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
@@ -135,7 +127,7 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace,
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace, 
-						const struct GPO_SID_TOKEN *token) 
+						const struct nt_user_token *token) 
 {
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) && 
@@ -152,7 +144,7 @@ static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace,
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace(const SEC_ACE *ace, 
-				 const struct GPO_SID_TOKEN *token) 
+				 const struct nt_user_token *token) 
 {
 	switch (ace->type) {
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
@@ -168,7 +160,7 @@ static NTSTATUS gpo_sd_check_ace(const SEC_ACE *ace,
 ****************************************************************/
 
 NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo, 
-				      const struct GPO_SID_TOKEN *token)
+				      const struct nt_user_token *token)
 {
 	SEC_DESC *sd = gpo->security_descriptor;
 	SEC_ACL *dacl = NULL;

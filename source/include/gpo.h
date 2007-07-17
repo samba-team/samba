@@ -93,10 +93,3 @@ struct GP_EXT {
 
 #define GPO_CACHE_DIR "gpo_cache"
 #define GPT_INI "GPT.INI"
-
-struct GPO_SID_TOKEN {
-	DOM_SID object_sid;
-	DOM_SID primary_group_sid;
-	size_t num_token_sids;
-	DOM_SID *token_sids;
-};
