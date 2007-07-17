@@ -4447,7 +4447,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstrin
 
 	if (dst_exists) {
 		files_struct *dst_fsp = file_find_di_first(file_id_sbuf(&sbuf1));
-		if (dst_fsp && !(dst_fsp->share_access & FILE_SHARE_DELETE)) {
+		if (dst_fsp) {
 			DEBUG(3, ("rename_internals_fsp: Target file open\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
