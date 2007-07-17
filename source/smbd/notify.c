@@ -21,15 +21,12 @@
 
 #include "includes.h"
 
-/* Max size we can send to client in a notify response. */
-extern int max_send;
-
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
 	char request_buf[smb_size];
 	uint32 filter;
-	uint32 current_bufsize;
+	uint32 max_param;
 	struct notify_mid_map *mid_map;
 	void *backend_data;
 };
@@ -61,8 +58,9 @@ static BOOL notify_change_record_identical(struct notify_change *c1,
 }
 
 static BOOL notify_marshall_changes(int num_changes,
-				    struct notify_change *changes,
-				    prs_struct *ps)
+				uint32 max_offset,
+				struct notify_change *changes,
+				prs_struct *ps)
 {
 	int i;
 	UNISTR uni_name;
@@ -112,6 +110,11 @@ static BOOL notify_marshall_changes(int num_changes,
 		prs_set_offset(ps, prs_offset(ps)-2);
 
 		SAFE_FREE(uni_name.buffer);
+
+		if (prs_offset(ps) > max_offset) {
+			/* Too much data for client. */
+			return False;
+		}
 	}
 
 	return True;
@@ -147,7 +150,7 @@ static void change_notify_reply_packet(const char *request_buf,
 				    "failed.");
 }
 
-void change_notify_reply(const char *request_buf,
+void change_notify_reply(const char *request_buf, uint32 max_param,
 			 struct notify_change_buf *notify_buf)
 {
 	char *outbuf = NULL;
@@ -159,16 +162,10 @@ void change_notify_reply(const char *request_buf,
 		return;
 	}
 
-	if (!prs_init(&ps, 0, NULL, False)
-	    || !notify_marshall_changes(notify_buf->num_changes,
+	prs_init(&ps, 0, NULL, False);
+
+	if (!notify_marshall_changes(notify_buf->num_changes, max_param,
 					notify_buf->changes, &ps)) {
-		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
-
-	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
-
-	if (buflen > max_send) {
 		/*
 		 * We exceed what the client is willing to accept. Send
 		 * nothing.
@@ -237,7 +234,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	return status;
 }
 
-NTSTATUS change_notify_add_request(const char *inbuf, 
+NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param,
 				   uint32 filter, BOOL recursive,
 				   struct files_struct *fsp)
 {
@@ -254,11 +251,11 @@ NTSTATUS change_notify_add_request(const char *inbuf,
 	map->req = request;
 
 	memcpy(request->request_buf, inbuf, sizeof(request->request_buf));
-	request->current_bufsize = 0;
+	request->max_param = max_param;
 	request->filter = filter;
 	request->fsp = fsp;
 	request->backend_data = NULL;
-	
+
 	DLIST_ADD_END(fsp->notify->requests, request,
 		      struct notify_change_request *);
 
@@ -430,6 +427,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	 */
 
 	change_notify_reply(fsp->notify->requests->request_buf,
+			    fsp->notify->requests->max_param,
 			    fsp->notify);
 
 	change_notify_remove_request(fsp->notify->requests);
