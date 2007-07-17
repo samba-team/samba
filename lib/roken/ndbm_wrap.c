@@ -116,7 +116,7 @@ dbm_get (DB *db, int flags)
 	db->cursor(db, NULL, &cursor, 0);
     if(cursor->c_get(cursor, &key, &value, flags) != 0) {
 	datum.dptr = NULL;
-	datum.0 = NULL;
+	datum.dsize = 0;
     } else 
 	DBT2DATUM(&value, &datum);
 #else
