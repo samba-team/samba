@@ -3,7 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 
 if do_roken_rename
-ES = strtok_r.c snprintf.c strdup.c strupr.c getprogname.c roken_rename.h
+ES = strtok_r.c snprintf.c strdup.c strupr.c getprogname.c
 endif
 
 AM_CPPFLAGS += $(ROKEN_RENAME)
@@ -19,7 +19,7 @@ libss_la_LDFLAGS = -version-info 1:6:1
 libsl_la_LIBADD = @LIB_readline@
 libss_la_LIBADD = @LIB_readline@ @LIB_com_err@
 
-dist_libsl_la_SOURCES = sl_locl.h sl.c
+dist_libsl_la_SOURCES = sl_locl.h sl.c roken_rename.h
 nodist_libsl_la_SOURCES = $(ES)
 dist_libss_la_SOURCES = $(dist_libsl_la_SOURCES) ss.c ss.h
 nodist_libss_la_SOURCES = $(ES)
