@@ -40,6 +40,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
+#define NO_LOCKING_COUNT (-1)
+
 /* the locking database handle */
 static struct db_context *lock_db;
 
@@ -225,11 +227,19 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			blocking_lock,
 			plock_pid);
 
-	/* blocking ie. pending, locks also count here,
-	 * as this is an efficiency counter to avoid checking
-	 * the lock db. on close. JRA. */
+	if (lock_flav == WINDOWS_LOCK &&
+			fsp->current_lock_count != NO_LOCKING_COUNT) {
+		/* blocking ie. pending, locks also count here,
+		 * as this is an efficiency counter to avoid checking
+		 * the lock db. on close. JRA. */
 
-	fsp->current_lock_count++;
+		fsp->current_lock_count++;
+	} else {
+		/* Notice that this has had a POSIX lock request.
+		 * We can't count locks after this so forget them.
+		 */
+		fsp->current_lock_count = NO_LOCKING_COUNT;
+	}
 
 	return br_lck;
 }
@@ -279,8 +289,11 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
-	SMB_ASSERT(fsp->current_lock_count > 0);
-	fsp->current_lock_count--;
+	if (lock_flav == WINDOWS_LOCK &&
+			fsp->current_lock_count != NO_LOCKING_COUNT) {
+		SMB_ASSERT(fsp->current_lock_count > 0);
+		fsp->current_lock_count--;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -329,8 +342,11 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
-	SMB_ASSERT(fsp->current_lock_count > 0);
-	fsp->current_lock_count--;
+	if (lock_flav == WINDOWS_LOCK &&
+			fsp->current_lock_count != NO_LOCKING_COUNT) {
+		SMB_ASSERT(fsp->current_lock_count > 0);
+		fsp->current_lock_count--;
+	}
 
 	return NT_STATUS_OK;
 }
