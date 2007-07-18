@@ -938,7 +938,8 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 }
 
 
-/* called every second until all sentenced connections have been reset
+/* 
+   called every second until all sentenced connections have been reset
  */
 static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct timed_event *te, 
 					      struct timeval t, void *private_data)
@@ -1006,7 +1007,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	   a new structure
 	 */
 	if (killtcp == NULL) {
-		killtcp = talloc(ctdb, struct ctdb_kill_tcp);
+		killtcp = talloc_zero(ctdb, struct ctdb_kill_tcp);
 		CTDB_NO_MEMORY(ctdb, killtcp);
 
 		killtcp->ctdb        = ctdb;
@@ -1057,7 +1058,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		/* We also need to set up some events to tickle all these connections
 		   until they are all reset
 		*/
-		event_add_timed(ctdb->ev, killtcp, timeval_current_ofs(0, 0), 
+		event_add_timed(ctdb->ev, killtcp, timeval_zero(), 
 				ctdb_tickle_sentenced_connections, killtcp);
 	}
 
