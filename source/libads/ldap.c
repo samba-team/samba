@@ -425,7 +425,7 @@ got_connection:
 		return ADS_SUCCESS;
 	}
 
-	ads->ldap.mem_ctx = talloc_new("ads LDAP connection memory");
+	ads->ldap.mem_ctx = talloc_init("ads LDAP connection memory");
 	if (!ads->ldap.mem_ctx) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
