@@ -256,6 +256,105 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	return ADS_ERROR(rc);
 }
 
+#ifdef HAVE_GSSAPI
+static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
+{
+	gss_ctx_id_t context_handle = ads->ldap.wrap_private_data;
+	ADS_STATUS status;
+	int gss_rc;
+	uint32 minor_status;
+	gss_buffer_desc unwrapped, wrapped;
+	int conf_req_flag, conf_state;
+
+	unwrapped.value		= buf;
+	unwrapped.length	= len;
+
+	/* for now request sign and seal */
+	conf_req_flag	= (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL);
+
+	gss_rc = gss_wrap(&minor_status, context_handle,
+			  conf_req_flag, GSS_C_QOP_DEFAULT,
+			  &unwrapped, &conf_state,
+			  &wrapped);
+	status = ADS_ERROR_GSS(gss_rc, minor_status);
+	if (!ADS_ERR_OK(status)) return status;
+
+	if (conf_req_flag && conf_state == 0) {
+		return ADS_ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
+	if ((ads->ldap.out.size - 4) < wrapped.length) {
+		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+	}
+
+	/* copy the wrapped blob to the right location */
+	memcpy(ads->ldap.out.buf + 4, wrapped.value, wrapped.length);
+
+	/* set how many bytes must be written to the underlying socket */
+	ads->ldap.out.left = 4 + wrapped.length;
+
+	gss_release_buffer(&minor_status, &wrapped);
+
+	return ADS_SUCCESS;
+}
+
+static ADS_STATUS ads_sasl_gssapi_unwrap(ADS_STRUCT *ads)
+{
+	gss_ctx_id_t context_handle = ads->ldap.wrap_private_data;
+	ADS_STATUS status;
+	int gss_rc;
+	uint32 minor_status;
+	gss_buffer_desc unwrapped, wrapped;
+	int conf_state;
+
+	wrapped.value	= ads->ldap.in.buf + 4;
+	wrapped.length	= ads->ldap.in.ofs - 4;
+
+	gss_rc = gss_unwrap(&minor_status, context_handle,
+			    &wrapped, &unwrapped,
+			    &conf_state, GSS_C_QOP_DEFAULT);
+	status = ADS_ERROR_GSS(gss_rc, minor_status);
+	if (!ADS_ERR_OK(status)) return status;
+
+	if (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL && conf_state == 0) {
+		return ADS_ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
+	if (wrapped.length < wrapped.length) {
+		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+	}
+
+	/* copy the wrapped blob to the right location */
+	memcpy(ads->ldap.in.buf + 4, unwrapped.value, unwrapped.length);
+
+	/* set how many bytes must be written to the underlying socket */
+	ads->ldap.in.left	= unwrapped.length;
+	ads->ldap.in.ofs	= 4;
+
+	gss_release_buffer(&minor_status, &unwrapped);
+
+	return ADS_SUCCESS;
+}
+
+static void ads_sasl_gssapi_disconnect(ADS_STRUCT *ads)
+{
+	gss_ctx_id_t context_handle = ads->ldap.wrap_private_data;
+	uint32 minor_status;
+
+	gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
+
+	ads->ldap.wrap_ops = NULL;
+	ads->ldap.wrap_private_data = NULL;
+}
+
+static const struct ads_saslwrap_ops ads_sasl_gssapi_ops = {
+	.name		= "gssapi",
+	.wrap		= ads_sasl_gssapi_wrap,
+	.unwrap		= ads_sasl_gssapi_unwrap,
+	.disconnect	= ads_sasl_gssapi_disconnect
+};
+#endif
+
 #ifdef HAVE_KRB5
 /* 
    perform a LDAP/SASL/SPNEGO/KRB5 bind
@@ -424,7 +523,8 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
 	gss_OID mech_type = GSS_C_NULL_OID;
 	gss_buffer_desc output_token, input_token;
-	uint32 ret_flags, conf_state;
+	uint32 req_flags, ret_flags;
+	int conf_state;
 	struct berval cred;
 	struct berval *scred = NULL;
 	int i=0;
@@ -491,13 +591,25 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	input_token.value = NULL;
 	input_token.length = 0;
 
+	req_flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG;
+	switch (ads->ldap.wrap_type) {
+	case ADS_SASLWRAP_TYPE_SEAL:
+		req_flags |= GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG;
+		break;
+	case ADS_SASLWRAP_TYPE_SIGN:
+		req_flags |= GSS_C_INTEG_FLAG;
+		break;
+	case ADS_SASLWRAP_TYPE_PLAIN:
+		break;
+	}
+
 	for (i=0; i < MAX_GSS_PASSES; i++) {
 		gss_rc = gss_init_sec_context(&minor_status,
 					  GSS_C_NO_CREDENTIAL,
 					  &context_handle,
 					  serv_name,
 					  mech_type,
-					  GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG,
+					  req_flags,
 					  0,
 					  NULL,
 					  &input_token,
@@ -541,7 +653,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	}
 
 	gss_rc = gss_unwrap(&minor_status,context_handle,&input_token,&output_token,
-			    (int *)&conf_state,NULL);
+			    &conf_state,NULL);
 	if (gss_rc) {
 		status = ADS_ERROR_GSS(gss_rc, minor_status);
 		goto failed;
@@ -565,7 +677,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	output_token.value = SMB_MALLOC(output_token.length);
 	p = (uint8 *)output_token.value;
 
-	*p++ = 1; /* no sign & seal selection */
+	*p++ = ads->ldap.wrap_type;
 	/* choose the same size as the server gave us */
 	*p++ = max_msg_size>>16;
 	*p++ = max_msg_size>>8;
@@ -580,7 +692,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	 */
 
 	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
-			  &output_token, (int *)&conf_state,
+			  &output_token, &conf_state,
 			  &input_token);
 	if (gss_rc) {
 		status = ADS_ERROR_GSS(gss_rc, minor_status);
@@ -598,6 +710,24 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	gss_release_buffer(&minor_status, &input_token);
 
+	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
+		gss_rc = gss_wrap_size_limit(&minor_status, context_handle,
+					     (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL),
+					     GSS_C_QOP_DEFAULT,
+					     max_msg_size, &ads->ldap.out.max);
+		if (gss_rc) {
+			status = ADS_ERROR_GSS(gss_rc, minor_status);
+			goto failed;
+		}
+
+		ads->ldap.out.min = 4;
+		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max;
+		ads->ldap.in.min = 4;
+		ads->ldap.in.max = max_msg_size;
+		ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
+		/* make sure we don't free context_handle */
+		context_handle = GSS_C_NO_CONTEXT;
+	}
 failed:
 
 	gss_release_name(&minor_status, &serv_name);
