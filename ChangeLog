@@ -1,9 +1,13 @@
 2007-07-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* Makefile.am: TODO-1.0
+	* TODO-1.0: remove 
+
+	* Makefile.am: remove TODO-1.0
 
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Heimdal 1.0 release branch cut here
+	
 	* doc/hx509.texi: use version.texi
 	
 	* doc/heimdal.texi: use version.texi
@@ -783,7 +787,7 @@
 
 	* lib/krb5/krb5_init_context.3: fix mdoc errors
 
-	* 0.8 branch cut today
+	* Heimdal 0.8 branch cut today
 
 	* doc/hx509.texi: Spelling and more about proxy certificates.
 
