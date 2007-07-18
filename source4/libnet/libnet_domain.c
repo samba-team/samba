@@ -1,4 +1,4 @@
- /* 
+/* 
    Unix SMB/CIFS implementation.
 
    Copyright (C) Rafal Szczesniak 2005
@@ -100,6 +100,15 @@ static void continue_domain_open_close(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type = rpc_close;
+		msg.data = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
+
 	/* reset domain handle and associated data in libnet_context */
 	s->ctx->samr.name        = NULL;
 	s->ctx->samr.access_mask = 0;
@@ -136,6 +145,15 @@ static void continue_domain_open_connect(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+
+		msg.type = rpc_connect;
+		msg.data = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
+
 	r = &s->lookup;
 
 	/* prepare for samr_LookupDomain call */
@@ -164,6 +182,18 @@ static void continue_domain_open_lookup(struct rpc_request *req)
 	
 	/* receive samr_LookupDomain reply */
 	c->status = dcerpc_ndr_request_recv(req);
+
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		struct msg_rpc_lookup_domain data;
+
+		data.domain_name = s->domain_name.string;
+
+		msg.type = rpc_lookup_domain;
+		msg.data = (void*)&data;
+		msg.data_size = sizeof(data);
+		s->monitor_fn(&msg);
+	}
 
 	r = &s->open;
 
@@ -203,6 +233,15 @@ static void continue_domain_open_open(struct rpc_request *req)
 	/* receive samr_OpenDomain reply */
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
+
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type = rpc_open_domain;
+		msg.data = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
 
 	composite_done(c);
 }
@@ -248,7 +287,7 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 		s->rpcconn.in.dcerpc_iface = &dcerpc_table_samr;
 		
 		/* send rpc pipe connect request */
-		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
+		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn, s->monitor_fn);
 		if (composite_nomem(rpcconn_req, c)) return c;
 
 		composite_continue(c, rpcconn_req, continue_domain_open_rpc_connect, c);
@@ -389,7 +428,7 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 		s->rpcconn.in.dcerpc_iface = &dcerpc_table_lsarpc;
 		
 		/* send rpc pipe connect request */
-		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
+		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn, s->monitor_fn);
 		if (composite_nomem(rpcconn_req, c)) return c;
 
 		composite_continue(c, rpcconn_req, continue_rpc_connect_lsa, c);
@@ -1079,7 +1118,7 @@ struct composite_context* libnet_DomainList_send(struct libnet_context *ctx,
 		s->rpcconn.in.name         = s->hostname;
 		s->rpcconn.in.dcerpc_iface = &dcerpc_table_samr;
 
-		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
+		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn, s->monitor_fn);
 		if (composite_nomem(rpcconn_req, c)) return c;
 		
 		composite_continue(c, rpcconn_req, continue_rpc_connect, c);

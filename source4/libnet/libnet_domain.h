@@ -63,3 +63,8 @@ struct libnet_DomainList {
 		const char *error_string;
 	} out;
 };
+
+
+struct msg_rpc_lookup_domain {
+	const char *domain_name;
+};

@@ -64,15 +64,9 @@ struct libnet_RpcConnect {
  * Monitor messages sent from libnet_rpc.c functions
  */
 
-struct msg_net_lookup_dc {
-	const char *domain_name;
-	const char *hostname;
-	const char *address;
-};
-
-
-struct msg_net_pipe_connected {
+struct msg_net_rpc_connect {
 	const char *host;
+	const char *domain_name;
 	const char *endpoint;
 	enum dcerpc_transport_t transport;
 };
