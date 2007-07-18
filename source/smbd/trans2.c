@@ -2008,11 +2008,12 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 		   complain (it thinks we're asking for the directory above the shared
 		   path or an invalid name). Catch this as the resume name is only compared, never used in
 		   a file access. JRA. */
-		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
-			pstrcpy(resume_name, "..");
-		} else if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_NAME_INVALID)) {
-			pstrcpy(resume_name, ".");
-		} else {
+		srvstr_pull(inbuf, SVAL(inbuf,smb_flg2),
+				resume_name, params+12,
+				sizeof(resume_name), total_params - 12,
+				STR_TERMINATE);
+
+		if (!(ISDOT(resume_name) || ISDOTDOT(resume_name))) {
 			return ERROR_NT(ntstatus);
 		}
 	}
