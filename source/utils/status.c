@@ -111,6 +111,10 @@ static void print_share_mode(const struct share_mode_entry *e,
 		return;
 	}
 
+	if (!process_exists(e->pid)) {
+		return;
+	}
+
 	if (count==0) {
 		d_printf("Locked files:\n");
 		d_printf("Pid          Uid        DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
