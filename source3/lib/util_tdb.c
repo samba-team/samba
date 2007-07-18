@@ -1191,7 +1191,7 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 	}
 
 	/* open old tdb RDWR - so we can lock it */
-	src_tdb = tdb_open(src_path, 0, TDB_DEFAULT, O_RDWR, 0);
+	src_tdb = tdb_open_log(src_path, 0, TDB_DEFAULT, O_RDWR, 0);
 	if (src_tdb == NULL) {
 		DEBUG(3, ("Failed to open tdb '%s'\n", src_path));
 		goto done;
@@ -1204,10 +1204,10 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 
 	tmp_path = talloc_asprintf(ctx, "%s%s", dst_path, ".tmp");
 	unlink(tmp_path);
-	dst_tdb = tdb_open(tmp_path,
-			   hash_size ? hash_size : tdb_hash_size(src_tdb),
-			   TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL,
-			   st.st_mode & 0777);
+	dst_tdb = tdb_open_log(tmp_path,
+			       hash_size ? hash_size : tdb_hash_size(src_tdb),
+			       TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL,
+			       st.st_mode & 0777);
 	if (dst_tdb == NULL) {
 		DEBUG(3, ("Error creating tdb '%s': %s\n", tmp_path,
 			  strerror(errno)));
@@ -1224,7 +1224,7 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 
 	/* reopen ro and do basic verification */
 	tdb_close(dst_tdb);
-	dst_tdb = tdb_open(tmp_path, 0, TDB_DEFAULT, O_RDONLY, 0);
+	dst_tdb = tdb_open_log(tmp_path, 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!dst_tdb) {
 		DEBUG(3, ("Failed to reopen tdb '%s': %s\n", tmp_path,
 			  strerror(errno)));
