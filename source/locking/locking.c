@@ -937,6 +937,14 @@ BOOL is_valid_share_mode_entry(const struct share_mode_entry *e)
 {
 	int num_props = 0;
 
+	if (e->op_type == UNUSED_SHARE_MODE_ENTRY) {
+		/* cope with dead entries from the process not
+		   existing. These should not be considered valid,
+		   otherwise we end up doing zero timeout sharing
+		   violation */
+		return False;
+	}
+
 	num_props += ((e->op_type == NO_OPLOCK) ? 1 : 0);
 	num_props += (EXCLUSIVE_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 	num_props += (LEVEL_II_OPLOCK_TYPE(e->op_type) ? 1 : 0);
