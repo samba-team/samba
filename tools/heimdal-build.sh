@@ -205,8 +205,8 @@ if [ X"$unpack" = Xyes ]; then
 fi
 
 if [ X"$autotools" = Xyes ]; then
-	echo "Autotooling (via fix-export)"
-	env DATEDVERSION="svn${branch}-${date}" ${hversion}/fix-export ${hversion}
+	echo "Autotooling"
+	(cd ${hversion} && sh ./autogen.sh) || exit 1
 fi
 
 if [ X"$ccachedir" != X ]; then
