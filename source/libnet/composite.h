@@ -24,16 +24,22 @@
  */
 
 
-#define  rpc_create_user        (0x00000001)        /* userman.h */
-#define  rpc_open_user          (0x00000002)        /* userinfo.h */
-#define  rpc_query_user         (0x00000003)        /* userinfo.h */
-#define  rpc_close_user         (0x00000004)        /* userinfo.h */
-#define  rpc_lookup_name        (0x00000005)        /* userman.h */
-#define  rpc_delete_user        (0x00000006)        /* userman.h */
-#define  rpc_set_user           (0x00000007)        /* userman.h */
+#define  rpc_create_user        (0x00000001)
+#define  rpc_open_user          (0x00000002)
+#define  rpc_query_user         (0x00000003)
+#define  rpc_close_user         (0x00000004)
+#define  rpc_lookup_name        (0x00000005)
+#define  rpc_delete_user        (0x00000006)
+#define  rpc_set_user           (0x00000007)
+#define  rpc_close              (0x00000008)
+#define  rpc_connect            (0x00000009)
+#define  rpc_lookup_domain      (0x00000010)
+#define  rpc_open_domain        (0x00000011)
+#define  rpc_open_policy        (0x00000012)
+#define  rpc_query_policy       (0x00000013)
 
-#define  net_lookup_dc          (0x00000100)        /* libnet_rpc.h */
-#define  net_pipe_connected     (0x00000200)        /* libnet_rpc.h */
+#define  net_lookup_dc          (0x00000100)
+#define  net_rpc_connect        (0x00000200)
 
 
 struct monitor_msg {

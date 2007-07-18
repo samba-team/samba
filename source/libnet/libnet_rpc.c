@@ -31,6 +31,9 @@ struct rpc_connect_srv_state {
 	struct libnet_context *ctx;
 	struct libnet_RpcConnect r;
 	const char *binding;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg*);
 };
 
 
@@ -48,7 +51,8 @@ static void continue_pipe_connect(struct composite_context *ctx);
 
 static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context *ctx,
 							   TALLOC_CTX *mem_ctx,
-							   struct libnet_RpcConnect *r)
+							   struct libnet_RpcConnect *r,
+							   void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;	
 	struct rpc_connect_srv_state *s;
@@ -63,6 +67,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	if (composite_nomem(s, c)) return c;
 
 	c->private_data = s;
+	s->monitor_fn   = monitor;
 
 	s->ctx = ctx;
 	s->r = *r;
@@ -130,8 +135,26 @@ static void continue_pipe_connect(struct composite_context *ctx)
 
 	/* receive result of rpc pipe connection */
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->r.out.dcerpc_pipe);
+	
+	/* post monitor message */
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		struct msg_net_rpc_connect data;
+		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
+		
+		/* prepare monitor message and post it */
+		data.host        = binding->host;
+		data.endpoint    = binding->endpoint;
+		data.transport   = binding->transport;
+		data.domain_name = binding->target_hostname;
+		
+		msg.type      = net_rpc_connect;
+		msg.data      = (void*)&data;
+		msg.data_size = sizeof(data);
+		s->monitor_fn(&msg);
+	}
 
-	composite_done(c);
+	composite_done(c);	
 }
 
 
@@ -208,7 +231,8 @@ static void continue_rpc_connect(struct composite_context *ctx);
 
 static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context *ctx,
 							  TALLOC_CTX *mem_ctx,
-							  struct libnet_RpcConnect *r)
+							  struct libnet_RpcConnect *r,
+							  void (*monitor)(struct monitor_msg *msg))
 {
 	struct composite_context *c;
 	struct rpc_connect_dc_state *s;
@@ -222,6 +246,7 @@ static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context 
 	if (composite_nomem(s, c)) return c;
 
 	c->private_data = s;
+	s->monitor_fn   = monitor;
 
 	s->ctx = ctx;
 	s->r   = *r;
@@ -275,16 +300,18 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	/* decide on preferred address type depending on DC type */
 	s->connect_name = s->f.out.dcs[0].name;
 
-	/* prepare a monitor message and post it */
-	msg.type         = net_lookup_dc;
-	msg.data         = &data;
-	msg.data_size    = sizeof(data);
-
-	data.domain_name = s->f.in.domain_name;
-	data.hostname    = s->f.out.dcs[0].name;
-	data.address     = s->f.out.dcs[0].address;
-	
-	if (s->monitor_fn) s->monitor_fn(&msg);
+	/* post monitor message */
+	if (s->monitor_fn) {
+		/* prepare a monitor message and post it */
+		data.domain_name = s->f.in.domain_name;
+		data.hostname    = s->f.out.dcs[0].name;
+		data.address     = s->f.out.dcs[0].address;
+		
+		msg.type         = net_lookup_dc;
+		msg.data         = &data;
+		msg.data_size    = sizeof(data);
+		s->monitor_fn(&msg);
+	}
 
 	/* ok, pdc has been found so do attempt to rpc connect */
 	s->r2.level	       = LIBNET_RPC_CONNECT_SERVER_ADDRESS;
@@ -296,7 +323,7 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	s->r2.in.dcerpc_iface  = s->r.in.dcerpc_iface;	
 
 	/* send rpc connect request to the server */
-	rpc_connect_req = libnet_RpcConnectSrv_send(s->ctx, c, &s->r2);
+	rpc_connect_req = libnet_RpcConnectSrv_send(s->ctx, c, &s->r2, s->monitor_fn);
 	if (composite_nomem(rpc_connect_req, c)) return;
 
 	composite_continue(c, rpc_connect_req, continue_rpc_connect, c);
@@ -310,8 +337,6 @@ static void continue_rpc_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct rpc_connect_dc_state *s;
-	struct monitor_msg msg;
-	struct msg_net_pipe_connected data;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dc_state);
@@ -323,17 +348,23 @@ static void continue_rpc_connect(struct composite_context *ctx)
 	if (!composite_is_ok(c)) return;
 
 	s->r.out.dcerpc_pipe = s->r2.out.dcerpc_pipe;
-
-	/* prepare a monitor message and post it */
-	data.host      = s->r.out.dcerpc_pipe->binding->host;
-	data.endpoint  = s->r.out.dcerpc_pipe->binding->endpoint;
-	data.transport = s->r.out.dcerpc_pipe->binding->transport;
-
-	msg.type       = net_pipe_connected;
-	msg.data       = (void*)&data;
-	msg.data_size  = sizeof(data);
 	
-	if (s->monitor_fn) s->monitor_fn(&msg);
+	/* post monitor message */
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		struct msg_net_rpc_connect data;
+		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
+
+		data.host        = binding->host;
+		data.endpoint    = binding->endpoint;
+		data.transport   = binding->transport;
+		data.domain_name = binding->target_hostname;
+		
+		msg.type      = net_rpc_connect;
+		msg.data      = (void*)&data;
+		msg.data_size = sizeof(data);
+		s->monitor_fn(&msg);
+	}
 
 	composite_done(c);
 }
@@ -398,6 +429,9 @@ struct rpc_connect_dci_state {
 	struct lsa_QueryInfoPolicy lsa_query_info;
 	struct dcerpc_binding *final_binding;
 	struct dcerpc_pipe *final_pipe;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg*);
 };
 
 
@@ -422,7 +456,8 @@ static void continue_epm_map_binding_send(struct composite_context *c);
 
 static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_context *ctx,
 							      TALLOC_CTX *mem_ctx,
-							      struct libnet_RpcConnect *r)
+							      struct libnet_RpcConnect *r,
+							      void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c, *conn_req;
 	struct rpc_connect_dci_state *s;
@@ -435,6 +470,7 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	if (composite_nomem(s, c)) return c;
 
 	c->private_data = s;
+	s->monitor_fn   = monitor;
 
 	s->ctx = ctx;
 	s->r   = *r;
@@ -454,7 +490,7 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	s->rpc_conn.in.dcerpc_iface    = &dcerpc_table_lsarpc;
 	
 	/* request connection to the lsa pipe on the pdc */
-	conn_req = libnet_RpcConnect_send(ctx, c, &s->rpc_conn);
+	conn_req = libnet_RpcConnect_send(ctx, c, &s->rpc_conn, s->monitor_fn);
 	if (composite_nomem(c, conn_req)) return c;
 
 	composite_continue(c, conn_req, continue_dci_rpc_connect, c);
@@ -479,6 +515,23 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 	if (!NT_STATUS_IS_OK(c->status)) {
 		composite_error(c, c->status);
 		return;
+	}
+
+	/* post monitor message */
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		struct msg_net_rpc_connect data;
+		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
+
+		data.host        = binding->host;
+		data.endpoint    = binding->endpoint;
+		data.transport   = binding->transport;
+		data.domain_name = binding->target_hostname;
+
+		msg.type      = net_rpc_connect;
+		msg.data      = (void*)&data;
+		msg.data_size = sizeof(data);
+		s->monitor_fn(&msg);
 	}
 
 	/* prepare to open a policy handle on lsa pipe */
@@ -529,12 +582,24 @@ static void continue_lsa_policy(struct rpc_request *req)
 		s->r.out.guid  = NULL;
 		s->r.out.domain_name = NULL;
 		s->r.out.domain_sid  = NULL;
+
 		/* Skip to the creating the actual connection, no info available on this transport */
 		continue_epm_map_binding_send(c);
 		return;
+
 	} else if (!NT_STATUS_IS_OK(s->lsa_open_policy.out.result)) {
 		composite_error(c, s->lsa_open_policy.out.result);
 		return;
+	}
+
+	/* post monitor message */
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+
+		msg.type      = rpc_open_policy;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
 	}
 
 	/* query lsa info for dns domain name and guid */
@@ -600,6 +665,16 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 		*s->r.out.guid = s->lsa_query_info2.out.info->dns.domain_guid;
 	}
 
+	/* post monitor message */
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type      = rpc_query_policy;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
+
 	/* query lsa info for domain name and sid */
 	s->lsa_query_info.in.handle = &s->lsa_handle;
 	s->lsa_query_info.in.level  = LSA_POLICY_INFO_DOMAIN;
@@ -631,6 +706,16 @@ static void continue_lsa_query_info(struct rpc_request *req)
 		return;
 	}
 
+	/* post monitor message */
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type      = rpc_query_policy;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
+
 	/* Copy the domain name and sid from the query result */
 	s->r.out.domain_sid  = s->lsa_query_info.out.info->domain.sid;
 	s->r.out.domain_name = s->lsa_query_info.out.info->domain.name.string;
@@ -642,7 +727,7 @@ static void continue_lsa_query_info(struct rpc_request *req)
    Step 5 (continued) of RpcConnectDCInfo: request endpoint
    map binding.
 
-   We may short-cut to this step if we dont' support LSA OpenPolicy on this transport
+   We may short-cut to this step if we don't support LSA OpenPolicy on this transport
 */
 static void continue_epm_map_binding_send(struct composite_context *c)
 {
@@ -718,6 +803,25 @@ static void continue_secondary_conn(struct composite_context *ctx)
 	}
 
 	s->r.out.dcerpc_pipe = s->final_pipe;
+
+	/* post monitor message */
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		struct msg_net_rpc_connect data;
+		struct dcerpc_binding *binding = s->r.out.dcerpc_pipe->binding;
+		
+		/* prepare monitor message and post it */
+		data.host        = binding->host;
+		data.endpoint    = binding->endpoint;
+		data.transport   = binding->transport;
+		data.domain_name = binding->target_hostname;
+		
+		msg.type      = net_rpc_connect;
+		msg.data      = (void*)&data;
+		msg.data_size = sizeof(data);
+		s->monitor_fn(&msg);
+	}
+
 	composite_done(c);
 }
 
@@ -784,7 +888,8 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 
 struct composite_context* libnet_RpcConnect_send(struct libnet_context *ctx,
 						 TALLOC_CTX *mem_ctx,
-						 struct libnet_RpcConnect *r)
+						 struct libnet_RpcConnect *r,
+						 void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
 
@@ -792,16 +897,16 @@ struct composite_context* libnet_RpcConnect_send(struct libnet_context *ctx,
 	case LIBNET_RPC_CONNECT_SERVER:
 	case LIBNET_RPC_CONNECT_SERVER_ADDRESS:
 	case LIBNET_RPC_CONNECT_BINDING:
-		c = libnet_RpcConnectSrv_send(ctx, mem_ctx, r);
+		c = libnet_RpcConnectSrv_send(ctx, mem_ctx, r, monitor);
 		break;
 
 	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_DC:
-		c = libnet_RpcConnectDC_send(ctx, mem_ctx, r);
+		c = libnet_RpcConnectDC_send(ctx, mem_ctx, r, monitor);
 		break;
 
 	case LIBNET_RPC_CONNECT_DC_INFO:
-		c = libnet_RpcConnectDCInfo_send(ctx, mem_ctx, r);
+		c = libnet_RpcConnectDCInfo_send(ctx, mem_ctx, r, monitor);
 		break;
 
 	default:
@@ -859,6 +964,6 @@ NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c;
 	
-	c = libnet_RpcConnect_send(ctx, mem_ctx, r);
+	c = libnet_RpcConnect_send(ctx, mem_ctx, r, NULL);
 	return libnet_RpcConnect_recv(c, ctx, mem_ctx, r);
 }

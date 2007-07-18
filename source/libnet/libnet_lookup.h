@@ -55,3 +55,15 @@ struct libnet_LookupName {
 		const char *error_string;
 	} out;
 };
+
+
+/*
+ * Monitor messages sent from libnet_lookup.c functions
+ */
+
+struct msg_net_lookup_dc {
+	const char *domain_name;
+	const char *hostname;
+	const char *address;
+};
+
