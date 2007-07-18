@@ -1265,6 +1265,30 @@ done:
 	return ret;
 }
 
+static int rename_file_with_suffix(TALLOC_CTX *ctx, const char *path,
+				   const char *suffix)
+{
+	int ret = -1;
+	char *dst_path;
+
+	dst_path = talloc_asprintf(ctx, "%s%s", path, suffix);
+
+	ret = (rename(path, dst_path) != 0);
+
+	if (ret == 0) {
+		DEBUG(5, ("moved '%s' to '%s'\n", path, dst_path));
+	} else if (errno == ENOENT) {
+		DEBUG(3, ("file '%s' does not exist - so not moved\n", path));
+		ret = 0;
+	} else {
+		DEBUG(3, ("error renaming %s to %s: %s\n", path, dst_path,
+			  strerror(errno)));
+	}
+
+	TALLOC_FREE(dst_path);
+	return ret;
+}
+
 /*
  * do a backup of a tdb, moving the destination out of the way first
  */
@@ -1272,20 +1296,14 @@ static int tdb_backup_with_rotate(TALLOC_CTX *ctx, const char *src_path,
 		      		  const char *dst_path, int hash_size,
 				  const char *rotate_suffix)
 {
-	char *rotate_path;
-	int ret = -1;
+	int ret;
 
-	rotate_path = talloc_asprintf(ctx, "%s%s", dst_path, rotate_suffix);
-	if ((rename(dst_path, rotate_path) != 0) && (errno != ENOENT)) {
-		DEBUG(0, ("tdb_backup_with_rotate: error renaming "
-			  "%s to %s: %s\n", dst_path, rotate_path,
-			  strerror(errno)));
-		goto done;
-	}
+	ret = rename_file_with_suffix(ctx, dst_path, rotate_suffix);
+
+	/* ignore return value of rename here:
+	 * the more important thing is to do the backup */
 	ret = tdb_backup(ctx, src_path, dst_path, hash_size);
 
-done:
-	TALLOC_FREE(rotate_path);
 	return ret;
 }
 
@@ -1294,11 +1312,14 @@ done:
  *
  *  - calls tdb_validate
  *  - if the tdb is ok, create a backup "name.bak", possibly moving
- *    existing backup to name.bak.old
- *  - if the tdb is corrupt, check if there is a valid backup.
- *    if so, move corrupt tdb  to "name.corrupt",
- *    and restore the backup
- *    (give up if there is no backup or if it is invalid)
+ *    existing backup to name.bak.old,
+ *    return 0 (success) even if the backup fails
+ *  - if the tdb is corrupt:
+ *    - move the tdb to "name.corrupt"
+ *    - check if there is valid backup.
+ *      if so, restore the backup.
+ *      if restore is successful, return 0 (success),
+ *    - otherwise return -1 (failure)
  */
 int tdb_validate_and_backup(const char *tdb_path,
 			    tdb_validate_data_func validate_fn)
@@ -1328,35 +1349,48 @@ int tdb_validate_and_backup(const char *tdb_path,
 		if (ret != 0) {
 			DEBUG(1, ("Error creating backup of tdb '%s'\n",
 				  tdb_path));
-			goto done;
+			/* the actual validation was successful: */
+			ret = 0;
+		} else {
+			DEBUG(1, ("Created backup '%s' of tdb '%s'\n",
+				  tdb_path_backup, tdb_path));
 		}
-		DEBUG(1, ("Created backup '%s' of tdb '%s'\n", tdb_path_backup,
-			  tdb_path));
 	} else {
 		DEBUG(1, ("tdb '%s' is invalid\n", tdb_path));
+
+		/* move corrupt tdb away first, but don't return on error*/
+		ret = rename_file_with_suffix(ctx, tdb_path, corrupt_suffix);
+		if (ret != 0) {
+			DEBUG(1, ("Error moving tdb to '%s%s'\n", tdb_path,
+				  corrupt_suffix));
+		} else {
+			DEBUG(1, ("Corrupt tdb stored as '%s%s'\n", tdb_path,
+				  corrupt_suffix));
+		}
+
 		if (stat(tdb_path_backup, &st) != 0) {
-			DEBUG(3, ("Could not stat '%s': %s\n", tdb_path_backup,
+			DEBUG(5, ("Could not stat '%s': %s\n", tdb_path_backup,
 				  strerror(errno)));
-			DEBUG(1, ("No backup found. Giving up.\n"));
+			DEBUG(1, ("No backup found.\n"));
+			ret = -1;
 			goto done;
 		}
+		DEBUG(1, ("backup '%s' found.\n", tdb_path_backup));
 		ret = tdb_validate(tdb_path_backup, validate_fn);
 		if (ret != 0) {
-			DEBUG(1, ("Backup '%s' found but it is invalid.\n",
-				  tdb_path_backup));
+			DEBUG(1, ("Backup '%s' is invalid.\n",tdb_path_backup));
 			goto done;
 		}
+
 		DEBUG(1, ("valid backup '%s' found\n", tdb_path_backup));
-		ret = tdb_backup_with_rotate(ctx, tdb_path_backup, tdb_path, 0,
-					     corrupt_suffix);
+		ret = tdb_backup(ctx, tdb_path_backup, tdb_path, 0);
 		if (ret != 0) {
 			DEBUG(1, ("Error restoring backup from '%s'\n",
 				  tdb_path_backup));
-			goto done;
+		} else {
+			DEBUG(1, ("Restored tdb backup from '%s'\n",
+				  tdb_path_backup));
 		}
-		DEBUG(1, ("Restored tdb backup from '%s'\n", tdb_path_backup));
-		DEBUGADD(1, ("Corrupt tdb stored as '%s%s'\n", tdb_path,
-			     corrupt_suffix));
 	}
 
 done:
