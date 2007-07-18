@@ -93,7 +93,7 @@ static ber_slen_t ads_saslwrap_read(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_t
 		ret = LBER_SBIOD_READ_NEXT(sbiod,
 					   ads->ldap.in.buf + ads->ldap.in.ofs,
 					   4 - ads->ldap.in.ofs);
-		if (ret < 0) return ret;
+		if (ret <= 0) return ret;
 		ads->ldap.in.ofs += ret;
 
 		if (ads->ldap.in.ofs < 4) goto eagain;
@@ -120,7 +120,7 @@ static ber_slen_t ads_saslwrap_read(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_t
 		ret = LBER_SBIOD_READ_NEXT(sbiod,
 					   ads->ldap.in.buf + ads->ldap.in.ofs,
 					   ads->ldap.in.needed);
-		if (ret < 0) return ret;
+		if (ret <= 0) return ret;
 		ads->ldap.in.ofs += ret;
 		ads->ldap.in.needed -= ret;
 
@@ -227,7 +227,7 @@ static ber_slen_t ads_saslwrap_write(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_
 	ret = LBER_SBIOD_WRITE_NEXT(sbiod,
 				    ads->ldap.out.buf + ads->ldap.out.ofs,
 				    ads->ldap.out.left);
-	if (ret < 0) return ret;
+	if (ret <= 0) return ret;
 	ads->ldap.out.ofs += ret;
 	ads->ldap.out.left -= ret;
 
@@ -302,5 +302,11 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
 
 	return ADS_SUCCESS;
 }
-
+#else
+ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
+				   const struct ads_saslwrap_ops *ops,
+				   void *private_data)
+{
+	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+}
 #endif /* HAVE_LDAP_SASL_WRAPPING */

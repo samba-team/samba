@@ -39,6 +39,12 @@ struct ads_saslwrap_ops {
 	ADS_STATUS (*disconnect)(struct ads_struct *);
 };
 
+enum ads_saslwrap_type {
+	ADS_SASLWRAP_TYPE_PLAIN = 1,
+	ADS_SASLWRAP_TYPE_SIGN = 2,
+	ADS_SASLWRAP_TYPE_SEAL = 4
+} wrap_type;
+
 typedef struct ads_struct {
 	int is_mine;	/* do I own this structure's memory? */
 	
@@ -85,8 +91,11 @@ typedef struct ads_struct {
 		time_t last_attempt; /* last attempt to reconnect */
 		int port;
 
+		enum ads_saslwrap_type wrap_type;
+
 #ifdef HAVE_LDAP_SASL_WRAPPING
 		Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
+#endif /* HAVE_LDAP_SASL_WRAPPING */
 		TALLOC_CTX *mem_ctx;
 		const struct ads_saslwrap_ops *wrap_ops;
 		void *wrap_private_data;
@@ -108,7 +117,6 @@ typedef struct ads_struct {
 			uint32 size;
 			uint8 *buf;
 		} out;
-#endif /* HAVE_LDAP_SASL_WRAPPING */
 	} ldap;
 #endif /* HAVE_LDAP */
 } ADS_STRUCT;
@@ -321,6 +329,9 @@ typedef void **ADS_MODLIST;
 #define ADS_AUTH_ANON_BIND        0x04
 #define ADS_AUTH_SIMPLE_BIND      0x08
 #define ADS_AUTH_ALLOW_NTLMSSP    0x10
+#define ADS_AUTH_SASL_SIGN        0x20
+#define ADS_AUTH_SASL_SEAL        0x40
+#define ADS_AUTH_SASL_FORCE       0x80
 
 /* Kerberos environment variable names */
 #define KRB5_ENV_CCNAME "KRB5CCNAME"

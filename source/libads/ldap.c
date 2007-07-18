@@ -372,8 +372,9 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 
-	ads->ldap.last_attempt = time(NULL);
-	ads->ldap.ld = NULL;
+	ZERO_STRUCT(ads->ldap);
+	ads->ldap.last_attempt	= time(NULL);
+	ads->ldap.wrap_type	= ADS_SASLWRAP_TYPE_PLAIN;
 
 	/* try with a user specified server */
 
@@ -422,6 +423,11 @@ got_connection:
 	
 	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
 		return ADS_SUCCESS;
+	}
+
+	ads->ldap.mem_ctx = talloc_new("ads LDAP connection memory");
+	if (!ads->ldap.mem_ctx) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
 	/* Otherwise setup the TCP LDAP session */
@@ -475,6 +481,13 @@ void ads_disconnect(ADS_STRUCT *ads)
 		ldap_unbind(ads->ldap.ld);
 		ads->ldap.ld = NULL;
 	}
+	if (ads->ldap.wrap_ops && ads->ldap.wrap_ops->disconnect) {
+		ads->ldap.wrap_ops->disconnect(ads);
+	}
+	if (ads->ldap.mem_ctx) {
+		talloc_free(ads->ldap.mem_ctx);
+	}
+	ZERO_STRUCT(ads->ldap);
 }
 
 /*
