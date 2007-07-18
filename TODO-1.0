@@ -1,9 +1,0 @@
-$Id$
-
-- sort out hprop:ing
-- figure out hostname case sensitive issues
-- verify_user: handle non-secure verification failing because of
-  host->realm mapping
-- PAM?
-- kadmin: make it happy with reading and parsing kdc.conf
-- handle readline hiding in readline/readline.h
