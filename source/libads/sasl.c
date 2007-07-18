@@ -23,7 +23,8 @@
 
 static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 {
-	struct ntlmssp_state *ntlmssp_state = ads->ldap.wrap_private_data;
+	struct ntlmssp_state *ntlmssp_state =
+		(struct ntlmssp_state *)ads->ldap.wrap_private_data;
 	ADS_STATUS status;
 	NTSTATUS nt_status;
 	DATA_BLOB sig;
@@ -61,7 +62,8 @@ static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 
 static ADS_STATUS ads_sasl_ntlmssp_unwrap(ADS_STRUCT *ads)
 {
-	struct ntlmssp_state *ntlmssp_state = ads->ldap.wrap_private_data;
+	struct ntlmssp_state *ntlmssp_state =
+		(struct ntlmssp_state *)ads->ldap.wrap_private_data;
 	ADS_STATUS status;
 	NTSTATUS nt_status;
 	DATA_BLOB sig;
@@ -95,7 +97,8 @@ static ADS_STATUS ads_sasl_ntlmssp_unwrap(ADS_STRUCT *ads)
 
 static void ads_sasl_ntlmssp_disconnect(ADS_STRUCT *ads)
 {
-	struct ntlmssp_state *ntlmssp_state = ads->ldap.wrap_private_data;
+	struct ntlmssp_state *ntlmssp_state =
+		(struct ntlmssp_state *)ads->ldap.wrap_private_data;
 
 	ntlmssp_end(&ntlmssp_state);
 

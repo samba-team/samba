@@ -213,7 +213,7 @@ static ber_slen_t ads_saslwrap_write(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_
 		ret = ads_saslwrap_prepare_outbuf(ads, rlen);
 		if (ret < 0) return ret;
 		
-		status = ads->ldap.wrap_ops->wrap(ads, buf, rlen);
+		status = ads->ldap.wrap_ops->wrap(ads, (uint8 *)buf, rlen);
 		if (!ADS_ERR_OK(status)) {
 			errno = EACCES;
 			return -1;
