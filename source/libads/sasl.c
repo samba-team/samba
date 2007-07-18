@@ -21,6 +21,95 @@
 
 #ifdef HAVE_LDAP
 
+static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
+{
+	struct ntlmssp_state *ntlmssp_state = ads->ldap.wrap_private_data;
+	ADS_STATUS status;
+	NTSTATUS nt_status;
+	DATA_BLOB sig;
+	uint8 *dptr = ads->ldap.out.buf + (4 + NTLMSSP_SIG_SIZE);
+
+	/* copy the data to the right location */
+	memcpy(dptr, buf, len);
+
+	/* create the signature and may encrypt the data */
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		nt_status = ntlmssp_seal_packet(ntlmssp_state,
+						dptr, len,
+						dptr, len,
+						&sig);
+	} else {
+		nt_status = ntlmssp_sign_packet(ntlmssp_state,
+						dptr, len,
+						dptr, len,
+						&sig);
+	}
+	status = ADS_ERROR_NT(nt_status);
+	if (!ADS_ERR_OK(status)) return status;
+
+	/* copy the signature to the right location */
+	memcpy(ads->ldap.out.buf + 4,
+	       sig.data, NTLMSSP_SIG_SIZE);
+
+	data_blob_free(&sig);
+
+	/* set how many bytes must be written to the underlying socket */
+	ads->ldap.out.left = 4 + NTLMSSP_SIG_SIZE + len;
+
+	return ADS_SUCCESS;
+}
+
+static ADS_STATUS ads_sasl_ntlmssp_unwrap(ADS_STRUCT *ads)
+{
+	struct ntlmssp_state *ntlmssp_state = ads->ldap.wrap_private_data;
+	ADS_STATUS status;
+	NTSTATUS nt_status;
+	DATA_BLOB sig;
+	uint8 *dptr = ads->ldap.in.buf + (4 + NTLMSSP_SIG_SIZE);
+	uint32 dlen = ads->ldap.in.ofs - (4 + NTLMSSP_SIG_SIZE);
+
+	/* wrap the signature into a DATA_BLOB */
+	sig = data_blob_const(ads->ldap.in.buf + 4, NTLMSSP_SIG_SIZE);
+
+	/* verify the signature and maybe decrypt the data */
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		nt_status = ntlmssp_unseal_packet(ntlmssp_state,
+						  dptr, dlen,
+						  dptr, dlen,
+						  &sig);
+	} else {
+		nt_status = ntlmssp_check_packet(ntlmssp_state,
+						 dptr, dlen,
+						 dptr, dlen,
+						 &sig);
+	}
+	status = ADS_ERROR_NT(nt_status);
+	if (!ADS_ERR_OK(status)) return status;
+
+	/* set the amount of bytes for the upper layer and set the ofs to the data */
+	ads->ldap.in.left	= dlen;
+	ads->ldap.in.ofs	= 4 + NTLMSSP_SIG_SIZE;
+
+	return ADS_SUCCESS;
+}
+
+static void ads_sasl_ntlmssp_disconnect(ADS_STRUCT *ads)
+{
+	struct ntlmssp_state *ntlmssp_state = ads->ldap.wrap_private_data;
+
+	ntlmssp_end(&ntlmssp_state);
+
+	ads->ldap.wrap_ops = NULL;
+	ads->ldap.wrap_private_data = NULL;
+}
+
+static const struct ads_saslwrap_ops ads_sasl_ntlmssp_ops = {
+	.name		= "ntlmssp",
+	.wrap		= ads_sasl_ntlmssp_wrap,
+	.unwrap		= ads_sasl_ntlmssp_unwrap,
+	.disconnect	= ads_sasl_ntlmssp_disconnect
+};
+
 /* 
    perform a LDAP/SASL/SPNEGO/NTLMSSP bind (just how many layers can
    we fit on one socket??)
@@ -35,6 +124,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	int rc;
 	NTSTATUS nt_status;
 	int turn = 1;
+	uint32 features = 0;
 
 	struct ntlmssp_state *ntlmssp_state;
 
@@ -52,6 +142,28 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_password(ntlmssp_state, ads->auth.password))) {
 		return ADS_ERROR_NT(nt_status);
 	}
+
+	switch (ads->ldap.wrap_type) {
+	case ADS_SASLWRAP_TYPE_SEAL:
+		features = NTLMSSP_FEATURE_SIGN | NTLMSSP_FEATURE_SEAL;
+		break;
+	case ADS_SASLWRAP_TYPE_SIGN:
+		if (ads->auth.flags & ADS_AUTH_SASL_FORCE) {
+			features = NTLMSSP_FEATURE_SIGN;
+		} else {
+			/*
+			 * windows servers are broken with sign only,
+			 * so we need to use seal here too
+			 */
+			features = NTLMSSP_FEATURE_SIGN | NTLMSSP_FEATURE_SEAL;
+			ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SEAL;
+		}
+		break;
+	case ADS_SASLWRAP_TYPE_PLAIN:
+		break;
+	}
+
+	ntlmssp_want_feature(ntlmssp_state, features);
 
 	blob_in = data_blob_null;
 
@@ -130,7 +242,16 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	/* we have a reference conter on ntlmssp_state, if we are signing
 	   then the state will be kept by the signing engine */
 
-	ntlmssp_end(&ntlmssp_state);
+	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
+		ads->ldap.out.min = 4;
+		ads->ldap.out.max = 0x0FFFFFFF - NTLMSSP_SIG_SIZE;
+		ads->ldap.out.sig_size = NTLMSSP_SIG_SIZE;
+		ads->ldap.in.min = 4;
+		ads->ldap.in.max = 0x0FFFFFFF;
+		ads_setup_sasl_wrapping(ads, &ads_sasl_ntlmssp_ops, ntlmssp_state);
+	} else {
+		ntlmssp_end(&ntlmssp_state);
+	}
 
 	return ADS_ERROR(rc);
 }

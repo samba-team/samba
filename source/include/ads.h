@@ -36,7 +36,7 @@ struct ads_saslwrap_ops {
 	const char *name;
 	ADS_STATUS (*wrap)(struct ads_struct *, uint8 *buf, uint32 len);
 	ADS_STATUS (*unwrap)(struct ads_struct *);
-	ADS_STATUS (*disconnect)(struct ads_struct *);
+	void (*disconnect)(struct ads_struct *);
 };
 
 enum ads_saslwrap_type {
