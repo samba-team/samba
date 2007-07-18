@@ -14,7 +14,6 @@ ACLOCAL_AMFLAGS = -I cf
 
 EXTRA_DIST = \
 	TODO \
-	TODO-1.0 \
 	LICENSE \
 	README \
 	ChangeLog \
