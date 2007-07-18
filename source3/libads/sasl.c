@@ -517,6 +517,14 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 
 	values = ldap_get_values(ads->ldap.ld, res, "supportedSASLMechanisms");
 
+	if (ads->auth.flags & ADS_AUTH_SASL_SEAL) {
+		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SEAL;
+	} else if (ads->auth.flags & ADS_AUTH_SASL_SIGN) {
+		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SIGN;
+	} else {
+		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
+	}
+
 	/* try our supported mechanisms in order */
 	for (i=0;sasl_mechanisms[i].name;i++) {
 		/* see if the server supports it */
