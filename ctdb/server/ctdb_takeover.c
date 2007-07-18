@@ -452,20 +452,47 @@ static bool ctdb_same_subnet(const char *ip1, const char *ip2, uint8_t netmask_b
   criterion given by the flags
  */
 static void ctdb_takeover_find_node(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
-				    int start_node, uint32_t mask_flags)
+				    int node, uint32_t mask_flags)
 {
+	static int start_node=0;
 	int j;
-	for (j=(start_node+1)%nodemap->num;
-	     j != start_node;
-	     j=(j+1)%nodemap->num) {
+
+	/* If we add facilities to add/remove nodes to a cluster at runtime
+	   we must make sure that start_node is suddently not beyond the
+	   end of the nodelist
+	*/
+	if (start_node >= nodemap->num) {
+		start_node = 0;
+	}
+
+	j=start_node;
+	while (1) {
 		if (!(nodemap->nodes[j].flags & mask_flags) &&
 		    ctdb_same_subnet(ctdb->nodes[j]->public_address, 
-				     ctdb->nodes[start_node]->public_address, 
+				     ctdb->nodes[node]->public_address, 
 				     ctdb->nodes[j]->public_netmask_bits)) {
-			ctdb->nodes[start_node]->takeover_vnn = nodemap->nodes[j].vnn;
+			ctdb->nodes[node]->takeover_vnn = nodemap->nodes[j].vnn;
+			/* We found a node to take over
+			   also update the startnode so that we start at a 
+			   different node next time we are called.
+			 */
+			start_node = (j+1)%nodemap->num;;
+			return;
+		}
+
+		/* Try the next node */
+		j=(j+1)%nodemap->num;
+
+		/* We tried all the nodes and got back to where we started,
+		   there is no node that can take over
+		 */
+		if (j == start_node) {
 			break;
 		}
 	}
+
+	/* No takeover node found */
+	return;
 }
 
 
@@ -856,6 +883,7 @@ struct ctdb_kill_tcp {
 	int sending_fd;
 	struct fd_event *fde;
 	struct ctdb_killtcp_connection *connections;
+	void *private_data;
 };
 
 /*
@@ -873,8 +901,10 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd, &src, &dst,
-				     &ack_seq, &seq) != 0) {
+	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd,
+				killtcp->private_data,
+				&src, &dst,
+				&ack_seq, &seq) != 0) {
 		/* probably a non-tcp ACK packet */
 		return;
 	}
@@ -1012,7 +1042,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	   If we dont have a socket to listen on yet we must create it
 	 */
 	if (killtcp->capture_fd == -1) {
-		killtcp->capture_fd = ctdb_sys_open_capture_socket();
+		killtcp->capture_fd = ctdb_sys_open_capture_socket(ctdb->takeover.interface, &killtcp->private_data);
 		if (killtcp->capture_fd == -1) {
 			DEBUG(0,(__location__ " Failed to open capturing socket for killtcp\n"));
 			goto failed;

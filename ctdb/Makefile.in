@@ -1,5 +1,5 @@
 #!gmake
-#
+
 CC = @CC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -28,14 +28,14 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
 
-LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@
+LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
 
 UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o \
 	lib/util/util_time.o lib/util/util_file.o
 
 CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
-	lib/util/debug.o common/system.o
+	lib/util/debug.o @CTDB_SYSTEM_OBJ@
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
@@ -51,7 +51,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
 TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store @INFINIBAND_BINS@
-BINS = bin/ctdb bin/scsi_io
+BINS = bin/ctdb @CTDB_SCSI_IO@
 SBINS = bin/ctdbd
 
 DIRS = lib bin

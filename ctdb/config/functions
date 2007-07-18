@@ -8,6 +8,8 @@ loadconfig() {
 	. /etc/sysconfig/$name
     elif [ -f /etc/default/$name ]; then
 	. /etc/default/$name
+    elif [ -f /etc/ctdb/sysconfig/$name ]; then
+	. /etc/ctdb/sysconfig/$name
     fi
 }
 
@@ -22,7 +24,7 @@ service() {
   elif [ -x /etc/init.d/$service_name ]; then
       /etc/init.d/$service_name "$op"
   elif [ -x /etc/rc.d/init.d/$service_name ]; then
-      /etc/init.d/$service_name "$op"
+      /etc/rc.d/init.d/$service_name "$op"
   fi
 }
 
@@ -67,8 +69,10 @@ ctdb_wait_tcp_ports() {
 	          /usr/bin/netcat -z 127.0.0.1 $p || all_ok=0
 	      elif [ -x /usr/bin/nc ]; then
 	          /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
+	      elif [ -x /usr/bin/netstat ]; then
+	          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p .*LISTEN") || all_ok=0
 	      else 
-		  echo "`date` netcat not found - cannot check tcp ports"
+		  echo "`date` - No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
 		  return
 	      fi
 	  done
@@ -156,6 +160,8 @@ ctdb_check_tcp_ports() {
           /usr/bin/netcat -z 127.0.0.1 $p || all_ok=0
       elif [ -x /usr/bin/nc ]; then
           /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
+      elif [ -x /usr/bin/netstat ]; then
+          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p .*LISTEN") || all_ok=0
       fi
       [ $all_ok -eq 1 ] || {
 	  echo "`date` ERROR: $service_name tcp port $p is not responding"
