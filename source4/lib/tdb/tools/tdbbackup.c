@@ -177,7 +177,6 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 
 	/* close the new tdb and rename it to .bak */
 	tdb_close(tdb_new);
-	unlink(new_name);
 	if (rename(tmp_name, new_name) != 0) {
 		perror(new_name);
 		free(tmp_name);
