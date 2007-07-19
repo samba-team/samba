@@ -61,6 +61,7 @@ testit "kinit with pkinit" bin/samba4kinit --request-pac --pk-user=FILE:$PREFIX/
 test_smbclient "Test login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
 testit "domain join with kerberos ccache" $VALGRIND bin/net join $DOMAIN $CONFIGURATION  -W "$DOMAIN" -k yes $@ || failed=`expr $failed + 1`
+testit "check time with kerberos ccache" $VALGRIND bin/net time $SERVER $CONFIGURATION  -W "$DOMAIN" -k yes $@ || failed=`expr $failed + 1`
 
 testit "add user with kerberos ccache" $VALGRIND bin/net user add nettestuser $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 USERPASS=testPass@12%
