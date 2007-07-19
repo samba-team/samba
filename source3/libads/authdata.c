@@ -6,7 +6,7 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Stefan Metzmacher 2004-2005
-   Copyright (C) Guenther Deschner 2005
+   Copyright (C) Guenther Deschner 2005,2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -723,8 +723,8 @@ char *pac_group_attr_string(uint32 attr)
 }
 
 /* just for debugging, will be removed later - Guenther */
-static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
-
+static void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
+{
 	DOM_SID dom_sid, res_group_dom_sid;
 	int i;
 	char *attr_string;
@@ -734,21 +734,21 @@ static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
 		sid_copy(&res_group_dom_sid, &logon_info->res_group_dom_sid.sid);
 	}
 	sid_copy(&dom_sid, &logon_info->info3.dom_sid.sid);
-	
-	DEBUG(10,("The PAC:\n"));
-	
-	DEBUGADD(10,("\tUser Flags: 0x%x (%d)\n", user_flgs, user_flgs));
-	if (user_flgs & LOGON_EXTRA_SIDS)
-		DEBUGADD(10,("\tUser Flags: LOGON_EXTRA_SIDS 0x%x (%d)\n", LOGON_EXTRA_SIDS, LOGON_EXTRA_SIDS));
-	if (user_flgs & LOGON_RESOURCE_GROUPS)
-		DEBUGADD(10,("\tUser Flags: LOGON_RESOURCE_GROUPS 0x%x (%d)\n", LOGON_RESOURCE_GROUPS, LOGON_RESOURCE_GROUPS));
-	DEBUGADD(10,("\tUser SID: %s-%d\n", sid_string_static(&dom_sid), logon_info->info3.user_rid));
-	DEBUGADD(10,("\tGroup SID: %s-%d\n", sid_string_static(&dom_sid), logon_info->info3.group_rid));
 
-	DEBUGADD(10,("\tGroup Membership (Global and Universal Groups of own domain):\n"));
+	DEBUG(lvl,("The PAC:\n"));
+
+	DEBUGADD(lvl,("\tUser Flags: 0x%x (%d)\n", user_flgs, user_flgs));
+	if (user_flgs & LOGON_EXTRA_SIDS)
+		DEBUGADD(lvl,("\tUser Flags: LOGON_EXTRA_SIDS 0x%x (%d)\n", LOGON_EXTRA_SIDS, LOGON_EXTRA_SIDS));
+	if (user_flgs & LOGON_RESOURCE_GROUPS)
+		DEBUGADD(lvl,("\tUser Flags: LOGON_RESOURCE_GROUPS 0x%x (%d)\n", LOGON_RESOURCE_GROUPS, LOGON_RESOURCE_GROUPS));
+	DEBUGADD(lvl,("\tUser SID: %s-%d\n", sid_string_static(&dom_sid), logon_info->info3.user_rid));
+	DEBUGADD(lvl,("\tGroup SID: %s-%d\n", sid_string_static(&dom_sid), logon_info->info3.group_rid));
+
+	DEBUGADD(lvl,("\tGroup Membership (Global and Universal Groups of own domain):\n"));
 	for (i = 0; i < logon_info->info3.num_groups; i++) {
 		attr_string = pac_group_attr_string(logon_info->info3.gids[i].attr);
-		DEBUGADD(10,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n", 
+		DEBUGADD(lvl,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n",
 			i, sid_string_static(&dom_sid), 
 			logon_info->info3.gids[i].g_rid,
 			logon_info->info3.gids[i].attr,
@@ -756,20 +756,20 @@ static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
 		SAFE_FREE(attr_string);
 	}
 
-	DEBUGADD(10,("\tGroup Membership (Domain Local Groups and Groups from Trusted Domains):\n"));
+	DEBUGADD(lvl,("\tGroup Membership (Domain Local Groups and Groups from Trusted Domains):\n"));
 	for (i = 0; i < logon_info->info3.num_other_sids; i++) {
 		attr_string = pac_group_attr_string(logon_info->info3.other_sids_attrib[i]);
-		DEBUGADD(10,("\t\t%d: sid: %s\n\t\t   attr: 0x%x == %s\n", 
+		DEBUGADD(lvl,("\t\t%d: sid: %s\n\t\t   attr: 0x%x == %s\n",
 			i, sid_string_static(&logon_info->info3.other_sids[i].sid), 
 			logon_info->info3.other_sids_attrib[i],
 			attr_string));
 		SAFE_FREE(attr_string);
 	}
 
-	DEBUGADD(10,("\tGroup Membership (Ressource Groups (SID History ?)):\n"));
+	DEBUGADD(lvl,("\tGroup Membership (Ressource Groups (SID History ?)):\n"));
 	for (i = 0; i < logon_info->info3.res_group_count; i++) {
 		attr_string = pac_group_attr_string(logon_info->res_groups.group_membership[i].attrs);
-		DEBUGADD(10,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n", 
+		DEBUGADD(lvl,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n",
 			i, sid_string_static(&res_group_dom_sid),
 			logon_info->res_groups.group_membership[i].rid,
 			logon_info->res_groups.group_membership[i].attrs,
@@ -925,7 +925,7 @@ static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
 
 	DEBUG(10,("Successfully validated Kerberos PAC\n"));
 
-	dump_pac_logon_info(logon_info);
+	dump_pac_logon_info(10, logon_info);
 
 	*pac_data = my_pac;
 
