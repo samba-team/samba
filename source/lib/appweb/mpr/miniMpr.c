@@ -387,7 +387,10 @@ static int mprCoreStrcat(int alloc, char **destp, int destMax, int existingLen,
 	return required - 1;
 }
 
-/*****************************************************************************/
+/*****************************************************************************
+  Note that this VARARGS function must be NULL (not 0, this must be a
+  pointer) terminated
+*/
 
 int mprReallocStrcat(char **destp, int destMax, int existingLen, 
 	const char *delim, const char *src,...)

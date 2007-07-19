@@ -2590,7 +2590,7 @@ EjsProperty *ejsDefineAccessors(Ejs *ep, EjsVar *vp, const char *prop,
 	/* MOB -- need to encapsulate this logic */
 
 	if (mprAllocStrcat(MPR_LOC_ARGS(ep), &propName, EJS_MAX_ID+5, 0, 
-			"-set-", prop, 0) < 0) {
+			"-set-", prop, NULL) < 0) {
 		ejsMemoryError(ep);
 		return 0;
 	}
@@ -2633,7 +2633,7 @@ EjsProperty *ejsDefineCAccessors(Ejs *ep, EjsVar *vp, const char *prop,
 
 	/* MOB -- OPT to use SLAB */
 	if (mprAllocStrcat(MPR_LOC_ARGS(ep), &propName, EJS_MAX_ID + 5, 0, 
-			"-set-", prop, 0) < 0) {
+			"-set-", prop, NULL) < 0) {
 		ejsMemoryError(ep);
 		return 0;
 	}

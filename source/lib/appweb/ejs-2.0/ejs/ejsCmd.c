@@ -167,10 +167,10 @@ int main(int argc, char *argv[])
 		i = 0;
 		commandLine = 0;
 		len = mprAllocStrcat(MPR_LOC_ARGS(app), &commandLine, 0, " ", 
-			mprGetBaseName(argv[i++]), 0);
+			mprGetBaseName(argv[i++]), NULL);
 		for (; i < argc; i++) {
 			len = mprReallocStrcat(MPR_LOC_ARGS(app), &commandLine, 0, len, 
-				" ", argv[i], 0);
+				" ", argv[i], NULL);
 		}
 		mprPrintf(app, "  %s\n", commandLine);
 	}
@@ -339,7 +339,7 @@ static char *readCmd(MprApp *app, FILE *input)
 			line[len - 1] = '\0';
 		}
 		cmdLen = mprReallocStrcat(MPR_LOC_ARGS(app), &cmd, EJS_MAX_SCRIPT, 
-			cmdLen, 0, line, 0);
+			cmdLen, 0, line, NULL);
 	}
 	return cmd;
 }
@@ -380,12 +380,12 @@ static int interactiveUse(MprApp *app, Ejs *ejs, FILE *input, char *fileName)
 		if (line[len - 1] == '\\') {
 			line[len - 1] = '\0';
 			cmdLen = mprReallocStrcat(MPR_LOC_ARGS(app), &cmd, EJS_MAX_SCRIPT, 
-				cmdLen, 0, line, 0);
+				cmdLen, 0, line, NULL);
 
 		} else {
 
 			cmdLen = mprReallocStrcat(MPR_LOC_ARGS(app), &cmd, EJS_MAX_SCRIPT, 
-				cmdLen, 0, line, 0);
+				cmdLen, 0, line, NULL);
 			
 
 			if (traceCmds) {
