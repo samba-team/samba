@@ -58,22 +58,6 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	return ret;
 }
 
-/*
-  run the event script
- */
-int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = ctdb_event_script_v(ctdb, fmt, ap);
-	va_end(ap);
-
-	return ret;
-}
-
-
 struct ctdb_event_script_state {
 	struct ctdb_context *ctdb;
 	pid_t child;
@@ -131,15 +115,14 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
   run the event script in the background, calling the callback when 
   finished
  */
-int ctdb_event_script_callback(struct ctdb_context *ctdb, 
-			       struct timeval timeout,
-			       TALLOC_CTX *mem_ctx,
-			       void (*callback)(struct ctdb_context *, int, void *),
-			       void *private_data,
-			       const char *fmt, ...)
+static int ctdb_event_script_callback_v(struct ctdb_context *ctdb, 
+					struct timeval timeout,
+					TALLOC_CTX *mem_ctx,
+					void (*callback)(struct ctdb_context *, int, void *),
+					void *private_data,
+					const char *fmt, va_list ap)
 {
 	struct ctdb_event_script_state *state;
-	va_list ap;
 	int ret;
 
 	state = talloc(mem_ctx, struct ctdb_event_script_state);
@@ -170,9 +153,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			ctdb_restore_scheduler(ctdb);
 		}
 		set_close_on_exec(state->fd[1]);
-		va_start(ap, fmt);
 		ret = ctdb_event_script_v(ctdb, fmt, ap);
-		va_end(ap);
 		_exit(ret);
 	}
 
@@ -191,3 +172,69 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 }
 
 
+/*
+  run the event script in the background, calling the callback when 
+  finished
+ */
+int ctdb_event_script_callback(struct ctdb_context *ctdb, 
+			       struct timeval timeout,
+			       TALLOC_CTX *mem_ctx,
+			       void (*callback)(struct ctdb_context *, int, void *),
+			       void *private_data,
+			       const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = ctdb_event_script_callback_v(ctdb, timeout, mem_ctx, callback, private_data, fmt, ap);
+	va_end(ap);
+
+	return ret;
+}
+
+
+struct callback_status {
+	bool done;
+	int status;
+};
+
+/*
+  called when ctdb_event_script() finishes
+ */
+static void event_script_callback(struct ctdb_context *ctdb, int status, void *private_data)
+{
+	struct callback_status *s = (struct callback_status *)private_data;
+	s->done = true;
+	s->status = status;
+}
+
+/*
+  run the event script, waiting for it to complete. Used when the caller doesn't want to 
+  continue till the event script has finished.
+ */
+int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct callback_status status;
+
+	va_start(ap, fmt);
+	ret = ctdb_event_script_callback_v(ctdb, timeval_zero(), tmp_ctx, event_script_callback, &status, fmt, ap);
+	va_end(ap);
+
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	status.status = -1;
+	status.done = false;
+
+	while (status.done == false && event_loop_once(ctdb->ev) == 0) /* noop */;
+
+	talloc_free(tmp_ctx);
+
+	return status.status;
+}

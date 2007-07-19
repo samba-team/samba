@@ -644,6 +644,11 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, u
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
+	DEBUG(2,("registered tcp client for %u->%s:%u\n",
+		 (unsigned)ntohs(p->dest.sin_port), 
+		 inet_ntoa(p->src.sin_addr),
+		 (unsigned)ntohs(p->src.sin_port)));
+
 	/* tell all nodes about this tcp connection */
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
 				       CTDB_CONTROL_TCP_ADD,
@@ -792,9 +797,11 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 		p.dest = tcp->daddr;
 		data.dptr = (uint8_t *)&p;
 		data.dsize = sizeof(p);
-		ctdb_daemon_send_control(client->ctdb, CTDB_BROADCAST_CONNECTED, 0, 
-					 CTDB_CONTROL_TCP_REMOVE,
-					 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+		if (ctdb_sys_have_ip(inet_ntoa(p.dest.sin_addr))) {
+			ctdb_daemon_send_control(client->ctdb, CTDB_BROADCAST_CONNECTED, 0, 
+						 CTDB_CONTROL_TCP_REMOVE,
+						 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+		}
 		talloc_free(tcp);
 	}
 }
