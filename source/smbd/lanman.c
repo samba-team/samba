@@ -850,6 +850,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
 		if (!*rdata) {
+			SAFE_FREE(queue);
 			return False;
 		}
 		desc.base = *rdata;
@@ -882,6 +883,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
 	if (!*rparam) {
+		SAFE_FREE(queue);
+		SAFE_FREE(tmpdata);
 		return False;
 	}
 	SSVALS(*rparam,0,desc.errcode);
