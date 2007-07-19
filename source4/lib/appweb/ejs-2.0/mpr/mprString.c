@@ -232,8 +232,10 @@ static int mprCoreStrcat(MPR_LOC_DEC(ctx, loc), char **destp, int destMax,
 	return required - 1;
 }
 
-/******************************************************************************/
-
+/*****************************************************************************
+  Note that this VARARGS function must be NULL (not 0, this must be a
+  pointer) terminated
+*/
 int mprStrcat(char *dest, int destMax, const char *delim, const char *src, ...)
 {
 	va_list		ap;
@@ -249,8 +251,10 @@ int mprStrcat(char *dest, int destMax, const char *delim, const char *src, ...)
 	return rc;
 }
 
-/******************************************************************************/
-
+/*****************************************************************************
+  Note that this VARARGS function must be NULL (not 0, this must be a
+  pointer) terminated
+*/
 int mprAllocStrcat(MPR_LOC_DEC(ctx, loc), char **destp, int destMax, 
 	const char *delim, const char *src, ...)
 {
@@ -268,8 +272,10 @@ int mprAllocStrcat(MPR_LOC_DEC(ctx, loc), char **destp, int destMax,
 	return rc;
 }
 
-/******************************************************************************/
-
+/*****************************************************************************
+  Note that this VARARGS function must be NULL (not 0, this must be a
+  pointer) terminated
+*/
 int mprReallocStrcat(MPR_LOC_DEC(ctx, loc), char **destp, int destMax, 
 	int existingLen, const char *delim, const char *src,...)
 {

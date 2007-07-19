@@ -352,7 +352,7 @@ void espError(EspRequest *ep, const char *fmt, ...)
 
 	va_start(args, fmt);
 	mprAllocVsprintf(&buf, MPR_MAX_HEAP_SIZE, fmt, args);
-	ejsSetErrorMsg(ep->eid, buf);
+	ejsSetErrorMsg(ep->eid, "%s", buf);
 	mprFree(buf);
 	va_end(args);
 }
@@ -735,7 +735,7 @@ static int buildScript(EspRequest *ep, char **jsBuf, char *input, char **errMsg)
 			
 		case ESP_TOK_LITERAL:
 			len = mprReallocStrcat(jsBuf, maxScriptSize, len, 0, 
-				"write(\"", parse.token, "\");\n", 0);
+				"write(\"", parse.token, "\");\n", NULL);
 			break;
 
 		case ESP_TOK_ATAT:
@@ -744,12 +744,12 @@ static int buildScript(EspRequest *ep, char **jsBuf, char *input, char **errMsg)
 			 *	Catenate with "" to cause toString to run. 
 			 */
 			len = mprReallocStrcat(jsBuf, maxScriptSize, len, 0, 
-				"write(\"\" + ", parse.token, ");\n", 0);
+				"write(\"\" + ", parse.token, ");\n", NULL);
 			break;
 
 		case ESP_TOK_EQUALS:
 			len = mprReallocStrcat(jsBuf, maxScriptSize, len, 0, 
-				"write(\"\" + ", parse.token, ");\n", 0);
+				"write(\"\" + ", parse.token, ");\n", NULL);
 			state = ESP_STATE_IN_ESP_TAG;
 			break;
 
@@ -759,7 +759,7 @@ static int buildScript(EspRequest *ep, char **jsBuf, char *input, char **errMsg)
 			while (tid != ESP_TOK_EOF && tid != ESP_TOK_EOF && 
 					tid != ESP_TOK_END_ESP && len >= 0) {
 				len = mprReallocStrcat(jsBuf, maxScriptSize, len, 0, 
-					parse.token, 0);
+					parse.token, NULL);
 				tid = getEspToken(state, &parse);
 			}
 			state = ESP_STATE_BEGIN;
@@ -802,7 +802,7 @@ static int buildScript(EspRequest *ep, char **jsBuf, char *input, char **errMsg)
 				return rc;
 			}
 
-			len = mprReallocStrcat(jsBuf, maxScriptSize, len, 0, incBuf, 0);
+			len = mprReallocStrcat(jsBuf, maxScriptSize, len, 0, incBuf, NULL);
 			mprFree(incText);
 			mprFree(incBuf);
 			state = ESP_STATE_IN_ESP_TAG;
