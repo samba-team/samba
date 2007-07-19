@@ -2505,6 +2505,111 @@ use keytab functions.\n");
 	return net_run_function(argc, argv, func, net_ads_keytab_usage);
 }
 
+static int net_ads_kerberos_usage(int argc, const char **argv)
+{
+	d_printf(
+		"net ads kerberos <COMMAND>\n"\
+		"<COMMAND> can be either:\n"\
+		"  RENEW     Renew TGT from existing credential cache\n"\
+		"  PAC       Dumps the Kerberos PAC\n"\
+		"  KINIT     Retrieve Ticket Granting Ticket (TGT)\n"\
+		"\n"
+	);
+
+	return -1;
+}
+
+static int net_ads_kerberos_renew(int argc, const char **argv)
+{
+	int ret = smb_krb5_renew_ticket(NULL, NULL, NULL, NULL);
+	if (ret) {
+		d_printf("failed to renew kerberos ticket: %s\n",
+			error_message(ret));
+	}
+	return ret;
+}
+
+static int net_ads_kerberos_pac(int argc, const char **argv)
+{
+	PAC_DATA *pac = NULL;
+	PAC_LOGON_INFO *info = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	NTSTATUS status;
+	int ret = -1;
+
+	mem_ctx = talloc_init("net_ads_kerberos_pac");
+	if (!mem_ctx) {
+		goto out;
+	}
+
+	opt_password = net_prompt_pass(opt_user_name);
+
+	status = kerberos_return_pac(mem_ctx,
+				     opt_user_name,
+				     opt_password,
+				     0, &pac);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to query kerberos PAC: %s\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	info = get_logon_info_from_pac(pac);
+	if (info) {
+		dump_pac_logon_info(0, info);
+	}
+
+	ret = 0;
+ out:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+static int net_ads_kerberos_kinit(int argc, const char **argv)
+{
+	TALLOC_CTX *mem_ctx = NULL;
+	int ret = -1;
+	NTSTATUS status;
+
+	mem_ctx = talloc_init("net_ads_kerberos_kinit");
+	if (!mem_ctx) {
+		goto out;
+	}
+
+	opt_password = net_prompt_pass(opt_user_name);
+
+	ret = kerberos_kinit_password_ext(opt_user_name,
+					  opt_password,
+					  0,
+					  NULL,
+					  NULL,
+					  NULL,
+					  True,
+					  True,
+					  2592000, /* one month */
+					  &status);
+	if (ret) {
+		d_printf("failed to kinit password: %s\n",
+			nt_errstr(status));
+	}
+ out:
+	return ret;
+}
+
+int net_ads_kerberos(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"KINIT", net_ads_kerberos_kinit},
+		{"RENEW", net_ads_kerberos_renew},
+		{"PAC", net_ads_kerberos_pac},
+		{"HELP", net_ads_kerberos_usage},
+		{NULL, NULL}
+	};
+
+	return net_run_function(argc, argv, func, net_ads_kerberos_usage);
+}
+
+
 int net_ads_help(int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -2546,6 +2651,7 @@ int net_ads(int argc, const char **argv)
 		{"LOOKUP", net_ads_lookup},
 		{"KEYTAB", net_ads_keytab},
 		{"GPO", net_ads_gpo},
+		{"KERBEROS", net_ads_kerberos},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};
@@ -2562,6 +2668,11 @@ static int net_ads_noads(void)
 }
 
 int net_ads_keytab(int argc, const char **argv)
+{
+	return net_ads_noads();
+}
+
+int net_ads_kerberos(int argc, const char **argv)
 {
 	return net_ads_noads();
 }
