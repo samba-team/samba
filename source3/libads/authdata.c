@@ -955,4 +955,164 @@ out:
 	return logon_info;
 }
 
+/****************************************************************
+****************************************************************/
+
+ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
+			      const char *name,
+			      const char *pass,
+			      time_t time_offset,
+			      PAC_DATA **pac_ret)
+{
+	krb5_error_code ret;
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+	DATA_BLOB tkt, ap_rep, sesskey1, sesskey2;
+	PAC_DATA *pac_data = NULL;
+	char *client_princ_out = NULL;
+	const char *auth_princ = NULL;
+	const char *local_service = NULL;
+	const char *cc = "MEMORY:kerberos_return_pac";
+
+	ZERO_STRUCT(tkt);
+	ZERO_STRUCT(ap_rep);
+	ZERO_STRUCT(sesskey1);
+	ZERO_STRUCT(sesskey2);
+
+	if (!name || !pass) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!strchr_m(name, '@')) {
+		auth_princ = talloc_asprintf(mem_ctx, "%s@%s", name,
+			lp_realm());
+	} else {
+		auth_princ = name;
+	}
+	NT_STATUS_HAVE_NO_MEMORY(auth_princ);
+
+	local_service = talloc_asprintf(mem_ctx, "%s$@%s",
+					global_myname(), lp_realm());
+	NT_STATUS_HAVE_NO_MEMORY(local_service);
+
+	ret = kerberos_kinit_password_ext(auth_princ,
+					  pass,
+					  time_offset,
+					  NULL,
+					  NULL,
+					  cc,
+					  True,
+					  True,
+					  0,
+					  &status);
+	if (ret) {
+		/* status already set */
+		goto out;
+	}
+
+	ret = cli_krb5_get_ticket(local_service,
+				  time_offset,
+				  &tkt,
+				  &sesskey1,
+				  0,
+				  cc,
+				  NULL);
+	if (ret) {
+		status = krb5_to_nt_status(ret);
+		goto out;
+	}
+
+	status = ads_verify_ticket(mem_ctx,
+				   lp_realm(),
+				   time_offset,
+				   &tkt,
+				   &client_princ_out,
+				   &pac_data,
+				   &ap_rep,
+				   &sesskey2,
+				   False);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (!pac_data) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	*pac_ret = pac_data;
+
+out:
+	ads_kdestroy(cc);
+
+	data_blob_free(&tkt);
+	data_blob_free(&ap_rep);
+	data_blob_free(&sesskey1);
+	data_blob_free(&sesskey2);
+
+	SAFE_FREE(client_princ_out);
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
+					       const char *name,
+					       const char *pass,
+					       time_t time_offset,
+					       PAC_LOGON_INFO **logon_info)
+{
+	NTSTATUS status;
+	PAC_DATA *pac_data = NULL;
+	PAC_LOGON_INFO *info = NULL;
+
+	status = kerberos_return_pac(mem_ctx,
+				     name,
+				     pass,
+				     time_offset,
+				     &pac_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!pac_data) {
+		return NT_STATUS_INVALID_USER_BUFFER;
+	}
+
+	info = get_logon_info_from_pac(pac_data);
+	if (!info) {
+		return NT_STATUS_INVALID_USER_BUFFER;
+	}
+
+	*logon_info = info;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
+					const char *name,
+					const char *pass,
+					time_t time_offset,
+					NET_USER_INFO_3 **info3)
+{
+	NTSTATUS status;
+	PAC_LOGON_INFO *logon_info = NULL;
+
+	status = kerberos_return_pac_logon_info(mem_ctx,
+						name,
+						pass,
+						time_offset,
+						&logon_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*info3 = &logon_info->info3;
+
+	return NT_STATUS_OK;
+}
 #endif
