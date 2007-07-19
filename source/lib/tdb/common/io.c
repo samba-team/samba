@@ -234,13 +234,13 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 	while (addition) {
 		int n = addition>sizeof(buf)?sizeof(buf):addition;
 		int ret = pwrite(tdb->fd, buf, n, size);
-		if (ret != n) {
+		if (ret == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of %d failed (%s)\n", 
 				   n, strerror(errno)));
 			return -1;
 		}
-		addition -= n;
-		size += n;
+		addition -= ret;
+		size += ret;
 	}
 	return 0;
 }
