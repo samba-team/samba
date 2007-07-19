@@ -27,6 +27,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
+#include "libcli/security/security.h"
 
 static int ejs_doauth(MprVarHandle eid,
 		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
@@ -39,6 +40,7 @@ static int ejs_doauth(MprVarHandle eid,
 	struct auth_context *auth_context;
 	struct MprVar *session_info_obj;
 	NTSTATUS nt_status;
+	bool set;
 
 	struct smbcalls_context *c;
 	struct event_context *ev;
@@ -111,6 +113,32 @@ static int ejs_doauth(MprVarHandle eid,
 		goto done;
 	}
 
+	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
+		mprSetPropertyValue(auth, "user_class", mprString("USER"));
+		set = true;
+	}
+	
+	if (security_token_has_builtin_administrators(session_info->security_token)) {
+		mprSetPropertyValue(auth, "user_class", mprString("ADMINISTRATOR"));
+		set = true;
+	}
+
+	if (security_token_is_system(session_info->security_token)) {
+		mprSetPropertyValue(auth, "user_class", mprString("SYSTEM"));
+		set = true;
+	}
+
+	if (security_token_is_anonymous(session_info->security_token)) {
+		mprSetPropertyValue(auth, "report", mprString("Anonymous login not permitted"));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		goto done;
+	}
+
+	if (!set) {
+		mprSetPropertyValue(auth, "report", mprString("Session Info generation failed"));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+	}
+	
 	session_info_obj = mprInitObject(eid, "session_info", 0, NULL);
 
 	mprSetPtrChild(session_info_obj, "session_info", session_info);
@@ -120,6 +148,23 @@ static int ejs_doauth(MprVarHandle eid,
 	mprSetPropertyValue(auth, "result", mprCreateBoolVar(server_info->authenticated));
 	mprSetPropertyValue(auth, "username", mprString(server_info->account_name));
 	mprSetPropertyValue(auth, "domain", mprString(server_info->domain_name));
+
+	if (security_token_is_system(session_info->security_token)) {
+		mprSetPropertyValue(auth, "report", mprString("SYSTEM"));
+	}
+
+	if (security_token_is_anonymous(session_info->security_token)) {
+		mprSetPropertyValue(auth, "report", mprString("ANONYMOUS"));
+	}
+
+	if (security_token_has_builtin_administrators(session_info->security_token)) {
+		mprSetPropertyValue(auth, "report", mprString("ADMINISTRATOR"));
+	}
+
+	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
+		mprSetPropertyValue(auth, "report", mprString("USER"));
+	}
+
 
 done:
 	return 0;
