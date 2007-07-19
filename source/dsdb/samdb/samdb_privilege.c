@@ -80,6 +80,11 @@ _PUBLIC_ NTSTATUS samdb_privilege_setup(struct security_token *token)
 	NTSTATUS status;
 
 	/* Shortcuts to prevent recursion and avoid lookups */
+	if (token->user_sid == NULL) {
+		token->privilege_mask = 0;
+		return NT_STATUS_OK;
+	}
+
 	if (security_token_is_system(token)) {
 		token->privilege_mask = ~0;
 		return NT_STATUS_OK;

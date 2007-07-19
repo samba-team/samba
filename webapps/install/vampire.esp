@@ -14,6 +14,11 @@ var f = FormObj("Provisioning", 0, 2);
 var i;
 var lp = loadparm_init();
 
+if (session.authinfo.user_class != "ADMINISTRATOR"
+	 && session.authinfo.user_class != "SYSTEM") {
+	redirect("/");
+}
+
 if (lp.get("realm") == "") {
 	lp.set("realm", lp.get("workgroup") + ".example.com");
 }
