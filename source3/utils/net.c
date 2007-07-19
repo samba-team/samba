@@ -168,11 +168,9 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 {
 	NTSTATUS nt_status;
 
-	if (!opt_password && !opt_machine_pass) {
-		char *pass = getpass("Password:");
-		if (pass) {
-			opt_password = SMB_STRDUP(pass);
-		}
+	opt_password = net_prompt_pass(opt_user_name);
+	if (!opt_password) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	nt_status = cli_full_connection(c, NULL, server_name, 
@@ -180,7 +178,6 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 					service_name, service_type,  
 					opt_user_name, opt_workgroup,
 					opt_password, 0, Undefined, NULL);
-
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
@@ -267,11 +264,9 @@ NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 	NTSTATUS nt_status;
 	char *user_and_realm = NULL;
 
-	if (!opt_password && !opt_machine_pass) {
-		char *pass = getpass("Password:");
-		if (pass) {
-			opt_password = SMB_STRDUP(pass);
-		}
+	opt_password = net_prompt_pass(opt_user_name);
+	if (!opt_password) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	user_and_realm = get_user_and_realm(opt_user_name);
@@ -832,6 +827,33 @@ static int net_maxrid(int argc, const char **argv)
 	d_printf("Currently used maximum rid: %d\n", rid);
 
 	return 0;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+const char *net_prompt_pass(const char *user)
+{
+	char *prompt = NULL;
+	const char *pass = NULL;
+
+	if (opt_password) {
+		return opt_password;
+	}
+
+	if (opt_machine_pass) {
+		return NULL;
+	}
+
+	asprintf(&prompt, "Enter %s's password:", user);
+	if (!prompt) {
+		return NULL;
+	}
+
+	pass = getpass(prompt);
+	SAFE_FREE(prompt);
+
+	return pass;
 }
 
 /* main function table */
