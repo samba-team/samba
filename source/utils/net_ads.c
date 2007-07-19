@@ -244,14 +244,11 @@ retry_connect:
 
 retry:
 	if (!opt_password && need_password && !opt_machine_pass) {
-		char *prompt = NULL;
-		asprintf(&prompt,"%s's password: ", opt_user_name);
-		if (!prompt) {
+		opt_password = net_prompt_pass(opt_user_name);
+		if (!opt_password) {
 			ads_destroy(&ads);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
-		opt_password = getpass(prompt);
-		free(prompt);
 	}
 
 	if (opt_password) {
