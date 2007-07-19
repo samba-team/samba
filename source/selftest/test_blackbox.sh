@@ -16,7 +16,7 @@ ADDARGS="$*"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-plantest "blackbox.smbclient" dc $incdir/../../testprogs/blackbox/test_smbclient.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" "$ADDARGS"
-plantest "blackbox.kinit" dc $incdir/../../testprogs/blackbox/test_kinit.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$REALM" "$PREFIX" "$ADDARGS"
+plantest "blackbox.smbclient" dc $incdir/../../testprogs/blackbox/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" "$ADDARGS"
+plantest "blackbox.kinit" dc $incdir/../../testprogs/blackbox/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" "$ADDARGS"
 
-plantest "blackbox.cifsdd" dc $incdir/../../testprogs/blackbox/test_cifsdd.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$ADDARGS"
+plantest "blackbox.cifsdd" dc $incdir/../../testprogs/blackbox/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$ADDARGS"
