@@ -1145,7 +1145,8 @@ static int traverse_copy_fn(struct tdb_context *tdb, TDB_DATA key,
 	struct tdb_copy_data *data = (struct tdb_copy_data *)private_data;
 
 	if (tdb_store(data->dst, key, dbuf, TDB_INSERT) != 0) {
-		DEBUG(4, ("Failed to insert into %s\n", tdb_name(data->dst)));
+		DEBUG(4, ("Failed to insert into %s: %s\n", tdb_name(data->dst),
+			  strerror(errno)));
 		data->success = False;
 		return 1;
 	}
@@ -1217,7 +1218,8 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 
 	count1 = tdb_copy(src_tdb, dst_tdb);
 	if (count1 < 0) {
-		DEBUG(3, ("Failed to copy tdb '%s'\n", src_path));
+		DEBUG(3, ("Failed to copy tdb '%s': %s\n", src_path,
+			  strerror(errno)));
 		tdb_close(dst_tdb);
 		goto done;
 	}
