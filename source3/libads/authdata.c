@@ -723,7 +723,7 @@ char *pac_group_attr_string(uint32 attr)
 }
 
 /* just for debugging, will be removed later - Guenther */
-static void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
+void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
 {
 	DOM_SID dom_sid, res_group_dom_sid;
 	int i;
