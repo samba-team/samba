@@ -648,7 +648,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	tcp = talloc(client, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);
 
-	addr = inet_ntoa(p->src.sin_addr);
+	addr = inet_ntoa(p->dest.sin_addr);
 
 	takeover_vnn = find_public_ip_vnn(ctdb, addr);
 	if (takeover_vnn == -1) {
