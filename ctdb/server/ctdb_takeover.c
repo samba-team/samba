@@ -166,7 +166,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 		 */
 		talloc_free(tcparray);
 		state->node->tcp_array = NULL;
-			
+		state->node->tcp_update_needed = true;
 	}
 
 	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover.last_ctx, 
