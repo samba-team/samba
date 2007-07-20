@@ -46,6 +46,7 @@ extern "C" {
 #define TDB_BIGENDIAN 32 /* header is big-endian (internal use) */
 #define TDB_NOSYNC   64 /* don't use synchronous transactions */
 #define TDB_SEQNUM   128 /* maintain a sequence number */
+#define TDB_VOLATILE   256 /* Activate the per-hashchain freelist, default 5 */
 
 #define TDB_ERRCODE(code, ret) ((tdb->ecode = (code)), ret)
 
