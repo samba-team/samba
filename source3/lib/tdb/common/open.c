@@ -49,7 +49,9 @@ static unsigned int default_tdb_hash(TDB_DATA *key)
 static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 {
 	struct tdb_header *newdb;
-	int size, ret = -1;
+	size_t size;
+	int ret = -1;
+	ssize_t written;
 
 	/* We make it up in memory, then write it out if not internal */
 	size = sizeof(struct tdb_header) + (hash_size+1)*sizeof(tdb_off_t);
@@ -78,10 +80,22 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 	memcpy(&tdb->header, newdb, sizeof(tdb->header));
 	/* Don't endian-convert the magic food! */
 	memcpy(newdb->magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
-	if (write(tdb->fd, newdb, size) != size) {
-		ret = -1;
-	} else {
+	/* we still have "ret == -1" here */
+	written = write(tdb->fd, newdb, size);
+	if (written == size) {
 		ret = 0;
+	} else if (written != -1) {
+		/* call write once again, this usually should return -1 and
+		 * set errno appropriately */
+		size -= written;
+		written = write(tdb->fd, newdb+written, size);
+		if (written == size) {
+			ret = 0;
+		} else if (written >= 0) {
+			/* a second incomplete write - we give up.
+			 * guessing the errno... */
+			errno = ENOSPC;
+		}
 	}
 
   fail:
@@ -220,13 +234,16 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		}
 	}
 
+	errno = 0;
 	if (read(tdb->fd, &tdb->header, sizeof(tdb->header)) != sizeof(tdb->header)
 	    || strcmp(tdb->header.magic_food, TDB_MAGIC_FOOD) != 0
 	    || (tdb->header.version != TDB_VERSION
 		&& !(rev = (tdb->header.version==TDB_BYTEREV(TDB_VERSION))))) {
 		/* its not a valid database - possibly initialise it */
 		if (!(open_flags & O_CREAT) || tdb_new_database(tdb, hash_size) == -1) {
-			errno = EIO; /* ie bad format or something */
+			if (errno == 0) {
+				errno = EIO; /* ie bad format or something */
+			}
 			goto fail;
 		}
 		rev = (tdb->flags & TDB_CONVERT);
