@@ -303,6 +303,39 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  get a list of all tickles for this vnn
+ */
+static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	struct ctdb_control_tcp_tickle_list *list;
+	uint32_t vnn;
+	int i, ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	vnn = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_get_tcp_tickles(ctdb, TIMELIMIT(), options.vnn, ctdb, vnn, &list);
+	if (ret == -1) {
+		printf("Unable to list tickles\n");
+		return -1;
+	}
+
+	printf("Tickles for vnn:%u\n", list->vnn);
+	printf("Num tickles:%u\n", list->tickles.num);
+	for (i=0;i<list->tickles.num;i++) {
+		printf("SRC: %s:%u   ", inet_ntoa(list->tickles.connections[i].saddr.sin_addr), ntohs(list->tickles.connections[i].saddr.sin_port));
+		printf("DST: %s:%u\n", inet_ntoa(list->tickles.connections[i].daddr.sin_addr), ntohs(list->tickles.connections[i].daddr.sin_port));
+	}
+
+	talloc_free(list);
+	
+	return 0;
+}
+
+/*
   kill a tcp connection
  */
 static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -894,6 +927,7 @@ static const struct {
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
 	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
+	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this vnn", "<vnn>" },
 };
 
 /*

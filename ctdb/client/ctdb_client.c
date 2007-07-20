@@ -2119,6 +2119,33 @@ int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/*
+  get a list of all tcp tickles that a node knows about for a particular vnn
+ */
+int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 
+			      struct timeval timeout, uint32_t destnode, 
+			      TALLOC_CTX *mem_ctx, uint32_t vnn,
+			      struct ctdb_control_tcp_tickle_list **list)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t status;
+
+	data.dptr = (uint8_t*)&vnn;
+	data.dsize = sizeof(vnn);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_TCP_TICKLE_LIST, 0, data, 
+			   mem_ctx, &outdata, &status, NULL, NULL);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for get tcp tickles failed\n"));
+		return -1;
+	}
+
+	*list = (struct ctdb_control_tcp_tickle_list *)outdata.dptr;
+
+	return status;
+}
 
 /*
   initialise the ctdb daemon for client applications

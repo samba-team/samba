@@ -87,6 +87,9 @@ static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
 
 	/* start monitoring for dead nodes */
 	ctdb_start_monitoring(ctdb);
+
+	/* start periodic update of tcp tickle lists */
+       	ctdb_start_tcp_tickle_update(ctdb);
 }
 
 /* go into main ctdb loop */
