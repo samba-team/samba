@@ -220,7 +220,16 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 
 	if (ftruncate(tdb->fd, size+addition) == -1) {
 		char b = 0;
-		if (pwrite(tdb->fd,  &b, 1, (size+addition) - 1) != 1) {
+		ssize_t written = pwrite(tdb->fd,  &b, 1, (size+addition) - 1);
+		if (written == 0) {
+			/* try once more, potentially revealing errno */
+			written = pwrite(tdb->fd,  &b, 1, (size+addition) - 1);
+		}
+		if (written == 0) {
+			/* again - give up, guessing errno */
+			errno = ENOSPC;
+		}
+		if (written != 1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file to %d failed (%s)\n", 
 				 size+addition, strerror(errno)));
 			return -1;
