@@ -1183,6 +1183,7 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 	char *tmp_path = NULL;
 	struct stat st;
 	int count1, count2;
+	int saved_errno = 0;
 	int ret = -1;
 
 	if (stat(src_path, &st) != 0) {
@@ -1212,6 +1213,7 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 	if (dst_tdb == NULL) {
 		DEBUG(3, ("Error creating tdb '%s': %s\n", tmp_path,
 			  strerror(errno)));
+		saved_errno = errno;
 		unlink(tmp_path);
 		goto done;
 	}
@@ -1264,6 +1266,9 @@ done:
 		unlink(tmp_path);
 		TALLOC_FREE(tmp_path);
 	}
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	return ret;
 }
 
@@ -1296,17 +1301,45 @@ static int rename_file_with_suffix(TALLOC_CTX *ctx, const char *path,
  */
 static int tdb_backup_with_rotate(TALLOC_CTX *ctx, const char *src_path,
 		      		  const char *dst_path, int hash_size,
-				  const char *rotate_suffix)
+				  const char *rotate_suffix,
+				  BOOL retry_norotate_if_nospc,
+				  BOOL rename_as_last_resort_if_nospc)
 {
 	int ret;
 
-	ret = rename_file_with_suffix(ctx, dst_path, rotate_suffix);
+        rename_file_with_suffix(ctx, dst_path, rotate_suffix);
 
-	/* ignore return value of rename here:
-	 * the more important thing is to do the backup */
-	ret = tdb_backup(ctx, src_path, dst_path, hash_size);
+        ret = tdb_backup(ctx, src_path, dst_path, hash_size);
 
-	return ret;
+	if (ret != 0) {
+		DEBUG(10, ("backup of %s failed: %s\n", src_path, strerror(errno)));
+	}
+        if ((ret != 0) && (errno == ENOSPC) && retry_norotate_if_nospc)
+        {
+                char *rotate_path = talloc_asprintf(ctx, "%s%s", dst_path,
+                                                    rotate_suffix);
+                DEBUG(10, ("backup of %s failed due to lack of space\n",
+			   src_path));
+                DEBUGADD(10, ("trying to free some space by removing rotated "
+			      "dst %s\n", rotate_path));
+                if (unlink(rotate_path) == -1) {
+                        DEBUG(10, ("unlink of %s failed: %s\n", rotate_path,
+				   strerror(errno)));
+                } else {
+                        ret = tdb_backup(ctx, src_path, dst_path, hash_size);
+                }
+                TALLOC_FREE(rotate_path);
+        }
+
+        if ((ret != 0) && (errno == ENOSPC) && rename_as_last_resort_if_nospc)
+        {
+                DEBUG(10, ("backup of %s failed due to lack of space\n", 
+			   src_path));
+                DEBUGADD(10, ("using 'rename' as a last resort\n"));
+                ret = rename(src_path, dst_path);
+        }
+
+        return ret;
 }
 
 /*
@@ -1347,7 +1380,7 @@ int tdb_validate_and_backup(const char *tdb_path,
 	if (ret == 0) {
 		DEBUG(1, ("tdb '%s' is valid\n", tdb_path));
 		ret = tdb_backup_with_rotate(ctx, tdb_path, tdb_path_backup, 0,
-					     rotate_suffix);
+					     rotate_suffix, True, False);
 		if (ret != 0) {
 			DEBUG(1, ("Error creating backup of tdb '%s'\n",
 				  tdb_path));
@@ -1360,32 +1393,36 @@ int tdb_validate_and_backup(const char *tdb_path,
 	} else {
 		DEBUG(1, ("tdb '%s' is invalid\n", tdb_path));
 
-		/* move corrupt tdb away first, but don't return on error*/
-		ret = rename_file_with_suffix(ctx, tdb_path, corrupt_suffix);
+		ret =stat(tdb_path_backup, &st);
 		if (ret != 0) {
-			DEBUG(1, ("Error moving tdb to '%s%s'\n", tdb_path,
-				  corrupt_suffix));
-		} else {
-			DEBUG(1, ("Corrupt tdb stored as '%s%s'\n", tdb_path,
-				  corrupt_suffix));
-		}
-
-		if (stat(tdb_path_backup, &st) != 0) {
 			DEBUG(5, ("Could not stat '%s': %s\n", tdb_path_backup,
 				  strerror(errno)));
 			DEBUG(1, ("No backup found.\n"));
-			ret = -1;
-			goto done;
+		} else {
+			DEBUG(1, ("backup '%s' found.\n", tdb_path_backup));
+			ret = tdb_validate(tdb_path_backup, validate_fn);
+			if (ret != 0) {
+				DEBUG(1, ("Backup '%s' is invalid.\n",
+					  tdb_path_backup));
+			}
 		}
-		DEBUG(1, ("backup '%s' found.\n", tdb_path_backup));
-		ret = tdb_validate(tdb_path_backup, validate_fn);
+
 		if (ret != 0) {
-			DEBUG(1, ("Backup '%s' is invalid.\n",tdb_path_backup));
+			int renamed = rename_file_with_suffix(ctx, tdb_path,
+							      corrupt_suffix);
+			if (renamed != 0) {
+				DEBUG(1, ("Error moving tdb to '%s%s'\n",
+					  tdb_path, corrupt_suffix));
+			} else {
+				DEBUG(1, ("Corrupt tdb stored as '%s%s'\n",
+					  tdb_path, corrupt_suffix));
+			}
 			goto done;
 		}
 
 		DEBUG(1, ("valid backup '%s' found\n", tdb_path_backup));
-		ret = tdb_backup(ctx, tdb_path_backup, tdb_path, 0);
+		ret = tdb_backup_with_rotate(ctx, tdb_path_backup, tdb_path, 0,
+					     corrupt_suffix, True, True);
 		if (ret != 0) {
 			DEBUG(1, ("Error restoring backup from '%s'\n",
 				  tdb_path_backup));
