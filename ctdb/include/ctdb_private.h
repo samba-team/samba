@@ -139,6 +139,9 @@ struct ctdb_node {
 	/* the node number that has taken over this nodes public address, if any. 
 	   If not taken over, then set to -1 */
 	int32_t takeover_vnn;
+
+	/* List of clients to tickle for this public address */
+	struct ctdb_tcp_array *tcp_array;
 };
 
 /*
@@ -305,7 +308,6 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_takeover takeover;
-	struct ctdb_tcp_list *tcp_list;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_setsched;
 	void *saved_scheduler_param;
@@ -410,6 +412,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_MODIFY_FLAGS            = 52,
 		    CTDB_CONTROL_GET_ALL_TUNABLES        = 53,
 		    CTDB_CONTROL_KILL_TCP                = 54,
+		    CTDB_CONTROL_TCP_TICKLE_LIST         = 55,
 };
 
 /*
@@ -1003,11 +1006,12 @@ int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
-				uint32_t srcnode, TDB_DATA indata);
+				TDB_DATA indata);
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
