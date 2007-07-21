@@ -170,7 +170,9 @@ static void null_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - NULL implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL null_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
+static BOOL null_check_incoming_message(const char *inbuf,
+					struct smb_sign_info *si,
+					BOOL must_be_ok)
 {
 	return True;
 }
@@ -217,7 +219,8 @@ static void free_signing_context(struct smb_sign_info *si)
 }
 
 
-static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good, uint32 seq, BOOL must_be_ok) 
+static BOOL signing_good(const char *inbuf, struct smb_sign_info *si,
+			 BOOL good, uint32 seq, BOOL must_be_ok)
 {
 	if (good) {
 
@@ -375,7 +378,9 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - Client implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
+static BOOL client_check_incoming_message(const char *inbuf,
+					  struct smb_sign_info *si,
+					  BOOL must_be_ok)
 {
 	BOOL good;
 	uint32 reply_seq_number;
@@ -531,7 +536,8 @@ static void temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - TEMP implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL temp_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL foo)
+static BOOL temp_check_incoming_message(const char *inbuf,
+					struct smb_sign_info *si, BOOL foo)
 {
 	return True;
 }
@@ -712,7 +718,9 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - Server implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
+static BOOL srv_check_incoming_message(const char *inbuf,
+				       struct smb_sign_info *si,
+				       BOOL must_be_ok)
 {
 	BOOL good;
 	struct smb_basic_signing_context *data =
