@@ -890,13 +890,9 @@ static void smb_dump(const char *name, int type, char *data, ssize_t len)
 
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
-	static pid_t pid= (pid_t)-1;
 	int outsize = 0;
 
 	type &= 0xff;
-
-	if (pid == (pid_t)-1)
-		pid = sys_getpid();
 
 	errno = 0;
 
@@ -920,7 +916,9 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
 		connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 
-		DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n",smb_fn_name(type),(int)pid,(unsigned long)conn));
+		DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n",
+			 smb_fn_name(type), (int)sys_getpid(),
+			 (unsigned long)conn));
 
 		smb_dump(smb_fn_name(type), 1, inbuf, size);
 
