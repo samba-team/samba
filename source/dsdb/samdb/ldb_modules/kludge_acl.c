@@ -115,7 +115,7 @@ struct kludge_acl_context {
 static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_message *msg,
 							 const char *attrName) 
 {
-	struct ldb_message_element *oc_el = ldb_msg_find_element(msg, "objectClass");
+	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedAttributes;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	const struct dsdb_class *class;
@@ -125,6 +125,10 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 		return ret;
 	}
 	
+	/* To ensure that oc_el is valid, we must look for it after 
+	   we alter the element array in ldb_msg_add_empty() */
+	oc_el = ldb_msg_find_element(msg, "objectClass");
+
 	for (i=0; i < oc_el->num_values; i++) {
 		class = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
 		if (!class) {
