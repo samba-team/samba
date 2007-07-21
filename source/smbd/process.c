@@ -891,6 +891,10 @@ static void smb_dump(const char *name, int type, char *data, ssize_t len)
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
 	int outsize = 0;
+	int flags;
+	static uint16 last_session_tag = UID_FIELD_INVALID;
+	uint16 session_tag;
+	connection_struct *conn;
 
 	type &= 0xff;
 
@@ -909,97 +913,100 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		DEBUG(0,("Unknown message type %d!\n",type));
 		smb_dump("Unknown", 1, inbuf, size);
 		outsize = reply_unknown(inbuf,outbuf);
-	} else {
-		int flags = smb_messages[type].flags;
-		static uint16 last_session_tag = UID_FIELD_INVALID;
-		/* In share mode security we must ignore the vuid. */
-		uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
-		connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
-
-		DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n",
-			 smb_fn_name(type), (int)sys_getpid(),
-			 (unsigned long)conn));
-
-		smb_dump(smb_fn_name(type), 1, inbuf, size);
-
-		/* Ensure this value is replaced in the incoming packet. */
-		SSVAL(inbuf,smb_uid,session_tag);
-
-		/*
-		 * Ensure the correct username is in current_user_info.
-		 * This is a really ugly bugfix for problems with
-		 * multiple session_setup_and_X's being done and
-		 * allowing %U and %G substitutions to work correctly.
-		 * There is a reason this code is done here, don't
-		 * move it unless you know what you're doing... :-).
-		 * JRA.
-		 */
-
-		if (session_tag != last_session_tag) {
-			user_struct *vuser = NULL;
-
-			last_session_tag = session_tag;
-			if(session_tag != UID_FIELD_INVALID) {
-				vuser = get_valid_user_struct(session_tag);           
-				if (vuser) {
-					set_current_user_info(&vuser->user);
-				}
-			}
-		}
-
-		/* Does this call need to be run as the connected user? */
-		if (flags & AS_USER) {
-
-			/* Does this call need a valid tree connection? */
-			if (!conn) {
-				/* Amazingly, the error code depends on the command (from Samba4). */
-				if (type == SMBntcreateX) {
-					return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-				} else {
-					return ERROR_DOS(ERRSRV, ERRinvnid);
-				}
-			}
-
-			if (!change_to_user(conn,session_tag)) {
-				return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
-			}
-
-			/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
-
-			/* Does it need write permission? */
-			if ((flags & NEED_WRITE) && !CAN_WRITE(conn)) {
-				return ERROR_NT(NT_STATUS_MEDIA_WRITE_PROTECTED);
-			}
-
-			/* IPC services are limited */
-			if (IS_IPC(conn) && !(flags & CAN_IPC)) {
-				return(ERROR_DOS(ERRSRV,ERRaccess));
-			}
-		} else {
-			/* This call needs to be run as root */
-			change_to_root_user();
-		}
-
-		/* load service specific parameters */
-		if (conn) {
-			if (!set_current_service(conn,SVAL(inbuf,smb_flg),(flags & (AS_USER|DO_CHDIR)?True:False))) {
-				return(ERROR_DOS(ERRSRV,ERRaccess));
-			}
-			conn->num_smb_operations++;
-		}
-
-		/* does this protocol need to be run as guest? */
-		if ((flags & AS_GUEST) && (!change_to_guest() || 
-				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
-			return(ERROR_DOS(ERRSRV,ERRaccess));
-		}
-
-		current_inbuf = inbuf; /* In case we need to defer this message in open... */
-		outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
+		goto done;
 	}
 
-	smb_dump(smb_fn_name(type), 0, outbuf, outsize);
+	flags = smb_messages[type].flags;
 
+	/* In share mode security we must ignore the vuid. */
+	session_tag = (lp_security() == SEC_SHARE)
+		? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
+
+	conn = conn_find(SVAL(inbuf,smb_tid));
+
+	DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n",
+		 smb_fn_name(type), (int)sys_getpid(),
+		 (unsigned long)conn));
+
+	smb_dump(smb_fn_name(type), 1, inbuf, size);
+
+	/* Ensure this value is replaced in the incoming packet. */
+	SSVAL(inbuf,smb_uid,session_tag);
+
+	/*
+	 * Ensure the correct username is in current_user_info.  This is a
+	 * really ugly bugfix for problems with multiple session_setup_and_X's
+	 * being done and allowing %U and %G substitutions to work correctly.
+	 * There is a reason this code is done here, don't move it unless you
+	 * know what you're doing... :-).  JRA.
+	 */
+
+	if (session_tag != last_session_tag) {
+		user_struct *vuser = NULL;
+
+		last_session_tag = session_tag;
+		if(session_tag != UID_FIELD_INVALID) {
+			vuser = get_valid_user_struct(session_tag);           
+			if (vuser) {
+				set_current_user_info(&vuser->user);
+			}
+		}
+	}
+
+	/* Does this call need to be run as the connected user? */
+	if (flags & AS_USER) {
+
+		/* Does this call need a valid tree connection? */
+		if (!conn) {
+			/* Amazingly, the error code depends on the command (from Samba4). */
+			if (type == SMBntcreateX) {
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+			} else {
+				return ERROR_DOS(ERRSRV, ERRinvnid);
+			}
+		}
+
+		if (!change_to_user(conn,session_tag)) {
+			return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
+		}
+
+		/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
+
+		/* Does it need write permission? */
+		if ((flags & NEED_WRITE) && !CAN_WRITE(conn)) {
+			return ERROR_NT(NT_STATUS_MEDIA_WRITE_PROTECTED);
+		}
+
+		/* IPC services are limited */
+		if (IS_IPC(conn) && !(flags & CAN_IPC)) {
+			return(ERROR_DOS(ERRSRV,ERRaccess));
+		}
+	} else {
+		/* This call needs to be run as root */
+		change_to_root_user();
+	}
+
+	/* load service specific parameters */
+	if (conn) {
+		if (!set_current_service(conn,SVAL(inbuf,smb_flg),(flags & (AS_USER|DO_CHDIR)?True:False))) {
+			return(ERROR_DOS(ERRSRV,ERRaccess));
+		}
+		conn->num_smb_operations++;
+	}
+
+	/* does this protocol need to be run as guest? */
+	if ((flags & AS_GUEST)
+	    && (!change_to_guest() || 
+		!check_access(smbd_server_fd(), lp_hostsallow(-1),
+			      lp_hostsdeny(-1)))) {
+		return(ERROR_DOS(ERRSRV,ERRaccess));
+	}
+
+	current_inbuf = inbuf; /* In case we need to defer this message in open... */
+	outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
+
+ done:
+	smb_dump(smb_fn_name(type), 0, outbuf, outsize);
 	return(outsize);
 }
 
