@@ -1,3 +1,8 @@
+2007-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kaserver.c: Don't ovewrite the error code, from Peter
+	Meinecke.
+
 2007-07-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* TODO-1.0: remove 
