@@ -74,8 +74,6 @@ krb5_kdc_set_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
 
 	kdc_log(context, c, 0, "label: %s",
 		hdb_dbinfo_get_label(context, d));
-	kdc_log(context, c, 0, "\trealm: %s",
-		hdb_dbinfo_get_realm(context, d));
 	kdc_log(context, c, 0, "\tdbname: %s",
 		hdb_dbinfo_get_dbname(context, d));
 	kdc_log(context, c, 0, "\tmkey_file: %s",
