@@ -775,6 +775,24 @@ static int cmd_du(void)
 	return rc;
 }
 
+static int cmd_echo(void)
+{
+	pstring data;
+
+	if (!next_token_nr(NULL, data, NULL, sizeof(data))) {
+		d_printf("echo <data>\n");
+		return 1;
+	}
+
+	if (!cli_echo(cli, (uint8 *)data, strlen(data))) {
+		d_printf("echo failed: %s\n",
+			 nt_errstr(cli_get_nt_error(cli)));
+		return 1;
+	}
+
+	return 0;
+}
+
 /****************************************************************************
  Get a file from rname to lname
 ****************************************************************************/
@@ -3219,6 +3237,7 @@ static struct
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"echo",cmd_echo,"ping the server",{COMPL_NONE,COMPL_NONE}},
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
   {"getfacl",cmd_getfacl,"<file name> get the POSIX ACL on a file (UNIX extensions only)",{COMPL_REMOTE,COMPL_LOCAL}},
