@@ -11,6 +11,7 @@ SCRIPT_TESTS = \
 	check-digest \
 	check-kadmin \
 	check-kdc \
+	check-keys \
 	check-pkinit \
 	check-referral \
 	check-uu
@@ -32,6 +33,11 @@ check-kdc: check-kdc.in Makefile
 	$(do_subst) < $(srcdir)/check-kdc.in > check-kdc.tmp
 	chmod +x check-kdc.tmp
 	mv check-kdc.tmp check-kdc
+
+check-keys: check-keys.in Makefile
+	$(do_subst) < $(srcdir)/check-keys.in > check-keys.tmp
+	chmod +x check-keys.tmp
+	mv check-keys.tmp check-keys
 
 check-kadmin: check-kadmin.in Makefile
 	$(do_subst) < $(srcdir)/check-kadmin.in > check-kadmin.tmp
@@ -106,12 +112,14 @@ CLEANFILES= \
 EXTRA_DIST = \
 	check-kadmin.in \
 	check-kdc.in \
+	check-keys.in \
 	check-referral.in \
 	check-uu.in \
 	check-pkinit.in \
 	check-digest.in \
 	heimdal.acl \
 	krb5.conf.in \
+	krb5.conf.keys.in \
 	krb5-pkinit.conf.in \
 	wait-kdc.sh \
 	pki-mapping \
