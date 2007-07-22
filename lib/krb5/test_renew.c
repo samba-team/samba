@@ -33,9 +33,30 @@
 
 #include "krb5_locl.h"
 #include <err.h>
+#include <getarg.h>
 
-RCSID("$Id: test_keytab.c 18809 2006-10-22 07:11:43Z lha $");
+RCSID("$Id$");
 
+
+static int version_flag = 0;
+static int help_flag	= 0;
+
+static struct getargs args[] = {
+    {"version",	0,	arg_flag,	&version_flag,
+     "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,
+     NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "[principal]");
+    exit (ret);
+}
 
 int
 main(int argc, char **argv)
@@ -46,13 +67,28 @@ main(int argc, char **argv)
     krb5_ccache id;
     krb5_error_code ret;
     krb5_creds out;;
-
-    memset(&out, 0, sizeof(out));
+    int optidx = 0;
 
     setprogname(argv[0]);
 
-    if (argc > 1)
-	in_tkt_service = argv[1];
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optidx;
+    argv += optidx;
+
+    if (argc > 0)
+	in_tkt_service = argv[0];
+
+    memset(&out, 0, sizeof(out));
 
     ret = krb5_init_context(&context);
     if (ret)
@@ -74,6 +110,9 @@ main(int argc, char **argv)
 
     if(ret)
 	krb5_err(context, 1, ret, "krb5_get_kdc_cred");
+
+    if (krb5_principal_compare(context, out.client, client) != TRUE)
+	krb5_errx(context, 1, "return principal is not as expected");
 
     krb5_free_creds_contents(context, &out);
 
