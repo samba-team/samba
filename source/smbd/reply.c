@@ -206,7 +206,7 @@ NTSTATUS check_path_syntax_posix(char *path)
  Pull a string and check the path allowing a wilcard - provide for error return.
 ****************************************************************************/
 
-size_t srvstr_get_path_wcard(char *inbuf, uint16 smb_flags2, char *dest,
+size_t srvstr_get_path_wcard(const char *inbuf, uint16 smb_flags2, char *dest,
 			     const char *src, size_t dest_len, size_t src_len,
 			     int flags, NTSTATUS *err, BOOL *contains_wcard)
 {
@@ -247,7 +247,7 @@ size_t srvstr_get_path_wcard(char *inbuf, uint16 smb_flags2, char *dest,
  Pull a string and check the path - provide for error return.
 ****************************************************************************/
 
-size_t srvstr_get_path(char *inbuf, uint16 smb_flags2, char *dest,
+size_t srvstr_get_path(const char *inbuf, uint16 smb_flags2, char *dest,
 		       const char *src, size_t dest_len, size_t src_len,
 		       int flags, NTSTATUS *err)
 {
