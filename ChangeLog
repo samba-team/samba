@@ -1,5 +1,13 @@
 2007-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/dbinfo.c (get_dbinfo): use dbname instead of realm as
+	key if the entry is a correct entry.
+
+	* lib/krb5/get_cred.c: Make krb5_get_renewed_creds work, from
+	Gunther Deschner.
+
+	* lib/krb5/Makefile.am: Add test_renew to noinst_PROGRAMS.
+
 	* lib/krb5/test_renew.c: Test for krb5_get_renewed_creds.
 
 2007-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
