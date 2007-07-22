@@ -812,7 +812,7 @@ BOOL srv_oplock_set_signing(BOOL onoff)
  Called to validate an incoming packet from the client.
 ************************************************************/
 
-BOOL srv_check_sign_mac(char *inbuf, BOOL must_be_ok)
+BOOL srv_check_sign_mac(const char *inbuf, BOOL must_be_ok)
 {
 	/* Check if it's a session keepalive. */
 	if(CVAL(inbuf,0) == SMBkeepalive)
