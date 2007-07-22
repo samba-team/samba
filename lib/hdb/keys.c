@@ -105,7 +105,7 @@ parse_key_set(krb5_context context, const char *key,
     salt->saltvalue.length = 0;
 
     for(i = 0; i < num_buf; i++) {
-	if(enctypes == NULL) {
+	if(enctypes == NULL && num_buf > 1) {
 	    /* this might be a etype specifier */
 	    /* XXX there should be a string_to_etypes handling
 	       special cases like `des' and `all' */
@@ -124,7 +124,9 @@ parse_key_set(krb5_context context, const char *key,
 		} else
 		    return ret;
 	    }
-	} else if(salt->salttype == 0) {
+	    continue;
+	}
+	if(salt->salttype == 0) {
 	    /* interpret string as a salt specifier, if no etype
 	       is set, this sets default values */
 	    /* XXX should perhaps use string_to_salttype, but that
@@ -142,7 +144,10 @@ parse_key_set(krb5_context context, const char *key,
 		}
 		salt->salttype = KRB5_AFS3_SALT;
 	    }
-	} else {
+	    continue;
+	}
+
+	{
 	    /* if there is a final string, use it as the string to
 	       salt with, this is mostly useful with null salt for
 	       v4 compat, and a cell name for afs compat */
