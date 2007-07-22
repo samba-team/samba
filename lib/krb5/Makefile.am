@@ -7,11 +7,12 @@ AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../co
 bin_PROGRAMS = verify_krb5_conf
 
 noinst_PROGRAMS =				\
-	test_get_addrs				\
 	krbhst-test				\
 	test_alname				\
 	test_crypto				\
-	test_kuserok
+	test_get_addrs				\
+	test_kuserok				\
+	test_renew
 
 TESTS =						\
 	aes-test				\
