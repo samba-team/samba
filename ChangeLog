@@ -1,5 +1,8 @@
 2007-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/keys.c: Make parse_key_set handle key set string "v5",
+	from Peter Meinecke.
+
 	* kdc/kaserver.c: Don't ovewrite the error code, from Peter
 	Meinecke.
 
