@@ -1224,9 +1224,10 @@ krb5_get_renewed_creds(krb5_context context,
 {
     krb5_error_code ret;
     krb5_kdc_flags flags;
-    krb5_creds in, *template;
+    krb5_creds in, *template, *out = NULL;
 
     memset(&in, 0, sizeof(in));
+    memset(creds, 0, sizeof(*creds));
 
     ret = krb5_copy_principal(context, client, &in.client);
     if (ret)
@@ -1263,9 +1264,14 @@ krb5_get_renewed_creds(krb5_context context,
 	krb5_free_creds (context, template);
     }
 
-    ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &in, &creds);
+    ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &in, &out);
     krb5_free_principal(context, in.client);
     krb5_free_principal(context, in.server);
+    if (ret)
+	return ret;
+
+    ret = krb5_copy_creds_contents(context, out, creds);
+    krb5_free_creds(context, out);
 
     return ret;
 }
