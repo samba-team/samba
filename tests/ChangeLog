@@ -1,3 +1,15 @@
+2007-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Test renewing.
+	
+2007-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am: Test for simple salt types.
+
+	* kdc/krb5.conf.keys.in: Configuration file for testing keys.
+
+	* kdc/check-keys.in: Test some simple salt types.
+
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* java/Makefile.am: EXTRA_DIST += have_java.sh
