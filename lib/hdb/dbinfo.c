@@ -57,7 +57,7 @@ get_dbinfo(krb5_context context,
 
     *db = NULL;
 
-    p = krb5_config_get_string(context, db_binding, "realm", NULL);
+    p = krb5_config_get_string(context, db_binding, "dbname", NULL);
     if(p == NULL)
 	return 0;
 
@@ -67,11 +67,11 @@ get_dbinfo(krb5_context context,
 	return ENOMEM;
     }
     di->label = strdup(label);
-    di->realm = strdup(p);
+    di->dbname = strdup(p);
 
-    p = krb5_config_get_string(context, db_binding, "dbname", NULL);
+    p = krb5_config_get_string(context, db_binding, "realm", NULL);
     if(p)
-	di->dbname = strdup(p);
+	di->realm = strdup(p);
     p = krb5_config_get_string(context, db_binding, "mkey_file", NULL);
     if(p)
 	di->mkey_file = strdup(p);
@@ -142,6 +142,7 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
 	/* if there are none specified, create one and use defaults */
 	di = calloc(1, sizeof(*di));
 	databases = di;
+	di->label = strdup("default");
     }
 
     for(di = databases; di; di = di->next) {
