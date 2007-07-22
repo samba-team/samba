@@ -70,6 +70,7 @@ kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache --no-unlog"
 ktutil="${TESTS_ENVIRONMENT} ../../admin/ktutil"
 hxtool="${TESTS_ENVIRONMENT} ../../lib/hx509/hxtool"
 kimpersonate="${TESTS_ENVIRONMENT} ../../kuser/kimpersonate -k ${keytab} --ccache=${ocache}"
+test_renew="${TESTS_ENVIRONMENT} ../../lib/krb5/test_renew"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -380,6 +381,21 @@ ${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${ser
 	{ ec=1 ; eval "${testfailed}"; }
 
 ${kdestroy}
+
+echo "check renewing" > messages.log
+${kinit} --renewable --password-file=${objdir}/foopassword foo@$R || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "kinit -R"
+${kinit} -R || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "check renewing MIT interface" > messages.log
+${kinit} --renewable --password-file=${objdir}/foopassword foo@$R || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "test_renew"
+env KRB5CCNAME=${cache} ${test_renew} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
 
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
