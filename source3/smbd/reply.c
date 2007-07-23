@@ -1423,78 +1423,98 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
  Reply to an open and X.
 ****************************************************************************/
 
-int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
+void reply_open_and_X(connection_struct *conn, struct smb_request *req)
 {
 	pstring fname;
-	uint16 open_flags = SVAL(inbuf,smb_vwv2);
-	int deny_mode = SVAL(inbuf,smb_vwv3);
-	uint32 smb_attr = SVAL(inbuf,smb_vwv5);
+	uint16 open_flags;
+	int deny_mode;
+	uint32 smb_attr;
 	/* Breakout the oplock request bits so we can set the
 		reply bits separately. */
-	int ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
-	int core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-	int oplock_request = ex_oplock_request | core_oplock_request;
+	int ex_oplock_request;
+	int core_oplock_request;
+	int oplock_request;
 #if 0
-	int smb_sattr = SVAL(inbuf,smb_vwv4); 
-	uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
+	int smb_sattr = SVAL(req->inbuf,smb_vwv4);
+	uint32 smb_time = make_unix_date3(req->inbuf+smb_vwv6);
 #endif
-	int smb_ofun = SVAL(inbuf,smb_vwv8);
+	int smb_ofun;
 	uint32 fattr=0;
 	int mtime=0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
 	files_struct *fsp;
 	NTSTATUS status;
-	SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv9);
+	SMB_BIG_UINT allocation_size;
 	ssize_t retval = -1;
 	uint32 access_mask;
 	uint32 share_mode;
 	uint32 create_disposition;
 	uint32 create_options = 0;
-	struct smb_request req;
 
 	START_PROFILE(SMBopenX);
 
-	init_smb_request(&req, (uint8 *)inbuf);
+	if (req->wct < 15) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBopenX);
+		return;
+	}
+
+	open_flags = SVAL(req->inbuf,smb_vwv2);
+	deny_mode = SVAL(req->inbuf,smb_vwv3);
+	smb_attr = SVAL(req->inbuf,smb_vwv5);
+	ex_oplock_request = EXTENDED_OPLOCK_REQUEST(req->inbuf);
+	core_oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
+	oplock_request = ex_oplock_request | core_oplock_request;
+	smb_ofun = SVAL(req->inbuf,smb_vwv8);
+	allocation_size = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv9);
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support()) {
-			END_PROFILE(SMBopenX);
-			return reply_open_pipe_and_X(conn, inbuf,outbuf,length,bufsize);
+			reply_open_pipe_and_X(conn, req);
 		} else {
-			END_PROFILE(SMBopenX);
-			return ERROR_DOS(ERRSRV,ERRaccess);
+			reply_doserror(req, ERRSRV, ERRaccess);
 		}
+		END_PROFILE(SMBopenX);
+		return;
 	}
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, smb_buf(inbuf),
-			sizeof(fname), 0, STR_TERMINATE, &status);
+	srvstr_get_path((char *)req->inbuf, req->flags2, fname,
+			smb_buf(req->inbuf), sizeof(fname), 0, STR_TERMINATE,
+			&status);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBopenX);
-		return ERROR_NT(status);
+		return;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBopenX);
-		return ERROR_NT(status);
+		return;
 	}
 
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBopenX);
-		return ERROR_NT(status);
+		return;
 	}
 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, smb_ofun,
@@ -1502,11 +1522,12 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 				&share_mode,
 				&create_disposition,
 				&create_options)) {
+		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		END_PROFILE(SMBopenX);
-		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
+		return;
 	}
 
-	status = open_file_ntcreate(conn, &req, fname, &sbuf,
+	status = open_file_ntcreate(conn, req, fname, &sbuf,
 			access_mask,
 			share_mode,
 			create_disposition,
@@ -1517,11 +1538,12 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
       
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	/* Setting the "size" field in vwv9 and vwv10 causes the file to be set to this size,
@@ -1530,14 +1552,16 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 			close_file(fsp,ERROR_CLOSE);
+			reply_nterror(req, NT_STATUS_DISK_FULL);
 			END_PROFILE(SMBopenX);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
+			return;
 		}
 		retval = vfs_set_filelen(fsp, (SMB_OFF_T)allocation_size);
 		if (retval < 0) {
 			close_file(fsp,ERROR_CLOSE);
+			reply_nterror(req, NT_STATUS_DISK_FULL);
 			END_PROFILE(SMBopenX);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
+			return;
 		}
 		sbuf.st_size = get_allocation_size(conn,fsp,&sbuf);
 	}
@@ -1546,8 +1570,9 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	mtime = sbuf.st_mtime;
 	if (fattr & aDIR) {
 		close_file(fsp,ERROR_CLOSE);
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBopenX);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return;
 	}
 
 	/* If the caller set the extended oplock request bit
@@ -1568,36 +1593,40 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		correct bit for core oplock reply.
 	*/
 
+	if (open_flags & EXTENDED_RESPONSE_REQUIRED) {
+		reply_outbuf(req, 19, 0);
+	} else {
+		reply_outbuf(req, 15, 0);
+	}
+
 	if (core_oplock_request && lp_fake_oplocks(SNUM(conn))) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf, smb_flg,
+		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
 	if(core_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf, smb_flg,
+		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
-	if (open_flags & EXTENDED_RESPONSE_REQUIRED) {
-		set_message(inbuf,outbuf,19,0,True);
-	} else {
-		set_message(inbuf,outbuf,15,0,True);
-	}
-	SSVAL(outbuf,smb_vwv2,fsp->fnum);
-	SSVAL(outbuf,smb_vwv3,fattr);
+	SSVAL(req->outbuf,smb_vwv2,fsp->fnum);
+	SSVAL(req->outbuf,smb_vwv3,fattr);
 	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
-		srv_put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
+		srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime & ~1);
 	} else {
-		srv_put_dos_date3(outbuf,smb_vwv4,mtime);
+		srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime);
 	}
-	SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
-	SSVAL(outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
-	SSVAL(outbuf,smb_vwv11,smb_action);
+	SIVAL(req->outbuf,smb_vwv6,(uint32)sbuf.st_size);
+	SSVAL(req->outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
+	SSVAL(req->outbuf,smb_vwv11,smb_action);
 
 	if (open_flags & EXTENDED_RESPONSE_REQUIRED) {
-		SIVAL(outbuf, smb_vwv15, STD_RIGHT_ALL_ACCESS);
+		SIVAL(req->outbuf, smb_vwv15, STD_RIGHT_ALL_ACCESS);
 	}
 
 	END_PROFILE(SMBopenX);
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
+	return;
 }
 
 /****************************************************************************
