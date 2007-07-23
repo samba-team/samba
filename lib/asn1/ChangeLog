@@ -1,3 +1,9 @@
+2007-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Fold in pk-init-alg-agilty.
+
+	* pkinit.asn1: Fold in pk-init-alg-agilty.
+
 2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse.y: Passe object id is its part of the module defintion
