@@ -285,22 +285,24 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
  Reply to a close.
 ****************************************************************************/
 
-int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
+void reply_pipe_close(connection_struct *conn, struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
-	int outsize = set_message(inbuf,outbuf,0,0,True);
+	smb_np_struct *p = get_rpc_pipe_p((char *)req->inbuf,smb_vwv0);
 
 	if (!p) {
-		return(ERROR_DOS(ERRDOS,ERRbadfid));
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 
 	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
 
 	if (!close_rpc_pipe_hnd(p)) {
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 	
 	/* TODO: REMOVE PIPE FROM DB */
 
-	return(outsize);
+	reply_outbuf(req, 0, 0);
+	return;
 }

@@ -3402,31 +3402,35 @@ int reply_exit(connection_struct *conn,
  Reply to a close - has to deal with closing a directory opened by NT SMB's.
 ****************************************************************************/
 
-int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
-                int dum_buffsize)
+void reply_close(connection_struct *conn, struct smb_request *req)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	int outsize = 0;
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
 
-	outsize = set_message(inbuf,outbuf,0,0,False);
+	if (req->wct < 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBclose);
+		return;
+	}
 
 	/* If it's an IPC, pass off to the pipe handler. */
 	if (IS_IPC(conn)) {
+		reply_pipe_close(conn, req);
 		END_PROFILE(SMBclose);
-		return reply_pipe_close(conn, inbuf,outbuf);
+		return;
 	}
 
-	fsp = file_fsp(inbuf,smb_vwv0);
+	fsp = file_fsp((char *)req->inbuf,smb_vwv0);
 
 	/*
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
 	if(!fsp || (fsp->conn != conn) || (fsp->vuid != current_user.vuid)) {
+		reply_doserror(req, ERRDOS, ERRbadfid);
 		END_PROFILE(SMBclose);
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		return;
 	}
 
 	if(fsp->is_directory) {
@@ -3448,8 +3452,9 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Take care of any time sent in the close.
 		 */
 
-		fsp_set_pending_modtime(fsp,
-				convert_time_t_to_timespec(srv_make_unix_date3(inbuf+smb_vwv1)));
+		fsp_set_pending_modtime(fsp, convert_time_t_to_timespec(
+						srv_make_unix_date3(
+							req->inbuf+smb_vwv1)));
 
 		/*
 		 * close_file() returns the unix errno if an error
@@ -3460,13 +3465,15 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		status = close_file(fsp,NORMAL_CLOSE);
 	}  
 
-	if(!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBclose);
-		return ERROR_NT(status);
+		return;
 	}
 
+	reply_outbuf(req, 0, 0);
 	END_PROFILE(SMBclose);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
