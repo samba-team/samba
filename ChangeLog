@@ -1,3 +1,7 @@
+2007-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: Add RFC3526 modp group14 as a default.
+
 2007-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/dbinfo.c (get_dbinfo): use dbname instead of realm as
