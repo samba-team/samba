@@ -286,7 +286,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 	 * that here and must set up the chain info manually.
 	 */
 
-	outsize = chain_reply(inbuf,outbuf,blr->length,bufsize);
+	outsize = chain_reply(inbuf,&outbuf,blr->length,bufsize);
 
 	outsize += chain_size;
 
