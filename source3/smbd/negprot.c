@@ -481,16 +481,17 @@ static const struct {
 ****************************************************************************/
 
 int reply_negprot(connection_struct *conn, 
-		  char *inbuf,char *outbuf, int dum_size, 
+		  char *inbuf,char *outbuf, int size,
 		  int dum_buffsize)
 {
 	int outsize = set_message(inbuf,outbuf,1,0,True);
-	int Index=0;
 	int choice= -1;
 	int protocol;
 	char *p;
-	int bcc = SVAL(smb_buf(inbuf),-2);
 	int arch = ARCH_ALL;
+	int num_cliprotos;
+	char **cliprotos;
+	int i;
 
 	static BOOL done_negprot = False;
 
@@ -502,41 +503,78 @@ int reply_negprot(connection_struct *conn,
 	}
 	done_negprot = True;
 
+	if (inbuf[size-1] != '\0') {
+		DEBUG(0, ("negprot protocols not 0-terminated\n"));
+		END_PROFILE(SMBnegprot);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
 	p = smb_buf(inbuf)+1;
-	while (p < (smb_buf(inbuf) + bcc)) { 
-		Index++;
-		DEBUG(3,("Requested protocol [%s]\n",p));
-		if (strcsequal(p,"Windows for Workgroups 3.1a"))
-			arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
-		else if (strcsequal(p,"DOS LM1.2X002"))
-			arch &= ( ARCH_WFWG | ARCH_WIN95 );
-		else if (strcsequal(p,"DOS LANMAN2.1"))
-			arch &= ( ARCH_WFWG | ARCH_WIN95 );
-		else if (strcsequal(p,"NT LM 0.12"))
-			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K | ARCH_CIFSFS);
-		else if (strcsequal(p,"SMB 2.001"))
-			arch = ARCH_VISTA;		
-		else if (strcsequal(p,"LANMAN2.1"))
-			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-		else if (strcsequal(p,"LM1.2X002"))
-			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-		else if (strcsequal(p,"MICROSOFT NETWORKS 1.03"))
-			arch &= ARCH_WINNT;
-		else if (strcsequal(p,"XENIX CORE"))
-			arch &= ( ARCH_WINNT | ARCH_OS2 );
-		else if (strcsequal(p,"Samba")) {
-			arch = ARCH_SAMBA;
-			break;
-		} else if (strcsequal(p,"POSIX 2")) {
-			arch = ARCH_CIFSFS;
-			break;
+
+	num_cliprotos = 0;
+	cliprotos = NULL;
+
+	while (smb_bufrem(inbuf, p) > 0) {
+		char **tmp;
+
+		tmp = TALLOC_REALLOC_ARRAY(tmp_talloc_ctx(), cliprotos, char *,
+					   num_cliprotos+1);
+		if (tmp == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			TALLOC_FREE(cliprotos);
+			END_PROFILE(SMBnegprot);
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
- 
+
+		cliprotos = tmp;
+
+		if (pull_ascii_talloc(cliprotos, &cliprotos[num_cliprotos], p)
+		    == (size_t)-1) {
+			DEBUG(0, ("pull_ascii_talloc failed\n"));
+			TALLOC_FREE(cliprotos);
+			END_PROFILE(SMBnegprot);
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		DEBUG(3, ("Requested protocol [%s]\n",
+			  cliprotos[num_cliprotos]));
+
+		num_cliprotos += 1;
 		p += strlen(p) + 2;
 	}
 
+	for (i=0; i<num_cliprotos; i++) {
+		if (strcsequal(cliprotos[i], "Windows for Workgroups 3.1a"))
+			arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT
+				  | ARCH_WIN2K );
+		else if (strcsequal(cliprotos[i], "DOS LM1.2X002"))
+			arch &= ( ARCH_WFWG | ARCH_WIN95 );
+		else if (strcsequal(cliprotos[i], "DOS LANMAN2.1"))
+			arch &= ( ARCH_WFWG | ARCH_WIN95 );
+		else if (strcsequal(cliprotos[i], "NT LM 0.12"))
+			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K
+				  | ARCH_CIFSFS);
+		else if (strcsequal(cliprotos[i], "SMB 2.001"))
+			arch = ARCH_VISTA;		
+		else if (strcsequal(cliprotos[i], "LANMAN2.1"))
+			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
+		else if (strcsequal(cliprotos[i], "LM1.2X002"))
+			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
+		else if (strcsequal(cliprotos[i], "MICROSOFT NETWORKS 1.03"))
+			arch &= ARCH_WINNT;
+		else if (strcsequal(cliprotos[i], "XENIX CORE"))
+			arch &= ( ARCH_WINNT | ARCH_OS2 );
+		else if (strcsequal(cliprotos[i], "Samba")) {
+			arch = ARCH_SAMBA;
+			break;
+		} else if (strcsequal(cliprotos[i], "POSIX 2")) {
+			arch = ARCH_CIFSFS;
+			break;
+		}
+	}
+
 	/* CIFSFS can send one arch only, NT LM 0.12. */
-	if (Index == 1 && (arch & ARCH_CIFSFS)) {
+	if (i == 1 && (arch & ARCH_CIFSFS)) {
 		arch = ARCH_CIFSFS;
 	}
 
@@ -588,15 +626,13 @@ int reply_negprot(connection_struct *conn,
     
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
-		p = smb_buf(inbuf)+1;
-		Index = 0;
+		i = 0;
 		if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
 				(supported_protocols[protocol].protocol_level >= lp_minprotocol()))
-			while (p < (smb_buf(inbuf) + bcc)) { 
-				if (strequal(p,supported_protocols[protocol].proto_name))
-					choice = Index;
-				Index++;
-				p += strlen(p) + 2;
+			while (i < num_cliprotos) {
+				if (strequal(cliprotos[i],supported_protocols[protocol].proto_name))
+					choice = i;
+				i++;
 			}
 		if(choice != -1)
 			break;
@@ -620,6 +656,7 @@ int reply_negprot(connection_struct *conn,
 			"client negotiated a downlevel protocol");
 	}
 
+	TALLOC_FREE(cliprotos);
 	END_PROFILE(SMBnegprot);
 	return(outsize);
 }
