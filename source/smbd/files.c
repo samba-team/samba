@@ -487,7 +487,7 @@ files_struct *file_fnum(uint16 fnum)
  Get an fsp from a packet given the offset of a 16 bit fnum.
 ****************************************************************************/
 
-files_struct *file_fsp(char *buf, int where)
+files_struct *file_fsp(const char *buf, int where)
 {
 	files_struct *fsp;
 
