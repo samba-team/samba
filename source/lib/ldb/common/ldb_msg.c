@@ -162,11 +162,14 @@ int ldb_msg_add(struct ldb_message *msg,
 		const struct ldb_message_element *el, 
 		int flags)
 {
+	/* We have to copy this, just in case *el is a pointer into
+	 * what ldb_msg_add_empty() is about to realloc() */
+	struct ldb_message_element el_copy = *el;
 	if (ldb_msg_add_empty(msg, el->name, flags, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	msg->elements[msg->num_elements-1] = *el;
+	msg->elements[msg->num_elements-1] = el_copy;
 	msg->elements[msg->num_elements-1].flags = flags;
 
 	return LDB_SUCCESS;
