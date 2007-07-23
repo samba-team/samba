@@ -105,7 +105,7 @@ void pidfile_create(const char *program_name)
 			short_configfile++;
 		}
 		if (asprintf(&name, "%s-%s", program_name,
-			     short_configfile+1) == -1) {
+			     short_configfile) == -1) {
 			smb_panic("asprintf failed");
 		}
 	}
