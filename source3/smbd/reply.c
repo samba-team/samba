@@ -747,33 +747,36 @@ static NTSTATUS map_checkpath_error(const char *inbuf, NTSTATUS status)
  Reply to a checkpath.
 ****************************************************************************/
 
-int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_checkpath(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	pstring name;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 
 	START_PROFILE(SMBcheckpath);
 
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), name, smb_buf(inbuf) + 1,
-			sizeof(name), 0, STR_TERMINATE, &status);
+	srvstr_get_path((char *)req->inbuf, req->flags2, name,
+			smb_buf(req->inbuf) + 1, sizeof(name), 0,
+			STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
+		status = map_checkpath_error((char *)req->inbuf, status);
+		reply_nterror(req, status);
 		END_PROFILE(SMBcheckpath);
-		status = map_checkpath_error(inbuf, status);
-		return ERROR_NT(status);
+		return;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, name);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
 			END_PROFILE(SMBcheckpath);
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			return;
 		}
 		goto path_err;
 	}
 
-	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(inbuf,smb_vwv0)));
+	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->inbuf,smb_vwv0)));
 
 	status = unix_convert(conn, name, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -793,14 +796,16 @@ int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 	}
 
 	if (!S_ISDIR(sbuf.st_mode)) {
+		reply_botherror(req, NT_STATUS_NOT_A_DIRECTORY,
+				ERRDOS, ERRbadpath);
 		END_PROFILE(SMBcheckpath);
-		return ERROR_BOTH(NT_STATUS_NOT_A_DIRECTORY,ERRDOS,ERRbadpath);
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,0,0,False);
+	reply_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBcheckpath);
-	return outsize;
+	return;
 
   path_err:
 
@@ -811,8 +816,8 @@ int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 		one at a time - if a component fails it expects
 		ERRbadpath, not ERRbadfile.
 	*/
-	status = map_checkpath_error(inbuf, status);
-	if(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+	status = map_checkpath_error((char *)req->inbuf, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
 		 * Windows returns different error codes if
 		 * the parent directory is valid but not the
@@ -820,10 +825,12 @@ int reply_checkpath(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 		 * for that case and NT_STATUS_OBJECT_PATH_NOT_FOUND
 		 * if the path is invalid.
 		 */
-		return ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpath);
+		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+				ERRDOS, ERRbadpath);
+		return;
 	}
 
-	return ERROR_NT(status);
+	reply_nterror(req, status);
 }
 
 /****************************************************************************
