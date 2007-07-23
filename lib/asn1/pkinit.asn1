@@ -2,7 +2,7 @@
 
 PKINIT DEFINITIONS ::= BEGIN
 
-IMPORTS EncryptionKey, PrincipalName, Realm, KerberosTime, Checksum FROM krb5
+IMPORTS EncryptionKey, PrincipalName, Realm, KerberosTime, Checksum, Ticket FROM krb5
 	IssuerAndSerialNumber, ContentInfo FROM cms
 	SubjectPublicKeyInfo, AlgorithmIdentifier FROM rfc2459
 	heim_any FROM heim;
@@ -40,6 +40,11 @@ td-dh-parameters INTEGER ::=             109
 
 DHNonce ::= OCTET STRING
 
+KDFAlgorithmId ::= SEQUENCE {
+       kdf-id            [0] OBJECT IDENTIFIER,
+       ...
+}
+
 TrustedCA ::= SEQUENCE {
 	caName                  [0] IMPLICIT OCTET STRING,
 	certificateSerialNumber [1] INTEGER OPTIONAL,
@@ -76,6 +81,8 @@ AuthPack ::= SEQUENCE {
 	clientPublicValue       [1] SubjectPublicKeyInfo OPTIONAL,
 	supportedCMSTypes       [2] SEQUENCE OF AlgorithmIdentifier OPTIONAL,
 	clientDHNonce           [3] DHNonce OPTIONAL,
+	...,
+	supportedKDFs		[4] SEQUENCE OF KDFAlgorithmId OPTIONAL,
 	...
 }
 
@@ -89,10 +96,12 @@ KRB5PrincipalName ::= SEQUENCE {
 
 AD-INITIAL-VERIFIED-CAS ::= SEQUENCE OF ExternalPrincipalIdentifier
 
-
 DHRepInfo ::= SEQUENCE {
 	dhSignedData            [0] IMPLICIT OCTET STRING,
-	serverDHNonce           [1] DHNonce OPTIONAL
+	serverDHNonce           [1] DHNonce OPTIONAL,
+	...,
+	kdf			[2] KDFAlgorithmId OPTIONAL,
+	...
 }
 
 PA-PK-AS-REP ::= CHOICE {
@@ -160,6 +169,14 @@ ReplyKeyPack-Win2k ::= SEQUENCE {
         replyKey                [0] EncryptionKey,
         nonce                   [1] INTEGER (-2147483648..2147483647),
 	...
+}
+
+PkinitSuppPubInfo ::= SEQUENCE {
+       enctype           [0] INTEGER (-2147483648..2147483647),
+       as-REQ            [1] OCTET STRING,
+       pk-as-rep         [2] OCTET STRING,
+       ticket            [3] Ticket,
+       ...
 }
 
 END
