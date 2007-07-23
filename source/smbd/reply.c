@@ -284,22 +284,28 @@ size_t srvstr_get_path(const char *inbuf, uint16 smb_flags2, char *dest,
 }
 
 /****************************************************************************
- Reply to a special message.
+ Reply to a (netbios-level) special message.
 ****************************************************************************/
 
-int reply_special(char *inbuf,char *outbuf)
+void reply_special(char *inbuf)
 {
-	int outsize = 4;
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	fstring name1,name2;
 	char name_type = 0;
+
+	/*
+	 * We only really use 4 bytes of the outbuf, but for the smb_setlen
+	 * calculation & friends (send_smb uses that) we need the full smb
+	 * header.
+	 */
+	char outbuf[smb_size];
 	
 	static BOOL already_got_session = False;
 
 	*name1 = *name2 = 0;
 	
-	memset(outbuf,'\0',smb_size);
+	memset(outbuf, '\0', sizeof(outbuf));
 
 	smb_setlen(inbuf,outbuf,0);
 	
@@ -315,7 +321,7 @@ int reply_special(char *inbuf,char *outbuf)
 		if (name_len(inbuf+4) > 50 || 
 		    name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
 			DEBUG(0,("Invalid name length in session request\n"));
-			return(0);
+			return;
 		}
 		name_extract(inbuf,4,name1);
 		name_type = name_extract(inbuf,4 + name_len(inbuf + 4),name2);
@@ -363,13 +369,14 @@ int reply_special(char *inbuf,char *outbuf)
 		
 	case SMBkeepalive: /* session keepalive */
 	default:
-		return(0);
+		return;
 	}
 	
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
-	
-	return(outsize);
+
+	send_smb(smbd_server_fd(), outbuf);
+	return;
 }
 
 /****************************************************************************
@@ -613,7 +620,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	TALLOC_FREE(ctx);
 	END_PROFILE(SMBtconX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 /****************************************************************************
@@ -629,6 +636,14 @@ int reply_unknown(char *inbuf,char *outbuf)
 		 smb_fn_name(type), type, type));
   
 	return(ERROR_DOS(ERRSRV,ERRunknownsmb));
+}
+
+void reply_unknown_new(struct smb_request *req, uint8 type)
+{
+	DEBUG(0, ("unknown command type (%s): type=%d (0x%X)\n",
+		  smb_fn_name(type), type, type));
+	reply_doserror(req, ERRSRV, ERRunknownsmb);
+	return;
 }
 
 /****************************************************************************
@@ -1582,7 +1597,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	END_PROFILE(SMBopenX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 /****************************************************************************
@@ -1611,7 +1626,7 @@ int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	DEBUG( 3, ( "ulogoffX vuid=%d\n", vuid ) );
 
 	END_PROFILE(SMBulogoffX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 /****************************************************************************
@@ -2813,7 +2828,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
 	/* Only call chain_reply if not an error. */
 	if (nread != -1 && SVAL(outbuf,smb_rcls) == 0) {
-		nread = chain_reply(inbuf,outbuf,length,bufsize);
+		nread = chain_reply(inbuf,&outbuf,length,bufsize);
 	}
 
 	END_PROFILE(SMBreadX);
@@ -3254,7 +3269,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	}
 
 	END_PROFILE(SMBwriteX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 /****************************************************************************
@@ -5722,7 +5737,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
 	
 	END_PROFILE(SMBlockingX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 #undef DBGC_CLASS

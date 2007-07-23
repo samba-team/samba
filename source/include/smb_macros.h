@@ -169,6 +169,10 @@
 #define ERROR_FORCE_NT(status) error_packet(inbuf,outbuf,-1,-1,status,__LINE__,__FILE__)
 #define ERROR_BOTH(status,class,code) error_packet(inbuf,outbuf,class,code,status,__LINE__,__FILE__)
 
+#define reply_nterror(req,status) reply_nt_error(req,status,__LINE__,__FILE__)
+#define reply_doserror(req,eclass,ecode) reply_dos_error(req,eclass,ecode,__LINE__,__FILE__)
+#define reply_botherror(req,status,eclass,ecode) reply_both_error(req,eclass,ecode,status,__LINE__,__FILE__)
+
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 

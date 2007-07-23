@@ -126,7 +126,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	SSVAL(outbuf,smb_vwv8,rmode);
 	SSVAL(outbuf,smb_vwv11,0x0001);
 
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 /****************************************************************************
@@ -231,7 +231,7 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   
 	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n", p->pnum, nwritten));
 
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 /****************************************************************************
@@ -278,7 +278,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 	/* Ensure we set up the message length to include the data length read. */
 	set_message_bcc(inbuf,outbuf,nread);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
 
 /****************************************************************************

@@ -686,6 +686,10 @@ struct smb_request {
 	uint16 smbpid;
 	uint16 mid;
 	uint16 vuid;
+	uint16 tid;
+	uint8  wct;
+	const uint8 *inbuf;
+	uint8 *outbuf;
 };
 
 /* Defines for the sent_oplock_break field above. */

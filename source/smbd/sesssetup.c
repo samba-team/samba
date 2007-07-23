@@ -1582,5 +1582,5 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	done_sesssetup = True;
 	
 	END_PROFILE(SMBsesssetupX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return chain_reply(inbuf,&outbuf,length,bufsize);
 }
