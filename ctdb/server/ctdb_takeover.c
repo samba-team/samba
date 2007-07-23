@@ -36,7 +36,7 @@ struct ctdb_takeover_arp {
 	struct ctdb_context *ctdb;
 	uint32_t count;
 	struct sockaddr_in sin;
-	struct ctdb_tcp_list *tcp_list;
+	struct ctdb_tcp_array *tcparray;
 };
 
 
@@ -67,8 +67,9 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 {
 	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
 							struct ctdb_takeover_arp);
-	int s, ret;
-	struct ctdb_tcp_list *tcp;
+	int i, s, ret;
+	struct ctdb_tcp_array *tcparray;
+
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->ctdb->takeover.interface);
 	if (ret != 0) {
@@ -81,16 +82,19 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 		return;
 	}
 
-	for (tcp=arp->tcp_list;tcp;tcp=tcp->next) {
-		DEBUG(2,("sending tcp tickle ack for %u->%s:%u\n",
-			 (unsigned)ntohs(tcp->connection.daddr.sin_port), 
-			 inet_ntoa(tcp->connection.saddr.sin_addr),
-			 (unsigned)ntohs(tcp->connection.saddr.sin_port)));
-		ret = ctdb_sys_send_tcp(s, &tcp->connection.saddr, 
-					&tcp->connection.daddr, 0, 0, 0);
-		if (ret != 0) {
-			DEBUG(0,(__location__ " Failed to send tcp tickle ack for %s\n",
-				 inet_ntoa(tcp->connection.saddr.sin_addr)));
+	tcparray = arp->tcparray;
+	if (tcparray) {
+		for (i=0;i<tcparray->num;i++) {
+			DEBUG(2,("sending tcp tickle ack for %u->%s:%u\n",
+				 (unsigned)ntohs(tcparray->connections[i].daddr.sin_port), 
+				 inet_ntoa(tcparray->connections[i].saddr.sin_addr),
+				 (unsigned)ntohs(tcparray->connections[i].saddr.sin_port)));
+			ret = ctdb_sys_send_tcp(s, &tcparray->connections[i].saddr, 
+						&tcparray->connections[i].daddr, 0, 0, 0);
+			if (ret != 0) {
+				DEBUG(0,(__location__ " Failed to send tcp tickle ack for %s\n",
+					 inet_ntoa(tcparray->connections[i].saddr.sin_addr)));
+			}
 		}
 	}
 
@@ -148,23 +152,11 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 
 	tcparray = state->node->tcp_array;
 	if (tcparray) {
-		int i;
-	
 		/* add all of the known tcp connections for this IP to the
 		   list of tcp connections to send tickle acks for */
-		for (i=0;i<tcparray->num;i++) {
-			struct ctdb_tcp_list *t2 = talloc(arp, struct ctdb_tcp_list);
-			if (t2 == NULL) goto failed;
-			t2->connection.saddr = tcparray->connections[i].saddr;
-			t2->connection.daddr = tcparray->connections[i].daddr;
-			DLIST_ADD(arp->tcp_list, t2);
-		}
+		arp->tcparray = tcparray;
+		talloc_steal(arp, tcparray);
 
-		/* Delete the entire tickle array for this public address
-		   We have tickled them now so we dont need them
-		   anymore
-		 */
-		talloc_free(tcparray);
 		state->node->tcp_array = NULL;
 		state->node->tcp_update_needed = true;
 	}
