@@ -27,7 +27,7 @@ BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
 struct auth_context *negprot_global_auth_context = NULL;
 
-static void get_challenge(char buff[8]) 
+static void get_challenge(uint8 buff[8])
 {
 	NTSTATUS nt_status;
 	const uint8 *cryptkey;
@@ -53,39 +53,39 @@ static void get_challenge(char buff[8])
  Reply for the core protocol.
 ****************************************************************************/
 
-static int reply_corep(char *inbuf, char *outbuf)
+static void reply_corep(struct smb_request *req, uint16 choice)
 {
-	int outsize = set_message(inbuf,outbuf,1,0,True);
+	reply_outbuf(req, 1, 0);
+	SSVAL(req->outbuf, smb_vwv0, choice);
 
 	Protocol = PROTOCOL_CORE;
-	
-	return outsize;
 }
 
 /****************************************************************************
  Reply for the coreplus protocol.
 ****************************************************************************/
 
-static int reply_coreplus(char *inbuf, char *outbuf)
+static void reply_coreplus(struct smb_request *req, uint16 choice)
 {
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
-	int outsize = set_message(inbuf,outbuf,13,0,True);
-	SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
+
+	reply_outbuf(req, 13, 0);
+
+	SSVAL(req->outbuf,smb_vwv0,choice);
+	SSVAL(req->outbuf,smb_vwv5,raw); /* tell redirector we support
 			readbraw and writebraw (possibly) */
 	/* Reply, SMBlockread, SMBwritelock supported. */
-	SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(outbuf,smb_vwv1,0x1); /* user level security, don't encrypt */	
-
+	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
+	SSVAL(req->outbuf,smb_vwv1,0x1); /* user level security, don't
+					  * encrypt */
 	Protocol = PROTOCOL_COREPLUS;
-
-	return outsize;
 }
 
 /****************************************************************************
  Reply for the lanman 1.0 protocol.
 ****************************************************************************/
 
-static int reply_lanman1(char *inbuf, char *outbuf)
+static void reply_lanman1(struct smb_request *req, uint16 choice)
 {
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
@@ -98,36 +98,38 @@ static int reply_lanman1(char *inbuf, char *outbuf)
 	if (global_encrypted_passwords_negotiated)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-	set_message(inbuf,outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
-	SSVAL(outbuf,smb_vwv1,secword); 
+	reply_outbuf(req, 13, global_encrypted_passwords_negotiated?8:0);
+
+	SSVAL(req->outbuf,smb_vwv0,choice);
+	SSVAL(req->outbuf,smb_vwv1,secword);
 	/* Create a token value and add it to the outgoing packet. */
 	if (global_encrypted_passwords_negotiated) {
-		get_challenge(smb_buf(outbuf));
-		SSVAL(outbuf,smb_vwv11, 8);
+		get_challenge((uint8 *)smb_buf(req->outbuf));
+		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
 	Protocol = PROTOCOL_LANMAN1;
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
-	SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(outbuf,smb_vwv2,max_recv);
-	SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
-	SSVAL(outbuf,smb_vwv4,1);
-	SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
+	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
+	SSVAL(req->outbuf,smb_vwv2,max_recv);
+	SSVAL(req->outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
+	SSVAL(req->outbuf,smb_vwv4,1);
+	SSVAL(req->outbuf,smb_vwv5,raw); /* tell redirector we support
 		readbraw writebraw (possibly) */
-	SIVAL(outbuf,smb_vwv6,sys_getpid());
-	SSVAL(outbuf,smb_vwv10, set_server_zone_offset(t)/60);
+	SIVAL(req->outbuf,smb_vwv6,sys_getpid());
+	SSVAL(req->outbuf,smb_vwv10, set_server_zone_offset(t)/60);
 
-	srv_put_dos_date(outbuf,smb_vwv8,t);
+	srv_put_dos_date((char *)req->outbuf,smb_vwv8,t);
 
-	return (smb_len(outbuf)+4);
+	return;
 }
 
 /****************************************************************************
  Reply for the lanman 2.0 protocol.
 ****************************************************************************/
 
-static int reply_lanman2(char *inbuf, char *outbuf)
+static void reply_lanman2(struct smb_request *req, uint16 choice)
 {
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
@@ -140,28 +142,28 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 	if (global_encrypted_passwords_negotiated)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-	set_message(inbuf,outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
-	SSVAL(outbuf,smb_vwv1,secword); 
-	SIVAL(outbuf,smb_vwv6,sys_getpid());
+	reply_outbuf(req, 13, global_encrypted_passwords_negotiated?8:0);
+
+	SSVAL(req->outbuf,smb_vwv0,choice);
+	SSVAL(req->outbuf,smb_vwv1,secword);
+	SIVAL(req->outbuf,smb_vwv6,sys_getpid());
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (global_encrypted_passwords_negotiated) {
-		get_challenge(smb_buf(outbuf));
-		SSVAL(outbuf,smb_vwv11, 8);
+		get_challenge((uint8 *)smb_buf(req->outbuf));
+		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
 	Protocol = PROTOCOL_LANMAN2;
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
-	SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(outbuf,smb_vwv2,max_recv);
-	SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
-	SSVAL(outbuf,smb_vwv4,1);
-	SSVAL(outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
-	SSVAL(outbuf,smb_vwv10, set_server_zone_offset(t)/60);
-	srv_put_dos_date(outbuf,smb_vwv8,t);
-
-	return (smb_len(outbuf)+4);
+	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
+	SSVAL(req->outbuf,smb_vwv2,max_recv);
+	SSVAL(req->outbuf,smb_vwv3,lp_maxmux());
+	SSVAL(req->outbuf,smb_vwv4,1);
+	SSVAL(req->outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
+	SSVAL(req->outbuf,smb_vwv10, set_server_zone_offset(t)/60);
+	srv_put_dos_date((char *)req->outbuf,smb_vwv8,t);
 }
 
 /****************************************************************************
@@ -242,7 +244,7 @@ static DATA_BLOB negprot_spnego(void)
  Reply for the nt protocol.
 ****************************************************************************/
 
-static int reply_nt1(char *inbuf, char *outbuf)
+static void reply_nt1(struct smb_request *req, uint16 choice)
 {
 	/* dual names + lock_and_read + nt SMBs + remote API calls */
 	int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|
@@ -252,6 +254,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	char *p, *q;
 	BOOL negotiate_spnego = False;
 	time_t t = time(NULL);
+	ssize_t ret;
 
 	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
@@ -259,13 +262,15 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	   WinXP sets it and Vista does not. But we have to 
 	   distinguish from NT which doesn't set it either. */
 
-	if ( (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY) &&
-		((SVAL(inbuf, smb_flg2) & FLAGS2_UNKNOWN_BIT4) == 0) ) 
+	if ( (req->flags2 & FLAGS2_EXTENDED_SECURITY) &&
+		((req->flags2 & FLAGS2_UNKNOWN_BIT4) == 0) )
 	{
 		if (get_remote_arch() != RA_SAMBA) {
 			set_remote_arch( RA_VISTA );
 		}
 	}
+
+	reply_outbuf(req,17,0);
 
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
@@ -273,13 +278,14 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	if (global_encrypted_passwords_negotiated && 
 	    (lp_security() != SEC_SHARE) &&
 	    lp_use_spnego() &&
-	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
+	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
 		negotiate_spnego = True;
 		capabilities |= CAP_EXTENDED_SECURITY;
 		add_to_common_flags2(FLAGS2_EXTENDED_SECURITY);
-		/* Ensure FLAGS2_EXTENDED_SECURITY gets set in this reply (already
-			partially constructed. */
-		SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_EXTENDED_SECURITY);
+		/* Ensure FLAGS2_EXTENDED_SECURITY gets set in this reply
+		   (already partially constructed. */
+		SSVAL(req->outbuf, smb_flg2,
+		      req->flags2 | FLAGS2_EXTENDED_SECURITY);
 	}
 	
 	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS|CAP_UNICODE;
@@ -324,53 +330,72 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		}
 	}
 
-	set_message(inbuf,outbuf,17,0,True);
-	
-	SCVAL(outbuf,smb_vwv1,secword);
+	SSVAL(req->outbuf,smb_vwv0,choice);
+	SCVAL(req->outbuf,smb_vwv1,secword);
 	
 	Protocol = PROTOCOL_NT1;
 	
-	SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
-	SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
-	SIVAL(outbuf,smb_vwv3+1,max_recv); /* max buffer. LOTS! */
-	SIVAL(outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
-	SIVAL(outbuf,smb_vwv7+1,sys_getpid()); /* session key */
-	SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
-	put_long_date(outbuf+smb_vwv11+1,t);
-	SSVALS(outbuf,smb_vwv15+1,set_server_zone_offset(t)/60);
+	SSVAL(req->outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
+	SSVAL(req->outbuf,smb_vwv2+1,1); /* num vcs */
+	SIVAL(req->outbuf,smb_vwv3+1,max_recv); /* max buffer. LOTS! */
+	SIVAL(req->outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
+	SIVAL(req->outbuf,smb_vwv7+1,sys_getpid()); /* session key */
+	SIVAL(req->outbuf,smb_vwv9+1,capabilities); /* capabilities */
+	put_long_date((char *)req->outbuf+smb_vwv11+1,t);
+	SSVALS(req->outbuf,smb_vwv15+1,set_server_zone_offset(t)/60);
 	
-	p = q = smb_buf(outbuf);
+	p = q = smb_buf(req->outbuf);
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
 		if (global_encrypted_passwords_negotiated) {
+			uint8 chal[8];
 			/* note that we do not send a challenge at all if
 			   we are using plaintext */
-			get_challenge(p);
-			SCVAL(outbuf,smb_vwv16+1,8);
-			p += 8;
+			get_challenge(chal);
+			ret = message_push_blob(
+				&req->outbuf, data_blob_const(chal, sizeof(chal)));
+			if (ret == -1) {
+				DEBUG(0, ("Could not push challenge\n"));
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
+			SCVAL(req->outbuf, smb_vwv16+1, ret);
+			p += ret;
 		}
-		p += srvstr_push(outbuf, p, lp_workgroup(), -1, 
-				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
+		ret = message_push_string(&req->outbuf, lp_workgroup(),
+					  STR_UNICODE|STR_TERMINATE
+					  |STR_NOALIGN);
+		if (ret == -1) {
+			DEBUG(0, ("Could not push challenge\n"));
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
 		DATA_BLOB spnego_blob = negprot_spnego();
 
 		if (spnego_blob.data == NULL) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 
-		memcpy(p, spnego_blob.data, spnego_blob.length);
-		p += spnego_blob.length;
+		ret = message_push_blob(&req->outbuf, spnego_blob);
+		if (ret == -1) {
+			DEBUG(0, ("Could not push spnego blob\n"));
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+		p += ret;
 		data_blob_free(&spnego_blob);
 
-		SCVAL(outbuf,smb_vwv16+1, 0);
+		SCVAL(req->outbuf,smb_vwv16+1, 0);
 		DEBUG(3,("using SPNEGO\n"));
 	}
 	
-	SSVAL(outbuf,smb_vwv17, p - q); /* length of challenge+domain strings */
-	set_message_end(inbuf,outbuf, p);
-	
-	return (smb_len(outbuf)+4);
+	SSVAL(req->outbuf,smb_vwv17, p - q); /* length of challenge+domain
+					      * strings */
+
+	return;
 }
 
 /* these are the protocol lists used for auto architecture detection:
@@ -458,7 +483,7 @@ protocol [LANMAN2.1]
 static const struct {
 	const char *proto_name;
 	const char *short_name;
-	int (*proto_reply_fn)(char *, char *);
+	void (*proto_reply_fn)(struct smb_request *req, uint16 choice);
 	int protocol_level;
 } supported_protocols[] = {
 	{"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
@@ -480,11 +505,9 @@ static const struct {
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_negprot(connection_struct *conn, 
-		  char *inbuf,char *outbuf, int size,
-		  int dum_buffsize)
+void reply_negprot(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = set_message(inbuf,outbuf,1,0,True);
+	size_t size = smb_len(req->inbuf) + 4;
 	int choice= -1;
 	int protocol;
 	char *p;
@@ -503,18 +526,19 @@ int reply_negprot(connection_struct *conn,
 	}
 	done_negprot = True;
 
-	if (inbuf[size-1] != '\0') {
+	if (req->inbuf[size-1] != '\0') {
 		DEBUG(0, ("negprot protocols not 0-terminated\n"));
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnegprot);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
-	p = smb_buf(inbuf)+1;
+	p = smb_buf(req->inbuf)+1;
 
 	num_cliprotos = 0;
 	cliprotos = NULL;
 
-	while (smb_bufrem(inbuf, p) > 0) {
+	while (smb_bufrem(req->inbuf, p) > 0) {
 		char **tmp;
 
 		tmp = TALLOC_REALLOC_ARRAY(tmp_talloc_ctx(), cliprotos, char *,
@@ -522,8 +546,9 @@ int reply_negprot(connection_struct *conn,
 		if (tmp == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(cliprotos);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBnegprot);
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		cliprotos = tmp;
@@ -532,8 +557,9 @@ int reply_negprot(connection_struct *conn,
 		    == (size_t)-1) {
 			DEBUG(0, ("pull_ascii_talloc failed\n"));
 			TALLOC_FREE(cliprotos);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBnegprot);
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		DEBUG(3, ("Requested protocol [%s]\n",
@@ -592,7 +618,7 @@ int reply_negprot(connection_struct *conn,
 			set_remote_arch(RA_WIN95);
 			break;
 		case ARCH_WINNT:
-			if(SVAL(inbuf,smb_flg2)==FLAGS2_WIN2K_SIGNATURE)
+			if(req->flags2 == FLAGS2_WIN2K_SIGNATURE)
 				set_remote_arch(RA_WIN2K);
 			else
 				set_remote_arch(RA_WINNT);
@@ -638,16 +664,14 @@ int reply_negprot(connection_struct *conn,
 			break;
 	}
   
-	SSVAL(outbuf,smb_vwv0,choice);
 	if(choice != -1) {
 		fstrcpy(remote_proto,supported_protocols[protocol].short_name);
 		reload_services(True);          
-		outsize = supported_protocols[protocol].proto_reply_fn(inbuf, outbuf);
+		supported_protocols[protocol].proto_reply_fn(req, choice);
 		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 	} else {
 		DEBUG(0,("No protocol supported !\n"));
 	}
-	SSVAL(outbuf,smb_vwv0,choice);
   
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
@@ -658,5 +682,5 @@ int reply_negprot(connection_struct *conn,
 
 	TALLOC_FREE(cliprotos);
 	END_PROFILE(SMBnegprot);
-	return(outsize);
+	return;
 }
