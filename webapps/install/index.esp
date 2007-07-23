@@ -1,20 +1,40 @@
 <% page_header("columns", "Server Installation", "install"); 
+
+if (session.authinfo.user_class == "ADMINISTRATOR"
+	 || session.authinfo.user_class == "SYSTEM") {
+
 %>
 
 <h1>Installation</h1>
 
-Welcome to Samba4 installation. Before proceeding, you will need to
-know:
+<p>Welcome to Samba4 installation. Before proceeding, you will need to
+know: </p>
 
 <ul>
 <li>The domain name you will use
 <li>The realm name you will use
 </ul>
 
-After you have decided on those, choose the 'Provisioning' menu item
-on the left, and fill in the form.<p>
+<p>After you have decided on those, choose the 'Provisioning' menu item
+on the left, and fill in the form.</p>
 
-<b>Warning!</b> When you provision, your existing user database is
-wiped and replaced with a new one.
+<p><b>Warning!</b> When you provision, your existing user database is
+wiped and replaced with a new one.</p>
 
-<% page_footer(); %>
+<% 
+
+} else {
+
+%>
+
+<h1>Installation</h1>
+
+<p>To install Samba4, you must have logged in as <b>root</b>, or administrator of the previously configured domain. </p>
+
+<p><b>Warning!</b> When you provision, your existing user database is
+wiped and replaced with a new one. </p>
+
+<% 
+
+}
+page_footer(); %>

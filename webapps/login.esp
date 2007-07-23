@@ -39,6 +39,7 @@ f.display();
 			session.authinfo.domain = auth.domain;
 			session.authinfo.credentials = creds;
 			session.authinfo.session_info = auth.session_info;
+			session.authinfo.user_class = auth.user_class;
 			
 			/* if the user was asking for the login page, then now
 			   redirect them to the main page. Otherwise just
