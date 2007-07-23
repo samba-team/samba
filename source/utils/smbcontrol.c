@@ -247,7 +247,7 @@ static int stack_trace_connection(struct db_record *rec,
 				  const struct connections_data *crec,
 				  void *priv)
 {
-	print_stack_trace(procid_to_pid(&conn->pid), (int *)priv);
+	print_stack_trace(procid_to_pid(&crec->pid), (int *)priv);
 
 	return 0;
 }
