@@ -53,25 +53,24 @@ extern struct pipe_id_info pipe_names[];
  wrinkles to handle pipes.
 ****************************************************************************/
 
-int reply_open_pipe_and_X(connection_struct *conn,
-			  char *inbuf,char *outbuf,int length,int bufsize)
+void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 {
 	pstring fname;
 	pstring pipe_name;
-	uint16 vuid = SVAL(inbuf, smb_uid);
 	smb_np_struct *p;
 	int size=0,fmode=0,mtime=0,rmode=0;
 	int i;
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), pipe_name,
-			smb_buf(inbuf), sizeof(pipe_name), STR_TERMINATE);
+	srvstr_pull_buf(req->inbuf, req->flags2, pipe_name,
+			smb_buf(req->inbuf), sizeof(pipe_name), STR_TERMINATE);
 
 	/* If the name doesn't start \PIPE\ then this is directed */
 	/* at a mailslot or something we really, really don't understand, */
 	/* not just something we really don't understand. */
 	if ( strncmp(pipe_name,PIPE,PIPELEN) != 0 ) {
-		return(ERROR_DOS(ERRSRV,ERRaccess));
+		reply_doserror(req, ERRSRV, ERRaccess);
+		return;
 	}
 
 	DEBUG(4,("Opening pipe %s.\n", pipe_name));
@@ -84,7 +83,9 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	}
 
 	if (pipe_names[i].client_pipe == NULL) {
-		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
+		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+				ERRDOS, ERRbadpipe);
+		return;
 	}
 
 	/* Strip \PIPE\ off the name. */
@@ -94,39 +95,43 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	/*
 	 * Hack for NT printers... JRA.
 	 */
-    if(should_fail_next_srvsvc_open(fname))
-      return(ERROR(ERRSRV,ERRaccess));
+	if(should_fail_next_srvsvc_open(fname)) {
+		reply_doserror(req, ERRSRV, ERRaccess);
+		return;
+	}
 #endif
 
 	/* Known pipes arrive with DIR attribs. Remove it so a regular file */
 	/* can be opened and add it in after the open. */
 	DEBUG(3,("Known pipe %s opening.\n",fname));
 
-	p = open_rpc_pipe_p(fname, conn, vuid);
+	p = open_rpc_pipe_p(fname, conn, req->vuid);
 	if (!p) {
-		return(ERROR_DOS(ERRSRV,ERRnofids));
+		reply_doserror(req, ERRSRV, ERRnofids);
+		return;
 	}
 
 	/* Prepare the reply */
-	set_message(inbuf,outbuf,15,0,True);
+	reply_outbuf(req, 15, 0);
 
 	/* Mark the opened file as an existing named pipe in message mode. */
-	SSVAL(outbuf,smb_vwv9,2);
-	SSVAL(outbuf,smb_vwv10,0xc700);
+	SSVAL(req->outbuf,smb_vwv9,2);
+	SSVAL(req->outbuf,smb_vwv10,0xc700);
 
 	if (rmode == 2) {
 		DEBUG(4,("Resetting open result to open from create.\n"));
 		rmode = 1;
 	}
 
-	SSVAL(outbuf,smb_vwv2, p->pnum);
-	SSVAL(outbuf,smb_vwv3,fmode);
-	srv_put_dos_date3(outbuf,smb_vwv4,mtime);
-	SIVAL(outbuf,smb_vwv6,size);
-	SSVAL(outbuf,smb_vwv8,rmode);
-	SSVAL(outbuf,smb_vwv11,0x0001);
+	SSVAL(req->outbuf,smb_vwv2, p->pnum);
+	SSVAL(req->outbuf,smb_vwv3,fmode);
+	srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime);
+	SIVAL(req->outbuf,smb_vwv6,size);
+	SSVAL(req->outbuf,smb_vwv8,rmode);
+	SSVAL(req->outbuf,smb_vwv11,0x0001);
 
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
+	return;
 }
 
 /****************************************************************************

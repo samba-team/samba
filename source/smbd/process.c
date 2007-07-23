@@ -679,7 +679,7 @@ static const struct smb_message_struct {
 /* 0x2a */ { "SMBmove",NULL, NULL,AS_USER | NEED_WRITE },
 /* 0x2b */ { "SMBecho",reply_echo,NULL,0},
 /* 0x2c */ { "SMBwriteclose",reply_writeclose,NULL,AS_USER},
-/* 0x2d */ { "SMBopenX",reply_open_and_X,NULL,AS_USER | CAN_IPC },
+/* 0x2d */ { "SMBopenX",NULL,reply_open_and_X,AS_USER | CAN_IPC },
 /* 0x2e */ { "SMBreadX",reply_read_and_X,NULL,AS_USER | CAN_IPC },
 /* 0x2f */ { "SMBwriteX",reply_write_and_X,NULL,AS_USER | CAN_IPC },
 /* 0x30 */ { NULL, NULL, NULL, 0 },
