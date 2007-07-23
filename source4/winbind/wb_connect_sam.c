@@ -70,7 +70,7 @@ struct composite_context *wb_connect_samr_send(TALLOC_CTX *mem_ctx,
 	ctx = dcerpc_secondary_auth_connection_send(domain->netlogon_pipe,
 						    domain->samr_binding,
 						    &dcerpc_table_samr,
-						    domain->schannel_creds);
+						    domain->libnet_ctx->cred);
 	composite_continue(state->ctx, ctx, connect_samr_recv_pipe, state);
 	return result;
 	
@@ -145,8 +145,8 @@ static void connect_samr_recv_open(struct rpc_request *req)
 NTSTATUS wb_connect_samr_recv(struct composite_context *c,
 			     TALLOC_CTX *mem_ctx,
 			     struct dcerpc_pipe **samr_pipe,
-			     struct policy_handle **connect_handle,
-			     struct policy_handle **domain_handle)
+			     struct policy_handle *connect_handle,
+			     struct policy_handle *domain_handle)
 {
 	NTSTATUS status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
@@ -154,8 +154,8 @@ NTSTATUS wb_connect_samr_recv(struct composite_context *c,
 			talloc_get_type(c->private_data,
 					struct connect_samr_state);
 		*samr_pipe = talloc_steal(mem_ctx, state->samr_pipe);
-		*connect_handle = talloc_steal(mem_ctx, state->connect_handle);
-		*domain_handle = talloc_steal(mem_ctx, state->domain_handle);
+		*connect_handle = *state->connect_handle;
+		*domain_handle = *state->domain_handle;
 	}
 	talloc_free(c);
 	return status;

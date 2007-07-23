@@ -21,7 +21,7 @@
 
 #include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbindd_nss.h"
-
+#include "libnet/libnet.h"
 
 
 #define WINBINDD_SAMBA3_SOCKET "pipe"
@@ -62,20 +62,16 @@ struct wbsrv_domain {
 	const char *dc_address;
 	const char *dc_name;
 
-	struct dcerpc_pipe *lsa_pipe;
-	struct policy_handle *lsa_policy_handle;
+	struct libnet_context *libnet_ctx;
+
 	struct dcerpc_binding *lsa_binding;
 
-	struct dcerpc_pipe *samr_pipe;
-	struct policy_handle *samr_handle;
-	struct policy_handle *domain_handle;
 	struct dcerpc_binding *samr_binding;
 
 	struct ldap_connection *ldap_conn;
 
 	struct dcerpc_pipe *netlogon_pipe;
 	struct dcerpc_binding *netlogon_binding;
-	struct cli_credentials *schannel_creds;
 };
 
 /*

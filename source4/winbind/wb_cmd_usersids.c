@@ -122,11 +122,11 @@ static void usersids_recv_domain(struct composite_context *ctx)
 	state->rids.count = 0;
 	state->rids.ids = NULL;
 
-	state->r.in.domain_handle = domain->domain_handle;
+	state->r.in.domain_handle = &domain->libnet_ctx->samr.handle;
 	state->r.in.sids = &state->lsa_sids;
 	state->r.out.rids = &state->rids;
 
-	req = dcerpc_samr_GetAliasMembership_send(domain->samr_pipe, state,
+	req = dcerpc_samr_GetAliasMembership_send(domain->libnet_ctx->samr.pipe, state,
 						  &state->r);
 	composite_continue_rpc(state->ctx, req, usersids_recv_aliases, state);
 }

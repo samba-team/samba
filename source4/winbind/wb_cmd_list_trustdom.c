@@ -81,7 +81,7 @@ static void cmd_list_trustdoms_recv_domain(struct composite_context *ctx)
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
 
-	tree = dcerpc_smb_tree(domain->lsa_pipe->conn);
+	tree = dcerpc_smb_tree(domain->libnet_ctx->lsa.pipe->conn);
 	if (composite_nomem(tree, state->ctx)) return;
 
 	ctx = wb_init_lsa_send(state, domain);
