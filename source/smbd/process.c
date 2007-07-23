@@ -638,7 +638,7 @@ static const struct smb_message_struct {
 /* 0x01 */ { "SMBrmdir",reply_rmdir,NULL,AS_USER | NEED_WRITE},
 /* 0x02 */ { "SMBopen",reply_open,NULL,AS_USER },
 /* 0x03 */ { "SMBcreate",reply_mknew,NULL,AS_USER},
-/* 0x04 */ { "SMBclose",reply_close,NULL,AS_USER | CAN_IPC },
+/* 0x04 */ { "SMBclose",NULL,reply_close,AS_USER | CAN_IPC },
 /* 0x05 */ { "SMBflush",reply_flush,NULL,AS_USER},
 /* 0x06 */ { "SMBunlink",reply_unlink,NULL,AS_USER | NEED_WRITE },
 /* 0x07 */ { "SMBmv",reply_mv,NULL,AS_USER | NEED_WRITE },
