@@ -458,7 +458,7 @@ int reply_tcon(connection_struct *conn,
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
+void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 {
 	char *service = NULL;
 	DATA_BLOB password;
@@ -469,53 +469,67 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	/* what the server tells the client the share represents */
 	const char *server_devicetype;
 	NTSTATUS nt_status;
-	uint16 vuid = SVAL(inbuf,smb_uid);
-	int passlen = SVAL(inbuf,smb_vwv3);
+	int passlen;
 	char *path = NULL;
 	char *p, *q;
-	uint16 tcon_flags = SVAL(inbuf,smb_vwv2);
+	uint16 tcon_flags;
 
 	START_PROFILE(SMBtconX);
 
-	/* we might have to close an old one */
-	if ((SVAL(inbuf,smb_vwv2) & 0x1) && conn) {
-		close_cnum(conn,vuid);
+	if (req->wct < 4) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBtconX);
+		return;
 	}
 
-	if (passlen > MAX_PASS_LEN) {
-		return ERROR_DOS(ERRDOS,ERRbuftoosmall);
+	passlen = SVAL(req->inbuf,smb_vwv3);
+	tcon_flags = SVAL(req->inbuf,smb_vwv2);
+
+	/* we might have to close an old one */
+	if ((tcon_flags & 0x1) && conn) {
+		close_cnum(conn,req->vuid);
+	}
+
+	if ((passlen > MAX_PASS_LEN) || (passlen >= smb_buflen(req->inbuf))) {
+		reply_doserror(req, ERRDOS, ERRbuftoosmall);
+		END_PROFILE(SMBtconX);
+		return;
 	}
 
 	if (global_encrypted_passwords_negotiated) {
-		password = data_blob(smb_buf(inbuf),passlen);
+		password = data_blob(smb_buf(req->inbuf),passlen);
 		if (lp_security() == SEC_SHARE) {
 			/*
 			 * Security = share always has a pad byte
 			 * after the password.
 			 */
-			p = smb_buf(inbuf) + passlen + 1;
+			p = smb_buf(req->inbuf) + passlen + 1;
 		} else {
-			p = smb_buf(inbuf) + passlen;
+			p = smb_buf(req->inbuf) + passlen;
 		}
 	} else {
-		password = data_blob(smb_buf(inbuf),passlen+1);
+		password = data_blob(smb_buf(req->inbuf),passlen+1);
 		/* Ensure correct termination */
 		password.data[passlen]=0;
-		p = smb_buf(inbuf) + passlen + 1;
+		p = smb_buf(req->inbuf) + passlen + 1;
 	}
 
 	ctx = talloc_init("reply_tcon_and_X");
 	if (!ctx) {
+		data_blob_clear_free(&password);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBtconX);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return;
 	}
-	p += srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2), &path, p,
+	p += srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2, &path, p,
 			     STR_TERMINATE);
 
 	if (path == NULL) {
+		data_blob_clear_free(&password);
 		TALLOC_FREE(ctx);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtconX);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	/*
@@ -525,34 +539,41 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if (*path=='\\') {
 		q = strchr_m(path+2,'\\');
 		if (!q) {
+			data_blob_clear_free(&password);
 			TALLOC_FREE(ctx);
+			reply_doserror(req, ERRDOS, ERRnosuchshare);
 			END_PROFILE(SMBtconX);
-			return(ERROR_DOS(ERRDOS,ERRnosuchshare));
+			return;
 		}
 		service = q+1;
 	} else {
 		service = path;
 	}
 
-	p += srvstr_pull_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2), &client_devicetype, p,
-			 MIN(6,smb_bufrem(inbuf, p)), STR_ASCII);
+	p += srvstr_pull_talloc(ctx, req->inbuf, req->flags2,
+				&client_devicetype, p,
+				MIN(6,smb_bufrem(req->inbuf, p)), STR_ASCII);
 
 	if (client_devicetype == NULL) {
+		data_blob_clear_free(&password);
 		TALLOC_FREE(ctx);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtconX);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 
-	conn = make_connection(service,password,client_devicetype,vuid,&nt_status);
+	conn = make_connection(service, password, client_devicetype,
+			       req->vuid, &nt_status);
 
 	data_blob_clear_free(&password);
 
 	if (!conn) {
 		TALLOC_FREE(ctx);
+		reply_nterror(req, nt_status);
 		END_PROFILE(SMBtconX);
-		return ERROR_NT(nt_status);
+		return;
 	}
 
 	if ( IS_IPC(conn) )
@@ -563,11 +584,14 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		server_devicetype = "A:";
 
 	if (Protocol < PROTOCOL_NT1) {
-		set_message(inbuf,outbuf,2,0,True);
-		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, server_devicetype, -1,
-				 STR_TERMINATE|STR_ASCII);
-		set_message_end(inbuf,outbuf,p);
+		reply_outbuf(req, 2, 0);
+		if (message_push_string(&req->outbuf, server_devicetype,
+					STR_TERMINATE|STR_ASCII) == -1) {
+			TALLOC_FREE(ctx);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBtconX);
+			return;
+		}
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
 		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
@@ -577,7 +601,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 			uint32 perm1 = 0;
 			uint32 perm2 = 0;
 
-			set_message(inbuf,outbuf,7,0,True);
+			reply_outbuf(req, 7, 0);
 
 			if (IS_IPC(conn)) {
 				perm1 = FILE_ALL_ACCESS;
@@ -588,26 +612,28 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 						SHARE_READ_ONLY;
 			}
 
-			SIVAL(outbuf, smb_vwv3, perm1);
-			SIVAL(outbuf, smb_vwv5, perm2);
+			SIVAL(req->outbuf, smb_vwv3, perm1);
+			SIVAL(req->outbuf, smb_vwv5, perm2);
 		} else {
-			set_message(inbuf,outbuf,3,0,True);
+			reply_outbuf(req, 3, 0);
 		}
 
-		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, server_devicetype, -1,
-				 STR_TERMINATE|STR_ASCII);
-		p += srvstr_push(outbuf, p, fstype, -1,
-				 STR_TERMINATE);
-
-		set_message_end(inbuf,outbuf,p);
+		if ((message_push_string(&req->outbuf, server_devicetype,
+					 STR_TERMINATE|STR_ASCII) == -1)
+		    || (message_push_string(&req->outbuf, fstype,
+					    STR_TERMINATE) == -1)) {
+			TALLOC_FREE(ctx);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBtconX);
+			return;
+		}
 
 		/* what does setting this bit do? It is set by NT4 and
 		   may affect the ability to autorun mounted cdroms */
-		SSVAL(outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS|
-				(lp_csc_policy(SNUM(conn)) << 2));
+		SSVAL(req->outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS|
+		      (lp_csc_policy(SNUM(conn)) << 2));
 
-		init_dfsroot(conn, inbuf, outbuf);
+		init_dfsroot(conn, req->inbuf, req->outbuf);
 	}
 
 
@@ -615,12 +641,14 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		 service));
 
 	/* set the incoming and outgoing tid to the just created one */
-	SSVAL(inbuf,smb_tid,conn->cnum);
-	SSVAL(outbuf,smb_tid,conn->cnum);
+	SSVAL(req->inbuf,smb_tid,conn->cnum);
+	SSVAL(req->outbuf,smb_tid,conn->cnum);
 
 	TALLOC_FREE(ctx);
 	END_PROFILE(SMBtconX);
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+
+	chain_reply_new(req);
+	return;
 }
 
 /****************************************************************************
