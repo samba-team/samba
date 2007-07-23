@@ -41,3 +41,43 @@ size_t srvstr_push_fn(const char *function, unsigned int line,
 	/* 'normal' push into size-specified buffer */
 	return push_string_fn(function, line, base_ptr, dest, src, dest_len, flags);
 }
+
+/*******************************************************************
+ Add a string to the end of a smb_buf, adjusting bcc and smb_len.
+ Return the bytes added
+********************************************************************/
+
+ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
+{
+	size_t buf_size = smb_len(*outbuf) + 4;
+	size_t grow_size;
+	size_t result;
+	uint8 *tmp;
+
+	/*
+	 * We need to over-allocate, now knowing what srvstr_push will
+	 * actually use. This is very generous by incorporating potential
+	 * padding, the terminating 0 and at most 4 chars per UTF-16 code
+	 * point.
+	 */
+	grow_size = (strlen(str) + 2) * 4;
+
+	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, *outbuf, uint8,
+					 buf_size + grow_size))) {
+		DEBUG(0, ("talloc failed\n"));
+		return -1;
+	}
+
+	result = srvstr_push((char *)tmp, tmp + buf_size, str, grow_size,
+			     flags);
+
+	if (result == (size_t)-1) {
+		DEBUG(0, ("srvstr_push failed\n"));
+		return -1;
+	}
+	set_message_bcc(NULL, (char *)tmp, smb_buflen(tmp) + result);
+
+	*outbuf = tmp;
+
+	return result;
+}
