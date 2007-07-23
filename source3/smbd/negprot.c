@@ -511,6 +511,7 @@ void reply_negprot(connection_struct *conn, struct smb_request *req)
 	int choice= -1;
 	int protocol;
 	char *p;
+	int bcc = SVAL(smb_buf(req->inbuf),-2);
 	int arch = ARCH_ALL;
 	int num_cliprotos;
 	char **cliprotos;
@@ -533,23 +534,14 @@ void reply_negprot(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	p = smb_buf(req->inbuf);
+	p = smb_buf(req->inbuf) + 1;
 
 	num_cliprotos = 0;
 	cliprotos = NULL;
 
-	while (smb_bufrem(req->inbuf, p) > 0) {
+	while (p < (smb_buf(req->inbuf) + bcc)) { 
+
 		char **tmp;
-
-		if (p[0] != 0x02) {
-			DEBUG(3, ("Invalid string specifier %x, expected "
-				  "0x02\n", (int)p[0]));
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			END_PROFILE(SMBnegprot);
-			return;
-		}
-
-		p += 1; /* Skip the "0x02" */
 
 		tmp = TALLOC_REALLOC_ARRAY(tmp_talloc_ctx(), cliprotos, char *,
 					   num_cliprotos+1);
@@ -576,7 +568,7 @@ void reply_negprot(connection_struct *conn, struct smb_request *req)
 			  cliprotos[num_cliprotos]));
 
 		num_cliprotos += 1;
-		p += strlen(p) + 1;
+		p += strlen(p) + 2;
 	}
 
 	for (i=0; i<num_cliprotos; i++) {
