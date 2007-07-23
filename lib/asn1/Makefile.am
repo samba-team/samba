@@ -322,6 +322,7 @@ gen_files_pkinit =					\
 	asn1_id_pkinit_ms_san.x				\
 	asn1_MS_UPN_SAN.x				\
 	asn1_DHNonce.x					\
+	asn1_KDFAlgorithmId.x				\
 	asn1_TrustedCA.x				\
 	asn1_ExternalPrincipalIdentifier.x		\
 	asn1_ExternalPrincipalIdentifiers.x		\
@@ -335,15 +336,16 @@ gen_files_pkinit =					\
 	asn1_DHRepInfo.x				\
 	asn1_PA_PK_AS_REP.x				\
 	asn1_KDCDHKeyInfo.x				\
-	asn1_TrustedCA_Win2k.x				\
 	asn1_ReplyKeyPack.x				\
 	asn1_TD_DH_PARAMETERS.x				\
 	asn1_PKAuthenticator_Win2k.x			\
 	asn1_AuthPack_Win2k.x				\
+	asn1_TrustedCA_Win2k.x				\
+	asn1_PA_PK_AS_REQ_Win2k.x			\
 	asn1_PA_PK_AS_REP_Win2k.x			\
 	asn1_KDCDHKeyInfo_Win2k.x			\
-	asn1_PA_PK_AS_REQ_Win2k.x			\
-	asn1_ReplyKeyPack_Win2k.x
+	asn1_ReplyKeyPack_Win2k.x			\
+	asn1_PkinitSuppPubInfo.x 
 
 gen_files_pkcs12 =					\
 	asn1_id_pkcs_12.x				\
