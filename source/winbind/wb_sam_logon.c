@@ -85,14 +85,14 @@ static void wb_sam_logon_recv_domain(struct composite_context *creq)
 	s->ctx->status = wb_sid2domain_recv(creq, &domain);
 	if (!composite_is_ok(s->ctx)) return;
 
-	s->creds_state = cli_credentials_get_netlogon_creds(domain->schannel_creds);
+	s->creds_state = cli_credentials_get_netlogon_creds(domain->libnet_ctx->cred);
 	creds_client_authenticator(s->creds_state, &s->auth1);
 
 	s->r.in.server_name = talloc_asprintf(s, "\\\\%s",
 			      dcerpc_server_name(domain->netlogon_pipe));
 	if (composite_nomem(s->r.in.server_name, s->ctx)) return;
 
-	s->r.in.computer_name = cli_credentials_get_workstation(domain->schannel_creds);
+	s->r.in.computer_name = cli_credentials_get_workstation(domain->libnet_ctx->cred);
 	s->r.in.credential = &s->auth1;
 	s->r.in.return_authenticator = &s->auth2;
 	s->r.in.logon_level = s->req->in.logon_level;

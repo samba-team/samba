@@ -59,11 +59,12 @@ struct composite_context *wb_cmd_userdomgroups_send(TALLOC_CTX *mem_ctx,
 	state->user_rid = sid->sub_auths[sid->num_auths-1];
 
 	ctx = wb_sid2domain_send(state, service, sid);
-	if (ctx == NULL) goto failed;
 
-	ctx->async.fn = userdomgroups_recv_domain;
-	ctx->async.private_data = state;
-	return result;
+	composite_continue(state->ctx, ctx, userdomgroups_recv_domain, state);
+
+	if (ctx) {
+		return result;
+	}
 
  failed:
 	talloc_free(result);
@@ -80,8 +81,8 @@ static void userdomgroups_recv_domain(struct composite_context *ctx)
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
 
-	ctx = wb_samr_userdomgroups_send(state, domain->samr_pipe,
-					 domain->domain_handle,
+	ctx = wb_samr_userdomgroups_send(state, domain->libnet_ctx->samr.pipe,
+					 &domain->libnet_ctx->samr.handle,
 					 state->user_rid);
 	composite_continue(state->ctx, ctx, userdomgroups_recv_rids, state);
 	
