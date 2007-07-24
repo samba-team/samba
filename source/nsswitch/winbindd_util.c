@@ -324,7 +324,9 @@ static void trustdom_recv(void *private_data, BOOL success)
 			domain = add_trusted_domain(p, alternate_name,
 						    &cache_methods,
 						    &sid);
-			setup_domain_child(domain, &domain->child, NULL);
+			if (domain) {
+				setup_domain_child(domain, &domain->child, NULL);
+			}
 		}
 		p=q;
 		if (p != NULL)
@@ -703,32 +705,38 @@ BOOL init_domain_list(void)
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
 					     &cache_methods, &our_sid);
-		domain->primary = True;
-		setup_domain_child(domain, &domain->child, NULL);
+		if (domain) {
+			domain->primary = True;
+			setup_domain_child(domain, &domain->child, NULL);
 		
-		/* Even in the parent winbindd we'll need to
-		   talk to the DC, so try and see if we can
-		   contact it. Theoretically this isn't neccessary
-		   as the init_dc_connection() in init_child_recv()
-		   will do this, but we can start detecting the DC
-		   early here. */
-		set_domain_online_request(domain);
+			/* Even in the parent winbindd we'll need to
+			   talk to the DC, so try and see if we can
+			   contact it. Theoretically this isn't neccessary
+			   as the init_dc_connection() in init_child_recv()
+			   will do this, but we can start detecting the DC
+			   early here. */
+			set_domain_online_request(domain);
+		}
 	}
 
 	/* Local SAM */
 
 	domain = add_trusted_domain(get_global_sam_name(), NULL,
 				    &passdb_methods, get_global_sam_sid());
-	if ( role != ROLE_DOMAIN_MEMBER ) {
-		domain->primary = True;
+	if (domain) {
+		if ( role != ROLE_DOMAIN_MEMBER ) {
+			domain->primary = True;
+		}
+		setup_domain_child(domain, &domain->child, NULL);
 	}
-	setup_domain_child(domain, &domain->child, NULL);
 
 	/* BUILTIN domain */
 
 	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 				    &global_sid_Builtin);
-	setup_domain_child(domain, &domain->child, NULL);
+	if (domain) {
+		setup_domain_child(domain, &domain->child, NULL);
+	}
 
 	return True;
 }
