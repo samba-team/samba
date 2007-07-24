@@ -157,8 +157,8 @@ static BOOL ctdb_req_complete(const struct data_blob *data,
 
 	if (msglen < sizeof(struct ctdb_req_header)) {
 		DEBUG(0, ("Got invalid msglen: %d, expected at least %d for "
-			  "the req_header\n", msglen,
-			  sizeof(struct ctdb_req_header)));
+			  "the req_header\n", (int)msglen,
+			  (int)sizeof(struct ctdb_req_header)));
 		cluster_fatal("ctdbd protocol error\n");
 	}
 
@@ -313,7 +313,8 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 
 		if (conn->msg_ctx == NULL) {
 			DEBUG(1, ("Got a message without having a msg ctx, "
-				  "dropping msg %llu\n", msg->srvid));
+				  "dropping msg %llu\n",
+				  (long long unsigned)msg->srvid));
 			goto again;
 		}
 		
