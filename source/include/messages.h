@@ -148,7 +148,11 @@ struct server_id {
 #endif
 };
 
-
+#ifdef CLUSTER_SUPPORT
+#define MSG_BROADCAST_PID_STR	"0:0"
+#else
+#define MSG_BROADCAST_PID_STR	"0"
+#endif
 
 struct messaging_context;
 struct messaging_rec;
