@@ -94,6 +94,15 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return status;
 	}
 
+	status = ctdbd_register_msg_ctx(ctx->conn, msg_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("ctdbd_register_msg_ctx failed: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
 	global_ctdbd_connection = ctx->conn;
 	talloc_set_destructor(ctx, messaging_ctdbd_destructor);
 

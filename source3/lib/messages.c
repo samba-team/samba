@@ -320,6 +320,13 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, uint32_t msg_type,
 			const DATA_BLOB *data)
 {
+#ifdef CLUSTER_SUPPORT
+	if (!procid_is_local(&server)) {
+		return msg_ctx->remote->send_fn(msg_ctx, server,
+						msg_type, data,
+						msg_ctx->remote);
+	}
+#endif
 	return msg_ctx->local->send_fn(msg_ctx, server, msg_type, data,
 				       msg_ctx->local);
 }
