@@ -114,6 +114,7 @@ BOOL register_my_workgroup_and_names(void)
 {
 	struct subnet_record *subrec;
 	int i;
+	const char **cluster_addresses = NULL;
 
 	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
 		register_my_workgroup_one_subnet(subrec);
@@ -141,6 +142,35 @@ BOOL register_my_workgroup_and_names(void)
 
 			make_nmb_name(&nmbname, my_netbios_names(i),0x0);
 			insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
+		}
+	}
+
+	/*
+	 * add in any cluster addresses. We need to response to these,
+	 * but not listen on them. This allows us to run nmbd on every
+	 * node in the cluster, and have all of them register with a
+	 * WINS server correctly
+	 */
+	if (lp_clustering()) {
+		cluster_addresses = lp_cluster_addresses();
+	}
+	if (cluster_addresses) {
+		int a, n;
+		unsigned name_types[] = {0x20, 0x3, 0x0};
+		
+		for (i=0; my_netbios_names(i); i++) {
+			for(subrec = FIRST_SUBNET; subrec; subrec = subrec->next) {
+				for (n=0;n<ARRAY_SIZE(name_types);n++) {
+					struct name_record *namerec;
+					struct nmb_name nmbname;			
+					make_nmb_name(&nmbname, my_netbios_names(i), name_types[n]);
+					namerec = find_name_on_subnet(unicast_subnet, &nmbname, FIND_SELF_NAME);
+					if (namerec == NULL) continue;
+					for (a=0;cluster_addresses[a];a++) {
+						add_ip_to_name_record(namerec, *interpret_addr2(cluster_addresses[a]));
+					}
+				}
+			}
 		}
 	}
 
