@@ -149,23 +149,6 @@ static int ejs_doauth(MprVarHandle eid,
 	mprSetPropertyValue(auth, "username", mprString(server_info->account_name));
 	mprSetPropertyValue(auth, "domain", mprString(server_info->domain_name));
 
-	if (security_token_is_system(session_info->security_token)) {
-		mprSetPropertyValue(auth, "report", mprString("SYSTEM"));
-	}
-
-	if (security_token_is_anonymous(session_info->security_token)) {
-		mprSetPropertyValue(auth, "report", mprString("ANONYMOUS"));
-	}
-
-	if (security_token_has_builtin_administrators(session_info->security_token)) {
-		mprSetPropertyValue(auth, "report", mprString("ADMINISTRATOR"));
-	}
-
-	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
-		mprSetPropertyValue(auth, "report", mprString("USER"));
-	}
-
-
 done:
 	return 0;
 }
