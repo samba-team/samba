@@ -83,6 +83,9 @@
 #define EVP_rc2_cbc hc_EVP_rc2_cbc
 #define EVP_rc4 hc_EVP_rc4
 #define EVP_rc4_40 hc_EVP_rc4_40
+#define EVP_camellia_128_cbc hc_EVP_camellia_128_cbc
+#define EVP_camellia_192_cbc hc_EVP_camellia_192_cbc
+#define EVP_camellia_256_cbc hc_EVP_camellia_256_cbc
 #define EVP_sha hc_EVP_sha
 #define EVP_sha1 hc_EVP_sha1
 #define EVP_sha256 hc_EVP_sha256
@@ -180,6 +183,9 @@ const EVP_CIPHER * EVP_rc2_64_cbc(void);
 const EVP_CIPHER * EVP_rc2_cbc(void);
 const EVP_CIPHER * EVP_rc4(void);
 const EVP_CIPHER * EVP_rc4_40(void);
+const EVP_CIPHER * EVP_camellia_128_cbc(void);
+const EVP_CIPHER * EVP_camellia_192_cbc(void);
+const EVP_CIPHER * EVP_camellia_256_cbc(void);
 
 /*
  *

@@ -89,6 +89,10 @@ libhcrypto_la_SOURCES =	\
 	aes.h		\
 	bn.c		\
 	bn.h		\
+	camellia.h	\
+	camellia.c	\
+	camellia-ntt.c	\
+	camellia-ntt.h	\
 	des-tables.h	\
 	des.c		\
 	des.h		\

@@ -9,6 +9,7 @@
 #include <krb5-types.h>
 
 #include <aes.h>
+#include "camellia.h"
 #include <des.h>
 #include <sha.h>
 #include <rc2.h>
@@ -768,6 +769,99 @@ EVP_aes_256_cbc(void)
     return &aes_256_cbc;
 }
 
+static int
+camellia_init(EVP_CIPHER_CTX *ctx,
+	 const unsigned char * key,
+	 const unsigned char * iv,
+	 int encp)
+{
+    CAMELLIA_KEY *k = ctx->cipher_data;
+    k->bits = ctx->cipher->key_len * 8;
+    CAMELLIA_set_key(key, ctx->cipher->key_len * 8, k);
+    return 1;
+}
+
+static int
+camellia_do_cipher(EVP_CIPHER_CTX *ctx,
+	      unsigned char *out,
+	      const unsigned char *in,
+	      unsigned int size)
+{
+    CAMELLIA_KEY *k = ctx->cipher_data;
+    CAMELLIA_cbc_encrypt(in, out, size, k, ctx->iv, ctx->encrypt);
+    return 1;
+}
+
+static int
+camellia_cleanup(EVP_CIPHER_CTX *ctx)
+{
+    memset(ctx->cipher_data, 0, sizeof(CAMELLIA_KEY));
+    return 1;
+}
+
+const EVP_CIPHER *
+EVP_camellia_128_cbc(void)
+{
+    static const EVP_CIPHER cipher = {
+	0,
+	16,
+	16,
+	16,
+	EVP_CIPH_CBC_MODE,
+	camellia_init,
+	camellia_do_cipher,
+	camellia_cleanup,
+	sizeof(CAMELLIA_KEY),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &cipher;
+}
+
+const EVP_CIPHER *
+EVP_camellia_192_cbc(void)
+{
+    static const EVP_CIPHER cipher = {
+	0,
+	16,
+	24,
+	16,
+	EVP_CIPH_CBC_MODE,
+	camellia_init,
+	camellia_do_cipher,
+	camellia_cleanup,
+	sizeof(CAMELLIA_KEY),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &cipher;
+}
+
+const EVP_CIPHER *
+EVP_camellia_256_cbc(void)
+{
+    static const EVP_CIPHER cipher = {
+	0,
+	16,
+	32,
+	16,
+	EVP_CIPH_CBC_MODE,
+	camellia_init,
+	camellia_do_cipher,
+	camellia_cleanup,
+	sizeof(CAMELLIA_KEY),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &cipher;
+}
+
 /*
  *
  */
@@ -779,7 +873,10 @@ static const struct cipher_name {
     { "des-ede3-cbc", EVP_des_ede3_cbc },
     { "aes-128-cbc", EVP_aes_128_cbc },
     { "aes-192-cbc", EVP_aes_192_cbc },
-    { "aes-256-cbc", EVP_aes_256_cbc }
+    { "aes-256-cbc", EVP_aes_256_cbc },
+    { "camellia-128-cbc", EVP_camellia_128_cbc },
+    { "camellia-192-cbc", EVP_camellia_192_cbc },
+    { "camellia-256-cbc", EVP_camellia_256_cbc }
 };
 
 

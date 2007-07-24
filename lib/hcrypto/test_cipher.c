@@ -46,6 +46,8 @@ RCSID("$Id$");
 #include <string.h>
 
 #include <evp.h>
+#include <hex.h>
+#include <err.h>
 
 struct tests {
     void *key;
@@ -78,13 +80,23 @@ struct tests rc2_40_tests[] = {
     }
 };
 
-struct tests des_ede3_cbc_tests[] = {
+struct tests des_ede3_tests[] = {
     { "1917ffe6bb772efc297643bc63567e9a002e4d431d5ffd58",
       24,
       "\xbf\x9a\x12\xb7\x26\x69\xfd\x05",
       16,
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
       "\x9d\x50\xf4\xc6\x01\xdb\x45\x49\x11\x8f\x36\x06\x06\x08\x2e\xe5"
+    }
+};
+
+struct tests camellia128_tests[] = {
+    { "\x19\x17\xff\xe6\xbb\x77\x2e\xfc\x29\x76\x43\xbc\x63\x56\x7e\x9a",
+      16,
+      "\x12\x13\xff\xe3\xbb\x7e\x21\xfc\xe9\x76\x44\xbc\x63\x56\x7e\xff",
+      16,
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+      "\xf6\x1b\xa9\xa6\xed\xb2\xd3\x4e\x59\x70\xbc\x50\x4e\x89\xd7\xf5"
     }
 };
 
@@ -110,16 +122,18 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
 	return 1;
 
     if (memcmp(d, t->outdata, t->datasize) != 0) {
-	printf("encrypt not the same\n");
-	return 1;
+	char *s;
+	hex_encode(d, t->datasize, &s);
+	errx(1, "decrypt not the same: %s\n", s);
     }
 
     if (!EVP_Cipher(&dctx, d, d, t->datasize))
 	return 1;
 
     if (memcmp(d, t->indata, t->datasize) != 0) {
-	printf("decrypt not the same\n");
-	return 1;
+	char *s;
+	hex_encode(d, t->datasize, &s);
+	errx(1, "decrypt not the same: %s\n", s);
     }
 
     EVP_CIPHER_CTX_cleanup(&ectx);
@@ -139,8 +153,10 @@ main(int argc, char **argv)
 	ret += test_cipher(EVP_aes_256_cbc(), &aes_tests[i]);
     for (i = 0; i < sizeof(rc2_40_tests)/sizeof(rc2_40_tests[0]); i++)
 	ret += test_cipher(EVP_rc2_40_cbc(), &rc2_40_tests[i]);
-    for (i = 0; i < sizeof(rc2_40_tests)/sizeof(rc2_40_tests[0]); i++)
-	ret += test_cipher(EVP_des_ede3_cbc(), &des_ede3_cbc_tests[i]);
+    for (i = 0; i < sizeof(des_ede3_tests)/sizeof(des_ede3_tests[0]); i++)
+	ret += test_cipher(EVP_des_ede3_cbc(), &des_ede3_tests[i]);
+    for (i = 0; i < sizeof(camellia128_tests)/sizeof(camellia128_tests[0]); i++)
+	ret += test_cipher(EVP_des_ede3_cbc(), &camellia128_tests[i]);
 
     return ret;
 }
