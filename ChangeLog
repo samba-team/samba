@@ -1,5 +1,8 @@
 2007-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* tools/heimdal-gssapi.pc.in: Add LIB_pkinit to the list of
+	libraries.
+
 	* tools/heimdal-gssapi.pc.in: pkg-config file for libgssapi in
 	heimdal.
 
