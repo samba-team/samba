@@ -1148,7 +1148,7 @@ static struct server_id parse_dest(const char *dest)
 	/* Zero is a special return value for broadcast smbd */
 
 	if (strequal(dest, "smbd")) {
-		return interpret_pid("0");
+		return interpret_pid(MSG_BROADCAST_PID_STR);
 	}
 
 	/* Try self - useful for testing */
