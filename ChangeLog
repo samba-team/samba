@@ -1,3 +1,11 @@
+2007-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* tools/heimdal-gssapi.pc.in: pkg-config file for libgssapi in
+	heimdal.
+
+	* tools/Makefile.am: Add heimdal-gssapi.pc and install it into
+	$(libdir)/pkgconfig
+
 2007-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: Add RFC3526 modp group14 as a default.
