@@ -1,0 +1,3 @@
+In order to keep the docs out of the bzr tree, first get a release 
+tarball of samba, then invoke makerpms.sh with the DOCS_DIR variable
+pointing to the docs dir of that samba tarball.
