@@ -31,6 +31,7 @@ struct libnet_context {
 		const char *name;
 		uint32_t access_mask;
 		struct policy_handle handle;
+		struct policy_handle connect_handle;
 		int buf_size;
 	} samr;
 

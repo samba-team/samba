@@ -359,6 +359,7 @@ NTSTATUS libnet_DomainOpenSamr_recv(struct composite_context *c, struct libnet_c
 
 		/* store the resulting handle and related data for use by other
 		   libnet functions */
+		ctx->samr.connect_handle = s->connect_handle;
 		ctx->samr.handle      = s->domain_handle;
 		ctx->samr.name        = talloc_steal(ctx, s->domain_name.string);
 		ctx->samr.access_mask = s->access_mask;
