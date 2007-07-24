@@ -2679,7 +2679,8 @@ static int cmd_rename(void)
 	pstring src,dest;
 	pstring buf,buf2;
 	struct cli_state *targetcli;
-	pstring targetname;
+	pstring targetsrc;
+	pstring targetdest;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -2693,13 +2694,21 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
-		d_printf("chown %s: %s\n", src, cli_errstr(cli));
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetsrc ) ) {
+		d_printf("rename %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
 
-	if (!cli_rename(targetcli, targetname, dest)) {
-		d_printf("%s renaming files\n",cli_errstr(targetcli));
+	if ( !cli_resolve_path( "", cli, dest, &targetcli, targetdest ) ) {
+		d_printf("rename %s: %s\n", dest, cli_errstr(cli));
+		return 1;
+	}
+
+	if (!cli_rename(targetcli, targetsrc, targetdest)) {
+		d_printf("%s renaming files %s -> %s \n",
+			cli_errstr(targetcli),
+			targetsrc,
+			targetdest);
 		return 1;
 	}
 	
