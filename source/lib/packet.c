@@ -136,14 +136,15 @@ BOOL packet_handler(struct packet_context *ctx,
 
 	SMB_ASSERT(length <= ctx->in.length);
 
-	data.data = ctx->in.data;
-	data.length = length;
-
-	*status = callback(&data, private_data);
+	data = data_blob(ctx->in.data, length);
 
 	memmove(ctx->in.data, ctx->in.data + length,
 		ctx->in.length - length);
 	ctx->in.length -= length;
+
+	*status = callback(&data, private_data);
+
+	data_blob_free(&data);
 
 	return True;
 }
