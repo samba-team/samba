@@ -684,7 +684,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	status = packet_send(
 		conn->pkt, 2,
 		data_blob_const(&req, offsetof(struct ctdb_req_control, data)),
-		data);
+		data_blob_const(data.dptr, data.dsize));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("packet_send failed: %s\n", nt_errstr(status)));
@@ -852,7 +852,7 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
 	status = packet_send(
 		conn->pkt, 2,
 		data_blob_const(&req, offsetof(struct ctdb_req_call, data)),
-		key);
+		data_blob_const(key.dptr, key.dsize));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("packet_send failed: %s\n", nt_errstr(status)));
@@ -911,7 +911,7 @@ NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
 	status = packet_send(
 		conn->pkt, 2,
 		data_blob_const(&req, offsetof(struct ctdb_req_call, data)),
-		key);
+		data_blob_const(key.dptr, key.dsize));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("packet_send failed: %s\n", nt_errstr(status)));
