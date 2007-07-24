@@ -65,23 +65,38 @@ static BOOL send_message(struct messaging_context *msg_ctx,
 	return ret;
 }
 
+static void timeout_handler(struct event_context *event_ctx,
+			    struct timed_event *te,
+			    const struct timeval *now,
+			    void *private_data)
+{
+	BOOL *timed_out = (BOOL *)private_data;
+	TALLOC_FREE(te);
+	*timed_out = True;
+}
+
 /* Wait for one or more reply messages */
 
 static void wait_replies(struct messaging_context *msg_ctx,
 			 BOOL multiple_replies)
 {
-	time_t start_time = time(NULL);
+	struct timed_event *te;
+	BOOL timed_out = False;
 
-	/* Wait around a bit.  This is pretty disgusting - we have to
-           busy-wait here as there is no nicer way to do it. */
+	if (!(te = event_add_timed(messaging_event_context(msg_ctx), NULL,
+				   timeval_current_ofs(timeout, 0),
+				   "smbcontrol_timeout",
+				   timeout_handler, (void *)&timed_out))) {
+		DEBUG(0, ("event_add_timed failed\n"));
+		return;
+	}
 
-	do {
+	while (!timed_out) {
 		message_dispatch(msg_ctx);
-		event_loop_once(messaging_event_context(msg_ctx));
 		if (num_replies > 0 && !multiple_replies)
 			break;
-		sleep(1);
-	} while (timeout - (time(NULL) - start_time) > 0);
+		event_loop_once(messaging_event_context(msg_ctx));
+	}
 }
 
 /* Message handler callback that displays the PID and a string on stdout */
