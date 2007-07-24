@@ -29,6 +29,7 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			    const char *extension_raw,
 			    struct GP_EXT **gp_ext)
 {
+	ADS_STATUS status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	struct GP_EXT *ext = NULL;
 	char **ext_list;
 	char **ext_strings = NULL;
@@ -131,16 +132,9 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (ext_list) {
-		str_list_free_talloc(mem_ctx, &ext_list); 
-	}
-	if (ext_strings) {
-		str_list_free_talloc(mem_ctx, &ext_strings); 
-	}
-
 	*gp_ext = ext;
 
-	return ADS_ERROR(LDAP_SUCCESS);
+	status = ADS_ERROR_NT(NT_STATUS_OK);
 
 parse_error:
 	if (ext_list) {
@@ -150,7 +144,7 @@ parse_error:
 		str_list_free_talloc(mem_ctx, &ext_strings); 
 	}
 
-	return ADS_ERROR(LDAP_NO_MEMORY);
+	return status;
 }
 
 /****************************************************************
