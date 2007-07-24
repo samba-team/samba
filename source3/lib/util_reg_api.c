@@ -107,8 +107,7 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	case REG_BINARY:
-		value->v.binary.data = talloc_move(value, &data);
-		value->v.binary.length = length;
+		value->v.binary = data_blob_talloc(mem_ctx, data, length);
 		break;
 	default:
 		err = WERR_INVALID_PARAM;
@@ -148,6 +147,11 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	}
+	case REG_BINARY:
+		*presult = data_blob_talloc(mem_ctx,
+					    value->v.binary.data,
+					    value->v.binary.length);
+		break;
 	default:
 		return WERR_INVALID_PARAM;
 	}
