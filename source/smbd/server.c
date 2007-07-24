@@ -435,6 +435,14 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 	SAFE_FREE(ports);
 
+
+	/* Setup the main smbd so that we can get messages. Note that
+	   do this after starting listening. This is needed as when in
+	   clustered mode, ctdb won't allow us to start doing database
+	   operations until it has gone thru a full startup, which
+	   includes checking to see that smbd is listening. */
+	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
+
         /* Listen to messages */
 
 	messaging_register(smbd_messaging_context(), NULL,
@@ -1077,11 +1085,6 @@ extern void build_options(BOOL screen);
 		DEBUG(0,("ERROR: failed to setup guest info.\n"));
 		return -1;
 	}
-
-	/* Setup the main smbd so that we can get messages. */
-	/* don't worry about general printing messages here */
-
-	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
 
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if
