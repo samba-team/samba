@@ -1,0 +1,34 @@
+
+CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
+	--prefix=/usr \
+	--localstatedir=/var \
+	--with-configdir=/etc/samba \
+	--with-libdir=/usr/lib/samba \
+	--with-lockdir=/var/lib/samba \
+	--with-logfilebase=/var/log/samba \
+	--with-mandir=/usr/man \
+	--with-piddir=/var/run \
+	--with-privatedir=/etc/samba \
+	--with-sambabook=/usr/share/swat/using_samba \
+	--with-swatdir=/usr/share/swat \
+	--enable-cups \
+	--with-acl-support \
+	--with-ads \
+	--with-automount \
+	--with-fhs \
+	--with-pam_smbpass \
+	--with-libsmbclient \
+	--with-libsmbsharemodes \
+	--without-smbwrapper \
+	--with-pam \
+	--with-quotas \
+	--with-shared-modules=idmap_rid,idmap_ad \
+	--with-smbmount \
+	--with-syslog \
+	--with-utmp \
+	--with-cluster-support \
+	--with-ctdb=/usr/include \
+	--without-ldb \
+	--with-dnsupdate \
+	--with-aio-support \
+	$*
