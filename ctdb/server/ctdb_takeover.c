@@ -154,8 +154,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	if (tcparray) {
 		/* add all of the known tcp connections for this IP to the
 		   list of tcp connections to send tickle acks for */
-		arp->tcparray = tcparray;
-		talloc_steal(arp, tcparray);
+		arp->tcparray = talloc_steal(arp, tcparray);
 
 		state->node->tcp_array = NULL;
 		state->node->tcp_update_needed = true;
