@@ -153,7 +153,7 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 		qsort(allowedAttributes->values, 
 		      allowedAttributes->num_values, 
 		      sizeof(*allowedAttributes->values),
-		      data_blob_cmp);
+		      (comparison_fn_t)data_blob_cmp);
 	
 		for (i=1 ; i < allowedAttributes->num_values; i++) {
 			struct ldb_val *val1 = &allowedAttributes->values[i-1];
