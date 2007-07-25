@@ -420,7 +420,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 		DEBUG( 3, ( "handle_aio_read_complete file %s max=%d "
 			    "nread=%d\n",
 			    aio_ex->fsp->fsp_name,
-			    aio_ex->acb.aio_nbytes, (int)nread ) );
+			    (int)aio_ex->acb.aio_nbytes, (int)nread ) );
 
 	}
 	smb_setlen(outbuf,outsize - 4);
