@@ -125,12 +125,54 @@ trbt_rotate_right(trbt_node_t *node)
 }
 
 /* NULL nodes are black by definition */
-static inline int trbt_color(trbt_node_t *node)
+static inline int trbt_get_color(trbt_node_t *node)
 {
 	if (node==NULL) {
 		return TRBT_BLACK;
 	}
 	return node->rb_color;
+}
+static inline int trbt_get_color_left(trbt_node_t *node)
+{
+	if (node==NULL) {
+		return TRBT_BLACK;
+	}
+	if (node->left==NULL) {
+		return TRBT_BLACK;
+	}
+	return node->left->rb_color;
+}
+static inline int trbt_get_color_right(trbt_node_t *node)
+{
+	if (node==NULL) {
+		return TRBT_BLACK;
+	}
+	if (node->right==NULL) {
+		return TRBT_BLACK;
+	}
+	return node->right->rb_color;
+}
+/* setting a NULL node to black is a nop */
+static inline void trbt_set_color(trbt_node_t *node, int color)
+{
+	if ( (node==NULL) && (color==TRBT_BLACK) ) {
+		return;
+	}
+	node->rb_color = color;
+}
+static inline void trbt_set_color_left(trbt_node_t *node, int color)
+{
+	if ( ((node==NULL)||(node->left==NULL)) && (color==TRBT_BLACK) ) {
+		return;
+	}
+	node->left->rb_color = color;
+}
+static inline void trbt_set_color_right(trbt_node_t *node, int color)
+{
+	if ( ((node==NULL)||(node->right==NULL)) && (color==TRBT_BLACK) ) {
+		return;
+	}
+	node->right->rb_color = color;
 }
 
 static inline void
@@ -252,13 +294,13 @@ trbt_delete_case6(trbt_node_t *node)
 	sibling = trbt_sibling(node);
 	parent  = trbt_parent(node);
 
-	sibling->rb_color = parent->rb_color;
-	parent->rb_color = TRBT_BLACK;
+	trbt_set_color(sibling, parent->rb_color);
+	trbt_set_color(parent, TRBT_BLACK);
 	if (node == parent->left) {
-		sibling->right->rb_color = TRBT_BLACK;
+		trbt_set_color_right(sibling, TRBT_BLACK);
 		trbt_rotate_left(parent);
 	} else {
-		sibling->left->rb_color = TRBT_BLACK;
+		trbt_set_color_left(sibling, TRBT_BLACK);
 		trbt_rotate_right(parent);
 	}
 }
@@ -272,21 +314,21 @@ trbt_delete_case5(trbt_node_t *node)
 	parent = trbt_parent(node);
 	sibling = trbt_sibling(node);
 	if ( (node == parent->left)
-	   &&(trbt_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_color(sibling->left)  == TRBT_RED)
-	   &&(trbt_color(sibling->right) == TRBT_BLACK) ){
-		sibling->rb_color = TRBT_RED;
-		sibling->left->rb_color = TRBT_BLACK;
+	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_get_color_left(sibling)   == TRBT_RED)
+	   &&(trbt_get_color_right(sibling)  == TRBT_BLACK) ){
+		trbt_set_color(sibling, TRBT_RED);
+		trbt_set_color_left(sibling, TRBT_BLACK);
 		trbt_rotate_right(sibling);
 		trbt_delete_case6(node);
 		return;
-	}
+	} 
 	if ( (node == parent->right)
-	   &&(trbt_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_color(sibling->right) == TRBT_RED)
-	   &&(trbt_color(sibling->left)  == TRBT_BLACK) ){
-		sibling->rb_color = TRBT_RED;
-		sibling->right->rb_color = TRBT_BLACK;
+	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_get_color_right(sibling)  == TRBT_RED)
+	   &&(trbt_get_color_left(sibling)   == TRBT_BLACK) ){
+		trbt_set_color(sibling, TRBT_RED);
+		trbt_set_color_right(sibling, TRBT_BLACK);
 		trbt_rotate_left(sibling);
 		trbt_delete_case6(node);
 		return;
@@ -301,12 +343,12 @@ trbt_delete_case4(trbt_node_t *node)
 	trbt_node_t *sibling;
 
 	sibling = trbt_sibling(node);
-	if ( (trbt_color(node->parent)   == TRBT_RED)
-	   &&(trbt_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_color(sibling->left)  == TRBT_BLACK)
-	   &&(trbt_color(sibling->right) == TRBT_BLACK) ){
-		sibling->rb_color = TRBT_RED;
-		node->parent->rb_color = TRBT_BLACK;
+	if ( (trbt_get_color(node->parent)   == TRBT_RED)
+	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_get_color_left(sibling)   == TRBT_BLACK)
+	   &&(trbt_get_color_right(sibling)  == TRBT_BLACK) ){
+		trbt_set_color(sibling, TRBT_RED);
+		trbt_set_color(node->parent, TRBT_BLACK);
 	} else {
 		trbt_delete_case5(node);
 	}
@@ -320,11 +362,11 @@ trbt_delete_case3(trbt_node_t *node)
 	trbt_node_t *sibling;
 
 	sibling = trbt_sibling(node);
-	if ( (trbt_color(node->parent)   == TRBT_BLACK)
-	   &&(trbt_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_color(sibling->left)  == TRBT_BLACK)
-	   &&(trbt_color(sibling->right) == TRBT_BLACK) ){
-		sibling->rb_color = TRBT_RED;
+	if ( (trbt_get_color(node->parent)   == TRBT_BLACK)
+	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_get_color_left(sibling)   == TRBT_BLACK)
+	   &&(trbt_get_color_right(sibling)  == TRBT_BLACK) ){
+		trbt_set_color(sibling, TRBT_RED);
 		trbt_delete_case1(node->parent);
 	} else {
 		trbt_delete_case4(node);
@@ -337,7 +379,9 @@ trbt_delete_case2(trbt_node_t *node)
 	trbt_node_t *sibling;
 
 	sibling = trbt_sibling(node);
-	if (trbt_color(sibling) == TRBT_RED) {
+	if (trbt_get_color(sibling) == TRBT_RED) {
+		trbt_set_color(node->parent, TRBT_RED);
+		trbt_set_color(sibling, TRBT_BLACK);
 		if (node == node->parent->left) {
 			trbt_rotate_left(node->parent);
 		} else {
@@ -360,7 +404,7 @@ trbt_delete_case1(trbt_node_t *node)
 static void
 delete_node(trbt_node_t *node)
 {
-	trbt_node_t *child, *parent;
+	trbt_node_t *parent, *child, dc;
 
 	if (node->left != NULL && node->right != NULL) {
 		/* This node has two children, just copy the data */
@@ -385,36 +429,55 @@ delete_node(trbt_node_t *node)
 		return;
 	}
 
+
+
 	/* There is at most one child to this node to be deleted */
 	child = node->left;
 	if (node->right) {
 		child = node->right;
 	}
 
+	/* we didnt have a proper child so create a dummy child */
+	if (!child) {
+		child = &dc;
+		child->tree = node->tree;
+		child->left=NULL;
+		child->right=NULL;
+		child->rb_color=TRBT_BLACK;
+		child->data=NULL;
+	}
+
 	/* replace node with child */
-	parent=trbt_parent(node);
+	parent = trbt_parent(node);
 	if (parent) {
 		if (parent->left == node) {
 			parent->left = child;
 		} else {
 			parent->right = child;
 		}
-	} else {
-		node->tree->tree = child;
+//	} else {
+//		node->tree->tree = child;
 	}
+	child->parent = node->parent;
 
-	if (child) {
-		child->parent = node->parent;
-
-		if (node->rb_color == TRBT_BLACK) {
-			if (child->rb_color == TRBT_RED) {
-				child->rb_color = TRBT_BLACK;
-			} else {
-				trbt_delete_case1(child);
-			}
+	if (node->rb_color == TRBT_BLACK) {
+		if (trbt_get_color(child) == TRBT_RED) {
+			child->rb_color = TRBT_BLACK;
+		} else {
+			trbt_delete_case1(child);
 		}
 	}
-	
+
+	if (child == &dc) {
+		if (child == child->parent->left) {
+			child->parent->left = NULL;
+		} else {
+			child->parent->right = NULL;
+		}
+	}
+
+//	node->tree->tree->rb_color=TRBT_BLACK;
+
 	talloc_free(node);
 	return;
 }
@@ -583,23 +646,23 @@ test_tree(void)
 	char *str;
 	int i, ret;
 	int NUM=15;
+	int cnt=0;
 
-	for(NUM=5;NUM<1000;NUM+=33)
-	{
-		tree=trbt_create(talloc_new(NULL));
-		printf("tree:0x%08x  %d nodes\n",(int)tree,NUM);
-		for(i=0;i<NUM;i++){
-			str=talloc_asprintf(tree, "STRING#%d", i);
-			ret=trbt_insert32(tree, i, str);
-		}
+	tree=trbt_create(talloc_new(NULL));
+	while(++cnt){
+		int i;
+		printf("iteration : %d\n",cnt);
+		i=random()%20;
+		printf("adding node %i\n",i);
+		trbt_insert32(tree, i, NULL);
 		print_tree(tree);
-//		for(i=0;i<NUM;i++){
-		for(i=NUM-1;i>=0;i--){
-			trbt_delete32(tree, i);
-			print_tree(tree);
-		}
 
+		i=random()%20;
+		printf("deleting node %i\n",i);
+		trbt_delete32(tree, i);
+		print_tree(tree);
 	}
+
 }
 
 #endif
