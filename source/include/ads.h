@@ -43,7 +43,7 @@ enum ads_saslwrap_type {
 	ADS_SASLWRAP_TYPE_PLAIN = 1,
 	ADS_SASLWRAP_TYPE_SIGN = 2,
 	ADS_SASLWRAP_TYPE_SEAL = 4
-} wrap_type;
+};
 
 typedef struct ads_struct {
 	int is_mine;	/* do I own this structure's memory? */
