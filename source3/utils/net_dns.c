@@ -26,6 +26,14 @@
 
 #if defined(WITH_DNS_UPDATES)
 
+/*
+ * Silly prototype to get rid of a warning
+ */
+
+DNS_ERROR DoDNSUpdate(char *pszServerName,
+		      const char *pszDomainName, const char *pszHostName,
+		      const struct in_addr *iplist, size_t num_addrs );
+
 /*********************************************************************
 *********************************************************************/
 
@@ -158,6 +166,12 @@ int get_my_ip_address( struct in_addr **ips )
 
 	return count;
 }
+
+/*
+ * Silly prototype to get rid of a warning
+ */
+
+DNS_ERROR do_gethostbyname(const char *server, const char *host);
 
 DNS_ERROR do_gethostbyname(const char *server, const char *host)
 {
