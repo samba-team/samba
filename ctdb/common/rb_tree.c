@@ -476,8 +476,6 @@ delete_node(trbt_node_t *node)
 		}
 	}
 
-//	node->tree->tree->rb_color=TRBT_BLACK;
-
 	talloc_free(node);
 	return;
 }
