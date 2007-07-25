@@ -1224,7 +1224,7 @@ static void process_smb(char *inbuf, size_t nread)
 
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
-	DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
+	DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, (int)nread ) );
 
 	if (msg_type != 0) {
 		/*
