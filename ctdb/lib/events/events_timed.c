@@ -27,6 +27,17 @@
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
 
+struct timed_event {
+	struct timed_event *prev, *next;
+	struct event_context *event_ctx;
+	struct timeval next_event;
+	event_timed_handler_t handler;
+	/* this is private for the specific handler */
+	void *private_data;
+	/* this is private for the events_ops implementation */
+	void *additional_data;
+};
+
 /*
   destroy a timed event
 */
