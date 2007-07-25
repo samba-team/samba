@@ -709,9 +709,11 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSSAPI", &cred, NULL, NULL, 
 			      &scred);
-	status = ADS_ERROR(rc);
-
 	gss_release_buffer(&minor_status, &input_token);
+	status = ADS_ERROR(rc);
+	if (!ADS_ERR_OK(status)) {
+		goto failed;
+	}
 
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
 		gss_rc = gss_wrap_size_limit(&minor_status, context_handle,
