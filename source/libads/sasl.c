@@ -356,18 +356,306 @@ static const struct ads_saslwrap_ops ads_sasl_gssapi_ops = {
 	.unwrap		= ads_sasl_gssapi_unwrap,
 	.disconnect	= ads_sasl_gssapi_disconnect
 };
+
+/* 
+   perform a LDAP/SASL/SPNEGO/GSSKRB5 bind
+*/
+static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const char *sname)
+{
+	ADS_STATUS status;
+	BOOL ok;
+	uint32 minor_status;
+	int gss_rc, rc;
+	gss_OID_desc krb5_mech_type =
+	{9, CONST_DISCARD(char *, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
+	gss_OID mech_type = &krb5_mech_type;
+	gss_OID actual_mech_type = GSS_C_NULL_OID;
+	const char *spnego_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, OID_NTLMSSP, NULL};
+	gss_name_t serv_name;
+	gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
+	gss_buffer_desc input_token, output_token;
+	uint32 req_flags, ret_flags;
+	uint32 req_tmp, ret_tmp;
+	DATA_BLOB unwrapped;
+	DATA_BLOB wrapped;
+	struct berval cred, *scred = NULL;
+	krb5_principal principal = NULL;
+	gss_buffer_desc input_name;
+	krb5_context ctx = NULL;
+	krb5_enctype enc_types[] = {
+#ifdef ENCTYPE_ARCFOUR_HMAC
+			ENCTYPE_ARCFOUR_HMAC,
+#endif
+			ENCTYPE_DES_CBC_MD5,
+			ENCTYPE_NULL};
+	gss_OID_desc nt_principal = 
+	{10, CONST_DISCARD(char *, "\052\206\110\206\367\022\001\002\002\002")};
+
+	initialize_krb5_error_table();
+	status = ADS_ERROR_KRB5(krb5_init_context(&ctx));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(ctx, enc_types));
+	if (!ADS_ERR_OK(status)) {
+		krb5_free_context(ctx);	
+		return status;
+	}
+	status = ADS_ERROR_KRB5(smb_krb5_parse_name(ctx, sname, &principal));
+	if (!ADS_ERR_OK(status)) {
+		krb5_free_context(ctx);	
+		return status;
+	}
+
+	/*
+	 * The MIT libraries have a *HORRIBLE* bug - input_value.value needs
+	 * to point to the *address* of the krb5_principal, and the gss libraries
+	 * to a shallow copy of the krb5_principal pointer - so we need to keep
+	 * the krb5_principal around until we do the gss_release_name. MIT *SUCKS* !
+	 * Just one more way in which MIT engineers screwed me over.... JRA.
+	 */
+	input_name.value = &principal;
+	input_name.length = sizeof(principal);
+
+	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &serv_name);
+	if (gss_rc) {
+		krb5_free_principal(ctx, principal);
+		krb5_free_context(ctx);	
+		return ADS_ERROR_GSS(gss_rc, minor_status);
+	}
+
+	input_token.value = NULL;
+	input_token.length = 0;
+
+	req_flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG;
+	switch (ads->ldap.wrap_type) {
+	case ADS_SASLWRAP_TYPE_SEAL:
+		req_flags |= GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG;
+		break;
+	case ADS_SASLWRAP_TYPE_SIGN:
+		req_flags |= GSS_C_INTEG_FLAG;
+		break;
+	case ADS_SASLWRAP_TYPE_PLAIN:
+		break;
+	}
+
+	/* Note: here we explicit ask for the krb5 mech_type */
+	gss_rc = gss_init_sec_context(&minor_status,
+				      GSS_C_NO_CREDENTIAL,
+				      &context_handle,
+				      serv_name,
+				      mech_type,
+				      req_flags,
+				      0,
+				      NULL,
+				      &input_token,
+				      &actual_mech_type,
+				      &output_token,
+				      &ret_flags,
+				      NULL);
+	if (gss_rc && gss_rc != GSS_S_CONTINUE_NEEDED) {
+		status = ADS_ERROR_GSS(gss_rc, minor_status);
+		goto failed;
+	}
+
+	/*
+	 * As some gssapi krb5 mech implementations
+	 * automaticly add GSS_C_INTEG_FLAG and GSS_C_CONF_FLAG
+	 * to req_flags internaly, it's not possible to
+	 * use plain or signing only connection via
+	 * the gssapi interface.
+	 *
+	 * Because of this we need to check it the ret_flags
+	 * has more flags as req_flags and correct the value
+	 * of ads->ldap.wrap_type.
+	 *
+	 * I ads->auth.flags has ADS_AUTH_SASL_FORCE
+	 * we need to give an error.
+	 */
+	req_tmp = req_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
+	ret_tmp = ret_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
+
+	if (req_tmp == ret_tmp) {
+		/* everythings fine... */
+
+	} else if (req_flags & GSS_C_CONF_FLAG) {
+		/*
+		 * here we wanted sealing but didn't got it
+		 * from the gssapi library
+		 */
+		status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		goto failed;
+
+	} else if (req_flags & GSS_C_INTEG_FLAG) {
+		/*
+		 * here we wanted siging but didn't got it
+		 * from the gssapi library
+		 */
+		status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		goto failed;
+
+	} else if (ret_flags & GSS_C_CONF_FLAG) {
+		/*
+		 * here we didn't want sealing
+		 * but the gssapi library forces it
+		 * so correct the needed wrap_type if
+		 * the caller didn't forced siging only
+		 */
+		if (ads->auth.flags & ADS_AUTH_SASL_FORCE) {
+			status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+			goto failed;
+		}
+
+		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SEAL;
+		req_flags = ret_flags;
+
+	} else if (ret_flags & GSS_C_INTEG_FLAG) {
+		/*
+		 * here we didn't want signing
+		 * but the gssapi library forces it
+		 * so correct the needed wrap_type if
+		 * the caller didn't forced plain
+		 */
+		if (ads->auth.flags & ADS_AUTH_SASL_FORCE) {
+			status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+			goto failed;
+		}
+
+		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SIGN;
+		req_flags = ret_flags;
+	} else {
+		/*
+		 * This could (should?) not happen
+		 */
+		status = ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+		goto failed;
+	
+	}
+
+	/* and wrap that in a shiny SPNEGO wrapper */
+	unwrapped = data_blob_const(output_token.value, output_token.length);
+	wrapped = gen_negTokenTarg(spnego_mechs, unwrapped);
+	gss_release_buffer(&minor_status, &output_token);
+	if (unwrapped.length > wrapped.length) {
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto failed;
+	}
+
+	cred.bv_val = (char *)wrapped.data;
+	cred.bv_len = wrapped.length;
+
+	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, 
+			      &scred);
+	data_blob_free(&wrapped);
+	if (rc != LDAP_SUCCESS) {
+		status = ADS_ERROR(rc);
+		goto failed;
+	}
+
+	if (scred) {
+		wrapped = data_blob_const(scred->bv_val, scred->bv_len);
+	} else {
+		wrapped = data_blob_null;
+	}
+
+	ok = spnego_parse_auth_response(wrapped, NT_STATUS_OK,
+					OID_KERBEROS5_OLD,
+					&unwrapped);
+	if (scred) ber_bvfree(scred);
+	if (!ok) {
+		status = ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
+		goto failed;
+	}
+
+	input_token.value	= unwrapped.data;
+	input_token.length	= unwrapped.length;
+
+	/* 
+	 * As we asked for mutal authentication
+	 * we need to pass the servers response
+	 * to gssapi
+	 */
+	gss_rc = gss_init_sec_context(&minor_status,
+				      GSS_C_NO_CREDENTIAL,
+				      &context_handle,
+				      serv_name,
+				      mech_type,
+				      req_flags,
+				      0,
+				      NULL,
+				      &input_token,
+				      &actual_mech_type,
+				      &output_token,
+				      &ret_flags,
+				      NULL);
+	data_blob_free(&unwrapped);
+	if (gss_rc) {
+		status = ADS_ERROR_GSS(gss_rc, minor_status);
+		goto failed;
+	}
+
+	gss_release_buffer(&minor_status, &output_token);
+
+	/*
+	 * If we the sign and seal options
+	 * doesn't match after getting the response
+	 * from the server, we don't want to use the connection
+	 */
+	req_tmp = req_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
+	ret_tmp = ret_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
+
+	if (req_tmp != ret_tmp) {
+		/* everythings fine... */
+		status = ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
+		goto failed;
+	}
+
+	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
+		uint32 max_msg_size = 0x0A000000;
+
+		gss_rc = gss_wrap_size_limit(&minor_status, context_handle,
+					     (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL),
+					     GSS_C_QOP_DEFAULT,
+					     max_msg_size, &ads->ldap.out.max);
+		if (gss_rc) {
+			status = ADS_ERROR_GSS(gss_rc, minor_status);
+			goto failed;
+		}
+
+		ads->ldap.out.min = 4;
+		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max;
+		ads->ldap.in.min = 4;
+		ads->ldap.in.max = max_msg_size;
+		ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
+		/* make sure we don't free context_handle */
+		context_handle = GSS_C_NO_CONTEXT;
+	}
+
+failed:
+	gss_release_name(&minor_status, &serv_name);
+	if (context_handle != GSS_C_NO_CONTEXT)
+		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
+	krb5_free_principal(ctx, principal);
+	krb5_free_context(ctx);	
+	return status;
+}
+
 #endif
 
 #ifdef HAVE_KRB5
 /* 
    perform a LDAP/SASL/SPNEGO/KRB5 bind
 */
-static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *principal)
+static ADS_STATUS ads_sasl_spnego_rawkrb5_bind(ADS_STRUCT *ads, const char *principal)
 {
 	DATA_BLOB blob = data_blob_null;
 	struct berval cred, *scred = NULL;
 	DATA_BLOB session_key = data_blob_null;
 	int rc;
+
+	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
+		return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	}
 
 	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key, 0,
 				     &ads->auth.tgs_expire);
@@ -388,6 +676,26 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 		ber_bvfree(scred);
 
 	return ADS_ERROR(rc);
+}
+
+static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *principal)
+{
+#ifdef HAVE_GSSAPI
+	/*
+	 * we only use the gsskrb5 based implementation
+	 * when sasl sign or seal is requested.
+	 *
+	 * This has the following reasons:
+	 * - it's likely that the gssapi krb5 mech implementation
+	 *   doesn't support to negotiate plain connections
+	 * - the ads_sasl_spnego_rawkrb5_bind is more robust
+	 *   against clock skew errors
+	 */
+	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
+		return ads_sasl_spnego_gsskrb5_bind(ads, principal);
+	}
+#endif
+	return ads_sasl_spnego_rawkrb5_bind(ads, principal);
 }
 #endif
 
