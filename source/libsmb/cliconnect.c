@@ -723,7 +723,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			}
 			data_blob_free(&tmp_blob);
 		} else {
-			if (!spnego_parse_auth_response(blob, nt_status, 
+			if (!spnego_parse_auth_response(blob, nt_status, OID_NTLMSSP, 
 							&blob_in)) {
 				DEBUG(3,("Failed to parse auth response\n"));
 				if (NT_STATUS_IS_OK(nt_status) 

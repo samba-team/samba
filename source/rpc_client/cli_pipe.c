@@ -2001,7 +2001,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	prs_copy_data_out((char *)server_spnego_response.data, rbuf, phdr->auth_len);
 
 	/* Check we got a valid auth response. */
-	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK, &tmp_blob)) {
+	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK, OID_NTLMSSP, &tmp_blob)) {
 		data_blob_free(&server_spnego_response);
 		data_blob_free(&tmp_blob);
 		return NT_STATUS_INVALID_PARAMETER;
