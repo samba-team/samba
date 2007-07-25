@@ -1255,7 +1255,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	if (CVAL(inbuf, smb_wct) == 12 &&
 	    (smb_flag2 & FLAGS2_EXTENDED_SECURITY)) {
 		if (!global_spnego_negotiated) {
-			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at SPNEGO session setup when it was not negoitiated.\n"));
+			DEBUG(0, ("reply_sesssetup_and_X:  Rejecting attempt "
+				  "at SPNEGO session setup when it was not "
+				  "negotiated.\n"));
 			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 
