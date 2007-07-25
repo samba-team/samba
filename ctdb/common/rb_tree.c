@@ -328,7 +328,8 @@ trbt_delete_case2(trbt_node_t *node)
 	trbt_node_t *sibling;
 
 	sibling = trbt_sibling(node);
-	if (sibling->rb_color == TRBT_RED) {
+	/* If there is no sibling it is a leaf and thus black */
+	if (sibling && sibling->rb_color == TRBT_RED) {
 		if (node == node->parent->left) {
 			trbt_rotate_left(node->parent);
 		} else {
