@@ -76,7 +76,7 @@ getTableTranslationDomain(/*@null@*/ const struct poptOption *table)
     if (table != NULL)
     for (opt = table; opt->longName || opt->shortName || opt->arg; opt++) {
 	if (opt->argInfo == POPT_ARG_INTL_DOMAIN)
-	    return opt->arg;
+	    return (char *)opt->arg;
     }
     return NULL;
 }
@@ -131,7 +131,7 @@ singleOptionDefaultValue(int lineLength,
 	/*@*/
 {
     const char * defstr = D_(translation_domain, "default");
-    char * le = malloc(4*lineLength + 1);
+    char * le = (char *)malloc(4*lineLength + 1);
     char * l = le;
 
     if (le == NULL) return NULL;	/* XXX can't happen */
@@ -176,7 +176,7 @@ singleOptionDefaultValue(int lineLength,
     }	break;
     case POPT_ARG_NONE:
     default:
-	l = _free(l);
+	l = (char *)_free(l);
 	return NULL;
 	/*@notreached@*/ break;
     }
@@ -214,7 +214,7 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
     if (argDescrip)	nb += strlen(argDescrip);
 
 /*@-boundswrite@*/
-    left = malloc(nb);
+    left = (char *)malloc(nb);
     if (left == NULL) return;	/* XXX can't happen */
     left[0] = '\0';
     left[maxLeftCol] = '\0';
@@ -242,7 +242,7 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
 	if (opt->argInfo & POPT_ARGFLAG_SHOW_DEFAULT) {
 	    defs = singleOptionDefaultValue(lineLength, opt, translation_domain);
 	    if (defs) {
-		char * t = malloc((help ? strlen(help) : 0) +
+		char * t = (char *)malloc((help ? strlen(help) : 0) +
 				strlen(defs) + sizeof(" "));
 		if (t) {
 		    char * te = t;
@@ -252,7 +252,7 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
 		    }
 		    *te++ = ' ';
 		    strcpy(te, defs);
-		    defs = _free(defs);
+		    defs = (char *)_free(defs);
 		}
 		defs = t;
 	    }
@@ -323,7 +323,7 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
 	goto out;
     }
 
-    left = _free(left);
+    left = (char *)_free(left);
     if (defs) {
 	help = defs; defs = NULL;
     }
@@ -354,9 +354,9 @@ static void singleOptionHelp(FILE * fp, int maxLeftCol,
 
 out:
     /*@-dependenttrans@*/
-    defs = _free(defs);
+    defs = (char *)_free(defs);
     /*@=dependenttrans@*/
-    left = _free(left);
+    left = (char *)_free(left);
 }
 
 /**
@@ -375,7 +375,7 @@ static int maxArgWidth(const struct poptOption * opt,
     while (opt->longName || opt->shortName || opt->arg) {
 	if ((opt->argInfo & POPT_ARG_MASK) == POPT_ARG_INCLUDE_TABLE) {
 	    if (opt->arg)	/* XXX program error */
-	    len = maxArgWidth(opt->arg, translation_domain);
+	    len = maxArgWidth((const struct poptOption *)opt->arg, translation_domain);
 	    if (len > max) max = len;
 	} else if (!(opt->argInfo & POPT_ARGFLAG_DOC_HIDDEN)) {
 	    len = sizeof("  ")-1;
@@ -461,14 +461,15 @@ static void singleTableHelp(poptContext con, FILE * fp,
     for (opt = table; (opt->longName || opt->shortName || opt->arg); opt++) {
 	if ((opt->argInfo & POPT_ARG_MASK) != POPT_ARG_INCLUDE_TABLE)
 	    continue;
-	sub_transdom = getTableTranslationDomain(opt->arg);
+	sub_transdom = getTableTranslationDomain(
+	    (const struct poptOption *)opt->arg);
 	if (sub_transdom == NULL)
 	    sub_transdom = translation_domain;
 	    
 	if (opt->descrip)
 	    fprintf(fp, "\n%s\n", D_(sub_transdom, opt->descrip));
 
-	singleTableHelp(con, fp, opt->arg, left, sub_transdom);
+	singleTableHelp(con, fp, (const struct poptOption *)opt->arg, left, sub_transdom);
     }
 }
 
@@ -653,7 +654,7 @@ static int singleTableUsage(poptContext con, FILE * fp, int cursor,
 		    done->opts[done->nopts++] = (const void *) opt->arg;
 /*@=boundswrite@*/
 	    }
-	    cursor = singleTableUsage(con, fp, cursor, opt->arg,
+	    cursor = singleTableUsage(con, fp, cursor, (const struct poptOption *)opt->arg,
 			translation_domain, done);
 	} else if ((opt->longName || opt->shortName) &&
 		 !(opt->argInfo & POPT_ARGFLAG_DOC_HIDDEN)) {
@@ -680,7 +681,7 @@ static int showShortOptions(const struct poptOption * opt, FILE * fp,
 	/*@requires maxRead(str) >= 0 @*/
 {
     /* bufsize larger then the ascii set, lazy alloca on top level call. */
-    char * s = (str != NULL ? str : memset(alloca(300), 0, 300));
+    char * s = (str != NULL ? str : (char *)memset(alloca(300), 0, 300));
     int len = 0;
 
 /*@-boundswrite@*/
@@ -690,7 +691,8 @@ static int showShortOptions(const struct poptOption * opt, FILE * fp,
 	    s[strlen(s)] = opt->shortName;
 	else if ((opt->argInfo & POPT_ARG_MASK) == POPT_ARG_INCLUDE_TABLE)
 	    if (opt->arg)	/* XXX program error */
-		len = showShortOptions(opt->arg, fp, s);
+		len = showShortOptions(
+		    (const struct poptOption *)opt->arg, fp, s);
     } 
 /*@=boundswrite@*/
 
@@ -704,14 +706,14 @@ static int showShortOptions(const struct poptOption * opt, FILE * fp,
 
 void poptPrintUsage(poptContext con, FILE * fp, /*@unused@*/ int flags)
 {
-    poptDone done = memset(alloca(sizeof(*done)), 0, sizeof(*done));
+    poptDone done = (poptDone)memset(alloca(sizeof(*done)), 0, sizeof(*done));
     int cursor;
 
     done->nopts = 0;
     done->maxopts = 64;
     cursor = done->maxopts * sizeof(*done->opts);
 /*@-boundswrite@*/
-    done->opts = memset(alloca(cursor), 0, cursor);
+    done->opts = (const void **)memset(alloca(cursor), 0, cursor);
     done->opts[done->nopts++] = (const void *) con->options;
 /*@=boundswrite@*/
 
@@ -732,7 +734,7 @@ void poptPrintUsage(poptContext con, FILE * fp, /*@unused@*/ int flags)
 
 void poptSetOtherOptionHelp(poptContext con, const char * text)
 {
-    con->otherHelp = _free(con->otherHelp);
+    con->otherHelp = (const char *)_free(con->otherHelp);
     con->otherHelp = xstrdup(text);
 }
 /*@=type@*/
