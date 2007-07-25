@@ -24,22 +24,27 @@
  */
 
 
-#define  rpc_create_user        (0x00000001)
-#define  rpc_open_user          (0x00000002)
-#define  rpc_query_user         (0x00000003)
-#define  rpc_close_user         (0x00000004)
-#define  rpc_lookup_name        (0x00000005)
-#define  rpc_delete_user        (0x00000006)
-#define  rpc_set_user           (0x00000007)
-#define  rpc_close              (0x00000008)
-#define  rpc_connect            (0x00000009)
-#define  rpc_lookup_domain      (0x00000010)
-#define  rpc_open_domain        (0x00000011)
-#define  rpc_open_policy        (0x00000012)
-#define  rpc_query_policy       (0x00000013)
+#define  mon_SamrCreateUser        (0x00000001)
+#define  mon_SamrOpenUser          (0x00000002)
+#define  mon_SamrQueryUser         (0x00000003)
+#define  mon_SamrCloseUser         (0x00000004)
+#define  mon_SamrLookupName        (0x00000005)
+#define  mon_SamrDeleteUser        (0x00000006)
+#define  mon_SamrSetUser           (0x00000007)
+#define  mon_SamrClose             (0x00000008)
+#define  mon_SamrConnect           (0x00000009)
+#define  mon_SamrLookupDomain      (0x0000000A)
+#define  mon_SamrOpenDomain        (0x0000000B)
+#define  mon_SamrEnumDomains       (0x0000000C)
+#define  mon_LsaOpenPolicy         (0x0000000D)
+#define  mon_LsaQueryPolicy        (0x0000000E)
+#define  mon_LsaClose              (0x0000000F)
 
-#define  net_lookup_dc          (0x00000100)
-#define  net_rpc_connect        (0x00000200)
+#define  mon_NetLookupDc           (0x00000100)
+#define  mon_NetRpcConnect         (0x00000200)
+
+#define  mon_Mask_Rpc              (0x000000FF)
+#define  mon_Mask_Net              (0x0000FF00)
 
 
 struct monitor_msg {

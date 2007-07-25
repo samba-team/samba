@@ -79,7 +79,7 @@ static void continue_userinfo_lookup(struct rpc_request *req)
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {
-		msg.type = rpc_lookup_name;
+		msg.type = mon_SamrLookupName;
 		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
 		msg_lookup->rid = s->lookup.out.rids.ids;
 		msg_lookup->count = s->lookup.out.rids.count;
@@ -137,7 +137,7 @@ static void continue_userinfo_openuser(struct rpc_request *req)
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {
-		msg.type = rpc_open_user;
+		msg.type = mon_SamrOpenUser;
 		msg_open = talloc(s, struct msg_rpc_open_user);
 		msg_open->rid = s->openuser.in.rid;
 		msg_open->access_mask = s->openuser.in.access_mask;
@@ -187,7 +187,7 @@ static void continue_userinfo_getuser(struct rpc_request *req)
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {
-		msg.type = rpc_query_user;
+		msg.type = mon_SamrQueryUser;
 		msg_query = talloc(s, struct msg_rpc_query_user);
 		msg_query->level = s->queryuserinfo.in.level;
 		msg.data = (void*)msg_query;
@@ -232,7 +232,7 @@ static void continue_userinfo_closeuser(struct rpc_request *req)
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {
-		msg.type = rpc_close_user;
+		msg.type = mon_SamrClose;
 		msg_close = talloc(s, struct msg_rpc_close_user);
 		msg_close->rid = s->openuser.in.rid;
 		msg.data = (void*)msg_close;

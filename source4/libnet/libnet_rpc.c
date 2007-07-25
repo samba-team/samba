@@ -148,7 +148,7 @@ static void continue_pipe_connect(struct composite_context *ctx)
 		data.transport   = binding->transport;
 		data.domain_name = binding->target_hostname;
 		
-		msg.type      = net_rpc_connect;
+		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
 		msg.data_size = sizeof(data);
 		s->monitor_fn(&msg);
@@ -307,7 +307,7 @@ static void continue_lookup_dc(struct composite_context *ctx)
 		data.hostname    = s->f.out.dcs[0].name;
 		data.address     = s->f.out.dcs[0].address;
 		
-		msg.type         = net_lookup_dc;
+		msg.type         = mon_NetLookupDc;
 		msg.data         = &data;
 		msg.data_size    = sizeof(data);
 		s->monitor_fn(&msg);
@@ -360,7 +360,7 @@ static void continue_rpc_connect(struct composite_context *ctx)
 		data.transport   = binding->transport;
 		data.domain_name = binding->target_hostname;
 		
-		msg.type      = net_rpc_connect;
+		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
 		msg.data_size = sizeof(data);
 		s->monitor_fn(&msg);
@@ -528,7 +528,7 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 		data.transport   = binding->transport;
 		data.domain_name = binding->target_hostname;
 
-		msg.type      = net_rpc_connect;
+		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
 		msg.data_size = sizeof(data);
 		s->monitor_fn(&msg);
@@ -596,7 +596,7 @@ static void continue_lsa_policy(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 
-		msg.type      = rpc_open_policy;
+		msg.type      = mon_LsaOpenPolicy;
 		msg.data      = NULL;
 		msg.data_size = 0;
 		s->monitor_fn(&msg);
@@ -669,7 +669,7 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		
-		msg.type      = rpc_query_policy;
+		msg.type      = mon_LsaQueryPolicy;
 		msg.data      = NULL;
 		msg.data_size = 0;
 		s->monitor_fn(&msg);
@@ -710,7 +710,7 @@ static void continue_lsa_query_info(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		
-		msg.type      = rpc_query_policy;
+		msg.type      = mon_LsaQueryPolicy;
 		msg.data      = NULL;
 		msg.data_size = 0;
 		s->monitor_fn(&msg);
@@ -816,7 +816,7 @@ static void continue_secondary_conn(struct composite_context *ctx)
 		data.transport   = binding->transport;
 		data.domain_name = binding->target_hostname;
 		
-		msg.type      = net_rpc_connect;
+		msg.type      = mon_NetRpcConnect;
 		msg.data      = (void*)&data;
 		msg.data_size = sizeof(data);
 		s->monitor_fn(&msg);

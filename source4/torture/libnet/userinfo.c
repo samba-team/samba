@@ -226,16 +226,16 @@ static void msg_handler(struct monitor_msg *m)
 	struct msg_rpc_close_user *msg_close;
 
 	switch (m->type) {
-	case rpc_open_user:
+	case mon_SamrOpenUser:
 		msg_open = (struct msg_rpc_open_user*)m->data;
 		printf("monitor_msg: user opened (rid=%d, access_mask=0x%08x)\n",
 		       msg_open->rid, msg_open->access_mask);
 		break;
-	case rpc_query_user:
+	case mon_SamrQueryUser:
 		msg_query = (struct msg_rpc_query_user*)m->data;
 		printf("monitor_msg: user queried (level=%d)\n", msg_query->level);
 		break;
-	case rpc_close_user:
+	case mon_SamrCloseUser:
 		msg_close = (struct msg_rpc_close_user*)m->data;
 		printf("monitor_msg: user closed (rid=%d)\n", msg_close->rid);
 		break;

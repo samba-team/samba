@@ -103,7 +103,7 @@ static void continue_domain_open_close(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		
-		msg.type = rpc_close;
+		msg.type = mon_SamrClose;
 		msg.data = NULL;
 		msg.data_size = 0;
 		s->monitor_fn(&msg);
@@ -148,7 +148,7 @@ static void continue_domain_open_connect(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 
-		msg.type = rpc_connect;
+		msg.type = mon_SamrConnect;
 		msg.data = NULL;
 		msg.data_size = 0;
 		s->monitor_fn(&msg);
@@ -189,7 +189,7 @@ static void continue_domain_open_lookup(struct rpc_request *req)
 
 		data.domain_name = s->domain_name.string;
 
-		msg.type = rpc_lookup_domain;
+		msg.type = mon_SamrLookupDomain;
 		msg.data = (void*)&data;
 		msg.data_size = sizeof(data);
 		s->monitor_fn(&msg);
@@ -237,7 +237,7 @@ static void continue_domain_open_open(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		
-		msg.type = rpc_open_domain;
+		msg.type = mon_SamrOpenDomain;
 		msg.data = NULL;
 		msg.data_size = 0;
 		s->monitor_fn(&msg);
@@ -518,6 +518,15 @@ static void continue_lsa_policy_open(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type      = mon_LsaOpenPolicy;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
+
 	composite_done(c);
 }
 
@@ -709,6 +718,15 @@ static void continue_lsa_close(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+
+		msg.type      = mon_LsaClose;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
+
 	composite_done(c);
 }
 
@@ -801,6 +819,15 @@ static void continue_samr_close(struct rpc_request *req)
 	
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
+
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type      = mon_SamrClose;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
 	
 	composite_done(c);
 }
@@ -954,6 +981,15 @@ static void continue_samr_connect(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type      = mon_SamrConnect;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
+
 	s->enumdom.in.connect_handle = &s->connect_handle;
 	s->enumdom.in.resume_handle  = &s->resume_handle;
 	s->enumdom.in.buf_size       = s->buf_size;
@@ -983,6 +1019,15 @@ static void continue_samr_enum_domains(struct rpc_request *req)
 	
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
+
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type      = mon_SamrEnumDomains;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
 
 	if (NT_STATUS_IS_OK(s->enumdom.out.result)) {
 
@@ -1034,6 +1079,15 @@ static void continue_samr_close_handle(struct rpc_request *req)
 
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
+
+	if (s->monitor_fn) {
+		struct monitor_msg msg;
+		
+		msg.type      = mon_SamrClose;
+		msg.data      = NULL;
+		msg.data_size = 0;
+		s->monitor_fn(&msg);
+	}
 
 	/* did everything go fine ? */
 	if (!NT_STATUS_IS_OK(s->samrclose.out.result)) {

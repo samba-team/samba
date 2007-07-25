@@ -85,7 +85,7 @@ static void useradd_handler(struct rpc_request *req)
 		c->status = useradd_create(c, s);
 		
 		/* prepare a message to pass to monitor function */
-		msg.type = rpc_create_user;
+		msg.type = mon_SamrCreateUser;
 		rpc_create = talloc(s, struct msg_rpc_create_user);
 		rpc_create->rid = *s->createuser.out.rid;
 		msg.data = (void*)rpc_create;
@@ -350,7 +350,7 @@ static void userdel_handler(struct rpc_request *req)
 		c->status = userdel_lookup(c, s);
 
 		/* monitor message */
-		msg.type = rpc_lookup_name;
+		msg.type = mon_SamrLookupName;
 		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
 
 		msg_lookup->rid   = s->lookupname.out.rids.ids;
@@ -363,7 +363,7 @@ static void userdel_handler(struct rpc_request *req)
 		c->status = userdel_open(c, s);
 
 		/* monitor message */
-		msg.type = rpc_open_user;
+		msg.type = mon_SamrOpenUser;
 		msg_open = talloc(s, struct msg_rpc_open_user);
 
 		msg_open->rid         = s->openuser.in.rid;
@@ -376,7 +376,7 @@ static void userdel_handler(struct rpc_request *req)
 		c->status = userdel_delete(c, s);
 		
 		/* monitor message */
-		msg.type = rpc_delete_user;
+		msg.type = mon_SamrDeleteUser;
 		msg.data = NULL;
 		msg.data_size = 0;
 		break;
@@ -829,7 +829,7 @@ static void usermod_handler(struct rpc_request *req)
 		
 		if (NT_STATUS_IS_OK(c->status)) {
 			/* monitor message */
-			msg.type = rpc_lookup_name;
+			msg.type = mon_SamrLookupName;
 			msg_lookup = talloc(s, struct msg_rpc_lookup_name);
 			
 			msg_lookup->rid   = s->lookupname.out.rids.ids;
@@ -844,7 +844,7 @@ static void usermod_handler(struct rpc_request *req)
 
 		if (NT_STATUS_IS_OK(c->status)) {
 			/* monitor message */
-			msg.type = rpc_open_user;
+			msg.type = mon_SamrOpenUser;
 			msg_open = talloc(s, struct msg_rpc_open_user);
 			
 			msg_open->rid         = s->openuser.in.rid;
@@ -859,7 +859,7 @@ static void usermod_handler(struct rpc_request *req)
 
 		if (NT_STATUS_IS_OK(c->status)) {
 			/* monitor message */
-			msg.type = rpc_query_user;
+			msg.type = mon_SamrQueryUser;
 			msg.data = NULL;
 			msg.data_size = 0;
 		}
@@ -870,7 +870,7 @@ static void usermod_handler(struct rpc_request *req)
 		
 		if (NT_STATUS_IS_OK(c->status)) {
 			/* monitor message */
-			msg.type = rpc_set_user;
+			msg.type = mon_SamrSetUser;
 			msg.data = NULL;
 			msg.data_size = 0;
 		}
