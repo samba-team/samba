@@ -124,6 +124,15 @@ trbt_rotate_right(trbt_node_t *node)
 	node->parent->right=node;
 }
 
+/* NULL nodes are black by definition */
+static inline int trbt_color(trbt_node_t *node)
+{
+	if (node==NULL) {
+		return TRBT_BLACK;
+	}
+	return node->rb_color;
+}
+
 static inline void
 trbt_insert_case5(trbt_tree_t *tree, trbt_node_t *node)
 {
@@ -263,9 +272,9 @@ trbt_delete_case5(trbt_node_t *node)
 	parent = trbt_parent(node);
 	sibling = trbt_sibling(node);
 	if ( (node == parent->left)
-	   &&(sibling->rb_color == TRBT_BLACK)
-	   &&(sibling->left->rb_color == TRBT_RED)
-	   &&(sibling->right->rb_color == TRBT_BLACK) ){
+	   &&(trbt_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_color(sibling->left)  == TRBT_RED)
+	   &&(trbt_color(sibling->right) == TRBT_BLACK) ){
 		sibling->rb_color = TRBT_RED;
 		sibling->left->rb_color = TRBT_BLACK;
 		trbt_rotate_right(sibling);
@@ -273,9 +282,9 @@ trbt_delete_case5(trbt_node_t *node)
 		return;
 	}
 	if ( (node == parent->right)
-	   &&(sibling->rb_color == TRBT_BLACK)
-	   &&(sibling->right->rb_color == TRBT_RED)
-	   &&(sibling->left->rb_color == TRBT_BLACK) ){
+	   &&(trbt_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_color(sibling->right) == TRBT_RED)
+	   &&(trbt_color(sibling->left)  == TRBT_BLACK) ){
 		sibling->rb_color = TRBT_RED;
 		sibling->right->rb_color = TRBT_BLACK;
 		trbt_rotate_left(sibling);
@@ -292,10 +301,10 @@ trbt_delete_case4(trbt_node_t *node)
 	trbt_node_t *sibling;
 
 	sibling = trbt_sibling(node);
-	if ( (node->parent->rb_color == TRBT_RED)
-	   &&(sibling->rb_color == TRBT_BLACK)
-	   &&(sibling->left->rb_color == TRBT_BLACK)
-	   &&(sibling->right->rb_color == TRBT_BLACK) ){
+	if ( (trbt_color(node->parent)   == TRBT_RED)
+	   &&(trbt_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_color(sibling->left)  == TRBT_BLACK)
+	   &&(trbt_color(sibling->right) == TRBT_BLACK) ){
 		sibling->rb_color = TRBT_RED;
 		node->parent->rb_color = TRBT_BLACK;
 	} else {
@@ -311,10 +320,10 @@ trbt_delete_case3(trbt_node_t *node)
 	trbt_node_t *sibling;
 
 	sibling = trbt_sibling(node);
-	if ( (node->parent->rb_color == TRBT_BLACK)
-	   &&(sibling->rb_color == TRBT_BLACK)
-	   &&(sibling->left->rb_color == TRBT_BLACK)
-	   &&(sibling->right->rb_color == TRBT_BLACK) ){
+	if ( (trbt_color(node->parent)   == TRBT_BLACK)
+	   &&(trbt_color(sibling)        == TRBT_BLACK)
+	   &&(trbt_color(sibling->left)  == TRBT_BLACK)
+	   &&(trbt_color(sibling->right) == TRBT_BLACK) ){
 		sibling->rb_color = TRBT_RED;
 		trbt_delete_case1(node->parent);
 	} else {
@@ -328,8 +337,7 @@ trbt_delete_case2(trbt_node_t *node)
 	trbt_node_t *sibling;
 
 	sibling = trbt_sibling(node);
-	/* If there is no sibling it is a leaf and thus black */
-	if (sibling && sibling->rb_color == TRBT_RED) {
+	if (trbt_color(sibling) == TRBT_RED) {
 		if (node == node->parent->left) {
 			trbt_rotate_left(node->parent);
 		} else {
@@ -556,38 +564,41 @@ static void printtree(trbt_node_t *node, int levels)
 
 void print_tree(trbt_tree_t *tree)
 {
+	if(tree->tree==NULL){
+		printf("tree is empty\n");
+		return;
+	}
+	printf("---\n");
 	printtree(tree->tree->left, 1);
 	printf("root node key:%d COLOR:%s\n",tree->tree->key32,tree->tree->rb_color==TRBT_BLACK?"BLACK":"RED");
 	printtree(tree->tree->right, 1);
+	printf("===\n");
 }
 
 
-#include "../common/rb_tree.h"
 void 
 test_tree(void)
 {
 	trbt_tree_t *tree;
 	char *str;
 	int i, ret;
+	int NUM=15;
 
-#define NUM 10
-	tree=trbt_create(talloc_new(NULL));
-	printf("tree:0x%08x  %d nodes\n",(int)tree,NUM);
-	for(i=0;i<NUM;i++){
-		str=talloc_asprintf(tree, "STRING#%d", i);
-		ret=trbt_insert32(tree, i, str);
-		printf("%s ret:%d\n",str, ret);
-	}
-	print_tree(tree);
-	for(i=0;i<NUM;i++){
-		str=trbt_lookup32(tree, i);
-		printf("lookedup i:%d str:%s\n",i,str);
-	}
-	trbt_delete32(tree, 9);
-	print_tree(tree);
-	for(i=0;i<NUM;i++){
-		str=trbt_lookup32(tree, i);
-		printf("lookedup i:%d str:%s\n",i,str);
+	for(NUM=5;NUM<1000;NUM+=33)
+	{
+		tree=trbt_create(talloc_new(NULL));
+		printf("tree:0x%08x  %d nodes\n",(int)tree,NUM);
+		for(i=0;i<NUM;i++){
+			str=talloc_asprintf(tree, "STRING#%d", i);
+			ret=trbt_insert32(tree, i, str);
+		}
+		print_tree(tree);
+//		for(i=0;i<NUM;i++){
+		for(i=NUM-1;i>=0;i--){
+			trbt_delete32(tree, i);
+			print_tree(tree);
+		}
+
 	}
 }
 
