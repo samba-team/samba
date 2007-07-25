@@ -104,7 +104,7 @@ static void msg_handler(struct monitor_msg *m)
 	struct msg_rpc_create_user *msg_create;
 
 	switch (m->type) {
-	case rpc_create_user:
+	case mon_SamrCreateUser:
 		msg_create = (struct msg_rpc_create_user*)m->data;
 		printf("monitor_msg: user created (rid=%d)\n", msg_create->rid);
 		break;
