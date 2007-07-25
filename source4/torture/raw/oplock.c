@@ -27,8 +27,8 @@
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		torture_result(tctx, TORTURE_FAIL, __location__": wrong value for %s got 0x%x - should be 0x%x", \
-				#v, (int)v, (int)correct); \
+		torture_comment(tctx, "(%s): wrong value for %s got 0x%x - should be 0x%x\n", \
+				__location__, #v, (int)v, (int)correct); \
 		ret = False; \
 	}} while (0)
 
