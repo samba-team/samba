@@ -223,9 +223,9 @@ _gss_load_mech(void)
 	add_builtin(__gss_spnego_initialize());
 	add_builtin(__gss_ntlm_initialize());
 
+#ifdef HAVE_DLOPEN
 	fp = fopen(_PATH_GSS_MECH, "r");
 	if (!fp) {
-/*		perror(_PATH_GSS_MECH); */
 		HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 		return;
 	}
@@ -316,6 +316,7 @@ _gss_load_mech(void)
 		continue;
 	}
 	fclose(fp);
+#endif
 	HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 }
 
