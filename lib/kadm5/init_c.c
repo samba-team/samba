@@ -242,12 +242,15 @@ get_cache_principal(krb5_context context,
     krb5_principal p1, p2;
 
     ret = krb5_cc_default(context, id);
-    if(ret)
+    if(ret) {
+	*id = NULL;
 	return ret;
+    }
     
     ret = krb5_cc_get_principal(context, *id, &p1);
     if(ret) {
 	krb5_cc_close(context, *id);
+	*id = NULL;
 	return ret;
     }
 
@@ -255,6 +258,7 @@ get_cache_principal(krb5_context context,
 			      "kadmin", "admin", NULL);
     if (ret) {
 	krb5_cc_close(context, *id);
+	*id = NULL;
 	krb5_free_principal(context, p1);
 	return ret;
     }
