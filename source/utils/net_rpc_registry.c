@@ -70,6 +70,8 @@ static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct winreg_String key;
 
+	ZERO_STRUCT(key);
+
 	if (!reg_hive_key(name, &hive, &key.name)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -330,6 +332,8 @@ static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
 		return werror_to_ntstatus(err);
 	}
 
+	ZERO_STRUCT(name_string);
+
 	name_string.name = name;
 	result = rpccli_winreg_SetValue(pipe_hnd, blob.data, key_hnd,
 					name_string, value->type,
@@ -417,6 +421,8 @@ static NTSTATUS rpc_registry_deletevalue_internal(const DOM_SID *domain_sid,
 	NTSTATUS status;
 	struct winreg_String valuename;
 
+	ZERO_STRUCT(valuename);
+
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_WRITE,
 				  &hive_hnd, &key_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -466,6 +472,9 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 	struct winreg_String key, keyclass;
 	enum winreg_CreateAction action;
 	NTSTATUS status;
+
+	ZERO_STRUCT(key);
+	ZERO_STRUCT(keyclass);
 
 	if (!reg_hive_key(argv[0], &hive, &key.name)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -532,6 +541,8 @@ static NTSTATUS rpc_registry_deletekey_internal(const DOM_SID *domain_sid,
 	struct policy_handle hive_hnd;
 	struct winreg_String key;
 	NTSTATUS status;
+
+	ZERO_STRUCT(key);
 
 	if (!reg_hive_key(argv[0], &hive, &key.name)) {
 		return NT_STATUS_INVALID_PARAMETER;
