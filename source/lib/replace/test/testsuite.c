@@ -519,7 +519,7 @@ static int test_strtoll(void)
 {
 	printf("test: strtoll\n");
 
-#define TEST_STRTOLL(str,base,res,diff,errnoo) TEST_STRTO_X(int64_t, "%lld", strtoll,str,base,res,diff,errnoo)
+#define TEST_STRTOLL(str,base,res,diff,errnoo) TEST_STRTO_X(long long int, "%lld", strtoll,str,base,res,diff,errnoo)
 
 	TEST_STRTOLL("15",	10,	15LL,	2, 0);
 	TEST_STRTOLL("  15",	10,	15LL,	4, 0);
@@ -618,7 +618,7 @@ static int test_strtoull(void)
 {
 	printf("test: strtoull\n");
 
-#define TEST_STRTOULL(str,base,res,diff,errnoo) TEST_STRTO_X(uint64_t,"%llu",strtoull,str,base,res,diff,errnoo)
+#define TEST_STRTOULL(str,base,res,diff,errnoo) TEST_STRTO_X(long long unsigned int,"%llu",strtoull,str,base,res,diff,errnoo)
 
 	TEST_STRTOULL("15",	10,	15LLU,	2, 0);
 	TEST_STRTOULL("  15",	10,	15LLU,	4, 0);
