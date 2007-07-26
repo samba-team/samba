@@ -79,10 +79,6 @@ ${kadmin} -l add -p foo --use-defaults foo/admin@${R} || exit 1
 
 echo foo > ${objdir}/foopassword
 
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo Starting kdc
 ${kdc} &
 kdcpid=$!
@@ -100,10 +96,26 @@ echo "kinit"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} foo/admin@${R} || exit 1
 
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
 echo "kadmin"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} add -p foo --use-defaults kaka@${R} || 
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
+
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kadmin get doesnotexists"
+env KRB5CCNAME=${cache} \
+${kadmin} -p foo/admin@${R} get -s doesnotexists@${R} \
+        > /dev/null 2>/dev/null && \
+	{ echo "kadmin passed"; cat messages.log ; exit 1; }
 
 echo "killing kdc (${kdcpid} ${kadmpid})"
 kill ${kdcpid} ${kadmpid} > /dev/null 2>/dev/null
