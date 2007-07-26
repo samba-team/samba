@@ -508,7 +508,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state, TALLO
 		break;
 	}
 
-	/* TODO: Should these filter on SID, to avoid counting BUILTIN? */
+	/* No users in BUILTIN, and the LOCAL group types are only in builtin, and the global group type is never in BUILTIN */
 	info->num_users = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn, 
 					     "(objectClass=user)");
 	info->num_groups = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn,
@@ -3573,8 +3573,8 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
 	int ldb_cnt, count, i;
-	const char * const attrs[4] = { "objectSid", "sAMAccountName",
-					"description", NULL };
+	const char * const attrs[] = { "objectSid", "sAMAccountName", "displayName",
+					"description", "userAccountControl", NULL };
 	struct samr_DispEntryFull *entriesFull = NULL;
 	struct samr_DispEntryFullGroup *entriesFullGroup = NULL;
 	struct samr_DispEntryAscii *entriesAscii = NULL;
@@ -3674,12 +3674,21 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 				samdb_result_string(res[i], "description", "");
 			break;
 		case 2:
+			if (!(samdb_result_acct_flags(res[i], 
+						      "userAccountControl") & ACB_WSTRUST)) {
+				/* Domain controllers match the
+				 * filter, but should not be included
+				 * in the output */
+				continue;
+			}
 			entriesFull[count].idx = count + 1;
 			entriesFull[count].rid =
 				objectsid->sub_auths[objectsid->num_auths-1];
+
+			/* No idea why we need to or in ACB_NORMAL here, but this is what Win2k3 seems to do... */
 			entriesFull[count].acct_flags =
 				samdb_result_acct_flags(res[i], 
-							"userAccountControl");
+							"userAccountControl") | ACB_NORMAL;
 			entriesFull[count].account_name.string =
 				samdb_result_string(res[i], "sAMAccountName",
 						    "");
