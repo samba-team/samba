@@ -871,8 +871,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		uint32    rid;
 		samr_AcctFlags acct_flags;
 		lsa_String account_name;
-		lsa_String full_name;
 		lsa_String description;
+		lsa_String full_name;
 	} samr_DispEntryGeneral;
 
 	typedef struct {

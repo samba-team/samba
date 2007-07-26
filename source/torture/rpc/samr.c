@@ -3124,30 +3124,213 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 	return ret;	
 }
 
+#define STRING_EQUAL_QUERY(s1, s2, user)					\
+	if (s1.string == NULL && s2.string != NULL && s2.string[0] == '\0') { \
+		/* odd, but valid */						\
+	} else if ((s1.string && !s2.string) || (s2.string && !s1.string) || strcmp(s1.string, s2.string)) { \
+			printf("%s mismatch for %s: %s != %s (%s)\n", \
+			       #s1, user.string,  s1.string, s2.string, __location__);   \
+			ret = False; \
+	}
+#define INT_EQUAL_QUERY(s1, s2, user)		\
+		if (s1 != s2) { \
+			printf("%s mismatch for %s: 0x%x != 0x%x (%s)\n", \
+			       #s1, user.string, (unsigned int)s1, (unsigned int)s2, __location__); \
+			ret = False; \
+		}
+
+static BOOL test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				       struct samr_QueryDisplayInfo *querydisplayinfo,
+				       bool *seen_testuser) 
+{
+	struct samr_OpenUser r;
+	struct samr_QueryUserInfo q;
+	struct policy_handle user_handle;
+	int i, ret = True;
+	NTSTATUS status;
+	r.in.domain_handle = querydisplayinfo->in.domain_handle;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	for (i = 0; ; i++) {
+		switch (querydisplayinfo->in.level) {
+		case 1:
+			if (i >= querydisplayinfo->out.info.info1.count) {
+				return ret;
+			}
+			r.in.rid = querydisplayinfo->out.info.info1.entries[i].rid;
+			break;
+		case 2:
+			if (i >= querydisplayinfo->out.info.info2.count) {
+				return ret;
+			}
+			r.in.rid = querydisplayinfo->out.info.info2.entries[i].rid;
+			break;
+		case 3:
+			/* Groups */
+		case 4:
+		case 5:
+			/* Not interested in validating just the account name */
+			return true;
+		}
+			
+		r.out.user_handle = &user_handle;
+		
+		switch (querydisplayinfo->in.level) {
+		case 1:
+		case 2:
+			status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("OpenUser(%u) failed - %s\n", r.in.rid, nt_errstr(status));
+				return False;
+			}
+		}
+		
+		q.in.user_handle = &user_handle;
+		q.in.level = 21;
+		status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryUserInfo(%u) failed - %s\n", r.in.rid, nt_errstr(status));
+			return False;
+		}
+		
+		switch (querydisplayinfo->in.level) {
+		case 1:
+			if (seen_testuser && strcmp(q.out.info->info21.account_name.string, TEST_ACCOUNT_NAME) == 0) {
+				*seen_testuser = true;
+			}
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].full_name, 
+					   q.out.info->info21.full_name, q.out.info->info21.account_name);
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].account_name, 
+					   q.out.info->info21.account_name, q.out.info->info21.account_name);
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].description, 
+					   q.out.info->info21.description, q.out.info->info21.account_name);
+			INT_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].rid, 
+					q.out.info->info21.rid, q.out.info->info21.account_name);
+			INT_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].acct_flags, 
+					q.out.info->info21.acct_flags, q.out.info->info21.account_name);
+			
+			break;
+		case 2:
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info2.entries[i].account_name, 
+					   q.out.info->info21.account_name, q.out.info->info21.account_name);
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info2.entries[i].description, 
+					   q.out.info->info21.description, q.out.info->info21.account_name);
+			INT_EQUAL_QUERY(querydisplayinfo->out.info.info2.entries[i].rid, 
+					q.out.info->info21.rid, q.out.info->info21.account_name);
+			INT_EQUAL_QUERY((querydisplayinfo->out.info.info2.entries[i].acct_flags & ~ACB_NORMAL), 
+					q.out.info->info21.acct_flags, q.out.info->info21.account_name);
+			
+			if (!(querydisplayinfo->out.info.info2.entries[i].acct_flags & ACB_NORMAL)) {
+				printf("Missing ACB_NORMAL in querydisplayinfo->out.info.info2.entries[i].acct_flags on %s\n", 
+				       q.out.info->info21.account_name.string);
+			}
+
+			if (!(q.out.info->info21.acct_flags & (ACB_WSTRUST))) {
+				printf("Found non-trust account %s in trust accoutn listing: 0x%x 0x%x\n",
+				       q.out.info->info21.account_name.string,
+				       querydisplayinfo->out.info.info2.entries[i].acct_flags,
+				       q.out.info->info21.acct_flags);
+				return False;
+			}
+			
+			break;
+		}
+		
+		if (!test_samr_handle_Close(p, mem_ctx, &user_handle)) {
+			return False;
+		}
+	}
+	return ret;
+}
+
 static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				  struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo r;
+	struct samr_QueryDomainInfo dom_info;
 	BOOL ret = True;
 	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
+	bool seen_testuser = false;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		printf("Testing QueryDisplayInfo level %u\n", levels[i]);
 
-		r.in.domain_handle = handle;
-		r.in.level = levels[i];
 		r.in.start_idx = 0;
-		r.in.max_entries = 1000;
-		r.in.buf_size = (uint32_t)-1;
-
-		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("QueryDisplayInfo level %u failed - %s\n", 
-			       levels[i], nt_errstr(status));
-			ret = False;
+		status = STATUS_MORE_ENTRIES;
+		while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			r.in.domain_handle = handle;
+			r.in.level = levels[i];
+			r.in.max_entries = 2;
+			r.in.buf_size = (uint32_t)-1;
+			
+			status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
+			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) && !NT_STATUS_IS_OK(status)) {
+				printf("QueryDisplayInfo level %u failed - %s\n", 
+				       levels[i], nt_errstr(status));
+				ret = False;
+			}
+			switch (r.in.level) {
+			case 1:
+				if (!test_each_DisplayInfo_user(p, mem_ctx, &r, &seen_testuser)) {
+					ret = False;
+				}
+				r.in.start_idx += r.out.info.info1.count;
+				break;
+			case 2:
+				if (!test_each_DisplayInfo_user(p, mem_ctx, &r, NULL)) {
+					ret = False;
+				}
+				r.in.start_idx += r.out.info.info2.count;
+				break;
+			case 3:
+				r.in.start_idx += r.out.info.info3.count;
+				break;
+			case 4:
+				r.in.start_idx += r.out.info.info4.count;
+				break;
+			case 5:
+				r.in.start_idx += r.out.info.info5.count;
+				break;
+			}
 		}
+		dom_info.in.domain_handle = handle;
+		dom_info.in.level = 2;
+		/* Check number of users returned is correct */
+		status = dcerpc_samr_QueryDomainInfo(p, mem_ctx, &dom_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDomainInfo level %u failed - %s\n", 
+			       r.in.level, nt_errstr(status));
+				ret = False;
+				break;
+		}
+		switch (r.in.level) {
+		case 1:
+		case 4:
+			if (dom_info.out.info->info2.num_users < r.in.start_idx) {
+				printf("QueryDomainInfo indicates that QueryDisplayInfo returned more users (%d/%d) than the domain %s is said to contain!\n",
+				       r.in.start_idx, dom_info.out.info->info2.num_groups,
+				       dom_info.out.info->info2.domain_name.string);
+				ret = False;
+			}
+			if (!seen_testuser) {
+				printf("Didn't find test user " TEST_ACCOUNT_NAME " in enumeration of %s\n", 
+				       dom_info.out.info->info2.domain_name.string);
+				ret = False;
+			}
+			break;
+		case 3:
+		case 5:
+			if (dom_info.out.info->info2.num_groups != r.in.start_idx) {
+				printf("QueryDomainInfo indicates that QueryDisplayInfo didn't return all (%d/%d) the groups in %s\n",
+				       r.in.start_idx, dom_info.out.info->info2.num_groups,
+				       dom_info.out.info->info2.domain_name.string);
+				ret = False;
+			}
+			
+			break;
+		}
+
 	}
 	
 	return ret;	
@@ -3811,8 +3994,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	switch (which_ops) {
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 	case TORTURE_SAMR_PASSWORDS:
-		ret &= test_CreateUser(p, mem_ctx, &domain_handle, NULL, which_ops);
 		ret &= test_CreateUser2(p, mem_ctx, &domain_handle, which_ops);
+		ret &= test_CreateUser(p, mem_ctx, &domain_handle, &user_handle, which_ops);
+		/* This test needs 'complex' users to validate */
+		ret &= test_QueryDisplayInfo(p, mem_ctx, &domain_handle);
 		break;
 	case TORTURE_SAMR_OTHER:
 		ret &= test_CreateUser(p, mem_ctx, &domain_handle, &user_handle, which_ops);
@@ -3826,7 +4011,6 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret &= test_EnumDomainUsers_async(p, mem_ctx, &domain_handle);
 		ret &= test_EnumDomainGroups(p, mem_ctx, &domain_handle);
 		ret &= test_EnumDomainAliases(p, mem_ctx, &domain_handle);
-		ret &= test_QueryDisplayInfo(p, mem_ctx, &domain_handle);
 		ret &= test_QueryDisplayInfo2(p, mem_ctx, &domain_handle);
 		ret &= test_QueryDisplayInfo3(p, mem_ctx, &domain_handle);
 		ret &= test_QueryDisplayInfo_continue(p, mem_ctx, &domain_handle);
