@@ -124,4 +124,5 @@ EXTRA_DIST = \
 	wait-kdc.sh \
 	pki-mapping \
 	ntlm-user-file.txt \
-	uuserver.txt
+	uuserver.txt \
+	donotexists.txt
