@@ -1,4 +1,26 @@
+2007-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_mech_switch.c: Don't try to do dlopen if system doesn't
+	have dlopen. From Rune of Chalmers.
+
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_duplicate_name.c: New signature of _gss_find_mn.
+
+	* mech/gss_init_sec_context.c: New signature of _gss_find_mn.
+
+	* mech/gss_acquire_cred.c: New signature of _gss_find_mn.
+
+	* mech/name.h: New signature of _gss_find_mn.
+
+	* mech/gss_canonicalize_name.c: New signature of _gss_find_mn.
+
+	* mech/gss_compare_name.c: New signature of _gss_find_mn.
+
+	* mech/gss_add_cred.c: New signature of _gss_find_mn.
+
+	* mech/gss_names.c (_gss_find_mn): Return an error code for
+	caller.
 
 	* spnego/accept_sec_context.c: remove checks that are done by the
 	previous function.
