@@ -1,3 +1,8 @@
+2007-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_c.c (get_cache_principal): make sure id is reset if we
+	fail. From Benjamin Bennet.
+
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* context_s.c (find_db_spec): match realm-less as the default
