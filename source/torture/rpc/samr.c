@@ -2861,42 +2861,100 @@ static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL check_mask(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		       struct policy_handle *handle, uint32_t rid, 
+		       uint32_t acct_flag_mask)
+{
+	NTSTATUS status;
+	struct samr_OpenUser r;
+	struct samr_QueryUserInfo q;
+	struct policy_handle user_handle;
+	BOOL ret = True;
+
+	printf("Testing OpenUser(%u)\n", rid);
+
+	r.in.domain_handle = handle;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.rid = rid;
+	r.out.user_handle = &user_handle;
+
+	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenUser(%u) failed - %s\n", rid, nt_errstr(status));
+		return False;
+	}
+
+	q.in.user_handle = &user_handle;
+	q.in.level = 16;
+	
+	status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryUserInfo level 16 failed - %s\n", 
+		       nt_errstr(status));
+		ret = False;
+	} else {
+		if ((acct_flag_mask & q.out.info->info16.acct_flags) == 0) {
+			printf("Server failed to filter for 0x%x, allowed 0x%x (%d) on EnumDomainUsers\n",
+			       acct_flag_mask, q.out.info->info16.acct_flags, rid);
+			ret = False;
+		}
+	}
+	
+	if (!test_samr_handle_Close(p, mem_ctx, &user_handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				 struct policy_handle *handle)
 {
-	NTSTATUS status;
+	NTSTATUS status = STATUS_MORE_ENTRIES;
 	struct samr_EnumDomainUsers r;
-	uint32_t resume_handle=0;
-	int i;
+	uint32_t mask, resume_handle=0;
+	int i, mask_idx;
 	BOOL ret = True;
 	struct samr_LookupNames n;
 	struct samr_LookupRids  lr ;
+	uint32_t masks[] = {ACB_NORMAL, ACB_DOMTRUST, ACB_WSTRUST, 
+			    ACB_DISABLED, ACB_NORMAL | ACB_DISABLED, 
+			    ACB_SVRTRUST | ACB_DOMTRUST | ACB_WSTRUST, 
+			    ACB_PWNOEXP, 0};
 
 	printf("Testing EnumDomainUsers\n");
 
-	r.in.domain_handle = handle;
-	r.in.resume_handle = &resume_handle;
-	r.in.acct_flags = 0;
-	r.in.max_size = (uint32_t)-1;
-	r.out.resume_handle = &resume_handle;
+	for (mask_idx=0;mask_idx<ARRAY_SIZE(masks);mask_idx++) {
+		r.in.domain_handle = handle;
+		r.in.resume_handle = &resume_handle;
+		r.in.acct_flags = mask = masks[mask_idx];
+		r.in.max_size = (uint32_t)-1;
+		r.out.resume_handle = &resume_handle;
 
-	status = dcerpc_samr_EnumDomainUsers(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumDomainUsers failed - %s\n", nt_errstr(status));
-		return False;
-	}
+		status = dcerpc_samr_EnumDomainUsers(p, mem_ctx, &r);
+		if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&  
+		    !NT_STATUS_IS_OK(status)) {
+			printf("EnumDomainUsers failed - %s\n", nt_errstr(status));
+			return False;
+		}
 	
-	if (!r.out.sam) {
-		return False;
-	}
+		if (!r.out.sam) {
+			printf("EnumDomainUsers failed: r.out.sam unexpectedly NULL\n");
+			return False;
+		}
 
-	if (r.out.sam->count == 0) {
-		return True;
-	}
+		if (r.out.sam->count == 0) {
+			continue;
+		}
 
-	for (i=0;i<r.out.sam->count;i++) {
-		if (!test_OpenUser(p, mem_ctx, handle, r.out.sam->entries[i].idx)) {
-			ret = False;
+		for (i=0;i<r.out.sam->count;i++) {
+			if (mask) {
+				if (!check_mask(p, mem_ctx, handle, r.out.sam->entries[i].idx, mask)) {
+					ret = False;
+				}
+			} else if (!test_OpenUser(p, mem_ctx, handle, r.out.sam->entries[i].idx)) {
+				ret = False;
+			}
 		}
 	}
 

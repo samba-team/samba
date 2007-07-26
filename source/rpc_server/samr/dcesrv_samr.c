@@ -1428,9 +1428,9 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
-	int count, i, first;
+	int count, num_filtered_entries, i, first;
 	struct samr_SamEntry *entries;
-	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
+	const char * const attrs[] = { "objectSid", "sAMAccountName", "userAccountControl", NULL };
 
 	*r->out.resume_handle = 0;
 	r->out.sam = NULL;
@@ -1456,27 +1456,31 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	num_filtered_entries = 0;
 	for (i=0;i<count;i++) {
-		entries[i].idx = samdb_result_rid_from_sid(mem_ctx, res[i], "objectSid", 0);
-		entries[i].name.string = samdb_result_string(res[i], "sAMAccountName", "");
+		/* Check if a mask has been requested */
+		if (r->in.acct_flags
+		    && ((samdb_result_acct_flags(res[i], 
+						 "userAccountControl") & r->in.acct_flags) == 0)) {
+			continue;
+		}
+		entries[num_filtered_entries].idx = samdb_result_rid_from_sid(mem_ctx, res[i], "objectSid", 0);
+		entries[num_filtered_entries].name.string = samdb_result_string(res[i], "sAMAccountName", "");
+		num_filtered_entries++;
 	}
 
 	/* sort the results by rid */
-	qsort(entries, count, sizeof(struct samr_SamEntry), 
+	qsort(entries, num_filtered_entries, sizeof(struct samr_SamEntry), 
 	      (comparison_fn_t)compare_SamEntry);
 
 	/* find the first entry to return */
 	for (first=0;
-	     first<count && entries[first].idx <= *r->in.resume_handle;
+	     first<num_filtered_entries && entries[first].idx <= *r->in.resume_handle;
 	     first++) ;
-
-	if (first == count) {
-		return NT_STATUS_OK;
-	}
 
 	/* return the rest, limit by max_size. Note that we 
 	   use the w2k3 element size value of 54 */
-	r->out.num_entries = count - first;
+	r->out.num_entries = num_filtered_entries - first;
 	r->out.num_entries = MIN(r->out.num_entries, 
 				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
@@ -1488,7 +1492,11 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	r->out.sam->entries = entries+first;
 	r->out.sam->count = r->out.num_entries;
 
-	if (r->out.num_entries < count - first) {
+	if (first == num_filtered_entries) {
+		return NT_STATUS_OK;
+	}
+
+	if (r->out.num_entries < num_filtered_entries - first) {
 		*r->out.resume_handle = entries[first+r->out.num_entries-1].idx;
 		return STATUS_MORE_ENTRIES;
 	}
