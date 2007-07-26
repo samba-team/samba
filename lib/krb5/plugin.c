@@ -76,6 +76,8 @@ _krb5_plugin_get_next(struct krb5_plugin *p)
  *
  */
 
+#ifdef HAVE_DLOPEN
+
 static krb5_error_code
 loadlib(krb5_context context,
 	enum krb5_plugin_type type,
@@ -113,6 +115,7 @@ loadlib(krb5_context context,
 
     return 0;
 }
+#endif /* HAVE_DLOPEN */
 
 krb5_error_code
 _krb5_plugin_register(krb5_context context,
@@ -181,6 +184,8 @@ _krb5_plugin_find(krb5_context context,
     }
     HEIMDAL_MUTEX_unlock(&plugin_mutex);
 
+#ifdef HAVE_DLOPEN
+
     dirs = krb5_config_get_strings(context, NULL, "libdefaults", 
 				   "plugin_dir", NULL);
     if (dirs == NULL) {
@@ -213,6 +218,7 @@ _krb5_plugin_find(krb5_context context,
     }
     if (dirs != sysdirs)
 	krb5_config_free_strings(dirs);
+#endif /* HAVE_DLOPEN */
 
     if (*list == NULL) {
 	krb5_set_error_string(context, "Did not find a plugin for %s", name);
