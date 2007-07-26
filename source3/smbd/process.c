@@ -749,7 +749,7 @@ static const struct smb_message_struct {
 /* 0x70 */ { "SMBtcon",reply_tcon,NULL,0},
 /* 0x71 */ { "SMBtdis",reply_tdis,NULL,DO_CHDIR},
 /* 0x72 */ { "SMBnegprot",NULL,reply_negprot,0},
-/* 0x73 */ { "SMBsesssetupX",reply_sesssetup_and_X,NULL,0},
+/* 0x73 */ { "SMBsesssetupX",NULL,reply_sesssetup_and_X,0},
 /* 0x74 */ { "SMBulogoffX", reply_ulogoffX,NULL, 0}, /* ulogoff doesn't give a valid TID */
 /* 0x75 */ { "SMBtconX",NULL,reply_tcon_and_X,0},
 /* 0x76 */ { NULL, NULL, NULL, 0 },
