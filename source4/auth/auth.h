@@ -21,6 +21,8 @@
 #ifndef _SAMBA_AUTH_H
 #define _SAMBA_AUTH_H
 
+extern const char *user_attrs[];
+
 union netr_Validation;
 struct netr_SamBaseInfo;
 struct netr_SamInfo3;

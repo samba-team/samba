@@ -45,6 +45,7 @@ const char *user_attrs[] = {
 
 	"pwdLastSet",
 	"accountExpires",
+	"logonHours",
 	
 	"objectSid",
 
@@ -67,8 +68,69 @@ const char *user_attrs[] = {
 };
 
 const char *domain_ref_attrs[] =  {"nETBIOSName", "nCName", 
-					  "dnsRoot", "objectClass", NULL};
+				   "dnsRoot", "objectClass", NULL};
 
+/****************************************************************************
+ Check if a user is allowed to logon at this time. Note this is the
+ servers local time, as logon hours are just specified as a weekly
+ bitmask.
+****************************************************************************/
+                                                                                                              
+static BOOL logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
+{
+	/* In logon hours first bit is Sunday from 12AM to 1AM */
+	const struct ldb_val *hours;
+	struct tm *utctime;
+	time_t lasttime;
+	const char *asct;
+	uint8_t bitmask, bitpos;
+
+	hours = ldb_msg_find_ldb_val(msg, "logonHours");
+	if (!hours) {
+		DEBUG(5,("logon_hours_ok: No hours restrictions for user %s\n", name_for_logs));
+		return True;
+	}
+
+	if (hours->length != 168/8) {
+		DEBUG(5,("logon_hours_ok: malformed logon hours restrictions for user %s\n", name_for_logs));
+		return True;		
+	}
+
+	lasttime = time(NULL);
+	utctime = gmtime(&lasttime);
+	if (!utctime) {
+		DEBUG(1, ("logon_hours_ok: failed to get gmtime. Failing logon for user %s\n",
+			name_for_logs));
+		return False;
+	}
+
+	/* find the corresponding byte and bit */
+	bitpos = (utctime->tm_wday * 24 + utctime->tm_hour) % 168;
+	bitmask = 1 << (bitpos % 8);
+
+	if (! (hours->data[bitpos/8] & bitmask)) {
+		struct tm *t = localtime(&lasttime);
+		if (!t) {
+			asct = "INVALID TIME";
+		} else {
+			asct = asctime(t);
+			if (!asct) {
+				asct = "INVALID TIME";
+			}
+		}
+		
+		DEBUG(1, ("logon_hours_ok: Account for user %s not allowed to "
+			  "logon at this time (%s).\n",
+			  name_for_logs, asct ));
+		return False;
+	}
+
+	asct = asctime(utctime);
+	DEBUG(5,("logon_hours_ok: user %s allowed to logon at this time (%s)\n",
+		name_for_logs, asct ? asct : "UNKNOWN TIME" ));
+
+	return True;
+}
 
 /****************************************************************************
  Do a specific test for a SAM_ACCOUNT being vaild for this connection 
@@ -162,6 +224,10 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		if (invalid_ws) {
 			return NT_STATUS_INVALID_WORKSTATION;
 		}
+	}
+	
+	if (!logon_hours_ok(msg, name_for_logs)) {
+		return NT_STATUS_INVALID_LOGON_HOURS;
 	}
 	
 	if (acct_flags & ACB_DOMTRUST) {

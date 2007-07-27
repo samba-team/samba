@@ -54,29 +54,6 @@ enum hdb_ldb_ent_type
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
   HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_ANY };
 
-static const char * const krb5_attrs[] = {
-	"objectClass",
-	"sAMAccountName",
-
-	"userPrincipalName",
-	"servicePrincipalName",
-
-	"userAccountControl",
-
-	"pwdLastSet",
-	"accountExpires",
-
-	"whenCreated",
-	"whenChanged",
-
-	"msDS-KeyVersionNumber",
-
-	"unicodePwd",
-	"supplementalCredentials",
-
-	NULL
-};
-
 static const char *realm_ref_attrs[] = {
 	"nCName", 
 	"dnsRoot", 
@@ -615,7 +592,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	krb5_error_code ret;
 	int lret;
 	char *filter = NULL;
-	const char * const *princ_attrs = krb5_attrs;
+	const char * const *princ_attrs = user_attrs;
 
 	char *short_princ;
 	char *short_princ_talloc;
@@ -886,7 +863,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		}
 		
 		ldb_ret = gendb_search_dn((struct ldb_context *)db->hdb_db,
-					  mem_ctx, user_dn, &msg, krb5_attrs);
+					  mem_ctx, user_dn, &msg, user_attrs);
 		
 		if (ldb_ret != 1) {
 			return HDB_ERR_NOENTRY;
@@ -1083,7 +1060,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	lret = ldb_search(ldb_ctx, realm_dn,
 				 LDB_SCOPE_SUBTREE, "(objectClass=user)",
-				 krb5_attrs, &res);
+				 user_attrs, &res);
 
 	if (lret != LDB_SUCCESS) {
 		talloc_free(priv);
