@@ -111,6 +111,7 @@ struct dsdb_class {
 	const char **possSuperiors;
 	const char **mustContain;
 	const char **mayContain;
+	const char **possibleInferiors;
 
 	const char *defaultSecurityDescriptor;
 

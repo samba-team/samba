@@ -107,13 +107,15 @@ struct kludge_acl_context {
 	enum user_is user_type;
 	bool allowedAttributes;
 	bool allowedAttributesEffective;
+	bool allowedChildClasses;
+	bool allowedChildClassesEffective;
 	const char **attrs;
 };
 
 /* read all objectClasses */
 
 static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_message *msg,
-							 const char *attrName) 
+					const char *attrName) 
 {
 	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedAttributes;
@@ -129,12 +131,13 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	   we alter the element array in ldb_msg_add_empty() */
 	oc_el = ldb_msg_find_element(msg, "objectClass");
 
-	for (i=0; i < oc_el->num_values; i++) {
+	for (i=0; oc_el && i < oc_el->num_values; i++) {
 		class = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
 		if (!class) {
 			/* We don't know this class?  what is going on? */
 			continue;
 		}
+
 		for (j=0; class->mayContain && class->mayContain[j]; j++) {
 			ldb_msg_add_string(msg, attrName, class->mayContain[j]);
 		}
@@ -169,6 +172,57 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	return 0;
 
 }
+/* read all objectClasses */
+
+static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *msg,
+				   const char *attrName) 
+{
+	struct ldb_message_element *oc_el;
+	struct ldb_message_element *allowedClasses;
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	const struct dsdb_class *class;
+	int i, j, ret;
+	ret = ldb_msg_add_empty(msg, attrName, 0, &allowedClasses);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
+	/* To ensure that oc_el is valid, we must look for it after 
+	   we alter the element array in ldb_msg_add_empty() */
+	oc_el = ldb_msg_find_element(msg, "objectClass");
+
+	for (i=0; oc_el && i < oc_el->num_values; i++) {
+		class = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
+		if (!class) {
+			/* We don't know this class?  what is going on? */
+			continue;
+		}
+
+		for (j=0; class->possibleInferiors && class->possibleInferiors[j]; j++) {
+			ldb_msg_add_string(msg, attrName, class->possibleInferiors[j]);
+		}
+	}
+		
+	if (allowedClasses->num_values > 1) {
+		qsort(allowedClasses->values, 
+		      allowedClasses->num_values, 
+		      sizeof(*allowedClasses->values),
+		      (comparison_fn_t)data_blob_cmp);
+	
+		for (i=1 ; i < allowedClasses->num_values; i++) {
+			struct ldb_val *val1 = &allowedClasses->values[i-1];
+			struct ldb_val *val2 = &allowedClasses->values[i];
+			if (data_blob_cmp(val1, val2) == 0) {
+				memmove(val1, val2, (allowedClasses->num_values - i) * sizeof( struct ldb_val)); 
+				allowedClasses->num_values--;
+				i--;
+			}
+		}
+	}
+
+	return 0;
+
+}
 
 /* find all attributes allowed by all these objectClasses */
 
@@ -194,6 +248,13 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 		ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributes");
 		if (ret != LDB_SUCCESS) {
 			return ret;
+
+		}
+	}
+	if (ac->allowedChildClasses) {
+		ret = kludge_acl_childClasses(ldb, ares->message, "allowedChildClasses");
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
 
@@ -208,6 +269,12 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 					return ret;
 				}
 			}
+			if (ac->allowedChildClassesEffective) {
+				ret = kludge_acl_childClasses(ldb, ares->message, "allowedChildClassesEffective");
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
 			break;
 		default:
 			/* remove password attributes */
@@ -217,7 +284,8 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 		}
 	}
 
-	if ((ac->allowedAttributes || ac->allowedAttributesEffective) && 
+	if ((ac->allowedAttributes || ac->allowedAttributesEffective
+	     || ac->allowedChildClasses || ac->allowedChildClassesEffective) && 
 	    (!ldb_attr_in_list(ac->attrs, "objectClass") && 
 	     !ldb_attr_in_list(ac->attrs, "*"))) {
 		ldb_msg_remove_attr(ares->message, "objectClass");
@@ -267,7 +335,11 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac->allowedAttributesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedAttributesEffective");
 
-	if (ac->allowedAttributes || ac->allowedAttributesEffective) {
+	ac->allowedChildClasses = ldb_attr_in_list(req->op.search.attrs, "allowedChildClasses");
+
+	ac->allowedChildClassesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedChildClassesEffective");
+
+	if (ac->allowedAttributes || ac->allowedAttributesEffective || ac->allowedChildClasses || ac->allowedChildClassesEffective) {
 		down_req->op.search.attrs
 			= ldb_attr_list_copy_add(down_req, down_req->op.search.attrs, "objectClass");
 	}

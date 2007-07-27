@@ -17,7 +17,3 @@ objectCategory: CN=Container,${SCHEMADN}
 -
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE
--
-replace: allowedChildClassesEffective
-allowedChildClassesEffective: user
-allowedChildClassesEffective: group
