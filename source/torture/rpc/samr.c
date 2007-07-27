@@ -324,6 +324,16 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_STRING(21, full_name, 21, full_name, "xx21-21 full_name", 
 			   SAMR_FIELD_FULL_NAME);
 
+	TEST_USERINFO_STRING(6, full_name,  1, full_name, "", 0);
+	TEST_USERINFO_STRING(6, full_name,  3, full_name, "", 0);
+	TEST_USERINFO_STRING(6, full_name,  5, full_name, "", 0);
+	TEST_USERINFO_STRING(6, full_name,  6, full_name, "", 0);
+	TEST_USERINFO_STRING(6, full_name,  8, full_name, "", 0);
+	TEST_USERINFO_STRING(6, full_name, 21, full_name, "", 0);
+	TEST_USERINFO_STRING(8, full_name, 21, full_name, "", 0);
+	TEST_USERINFO_STRING(21, full_name, 21, full_name, "", 
+			   SAMR_FIELD_FULL_NAME);
+
 	TEST_USERINFO_STRING(11, logon_script, 3, logon_script, "xx11-3 logon_script", 0);
 	TEST_USERINFO_STRING(11, logon_script, 5, logon_script, "xx11-5 logon_script", 0);
 	TEST_USERINFO_STRING(11, logon_script, 21, logon_script, "xx11-21 logon_script", 0);
