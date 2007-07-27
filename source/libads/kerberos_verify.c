@@ -285,6 +285,7 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 		if (ret == KRB5KRB_AP_ERR_TKT_NYV || 
 		    ret == KRB5KRB_AP_ERR_TKT_EXPIRED ||
 		    ret == KRB5KRB_AP_ERR_SKEW) {
+			krb5_free_keyblock(context, key);
 			break;
 		}
 
