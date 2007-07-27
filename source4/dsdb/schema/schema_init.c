@@ -492,15 +492,17 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 	GET_STRING_LDB(msg, "subClassOf", mem_ctx, obj, subClassOf, True);
 
 	obj->systemAuxiliaryClass	= NULL;
-	obj->systemPossSuperiors	= NULL;
 
 	obj->auxiliaryClass		= NULL;
-	obj->possSuperiors		= NULL;
 
 	GET_STRING_LIST_LDB(msg, "systemMustContain", mem_ctx, obj, systemMustContain, False);
 	GET_STRING_LIST_LDB(msg, "systemMayContain", mem_ctx, obj, systemMayContain, False);
 	GET_STRING_LIST_LDB(msg, "mustContain", mem_ctx, obj, mustContain, False);
 	GET_STRING_LIST_LDB(msg, "mayContain", mem_ctx, obj, mayContain, False);
+
+	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, False);
+	GET_STRING_LIST_LDB(msg, "possSuperiors", mem_ctx, obj, possSuperiors, False);
+	GET_STRING_LIST_LDB(msg, "possibleInferiors", mem_ctx, obj, possibleInferiors, False);
 
 	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
 
@@ -831,6 +833,8 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 	obj->possSuperiors		= NULL;
 	obj->mustContain		= NULL;
 	obj->mayContain			= NULL;
+
+	obj->possibleInferiors          = NULL;
 
 	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
 
