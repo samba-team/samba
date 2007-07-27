@@ -486,7 +486,8 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const char *snam
 		status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 		goto failed;
 
-	} else if (req_flags & GSS_C_INTEG_FLAG) {
+	} else if ((req_flags & GSS_C_INTEG_FLAG) &&
+		   !(ret_flags & GSS_C_INTEG_FLAG)) {
 		/*
 		 * here we wanted siging but didn't got it
 		 * from the gssapi library
