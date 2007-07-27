@@ -161,7 +161,11 @@ receive_loop (krb5_context context,
     off_t left, right;
     void *buf;
     int32_t vers;
+    ssize_t sret;
 
+    /*
+     * Seek to the current version of the local database.
+     */
     do {
 	int32_t len, timestamp, tmp;
 	enum kadm_ops op;
@@ -176,6 +180,9 @@ receive_loop (krb5_context context,
 	    krb5_storage_seek(sp, len + 8, SEEK_CUR);
     } while(vers <= server_context->log_context.version);
 
+    /*
+     * Read up rest of the entires into the memory...
+     */
     left  = krb5_storage_seek (sp, -16, SEEK_CUR);
     right = krb5_storage_seek (sp, 0, SEEK_END);
     buf = malloc (right - left);
@@ -183,16 +190,29 @@ receive_loop (krb5_context context,
 	krb5_warnx (context, "malloc: no memory");
 	return;
     }
+
+    /*
+     * ...and then write them out to the on-disk log.
+     */
     krb5_storage_seek (sp, left, SEEK_SET);
     krb5_storage_read (sp, buf, right - left);
-    write (server_context->log_context.log_fd, buf, right-left);
-    fsync (server_context->log_context.log_fd);
+    sret = write (server_context->log_context.log_fd, buf, right-left);
+    if (sret != right - left)
+	krb5_err(context, 1, errno, "Failed to write log to disk");
+    ret = fsync (server_context->log_context.log_fd);
+    if (ret)
+	krb5_err(context, 1, errno, "Failed to sync log to disk");
     free (buf);
 
+    /*
+     * Go back to the startpoint and start to commit the entires to
+     * the database.
+     */
     krb5_storage_seek (sp, left, SEEK_SET);
 
     for(;;) {
 	int32_t len, timestamp, tmp;
+	off_t cur;
 	enum kadm_ops op;
 
 	if(krb5_ret_int32 (sp, &vers) != 0)
@@ -201,6 +221,7 @@ receive_loop (krb5_context context,
 	krb5_ret_int32 (sp, &tmp);
 	op = tmp;
 	krb5_ret_int32 (sp, &len);
+	cur = krb5_storage_seek(sp, 0, SEEK_CUR);
 
 	ret = kadm5_log_replay (server_context,
 				op, vers, len, sp);
@@ -208,7 +229,12 @@ receive_loop (krb5_context context,
 	    krb5_warn (context, ret, "kadm5_log_replay: %d", (int)vers);
 	else
 	    server_context->log_context.version = vers;
-	krb5_storage_seek (sp, 8, SEEK_CUR);
+
+	/* 
+	 * Don't trust the kadm5_log_reply* functions to do the right
+	 * thing and set the offset to the end ourself.
+	 */
+	krb5_storage_seek (sp, cur + 8, SEEK_SET);
     }
 }
 
@@ -285,7 +311,6 @@ receive_everything (krb5_context context, int fd,
     /* I really want to use O_EXCL here, but given that I can't easily clean
        up on error, I won't */
     ret = mydb->hdb_open(context, mydb, O_RDWR | O_CREAT | O_TRUNC, 0600);
-
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
