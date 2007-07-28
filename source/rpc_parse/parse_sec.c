@@ -262,7 +262,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		psd->revision = (enum security_acl_revision)revision;
+		psd->revision = (enum security_descriptor_revision)revision;
 	}
 
 	if(!prs_uint16("type     ", ps, depth, &psd->type))
