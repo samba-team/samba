@@ -201,7 +201,7 @@ get_words(void)
 }
 
 static void
-usage(void)
+usage(int exit_code)
 {
     fprintf(stderr, "usage: %s [options] [message]\n", getprogname());
     fprintf(stderr, "-fg color     foreground color\n");
@@ -215,7 +215,9 @@ usage(void)
     fprintf(stderr, "-f [file]     message is read from file or ~/.msgfile\n");
     fprintf(stderr, "-prog program  text is gotten from executing `program'\n");
     fprintf(stderr, "-nodestroytickets keep kerberos tickets\n");
-    exit(1);
+    fprintf(stderr, "--version\n");
+    fprintf(stderr, "--help\n");
+    exit(exit_code);
 }
 
 static void
@@ -232,7 +234,7 @@ init_words (int argc, char **argv)
 		i++;
 	    } else {
 		warnx ("-p requires an argument");
-		usage();
+		usage(1);
 	    }
 	} else if(strcmp(argv[i], "-f") == 0) {
 	    i++;
@@ -249,6 +251,8 @@ init_words (int argc, char **argv)
 	} else if(strcmp(argv[i], "--version") == 0) {
 	    print_version(NULL);
 	    exit(0);
+	} else if(strcmp(argv[i], "--help") == 0) {
+	    usage(0);
 	} else {
 	    int j;
 	    int len = 1;
