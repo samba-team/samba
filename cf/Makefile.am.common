@@ -106,7 +106,7 @@ check-local::
 	  failed=0; all=0; \
 	  for i in $$foo; do \
 	    all=`expr $$all + 1`; \
-	    if ./$$i --version > /dev/null 2>&1; then \
+	    if (./$$i --version && ./$$i --help) > /dev/null 2>&1; then \
 	      echo "PASS: $$i"; \
 	    else \
 	      echo "FAIL: $$i"; \
