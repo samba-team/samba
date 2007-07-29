@@ -553,7 +553,7 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 		pid_list = NULL;
 	}
 
-	for( i = 0, offset = 0; offset < data.dsize; offset += 8, i++)
+	for( i = 0, offset = 0; i < num_pids; offset += 8, i++)
 		pid_list[i] = (pid_t)IVAL(data.dptr, offset);
 
 	*pp_pid_list = pid_list;
