@@ -81,7 +81,7 @@ static void received_unlock_msg(struct messaging_context *msg,
 ****************************************************************************/
 
 BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
-		char *inbuf, int length,
+		const char *inbuf, int length,
 		files_struct *fsp,
 		int lock_timeout,
 		int lock_num,
