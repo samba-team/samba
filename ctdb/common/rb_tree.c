@@ -406,6 +406,14 @@ delete_node(trbt_node_t *node)
 {
 	trbt_node_t *parent, *child, dc;
 
+	/* This node has two child nodes, then just copy the content
+	   from the next smaller node with this node and delete the 
+	   predecessor instead.
+	   The predecessor is guaranteed to have at most one child
+	   node since its right arm must be NULL
+	   (It must be NULL since we are its sucessor and we are above
+	    it in the tree)
+	 */
 	if (node->left != NULL && node->right != NULL) {
 		/* This node has two children, just copy the data */
 		/* find the predecessor */
@@ -430,14 +438,20 @@ delete_node(trbt_node_t *node)
 	}
 
 
-
 	/* There is at most one child to this node to be deleted */
 	child = node->left;
 	if (node->right) {
 		child = node->right;
 	}
 
-	/* we didnt have a proper child so create a dummy child */
+	/* If the node to be deleted did not have any child at all we
+	   create a temporary dummy node for the child and mark it black.
+	   Once the delete of the node is finished, we remove this dummy
+	   node, which is simple to do since it is guaranteed that it will
+	   still not have any children after the delete operation.
+	   This is because we dont represent the leaf-nodes as actual nodes
+	   in this implementation.
+	 */
 	if (!child) {
 		child = &dc;
 		child->tree = node->tree;
@@ -455,10 +469,11 @@ delete_node(trbt_node_t *node)
 		} else {
 			parent->right = child;
 		}
-//	} else {
-//		node->tree->tree = child;
+	} else {
+		node->tree->tree = child;
 	}
 	child->parent = node->parent;
+
 
 	if (node->rb_color == TRBT_BLACK) {
 		if (trbt_get_color(child) == TRBT_RED) {
@@ -468,8 +483,22 @@ delete_node(trbt_node_t *node)
 		}
 	}
 
+	/* If we had to create a temporary dummy node to represent a black 
+	   leaf child we now has to delete it.
+	   This is simple since this dummy node originally had no children
+	   and we are guaranteed that it will also not have any children 
+	   after the node has been deleted and any possible rotations 
+	   have occured.
+
+	   The only special case is if this was the last node of the tree
+	   in which case we have to reset the root to NULL as well.
+	   Othervise it is enough to just unlink the child from its new
+	   parent.
+	 */
 	if (child == &dc) {
-		if (child == child->parent->left) {
+		if (child->parent == NULL) {
+			node->tree->tree = NULL;
+		} else if (child == child->parent->left) {
 			child->parent->left = NULL;
 		} else {
 			child->parent->right = NULL;
@@ -647,6 +676,22 @@ test_tree(void)
 	int cnt=0;
 
 	tree=trbt_create(talloc_new(NULL));
+#if 0
+	for(i=0;i<10;i++){
+		printf("adding node %i\n",i);
+		trbt_insert32(tree, i, NULL);
+		print_tree(tree);
+	}
+	printf("deleting node %i\n",3);
+	trbt_delete32(tree, 3);
+	print_tree(tree);
+	for(i=0;i<10;i++){
+		printf("deleting node %i\n",i);
+		trbt_delete32(tree, i);
+		print_tree(tree);
+	}
+exit(0);
+#endif
 	while(++cnt){
 		int i;
 		printf("iteration : %d\n",cnt);
