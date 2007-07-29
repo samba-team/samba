@@ -151,7 +151,7 @@ static BOOL recalc_brl_timeout(void)
 ****************************************************************************/
 
 BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
-		char *inbuf, int length,
+		const char *inbuf, int length,
 		files_struct *fsp,
 		int lock_timeout,
 		int lock_num,
