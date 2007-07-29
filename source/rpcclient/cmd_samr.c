@@ -1743,15 +1743,12 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	/* Look up rids */
 
 	num_rids = argc - 2;
-	if (num_rids) {
-		if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
-			rpccli_samr_close(cli, mem_ctx, &domain_pol);
-			rpccli_samr_close(cli, mem_ctx, &connect_pol);
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-	} else {
-		rids = NULL;
+
+	if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+		rpccli_samr_close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	for (i = 0; i < argc - 2; i++)
