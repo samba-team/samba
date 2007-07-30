@@ -4205,56 +4205,65 @@ NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
  Reply to a rmdir.
 ****************************************************************************/
 
-int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_rmdir(connection_struct *conn, struct smb_request *req)
 {
 	pstring directory;
-	int outsize = 0;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	START_PROFILE(SMBrmdir);
 
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), directory,
-			smb_buf(inbuf) + 1, sizeof(directory), 0,
+	srvstr_get_path((char *)req->inbuf, req->flags2, directory,
+			smb_buf(req->inbuf) + 1, sizeof(directory), 0,
 			STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBrmdir);
-		return ERROR_NT(status);
+		return;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory);
+	status = resolve_dfspath(conn,
+				 req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 directory);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBrmdir);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBrmdir);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBrmdir);
+		return;
 	}
 
 	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBrmdir);
-		return ERROR_NT(status);
+		return;
 	}
   
 	status = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBrmdir);
-		return ERROR_NT(status);
+		return;
 	}
 
-	dptr_closepath(directory,SVAL(inbuf,smb_pid));
+	dptr_closepath(directory, req->smbpid);
 	status = rmdir_internals(conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBrmdir);
-		return ERROR_NT(status);
+		return;
 	}
  
-	outsize = set_message(inbuf,outbuf,0,0,False);
+	reply_outbuf(req, 0, 0);
   
 	DEBUG( 3, ( "rmdir %s\n", directory ) );
   
 	END_PROFILE(SMBrmdir);
-	return(outsize);
+	return;
 }
 
 /*******************************************************************
