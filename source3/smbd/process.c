@@ -762,7 +762,7 @@ static const struct smb_message_struct {
 /* 0x7d */ { NULL, NULL, NULL, 0 },
 /* 0x7e */ { NULL, NULL, NULL, 0 },
 /* 0x7f */ { NULL, NULL, NULL, 0 },
-/* 0x80 */ { "SMBdskattr",reply_dskattr,NULL,AS_USER},
+/* 0x80 */ { "SMBdskattr",NULL,reply_dskattr,AS_USER},
 /* 0x81 */ { "SMBsearch",reply_search,NULL,AS_USER},
 /* 0x82 */ { "SMBffirst",reply_search,NULL,AS_USER},
 /* 0x83 */ { "SMBfunique",reply_search,NULL,AS_USER},
