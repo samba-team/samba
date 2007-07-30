@@ -174,6 +174,7 @@ static NTSTATUS ipc_setpathinfo(struct ntvfs_module_context *ntvfs,
 static int ipc_fd_destructor(struct pipe_state *p)
 {
 	DLIST_REMOVE(p->private->pipe_list, p);
+	ntvfs_handle_remove_backend_data(p->handle, p->private->ntvfs);
 	return 0;
 }
 
