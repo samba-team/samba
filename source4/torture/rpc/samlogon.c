@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"
@@ -33,6 +34,8 @@
 
 #define TEST_MACHINE_NAME "samlogontest"
 #define TEST_USER_NAME "samlogontestuser"
+#define TEST_USER_NAME_WRONG_WKS "samlogontest2"
+#define TEST_USER_NAME_WRONG_TIME "samlogontest3"
 
 enum ntlm_break {
 	BREAK_BOTH,
@@ -1476,13 +1479,15 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	struct cli_credentials *machine_credentials;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_netlogon");
 	BOOL ret = True;
-	struct test_join *join_ctx;
-	struct test_join *user_ctx;
-	char *user_password;
+	struct test_join *join_ctx = NULL;
+	struct test_join *user_ctx = NULL, *user_ctx_wrong_wks = NULL, *user_ctx_wrong_time = NULL;
+	char *user_password, *user_password_wrong_wks, *user_password_wrong_time;
 	const char *old_user_password;
 	char *test_machine_account;
 	const char *binding = torture_setting_string(torture, "binding", NULL);
 	const char *userdomain;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
 	int i;
 	int ci;
 
@@ -1514,7 +1519,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 					   ACB_NORMAL, 
 					   (const char **)&user_password);
 	if (!user_ctx) {
-		d_printf("Failed to join as Workstation\n");
+		d_printf("Failed to create a test user\n");
 		return False;
 	}
 
@@ -1523,6 +1528,57 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	test_ChangePasswordUser3(torture_join_samr_pipe(user_ctx), mem_ctx,
 				 TEST_USER_NAME, 16 /* > 14 */, &user_password, 
 				 NULL, 0, False);
+
+	user_ctx_wrong_wks = torture_create_testuser(TEST_USER_NAME_WRONG_WKS,
+					   userdomain,
+					   ACB_NORMAL, 
+					   (const char **)&user_password_wrong_wks);
+	if (!user_ctx_wrong_wks) {
+		d_printf("Failed to create a test user (wrong workstation test)\n");
+		return False;
+	}
+
+	ZERO_STRUCT(u);
+	s.in.user_handle = torture_join_samr_user_policy(user_ctx_wrong_wks);
+	s.in.info = &u;
+	s.in.level = 21;
+
+	u.info21.fields_present = SAMR_FIELD_WORKSTATIONS;
+	u.info21.workstations.string = "not" TEST_MACHINE_NAME;
+
+	status = dcerpc_samr_SetUserInfo(torture_join_samr_pipe(user_ctx_wrong_wks), mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo (list of workstations) failed - %s\n", nt_errstr(status));
+		ret = False;
+		goto failed;
+	}
+
+	user_ctx_wrong_time
+		= torture_create_testuser(TEST_USER_NAME_WRONG_TIME,
+					   userdomain,
+					   ACB_NORMAL, 
+					   (const char **)&user_password_wrong_time);
+	if (!user_ctx_wrong_time) {
+		d_printf("Failed to create a test user (wrong workstation test)\n");
+		return False;
+	}
+
+	ZERO_STRUCT(u);
+	s.in.user_handle = torture_join_samr_user_policy(user_ctx_wrong_time);
+	s.in.info = &u;
+	s.in.level = 21;
+
+	u.info21.fields_present = SAMR_FIELD_WORKSTATIONS | SAMR_FIELD_LOGON_HOURS;
+	u.info21.workstations.string = TEST_MACHINE_NAME;
+	u.info21.logon_hours.units_per_week = 168;
+	u.info21.logon_hours.bits = talloc_zero_size(mem_ctx, 168);
+
+	status = dcerpc_samr_SetUserInfo(torture_join_samr_pipe(user_ctx_wrong_time), mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo (logon times and list of workstations) failed - %s\n", nt_errstr(status));
+		ret = False;
+		goto failed;
+	}
 
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1706,6 +1762,15 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 				.expected_interactive_error = NT_STATUS_WRONG_PASSWORD,
 				.expected_network_error     = NT_STATUS_OK,
 				.old_password  = True
+			},
+			{	
+				.comment       = "test user (wong workstation): domain\\user",
+				.domain        = userdomain,
+				.username      = TEST_USER_NAME_WRONG_WKS,
+				.password      = user_password_wrong_wks,
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_INVALID_WORKSTATION,
+				.expected_network_error     = NT_STATUS_INVALID_WORKSTATION
 			}
 		};
 		
@@ -1777,5 +1842,7 @@ failed:
 
 	torture_leave_domain(join_ctx);
 	torture_leave_domain(user_ctx);
+	torture_leave_domain(user_ctx_wrong_wks);
+	torture_leave_domain(user_ctx_wrong_time);
 	return ret;
 }

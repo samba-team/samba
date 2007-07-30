@@ -46,7 +46,6 @@ const char *user_attrs[] = {
 	"pwdLastSet",
 	"accountExpires",
 	"logonHours",
-	
 	"objectSid",
 
 	/* check 'allowed workstations' */
@@ -213,7 +212,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			DEBUG(10,("sam_account_ok: checking for workstation match '%s' and '%s'\n",
 				  workstations[i], logon_workstation));
 
-			if (strequal(workstations[i], logon_workstation) == 0) {
+			if (strequal(workstations[i], logon_workstation)) {
 				invalid_ws = False;
 				break;
 			}
