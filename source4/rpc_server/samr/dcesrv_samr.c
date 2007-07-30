@@ -3707,13 +3707,6 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 				samdb_result_string(res[i], "description", "");
 			break;
 		case 2:
-			if (!(samdb_result_acct_flags(res[i], 
-						      "userAccountControl") & ACB_WSTRUST)) {
-				/* Domain controllers match the
-				 * filter, but should not be included
-				 * in the output */
-				continue;
-			}
 			entriesFull[count].idx = count + 1;
 			entriesFull[count].rid =
 				objectsid->sub_auths[objectsid->num_auths-1];
