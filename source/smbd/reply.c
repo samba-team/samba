@@ -1669,28 +1669,33 @@ void reply_open_and_X(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
+void reply_ulogoffX(connection_struct *conn, struct smb_request *req)
 {
-	uint16 vuid = SVAL(inbuf,smb_uid);
-	user_struct *vuser = get_valid_user_struct(vuid);
+	user_struct *vuser;
+
 	START_PROFILE(SMBulogoffX);
 
-	if(vuser == 0)
-		DEBUG(3,("ulogoff, vuser id %d does not map to user.\n", vuid));
+	vuser = get_valid_user_struct(req->vuid);
+
+	if(vuser == NULL) {
+		DEBUG(3,("ulogoff, vuser id %d does not map to user.\n",
+			 req->vuid));
+	}
 
 	/* in user level security we are supposed to close any files
 		open by this user */
-	if ((vuser != 0) && (lp_security() != SEC_SHARE))
-		file_close_user(vuid);
+	if ((vuser != NULL) && (lp_security() != SEC_SHARE)) {
+		file_close_user(req->vuid);
+	}
 
-	invalidate_vuid(vuid);
+	invalidate_vuid(req->vuid);
 
-	set_message(inbuf,outbuf,2,0,True);
+	reply_outbuf(req, 2, 0);
 
-	DEBUG( 3, ( "ulogoffX vuid=%d\n", vuid ) );
+	DEBUG( 3, ( "ulogoffX vuid=%d\n", req->vuid ) );
 
 	END_PROFILE(SMBulogoffX);
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
 }
 
 /****************************************************************************
