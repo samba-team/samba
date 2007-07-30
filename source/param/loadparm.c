@@ -325,6 +325,7 @@ typedef struct {
 	int name_cache_timeout;
 	int client_signing;
 	int server_signing;
+	int client_ldap_sasl_wrapping;
 	int iUsershareMaxShares;
 	int iIdmapCacheTime;
 	int iIdmapNegativeCacheTime;
@@ -690,6 +691,13 @@ static const struct enum_list enum_printing[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_ldap_sasl_wrapping[] = {
+	{0, "plain"},
+	{ADS_AUTH_SASL_SIGN, "sign"},
+	{ADS_AUTH_SASL_SEAL, "seal"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "no"},
 	{LDAP_SSL_OFF, "No"},
@@ -1017,7 +1025,7 @@ static struct parm_struct parm_table[] = {
 	{"client signing", P_ENUM, P_GLOBAL, &Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
-
+	{"client ldap sasl wrapping", P_ENUM, P_GLOBAL, &Globals.client_ldap_sasl_wrapping, NULL, enum_ldap_sasl_wrapping, FLAG_ADVANCED},
 	{"enable asu support", P_BOOL, P_GLOBAL, &Globals.bASUSupport, NULL, NULL, FLAG_ADVANCED}, 
 	{"svcctl list", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
 
@@ -2183,6 +2191,7 @@ FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
+FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrapping)
 
 /* local prototypes */
 

@@ -109,6 +109,7 @@ ADS_STRUCT *ads_init(const char *realm,
 		     const char *ldap_server)
 {
 	ADS_STRUCT *ads;
+	int wrap_flags;
 	
 	ads = SMB_XMALLOC_P(ADS_STRUCT);
 	ZERO_STRUCTP(ads);
@@ -127,6 +128,13 @@ ADS_STRUCT *ads_init(const char *realm,
 
 	/* the caller will own the memory by default */
 	ads->is_mine = 1;
+
+	wrap_flags = lp_client_ldap_sasl_wrapping();
+	if (wrap_flags == -1) {
+		wrap_flags = 0;
+	}
+
+	ads->auth.flags = wrap_flags;
 
 	return ads;
 }
