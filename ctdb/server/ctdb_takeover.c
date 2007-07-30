@@ -643,9 +643,11 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	takeover_vnn = find_public_ip_vnn(ctdb, addr);
 	if (takeover_vnn == -1) {
-		DEBUG(3,("Could not add client IP %s. It is not a public address.\n", addr)); 
+		DEBUG(3,("Could not add client IP %s. This is not a public address.\n", addr)); 
 		return -1;
 	}
+
+	addr = inet_ntoa(p->src.sin_addr);
 
 	tcp->connection.saddr = p->src;
 	tcp->connection.daddr = p->dest;
@@ -717,7 +719,6 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_control_tcp_vnn *p = (struct ctdb_control_tcp_vnn *)indata.dptr;
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_tcp_connection tcp;
-
 
 	tcparray = ctdb->nodes[p->vnn]->tcp_array;
 
