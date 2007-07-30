@@ -3704,27 +3704,24 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_tdis(connection_struct *conn, 
-	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_tdis(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = set_message(inbuf,outbuf,0,0,False);
-	uint16 vuid;
 	START_PROFILE(SMBtdis);
-
-	vuid = SVAL(inbuf,smb_uid);
 
 	if (!conn) {
 		DEBUG(4,("Invalid connection in tdis\n"));
+		reply_doserror(req, ERRSRV, ERRinvnid);
 		END_PROFILE(SMBtdis);
-		return ERROR_DOS(ERRSRV,ERRinvnid);
+		return;
 	}
 
 	conn->used = False;
 
-	close_cnum(conn,vuid);
-  
+	close_cnum(conn,req->vuid);
+
+	reply_outbuf(req, 0, 0);
 	END_PROFILE(SMBtdis);
-	return outsize;
+	return;
 }
 
 /****************************************************************************
