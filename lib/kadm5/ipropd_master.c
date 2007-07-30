@@ -472,6 +472,8 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     }
     slave_seen(s);
 
+    s->version = current_version;
+
     return 0;
 }
 
