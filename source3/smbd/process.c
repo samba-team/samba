@@ -634,7 +634,7 @@ static const struct smb_message_struct {
 	int flags;
 } smb_messages[256] = {
 
-/* 0x00 */ { "SMBmkdir",reply_mkdir,NULL,AS_USER | NEED_WRITE},
+/* 0x00 */ { "SMBmkdir",NULL,reply_mkdir,AS_USER | NEED_WRITE},
 /* 0x01 */ { "SMBrmdir",reply_rmdir,NULL,AS_USER | NEED_WRITE},
 /* 0x02 */ { "SMBopen",reply_open,NULL,AS_USER },
 /* 0x03 */ { "SMBcreate",reply_mknew,NULL,AS_USER},
