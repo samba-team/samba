@@ -34,6 +34,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <krb5-types.h>
 #include "camellia-ntt.h"
 
 /* u32 must be 32bit word */
