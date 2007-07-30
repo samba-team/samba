@@ -3405,9 +3405,13 @@ static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				ret = False;
 			}
 			if (!seen_testuser) {
-				printf("Didn't find test user " TEST_ACCOUNT_NAME " in enumeration of %s\n", 
-				       dom_info.out.info->info2.domain_name.string);
-				ret = False;
+				struct policy_handle user_handle;
+				if (NT_STATUS_IS_OK(test_OpenUser_byname(p, mem_ctx, handle, TEST_ACCOUNT_NAME, &user_handle))) {
+					printf("Didn't find test user " TEST_ACCOUNT_NAME " in enumeration of %s\n", 
+					       dom_info.out.info->info2.domain_name.string);
+					ret = False;
+					test_samr_handle_Close(p, mem_ctx, &user_handle);
+				}
 			}
 			break;
 		case 3:
