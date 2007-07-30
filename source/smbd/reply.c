@@ -1007,18 +1007,18 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  Reply to a dskattr.
 ****************************************************************************/
 
-int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_dskattr(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	SMB_BIG_UINT dfree,dsize,bsize;
 	START_PROFILE(SMBdskattr);
 
 	if (get_dfree_info(conn,".",True,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+		reply_unixerror(req, ERRHRD, ERRgeneral);
 		END_PROFILE(SMBdskattr);
-		return(UNIXERROR(ERRHRD,ERRgeneral));
+		return;
 	}
-  
-	outsize = set_message(inbuf,outbuf,5,0,True);
+
+	reply_outbuf(req, 5, 0);
 	
 	if (Protocol <= PROTOCOL_LANMAN2) {
 		double total_space, free_space;
@@ -1037,21 +1037,21 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 		if (dsize > 0xFFFF) dsize = 0xFFFF;
 		if (dfree > 0xFFFF) dfree = 0xFFFF;
 
-		SSVAL(outbuf,smb_vwv0,dsize);
-		SSVAL(outbuf,smb_vwv1,64); /* this must be 64 for dos systems */
-		SSVAL(outbuf,smb_vwv2,512); /* and this must be 512 */
-		SSVAL(outbuf,smb_vwv3,dfree);
+		SSVAL(req->outbuf,smb_vwv0,dsize);
+		SSVAL(req->outbuf,smb_vwv1,64); /* this must be 64 for dos systems */
+		SSVAL(req->outbuf,smb_vwv2,512); /* and this must be 512 */
+		SSVAL(req->outbuf,smb_vwv3,dfree);
 	} else {
-		SSVAL(outbuf,smb_vwv0,dsize);
-		SSVAL(outbuf,smb_vwv1,bsize/512);
-		SSVAL(outbuf,smb_vwv2,512);
-		SSVAL(outbuf,smb_vwv3,dfree);
+		SSVAL(req->outbuf,smb_vwv0,dsize);
+		SSVAL(req->outbuf,smb_vwv1,bsize/512);
+		SSVAL(req->outbuf,smb_vwv2,512);
+		SSVAL(req->outbuf,smb_vwv3,dfree);
 	}
 
 	DEBUG(3,("dskattr dfree=%d\n", (unsigned int)dfree));
 
 	END_PROFILE(SMBdskattr);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
