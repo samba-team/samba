@@ -2513,7 +2513,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		
 		if (NT_STATUS_IS_OK(status)) {
 			q.in.user_handle = &user_handle;
-			q.in.level = 16;
+			q.in.level = 5;
 			
 			status = dcerpc_samr_QueryUserInfo(p, user_ctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -2521,11 +2521,34 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				       q.in.level, nt_errstr(status));
 				ret = False;
 			} else {
-				if ((q.out.info->info16.acct_flags & acct_flags) != acct_flags) {
-					printf("QuerUserInfo level 16 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
-					       q.out.info->info16.acct_flags, 
+				if ((q.out.info->info5.acct_flags & acct_flags) != acct_flags) {
+					printf("QuerUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
+					       q.out.info->info5.acct_flags, 
 					       acct_flags);
 					ret = False;
+				} 
+				switch (acct_flags) {
+				case ACB_SVRTRUST:
+					if (q.out.info->info5.primary_gid != DOMAIN_RID_DCS) {
+						printf("QuerUserInfo level 5: DC should have had Primary Group %d, got %d\n", 
+						       DOMAIN_RID_DCS, q.out.info->info5.primary_gid);
+						ret = False;
+					}
+					break;
+				case ACB_WSTRUST:
+					if (q.out.info->info5.primary_gid != DOMAIN_RID_DOMAIN_MEMBERS) {
+						printf("QuerUserInfo level 5: Domain Member should have had Primary Group %d, got %d\n", 
+						       DOMAIN_RID_DOMAIN_MEMBERS, q.out.info->info5.primary_gid);
+						ret = False;
+					}
+					break;
+				case ACB_NORMAL:
+					if (q.out.info->info5.primary_gid != DOMAIN_RID_USERS) {
+						printf("QuerUserInfo level 5: Users should have had Primary Group %d, got %d\n", 
+						       DOMAIN_RID_USERS, q.out.info->info5.primary_gid);
+						ret = False;
+					}
+					break;
 				}
 			}
 		

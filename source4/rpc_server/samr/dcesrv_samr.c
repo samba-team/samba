@@ -1269,6 +1269,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		cn_name[cn_name_len - 1] = '\0';
 		container = "CN=Computers";
 		obj_class = "computer";
+		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "primaryGroupID", DOMAIN_RID_DOMAIN_MEMBERS);
 
 	} else if (r->in.acct_flags == ACB_SVRTRUST) {
 		if (cn_name[cn_name_len - 1] != '$') {
@@ -1277,6 +1278,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		cn_name[cn_name_len - 1] = '\0';
 		container = "OU=Domain Controllers";
 		obj_class = "computer";
+		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "primaryGroupID", DOMAIN_RID_DCS);
 
 	} else if (r->in.acct_flags == ACB_DOMTRUST) {
 		container = "CN=Users";
