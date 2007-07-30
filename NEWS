@@ -1,5 +1,15 @@
 Changes in release 1.0.1
 
+ * Make work on platforms without dlopen
+
+ * Add RFC3526 modp group14 as default
+
+ * Handle [kdc] database = { } entries without realm = stanzas
+
+ * Make krb5_get_renewed_creds work
+
+ * Make kaserver preauth work again
+
  * Bug fixes
 
 Changes in release 1.0
