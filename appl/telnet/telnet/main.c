@@ -59,8 +59,8 @@ tninit(void)
     init_sys();
 }
 
-void
-usage(void)
+static void
+usage(int exit_code)
 {
   fprintf(stderr, "Usage: %s %s%s%s%s\n", prompt,
 #ifdef	AUTHENTICATION
@@ -77,7 +77,7 @@ usage(void)
 	  "[host-name [port]]"
 #endif
     );
-  exit(1);
+  exit(exit_code);
 }
 
 /*
@@ -194,6 +194,9 @@ main(int argc, char **argv)
 	    print_version(NULL);
 	    exit(0);
 	}
+	if (argc == 2 && strcmp(argv[1], "--help") == 0)
+	    usage(0);
+
 
 	while((ch = getopt(argc, argv,
 			   "78DEKLS:X:abcde:fFk:l:n:rxG")) != -1) {
@@ -267,7 +270,7 @@ main(int argc, char **argv)
 			    fprintf(stderr,
 				    "%s: Only one of -f, -F and -G allowed.\n",
 				    prompt);
-			    usage();
+			    usage(1);
 			}
 			forward_option = ch;
 #else
@@ -316,7 +319,7 @@ main(int argc, char **argv)
 
 		case '?':
 		default:
-			usage();
+			usage(1);
 			/* NOTREACHED */
 		}
 	}
@@ -342,7 +345,7 @@ main(int argc, char **argv)
 		char *args[7], **argp = args;
 
 		if (argc > 2)
-			usage();
+			usage(1);
 		*argp++ = prompt;
 		if (user) {
 			*argp++ = "-l";
