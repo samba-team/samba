@@ -190,7 +190,11 @@ cn: LDAPtestUSER3
 	}
 	assert(ok.error == 68);
 	ok = ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestuser3,cn=configuration," + base_dn);
-	assert(ok.error == 71);
+	if (ok.error != 71 && ok.error != 64) {
+		println("expected error LDB_ERR_ENTRY_ALREADY_EXISTS or LDAP_NAMING_VIOLATION, got: " + ok.errstr);
+		assert(ok.error == 71 || ok.error == 64);
+	}
+	assert(ok.error == 71 || ok.error == 64);
 
 	ok = ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
 
@@ -328,6 +332,7 @@ objectClass: user
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
 	assert(res.msgs[0].objectCategory == "cn=Computer,cn=Schema,cn=Configuration," + base_dn);
+	assert(res.msgs[0].primaryGroupID == 513);
 //	assert(res.msgs[0].sAMAccountType == 805306368);
 //	assert(res.msgs[0].userAccountControl == 546);
 
