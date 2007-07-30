@@ -1,5 +1,9 @@
-2007-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-07-30  David Love  <fx@gnu.org>
 
+	* camellia-ntt.c: Include <krb5-types.h>
+	
+2007-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Add Camellia.
 
 2007-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
