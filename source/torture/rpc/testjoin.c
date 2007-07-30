@@ -232,6 +232,7 @@ again:
 
 	printf("Setting account password '%s'\n", random_pw);
 
+	ZERO_STRUCT(u);
 	s.in.user_handle = &join->user_handle;
 	s.in.info = &u;
 	s.in.level = 24;
