@@ -3315,8 +3315,8 @@ static BOOL test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 				       q.out.info->info21.account_name.string);
 			}
 
-			if (!(q.out.info->info21.acct_flags & (ACB_WSTRUST))) {
-				printf("Found non-trust account %s in trust accoutn listing: 0x%x 0x%x\n",
+			if (!(q.out.info->info21.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST))) {
+				printf("Found non-trust account %s in trust account listing: 0x%x 0x%x\n",
 				       q.out.info->info21.account_name.string,
 				       querydisplayinfo->out.info.info2.entries[i].acct_flags,
 				       q.out.info->info21.acct_flags);
