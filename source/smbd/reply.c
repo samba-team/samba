@@ -2175,6 +2175,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	status = unlink_internals(conn, &req, dirtype, name,
 				  path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBunlink);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
