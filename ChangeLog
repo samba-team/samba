@@ -12,6 +12,12 @@
 	* lib/krb5/n-fold.c: Make _krb5_n_fold return a error
 	code. Prompted by patch of Charles Longeau.
 
+2007-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds.c: Always set the ticket options, use
+	KRB5_ADDRESSLESS_DEFAULT as the default value, this make the unset
+	tri-state not so useful.
+
 2007-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/heimdal-gssapi.pc.in: Add LIB_pkinit to the list of
