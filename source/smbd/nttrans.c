@@ -1786,23 +1786,21 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_ntcancel(connection_struct *conn,
-		   char *inbuf,char *outbuf,int length,int bufsize)
+void reply_ntcancel(connection_struct *conn, struct smb_request *req)
 {
 	/*
 	 * Go through and cancel any pending change notifies.
 	 */
 	
-	int mid = SVAL(inbuf,smb_mid);
 	START_PROFILE(SMBntcancel);
-	remove_pending_change_notify_requests_by_mid(mid);
-	remove_pending_lock_requests_by_mid(mid);
-	srv_cancel_sign_response(mid);
+	remove_pending_change_notify_requests_by_mid(req->mid);
+	remove_pending_lock_requests_by_mid(req->mid);
+	srv_cancel_sign_response(req->mid);
 	
-	DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", mid));
+	DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", req->mid));
 
 	END_PROFILE(SMBntcancel);
-	return(-1);
+	return;
 }
 
 /****************************************************************************
