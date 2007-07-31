@@ -44,6 +44,8 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getarg.h>
+#include <roken.h>
 
 #include <evp.h>
 #include <hex.h>
@@ -143,11 +145,47 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
     return 0;
 }
 
+static int version_flag;
+static int help_flag;
+
+static struct getargs args[] = {
+    { "version",	0,	arg_flag,	&version_flag,
+      "print version", NULL },
+    { "help",		0,	arg_flag,	&help_flag,
+      NULL, 	NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "");
+    exit (ret);
+}
+
 int
 main(int argc, char **argv)
 {
     int ret = 0;
-    int i;
+    int i, idx = 0;
+
+    setprogname(argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &idx))
+	usage(1);
+    
+    if (help_flag)
+	usage(0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= idx;
+    argv += idx;
 
     for (i = 0; i < sizeof(aes_tests)/sizeof(aes_tests[0]); i++)
 	ret += test_cipher(EVP_aes_256_cbc(), &aes_tests[i]);
