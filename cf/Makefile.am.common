@@ -122,7 +122,7 @@ check-local::
 	  echo "$$dashes"; \
 	  echo "$$banner"; \
 	  echo "$$dashes"; \
-	  test "$$failed" -eq 0; \
+	  test "$$failed" -eq 0 || exit 1; \
 	fi ; \
 	if test '$(CHECK_SYMBOLS)' != ""; then \
 	  echo "$$dashes"; \
