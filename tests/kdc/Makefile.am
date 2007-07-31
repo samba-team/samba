@@ -97,6 +97,8 @@ CLEANFILES= \
 	*.tmp \
 	client-cache \
 	current-db* \
+	current*.log \
+	iprop.keytab \
 	digest-reply \
 	foopassword \
 	krb5.conf \
