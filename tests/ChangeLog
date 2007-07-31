@@ -1,3 +1,19 @@
+2007-08-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am: Clean after iprop tests.
+
+	* kdc/check-iprop.in: more iprop tests.
+
+2007-07-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am: Add check-iprop and related files.
+
+	* kdc/krb5.conf.in: Add stuff for iprop.
+
+	* kdc/check-iprop.in: Test for iprop.
+
+	* kdc/iprop-acl: ACL file for iprop.
+
 2007-07-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/donotexists.txt: missing file.
