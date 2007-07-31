@@ -1,5 +1,8 @@
 2007-07-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* telnetd/telnetd.c (usage): use exit_code, add --version and
+	--help.
+
 	* telnetd/telnetd.c: Add --help, reported by David Love.
 
 2007-07-30  Love Hörnquist Åstrand  <lha@it.su.se>
