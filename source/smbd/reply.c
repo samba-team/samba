@@ -2222,56 +2222,66 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
  Reply to a unlink
 ****************************************************************************/
 
-int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
-		 int dum_buffsize)
+void reply_unlink(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	pstring name;
 	uint32 dirtype;
 	NTSTATUS status;
 	BOOL path_contains_wcard = False;
-	struct smb_request req;
 
 	START_PROFILE(SMBunlink);
 
-	init_smb_request(&req, (uint8 *)inbuf);
-
-	dirtype = SVAL(inbuf,smb_vwv0);
-	
-	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), name,
-			      smb_buf(inbuf) + 1, sizeof(name), 0,
-			      STR_TERMINATE, &status, &path_contains_wcard);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBunlink);
-		return ERROR_NT(status);
+		return;
 	}
 
-	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name, &path_contains_wcard);
+	dirtype = SVAL(req->inbuf,smb_vwv0);
+	
+	srvstr_get_path_wcard((char *)req->inbuf, req->flags2, name,
+			      smb_buf(req->inbuf) + 1, sizeof(name), 0,
+			      STR_TERMINATE, &status, &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBunlink);
+		return;
+	}
+
+	status = resolve_dfspath_wcard(conn,
+				       req->flags2 & FLAGS2_DFS_PATHNAMES,
+				       name, &path_contains_wcard);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBunlink);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBunlink);
+		return;
 	}
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
-	status = unlink_internals(conn, &req, dirtype, name,
+	status = unlink_internals(conn, req, dirtype, name,
 				  path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBunlink);
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			END_PROFILE(SMBunlink);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBunlink);
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,0,0,False);
-  
+	reply_outbuf(req, 0, 0);
 	END_PROFILE(SMBunlink);
-	return outsize;
+
+	return;
 }
 
 /****************************************************************************
