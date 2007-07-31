@@ -53,8 +53,12 @@ _krb5_principalname2krb5_principal (krb5_context context,
 				    const Realm realm)
 {
     krb5_principal p = malloc(sizeof(*p));
+    if (p == NULL)
+	return ENOMEM;
     copy_PrincipalName(&from, &p->name);
     p->realm = strdup(realm);
+    if (p->realm == NULL)
+	return ENOMEM;
     *principal = p;
     return 0;
 }

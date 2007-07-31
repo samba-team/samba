@@ -157,12 +157,18 @@ v4_prop(void *arg, struct v4_principal *p)
     ent.entry.kvno = p->kvno;
     ent.entry.keys.len = 3;
     ent.entry.keys.val = malloc(ent.entry.keys.len * sizeof(*ent.entry.keys.val));
+    if (ent.entry.keys.val == NULL)
+	krb5_errx(pd->context, ENOMEM, "malloc");
     if(p->mkvno != -1) {
 	ent.entry.keys.val[0].mkvno = malloc (sizeof(*ent.entry.keys.val[0].mkvno));
+	if (ent.entry.keys.val[0].mkvno == NULL)
+	    krb5_errx(pd->context, ENOMEM, "malloc");
 	*(ent.entry.keys.val[0].mkvno) = p->mkvno;
     } else
 	ent.entry.keys.val[0].mkvno = NULL;
     ent.entry.keys.val[0].salt = calloc(1, sizeof(*ent.entry.keys.val[0].salt));
+    if (ent.entry.keys.val[0].salt == NULL)
+	krb5_errx(pd->context, ENOMEM, "calloc");
     ent.entry.keys.val[0].salt->type = KRB5_PADATA_PW_SALT;
     ent.entry.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
     krb5_data_alloc(&ent.entry.keys.val[0].key.keyvalue, DES_KEY_SZ);
@@ -292,8 +298,12 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent)
     hdb.entry.keys.len = 3;
     hdb.entry.keys.val = 
 	malloc(hdb.entry.keys.len * sizeof(*hdb.entry.keys.val));
+    if (hdb.entry.keys.val == NULL)
+	krb5_errx(pd->context, ENOMEM, "malloc");
     hdb.entry.keys.val[0].mkvno = NULL;
     hdb.entry.keys.val[0].salt = calloc(1, sizeof(*hdb.entry.keys.val[0].salt));
+    if (hdb.entry.keys.val[0].salt == NULL)
+	krb5_errx(pd->context, ENOMEM, "calloc");
     if (ka_use_null_salt) {
 	hdb.entry.keys.val[0].salt->type = hdb_pw_salt;
 	hdb.entry.keys.val[0].salt->salt.data = NULL;
@@ -301,6 +311,8 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent)
     } else {
 	hdb.entry.keys.val[0].salt->type = hdb_afs3_salt;
 	hdb.entry.keys.val[0].salt->salt.data = strdup(afs_cell);
+	if (hdb.entry.keys.val[0].salt->salt.data == NULL)
+	    krb5_errx(pd->context, ENOMEM, "strdup");
 	hdb.entry.keys.val[0].salt->salt.length = strlen(afs_cell);
     }
     

@@ -116,12 +116,23 @@ krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_emem(void)
 {
     krb5_storage *sp = malloc(sizeof(krb5_storage));
+    if (sp == NULL)
+	return NULL;
     emem_storage *s = malloc(sizeof(*s));
+    if (s == NULL) {
+	free(sp);
+	return NULL;
+    }
     sp->data = s;
     sp->flags = 0;
     sp->eof_code = HEIM_ERR_EOF;
     s->size = 1024;
     s->base = malloc(s->size);
+    if (s->base == NULL) {
+	free(sp);
+	free(s);
+	return NULL;
+    }
     s->len = 0;
     s->ptr = s->base;
     sp->fetch = emem_fetch;

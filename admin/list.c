@@ -114,6 +114,11 @@ do_list(struct list_options *opt, const char *keytab_str)
 	if(opt->keys_flag) {
 	    int i;
 	    s = malloc(2 * entry.keyblock.keyvalue.length + 1);
+	    if (s == NULL) {
+		krb5_warnx(context, "malloc failed");
+		ret = ENOMEM;
+		goto out;
+	    }
 	    for(i = 0; i < entry.keyblock.keyvalue.length; i++)
 		snprintf(s + 2 * i, 3, "%02x", 
 			 ((unsigned char*)entry.keyblock.keyvalue.data)[i]);
@@ -124,6 +129,8 @@ do_list(struct list_options *opt, const char *keytab_str)
     }
     ret = krb5_kt_end_seq_get(context, keytab, &cursor);
     rtbl_format(table, stdout);
+
+out:
     rtbl_destroy(table);
 
     krb5_kt_close(context, keytab);

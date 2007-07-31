@@ -123,7 +123,11 @@ generate_password(char **pw, int num_classes, ...)
     unsigned char rbuf[8]; /* random buffer */
     int rleft = 0;
 
+    *pw = NULL;
+
     classes = malloc(num_classes * sizeof(*classes));
+    if(classes == NULL)
+	return;
     va_start(ap, num_classes);
     len = 0;
     for(i = 0; i < num_classes; i++){

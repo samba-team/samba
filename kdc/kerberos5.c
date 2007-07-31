@@ -1554,6 +1554,10 @@ _kdc_as_rep(krb5_context context,
      * otherwise just a dummy lr.
      */
     ek.last_req.val = malloc(2 * sizeof(*ek.last_req.val));
+    if (ek.last_req.val == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
     ek.last_req.len = 0;
     if (client->entry.pw_end
 	&& (config->kdc_warn_pwexpire == 0

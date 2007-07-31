@@ -314,6 +314,8 @@ mit_prop_dump(void *arg, const char *file)
 	    switch(tl_type) {
 	    case mit_KRB5_TL_MOD_PRINC:
 		buf = malloc(tl_length);
+		if (buf == NULL)
+		    errx(ENOMEM, "malloc");
 		getdata(&p, buf, tl_length); /* data itself */
 		val = buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
 		ret = krb5_parse_name(pd->context, (char *)buf + 4, &princ);

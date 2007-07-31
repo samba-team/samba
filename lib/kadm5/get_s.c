@@ -174,6 +174,10 @@ kadm5_s_get_principal(void *server_handle,
 	krb5_data *sp;
 	krb5_get_pw_salt(context->context, ent.entry.principal, &salt);
 	out->key_data = malloc(ent.entry.keys.len * sizeof(*out->key_data));
+	if (out->key_data == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
 	for(i = 0; i < ent.entry.keys.len; i++){
 	    key = &ent.entry.keys.val[i];
 	    kd = &out->key_data[i];

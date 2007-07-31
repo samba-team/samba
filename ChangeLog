@@ -1,5 +1,7 @@
 2007-07-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check return value of alloc functions, from Charles Longeau
+
 	* lib/krb5/principal.c: spelling.
 
 	* kadmin/kadmin.8: spelling

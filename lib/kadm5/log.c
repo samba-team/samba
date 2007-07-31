@@ -673,6 +673,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 
 	ent.entry.keys.len = num;
 	ent.entry.keys.val = malloc(len * sizeof(*ent.entry.keys.val));
+	if (ent.entry.keys.val == NULL)
+	    return ENOMEM;
 	for (i = 0; i < ent.entry.keys.len; ++i) {
 	    ret = copy_Key(&log_ent.entry.keys.val[i],
 			   &ent.entry.keys.val[i]);

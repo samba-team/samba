@@ -138,6 +138,8 @@ struct string_list*
 append_string(struct string_list *list, char *str)
 {
     struct string_list *sl = malloc(sizeof(*sl));
+    if (sl == NULL)
+	return sl;
     sl->string = str;
     sl->next = NULL;
     if(list) {

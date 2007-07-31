@@ -129,6 +129,11 @@ read_master_keytab(krb5_context context, const char *filename,
     *mkey = NULL;
     while(krb5_kt_next_entry(context, id, &entry, &cursor) == 0) {
 	p = calloc(1, sizeof(*p));
+	if(p == NULL) {
+	    krb5_kt_end_seq_get(context, id, &cursor);
+	    ret = ENOMEM;
+	    goto out;
+	}
 	p->keytab = entry;
 	ret = krb5_crypto_init(context, &p->keytab.keyblock, 0, &p->crypto);
 	p->next = *mkey;

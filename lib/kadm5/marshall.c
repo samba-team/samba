@@ -260,6 +260,8 @@ ret_principal_ent(krb5_storage *sp,
 	krb5_ret_int32(sp, &tmp);
 	princ->n_key_data = tmp;
 	princ->key_data = malloc(princ->n_key_data * sizeof(*princ->key_data));
+	if (princ->key_data == NULL)
+	    return ENOMEM;
 	for(i = 0; i < princ->n_key_data; i++)
 	    kadm5_ret_key_data(sp, &princ->key_data[i]);
     }
@@ -269,6 +271,8 @@ ret_principal_ent(krb5_storage *sp,
 	princ->tl_data = NULL;
 	for(i = 0; i < princ->n_tl_data; i++){
 	    krb5_tl_data *tp = malloc(sizeof(*tp));
+	    if (tp == NULL)
+		return ENOMEM;
 	    kadm5_ret_tl_data(sp, tp);
 	    tp->tl_data_next = princ->tl_data;
 	    princ->tl_data = tp;

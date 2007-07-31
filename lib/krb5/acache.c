@@ -188,11 +188,10 @@ make_cred_from_ccred(krb5_context context,
 	;
     
     if (i) {
-	cred->authdata.val = malloc(sizeof(cred->authdata.val[0]) * i);
+	cred->authdata.val = calloc(i, sizeof(cred->authdata.val[0]));
 	if (cred->authdata.val == NULL)
 	    goto nomem;
 	cred->authdata.len = i;
-	memset(cred->authdata.val, 0, sizeof(cred->authdata.val[0]) * i);
 	for (i = 0; i < cred->authdata.len; i++) {
 	    cred->authdata.val[i].ad_type = incred->authdata[i]->type;
 	    ret = krb5_data_copy(&cred->authdata.val[i].ad_data,
@@ -207,11 +206,10 @@ make_cred_from_ccred(krb5_context context,
 	;
     
     if (i) {
-	cred->addresses.val = malloc(sizeof(cred->addresses.val[0]) * i);
+	cred->addresses.val = calloc(i, sizeof(cred->addresses.val[0]));
 	if (cred->addresses.val == NULL)
 	    goto nomem;
 	cred->addresses.len = i;
-	memset(cred->addresses.val, 0, sizeof(cred->addresses.val[0]) * i);
 	
 	for (i = 0; i < cred->addresses.len; i++) {
 	    cred->addresses.val[i].addr_type = incred->addresses[i]->type;
@@ -331,6 +329,10 @@ make_ccred_from_cred(krb5_context context,
     for (i = 0; i < incred->addresses.len; i++) {
 	cc_data *addr;
 	addr = malloc(sizeof(*addr));
+	if (addr == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
 	addr->type = incred->addresses.val[i].addr_type;
 	addr->length = incred->addresses.val[i].address.length;
 	addr->data = malloc(addr->length);

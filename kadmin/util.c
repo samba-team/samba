@@ -648,6 +648,10 @@ parse_des_key (const char *key_string, krb5_key_data *key_data,
 	key_data[i].key_data_type[0]     = ETYPE_DES_CBC_CRC;
 	key_data[i].key_data_length[0]   = 8;
 	key_data[i].key_data_contents[0] = malloc(8);
+	if (key_data[i].key_data_contents[0] == NULL) {
+	    *error = "malloc";
+	    return ENOMEM;
+	}
 	memcpy (key_data[i].key_data_contents[0], bits, 8);
 	/* salt */
 	key_data[i].key_data_type[1]     = KRB5_PW_SALT;

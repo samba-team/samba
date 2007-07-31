@@ -87,6 +87,8 @@ static int
 add_column(struct get_entry_data *data, struct field_name *ff, const char *header)
 {
     struct field_info *f = malloc(sizeof(*f));
+    if (f == NULL)
+	return ENOMEM;
     f->ff = ff;
     if(header)
 	f->header = strdup(header);

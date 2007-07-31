@@ -72,6 +72,8 @@ kadm5_s_rename_principal(void *server_handle,
 	    if(ent.entry.keys.val[i].salt == NULL){
 		ent.entry.keys.val[i].salt = 
 		    malloc(sizeof(*ent.entry.keys.val[i].salt));
+		if(ent.entry.keys.val[i].salt == NULL)
+		    return ENOMEM;
 		ret = copy_Salt(&salt, ent.entry.keys.val[i].salt);
 		if(ret)
 		    break;

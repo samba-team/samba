@@ -306,6 +306,8 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 				/* save the data; close frees it */
 		clen = strlen(record);
 		cbuf = malloc(clen + 1);
+		if (cbuf == NULL)
+		    return (-2);
 		memmove(cbuf, record, clen + 1);
 		if (capdbp->close(capdbp) < 0) {
 		    free(cbuf);
