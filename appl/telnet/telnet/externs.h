@@ -240,7 +240,6 @@ void command(int top, char *tbuf, int cnt);
 /* main.c */
 
 void tninit(void);
-void usage(void);
 void set_forward_options(void);
 
 /* network.c */
