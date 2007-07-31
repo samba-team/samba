@@ -468,6 +468,8 @@ static void
 usage(int exit_code)
 {
     fprintf(stderr, "Usage: telnetd");
+    fprintf(stderr, " [--help]");
+    fprintf(stderr, " [--version]");
 #ifdef	AUTHENTICATION
     fprintf(stderr, " [-a (debug|other|otp|user|valid|off|none)]\n\t");
 #endif
@@ -493,7 +495,7 @@ usage(int exit_code)
 #endif
     fprintf(stderr, " [-u utmp_hostname_length] [-U]");
     fprintf(stderr, " [port]\n");
-    exit(1);
+    exit(exit_code);
 }
 
 /*
