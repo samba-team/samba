@@ -53,6 +53,7 @@ kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -r $R"
 ipropdslave="${TESTS_ENVIRONMENT} ../../lib/kadm5/ipropd-slave"
 ipropdmaster="${TESTS_ENVIRONMENT} ../../lib/kadm5/ipropd-master"
+iproplog="${TESTS_ENVIRONMENT} ../../lib/kadm5/iprop-log"
 
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 
@@ -73,7 +74,7 @@ ${kadmin} -l \
     --realm-max-renewable-life=1month \
     ${R} || exit 1
 
-${kadmin} -l add -p foo --use-defaults foo/admin@${R} || exit 1
+${kadmin} -l add -p foo --use-defaults user@${R} || exit 1
 
 ${kadmin} -l add --random-key --use-defaults iprop/localhost@${R} || exit 1
 ${kadmin} -l ext -k ${keytab} iprop/localhost@${R} || exit 1
@@ -100,7 +101,8 @@ if [ "$?" != 0 ] ; then
 fi
 
 echo "starting master"
-${ipropdmaster} --hostname=localhost -k ${keytab} &
+${ipropdmaster} --hostname=localhost -k ${keytab} \
+    --database=${objdir}/current-db &
 ipdm=$!
 sleep 2
 
@@ -154,7 +156,7 @@ echo "kill slave and remove log and database"
 kill ${ipds}
 sleep 2
 
-rm current.slave.log current-db.slave*
+rm current.slave.log current-db.slave* || exit 1
 > iprop-stats
 > messages.log
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
@@ -166,6 +168,13 @@ ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
 ${EGREP} 'Entry already exists in database' messages.log && exit 1
 
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+sleep 2
+
+echo "live truncate on master log"
+${iproplog} truncate || exit 1
+sleep 2
+
 trap "" EXIT
 
 kill ${ipdm} ${ipds} ${kdcpid}
@@ -173,7 +182,10 @@ kill ${ipdm} ${ipds} ${kdcpid}
 sleep 2
 ${EGREP} "^master down at " iprop-stats > /dev/null || exit 1
 
-echo "compare logs"
-cmp current.slave.log current.log || exit 1
+echo "compare versions on master and slave logs"
+KRB5_CONFIG=${objdir}/krb5-slave.conf \
+${iproplog} last-version > slave-last.tmp
+${iproplog} last-version > master-last.tmp
+cmp master-last.tmp slave-last.tmp || exit 1
 
 exit $ec
