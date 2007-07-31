@@ -3244,7 +3244,7 @@ static int call_trans2qpipeinfo(connection_struct *conn, char *inbuf, char *outb
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	p_pipe = get_rpc_pipe_p(params,0);
+	p_pipe = get_rpc_pipe_p(SVAL(params,0));
 	if (p_pipe == NULL) {
 		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
 	}

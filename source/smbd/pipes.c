@@ -140,7 +140,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 
 int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
+	smb_np_struct *p = get_rpc_pipe_p(SVAL(inbuf,smb_vwv0));
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	size_t numtowrite = SVAL(inbuf,smb_vwv1);
 	int nwritten;
@@ -185,7 +185,7 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	smb_np_struct *p = get_rpc_pipe_p(SVAL(inbuf,smb_vwv2));
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
@@ -247,7 +247,7 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	smb_np_struct *p = get_rpc_pipe_p(SVAL(inbuf,smb_vwv2));
 	int smb_maxcnt = SVAL(inbuf,smb_vwv5);
 	int smb_mincnt = SVAL(inbuf,smb_vwv6);
 	int nread = -1;
@@ -292,7 +292,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 void reply_pipe_close(connection_struct *conn, struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p((char *)req->inbuf,smb_vwv0);
+	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv0));
 
 	if (!p) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
