@@ -697,8 +697,10 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    ent.entry.extensions = es;
 	    goto out;
 	}
-	free_HDB_extensions(es);
-	free(es);
+	if (es) {
+	    free_HDB_extensions(es);
+	    free(es);
+	}
     }
     ret = context->db->hdb_store(context->context, context->db, 
 				 HDB_F_REPLACE, &ent);
