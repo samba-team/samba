@@ -105,6 +105,8 @@ CLEANFILES= \
 	krb5-slave.conf \
 	krb5-pkinit.conf \
 	krb5-pkinit-win.conf \
+	krb5.conf.keys \
+	signal \
 	messages.log \
 	o2cache.krb5 \
 	o2digest-reply \
