@@ -676,6 +676,26 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 		if (!p->string) {
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
+	} else if (ads->config.realm && ads->config.ldap_server_name) {
+		char *server, *server_realm;
+
+		server = SMB_STRDUP(ads->config.ldap_server_name);
+		server_realm = SMB_STRDUP(ads->config.realm);
+
+		if (!server || !server_realm) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		strlower_m(server);
+		strupper_m(server_realm);
+		asprintf(&p->string, "ldap/%s@%s", server, server_realm);
+
+		SAFE_FREE(server);
+		SAFE_FREE(server_realm);
+
+		if (!p->string) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
 	}
 
 	initialize_krb5_error_table();
