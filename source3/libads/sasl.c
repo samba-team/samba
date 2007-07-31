@@ -126,6 +126,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	struct berval cred, *scred = NULL;
 	int rc;
 	NTSTATUS nt_status;
+	ADS_STATUS status;
 	int turn = 1;
 	uint32 features = 0;
 
@@ -253,7 +254,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		ads->ldap.in.max = 0x0FFFFFFF;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_ntlmssp_ops, ntlmssp_state);
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(0, "ads_setup_sasl_wrapping() failed: %s\n",
+			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
 			ntlmssp_end(&ntlmssp_state);
 			return status;
@@ -590,7 +591,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 		ads->ldap.in.max = max_msg_size;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(0, "ads_setup_sasl_wrapping() failed: %s\n",
+			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
 			goto failed;
 		}
@@ -1072,7 +1073,7 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 		ads->ldap.in.max = max_msg_size;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(0, "ads_setup_sasl_wrapping() failed: %s\n",
+			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
 			goto failed;
 		}
