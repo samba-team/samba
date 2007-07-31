@@ -90,18 +90,18 @@ SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, con
  Utility functions for dealing with extended attributes.
 ****************************************************************************/
 
-static const char *prohibited_ea_names[] = {
-	SAMBA_POSIX_INHERITANCE_EA_NAME,
-	SAMBA_XATTR_DOS_ATTRIB,
-	NULL
-};
-
 /****************************************************************************
  Refuse to allow clients to overwrite our private xattrs.
 ****************************************************************************/
 
 static BOOL samba_private_attr_name(const char *unix_ea_name)
 {
+	static const char *prohibited_ea_names[] = {
+		SAMBA_POSIX_INHERITANCE_EA_NAME,
+		SAMBA_XATTR_DOS_ATTRIB,
+		NULL
+	};
+
 	int i;
 
 	for (i = 0; prohibited_ea_names[i]; i++) {
