@@ -360,7 +360,7 @@ static const struct ads_saslwrap_ops ads_sasl_gssapi_ops = {
 /* 
    perform a LDAP/SASL/SPNEGO/GSSKRB5 bind
 */
-static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const char *sname)
+static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t serv_name)
 {
 	ADS_STATUS status;
 	BOOL ok;
@@ -371,7 +371,6 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const char *snam
 	gss_OID mech_type = &krb5_mech_type;
 	gss_OID actual_mech_type = GSS_C_NULL_OID;
 	const char *spnego_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, OID_NTLMSSP, NULL};
-	gss_name_t serv_name;
 	gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
 	gss_buffer_desc input_token, output_token;
 	uint32 req_flags, ret_flags;
@@ -379,50 +378,6 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const char *snam
 	DATA_BLOB unwrapped;
 	DATA_BLOB wrapped;
 	struct berval cred, *scred = NULL;
-	krb5_principal principal = NULL;
-	gss_buffer_desc input_name;
-	krb5_context ctx = NULL;
-	krb5_enctype enc_types[] = {
-#ifdef ENCTYPE_ARCFOUR_HMAC
-			ENCTYPE_ARCFOUR_HMAC,
-#endif
-			ENCTYPE_DES_CBC_MD5,
-			ENCTYPE_NULL};
-	gss_OID_desc nt_principal = 
-	{10, CONST_DISCARD(char *, "\052\206\110\206\367\022\001\002\002\002")};
-
-	initialize_krb5_error_table();
-	status = ADS_ERROR_KRB5(krb5_init_context(&ctx));
-	if (!ADS_ERR_OK(status)) {
-		return status;
-	}
-	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(ctx, enc_types));
-	if (!ADS_ERR_OK(status)) {
-		krb5_free_context(ctx);	
-		return status;
-	}
-	status = ADS_ERROR_KRB5(smb_krb5_parse_name(ctx, sname, &principal));
-	if (!ADS_ERR_OK(status)) {
-		krb5_free_context(ctx);	
-		return status;
-	}
-
-	/*
-	 * The MIT libraries have a *HORRIBLE* bug - input_value.value needs
-	 * to point to the *address* of the krb5_principal, and the gss libraries
-	 * to a shallow copy of the krb5_principal pointer - so we need to keep
-	 * the krb5_principal around until we do the gss_release_name. MIT *SUCKS* !
-	 * Just one more way in which MIT engineers screwed me over.... JRA.
-	 */
-	input_name.value = &principal;
-	input_name.length = sizeof(principal);
-
-	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &serv_name);
-	if (gss_rc) {
-		krb5_free_principal(ctx, principal);
-		krb5_free_context(ctx);	
-		return ADS_ERROR_GSS(gss_rc, minor_status);
-	}
 
 	input_token.value = NULL;
 	input_token.length = 0;
@@ -633,17 +588,136 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const char *snam
 	}
 
 failed:
-	gss_release_name(&minor_status, &serv_name);
 	if (context_handle != GSS_C_NO_CONTEXT)
 		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
-	krb5_free_principal(ctx, principal);
-	krb5_free_context(ctx);	
 	return status;
 }
 
 #endif
 
 #ifdef HAVE_KRB5
+struct ads_service_principal {
+	 krb5_context ctx;
+	 char *string;
+	 krb5_principal principal;
+#ifdef HAVE_GSSAPI
+	 gss_name_t name;
+#endif
+};
+
+static void ads_free_service_principal(struct ads_service_principal *p)
+{
+	SAFE_FREE(p->string);
+
+#ifdef HAVE_GSSAPI
+	if (p->name) {
+		uint32 minor_status;
+		gss_release_name(&minor_status, &p->name);
+	}
+#endif
+	if (p->principal) {
+		krb5_free_principal(p->ctx, p->principal);
+	}
+
+	if (p->ctx) {
+		krb5_free_context(p->ctx);
+	}
+
+	ZERO_STRUCTP(p);
+}
+
+static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
+						 const char *given_principal,
+						 struct ads_service_principal *p)
+{
+	ADS_STATUS status;
+	krb5_enctype enc_types[] = {
+#ifdef ENCTYPE_ARCFOUR_HMAC
+			ENCTYPE_ARCFOUR_HMAC,
+#endif
+			ENCTYPE_DES_CBC_MD5,
+			ENCTYPE_NULL};
+#ifdef HAVE_GSSAPI
+	gss_buffer_desc input_name;
+	gss_OID_desc nt_principal = 
+	{10, CONST_DISCARD(char *, "\052\206\110\206\367\022\001\002\002\002")};
+	uint32 minor_status;
+	int gss_rc;
+#endif
+
+	ZERO_STRUCTP(p);
+
+	/* I've seen a child Windows 2000 domain not send 
+	   the principal name back in the first round of 
+	   the SASL bind reply.  So we guess based on server
+	   name and realm.  --jerry  */
+	if (given_principal) {
+		p->string = SMB_STRDUP(given_principal);
+		if (!p->string) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	} else if (ads->server.realm && ads->server.ldap_server) {
+		char *server, *server_realm;
+
+		server = SMB_STRDUP(ads->server.ldap_server);
+		server_realm = SMB_STRDUP(ads->server.realm);
+
+		if (!server || !server_realm) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		strlower_m(server);
+		strupper_m(server_realm);
+		asprintf(&p->string, "ldap/%s@%s", server, server_realm);
+
+		SAFE_FREE(server);
+		SAFE_FREE(server_realm);
+
+		if (!p->string) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
+
+	initialize_krb5_error_table();
+	status = ADS_ERROR_KRB5(krb5_init_context(&p->ctx));
+	if (!ADS_ERR_OK(status)) {
+		ads_free_service_principal(p);
+		return status;
+	}
+	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(p->ctx, enc_types));
+	if (!ADS_ERR_OK(status)) {
+		ads_free_service_principal(p);
+		return status;
+	}
+	status = ADS_ERROR_KRB5(smb_krb5_parse_name(p->ctx, p->string, &p->principal));
+	if (!ADS_ERR_OK(status)) {
+		ads_free_service_principal(p);
+		return status;
+	}
+
+#ifdef HAVE_GSSAPI
+	/*
+	 * The MIT libraries have a *HORRIBLE* bug - input_value.value needs
+	 * to point to the *address* of the krb5_principal, and the gss libraries
+	 * to a shallow copy of the krb5_principal pointer - so we need to keep
+	 * the krb5_principal around until we do the gss_release_name. MIT *SUCKS* !
+	 * Just one more way in which MIT engineers screwed me over.... JRA.
+	 *
+	 * That's the reason for principal not beeing a local var in this function
+	 */
+	input_name.value = &p->principal;
+	input_name.length = sizeof(p->principal);
+
+	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &p->name);
+	if (gss_rc) {
+		ads_free_service_principal(p);
+		return ADS_ERROR_GSS(gss_rc, minor_status);
+	}
+#endif
+
+	return status;
+}
+
 /* 
    perform a LDAP/SASL/SPNEGO/KRB5 bind
 */
@@ -679,7 +753,8 @@ static ADS_STATUS ads_sasl_spnego_rawkrb5_bind(ADS_STRUCT *ads, const char *prin
 	return ADS_ERROR(rc);
 }
 
-static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *principal)
+static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads,
+					    struct ads_service_principal *p)
 {
 #ifdef HAVE_GSSAPI
 	/*
@@ -693,10 +768,10 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 	 *   against clock skew errors
 	 */
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		return ads_sasl_spnego_gsskrb5_bind(ads, principal);
+		return ads_sasl_spnego_gsskrb5_bind(ads, p->name);
 	}
 #endif
-	return ads_sasl_spnego_rawkrb5_bind(ads, principal);
+	return ads_sasl_spnego_rawkrb5_bind(ads, p->string);
 }
 #endif
 
@@ -709,7 +784,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	int rc, i;
 	ADS_STATUS status;
 	DATA_BLOB blob;
-	char *principal = NULL;
+	char *given_principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 #ifdef HAVE_KRB5
 	BOOL got_kerberos_mechanism = False;
@@ -732,7 +807,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 	/* the server sent us the first part of the SPNEGO exchange in the negprot 
 	   reply */
-	if (!spnego_parse_negTokenInit(blob, OIDs, &principal)) {
+	if (!spnego_parse_negTokenInit(blob, OIDs, &given_principal)) {
 		data_blob_free(&blob);
 		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
 		goto failed;
@@ -750,42 +825,23 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 #endif
 		free(OIDs[i]);
 	}
-	DEBUG(3,("ads_sasl_spnego_bind: got server principal name = %s\n", principal));
+	DEBUG(3,("ads_sasl_spnego_bind: got server principal name = %s\n", given_principal));
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
 	    got_kerberos_mechanism) 
 	{
-		/* I've seen a child Windows 2000 domain not send 
-		   the principal name back in the first round of 
-		   the SASL bind reply.  So we guess based on server
-		   name and realm.  --jerry  */
-		if ( !principal ) {
-			if ( ads->server.realm && ads->server.ldap_server ) {
-				char *server, *server_realm;
-				
-				server = SMB_STRDUP( ads->server.ldap_server );
-				server_realm = SMB_STRDUP( ads->server.realm );
-				
-				if ( !server || !server_realm )
-					return ADS_ERROR(LDAP_NO_MEMORY);
+		struct ads_service_principal p;
 
-				strlower_m( server );
-				strupper_m( server_realm );				
-				asprintf( &principal, "ldap/%s@%s", server, server_realm );
-
-				SAFE_FREE( server );
-				SAFE_FREE( server_realm );
-
-				if ( !principal )
-					return ADS_ERROR(LDAP_NO_MEMORY);				
-			}
-			
+		status = ads_generate_service_principal(ads, given_principal, &p);
+		SAFE_FREE(given_principal);
+		if (!ADS_ERR_OK(status)) {
+			return status;
 		}
-		
-		status = ads_sasl_spnego_krb5_bind(ads, principal);
+
+		status = ads_sasl_spnego_krb5_bind(ads, &p);
 		if (ADS_ERR_OK(status)) {
-			SAFE_FREE(principal);
+			ads_free_service_principal(&p);
 			return status;
 		}
 
@@ -795,19 +851,21 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		status = ADS_ERROR_KRB5(ads_kinit_password(ads)); 
 
 		if (ADS_ERR_OK(status)) {
-			status = ads_sasl_spnego_krb5_bind(ads, principal);
+			status = ads_sasl_spnego_krb5_bind(ads, &p);
 		}
+
+		ads_free_service_principal(&p);
 
 		/* only fallback to NTLMSSP if allowed */
 		if (ADS_ERR_OK(status) || 
 		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
-			SAFE_FREE(principal);
 			return status;
 		}
-	}
+	} else
 #endif
-
-	SAFE_FREE(principal);
+	{
+		SAFE_FREE(given_principal);
+	}
 
 	/* lets do NTLMSSP ... this has the big advantage that we don't need
 	   to sync clocks, and we don't rely on special versions of the krb5 
