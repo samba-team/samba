@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -804,7 +804,7 @@ krb5_425_conv_principal_ext2(krb5_context context,
     char local_hostname[MAXHOSTNAMELEN];
 
     /* do the following: if the name is found in the
-       `v4_name_convert:host' part, is is assumed to be a `host' type
+       `v4_name_convert:host' part, is assumed to be a `host' type
        principal, and the instance is looked up in the
        `v4_instance_convert' part. if not found there the name is
        (optionally) looked up as a hostname, and if that doesn't yield
