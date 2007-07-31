@@ -2,7 +2,11 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-noinst_DATA = krb5.conf krb5-pkinit.conf krb5-pkinit-win.conf krb5-slave.conf
+noinst_DATA = \
+	krb5.conf \
+	krb5-pkinit.conf \
+	krb5-pkinit-win.conf \
+	krb5-slave.conf
 
 check_PROGRAMS = ap-req
 check_SCRIPTS = $(SCRIPT_TESTS) 
