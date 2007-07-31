@@ -2859,7 +2859,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				 * but we didn't use the last 6 bytes for now 
 				 * --metze 
 				 */
-				fsp = file_fsp(params,0);
+				fsp = file_fsp(SVAL(params,0));
 				if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 					DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 					return ERROR_NT(NT_STATUS_INVALID_HANDLE);
@@ -3341,7 +3341,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 							max_data_bytes);
 		}
 
-		fsp = file_fsp(params,0);
+		fsp = file_fsp(SVAL(params,0));
 		info_level = SVAL(params,2);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
@@ -5860,7 +5860,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		fsp = file_fsp(params,0);
+		fsp = file_fsp(SVAL(params,0));
 		info_level = SVAL(params,2);    
 
 		if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
@@ -6460,7 +6460,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 					unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv15);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv15));
 
 	/* check for an invalid fid before proceeding */
 	

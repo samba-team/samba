@@ -709,7 +709,7 @@ int reply_ioctl(connection_struct *conn,
 	switch (ioctl_code) {
 		case IOCTL_QUERY_JOB_INFO:		    
 		{
-			files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+			files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 			if (!fsp) {
 				END_PROFILE(SMBioctl);
 				return(UNIXERROR(ERRDOS,ERRbadfid));
@@ -2433,7 +2433,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	 * return a zero length response here.
 	 */
 
-	fsp = file_fsp(inbuf,smb_vwv0);
+	fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 
 	if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
 		/*
@@ -2538,7 +2538,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	SMB_OFF_T startpos;
 	size_t numtoread;
 	NTSTATUS status;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	struct byte_range_lock *br_lck = NULL;
 	START_PROFILE(SMBlockread);
 
@@ -2624,7 +2624,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 	char *data;
 	SMB_OFF_T startpos;
 	int outsize = 0;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBread);
 
 	CHECK_FSP(fsp,conn);
@@ -2827,7 +2827,7 @@ normal_read:
 
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv2));
 	SMB_OFF_T startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 	ssize_t nread = -1;
 	size_t smb_maxcnt = SVAL(inbuf,smb_vwv5);
@@ -2928,7 +2928,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SMB_OFF_T startpos;
 	char *data=NULL;
 	BOOL write_through;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	int outsize = 0;
 	NTSTATUS status;
 	START_PROFILE(SMBwritebraw);
@@ -3079,7 +3079,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	SMB_OFF_T startpos;
 	char *data;
 	NTSTATUS status = NT_STATUS_OK;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	int outsize = 0;
 	START_PROFILE(SMBwriteunlock);
 	
@@ -3157,7 +3157,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	ssize_t nwritten = -1;
 	SMB_OFF_T startpos;
 	char *data;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	int outsize = 0;
 	NTSTATUS status;
 	START_PROFILE(SMBwrite);
@@ -3240,7 +3240,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv2));
 	SMB_OFF_T startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
@@ -3362,7 +3362,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	SMB_OFF_T res= -1;
 	int mode,umode;
 	int outsize = 0;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBlseek);
 
 	CHECK_FSP(fsp,conn);
@@ -3434,7 +3434,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 {
 	int outsize = set_message(inbuf,outbuf,0,0,False);
 	uint16 fnum = SVAL(inbuf,smb_vwv0);
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBflush);
 
 	if (fnum != 0xFFFF)
@@ -3501,7 +3501,7 @@ void reply_close(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp((char *)req->inbuf,smb_vwv0);
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
 	/*
 	 * We can only use CHECK_FSP if we know it's not a directory.
@@ -3570,7 +3570,7 @@ int reply_writeclose(connection_struct *conn,
 	SMB_OFF_T startpos;
 	char *data;
 	struct timespec mtime;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBwriteclose);
 
 	CHECK_FSP(fsp,conn);
@@ -3637,7 +3637,7 @@ int reply_lock(connection_struct *conn,
 	int outsize = set_message(inbuf,outbuf,0,0,False);
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	struct byte_range_lock *br_lck = NULL;
 
 	START_PROFILE(SMBlock);
@@ -3684,7 +3684,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	int outsize = set_message(inbuf,outbuf,0,0,False);
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBunlock);
 
 	CHECK_FSP(fsp,conn);
@@ -3830,7 +3830,7 @@ int reply_printclose(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
 	int outsize = set_message(inbuf,outbuf,0,0,False);
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	NTSTATUS status;
 	START_PROFILE(SMBsplclose);
 
@@ -3935,7 +3935,7 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
 	int numtowrite;
 	int outsize = set_message(inbuf,outbuf,0,0,False);
 	char *data;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 
 	START_PROFILE(SMBsplwr);
   
@@ -5533,7 +5533,7 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_forma
 int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		   int length, int bufsize)
 {
-	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv2));
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
 	unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
@@ -5860,7 +5860,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	int max_per_packet;
 	size_t tcount;
 	int pad;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBreadBmpx);
 
 	/* this function doesn't seem to work - disable by default */
@@ -5931,7 +5931,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 {
 	struct timespec ts[2];
 	int outsize = 0;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBsetattrE);
 
 	outsize = set_message(inbuf,outbuf,0,0,False);
@@ -6000,7 +6000,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	BOOL write_through;
 	int smb_doff;
 	char *data;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	NTSTATUS status;
 	START_PROFILE(SMBwriteBmpx);
 
@@ -6112,7 +6112,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	char *data;
 	write_bmpx_struct *wbms;
 	BOOL send_response = False; 
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	NTSTATUS status;
 	START_PROFILE(SMBwriteBs);
 
@@ -6201,7 +6201,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	SMB_STRUCT_STAT sbuf;
 	int outsize = 0;
 	int mode;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
 	START_PROFILE(SMBgetattrE);
 
 	outsize = set_message(inbuf,outbuf,11,0,True);
