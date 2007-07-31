@@ -850,7 +850,7 @@ static const struct smb_message_struct {
 /* 0x9f */ { NULL, NULL, NULL, 0 },
 /* 0xa0 */ { "SMBnttrans", reply_nttrans,NULL, AS_USER | CAN_IPC },
 /* 0xa1 */ { "SMBnttranss", reply_nttranss,NULL, AS_USER | CAN_IPC },
-/* 0xa2 */ { "SMBntcreateX", reply_ntcreate_and_X,NULL, AS_USER | CAN_IPC },
+/* 0xa2 */ { "SMBntcreateX", NULL,reply_ntcreate_and_X, AS_USER | CAN_IPC },
 /* 0xa3 */ { NULL, NULL, NULL, 0 },
 /* 0xa4 */ { "SMBntcancel", reply_ntcancel,NULL, 0 },
 /* 0xa5 */ { "SMBntrename", reply_ntrename,NULL, AS_USER | NEED_WRITE },

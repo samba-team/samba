@@ -479,10 +479,9 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
  Reply to an NT create and X call.
 ****************************************************************************/
 
-int reply_ntcreate_and_X(connection_struct *conn,
-			 char *inbuf,char *outbuf,int length,int bufsize)
+void reply_ntcreate_and_X(connection_struct *conn,
+			  struct smb_request *req)
 {  
-	int result;
 	pstring fname;
 	uint32 flags;
 	uint32 access_mask;
@@ -506,28 +505,26 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	struct timespec m_timespec;
 	BOOL extended_oplock_granted = False;
 	NTSTATUS status;
-	struct smb_request req;
 	struct case_semantics_state *case_state = NULL;
 
 	START_PROFILE(SMBntcreateX);
 
-	init_smb_request(&req, (uint8 *)inbuf);
-
-	if (req.wct < 24) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	if (req->wct < 24) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
-	flags = IVAL(inbuf,smb_ntcreate_Flags);
-	access_mask = IVAL(inbuf,smb_ntcreate_DesiredAccess);
-	file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
-	share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
-	create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
-	create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
-	root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
+	flags = IVAL(req->inbuf,smb_ntcreate_Flags);
+	access_mask = IVAL(req->inbuf,smb_ntcreate_DesiredAccess);
+	file_attributes = IVAL(req->inbuf,smb_ntcreate_FileAttributes);
+	share_access = IVAL(req->inbuf,smb_ntcreate_ShareAccess);
+	create_disposition = IVAL(req->inbuf,smb_ntcreate_CreateDisposition);
+	create_options = IVAL(req->inbuf,smb_ntcreate_CreateOptions);
+	root_dir_fid = (uint16)IVAL(req->inbuf,smb_ntcreate_RootDirectoryFid);
 
-	allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
+	allocation_size = (SMB_BIG_UINT)IVAL(req->inbuf,smb_ntcreate_AllocationSize);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
+	allocation_size |= (((SMB_BIG_UINT)IVAL(req->inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
 
 	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x "
@@ -548,17 +545,30 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support()) {
+			char *inbuf, *outbuf;
+			int length, bufsize;
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf,
+					       &length, &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
+			reply_post_legacy(req, do_ntcreate_pipe_open(
+						  conn, inbuf, outbuf,
+						  length, bufsize));
 			END_PROFILE(SMBntcreateX);
-			return do_ntcreate_pipe_open(conn,inbuf,outbuf,length,bufsize);
+			return;
 		} else {
+			reply_doserror(req, ERRDOS, ERRnoaccess);
 			END_PROFILE(SMBntcreateX);
-			return(ERROR_DOS(ERRDOS,ERRnoaccess));
+			return;
 		}
 	}
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		return;
 	}
 
 	/*
@@ -570,22 +580,25 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * This filename is relative to a directory fid.
 		 */
 		pstring rel_fname;
-		files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
+		files_struct *dir_fsp = file_fsp(
+			(char *)req->inbuf, smb_ntcreate_RootDirectoryFid);
 		size_t dir_name_len;
 
 		if(!dir_fsp) {
+			reply_doserror(req, ERRDOS, ERRbadfid);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_DOS(ERRDOS,ERRbadfid);
+			return;
 		}
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path(inbuf, req.flags2, fname,
-					smb_buf(inbuf), sizeof(fname), 0,
+			srvstr_get_path((char *)req->inbuf, req->flags2, fname,
+					smb_buf(req->inbuf), sizeof(fname), 0,
 					STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
+				reply_nterror(req, status);
 				END_PROFILE(SMBntcreateX);
-				return ERROR_NT(status);
+				return;
 			}
 
 			/*
@@ -593,8 +606,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			 */
 
 			if( is_ntfs_stream_name(fname)) {
+				reply_nterror(
+					req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 				END_PROFILE(SMBntcreateX);
-				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+				return;
 			}
 
 			/*
@@ -604,8 +619,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			  (hint from demyn plantenberg)
 			*/
 
+			reply_doserror(req, ERRDOS, ERRbadfid);
 			END_PROFILE(SMBntcreateX);
-			return(ERROR_DOS(ERRDOS,ERRbadfid));
+			return;
 		}
 
 		/*
@@ -624,21 +640,23 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, req.flags2, rel_fname,
-				smb_buf(inbuf), sizeof(rel_fname), 0,
+		srvstr_get_path((char *)req->inbuf, req->flags2, rel_fname,
+				smb_buf(req->inbuf), sizeof(rel_fname), 0,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(status);
+			return;
 		}
 		pstrcat(fname, rel_fname);
 	} else {
-		srvstr_get_path(inbuf, req.flags2, fname,
-				smb_buf(inbuf), sizeof(fname), 0,
+		srvstr_get_path((char *)req->inbuf, req->flags2, fname,
+				smb_buf(req->inbuf), sizeof(fname), 0,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(status);
+			return;
 		}
 
 		/*
@@ -648,6 +666,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		if( is_ntfs_stream_name(fname)) {
 			enum FAKE_FILE_TYPE fake_file_type = is_fake_file(fname);
 			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
+
+				char *inbuf, *outbuf;
+				int length, bufsize;
+
 				/*
 				 * Here we go! support for changing the disk quotas --metze
 				 *
@@ -657,13 +679,21 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				 * w2k close this file directly after openening
 				 * xp also tries a QUERY_FILE_INFO on the file and then close it
 				 */
-				result = reply_ntcreate_and_X_quota(conn, inbuf, outbuf, length, bufsize,
-								fake_file_type, fname);
+				if (!reply_prep_legacy(req, &inbuf, &outbuf,
+						       &length, &bufsize)) {
+					reply_nterror(req, NT_STATUS_NO_MEMORY);
+					return;
+				}
+				reply_post_legacy(req, reply_ntcreate_and_X_quota(
+							  conn, inbuf, outbuf,
+							  length, bufsize,
+							  fake_file_type, fname));
 				END_PROFILE(SMBntcreateX);
-				return result;
+				return;
 			} else {
+				reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 				END_PROFILE(SMBntcreateX);
-				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+				return;
 			}
 		}
 	}
@@ -672,13 +702,18 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Now contruct the smb_open_mode value from the filename, 
 	 * desired access and the share access.
 	 */
-	status = resolve_dfspath(conn, req.flags2 & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntcreateX);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
 		}
-		return ERROR_NT(status);
+		else {
+			reply_nterror(req, status);
+		}
+		END_PROFILE(SMBntcreateX);
+		return;
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
@@ -702,15 +737,17 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
+		reply_nterror(req, status);
 		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(status);
+		return;
 	}
 	/* All file access must go through check_name() */
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
+		reply_nterror(req, status);
 		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(status);
+		return;
 	}
 
 	/* This is the correct thing to do (check every time) but can_delete is
@@ -728,8 +765,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
 				!can_delete_file_in_directory(conn, fname)) {
 			TALLOC_FREE(case_state);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+			return;
 		}
 	}
 
@@ -753,12 +791,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
 			TALLOC_FREE(case_state);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		oplock_request = 0;
-		status = open_directory(conn, &req, fname, &sbuf,
+		status = open_directory(conn, req, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -773,8 +812,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 				status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
 			}
+			reply_nterror(req, status);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(status);
+			return;
 		}
 
 	} else {
@@ -796,7 +836,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		status = open_file_ntcreate(conn, &req, fname, &sbuf,
+		status = open_file_ntcreate(conn, req, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -834,12 +874,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					TALLOC_FREE(case_state);
+					reply_nterror(req, NT_STATUS_FILE_IS_A_DIRECTORY);
 					END_PROFILE(SMBntcreateX);
-					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
+					return;
 				}
 	
 				oplock_request = 0;
-				status = open_directory(conn, &req, fname,
+				status = open_directory(conn, req, fname,
 							&sbuf,
 							access_mask,
 							share_access,
@@ -854,17 +895,19 @@ int reply_ntcreate_and_X(connection_struct *conn,
 						    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 						status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
 					}
+					reply_nterror(req, status);
 					END_PROFILE(SMBntcreateX);
-					return ERROR_NT(status);
+					return;
 				}
 			} else {
 				TALLOC_FREE(case_state);
 				END_PROFILE(SMBntcreateX);
-				if (open_was_deferred(req.mid)) {
+				if (open_was_deferred(req->mid)) {
 					/* We have re-scheduled this call. */
-					return -1;
+					return;
 				}
-				return ERROR_NT(status);
+				reply_nterror(req, status);
+				return;
 			}
 		} 
 	}
@@ -878,8 +921,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 	if (!fsp->is_directory && (fattr & aDIR)) {
 		close_file(fsp,ERROR_CLOSE);
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBntcreateX);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return;
 	} 
 	
 	/* Save the requested allocation size. */
@@ -888,14 +932,16 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 			if (fsp->is_directory) {
 				close_file(fsp,ERROR_CLOSE);
-				END_PROFILE(SMBntcreateX);
 				/* Can't set allocation size on a directory. */
-				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+				END_PROFILE(SMBntcreateX);
+				return;
 			}
 			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 				close_file(fsp,ERROR_CLOSE);
+				reply_nterror(req, NT_STATUS_DISK_FULL);
 				END_PROFILE(SMBntcreateX);
-				return ERROR_NT(NT_STATUS_DISK_FULL);
+				return;
 			}
 		} else {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
@@ -922,13 +968,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
  		 * the wcnt to 42 ? It's definately
  		 * what happens on the wire....
  		 */
-		set_message(inbuf,outbuf,50,0,True);
-		SCVAL(outbuf,smb_wct,42);
+		reply_outbuf(req, 50, 0);
+		SCVAL(req->outbuf,smb_wct,42);
 	} else {
-		set_message(inbuf,outbuf,34,0,True);
+		reply_outbuf(req, 34, 0);
 	}
 
-	p = outbuf + smb_vwv2;
+	p = (char *)req->outbuf + smb_vwv2;
 	
 	/*
 	 * Currently as we don't support level II oplocks we just report
@@ -1001,9 +1047,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
-	result = chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
 	END_PROFILE(SMBntcreateX);
-	return result;
+	return;
 }
 
 /****************************************************************************
