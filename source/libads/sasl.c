@@ -905,11 +905,9 @@ failed:
    this routine is much less fragile
    see RFC2078 and RFC2222 for details
 */
-static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
+static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv_name)
 {
 	uint32 minor_status;
-	gss_name_t serv_name;
-	gss_buffer_desc input_name;
 	gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
 	gss_OID mech_type = GSS_C_NULL_OID;
 	gss_buffer_desc output_token, input_token;
@@ -921,62 +919,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	int gss_rc, rc;
 	uint8 *p;
 	uint32 max_msg_size = 0;
-	char *sname = NULL;
 	ADS_STATUS status;
-	krb5_principal principal = NULL;
-	krb5_context ctx = NULL;
-	krb5_enctype enc_types[] = {
-#ifdef ENCTYPE_ARCFOUR_HMAC
-			ENCTYPE_ARCFOUR_HMAC,
-#endif
-			ENCTYPE_DES_CBC_MD5,
-			ENCTYPE_NULL};
-	gss_OID_desc nt_principal = 
-	{10, CONST_DISCARD(char *, "\052\206\110\206\367\022\001\002\002\002")};
-
-	/* we need to fetch a service ticket as the ldap user in the
-	   servers realm, regardless of our realm */
-	asprintf(&sname, "ldap/%s@%s", ads->config.ldap_server_name, ads->config.realm);
-
-	initialize_krb5_error_table();
-	status = ADS_ERROR_KRB5(krb5_init_context(&ctx));
-	if (!ADS_ERR_OK(status)) {
-		SAFE_FREE(sname);
-		return status;
-	}
-	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(ctx, enc_types));
-	if (!ADS_ERR_OK(status)) {
-		SAFE_FREE(sname);
-		krb5_free_context(ctx);	
-		return status;
-	}
-	status = ADS_ERROR_KRB5(smb_krb5_parse_name(ctx, sname, &principal));
-	if (!ADS_ERR_OK(status)) {
-		SAFE_FREE(sname);
-		krb5_free_context(ctx);	
-		return status;
-	}
-
-	input_name.value = &principal;
-	input_name.length = sizeof(principal);
-
-	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &serv_name);
-
-	/*
-	 * The MIT libraries have a *HORRIBLE* bug - input_value.value needs
-	 * to point to the *address* of the krb5_principal, and the gss libraries
-	 * to a shallow copy of the krb5_principal pointer - so we need to keep
-	 * the krb5_principal around until we do the gss_release_name. MIT *SUCKS* !
-	 * Just one more way in which MIT engineers screwed me over.... JRA.
-	 */
-
-	SAFE_FREE(sname);
-
-	if (gss_rc) {
-		krb5_free_principal(ctx, principal);
-		krb5_free_context(ctx);	
-		return ADS_ERROR_GSS(gss_rc, minor_status);
-	}
 
 	input_token.value = NULL;
 	input_token.length = 0;
@@ -1122,16 +1065,44 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	}
 failed:
 
-	gss_release_name(&minor_status, &serv_name);
 	if (context_handle != GSS_C_NO_CONTEXT)
 		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
-	krb5_free_principal(ctx, principal);
-	krb5_free_context(ctx);	
 
 	if(scred)
 		ber_bvfree(scred);
 	return status;
 }
+
+static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
+{
+	ADS_STATUS status;
+	struct ads_service_principal p;
+
+	status = ads_generate_service_principal(ads, NULL, &p);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	status = ads_sasl_gssapi_do_bind(ads, p.name);
+	if (ADS_ERR_OK(status)) {
+		ads_free_service_principal(&p);
+		return status;
+	}
+
+	DEBUG(10,("ads_sasl_gssapi_do_bind failed with: %s, "
+		  "calling kinit\n", ads_errstr(status)));
+
+	status = ADS_ERROR_KRB5(ads_kinit_password(ads));
+
+	if (ADS_ERR_OK(status)) {
+		status = ads_sasl_gssapi_do_bind(ads, p.name);
+	}
+
+	ads_free_service_principal(&p);
+
+	return status;
+}
+
 #endif /* HAVE_GGSAPI */
 
 /* mapping between SASL mechanisms and functions */
