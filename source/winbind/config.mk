@@ -15,6 +15,7 @@ OBJ_FILES = \
 		wb_dom_info.o \
 		wb_dom_info_trusted.o \
 		wb_sid2domain.o \
+		wb_name2domain.o \
 		wb_connect_lsa.o \
 		wb_connect_sam.o \
 		wb_cmd_lookupname.o \
