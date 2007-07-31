@@ -1,7 +1,7 @@
 2007-08-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* log.c: only free the orignal entries extentions if there was
-	any.  Bug reported byg Peter Meinecke.
+	any.  Bug reported by Peter Meinecke.
 
 	* add configuration for signal file and acl file, let user select
 	hostname, catch signals and print why we are quiting, make nop
