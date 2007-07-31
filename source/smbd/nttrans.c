@@ -619,7 +619,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		 */
 		pstring rel_fname;
 		files_struct *dir_fsp = file_fsp(
-			(char *)req->inbuf, smb_ntcreate_RootDirectoryFid);
+			SVAL(req->inbuf, smb_ntcreate_RootDirectoryFid));
 		size_t dir_name_len;
 
 		if(!dir_fsp) {
@@ -1377,7 +1377,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		/*
 		 * This filename is relative to a directory fid.
 		 */
-		files_struct *dir_fsp = file_fsp(params,4);
+		files_struct *dir_fsp = file_fsp(SVAL(params,4));
 		size_t dir_name_len;
 
 		if(!dir_fsp) {
@@ -2078,7 +2078,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
-	fsp = file_fsp((char *)setup,4);
+	fsp = file_fsp(SVAL(setup,4));
 	filter = IVAL(setup, 0);
 	recursive = (SVAL(setup, 6) != 0) ? True : False;
 
@@ -2173,7 +2173,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
-	fsp = file_fsp(params, 0);
+	fsp = file_fsp(SVAL(params, 0));
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
 	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), new_name, params+4,
@@ -2244,7 +2244,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
-	fsp = file_fsp(params,0);
+	fsp = file_fsp(SVAL(params,0));
 	if(!fsp) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
@@ -2358,7 +2358,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
-	if((fsp = file_fsp(params,0)) == NULL) {
+	if((fsp = file_fsp(SVAL(params,0))) == NULL) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
@@ -2415,7 +2415,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 	DEBUG(10,("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
 		 function, fidnum, isFSctl, compfilter));
 
-	fsp=file_fsp((char *)*ppsetup, 4);
+	fsp=file_fsp(SVAL(ppsetup, 4));
 	/* this check is done in each implemented function case for now
 	   because I don't want to break anything... --metze
 	FSP_BELONGS_CONN(fsp,conn);*/
@@ -2693,7 +2693,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 	}
 	
 	/* maybe we can check the quota_fnum */
-	fsp = file_fsp(params,0);
+	fsp = file_fsp(SVAL(params,0));
 	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
@@ -2941,7 +2941,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 	}
 	
 	/* maybe we can check the quota_fnum */
-	fsp = file_fsp(params,0);
+	fsp = file_fsp(SVAL(params,0));
 	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
