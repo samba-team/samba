@@ -1,5 +1,7 @@
 2007-07-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kadmin/kadmin.8: spelling
+
 	* lib/krb5/crypto.c: Check return values from alloc
 	functions. Prompted by patch of Charles Longeau.
 
