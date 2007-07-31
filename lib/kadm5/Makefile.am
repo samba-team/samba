@@ -108,9 +108,9 @@ nodist_libkadm5srv_la_SOURCES = 		\
 dist_iprop_log_SOURCES = iprop-log.c
 nodist_iprop_log_SOURCES = iprop-commands.c
 
-ipropd_master_SOURCES = ipropd_master.c iprop.h kadm5_locl.h
+ipropd_master_SOURCES = ipropd_master.c ipropd_common.c iprop.h kadm5_locl.h
 
-ipropd_slave_SOURCES = ipropd_slave.c iprop.h kadm5_locl.h
+ipropd_slave_SOURCES = ipropd_slave.c ipropd_common.c iprop.h kadm5_locl.h
 
 man_MANS = kadm5_pwcheck.3 iprop.8 iprop-log.8
 

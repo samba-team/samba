@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,6 +38,7 @@ RCSID("$Id$");
 static krb5_log_facility *log_facility;
 static char *server_time_lost = "5 min";
 static int time_before_lost;
+const char *slave_str = NULL;
 
 static int
 connect_to_master (krb5_context context, const char *master,
@@ -80,7 +81,7 @@ connect_to_master (krb5_context context, const char *master,
 
 static void
 get_creds(krb5_context context, const char *keytab_str,
-	  krb5_ccache *cache, const char *host)
+	  krb5_ccache *cache, const char *serverhost)
 {
     krb5_keytab keytab;
     krb5_principal client;
@@ -101,14 +102,15 @@ get_creds(krb5_context context, const char *keytab_str,
     if(ret)
 	krb5_err(context, 1, ret, "%s", keytab_str);
     
-    ret = krb5_sname_to_principal (context, NULL, IPROP_NAME,
+
+    ret = krb5_sname_to_principal (context, slave_str, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &client);
     if (ret) krb5_err(context, 1, ret, "krb5_sname_to_principal");
 
     ret = krb5_get_init_creds_opt_alloc(context, &init_opts);
     if (ret) krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
 
-    asprintf (&server, "%s/%s", IPROP_NAME, host);
+    asprintf (&server, "%s/%s", IPROP_NAME, serverhost);
     if (server == NULL)
 	krb5_errx (context, 1, "malloc: no memory");
 
@@ -186,10 +188,8 @@ receive_loop (krb5_context context,
     left  = krb5_storage_seek (sp, -16, SEEK_CUR);
     right = krb5_storage_seek (sp, 0, SEEK_END);
     buf = malloc (right - left);
-    if (buf == NULL && (right - left) != 0) {
-	krb5_warnx (context, "malloc: no memory");
-	return;
-    }
+    if (buf == NULL && (right - left) != 0)
+	krb5_errx (context, 1, "malloc: no memory");
 
     /*
      * ...and then write them out to the on-disk log.
@@ -217,11 +217,20 @@ receive_loop (krb5_context context,
 
 	if(krb5_ret_int32 (sp, &vers) != 0)
 	    break;
-	krb5_ret_int32 (sp, &timestamp);
-	krb5_ret_int32 (sp, &tmp);
+	ret = krb5_ret_int32 (sp, &timestamp);
+	if (ret) krb5_errx(context, 1, "entry %ld: too short", (long)vers);
+	ret = krb5_ret_int32 (sp, &tmp);
+	if (ret) krb5_errx(context, 1, "entry %ld: too short", (long)vers);
 	op = tmp;
-	krb5_ret_int32 (sp, &len);
+	ret = krb5_ret_int32 (sp, &len);
+	if (ret) krb5_errx(context, 1, "entry %ld: too short", (long)vers);
+	if (len < 0)
+	    krb5_errx(context, 1, "log is corrupted, "
+			"negative length of entry version %ld: %ld",
+			(long)vers, (long)len);
 	cur = krb5_storage_seek(sp, 0, SEEK_CUR);
+
+	krb5_warnx (context, "replying entry %d", (int)vers);
 
 	ret = kadm5_log_replay (server_context,
 				op, vers, len, sp);
@@ -232,9 +241,9 @@ receive_loop (krb5_context context,
 
 	/* 
 	 * Don't trust the kadm5_log_reply* functions to do the right
-	 * thing and set the offset to the end ourself.
+	 * thing and set the offset to the end of the entry ourself.
 	 */
-	krb5_storage_seek (sp, cur + 8, SEEK_SET);
+	krb5_storage_seek (sp, cur + len + 8, SEEK_SET);
     }
 }
 
@@ -297,6 +306,8 @@ receive_everything (krb5_context context, int fd,
     char *dbname;
     HDB *mydb;
   
+    krb5_warnx(context, "receive complete database");
+
     asprintf(&dbname, "%s-NEW", server_context->db->hdb_name);
     ret = hdb_create(context, &mydb, dbname);
     if(ret)
@@ -384,6 +395,8 @@ receive_everything (krb5_context context, int fd,
     ret = mydb->hdb_destroy (context, mydb);
     if (ret)
 	krb5_err (context, 1, ret, "db->destroy");
+
+    krb5_warnx(context, "receive complete database, version %ld", (long)vno);
 }
 
 static char *config_file;
@@ -405,6 +418,8 @@ static struct getargs args[] = {
       "port ipropd-slave will connect to", "port"},
     { "detach", 0, arg_flag, &detach_from_console, 
       "detach from console" },
+    { "hostname", 0, arg_string, &slave_str, 
+      "hostname of slave (if not same as hostname)", "hostname" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -436,6 +451,8 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    setup_signal();
 
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
@@ -508,10 +525,12 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, "krb5_sendauth");
 
+    krb5_warnx(context, "ipropd-slave started");
+
     ihave (context, auth_context, master_fd,
 	   server_context->log_context.version);
 
-    for (;;) {
+    while (exit_flag == 0) {
 	krb5_data out;
 	krb5_storage *sp;
 	int32_t tmp;
@@ -571,5 +590,13 @@ main(int argc, char **argv)
 	krb5_data_free (&out);
     }
     
+    if(exit_flag == SIGXCPU)
+	krb5_warnx(context, "%s CPU time limit exceeded", getprogname());
+    else if(exit_flag == SIGINT || exit_flag == SIGTERM)
+	krb5_warnx(context, "%s terminated", getprogname());
+    else
+	krb5_warnx(context, "%s unexpected exit reason: %d", 
+		   getprogname(), exit_flag);
+
     return 0;
 }

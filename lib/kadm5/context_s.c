@@ -54,18 +54,13 @@ set_funcs(kadm5_server_context *c)
 }
 
 static void
-set_socket_name(const char *dbname, struct sockaddr_un *un)
+set_socket_name(krb5_context context, struct sockaddr_un *un)
 {
-    const char *p;
+    const char *fn = kadm5_log_signal_socket(context);
+
     memset(un, 0, sizeof(*un));
     un->sun_family = AF_UNIX;
-    p = strrchr(dbname, '.');
-    if(p == NULL)
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s.signal", 
-		 dbname);
-    else
-	snprintf(un->sun_path, sizeof(un->sun_path), "%.*s.signal", 
-		 (int)(p - dbname), dbname);
+    strlcpy (un->sun_path, fn, sizeof(un->sun_path));
 }
 
 static kadm5_ret_t
@@ -120,8 +115,7 @@ find_db_spec(kadm5_server_context *ctx)
     if (ctx->log_context.log_file == NULL)
 	ctx->log_context.log_file = strdup(HDB_DB_DIR "/log");
 
-    set_socket_name(ctx->config.dbname, 
-		    &ctx->log_context.socket_name);
+    set_socket_name(context, &ctx->log_context.socket_name);
 
     return 0;
 }

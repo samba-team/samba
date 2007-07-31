@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,44 +31,39 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id$ */
+#include "iprop.h"
+RCSID("$Id$");
 
-#ifndef __IPROP_H__
-#define __IPROP_H__
+sig_atomic_t exit_flag;
 
-#include "kadm5_locl.h"
-#include <getarg.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
+static RETSIGTYPE
+sigterm(int sig)
+{
+    exit_flag = sig;
+}
+
+void
+setup_signal(void)
+{
+#ifdef HAVE_SIGACTION
+    {
+	struct sigaction sa;
+
+	sa.sa_flags = 0;
+	sa.sa_handler = sigterm;
+	sigemptyset(&sa.sa_mask);
+
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGXCPU, &sa, NULL);
+
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
+    }
+#else
+    signal(SIGINT, sigterm);
+    signal(SIGTERM, sigterm);
+    signal(SIGXCPU, sigterm);
+    signal(SIGPIPE, SIG_IGN);
 #endif
-#ifdef HAVE_UTIL_H
-#include <util.h>
-#endif
-
-#include <parse_time.h>
-
-#define IPROP_VERSION "iprop-0.0"
-
-#define KADM5_SLAVE_ACL HDB_DB_DIR "/slaves"
-
-#define KADM5_SLAVE_STATS HDB_DB_DIR "/slaves-stats"
-
-#define IPROP_NAME "iprop"
-
-#define IPROP_SERVICE "iprop"
-
-#define IPROP_PORT 2121
-
-enum iprop_cmd { I_HAVE = 1,
-		 FOR_YOU = 2,
-		 TELL_YOU_EVERYTHING = 3,
-		 ONE_PRINC = 4,
-		 NOW_YOU_HAVE = 5,
-		 ARE_YOU_THERE = 6,
-		 I_AM_HERE = 7
-};
-
-extern sig_atomic_t exit_flag;
-void setup_signal(void);
-
-#endif /* __IPROP_H__ */
+}

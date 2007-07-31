@@ -38,25 +38,30 @@ RCSID("$Id$");
 
 static krb5_log_facility *log_facility;
 
-const char *slave_stats_file = KADM5_SLAVE_STATS;
+const char *slave_stats_file;
 const char *slave_time_missing = "2 min";
 const char *slave_time_gone = "5 min";
 
 static int time_before_missing;
 static int time_before_gone;
 
+const char *master_hostname;
+
 static int
 make_signal_socket (krb5_context context)
 {
     struct sockaddr_un addr;
+    const char *fn;
     int fd;
+
+    fn = kadm5_log_signal_socket(context);
 
     fd = socket (AF_UNIX, SOCK_DGRAM, 0);
     if (fd < 0)
 	krb5_err (context, 1, errno, "socket AF_UNIX");
     memset (&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strlcpy (addr.sun_path, KADM5_LOG_SIGNAL, sizeof(addr.sun_path));
+    strlcpy (addr.sun_path, fn, sizeof(addr.sun_path));
     unlink (addr.sun_path);
     if (bind (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	krb5_err (context, 1, errno, "bind %s", addr.sun_path);
@@ -119,11 +124,20 @@ typedef struct slave slave;
 static int
 check_acl (krb5_context context, const char *name)
 {
+    const char *fn;
     FILE *fp;
     char buf[256];
     int ret = 1;
 
-    fp = fopen (KADM5_SLAVE_ACL, "r");
+
+    fn = krb5_config_get_string_default(context,
+					NULL,
+					KADM5_SLAVE_ACL,
+					"kdc",
+					"iprop-acl",
+					NULL);
+
+    fp = fopen (fn, "r");
     if (fp == NULL)
 	return 1;
     while (fgets(buf, sizeof(buf), fp) != NULL) {
@@ -215,7 +229,11 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root, int fd)
 	krb5_warn (context, errno, "accept");
 	goto error;
     }
-    gethostname(hostname, sizeof(hostname));
+    if (master_hostname)
+	strlcpy(hostname, master_hostname, sizeof(hostname));
+    else
+	gethostname(hostname, sizeof(hostname));
+
     ret = krb5_sname_to_principal (context, hostname, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &server);
     if (ret) {
@@ -429,6 +447,10 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     if (s->flags & SLAVE_F_DEAD)
 	return 0;
 
+    /* if slave is a fresh client, starting over */
+    if (s->version == 0)
+	return send_complete (context, s, database, current_version);
+
     sp = kadm5_log_goto_end (log_fd);
     right = krb5_storage_seek(sp, 0, SEEK_CUR);
     for (;;) {
@@ -535,6 +557,40 @@ process_msg (krb5_context context, slave *s, int log_fd,
 #define SLAVE_STATUS	"Status"
 #define SLAVE_SEEN	"Last Seen"
 
+static FILE *
+open_stats(krb5_context context)
+{
+    const char *fn;
+
+    if (slave_stats_file)
+	fn = slave_stats_file;
+    else
+	fn = krb5_config_get_string_default(context,
+					    NULL,
+					    KADM5_SLAVE_STATS,
+					    "kdc",
+					    "iprop-stats",
+					    NULL);
+
+    return fopen(fn, "w");
+}
+
+static void
+write_master_down(krb5_context context)
+{
+    char str[100];
+    time_t t = time(NULL);
+    FILE *fp;
+
+    fp = open_stats(context);
+    if (fp == NULL)
+	return;
+    krb5_format_time(context, t, str, sizeof(str), TRUE); 
+    fprintf(fp, "master down at %s\n", str);
+
+    fclose(fp);
+}
+
 static void
 write_stats(krb5_context context, slave *slaves, uint32_t current_version)
 {
@@ -543,7 +599,7 @@ write_stats(krb5_context context, slave *slaves, uint32_t current_version)
     time_t t = time(NULL);
     FILE *fp;
 
-    fp = fopen(slave_stats_file, "w");
+    fp = open_stats(context);
     if (fp == NULL)
 	return;
 
@@ -626,6 +682,8 @@ static struct getargs args[] = {
       "port ipropd will listen to", "port"},
     { "detach", 0, arg_flag, &detach_from_console, 
       "detach from console" },
+    { "hostname", 0, arg_string, &master_hostname, 
+      "hostname of master (if not same as hostname)", "hostname" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -655,6 +713,8 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    setup_signal();
 
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
@@ -713,9 +773,9 @@ main(int argc, char **argv)
     signal_fd = make_signal_socket (context);
     listen_fd = make_listen_socket (context, port_str);
 
-    signal (SIGPIPE, SIG_IGN);
+    krb5_warnx(context, "ipropd-master started");
 
-    for (;;) {
+    while(exit_flag == 0){
 	slave *p;
 	fd_set readset;
 	int max_fd = 0;
@@ -798,6 +858,16 @@ main(int argc, char **argv)
 	}
 	write_stats(context, slaves, current_version);
     }
+
+    if(exit_flag == SIGXCPU)
+	krb5_warnx(context, "%s CPU time limit exceeded", getprogname());
+    else if(exit_flag == SIGINT || exit_flag == SIGTERM)
+	krb5_warnx(context, "%s terminated", getprogname());
+    else
+	krb5_warnx(context, "%s unexpected exit reason: %d", 
+		   getprogname(), exit_flag);
+
+    write_master_down(context);
 
     return 0;
 }
