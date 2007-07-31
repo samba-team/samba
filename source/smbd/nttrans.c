@@ -492,17 +492,13 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
  Reply to an NT create and X call for a quota file.
 ****************************************************************************/
 
-int reply_ntcreate_and_X_quota(connection_struct *conn,
-				char *inbuf,
-				char *outbuf,
-				int length,
-				int bufsize,
-				enum FAKE_FILE_TYPE fake_file_type,
-				const char *fname)
+static void reply_ntcreate_and_X_quota(connection_struct *conn,
+				       struct smb_request *req,
+				       enum FAKE_FILE_TYPE fake_file_type,
+				       const char *fname)
 {
-	int result;
 	char *p;
-	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
+	uint32 desired_access = IVAL(req->inbuf,smb_ntcreate_DesiredAccess);
 	files_struct *fsp;
 	NTSTATUS status;
 
@@ -510,12 +506,13 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
 				&fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
-	set_message(inbuf,outbuf,34,0,True);
+	reply_outbuf(req, 34, 0);
 	
-	p = outbuf + smb_vwv2;
+	p = (char *)req->outbuf + smb_vwv2;
 	
 	/* SCVAL(p,0,NO_OPLOCK_RETURN); */
 	p++;
@@ -523,8 +520,7 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
 
 	DEBUG(5,("reply_ntcreate_and_X_quota: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
-	result = chain_reply(inbuf,&outbuf,length,bufsize);
-	return result;
+	chain_reply_new(req);
 }
 
 /****************************************************************************
@@ -708,10 +704,6 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		if( is_ntfs_stream_name(fname)) {
 			enum FAKE_FILE_TYPE fake_file_type = is_fake_file(fname);
 			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
-
-				char *inbuf, *outbuf;
-				int length, bufsize;
-
 				/*
 				 * Here we go! support for changing the disk quotas --metze
 				 *
@@ -721,22 +713,13 @@ void reply_ntcreate_and_X(connection_struct *conn,
 				 * w2k close this file directly after openening
 				 * xp also tries a QUERY_FILE_INFO on the file and then close it
 				 */
-				if (!reply_prep_legacy(req, &inbuf, &outbuf,
-						       &length, &bufsize)) {
-					reply_nterror(req, NT_STATUS_NO_MEMORY);
-					return;
-				}
-				reply_post_legacy(req, reply_ntcreate_and_X_quota(
-							  conn, inbuf, outbuf,
-							  length, bufsize,
-							  fake_file_type, fname));
-				END_PROFILE(SMBntcreateX);
-				return;
+				reply_ntcreate_and_X_quota(conn, req,
+							  fake_file_type, fname);
 			} else {
 				reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-				END_PROFILE(SMBntcreateX);
-				return;
 			}
+			END_PROFILE(SMBntcreateX);
+			return;
 		}
 	}
 	
