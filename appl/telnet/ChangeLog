@@ -1,3 +1,11 @@
+2007-07-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/telnetd.c: Add --help, reported by David Love.
+
+2007-07-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnet/main.c: Catch --help, reported by David Love.
+	
 2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/sys_term.c: GLIBC made the choice that ut_tv should be
