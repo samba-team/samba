@@ -484,13 +484,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 {  
 	int result;
 	pstring fname;
-	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
-	uint32 access_mask = IVAL(inbuf,smb_ntcreate_DesiredAccess);
-	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
-	uint32 share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
-	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
-	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
-	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
+	uint32 flags;
+	uint32 access_mask;
+	uint32 file_attributes;
+	uint32 share_access;
+	uint32 create_disposition;
+	uint32 create_options;
+	uint16 root_dir_fid;
+	SMB_BIG_UINT allocation_size;
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	int oplock_request = 0;
@@ -510,6 +511,25 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	START_PROFILE(SMBntcreateX);
 
+	init_smb_request(&req, (uint8 *)inbuf);
+
+	if (req.wct < 24) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	flags = IVAL(inbuf,smb_ntcreate_Flags);
+	access_mask = IVAL(inbuf,smb_ntcreate_DesiredAccess);
+	file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
+	share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
+	create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
+	create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
+	root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
+
+	allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
+#ifdef LARGE_SMB_OFF_T
+	allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
+#endif
+
 	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
@@ -521,8 +541,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			(unsigned int)create_disposition,
 			(unsigned int)create_options,
 			(unsigned int)root_dir_fid ));
-
-	init_smb_request(&req, (uint8 *)inbuf);
 
 	/*
 	 * If it's an IPC, use the pipe handler.
@@ -562,7 +580,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname,
+			srvstr_get_path(inbuf, req.flags2, fname,
 					smb_buf(inbuf), sizeof(fname), 0,
 					STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -606,7 +624,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), rel_fname,
+		srvstr_get_path(inbuf, req.flags2, rel_fname,
 				smb_buf(inbuf), sizeof(rel_fname), 0,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -615,7 +633,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 		pstrcat(fname, rel_fname);
 	} else {
-		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname,
+		srvstr_get_path(inbuf, req.flags2, fname,
 				smb_buf(inbuf), sizeof(fname), 0,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -654,7 +672,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Now contruct the smb_open_mode value from the filename, 
 	 * desired access and the share access.
 	 */
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req.flags2 & FLAGS2_DFS_PATHNAMES, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntcreateX);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -842,7 +860,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			} else {
 				TALLOC_FREE(case_state);
 				END_PROFILE(SMBntcreateX);
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+				if (open_was_deferred(req.mid)) {
 					/* We have re-scheduled this call. */
 					return -1;
 				}
@@ -866,10 +884,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
-#ifdef LARGE_SMB_OFF_T
-		allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
-#endif
 		if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 			if (fsp->is_directory) {
