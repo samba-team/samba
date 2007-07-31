@@ -321,7 +321,8 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
 }
 
 /****************************************************************************
- Reply to an NT create and X call on a pipe.
+ Reply to an NT create and X call on a pipe -- this will die when all
+ callers are converted to nt_open_pipe_new
 ****************************************************************************/
 
 static int nt_open_pipe(char *fname, connection_struct *conn,
@@ -369,24 +370,75 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	return 0;
 }
 
+static void nt_open_pipe_new(char *fname, connection_struct *conn,
+			     struct smb_request *req, int *ppnum)
+{
+	smb_np_struct *p = NULL;
+	int i;
+
+	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
+
+	/* See if it is one we want to handle. */
+
+	if (lp_disable_spoolss() && strequal(fname, "\\spoolss")) {
+		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+				ERRDOS, ERRbadpipe);
+		return;
+	}
+
+	for( i = 0; known_nt_pipes[i]; i++ ) {
+		if( strequal(fname,known_nt_pipes[i])) {
+			break;
+		}
+	}
+
+	if ( known_nt_pipes[i] == NULL ) {
+		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+				ERRDOS, ERRbadpipe);
+		return;
+	}
+
+	/* Strip \\ off the name. */
+	fname++;
+
+	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
+
+	p = open_rpc_pipe_p(fname, conn, req->vuid);
+	if (!p) {
+		reply_doserror(req, ERRSRV, ERRnofids);
+		return;
+	}
+
+	/* TODO: Add pipe to db */
+
+	if ( !store_pipe_opendb( p ) ) {
+		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));
+	}
+
+	*ppnum = p->pnum;
+	return;
+}
+
 /****************************************************************************
  Reply to an NT create and X call for pipes.
 ****************************************************************************/
 
-static int do_ntcreate_pipe_open(connection_struct *conn,
-			 char *inbuf,char *outbuf,int length,int bufsize)
+static void do_ntcreate_pipe_open(connection_struct *conn,
+				  struct smb_request *req)
 {
 	pstring fname;
-	int ret;
 	int pnum = -1;
 	char *p = NULL;
-	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
+	uint32 flags = IVAL(req->inbuf,smb_ntcreate_Flags);
 
-	srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), fname, smb_buf(inbuf),
-			sizeof(fname), STR_TERMINATE);
+	srvstr_pull_buf((char *)req->inbuf, req->flags2, fname,
+			smb_buf(req->inbuf), sizeof(fname), STR_TERMINATE);
 
-	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0) {
-		return ret;
+	nt_open_pipe_new(fname, conn, req, &pnum);
+
+	if (req->outbuf) {
+		/* error reply */
+		return;
 	}
 
 	/*
@@ -399,13 +451,13 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
  		 * the wcnt to 42 ? It's definately
  		 * what happens on the wire....
  		 */
-		set_message(inbuf,outbuf,50,0,True);
-		SCVAL(outbuf,smb_wct,42);
+		reply_outbuf(req, 50, 0);
+		SCVAL(req->outbuf,smb_wct,42);
 	} else {
-		set_message(inbuf,outbuf,34,0,True);
+		reply_outbuf(req, 34, 0);
 	}
 
-	p = outbuf + smb_vwv2;
+	p = (char *)req->outbuf + smb_vwv2;
 	p++;
 	SSVAL(p,0,pnum);
 	p += 2;
@@ -433,7 +485,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 
 	DEBUG(5,("do_ntcreate_pipe_open: open pipe = %s\n", fname));
 
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
 }
 
 /****************************************************************************
@@ -545,17 +597,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support()) {
-			char *inbuf, *outbuf;
-			int length, bufsize;
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf,
-					       &length, &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-			reply_post_legacy(req, do_ntcreate_pipe_open(
-						  conn, inbuf, outbuf,
-						  length, bufsize));
+			do_ntcreate_pipe_open(conn, req);
 			END_PROFILE(SMBntcreateX);
 			return;
 		} else {
