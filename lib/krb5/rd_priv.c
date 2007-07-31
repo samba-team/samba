@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -55,13 +55,17 @@ krb5_rd_priv(krb5_context context,
 
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
-	outdata == NULL)
+	outdata == NULL) {
+	krb5_clear_error_string (context);
 	return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
+    }
 
     memset(&priv, 0, sizeof(priv));
     ret = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
-    if (ret) 
+    if (ret) {
+	krb5_clear_error_string (context);
 	goto failure;
+    }
     if (priv.pvno != 5) {
 	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BADVERSION;
@@ -94,8 +98,10 @@ krb5_rd_priv(krb5_context context,
 
     ret = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
     krb5_data_free (&plain);
-    if (ret) 
+    if (ret) {
+	krb5_clear_error_string (context);
 	goto failure;
+    }
   
     /* check sender address */
 
