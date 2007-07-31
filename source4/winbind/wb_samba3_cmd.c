@@ -25,6 +25,7 @@
 #include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
 #include "winbind/wb_async_helpers.h"
+#include "winbind/wb_helper.h"
 #include "libcli/composite/composite.h"
 #include "version.h"
 #include "librpc/gen_ndr/netlogon.h"
@@ -529,27 +530,6 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
 
-/* Helper function: Split a domain\\user string into it's parts,
- * because the client supplies it as one string */
-
-static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
-				 char **domain, char **user)
-{
-	char *p = strchr(domuser, *lp_winbind_separator());
-
-	if (p == NULL) {
-		*domain = talloc_strdup(mem_ctx, lp_workgroup());
-	} else {
-		*domain = talloc_strndup(mem_ctx, domuser,
-					 PTR_DIFF(p, domuser));
-		domuser = p+1;
-	}
-
-	*user = talloc_strdup(mem_ctx, domuser);
-
-	return ((*domain != NULL) && (*user != NULL));
-}
-
 /* Plaintext authentication 
    
    This interface is used by ntlm_auth in it's 'basic' authentication
@@ -566,7 +546,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 		s3call->wbconn->listen_socket->service;
 	char *user, *domain;
 
-	if (!samba3_parse_domuser(s3call, 
+	if (!wb_samba3_split_username(s3call,
 				 s3call->request.data.auth.user,
 				 &domain, &user)) {
 		return NT_STATUS_NO_SUCH_USER;
