@@ -119,7 +119,7 @@ int debug = 0;
 int keepalive = 1;
 char *progname;
 
-static void usage (void);
+static void usage (int error_code);
 
 /*
  * The string to pass to getopt().  We do it this way so
@@ -177,6 +177,8 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+    if (argc == 2 && strcmp(argv[1], "--help") == 0)
+	usage(0);
 
     while ((ch = getopt(argc, argv, valid_opts)) != -1) {
 	switch(ch) {
@@ -218,7 +220,7 @@ main(int argc, char **argv)
 		debug++;
 		break;
 	    }
-	    usage();
+	    usage(1);
 	    /* NOTREACHED */
 	    break;
 
@@ -238,7 +240,7 @@ main(int argc, char **argv)
 	    } else if (!strcmp(optarg, "options")) {
 		diagnostic |= TD_OPTIONS;
 	    } else {
-		usage();
+		usage(1);
 		/* NOT REACHED */
 	    }
 	    break;
@@ -283,7 +285,7 @@ main(int argc, char **argv)
 		    lowpty = atoi(optarg);
 		if ((lowpty > highpty) || (lowpty < 0) ||
 		    (highpty > 32767)) {
-		    usage();
+		    usage(1);
 		    /* NOT REACHED */
 		}
 		break;
@@ -341,7 +343,7 @@ main(int argc, char **argv)
 	    fprintf(stderr, "telnetd: %c: unknown option\n", ch);
 	    /* FALLTHROUGH */
 	case '?':
-	    usage();
+	    usage(0);
 	    /* NOTREACHED */
 	}
     }
@@ -354,7 +356,7 @@ main(int argc, char **argv)
 	struct servent *sp;
 
 	if (argc > 1) {
-	    usage ();
+	    usage (1);
 	} else if (argc == 1) {
 	    sp = roken_getservbyname (*argv, "tcp");
 	    if (sp)
@@ -370,7 +372,7 @@ main(int argc, char **argv)
 	}
 	mini_inetd (port);
     } else if (argc > 0) {
-	usage();
+	usage(1);
 	/* NOT REACHED */
     }
 
@@ -463,7 +465,7 @@ main(int argc, char **argv)
 }  /* end of main */
 
 static void
-usage(void)
+usage(int exit_code)
 {
     fprintf(stderr, "Usage: telnetd");
 #ifdef	AUTHENTICATION
