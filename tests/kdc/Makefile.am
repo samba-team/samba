@@ -13,6 +13,7 @@ SCRIPT_TESTS = \
 	check-kdc \
 	check-keys \
 	check-pkinit \
+	check-iprop \
 	check-referral \
 	check-uu
 
@@ -54,6 +55,11 @@ check-pkinit: check-pkinit.in Makefile krb5-pkinit.conf
 	chmod +x check-pkinit.tmp
 	mv check-pkinit.tmp check-pkinit
 
+check-iprop: check-iprop.in Makefile krb5.conf krb5-slave.conf
+	$(do_subst) < $(srcdir)/check-iprop.in > check-iprop.tmp
+	chmod +x check-iprop.tmp
+	mv check-iprop.tmp check-iprop
+
 check-digest: check-digest.in Makefile
 	$(do_subst) < $(srcdir)/check-digest.in > check-digest.tmp
 	chmod +x check-digest.tmp
@@ -65,8 +71,14 @@ check-referral: check-referral.in Makefile
 	mv check-referral.tmp check-referral
 
 krb5.conf: krb5.conf.in Makefile
-	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
+	$(do_subst) \
+	   -e 's,[@]kdc[@],,g' < $(srcdir)/krb5.conf.in > krb5.conf.tmp
 	mv krb5.conf.tmp krb5.conf
+
+krb5-slave.conf: krb5.conf.in Makefile
+	$(do_subst) \
+	   -e 's,[@]kdc[@],.slave,g' < $(srcdir)/krb5.conf.in > krb5-slave.conf.tmp
+	mv krb5-slave.conf.tmp krb5-slave.conf
 
 krb5-pkinit.conf: krb5-pkinit.conf.in Makefile
 	$(do_subst) -e 's,[@]w2k[@],no,g' < $(srcdir)/krb5-pkinit.conf.in > krb5-pkinit.conf.tmp
@@ -78,6 +90,7 @@ krb5-pkinit-win.conf: krb5-pkinit.conf.in Makefile
 
 CLEANFILES= \
 	$(TESTS) \
+	iprop-stats \
 	barpassword \
 	cache.krb5 \
 	cdigest-reply \
@@ -87,6 +100,7 @@ CLEANFILES= \
 	digest-reply \
 	foopassword \
 	krb5.conf \
+	krb5-slave.conf \
 	krb5-pkinit.conf \
 	krb5-pkinit-win.conf \
 	messages.log \
@@ -116,11 +130,13 @@ EXTRA_DIST = \
 	check-referral.in \
 	check-uu.in \
 	check-pkinit.in \
+	check-iprop.in \
 	check-digest.in \
 	heimdal.acl \
 	krb5.conf.in \
 	krb5.conf.keys.in \
 	krb5-pkinit.conf.in \
+	iprop-acl \
 	wait-kdc.sh \
 	pki-mapping \
 	ntlm-user-file.txt \
