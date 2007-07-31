@@ -41,7 +41,8 @@ PRIVATE_DEPENDENCIES = \
 [SUBSYSTEM::WB_HELPER]
 PRIVATE_PROTO_HEADER = wb_helper.h
 OBJ_FILES = \
-		wb_async_helpers.o
+		wb_async_helpers.o \
+		wb_utils.o
 PUBLIC_DEPENDENCIES = RPC_NDR_LSA dcerpc_samr
 # End SUBSYSTEM WB_HELPER
 ################################################
