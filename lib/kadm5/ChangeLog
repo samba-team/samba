@@ -1,3 +1,9 @@
+2007-08-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* add configuration for signal file and acl file, let user select
+	hostname, catch signals and print why we are quiting, make nop
+	cause one new version, not two
+
 2007-07-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ipropd_master.c (send_diffs): make current slave's version
