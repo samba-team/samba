@@ -67,6 +67,60 @@ void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 	req->outbuf = NULL;
 }
 
+/*
+ * From within a converted call you might have to call non-converted
+ * subroutines that still take the old inbuf/outbuf/lenght/bufsize
+ * parameters. This takes a struct smb_request and prepares the legacy
+ * parameters.
+ */
+
+BOOL reply_prep_legacy(struct smb_request *req,
+		       char **pinbuf, char **poutbuf,
+		       int *psize, int *pbufsize)
+{
+	const int bufsize = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE
+			     + SAFETY_MARGIN);
+	char *inbuf, *outbuf;
+
+	if (!(inbuf = TALLOC_ARRAY(req, char, bufsize))) {
+		DEBUG(0, ("Could not allocate legacy inbuf\n"));
+		return False;
+	}
+	memcpy(inbuf, req->inbuf, MIN(smb_len(req->inbuf)+4, bufsize));
+	req->inbuf = (uint8 *)inbuf;
+
+	if (!(outbuf = TALLOC_ARRAY(req, char, bufsize))) {
+		DEBUG(0, ("Could not allocate legacy outbuf\n"));
+		return False;
+	}
+	req->outbuf = (uint8 *)outbuf;
+
+	construct_reply_common(inbuf, outbuf);
+
+	*pinbuf   = inbuf;
+	*poutbuf  = outbuf;
+	*psize    = smb_len(inbuf)+4;
+	*pbufsize = bufsize;
+
+	return True;
+}
+
+/*
+ * Post-process the output of the legacy routine so that the result fits into
+ * the new reply_xxx API
+ */
+
+void reply_post_legacy(struct smb_request *req, int outsize)
+{
+	if (outsize > 0) {
+		smb_setlen((char *)req->inbuf, (char *)req->outbuf,
+			   outsize);
+	}
+	else {
+		TALLOC_FREE(req->outbuf);
+	}
+}
+
 /****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.
