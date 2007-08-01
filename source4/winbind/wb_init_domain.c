@@ -284,6 +284,8 @@ static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 
 	talloc_steal(state->domain->libnet_ctx, state->domain->libnet_ctx->lsa.pipe);
 	talloc_steal(state->domain->libnet_ctx->lsa.pipe, state->domain->lsa_binding);
+	state->domain->libnet_ctx->lsa.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->domain->libnet_ctx->lsa.name = state->domain->info->name;
 
 	ZERO_STRUCT(state->domain->libnet_ctx->lsa.handle);
 	state->lsa_openpolicy.in.system_name =
@@ -392,6 +394,8 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	talloc_steal(state->domain->libnet_ctx->samr.pipe, state->domain->samr_binding);
+	state->domain->libnet_ctx->samr.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->domain->libnet_ctx->samr.name = state->domain->info->name;
 
 	state->domain->ldap_conn =
 		ldap4_new_connection(state->domain, state->ctx->event_ctx);
