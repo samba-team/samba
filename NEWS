@@ -1,3 +1,9 @@
+Changes in release 1.1
+
+ * Provide pkg-config file for Heimdal (heimdal-gssapi.pc).
+
+ * Bug fixes.
+
 Changes in release 1.0.1
 
  * Serveral bug fixes to iprop.
