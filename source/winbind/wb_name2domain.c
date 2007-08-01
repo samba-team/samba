@@ -59,7 +59,7 @@ struct composite_context *wb_name2domain_send(TALLOC_CTX *mem_ctx,
 	ctx = wb_cmd_lookupname_send(state, service, user_dom, user_name);
 	if (ctx == NULL) goto failed;
 
-	composite_continue(result, ctx, name2domain_recv_sid, ctx->async.private_data);
+	composite_continue(result, ctx, name2domain_recv_sid, state);
 	return result;
 
 failed:
