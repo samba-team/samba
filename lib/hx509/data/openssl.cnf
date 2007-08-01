@@ -55,6 +55,14 @@ default_md=sha1
 policy		= policy_match
 certs		= .
 
+[https]
+database	= index.txt
+serial		= serial
+x509_extensions = https_cert
+default_md=sha1
+policy		= policy_match
+certs		= .
+
 [subca]
 database	= index.txt
 serial		= serial
@@ -109,6 +117,12 @@ name_string = EXP:1, SEQUENCE:pkinitc_principals
 
 [pkinitc_principals] 
 princ1 = GeneralString:bar
+
+[ https_cert ]
+basicConstraints=CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+#extendedKeyUsage = https-server XXX
+subjectKeyIdentifier	= hash
 
 [ pkinit_kdc_cert ]
 basicConstraints=CA:FALSE

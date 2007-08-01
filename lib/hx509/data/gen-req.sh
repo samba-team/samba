@@ -5,9 +5,11 @@
 # otherName section for pkinit certificates.
 #
 
+openssl=$HOME/src/openssl/openssl-0.9.8e/apps/openssl
+
 gen_cert()
 {
-	openssl req \
+	${openssl} req \
 		-new \
 		-subj "$1" \
 		-config openssl.cnf \
@@ -18,7 +20,7 @@ gen_cert()
 		-out cert.req > /dev/null 2>/dev/null
 
         if [ "$3" = "ca" ] ; then
-	    openssl x509 \
+	    ${openssl} x509 \
 		-req \
 		-days 3650 \
 		-in cert.req \
@@ -27,13 +29,13 @@ gen_cert()
                 -signkey out.key \
 		-out cert.crt
 
-		ln -s ca.crt `openssl x509 -hash -noout -in cert.crt`.0
+		ln -s ca.crt `${openssl} x509 -hash -noout -in cert.crt`.0
 
 		name=$3
 
         elif [ "$3" = "proxy" ] ; then
 
-	    openssl x509 \
+	    ${openssl} x509 \
 		-req \
 		-in cert.req \
 		-days 3650 \
@@ -47,7 +49,7 @@ gen_cert()
 		name=$5
 	else
 
-	    openssl ca \
+	    ${openssl} ca \
 		-name $4 \
 		-days 3650 \
 		-cert $2.crt \
@@ -78,6 +80,7 @@ gen_cert "/CN=Test cert DigitalSignature/C=SE" "ca" "test-ds-only" "usr_ds"
 gen_cert "/CN=pkinit/C=SE" "ca" "pkinit" "pkinit_client"
 gen_cert "/C=SE/CN=pkinit/CN=pkinit-proxy" "pkinit" "proxy" "proxy_cert" pkinit-proxy
 gen_cert "/CN=kdc/C=SE" "ca" "kdc" "pkinit_kdc"
+gen_cert "/CN=www.test.h5l.se/C=SE" "ca" "https" "https"
 gen_cert "/CN=Sub CA/C=SE" "ca" "sub-ca" "subca"
 gen_cert "/CN=Test sub cert/C=SE" "sub-ca" "sub-cert" "usr"
 gen_cert "/C=SE/CN=Test cert/CN=proxy" "test" "proxy" "proxy_cert" proxy-test
@@ -94,18 +97,18 @@ cat test.crt test.key > test.combined.crt
 cat pkinit-proxy.crt pkinit.crt > pkinit-proxy-chain.crt
 
 # password protected key
-openssl rsa -in test.key -aes256 -passout pass:foobar -out test-pw.key
-openssl rsa -in pkinit.key -aes256 -passout pass:foo -out pkinit-pw.key
+${openssl} rsa -in test.key -aes256 -passout pass:foobar -out test-pw.key
+${openssl} rsa -in pkinit.key -aes256 -passout pass:foo -out pkinit-pw.key
 
 
-openssl ca \
+${openssl} ca \
     -name usr \
     -cert ca.crt \
     -keyfile ca.key \
     -revoke revoke.crt \
     -config openssl.cnf 
 
-openssl pkcs12 \
+${openssl} pkcs12 \
     -export \
     -in test.crt \
     -inkey test.key \
@@ -115,7 +118,7 @@ openssl pkcs12 \
     -certfile ca.crt \
     -caname ca
 
-openssl pkcs12 \
+${openssl} pkcs12 \
     -export \
     -in sub-cert.crt \
     -inkey sub-cert.key \
@@ -126,7 +129,7 @@ openssl pkcs12 \
     -caname sub-ca \
     -caname ca
 
-openssl pkcs12 \
+${openssl} pkcs12 \
     -keypbe NONE \
     -certpbe NONE \
     -export \
@@ -138,7 +141,7 @@ openssl pkcs12 \
     -certfile ca.crt \
     -caname ca
 
-openssl smime \
+${openssl} smime \
     -sign \
     -nodetach \
     -binary \
@@ -148,7 +151,7 @@ openssl smime \
     -outform DER \
     -out test-signed-data
 
-openssl smime \
+${openssl} smime \
     -sign \
     -nodetach \
     -binary \
@@ -159,7 +162,7 @@ openssl smime \
     -outform DER \
     -out test-signed-data-noattr
 
-openssl smime \
+${openssl} smime \
     -sign \
     -nodetach \
     -binary \
@@ -171,7 +174,7 @@ openssl smime \
     -outform DER \
     -out test-signed-data-noattr-nocerts
 
-openssl smime \
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
@@ -181,7 +184,7 @@ openssl smime \
     -rc2-40 \
     test.crt
 
-openssl smime \
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
@@ -191,7 +194,7 @@ openssl smime \
     -rc2-64 \
     test.crt
 
-openssl smime \
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
@@ -201,7 +204,7 @@ openssl smime \
     -rc2-128 \
     test.crt
 
-openssl smime \
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
@@ -211,7 +214,7 @@ openssl smime \
     -des \
     test.crt
 
-openssl smime \
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
@@ -221,7 +224,7 @@ openssl smime \
     -des3 \
     test.crt
 
-openssl smime \
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
@@ -231,7 +234,7 @@ openssl smime \
     -aes128 \
     test.crt
 
-openssl smime \
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
@@ -243,12 +246,12 @@ openssl smime \
 
 echo ocsp requests
 
-openssl ocsp \
+${openssl} ocsp \
     -issuer ca.crt \
     -cert test.crt \
     -reqout ocsp-req1.der
 
-openssl ocsp \
+${openssl} ocsp \
     -index index.txt \
     -rsigner ocsp-responder.crt \
     -rkey ocsp-responder.key \
@@ -257,7 +260,7 @@ openssl ocsp \
     -noverify \
     -respout ocsp-resp1-ocsp.der
 
-openssl ocsp \
+${openssl} ocsp \
     -index index.txt \
     -rsigner ca.crt \
     -rkey ca.key \
@@ -266,7 +269,7 @@ openssl ocsp \
     -noverify \
     -respout ocsp-resp1-ca.der
 
-openssl ocsp \
+${openssl} ocsp \
     -index index.txt \
     -rsigner ocsp-responder.crt \
     -rkey ocsp-responder.key \
@@ -276,7 +279,7 @@ openssl ocsp \
     -noverify \
     -respout ocsp-resp1-ocsp-no-cert.der
 
-openssl ocsp \
+${openssl} ocsp \
     -index index.txt \
     -rsigner ocsp-responder.crt \
     -rkey ocsp-responder.key \
@@ -286,12 +289,12 @@ openssl ocsp \
     -noverify \
     -respout ocsp-resp1-keyhash.der
 
-openssl ocsp \
+${openssl} ocsp \
     -issuer ca.crt \
     -cert revoke.crt \
     -reqout ocsp-req2.der
 
-openssl ocsp \
+${openssl} ocsp \
     -index index.txt \
     -rsigner ocsp-responder.crt \
     -rkey ocsp-responder.key \
@@ -300,7 +303,7 @@ openssl ocsp \
     -noverify \
     -respout ocsp-resp2.der
 
-openssl ca \
+${openssl} ca \
     -gencrl \
     -name usr \
     -crldays 3600 \
@@ -310,4 +313,4 @@ openssl ca \
     -out crl1.crl \
     -config openssl.cnf 
 
-openssl crl -in crl1.crl -outform der -out crl1.der
+${openssl} crl -in crl1.crl -outform der -out crl1.der
