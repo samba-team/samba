@@ -36,18 +36,31 @@
 
 srcdir="@srcdir@"
 objdir="@objdir@"
-nistdir=/sources/pki/nist/PKITS_data/pkcs12
 pass="--pass=PASS:password"
+nistdir=${objdir}/PKITS_data
+nistzip=${srcdir}/data/PKITS_data.zip
 
-echo "nist pkcs12 tests"
-
-test -d "$nistdir" || exit 77
+# nistzip is not distributed part of the distribution
+test -f "$nistzip" || exit 77
 
 stat="--statistic-file=${objdir}/statfile"
 
 hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 
-for a in $nistdir/*.p12 ; do
+if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
+    exit 77
+fi
+if ${hxtool} info | grep 'rand: not available' > /dev/null ; then
+    exit 77
+fi
+
+if [ ! -d "$nistdir" ] ; then
+    ( mkdir "$nistdir" &&  cd "$nistdir" && unzip "$nistzip" ) || { rm -rf "$nistdir" ; exit 1; }
+fi
+
+echo "nist pkcs12 tests"
+
+for a in $nistdir/pkcs12/*.p12 ; do
 
     echo -n .
 
