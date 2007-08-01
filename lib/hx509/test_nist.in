@@ -36,11 +36,15 @@
 
 srcdir="@srcdir@"
 objdir="@objdir@"
-nistdir=/sources/pki/nist/PKITS_data
+nistdir=${objdir}/PKITS_data
+nistzip=${srcdir}/data/PKITS_data.zip
 
 stat="--statistic-file=${objdir}/statfile"
 
 hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
+
+# nistzip is not distributed part of the distribution
+test -f "$nistzip" || exit 77
 
 if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77
@@ -51,7 +55,9 @@ fi
 
 echo "nist tests"
 
-test -d "$nistdir" || exit 77
+if [ ! -d "$nistdir" ] ; then
+    ( mkdir "$nistdir" &&  cd "$nistdir" && unzip "$nistzip" ) || { rm -rf "$nistdir" ; exit 1; }
+fi
 
 while read id verify cert arg1 arg2 arg3 arg4 arg5 ; do
     expr "$id" : "#" > /dev/null && continue
