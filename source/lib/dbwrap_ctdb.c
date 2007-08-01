@@ -363,7 +363,11 @@ static struct ctdbd_connection *db_ctdbd_conn(struct db_ctdb_ctx *ctx)
 	}
 
 	if (ctx->conn == NULL) {
-		ctdbd_init_connection(ctx, &ctx->conn);
+		NTSTATUS status;
+		status = ctdbd_init_connection(ctx, &ctx->conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
 		set_my_vnn(ctdbd_vnn(ctx->conn));
 	}
 

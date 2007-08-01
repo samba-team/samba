@@ -88,7 +88,7 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	status = ctdbd_messaging_connection(ctx, &ctx->conn);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("ctdbd_init_connection failed: %s\n",
+		DEBUG(10, ("ctdbd_messaging_connection failed: %s\n",
 			   nt_errstr(status)));
 		TALLOC_FREE(result);
 		return status;
