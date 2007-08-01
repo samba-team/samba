@@ -782,10 +782,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 					    const char *fname)
 {
 	struct share_mode_lock *lck;
-	TDB_DATA key;
-
-	key.dptr = (unsigned char *)&id;
-	key.dsize = sizeof(id);
+	TDB_DATA key = locking_key(id);
 
 	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
