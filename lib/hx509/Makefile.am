@@ -162,6 +162,8 @@ CLEANFILES = $(BUILT_SOURCES) \
 	random-data statfile crl.crl \
 	test
 
+clean-local:
+	@echo "cleaning PKITS" ; rm -rf PKITS_data
 
 #
 # regression tests
