@@ -88,7 +88,7 @@ ipds=
 ipdm=
 kdcpid=
 
-trap "kill \${ipdm} \${ipds} \${kdcpid}; echo killing ipropd slave + master; exit 1;" EXIT
+trap "kill \${ipdm} \${ipds} \${kdcpid}; tail -10 messages.log; echo 'killing ipropd slave + master'; exit 1;" EXIT
 
 echo Starting kdc
 ${kdc} &
@@ -104,14 +104,14 @@ echo "starting master"
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
 ipdm=$!
-sleep 2
+sleep 4
 
 echo "starting slave"
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave -k ${keytab} localhost &
 ipds=$!
 
-sleep 2
+sleep 4
 echo "checking slave is up"
 ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 
