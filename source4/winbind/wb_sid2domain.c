@@ -94,7 +94,7 @@ struct composite_context *wb_sid2domain_send(TALLOC_CTX *mem_ctx,
 
 	ctx = wb_cmd_lookupsid_send(state, service, state->sid);
 	if (ctx == NULL) goto failed;
-	composite_continue(result, ctx, sid2domain_recv_name, ctx->async.private_data);
+	composite_continue(result, ctx, sid2domain_recv_name, state);
 
 	return result;
 
