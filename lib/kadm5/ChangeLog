@@ -1,5 +1,9 @@
 2007-08-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: add version-script for libkadm5srv.la
+
+	* version-script.map: version script fro kadm5 server libary.
+
 	* log.c: only free the orignal entries extentions if there was
 	any.  Bug reported by Peter Meinecke.
 
