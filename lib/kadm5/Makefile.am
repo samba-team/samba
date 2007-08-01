@@ -7,6 +7,11 @@ SLC = $(top_builddir)/lib/sl/slc
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
 libkadm5srv_la_LDFLAGS = -version-info 8:1:0
 libkadm5clnt_la_LDFLAGS = -version-info 7:1:0
+
+if versionscript
+libkadm5srv_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+
 sbin_PROGRAMS = iprop-log
 check_PROGRAMS = default_keys
 noinst_PROGRAMS = test_pw_quality
@@ -172,4 +177,4 @@ $(srcdir)/kadm5-private.h:
 		$(dist_libkadm5srv_la_SOURCES) \
 		|| rm -f kadm5-private.h
 
-EXTRA_DIST = kadm5_err.et iprop-commands.in $(man_MANS)
+EXTRA_DIST = kadm5_err.et iprop-commands.in $(man_MANS) version-script.map
