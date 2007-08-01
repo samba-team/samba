@@ -190,12 +190,22 @@ static void print_brl(struct file_id id,
 		{ UNLOCK_LOCK, "U" }
 	};
 	const char *desc="X";
+	const char *sharepath = "";
+	const char *fname = "";
+	struct share_mode_lock *share_mode;
+
 	if (count==0) {
 		d_printf("Byte range locks:\n");
-		d_printf("   Pid     dev:inode  R/W      start        size\n");
-		d_printf("------------------------------------------------\n");
+		d_printf("Pid        dev:inode       R/W  start     size      SharePath               Name\n");
+		d_printf("--------------------------------------------------------------------------------\n");
 	}
 	count++;
+
+	share_mode = fetch_share_mode_unlocked(NULL, id, "__unspecified__", "__unspecified__");
+	if (share_mode) {
+		sharepath = share_mode->servicepath;
+		fname = share_mode->filename;
+	}
 
 	for (i=0;i<ARRAY_SIZE(lock_types);i++) {
 		if (lock_type == lock_types[i].lock_type) {
@@ -203,10 +213,13 @@ static void print_brl(struct file_id id,
 		}
 	}
 
-	d_printf("%8s   %s    %2s  %9.0f   %9.0f\n", 
+	d_printf("%-10s %-15s %-4s %-9.0f %-9.0f %-24s %-24s\n", 
 		 procid_str_static(&pid), file_id_static_string(&id),
 		 desc,
-		 (double)start, (double)size);
+		 (double)start, (double)size,
+		 sharepath, fname);
+
+	talloc_free(share_mode);
 }
 
 static int traverse_fn1(struct db_record *rec,
