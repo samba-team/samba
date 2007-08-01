@@ -1,5 +1,8 @@
 2007-08-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-iprop.in: wait longer for iprop, dump messages.log on
+	failure.
+
 	* kdc/Makefile.am: Clean after iprop tests.
 
 	* kdc/check-iprop.in: more iprop tests.
