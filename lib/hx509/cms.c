@@ -335,11 +335,6 @@ hx509_cms_unenvelope(hx509_context context,
 
 	ri = &ed.recipientInfos.val[i];
 
-	/* ret = search_keyset(ri,
-	 * 	PRIVATE_KEY,
-	 * 	ki->keyEncryptionAlgorithm.algorithm);
-	 */
-
 	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert,
 				 HX509_QUERY_PRIVATE_KEY|findflags);
 	if (ret)
