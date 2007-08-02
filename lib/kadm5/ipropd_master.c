@@ -175,8 +175,10 @@ slave_gone_p (slave *s)
 }
 
 static void
-slave_dead(slave *s)
+slave_dead(krb5_context context, slave *s)
 {
+    krb5_warnx(context, "slave %s dead", s->name);
+
     if (s->fd >= 0) {
 	close (s->fd);
 	s->fd = -1;
@@ -355,14 +357,14 @@ send_complete (krb5_context context, slave *s,
 
     if (ret) {
 	krb5_warn (context, ret, "krb5_write_priv_message");
-	slave_dead(s);
+	slave_dead(context, s);
 	return ret;
     }
 
     ret = hdb_foreach (context, db, 0, prop_one, s);
     if (ret) {
 	krb5_warn (context, ret, "hdb_foreach");
-	slave_dead(s);
+	slave_dead(context, s);
 	return ret;
     }
 
@@ -382,7 +384,7 @@ send_complete (krb5_context context, slave *s,
 
     ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
     if (ret) {
-	slave_dead(s);
+	slave_dead(context, s);
 	krb5_warn (context, ret, "krb5_write_priv_message");
 	return ret;
     }
@@ -411,7 +413,7 @@ send_are_you_there (krb5_context context, slave *s)
     sp = krb5_storage_from_mem (buf, 4);
     if (sp == NULL) {
 	krb5_warnx (context, "are_you_there: krb5_data_alloc");
-	slave_dead(s);
+	slave_dead(context, s);
 	return 1;
     }
     krb5_store_int32 (sp, ARE_YOU_THERE);
@@ -421,7 +423,7 @@ send_are_you_there (krb5_context context, slave *s)
 
     if (ret) {
 	krb5_warn (context, ret, "are_you_there: krb5_write_priv_message");
-	slave_dead(s);
+	slave_dead(context, s);
 	return 1;
     }
 
@@ -441,15 +443,20 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     krb5_data data;
     int ret = 0;
 
-    if (s->version == current_version)
+    if (s->version == current_version) {
+	krb5_warnx(context, "slave %s in sync already", s->name);
 	return 0;
+    }
 
     if (s->flags & SLAVE_F_DEAD)
 	return 0;
 
     /* if slave is a fresh client, starting over */
-    if (s->version == 0)
+    if (s->version == 0) {
+	krb5_warnx(context, "sending complete log to fresh slave %s",
+		   s->name);
 	return send_complete (context, s, database, current_version);
+    }
 
     sp = kadm5_log_goto_end (log_fd);
     right = krb5_storage_seek(sp, 0, SEEK_CUR);
@@ -463,13 +470,24 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 	    return 0;
 	if (ver == s->version + 1)
 	    break;
-	if (left == 0)
+	if (left == 0) {
+	    krb5_warnx(context,
+		       "slave %s (version %lu) out of sync with master "
+		       "(first version in log %lu), sending complete database",
+		       s->name, (unsigned long)s->version, (unsigned long)ver);
 	    return send_complete (context, s, database, current_version);
+	}
     }
+
+    krb5_warnx(context,
+	       "syncing slave %s from version %lu to version %lu",
+	       s->name, (unsigned long)s->version,
+	       (unsigned long)current_version);
+
     ret = krb5_data_alloc (&data, right - left + 4);
     if (ret) {
 	krb5_warn (context, ret, "send_diffs: krb5_data_alloc");
-	slave_dead(s);
+	slave_dead(context, s);
 	return 1;
     }
     krb5_storage_read (sp, (char *)data.data + 4, data.length - 4);
@@ -478,7 +496,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     sp = krb5_storage_from_data (&data);
     if (sp == NULL) {
 	krb5_warnx (context, "send_diffs: krb5_storage_from_data");
-	slave_dead(s);
+	slave_dead(context, s);
 	return 1;
     }
     krb5_store_int32 (sp, FOR_YOU);
@@ -489,7 +507,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 
     if (ret) {
 	krb5_warn (context, ret, "send_diffs: krb5_write_priv_message");
-	slave_dead(s);
+	slave_dead(context, s);
 	return 1;
     }
     slave_seen(s);
@@ -812,6 +830,10 @@ main(int argc, char **argv)
 	    kadm5_log_get_version_fd (log_fd, &current_version);
 
 	    if (current_version > old_version) {
+		krb5_warnx(context, 
+			   "Missed a signal, updating slaves %lu to %lu",
+			   (unsigned long)old_version,
+			   (unsigned long)current_version);
 		for (p = slaves; p != NULL; p = p->next) {
 		    if (p->flags & SLAVE_F_DEAD)
 			continue;
@@ -833,8 +855,18 @@ main(int argc, char **argv)
 	    assert(ret >= 0);
 	    old_version = current_version;
 	    kadm5_log_get_version_fd (log_fd, &current_version);
-	    for (p = slaves; p != NULL; p = p->next)
-		send_diffs (context, p, log_fd, database, current_version);
+	    if (current_version > old_version) {
+		krb5_warnx(context, 
+			   "Got a signal, updating slaves %lu to %lu",
+			   (unsigned long)old_version,
+			   (unsigned long)current_version);
+		for (p = slaves; p != NULL; p = p->next)
+		    send_diffs (context, p, log_fd, database, current_version);
+	    } else {
+		krb5_warnx(context, 
+			   "Got a signal, but no update in log version %lu",
+			   (unsigned long)current_version);
+	    }
         }
 
 	for(p = slaves; p != NULL; p = p->next) {
@@ -844,11 +876,13 @@ main(int argc, char **argv)
 		--ret;
 		assert(ret >= 0);
 		if(process_msg (context, p, log_fd, database, current_version))
-		    slave_dead(p);
+		    slave_dead(context, p);
 	    } else if (slave_gone_p (p))
-		slave_dead (p);
-	    else if (slave_missing_p (p))
+		slave_dead(context, p);
+	    else if (slave_missing_p (p)) {
+		krb5_warnx(context, "slave %s missing, sending AYT", p->name);
 		send_are_you_there (context, p);
+	    }
 	}
 
 	if (ret && FD_ISSET(listen_fd, &readset)) {
