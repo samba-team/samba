@@ -301,7 +301,7 @@ import "security.idl";
 	NTSTATUS lsa_EnumTrustDom (
 		[in]               policy_handle *handle,
 		[in,out]           uint32 *resume_handle,
-		[in,range(0,1000)] uint32 max_size,
+		[in]               uint32 max_size,
 		[out]              lsa_DomainList *domains
 		);
 
