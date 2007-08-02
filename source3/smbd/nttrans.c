@@ -2571,7 +2571,10 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 			shadow_data->num_volumes,fsp->fsp_name));
 		if (labels && shadow_data->labels) {
 			for (i=0;i<shadow_data->num_volumes;i++) {
-				srvstr_push(outbuf, cur_pdata, shadow_data->labels[i], 2*sizeof(SHADOW_COPY_LABEL), STR_UNICODE|STR_TERMINATE);
+				srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					    cur_pdata, shadow_data->labels[i],
+					    2*sizeof(SHADOW_COPY_LABEL),
+					    STR_UNICODE|STR_TERMINATE);
 				cur_pdata+=2*sizeof(SHADOW_COPY_LABEL);
 				DEBUGADD(10,("Label[%u]: '%s'\n",i,shadow_data->labels[i]));
 			}

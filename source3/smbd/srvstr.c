@@ -24,7 +24,7 @@ extern int max_send;
 /* Make sure we can't write a string past the end of the buffer */
 
 size_t srvstr_push_fn(const char *function, unsigned int line, 
-		      const char *base_ptr, void *dest, 
+		      const char *base_ptr, uint16 smb_flags2, void *dest,
 		      const char *src, int dest_len, int flags)
 {
 	size_t buf_used = PTR_DIFF(dest, base_ptr);
@@ -68,8 +68,8 @@ ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
 		return -1;
 	}
 
-	result = srvstr_push((char *)tmp, tmp + buf_size, str, grow_size,
-			     flags);
+	result = srvstr_push((char *)tmp, SVAL(tmp, smb_flg2),
+			     tmp + buf_size, str, grow_size, flags);
 
 	if (result == (size_t)-1) {
 		DEBUG(0, ("srvstr_push failed\n"));

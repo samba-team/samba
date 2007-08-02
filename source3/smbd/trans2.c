@@ -1303,7 +1303,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 23;
 			nameptr = p;
 			p += align_string(outbuf, p, 0);
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p,
+					  fname, -1, STR_TERMINATE);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
 				if (len > 2) {
 					SCVAL(nameptr, -1, len - 2);
@@ -1338,7 +1339,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 			p += 27;
 			nameptr = p - 1;
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE | STR_NOALIGN);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  p, fname, -1,
+					  STR_TERMINATE | STR_NOALIGN);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
 				if (len > 2) {
 					len -= 2;
@@ -1394,7 +1397,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			/* Push the ea_data followed by the name. */
 			p += fill_ea_buffer(ea_ctx, p, space_remaining, conn, name_list);
 			nameptr = p;
-			len = srvstr_push(outbuf, p + 1, fname, -1, STR_TERMINATE | STR_NOALIGN);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  p + 1, fname, -1,
+					  STR_TERMINATE | STR_NOALIGN);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
 				if (len > 2) {
 					len -= 2;
@@ -1442,7 +1447,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				mangle_map(mangled_name,True,True,
 					   conn->params);
 				mangled_name[12] = 0;
-				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
+				len = srvstr_push(outbuf,
+						  SVAL(outbuf, smb_flg2),
+						  p+2, mangled_name, 24,
+						  STR_UPPER|STR_UNICODE);
 				if (len < 24) {
 					memset(p + 2 + len,'\0',24 - len);
 				}
@@ -1451,7 +1459,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				memset(p,'\0',26);
 			}
 			p += 2 + 24;
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p,
+					  fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1472,7 +1481,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
-			len = srvstr_push(outbuf, p + 4, fname, -1, STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  p + 4, fname, -1,
+					  STR_TERMINATE_ASCII);
 			SIVAL(p,0,len);
 			p += 4 + len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1499,7 +1510,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,ea_size); /* Extended attributes */
 				p +=4;
 			}
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p,
+					  fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q, 0, len);
 			p += len;
 
@@ -1517,7 +1529,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 4;
 			/* this must *not* be null terminated or w2k gets in a loop trying to set an
 			   acl on a dir (tridge) */
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(p, -4, len);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1547,7 +1560,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
 			SIVAL(p,0,sbuf.st_ino); p += 4; /* FileIndexLow */
 			SIVAL(p,0,sbuf.st_dev); p += 4; /* FileIndexHigh */
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p,
+					  fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q, 0, len);
 			p += len; 
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1585,7 +1599,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				mangle_map(mangled_name,True,True,
 					   conn->params);
 				mangled_name[12] = 0;
-				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
+				len = srvstr_push(outbuf,
+						  SVAL(outbuf, smb_flg2),
+						  p+2, mangled_name, 24,
+						  STR_UPPER|STR_UNICODE);
 				SSVAL(p, 0, len);
 				if (len < 24) {
 					memset(p + 2 + len,'\0',24 - len);
@@ -1598,7 +1615,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SSVAL(p,0,0); p += 2; /* Reserved ? */
 			SIVAL(p,0,sbuf.st_ino); p += 4; /* FileIndexLow */
 			SIVAL(p,0,sbuf.st_dev); p += 4; /* FileIndexHigh */
-			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p,
+					  fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1621,14 +1639,19 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
 				p = store_file_unix_basic(conn, p,
 							NULL, &sbuf);
-				len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
+				len = srvstr_push(outbuf,
+						  SVAL(outbuf, smb_flg2),
+						  p, fname, -1,
+						  STR_TERMINATE);
 			} else {
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
 				p = store_file_unix_basic_info2(conn, p,
 							NULL, &sbuf);
 				nameptr = p;
 				p += 4;
-				len = srvstr_push(outbuf, p, fname, -1, 0);
+				len = srvstr_push(outbuf,
+						  SVAL(outbuf, smb_flg2),
+						  p, fname, -1, 0);
 				SIVAL(nameptr, 0, len);
 			}
 
@@ -2341,7 +2364,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			 * this call so try fixing this by adding a terminating null to
 			 * the pushed string. The change here was adding the STR_TERMINATE. JRA.
 			 */
-			len = srvstr_push(outbuf, pdata+l2_vol_szVolLabel, vname, -1, STR_NOALIGN|STR_TERMINATE);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  pdata+l2_vol_szVolLabel, vname,
+					  -1, STR_NOALIGN|STR_TERMINATE);
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
 			DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
@@ -2365,14 +2390,16 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
 				and will think we can't do long filenames */
-			len = srvstr_push(outbuf, pdata+12, fstype, -1, STR_UNICODE);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  pdata+12, fstype, -1, STR_UNICODE);
 			SIVAL(pdata,8,len);
 			data_len = 12 + len;
 			break;
 
 		case SMB_QUERY_FS_LABEL_INFO:
 		case SMB_FS_LABEL_INFORMATION:
-			len = srvstr_push(outbuf, pdata+4, vname, -1, 0);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  pdata+4, vname, -1, 0);
 			data_len = 4 + len;
 			SIVAL(pdata,0,len);
 			break;
@@ -2388,7 +2415,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 				(str_checksum(get_local_machine_name())<<16));
 
 			/* Max label len is 32 characters. */
-			len = srvstr_push(outbuf, pdata+18, vname, -1, STR_UNICODE);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  pdata+18, vname, -1, STR_UNICODE);
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
 
@@ -3752,7 +3780,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			if(!mangle_is_8_3(short_name, True, conn->params)) {
 				mangle_map(short_name,True,True,conn->params);
 			}
-			len = srvstr_push(outbuf, pdata+4, short_name, -1, STR_UNICODE);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  pdata+4, short_name, -1,
+					  STR_UNICODE);
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
 			break;
@@ -3762,7 +3792,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			/*
 			  this must be *exactly* right for ACLs on mapped drives to work
 			 */
-			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, STR_UNICODE);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  pdata+4, dos_fname, -1, STR_UNICODE);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_QUERY_FILE_NAME_INFO\n"));
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
@@ -3803,7 +3834,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			pdata += 24;
 			SIVAL(pdata,0,ea_size);
 			pdata += 4; /* EA info */
-			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, STR_UNICODE);
+			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+					  pdata+4, dos_fname, -1, STR_UNICODE);
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
 			data_size = PTR_DIFF(pdata,(*ppdata));
@@ -3965,7 +3997,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				if (len == -1)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				buffer[len] = 0;
-				len = srvstr_push(outbuf, pdata, buffer, -1, STR_TERMINATE);
+				len = srvstr_push(outbuf,
+						  SVAL(outbuf, smb_flg2),
+						  pdata, buffer, -1,
+						  STR_TERMINATE);
 				pdata += len;
 				data_size = PTR_DIFF(pdata,(*ppdata));
 
@@ -6485,8 +6520,12 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 			CAN ACCEPT THIS IN UNICODE. JRA. */
 
 		SSVAL(pdata,0,fsp->rap_print_jobid);                     /* Job number */
-		srvstr_push( outbuf, pdata + 2, global_myname(), 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
-		srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_ASCII|STR_TERMINATE); /* Service name */
+		srvstr_push( outbuf, SVAL(outbuf, smb_flg2), pdata + 2,
+			     global_myname(), 15,
+			     STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
+		srvstr_push( outbuf, SVAL(outbuf, smb_flg2), pdata+18,
+			     lp_servicename(SNUM(conn)), 13,
+			     STR_ASCII|STR_TERMINATE); /* Service name */
 		send_trans2_replies(inbuf, outbuf,bufsize,*pparams,0,*ppdata,32, max_data_bytes);
 		return(-1);
 	} else {

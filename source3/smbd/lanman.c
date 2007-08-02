@@ -2866,7 +2866,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 	p = *rdata;
 	p2 = p + struct_len;
 	if (uLevel != 20) {
-		srvstr_push(NULL, p,global_myname(),16, 
+		srvstr_push(NULL, 0, p,global_myname(),16,
 			STR_ASCII|STR_UPPER|STR_TERMINATE);
   	}
 	p += 16;
