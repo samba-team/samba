@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -174,7 +174,9 @@ krb5_verify(const struct passwd *login_info,
 {
     krb5_error_code ret;
     krb5_principal p;
+    krb5_realm *realms, *r;
     char *login_name = NULL;
+    int user_ok = 0;
 	
 #if defined(HAVE_GETLOGIN) && !defined(POSIX_GETLOGIN)
     login_name = getlogin();
@@ -187,50 +189,63 @@ krb5_verify(const struct passwd *login_info,
 	return 1;
     }
 	
-    if (login_name == NULL || strcmp (login_name, "root") == 0) 
-	login_name = login_info->pw_name;
-    if (strcmp (su_info->pw_name, "root") == 0)
-	ret = krb5_make_principal(context, &p, NULL, 
-				  login_name,
-				  kerberos_instance,
-				  NULL);
-    else
-	ret = krb5_make_principal(context, &p, NULL, 
-				  su_info->pw_name,
-				  NULL);
-    if(ret)
+    ret = krb5_get_default_realms(context, &realms);
+    if (ret) 
 	return 1;
+
+    /* Check all local realms */
+    for (r = realms; *r != NULL && !user_ok; r++) {
+       
+	if (login_name == NULL || strcmp (login_name, "root") == 0) 
+	    login_name = login_info->pw_name;
+	if (strcmp (su_info->pw_name, "root") == 0)
+	    ret = krb5_make_principal(context, &p, *r, 
+				      login_name,
+				      kerberos_instance,
+				      NULL);
+	else
+	    ret = krb5_make_principal(context, &p, *r, 
+				      su_info->pw_name,
+				      NULL);
+	if (ret) {
+	    krb5_free_host_realm(context, realms);
+	    return 1;
+	}
 	
-    if(su_info->pw_uid != 0 || krb5_kuserok(context, p, su_info->pw_name)) {
+	/* if we are su-ing too root, check with krb5_kuserok */
+	if (su_info->pw_uid == 0 && !krb5_kuserok(context, p, su_info->pw_name))
+	    continue;
+       
 	ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
 	if(ret) {
-#if 1
-	    krb5_warn(context, ret, "krb5_cc_gen_new");
-#endif
+	    krb5_free_host_realm(context, realms);
 	    krb5_free_principal (context, p);
 	    return 1;
 	}
-	ret = krb5_verify_user_lrealm(context, p, ccache, NULL, TRUE, NULL);
+  	ret = krb5_verify_user(context, p, ccache, NULL, TRUE, NULL);
 	krb5_free_principal (context, p);
-	if(ret) {
+	switch (ret) {
+	case 0:
+	    user_ok = 1;
+	    break;
+	case KRB5_LIBOS_PWDINTR :
 	    krb5_cc_destroy(context, ccache);
-	    switch (ret) {
-	    case KRB5_LIBOS_PWDINTR :
-		break;
-	    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
-	    case KRB5KRB_AP_ERR_MODIFIED:
-		krb5_warnx(context, "Password incorrect");
-		break;
-	    default :
-		krb5_warn(context, ret, "krb5_verify_user");
-		break;
-	    }
-	    return 1;
+	    break;
+	case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+	case KRB5KRB_AP_ERR_MODIFIED:
+	    krb5_cc_destroy(context, ccache);
+	    krb5_warnx(context, "Password incorrect");
+	    break;
+	default :
+	    krb5_cc_destroy(context, ccache);
+	    krb5_warn(context, ret, "krb5_verify_user");
+	    break;
 	}
-	return 0;
     }
-    krb5_free_principal (context, p);
-    return 1;
+    krb5_free_host_realm(context, realms);
+    if (!user_ok)
+	return 1;
+    return 0;
 }
 
 static int
