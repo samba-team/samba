@@ -6365,9 +6365,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
  Reply to a TRANS2_MKDIR (make directory with extended attributes).
 ****************************************************************************/
 
-static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
+			     char **pparams, int total_params,
+			     char **ppdata, int total_data,
+			     unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -6376,36 +6377,43 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
 
-	if (!CAN_WRITE(conn))
-		return ERROR_DOS(ERRSRV,ERRaccess);
-
-	if (total_params < 5) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	if (!CAN_WRITE(conn)) {
+		reply_doserror(req, ERRSRV, ERRaccess);
+		return;
 	}
 
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), directory, &params[4],
+	if (total_params < 5) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	srvstr_get_path(params, req->flags2, directory, &params[4],
 			sizeof(directory), total_params - 4, STR_TERMINATE,
 			&status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
 	status = unix_convert(conn, directory, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	status = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	/* Any data in this call is an EA list. */
 	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
-		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
+		reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
+		return;
 	}
 
 	/*
@@ -6416,50 +6424,57 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	if (total_data != 4) {
 		if (total_data < 10) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		if (IVAL(pdata,0) > total_data) {
 			DEBUG(10,("call_trans2mkdir: bad total data size (%u) > %u\n",
 				IVAL(pdata,0), (unsigned int)total_data));
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		ea_list = read_ea_list(tmp_talloc_ctx(), pdata + 4,
 				       total_data - 4);
 		if (!ea_list) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	} else if (IVAL(pdata,0) != 4) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	status = create_directory(conn, directory);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
   
 	/* Try and set any given EA. */
 	if (ea_list) {
 		status = set_ea(conn, NULL, directory, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 	}
 
 	/* Realloc the parameter and data sizes */
 	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if(*pparams == NULL) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 	params = *pparams;
 
 	SSVAL(params,0,0);
 
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
+	send_trans2_replies_new(req, params, 2, *ppdata, 0, max_data_bytes);
   
-	return(-1);
+	return;
 }
 
 /****************************************************************************
@@ -6792,11 +6807,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_MKDIR:
 	{
 		START_PROFILE(Trans2_mkdir);
-		outsize = call_trans2mkdir(
-			conn, inbuf, outbuf, size, bufsize,
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2mkdir(conn, req,
+				 &state->param, state->total_param,
+				 &state->data, state->total_data,
+				 state->max_data_return);
 		END_PROFILE(Trans2_mkdir);
 		break;
 	}
