@@ -2052,9 +2052,11 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
  Reply to a TRANS2_FINDNEXT.
 ****************************************************************************/
 
-static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2findnext(connection_struct *conn,
+				struct smb_request *req,
+				char **pparams, int total_params,
+				char **ppdata, int total_data,
+				unsigned int max_data_bytes)
 {
 	/* We must be careful here that we don't return more than the
 		allowed number of data bytes. If this means returning fewer than
@@ -2090,7 +2092,8 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
 	if (total_params < 13) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	dptr_num = SVAL(params,0);
@@ -2105,7 +2108,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	*mask = *directory = *resume_name = 0;
 
-	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), resume_name,
+	srvstr_get_path_wcard(params, req->flags2, resume_name,
 			      params+12, sizeof(resume_name),
 			      total_params - 12, STR_TERMINATE, &ntstatus,
 			      &mask_contains_wcard);
@@ -2114,13 +2117,14 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 		   complain (it thinks we're asking for the directory above the shared
 		   path or an invalid name). Catch this as the resume name is only compared, never used in
 		   a file access. JRA. */
-		srvstr_pull(inbuf, SVAL(inbuf,smb_flg2),
+		srvstr_pull(params, req->flags2,
 				resume_name, params+12,
 				sizeof(resume_name), total_params - 12,
 				STR_TERMINATE);
 
 		if (!(ISDOT(resume_name) || ISDOTDOT(resume_name))) {
-			return ERROR_NT(ntstatus);
+			reply_nterror(req, ntstatus);
+			return;
 		}
 	}
 
@@ -2149,40 +2153,47 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		case SMB_FIND_FILE_UNIX:
 		case SMB_FIND_FILE_UNIX_INFO2:
 			if (!lp_unix_extensions()) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 			break;
 		default:
-			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
 	}
 
 	if (info_level == SMB_FIND_EA_LIST) {
 		uint32 ea_size;
 
 		if (total_data < 4) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		ea_size = IVAL(pdata,0);
 		if (ea_size != total_data) {
 			DEBUG(4,("call_trans2findnext: Rejecting EA request with incorrect \
 total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
                                                                                                                                                      
 		if (!lp_ea_support(SNUM(conn))) {
-			return ERROR_DOS(ERRDOS,ERReasnotsupported);
+			reply_doserror(req, ERRDOS, ERReasnotsupported);
+			return;
 		}
                                                                                                                                                      
 		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		/* Pull out the list of names. */
 		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
 			talloc_destroy(ea_ctx);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	}
 
@@ -2190,7 +2201,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL) {
 		talloc_destroy(ea_ctx);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	pdata = *ppdata;
@@ -2200,7 +2212,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	*pparams = (char *)SMB_REALLOC(*pparams, 6*SIZEOFWORD);
 	if(*pparams == NULL ) {
 		talloc_destroy(ea_ctx);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	params = *pparams;
@@ -2208,7 +2221,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check that the dptr is valid */
 	if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num))) {
 		talloc_destroy(ea_ctx);
-		return ERROR_DOS(ERRDOS,ERRnofiles);
+		reply_doserror(req, ERRDOS, ERRnofiles);
+		return;
 	}
 
 	string_set(&conn->dirpath,dptr_path(dptr_num));
@@ -2217,7 +2231,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if((p = dptr_wcard(dptr_num))== NULL) {
 		DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
 		talloc_destroy(ea_ctx);
-		return ERROR_DOS(ERRDOS,ERRnofiles);
+		reply_doserror(req, ERRDOS, ERRnofiles);
+		return;
 	}
 
 	pstrcpy(mask, p);
@@ -2284,7 +2299,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			finished = False;
 		} else {
 			finished = !get_lanman2_dir_entry(conn,
-						SVAL(outbuf, smb_flg2),
+						req->flags2,
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
 						&p,pdata,data_end,
@@ -2326,16 +2341,17 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,4,0); /* Never an EA error */
 	SSVAL(params,6,last_entry_off);
 
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata), max_data_bytes);
+	send_trans2_replies_new(req, params, 8, pdata, PTR_DIFF(p,pdata),
+				max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
 	DEBUG( 3, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-		smb_fn_name(CVAL(inbuf,smb_com)), 
+		smb_fn_name(CVAL(req->inbuf,smb_com)),
 		mask, directory, dirtype, numentries ) );
 
-	return(-1);
+	return;
 }
 
 unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16])
@@ -6691,11 +6707,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_FINDNEXT:
 	{
 		START_PROFILE(Trans2_findnext);
-		outsize = call_trans2findnext(
-			conn, inbuf, outbuf, size, bufsize, 
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2findnext(conn, req,
+				    &state->param, state->total_param,
+				    &state->data, state->total_data,
+				    state->max_data_return);
 		END_PROFILE(Trans2_findnext);
 		break;
 	}
