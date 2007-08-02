@@ -540,7 +540,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 		} /* end else */
 
 #ifdef DEVELOPER
-		if (VALID_STAT(st) && get_delete_on_close_flag(file_id_sbuf(&st))) {
+		if (VALID_STAT(st) &&
+		    get_delete_on_close_flag(vfs_file_id_from_sbuf(conn, &st))) {
 			result = NT_STATUS_DELETE_PENDING;
 			goto fail;
 		}
