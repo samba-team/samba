@@ -39,6 +39,7 @@ struct revoke_crl {
     time_t last_modfied;
     CRLCertificateList crl;
     int verified;
+    int failed_verify;
 };
 
 struct revoke_ocsp {
@@ -380,6 +381,7 @@ hx509_revoke_add_ocsp(hx509_context context,
 
 static int
 verify_crl(hx509_context context,
+	   hx509_revoke_ctx ctx,
 	   CRLCertificateList *crl,
 	   time_t time_now,
 	   hx509_certs certs,
@@ -404,40 +406,12 @@ verify_crl(hx509_context context,
     _hx509_query_clear(&q);
 	
     q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
+    q.match |= HX509_QUERY_KU_CRLSIGN;
     q.subject_name = &crl->tbsCertList.issuer;
-	
+
     ret = hx509_certs_find(context, certs, &q, &signer);
     if (ret)
 	return ret;
-
-    /* verify is parent or CRLsigner */
-    if (hx509_cert_cmp(signer, parent) != 0) {
-	Certificate *p = _hx509_get_cert(parent);
-	Certificate *s = _hx509_get_cert(signer);
-
-	ret = _hx509_cert_is_parent_cmp(s, p, 0);
-	if (ret != 0) {
-	    ret = HX509_PARENT_NOT_CA;
-	    hx509_set_error_string(context, 0, ret, "Revoke CRL signer is "
-				   "doesn't have CA as signer certificate");
-	    goto out;
-	}
-
-	ret = _hx509_verify_signature_bitstring(context,
-						p,
-						&s->signatureAlgorithm,
-						&s->tbsCertificate._save,
-						&s->signatureValue);
-	if (ret) {
-	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
-				   "CRL signer signature invalid");
-	    goto out;
-	}
-
-	ret = _hx509_check_key_usage(context, signer, 1 << 6, TRUE); /* crl */
-	if (ret != 0)
-	    goto out;
-    }
 
     ret = _hx509_verify_signature_bitstring(context,
 					    _hx509_get_cert(signer), 
@@ -448,6 +422,44 @@ verify_crl(hx509_context context,
 	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 			       "CRL signature invalid");
 	goto out;
+    }
+
+    /* 
+     * If signer is not CA cert, need to check revoke status of this
+     * CRL signing cert too, this include all parent CRL signer cert
+     * up to the root *sigh*, assume root at least hve CERTSIGN flag
+     * set.
+     */
+    while (_hx509_check_key_usage(context, signer, 1 << 5, TRUE)) {
+	hx509_cert crl_parent;
+
+	_hx509_query_clear(&q);
+	
+	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
+	q.match |= HX509_QUERY_KU_CRLSIGN;
+	q.subject_name = &crl->tbsCertList.issuer;
+	
+	ret = hx509_certs_find(context, certs, &q, &crl_parent);
+	if (ret) {
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				   "Failed to find parent of CRL signer");
+	    goto out;
+	}
+
+	ret = hx509_revoke_verify(context,
+				  ctx, 
+				  certs,
+				  time_now,
+				  signer,
+				  crl_parent);
+	hx509_cert_free(signer);
+	signer = crl_parent;
+	if (ret) {
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				   "Failed to verify revoke "
+				   "status of CRL signer");
+	    goto out;
+	}
     }
 
 out:
@@ -551,6 +563,8 @@ hx509_revoke_verify(hx509_context context,
     unsigned long i, j, k;
     int ret;
 
+    hx509_clear_error_string(context);
+
     for (i = 0; i < ctx->ocsps.len; i++) {
 	struct revoke_ocsp *ocsp = &ctx->ocsps.val[i];
 	struct stat sb;
@@ -613,7 +627,7 @@ hx509_revoke_verify(hx509_context context,
 		now + context->ocsp_time_diff)
 		continue;
 
-	    /* don't allow the next updte to be in the past */
+	    /* don't allow the next update to be in the past */
 	    if (ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate) {
 		if (*ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate < now)
 		    continue;
@@ -643,17 +657,22 @@ hx509_revoke_verify(hx509_context context,
 		free_CRLCertificateList(&crl->crl);
 		crl->crl = cl;
 		crl->verified = 0;
+		crl->failed_verify = 0;
 	    }
 	}
+	if (crl->failed_verify)
+	    continue;
 
 	/* verify signature in crl if not already done */
 	if (crl->verified == 0) {
-	    ret = verify_crl(context, &crl->crl, now, certs, parent_cert);
-	    if (ret)
-		return ret;
+	    ret = verify_crl(context, ctx, &crl->crl, now, certs, parent_cert);
+	    if (ret) {
+		crl->failed_verify = 1;
+		continue;
+	    }
 	    crl->verified = 1;
 	}
-	
+
 	if (crl->crl.tbsCertList.crlExtensions)
 	    for (j = 0; j < crl->crl.tbsCertList.crlExtensions->len; j++)
 		if (crl->crl.tbsCertList.crlExtensions->val[j].critical)
@@ -667,7 +686,7 @@ hx509_revoke_verify(hx509_context context,
 	    time_t t;
 
 	    ret = der_heim_integer_cmp(&crl->crl.tbsCertList.revokedCertificates->val[j].userCertificate,
-				   &c->tbsCertificate.serialNumber);
+				       &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
 
@@ -689,6 +708,10 @@ hx509_revoke_verify(hx509_context context,
 
     if (context->flags & HX509_CTX_VERIFY_MISSING_OK)
 	return 0;
+    hx509_set_error_string(context, HX509_ERROR_APPEND, 
+			   HX509_REVOKE_STATUS_MISSING,
+			   "No revoke status found for "
+			   "certificates");
     return HX509_REVOKE_STATUS_MISSING;
 }
 
