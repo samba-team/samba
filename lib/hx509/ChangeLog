@@ -1,3 +1,8 @@
+2007-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c: Search for the right issuer when looking for the
+	issuer of the CRL signer.
+
 2007-08-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* revoke.c: Handle CRL signing certificate better, try to not
