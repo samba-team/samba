@@ -3258,6 +3258,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	time_t create_time, mtime, atime;
 	struct timespec create_time_ts, mtime_ts, atime_ts;
 	files_struct *fsp = NULL;
+	struct file_id fileid;
 	TALLOC_CTX *data_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
@@ -3324,7 +3325,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return UNIXERROR(ERRDOS,ERRbadpath);
 			}
 
-			delete_pending = get_delete_on_close_flag(file_id_sbuf(&sbuf));
+			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+			delete_pending = get_delete_on_close_flag(fileid);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -3337,7 +3339,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
 			pos = fsp->fh->position_information;
-			delete_pending = get_delete_on_close_flag(file_id_sbuf(&sbuf));
+			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+			delete_pending = get_delete_on_close_flag(fileid);
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -3392,7 +3395,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return UNIXERROR(ERRDOS,ERRbadpath);
 		}
 
-		delete_pending = get_delete_on_close_flag(file_id_sbuf(&sbuf));
+		fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+		delete_pending = get_delete_on_close_flag(fileid);
 		if (delete_pending) {
 			return ERROR_NT(NT_STATUS_DELETE_PENDING);
 		}
@@ -3518,8 +3522,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			mtime_ts = fsp->pending_modtime;
 		}
 	} else {
+		files_struct *fsp1;
 		/* Do we have this path open ? */
-		files_struct *fsp1 = file_find_di_first(file_id_sbuf(&sbuf));
+		fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+		fsp1 = file_find_di_first(fileid);
 		if (fsp1 && !null_timespec(fsp1->pending_modtime)) {
 			/* the pending modtime overrides the current modtime */
 			mtime_ts = fsp1->pending_modtime;

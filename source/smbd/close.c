@@ -265,7 +265,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		goto done;
 	}
 
-	id = file_id_sbuf(&sbuf);
+	id = vfs_file_id_from_sbuf(conn, &sbuf);
 
 	if (!file_id_equal(&fsp->file_id, &id)) {
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "

@@ -357,7 +357,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	}
 
 	fsp->mode = psbuf->st_mode;
-	fsp->file_id = file_id_sbuf(psbuf);
+	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = True;
@@ -1420,7 +1420,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return status;
 	}
 
-	fsp->file_id = file_id_sbuf(psbuf);
+	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->share_access = share_access;
 	fsp->fh->private_options = create_options;
 	fsp->access_mask = open_access_mask; /* We change this to the
@@ -1436,7 +1436,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
-		id = file_id_sbuf(psbuf);
+		id = vfs_file_id_from_sbuf(conn, psbuf);
 
 		lck = get_share_mode_lock(NULL, id,
 					  conn->connectpath,
@@ -2164,7 +2164,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	 */
 	
 	fsp->mode = psbuf->st_mode;
-	fsp->file_id = file_id_sbuf(psbuf);
+	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = False;
@@ -2292,7 +2292,7 @@ NTSTATUS open_file_stat(connection_struct *conn, struct smb_request *req,
 	 */
 	
 	fsp->mode = psbuf->st_mode;
-	fsp->file_id = file_id_sbuf(psbuf);
+	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = False;

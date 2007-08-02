@@ -923,6 +923,11 @@ static int vfswrap_chflags(vfs_handle_struct *handle, const char *path, int flag
 #endif
 }
 
+static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode)
+{
+	return file_id_create_dev(dev, inode);
+}
+
 static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)
 {
 	size_t result;
@@ -1309,6 +1314,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_notify_watch),	SMB_VFS_OP_NOTIFY_WATCH,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_chflags),	SMB_VFS_OP_CHFLAGS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */

@@ -25,7 +25,7 @@
   return a file_id which gives a unique ID for a file given the device and
   inode numbers
  */
-struct file_id file_id_create(SMB_DEV_T dev, SMB_INO_T inode)
+struct file_id file_id_create_dev(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	struct file_id key;
 	/* the ZERO_STRUCT ensures padding doesn't break using the key as a
@@ -39,11 +39,10 @@ struct file_id file_id_create(SMB_DEV_T dev, SMB_INO_T inode)
 /*
   generate a file_id from a stat structure
  */
-struct file_id file_id_sbuf(const SMB_STRUCT_STAT *sbuf)
+struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf)
 {
-	return file_id_create(sbuf->st_dev, sbuf->st_ino);
+	return SMB_VFS_FILE_ID_CREATE(conn, sbuf->st_dev, sbuf->st_ino);
 }
-
 
 /*
   return True if two file_id structures are equal

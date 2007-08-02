@@ -71,6 +71,7 @@
 /* Changed to version21 to add chflags operation -- jpeach */
 /* Changed to version22 to add lchown operation -- jra */
 /* Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra. */
+/* Leave at 22 - not yet released. Add file_id_create operation. --metze */
 #define SMB_VFS_INTERFACE_VERSION 22
 
 
@@ -162,6 +163,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_REALPATH,
 	SMB_VFS_OP_NOTIFY_WATCH,
 	SMB_VFS_OP_CHFLAGS,
+	SMB_VFS_OP_FILE_ID_CREATE,
 
 	/* NT ACL operations. */
 
@@ -295,7 +297,8 @@ struct vfs_ops {
 							  struct notify_event *ev),
 					 void *private_data, void *handle_p);
 		int (*chflags)(struct vfs_handle_struct *handle, const char *path, uint flags);
-		
+		struct file_id (*file_id_create)(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode);
+
 		/* NT ACL operations. */
 		
 		size_t (*fget_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd,  uint32 security_info, struct security_descriptor **ppdesc);
@@ -414,6 +417,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *realpath;
 		struct vfs_handle_struct *notify_watch;
 		struct vfs_handle_struct *chflags;
+		struct vfs_handle_struct *file_id_create;
 
 		/* NT ACL operations. */
 
