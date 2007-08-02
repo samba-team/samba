@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.72.0 <http://docbook.sf.net/>
-.\"      Date: 07/10/2007
+.\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
+.\"      Date: 08/03/2007
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "07/10/2007" "" ""
+.TH "CTDB" "1" "08/03/2007" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -22,38 +22,40 @@ ctdb \- clustered tdb database management utility
 ctdb is a utility to view and manage a ctdb cluster.
 .SH "OPTIONS"
 .PP
-\-n <node>
-.RS 4
-This specifies on which node to execute the command. Default is to run the command on the deamon running on the local host.
+\-n <vnn>
+.RS 3n
+This specifies the virtual node number on which to execute the command. Default is to run the command on the deamon running on the local host.
+.sp
+The virtual node number is an integer that describes the node in the cluster. The first node has virtual node number 0.
 .RE
 .PP
 \-Y
-.RS 4
+.RS 3n
 Produce output in machinereadable form for easier parsing by scripts. Not all commands support this option.
 .RE
 .PP
 \-t <timeout>
-.RS 4
+.RS 3n
 How long should ctdb wait for a command to complete before timing out. Default is 3 seconds.
 .RE
 .PP
 \-? \-\-help
-.RS 4
+.RS 3n
 Print some help text to the screen.
 .RE
 .PP
 \-\-usage
-.RS 4
+.RS 3n
 Print useage information to the screen.
 .RE
 .PP
 \-d \-\-debug=<debuglevel>
-.RS 4
+.RS 3n
 Change the debug level for the command. Default is 0.
 .RE
 .PP
 \-\-socket=<filename>
-.RS 4
+.RS 3n
 Specify the socketname to use when connecting to the local ctdb daemon. The default is /tmp/ctdb.socket .
 .sp
 You only need to specify this parameter if you run multiple ctdb daemons on the same physical host and thus can not use the default name for the domain socket.
@@ -133,7 +135,7 @@ Example: ctdb status
 .PP
 Example output:
 .sp
-.RS 4
+.RS 3n
 .nf
 Number of nodes:4
 vnn:0 11.1.2.200       OK (THIS NODE)
@@ -159,7 +161,7 @@ Example: ctdb ping
 .PP
 Example output:
 .sp
-.RS 4
+.RS 3n
 .nf
 response from 0 time=0.000054 sec  (3 clients)
 response from 1 time=0.000144 sec  (2 clients)
@@ -176,7 +178,7 @@ Example: ctdb ip
 .PP
 Example output:
 .sp
-.RS 4
+.RS 3n
 .nf
 Number of nodes:4
 12.1.1.1         0
@@ -194,7 +196,7 @@ Example: ctdb getvar MaxRedirectCount
 .PP
 Example output:
 .sp
-.RS 4
+.RS 3n
 .nf
 MaxRedirectCount    = 3
       
@@ -213,7 +215,7 @@ Example: ctdb listvars
 .PP
 Example output:
 .sp
-.RS 4
+.RS 3n
 .nf
 MaxRedirectCount    = 5
 SeqnumFrequency     = 1
@@ -241,7 +243,7 @@ Example: ctdb statistics
 .PP
 Example output:
 .sp
-.RS 4
+.RS 3n
 .nf
 CTDB version 1
  num_clients                        3
@@ -339,7 +341,7 @@ Example: ctdb getdbmap
 .PP
 Example output:
 .sp
-.RS 4
+.RS 3n
 .nf
 Number of databases:4
 dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
@@ -382,7 +384,7 @@ ctdbd(1), onnode(1)
 \fI\%http://ctdb.samba.org/\fR
 .SH "COPYRIGHT/LICENSE"
 .sp
-.RS 4
+.RS 3n
 .nf
 Copyright (C) Andrew Tridgell 2007
 Copyright (C) Ronnie sahlberg 2007

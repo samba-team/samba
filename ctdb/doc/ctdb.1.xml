@@ -42,11 +42,16 @@
     <title>OPTIONS</title>
 
     <variablelist>
-      <varlistentry><term>-n &lt;node&gt;</term>
+      <varlistentry><term>-n &lt;vnn&gt;</term>
         <listitem>
           <para>
-            This specifies on which node to execute the command. Default is
-            to run the command on the deamon running on the local host.
+            This specifies the virtual node number on which to execute the 
+	    command. Default is to run the command on the deamon running on 
+	    the local host.
+	  </para>
+	  <para>
+	    The virtual node number is an integer that describes the node in the
+	    cluster. The first node has virtual node number 0.
           </para>
         </listitem>
       </varlistentry>
