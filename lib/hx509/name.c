@@ -252,6 +252,13 @@ _hx509_Name_to_string(const Name *n, char **str)
  * bytes.
  */
 
+static void
+prune_space(const unsigned char **s)
+{
+    while (**s == ' ')
+	(*s)++;
+}
+
 int
 _hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
 {
@@ -269,9 +276,22 @@ _hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
 	c = der_heim_octet_string_cmp(&ds1->u.teletexString,
 				  &ds2->u.teletexString);
 	break;
-    case choice_DirectoryString_printableString:
-	c = strcasecmp(ds1->u.printableString, ds2->u.printableString);
+    case choice_DirectoryString_printableString: {
+	const unsigned char *s1 = (unsigned char*)ds1->u.printableString;
+	const unsigned char *s2 = (unsigned char*)ds2->u.printableString;
+	prune_space(&s1); prune_space(&s2);
+	while (*s1 && *s2) {
+	    if (toupper(*s1) != toupper(*s2)) {
+		c = toupper(*s1) - toupper(*s2);
+		break;
+	    }
+	    if (*s1 == ' ') { prune_space(&s1); prune_space(&s2); }
+	    else { s1++; s2++; }
+	}	    
+	prune_space(&s1); prune_space(&s2);
+	c = *s1 - *s2;
 	break;
+    }
     case choice_DirectoryString_utf8String:
 	c = strcmp(ds1->u.utf8String, ds2->u.utf8String);
 	break;
