@@ -285,6 +285,33 @@ size_t srvstr_get_path(const char *inbuf, uint16 smb_flags2, char *dest,
 }
 
 /****************************************************************************
+ Check if we have a correct fsp pointing to a file. Replacement for the
+ CHECK_FSP macro.
+****************************************************************************/
+BOOL check_fsp(connection_struct *conn, struct smb_request *req,
+	       files_struct *fsp, struct current_user *user)
+{
+	if (!(fsp) || !(conn)) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return False;
+	}
+	if (((conn) != (fsp)->conn) || current_user.vuid != (fsp)->vuid) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return False;
+	}
+	if ((fsp)->is_directory) {
+		reply_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+		return False;
+	}
+	if ((fsp)->fh->fd == -1) {
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return False;
+	}
+	(fsp)->num_smb_operations++;
+	return True;
+}
+
+/****************************************************************************
  Reply to a (netbios-level) special message.
 ****************************************************************************/
 
