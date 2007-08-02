@@ -1,3 +1,7 @@
+2007-08-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* su.c: Check all local realms when su-ing, from Magnus Holmberg.
+
 2007-06-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* su.c: If not root and not setuid, print warning.
