@@ -167,7 +167,7 @@ size_t __unsafe_string_function_usage_here_char__(void);
 #define pull_string_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) pull_string_talloc_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, ctx, base_ptr, smb_flags2, dest, src, src_len, flags)
 #define clistr_push(cli, dest, src, dest_len, flags) clistr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, cli, dest, src, dest_len, flags)
 #define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_pull_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, cli, dest, src, dest_len, src_len, flags)
-#define srvstr_push(base_ptr, dest, src, dest_len, flags) srvstr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, base_ptr, dest, src, dest_len, flags)
+#define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags) srvstr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, base_ptr, smb_flags2, dest, src, dest_len, flags)
 
 #define alpha_strcpy(dest,src,other_safe_chars,maxlength) alpha_strcpy_fn(SAFE_STRING_FUNCTION_NAME,SAFE_STRING_LINE,dest,src,other_safe_chars,maxlength)
 #define StrnCpy(dest,src,n)		StrnCpy_fn(SAFE_STRING_FUNCTION_NAME,SAFE_STRING_LINE,dest,src,n)
@@ -211,10 +211,10 @@ size_t __unsafe_string_function_usage_here_char__(void);
     ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_pull_fn(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags))
 
-#define srvstr_push_fn2(fn_name, fn_line, base_ptr, dest, src, dest_len, flags) \
+#define srvstr_push_fn2(fn_name, fn_line, base_ptr, smb_flags2, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
-    : srvstr_push_fn(fn_name, fn_line, base_ptr, dest, src, dest_len, flags))
+    : srvstr_push_fn(fn_name, fn_line, base_ptr, smb_flags2, dest, src, dest_len, flags))
 
 #else
 
