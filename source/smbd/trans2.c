@@ -3458,13 +3458,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 		if (IS_IPC(conn)) {
-			return call_trans2qpipeinfo(conn, req,
-							tran_call,
-							pparams,
-							total_params,
-							ppdata,
-							total_data,
-							max_data_bytes);
+			call_trans2qpipeinfo(conn, req,	tran_call,
+					     pparams, total_params,
+					     ppdata, total_data,
+					     max_data_bytes);
+			return;
 		}
 
 		fsp = file_fsp(SVAL(params,0));
