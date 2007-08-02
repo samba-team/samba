@@ -1504,7 +1504,10 @@ size_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  is -1 then no maxiumum is used.
 **/
 
-size_t push_string_fn(const char *function, unsigned int line, const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
+size_t push_string_fn(const char *function, unsigned int line,
+		      const void *base_ptr, uint16 flags2,
+		      void *dest, const char *src,
+		      size_t dest_len, int flags)
 {
 #ifdef DEVELOPER
 	/* We really need to zero fill here, not clobber
@@ -1524,7 +1527,7 @@ size_t push_string_fn(const char *function, unsigned int line, const void *base_
 
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
-	      (SVAL(base_ptr, smb_flg2) & FLAGS2_UNICODE_STRINGS)))) {
+	      (flags2 & FLAGS2_UNICODE_STRINGS)))) {
 		return push_ucs2(base_ptr, dest, src, dest_len, flags);
 	}
 	return push_ascii(dest, src, dest_len, flags);

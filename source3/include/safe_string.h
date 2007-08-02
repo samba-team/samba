@@ -191,7 +191,7 @@ size_t __unsafe_string_function_usage_here_char__(void);
 #define push_string_fn2(fn_name, fn_line, base_ptr, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
-    : push_string_fn(fn_name, fn_line, base_ptr, dest, src, dest_len, flags))
+    : push_string_fn(fn_name, fn_line, base_ptr, 0, dest, src, dest_len, flags))
 
 #define pull_string_fn2(fn_name, fn_line, base_ptr, smb_flags2, dest, src, dest_len, src_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \

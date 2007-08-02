@@ -33,13 +33,17 @@ size_t srvstr_push_fn(const char *function, unsigned int line,
 #if 0
 			DEBUG(0, ("Pushing string of 'unlimited' length into non-SMB buffer!\n"));
 #endif
-			return push_string_fn(function, line, base_ptr, dest, src, -1, flags);
+			return push_string_fn(function, line, base_ptr,
+					      smb_flags2, dest, src, -1,
+					      flags);
 		}
-		return push_string_fn(function, line, base_ptr, dest, src, max_send - buf_used, flags);
+		return push_string_fn(function, line, base_ptr, smb_flags2,
+				      dest, src, max_send - buf_used, flags);
 	}
 	
 	/* 'normal' push into size-specified buffer */
-	return push_string_fn(function, line, base_ptr, dest, src, dest_len, flags);
+	return push_string_fn(function, line, base_ptr, smb_flags2, dest, src,
+			      dest_len, flags);
 }
 
 /*******************************************************************
