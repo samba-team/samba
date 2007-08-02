@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    negprot reply code
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Volker Lendecke 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
