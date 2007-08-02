@@ -6882,11 +6882,22 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 	if ((state->received_param == state->total_param) &&
 	    (state->received_data == state->total_data)) {
 
-		struct smb_request req;
-		init_smb_request(&req, (uint8 *)inbuf);
+		struct smb_request *req;
 
-		outsize = handle_trans2(conn, &req, state, inbuf, outbuf,
+		if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+			END_PROFILE(SMBtrans2);
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		init_smb_request(req, (uint8 *)inbuf);
+
+		outsize = handle_trans2(conn, req, state, inbuf, outbuf,
 					size, bufsize);
+		if (req->outbuf != NULL) {
+			outsize = smb_len(req->outbuf) + 4;
+			memcpy(outbuf, req->outbuf, outsize);
+		}
+		TALLOC_FREE(req);
 		SAFE_FREE(state->data);
 		SAFE_FREE(state->param);
 		TALLOC_FREE(state);
@@ -6924,7 +6935,7 @@ int reply_transs2(connection_struct *conn,
 	int outsize = 0;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
-	struct smb_request req;
+	struct smb_request *req;
 
 	START_PROFILE(SMBtranss2);
 
@@ -7010,10 +7021,20 @@ int reply_transs2(connection_struct *conn,
 	 */
 	SCVAL(outbuf,smb_com,SMBtrans2);
 
-	init_smb_request(&req, (uint8 *)inbuf);
+	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+		END_PROFILE(SMBtranss2);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
-	outsize = handle_trans2(conn, &req, state, inbuf, outbuf, size,
+	init_smb_request(req, (uint8 *)inbuf);
+
+	outsize = handle_trans2(conn, req, state, inbuf, outbuf, size,
 				bufsize);
+	if (req->outbuf != NULL) {
+		outsize = smb_len(req->outbuf) + 4;
+		memcpy(outbuf, req->outbuf, outsize);
+	}
+	TALLOC_FREE(req);
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);
