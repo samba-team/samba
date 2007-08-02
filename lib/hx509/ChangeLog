@@ -1,3 +1,20 @@
+2007-08-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c: Handle CRL signing certificate better, try to not
+	revalidate invalid CRLs over and over.
+
+2007-08-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cms.c: remove stale comment.
+
+	* test_nist.in: Unpack PKITS_data.zip and run tests.
+	
+	* test_nist_cert.in: Adapt to new nist pkits framework.
+
+	* test_nist_pkcs12.in: Adapt to new nist pkits framework.
+
+	* Makefile.am: clean PKITS_data
+
 2007-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add version-script.map to EXTRA_DIST
