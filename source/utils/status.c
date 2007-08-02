@@ -219,7 +219,7 @@ static void print_brl(struct file_id id,
 		 (double)start, (double)size,
 		 sharepath, fname);
 
-	talloc_free(share_mode);
+	TALLOC_FREE(share_mode);
 }
 
 static int traverse_fn1(struct db_record *rec,
@@ -369,7 +369,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 			d_printf("-------------------------------------------------------------------\n");
 
 			db->traverse_read(db, traverse_sessionid, NULL);
-			talloc_free(db);
+			TALLOC_FREE(db);
 		}
 
 		if (processes_only) 
