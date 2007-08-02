@@ -280,6 +280,15 @@ static int skel_chflags(vfs_handle_struct *handle,  const char *path, uint flags
 	return -1;
 }
 
+static struct file_id skel_file_id_create(vfs_handle_struct *handle,
+					  SMB_DEV_T dev, SMB_INO_T inode)
+{
+	struct file_id id_zero;
+	ZERO_STRUCT(id_zero);
+	errno = ENOSYS;
+	return id_zero;
+}
+
 static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	int fd, uint32 security_info, SEC_DESC **ppdesc)
 {
@@ -618,8 +627,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_notify_watch),			SMB_VFS_OP_NOTIFY_WATCH,	SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_chflags),			SMB_VFS_OP_CHFLAGS,		SMB_VFS_LAYER_OPAQUE},
-
-
+	{SMB_VFS_OP(skel_file_id_create),		SMB_VFS_OP_FILE_ID_CREATE,	SMB_VFS_LAYER_OPAQUE},
 
 	/* NT File ACL operations */
 
