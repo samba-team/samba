@@ -56,7 +56,8 @@ fi
 echo "nist tests"
 
 if [ ! -d "$nistdir" ] ; then
-    ( mkdir "$nistdir" &&  cd "$nistdir" && unzip "$nistzip" ) || { rm -rf "$nistdir" ; exit 1; }
+    ( mkdir "$nistdir" &&  cd "$nistdir" && unzip "$nistzip" ) >/dev/null || \
+	{ rm -rf "$nistdir" ; exit 1; }
 fi
 
 while read id verify cert arg1 arg2 arg3 arg4 arg5 ; do
