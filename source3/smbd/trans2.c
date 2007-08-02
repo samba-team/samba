@@ -3401,7 +3401,9 @@ static int call_trans2qpipeinfo(connection_struct *conn, char *inbuf, char *outb
  file name or file id).
 ****************************************************************************/
 
-static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+static int call_trans2qfilepathinfo(connection_struct *conn,
+				    struct smb_request *req,
+				    char *inbuf, char *outbuf, int length, int bufsize,
 					unsigned int tran_call,
 					char **pparams, int total_params, char **ppdata, int total_data,
 					unsigned int max_data_bytes)
@@ -3527,14 +3529,16 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 		}
 
-		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, &params[6],
+		srvstr_get_path(params, req->flags2, fname, &params[6],
 				sizeof(fname), total_params - 6,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
 
-		status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+		status = resolve_dfspath(conn,
+					 req->flags2 & FLAGS2_DFS_PATHNAMES,
+					 fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
@@ -6767,7 +6771,8 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	{
 		START_PROFILE(Trans2_qpathinfo);
 		outsize = call_trans2qfilepathinfo(
-			conn, inbuf, outbuf, size, bufsize, state->call,
+			conn, req,
+			inbuf, outbuf, size, bufsize, state->call,
 			&state->param, state->total_param,
 			&state->data, state->total_data,
 			state->max_data_return);
