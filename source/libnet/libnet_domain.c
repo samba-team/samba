@@ -361,6 +361,7 @@ NTSTATUS libnet_DomainOpenSamr_recv(struct composite_context *c, struct libnet_c
 		   libnet functions */
 		ctx->samr.connect_handle = s->connect_handle;
 		ctx->samr.handle      = s->domain_handle;
+		ctx->samr.sid         = talloc_steal(ctx, s->lookup.out.sid);
 		ctx->samr.name        = talloc_steal(ctx, s->domain_name.string);
 		ctx->samr.access_mask = s->access_mask;
 	}
@@ -844,7 +845,10 @@ NTSTATUS libnet_DomainCloseSamr_recv(struct composite_context *c, struct libnet_
 		/* domain policy handle closed successfully */
 
 		ZERO_STRUCT(ctx->samr.handle);
+		talloc_free(ctx->samr.name);
+		talloc_free(ctx->samr.sid);
 		ctx->samr.name = NULL;
+		ctx->samr.sid = NULL;
 
 		io->out.error_string = talloc_asprintf(mem_ctx, "Success");
 

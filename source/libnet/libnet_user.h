@@ -92,6 +92,8 @@ struct libnet_UserInfo {
 		const char *domain_name;
 	} in;
 	struct {
+		struct dom_sid *user_sid;
+		struct dom_sid *primary_group_sid;
 		const char *account_name;
 		const char *full_name;
 		const char *description;

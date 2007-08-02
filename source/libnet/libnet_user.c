@@ -773,6 +773,9 @@ NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 		s = talloc_get_type(c->private_data, struct user_info_state);
 		info = &s->userinfo.out.info.info21;
 
+		r->out.user_sid = dom_sid_add_rid(mem_ctx, s->ctx->samr.sid, info->rid);
+		r->out.primary_group_sid = dom_sid_add_rid(mem_ctx, s->ctx->samr.sid, info->primary_gid);
+
 		/* string fields */
 		r->out.account_name   = talloc_steal(mem_ctx, info->account_name.string);
 		r->out.full_name      = talloc_steal(mem_ctx, info->full_name.string);

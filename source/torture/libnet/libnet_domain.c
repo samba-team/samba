@@ -34,7 +34,7 @@
 
 static BOOL test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle, struct lsa_String *domname,
-				 uint32_t *access_mask)
+				 uint32_t *access_mask, struct dom_sid **sid)
 {
 	NTSTATUS status;
 	struct policy_handle h, domain_handle;
@@ -69,7 +69,7 @@ static BOOL test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = *access_mask;
-	r3.in.sid = r2.out.sid;
+	r3.in.sid = *sid = r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
 	printf("opening domain\n");
@@ -320,6 +320,7 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 	struct policy_handle h;
 	struct dcerpc_pipe *p;
 	struct libnet_DomainClose r;
+	struct dom_sid *sid;
 
 	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
@@ -347,18 +348,19 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 		goto done;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = talloc_strdup(mem_ctx, lp_workgroup());
 	
-	if (!test_opendomain_samr(p, torture, &h, &domain_name, &access_mask)) {
+	if (!test_opendomain_samr(p, torture, &h, &domain_name, &access_mask, &sid)) {
 		d_printf("failed to open domain on samr service\n");
 		ret = False;
 		goto done;
 	}
 	
 	ctx->samr.pipe        = p;
-	ctx->samr.name        = domain_name.string;
+	ctx->samr.name        = talloc_steal(ctx, domain_name.string);
 	ctx->samr.access_mask = access_mask;
 	ctx->samr.handle      = h;
+	ctx->samr.sid         = talloc_steal(ctx, sid);
 	/* we have to use pipe's event context, otherwise the call will
 	   hang indefinitely - this wouldn't be the case if pipe was opened
 	   by means of libnet call */
