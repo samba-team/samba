@@ -6482,16 +6482,19 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
  We don't actually do this - we just send a null response.
 ****************************************************************************/
 
-static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2findnotifyfirst(connection_struct *conn,
+				       struct smb_request *req,
+				       char **pparams, int total_params,
+				       char **ppdata, int total_data,
+				       unsigned int max_data_bytes)
 {
 	static uint16 fnf_handle = 257;
 	char *params = *pparams;
 	uint16 info_level;
 
 	if (total_params < 6) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	info_level = SVAL(params,4);
@@ -6502,13 +6505,15 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 		case 2:
 			break;
 		default:
-			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
 	}
 
 	/* Realloc the parameter and data sizes */
 	*pparams = (char *)SMB_REALLOC(*pparams,6);
 	if (*pparams == NULL) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 	params = *pparams;
 
@@ -6521,9 +6526,9 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	if(fnf_handle == 0)
 		fnf_handle = 257;
 
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 6, *ppdata, 0, max_data_bytes);
+	send_trans2_replies_new(req, params, 6, *ppdata, 0, max_data_bytes);
   
-	return(-1);
+	return;
 }
 
 /****************************************************************************
@@ -6531,9 +6536,11 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
  changes). Currently this does nothing.
 ****************************************************************************/
 
-static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2findnotifynext(connection_struct *conn,
+				      struct smb_request *req,
+				      char **pparams, int total_params,
+				      char **ppdata, int total_data,
+				      unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 
@@ -6542,16 +6549,17 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 	/* Realloc the parameter and data sizes */
 	*pparams = (char *)SMB_REALLOC(*pparams,4);
 	if (*pparams == NULL) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 	params = *pparams;
 
 	SSVAL(params,0,0); /* No changes */
 	SSVAL(params,2,0); /* No EA errors */
 
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 4, *ppdata, 0, max_data_bytes);
+	send_trans2_replies_new(req, params, 4, *ppdata, 0, max_data_bytes);
   
-	return(-1);
+	return;
 }
 
 /****************************************************************************
@@ -6783,11 +6791,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_FINDNOTIFYFIRST:
 	{
 		START_PROFILE(Trans2_findnotifyfirst);
-		outsize = call_trans2findnotifyfirst(
-			conn, inbuf, outbuf, size, bufsize, 
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2findnotifyfirst(conn, req,
+					   &state->param, state->total_param,
+					   &state->data, state->total_data,
+					   state->max_data_return);
 		END_PROFILE(Trans2_findnotifyfirst);
 		break;
 	}
@@ -6795,11 +6802,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_FINDNOTIFYNEXT:
 	{
 		START_PROFILE(Trans2_findnotifynext);
-		outsize = call_trans2findnotifynext(
-			conn, inbuf, outbuf, size, bufsize, 
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2findnotifynext(conn, req,
+					  &state->param, state->total_param,
+					  &state->data, state->total_data,
+					  state->max_data_return);
 		END_PROFILE(Trans2_findnotifynext);
 		break;
 	}
