@@ -962,11 +962,10 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 					  &output_token,
 					  &ret_flags,
 					  NULL);
-
-		if (input_token.value) {
-			gss_release_buffer(&minor_status, &input_token);
+		if (scred) {
+			ber_bvfree(scred);
+			scred = NULL;
 		}
-
 		if (gss_rc && gss_rc != GSS_S_CONTINUE_NEEDED) {
 			status = ADS_ERROR_GSS(gss_rc, minor_status);
 			goto failed;
@@ -999,12 +998,14 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 
 	gss_rc = gss_unwrap(&minor_status,context_handle,&input_token,&output_token,
 			    &conf_state,NULL);
+	if (scred) {
+		ber_bvfree(scred);
+		scred = NULL;
+	}
 	if (gss_rc) {
 		status = ADS_ERROR_GSS(gss_rc, minor_status);
 		goto failed;
 	}
-
-	gss_release_buffer(&minor_status, &input_token);
 
 	p = (uint8 *)output_token.value;
 
