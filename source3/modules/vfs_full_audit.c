@@ -184,6 +184,8 @@ static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
 			void *private_data, void *handle_p);
 static int smb_full_audit_chflags(vfs_handle_struct *handle,
 			    const char *path, uint flags);
+static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
+						    SMB_DEV_T dev, SMB_INO_T inode);
 static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				int fd, uint32 security_info,
 				SEC_DESC **ppdesc);
@@ -413,6 +415,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_chflags),	SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* NT ACL operations. */
 
@@ -579,6 +583,7 @@ static struct {
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
 	{ SMB_VFS_OP_NOTIFY_WATCH, "notify_watch" },
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
+	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -1462,6 +1467,23 @@ static int smb_full_audit_chflags(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
 
 	do_log(SMB_VFS_OP_CHFLAGS, (result != 0), handle, "%s", path);
+
+	return result;
+}
+
+static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
+						    SMB_DEV_T dev, SMB_INO_T inode)
+{
+	struct file_id id_zero;
+	struct file_id result;
+
+	ZERO_STRUCT(id_zero);
+
+	result = SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode);
+
+	do_log(SMB_VFS_OP_FILE_ID_CREATE,
+	       !file_id_equal(&id_zero, &result),
+	       handle, "%s", file_id_static_string(&result));
 
 	return result;
 }
