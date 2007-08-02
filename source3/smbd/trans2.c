@@ -1730,9 +1730,11 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
  Reply to a TRANS2_FINDFIRST.
 ****************************************************************************/
 
-static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outbuf, int bufsize,  
-				char **pparams, int total_params, char **ppdata, int total_data,
-				unsigned int max_data_bytes)
+static void call_trans2findfirst(connection_struct *conn,
+				 struct smb_request *req,
+				 char **pparams, int total_params,
+				 char **ppdata, int total_data,
+				 unsigned int max_data_bytes)
 {
 	/* We must be careful here that we don't return more than the
 		allowed number of data bytes. If this means returning fewer than
@@ -1767,7 +1769,8 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
 	if (total_params < 13) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	dirtype = SVAL(params,0);
@@ -1804,35 +1807,43 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		case SMB_FIND_FILE_UNIX:
 		case SMB_FIND_FILE_UNIX_INFO2:
 			if (!lp_unix_extensions()) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 			break;
 		default:
-			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
 	}
 
-	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), directory,
+	srvstr_get_path_wcard(params, req->flags2, directory,
 			      params+12, sizeof(directory), total_params - 12,
 			      STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		return ERROR_NT(ntstatus);
+		reply_nterror(req, ntstatus);
+		return;
 	}
 
-	ntstatus = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, directory, &mask_contains_wcard);
+	ntstatus = resolve_dfspath_wcard(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, directory, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			return;
 		}
-		return ERROR_NT(ntstatus);
+		reply_nterror(req, ntstatus);
+		return;
 	}
 
 	ntstatus = unix_convert(conn, directory, True, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		return ERROR_NT(ntstatus);
+		reply_nterror(req, ntstatus);
+		return;
 	}
 	ntstatus = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		return ERROR_NT(ntstatus);
+		reply_nterror(req, ntstatus);
+		return;
 	}
 
 	p = strrchr_m(directory,'/');
@@ -1856,29 +1867,34 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		uint32 ea_size;
 
 		if (total_data < 4) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		ea_size = IVAL(pdata,0);
 		if (ea_size != total_data) {
 			DEBUG(4,("call_trans2findfirst: Rejecting EA request with incorrect \
 total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		if (!lp_ea_support(SNUM(conn))) {
-			return ERROR_DOS(ERRDOS,ERReasnotsupported);
+			reply_doserror(req, ERRDOS, ERReasnotsupported);
+			return;
 		}
                                                                                                                                                         
 		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		/* Pull out the list of names. */
 		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
 			talloc_destroy(ea_ctx);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	}
 
@@ -1886,7 +1902,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL ) {
 		talloc_destroy(ea_ctx);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 	pdata = *ppdata;
 	data_end = pdata + max_data_bytes + DIR_ENTRY_SAFETY_MARGIN - 1;
@@ -1895,7 +1912,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	*pparams = (char *)SMB_REALLOC(*pparams, 10);
 	if (*pparams == NULL) {
 		talloc_destroy(ea_ctx);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 	params = *pparams;
 
@@ -1906,7 +1924,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				directory,
 				False,
 				True,
-				SVAL(inbuf,smb_pid),
+				req->smbpid,
 				mask,
 				mask_contains_wcard,
 				dirtype,
@@ -1914,7 +1932,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_destroy(ea_ctx);
-		return ERROR_NT(ntstatus);
+		reply_nterror(req, ntstatus);
+		return;
 	}
 
 	dptr_num = dptr_dnum(conn->dirptr);
@@ -1941,7 +1960,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			finished = False;
 		} else {
 			finished = !get_lanman2_dir_entry(conn,
-					SVAL(outbuf, smb_flg2),
+					req->flags2,
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
 					&p,pdata,data_end,
@@ -1987,9 +2006,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if(numentries == 0) {
 		dptr_close(&dptr_num);
 		if (Protocol < PROTOCOL_NT1) {
-			return ERROR_DOS(ERRDOS,ERRnofiles);
+			reply_doserror(req, ERRDOS, ERRnofiles);
+			return;
 		} else {
-			return ERROR_BOTH(NT_STATUS_NO_SUCH_FILE,ERRDOS,ERRbadfile);
+			reply_botherror(req, NT_STATUS_NO_SUCH_FILE,
+					ERRDOS, ERRbadfile);
+			return;
 		}
 	}
 
@@ -2002,13 +2024,14 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,6,0); /* Never an EA error */
 	SSVAL(params,8,last_entry_off);
 
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata), max_data_bytes);
+	send_trans2_replies_new(req, params, 10, pdata, PTR_DIFF(p,pdata),
+				max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
 	DEBUG( 4, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-		smb_fn_name(CVAL(inbuf,smb_com)), 
+		smb_fn_name(CVAL(req->inbuf,smb_com)),
 		mask, directory, dirtype, numentries ) );
 
 	/* 
@@ -2022,7 +2045,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if(!mangle_is_8_3_wildcards( mask, False, conn->params))
 		mangle_map(mask, True, True, conn->params);
 
-	return(-1);
+	return;
 }
 
 /****************************************************************************
@@ -6657,11 +6680,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_FINDFIRST:
 	{
 		START_PROFILE(Trans2_findfirst);
-		outsize = call_trans2findfirst(
-			conn, inbuf, outbuf, bufsize,
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2findfirst(conn, req,
+				     &state->param, state->total_param,
+				     &state->data, state->total_data,
+				     state->max_data_return);
 		END_PROFILE(Trans2_findfirst);
 		break;
 	}
