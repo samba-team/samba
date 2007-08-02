@@ -28,7 +28,8 @@ struct libnet_context {
 	/* samr connection parameters - opened handles and related properties */
 	struct {
 		struct dcerpc_pipe *pipe;
-		const char *name;
+		char *name;
+		struct dom_sid *sid;
 		uint32_t access_mask;
 		struct policy_handle handle;
 		struct policy_handle connect_handle;
@@ -38,7 +39,7 @@ struct libnet_context {
 	/* lsa connection parameters - opened handles and related properties */
 	struct {
 		struct dcerpc_pipe *pipe;
-		const char *name;
+		char *name;
 		uint32_t access_mask;
 		struct policy_handle handle;
 	} lsa;
