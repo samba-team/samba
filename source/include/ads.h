@@ -103,16 +103,17 @@ typedef struct ads_struct {
 			uint32 ofs;
 			uint32 needed;
 			uint32 left;
-			uint32 max;
-			uint32 min;
+#define        ADS_SASL_WRAPPING_IN_MAX_WRAPPED        0x0FFFFFFF
+			uint32 max_wrapped;
+			uint32 min_wrapped;
 			uint32 size;
 			uint8 *buf;
 		} in;
 		struct {
 			uint32 ofs;
 			uint32 left;
-			uint32 max;
-			uint32 min;
+#define        ADS_SASL_WRAPPING_OUT_MAX_WRAPPED       0x00A00000
+			uint32 max_unwrapped;
 			uint32 sig_size;
 			uint32 size;
 			uint8 *buf;

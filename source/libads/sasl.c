@@ -247,11 +247,10 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	   then the state will be kept by the signing engine */
 
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		ads->ldap.out.min = 4;
-		ads->ldap.out.max = 0x0FFFFFFF - NTLMSSP_SIG_SIZE;
+		ads->ldap.out.max_unwrapped = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED - NTLMSSP_SIG_SIZE;
 		ads->ldap.out.sig_size = NTLMSSP_SIG_SIZE;
-		ads->ldap.in.min = 4;
-		ads->ldap.in.max = 0x0FFFFFFF;
+		ads->ldap.in.min_wrapped = ads->ldap.out.sig_size;
+		ads->ldap.in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_ntlmssp_ops, ntlmssp_state);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
@@ -574,21 +573,20 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 	}
 
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		uint32 max_msg_size = 0x0A000000;
+		uint32 max_msg_size = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED;
 
 		gss_rc = gss_wrap_size_limit(&minor_status, context_handle,
 					     (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL),
 					     GSS_C_QOP_DEFAULT,
-					     max_msg_size, &ads->ldap.out.max);
+					     max_msg_size, &ads->ldap.out.max_unwrapped);
 		if (gss_rc) {
 			status = ADS_ERROR_GSS(gss_rc, minor_status);
 			goto failed;
 		}
 
-		ads->ldap.out.min = 4;
-		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max;
-		ads->ldap.in.min = 4;
-		ads->ldap.in.max = max_msg_size;
+		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max_unwrapped;
+		ads->ldap.in.min_wrapped = 0x2C; /* taken from a capture with LDAP unbind */
+		ads->ldap.in.max_wrapped = max_msg_size;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
@@ -930,23 +928,19 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 	int i=0;
 	int gss_rc, rc;
 	uint8 *p;
-	uint32 max_msg_size = 0;
+	uint32 max_msg_size = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED;
+	uint8 wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
 	ADS_STATUS status;
 
 	input_token.value = NULL;
 	input_token.length = 0;
 
-	req_flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG;
-	switch (ads->ldap.wrap_type) {
-	case ADS_SASLWRAP_TYPE_SEAL:
-		req_flags |= GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG;
-		break;
-	case ADS_SASLWRAP_TYPE_SIGN:
-		req_flags |= GSS_C_INTEG_FLAG;
-		break;
-	case ADS_SASLWRAP_TYPE_PLAIN:
-		break;
-	}
+	/*
+	 * Note: here we always ask the gssapi for sign and seal
+	 *       as this is negotiated later after the mutal
+	 *       authentication
+	 */
+	req_flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG;
 
 	for (i=0; i < MAX_GSS_PASSES; i++) {
 		gss_rc = gss_init_sec_context(&minor_status,
@@ -1014,20 +1008,37 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 #endif
 
 	if (p) {
-		max_msg_size = (p[1]<<16) | (p[2]<<8) | p[3];
+		wrap_type = CVAL(p,0);
+		SCVAL(p,0,0);
+		max_msg_size = RIVAL(p,0);
 	}
 
 	gss_release_buffer(&minor_status, &output_token);
+
+	if (!(wrap_type & ads->ldap.wrap_type)) {
+		/*
+		 * the server doesn't supports the wrap
+		 * type we want :-(
+		 */
+		DEBUG(0,("The ldap sasl wrap type doesn't match wanted[%d] server[%d]\n",
+			ads->ldap.wrap_type, wrap_type));
+		DEBUGADD(0,("You may want to set the 'client ldap sasl wrapping' option\n"));
+		status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		goto failed;
+	}
+
+	/* 0x58 is the minimum windows accepts */
+	if (max_msg_size < 0x58) {
+		max_msg_size = 0x58;
+	}
 
 	output_token.length = 4;
 	output_token.value = SMB_MALLOC(output_token.length);
 	p = (uint8 *)output_token.value;
 
-	*p++ = ads->ldap.wrap_type;
-	/* choose the same size as the server gave us */
-	*p++ = max_msg_size>>16;
-	*p++ = max_msg_size>>8;
-	*p++ = max_msg_size;
+	RSIVAL(p,0,max_msg_size);
+	SCVAL(p,0,ads->ldap.wrap_type);
+
 	/*
 	 * we used to add sprintf("dn:%s", ads->config.bind_path) here.
 	 * but using ads->config.bind_path is the wrong! It should be
@@ -1062,16 +1073,15 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 		gss_rc = gss_wrap_size_limit(&minor_status, context_handle,
 					     (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL),
 					     GSS_C_QOP_DEFAULT,
-					     max_msg_size, &ads->ldap.out.max);
+					     max_msg_size, &ads->ldap.out.max_unwrapped);
 		if (gss_rc) {
 			status = ADS_ERROR_GSS(gss_rc, minor_status);
 			goto failed;
 		}
 
-		ads->ldap.out.min = 4;
-		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max;
-		ads->ldap.in.min = 4;
-		ads->ldap.in.max = max_msg_size;
+		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max_unwrapped;
+		ads->ldap.in.min_wrapped = 0x2C; /* taken from a capture with LDAP unbind */
+		ads->ldap.in.max_wrapped = max_msg_size;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
@@ -1081,6 +1091,7 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 		/* make sure we don't free context_handle */
 		context_handle = GSS_C_NO_CONTEXT;
 	}
+
 failed:
 
 	if (context_handle != GSS_C_NO_CONTEXT)
