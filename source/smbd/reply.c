@@ -3462,20 +3462,18 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_exit(connection_struct *conn, 
-	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_exit(connection_struct *conn, struct smb_request *req)
 {
-	int outsize;
 	START_PROFILE(SMBexit);
 
-	file_close_pid(SVAL(inbuf,smb_pid),SVAL(inbuf,smb_uid));
+	file_close_pid(req->smbpid, req->vuid);
 
-	outsize = set_message(inbuf,outbuf,0,0,False);
+	reply_outbuf(req, 0, 0);
 
 	DEBUG(3,("exit\n"));
 
 	END_PROFILE(SMBexit);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
