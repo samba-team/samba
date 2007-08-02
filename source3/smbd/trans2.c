@@ -3,7 +3,7 @@
    SMB transaction2 handling
    Copyright (C) Jeremy Allison			1994-2007
    Copyright (C) Stefan (metze) Metzmacher	2003
-   Copyright (C) Volker Lendecke		2005
+   Copyright (C) Volker Lendecke		2005-2007
    Copyright (C) Steve French			2005
    Copyright (C) James Peach			2007
 
@@ -735,16 +735,37 @@ int send_trans2_replies(const char *inbuf,
 	return 0;
 }
 
+static void send_trans2_replies_new(struct smb_request *req,
+				    const char *params,
+				    int paramsize,
+				    const char *pdata,
+				    int datasize,
+				    int max_data_bytes)
+{
+	char *inbuf, *outbuf;
+	int length, bufsize;
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	reply_post_legacy(req, send_trans2_replies(
+				  inbuf, outbuf, bufsize,
+				  params, paramsize,
+				  pdata, datasize,
+				  max_data_bytes));
+}
+
 /****************************************************************************
  Reply to a TRANSACT2_OPEN.
 ****************************************************************************/
 
-static int call_trans2open(connection_struct *conn,
-			   struct smb_request *req,
-			   char *inbuf, char *outbuf, int bufsize,
-			   char **pparams, int total_params,
-			   char **ppdata, int total_data,
-			   unsigned int max_data_bytes)
+static void call_trans2open(connection_struct *conn,
+			    struct smb_request *req,
+			    char **pparams, int total_params,
+			    char **ppdata, int total_data,
+			    unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -779,7 +800,8 @@ static int call_trans2open(connection_struct *conn,
 	 */
 
 	if (total_params < 29) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	flags = SVAL(params, 0);
@@ -800,14 +822,16 @@ static int call_trans2open(connection_struct *conn,
 	pname = &params[28];
 
 	if (IS_IPC(conn)) {
-		return(ERROR_DOS(ERRSRV,ERRaccess));
+		reply_doserror(req, ERRSRV, ERRaccess);
+		return;
 	}
 
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, pname,
+	srvstr_get_path(params, req->flags2, fname, pname,
 			sizeof(fname), total_params - 28, STR_TERMINATE,
 			&status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	DEBUG(3,("call_trans2open %s deny_mode=0x%x attr=%d ofun=0x%x size=%d\n",
@@ -818,16 +842,19 @@ static int call_trans2open(connection_struct *conn,
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
     
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	if (open_ofun == 0) {
-		return ERROR_NT(NT_STATUS_OBJECT_NAME_COLLISION);
+		reply_nterror(req, NT_STATUS_OBJECT_NAME_COLLISION);
+		return;
 	}
 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, open_ofun,
@@ -835,32 +862,38 @@ static int call_trans2open(connection_struct *conn,
 				&share_mode,
 				&create_disposition,
 				&create_options)) {
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		reply_doserror(req, ERRDOS, ERRbadaccess);
+		return;
 	}
 
 	/* Any data in this call is an EA list. */
 	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
-		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
+		reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
+		return;
 	}
 
 	if (total_data != 4) {
 		if (total_data < 10) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		if (IVAL(pdata,0) > total_data) {
 			DEBUG(10,("call_trans2open: bad total data size (%u) > %u\n",
 				IVAL(pdata,0), (unsigned int)total_data));
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		ea_list = read_ea_list(tmp_talloc_ctx(), pdata + 4,
 				       total_data - 4);
 		if (!ea_list) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	} else if (IVAL(pdata,0) != 4) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	status = open_file_ntcreate(conn, req, fname, &sbuf,
@@ -873,11 +906,12 @@ static int call_trans2open(connection_struct *conn,
 		&smb_action, &fsp);
       
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	size = get_file_size(sbuf);
@@ -886,7 +920,8 @@ static int call_trans2open(connection_struct *conn,
 	inode = sbuf.st_ino;
 	if (fattr & aDIR) {
 		close_file(fsp,ERROR_CLOSE);
-		return(ERROR_DOS(ERRDOS,ERRnoaccess));
+		reply_doserror(req, ERRDOS,ERRnoaccess);
+		return;
 	}
 
 	/* Save the requested allocation size. */
@@ -898,11 +933,13 @@ static int call_trans2open(connection_struct *conn,
                         if (fsp->is_directory) {
                                 close_file(fsp,ERROR_CLOSE);
                                 /* Can't set allocation size on a directory. */
-                                return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return;
                         }
                         if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
                                 close_file(fsp,ERROR_CLOSE);
-                                return ERROR_NT(NT_STATUS_DISK_FULL);
+				reply_nterror(req, NT_STATUS_DISK_FULL);
+				return;
                         }
 
 			/* Adjust size here to return the right size in the reply.
@@ -917,14 +954,16 @@ static int call_trans2open(connection_struct *conn,
 		status = set_ea(conn, fsp, fname, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			close_file(fsp,ERROR_CLOSE);
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 	}
 
 	/* Realloc the size of parameters and data we will return */
 	*pparams = (char *)SMB_REALLOC(*pparams, 30);
 	if(*pparams == NULL ) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 	params = *pparams;
 
@@ -955,9 +994,7 @@ static int call_trans2open(connection_struct *conn,
 	}
 
 	/* Send the required number of replies */
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 30, *ppdata, 0, max_data_bytes);
-
-	return -1;
+	send_trans2_replies_new(req, params, 30, *ppdata, 0, max_data_bytes);
 }
 
 /*********************************************************
@@ -6588,7 +6625,7 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 			 struct trans_state *state,
 			 char *inbuf, char *outbuf, int size, int bufsize)
 {
-	int outsize;
+	int outsize = -1;
 
 	if (Protocol >= PROTOCOL_NT1) {
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
@@ -6599,11 +6636,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_OPEN:
 	{
 		START_PROFILE(Trans2_open);
-		outsize = call_trans2open(
-			conn, req, inbuf, outbuf, bufsize,
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2open(conn, req,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 		END_PROFILE(Trans2_open);
 		break;
 	}
