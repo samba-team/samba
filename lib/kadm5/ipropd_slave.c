@@ -230,7 +230,7 @@ receive_loop (krb5_context context,
 			(long)vers, (long)len);
 	cur = krb5_storage_seek(sp, 0, SEEK_CUR);
 
-	krb5_warnx (context, "replying entry %d", (int)vers);
+	krb5_warnx (context, "replaying entry %d", (int)vers);
 
 	ret = kadm5_log_replay (server_context,
 				op, vers, len, sp);
