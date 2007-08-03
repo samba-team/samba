@@ -791,7 +791,10 @@ main(int argc, char **argv)
     signal_fd = make_signal_socket (context);
     listen_fd = make_listen_socket (context, port_str);
 
-    krb5_warnx(context, "ipropd-master started");
+    kadm5_log_get_version_fd (log_fd, &current_version);
+
+    krb5_warnx(context, "ipropd-master started at version: %lu", 
+	       (unsigned long)current_version);
 
     while(exit_flag == 0){
 	slave *p;
