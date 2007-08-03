@@ -6123,14 +6123,16 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		info_level = SVAL(params,0);    
-		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, &params[6],
+		srvstr_get_path(params, req->flags2, fname, &params[6],
 				sizeof(fname), total_params - 6, STR_TERMINATE,
 				&status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
 
-		status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+		status = resolve_dfspath(conn,
+					 req->flags2 & FLAGS2_DFS_PATHNAMES,
+					 fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
@@ -6421,11 +6423,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		if (blocking_lock_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (blocking_lock_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
