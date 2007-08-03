@@ -3142,8 +3142,8 @@ static int handle_nttrans(connection_struct *conn,
 
 		default:
 			/* Error in request */
-			DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n",
-				 state->call));
+			DEBUG(0,("handle_nttrans: Unknown request %d in "
+				 "nttrans call\n", state->call));
 			return ERROR_DOS(ERRSRV,ERRerror);
 	}
 	return outsize;
