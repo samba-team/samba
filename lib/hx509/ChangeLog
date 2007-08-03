@@ -1,5 +1,13 @@
 2007-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* revoke.c: Update to use CERT_REVOKED error, shortcut out of OCSP
+	checking when OCSP reply is a revocation reply.
+
+	* hx509_err.et: Make CERT_REVOKED error OCSP/CRL agnostic.
+
+	* name.c (_hx509_Name_to_string): make printableString handle
+	space (0x20) diffrences as required by rfc3280.
+
 	* revoke.c: Search for the right issuer when looking for the
 	issuer of the CRL signer.
 
