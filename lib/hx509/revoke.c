@@ -673,10 +673,16 @@ hx509_revoke_verify(hx509_context context,
 	    crl->verified = 1;
 	}
 
-	if (crl->crl.tbsCertList.crlExtensions)
-	    for (j = 0; j < crl->crl.tbsCertList.crlExtensions->len; j++)
-		if (crl->crl.tbsCertList.crlExtensions->val[j].critical)
+	if (crl->crl.tbsCertList.crlExtensions) {
+	    for (j = 0; j < crl->crl.tbsCertList.crlExtensions->len; j++) {
+		if (crl->crl.tbsCertList.crlExtensions->val[j].critical) {
+		    hx509_set_error_string(context, 0, 
+					   HX509_CRL_UNKNOWN_EXTENSION,
+					   "Unknown CRL extension");
 		    return HX509_CRL_UNKNOWN_EXTENSION;
+		}
+	    }
+	}
 
 	if (crl->crl.tbsCertList.revokedCertificates == NULL)
 	    return 0;
