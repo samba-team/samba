@@ -576,14 +576,14 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-int send_trans2_replies(const char *inbuf,
-			char *outbuf,
-			int bufsize,
-			const char *params, 
-			int paramsize,
-			const char *pdata,
-			int datasize,
-			int max_data_bytes)
+static int send_trans2_replies(const char *inbuf,
+			       char *outbuf,
+			       int bufsize,
+			       const char *params,
+			       int paramsize,
+			       const char *pdata,
+			       int datasize,
+			       int max_data_bytes)
 {
 	/* As we are using a protocol > LANMAN1 then the max_send
 	 variable must have been set in the sessetupX call.
