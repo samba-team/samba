@@ -186,6 +186,7 @@ SCRIPT_TESTS = 			\
 	test_cms		\
 	test_crypto		\
 	test_nist		\
+	test_nist2		\
 	test_nist_cert		\
 	test_nist_pkcs12	\
 	test_req		\
@@ -224,6 +225,11 @@ test_nist: test_nist.in Makefile
 	$(do_subst) < $(srcdir)/test_nist.in > test_nist.tmp
 	chmod +x test_nist.tmp
 	mv test_nist.tmp test_nist
+
+test_nist2: test_nist2.in Makefile
+	$(do_subst) < $(srcdir)/test_nist2.in > test_nist2.tmp
+	chmod +x test_nist2.tmp
+	mv test_nist2.tmp test_nist2
 
 test_nist_cert: test_nist_cert.in Makefile
 	$(do_subst) < $(srcdir)/test_nist_cert.in > test_nist_cert.tmp
@@ -264,6 +270,7 @@ EXTRA_DIST = \
 	test_cms.in \
 	test_crypto.in \
 	test_nist.in \
+	test_nist2.in \
 	test_nist_cert.in \
 	test_nist_pkcs12.in \
 	test_query.in \
@@ -295,6 +302,7 @@ EXTRA_DIST = \
 	data/key.der \
 	data/key2.der \
 	data/nist-data \
+	data/nist-data2 \
 	data/no-proxy-test.crt \
 	data/no-proxy-test.key \
 	data/ocsp-req1.der \
