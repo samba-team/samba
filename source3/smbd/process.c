@@ -738,7 +738,7 @@ static const struct smb_message_struct {
 /* 0x2f */ { "SMBwriteX",reply_write_and_X,NULL,AS_USER | CAN_IPC },
 /* 0x30 */ { NULL, NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, NULL, 0 },
-/* 0x32 */ { "SMBtrans2", reply_trans2,NULL, AS_USER | CAN_IPC },
+/* 0x32 */ { "SMBtrans2", NULL,reply_trans2, AS_USER | CAN_IPC },
 /* 0x33 */ { "SMBtranss2", reply_transs2,NULL, AS_USER},
 /* 0x34 */ { "SMBfindclose", reply_findclose,NULL,AS_USER},
 /* 0x35 */ { "SMBfindnclose", reply_findnclose,NULL, AS_USER},

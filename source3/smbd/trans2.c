@@ -7014,67 +7014,71 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
  Reply to a SMBtrans2.
  ****************************************************************************/
 
-int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
-		 int size, int bufsize)
+void reply_trans2(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	unsigned int dsoff;
 	unsigned int dscnt;
 	unsigned int psoff;
 	unsigned int pscnt;
 	unsigned int tran_call;
+	int size;
 	struct trans_state *state;
 	NTSTATUS result;
 
 	START_PROFILE(SMBtrans2);
 
-	if (SVAL(inbuf, smb_wct) < 8) {
+	if (req->wct < 8) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtrans2);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
-	dsoff = SVAL(inbuf, smb_dsoff);
-	dscnt = SVAL(inbuf, smb_dscnt);
-	psoff = SVAL(inbuf, smb_psoff);
-	pscnt = SVAL(inbuf, smb_pscnt);
-	tran_call = SVAL(inbuf, smb_setup0);
+	dsoff = SVAL(req->inbuf, smb_dsoff);
+	dscnt = SVAL(req->inbuf, smb_dscnt);
+	psoff = SVAL(req->inbuf, smb_psoff);
+	pscnt = SVAL(req->inbuf, smb_pscnt);
+	tran_call = SVAL(req->inbuf, smb_setup0);
+	size = smb_len(req->inbuf) + 4;
 
-	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
+	result = allow_new_trans(conn->pending_trans, req->mid);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid trans2 request: %s\n",
 			  nt_errstr(result)));
+		reply_nterror(req, result);
 		END_PROFILE(SMBtrans2);
-		return ERROR_NT(result);
+		return;
 	}
 
 	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)
             && (tran_call != TRANSACT2_GET_DFS_REFERRAL)
             && (tran_call != TRANSACT2_QFILEINFO)) {
+		reply_doserror(req, ERRSRV, ERRaccess);
 		END_PROFILE(SMBtrans2);
-		return ERROR_DOS(ERRSRV,ERRaccess);
+		return;
 	}
 
 	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
 		DEBUG(0, ("talloc failed\n"));
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBtrans2);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	state->cmd = SMBtrans2;
 
-	state->mid = SVAL(inbuf, smb_mid);
-	state->vuid = SVAL(inbuf, smb_uid);
-	state->setup_count = SVAL(inbuf, smb_suwcnt);
+	state->mid = req->mid;
+	state->vuid = req->vuid;
+	state->setup_count = SVAL(req->inbuf, smb_suwcnt);
 	state->setup = NULL;
-	state->total_param = SVAL(inbuf, smb_tpscnt);
+	state->total_param = SVAL(req->inbuf, smb_tpscnt);
 	state->param = NULL;
-	state->total_data =  SVAL(inbuf, smb_tdscnt);
+	state->total_data =  SVAL(req->inbuf, smb_tdscnt);
 	state->data = NULL;
-	state->max_param_return = SVAL(inbuf, smb_mprcnt);
-	state->max_data_return  = SVAL(inbuf, smb_mdrcnt);
-	state->max_setup_return = SVAL(inbuf, smb_msrcnt);
-	state->close_on_completion = BITSETW(inbuf+smb_vwv5,0);
-	state->one_way = BITSETW(inbuf+smb_vwv5,1);
+	state->max_param_return = SVAL(req->inbuf, smb_mprcnt);
+	state->max_data_return  = SVAL(req->inbuf, smb_mdrcnt);
+	state->max_setup_return = SVAL(req->inbuf, smb_msrcnt);
+	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
+	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
 
 	state->call = tran_call;
 
@@ -7089,16 +7093,18 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 		 *  Until DosPrintSetJobInfo with PRJINFO3 is supported,
 		 *  outbuf doesn't have to be set(only job id is used).
 		 */
-		if ( (state->setup_count == 4) && (tran_call == TRANSACT2_IOCTL) &&
-				(SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
-				(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+		if ( (state->setup_count == 4)
+		     && (tran_call == TRANSACT2_IOCTL)
+		     && (SVAL(req->inbuf,(smb_setup+4)) == LMCAT_SPL)
+		     &&	(SVAL(req->inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
 			DEBUG(2,("Got Trans2 DevIOctl jobid\n"));
 		} else {
 			DEBUG(2,("Invalid smb_sucnt in trans2 call(%u)\n",state->setup_count));
 			DEBUG(2,("Transaction is %d\n",tran_call));
 			TALLOC_FREE(state);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			END_PROFILE(SMBtrans2);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	}
 
@@ -7113,16 +7119,18 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 			DEBUG(0,("reply_trans2: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtrans2);
-			return(ERROR_DOS(ERRDOS,ERRnomem));
+			return;
 		}
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
 			goto bad_param;
-		if ((smb_base(inbuf)+dsoff+dscnt > inbuf + size) ||
-		    (smb_base(inbuf)+dsoff+dscnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf)+dsoff+dscnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf)+dsoff+dscnt < smb_base(req->inbuf)))
 			goto bad_param;
 
-		memcpy(state->data,smb_base(inbuf)+dsoff,dscnt);
+		memcpy(state->data,smb_base(req->inbuf)+dsoff,dscnt);
 	}
 
 	if (state->total_param) {
@@ -7134,16 +7142,18 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtrans2);
-			return(ERROR_DOS(ERRDOS,ERRnomem));
+			return;
 		} 
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
 			goto bad_param;
-		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
-		    (smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf)+psoff+pscnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf)+psoff+pscnt < smb_base(req->inbuf)))
 			goto bad_param;
 
-		memcpy(state->param,smb_base(inbuf)+psoff,pscnt);
+		memcpy(state->param,smb_base(req->inbuf)+psoff,pscnt);
 	}
 
 	state->received_data  = dscnt;
@@ -7152,37 +7162,23 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 	if ((state->received_param == state->total_param) &&
 	    (state->received_data == state->total_data)) {
 
-		struct smb_request *req;
-
-		if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
-			END_PROFILE(SMBtrans2);
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-
-		init_smb_request(req, (uint8 *)inbuf);
-
-		outsize = -1;
 		handle_trans2(conn, req, state);
-		if (req->outbuf != NULL) {
-			outsize = smb_len(req->outbuf) + 4;
-			memcpy(outbuf, req->outbuf, outsize);
-		}
-		TALLOC_FREE(req);
+
 		SAFE_FREE(state->data);
 		SAFE_FREE(state->param);
 		TALLOC_FREE(state);
 		END_PROFILE(SMBtrans2);
-		return outsize;
+		return;
 	}
 
 	DLIST_ADD(conn->pending_trans, state);
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(inbuf, outbuf,0,0,False);
-	show_msg(outbuf);
+	reply_outbuf(req, 0, 0);
+	show_msg((char *)req->outbuf);
 	END_PROFILE(SMBtrans2);
-	return outsize;
+	return;
 
   bad_param:
 
@@ -7191,7 +7187,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
 	END_PROFILE(SMBtrans2);
-	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 }
 
 
