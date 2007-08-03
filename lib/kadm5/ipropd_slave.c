@@ -252,10 +252,10 @@ receive_loop (krb5_context context,
 			  (long)vers);
 	}
 
-	ret = krb5_ret_int32 (sp, &len2);
-	if (ret) krb5_errx(context, 1, "entry %ld: postamble too short", (long)vers);
+	if (krb5_ret_int32 (sp, &len2) != 0)
+	    krb5_errx(context, 1, "entry %ld: postamble too short", (long)vers);
 	if(krb5_ret_int32 (sp, &vers2) != 0)
-	if (ret) krb5_errx(context, 1, "entry %ld: postamble too short", (long)vers);
+	    krb5_errx(context, 1, "entry %ld: postamble too short", (long)vers);
 
 	if (len != len2)
 	    krb5_errx(context, 1, "entry %ld: len != len2", (long)vers);
