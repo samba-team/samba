@@ -259,7 +259,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_TCP_CLIENT: 
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
-		return ctdb_control_tcp_client(ctdb, client_id, srcnode, indata);
+		return ctdb_control_tcp_client(ctdb, client_id, indata);
 
 	case CTDB_CONTROL_STARTUP: 
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -268,10 +268,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_TCP_ADD: 
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_vnn));
 		return ctdb_control_tcp_add(ctdb, indata);
-
-	case CTDB_CONTROL_TCP_REMOVE: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_vnn));
-		return ctdb_control_tcp_remove(ctdb, indata);
 
 	case CTDB_CONTROL_SET_TUNABLE:
 		return ctdb_control_set_tunable(ctdb, indata);
@@ -289,6 +285,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_KILL_TCP: 
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_killtcp));
 		return ctdb_control_kill_tcp(ctdb, indata);
+
+	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_get_tcp_tickle_list(ctdb, indata, outdata);
+
+	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
+		/* data size is verified in the called function */
+		return ctdb_control_set_tcp_tickle_list(ctdb, indata);
 
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
