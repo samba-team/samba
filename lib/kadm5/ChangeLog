@@ -1,5 +1,7 @@
 2007-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ipropd_slave.c: make more sane.
+
 	* ipropd_slave.c: more paranoid check that the log entires are
 	self consistant
 
