@@ -4963,7 +4963,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_posix_lock(connection_struct *conn,
-				char *inbuf,
+				const uint8 *inbuf,
 				int length,
 				const char *pdata,
 				int total_data,
@@ -5061,7 +5061,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 			 * onto the blocking lock queue.
 			 */
 			if(push_blocking_lock_request(br_lck,
-						inbuf, length,
+						(char *)inbuf, length,
 						fsp,
 						-1, /* infinite timeout. */
 						0,
@@ -6036,13 +6036,12 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
 
-static int call_trans2setfilepathinfo(connection_struct *conn,
-				      struct smb_request *req,
-				      char *inbuf, char *outbuf, int length,
-				      int bufsize,
-					unsigned int tran_call,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2setfilepathinfo(connection_struct *conn,
+				       struct smb_request *req,
+				       unsigned int tran_call,
+				       char **pparams, int total_params,
+				       char **ppdata, int total_data,
+				       unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -6054,14 +6053,16 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	int data_return_size = 0;
 
 	if (!params) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	ZERO_STRUCT(sbuf);
 
 	if (tran_call == TRANSACT2_SETFILEINFO) {
 		if (total_params < 4) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		fsp = file_fsp(SVAL(params,0));
@@ -6078,12 +6079,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
 					DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
-					return UNIXERROR(ERRDOS,ERRbadpath);
+					reply_unixerror(req,ERRDOS,ERRbadpath);
+					return;
 				}
 			} else {
 				if (SMB_VFS_STAT(conn,fname,&sbuf) != 0) {
 					DEBUG(3,("call_trans2setfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-					return UNIXERROR(ERRDOS,ERRbadpath);
+					reply_unixerror(req,ERRDOS,ERRbadpath);
+					return;
 				}
 			}
 		} else if (fsp && fsp->print_file) {
@@ -6096,27 +6099,36 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
 				SSVAL(params,0,0);
-				send_trans2_replies(inbuf, outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
-				return(-1);
-			} else
-				return (UNIXERROR(ERRDOS,ERRbadpath));
+				send_trans2_replies_new(req, params, 2,
+							*ppdata, 0,
+							max_data_bytes);
+				return;
+			}
+			else {
+				reply_unixerror(req, ERRDOS, ERRbadpath);
+				return;
+			}
 	    } else {
 			/*
 			 * Original code - this is an open file.
 			 */
-			CHECK_FSP(fsp,conn);
+		        if (!check_fsp(conn, req, fsp, &current_user)) {
+				return;
+			}
 
 			pstrcpy(fname, fsp->fsp_name);
 
 			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
-				return(UNIXERROR(ERRDOS,ERRbadfid));
+				reply_unixerror(req, ERRDOS, ERRbadfid);
+				return;
 			}
 		}
 	} else {
 		/* set path info */
 		if (total_params < 7) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		info_level = SVAL(params,0);    
@@ -6124,7 +6136,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				sizeof(fname), total_params - 6, STR_TERMINATE,
 				&status);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 
 		status = resolve_dfspath(conn,
@@ -6132,19 +6145,25 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					 fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-				return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+				reply_botherror(req,
+						NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				return;
 			}
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 
 		status = unix_convert(conn, fname, False, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 
 		status = check_name(conn, fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
@@ -6157,16 +6176,19 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf)) {
 			DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
-			return UNIXERROR(ERRDOS,ERRbadpath);
+			reply_unixerror(req, ERRDOS, ERRbadpath);
+			return;
 		}
 	}
 
 	if (!CAN_WRITE(conn)) {
-		return ERROR_DOS(ERRSRV,ERRaccess);
+		reply_doserror(req, ERRSRV, ERRaccess);
+		return;
 	}
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
-		return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+		return;
 	}
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d totdata=%d\n",
@@ -6175,7 +6197,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	/* Realloc the parameter size */
 	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if (*pparams == NULL) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 	params = *pparams;
 
@@ -6319,7 +6342,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		{
 			if (tran_call != TRANSACT2_SETPATHINFO) {
 				/* We must have a pathname for this. */
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 			status = smb_set_file_unix_link(conn, req, pdata,
 							total_data, fname);
@@ -6330,7 +6354,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		{
 			if (tran_call != TRANSACT2_SETPATHINFO) {
 				/* We must have a pathname for this. */
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 			status = smb_set_file_unix_hlink(conn, req,
 							 pdata,	total_data,
@@ -6362,14 +6387,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		case SMB_SET_POSIX_LOCK:
 		{
 			if (tran_call != TRANSACT2_SETFILEINFO) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
-			status = smb_set_posix_lock(conn,
-						inbuf,
-						length,
-						pdata,
-						total_data,
-						fsp);
+			status = smb_set_posix_lock(conn, req->inbuf,
+						    smb_len(req->inbuf) + 4,
+						    pdata, total_data, fsp);
 			break;
 		}
 
@@ -6377,7 +6400,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		{
 			if (tran_call != TRANSACT2_SETPATHINFO) {
 				/* We must have a pathname for this. */
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 
 			status = smb_posix_open(conn, req,
@@ -6393,7 +6417,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		{
 			if (tran_call != TRANSACT2_SETPATHINFO) {
 				/* We must have a pathname for this. */
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 
 			status = smb_posix_unlink(conn, req,
@@ -6405,29 +6430,34 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		default:
-			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
 	}
 
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			return;
 		}
 		if (blocking_lock_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			return;
 		}
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	SSVAL(params,0,0);
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 2, *ppdata, data_return_size, max_data_bytes);
+	send_trans2_replies_new(req, params, 2, *ppdata, data_return_size,
+				max_data_bytes);
   
-	return -1;
+	return;
 }
 
 /****************************************************************************
@@ -6847,11 +6877,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_SETFILEINFO:
 	{
 		START_PROFILE(Trans2_setpathinfo);
-		outsize = call_trans2setfilepathinfo(
-			conn, req, inbuf, outbuf, size, bufsize, state->call,
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2setfilepathinfo(conn, req, state->call,
+					   &state->param, state->total_param,
+					   &state->data, state->total_data,
+					   state->max_data_return);
 		END_PROFILE(Trans2_setpathinfo);
 		break;
 	}
