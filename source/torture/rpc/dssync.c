@@ -774,6 +774,9 @@ static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
 			}
 			printf("dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n", errstr);
 			ret = False;
+		} else if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_DOMAIN_ROLE)) {
+			printf("DsGetNT4ChangeLog not supported by target server\n");
+			break;
 		} else if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("DsGetNT4ChangeLog failed - %s\n", win_errstr(r.out.result));
 			ret = False;
