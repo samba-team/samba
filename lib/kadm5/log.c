@@ -774,7 +774,7 @@ kadm5_log_foreach (kadm5_server_context *context,
     lseek (fd, 0, SEEK_SET);
     sp = krb5_storage_from_fd (fd);
     for (;;) {
-	int32_t ver, timestamp, op, len;
+	int32_t ver, timestamp, op, len, len2, ver2;
 
 	if(krb5_ret_int32 (sp, &ver) != 0)
 	    break;
@@ -782,8 +782,14 @@ kadm5_log_foreach (kadm5_server_context *context,
 	krb5_ret_int32 (sp, &op);
 	krb5_ret_int32 (sp, &len);
 	(*func)(context, ver, timestamp, op, len, sp, ctx);
-	krb5_storage_seek(sp, 8, SEEK_CUR);
+	krb5_ret_int32 (sp, &len2);
+	krb5_ret_int32 (sp, &ver2);
+	if (len != len2)
+	    abort();
+	if (ver != ver2)
+	    abort();
     }
+    krb5_storage_free(sp);
     return 0;
 }
 
