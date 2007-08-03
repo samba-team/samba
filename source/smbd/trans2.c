@@ -4728,10 +4728,10 @@ static NTSTATUS smb_file_mode_information(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
-				char *inbuf,
-				const char *pdata,
-				int total_data,
-				const char *fname)
+				       struct smb_request *req,
+				       const char *pdata,
+				       int total_data,
+				       const char *fname)
 {
 	pstring link_target;
 	const char *newname = fname;
@@ -4748,7 +4748,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), link_target, pdata,
+	srvstr_pull(pdata, req->flags2, link_target, pdata,
 		    sizeof(link_target), total_data, STR_TERMINATE);
 
 	/* !widelinks forces the target path to be within the share. */
@@ -4791,11 +4791,9 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
-				char *inbuf,
-				char *outbuf,
-				const char *pdata,
-				int total_data,
-				pstring fname)
+					struct smb_request *req,
+					const char *pdata, int total_data,
+					pstring fname)
 {
 	pstring oldname;
 	NTSTATUS status = NT_STATUS_OK;
@@ -4805,13 +4803,14 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), oldname, pdata,
+	srvstr_get_path(pdata, req->flags2, oldname, pdata,
 			sizeof(oldname), total_data, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, oldname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4828,12 +4827,8 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 
 static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					    struct smb_request *req,
-				char *inbuf,
-				char *outbuf,
-				const char *pdata,
-				int total_data,
-				files_struct *fsp,
-				pstring fname)
+					    const char *pdata, int total_data,
+					    files_struct *fsp, pstring fname)
 {
 	BOOL overwrite;
 	uint32 root_fid;
@@ -4856,14 +4851,16 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), newname, &pdata[12],
+	srvstr_get_path_wcard(pdata, req->flags2, newname, &pdata[12],
 			      sizeof(newname), len, 0, &status,
 			      &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname, &dest_has_wcard);
+	status = resolve_dfspath_wcard(conn,
+				       req->flags2 & FLAGS2_DFS_PATHNAMES,
+				       newname, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -6324,11 +6321,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				/* We must have a pathname for this. */
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
-			status = smb_set_file_unix_link(conn,
-						inbuf,
-						pdata,
-						total_data,
-						fname);
+			status = smb_set_file_unix_link(conn, req, pdata,
+							total_data, fname);
 			break;
 		}
 
@@ -6338,24 +6332,17 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				/* We must have a pathname for this. */
 				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			}
-			status = smb_set_file_unix_hlink(conn,
-						inbuf,
-						outbuf,
-						pdata,
-						total_data,
-						fname);
+			status = smb_set_file_unix_hlink(conn, req,
+							 pdata,	total_data,
+							 fname);
 			break;
 		}
 
 		case SMB_FILE_RENAME_INFORMATION:
 		{
 			status = smb_file_rename_information(conn, req,
-							inbuf,
-							outbuf,
-							pdata,
-							total_data,
-							fsp,
-							fname);
+							     pdata, total_data,
+							     fsp, fname);
 			break;
 		}
 
