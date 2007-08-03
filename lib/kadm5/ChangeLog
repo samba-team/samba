@@ -1,5 +1,8 @@
 2007-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ipropd_slave.c: more paranoid check that the log entires are
+	self consistant
+
 	* log.c (kadm5_log_foreach): check that the postamble contains the
 	right data.
 
