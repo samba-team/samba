@@ -85,7 +85,7 @@ bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/smnotify: utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o
+bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(LIB_FLAGS)
 

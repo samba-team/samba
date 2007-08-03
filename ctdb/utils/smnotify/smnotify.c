@@ -17,6 +17,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -117,6 +118,9 @@ int main(int argc, const char *argv[])
 	   calls.
 	*/
 	s = create_socket(ip, sendport);
+
+	/* only wait for at most 3 seconds before giving up */
+	alarm(3);
 
 	/* Setup a sockaddr_in for the client we want to notify */
 	bzero(&sock_cl, sizeof(sock_cl));
