@@ -576,14 +576,12 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_trans2_replies(const char *inbuf,
-			       char *outbuf,
-			       int bufsize,
-			       const char *params,
-			       int paramsize,
-			       const char *pdata,
-			       int datasize,
-			       int max_data_bytes)
+void send_trans2_replies(struct smb_request *req,
+			 const char *params,
+			 int paramsize,
+			 const char *pdata,
+			 int datasize,
+			 int max_data_bytes)
 {
 	/* As we are using a protocol > LANMAN1 then the max_send
 	 variable must have been set in the sessetupX call.
@@ -599,10 +597,7 @@ static int send_trans2_replies(const char *inbuf,
 	int params_sent_thistime, data_sent_thistime, total_sent_thistime;
 	int alignment_offset = 1; /* JRA. This used to be 3. Set to 1 to make netmon parse ok. */
 	int data_alignment_offset = 0;
-
-	/* Initially set the wcnt area to be 10 - this is true for all trans2 replies */
-	
-	set_message(inbuf,outbuf,10,0,True);
+	BOOL overflow = False;
 
 	/* Modify the data_to_send and datasize and set the error if
 	   we're trying to send more than max_data_bytes. We still send
@@ -613,16 +608,15 @@ static int send_trans2_replies(const char *inbuf,
 		DEBUG(5,("send_trans2_replies: max_data_bytes %d exceeded by data %d\n",
 			max_data_bytes, datasize ));
 		datasize = data_to_send = max_data_bytes;
-		error_packet_set(outbuf,ERRDOS,ERRbufferoverflow,STATUS_BUFFER_OVERFLOW,__LINE__,__FILE__);
+		overflow = True;
 	}
 
 	/* If there genuinely are no parameters or data to send just send the empty packet */
 
 	if(params_to_send == 0 && data_to_send == 0) {
-		show_msg(outbuf);
-		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server_cleanly("send_trans2_replies: send_smb failed.");
-		return 0;
+		reply_outbuf(req, 10, 0);
+		show_msg((char *)req->outbuf);
+		return;
 	}
 
 	/* When sending params and data ensure that both are nicely aligned */
@@ -636,7 +630,10 @@ static int send_trans2_replies(const char *inbuf,
 	/* The alignment_offset is to align the param bytes on an even byte
 		boundary. NT 4.0 Beta needs this to work correctly. */
 
-	useable_space = bufsize - ((smb_buf(outbuf)+ alignment_offset+data_alignment_offset) - outbuf);
+	useable_space = max_send - (smb_size
+				    + 2 * 10 /* wct */
+				    + alignment_offset
+				    + data_alignment_offset);
 
 	/* useable_space can never be more than max_send minus the alignment offset. */
 
@@ -657,11 +654,11 @@ static int send_trans2_replies(const char *inbuf,
 
 		total_sent_thistime = MIN(total_sent_thistime, useable_space+ alignment_offset + data_alignment_offset);
 
-		set_message(inbuf, outbuf, 10, total_sent_thistime, True);
+		reply_outbuf(req, 10, total_sent_thistime);
 
 		/* Set total params and data to be sent */
-		SSVAL(outbuf,smb_tprcnt,paramsize);
-		SSVAL(outbuf,smb_tdrcnt,datasize);
+		SSVAL(req->outbuf,smb_tprcnt,paramsize);
+		SSVAL(req->outbuf,smb_tdrcnt,datasize);
 
 		/* Calculate how many parameters and data we can fit into
 		 * this packet. Parameters get precedence
@@ -671,52 +668,78 @@ static int send_trans2_replies(const char *inbuf,
 		data_sent_thistime = useable_space - params_sent_thistime;
 		data_sent_thistime = MIN(data_sent_thistime,data_to_send);
 
-		SSVAL(outbuf,smb_prcnt, params_sent_thistime);
+		SSVAL(req->outbuf,smb_prcnt, params_sent_thistime);
 
 		/* smb_proff is the offset from the start of the SMB header to the
 			parameter bytes, however the first 4 bytes of outbuf are
 			the Netbios over TCP header. Thus use smb_base() to subtract
 			them from the calculation */
 
-		SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
+		SSVAL(req->outbuf,smb_proff,
+		      ((smb_buf(req->outbuf)+alignment_offset)
+		       - smb_base(req->outbuf)));
 
 		if(params_sent_thistime == 0)
-			SSVAL(outbuf,smb_prdisp,0);
+			SSVAL(req->outbuf,smb_prdisp,0);
 		else
 			/* Absolute displacement of param bytes sent in this packet */
-			SSVAL(outbuf,smb_prdisp,pp - params);
+			SSVAL(req->outbuf,smb_prdisp,pp - params);
 
-		SSVAL(outbuf,smb_drcnt, data_sent_thistime);
+		SSVAL(req->outbuf,smb_drcnt, data_sent_thistime);
 		if(data_sent_thistime == 0) {
-			SSVAL(outbuf,smb_droff,0);
-			SSVAL(outbuf,smb_drdisp, 0);
+			SSVAL(req->outbuf,smb_droff,0);
+			SSVAL(req->outbuf,smb_drdisp, 0);
 		} else {
 			/* The offset of the data bytes is the offset of the
 				parameter bytes plus the number of parameters being sent this time */
-			SSVAL(outbuf,smb_droff,((smb_buf(outbuf)+alignment_offset) - 
-				smb_base(outbuf)) + params_sent_thistime + data_alignment_offset);
-			SSVAL(outbuf,smb_drdisp, pd - pdata);
+			SSVAL(req->outbuf, smb_droff,
+			      ((smb_buf(req->outbuf)+alignment_offset)
+			       - smb_base(req->outbuf))
+			      + params_sent_thistime + data_alignment_offset);
+			SSVAL(req->outbuf,smb_drdisp, pd - pdata);
 		}
 
 		/* Copy the param bytes into the packet */
 
-		if(params_sent_thistime)
-			memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
+		if(params_sent_thistime) {
+			if (alignment_offset != 0) {
+				memset(smb_buf(req->outbuf), 0,
+				       alignment_offset);
+			}
+			memcpy((smb_buf(req->outbuf)+alignment_offset), pp,
+			       params_sent_thistime);
+		}
 
 		/* Copy in the data bytes */
-		if(data_sent_thistime)
-			memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+
-				data_alignment_offset,pd,data_sent_thistime);
+		if(data_sent_thistime) {
+			if (data_alignment_offset != 0) {
+				memset((smb_buf(req->outbuf)+alignment_offset+
+					params_sent_thistime), 0,
+				       data_alignment_offset);
+			}
+			memcpy(smb_buf(req->outbuf)+alignment_offset
+			       +params_sent_thistime+data_alignment_offset,
+			       pd,data_sent_thistime);
+		}
 
 		DEBUG(9,("t2_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
 			params_sent_thistime, data_sent_thistime, useable_space));
 		DEBUG(9,("t2_rep: params_to_send = %d, data_to_send = %d, paramsize = %d, datasize = %d\n",
 			params_to_send, data_to_send, paramsize, datasize));
 
+		if (overflow) {
+			error_packet_set((char *)req->outbuf,
+					 ERRDOS,ERRbufferoverflow,
+					 STATUS_BUFFER_OVERFLOW,
+					 __LINE__,__FILE__);
+		}
+
 		/* Send the packet */
-		show_msg(outbuf);
-		if (!send_smb(smbd_server_fd(),outbuf))
+		show_msg((char *)req->outbuf);
+		if (!send_smb(smbd_server_fd(),(char *)req->outbuf))
 			exit_server_cleanly("send_trans2_replies: send_smb failed.");
+
+		TALLOC_FREE(req->outbuf);
 
 		pp += params_sent_thistime;
 		pd += data_sent_thistime;
@@ -728,33 +751,11 @@ static int send_trans2_replies(const char *inbuf,
 		if(params_to_send < 0 || data_to_send < 0) {
 			DEBUG(0,("send_trans2_replies failed sanity check pts = %d, dts = %d\n!!!",
 				params_to_send, data_to_send));
-			return -1;
+			return;
 		}
 	}
 
-	return 0;
-}
-
-void send_trans2_replies_new(struct smb_request *req,
-			     const char *params,
-			     int paramsize,
-			     const char *pdata,
-			     int datasize,
-			     int max_data_bytes)
-{
-	char *inbuf, *outbuf;
-	int length, bufsize;
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	reply_post_legacy(req, send_trans2_replies(
-				  inbuf, outbuf, bufsize,
-				  params, paramsize,
-				  pdata, datasize,
-				  max_data_bytes));
+	return;
 }
 
 /****************************************************************************
@@ -994,7 +995,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	/* Send the required number of replies */
-	send_trans2_replies_new(req, params, 30, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(req, params, 30, *ppdata, 0, max_data_bytes);
 }
 
 /*********************************************************
@@ -2024,8 +2025,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,6,0); /* Never an EA error */
 	SSVAL(params,8,last_entry_off);
 
-	send_trans2_replies_new(req, params, 10, pdata, PTR_DIFF(p,pdata),
-				max_data_bytes);
+	send_trans2_replies(req, params, 10, pdata, PTR_DIFF(p,pdata),
+			    max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
@@ -2341,8 +2342,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,4,0); /* Never an EA error */
 	SSVAL(params,6,last_entry_off);
 
-	send_trans2_replies_new(req, params, 8, pdata, PTR_DIFF(p,pdata),
-				max_data_bytes);
+	send_trans2_replies(req, params, 8, pdata, PTR_DIFF(p,pdata),
+			    max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
@@ -2865,8 +2866,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	}
 
 
-	send_trans2_replies_new(req, params, 0, pdata, data_len,
-				max_data_bytes);
+	send_trans2_replies(req, params, 0, pdata, data_len,
+			    max_data_bytes);
 
 	DEBUG( 4, ( "%s info_level = %d\n",
 		    smb_fn_name(CVAL(req->inbuf,smb_com)), info_level) );
@@ -2981,10 +2982,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return;
 				}
 
-				send_trans2_replies_new(req,
-							*pparams, param_len,
-							*ppdata, data_len,
-							max_data_bytes);
+				send_trans2_replies(req,
+						    *pparams, param_len,
+						    *ppdata, data_len,
+						    max_data_bytes);
 
 				if (NT_STATUS_IS_OK(status)) {
 					/* Server-side transport encryption is now *on*. */
@@ -3451,8 +3452,8 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 			return;
 	}
 
-	send_trans2_replies_new(req, params, param_size, *ppdata, data_size,
-				max_data_bytes);
+	send_trans2_replies(req, params, param_size, *ppdata, data_size,
+			    max_data_bytes);
 
 	return;
 }
@@ -4381,8 +4382,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			return;
 	}
 
-	send_trans2_replies_new(req, params, param_size, *ppdata, data_size,
-				max_data_bytes);
+	send_trans2_replies(req, params, param_size, *ppdata, data_size,
+			    max_data_bytes);
 
 	return;
 }
@@ -6151,9 +6152,9 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
 				SSVAL(params,0,0);
-				send_trans2_replies_new(req, params, 2,
-							*ppdata, 0,
-							max_data_bytes);
+				send_trans2_replies(req, params, 2,
+						    *ppdata, 0,
+						    max_data_bytes);
 				return;
 			}
 			else {
@@ -6506,8 +6507,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	}
 
 	SSVAL(params,0,0);
-	send_trans2_replies_new(req, params, 2, *ppdata, data_return_size,
-				max_data_bytes);
+	send_trans2_replies(req, params, 2, *ppdata, data_return_size,
+			    max_data_bytes);
   
 	return;
 }
@@ -6623,7 +6624,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	SSVAL(params,0,0);
 
-	send_trans2_replies_new(req, params, 2, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(req, params, 2, *ppdata, 0, max_data_bytes);
   
 	return;
 }
@@ -6677,7 +6678,7 @@ static void call_trans2findnotifyfirst(connection_struct *conn,
 	if(fnf_handle == 0)
 		fnf_handle = 257;
 
-	send_trans2_replies_new(req, params, 6, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(req, params, 6, *ppdata, 0, max_data_bytes);
   
 	return;
 }
@@ -6708,7 +6709,7 @@ static void call_trans2findnotifynext(connection_struct *conn,
 	SSVAL(params,0,0); /* No changes */
 	SSVAL(params,2,0); /* No EA errors */
 
-	send_trans2_replies_new(req, params, 4, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(req, params, 4, *ppdata, 0, max_data_bytes);
   
 	return;
 }
@@ -6753,7 +6754,7 @@ static void call_trans2getdfsreferral(connection_struct *conn,
     
 	SSVAL(req->inbuf, smb_flg2,
 	      SVAL(req->inbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
-	send_trans2_replies_new(req,0,0,*ppdata,reply_size, max_data_bytes);
+	send_trans2_replies(req,0,0,*ppdata,reply_size, max_data_bytes);
 
 	return;
 }
@@ -6800,8 +6801,8 @@ static void call_trans2ioctl(connection_struct *conn,
 		srvstr_push(pdata, req->flags2, pdata+18,
 			    lp_servicename(SNUM(conn)), 13,
 			    STR_ASCII|STR_TERMINATE); /* Service name */
-		send_trans2_replies_new(req, *pparams, 0, *ppdata, 32,
-					max_data_bytes);
+		send_trans2_replies(req, *pparams, 0, *ppdata, 32,
+				    max_data_bytes);
 		return;
 	}
 
