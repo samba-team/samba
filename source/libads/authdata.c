@@ -766,7 +766,7 @@ void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
 		SAFE_FREE(attr_string);
 	}
 
-	DEBUGADD(lvl,("\tGroup Membership (Ressource Groups (SID History ?)):\n"));
+	DEBUGADD(lvl,("\tGroup Membership (Resource Groups (SID History ?)):\n"));
 	for (i = 0; i < logon_info->info3.res_group_count; i++) {
 		attr_string = pac_group_attr_string(logon_info->res_groups.group_membership[i].attrs);
 		DEBUGADD(lvl,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n",

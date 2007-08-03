@@ -108,7 +108,7 @@
 #define SE_GROUP_OWNER 			0x00000008
 #define SE_GROUP_USE_FOR_DENY_ONLY 	0x00000010
 #define SE_GROUP_LOGON_ID 		0xC0000000
-#define SE_GROUP_RESOURCE 		0x20000000
+#define SE_GROUP_RESOURCE 		0x20000000	/* Domain Local Group */
 
 /* Flags for controlling the behaviour of a particular logon */
 
