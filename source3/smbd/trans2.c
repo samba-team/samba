@@ -2878,14 +2878,15 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
  Reply to a TRANS2_SETFSINFO (set filesystem info).
 ****************************************************************************/
 
-static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2setfsinfo(connection_struct *conn,
+				 struct smb_request *req,
+				 char **pparams, int total_params,
+				 char **ppdata, int total_data,
+				 unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
 	char *params = *pparams;
 	uint16 info_level;
-	int outsize;
 
 	DEBUG(10,("call_trans2setfsinfo: for service [%s]\n",lp_servicename(SNUM(conn))));
 
@@ -2893,7 +2894,8 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 	if (total_params < 4) {
 		DEBUG(0,("call_trans2setfsinfo: requires total_params(%d) >= 4 bytes!\n",
 			total_params));
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	info_level = SVAL(params,2);
@@ -2907,12 +2909,17 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 				uint32 client_unix_cap_high;
 
 				if (!lp_unix_extensions()) {
-					return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+					reply_nterror(req,
+						      NT_STATUS_INVALID_LEVEL);
+					return;
 				}
 
 				/* There should be 12 bytes of capabilities set. */
 				if (total_data < 8) {
-					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+					reply_nterror(
+						req,
+						NT_STATUS_INVALID_PARAMETER);
+					return;
 				}
 				client_unix_major = SVAL(pdata,0);
 				client_unix_minor = SVAL(pdata,2);
@@ -2950,7 +2957,9 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				size_t data_len = total_data;
 
 				if (!lp_unix_extensions()) {
-					return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+					reply_nterror(
+						req, NT_STATUS_INVALID_LEVEL);
+					return;
 				}
 
 				DEBUG( 4,("call_trans2setfsinfo: request transport encrption.\n"));
@@ -2962,13 +2971,20 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 									&param_len
 									);
 
-				if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-					error_packet_set(outbuf, 0, 0, status, __LINE__,__FILE__);
-				} else if (!NT_STATUS_IS_OK(status)) {
-					return ERROR_NT(status);
+				if (!NT_STATUS_IS_OK(status)) {
+					/*
+					 * TODO: Check
+					 * MORE_PROCESSING_REQUIRED, this used
+					 * to have special handling here.
+					 */
+					reply_nterror(req, status);
+					return;
 				}
 
-				send_trans2_replies(inbuf, outbuf, bufsize, *pparams, param_len, *ppdata, data_len, max_data_bytes);
+				send_trans2_replies_new(req,
+							*pparams, param_len,
+							*ppdata, data_len,
+							max_data_bytes);
 
 				if (NT_STATUS_IS_OK(status)) {
 					/* Server-side transport encryption is now *on*. */
@@ -2977,7 +2993,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 						exit_server_cleanly("Failure in setting up encrypted transport");
 					}
 				}
-				return -1;
+				return;
 			}
 		case SMB_FS_QUOTA_INFORMATION:
 			{
@@ -2990,7 +3006,8 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				if ((current_user.ut.uid != 0)||!CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 						lp_servicename(SNUM(conn)),conn->user));
-					return ERROR_DOS(ERRSRV,ERRaccess);
+					reply_doserror(req, ERRSRV, ERRaccess);
+					return;
 				}
 
 				/* note: normaly there're 48 bytes,
@@ -3000,13 +3017,18 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				fsp = file_fsp(SVAL(params,0));
 				if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 					DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-					return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+					reply_nterror(
+						req, NT_STATUS_INVALID_HANDLE);
+					return;
 				}
 
 				if (total_data < 42) {
 					DEBUG(0,("call_trans2setfsinfo: SET_FS_QUOTA: requires total_data(%d) >= 42 bytes!\n",
 						total_data));
-					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+					reply_nterror(
+						req,
+						NT_STATUS_INVALID_PARAMETER);
+					return;
 				}
 			
 				/* unknown_1 24 NULL bytes in pdata*/
@@ -3020,7 +3042,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					((quotas.softlim != 0xFFFFFFFF)||
 					(IVAL(pdata,28)!=0xFFFFFFFF))) {
 					/* more than 32 bits? */
-					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+					reply_nterror(
+						req,
+						NT_STATUS_INVALID_PARAMETER);
+					return;
 				}
 #endif /* LARGE_SMB_OFF_T */
 		
@@ -3033,7 +3058,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					((quotas.hardlim != 0xFFFFFFFF)||
 					(IVAL(pdata,36)!=0xFFFFFFFF))) {
 					/* more than 32 bits? */
-					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+					reply_nterror(
+						req,
+						NT_STATUS_INVALID_PARAMETER);
+					return;
 				}
 #endif /* LARGE_SMB_OFF_T */
 		
@@ -3045,7 +3073,8 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				/* now set the quotas */
 				if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
 					DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
-					return ERROR_DOS(ERRSRV,ERRerror);
+					reply_doserror(req, ERRSRV, ERRerror);
+					return;
 				}
 			
 				break;
@@ -3053,7 +3082,8 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 		default:
 			DEBUG(3,("call_trans2setfsinfo: unknown level (0x%X) not implemented yet.\n",
 				info_level));
-			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
 			break;
 	}
 
@@ -3062,10 +3092,8 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 	 * but I'm not sure it's the same 
 	 * like windows do...
 	 * --metze
-	 */ 
-	outsize = set_message(inbuf, outbuf,10,0,True);
-
-	return outsize;
+	 */
+	reply_outbuf(req, 10, 0);
 }
 
 #if defined(HAVE_POSIX_ACLS)
@@ -6890,11 +6918,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_SETFSINFO:
 	{
 		START_PROFILE(Trans2_setfsinfo);
-		outsize = call_trans2setfsinfo(
-			conn, inbuf, outbuf, size, bufsize, 
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2setfsinfo(conn, req,
+				     &state->param, state->total_param,
+				     &state->data, state->total_data,
+				     state->max_data_return);
 		END_PROFILE(Trans2_setfsinfo);
 		break;
 	}
