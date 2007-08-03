@@ -235,11 +235,11 @@ receive_loop (krb5_context context,
 	ret = kadm5_log_replay (server_context,
 				op, vers, len, sp);
 	if (ret)
-	    krb5_warn (context, ret, "kadm5_log_replay: %d, database out of sync ?",
-		       (int)vers);
-	else
-	    server_context->log_context.version = vers;
+	    krb5_warn (context, ret,
+		       "kadm5_log_replay: %ld. Lost entry entry, "
+		       "Database out of sync ?",
 
+		       (long)vers);
 	{
 	    /* 
 	     * Make sure the krb5_log_replay does the right thing wrt
@@ -262,6 +262,12 @@ receive_loop (krb5_context context,
 	if (vers != vers2)
 	    krb5_errx(context, 1, "entry %ld: vers != vers2", (long)vers);
     }
+
+    /*
+     * Update version
+     */
+
+    server_context->log_context.version = vers;
 }
 
 static void
