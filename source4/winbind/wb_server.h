@@ -103,7 +103,7 @@ struct wbsrv_connection {
 };
 
 #define WBSRV_SAMBA3_SET_STRING(dest, src) do { \
-	strncpy(dest, src, sizeof(dest)-1);\
+	safe_strcpy(dest, src, sizeof(dest)-1);\
 } while(0)
 
 /*
