@@ -7018,15 +7018,26 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 		 int size, int bufsize)
 {
 	int outsize = 0;
-	unsigned int dsoff = SVAL(inbuf, smb_dsoff);
-	unsigned int dscnt = SVAL(inbuf, smb_dscnt);
-	unsigned int psoff = SVAL(inbuf, smb_psoff);
-	unsigned int pscnt = SVAL(inbuf, smb_pscnt);
-	unsigned int tran_call = SVAL(inbuf, smb_setup0);
+	unsigned int dsoff;
+	unsigned int dscnt;
+	unsigned int psoff;
+	unsigned int pscnt;
+	unsigned int tran_call;
 	struct trans_state *state;
 	NTSTATUS result;
 
 	START_PROFILE(SMBtrans2);
+
+	if (SVAL(inbuf, smb_wct) < 8) {
+		END_PROFILE(SMBtrans2);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	dsoff = SVAL(inbuf, smb_dsoff);
+	dscnt = SVAL(inbuf, smb_dscnt);
+	psoff = SVAL(inbuf, smb_psoff);
+	pscnt = SVAL(inbuf, smb_pscnt);
+	tran_call = SVAL(inbuf, smb_setup0);
 
 	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
 	if (!NT_STATUS_IS_OK(result)) {
@@ -7197,6 +7208,11 @@ int reply_transs2(connection_struct *conn,
 	struct smb_request *req;
 
 	START_PROFILE(SMBtranss2);
+
+	if (SVAL(inbuf, smb_wct) < 8) {
+		END_PROFILE(SMBtranss2);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	show_msg(inbuf);
 
