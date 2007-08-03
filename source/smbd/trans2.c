@@ -6859,14 +6859,12 @@ int reply_findnclose(connection_struct *conn,
 	return(outsize);
 }
 
-static int handle_trans2(connection_struct *conn, struct smb_request *req,
-			 struct trans_state *state,
-			 char *inbuf, char *outbuf, int size, int bufsize)
+static void handle_trans2(connection_struct *conn, struct smb_request *req,
+			  struct trans_state *state)
 {
-	int outsize = -1;
-
 	if (Protocol >= PROTOCOL_NT1) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
+		req->flags2 |= 0x40; /* IS_LONG_NAME */
+		SSVAL(req->inbuf,smb_flg2,req->flags2);
 	}
 
 	/* Now we must call the relevant TRANS2 function */
@@ -7008,10 +7006,8 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	default:
 		/* Error in request */
 		DEBUG(2,("Unknown request %d in trans2 call\n", state->call));
-		outsize = ERROR_DOS(ERRSRV,ERRerror);
+		reply_doserror(req, ERRSRV,ERRerror);
 	}
-
-	return outsize;
 }
 
 /****************************************************************************
@@ -7154,8 +7150,8 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 
 		init_smb_request(req, (uint8 *)inbuf);
 
-		outsize = handle_trans2(conn, req, state, inbuf, outbuf,
-					size, bufsize);
+		outsize = -1;
+		handle_trans2(conn, req, state);
 		if (req->outbuf != NULL) {
 			outsize = smb_len(req->outbuf) + 4;
 			memcpy(outbuf, req->outbuf, outsize);
@@ -7291,8 +7287,8 @@ int reply_transs2(connection_struct *conn,
 
 	init_smb_request(req, (uint8 *)inbuf);
 
-	outsize = handle_trans2(conn, req, state, inbuf, outbuf, size,
-				bufsize);
+	outsize = -1;
+	handle_trans2(conn, req, state);
 	if (req->outbuf != NULL) {
 		outsize = smb_len(req->outbuf) + 4;
 		memcpy(outbuf, req->outbuf, outsize);
