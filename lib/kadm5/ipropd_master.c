@@ -550,8 +550,15 @@ process_msg (krb5_context context, slave *s, int log_fd,
 	    krb5_warnx (context, "process_msg: client send too I_HAVE data");
 	    break;
 	}
-	s->version = tmp;
-	ret = send_diffs (context, s, log_fd, database, current_version);
+	if (s->version > tmp) {
+	    krb5_warnx (context, 
+			"Slave claims to not have version we already sent to it");
+	} else if (current_version == tmp) {
+	    krb5_warnx (context, "Slave in sync with master at version %lu",
+			(unsigned long)tmp);
+	} else {
+	    ret = send_diffs (context, s, log_fd, database, current_version);
+	}
 	break;
     case I_AM_HERE :
 	break;
