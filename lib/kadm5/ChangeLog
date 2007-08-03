@@ -1,5 +1,11 @@
 2007-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* log.c (kadm5_log_foreach): check that the postamble contains the
+	right data.
+
+	* ipropd_master.c: Sprinkle more info about what versions the
+	master thinks about the client versions.
+
 	* ipropd_master.c: Start the server at the current version, not 0.
 
 2007-08-02  Love Hörnquist Åstrand  <lha@it.su.se>
