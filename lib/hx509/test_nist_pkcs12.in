@@ -55,7 +55,8 @@ if ${hxtool} info | grep 'rand: not available' > /dev/null ; then
 fi
 
 if [ ! -d "$nistdir" ] ; then
-    ( mkdir "$nistdir" &&  cd "$nistdir" && unzip "$nistzip" ) || { rm -rf "$nistdir" ; exit 1; }
+    ( mkdir "$nistdir" &&  cd "$nistdir" && unzip "$nistzip" ) >/dev/null || \
+	{ rm -rf "$nistdir" ; exit 1; }
 fi
 
 echo "nist pkcs12 tests"
