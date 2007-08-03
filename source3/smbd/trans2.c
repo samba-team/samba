@@ -6689,9 +6689,11 @@ static void call_trans2findnotifynext(connection_struct *conn,
  Reply to a TRANS2_GET_DFS_REFERRAL - Shirish Kalele <kalele@veritas.com>.
 ****************************************************************************/
 
-static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char* outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2getdfsreferral(connection_struct *conn,
+				      struct smb_request *req,
+				      char **pparams, int total_params,
+				      char **ppdata, int total_data,
+				      unsigned int max_data_bytes)
 {
 	char *params = *pparams;
   	pstring pathname;
@@ -6702,23 +6704,30 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 	DEBUG(10,("call_trans2getdfsreferral\n"));
 
 	if (total_params < 3) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	max_referral_level = SVAL(params,0);
 
-	if(!lp_host_msdfs())
-		return ERROR_DOS(ERRDOS,ERRbadfunc);
+	if(!lp_host_msdfs()) {
+		reply_doserror(req, ERRDOS, ERRbadfunc);
+		return;
+	}
 
-	srvstr_pull(inbuf, SVAL(inbuf, smb_flg2), pathname, &params[2],
+	srvstr_pull(params, req->flags2, pathname, &params[2],
 		    sizeof(pathname), total_params - 2, STR_TERMINATE);
-	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata,&status)) < 0)
-		return ERROR_NT(status);
+	if((reply_size = setup_dfs_referral(conn, pathname, max_referral_level,
+					    ppdata,&status)) < 0) {
+		reply_nterror(req, status);
+		return;
+	}
     
-	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
-	send_trans2_replies(inbuf, outbuf,bufsize,0,0,*ppdata,reply_size, max_data_bytes);
+	SSVAL(req->inbuf, smb_flg2,
+	      SVAL(req->inbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
+	send_trans2_replies_new(req,0,0,*ppdata,reply_size, max_data_bytes);
 
-	return(-1);
+	return;
 }
 
 #define LMCAT_SPL       0x53
@@ -6944,11 +6953,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_GET_DFS_REFERRAL:
 	{
 		START_PROFILE(Trans2_get_dfs_referral);
-		outsize = call_trans2getdfsreferral(
-			conn, inbuf, outbuf, size, bufsize,
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2getdfsreferral(conn, req,
+					  &state->param, state->total_param,
+					  &state->data, state->total_data,
+					  state->max_data_return);
 		END_PROFILE(Trans2_get_dfs_referral);
 		break;
 	}
