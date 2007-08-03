@@ -7304,12 +7304,6 @@ void reply_transs2(connection_struct *conn, struct smb_request *req)
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
 
-	if (req->outbuf == NULL) {
-		reply_doserror(req, ERRSRV, ERRnosupport);
-		END_PROFILE(SMBtranss2);
-		return;
-	}
-	
 	END_PROFILE(SMBtranss2);
 	return;
 
