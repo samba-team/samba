@@ -2364,11 +2364,13 @@ unsigned char *create_volume_objectid(connection_struct *conn, unsigned char obj
  Reply to a TRANS2_QFSINFO (query filesystem info).
 ****************************************************************************/
 
-static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2qfsinfo(connection_struct *conn,
+			       struct smb_request *req,
+			       char **pparams, int total_params,
+			       char **ppdata, int total_data,
+			       unsigned int max_data_bytes)
 {
-	char *pdata;
+	char *pdata, *end_data;
 	char *params = *pparams;
 	uint16 info_level;
 	int data_len, len;
@@ -2379,7 +2381,8 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 	int quota_flag = 0;
 
 	if (total_params < 2) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	info_level = SVAL(params,0);
@@ -2388,17 +2391,20 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 
 	if(SMB_VFS_STAT(conn,".",&st)!=0) {
 		DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
-		return ERROR_DOS(ERRSRV,ERRinvdevice);
+		reply_doserror(req, ERRSRV, ERRinvdevice);
+		return;
 	}
 
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if (*ppdata == NULL ) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	pdata = *ppdata;
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	end_data = pdata + max_data_bytes + DIR_ENTRY_SAFETY_MARGIN - 1;
 
 	switch (info_level) {
 		case SMB_INFO_ALLOCATION:
@@ -2406,7 +2412,8 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
 			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
-				return(UNIXERROR(ERRHRD,ERRgeneral));
+				reply_unixerror(req, ERRHRD, ERRgeneral);
+				return;
 			}
 
 			block_size = lp_block_size(snum);
@@ -2450,9 +2457,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			 * this call so try fixing this by adding a terminating null to
 			 * the pushed string. The change here was adding the STR_TERMINATE. JRA.
 			 */
-			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
-					  pdata+l2_vol_szVolLabel, vname,
-					  -1, STR_NOALIGN|STR_TERMINATE);
+			len = srvstr_push(
+				pdata, req->flags2,
+				pdata+l2_vol_szVolLabel, vname,
+				PTR_DIFF(end_data, pdata+l2_vol_szVolLabel),
+				STR_NOALIGN|STR_TERMINATE);
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
 			DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
@@ -2476,16 +2485,17 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
 				and will think we can't do long filenames */
-			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
-					  pdata+12, fstype, -1, STR_UNICODE);
+			len = srvstr_push(pdata, req->flags2, pdata+12, fstype,
+					  PTR_DIFF(end_data, pdata+12),
+					  STR_UNICODE);
 			SIVAL(pdata,8,len);
 			data_len = 12 + len;
 			break;
 
 		case SMB_QUERY_FS_LABEL_INFO:
 		case SMB_FS_LABEL_INFORMATION:
-			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
-					  pdata+4, vname, -1, 0);
+			len = srvstr_push(pdata, req->flags2, pdata+4, vname,
+					  PTR_DIFF(end_data, pdata+4), 0);
 			data_len = 4 + len;
 			SIVAL(pdata,0,len);
 			break;
@@ -2501,8 +2511,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 				(str_checksum(get_local_machine_name())<<16));
 
 			/* Max label len is 32 characters. */
-			len = srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
-					  pdata+18, vname, -1, STR_UNICODE);
+			len = srvstr_push(pdata, req->flags2, pdata+18, vname,
+					  PTR_DIFF(end_data, pdata+18),
+					  STR_UNICODE);
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
 
@@ -2516,7 +2527,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
 			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
-				return(UNIXERROR(ERRHRD,ERRgeneral));
+				reply_unixerror(req, ERRHRD, ERRgeneral);
+				return;
 			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
@@ -2548,7 +2560,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
 			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
-				return(UNIXERROR(ERRHRD,ERRgeneral));
+				reply_unixerror(req, ERRHRD, ERRgeneral);
+				return;
 			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
@@ -2621,12 +2634,14 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			if (current_user.ut.uid != 0) {
 				DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 					lp_servicename(SNUM(conn)),conn->user));
-				return ERROR_DOS(ERRDOS,ERRnoaccess);
+				reply_doserror(req, ERRDOS, ERRnoaccess);
+				return;
 			}
 			
 			if (vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
 				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
-				return ERROR_DOS(ERRSRV,ERRerror);
+				reply_doserror(req, ERRSRV, ERRerror);
+				return;
 			}
 
 			data_len = 48;
@@ -2669,7 +2684,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 		case SMB_QUERY_CIFS_UNIX_INFO:
 			if (!lp_unix_extensions()) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 			data_len = 12;
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
@@ -2692,7 +2708,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			vfs_statvfs_struct svfs;
 
 			if (!lp_unix_extensions()) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 
 			rc = SMB_VFS_STATVFS(conn, ".", &svfs);
@@ -2710,11 +2727,13 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_POSIX_FS_INFO succsessful\n"));
 #ifdef EOPNOTSUPP
 			} else if (rc == EOPNOTSUPP) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 #endif /* EOPNOTSUPP */
 			} else {
 				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
-				return ERROR_DOS(ERRSRV,ERRerror);
+				reply_doserror(req, ERRSRV, ERRerror);
+				return;
 			}
 			break;
 		}
@@ -2726,11 +2745,13 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			int i;
 
 			if (!lp_unix_extensions()) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
 			}
 
 			if (max_data_bytes < 40) {
-				return ERROR_NT(NT_STATUS_BUFFER_TOO_SMALL);
+				reply_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
+				return;
 			}
 
 			/* We ARE guest if global_sid_Builtin_Guests is
@@ -2839,15 +2860,18 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			}
 			/* drop through */
 		default:
-			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
 	}
 
 
-	send_trans2_replies(inbuf, outbuf, bufsize, params, 0, pdata, data_len, max_data_bytes);
+	send_trans2_replies_new(req, params, 0, pdata, data_len,
+				max_data_bytes);
 
-	DEBUG( 4, ( "%s info_level = %d\n", smb_fn_name(CVAL(inbuf,smb_com)), info_level) );
+	DEBUG( 4, ( "%s info_level = %d\n",
+		    smb_fn_name(CVAL(req->inbuf,smb_com)), info_level) );
 
-	return -1;
+	return;
 }
 
 /****************************************************************************
@@ -6840,11 +6864,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_QFSINFO:
 	{
 		START_PROFILE(Trans2_qfsinfo);
-		outsize = call_trans2qfsinfo(
-			conn, inbuf, outbuf, size, bufsize,
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2qfsinfo(conn, req,
+				   &state->param, state->total_param,
+				   &state->data, state->total_data,
+				   state->max_data_return);
 		END_PROFILE(Trans2_qfsinfo);
 	    break;
 	}
