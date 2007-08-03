@@ -551,7 +551,7 @@ static BOOL process_trans2(blocking_lock_record *blr)
 	SCVAL(req->inbuf, smb_com, SMBtrans2);
 	SSVAL(params,0,0);
 	/* Fake up max_data_bytes here - we know it fits. */
-	send_trans2_replies_new(req, params, 2, NULL, 0, 0xffff);
+	send_trans2_replies(req, params, 2, NULL, 0, 0xffff);
 	return True;
 }
 
