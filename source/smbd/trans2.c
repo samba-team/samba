@@ -735,12 +735,12 @@ int send_trans2_replies(const char *inbuf,
 	return 0;
 }
 
-static void send_trans2_replies_new(struct smb_request *req,
-				    const char *params,
-				    int paramsize,
-				    const char *pdata,
-				    int datasize,
-				    int max_data_bytes)
+void send_trans2_replies_new(struct smb_request *req,
+			     const char *params,
+			     int paramsize,
+			     const char *pdata,
+			     int datasize,
+			     int max_data_bytes)
 {
 	char *inbuf, *outbuf;
 	int length, bufsize;

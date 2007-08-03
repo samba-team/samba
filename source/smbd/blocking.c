@@ -511,8 +511,7 @@ Waiting....\n",
 
 static BOOL process_trans2(blocking_lock_record *blr)
 {
-	char *inbuf = blr->inbuf;
-	char *outbuf;
+	struct smb_request *req;
 	char params[2];
 	NTSTATUS status;
 	struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
@@ -541,12 +540,18 @@ static BOOL process_trans2(blocking_lock_record *blr)
 	}
 
 	/* We finally got the lock, return success. */
-	outbuf = get_OutBuffer();
-	construct_reply_common(inbuf, outbuf);
-	SCVAL(outbuf,smb_com,SMBtrans2);
+
+	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+		blocking_lock_reply_error(blr, NT_STATUS_NO_MEMORY);
+		return True;
+	}
+
+	init_smb_request(req, (uint8 *)blr->inbuf);
+
+	SCVAL(req->inbuf, smb_com, SMBtrans2);
 	SSVAL(params,0,0);
 	/* Fake up max_data_bytes here - we know it fits. */
-	send_trans2_replies(inbuf, outbuf, max_send, params, 2, NULL, 0, 0xffff);
+	send_trans2_replies_new(req, params, 2, NULL, 0, 0xffff);
 	return True;
 }
 
