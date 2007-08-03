@@ -51,7 +51,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
 TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store @INFINIBAND_BINS@
-BINS = bin/ctdb @CTDB_SCSI_IO@
+BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify
 SBINS = bin/ctdbd
 
 DIRS = lib bin
@@ -84,6 +84,22 @@ bin/scsi_io: $(CTDB_CLIENT_OBJ) scsi/scsi_io.o
 bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+bin/smnotify: utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(LIB_FLAGS)
+
+utils/smnotify/smnotify.h:  utils/smnotify/smnotify.x
+	@echo Generating $@
+	rpcgen -C -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
+
+utils/smnotify/gen_xdr.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
+	@echo Generating $@
+	rpcgen -C -c utils/smnotify/smnotify.x > utils/smnotify/gen_xdr.c 
+
+utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
+	@echo Generating $@
+	rpcgen -C -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
 
 bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/ctdb_bench.o 
 	@echo Linking $@
