@@ -548,7 +548,8 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, "krb5_sendauth");
 
-    krb5_warnx(context, "ipropd-slave started");
+    krb5_warnx(context, "ipropd-slave started at version: %ld",
+	       (long)server_context->log_context.version);
 
     ihave (context, auth_context, master_fd,
 	   server_context->log_context.version);
