@@ -7195,50 +7195,52 @@ void reply_trans2(connection_struct *conn, struct smb_request *req)
  Reply to a SMBtranss2
  ****************************************************************************/
 
-int reply_transs2(connection_struct *conn,
-		  char *inbuf,char *outbuf,int size,int bufsize)
+void reply_transs2(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
-	struct smb_request *req;
+	int size;
 
 	START_PROFILE(SMBtranss2);
 
-	if (SVAL(inbuf, smb_wct) < 8) {
+	show_msg((char *)req->inbuf);
+
+	if (req->wct < 8) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtranss2);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
-	show_msg(inbuf);
+	size = smb_len(req->inbuf)+4;
 
 	for (state = conn->pending_trans; state != NULL;
 	     state = state->next) {
-		if (state->mid == SVAL(inbuf,smb_mid)) {
+		if (state->mid == req->mid) {
 			break;
 		}
 	}
 
 	if ((state == NULL) || (state->cmd != SMBtrans2)) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtranss2);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	/* Revise state->total_param and state->total_data in case they have
 	   changed downwards */
 
-	if (SVAL(inbuf, smb_tpscnt) < state->total_param)
-		state->total_param = SVAL(inbuf, smb_tpscnt);
-	if (SVAL(inbuf, smb_tdscnt) < state->total_data)
-		state->total_data = SVAL(inbuf, smb_tdscnt);
+	if (SVAL(req->inbuf, smb_tpscnt) < state->total_param)
+		state->total_param = SVAL(req->inbuf, smb_tpscnt);
+	if (SVAL(req->inbuf, smb_tdscnt) < state->total_data)
+		state->total_data = SVAL(req->inbuf, smb_tdscnt);
 
-	pcnt = SVAL(inbuf, smb_spscnt);
-	poff = SVAL(inbuf, smb_spsoff);
-	pdisp = SVAL(inbuf, smb_spsdisp);
+	pcnt = SVAL(req->inbuf, smb_spscnt);
+	poff = SVAL(req->inbuf, smb_spsoff);
+	pdisp = SVAL(req->inbuf, smb_spsdisp);
 
-	dcnt = SVAL(inbuf, smb_sdscnt);
-	doff = SVAL(inbuf, smb_sdsoff);
-	ddisp = SVAL(inbuf, smb_sdsdisp);
+	dcnt = SVAL(req->inbuf, smb_sdscnt);
+	doff = SVAL(req->inbuf, smb_sdsoff);
+	ddisp = SVAL(req->inbuf, smb_sdsdisp);
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;
@@ -7254,13 +7256,14 @@ int reply_transs2(connection_struct *conn,
 			goto bad_param;
 		if (pdisp > state->total_param)
 			goto bad_param;
-		if ((smb_base(inbuf) + poff + pcnt > inbuf + size) ||
-		    (smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf) + poff + pcnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf) + poff + pcnt < smb_base(req->inbuf)))
 			goto bad_param;
 		if (state->param + pdisp < state->param)
 			goto bad_param;
 
-		memcpy(state->param+pdisp,smb_base(inbuf)+poff,
+		memcpy(state->param+pdisp,smb_base(req->inbuf)+poff,
 		       pcnt);
 	}
 
@@ -7271,54 +7274,44 @@ int reply_transs2(connection_struct *conn,
 			goto bad_param;
 		if (ddisp > state->total_data)
 			goto bad_param;
-		if ((smb_base(inbuf) + doff + dcnt > inbuf + size) ||
-		    (smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf) + doff + dcnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf) + doff + dcnt < smb_base(req->inbuf)))
 			goto bad_param;
 		if (state->data + ddisp < state->data)
 			goto bad_param;
 
-		memcpy(state->data+ddisp, smb_base(inbuf)+doff,
+		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,
 		       dcnt);      
 	}
 
 	if ((state->received_param < state->total_param) ||
 	    (state->received_data < state->total_data)) {
 		END_PROFILE(SMBtranss2);
-		return -1;
+		return;
 	}
 
-	/* construct_reply_common has done us the favor to pre-fill the
-	 * command field with SMBtranss2 which is wrong :-)
+	/*
+	 * construct_reply_common will copy smb_com from inbuf to
+	 * outbuf. SMBtranss2 is wrong here.
 	 */
-	SCVAL(outbuf,smb_com,SMBtrans2);
+	SCVAL(req->inbuf,smb_com,SMBtrans2);
 
-	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
-		END_PROFILE(SMBtranss2);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-
-	init_smb_request(req, (uint8 *)inbuf);
-
-	outsize = -1;
 	handle_trans2(conn, req, state);
-	if (req->outbuf != NULL) {
-		outsize = smb_len(req->outbuf) + 4;
-		memcpy(outbuf, req->outbuf, outsize);
-	}
-	TALLOC_FREE(req);
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
 
-	if (outsize == 0) {
+	if (req->outbuf == NULL) {
+		reply_doserror(req, ERRSRV, ERRnosupport);
 		END_PROFILE(SMBtranss2);
-		return(ERROR_DOS(ERRSRV,ERRnosupport));
+		return;
 	}
 	
 	END_PROFILE(SMBtranss2);
-	return(outsize);
+	return;
 
   bad_param:
 
@@ -7327,6 +7320,7 @@ int reply_transs2(connection_struct *conn,
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
+	reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 	END_PROFILE(SMBtranss2);
-	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	return;
 }
