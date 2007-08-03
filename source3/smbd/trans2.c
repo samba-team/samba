@@ -6737,23 +6737,28 @@ static void call_trans2getdfsreferral(connection_struct *conn,
  Reply to a TRANS2_IOCTL - used for OS/2 printing.
 ****************************************************************************/
 
-static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data,
-					unsigned int max_data_bytes)
+static void call_trans2ioctl(connection_struct *conn,
+			     struct smb_request *req,
+			     char **pparams, int total_params,
+			     char **ppdata, int total_data,
+			     unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv15));
+	files_struct *fsp = file_fsp(SVAL(req->inbuf,smb_vwv15));
 
 	/* check for an invalid fid before proceeding */
 	
-	if (!fsp)                                
-		return(ERROR_DOS(ERRDOS,ERRbadfid));  
+	if (!fsp) {
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
+	}
 
-	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
-			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+	if ((SVAL(req->inbuf,(smb_setup+4)) == LMCAT_SPL)
+	    && (SVAL(req->inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
 		*ppdata = (char *)SMB_REALLOC(*ppdata, 32);
 		if (*ppdata == NULL) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 		pdata = *ppdata;
 
@@ -6761,18 +6766,19 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 			CAN ACCEPT THIS IN UNICODE. JRA. */
 
 		SSVAL(pdata,0,fsp->rap_print_jobid);                     /* Job number */
-		srvstr_push( outbuf, SVAL(outbuf, smb_flg2), pdata + 2,
-			     global_myname(), 15,
-			     STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
-		srvstr_push( outbuf, SVAL(outbuf, smb_flg2), pdata+18,
-			     lp_servicename(SNUM(conn)), 13,
-			     STR_ASCII|STR_TERMINATE); /* Service name */
-		send_trans2_replies(inbuf, outbuf,bufsize,*pparams,0,*ppdata,32, max_data_bytes);
-		return(-1);
-	} else {
-		DEBUG(2,("Unknown TRANS2_IOCTL\n"));
-		return ERROR_DOS(ERRSRV,ERRerror);
+		srvstr_push(pdata, req->flags2, pdata + 2,
+			    global_myname(), 15,
+			    STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
+		srvstr_push(pdata, req->flags2, pdata+18,
+			    lp_servicename(SNUM(conn)), 13,
+			    STR_ASCII|STR_TERMINATE); /* Service name */
+		send_trans2_replies_new(req, *pparams, 0, *ppdata, 32,
+					max_data_bytes);
+		return;
 	}
+
+	DEBUG(2,("Unknown TRANS2_IOCTL\n"));
+	reply_doserror(req, ERRSRV, ERRerror);
 }
 
 /****************************************************************************
@@ -6964,11 +6970,10 @@ static int handle_trans2(connection_struct *conn, struct smb_request *req,
 	case TRANSACT2_IOCTL:
 	{
 		START_PROFILE(Trans2_ioctl);
-		outsize = call_trans2ioctl(
-			conn, inbuf, outbuf, size, bufsize,
-			&state->param, state->total_param,
-			&state->data, state->total_data,
-			state->max_data_return);
+		call_trans2ioctl(conn, req,
+				 &state->param, state->total_param,
+				 &state->data, state->total_data,
+				 state->max_data_return);
 		END_PROFILE(Trans2_ioctl);
 		break;
 	}
