@@ -162,7 +162,7 @@ receive_loop (krb5_context context,
     int ret;
     off_t left, right;
     void *buf;
-    int32_t vers;
+    int32_t vers, vers2;
     ssize_t sret;
 
     /*
@@ -211,8 +211,8 @@ receive_loop (krb5_context context,
     krb5_storage_seek (sp, left, SEEK_SET);
 
     for(;;) {
-	int32_t len, timestamp, tmp;
-	off_t cur;
+	int32_t len, len2, timestamp, tmp;
+	off_t cur, cur2;
 	enum kadm_ops op;
 
 	if(krb5_ret_int32 (sp, &vers) != 0)
@@ -235,15 +235,32 @@ receive_loop (krb5_context context,
 	ret = kadm5_log_replay (server_context,
 				op, vers, len, sp);
 	if (ret)
-	    krb5_warn (context, ret, "kadm5_log_replay: %d", (int)vers);
+	    krb5_warn (context, ret, "kadm5_log_replay: %d, database out of sync ?",
+		       (int)vers);
 	else
 	    server_context->log_context.version = vers;
 
-	/* 
-	 * Don't trust the kadm5_log_reply* functions to do the right
-	 * thing and set the offset to the end of the entry ourself.
-	 */
-	krb5_storage_seek (sp, cur + len + 8, SEEK_SET);
+	{
+	    /* 
+	     * Make sure the krb5_log_replay does the right thing wrt
+	     * reading out data from the sp.
+	     */
+	    cur2 = krb5_storage_seek(sp, 0, SEEK_CUR);
+	    if (cur + len != cur2)
+		krb5_errx(context, 1, 
+			  "kadm5_log_reply version: %ld didn't read the whole entry",
+			  (long)vers);
+	}
+
+	ret = krb5_ret_int32 (sp, &len2);
+	if (ret) krb5_errx(context, 1, "entry %ld: postamble too short", (long)vers);
+	if(krb5_ret_int32 (sp, &vers2) != 0)
+	if (ret) krb5_errx(context, 1, "entry %ld: postamble too short", (long)vers);
+
+	if (len != len2)
+	    krb5_errx(context, 1, "entry %ld: len != len2", (long)vers);
+	if (vers != vers2)
+	    krb5_errx(context, 1, "entry %ld: vers != vers2", (long)vers);
     }
 }
 
