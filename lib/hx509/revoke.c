@@ -618,6 +618,10 @@ hx509_revoke_verify(hx509_context context,
 	    case choice_OCSPCertStatus_good:
 		break;
 	    case choice_OCSPCertStatus_revoked:
+		hx509_set_error_string(context, 0, 
+				       HX509_CERT_REVOKED,
+				       "Certificate revoked by issuer in OCSP");
+		return HX509_CERT_REVOKED;
 	    case choice_OCSPCertStatus_unknown:
 		continue;
 	    }
@@ -705,7 +709,10 @@ hx509_revoke_verify(hx509_context context,
 		    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->val[k].critical)
 			return HX509_CRL_UNKNOWN_EXTENSION;
 	    
-	    return HX509_CRL_CERT_REVOKED;
+	    hx509_set_error_string(context, 0, 
+				   HX509_CERT_REVOKED,
+				   "Certificate revoked by issuer in CRL");
+	    return HX509_CERT_REVOKED;
 	}
 
 	return 0;
