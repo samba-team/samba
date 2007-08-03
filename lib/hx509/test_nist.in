@@ -56,7 +56,7 @@ fi
 echo "nist tests"
 
 if [ ! -d "$nistdir" ] ; then
-    ( mkdir "$nistdir" &&  cd "$nistdir" && unzip "$nistzip" ) >/dev/null || \
+    ( mkdir "$nistdir" && unzip -d "${nistdir}" "${nistzip}" ) >/dev/null || \
 	{ rm -rf "$nistdir" ; exit 1; }
 fi
 
