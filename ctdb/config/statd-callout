@@ -27,19 +27,22 @@ case "$1" in
 	done
 	;;
   notify)
-	# restart the local lock manager and statd
-	/etc/init.d/nfslock stop > /dev/null 2>&1 
-	/etc/init.d/nfslock start > /dev/null 2>&1 
 	# send out notifications to any additional ips we now serve
         for f in `/bin/ls /etc/ctdb/state/statd/ip/*`; do
 	    ip=`/bin/basename $f`
-	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && {
-		# we must copy to a different directory since rpc.statd gets
-		# "upset" if sm-notify touches the files.
+	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && [ -x /usr/bin/smnotify ] && {
 		/bin/rm -rf /tmp/statd/$ip
 		/bin/mkdir -p /tmp/statd/$ip
-		/bin/cp -apr $STATD_SHARED_DIRECTORY/$ip/* /tmp/statd/$ip
-		[ -x /usr/sbin/sm-notify ] && /usr/sbin/sm-notify -P /tmp/statd/$ip -v $ip -n
+		/bin/cp $STATD_SHARED_DIRECTORY/$ip/sm/* /tmp/statd/$ip
+		for g in `/bin/ls /tmp/statd/$ip/*`; do
+			client=`/bin/basename $g`
+			# send the notifications twice so we force the other
+			# end to recognice a state change has occured and that
+			# it MUST reclaim the locks.
+			#
+			/usr/bin/smnotify --client=$client --ip=$ip --server=$ip --stateval=4
+			/usr/bin/smnotify --client=$client --ip=$ip --server=$ip --stateval=5
+		done
 	    }
 	done
 	;;
