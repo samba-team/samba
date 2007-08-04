@@ -3463,31 +3463,43 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
  Reply to a flush.
 ****************************************************************************/
 
-int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
+void reply_flush(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = set_message(inbuf,outbuf,0,0,False);
-	uint16 fnum = SVAL(inbuf,smb_vwv0);
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	uint16 fnum;
+	files_struct *fsp;
+
 	START_PROFILE(SMBflush);
 
-	if (fnum != 0xFFFF)
-		CHECK_FSP(fsp,conn);
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	fnum = SVAL(req->inbuf,smb_vwv0);
+	fsp = file_fsp(fnum);
+
+	if ((fnum != 0xFFFF) && !check_fsp(conn, req, fsp, &current_user)) {
+		return;
+	}
 	
 	if (!fsp) {
 		file_sync_all(conn);
 	} else {
 		NTSTATUS status = sync_file(conn, fsp, True);
 		if (!NT_STATUS_IS_OK(status)) {
-			END_PROFILE(SMBflush);
 			DEBUG(5,("reply_flush: sync_file for %s returned %s\n",
 				fsp->fsp_name, nt_errstr(status) ));
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			END_PROFILE(SMBflush);
+			return;
 		}
 	}
 	
+	reply_outbuf(req, 0, 0);
+
 	DEBUG(3,("flush\n"));
 	END_PROFILE(SMBflush);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
