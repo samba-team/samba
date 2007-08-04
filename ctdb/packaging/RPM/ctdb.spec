@@ -102,6 +102,7 @@ fi
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
+%{_bindir}/smnotify
 %{_bindir}/onnode.ssh
 %{_bindir}/onnode.rsh
 %{_bindir}/onnode
