@@ -1525,14 +1525,14 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 			SAFE_FREE(sid_list);
 			return NT_STATUS_NO_MEMORY;
 		}
+
+		for (i = q_u->enum_context, j = 0; i < num_entries; i++, j++) {
+			init_dom_sid2(&(*sids).sid[j], &sid_list[i]);
+			(*sids).ptr_sid[j] = 1;
+		}
 	} else {
 		sids->ptr_sid = NULL;
 		sids->sid = NULL;
-	}
-
-	for (i = q_u->enum_context, j = 0; i < num_entries; i++, j++) {
-		init_dom_sid2(&(*sids).sid[j], &sid_list[i]);
-		(*sids).ptr_sid[j] = 1;
 	}
 
 	talloc_free(sid_list);
