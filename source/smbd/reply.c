@@ -3775,24 +3775,35 @@ void reply_tdis(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_echo(connection_struct *conn,
-	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_echo(connection_struct *conn, struct smb_request *req)
 {
-	int smb_reverb = SVAL(inbuf,smb_vwv0);
+	int smb_reverb;
 	int seq_num;
-	unsigned int data_len = smb_buflen(inbuf);
-	int outsize = set_message(inbuf,outbuf,1,data_len,True);
+	unsigned int data_len = smb_buflen(req->inbuf);
+
 	START_PROFILE(SMBecho);
+
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBecho);
+		return;
+	}
 
 	if (data_len > BUFFER_SIZE) {
 		DEBUG(0,("reply_echo: data_len too large.\n"));
+		reply_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
 		END_PROFILE(SMBecho);
-		return -1;
+		return;
 	}
 
+	smb_reverb = SVAL(req->inbuf,smb_vwv0);
+
+	reply_outbuf(req, 1, data_len);
+
 	/* copy any incoming data back out */
-	if (data_len > 0)
-		memcpy(smb_buf(outbuf),smb_buf(inbuf),data_len);
+	if (data_len > 0) {
+		memcpy(smb_buf(req->outbuf),smb_buf(req->inbuf),data_len);
+	}
 
 	if (smb_reverb > 100) {
 		DEBUG(0,("large reverb (%d)?? Setting to 100\n",smb_reverb));
@@ -3800,21 +3811,21 @@ int reply_echo(connection_struct *conn,
 	}
 
 	for (seq_num =1 ; seq_num <= smb_reverb ; seq_num++) {
-		SSVAL(outbuf,smb_vwv0,seq_num);
+		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
-		smb_setlen(inbuf,outbuf,outsize - 4);
-
-		show_msg(outbuf);
-		if (!send_smb(smbd_server_fd(),outbuf))
+		show_msg((char *)req->outbuf);
+		if (!send_smb(smbd_server_fd(),(char *)req->outbuf))
 			exit_server_cleanly("reply_echo: send_smb failed.");
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
 
+	TALLOC_FREE(req->outbuf);
+
 	smb_echo_count++;
 
 	END_PROFILE(SMBecho);
-	return -1;
+	return;
 }
 
 /****************************************************************************
