@@ -502,14 +502,24 @@ int reply_trans(connection_struct *conn,
 		int bufsize)
 {
 	int outsize = 0;
-	unsigned int dsoff = SVAL(inbuf, smb_dsoff);
-	unsigned int dscnt = SVAL(inbuf, smb_dscnt);
-	unsigned int psoff = SVAL(inbuf, smb_psoff);
-	unsigned int pscnt = SVAL(inbuf, smb_pscnt);
+	unsigned int dsoff;
+	unsigned int dscnt;
+	unsigned int psoff;
+	unsigned int pscnt;
 	struct trans_state *state;
 	NTSTATUS result;
 
 	START_PROFILE(SMBtrans);
+
+	if (SVAL(inbuf, smb_wct) < 10) {
+		END_PROFILE(SMBtrans);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	dsoff = SVAL(inbuf, smb_dsoff);
+	dscnt = SVAL(inbuf, smb_dscnt);
+	psoff = SVAL(inbuf, smb_psoff);
+	pscnt = SVAL(inbuf, smb_pscnt);
 
 	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
 	if (!NT_STATUS_IS_OK(result)) {
@@ -680,6 +690,11 @@ int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
 	START_PROFILE(SMBtranss);
 
 	show_msg(inbuf);
+
+	if (SVAL(inbuf, smb_wct) < 10) {
+		END_PROFILE(SMBtranss);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	for (state = conn->pending_trans; state != NULL;
 	     state = state->next) {
