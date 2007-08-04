@@ -1668,18 +1668,15 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	/* Look up names */
 
 	num_names = argc - 2;
-	if (num_names) {
-		if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
-			rpccli_samr_close(cli, mem_ctx, &domain_pol);
-			rpccli_samr_close(cli, mem_ctx, &connect_pol);
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-	} else {
-		names = NULL;
+
+	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
+		rpccli_samr_close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
-	for (i = 0; i < argc - 2; i++)
+	for (i = 0; i < num_names; i++)
 		names[i] = argv[i + 2];
 
 	result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
