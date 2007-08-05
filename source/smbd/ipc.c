@@ -509,24 +509,19 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBtrans);
 
-	if (!(reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize))) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBtrans);
-		return;
-	}
-
-	if (SVAL(inbuf, smb_wct) < 10) {
+	if (SVAL(req->inbuf, smb_wct) < 10) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtrans);
 		return;
 	}
 
-	dsoff = SVAL(inbuf, smb_dsoff);
-	dscnt = SVAL(inbuf, smb_dscnt);
-	psoff = SVAL(inbuf, smb_psoff);
-	pscnt = SVAL(inbuf, smb_pscnt);
+	size = smb_len(req->inbuf) + 4;
+	dsoff = SVAL(req->inbuf, smb_dsoff);
+	dscnt = SVAL(req->inbuf, smb_dscnt);
+	psoff = SVAL(req->inbuf, smb_psoff);
+	pscnt = SVAL(req->inbuf, smb_pscnt);
 
-	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
+	result = allow_new_trans(conn->pending_trans, req->mid);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid trans request: %s\n",
 			  nt_errstr(result)));
@@ -544,23 +539,24 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 
 	state->cmd = SMBtrans;
 
-	state->mid = SVAL(inbuf, smb_mid);
-	state->vuid = SVAL(inbuf, smb_uid);
-	state->setup_count = CVAL(inbuf, smb_suwcnt);
+	state->mid = req->mid;
+	state->vuid = req->vuid;
+	state->setup_count = CVAL(req->inbuf, smb_suwcnt);
 	state->setup = NULL;
-	state->total_param = SVAL(inbuf, smb_tpscnt);
+	state->total_param = SVAL(req->inbuf, smb_tpscnt);
 	state->param = NULL;
-	state->total_data = SVAL(inbuf, smb_tdscnt);
+	state->total_data = SVAL(req->inbuf, smb_tdscnt);
 	state->data = NULL;
-	state->max_param_return = SVAL(inbuf, smb_mprcnt);
-	state->max_data_return = SVAL(inbuf, smb_mdrcnt);
-	state->max_setup_return = CVAL(inbuf, smb_msrcnt);
-	state->close_on_completion = BITSETW(inbuf+smb_vwv5,0);
-	state->one_way = BITSETW(inbuf+smb_vwv5,1);
+	state->max_param_return = SVAL(req->inbuf, smb_mprcnt);
+	state->max_data_return = SVAL(req->inbuf, smb_mdrcnt);
+	state->max_setup_return = CVAL(req->inbuf, smb_msrcnt);
+	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
+	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
 
 	memset(state->name, '\0',sizeof(state->name));
-	srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), state->name,
-			smb_buf(inbuf), sizeof(state->name), STR_TERMINATE);
+	srvstr_pull_buf(req->inbuf, req->flags2, state->name,
+			smb_buf(req->inbuf), sizeof(state->name),
+			STR_TERMINATE);
 	
 	if ((dscnt > state->total_data) || (pscnt > state->total_param))
 		goto bad_param;
@@ -581,11 +577,12 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 		memset(&state->data[state->total_data], 0, 100);
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
 			goto bad_param;
-		if ((smb_base(inbuf)+dsoff+dscnt > inbuf + size) ||
-		    (smb_base(inbuf)+dsoff+dscnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf)+dsoff+dscnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf)+dsoff+dscnt < smb_base(req->inbuf)))
 			goto bad_param;
 
-		memcpy(state->data,smb_base(inbuf)+dsoff,dscnt);
+		memcpy(state->data,smb_base(req->inbuf)+dsoff,dscnt);
 	}
 
 	if (state->total_param) {
@@ -605,11 +602,12 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 		memset(&state->param[state->total_param], 0, 100);
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
 			goto bad_param;
-		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
-		    (smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf)+psoff+pscnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf)+psoff+pscnt < smb_base(req->inbuf)))
 			goto bad_param;
 
-		memcpy(state->param,smb_base(inbuf)+psoff,pscnt);
+		memcpy(state->param,smb_base(req->inbuf)+psoff,pscnt);
 	}
 
 	state->received_data  = dscnt;
@@ -629,8 +627,8 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 			END_PROFILE(SMBtrans);
 			return;
 		} 
-		if (inbuf+smb_vwv14+(state->setup_count*SIZEOFWORD) >
-		    inbuf + size)
+		if (req->inbuf+smb_vwv14+(state->setup_count*SIZEOFWORD) >
+		    req->inbuf + size)
 			goto bad_param;
 		if ((smb_vwv14+(state->setup_count*SIZEOFWORD) < smb_vwv14) ||
 		    (smb_vwv14+(state->setup_count*SIZEOFWORD) <
@@ -638,43 +636,55 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 
 		for (i=0;i<state->setup_count;i++)
-			state->setup[i] = SVAL(inbuf,smb_vwv14+i*SIZEOFWORD);
+			state->setup[i] = SVAL(req->inbuf,
+					       smb_vwv14+i*SIZEOFWORD);
 	}
 
 	state->received_param = pscnt;
 
-	if ((state->received_param == state->total_param) &&
-	    (state->received_data == state->total_data)) {
+	if ((state->received_param != state->total_param) ||
+	    (state->received_data != state->total_data)) {
+		DLIST_ADD(conn->pending_trans, state);
 
-		result = handle_trans(conn, state, inbuf, outbuf, &outsize);
-
-		SAFE_FREE(state->data);
-		SAFE_FREE(state->param);
-		TALLOC_FREE(state);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			reply_nterror(req, result);
-			END_PROFILE(SMBtrans);
-			return;
-		}
-
-		if (outsize == 0) {
-			reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
-			END_PROFILE(SMBtrans);
-			return;
-		}
-
+		/* We need to send an interim response then receive the rest
+		   of the parameter/data bytes */
+		reply_outbuf(req, 0, 0);
+		show_msg((char *)req->outbuf);
 		END_PROFILE(SMBtrans);
-		reply_post_legacy(req, outsize);
 		return;
 	}
 
-	DLIST_ADD(conn->pending_trans, state);
+	if (!(reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize))) {
+		SAFE_FREE(state->data);
+		SAFE_FREE(state->param);
+		TALLOC_FREE(state);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBtrans);
+		return;
+	}
 
-	/* We need to send an interim response then receive the rest
-	   of the parameter/data bytes */
-	reply_outbuf(req, 0, 0);
-	show_msg((char *)req->outbuf);
+	result = handle_trans(conn, state, inbuf, outbuf, &outsize);
+
+	if (NT_STATUS_IS_OK(result)) {
+		reply_post_legacy(req, outsize);
+	}
+
+	SAFE_FREE(state->data);
+	SAFE_FREE(state->param);
+	TALLOC_FREE(state);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		reply_nterror(req, result);
+		END_PROFILE(SMBtrans);
+		return;
+	}
+
+	if (outsize == 0) {
+		reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		END_PROFILE(SMBtrans);
+		return;
+	}
+
 	END_PROFILE(SMBtrans);
 	return;
 
