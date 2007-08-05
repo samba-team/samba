@@ -354,20 +354,31 @@ static int api_fd_reply(connection_struct *conn,
  Handle named pipe commands.
 ****************************************************************************/
 
-static int named_pipe(connection_struct *conn, uint16 vuid,
-		      const char *inbuf, char *outbuf,
-		      char *name, uint16 *setup,
-		      char *data, char *params,
-		      int suwcnt, int tdscnt,int tpscnt,
-		      int msrcnt, int mdrcnt, int mprcnt)
+static void named_pipe(connection_struct *conn, uint16 vuid,
+		       struct smb_request *req,
+		       char *name, uint16 *setup,
+		       char *data, char *params,
+		       int suwcnt, int tdscnt,int tpscnt,
+		       int msrcnt, int mdrcnt, int mprcnt)
 {
+	char *inbuf, *outbuf;
+	int size, bufsize;
+
 	DEBUG(3,("named pipe command on <%s> name\n", name));
 
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
 	if (strequal(name,"LANMAN")) {
-		return api_reply(conn, vuid, inbuf, outbuf,
-				 data, params,
-				 tdscnt, tpscnt,
-				 mdrcnt, mprcnt);
+		reply_post_legacy(
+			req,
+			api_reply(conn, vuid, inbuf, outbuf,
+				  data, params,
+				  tdscnt, tpscnt,
+				  mdrcnt, mprcnt));
+		return;
 	}
 
 	if (strequal(name,"WKSSVC") ||
@@ -376,24 +387,31 @@ static int named_pipe(connection_struct *conn, uint16 vuid,
 	    strequal(name,"SAMR") ||
 	    strequal(name,"LSARPC")) {
 		DEBUG(4,("named pipe command from Win95 (wow!)\n"));
-		return api_fd_reply(conn, vuid, inbuf, outbuf,
-				    setup, data, params,
-				    suwcnt, tdscnt, tpscnt,
-				    mdrcnt, mprcnt);
+		reply_post_legacy(
+			req,
+			api_fd_reply(conn, vuid, inbuf, outbuf,
+				     setup, data, params,
+				     suwcnt, tdscnt, tpscnt,
+				     mdrcnt, mprcnt));
+		return;
 	}
 
 	if (strlen(name) < 1) {
-		return api_fd_reply(conn, vuid, inbuf, outbuf,
-				    setup, data,
-				    params, suwcnt, tdscnt,
-				    tpscnt, mdrcnt, mprcnt);
+		reply_post_legacy(
+			req,
+			api_fd_reply(conn, vuid, inbuf, outbuf,
+				     setup, data,
+				     params, suwcnt, tdscnt,
+				     tpscnt, mdrcnt, mprcnt));
+		return;
 	}
 
 	if (setup)
 		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n",
 			 (int)setup[0],(int)setup[1]));
 
-	return 0;
+	reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+	return;
 }
 
 static void handle_trans(connection_struct *conn, struct smb_request *req,
@@ -401,18 +419,10 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
 {
 	char *local_machine_name;
 	int name_offset = 0;
-	char *inbuf, *outbuf;
-	int size, bufsize;
-	int outsize;
 
 	DEBUG(3,("trans <%s> data=%u params=%u setup=%u\n",
 		 state->name,(unsigned int)state->total_data,(unsigned int)state->total_param,
 		 (unsigned int)state->setup_count));
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
 
 	/*
 	 * WinCE wierdness....
@@ -446,28 +456,18 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
 		name_offset++;
 
 	DEBUG(5,("calling named_pipe\n"));
-	outsize = named_pipe(conn,
-			     state->vuid,
-			     inbuf,
-			     outbuf,
-			     state->name+name_offset,
-			     state->setup,state->data,
-			     state->param,
-			     state->setup_count,state->total_data,
-			     state->total_param,
-			     state->max_setup_return,
-			     state->max_data_return,
-			     state->max_param_return);
-
-	if (outsize == 0) {
-		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
-		return;
-	}
+	named_pipe(conn, state->vuid, req,
+		   state->name+name_offset,
+		   state->setup,state->data,
+		   state->param,
+		   state->setup_count,state->total_data,
+		   state->total_param,
+		   state->max_setup_return,
+		   state->max_data_return,
+		   state->max_param_return);
 
 	if (state->close_on_completion)
 		close_cnum(conn,state->vuid);
-
-	reply_post_legacy(req, outsize);
 
 	return;
 }
