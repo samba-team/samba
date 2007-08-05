@@ -46,7 +46,7 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 				char *rparam, int param_offset, int param_len,
 				char *rdata, int data_offset, int data_len)
 {
-	char *copy_into = smb_buf(outbuf)+1;
+	char *copy_into = smb_buf(outbuf);
 
 	if(param_len < 0)
 		param_len = 0;
@@ -57,6 +57,10 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 	DEBUG(5,("copy_trans_params_and_data: params[%d..%d] data[%d..%d]\n",
 			param_offset, param_offset + param_len,
 			data_offset , data_offset  + data_len));
+
+	*copy_into = '\0';
+
+	copy_into += 1;
 
 	if (param_len)
 		memcpy(copy_into, &rparam[param_offset], param_len);
@@ -71,13 +75,10 @@ static void copy_trans_params_and_data(char *outbuf, int align,
  Send a trans reply.
  ****************************************************************************/
 
-void send_trans_reply(const char *inbuf,
-			char *outbuf,
-			char *rparam,
-			int rparam_len,
-			char *rdata,
-			int rdata_len,
-			BOOL buffer_too_large)
+void send_trans_reply(struct smb_request *req,
+		      char *rparam, int rparam_len,
+		      char *rdata, int rdata_len,
+		      BOOL buffer_too_large)
 {
 	int this_ldata,this_lparam;
 	int tot_data_sent = 0;
@@ -95,29 +96,37 @@ void send_trans_reply(const char *inbuf,
 
 	align = ((this_lparam)%4);
 
-	if (buffer_too_large) {
-		ERROR_BOTH(STATUS_BUFFER_OVERFLOW,ERRDOS,ERRmoredata);
-	}
+	reply_outbuf(req, 10, 1+align+this_ldata+this_lparam);
 
-	set_message(inbuf,outbuf,10,1+align+this_ldata+this_lparam,True);
-
-	copy_trans_params_and_data(outbuf, align,
+	copy_trans_params_and_data((char *)req->outbuf, align,
 				rparam, tot_param_sent, this_lparam,
 				rdata, tot_data_sent, this_ldata);
 
-	SSVAL(outbuf,smb_vwv0,lparam);
-	SSVAL(outbuf,smb_vwv1,ldata);
-	SSVAL(outbuf,smb_vwv3,this_lparam);
-	SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
-	SSVAL(outbuf,smb_vwv5,0);
-	SSVAL(outbuf,smb_vwv6,this_ldata);
-	SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
-	SSVAL(outbuf,smb_vwv8,0);
-	SSVAL(outbuf,smb_vwv9,0);
+	SSVAL(req->outbuf,smb_vwv0,lparam);
+	SSVAL(req->outbuf,smb_vwv1,ldata);
+	SSVAL(req->outbuf,smb_vwv3,this_lparam);
+	SSVAL(req->outbuf,smb_vwv4,smb_offset(smb_buf(req->outbuf)+1,
+					      req->outbuf));
+	SSVAL(req->outbuf,smb_vwv5,0);
+	SSVAL(req->outbuf,smb_vwv6,this_ldata);
+	SSVAL(req->outbuf,smb_vwv7,smb_offset(smb_buf(req->outbuf)+1+
+					      this_lparam+align,
+					      req->outbuf));
+	SSVAL(req->outbuf,smb_vwv8,0);
+	SSVAL(req->outbuf,smb_vwv9,0);
 
-	show_msg(outbuf);
-	if (!send_smb(smbd_server_fd(),outbuf))
+	if (buffer_too_large) {
+		error_packet_set((char *)req->outbuf,
+				 ERRDOS, ERRmoredata,
+				 STATUS_BUFFER_OVERFLOW,
+				 __LINE__, __FILE__);
+	}
+
+	show_msg((char *)req->outbuf);
+	if (!send_smb(smbd_server_fd(),(char *)req->outbuf))
 		exit_server_cleanly("send_trans_reply: send_smb failed.");
+
+	TALLOC_FREE(req->outbuf);
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -135,45 +144,38 @@ void send_trans_reply(const char *inbuf,
 
 		align = (this_lparam%4);
 
-		set_message(inbuf,outbuf,10,1+this_ldata+this_lparam+align,False);
+		reply_outbuf(req, 10, 1+this_ldata+this_lparam+align);
 
-		copy_trans_params_and_data(outbuf, align,
+		copy_trans_params_and_data((char *)req->outbuf, align,
 					   rparam, tot_param_sent, this_lparam,
 					   rdata, tot_data_sent, this_ldata);
 		
-		SSVAL(outbuf,smb_vwv3,this_lparam);
-		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
-		SSVAL(outbuf,smb_vwv5,tot_param_sent);
-		SSVAL(outbuf,smb_vwv6,this_ldata);
-		SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
-		SSVAL(outbuf,smb_vwv8,tot_data_sent);
-		SSVAL(outbuf,smb_vwv9,0);
+		SSVAL(req->outbuf,smb_vwv3,this_lparam);
+		SSVAL(req->outbuf,smb_vwv4,smb_offset(smb_buf(req->outbuf)+1,
+						      req->outbuf));
+		SSVAL(req->outbuf,smb_vwv5,tot_param_sent);
+		SSVAL(req->outbuf,smb_vwv6,this_ldata);
+		SSVAL(req->outbuf,smb_vwv7,smb_offset(smb_buf(req->outbuf)+1+
+						      this_lparam+align,
+						      req->outbuf));
+		SSVAL(req->outbuf,smb_vwv8,tot_data_sent);
+		SSVAL(req->outbuf,smb_vwv9,0);
 
-		show_msg(outbuf);
-		if (!send_smb(smbd_server_fd(),outbuf))
+		if (buffer_too_large) {
+			error_packet_set((char *)req->outbuf,
+					 ERRDOS, ERRmoredata,
+					 STATUS_BUFFER_OVERFLOW,
+					 __LINE__, __FILE__);
+		}
+
+		show_msg((char *)req->outbuf);
+		if (!send_smb(smbd_server_fd(), (char *)req->outbuf))
 			exit_server_cleanly("send_trans_reply: send_smb failed.");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
+		TALLOC_FREE(req->outbuf);
 	}
-}
-
-void send_trans_reply_new(struct smb_request *req,
-			  char *rparam, int rparam_len,
-			  char *rdata, int rdata_len,
-			  BOOL buffer_too_large)
-{
-	char *inbuf, *outbuf;
-	int size, buflength;
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &buflength)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	send_trans_reply(inbuf, outbuf, rparam, rparam_len,
-			 rdata, rdata_len, buffer_too_large);
-	reply_post_legacy(req, -1);
 }
 
 /****************************************************************************
@@ -199,8 +201,7 @@ static void api_rpc_trans_reply(struct smb_request *req, smb_np_struct *p)
 		return;
 	}
 
-	send_trans_reply_new(req, NULL, 0, rdata, data_len,
-			     is_data_outstanding);
+	send_trans_reply(req, NULL, 0, rdata, data_len, is_data_outstanding);
 	SAFE_FREE(rdata);
 	return;
 }
@@ -224,7 +225,7 @@ static void api_WNPHS(struct smb_request *req, smb_np_struct *p,
 
 	if (wait_rpc_pipe_hnd_state(p, priority)) {
 		/* now send the reply */
-		send_trans_reply_new(req, NULL, 0, NULL, 0, False);
+		send_trans_reply(req, NULL, 0, NULL, 0, False);
 		return;
 	}
 	api_no_reply(req);
@@ -250,7 +251,7 @@ static void api_SNPHS(struct smb_request *req, smb_np_struct *p,
 
 	if (set_rpc_pipe_hnd_state(p, id)) {
 		/* now send the reply */
-		send_trans_reply_new(req, NULL, 0, NULL, 0, False);
+		send_trans_reply(req, NULL, 0, NULL, 0, False);
 		return;
 	}
 	api_no_reply(req);
@@ -272,7 +273,7 @@ static void api_no_reply(struct smb_request *req)
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply_new(req, rparam, 4, NULL, 0, False);
+	send_trans_reply(req, rparam, 4, NULL, 0, False);
 
 	return;
 }
@@ -314,7 +315,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 			/* Win9x does this call with a unicode pipe name, not a pnum. */
 			/* Just return success for now... */
 			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
-			send_trans_reply_new(req, NULL, 0, NULL, 0, False);
+			send_trans_reply(req, NULL, 0, NULL, 0, False);
 			return;
 		}
 

@@ -4467,8 +4467,8 @@ void api_reply(connection_struct *conn, uint16 vuid,
 
 	/* If api_Unsupported returns false we can't return anything. */
 	if (reply) {
-		send_trans_reply_new(req, rparam, rparam_len,
-				     rdata, rdata_len, False);
+		send_trans_reply(req, rparam, rparam_len,
+				 rdata, rdata_len, False);
 	}
 
 	SAFE_FREE(rdata);
