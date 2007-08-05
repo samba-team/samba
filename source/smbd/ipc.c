@@ -293,8 +293,6 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	smb_np_struct *p = NULL;
 	int pnum;
 	int subcommand;
-	char *inbuf, *outbuf;
-	int size, buflength;
 
 	DEBUG(5,("api_fd_reply\n"));
 
@@ -341,37 +339,74 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 
 	DEBUG(10,("api_fd_reply: p:%p max_trans_reply: %d\n", p, p->max_trans_reply));
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &buflength)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
 	switch (subcommand) {
-	case TRANSACT_DCERPCCMD:
+	case TRANSACT_DCERPCCMD: {
+
+		char *inbuf, *outbuf;
+		int size, buflength;
+
+		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+				       &buflength)) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
 		/* dce/rpc command */
 		reply = write_to_pipe(p, data, tdscnt);
 		if (reply)
 			reply = api_rpc_trans_reply(inbuf, outbuf, p);
+
+		if (!reply) {
+			api_no_reply(req);
+			return;
+		}
+		reply_post_legacy(req, -1);
 		break;
-	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:
+	}
+	case TRANSACT_WAITNAMEDPIPEHANDLESTATE: {
+
+		char *inbuf, *outbuf;
+		int size, buflength;
+
+		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+				       &buflength)) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
 		/* Wait Named Pipe Handle state */
-		reply = api_WNPHS(inbuf, outbuf, p, params, tpscnt);
+		if (!api_WNPHS(inbuf, outbuf, p, params, tpscnt)) {
+			api_no_reply(req);
+			return;
+		}
+
+		reply_post_legacy(req, -1);
 		break;
-	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
+	}
+	case TRANSACT_SETNAMEDPIPEHANDLESTATE: {
+
+		char *inbuf, *outbuf;
+		int size, buflength;
+
+		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+				       &buflength)) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
 		/* Set Named Pipe Handle state */
-		reply = api_SNPHS(inbuf, outbuf, p, params, tpscnt);
+		if (!api_SNPHS(inbuf, outbuf, p, params, tpscnt)) {
+			api_no_reply(req);
+			return;
+		}
+
+		reply_post_legacy(req, -1);
 		break;
+	}
 	default:
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
-
-	if (!reply) {
-		api_no_reply(req);
-		return;
-	}
-
-	reply_post_legacy(req, -1);
 }
 
 /****************************************************************************
