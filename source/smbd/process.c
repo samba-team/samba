@@ -726,7 +726,7 @@ static const struct smb_message_struct {
 /* 0x23 */ { "SMBgetattrE",reply_getattrE,NULL,AS_USER },
 /* 0x24 */ { "SMBlockingX",reply_lockingX,NULL,AS_USER },
 /* 0x25 */ { "SMBtrans",NULL,reply_trans,AS_USER | CAN_IPC },
-/* 0x26 */ { "SMBtranss",reply_transs,NULL,AS_USER | CAN_IPC},
+/* 0x26 */ { "SMBtranss",NULL,reply_transs,AS_USER | CAN_IPC},
 /* 0x27 */ { "SMBioctl",reply_ioctl,NULL,0},
 /* 0x28 */ { "SMBioctls",NULL, NULL,AS_USER},
 /* 0x29 */ { "SMBcopy",reply_copy,NULL,AS_USER | NEED_WRITE },
