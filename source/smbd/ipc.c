@@ -495,11 +495,7 @@ static NTSTATUS handle_trans(connection_struct *conn,
  Reply to a SMBtrans.
  ****************************************************************************/
 
-int reply_trans(connection_struct *conn,
-		char *inbuf,
-		char *outbuf,
-		int size,
-		int bufsize)
+void reply_trans(connection_struct *conn, struct smb_request *req)
 {
 	int outsize = 0;
 	unsigned int dsoff;
@@ -508,12 +504,21 @@ int reply_trans(connection_struct *conn,
 	unsigned int pscnt;
 	struct trans_state *state;
 	NTSTATUS result;
+	char *inbuf, *outbuf;
+	int size, bufsize;
 
 	START_PROFILE(SMBtrans);
 
-	if (SVAL(inbuf, smb_wct) < 10) {
+	if (!(reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize))) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBtrans);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if (SVAL(inbuf, smb_wct) < 10) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBtrans);
+		return;
 	}
 
 	dsoff = SVAL(inbuf, smb_dsoff);
@@ -525,14 +530,16 @@ int reply_trans(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid trans request: %s\n",
 			  nt_errstr(result)));
+		reply_nterror(req, result);
 		END_PROFILE(SMBtrans);
-		return ERROR_NT(result);
+		return;
 	}
 
 	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
 		DEBUG(0, ("talloc failed\n"));
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBtrans);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	state->cmd = SMBtrans;
@@ -566,8 +573,9 @@ int reply_trans(connection_struct *conn,
 			DEBUG(0,("reply_trans: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtrans);
-			return(ERROR_DOS(ERRDOS,ERRnomem));
+			return;
 		} 
 		/* null-terminate the slack space */
 		memset(&state->data[state->total_data], 0, 100);
@@ -589,8 +597,9 @@ int reply_trans(connection_struct *conn,
 				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtrans);
-			return(ERROR_DOS(ERRDOS,ERRnomem));
+			return;
 		} 
 		/* null-terminate the slack space */
 		memset(&state->param[state->total_param], 0, 100);
@@ -616,8 +625,9 @@ int reply_trans(connection_struct *conn,
 			SAFE_FREE(state->data);
 			SAFE_FREE(state->param);
 			TALLOC_FREE(state);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtrans);
-			return(ERROR_DOS(ERRDOS,ERRnomem));
+			return;
 		} 
 		if (inbuf+smb_vwv14+(state->setup_count*SIZEOFWORD) >
 		    inbuf + size)
@@ -643,27 +653,30 @@ int reply_trans(connection_struct *conn,
 		TALLOC_FREE(state);
 
 		if (!NT_STATUS_IS_OK(result)) {
+			reply_nterror(req, result);
 			END_PROFILE(SMBtrans);
-			return ERROR_NT(result);
+			return;
 		}
 
 		if (outsize == 0) {
+			reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
 			END_PROFILE(SMBtrans);
-			return ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+			return;
 		}
 
 		END_PROFILE(SMBtrans);
-		return outsize;
+		reply_post_legacy(req, outsize);
+		return;
 	}
 
 	DLIST_ADD(conn->pending_trans, state);
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(inbuf,outbuf,0,0,True);
-	show_msg(outbuf);
+	reply_outbuf(req, 0, 0);
+	show_msg((char *)req->outbuf);
 	END_PROFILE(SMBtrans);
-	return outsize;
+	return;
 
   bad_param:
 
@@ -672,7 +685,8 @@ int reply_trans(connection_struct *conn,
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
 	END_PROFILE(SMBtrans);
-	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+	return;
 }
 
 /****************************************************************************
