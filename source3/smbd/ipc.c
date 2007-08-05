@@ -354,34 +354,20 @@ static int api_fd_reply(connection_struct *conn,
  Handle named pipe commands.
 ****************************************************************************/
 
-static int named_pipe(connection_struct *conn,
-			uint16 vuid,
-			const char *inbuf,
-			char *outbuf,
-			char *name,
-			uint16 *setup,
-			char *data,
-			char *params,
-			int suwcnt,
-			int tdscnt,
-			int tpscnt,
-			int msrcnt,
-			int mdrcnt,
-			int mprcnt)
+static int named_pipe(connection_struct *conn, uint16 vuid,
+		      const char *inbuf, char *outbuf,
+		      char *name, uint16 *setup,
+		      char *data, char *params,
+		      int suwcnt, int tdscnt,int tpscnt,
+		      int msrcnt, int mdrcnt, int mprcnt)
 {
 	DEBUG(3,("named pipe command on <%s> name\n", name));
 
 	if (strequal(name,"LANMAN")) {
-		return api_reply(conn,
-				vuid,
-				inbuf,
-				outbuf,
-				data,
-				params,
-				tdscnt,
-				tpscnt,
-				mdrcnt,
-				mprcnt);
+		return api_reply(conn, vuid, inbuf, outbuf,
+				 data, params,
+				 tdscnt, tpscnt,
+				 mdrcnt, mprcnt);
 	}
 
 	if (strequal(name,"WKSSVC") ||
@@ -390,37 +376,22 @@ static int named_pipe(connection_struct *conn,
 	    strequal(name,"SAMR") ||
 	    strequal(name,"LSARPC")) {
 		DEBUG(4,("named pipe command from Win95 (wow!)\n"));
-		return api_fd_reply(conn,
-					vuid,
-					inbuf,
-					outbuf,
-					setup,
-					data,
-					params,
-					suwcnt,
-					tdscnt,
-					tpscnt,
-					mdrcnt,
-					mprcnt);
+		return api_fd_reply(conn, vuid, inbuf, outbuf,
+				    setup, data, params,
+				    suwcnt, tdscnt, tpscnt,
+				    mdrcnt, mprcnt);
 	}
 
 	if (strlen(name) < 1) {
-		return api_fd_reply(conn,
-					vuid,
-					inbuf,
-					outbuf,
-					setup,
-					data,
-					params,
-					suwcnt,
-					tdscnt,
-					tpscnt,
-					mdrcnt,
-					mprcnt);
+		return api_fd_reply(conn, vuid, inbuf, outbuf,
+				    setup, data,
+				    params, suwcnt, tdscnt,
+				    tpscnt, mdrcnt, mprcnt);
 	}
 
 	if (setup)
-		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n", (int)setup[0],(int)setup[1]));
+		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n",
+			 (int)setup[0],(int)setup[1]));
 
 	return 0;
 }
