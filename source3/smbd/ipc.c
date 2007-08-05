@@ -30,7 +30,7 @@ extern int max_send;
 
 #define NERR_notsupported 50
 
-extern int smb_read_error;
+static void api_no_reply(struct smb_request *req);
 
 /*******************************************************************
  copies parameters and data, as needed, into the smb buffer
@@ -209,26 +209,25 @@ static BOOL api_rpc_trans_reply(const char *inbuf,
  WaitNamedPipeHandleState 
 ****************************************************************************/
 
-static BOOL api_WNPHS(const char *inbuf,
-			char *outbuf,
-			smb_np_struct *p,
-			char *param,
-			int param_len)
+static void api_WNPHS(struct smb_request *req, smb_np_struct *p,
+		      char *param, int param_len)
 {
 	uint16 priority;
 
-	if (!param || param_len < 2)
-		return False;
+	if (!param || param_len < 2) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
 
 	priority = SVAL(param,0);
 	DEBUG(4,("WaitNamedPipeHandleState priority %x\n", priority));
 
 	if (wait_rpc_pipe_hnd_state(p, priority)) {
 		/* now send the reply */
-		send_trans_reply(inbuf, outbuf, NULL, 0, NULL, 0, False);
-		return True;
+		send_trans_reply_new(req, NULL, 0, NULL, 0, False);
+		return;
 	}
-	return False;
+	api_no_reply(req);
 }
 
 
@@ -236,26 +235,25 @@ static BOOL api_WNPHS(const char *inbuf,
  SetNamedPipeHandleState 
 ****************************************************************************/
 
-static BOOL api_SNPHS(const char *inbuf,
-			char *outbuf,
-			smb_np_struct *p,
-			char *param,
-			int param_len)
+static void api_SNPHS(struct smb_request *req, smb_np_struct *p,
+		      char *param, int param_len)
 {
 	uint16 id;
 
-	if (!param || param_len < 2)
-		return False;
+	if (!param || param_len < 2) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
 
 	id = SVAL(param,0);
 	DEBUG(4,("SetNamedPipeHandleState to code %x\n", id));
 
 	if (set_rpc_pipe_hnd_state(p, id)) {
 		/* now send the reply */
-		send_trans_reply(inbuf, outbuf, NULL, 0, NULL, 0, False);
-		return True;
+		send_trans_reply_new(req, NULL, 0, NULL, 0, False);
+		return;
 	}
-	return False;
+	api_no_reply(req);
 }
 
 
@@ -363,46 +361,14 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 		reply_post_legacy(req, -1);
 		break;
 	}
-	case TRANSACT_WAITNAMEDPIPEHANDLESTATE: {
-
-		char *inbuf, *outbuf;
-		int size, buflength;
-
-		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-				       &buflength)) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
+	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:
 		/* Wait Named Pipe Handle state */
-		if (!api_WNPHS(inbuf, outbuf, p, params, tpscnt)) {
-			api_no_reply(req);
-			return;
-		}
-
-		reply_post_legacy(req, -1);
+		api_WNPHS(req, p, params, tpscnt);
 		break;
-	}
-	case TRANSACT_SETNAMEDPIPEHANDLESTATE: {
-
-		char *inbuf, *outbuf;
-		int size, buflength;
-
-		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-				       &buflength)) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
+	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
 		/* Set Named Pipe Handle state */
-		if (!api_SNPHS(inbuf, outbuf, p, params, tpscnt)) {
-			api_no_reply(req);
-			return;
-		}
-
-		reply_post_legacy(req, -1);
+		api_SNPHS(req, p, params, tpscnt);
 		break;
-	}
 	default:
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
