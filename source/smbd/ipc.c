@@ -426,17 +426,22 @@ static int named_pipe(connection_struct *conn,
 }
 
 static NTSTATUS handle_trans(connection_struct *conn,
-				struct trans_state *state,
-				const char *inbuf,
-				char *outbuf,
-				int *outsize)
+			     struct smb_request *req,
+			     struct trans_state *state,
+			     int *outsize)
 {
 	char *local_machine_name;
 	int name_offset = 0;
+	char *inbuf, *outbuf;
+	int size, bufsize;
 
 	DEBUG(3,("trans <%s> data=%u params=%u setup=%u\n",
 		 state->name,(unsigned int)state->total_data,(unsigned int)state->total_param,
 		 (unsigned int)state->setup_count));
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * WinCE wierdness....
@@ -488,6 +493,8 @@ static NTSTATUS handle_trans(connection_struct *conn,
 	if (state->close_on_completion)
 		close_cnum(conn,state->vuid);
 
+	reply_post_legacy(req, *outsize);
+
 	return NT_STATUS_OK;
 }
 
@@ -504,8 +511,7 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 	unsigned int pscnt;
 	struct trans_state *state;
 	NTSTATUS result;
-	char *inbuf, *outbuf;
-	int size, bufsize;
+	int size;
 
 	START_PROFILE(SMBtrans);
 
@@ -654,20 +660,7 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (!(reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize))) {
-		SAFE_FREE(state->data);
-		SAFE_FREE(state->param);
-		TALLOC_FREE(state);
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBtrans);
-		return;
-	}
-
-	result = handle_trans(conn, state, inbuf, outbuf, &outsize);
-
-	if (NT_STATUS_IS_OK(result)) {
-		reply_post_legacy(req, outsize);
-	}
+	result = handle_trans(conn, req, state, &outsize);
 
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
@@ -709,8 +702,7 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 	NTSTATUS result;
-	char *inbuf, *outbuf;
-	int size, bufsize;
+	int size;
 
 	START_PROFILE(SMBtranss);
 
@@ -787,7 +779,7 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 		if (ddisp > state->total_data)
 			goto bad_param;
 		if ((smb_base(req->inbuf) + doff + dcnt
-		     > (char *)inbuf + size) ||
+		     > (char *)req->inbuf + size) ||
 		    (smb_base(req->inbuf) + doff + dcnt
 		     < smb_base(req->inbuf)))
 			goto bad_param;
@@ -804,22 +796,12 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBtranss);
-		return;
-	}
-
 	/* construct_reply_common has done us the favor to pre-fill the
 	 * command field with SMBtranss which is wrong :-)
 	 */
 	SCVAL(req->outbuf,smb_com,SMBtrans);
 
-	result = handle_trans(conn, state, inbuf, outbuf, &outsize);
-
-	if (NT_STATUS_IS_OK(result)) {
-		reply_post_legacy(req, outsize);
-	}
+	result = handle_trans(conn, req, state, &outsize);
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);
