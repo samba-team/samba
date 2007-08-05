@@ -180,9 +180,7 @@ void send_trans_reply_new(struct smb_request *req,
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
 
-static BOOL api_rpc_trans_reply(const char *inbuf,
-				char *outbuf,
-				smb_np_struct *p)
+static void api_rpc_trans_reply(struct smb_request *req, smb_np_struct *p)
 {
 	BOOL is_data_outstanding;
 	char *rdata = (char *)SMB_MALLOC(p->max_trans_reply);
@@ -190,19 +188,21 @@ static BOOL api_rpc_trans_reply(const char *inbuf,
 
 	if(rdata == NULL) {
 		DEBUG(0,("api_rpc_trans_reply: malloc fail.\n"));
-		return False;
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply,
 					&is_data_outstanding)) < 0) {
 		SAFE_FREE(rdata);
-		return False;
+		api_no_reply(req);
+		return;
 	}
 
-	send_trans_reply(inbuf, outbuf, NULL, 0, rdata, data_len, is_data_outstanding);
-
+	send_trans_reply_new(req, NULL, 0, rdata, data_len,
+			     is_data_outstanding);
 	SAFE_FREE(rdata);
-	return True;
+	return;
 }
 
 /****************************************************************************
@@ -338,29 +338,15 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	DEBUG(10,("api_fd_reply: p:%p max_trans_reply: %d\n", p, p->max_trans_reply));
 
 	switch (subcommand) {
-	case TRANSACT_DCERPCCMD: {
-
-		char *inbuf, *outbuf;
-		int size, buflength;
-
-		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-				       &buflength)) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
+	case TRANSACT_DCERPCCMD:
 		/* dce/rpc command */
 		reply = write_to_pipe(p, data, tdscnt);
-		if (reply)
-			reply = api_rpc_trans_reply(inbuf, outbuf, p);
-
 		if (!reply) {
 			api_no_reply(req);
 			return;
 		}
-		reply_post_legacy(req, -1);
+		api_rpc_trans_reply(req, p);
 		break;
-	}
 	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:
 		/* Wait Named Pipe Handle state */
 		api_WNPHS(req, p, params, tpscnt);
