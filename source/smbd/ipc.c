@@ -375,20 +375,10 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 	DEBUG(3,("named pipe command on <%s> name\n", name));
 
 	if (strequal(name,"LANMAN")) {
-		char *inbuf, *outbuf;
-		int size, bufsize;
-
-		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		reply_post_legacy(
-			req,
-			api_reply(conn, vuid, inbuf, outbuf,
-				  data, params,
-				  tdscnt, tpscnt,
-				  mdrcnt, mprcnt));
+		api_reply(conn, vuid, req,
+			  data, params,
+			  tdscnt, tpscnt,
+			  mdrcnt, mprcnt);
 		return;
 	}
 
