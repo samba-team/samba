@@ -714,13 +714,7 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBtranss);
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBtranss);
-		return;
-	}
-
-	show_msg(inbuf);
+	show_msg((char *)req->inbuf);
 
 	if (req->wct < 10) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -730,7 +724,7 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 
 	for (state = conn->pending_trans; state != NULL;
 	     state = state->next) {
-		if (state->mid == SVAL(inbuf,smb_mid)) {
+		if (state->mid == req->mid) {
 			break;
 		}
 	}
@@ -744,18 +738,20 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 	/* Revise total_params and total_data in case they have changed
 	 * downwards */
 
-	if (SVAL(inbuf, smb_vwv0) < state->total_param)
-		state->total_param = SVAL(inbuf,smb_vwv0);
-	if (SVAL(inbuf, smb_vwv1) < state->total_data)
-		state->total_data = SVAL(inbuf,smb_vwv1);
+	if (SVAL(req->inbuf, smb_vwv0) < state->total_param)
+		state->total_param = SVAL(req->inbuf,smb_vwv0);
+	if (SVAL(req->inbuf, smb_vwv1) < state->total_data)
+		state->total_data = SVAL(req->inbuf,smb_vwv1);
 
-	pcnt = SVAL(inbuf, smb_spscnt);
-	poff = SVAL(inbuf, smb_spsoff);
-	pdisp = SVAL(inbuf, smb_spsdisp);
+	size = smb_len(req->inbuf) + 4;
 
-	dcnt = SVAL(inbuf, smb_sdscnt);
-	doff = SVAL(inbuf, smb_sdsoff);
-	ddisp = SVAL(inbuf, smb_sdsdisp);
+	pcnt = SVAL(req->inbuf, smb_spscnt);
+	poff = SVAL(req->inbuf, smb_spsoff);
+	pdisp = SVAL(req->inbuf, smb_spsdisp);
+
+	dcnt = SVAL(req->inbuf, smb_sdscnt);
+	doff = SVAL(req->inbuf, smb_sdsoff);
+	ddisp = SVAL(req->inbuf, smb_sdsdisp);
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;
@@ -771,13 +767,15 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 		if (pdisp > state->total_param)
 			goto bad_param;
-		if ((smb_base(inbuf) + poff + pcnt > inbuf + size) ||
-		    (smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf) + poff + pcnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf) + poff + pcnt
+		     < smb_base(req->inbuf)))
 			goto bad_param;
 		if (state->param + pdisp < state->param)
 			goto bad_param;
 
-		memcpy(state->param+pdisp,smb_base(inbuf)+poff,
+		memcpy(state->param+pdisp,smb_base(req->inbuf)+poff,
 		       pcnt);
 	}
 
@@ -788,13 +786,15 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 		if (ddisp > state->total_data)
 			goto bad_param;
-		if ((smb_base(inbuf) + doff + dcnt > inbuf + size) ||
-		    (smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf) + doff + dcnt
+		     > (char *)inbuf + size) ||
+		    (smb_base(req->inbuf) + doff + dcnt
+		     < smb_base(req->inbuf)))
 			goto bad_param;
 		if (state->data + ddisp < state->data)
 			goto bad_param;
 
-		memcpy(state->data+ddisp, smb_base(inbuf)+doff,
+		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,
 		       dcnt);      
 	}
 
@@ -804,12 +804,22 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBtranss);
+		return;
+	}
+
 	/* construct_reply_common has done us the favor to pre-fill the
 	 * command field with SMBtranss which is wrong :-)
 	 */
-	SCVAL(outbuf,smb_com,SMBtrans);
+	SCVAL(req->outbuf,smb_com,SMBtrans);
 
 	result = handle_trans(conn, state, inbuf, outbuf, &outsize);
+
+	if (NT_STATUS_IS_OK(result)) {
+		reply_post_legacy(req, outsize);
+	}
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);
