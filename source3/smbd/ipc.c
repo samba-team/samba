@@ -263,7 +263,7 @@ static BOOL api_SNPHS(const char *inbuf,
  When no reply is generated, indicate unsupported.
  ****************************************************************************/
 
-static BOOL api_no_reply(const char *inbuf, char *outbuf, int max_rdata_len)
+static void api_no_reply(struct smb_request *req)
 {
 	char rparam[4];
 
@@ -274,39 +274,35 @@ static BOOL api_no_reply(const char *inbuf, char *outbuf, int max_rdata_len)
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(inbuf, outbuf, rparam, 4, NULL, 0, False);
+	send_trans_reply_new(req, rparam, 4, NULL, 0, False);
 
-	return -1;
+	return;
 }
 
 /****************************************************************************
  Handle remote api calls delivered to a named pipe already opened.
  ****************************************************************************/
 
-static int api_fd_reply(connection_struct *conn,
-			uint16 vuid,
-			const char *inbuf,
-			char *outbuf,
-			uint16 *setup,
-			char *data,
-			char *params,
-		 	int suwcnt,
-			int tdscnt,
-			int tpscnt,
-			int mdrcnt,
-			int mprcnt)
+static void api_fd_reply(connection_struct *conn, uint16 vuid,
+			 struct smb_request *req,
+			 uint16 *setup, char *data, char *params,
+			 int suwcnt, int tdscnt, int tpscnt,
+			 int mdrcnt, int mprcnt)
 {
 	BOOL reply = False;
 	smb_np_struct *p = NULL;
 	int pnum;
 	int subcommand;
+	char *inbuf, *outbuf;
+	int size, buflength;
 
 	DEBUG(5,("api_fd_reply\n"));
 
 	/* First find out the name of this file. */
 	if (suwcnt != 2) {
 		DEBUG(0,("Unexpected named pipe transaction.\n"));
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	/* Get the file handle and hence the file name. */
@@ -322,18 +318,20 @@ static int api_fd_reply(connection_struct *conn,
 			/* Win9x does this call with a unicode pipe name, not a pnum. */
 			/* Just return success for now... */
 			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
-			send_trans_reply(inbuf, outbuf, NULL, 0, NULL, 0, False);
-			return -1;
+			send_trans_reply_new(req, NULL, 0, NULL, 0, False);
+			return;
 		}
 
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return;
 	}
 
 	if (vuid != p->vuid) {
 		DEBUG(1, ("Got pipe request (pnum %x) using invalid VUID %d, "
 			  "expected %d\n", pnum, vuid, p->vuid));
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return;
 	}
 
 	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)\n", subcommand, p->name, pnum));
@@ -342,6 +340,11 @@ static int api_fd_reply(connection_struct *conn,
 	p->max_trans_reply = mdrcnt;
 
 	DEBUG(10,("api_fd_reply: p:%p max_trans_reply: %d\n", p, p->max_trans_reply));
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &buflength)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
 	switch (subcommand) {
 	case TRANSACT_DCERPCCMD:
@@ -359,13 +362,16 @@ static int api_fd_reply(connection_struct *conn,
 		reply = api_SNPHS(inbuf, outbuf, p, params, tpscnt);
 		break;
 	default:
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
-	if (!reply)
-		return api_no_reply(inbuf, outbuf, mdrcnt);
+	if (!reply) {
+		api_no_reply(req);
+		return;
+	}
 
-	return -1;
+	reply_post_legacy(req, -1);
 }
 
 /****************************************************************************
@@ -404,40 +410,21 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 	    strequal(name,"WINREG") ||
 	    strequal(name,"SAMR") ||
 	    strequal(name,"LSARPC")) {
-		char *inbuf, *outbuf;
-		int size, bufsize;
 
 		DEBUG(4,("named pipe command from Win95 (wow!)\n"));
 
-		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		reply_post_legacy(
-			req,
-			api_fd_reply(conn, vuid, inbuf, outbuf,
-				     setup, data, params,
-				     suwcnt, tdscnt, tpscnt,
-				     mdrcnt, mprcnt));
+		api_fd_reply(conn, vuid, req,
+			     setup, data, params,
+			     suwcnt, tdscnt, tpscnt,
+			     mdrcnt, mprcnt);
 		return;
 	}
 
 	if (strlen(name) < 1) {
-		char *inbuf, *outbuf;
-		int size, bufsize;
-
-		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		reply_post_legacy(
-			req,
-			api_fd_reply(conn, vuid, inbuf, outbuf,
-				     setup, data,
-				     params, suwcnt, tdscnt,
-				     tpscnt, mdrcnt, mprcnt));
+		api_fd_reply(conn, vuid, req,
+			     setup, data,
+			     params, suwcnt, tdscnt,
+			     tpscnt, mdrcnt, mprcnt);
 		return;
 	}
 
