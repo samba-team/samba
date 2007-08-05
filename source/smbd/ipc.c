@@ -396,22 +396,22 @@ static int named_pipe(connection_struct *conn, uint16 vuid,
 	return 0;
 }
 
-static NTSTATUS handle_trans(connection_struct *conn,
-			     struct smb_request *req,
-			     struct trans_state *state,
-			     int *outsize)
+static void handle_trans(connection_struct *conn, struct smb_request *req,
+			 struct trans_state *state)
 {
 	char *local_machine_name;
 	int name_offset = 0;
 	char *inbuf, *outbuf;
 	int size, bufsize;
+	int outsize;
 
 	DEBUG(3,("trans <%s> data=%u params=%u setup=%u\n",
 		 state->name,(unsigned int)state->total_data,(unsigned int)state->total_param,
 		 (unsigned int)state->setup_count));
 
 	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		return NT_STATUS_NO_MEMORY;
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	/*
@@ -422,7 +422,8 @@ static NTSTATUS handle_trans(connection_struct *conn,
 					     get_local_machine_name());
 
 	if (local_machine_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	if (strnequal(state->name, local_machine_name,
@@ -432,7 +433,8 @@ static NTSTATUS handle_trans(connection_struct *conn,
 
 	if (!strnequal(&state->name[name_offset], "\\PIPE",
 		       strlen("\\PIPE"))) {
-		return NT_STATUS_NOT_SUPPORTED;
+		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return;
 	}
 	
 	name_offset += strlen("\\PIPE");
@@ -444,29 +446,30 @@ static NTSTATUS handle_trans(connection_struct *conn,
 		name_offset++;
 
 	DEBUG(5,("calling named_pipe\n"));
-	*outsize = named_pipe(conn,
-				state->vuid,
-				inbuf,
-				outbuf,
-				state->name+name_offset,
-				state->setup,state->data,
-				state->param,
-				state->setup_count,state->total_data,
-				state->total_param,
-				state->max_setup_return,
-				state->max_data_return,
-				state->max_param_return);
+	outsize = named_pipe(conn,
+			     state->vuid,
+			     inbuf,
+			     outbuf,
+			     state->name+name_offset,
+			     state->setup,state->data,
+			     state->param,
+			     state->setup_count,state->total_data,
+			     state->total_param,
+			     state->max_setup_return,
+			     state->max_data_return,
+			     state->max_param_return);
 
-	if (*outsize == 0) {
-		return NT_STATUS_NOT_SUPPORTED;
+	if (outsize == 0) {
+		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return;
 	}
 
 	if (state->close_on_completion)
 		close_cnum(conn,state->vuid);
 
-	reply_post_legacy(req, *outsize);
+	reply_post_legacy(req, outsize);
 
-	return NT_STATUS_OK;
+	return;
 }
 
 /****************************************************************************
@@ -475,7 +478,6 @@ static NTSTATUS handle_trans(connection_struct *conn,
 
 void reply_trans(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	unsigned int dsoff;
 	unsigned int dscnt;
 	unsigned int psoff;
@@ -631,23 +633,11 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	result = handle_trans(conn, req, state, &outsize);
+	handle_trans(conn, req, state);
 
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		reply_nterror(req, result);
-		END_PROFILE(SMBtrans);
-		return;
-	}
-
-	if (outsize == 0) {
-		reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
-		END_PROFILE(SMBtrans);
-		return;
-	}
 
 	END_PROFILE(SMBtrans);
 	return;
@@ -669,10 +659,8 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 
 void reply_transs(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
-	NTSTATUS result;
 	int size;
 
 	START_PROFILE(SMBtranss);
@@ -772,19 +760,13 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 	 */
 	SCVAL(req->outbuf,smb_com,SMBtrans);
 
-	result = handle_trans(conn, req, state, &outsize);
+	handle_trans(conn, req, state);
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
 
-	if ((outsize == 0) || !NT_STATUS_IS_OK(result)) {
-		reply_doserror(req, ERRSRV, ERRnosupport);
-		END_PROFILE(SMBtranss);
-		return;
-	}
-	
 	END_PROFILE(SMBtranss);
 	return;
 
