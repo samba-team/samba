@@ -158,6 +158,24 @@ void send_trans_reply(const char *inbuf,
 	}
 }
 
+void send_trans_reply_new(struct smb_request *req,
+			  char *rparam, int rparam_len,
+			  char *rdata, int rdata_len,
+			  BOOL buffer_too_large)
+{
+	char *inbuf, *outbuf;
+	int size, buflength;
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &buflength)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	send_trans_reply(inbuf, outbuf, rparam, rparam_len,
+			 rdata, rdata_len, buffer_too_large);
+	reply_post_legacy(req, -1);
+}
+
 /****************************************************************************
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
