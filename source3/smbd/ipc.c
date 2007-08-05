@@ -703,21 +703,29 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
  Reply to a secondary SMBtrans.
  ****************************************************************************/
 
-int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
-		 int size, int bufsize)
+void reply_transs(connection_struct *conn, struct smb_request *req)
 {
 	int outsize = 0;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 	NTSTATUS result;
+	char *inbuf, *outbuf;
+	int size, bufsize;
 
 	START_PROFILE(SMBtranss);
 
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBtranss);
+		return;
+	}
+
 	show_msg(inbuf);
 
-	if (SVAL(inbuf, smb_wct) < 10) {
+	if (req->wct < 10) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtranss);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	for (state = conn->pending_trans; state != NULL;
@@ -728,8 +736,9 @@ int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 
 	if ((state == NULL) || (state->cmd != SMBtrans)) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtranss);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	/* Revise total_params and total_data in case they have changed
@@ -792,7 +801,7 @@ int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
 	if ((state->received_param < state->total_param) ||
 	    (state->received_data < state->total_data)) {
 		END_PROFILE(SMBtranss);
-		return -1;
+		return;
 	}
 
 	/* construct_reply_common has done us the favor to pre-fill the
@@ -808,12 +817,13 @@ int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
 	TALLOC_FREE(state);
 
 	if ((outsize == 0) || !NT_STATUS_IS_OK(result)) {
+		reply_doserror(req, ERRSRV, ERRnosupport);
 		END_PROFILE(SMBtranss);
-		return(ERROR_DOS(ERRSRV,ERRnosupport));
+		return;
 	}
 	
 	END_PROFILE(SMBtranss);
-	return(outsize);
+	return;
 
   bad_param:
 
@@ -822,6 +832,7 @@ int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
+	reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 	END_PROFILE(SMBtranss);
-	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	return;
 }
