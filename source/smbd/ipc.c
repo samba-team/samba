@@ -379,17 +379,17 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 		       int suwcnt, int tdscnt,int tpscnt,
 		       int msrcnt, int mdrcnt, int mprcnt)
 {
-	char *inbuf, *outbuf;
-	int size, bufsize;
-
 	DEBUG(3,("named pipe command on <%s> name\n", name));
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
 	if (strequal(name,"LANMAN")) {
+		char *inbuf, *outbuf;
+		int size, bufsize;
+
+		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
 		reply_post_legacy(
 			req,
 			api_reply(conn, vuid, inbuf, outbuf,
@@ -404,7 +404,16 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 	    strequal(name,"WINREG") ||
 	    strequal(name,"SAMR") ||
 	    strequal(name,"LSARPC")) {
+		char *inbuf, *outbuf;
+		int size, bufsize;
+
 		DEBUG(4,("named pipe command from Win95 (wow!)\n"));
+
+		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
 		reply_post_legacy(
 			req,
 			api_fd_reply(conn, vuid, inbuf, outbuf,
@@ -415,6 +424,14 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 	}
 
 	if (strlen(name) < 1) {
+		char *inbuf, *outbuf;
+		int size, bufsize;
+
+		if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
 		reply_post_legacy(
 			req,
 			api_fd_reply(conn, vuid, inbuf, outbuf,
