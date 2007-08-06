@@ -422,6 +422,14 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 	}
 
 	/*
+	 * localpath comes out of unix_convert, so it has
+	 * no trailing backslash. Make sure that canon_dfspath hasn't either.
+	 * Fix for bug #4860 from Jan Martin <Jan.Martin@rwedea.com>.
+	 */
+
+	trim_char(canon_dfspath,0,'/');
+
+	/*
 	 * Redirect if any component in the path is a link.
 	 * We do this by walking backwards through the 
 	 * local path, chopping off the last component
