@@ -77,9 +77,9 @@ bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
 
-bin/scsi_io: $(CTDB_CLIENT_OBJ) scsi/scsi_io.o 
+bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ scsi/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ utils/scsi_io/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o 
 	@echo Linking $@
