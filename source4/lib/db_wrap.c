@@ -47,13 +47,23 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 static void ldb_wrap_debug(void *context, enum ldb_debug_level level, 
 			   const char *fmt, va_list ap)
 {
+	int samba_level;
 	char *s = NULL;
-	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {
-		return;
-	}
-	if (DEBUGLEVEL < 2 && level > LDB_DEBUG_ERROR) {
-		return;
-	}
+	switch (level) {
+	case LDB_DEBUG_FATAL:
+		samba_level = 0;
+		break;
+	case LDB_DEBUG_ERROR:
+		samba_level = 1;
+		break;
+	case LDB_DEBUG_WARNING:
+		samba_level = 2;
+		break;
+	case LDB_DEBUG_TRACE:
+		samba_level = 5;
+		break;
+		
+	};
 	vasprintf(&s, fmt, ap);
 	if (!s) return;
 	DEBUG(level, ("ldb: %s\n", s));
@@ -137,6 +147,10 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
+
+	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+
 	real_url = private_path(ldb, url);
 	if (real_url == NULL) {
 		talloc_free(ldb);
@@ -158,10 +172,6 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		talloc_free(ldb);
 		return NULL;
 	}
-
-	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
-
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
 	/* setup for leak detection */
 	ldb_set_opaque(ldb, "wrap_url", real_url);
