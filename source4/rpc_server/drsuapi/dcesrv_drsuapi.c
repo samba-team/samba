@@ -556,7 +556,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 			struct ldb_dn *domain_dn;
 			struct ldb_result *res_domain;
 			struct ldb_result *res_account;
-			struct ldb_dn *ntds_dn = ldb_dn_copy(b_state->sam_ctx, res->msgs[i]->dn);
+			struct ldb_dn *ntds_dn = ldb_dn_copy(mem_ctx, res->msgs[i]->dn);
 			
 			struct ldb_dn *ref_dn
 				= ldb_msg_find_attr_as_dn(b_state->sam_ctx, 
@@ -617,9 +617,9 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 			struct ldb_dn *domain_dn;
 			struct ldb_result *res_domain;
 			struct ldb_result *res_account;
-			struct ldb_dn *ntds_dn = ldb_dn_copy(b_state->sam_ctx, res->msgs[i]->dn);
+			struct ldb_dn *ntds_dn = ldb_dn_copy(mem_ctx, res->msgs[i]->dn);
 			struct ldb_result *res_ntds;
-			struct ldb_dn *site_dn = ldb_dn_copy(b_state->sam_ctx, res->msgs[i]->dn);
+			struct ldb_dn *site_dn = ldb_dn_copy(mem_ctx, res->msgs[i]->dn);
 			struct ldb_result *res_site;
 			struct ldb_dn *ref_dn
 				= ldb_msg_find_attr_as_dn(b_state->sam_ctx, 
