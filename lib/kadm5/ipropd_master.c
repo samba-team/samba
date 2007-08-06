@@ -444,7 +444,8 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     int ret = 0;
 
     if (s->version == current_version) {
-	krb5_warnx(context, "slave %s in sync already", s->name);
+	krb5_warnx(context, "slave %s in sync already at version %ld",
+		   s->name, (long)s->version);
 	return 0;
     }
 
@@ -550,12 +551,18 @@ process_msg (krb5_context context, slave *s, int log_fd,
 	    krb5_warnx (context, "process_msg: client send too I_HAVE data");
 	    break;
 	}
-	if (s->version > tmp) {
-	    krb5_warnx (context, 
-			"Slave claims to not have version we already sent to it");
-	} else if (current_version == tmp) {
-	    krb5_warnx (context, "Slave in sync with master at version %lu",
-			(unsigned long)tmp);
+	/* new started slave that have old log */
+	if (s->version == 0 && tmp != 0) {
+	    if (s->version < tmp) {
+		krb5_warnx (context, "Slave %s have later version the master "
+			    "OUT OF SYNC", s->name);
+	    } else {
+		s->version = tmp;
+	    }
+	}
+	if (tmp < s->version) {
+	    krb5_warnx (context, "Slave claims to not have "
+			"version we already sent to it");
 	} else {
 	    ret = send_diffs (context, s, log_fd, database, current_version);
 	}
