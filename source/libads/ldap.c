@@ -1902,6 +1902,7 @@ static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 		{"tokenGroupsNoGCAcceptable", False, dump_sid},
 		{"tokengroupsGlobalandUniversal", False, dump_sid},
 		{"mS-DS-CreatorSID", False, dump_sid},
+		{"msExchMailboxGuid", False, dump_guid},
 		{NULL, True, NULL}
 	};
 	int i;
