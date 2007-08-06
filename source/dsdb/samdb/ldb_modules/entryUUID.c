@@ -172,49 +172,6 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 	return *val;
 }
 
-static struct ldb_val class_to_oid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
-{
-	int i;
-	struct map_private *map_private;
-	struct entryUUID_private *entryUUID_private;
-	struct ldb_result *list;
-
-	map_private = talloc_get_type(module->private_data, struct map_private);
-
-	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
-	list = entryUUID_private->objectclass_res;
-
-	for (i=0; list && (i < list->count); i++) {
-		if (ldb_attr_cmp((const char *)val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
-			const char *oid = ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL);
-			return data_blob_string_const(oid);
-		}
-	}
-	return *val;
-}
-
-static struct ldb_val class_from_oid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
-{
-	int i;
-	struct map_private *map_private;
-	struct entryUUID_private *entryUUID_private;
-	struct ldb_result *list;
-
-	map_private = talloc_get_type(module->private_data, struct map_private);
-
-	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
-	list = entryUUID_private->objectclass_res;
-
-	for (i=0; list && (i < list->count); i++) {
-		if (ldb_attr_cmp((const char *)val->data, ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL)) == 0) {
-			const char *oc = ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL);
-			return data_blob_string_const(oc);
-		}
-	}
-	return *val;
-}
-
-
 static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	long long int signed_ll = strtoll((const char *)val->data, NULL, 10);
@@ -398,19 +355,6 @@ static const struct ldb_map_attribute entryUUID_attributes[] =
 			 }
 		}
 	},
-#if 0
-	{
-		.local_name = "allowedChildClassesEffective",
-		.type = MAP_CONVERT,
-		.u = {
-			.convert = {
-				.remote_name = "allowedChildClassesEffective", 
-				.convert_local = class_to_oid,
-				.convert_remote = class_from_oid,
-			},
-		},
-	},
-#endif
 	{
 		.local_name = "objectCategory",
 		.type = MAP_CONVERT,
@@ -560,19 +504,6 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 			 }
 		}
 	},
-#if 0
-	{
-		.local_name = "allowedChildClassesEffective",
-		.type = MAP_CONVERT,
-		.u = {
-			.convert = {
-				.remote_name = "allowedChildClassesEffective", 
-				.convert_local = class_to_oid,
-				.convert_remote = class_from_oid,
-			},
-		},
-	},
-#endif
 	{
 		.local_name = "objectCategory",
 		.type = MAP_CONVERT,
