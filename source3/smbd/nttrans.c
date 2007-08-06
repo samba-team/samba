@@ -2415,7 +2415,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 	DEBUG(10,("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
 		 function, fidnum, isFSctl, compfilter));
 
-	fsp=file_fsp(SVAL(ppsetup, 4));
+	fsp=file_fsp(fidnum);
 	/* this check is done in each implemented function case for now
 	   because I don't want to break anything... --metze
 	FSP_BELONGS_CONN(fsp,conn);*/
@@ -2440,6 +2440,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on FID[0x%04X]\n",fidnum));
+
+		FSP_BELONGS_CONN(fsp, conn);
 
 		data_count = 64;
 		pdata = nttrans_realloc(ppdata, data_count);
