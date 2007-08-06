@@ -60,7 +60,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	schema_dn = samdb_schema_dn(module->ldb);
 	if (!schema_dn) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "schema_fsmo_init: no schema dn present: (skip schema loading)\n");
+			  "schema_fsmo_init: no schema dn present: (skip schema loading)");
 		return ldb_next_init(module);
 	}
 
@@ -92,7 +92,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 			 &schema_res);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to search the schema head: %d:%s\n",
+			      "schema_fsmo_init: failed to search the schema head: %d:%s",
 			      ret, ldb_strerror(ret));
 		talloc_free(mem_ctx);
 		return ret;
@@ -100,12 +100,12 @@ static int schema_fsmo_init(struct ldb_module *module)
 	talloc_steal(mem_ctx, schema_res);
 	if (schema_res->count == 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "schema_fsmo_init: no schema head present: (skip schema loading)\n");
+			  "schema_fsmo_init: no schema head present: (skip schema loading)");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (schema_res->count > 1) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: [%u] schema heads found on a base search\n",
+			      "schema_fsmo_init: [%u] schema heads found on a base search",
 			      schema_res->count);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -114,7 +114,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
 	if (!prefix_val) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: no prefixMap attribute found\n");
+			      "schema_fsmo_init: no prefixMap attribute found");
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -132,7 +132,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	status = dsdb_load_oid_mappings_ldb(schema, prefix_val, info_val);
 	if (!W_ERROR_IS_OK(status)) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to load oid mappings: %s\n",
+			      "schema_fsmo_init: failed to load oid mappings: %s",
 			      win_errstr(status));
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -147,7 +147,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 			 &a_res);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to search attributeSchema objects: %d:%s\n",
+			      "schema_fsmo_init: failed to search attributeSchema objects: %d:%s",
 			      ret, ldb_strerror(ret));
 		talloc_free(mem_ctx);
 		return ret;
@@ -166,7 +166,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 		status = dsdb_attribute_from_ldb(schema, a_res->msgs[i], sa, sa);
 		if (!W_ERROR_IS_OK(status)) {
 			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-				      "schema_fsmo_init: failed to load attriute definition: %s:%s\n",
+				      "schema_fsmo_init: failed to load attriute definition: %s:%s",
 				      ldb_dn_get_linearized(a_res->msgs[i]->dn),
 				      win_errstr(status));
 			talloc_free(mem_ctx);
@@ -186,7 +186,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 			 &c_res);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to search classSchema objects: %d:%s\n",
+			      "schema_fsmo_init: failed to search classSchema objects: %d:%s",
 			      ret, ldb_strerror(ret));
 		talloc_free(mem_ctx);
 		return ret;
@@ -205,7 +205,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 		status = dsdb_class_from_ldb(schema, c_res->msgs[i], sc, sc);
 		if (!W_ERROR_IS_OK(status)) {
 			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-				      "schema_fsmo_init: failed to load class definition: %s:%s\n",
+				      "schema_fsmo_init: failed to load class definition: %s:%s",
 				      ldb_dn_get_linearized(c_res->msgs[i]->dn),
 				      win_errstr(status));
 			talloc_free(mem_ctx);
@@ -220,7 +220,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	ret = dsdb_set_schema(module->ldb, schema);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: dsdb_set_schema() failed: %d:%s\n",
+			      "schema_fsmo_init: dsdb_set_schema() failed: %d:%s",
 			      ret, ldb_strerror(ret));
 		talloc_free(mem_ctx);
 		return ret;
@@ -241,7 +241,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	talloc_steal(module, schema_fsmo);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
-			  "schema_fsmo_init: we are master: %s\n",
+			  "schema_fsmo_init: we are master: %s",
 			  (schema_fsmo->we_are_master?"yes":"no"));
 
 	talloc_free(mem_ctx);

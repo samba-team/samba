@@ -52,7 +52,7 @@ static int naming_fsmo_init(struct ldb_module *module)
 	naming_dn = samdb_partitions_dn(module->ldb, mem_ctx);
 	if (!naming_dn) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
+			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	}
@@ -70,13 +70,13 @@ static int naming_fsmo_init(struct ldb_module *module)
 			 &naming_res);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
+			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	}
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "naming_fsmo_init: failed to search the cross-ref container: %s: %s\n",
+			      "naming_fsmo_init: failed to search the cross-ref container: %s: %s",
 			      ldb_strerror(ret), ldb_errstring(module->ldb));
 		talloc_free(mem_ctx);
 		return ret;
@@ -84,12 +84,12 @@ static int naming_fsmo_init(struct ldb_module *module)
 	talloc_steal(mem_ctx, naming_res);
 	if (naming_res->count == 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no cross-ref container present: (skip loading of naming contexts details)\n");
+			  "naming_fsmo_init: no cross-ref container present: (skip loading of naming contexts details)");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (naming_res->count > 1) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "naming_fsmo_init: [%u] cross-ref containers found on a base search\n",
+			      "naming_fsmo_init: [%u] cross-ref containers found on a base search",
 			      naming_res->count);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -110,7 +110,7 @@ static int naming_fsmo_init(struct ldb_module *module)
 	talloc_steal(module, naming_fsmo);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
-			  "naming_fsmo_init: we are master: %s\n",
+			  "naming_fsmo_init: we are master: %s",
 			  (naming_fsmo->we_are_master?"yes":"no"));
 
 	talloc_free(mem_ctx);
