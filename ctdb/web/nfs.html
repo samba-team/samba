@@ -14,13 +14,6 @@ NFS for CTDB clustering</a> at samba.org for additional information.
 Configure CTDB as above and set it up to use public ipaddresses.<br>
 Verify that the CTDB cluster works.
 
-<h2>sm-notify</h2>
-
-Make sure you have the sm-notify tool installed in /usr/sbin.<br>
-You should find that tool in the nfs-util package for your operating system.<br><br>
-This tool is required so that CTDB will be able to successfully trigger lock recovery after an ip address failover/failback.<br><br>
-This tool must be installed as /usr/sbin/sm-notify on all nodes in the cluster.
-
 <h2>/etc/exports</h2>
 
 Export the same directory from all nodes.<br>
