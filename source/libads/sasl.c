@@ -650,7 +650,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 #ifdef HAVE_GSSAPI
 	gss_buffer_desc input_name;
 	gss_OID_desc nt_principal = 
-	{10, CONST_DISCARD(char *, "\052\206\110\206\367\022\001\002\002\002")};
+	{10, CONST_DISCARD(char *, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01")};
 	uint32 minor_status;
 	int gss_rc;
 #endif
