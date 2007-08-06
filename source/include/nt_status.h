@@ -71,6 +71,12 @@ typedef uint32 WERROR;
 	}\
 } while (0)
 
+#define W_ERROR_HAVE_NO_MEMORY(x) do { \
+	if (!(x)) {\
+		return WERR_NOMEM;\
+	}\
+} while (0)
+
 #define W_ERROR_NOT_OK_RETURN(x) do { \
 	if (!W_ERROR_IS_OK(x)) {\
 		return x;\
