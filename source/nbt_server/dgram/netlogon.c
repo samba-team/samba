@@ -58,9 +58,9 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	partitions_basedn = samdb_partitions_dn(samctx, samctx);
+	partitions_basedn = samdb_partitions_dn(samctx, packet);
 
-	ret = gendb_search(samctx, samctx, partitions_basedn, &ref_res, ref_attrs,
+	ret = gendb_search(samctx, packet, partitions_basedn, &ref_res, ref_attrs,
 			   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 			   name->name);
 	
@@ -128,9 +128,9 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	partitions_basedn = samdb_partitions_dn(samctx, samctx);
+	partitions_basedn = samdb_partitions_dn(samctx, packet);
 
-	ret = gendb_search(samctx, samctx, partitions_basedn, &ref_res, ref_attrs,
+	ret = gendb_search(samctx, packet, partitions_basedn, &ref_res, ref_attrs,
 				  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 				  name->name);
 	
@@ -140,7 +140,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	/* try and find the domain */
-	ret = gendb_search_dn(samctx, samctx, 
+	ret = gendb_search_dn(samctx, packet, 
 			      samdb_result_dn(samctx, samctx, ref_res[0], "ncName", NULL), 
 			      &dom_res, dom_attrs);
 	if (ret != 1) {

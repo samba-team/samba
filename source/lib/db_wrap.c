@@ -80,7 +80,7 @@ static int ldb_wrap_destructor(struct ldb_context *ldb)
 {
 	size_t *startup_blocks = (size_t *)ldb_get_opaque(ldb, "startup_blocks");
 	if (startup_blocks &&
-	    talloc_total_blocks(ldb) > *startup_blocks + 100) {
+	    talloc_total_blocks(ldb) > *startup_blocks + 400) {
 		DEBUG(0,("WARNING: probable memory leak in ldb %s - %lu blocks (startup %lu) %lu bytes\n",
 			 (char *)ldb_get_opaque(ldb, "wrap_url"), 
 			 (unsigned long)talloc_total_blocks(ldb), 
@@ -88,6 +88,8 @@ static int ldb_wrap_destructor(struct ldb_context *ldb)
 			 (unsigned long)talloc_total_size(ldb)));
 #if 0
 		talloc_report_full(ldb, stdout);
+		call_backtrace();
+		smb_panic("probable memory leak in ldb");
 #endif
 	}
 	return 0;
