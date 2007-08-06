@@ -1143,6 +1143,7 @@ BOOL ldap_decode_control_wrapper(void *mem_ctx, struct asn1_data *data, struct l
 	ctrl->data = NULL;
 
 	if (!asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		*value = data_blob(NULL, 0);
 		goto end_tag;
 	}
 
