@@ -355,7 +355,12 @@ kadm5_log_replay_delete (kadm5_server_context *context,
     krb5_error_code ret;
     krb5_principal principal;
 
-    krb5_ret_principal (sp, &principal);
+    ret = krb5_ret_principal (sp, &principal);
+    if (ret) {
+	krb5_set_error_string(context->context,  "Failed to read deleted "
+			      "principal from log version: %ld",  (long)ver);
+	return ret;
+    }
 
     ret = context->db->hdb_remove(context->context, context->db, principal);
     krb5_free_principal (context->context, principal);
@@ -448,7 +453,12 @@ kadm5_log_replay_rename (kadm5_server_context *context,
     memset(&target_ent, 0, sizeof(target_ent));
 
     off = krb5_storage_seek(sp, 0, SEEK_CUR);
-    krb5_ret_principal (sp, &source);
+    ret = krb5_ret_principal (sp, &source);
+    if (ret) {
+	krb5_set_error_string(context->context, "Failed to read renamed "
+			      "principal in log, version: %ld", (long)ver);
+	return ret;
+    }
     princ_len = krb5_storage_seek(sp, 0, SEEK_CUR) - off;
     data_len = len - princ_len;
     ret = krb5_data_alloc (&value, data_len);
@@ -549,8 +559,10 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     krb5_ret_int32 (sp, &mask);
     len -= 4;
     ret = krb5_data_alloc (&value, len);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context->context, "out of memory");
 	return ret;
+    }
     krb5_storage_read (sp, value.data, len);
     ret = hdb_value2entry (context->context, &value, &log_ent.entry);
     krb5_data_free(&value);
@@ -570,6 +582,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.valid_end == NULL) {
 		ent.entry.valid_end = malloc(sizeof(*ent.entry.valid_end));
 		if (ent.entry.valid_end == NULL) {
+		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
 		    goto out;
 		}
@@ -584,6 +597,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.pw_end == NULL) {
 		ent.entry.pw_end = malloc(sizeof(*ent.entry.pw_end));
 		if (ent.entry.pw_end == NULL) {
+		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
 		    goto out;
 		}
@@ -604,6 +618,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.max_life == NULL) {
 		ent.entry.max_life = malloc (sizeof(*ent.entry.max_life));
 		if (ent.entry.max_life == NULL) {
+		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
 		    goto out;
 		}
@@ -615,14 +630,17 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	if (ent.entry.modified_by == NULL) {
 	    ent.entry.modified_by = malloc(sizeof(*ent.entry.modified_by));
 	    if (ent.entry.modified_by == NULL) {
+		krb5_set_error_string(context->context, "out of memory");
 		ret = ENOMEM;
 		goto out;
 	    }
 	} else
 	    free_Event(ent.entry.modified_by);
 	ret = copy_Event(log_ent.entry.modified_by, ent.entry.modified_by);
-	if (ret)
+	if (ret) {
+	    krb5_set_error_string(context->context, "out of memory");
 	    goto out;
+	}
     }
     if (mask & KADM5_KVNO) {
 	ent.entry.kvno = log_ent.entry.kvno;
@@ -646,6 +664,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.max_renew == NULL) {
 		ent.entry.max_renew = malloc (sizeof(*ent.entry.max_renew));
 		if (ent.entry.max_renew == NULL) {
+		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
 		    goto out;
 		}
@@ -674,13 +693,17 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 
 	ent.entry.keys.len = num;
 	ent.entry.keys.val = malloc(len * sizeof(*ent.entry.keys.val));
-	if (ent.entry.keys.val == NULL)
+	if (ent.entry.keys.val == NULL) {
+	    krb5_set_error_string(context->context, "out of memory");
 	    return ENOMEM;
+	}
 	for (i = 0; i < ent.entry.keys.len; ++i) {
 	    ret = copy_Key(&log_ent.entry.keys.val[i],
 			   &ent.entry.keys.val[i]);
-	    if (ret)
+	    if (ret) {
+		krb5_set_error_string(context->context, "out of memory");
 		goto out;
+	    }
 	}
     }
     if ((mask & KADM5_TL_DATA) && log_ent.entry.extensions) {
@@ -693,6 +716,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	ret = copy_HDB_extensions(log_ent.entry.extensions,
 				  ent.entry.extensions);
 	if (ret) {
+	    krb5_set_error_string(context->context, "out of memory");
 	    free(ent.entry.extensions);
 	    ent.entry.extensions = es;
 	    goto out;
@@ -894,6 +918,8 @@ kadm5_log_replay (kadm5_server_context *context,
     case kadm_nop :
 	return kadm5_log_replay_nop (context, ver, len, sp);
     default :
+	krb5_set_error_string(context->context, 
+			      "Unsupported replay op %d", (int)op);
 	return KADM5_FAILURE;
     }
 }
