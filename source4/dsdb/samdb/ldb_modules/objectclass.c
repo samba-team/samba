@@ -161,7 +161,7 @@ static int objectclass_sort(struct ldb_module *module,
 				/* Save the next pointer, as the DLIST_ macros will change poss_subclass->next */
 				next = poss_subclass->next;
 
-				if (ldb_attr_cmp(class->subClassOf, current->objectclass) == 0) {
+				if (class && ldb_attr_cmp(class->subClassOf, current->objectclass) == 0) {
 					DLIST_REMOVE(unsorted, poss_subclass);
 					DLIST_ADD(subclass, poss_subclass);
 					
@@ -199,6 +199,7 @@ static int objectclass_sort(struct ldb_module *module,
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_message_element *objectclass_element;
+	const struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
 	struct class_list *sorted, *current;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
@@ -264,6 +265,14 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 			ldb_set_errstring(module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
 			talloc_free(mem_ctx);
 			return ret;
+		}
+		/* Last one */
+		if (schema && !current->next && !ldb_msg_find_element(msg, "objectCategory")) {
+			const struct dsdb_class *objectclass
+				= dsdb_class_by_lDAPDisplayName(schema, current->objectclass);
+			if (objectclass) {
+				ldb_msg_add_string(msg, "objectCategory", objectclass->defaultObjectCategory);
+			}
 		}
 	}
 
