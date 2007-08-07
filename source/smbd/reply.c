@@ -3273,17 +3273,30 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv2));
-	SMB_OFF_T startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
-	size_t numtowrite = SVAL(inbuf,smb_vwv10);
-	BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
-	ssize_t nwritten = -1;
-	unsigned int smb_doff = SVAL(inbuf,smb_vwv11);
-	unsigned int smblen = smb_len(inbuf);
+	files_struct *fsp;
+	SMB_OFF_T startpos;
+	size_t numtowrite;
+	BOOL write_through;
+	ssize_t nwritten;
+	unsigned int smb_doff;
+	unsigned int smblen;
 	char *data;
-	BOOL large_writeX = ((CVAL(inbuf,smb_wct) == 14) && (smblen > 0xFFFF));
+	BOOL large_writeX;
 	NTSTATUS status;
+
 	START_PROFILE(SMBwriteX);
+
+	if ((CVAL(inbuf, smb_wct) != 12) && (CVAL(inbuf, smb_wct) != 14)) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
+	numtowrite = SVAL(inbuf,smb_vwv10);
+	write_through = BITSETW(inbuf+smb_vwv7,0);
+	smb_doff = SVAL(inbuf,smb_vwv11);
+	smblen = smb_len(inbuf);
+	large_writeX = ((CVAL(inbuf,smb_wct) == 14) && (smblen > 0xFFFF));
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
