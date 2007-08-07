@@ -220,3 +220,15 @@ OBJ_FILES = \
 # End MODULE ldb_update_kt
 ################################################
 
+################################################
+# Start MODULE ldb_objectclass
+[MODULE::ldb_objectclass]
+INIT_FUNCTION = ldb_objectclass_init
+CFLAGS = -Ilib/ldb/include
+PRIVATE_DEPENDENCIES = LIBTALLOC
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		objectclass.o
+# End MODULE ldb_objectclass
+################################################
+
