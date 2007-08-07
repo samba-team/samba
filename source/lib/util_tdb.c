@@ -696,6 +696,17 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 	log_ctx.log_fn = tdb_log;
 	log_ctx.log_private = NULL;
 
+	if (hash_size == 0) {
+		const char *base = strrchr_m(name, '/');
+		if (base != NULL) {
+			base += 1;
+		}
+		else {
+			base = name;
+		}
+		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
+	}
+
 	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
 			  open_flags, mode, &log_ctx, NULL);
 	if (!tdb)
@@ -927,6 +938,17 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	if (!(w->name = talloc_strdup(w, name))) {
 		talloc_free(w);
 		return NULL;
+	}
+
+	if (hash_size == 0) {
+		const char *base = strrchr_m(name, '/');
+		if (base != NULL) {
+			base += 1;
+		}
+		else {
+			base = name;
+		}
+		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
 	}
 
 	w->tdb = tdb_open_ex(name, hash_size, tdb_flags, 
