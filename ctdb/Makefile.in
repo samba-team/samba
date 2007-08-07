@@ -77,9 +77,9 @@ bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
 
-bin/scsi_io: $(CTDB_CLIENT_OBJ) scsi/scsi_io.o 
+bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ scsi/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ utils/scsi_io/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o 
 	@echo Linking $@
@@ -145,6 +145,7 @@ install: all
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
+	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
 	${INSTALLCMD} -m 755 config/events $(DESTDIR)$(etcdir)/ctdb
