@@ -1,4 +1,3 @@
-
 /* 
    ldb database library
 
@@ -155,7 +154,6 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 		ldb_tdb_init, 	\
 		ldb_operational_init,	\
 		ldb_rdn_name_init,	\
-		ldb_objectclass_init,	\
 		ldb_paged_results_init,	\
 		ldb_sort_init,		\
 		ldb_asq_init,		\
