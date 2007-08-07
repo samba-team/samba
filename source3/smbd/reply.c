@@ -3287,6 +3287,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	START_PROFILE(SMBwriteX);
 
 	if ((CVAL(inbuf, smb_wct) != 12) && (CVAL(inbuf, smb_wct) != 14)) {
+		END_PROFILE(SMBwriteX);
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -3306,6 +3307,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
 	CHECK_FSP(fsp,conn);
 	if (!CHECK_WRITE(fsp)) {
+		END_PROFILE(SMBwriteX);
 		return(ERROR_DOS(ERRDOS,ERRbadaccess));
 	}
 
@@ -3388,9 +3390,9 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
 	status = sync_file(conn, fsp, write_through);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBwriteX);
 		DEBUG(5,("reply_write_and_X: sync_file for %s returned %s\n",
 			fsp->fsp_name, nt_errstr(status) ));
+		END_PROFILE(SMBwriteX);
 		return ERROR_NT(status);
 	}
 
