@@ -1,5 +1,7 @@
 2007-08-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* log.c: Sprinkle krb5_set_error_string().
+
 	* ipropd_slave.c: Provide better error why kadm5_log_replay
 	failed.
 
