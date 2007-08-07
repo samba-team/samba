@@ -54,7 +54,6 @@ COMMON_OBJ=$(COMDIR)/ldb.o $(COMDIR)/ldb_ldif.o \
 
 MODDIR=modules
 MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/rdn_name.o \
-	   $(MODDIR)/objectclass.o \
 	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
 
 NSSDIR=nssldb
