@@ -2,24 +2,20 @@
    ldb database library
 
    Copyright (C) Simo Sorce  2006
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2006
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2007
 
-     ** NOTE! The following LGPL license applies to the ldb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -32,8 +28,13 @@
  *  Author: Andrew Bartlett
  */
 
-#include "ldb_includes.h"
 
+#include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
+#include "ldb/include/ldb_private.h"
+#include "dsdb/samdb/samdb.h"
+#include "lib/util/dlinklist.h"
 struct oc_context {
 
 	enum oc_step {OC_DO_REQ, OC_SEARCH_SELF, OC_DO_MOD} step;
@@ -92,6 +93,7 @@ static int objectclass_sort(struct ldb_module *module,
 {
 	int i;
 	int layer;
+	const struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
 	struct class_list *sorted = NULL, *parent_class = NULL,
 		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass;
 	/* DESIGN:
@@ -150,23 +152,20 @@ static int objectclass_sort(struct ldb_module *module,
 		 * parent_classes.  Push them onto the subclass list */
 
 		/* Ensure we don't bother if there are no unsorted entries left */
-		for (current = parent_class; unsorted && current; current = current->next) {
-			const char **subclasses = ldb_subclass_list(module->ldb, current->objectclass);
-
+		for (current = parent_class; schema && unsorted && current; current = current->next) {
 			/* Walk the list of possible subclasses in unsorted */
 			for (poss_subclass = unsorted; poss_subclass; ) {
+				const struct dsdb_class *class = dsdb_class_by_lDAPDisplayName(schema, poss_subclass->objectclass);
 				struct class_list *next;
 				
 				/* Save the next pointer, as the DLIST_ macros will change poss_subclass->next */
 				next = poss_subclass->next;
 
-				for (i = 0; subclasses && subclasses[i]; i++) {
-					if (ldb_attr_cmp(poss_subclass->objectclass, subclasses[i]) == 0) {
-						DLIST_REMOVE(unsorted, poss_subclass);
-						DLIST_ADD(subclass, poss_subclass);
-
-						break;
-					}
+				if (ldb_attr_cmp(class->subClassOf, current->objectclass) == 0) {
+					DLIST_REMOVE(unsorted, poss_subclass);
+					DLIST_ADD(subclass, poss_subclass);
+					
+					break;
 				}
 				poss_subclass = next;
 			}
