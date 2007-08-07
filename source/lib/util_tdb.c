@@ -696,7 +696,7 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 	log_ctx.log_fn = tdb_log;
 	log_ctx.log_private = NULL;
 
-	if (hash_size == 0) {
+	if ((hash_size == 0) && (name != NULL)) {
 		const char *base = strrchr_m(name, '/');
 		if (base != NULL) {
 			base += 1;
@@ -940,7 +940,7 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (hash_size == 0) {
+	if ((hash_size == 0) && (name != NULL)) {
 		const char *base = strrchr_m(name, '/');
 		if (base != NULL) {
 			base += 1;
