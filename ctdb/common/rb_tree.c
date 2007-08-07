@@ -530,9 +530,10 @@ trbt_create_node(trbt_tree_t *tree, trbt_node_t *parent, uint32_t key, void *dat
 
 /* insert a new node in the tree. 
    if there is already a node with a matching key in the tree 
-   we reurn an error
+   we replace it with the new data and return a pointer to the old data
+   in case the caller wants to take any special action
  */
-int
+void *
 trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data)
 {
 	trbt_node_t *node;
@@ -544,16 +545,23 @@ trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data)
 		node = trbt_create_node(tree, NULL, key, data);
 
 		tree->tree=node;
-		return 0;
+		return NULL;
 	}
 
 	/* it was not the new root so walk the tree until we find where to
 	 * insert this new leaf.
 	 */
 	while(1){
-		/* this node already exists, so just return an error */
+		/* this node already exists, replace data and return the 
+		   old data
+		 */
 		if(key==node->key32){
-			return -1;
+			void *old_data;
+
+			old_data = node->data;
+			node->data  = talloc_steal(node, data);
+
+			return old_data;
 		}
 		if(key<node->key32) {
 			if(!node->left){
@@ -587,7 +595,7 @@ trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data)
 	/* node will now point to the newly created node */
 	node->rb_color=TRBT_RED;
 	trbt_insert_case1(tree, node);
-	return 0;
+	return NULL;
 }
 
 void *

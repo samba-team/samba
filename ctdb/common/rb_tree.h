@@ -37,10 +37,19 @@ typedef struct _trbt_tree_t {
 
 
 
-
+/* Create a RB tree */
 trbt_tree_t *trbt_create(TALLOC_CTX *memctx);
+
+/* Lookup a node in the tree and return a pointer to data or NULL */
 void *trbt_lookup32(trbt_tree_t *tree, uint32_t key);
-int trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data);
+
+/* Insert a new node into the tree. If there was already a node with this
+   key the pointer to the previous data is returned.
+   The tree will talloc_steal() the data inserted into the tree .
+*/
+void *trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data);
+
+/* Delete a node from the tree and free all data associated with it */
 void trbt_delete32(trbt_tree_t *tree, uint32_t key);
 
 
