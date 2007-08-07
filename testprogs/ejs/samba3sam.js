@@ -46,7 +46,7 @@ dn: @MAP=samba3sam
 @TO: sambaDomainName=TESTS," + s3.BASEDN + "
 
 dn: @MODULES
-@LIST: rootdse,paged_results,server_sort,extended_dn,asq,samldb,objectclass,password_hash,operational,objectguid,rdn_name,samba3sam,partition
+@LIST: rootdse,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition
 
 dn: @PARTITION
 partition: " + s4.BASEDN + ":" + s4.url + "
@@ -482,7 +482,7 @@ description: y
 	assert(res.msgs[0].dnsHostName == "x");
 	assert(res.msgs[0].lastLogon == "x");
 	assert(res.msgs[0].objectClass != undefined);
-	assert(res.msgs[0].objectClass[3] == "user");
+	assert(res.msgs[0].objectClass[0] == "user"); 
 	assert(res.msgs[1].dn == s4.dn("cn=A"));
 	assert(res.msgs[1].dnsHostName == undefined);
 	assert(res.msgs[1].lastLogon == "x");
@@ -504,7 +504,7 @@ description: y
 	assert(res.msgs[1].dnsHostName == "x");
 	assert(res.msgs[1].lastLogon == "x");
 	assert(res.msgs[1].objectClass != undefined);
-	assert(res.msgs[1].objectClass[3] == "user");
+	assert(res.msgs[1].objectClass[0] == "user");
 	assert(res.msgs[2].dn == s4.dn("cn=A"));
 	assert(res.msgs[2].dnsHostName == undefined);
 	assert(res.msgs[2].lastLogon == "x");
