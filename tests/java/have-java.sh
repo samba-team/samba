@@ -48,6 +48,11 @@ done
 
 test "$j$k" = fc || exit 1
 
+# GNU GCC Java doesn't support Kerberos
+if java -version 2>&1 | grep 'gij' > /dev/null ; then
+    exit 1
+fi
+
 echo "ok"
 
 exit 0
