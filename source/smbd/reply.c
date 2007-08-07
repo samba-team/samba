@@ -3271,7 +3271,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
  Reply to a write and X.
 ****************************************************************************/
 
-int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
+void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 {
 	files_struct *fsp;
 	SMB_OFF_T startpos;
@@ -3284,11 +3284,21 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	BOOL large_writeX;
 	NTSTATUS status;
 
+	char *inbuf, *outbuf;
+	int length, bufsize;
+
 	START_PROFILE(SMBwriteX);
 
-	if ((CVAL(inbuf, smb_wct) != 12) && (CVAL(inbuf, smb_wct) != 14)) {
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBwriteX);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if ((CVAL(inbuf, smb_wct) != 12) && (CVAL(inbuf, smb_wct) != 14)) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBwriteX);
+		return;
 	}
 
 	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
@@ -3301,17 +3311,25 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
+		reply_post_legacy(
+			req,
+			reply_pipe_write_and_X(inbuf,outbuf,length,bufsize));
 		END_PROFILE(SMBwriteX);
-		return reply_pipe_write_and_X(inbuf,outbuf,length,bufsize);
+		return;
 	}
 
-	CHECK_FSP(fsp,conn);
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBwriteX);
+		return;
+	}
+
 	if (!CHECK_WRITE(fsp)) {
+		reply_doserror(req, ERRDOS, ERRbadaccess);
 		END_PROFILE(SMBwriteX);
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+		return;
 	}
 
-	set_message(inbuf,outbuf,6,0,True);
+	set_message(inbuf, outbuf, 6, 0, True);
   
 	/* Deal with possible LARGE_WRITEX */
 	if (large_writeX) {
@@ -3319,8 +3337,9 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	}
 
 	if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
+		reply_doserror(req, ERRDOS, ERRbadmem);
 		END_PROFILE(SMBwriteX);
-		return ERROR_DOS(ERRDOS,ERRbadmem);
+		return;
 	}
 
 	data = smb_base(inbuf) + smb_doff;
@@ -3339,18 +3358,23 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 		 */
 
 		if(IVAL(inbuf,smb_vwv12) != 0) {
-			DEBUG(0,("reply_write_and_X - large offset (%x << 32) used and we don't support \
-64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv12) ));
+			DEBUG(0,("reply_write_and_X - large offset (%x << 32) "
+				 "used and we don't support 64 bit offsets.\n",
+				 (unsigned int)IVAL(inbuf,smb_vwv12) ));
+			reply_doserror(req, ERRDOS, ERRbadaccess);
 			END_PROFILE(SMBwriteX);
-			return ERROR_DOS(ERRDOS,ERRbadaccess);
+			return;
 		}
 
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	if (is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),
+		      (SMB_BIG_UINT)numtowrite,
+		      (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+		reply_doserror(req, ERRDOS, ERRlock);
 		END_PROFILE(SMBwriteX);
-		return ERROR_DOS(ERRDOS,ERRlock);
+		return;
 	}
 
 	/* X/Open SMB protocol says that, unlike SMBwrite
@@ -3364,16 +3388,18 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
 		if (schedule_aio_write_and_X(conn, inbuf, outbuf, length, bufsize,
 					fsp,data,startpos,numtowrite)) {
+			reply_post_legacy(req, -1);
 			END_PROFILE(SMBwriteX);
-			return -1;
+			return;
 		}
 
 		nwritten = write_file(fsp,data,startpos,numtowrite);
 	}
   
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
+		reply_unixerror(req, ERRHRD, ERRdiskfull);
 		END_PROFILE(SMBwriteX);
-		return(UNIXERROR(ERRHRD,ERRdiskfull));
+		return;
 	}
 
 	SSVAL(outbuf,smb_vwv2,nwritten);
@@ -3392,12 +3418,16 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("reply_write_and_X: sync_file for %s returned %s\n",
 			fsp->fsp_name, nt_errstr(status) ));
+		reply_nterror(req, status);
 		END_PROFILE(SMBwriteX);
-		return ERROR_NT(status);
+		return;
 	}
 
+	reply_post_legacy(req, smb_len(req->outbuf));
+
 	END_PROFILE(SMBwriteX);
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
+	return;
 }
 
 /****************************************************************************
