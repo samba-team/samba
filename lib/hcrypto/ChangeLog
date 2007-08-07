@@ -1,3 +1,7 @@
+2007-08-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_cipher.c: Sprinkle EVP cipher names.
+	
 2007-07-30  David Love  <fx@gnu.org>
 
 	* camellia-ntt.c: Include <krb5-types.h>
