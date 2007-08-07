@@ -1,3 +1,7 @@
+2007-08-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* java/have-java.sh: GNU GCC Java doesn't support Kerberos
+
 2007-08-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-iprop.in: wait longer for iprop, dump messages.log on
