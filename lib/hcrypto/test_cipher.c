@@ -52,6 +52,7 @@ RCSID("$Id$");
 #include <err.h>
 
 struct tests {
+    const char *name;
     void *key;
     size_t keysize;
     void *iv;
@@ -62,7 +63,8 @@ struct tests {
 };
 
 struct tests aes_tests[] = {
-    { "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    { "aes-256",
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
       32,
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
@@ -73,7 +75,8 @@ struct tests aes_tests[] = {
 };
 
 struct tests rc2_40_tests[] = {
-    { "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    { "rc2-40",
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
       16,
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
       16,
@@ -83,7 +86,8 @@ struct tests rc2_40_tests[] = {
 };
 
 struct tests des_ede3_tests[] = {
-    { "1917ffe6bb772efc297643bc63567e9a002e4d431d5ffd58",
+    { "des-ede3",
+      "1917ffe6bb772efc297643bc63567e9a002e4d431d5ffd58",
       24,
       "\xbf\x9a\x12\xb7\x26\x69\xfd\x05",
       16,
@@ -93,7 +97,8 @@ struct tests des_ede3_tests[] = {
 };
 
 struct tests camellia128_tests[] = {
-    { "\x19\x17\xff\xe6\xbb\x77\x2e\xfc\x29\x76\x43\xbc\x63\x56\x7e\x9a",
+    { "camellia128",
+      "\x19\x17\xff\xe6\xbb\x77\x2e\xfc\x29\x76\x43\xbc\x63\x56\x7e\x9a",
       16,
       "\x12\x13\xff\xe3\xbb\x7e\x21\xfc\xe9\x76\x44\xbc\x63\x56\x7e\xff",
       16,
@@ -114,11 +119,11 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
     EVP_CIPHER_CTX_init(&dctx);
 
     if (!EVP_CipherInit_ex(&ectx, c, NULL, t->key, t->iv, 1))
-	return 1;
+	errx(1, "%s: EVP_CipherInit_ex encrypt", t->name);
     if (!EVP_CipherInit_ex(&dctx, c, NULL, t->key, t->iv, 0))
-	return 1;
+	errx(1, "%s: EVP_CipherInit_ex decrypt", t->name);
 
-    d = malloc(t->datasize);
+    d = emalloc(t->datasize);
 
     if (!EVP_Cipher(&ectx, d, t->indata, t->datasize))
 	return 1;
@@ -126,7 +131,7 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
     if (memcmp(d, t->outdata, t->datasize) != 0) {
 	char *s;
 	hex_encode(d, t->datasize, &s);
-	errx(1, "decrypt not the same: %s\n", s);
+	errx(1, "%s: decrypt not the same: %s\n", t->name, s);
     }
 
     if (!EVP_Cipher(&dctx, d, d, t->datasize))
@@ -135,7 +140,7 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
     if (memcmp(d, t->indata, t->datasize) != 0) {
 	char *s;
 	hex_encode(d, t->datasize, &s);
-	errx(1, "decrypt not the same: %s\n", s);
+	errx(1, "%s: decrypt not the same: %s\n", t->name, s);
     }
 
     EVP_CIPHER_CTX_cleanup(&ectx);
