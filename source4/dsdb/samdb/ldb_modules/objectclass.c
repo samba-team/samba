@@ -35,6 +35,11 @@
 #include "ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/util/dlinklist.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
+#include "auth/auth.h"
+
 struct oc_context {
 
 	enum oc_step {OC_DO_REQ, OC_SEARCH_SELF, OC_DO_MOD} step;
@@ -196,6 +201,39 @@ static int objectclass_sort(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
+DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
+		  const struct dsdb_class *objectclass) 
+{
+	NTSTATUS status;
+	DATA_BLOB *linear_sd;
+	struct auth_session_info *session_info
+		= ldb_get_opaque(module->ldb, "sessionInfo");
+	struct security_descriptor *sd = sddl_decode(mem_ctx, 
+						     objectclass->defaultSecurityDescriptor,
+						     samdb_domain_sid(module->ldb));
+	if (!session_info || !session_info->security_token) {
+		return NULL;
+	}
+	
+	sd->owner_sid = session_info->security_token->user_sid;
+	sd->group_sid = session_info->security_token->group_sid;
+	
+	linear_sd = talloc(mem_ctx, DATA_BLOB);
+	if (!linear_sd) {
+		return NULL;
+	}
+
+	status = ndr_push_struct_blob(linear_sd, mem_ctx, sd, 
+				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	
+	return linear_sd;
+
+}
+
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_message_element *objectclass_element;
@@ -266,12 +304,18 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 			talloc_free(mem_ctx);
 			return ret;
 		}
-		/* Last one */
-		if (schema && !current->next && !ldb_msg_find_element(msg, "objectCategory")) {
+		/* Last one is the critical one */
+		if (schema && !current->next) {
 			const struct dsdb_class *objectclass
 				= dsdb_class_by_lDAPDisplayName(schema, current->objectclass);
 			if (objectclass) {
-				ldb_msg_add_string(msg, "objectCategory", objectclass->defaultObjectCategory);
+				if (!ldb_msg_find_element(msg, "objectCategory")) {
+					ldb_msg_add_string(msg, "objectCategory", objectclass->defaultObjectCategory);
+				}
+				if (!ldb_msg_find_element(msg, "ntSecurityDescriptor")) {
+					DATA_BLOB *sd = get_sd(module, mem_ctx, objectclass);
+					ldb_msg_add_steal_value(msg, "ntSecurityDescriptor", sd);
+				}
 			}
 		}
 	}

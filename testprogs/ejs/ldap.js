@@ -258,7 +258,7 @@ objectClass: user
 	assert(res.msgs[0].objectCategory == "cn=Person,cn=Schema,cn=Configuration," + base_dn);
 	assert(res.msgs[0].sAMAccountType == 805306368);
 //	assert(res[0].userAccountControl == 546);
-
+ 
 	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
 	if (res2.error != 0 || res2.msgs.length != 1) {
@@ -439,8 +439,9 @@ objectClass: user
 //	assert(res.msgs[0].userAccountControl == 4098);
 
 
+        var attrs = new Array("cn", "name", "objectClass", "objectGUID", "whenCreated", "ntSecurityDescriptor");
 	println("Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))");
-	var res = ldb.search("(&(cn=ldaptestUSer2)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptestUSer2)(objectClass=user))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.error != 0 || res.msgs.length != 1) {
 		println("Could not find (&(cn=ldaptestUSer2)(objectClass=user))");
 		assert(res.error == 0);
@@ -456,6 +457,7 @@ objectClass: user
 	assert(res.msgs[0].objectClass[3] == "user");
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
+	assert(res.msgs[0].ntSecurityDescriptor != undefined);
 
 	ok = ldb.del(res.msgs[0].dn);
 	if (ok.error != 0) {
