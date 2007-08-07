@@ -179,7 +179,7 @@ BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 		doreg ? "adding" : "removing",
 		(unsigned int)msg_flags ));
 
-	if (!(rec = connections_fetch_entry(NULL, NULL, NULL))) {
+	if (!(rec = connections_fetch_entry(NULL, NULL, ""))) {
 		DEBUG(0, ("connections_fetch_entry failed\n"));
 		return False;
 	}
@@ -198,16 +198,17 @@ BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 
 	status = rec->store(rec, rec->value, TDB_REPLACE);
 
-	TALLOC_FREE(rec);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("register_message_flags: tdb_store failed: %s.\n",
 			 nt_errstr(status)));
+		TALLOC_FREE(rec);
 		return False;
 	}
 
 	DEBUG(10,("register_message_flags: new flags 0x%x\n",
 		(unsigned int)pcrec->bcast_msg_flags ));
+
+	TALLOC_FREE(rec);
 
 	return True;
 }
