@@ -263,8 +263,7 @@ void brl_init(int read_only)
 	if (brlock_db) {
 		return;
 	}
-	brlock_db = db_open(NULL, lock_path("brlock.tdb"),
-			    lp_open_files_db_hash_size(),
+	brlock_db = db_open(NULL, lock_path("brlock.tdb"), 0,
 			    TDB_DEFAULT
 			    |TDB_VOLATILE
 			    |(read_only?0x0:TDB_CLEAR_IF_FIRST),

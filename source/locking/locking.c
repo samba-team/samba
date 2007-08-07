@@ -394,8 +394,7 @@ BOOL locking_init(int read_only)
 	if (lock_db)
 		return True;
 
-	lock_db = db_open(NULL, lock_path("locking.tdb"),
-			  lp_open_files_db_hash_size(),
+	lock_db = db_open(NULL, lock_path("locking.tdb"), 0,
 			  TDB_DEFAULT
 			  |TDB_VOLATILE
 			  |(read_only?0x0:TDB_CLEAR_IF_FIRST),
