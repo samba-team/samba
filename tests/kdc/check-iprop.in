@@ -97,24 +97,20 @@ echo Starting kdc
 ${kdc} &
 kdcpid=$!
 
-sh ${srcdir}/wait-kdc.sh
-if [ "$?" != 0 ] ; then
-    kill ${kdcpid}
-    exit 1
-fi
+sh ${srcdir}/wait-kdc.sh || exit 1
 
 echo "starting master"
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
 ipdm=$!
-sleep 4
+sh ${srcdir}/wait-kdc.sh ipropd-master || exit 1
 
 echo "starting slave"
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave -k ${keytab} localhost &
 ipds=$!
+sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
 
-sleep 4
 echo "checking slave is up"
 ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 
