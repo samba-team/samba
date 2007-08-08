@@ -276,16 +276,6 @@ trbt_sibling(trbt_node_t *node)
 	}
 }
 
-static inline trbt_node_t *
-trbt_sibline(trbt_node_t *node)
-{
-	if (node==node->parent->left) {
-		return node->parent->right;
-	} else {
-		return node->parent->left;
-	}
-}
-
 static inline void
 trbt_delete_case6(trbt_node_t *node)
 {
