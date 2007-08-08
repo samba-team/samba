@@ -67,6 +67,8 @@ rm -f out-*
 rm -f mkey.file*
 rm -f messages.log
 
+> messages.log
+
 echo Creating database
 ${kadmin} -l \
     init \
@@ -89,8 +91,6 @@ ipdm=
 kdcpid=
 
 > iprop-stats
-> messages.log
-
 trap "echo 'killing ipropd s + m + kdc'; kill \${ipdm} \${ipds} \${kdcpid}; tail -10 messages.log iprop-stats; exit 1;" EXIT
 
 echo Starting kdc
