@@ -1,3 +1,8 @@
+2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-iprop.in: Checking master going backward, create
+	iprop-stats.
+
 2007-08-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* java/have-java.sh: GNU GCC Java doesn't support Kerberos
