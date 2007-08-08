@@ -46,10 +46,10 @@ while true ; do
     t=`expr ${t} + 2`
     sleep 2
     echo "Have waited $t seconds"
-    if tail -3 ${log} | grep "${name} started" > /dev/null; then
+    if tail -30 ${log} | grep "${name} started" > /dev/null; then
 	break
     fi
-    if tail -3 ${log} | grep "No sockets" ; then
+    if tail -30 ${log} | grep "No sockets" ; then
        echo "The ${name} failed to bind to any sockets, another ${name} running ?"
        exit 1
     fi
