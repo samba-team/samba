@@ -1588,7 +1588,7 @@ hx509_verify_path(hx509_context context,
 		goto out;
 	    }
 
-	    if (certificate_is_self_signed(c)) 
+	    if (i + 1 != path.len && certificate_is_self_signed(c)) 
 		selfsigned_depth++;
 
 	    break;
@@ -1760,7 +1760,7 @@ hx509_verify_path(hx509_context context,
 	c = _hx509_get_cert(path.val[i]);
 
 	/* verify name constraints, not for selfsigned and anchor */
-	if (!certificate_is_self_signed(c) || i != path.len - 1) {
+	if (!certificate_is_self_signed(c) || i + 1 != path.len) {
 	    ret = check_name_constraints(context, &nc, c);
 	    if (ret) {
 		goto out;
@@ -1833,7 +1833,7 @@ hx509_verify_path(hx509_context context,
 	c = _hx509_get_cert(path.val[i]);
 
 	/* is last in chain (trust anchor) */
-	if (i == path.len - 1) {
+	if (i + 1 == path.len) {
 	    signer = path.val[i]->data;
 
 	    /* if trust anchor is not self signed, don't check sig */
