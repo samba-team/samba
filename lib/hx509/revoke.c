@@ -394,20 +394,20 @@ verify_crl(hx509_context context,
 	
     t = _hx509_Time2time_t(&crl->tbsCertList.thisUpdate);
     if (t > time_now) {
-	hx509_set_error_string(context, HX509_CRL_USED_BEFORE_TIME,
+	hx509_set_error_string(context, 0, HX509_CRL_USED_BEFORE_TIME,
 			       "CRL used before time");
 	return HX509_CRL_USED_BEFORE_TIME;
     }
 
     if (crl->tbsCertList.nextUpdate == NULL) {
-	hx509_set_error_string(context, HX509_CRL_INVALID_FORMAT,
+	hx509_set_error_string(context, 0, HX509_CRL_INVALID_FORMAT,
 			       "CRL missing nextUpdate");
 	return HX509_CRL_INVALID_FORMAT;
     }
 
     t = _hx509_Time2time_t(crl->tbsCertList.nextUpdate);
     if (t < time_now) {
-	hx509_set_error_string(context, HX509_CRL_USED_AFTER_TIME,
+	hx509_set_error_string(context, 0, HX509_CRL_USED_AFTER_TIME,
 			       "CRL used after time");
 	return HX509_CRL_USED_AFTER_TIME;
     }
