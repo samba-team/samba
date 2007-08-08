@@ -39,7 +39,7 @@ void do_debug(const char *format, ...)
 
 	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
-	printf("%s.%06u [%5u]: %s", tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
-	fflush(stdout);
+	fprintf(stderr, "%s.%06u [%5u]: %s", tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
+	fflush(stderr);
 	free(s);
 }

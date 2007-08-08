@@ -217,9 +217,12 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	uint32_t recmode, recmaster;
-	uint32_t myvnn;
+	int myvnn;
 
 	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
+	if (myvnn == -1) {
+		return -1;
+	}
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.vnn, ctdb, &nodemap);
 	if (ret != 0) {
@@ -411,9 +414,12 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	struct ctdb_all_public_ips *ips;
-	uint32_t myvnn;
+	int myvnn;
 
 	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
+	if (myvnn == -1) {
+		return -1;
+	}
 
 	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.vnn, ctdb, &ips);
 	if (ret != 0) {
@@ -449,9 +455,12 @@ static int control_publicip(struct ctdb_context *ctdb, int argc, const char **ar
 {
 	int ret;
 	struct ctdb_all_public_ips *ips;
-	uint32_t myvnn;
+	int myvnn;
 
 	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
+	if (myvnn == -1) {
+		return -1;
+	}
 
 	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.vnn, ctdb, &ips);
 	if (ret != 0) {
@@ -1050,7 +1059,12 @@ int main(int argc, const char *argv[])
 			int j;
 
 			if (options.vnn == CTDB_CURRENT_NODE) {
-				options.vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
+				int vnn;
+				vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
+				if (vnn == -1) {
+					return -1;
+				}
+				options.vnn = vnn;
 			}
 
 			if (ctdb_commands[i].auto_all && 
