@@ -183,26 +183,29 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
  wrinkles to handle pipes.
 ****************************************************************************/
 
-int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
+void reply_pipe_write_and_X(struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p(SVAL(inbuf,smb_vwv2));
-	uint16 vuid = SVAL(inbuf,smb_uid);
-	size_t numtowrite = SVAL(inbuf,smb_vwv10);
+	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv2));
+	size_t numtowrite = SVAL(req->inbuf,smb_vwv10);
 	int nwritten = -1;
-	int smb_doff = SVAL(inbuf, smb_vwv11);
-	BOOL pipe_start_message_raw = ((SVAL(inbuf, smb_vwv7) & (PIPE_START_MESSAGE|PIPE_RAW_MODE)) ==
-								(PIPE_START_MESSAGE|PIPE_RAW_MODE));
+	int smb_doff = SVAL(req->inbuf, smb_vwv11);
+	BOOL pipe_start_message_raw =
+		((SVAL(req->inbuf, smb_vwv7)
+		  & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
+		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
 	char *data;
 
 	if (!p) {
-		return(ERROR_DOS(ERRDOS,ERRbadfid));
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 
-	if (p->vuid != vuid) {
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+	if (p->vuid != req->vuid) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return;
 	}
 
-	data = smb_base(inbuf) + smb_doff;
+	data = smb_base(req->inbuf) + smb_doff;
 
 	if (numtowrite == 0) {
 		nwritten = 0;
@@ -214,9 +217,12 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 			 * them (we don't trust the client). JRA.
 			 */
 	 	       if(numtowrite < 2) {
-				DEBUG(0,("reply_pipe_write_and_X: start of message set and not enough data sent.(%u)\n",
-					(unsigned int)numtowrite ));
-				return (UNIXERROR(ERRDOS,ERRnoaccess));
+				DEBUG(0,("reply_pipe_write_and_X: start of "
+					 "message set and not enough data "
+					 "sent.(%u)\n",
+					 (unsigned int)numtowrite ));
+				reply_unixerror(req, ERRDOS, ERRnoaccess);
+				return;
 			}
 
 			data += 2;
@@ -226,17 +232,18 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
-		return (UNIXERROR(ERRDOS,ERRnoaccess));
+		reply_unixerror(req, ERRDOS,ERRnoaccess);
+		return;
 	}
-  
-	set_message(inbuf,outbuf,6,0,True);
+
+	reply_outbuf(req, 6, 0);
 
 	nwritten = (pipe_start_message_raw ? nwritten + 2 : nwritten);
-	SSVAL(outbuf,smb_vwv2,nwritten);
+	SSVAL(req->outbuf,smb_vwv2,nwritten);
   
 	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n", p->pnum, nwritten));
 
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
 }
 
 /****************************************************************************
