@@ -201,16 +201,18 @@ static int objectclass_sort(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
-DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-		  const struct dsdb_class *objectclass) 
+static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
+			 const struct dsdb_class *objectclass) 
 {
 	NTSTATUS status;
 	DATA_BLOB *linear_sd;
 	struct auth_session_info *session_info
 		= ldb_get_opaque(module->ldb, "sessionInfo");
-	struct security_descriptor *sd = sddl_decode(mem_ctx, 
-						     objectclass->defaultSecurityDescriptor,
-						     samdb_domain_sid(module->ldb));
+	struct security_descriptor *sd
+		= sddl_decode(mem_ctx, 
+			      objectclass->defaultSecurityDescriptor,
+			      samdb_domain_sid(module->ldb));
+
 	if (!session_info || !session_info->security_token) {
 		return NULL;
 	}
@@ -300,17 +302,21 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	for (current = sorted; current; current = current->next) {
 		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
 		if (ret != LDB_SUCCESS) {
-			ldb_set_errstring(module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
+			ldb_set_errstring(module->ldb, 
+					  "objectclass: could not re-add sorted "
+					  "objectclass to modify msg");
 			talloc_free(mem_ctx);
 			return ret;
 		}
 		/* Last one is the critical one */
 		if (schema && !current->next) {
 			const struct dsdb_class *objectclass
-				= dsdb_class_by_lDAPDisplayName(schema, current->objectclass);
+				= dsdb_class_by_lDAPDisplayName(schema, 
+								current->objectclass);
 			if (objectclass) {
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
-					ldb_msg_add_string(msg, "objectCategory", objectclass->defaultObjectCategory);
+					ldb_msg_add_string(msg, "objectCategory", 
+							   objectclass->defaultObjectCategory);
 				}
 				if (!ldb_msg_find_element(msg, "ntSecurityDescriptor")) {
 					DATA_BLOB *sd = get_sd(module, mem_ctx, objectclass);
