@@ -88,7 +88,10 @@ ipds=
 ipdm=
 kdcpid=
 
-trap "kill \${ipdm} \${ipds} \${kdcpid}; tail -10 messages.log; echo 'killing ipropd slave + master'; exit 1;" EXIT
+> iprop-stats
+> messages.log
+
+trap "echo 'killing ipropd s + m + kdc'; kill \${ipdm} \${ipds} \${kdcpid}; tail -10 messages.log iprop-stats; exit 1;" EXIT
 
 echo Starting kdc
 ${kdc} &
@@ -100,7 +103,6 @@ if [ "$?" != 0 ] ; then
     exit 1
 fi
 
-> iprop-stats
 echo "starting master"
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
