@@ -172,8 +172,7 @@ static void stream_new_connection(struct event_context *ev,
 	srv_conn->ops           = stream_socket->ops;
 	srv_conn->event.ctx	= ev;
 	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
-					       EVENT_FD_READ, 
-					       stream_io_handler_fde, srv_conn);
+					       0, stream_io_handler_fde, srv_conn);
 
 	if (!socket_check_access(sock, "smbd", lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
@@ -201,6 +200,9 @@ static void stream_new_connection(struct event_context *ev,
 	}
 	talloc_free(c);
 	talloc_free(s);
+
+	/* we're now ready to start receiving events on this stream */
+	EVENT_FD_READABLE(srv_conn->event.fde);
 
 	/* call the server specific accept code */
 	stream_socket->ops->accept_connection(srv_conn);
