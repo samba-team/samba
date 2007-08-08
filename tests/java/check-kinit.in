@@ -60,6 +60,8 @@ echo "Compile"
 javac -d "${objdir}" "${srcdir}/KerberosInit.java" || \
     { echo "Failed to compile java program: $?" ; exit 77; }
 
+> messages.log
+
 echo Creating database
 ${kadmin} \
     init \
