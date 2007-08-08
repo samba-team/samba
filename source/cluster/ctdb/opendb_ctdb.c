@@ -86,7 +86,7 @@ static struct odb_context *odb_ctdb_init(TALLOC_CTX *mem_ctx,
 	}
 
 	odb->ctdb = ctdb;
-	odb->ctdb_db = ctdb_db_handle(ctdb, "opendb");
+	odb->ctdb_db = ctdb_attach(ctdb, "opendb");
 	if (!odb->ctdb_db) {
 		DEBUG(0,("Failed to get attached ctdb db handle for opendb\n"));
 		talloc_free(odb);

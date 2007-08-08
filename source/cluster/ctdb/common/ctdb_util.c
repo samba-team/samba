@@ -192,20 +192,42 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
 /*
   if possible, make this task real time
  */
-void ctdb_set_realtime(bool enable)
+void ctdb_set_scheduler(struct ctdb_context *ctdb)
 {
-#if HAVE_SCHED_SETSCHEDULER
+#if HAVE_SCHED_SETSCHEDULER	
 	struct sched_param p;
-	p.__sched_priority = 1;
+	if (ctdb->saved_scheduler_param == NULL) {
+		ctdb->saved_scheduler_param = talloc_size(ctdb, sizeof(p));
+	}
+	
+	if (sched_getparam(0, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
+		DEBUG(0,("Unable to get old scheduler params\n"));
+		return;
+	}
 
-	if (enable) {
-		if (sched_setscheduler(getpid(), SCHED_FIFO, &p) == -1) {
-			DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", strerror(errno)));
-		} else {
-			DEBUG(0,("Set scheduler to SCHED_FIFO\n"));
-		}
+	p = *(struct sched_param *)ctdb->saved_scheduler_param;
+	p.sched_priority = 1;
+
+	if (sched_setscheduler(0, SCHED_FIFO, &p) == -1) {
+		DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", 
+			 strerror(errno)));
 	} else {
-		sched_setscheduler(getpid(), SCHED_OTHER, &p);
+		DEBUG(0,("Set scheduler to SCHED_FIFO\n"));
+	}
+#endif
+}
+
+/*
+  restore previous scheduler parameters
+ */
+void ctdb_restore_scheduler(struct ctdb_context *ctdb)
+{
+#if HAVE_SCHED_SETSCHEDULER	
+	if (ctdb->saved_scheduler_param == NULL) {
+		ctdb_fatal(ctdb, "No saved scheduler parameters\n");
+	}
+	if (sched_setscheduler(0, SCHED_OTHER, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
+		ctdb_fatal(ctdb, "Unable to restore old scheduler parameters\n");
 	}
 #endif
 }

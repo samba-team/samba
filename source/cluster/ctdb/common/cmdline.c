@@ -102,20 +102,20 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 	/* initialise ctdb */
 	ctdb = ctdb_init(ev);
 	if (ctdb == NULL) {
-		printf("Failed to init ctdb\n");
+		fprintf(stderr, "Failed to init ctdb\n");
 		exit(1);
 	}
 
 	/* tell ctdb the socket address */
 	ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
 	if (ret == -1) {
-		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
+		fprintf(stderr, "ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 
 	ret = ctdb_socket_connect(ctdb);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to connect to daemon\n"));
+		fprintf(stderr, __location__ " Failed to connect to daemon\n");
 		talloc_free(ctdb);
 		return NULL;
 	}

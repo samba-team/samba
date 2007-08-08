@@ -367,4 +367,6 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 		       uint32_t destnode, 
 		       uint32_t set, uint32_t clear);
 
+int ctdb_socket_connect(struct ctdb_context *ctdb);
+
 #endif
