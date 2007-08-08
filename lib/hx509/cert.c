@@ -605,6 +605,12 @@ check_key_usage(hx509_context context, const Certificate *cert,
     return 0;
 }
 
+/*
+ * Return 0 on matching key usage 'flags' for 'cert', otherwise return
+ * an error code. If 'req_present' the existance is required of the
+ * KeyUsage extension.
+ */
+
 int
 _hx509_check_key_usage(hx509_context context, hx509_cert cert, 
 		       unsigned flags, int req_present)
@@ -778,7 +784,8 @@ certificate_is_anchor(hx509_context context,
 static int
 certificate_is_self_signed(const Certificate *cert)
 {
-    return _hx509_cert_is_parent_cmp(cert, cert, 1) == 0;
+    return _hx509_name_cmp(&cert->tbsCertificate.subject, 
+			   &cert->tbsCertificate.issuer) == 0;
 }
 
 /*
@@ -1224,6 +1231,7 @@ add_name_constraints(hx509_context context, const Certificate *c, int not_ca,
 			       "have NameConstraints");
     } else {
 	NameConstraints *val;
+	printf("adding nc\n");
 	val = realloc(nc->val, sizeof(nc->val[0]) * (nc->len + 1));
 	if (val == NULL) {
 	    hx509_clear_error_string(context);
@@ -1498,7 +1506,7 @@ hx509_verify_path(hx509_context context,
 #if 0
     const AlgorithmIdentifier *alg_id;
 #endif
-    int ret, i, proxy_cert_depth;
+    int ret, i, proxy_cert_depth, selfsigned_depth;
     enum certtype type;
     Name proxy_issuer;
     hx509_certs anchors = NULL;
@@ -1550,6 +1558,7 @@ hx509_verify_path(hx509_context context,
      */
 
     proxy_cert_depth = 0;
+    selfsigned_depth = 0;
 
     if (ctx->flags & HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE)
 	type = PROXY_CERT;
@@ -1578,6 +1587,10 @@ hx509_verify_path(hx509_context context,
 				       "Key usage missing from CA certificate");
 		goto out;
 	    }
+
+	    if (certificate_is_self_signed(c)) 
+		selfsigned_depth++;
+
 	    break;
 	case PROXY_CERT: {
 	    ProxyCertInfo info;	    
@@ -1705,7 +1718,8 @@ hx509_verify_path(hx509_context context,
 	    break;
 	}
 
-	ret = check_basic_constraints(context, c, type, i - proxy_cert_depth);
+	ret = check_basic_constraints(context, c, type, 
+				      i - proxy_cert_depth - selfsigned_depth);
 	if (ret)
 	    goto out;
 	    
@@ -1745,19 +1759,8 @@ hx509_verify_path(hx509_context context,
 
 	c = _hx509_get_cert(path.val[i]);
 
-#if 0
-	/* check that algorithm and parameters is the same */
-	/* XXX this is wrong */
-	ret = alg_cmp(&c->tbsCertificate.signature, alg_id);
-	if (ret) {
-	    hx509_clear_error_string(context);
-	    ret = HX509_PATH_ALGORITHM_CHANGED;
-	    goto out;
-	}
-#endif
-
 	/* verify name constraints, not for selfsigned and anchor */
-	if (!certificate_is_self_signed(c) || i == path.len - 1) {
+	if (!certificate_is_self_signed(c) || i != path.len - 1) {
 	    ret = check_name_constraints(context, &nc, c);
 	    if (ret) {
 		goto out;
