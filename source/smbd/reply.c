@@ -3284,9 +3284,6 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	BOOL large_writeX;
 	NTSTATUS status;
 
-	char *inbuf, *outbuf;
-	int length, bufsize;
-
 	START_PROFILE(SMBwriteX);
 
 	if ((req->wct != 12) && (req->wct != 14)) {
@@ -3333,22 +3330,14 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBwriteX);
-		return;
-	}
+	data = smb_base(req->inbuf) + smb_doff;
 
-	set_message(inbuf, outbuf, 6, 0, True);
-
-	data = smb_base(inbuf) + smb_doff;
-
-	if(CVAL(inbuf,smb_wct) == 14) {
+	if(req->wct == 14) {
 #ifdef LARGE_SMB_OFF_T
 		/*
 		 * This is a large offset (64 bit) write.
 		 */
-		startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv12)) << 32);
+		startpos |= (((SMB_OFF_T)IVAL(req->inbuf,smb_vwv12)) << 32);
 
 #else /* !LARGE_SMB_OFF_T */
 
@@ -3356,7 +3345,7 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		 * Ensure we haven't been sent a >32 bit offset.
 		 */
 
-		if(IVAL(inbuf,smb_vwv12) != 0) {
+		if(IVAL(req->inbuf,smb_vwv12) != 0) {
 			DEBUG(0,("reply_write_and_X - large offset (%x << 32) "
 				 "used and we don't support 64 bit offsets.\n",
 				 (unsigned int)IVAL(inbuf,smb_vwv12) ));
@@ -3368,7 +3357,7 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	if (is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),
+	if (is_locked(fsp,(uint32)req->smbpid,
 		      (SMB_BIG_UINT)numtowrite,
 		      (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		reply_doserror(req, ERRDOS, ERRlock);
@@ -3385,14 +3374,14 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		nwritten = 0;
 	} else {
 
-		if (schedule_aio_write_and_X(conn, inbuf, outbuf, length, bufsize,
-					fsp,data,startpos,numtowrite)) {
-			reply_post_legacy(req, -1);
+		if (schedule_aio_write_and_X(conn, req, fsp, data, startpos,
+					     numtowrite)) {
 			END_PROFILE(SMBwriteX);
 			return;
 		}
 
 		nwritten = write_file(fsp,data,startpos,numtowrite);
+		reply_outbuf(req, 6, 0);
 	}
   
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
@@ -3401,13 +3390,13 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	SSVAL(outbuf,smb_vwv2,nwritten);
+	SSVAL(req->outbuf,smb_vwv2,nwritten);
 	if (large_writeX)
-		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
+		SSVAL(req->outbuf,smb_vwv4,(nwritten>>16)&1);
 
 	if (nwritten < (ssize_t)numtowrite) {
-		SCVAL(outbuf,smb_rcls,ERRHRD);
-		SSVAL(outbuf,smb_err,ERRdiskfull);      
+		SCVAL(req->outbuf,smb_rcls,ERRHRD);
+		SSVAL(req->outbuf,smb_err,ERRdiskfull);
 	}
 
 	DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
@@ -3421,8 +3410,6 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		END_PROFILE(SMBwriteX);
 		return;
 	}
-
-	reply_post_legacy(req, smb_len(req->outbuf));
 
 	END_PROFILE(SMBwriteX);
 	chain_reply_new(req);
