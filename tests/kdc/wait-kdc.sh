@@ -34,26 +34,27 @@
 # $Id$
 #
 
-log=${1:-messages.log}
+name=${1:-KDC}
+log=${2:-messages.log}
 
 t=0
 waitsec=20
 
-echo "Waiting for KDC to start, looking logfile ${log}"
+echo "Waiting for ${name} to start, looking logfile ${log}"
 
 while true ; do
     t=`expr ${t} + 2`
     sleep 2
     echo "Have waited $t seconds"
-    if tail -3 ${log} | grep 'KDC started' > /dev/null; then
+    if tail -3 ${log} | grep "${name} started" > /dev/null; then
 	break
     fi
     if tail -3 ${log} | grep "No sockets" ; then
-       echo "The KDC failed to bind to any sockets, another KDC running ?"
+       echo "The ${name} failed to bind to any sockets, another ${name} running ?"
        exit 1
     fi
     if [ "$t" -gt $waitsec ]; then
-       echo "Waited for $waitsec for the KDC to start, and it didnt happen"
+       echo "Waited for $waitsec for the ${name} to start, and it didnt happen"
        exit 2
     fi
 done
