@@ -265,19 +265,24 @@ _PUBLIC_ uint32_t generate_random(void)
 **/
 _PUBLIC_ BOOL check_password_quality(const char *s)
 {
-	int has_digit=0, has_capital=0, has_lower=0;
+	int has_digit=0, has_capital=0, has_lower=0, has_special=0, has_high=0;
 	while (*s) {
 		if (isdigit((unsigned char)*s)) {
-			has_digit++;
+			has_digit |= 1;
 		} else if (isupper((unsigned char)*s)) {
-			has_capital++;
+			has_capital |= 1;
 		} else if (islower((unsigned char)*s)) {
-			has_lower++;
+			has_lower |= 1;
+		} else if (isascii((unsigned char)*s)) {
+			has_special |= 1;
+		} else {
+			has_high++;
 		}
 		s++;
 	}
 
-	return has_digit && has_lower && has_capital;
+	return ((has_digit + has_lower + has_capital + has_special) >= 3
+		|| (has_high > strlen(s)/2));
 }
 
 /**
