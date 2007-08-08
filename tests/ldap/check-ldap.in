@@ -87,6 +87,8 @@ export KRB5_CONFIG
 
 rm -f current-db*
 
+> messages.log
+
 echo Creating database
 ${kadmin} \
     init \
