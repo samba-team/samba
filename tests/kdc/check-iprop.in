@@ -100,6 +100,7 @@ if [ "$?" != 0 ] ; then
     exit 1
 fi
 
+> iprop-stats
 echo "starting master"
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
@@ -114,6 +115,8 @@ ipds=$!
 sleep 4
 echo "checking slave is up"
 ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
+
+# ----------------- checking: pushing lives changes
 
 echo "Add host"
 ${kadmin} -l add --random-key --use-defaults host/foo@${R} || exit 1
@@ -140,6 +143,17 @@ kill ${ipds}
 sleep 2
 
 ${EGREP} 'iprop/slave@TEST.H5L.SE.*Down' iprop-stats >/dev/null || exit 1
+
+# ----------------- checking: slave is missing changes while down
+
+echo "doing changes while slave is down"
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+
+echo "Makeing a copy of the master log file"
+cp ${objdir}/current.log ${objdir}/current.log.tmp
+
+# ----------------- checking: checking that master and slaves resyncs
 
 echo "starting slave again"
 > iprop-stats
@@ -168,6 +182,8 @@ ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
 ${EGREP} 'Entry already exists in database' messages.log && exit 1
 
+# ----------------- checking: checking live truncation of master log
+
 ${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
 sleep 2
 
@@ -175,12 +191,46 @@ echo "live truncate on master log"
 ${iproplog} truncate || exit 1
 sleep 2
 
-trap "" EXIT
-
-kill ${ipdm} ${ipds} ${kdcpid}
+echo "Killing master and slave"
+kill ${ipdm} ${ipds}
 
 sleep 2
 ${EGREP} "^master down at " iprop-stats > /dev/null || exit 1
+
+echo "compare versions on master and slave logs"
+KRB5_CONFIG=${objdir}/krb5-slave.conf \
+${iproplog} last-version > slave-last.tmp
+${iproplog} last-version > master-last.tmp
+cmp master-last.tmp slave-last.tmp || exit 1
+
+# ----------------- checking: master going backward
+
+echo "Going back to old version of the master log file"
+cp ${objdir}/current.log.tmp ${objdir}/current.log
+
+echo "starting master"
+${ipropdmaster} --hostname=localhost -k ${keytab} \
+    --database=${objdir}/current-db &
+ipdm=$!
+sleep 4
+
+echo "starting slave"
+> iprop-stats
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${ipropdslave} --hostname=slave -k ${keytab} localhost &
+ipds=$!
+sleep 2
+echo "checking slave is up again"
+${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
+echo "checking for replay problems"
+${EGREP} 'Entry already exists in database' messages.log && exit 1
+
+echo "pushing one change"
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+sleep 2
+
+trap "" EXIT
+kill ${ipdm} ${ipds} ${kdcpid}
 
 echo "compare versions on master and slave logs"
 KRB5_CONFIG=${objdir}/krb5-slave.conf \
