@@ -213,7 +213,7 @@ int main(int argc, const char *argv[])
 	tree = trbt_create(NULL);
 	i=0;
 	start_timer();
-	while(end_timer() < 10.0){
+	while(end_timer() < 60.0){
 		char *str;
 
 		i++;
