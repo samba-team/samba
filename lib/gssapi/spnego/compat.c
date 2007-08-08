@@ -129,6 +129,7 @@ OM_uint32 _gss_spnego_internal_delete_sec_context
     gss_release_oid(&minor, &ctx->preferred_mech_type);
     ctx->negotiated_mech_type = GSS_C_NO_OID;
 
+    gss_release_name(&minor, &ctx->target_name);
     gss_release_name(&minor, &ctx->mech_src_name);
 
     if (ctx->negotiated_ctx_id != GSS_C_NO_CONTEXT) {
