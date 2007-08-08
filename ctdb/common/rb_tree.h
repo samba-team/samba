@@ -63,3 +63,14 @@ void trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(v
 /* Delete a node from the tree and free all data associated with it */
 void trbt_delete32(trbt_tree_t *tree, uint32_t key);
 
+
+/* insert into the tree with a key based on an array of uint32 */
+void trbt_insertarray32_callback(trbt_tree_t *tree, uint32_t keylen, uint32_t *key, void *(*callback)(void *param, void *data), void *param);
+
+/* Lookup a node in the tree with a key based on an array of uint32 
+   and return a pointer to data or NULL */
+void *trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key);
+
+/* Delete a node in the tree with a key based on an array of uint32 
+   and return a pointer to data or NULL */
+void trbt_deletearray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key);

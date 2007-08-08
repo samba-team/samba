@@ -713,6 +713,125 @@ trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(void *
 
 
 
+struct trbt_array_param {
+	void *(*callback)(void *param, void *data);
+	void *param;
+	uint32_t keylen;
+	uint32_t *key;
+	trbt_tree_t *tree;
+};
+static void *array_insert_callback(void *p, void *data)
+{
+	struct trbt_array_param *param = (struct trbt_array_param *)p;
+	trbt_tree_t *tree = NULL;
+
+
+	/* if keylen has reached 0 we are done and can call the users 
+	   callback function with the users parameters
+	*/
+	if (param->keylen == 0) {
+		return param->callback(param->param, data);
+	}
+
+
+	/* keylen is not zero yes so we must create/process more subtrees */
+	/* if data is NULL this means we did not yet have a subtree here
+	   and we must create one.
+	*/
+	if (data == NULL) {
+		/* create a new subtree and hang it off our current tree */
+		tree = trbt_create(param->tree);
+	} else {
+		/* we already have a subtree for this path */
+		tree = (trbt_tree_t *)data;
+	}
+		
+	trbt_insertarray32_callback(tree, param->keylen, param->key, param->callback, param->param);
+
+	/* now return either the old tree we got in *data or the new tree
+	   we created to our caller so he can update his pointer in his
+	   tree to point to our subtree
+	*/
+	return tree;
+}
+
+
+
+/* insert into the tree using an array of uint32 as a key */
+void 
+trbt_insertarray32_callback(trbt_tree_t *tree, uint32_t keylen, uint32_t *key, void *(*cb)(void *param, void *data), void *pm)
+{
+	struct trbt_array_param tap;
+
+	/* keylen-1 and key[1]  since the call to insert32 will consume the
+	   first part of the key.
+	*/
+	tap.callback= cb;
+	tap.param   = pm;
+	tap.keylen  = keylen-1;
+	tap.key     = &key[1];
+	tap.tree    = tree;
+
+	trbt_insert32_callback(tree, key[0], array_insert_callback, &tap);
+}
+
+
+/* lookup the tree using an array of uint32 as a key */
+void *
+trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key)
+{
+	/* if keylen is 1 we can do a regular lookup and return this to the
+	   user 
+	*/
+	if (keylen == 1) {
+		return trbt_lookup32(tree, key[0]);
+	}
+
+	/* we need to lookup the next subtree */
+	tree = trbt_lookup32(tree, key[0]);
+	if (tree == NULL) {
+		/* the key does not exist, return NULL */
+		return NULL;
+	}
+
+	/* now lookup the next part of the key in our new tree */
+	return trbt_lookuparray32(tree, keylen-1, &key[1]);
+}
+
+
+/*  delete a node from the tree using an array of uint32 as a key */
+void
+trbt_deletearray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key)
+{
+	trbt_tree_t *next_tree;
+
+	/* if we have reached the leaftree we can just delete the node
+	   if it exists
+	*/
+	if (keylen == 1) {
+		trbt_delete32(tree, key[0]);
+		return;
+	}
+
+
+	/* find the next subtree and recurse into it if it exists */
+	next_tree = trbt_lookup32(tree, key[0]);
+	if (next_tree == NULL) {
+		return;
+	}
+
+	trbt_deletearray32(next_tree, keylen-1, &key[1]);
+
+
+	/* when we returned from recursing into the the subtree,
+	   that subtree might have become empty in which case we can delete it
+	   as well
+	 */
+	if (next_tree->root == NULL) {
+		trbt_delete32(tree, key[0]);
+	}
+}
+
 # if 0
 static void printtree(trbt_node_t *node, int levels)
 {
