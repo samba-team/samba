@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
 
 
 #define TAKEOVER_TIMEOUT() timeval_current_ofs(ctdb->tunable.takeover_timeout,0)
@@ -923,17 +924,6 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 
 
 
-/*
-  list of tcp connections to kill
- */
-struct ctdb_killtcp_connection {
-	struct ctdb_killtcp_connection *prev, *next;
-	struct ctdb_context *ctdb;
-	struct sockaddr_in src;
-	struct sockaddr_in dst;
-	int count;
-};
-
 /* 
    structure containing the listening socket and the list of tcp connections
    that the ctdb daemon is to kill
@@ -943,9 +933,20 @@ struct ctdb_kill_tcp {
 	int capture_fd;
 	int sending_fd;
 	struct fd_event *fde;
-	struct ctdb_killtcp_connection *connections;
+	trbt_tree_t *connections;
 	void *private_data;
 };
+
+/*
+  a tcp connection that is to be killed
+ */
+struct ctdb_killtcp_con {
+	struct sockaddr_in src;
+	struct sockaddr_in dst;
+	int count;
+	struct ctdb_kill_tcp *killtcp;
+};
+
 
 /*
   called when we get a read event on the raw socket
@@ -954,9 +955,10 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 				uint16_t flags, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
+	struct ctdb_killtcp_con *con;
 	struct sockaddr_in src, dst;
-	struct ctdb_killtcp_connection *conn;
 	uint32_t ack_seq, seq;
+	uint32_t key[4];
 
 	if (!(flags & EVENT_FD_READ)) {
 		return;
@@ -970,32 +972,49 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	/* loop over all connections and see if we find one that matches */
-	for (conn = killtcp->connections; conn; conn = conn->next) {
-		/* We only want packets sent from a guy we have tickled */
-		if (src.sin_addr.s_addr != conn->dst.sin_addr.s_addr) {
-			continue;
-		}
-		/* We only want packets sent to us */
-		if (dst.sin_addr.s_addr != conn->src.sin_addr.s_addr) {
-			continue;
-		}
-		/* We only want replies from a port we tickled */
-		if (src.sin_port != conn->dst.sin_port) {
-			continue;
-		}
-		if (dst.sin_port != conn->src.sin_port) {
-			continue;
-		}
-
-		/* This one has been tickled !
-		   now reset him and remove him from the list.
-		 */
-		ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, 
-				  &conn->src, ack_seq, seq, 1);
-		talloc_free(conn);
-		break;
+	/* check if we have this guy in our list of connections
+	   to kill
+	*/
+	key[0]	= dst.sin_addr.s_addr;
+	key[1]	= src.sin_addr.s_addr;
+	key[2]	= dst.sin_port;
+	key[3]	= src.sin_port;
+	con = trbt_lookuparray32(killtcp->connections, 4, key);
+	if (con == NULL) {
+		/* no this was some other packet we can just ignore */
+		return;
 	}
+
+	/* This one has been tickled !
+	   now reset him and remove him from the list.
+	 */
+	DEBUG(1, ("sending a tcp reset to kill connection :%d -> %s:%d\n", ntohs(con->dst.sin_port), inet_ntoa(con->src.sin_addr), ntohs(con->src.sin_port)));
+
+	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, 
+			  &con->src, ack_seq, seq, 1);
+	trbt_deletearray32(killtcp->connections, 4, key);	
+}
+
+
+/* when traversing the list of all tcp connections to send tickle acks to
+   (so that we can capture the ack coming back and kill the connection
+    by a RST)
+   this callback is called for each connection we are currently trying to kill
+*/
+static void tickle_connection_traverse(void *param, void *data)
+{
+	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
+	struct ctdb_kill_tcp *killtcp = talloc_get_type(param, struct ctdb_kill_tcp);
+
+	/* have tried too many times, just give up */
+	if (con->count >= 5) {
+		talloc_free(con);
+		return;
+	}
+
+	/* othervise, try tickling it again */
+	con->count++;
+	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, &con->src, 0, 0, 0);
 }
 
 
@@ -1006,23 +1025,17 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
 					      struct timeval t, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
-	struct ctdb_killtcp_connection *conn, *next;
+
 
 	/* loop over all connections sending tickle ACKs */
-	for (conn = killtcp->connections; conn; conn = next) {
-		next = conn->next;
-		conn->count++;
-		if (conn->count > 5) {
-			talloc_free(conn);
-			continue;
-		}
-		ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, &conn->src, 0, 0, 0);
-	}
+	trbt_traversearray32(killtcp->connections, 4, tickle_connection_traverse, killtcp);
+
 
 	/* If there are no more connections to kill we can remove the
 	   entire killtcp structure
 	 */
-	if (killtcp->connections == NULL) {
+	if ( (killtcp->connections == NULL) || 
+	     (killtcp->connections->root == NULL) ) {
 		talloc_free(killtcp);
 		return;
 	}
@@ -1049,10 +1062,31 @@ static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 /*
   destroy a killtcp connection structure
  */
-static int ctdb_killtcp_connection_destructor(struct ctdb_killtcp_connection *conn)
+static int ctdb_killtcp_connection_destructor(struct ctdb_killtcp_con *con)
 {
-	DLIST_REMOVE(conn->ctdb->killtcp->connections, conn);
+	uint32_t key[4];
+
+	key[0]	= con->src.sin_addr.s_addr;
+	key[1]	= con->dst.sin_addr.s_addr;
+	key[2]	= con->src.sin_port;
+	key[3]	= con->dst.sin_port;
+
+	trbt_deletearray32(con->killtcp->connections, 4, key);
+
 	return 0;
+}
+
+
+/* nothing fancy here, just unconditionally replace any existing
+   connection structure with the new one.
+
+   dont even free the old one if it did exist, that one is talloc_stolen
+   by the same node in the tree anyway and will be deleted when the new data 
+   is deleted
+*/
+static void *add_killtcp_callback(void *parm, void *data)
+{
+	return parm;
 }
 
 /*
@@ -1062,7 +1096,8 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 				       struct sockaddr_in *src, struct sockaddr_in *dst)
 {
 	struct ctdb_kill_tcp *killtcp = ctdb->killtcp;
-	struct ctdb_killtcp_connection *conn;
+	struct ctdb_killtcp_con *con;
+	uint32_t key[4];
 	
 	/* If this is the first connection to kill we must allocate
 	   a new structure
@@ -1074,19 +1109,31 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		killtcp->ctdb        = ctdb;
 		killtcp->capture_fd  = -1;
 		killtcp->sending_fd  = -1;
-		killtcp->connections = NULL;
+		killtcp->connections= trbt_create(killtcp);
+
 		ctdb->killtcp        = killtcp;
 		talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
 	}
 
-	conn = talloc(killtcp, struct ctdb_killtcp_connection);
-	CTDB_NO_MEMORY(ctdb, conn);
-	conn->src   = *src;
-	conn->dst   = *dst;
-	conn->ctdb  = ctdb;
-	conn->count = 0;
-	talloc_set_destructor(conn, ctdb_killtcp_connection_destructor);
-	DLIST_ADD(killtcp->connections, conn);
+
+
+	/* create a structure that describes this connection we want to
+	   RST and store it in killtcp->connections
+	*/
+	con = talloc(killtcp, struct ctdb_killtcp_con);
+	CTDB_NO_MEMORY(ctdb, con);
+	con->src     = *src;
+	con->dst     = *dst;
+	con->count   = 0;
+	con->killtcp = killtcp;
+	talloc_set_destructor(con, ctdb_killtcp_connection_destructor);
+
+	key[0]	= con->src.sin_addr.s_addr;
+	key[1]	= con->dst.sin_addr.s_addr;
+	key[2]	= con->src.sin_port;
+	key[3]	= con->dst.sin_port;
+	trbt_insertarray32_callback(killtcp->connections, 4, key, add_killtcp_callback, con);
+
 
 	/* 
 	   If we dont have a socket to send from yet we must create it
@@ -1124,7 +1171,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	}
 
 	/* tickle him once now */
-	ctdb_sys_send_tcp(killtcp->sending_fd, &conn->dst, &conn->src, 0, 0, 0);
+	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, &con->src, 0, 0, 0);
 
 	return 0;
 
