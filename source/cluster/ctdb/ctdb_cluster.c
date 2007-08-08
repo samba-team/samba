@@ -42,6 +42,7 @@ struct cluster_messaging_list {
 struct cluster_state {
 	struct ctdb_context *ctdb;
 	struct cluster_messaging_list *list;
+	uint32_t vnn;
 };
 
 
@@ -197,6 +198,7 @@ static struct cluster_ops cluster_ctdb_ops = {
 void cluster_ctdb_init(struct event_context *ev, const char *model)
 {
 	struct cluster_state *state;
+	int ret;
 
 	if (!lp_parm_bool(-1, "ctdb", "enable", False)) {
 		return;
@@ -208,17 +210,32 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
 	state->ctdb = ctdb_init(ev);
 	if (state->ctdb == NULL) goto failed;
 
+	ret = ctdb_socket_connect(state->ctdb);
+	if (ret == -1) {
+		DEBUG(0,(__location__ " Failed to connect to ctdb socket\n"));
+		goto failed;
+	}
+
+	/* get our vnn */
+	state->vnn = ctdb_ctrl_getvnn(state->ctdb, timeval_zero(), CTDB_CURRENT_NODE);
+	if (state->vnn == (uint32_t)-1) {
+		DEBUG(0,(__location__ " Failed to get ctdb vnn\n"));
+		goto failed;
+	}
+
 	state->list = NULL;
 
 	cluster_ctdb_ops.private = state;
 
 	cluster_set_ops(&cluster_ctdb_ops);
 
+#if 0
 	/* nasty hack for now ... */
 	{
 		void brl_ctdb_init_ops(void);
 		brl_ctdb_init_ops();
 	}
+#endif
 
 	return;
 	
