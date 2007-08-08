@@ -28,6 +28,20 @@
 #include <time.h>
 #include "common/rb_tree.h"
 
+static struct timeval tp1,tp2;
+
+static void start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
+		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
+}
+
 int num_records;
 
 void *callback(void *param, void *d)
@@ -43,11 +57,24 @@ void *callback(void *param, void *d)
 	return data;
 }
 
-void traverse(void *param, void *d)
+void *random_add(void *p, void *d)
+{
+	if(d){
+		talloc_free(d);
+	}
+	return p;
+}
+
+void traverse(void *p, void *d)
 {
 	uint32_t *data = (uint32_t *)d;
 
 	printf("traverse data:%d\n",*data);
+}
+
+void random_traverse(void *p, void *d)
+{
+	printf("%s   ",(char *)d);
 }
 	
 				
@@ -67,9 +94,10 @@ int main(int argc, const char *argv[])
 	int extra_argc = 0;
 	poptContext pc;
 	struct event_context *ev;
-	int i;
+	int i,j,k;
 	trbt_tree_t *tree;
 	uint32_t *data;
+	uint32_t key[3];
 	uint32_t key1[3] = {0,10,20};
 	uint32_t key2[3] = {0,10,21};
 	uint32_t key3[3] = {0,11,20};
@@ -180,6 +208,44 @@ int main(int argc, const char *argv[])
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	trbt_traversearray32(tree, 3, traverse, NULL);
 	
+
+	printf("\nrun random insert and delete for 60 seconds\n");
+	tree = trbt_create(NULL);
+	i=0;
+	start_timer();
+	while(end_timer() < 10.0){
+		char *str;
+
+		i++;
+		key[0]=random()%10;
+		key[1]=random()%10;
+		key[2]=random()%10;
+		if (random()%2) {
+			str=talloc_asprintf(tree, "%d.%d.%d", key[0],key[1],key[2]);
+			trbt_insertarray32_callback(tree, 3, key, random_add, str);
+		} else {
+			trbt_deletearray32(tree, 3, key);
+		}
+		if(i%1000==999)printf(".");fflush(stdout);
+	}
+	printf("\n");
+	trbt_traversearray32(tree, 3, random_traverse, NULL);
+	printf("\n");
+
+	printf("\ndeleting all entries\n");
+	for(i=0;i<10;i++){
+	for(j=0;j<10;j++){
+	for(k=0;k<10;k++){
+		key[0]=i;
+		key[1]=j;
+		key[2]=k;
+		trbt_deletearray32(tree, 3, key);
+	}
+	}
+	}
+	trbt_traversearray32(tree, 3, random_traverse, NULL);
+	printf("\n");
+	talloc_report_full(tree, stdout);
 
 	return 0;
 }
