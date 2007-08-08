@@ -405,13 +405,24 @@ verify_crl(hx509_context context,
 
     _hx509_query_clear(&q);
 	
-    q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
-    q.match |= HX509_QUERY_KU_CRLSIGN;
-    q.subject_name = &crl->tbsCertList.issuer;
-
-    ret = hx509_certs_find(context, certs, &q, &signer);
-    if (ret)
-	return ret;
+    /*
+     * If its the signer have CRLSIGN bit set, use that as the signer
+     * cert for the certificate, otherwise, search for a certificate.
+     */
+    if (_hx509_check_key_usage(context, parent, 1 << 6, FALSE) == 0) {
+	signer = hx509_cert_ref(parent);
+    } else {
+	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
+	q.match |= HX509_QUERY_KU_CRLSIGN;
+	q.subject_name = &crl->tbsCertList.issuer;
+	
+	ret = hx509_certs_find(context, certs, &q, &signer);
+	if (ret) {
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				   "Failed to find certificate for CRL");
+	    return ret;
+	}
+    }
 
     ret = _hx509_verify_signature_bitstring(context,
 					    _hx509_get_cert(signer), 
