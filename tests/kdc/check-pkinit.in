@@ -86,6 +86,8 @@ rm -f current-db*
 rm -f out-*
 rm -f mkey.file*
 
+> messages.log
+
 echo Creating database
 ${kadmin} \
     init \
