@@ -1,5 +1,15 @@
 2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-iprop.in: use wait-kdc.sh for all diffrent places we
+	start ipropd-{master,slave}.
+
+	* all-tests: empty messages.log
+
+	* kdc/check-iprop.in: Use wait-kdc.sh to wait for
+	ipropd-{master,slave}.
+
+	* kdc/wait-kdc.sh: look futher back in the logfile.
+	
 	* kdc/wait-kdc.sh: Make wait-kdc.sh able to wait on other things.
 
 	* kdc/check-iprop.in: Checking master going backward, create
