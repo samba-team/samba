@@ -531,7 +531,7 @@ static struct static_dir_ace_mapping {
 static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
 {
 	uint32 result = 0;
-	uint32 rights = ace->info.mask;
+	uint32 rights = ace->access_mask;
 	uint8 flags = ace->flags;
 
 	struct static_dir_ace_mapping *m;
@@ -539,12 +539,12 @@ static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
 	for (m = &ace_mappings[0]; m->afs_rights != 9999; m++) {
 		if ( (ace->type == m->type) &&
 		     (ace->flags == m->flags) &&
-		     (ace->info.mask == m->mask) )
+		     (ace->access_mask == m->mask) )
 			return m->afs_rights;
 	}
 
 	DEBUG(1, ("AFSACL FALLBACK: 0x%X 0x%X 0x%X %s %X\n",
-		  ace->type, ace->flags, ace->info.mask, filename, rights));
+		  ace->type, ace->flags, ace->access_mask, filename, rights));
 
 	if (rights & (GENERIC_ALL_ACCESS|WRITE_DAC_ACCESS)) {
 		result |= PRSFS_READ | PRSFS_WRITE | PRSFS_INSERT |
@@ -572,7 +572,7 @@ static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
 static uint32 nt_to_afs_file_rights(const char *filename, const SEC_ACE *ace)
 {
 	uint32 result = 0;
-	uint32 rights = ace->info.mask;
+	uint32 rights = ace->access_mask;
 
 	if (rights & (GENERIC_READ_ACCESS|FILE_READ_DATA)) {
 		result |= PRSFS_READ;
@@ -714,7 +714,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 	dacl = psd->dacl;
 
 	for (i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *ace = &(dacl->ace[i]);
+		SEC_ACE *ace = &(dacl->aces[i]);
 		const char *dom_name, *name;
 		enum lsa_SidType name_type;
 		char *p;
