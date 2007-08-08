@@ -1,5 +1,12 @@
 2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c: "self-signed doesn't count" doesn't apply to trust
+	anchor certificate.  make trust anchor check consistant.
+
+	* revoke.c: make compile.
+
+	* revoke.c (verify_crl): set error strings.
+	
 	* revoke.c (verify_crl): handle with the signer is the
 	CRLsigner (shortcut).
 
