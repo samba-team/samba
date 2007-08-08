@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 7
+Release: 8
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -102,6 +102,7 @@ fi
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
+%{_bindir}/smnotify
 %{_bindir}/onnode.ssh
 %{_bindir}/onnode.rsh
 %{_bindir}/onnode

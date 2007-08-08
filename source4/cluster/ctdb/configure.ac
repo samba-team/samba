@@ -14,6 +14,23 @@ AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(ctdb.h)
 AC_CONFIG_SRCDIR([server/ctdbd.c])
 
+case `uname` in
+  Linux*)
+    CTDB_SYSTEM_OBJ=common/system_linux.o
+    CTDB_SCSI_IO=bin/scsi_io
+    CTDB_PCAP_LDFLAGS=
+    ;;
+  AIX*)
+    CTDB_SYSTEM_OBJ=common/system_aix.o
+    CTDB_SCSI_IO=
+    CTDB_PCAP_LDFLAGS=-lpcap
+    ;;
+  *)
+    echo unknown system  cant configure
+    exit
+    ;;
+esac
+
 AC_LIBREPLACE_ALL_CHECKS
 
 if test "$ac_cv_prog_gcc" = yes; then
@@ -44,5 +61,8 @@ if test x"$ctdb_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
 fi
 
 AC_SUBST(EXTRA_OBJ)
+AC_SUBST(CTDB_SYSTEM_OBJ)
+AC_SUBST(CTDB_SCSI_IO)
+AC_SUBST(CTDB_PCAP_LDFLAGS)
 
 AC_OUTPUT(Makefile)

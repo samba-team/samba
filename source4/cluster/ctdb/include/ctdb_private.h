@@ -37,6 +37,35 @@
 #define CTDB_NULL_FUNC      0xFF000001
 #define CTDB_FETCH_FUNC     0xFF000002
 
+/*
+  a tcp connection description
+ */
+struct ctdb_tcp_connection {
+	struct sockaddr_in saddr;
+	struct sockaddr_in daddr;
+};
+
+/* the wire representation for a tcp tickle array */
+struct ctdb_tcp_wire_array {
+	uint32_t num;
+	struct ctdb_tcp_connection connections[1];
+};	
+
+/* the list of tcp tickles used by get/set tcp tickle list */
+struct ctdb_control_tcp_tickle_list {
+	uint32_t vnn;
+	struct ctdb_tcp_wire_array tickles;
+};
+
+/*
+  array of tcp connections
+ */
+struct ctdb_tcp_array {
+	uint32_t num;
+	struct ctdb_tcp_connection *connections;
+};	
+
+
 /* all tunable variables go in here */
 struct ctdb_tunable {
 	uint32_t max_redirect_count;
@@ -51,6 +80,7 @@ struct ctdb_tunable {
 	uint32_t election_timeout;
 	uint32_t takeover_timeout;
 	uint32_t monitor_interval;
+	uint32_t tickle_update_interval;
 	uint32_t script_timeout;
 	uint32_t recovery_grace_period;
 	uint32_t recovery_ban_period;
@@ -139,6 +169,13 @@ struct ctdb_node {
 	/* the node number that has taken over this nodes public address, if any. 
 	   If not taken over, then set to -1 */
 	int32_t takeover_vnn;
+
+	/* List of clients to tickle for this public address */
+	struct ctdb_tcp_array *tcp_array;
+
+	/* whether we need to update the other nodes with changes to our list
+	   of connected clients */
+	bool tcp_update_needed;
 };
 
 /*
@@ -274,6 +311,7 @@ struct ctdb_context {
 	uint32_t recovery_mode;
 	uint32_t monitoring_mode;
 	TALLOC_CTX *monitor_context;
+	TALLOC_CTX *tickle_update_context;
 	struct ctdb_tunable tunable;
 	enum ctdb_freeze_mode freeze_mode;
 	struct ctdb_freeze_handle *freeze_handle;
@@ -305,8 +343,10 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_takeover takeover;
-	struct ctdb_tcp_list *tcp_list;
 	struct ctdb_client_ip *client_ip_list;
+	bool do_setsched;
+	void *saved_scheduler_param;
+	struct ctdb_kill_tcp *killtcp;
 };
 
 struct ctdb_db_context {
@@ -406,6 +446,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 51,
 		    CTDB_CONTROL_MODIFY_FLAGS            = 52,
 		    CTDB_CONTROL_GET_ALL_TUNABLES        = 53,
+		    CTDB_CONTROL_KILL_TCP                = 54,
+		    CTDB_CONTROL_GET_TCP_TICKLE_LIST     = 55,
+		    CTDB_CONTROL_SET_TCP_TICKLE_LIST     = 56,
 };
 
 /*
@@ -439,6 +482,14 @@ struct ctdb_control_set_call {
 struct ctdb_control_tcp {
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
+};
+
+/*
+  struct for kill_tcp control
+ */
+struct ctdb_control_killtcp {
+	struct sockaddr_in src;
+	struct sockaddr_in dst;
 };
 
 /*
@@ -931,6 +982,7 @@ uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_monitoring(struct ctdb_context *ctdb);
+void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
@@ -947,7 +999,8 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
 int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
-void ctdb_set_realtime(bool enable);
+void ctdb_set_scheduler(struct ctdb_context *ctdb);
+void ctdb_restore_scheduler(struct ctdb_context *ctdb);
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
@@ -980,22 +1033,23 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
 bool ctdb_sys_have_ip(const char *ip);
-int ctdb_sys_send_tcp(const struct sockaddr_in *dest, 
+int ctdb_sys_send_tcp(int fd,
+		      const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src,
 		      uint32_t seq, uint32_t ack, int rst);
-int ctdb_sys_kill_tcp(struct event_context *ev,
-		      const struct sockaddr_in *dest, 
-		      const struct sockaddr_in *src);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
-				uint32_t srcnode, TDB_DATA indata);
+				TDB_DATA indata);
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
+int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1031,5 +1085,23 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_port(const char *s, struct sockaddr_in *ip);
+
+int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
+int ctdb_sys_close_capture_socket(void *private_data);
+int ctdb_sys_open_sending_socket(void);
+int ctdb_sys_read_tcp_packet(int s, void *private_data, struct sockaddr_in *src, struct sockaddr_in *dst,
+			     uint32_t *ack_seq, uint32_t *seq);
+
+int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_killtcp *killtcp);
+
+int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      TALLOC_CTX *mem_ctx,
+		      uint32_t vnn,
+		      struct ctdb_control_tcp_tickle_list **list);
 
 #endif

@@ -1432,6 +1432,11 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
 	int ret;
 	int32_t res;
 
+	ctdb_db = ctdb_db_handle(ctdb, name);
+	if (ctdb_db) {
+		return ctdb_db;
+	}
+
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db);
 
@@ -2095,6 +2100,59 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 
 
 /*
+  kill a tcp connection
+ */
+int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_killtcp *killtcp)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_control_killtcp);
+	data.dptr  = (unsigned char *)killtcp;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_KILL_TCP, 0, data, NULL,
+			   NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for killtcp failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  get a list of all tcp tickles that a node knows about for a particular vnn
+ */
+int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 
+			      struct timeval timeout, uint32_t destnode, 
+			      TALLOC_CTX *mem_ctx, uint32_t vnn,
+			      struct ctdb_control_tcp_tickle_list **list)
+{
+	int ret;
+	TDB_DATA data, outdata;
+	int32_t status;
+
+	data.dptr = (uint8_t*)&vnn;
+	data.dsize = sizeof(vnn);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_TCP_TICKLE_LIST, 0, data, 
+			   mem_ctx, &outdata, &status, NULL, NULL);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for get tcp tickles failed\n"));
+		return -1;
+	}
+
+	*list = (struct ctdb_control_tcp_tickle_list *)outdata.dptr;
+
+	return status;
+}
+
+/*
   initialise the ctdb daemon for client applications
 
   NOTE: In current code the daemon does not fork. This is for testing purposes only
@@ -2108,6 +2166,8 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->ev  = ev;
 	ctdb->idr = idr_init(ctdb);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
+
+	ctdb_set_socketname(ctdb, CTDB_PATH);
 
 	return ctdb;
 }
