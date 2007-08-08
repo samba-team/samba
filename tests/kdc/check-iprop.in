@@ -155,10 +155,12 @@ cp ${objdir}/current.log ${objdir}/current.log.tmp
 
 echo "starting slave again"
 > iprop-stats
+> messages.log
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave -k ${keytab} localhost &
 ipds=$!
-sleep 2
+sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
+
 echo "checking slave is up again"
 ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
@@ -174,7 +176,8 @@ rm current.slave.log current-db.slave* || exit 1
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave -k ${keytab} localhost &
 ipds=$!
-sleep 2
+sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
+
 echo "checking slave is up again"
 ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
@@ -202,6 +205,8 @@ ${iproplog} last-version > master-last.tmp
 cmp master-last.tmp slave-last.tmp || exit 1
 
 # ----------------- checking: master going backward
+> iprop-stats
+> messages.log
 
 echo "Going back to old version of the master log file"
 cp ${objdir}/current.log.tmp ${objdir}/current.log
@@ -210,14 +215,14 @@ echo "starting master"
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
 ipdm=$!
-sleep 4
+sh ${srcdir}/wait-kdc.sh ipropd-master || exit 1
 
 echo "starting slave"
-> iprop-stats
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave -k ${keytab} localhost &
 ipds=$!
-sleep 2
+sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
+
 echo "checking slave is up again"
 ${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
