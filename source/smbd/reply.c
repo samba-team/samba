@@ -3289,34 +3289,38 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBwriteX);
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBwriteX);
-		return;
-	}
-
-	if ((CVAL(inbuf, smb_wct) != 12) && (CVAL(inbuf, smb_wct) != 14)) {
+	if ((req->wct != 12) && (req->wct != 14)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBwriteX);
 		return;
 	}
 
-	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
-	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
-	numtowrite = SVAL(inbuf,smb_vwv10);
-	write_through = BITSETW(inbuf+smb_vwv7,0);
-	smb_doff = SVAL(inbuf,smb_vwv11);
-	smblen = smb_len(inbuf);
-	large_writeX = ((CVAL(inbuf,smb_wct) == 14) && (smblen > 0xFFFF));
+	numtowrite = SVAL(req->inbuf,smb_vwv10);
+	smb_doff = SVAL(req->inbuf,smb_vwv11);
+	smblen = smb_len(req->inbuf);
+	large_writeX = ((req->wct == 14) && (smblen > 0xFFFF));
 
-	/* If it's an IPC, pass off the pipe handler. */
-	if (IS_IPC(conn)) {
-		reply_post_legacy(
-			req,
-			reply_pipe_write_and_X(inbuf,outbuf,length,bufsize));
+	/* Deal with possible LARGE_WRITEX */
+	if (large_writeX) {
+		numtowrite |= ((((size_t)SVAL(req->inbuf,smb_vwv9)) & 1 )<<16);
+	}
+
+	if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
+		reply_doserror(req, ERRDOS, ERRbadmem);
 		END_PROFILE(SMBwriteX);
 		return;
 	}
+
+	/* If it's an IPC, pass off the pipe handler. */
+	if (IS_IPC(conn)) {
+		reply_pipe_write_and_X(req);
+		END_PROFILE(SMBwriteX);
+		return;
+	}
+
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv2));
+	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv3);
+	write_through = BITSETW(req->inbuf+smb_vwv7,0);
 
 	if (!check_fsp(conn, req, fsp, &current_user)) {
 		END_PROFILE(SMBwriteX);
@@ -3329,18 +3333,13 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	set_message(inbuf, outbuf, 6, 0, True);
-  
-	/* Deal with possible LARGE_WRITEX */
-	if (large_writeX) {
-		numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
-	}
-
-	if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
-		reply_doserror(req, ERRDOS, ERRbadmem);
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBwriteX);
 		return;
 	}
+
+	set_message(inbuf, outbuf, 6, 0, True);
 
 	data = smb_base(inbuf) + smb_doff;
 
