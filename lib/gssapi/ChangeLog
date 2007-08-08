@@ -1,3 +1,8 @@
+2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* spnego/compat.c (_gss_spnego_internal_delete_sec_context):
+	release ctx->target_name too From Rafal Malinowski.
+
 2007-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* mech/gss_mech_switch.c: Don't try to do dlopen if system doesn't
