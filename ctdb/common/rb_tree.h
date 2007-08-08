@@ -32,7 +32,7 @@ typedef struct _trbt_node_t {
 } trbt_node_t;
 
 typedef struct _trbt_tree_t {
-	trbt_node_t *tree;
+	trbt_node_t *root;
 } trbt_tree_t;
 
 
@@ -49,7 +49,17 @@ void *trbt_lookup32(trbt_tree_t *tree, uint32_t key);
 */
 void *trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data);
 
+/* Insert a new node into the tree.
+   If this is a new node:
+     callback is called with data==NULL and param=param
+     the returned value from the callback is talloc_stolen and inserted in the
+     tree.
+   If a node already exists for this key then:
+     callback is called with data==existing data and param=param
+     the returned calue is talloc_stolen and inserted in the tree
+*/
+void trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(void *param, void *data), void *param);
+
 /* Delete a node from the tree and free all data associated with it */
 void trbt_delete32(trbt_tree_t *tree, uint32_t key);
-
 

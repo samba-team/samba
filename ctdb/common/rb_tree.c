@@ -90,7 +90,7 @@ trbt_rotate_left(trbt_node_t *node)
 			node->parent->right=node->right;
 		}
 	} else {
-		tree->tree=node->right;
+		tree->root=node->right;
 	}
 	node->right->parent=node->parent;
 	node->parent=node->right;
@@ -113,7 +113,7 @@ trbt_rotate_right(trbt_node_t *node)
 			node->parent->right=node->left;
 		}
 	} else {
-		tree->tree=node->left;
+		tree->root=node->left;
 	}
 	node->left->parent=node->parent;
 	node->parent=node->left;
@@ -470,7 +470,7 @@ delete_node(trbt_node_t *node)
 			parent->right = child;
 		}
 	} else {
-		node->tree->tree = child;
+		node->tree->root = child;
 	}
 	child->parent = node->parent;
 
@@ -497,7 +497,7 @@ delete_node(trbt_node_t *node)
 	 */
 	if (child == &dc) {
 		if (child->parent == NULL) {
-			node->tree->tree = NULL;
+			node->tree->root = NULL;
 		} else if (child == child->parent->left) {
 			child->parent->left = NULL;
 		} else {
@@ -538,13 +538,13 @@ trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data)
 {
 	trbt_node_t *node;
 
-	node=tree->tree;
+	node=tree->root;
 
 	/* is this the first node ?*/
 	if(!node){
 		node = trbt_create_node(tree, NULL, key, data);
 
-		tree->tree=node;
+		tree->root=node;
 		return NULL;
 	}
 
@@ -603,7 +603,7 @@ trbt_lookup32(trbt_tree_t *tree, uint32_t key)
 {
 	trbt_node_t *node;
 
-	node=tree->tree;
+	node=tree->root;
 
 	while(node){
 		if(key==node->key32){
@@ -626,7 +626,7 @@ trbt_delete32(trbt_tree_t *tree, uint32_t key)
 {
 	trbt_node_t *node;
 
-	node=tree->tree;
+	node=tree->root;
 
 	while(node){
 		if(key==node->key32){
@@ -642,6 +642,73 @@ trbt_delete32(trbt_tree_t *tree, uint32_t key)
 			continue;
 		}
 	}
+}
+
+
+void 
+trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(void *param, void *data), void *param)
+{
+	trbt_node_t *node;
+
+	node=tree->root;
+
+	/* is this the first node ?*/
+	if(!node){
+		node = trbt_create_node(tree, NULL, key, 
+				callback(param, NULL));
+
+		tree->root=node;
+		return;
+	}
+
+	/* it was not the new root so walk the tree until we find where to
+	 * insert this new leaf.
+	 */
+	while(1){
+		/* this node already exists, replace data and return the 
+		   old data
+		 */
+		if(key==node->key32){
+			node->data  = talloc_steal(node, 
+					callback(param, node->data));
+
+			return;
+		}
+		if(key<node->key32) {
+			if(!node->left){
+				/* new node to the left */
+				trbt_node_t *new_node;
+
+				new_node = trbt_create_node(tree, node, key,
+						callback(param, NULL));
+				node->left=new_node;
+				node=new_node;
+
+				break;
+			}
+			node=node->left;
+			continue;
+		}
+		if(key>node->key32) {
+			if(!node->right){
+				/* new node to the right */
+				trbt_node_t *new_node;
+
+				new_node = trbt_create_node(tree, node, key,
+						callback(param, NULL));
+				node->right=new_node;
+				node=new_node;
+				break;
+			}
+			node=node->right;
+			continue;
+		}
+	}
+
+	/* node will now point to the newly created node */
+	node->rb_color=TRBT_RED;
+	trbt_insert_case1(tree, node);
+	return;
 }
 
 
