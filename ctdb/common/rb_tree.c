@@ -832,6 +832,56 @@ trbt_deletearray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key)
 	}
 }
 
+
+
+/* traverse a tree starting at node */
+static void 
+trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen, 
+	void (*callback)(void *param, void *data), 
+	void *param)
+{
+	if (node->left) {
+		trbt_traversearray32_node(node->left, keylen, callback, param);
+	}
+
+	/* this is the smallest node in this subtree
+	   if keylen is 0 this means we can just call the callback
+	   otherwise we must pull the next subtree and traverse that one as well
+	*/
+	if (keylen == 0) {
+		callback(param, node->data);
+	} else {
+		trbt_traversearray32(node->data, keylen, callback, param);
+	}
+
+	if (node->right) {
+		trbt_traversearray32_node(node->right, keylen, callback, param);
+	}
+}
+	
+
+/* traverse the tree using an array of uint32 as a key */
+void 
+trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, 
+	void (*callback)(void *param, void *data), 
+	void *param)
+{
+	trbt_node_t *node;
+
+	if (tree == NULL) {
+		return;
+	}
+
+	node=tree->root;
+	if (node == NULL) {
+		return;
+	}
+
+	trbt_traversearray32_node(node, keylen-1, callback, param);
+}
+		
+
+
 # if 0
 static void printtree(trbt_node_t *node, int levels)
 {

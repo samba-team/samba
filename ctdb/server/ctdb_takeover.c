@@ -923,7 +923,6 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 
 
 
-
 /*
   list of tcp connections to kill
  */

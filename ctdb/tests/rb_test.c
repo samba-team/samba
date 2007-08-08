@@ -42,6 +42,13 @@ void *callback(void *param, void *d)
 
 	return data;
 }
+
+void traverse(void *param, void *d)
+{
+	uint32_t *data = (uint32_t *)d;
+
+	printf("traverse data:%d\n",*data);
+}
 	
 				
 /*
@@ -63,10 +70,10 @@ int main(int argc, const char *argv[])
 	int i;
 	trbt_tree_t *tree;
 	uint32_t *data;
-	uint32_t key1[3] = {0,0,0};
-	uint32_t key2[3] = {0,0,1};
-	uint32_t key3[3] = {0,1,0};
-	uint32_t key4[3] = {2,0,0};
+	uint32_t key1[3] = {0,10,20};
+	uint32_t key2[3] = {0,10,21};
+	uint32_t key3[3] = {0,11,20};
+	uint32_t key4[3] = {2,10,20};
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -114,6 +121,7 @@ int main(int argc, const char *argv[])
 	trbt_insertarray32_callback(tree, 3, key3, callback, NULL);
 	trbt_insertarray32_callback(tree, 3, key2, callback, NULL);
 	trbt_insertarray32_callback(tree, 3, key1, callback, NULL);
+
 	data = trbt_lookuparray32(tree, 3, key1);
 	printf("key1 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key2);
@@ -122,7 +130,8 @@ int main(int argc, const char *argv[])
 	printf("key3 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key4);
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
-
+	trbt_traversearray32(tree, 3, traverse, NULL);
+	
 	printf("\ndeleting key4\n");
 	trbt_deletearray32(tree, 3, key4);
 	data = trbt_lookuparray32(tree, 3, key1);
@@ -133,6 +142,7 @@ int main(int argc, const char *argv[])
 	printf("key3 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key4);
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
+	trbt_traversearray32(tree, 3, traverse, NULL);
 
 	printf("\ndeleting key2\n");
 	trbt_deletearray32(tree, 3, key2);
@@ -144,6 +154,7 @@ int main(int argc, const char *argv[])
 	printf("key3 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key4);
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
+	trbt_traversearray32(tree, 3, traverse, NULL);
 	
 	printf("\ndeleting key3\n");
 	trbt_deletearray32(tree, 3, key3);
@@ -155,6 +166,7 @@ int main(int argc, const char *argv[])
 	printf("key3 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key4);
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
+	trbt_traversearray32(tree, 3, traverse, NULL);
 	
 	printf("\ndeleting key1\n");
 	trbt_deletearray32(tree, 3, key1);
@@ -166,6 +178,7 @@ int main(int argc, const char *argv[])
 	printf("key3 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key4);
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
+	trbt_traversearray32(tree, 3, traverse, NULL);
 	
 
 	return 0;
