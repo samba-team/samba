@@ -1,5 +1,7 @@
 2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/wait-kdc.sh: Make wait-kdc.sh able to wait on other things.
+
 	* kdc/check-iprop.in: Checking master going backward, create
 	iprop-stats.
 
