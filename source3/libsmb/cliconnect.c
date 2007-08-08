@@ -583,6 +583,7 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			DEBUG(0, ("cli_session_setup_blob: recieve failed (%s)\n",
 				nt_errstr(cli_get_nt_error(cli)) ));
+			cli->vuid = 0;
 			return False;
 		}
 	}
@@ -769,6 +770,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 
 	ntlmssp_end(&ntlmssp_state);
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		cli->vuid = 0;
+	}
 	return nt_status;
 }
 
