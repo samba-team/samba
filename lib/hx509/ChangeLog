@@ -1,3 +1,10 @@
+2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c (verify_crl): handle with the signer is the
+	CRLsigner (shortjcut).
+
+	* cert.c: Fix NC, comment on how to use _hx509_check_key_usage.
+
 2007-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_nist2.in, Makefile, test/nist*: Add nist pkits tests. 
