@@ -1,3 +1,8 @@
+2007-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/wait-kdc.sh: Catch bind ../../tests/kdc/signal: Operation
+	not permitted
+
 2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-iprop.in: use wait-kdc.sh for all diffrent places we
