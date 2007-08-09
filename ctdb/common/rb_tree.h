@@ -33,12 +33,15 @@ typedef struct _trbt_node_t {
 
 typedef struct _trbt_tree_t {
 	trbt_node_t *root;
+/* automatically free the tree when the last node has been deleted */
+#define TRBT_AUTOFREE		0x00000001
+	uint32_t flags;
 } trbt_tree_t;
 
 
 
 /* Create a RB tree */
-trbt_tree_t *trbt_create(TALLOC_CTX *memctx);
+trbt_tree_t *trbt_create(TALLOC_CTX *memctx, uint32_t flags);
 
 /* Lookup a node in the tree and return a pointer to data or NULL */
 void *trbt_lookup32(trbt_tree_t *tree, uint32_t key);
@@ -70,10 +73,6 @@ void trbt_insertarray32_callback(trbt_tree_t *tree, uint32_t keylen, uint32_t *k
 /* Lookup a node in the tree with a key based on an array of uint32 
    and return a pointer to data or NULL */
 void *trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key);
-
-/* Delete a node in the tree with a key based on an array of uint32 
-   and return a pointer to data or NULL */
-void trbt_deletearray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key);
 
 /* Traverse a tree with a key based on an array of uint32 */
 void trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, void (*callback)(void *param, void *data), void *param);

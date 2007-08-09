@@ -992,7 +992,7 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 
 	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, 
 			  &con->src, ack_seq, seq, 1);
-	trbt_deletearray32(killtcp->connections, 4, key);	
+	talloc_free(con);
 }
 
 
@@ -1059,23 +1059,6 @@ static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 	return 0;
 }
 
-/*
-  destroy a killtcp connection structure
- */
-static int ctdb_killtcp_connection_destructor(struct ctdb_killtcp_con *con)
-{
-	uint32_t key[4];
-
-	key[0]	= con->src.sin_addr.s_addr;
-	key[1]	= con->dst.sin_addr.s_addr;
-	key[2]	= con->src.sin_port;
-	key[3]	= con->dst.sin_port;
-
-	trbt_deletearray32(con->killtcp->connections, 4, key);
-
-	return 0;
-}
-
 
 /* nothing fancy here, just unconditionally replace any existing
    connection structure with the new one.
@@ -1109,7 +1092,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		killtcp->ctdb        = ctdb;
 		killtcp->capture_fd  = -1;
 		killtcp->sending_fd  = -1;
-		killtcp->connections= trbt_create(killtcp);
+		killtcp->connections= trbt_create(killtcp, 0);
 
 		ctdb->killtcp        = killtcp;
 		talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
@@ -1126,7 +1109,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	con->dst     = *dst;
 	con->count   = 0;
 	con->killtcp = killtcp;
-	talloc_set_destructor(con, ctdb_killtcp_connection_destructor);
+
 
 	key[0]	= con->src.sin_addr.s_addr;
 	key[1]	= con->dst.sin_addr.s_addr;
@@ -1166,7 +1149,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		/* We also need to set up some events to tickle all these connections
 		   until they are all reset
 		*/
-		event_add_timed(ctdb->ev, killtcp, timeval_zero(), 
+		event_add_timed(ctdb->ev, killtcp, timeval_current_ofs(1, 0), 
 				ctdb_tickle_sentenced_connections, killtcp);
 	}
 

@@ -42,16 +42,16 @@ static double end_timer(void)
 		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
 }
 
-int num_records;
+int num_records=5;
 
-void *callback(void *param, void *d)
+void *callback(void *p, void *d)
 {
 	uint32_t *data = (uint32_t *)d;
 
-	if(!data){
-		data = talloc(NULL, uint32_t);
-		*data = 0;
+	if (d==NULL) {
+		data = (uint32_t *)p;
 	}
+
 	(*data)++;
 
 	return data;
@@ -59,9 +59,6 @@ void *callback(void *param, void *d)
 
 void *random_add(void *p, void *d)
 {
-	if(d){
-		talloc_free(d);
-	}
 	return p;
 }
 
@@ -102,6 +99,8 @@ int main(int argc, const char *argv[])
 	uint32_t key2[3] = {0,10,21};
 	uint32_t key3[3] = {0,11,20};
 	uint32_t key4[3] = {2,10,20};
+	TALLOC_CTX *memctx;
+	uint32_t **u32array;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -125,9 +124,13 @@ int main(int argc, const char *argv[])
 
 
 	printf("testing trbt_insert32_callback for %d records\n", num_records);
-	tree = trbt_create(NULL);
+	memctx   = talloc_new(NULL);
+	u32array = talloc_array(memctx, uint32_t, num_records);
+	tree = trbt_create(memctx, 0);
 	for (i=0; i<num_records; i++) {
-		trbt_insert32_callback(tree, i, callback, NULL);
+		u32array[i]  = talloc(u32array, uint32_t);
+		*u32array[i] = 0;
+		trbt_insert32_callback(tree, i, callback, u32array[i]);
 	}
 	for (i=3; i<num_records; i++) {
 		trbt_insert32_callback(tree, i, callback, NULL);
@@ -139,16 +142,41 @@ int main(int argc, const char *argv[])
 		data = trbt_lookup32(tree, i);
 		printf("key:%d data:%d\n", i, *data);
 	}
+//	talloc_report_full(tree, stdout);
+//	talloc_report_full(memctx, stdout);
+//	print_tree(tree);
+
+	printf("deleting key 2\n");
+	talloc_free(u32array[2]);
+//	talloc_report_full(tree, stdout);
+//	talloc_report_full(memctx, stdout);
+//	print_tree(tree);
+
+	printf("deleting key 1\n");
+	talloc_free(u32array[1]);
+//	talloc_report_full(tree, stdout);
+//	talloc_report_full(memctx, stdout);
+//	print_tree(tree);
+
+	printf("freeing tree\n");
+	talloc_report_full(memctx, stdout);
+	talloc_free(memctx);
 
 
 	printf("testing trbt_insertarray32_callback\n");
-	tree = trbt_create(NULL);
-	trbt_insertarray32_callback(tree, 3, key1, callback, NULL);
-	trbt_insertarray32_callback(tree, 3, key1, callback, NULL);
-	trbt_insertarray32_callback(tree, 3, key2, callback, NULL);
-	trbt_insertarray32_callback(tree, 3, key3, callback, NULL);
-	trbt_insertarray32_callback(tree, 3, key2, callback, NULL);
-	trbt_insertarray32_callback(tree, 3, key1, callback, NULL);
+	memctx   = talloc_new(NULL);
+	tree = trbt_create(memctx, 0);
+	u32array = talloc_array(memctx, uint32_t, 4);
+	for (i=0;i<4;i++) {
+		u32array[i]  = talloc(u32array, uint32_t);
+		*u32array[i] = 0;
+	}
+	trbt_insertarray32_callback(tree, 3, key1, callback, u32array[0]);
+	trbt_insertarray32_callback(tree, 3, key1, callback, u32array[0]);
+	trbt_insertarray32_callback(tree, 3, key2, callback, u32array[1]);
+	trbt_insertarray32_callback(tree, 3, key3, callback, u32array[2]);
+	trbt_insertarray32_callback(tree, 3, key2, callback, u32array[1]);
+	trbt_insertarray32_callback(tree, 3, key1, callback, u32array[0]);
 
 	data = trbt_lookuparray32(tree, 3, key1);
 	printf("key1 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
@@ -159,9 +187,10 @@ int main(int argc, const char *argv[])
 	data = trbt_lookuparray32(tree, 3, key4);
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	trbt_traversearray32(tree, 3, traverse, NULL);
+
 	
 	printf("\ndeleting key4\n");
-	trbt_deletearray32(tree, 3, key4);
+	talloc_free(trbt_lookuparray32(tree, 3, key4));
 	data = trbt_lookuparray32(tree, 3, key1);
 	printf("key1 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key2);
@@ -173,7 +202,7 @@ int main(int argc, const char *argv[])
 	trbt_traversearray32(tree, 3, traverse, NULL);
 
 	printf("\ndeleting key2\n");
-	trbt_deletearray32(tree, 3, key2);
+	talloc_free(trbt_lookuparray32(tree, 3, key2));
 	data = trbt_lookuparray32(tree, 3, key1);
 	printf("key1 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key2);
@@ -185,7 +214,7 @@ int main(int argc, const char *argv[])
 	trbt_traversearray32(tree, 3, traverse, NULL);
 	
 	printf("\ndeleting key3\n");
-	trbt_deletearray32(tree, 3, key3);
+	talloc_free(trbt_lookuparray32(tree, 3, key3));
 	data = trbt_lookuparray32(tree, 3, key1);
 	printf("key1 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key2);
@@ -197,7 +226,7 @@ int main(int argc, const char *argv[])
 	trbt_traversearray32(tree, 3, traverse, NULL);
 	
 	printf("\ndeleting key1\n");
-	trbt_deletearray32(tree, 3, key1);
+	talloc_free(trbt_lookuparray32(tree, 3, key1));
 	data = trbt_lookuparray32(tree, 3, key1);
 	printf("key1 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	data = trbt_lookuparray32(tree, 3, key2);
@@ -207,10 +236,14 @@ int main(int argc, const char *argv[])
 	data = trbt_lookuparray32(tree, 3, key4);
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	trbt_traversearray32(tree, 3, traverse, NULL);
+
+	talloc_free(tree);
+	talloc_free(memctx);
 	
 
 	printf("\nrun random insert and delete for 60 seconds\n");
-	tree = trbt_create(NULL);
+	memctx   = talloc_new(NULL);
+	tree = trbt_create(memctx, 0);
 	i=0;
 	start_timer();
 	while(end_timer() < 60.0){
@@ -221,10 +254,10 @@ int main(int argc, const char *argv[])
 		key[1]=random()%10;
 		key[2]=random()%10;
 		if (random()%2) {
-			str=talloc_asprintf(tree, "%d.%d.%d", key[0],key[1],key[2]);
+			str=talloc_asprintf(memctx, "%d.%d.%d", key[0],key[1],key[2]);
 			trbt_insertarray32_callback(tree, 3, key, random_add, str);
 		} else {
-			trbt_deletearray32(tree, 3, key);
+			talloc_free(trbt_lookuparray32(tree, 3, key));
 		}
 		if(i%1000==999)printf(".");fflush(stdout);
 	}
@@ -239,7 +272,7 @@ int main(int argc, const char *argv[])
 		key[0]=i;
 		key[1]=j;
 		key[2]=k;
-		trbt_deletearray32(tree, 3, key);
+		talloc_free(trbt_lookuparray32(tree, 3, key));
 	}
 	}
 	}
