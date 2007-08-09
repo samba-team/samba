@@ -308,7 +308,7 @@ int winbind_open_pipe_sock(void)
 		return winbindd_fd;
 	}
 
-#ifdef DEVELOPER
+#ifdef SOCKET_WRAPPER
 	winbindd_socket_dir_env = getenv(WINBINDD_SOCKET_DIR_ENV);
 
 	if (!winbindd_socket_dir_env)
