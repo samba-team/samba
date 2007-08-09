@@ -188,7 +188,6 @@ int main(int argc, const char *argv[])
 	printf("key4 dataptr:0x%08x == %d\n",(int)data,data?*data:-1);
 	trbt_traversearray32(tree, 3, traverse, NULL);
 
-	
 	printf("\ndeleting key4\n");
 	talloc_free(trbt_lookuparray32(tree, 3, key4));
 	data = trbt_lookuparray32(tree, 3, key1);
