@@ -1,3 +1,11 @@
+2007-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* strftime.c: rewrite str[pf]time for testing.
+
+	* strptime.c: rewrite str[pf]time for testing.
+
+	* Makefile.am: add TEST_STRPFTIME
+	
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ndbm_wrap.c (dbm_get): set dsize to 0 on failure.
