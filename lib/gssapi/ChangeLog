@@ -1,3 +1,7 @@
+2007-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_krb5.c: Readd gss_krb5_get_tkt_flags.
+
 2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* spnego/compat.c (_gss_spnego_internal_delete_sec_context):
