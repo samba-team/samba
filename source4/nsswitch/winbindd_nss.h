@@ -40,7 +40,7 @@
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
-#ifdef DEVELOPER
+#ifdef SOCKET_WRAPPER
 #define WINBINDD_SOCKET_DIR_ENV "WINBINDD_SOCKET_DIR"
 #endif
 
