@@ -33,6 +33,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#ifdef TEST_STRPFTIME
+#include "strpftime-test.h"
+#endif
 #include "roken.h"
 
 RCSID("$Id$");
