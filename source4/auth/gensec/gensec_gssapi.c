@@ -370,7 +370,10 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	}
 
 	gensec_gssapi_state->client_cred = gcc;
-
+	if (!talloc_reference(gensec_gssapi_state, gcc)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
 	return NT_STATUS_OK;
 }
 
