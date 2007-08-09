@@ -1231,7 +1231,6 @@ add_name_constraints(hx509_context context, const Certificate *c, int not_ca,
 			       "have NameConstraints");
     } else {
 	NameConstraints *val;
-	printf("adding nc\n");
 	val = realloc(nc->val, sizeof(nc->val[0]) * (nc->len + 1));
 	if (val == NULL) {
 	    hx509_clear_error_string(context);
@@ -1324,7 +1323,7 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
 		return HX509_NAME_CONSTRAINT_ERROR;
 	    if (strcasecmp(s + 1 + len2 - len1, c->u.rfc822Name) != 0)
 		return HX509_NAME_CONSTRAINT_ERROR;
-	    if (len1 < len2 && s[len2 - len1] != '.')
+	    if (len1 < len2 && s[len2 - len1 + 1] != '.')
 		return HX509_NAME_CONSTRAINT_ERROR;
 	}
 	*match = 1;
@@ -1395,7 +1394,6 @@ match_alt_name(const GeneralName *n, const Certificate *c,
 	}
 	free_GeneralNames(&sa);
     } while (1);
-
     return ret;
 }
 
@@ -1465,7 +1463,10 @@ check_name_constraints(hx509_context context,
 	    }
 	    /* allow null subjectNames, they wont matches anything */
 	    if (match == 0 && !subject_null_p(c)) {
-		hx509_clear_error_string(context);
+		hx509_set_error_string(context, 0, HX509_VERIFY_CONSTRAINTS,
+				       "Error verify constraints, "
+				       "certificate didn't match any "
+				       "permitted subtree");
 		return HX509_VERIFY_CONSTRAINTS;
 	    }
 	}
@@ -1477,7 +1478,10 @@ check_name_constraints(hx509_context context,
 		return ret;
 	    }
 	    if (match) {
-		hx509_clear_error_string(context);
+		hx509_set_error_string(context, 0, HX509_VERIFY_CONSTRAINTS,
+				       "Error verify constraints, "
+				       "certificate included in excluded "
+				       "subtree");
 		return HX509_VERIFY_CONSTRAINTS;
 	    }
 	}
