@@ -259,7 +259,8 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		cli_credentials_set_machine_account(cred);
 	}
 
-	if (cred->ccache_obtained >= cred->ccache_threshold) {
+	if (cred->ccache_obtained >= cred->ccache_threshold && 
+	    cred->ccache_obtained > CRED_UNINITIALISED) {
 		*ccc = cred->ccache;
 		return 0;
 	}
@@ -298,7 +299,7 @@ void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred,
 	 * any cached credentials are now invalid */
 	if (obtained >= cred->client_gss_creds_obtained) {
 		if (cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
-			talloc_free(cred->client_gss_creds);
+			talloc_unlink(cred, cred->client_gss_creds);
 			cred->client_gss_creds = NULL;
 		}
 		cred->client_gss_creds_obtained = CRED_UNINITIALISED;
@@ -319,7 +320,7 @@ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 	 * any cached credentials are now invalid */
 	if (obtained >= cred->ccache_obtained) {
 		if (cred->ccache_obtained > CRED_UNINITIALISED) {
-			talloc_free(cred->ccache);
+			talloc_unlink(cred, cred->ccache);
 			cred->ccache = NULL;
 		}
 		cred->ccache_obtained = CRED_UNINITIALISED;
@@ -350,7 +351,8 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	OM_uint32 maj_stat, min_stat;
 	struct gssapi_creds_container *gcc;
 	struct ccache_container *ccache;
-	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold) {
+	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold && 
+	    cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
 		*_gcc = cred->client_gss_creds;
 		return 0;
 	}
