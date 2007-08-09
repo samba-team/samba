@@ -193,7 +193,7 @@ ${iproplog} truncate || exit 1
 sleep 2
 
 echo "Killing master and slave"
-kill ${ipdm} ${ipds}
+kill ${ipdm} ${ipds} >/dev/null 2>/dev/null
 
 sleep 2
 ${EGREP} "^master down at " iprop-stats > /dev/null || exit 1
