@@ -415,7 +415,7 @@ void svcctl_init_keys( void )
 					get_root_nt_token(), REG_KEY_ALL );
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
-		DEBUG(0,("init_services_keys: key lookup failed! (%s)\n", 
+		DEBUG(0,("svcctl_init_keys: key lookup failed! (%s)\n", 
 			dos_errstr(wresult)));
 		return;
 	}
@@ -423,7 +423,7 @@ void svcctl_init_keys( void )
 	/* lookup the available subkeys */	
 	
 	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
-		DEBUG(0,("init_services_keys: talloc() failed!\n"));
+		DEBUG(0,("svcctl_init_keys: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return;
 	}
