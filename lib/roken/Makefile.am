@@ -35,7 +35,7 @@ make_roken_LDADD =
 
 noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = strftime.c strptime.c snprintf.c
-libtest_la_CFLAGS = -DTEST_SNPRINTF
+libtest_la_CFLAGS = -DTEST_SNPRINTF -DTEST_STRPFTIME
 
 parse_reply_test_SOURCES = parse_reply-test.c resolve.c
 parse_reply_test_CFLAGS  = -DTEST_RESOLVE
@@ -44,8 +44,9 @@ test_readenv_SOURCES = test-readenv.c test-mem.c
 
 parse_time_test_SOURCES = parse_time-test.c test-mem.c
 
-strpftime_test_SOURCES	= strpftime-test.c
+strpftime_test_SOURCES	= strpftime-test.c strpftime-test.h
 strpftime_test_LDADD = libtest.la $(LDADD)
+strpftime_test_CFLAGS = -DTEST_STRPFTIME
 snprintf_test_SOURCES	= snprintf-test.c snprintf-test.h
 snprintf_test_LDADD = libtest.la $(LDADD)
 snprintf_test_CFLAGS	= -DTEST_SNPRINTF
