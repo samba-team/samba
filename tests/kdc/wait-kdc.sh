@@ -53,6 +53,10 @@ while true ; do
        echo "The ${name} failed to bind to any sockets, another ${name} running ?"
        exit 1
     fi
+    if tail -30 ${log} | grep "bind" | grep "Operation not permitted" ; then
+       echo "The ${name} failed to bind to any sockets, another ${name} running ?"
+       exit 1
+    fi
     if [ "$t" -gt $waitsec ]; then
        echo "Waited for $waitsec for the ${name} to start, and it didnt happen"
        exit 2
