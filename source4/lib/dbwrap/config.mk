@@ -1,0 +1,5 @@
+[SUBSYSTEM::LIBDBWRAP]
+OBJ_FILES = dbwrap.o \
+		dbwrap_tdb.o
+PUBLIC_DEPENDENCIES = \
+		LIBTDB

@@ -13,6 +13,7 @@ include appweb/config.mk
 include stream/config.mk
 include util/config.mk
 include tdr/config.mk
+include dbwrap/config.mk
 
 ##############################
 # Start SUBSYSTEM LIBCRYPTO
