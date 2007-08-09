@@ -91,7 +91,7 @@ ipdm=
 kdcpid=
 
 > iprop-stats
-trap "echo 'killing ipropd s + m + kdc'; kill \${ipdm} \${ipds} \${kdcpid}; tail -10 messages.log iprop-stats; exit 1;" EXIT
+trap "echo 'killing ipropd s + m + kdc'; kill \${ipdm} \${ipds} \${kdcpid} >/dev/null 2>/dev/null; tail messages.log ; tail iprop-stats; exit 1;" EXIT
 
 echo Starting kdc
 ${kdc} &
