@@ -41,6 +41,9 @@ EGREP="@EGREP@"
 # If there is no useful db support compile in, disable test
 ../db/have-db || exit 77
 
+# Dont run this test in AFS, since it lacks support for AF_UNIX
+expr "X`pwd`" : "X/afs/.*" > /dev/null && exit 77
+
 R=TEST.H5L.SE
 
 port=@port@
