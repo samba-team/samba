@@ -42,7 +42,7 @@ EGREP="@EGREP@"
 ../db/have-db || exit 77
 
 # Dont run this test in AFS, since it lacks support for AF_UNIX
-expr "X`pwd`" : "X/afs/.*" > /dev/null && exit 77
+expr "X`/bin/pwd || pwd`" : "X/afs/.*" > /dev/null && exit 77
 
 R=TEST.H5L.SE
 
