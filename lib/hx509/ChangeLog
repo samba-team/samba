@@ -1,3 +1,8 @@
+2007-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cert.c: match rfc822 contrains better, provide better error
+	strings.
+
 2007-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cert.c: "self-signed doesn't count" doesn't apply to trust
