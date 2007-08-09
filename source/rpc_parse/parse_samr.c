@@ -4923,18 +4923,10 @@ NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 		r_u->ptr_rids = 1;
 		r_u->num_rids2 = num_rids;
 
-		if (num_rids) {
-			if (!(r_u->rids = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
-				return NT_STATUS_NO_MEMORY;
-			if (!(r_u->types = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
-				return NT_STATUS_NO_MEMORY;
-		} else {
-			r_u->rids = NULL;
-			r_u->types = NULL;
-		}
-
-		if (!r_u->rids || !r_u->types)
-			goto empty;
+		if (!(r_u->rids = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
+			return NT_STATUS_NO_MEMORY;
+		if (!(r_u->types = TALLOC_ZERO_ARRAY(ctx, uint32, num_rids)))
+			return NT_STATUS_NO_MEMORY;
 
 		for (i = 0; i < num_rids; i++) {
 			r_u->rids[i] = rid[i];
@@ -4942,7 +4934,6 @@ NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 		}
 	} else {
 
-  empty:
 		r_u->num_types1 = 0;
 		r_u->ptr_types = 0;
 		r_u->num_types2 = 0;
