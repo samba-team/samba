@@ -52,11 +52,7 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, struct server_id server,
 			     struct messaging_context *messaging_ctx)
 {
 	if (ops == NULL) {
-		if (lp_parm_bool(-1, "ctdb", "brlock", False)) {
-			brl_ctdb_init_ops();
-		} else {
-			brl_tdb_init_ops();
-		}
+		brl_tdb_init_ops();
 	}
 	return ops->brl_init(mem_ctx, server, messaging_ctx);
 }
