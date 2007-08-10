@@ -2860,16 +2860,24 @@ normal_read:
 
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv2));
-	SMB_OFF_T startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
+	files_struct *fsp;
+	SMB_OFF_T startpos;
 	ssize_t nread = -1;
-	size_t smb_maxcnt = SVAL(inbuf,smb_vwv5);
+	size_t smb_maxcnt;
 	BOOL big_readX = False;
 #if 0
 	size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
 #endif
 
 	START_PROFILE(SMBreadX);
+
+	if ((CVAL(inbuf, smb_wct) != 10) && (CVAL(inbuf, smb_wct) != 12)) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
+	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
+	smb_maxcnt = SVAL(inbuf,smb_vwv5);
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
