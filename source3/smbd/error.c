@@ -140,6 +140,14 @@ void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
 	error_packet_set((char *)req->outbuf, 0, 0, ntstatus, line, file);
 }
 
+void reply_force_nt_error(struct smb_request *req, NTSTATUS ntstatus,
+			  int line, const char *file)
+{
+	TALLOC_FREE(req->outbuf);
+	reply_outbuf(req, 0, 0);
+	error_packet_set((char *)req->outbuf, -1, -1, ntstatus, line, file);
+}
+
 void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		    int line, const char *file)
 {
