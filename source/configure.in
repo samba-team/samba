@@ -1664,6 +1664,14 @@ case "$host_os" in
 esac
 
 ########################################################
+# Check if attropen() is present if this is Solaris
+case "$host_os" in
+  *solaris*)
+	AC_CHECK_FUNCS(attropen)
+  ;;
+esac
+
+########################################################
 # Do xattr functions take additional options like on Darwin?
 if test x"$ac_cv_func_getxattr" = x"yes" ; then
 	AC_CACHE_CHECK([whether xattr interface takes additional options], smb_attr_cv_xattr_add_opt, [
