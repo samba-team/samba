@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #include <krb5.h>
 
+const char* check_length(krb5_context, krb5_principal, krb5_data *);
+
 /* specify the api-version this library conforms to */
 
 int version = 0;
