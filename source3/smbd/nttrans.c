@@ -729,7 +729,6 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	 */
 	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBntcreateX);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
