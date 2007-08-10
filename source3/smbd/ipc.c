@@ -488,7 +488,7 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBtrans);
 
-	if (SVAL(req->inbuf, smb_wct) < 10) {
+	if (req->wct < 14) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtrans);
 		return;
@@ -667,7 +667,7 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 
 	show_msg((char *)req->inbuf);
 
-	if (req->wct < 10) {
+	if (req->wct < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtranss);
 		return;
