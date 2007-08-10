@@ -224,6 +224,10 @@ typedef int ber_int_t;
 #include <sys/attributes.h>
 #endif
 
+#ifndef ENOATTR
+#define ENOATTR ENODATA
+#endif
+
 /* mutually exclusive (SuSE 8.2) */
 #if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
