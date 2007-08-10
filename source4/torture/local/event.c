@@ -97,9 +97,17 @@ static bool test_event_context(struct torture_context *test,
 
 	t = timeval_current();
 	while (!finished) {
+		errno = 0;
 		if (event_loop_once(ev_ctx) == -1) {
 			talloc_free(ev_ctx);
-			torture_fail(test, "Failed event loop\n");
+			if (errno == ENOSYS) {
+				torture_comment(test, "Host kernel does not support %s event backend!", backend);
+				talloc_free(ev_ctx);
+				
+				return true;
+			} else {
+				torture_fail(test, "Failed event loop\n");
+			}
 		}
 	}
 
