@@ -298,6 +298,7 @@ sub provision($$$$$$)
 	setup directory = $self->{setupdir}
 	js include = $srcdir/scripting/libjs
 	winbindd socket directory = $winbindd_socket_dir
+        winbind separator = /
 	name resolve order = bcast
 	interfaces = $interfaces
 	tls dh params file = $tlsdir/dhparms.pem
