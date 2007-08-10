@@ -472,6 +472,7 @@ VFS_COMMIT_OBJ = modules/vfs_commit.o
 VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
 VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
 VFS_READAHEAD_OBJ = modules/vfs_readahead.o
+VFS_FILEID_OBJ = modules/vfs_fileid.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1673,6 +1674,10 @@ bin/readahead.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READAHEAD_OBJ) \
 		@SONAMEFLAG@`basename $@`
+
+bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_FILEID_OBJ)
 
 #########################################################
 ## IdMap NSS plugins

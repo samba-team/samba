@@ -6072,6 +6072,38 @@ AC_ARG_WITH(python,
   esac ])
 AC_SUBST(PYTHON)
 
+
+# Checks for the vfs_fileid module
+# Start
+AC_CHECK_FUNC(getmntent)
+
+AC_CHECK_HEADERS(sys/statfs.h)
+
+AC_MSG_CHECKING([vfs_fileid: checking for statfs() and struct statfs.f_fsid)])
+AC_CACHE_VAL(vfsfileid_cv_statfs,[
+	     AC_TRY_RUN([
+		#include <sys/types.h>
+		#include <sys/statfs.h>
+		int main(void)
+		{
+			struct statfs fsd;
+			fsid_t fsid = fsd.f_fsid;
+			return statfs (".", &fsd);
+		}],
+		vfsfileid_cv_statfs=yes,
+		vfsfileid_cv_statfs=no,
+		vfsfileid_cv_statfs=cross)
+])
+AC_MSG_RESULT($vfsfileid_cv_statfs)
+
+if test x"$ac_cv_func_getmntent" = x"yes" -a \
+	x"$vfsfileid_cv_statfs" = x"yes"; then
+	default_shared_modules="$default_shared_modules vfs_fileid"
+fi
+# End
+# Checks for the vfs_fileid module
+
+
 for i in `echo $default_static_modules | sed -e 's/,/ /g'`
 do
 	eval MODULE_DEFAULT_$i=STATIC
@@ -6189,6 +6221,7 @@ SMB_MODULE(vfs_prealloc, \$(VFS_PREALLOC_OBJ), "bin/prealloc.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_commit, \$(VFS_COMMIT_OBJ), "bin/commit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readahead, \$(VFS_READAHEAD_OBJ), "bin/readahead.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_fileid, \$(VFS_FILEID_OBJ), "bin/fileid.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
