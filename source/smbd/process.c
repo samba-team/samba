@@ -82,6 +82,8 @@ BOOL reply_prep_legacy(struct smb_request *req,
 			     + SAFETY_MARGIN);
 	char *inbuf, *outbuf;
 
+	DEBUG(1, ("reply_prep_legacy called\n"));
+
 	if (!(inbuf = TALLOC_ARRAY(req, char, bufsize))) {
 		DEBUG(0, ("Could not allocate legacy inbuf\n"));
 		return False;
