@@ -159,6 +159,7 @@ void change_notify_reply(const char *request_buf, uint32 max_param,
 
 	if (notify_buf->num_changes == -1) {
 		change_notify_reply_packet(request_buf, NT_STATUS_OK);
+		notify_buf->num_changes = 0;
 		return;
 	}
 
