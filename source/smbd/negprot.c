@@ -674,7 +674,6 @@ void reply_negprot(connection_struct *conn, struct smb_request *req)
 		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 	} else {
 		DEBUG(0,("No protocol supported !\n"));
-		SSVAL(outbuf,smb_vwv0,choice);
 	}
   
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
