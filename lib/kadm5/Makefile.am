@@ -16,6 +16,11 @@ sbin_PROGRAMS = iprop-log
 check_PROGRAMS = default_keys
 noinst_PROGRAMS = test_pw_quality
 
+noinst_LTLIBRARIES = sample_passwd_check.la
+
+sample_passwd_check_la_SOURCES = sample_passwd_check.c
+sample_passwd_check_la_LDFLAGS = -module
+
 libkadm5srv_la_LIBADD = \
 	$(LIB_com_err) ../krb5/libkrb5.la \
 	../hdb/libhdb.la $(LIBADD_roken)
@@ -177,4 +182,8 @@ $(srcdir)/kadm5-private.h:
 		$(dist_libkadm5srv_la_SOURCES) \
 		|| rm -f kadm5-private.h
 
-EXTRA_DIST = kadm5_err.et iprop-commands.in $(man_MANS) version-script.map
+EXTRA_DIST = \
+	kadm5_err.et \
+	iprop-commands.in \
+	$(man_MANS) \
+	version-script.map
