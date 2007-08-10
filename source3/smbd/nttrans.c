@@ -898,7 +898,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					TALLOC_FREE(case_state);
-					reply_nterror(req, NT_STATUS_FILE_IS_A_DIRECTORY);
+					reply_force_nterror(req, NT_STATUS_FILE_IS_A_DIRECTORY);
 					END_PROFILE(SMBntcreateX);
 					return;
 				}
