@@ -295,7 +295,7 @@ BOOL check_fsp(connection_struct *conn, struct smb_request *req,
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return False;
 	}
-	if (((conn) != (fsp)->conn) || current_user.vuid != (fsp)->vuid) {
+	if (((conn) != (fsp)->conn) || user->vuid != (fsp)->vuid) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return False;
 	}
