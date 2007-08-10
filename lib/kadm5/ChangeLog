@@ -1,3 +1,9 @@
+2007-08-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: build sample_passwd_check.la as part of noinst.
+
+	* sample_passwd_check.c: Add missing prototype for check_length().
+
 2007-08-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* log.c: Sprinkle krb5_set_error_string().
