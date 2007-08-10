@@ -1,4 +1,4 @@
-.\" Copyright (c) 2000 - 2005 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2000 - 2007 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -32,7 +32,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd August 23, 2005
+.Dd August 10, 2007
 .Dt KRB5_CONFIG_GET 3
 .Os HEIMDAL
 .Sh NAME
@@ -271,6 +271,14 @@ seconds, so the string
 .Sq 2 weeks
 will be converted to
 1209600 (2 * 7 * 24 * 60 * 60).
+.Pp
+.Fn krb5_config_get_string
+returns a
+.Ft "const char *"
+to a string in the configuration database.  The string not be valid
+after reload of the configuration database
+.\" or a call to .Fn krb5_config_set_string ,
+so a caller should make a local copy if its need to keep the database.
 .Pp
 .Fn krb5_config_free_strings
 free
