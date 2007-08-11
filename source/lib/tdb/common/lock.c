@@ -523,7 +523,7 @@ int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off)
 int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off)
 {
 	struct tdb_traverse_lock *i;
-	u32 count = 0;
+	uint32_t count = 0;
 
 	if (off == 0)
 		return 0;

@@ -75,7 +75,7 @@ static int tdb_key_compare(TDB_DATA key, TDB_DATA data, void *private_data)
 
 /* Returns 0 on fail.  On success, return offset of record, and fills
    in rec */
-static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, u32 hash,
+static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 			struct list_struct *r)
 {
 	tdb_off_t rec_ptr;
@@ -102,10 +102,11 @@ static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, u32 hash,
 }
 
 /* As tdb_find, but if you succeed, keep the lock */
-tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash, int locktype,
+tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, 
+							 uint32_t hash, int locktype,
 			   struct list_struct *rec)
 {
-	u32 rec_ptr;
+	uint32_t rec_ptr;
 
 	if (tdb_lock(tdb, BUCKET(hash), locktype) == -1)
 		return 0;
@@ -119,7 +120,7 @@ tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash, in
    is <= the old data size and the key exists.
    on failure return -1.
 */
-static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash, TDB_DATA dbuf)
+static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash, TDB_DATA dbuf)
 {
 	struct list_struct rec;
 	tdb_off_t rec_ptr;
@@ -158,7 +159,7 @@ TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
 	tdb_off_t rec_ptr;
 	struct list_struct rec;
 	TDB_DATA ret;
-	u32 hash;
+	uint32_t hash;
 
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
@@ -196,7 +197,7 @@ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 	tdb_off_t rec_ptr;
 	struct list_struct rec;
 	int ret;
-	u32 hash;
+	uint32_t hash;
 
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
@@ -219,7 +220,7 @@ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
    this doesn't match the conventions in the rest of this module, but is
    compatible with gdbm
 */
-static int tdb_exists_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash)
+static int tdb_exists_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 {
 	struct list_struct rec;
 	
@@ -231,7 +232,7 @@ static int tdb_exists_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash)
 
 int tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 {
-	u32 hash = tdb->hash_fn(&key);
+	uint32_t hash = tdb->hash_fn(&key);
 	return tdb_exists_hash(tdb, key, hash);
 }
 
@@ -270,7 +271,7 @@ int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct
 	return 0;
 }
 
-static int tdb_count_dead(struct tdb_context *tdb, u32 hash)
+static int tdb_count_dead(struct tdb_context *tdb, uint32_t hash)
 {
 	int res = 0;
 	tdb_off_t rec_ptr;
@@ -295,7 +296,7 @@ static int tdb_count_dead(struct tdb_context *tdb, u32 hash)
 /*
  * Purge all DEAD records from a hash chain
  */
-static int tdb_purge_dead(struct tdb_context *tdb, u32 hash)
+static int tdb_purge_dead(struct tdb_context *tdb, uint32_t hash)
 {
 	int res = -1;
 	struct list_struct rec;
@@ -331,7 +332,7 @@ static int tdb_purge_dead(struct tdb_context *tdb, u32 hash)
 }
 
 /* delete an entry in the database given a key */
-static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash)
+static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 {
 	tdb_off_t rec_ptr;
 	struct list_struct rec;
@@ -385,14 +386,14 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash)
 
 int tdb_delete(struct tdb_context *tdb, TDB_DATA key)
 {
-	u32 hash = tdb->hash_fn(&key);
+	uint32_t hash = tdb->hash_fn(&key);
 	return tdb_delete_hash(tdb, key, hash);
 }
 
 /*
  * See if we have a dead record around with enough space
  */
-static tdb_off_t tdb_find_dead(struct tdb_context *tdb, u32 hash,
+static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 			       struct list_struct *r, tdb_len_t length)
 {
 	tdb_off_t rec_ptr;
@@ -426,7 +427,7 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, u32 hash,
 int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 {
 	struct list_struct rec;
-	u32 hash;
+	uint32_t hash;
 	tdb_off_t rec_ptr;
 	char *p = NULL;
 	int ret = -1;
@@ -564,7 +565,7 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 /* Append to an entry. Create if not exist. */
 int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 {
-	u32 hash;
+	uint32_t hash;
 	TDB_DATA dbuf;
 	int ret = -1;
 

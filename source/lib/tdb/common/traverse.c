@@ -274,7 +274,7 @@ TDB_DATA tdb_firstkey(struct tdb_context *tdb)
 /* find the next entry in the database, returning its key */
 TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA oldkey)
 {
-	u32 oldhash;
+	uint32_t oldhash;
 	TDB_DATA key = tdb_null;
 	struct list_struct rec;
 	unsigned char *k = NULL;
