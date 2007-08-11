@@ -736,7 +736,7 @@ static const struct smb_message_struct {
 /* 0x2b */ { "SMBecho",NULL,reply_echo,0},
 /* 0x2c */ { "SMBwriteclose",reply_writeclose,NULL,AS_USER},
 /* 0x2d */ { "SMBopenX",NULL,reply_open_and_X,AS_USER | CAN_IPC },
-/* 0x2e */ { "SMBreadX",reply_read_and_X,NULL,AS_USER | CAN_IPC },
+/* 0x2e */ { "SMBreadX",NULL,reply_read_and_X,AS_USER | CAN_IPC },
 /* 0x2f */ { "SMBwriteX",NULL,reply_write_and_X,AS_USER | CAN_IPC },
 /* 0x30 */ { NULL, NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, NULL, 0 },
