@@ -2858,7 +2858,9 @@ normal_read:
  Reply to a read and X.
 ****************************************************************************/
 
-int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
+static int reply_read_and_X_old(connection_struct *conn,
+				char *inbuf, char *outbuf,
+				int length,int bufsize)
 {
 	files_struct *fsp;
 	SMB_OFF_T startpos;
@@ -2954,6 +2956,31 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	END_PROFILE(SMBreadX);
 	return nread;
+}
+
+void reply_read_and_X(connection_struct *conn, struct smb_request *req)
+{
+	char *inbuf, *outbuf;
+	int length, bufsize;
+	int outsize;
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	outsize = reply_read_and_X_old(conn, inbuf, outbuf, length, bufsize);
+
+	DEBUG(10, ("outsize = %d\n", outsize));
+
+	/*
+	 * Can't use reply_post_legacy here, setup_readX_header has set up its
+	 * size itself already.
+	 */
+
+	if (outsize == -1) {
+		TALLOC_FREE(req->outbuf);
+	}
 }
 
 /****************************************************************************
