@@ -2960,6 +2960,13 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
+	if (!big_readX
+	    && schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
+		END_PROFILE(SMBreadX);
+		reply_post_legacy(req, -1);
+		return;
+	}
+
 	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBreadX);
@@ -2967,14 +2974,6 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 	}
 
 	set_message(inbuf,outbuf,12,0,True);
-
-	if (!big_readX
-	    && schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize,
-				       fsp, startpos, smb_maxcnt)) {
-		END_PROFILE(SMBreadX);
-		reply_post_legacy(req, -1);
-		return;
-	}
 
 	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp,
 				startpos, smb_maxcnt);
