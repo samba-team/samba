@@ -1355,6 +1355,7 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 	int smb_com1, smb_com2 = CVAL(inbuf,smb_vwv0);
 	unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
 	char *inbuf2;
+	char *outbuf2 = NULL;
 	int outsize2;
 	int new_size;
 	char inbuf_saved[smb_wct];
@@ -1435,7 +1436,7 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 	}
 
 	/* And set it in the header. */
-	smb_setlen(inbuf, inbuf2, new_size);
+	smb_setlen(inbuf, inbuf2, new_size - 4);
 
 	DEBUG(3,("Chained message\n"));
 	show_msg(inbuf2);
@@ -1446,7 +1447,7 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 	init_smb_request(req, (uint8 *)inbuf2);
 
 	/* process the request */
-	outsize2 = switch_message(smb_com2, req, &outbuf, new_size,
+	outsize2 = switch_message(smb_com2, req, &outbuf2, new_size,
 				  bufsize-chain_size);
 
 	/*
@@ -1495,7 +1496,7 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 
 	*poutbuf = outbuf;
 
-	memmove(outbuf + smb_wct + ofs, outbuf + smb_wct, to_move);
+	memmove(outbuf + smb_wct + ofs, outbuf2 + smb_wct, to_move);
 	memcpy(outbuf + smb_wct, caller_output, caller_outputlen);
 
 	/*
