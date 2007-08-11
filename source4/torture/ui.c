@@ -56,7 +56,7 @@ void torture_warning(struct torture_context *context, const char *comment, ...)
 }
 
 void torture_result(struct torture_context *context, 
-					enum torture_result result, const char *fmt, ...)
+		    enum torture_result result, const char *fmt, ...)
 {
 	va_list ap;
 
