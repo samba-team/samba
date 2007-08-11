@@ -1009,7 +1009,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	}
 
 	for (i=0; i<num_members; i++) {
-		uint32 name_type;
+		enum lsa_SidType name_type;
 		char *name, *domain_name;
 		DOM_SID sid;
 
