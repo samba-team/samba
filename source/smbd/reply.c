@@ -2858,9 +2858,7 @@ normal_read:
  Reply to a read and X.
 ****************************************************************************/
 
-static int reply_read_and_X_old(connection_struct *conn,
-				char *inbuf, char *outbuf,
-				int length,int bufsize)
+void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 {
 	files_struct *fsp;
 	SMB_OFF_T startpos;
@@ -2868,28 +2866,46 @@ static int reply_read_and_X_old(connection_struct *conn,
 	size_t smb_maxcnt;
 	BOOL big_readX = False;
 #if 0
-	size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
+	size_t smb_mincnt = SVAL(req->inbuf,smb_vwv6);
 #endif
+	char *inbuf, *outbuf;
+	int length, bufsize;
 
 	START_PROFILE(SMBreadX);
 
-	if ((CVAL(inbuf, smb_wct) != 10) && (CVAL(inbuf, smb_wct) != 12)) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	if ((req->wct != 10) && (req->wct != 12)) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
-	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
-	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
-	smb_maxcnt = SVAL(inbuf,smb_vwv5);
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv2));
+	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv3);
+	smb_maxcnt = SVAL(req->inbuf,smb_vwv5);
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBreadX);
+		return;
+	}
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
+		reply_post_legacy(
+			req,
+			reply_pipe_read_and_X(inbuf,outbuf,length,bufsize));
 		END_PROFILE(SMBreadX);
-		return reply_pipe_read_and_X(inbuf,outbuf,length,bufsize);
+		return;
 	}
 
-	CHECK_FSP(fsp,conn);
-	if (!CHECK_READ(fsp,inbuf)) {
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBreadX);
+		return;
+	}
+
+	if (!CHECK_READ(fsp,req->inbuf)) {
+		reply_doserror(req, ERRDOS,ERRbadaccess);
+		END_PROFILE(SMBreadX);
+		return;
 	}
 
 	set_message(inbuf,outbuf,12,0,True);
@@ -2900,15 +2916,22 @@ static int reply_read_and_X_old(connection_struct *conn,
 		if (upper_size > 1) {
 			/* Can't do this on a chained packet. */
 			if ((CVAL(inbuf,smb_vwv0) != 0xFF)) {
-				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+				END_PROFILE(SMBreadX);
+				return;
 			}
 			/* We currently don't do this on signed or sealed data. */
 			if (srv_is_signing_active() || srv_encryption_on()) {
-				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+				END_PROFILE(SMBreadX);
+				return;
 			}
 			/* Is there room in the reply for this data ? */
 			if (smb_maxcnt > (0xFFFFFF - (smb_size -4 + 12*2)))  {
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				reply_nterror(req,
+					      NT_STATUS_INVALID_PARAMETER);
+				END_PROFILE(SMBreadX);
+				return;
 			}
 			big_readX = True;
 		}
@@ -2928,59 +2951,50 @@ static int reply_read_and_X_old(connection_struct *conn,
 		 */
 
 		if(IVAL(inbuf,smb_vwv10) != 0) {
-			DEBUG(0,("reply_read_and_X - large offset (%x << 32) used and we don't support \
-64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv10) ));
+			DEBUG(0,("reply_read_and_X - large offset (%x << 32) "
+				 "used and we don't support 64 bit offsets.\n",
+				 (unsigned int)IVAL(inbuf,smb_vwv10) ));
 			END_PROFILE(SMBreadX);
-			return ERROR_DOS(ERRDOS,ERRbadaccess);
+			reply_doserror(req, ERRDOS, ERRbadaccess);
+			return;
 		}
 
 #endif /* LARGE_SMB_OFF_T */
 
 	}
 
-	if (is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+	if (is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)smb_maxcnt,
+		      (SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadX);
-		return ERROR_DOS(ERRDOS,ERRlock);
+		reply_doserror(req, ERRDOS, ERRlock);
+		return;
 	}
 
-	if (!big_readX && schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt)) {
+	if (!big_readX
+	    && schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize,
+				       fsp, startpos, smb_maxcnt)) {
 		END_PROFILE(SMBreadX);
-		return -1;
+		reply_post_legacy(req, -1);
+		return;
 	}
 
-	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
+	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp,
+				startpos, smb_maxcnt);
 	/* Only call chain_reply if not an error. */
 	if (nread != -1 && SVAL(outbuf,smb_rcls) == 0) {
 		nread = chain_reply(inbuf,&outbuf,length,bufsize);
 	}
 
-	END_PROFILE(SMBreadX);
-	return nread;
-}
-
-void reply_read_and_X(connection_struct *conn, struct smb_request *req)
-{
-	char *inbuf, *outbuf;
-	int length, bufsize;
-	int outsize;
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	outsize = reply_read_and_X_old(conn, inbuf, outbuf, length, bufsize);
-
-	DEBUG(10, ("outsize = %d\n", outsize));
-
-	/*
-	 * Can't use reply_post_legacy here, setup_readX_header has set up its
-	 * size itself already.
-	 */
-
-	if (outsize == -1) {
+	if (nread == -1) {
+		/*
+		 * Can't use reply_post_legacy here, setup_readX_header has
+		 * set up its (potentially LARGE) size itself already.
+		 */
 		TALLOC_FREE(req->outbuf);
 	}
+
+	END_PROFILE(SMBreadX);
+	return;
 }
 
 /****************************************************************************
