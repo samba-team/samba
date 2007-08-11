@@ -2900,20 +2900,12 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBreadX);
-		return;
-	}
-
-	set_message(inbuf,outbuf,12,0,True);
-
 	if (global_client_caps & CAP_LARGE_READX) {
-		size_t upper_size = SVAL(inbuf,smb_vwv7);
+		size_t upper_size = SVAL(req->inbuf,smb_vwv7);
 		smb_maxcnt |= (upper_size<<16);
 		if (upper_size > 1) {
 			/* Can't do this on a chained packet. */
-			if ((CVAL(inbuf,smb_vwv0) != 0xFF)) {
+			if ((CVAL(req->inbuf,smb_vwv0) != 0xFF)) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
 				return;
@@ -2935,12 +2927,12 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 		}
 	}
 
-	if(CVAL(inbuf,smb_wct) == 12) {
+	if (req->wct == 12) {
 #ifdef LARGE_SMB_OFF_T
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
-		startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv10)) << 32);
+		startpos |= (((SMB_OFF_T)IVAL(req->inbuf,smb_vwv10)) << 32);
 
 #else /* !LARGE_SMB_OFF_T */
 
@@ -2948,10 +2940,10 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 		 * Ensure we haven't been sent a >32 bit offset.
 		 */
 
-		if(IVAL(inbuf,smb_vwv10) != 0) {
+		if(IVAL(req->inbuf,smb_vwv10) != 0) {
 			DEBUG(0,("reply_read_and_X - large offset (%x << 32) "
 				 "used and we don't support 64 bit offsets.\n",
-				 (unsigned int)IVAL(inbuf,smb_vwv10) ));
+				 (unsigned int)IVAL(req->inbuf,smb_vwv10) ));
 			END_PROFILE(SMBreadX);
 			reply_doserror(req, ERRDOS, ERRbadaccess);
 			return;
@@ -2967,6 +2959,14 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 		reply_doserror(req, ERRDOS, ERRlock);
 		return;
 	}
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBreadX);
+		return;
+	}
+
+	set_message(inbuf,outbuf,12,0,True);
 
 	if (!big_readX
 	    && schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize,
