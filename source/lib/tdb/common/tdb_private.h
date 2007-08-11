@@ -37,10 +37,6 @@
 typedef uint32_t tdb_len_t;
 typedef uint32_t tdb_off_t;
 
-#ifndef offsetof
-#define offsetof(t,f) ((unsigned int)&((t *)0)->f)
-#endif
-
 #define TDB_MAGIC_FOOD "TDB file\n"
 #define TDB_VERSION (0x26011967 + 6)
 #define TDB_MAGIC (0x26011999U)
