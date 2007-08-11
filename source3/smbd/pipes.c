@@ -293,7 +293,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
 		 p->pnum, smb_mincnt, smb_maxcnt, nread));
 
-	return chain_reply_new(req);
+	chain_reply_new(req);
 }
 
 /****************************************************************************
