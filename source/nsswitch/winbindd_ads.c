@@ -914,7 +914,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         POLICY_HND lsa_policy;
 	DOM_SID *sid_mem_nocache = NULL;
 	char **names_nocache = NULL;
-	uint32 *name_types_nocache = NULL;
+	enum lsa_SidType *name_types_nocache = NULL;
 	char **domains_nocache = NULL;     /* only needed for rpccli_lsa_lookup_sids */
 	uint32 num_nocache = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
