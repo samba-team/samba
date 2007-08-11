@@ -1500,9 +1500,10 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 	memcpy(outbuf + smb_wct, caller_output, caller_outputlen);
 
 	/*
-	 * The secondary function has overwritten smb_com
+	 * copy the new reply header over the old one but preserve the smb_com
+	 * field
 	 */
-
+	memmove(outbuf,outbuf2,smb_wct);
 	SCVAL(outbuf, smb_com, smb_com1);
 
 	/*
