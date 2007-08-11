@@ -51,6 +51,8 @@ runcmd() {
 
 testit "share and server list" $VALGRIND bin/smbclient -L $SERVER $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
+testit "share and server list anonymously" $VALGRIND bin/smbclient -N -L $SERVER $CONFIGURATION $@ || failed=`expr $failed + 1`
+
 testit "domain join" $VALGRIND bin/net join $DOMAIN $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
 # Generate random file
