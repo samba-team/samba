@@ -183,7 +183,7 @@ sub getlog_env($);
 
 my $test_output = {};
 
-sub buildfarm_start_msg($)
+sub buildfarm_start_testsuite($)
 {
 	my ($state) = @_;
 	my $out = "";
@@ -208,7 +208,7 @@ sub buildfarm_output_msg($$)
 	$test_output->{$state->{NAME}} .= $output;
 }
 
-sub buildfarm_end_msg($$$)
+sub buildfarm_end_testsuite($$$)
 {
 	my ($state, $expected_ret, $ret) = @_;
 	my $out = "";
@@ -237,15 +237,27 @@ sub buildfarm_end_msg($$$)
 	print $out;
 }
 
+sub buildfarm_start_test($$)
+{
+	my ($state, $testname) = @_;
+}
+
+sub buildfarm_end_test($$$$)
+{
+	my ($state, $testname, $result, $expected) = @_;
+}
+
 my $buildfarm_msg_ops = {
-	start_msg	=> \&buildfarm_start_msg,
+	start_testsuite	=> \&buildfarm_start_testsuite,
 	output_msg	=> \&buildfarm_output_msg,
-	end_msg		=> \&buildfarm_end_msg
+	end_testsuite		=> \&buildfarm_end_testsuite,
+	start_test => \&buildfarm_start_test,
+	end_test => \&buildfarm_end_test,
 };
 
 sub plain_output_msg($$);
 
-sub plain_start_msg($)
+sub plain_start_testsuite($)
 {
 	my ($state) = @_;
 	my $out = "";
@@ -272,7 +284,7 @@ sub plain_output_msg($$)
 	}
 }
 
-sub plain_end_msg($$$)
+sub plain_end_testsuite($$$)
 {
 	my ($state, $expected_ret, $ret) = @_;
 	my $out = "";
@@ -294,10 +306,22 @@ sub plain_end_msg($$$)
 	print $out;
 }
 
+sub plain_start_test($$)
+{
+	my ($state, $testname) = @_;
+}
+
+sub plain_end_test($$$$)
+{
+	my ($state, $testname, $result, $expected) = @_;
+}
+
 my $plain_msg_ops = {
-	start_msg	=> \&plain_start_msg,
+	start_testsuite	=> \&plain_start_testsuite,
 	output_msg	=> \&plain_output_msg,
-	end_msg		=> \&plain_end_msg
+	end_testsuite		=> \&plain_end_testsuite,
+	start_test => \&plain_start_test,
+	end_test => \&plain_end_test,
 };
 
 sub setup_pcap($)
@@ -344,48 +368,57 @@ sub run_test($$$$$$)
 
 	setup_pcap($msg_state);
 
-	$msg_ops->{start_msg}->($msg_state);
+	$msg_ops->{start_testsuite}->($msg_state);
 
 	open(RESULT, "$cmd 2>&1|");
 	while (<RESULT>) {
 		$msg_ops->{output_msg}->($msg_state, $_);
 		if (/^test: (.+)\n/) {
 			$open_tests->{$1} = 1;
+			$msg_ops->{start_test}->($msg_state, $1);
 		} elsif (/^(success|failure|skip|error): (.*?)( \[)?\n/) {
 			my $result = $1;
 			if ($1 eq "success") {
 				delete $open_tests->{$2};
 				if (expecting_failure("$name/$2")) {
 					$statistics->{TESTS_UNEXPECTED_OK}++;
+					$msg_ops->{end_test}->($msg_state, $2, $1, 1);
 				} else {
 					$statistics->{TESTS_EXPECTED_OK}++;
+					$msg_ops->{end_test}->($msg_state, $2, $1, 0);
 				}
 			} elsif ($1 eq "failure") {
 				delete $open_tests->{$2};
 				if (expecting_failure("$name/$2")) {
 					$statistics->{TESTS_EXPECTED_FAIL}++;
+					$msg_ops->{end_test}->($msg_state, $2, $1, 0);
 					$expected_ret = 0;
 				} else {
 					print "n:$name/$2\n";
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
+					$msg_ops->{end_test}->($msg_state, $2, $1, 1);
 				}
 			} elsif ($1 eq "skip") {
 				delete $open_tests->{$2};
+				$msg_ops->{end_test}->($msg_state, $2, $1, 0);
 			} elsif ($1 eq "error") {
 				$statistics->{TESTS_ERROR}++;
 				delete $open_tests->{$2};
+				$msg_ops->{end_test}->($msg_state, $2, $1, 1);
 			}
 		}
 	}
+
 	foreach (keys %$open_tests) {
-		$msg_ops->{output_msg}->($msg_state, "$_ was started but never finished!\n");
+		$msg_ops->{end_test}->($msg_state, $_, "error", 1);
+		$msg_ops->{output_msg}->($msg_state, "$_ was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
 	}
 	my $ret = close(RESULT);
 
 	cleanup_pcap($msg_state,  $expected_ret, $ret);
 
-	$msg_ops->{end_msg}->($msg_state, $expected_ret, $ret);
+	$msg_ops->{end_testsuite}->($msg_state, $expected_ret, $ret);
 
 	if ($ret != $expected_ret) {
 		push(@$suitesfailed, $name);
