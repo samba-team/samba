@@ -235,12 +235,35 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
+#define torture_assert_file_contains_text(torture_ctx,filename,expected,cmt)\
+	do { \
+	char *__got; \
+	const char *__expected = (expected); \
+	size_t __size; \
+	__got = file_load(filename, &__size, torture_ctx); \
+	if (__got == NULL) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			       __location__": unable to open %s: %s\n", \
+			       filename, cmt); \
+		return false; \
+	} \
+	\
+	if (strcmp_safe(__got, __expected) != 0) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": %s contained:\n%sExpected: %s%s\n", \
+			filename, __got, __expected, cmt); \
+		talloc_free(__got); \
+		return false; \
+	} \
+	talloc_free(__got); \
+	} while(0)
+
 #define torture_assert_int_equal(torture_ctx,got,expected,cmt)\
 	do { int __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
-					 __location__": "#got" was %d, expected %d: %s", \
-					   __got, __expected, cmt); \
+			__location__": "#got" was %d, expected %d: %s", \
+			__got, __expected, cmt); \
 		return false; \
 	} \
 	} while(0)

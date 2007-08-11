@@ -39,6 +39,9 @@ static bool test_file_load_save(struct torture_context *tctx)
 	torture_assert(tctx, file_save(TEST_FILENAME, TEST_DATA, strlen(TEST_DATA)),
 				   "saving file");
 
+	torture_assert_file_contains_text(tctx, TEST_FILENAME, TEST_DATA, 
+								      "file contents");
+
 	data = file_load(TEST_FILENAME, &len, mem_ctx);
 	torture_assert(tctx, data, "loading file");
 
