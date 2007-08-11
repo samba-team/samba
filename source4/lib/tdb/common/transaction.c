@@ -100,7 +100,7 @@ struct tdb_transaction_el {
 struct tdb_transaction {
 	/* we keep a mirrored copy of the tdb hash heads here so
 	   tdb_next_hash_chain() can operate efficiently */
-	u32 *hash_heads;
+	uint32_t *hash_heads;
 
 	/* the original io methods - used to do IOs to the real db */
 	const struct tdb_methods *io_methods;
@@ -205,7 +205,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	   hash heads */
 	if (len == sizeof(tdb_off_t) && off >= FREELIST_TOP &&
 	    off < FREELIST_TOP+TDB_HASHTABLE_SIZE(tdb)) {
-		u32 chain = (off-FREELIST_TOP) / sizeof(tdb_off_t);
+		uint32_t chain = (off-FREELIST_TOP) / sizeof(tdb_off_t);
 		memcpy(&tdb->transaction->hash_heads[chain], buf, len);
 	}
 
@@ -316,9 +316,9 @@ fail:
 /*
   accelerated hash chain head search, using the cached hash heads
 */
-static void transaction_next_hash_chain(struct tdb_context *tdb, u32 *chain)
+static void transaction_next_hash_chain(struct tdb_context *tdb, uint32_t *chain)
 {
-	u32 h = *chain;
+	uint32_t h = *chain;
 	for (;h < tdb->header.hash_size;h++) {
 		/* the +1 takes account of the freelist */
 		if (0 != tdb->transaction->hash_heads[h+1]) {
@@ -437,8 +437,8 @@ int tdb_transaction_start(struct tdb_context *tdb)
 
 	/* setup a copy of the hash table heads so the hash scan in
 	   traverse can be fast */
-	tdb->transaction->hash_heads = (u32 *)
-		calloc(tdb->header.hash_size+1, sizeof(u32));
+	tdb->transaction->hash_heads = (uint32_t *)
+		calloc(tdb->header.hash_size+1, sizeof(uint32_t));
 	if (tdb->transaction->hash_heads == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		goto fail;
@@ -570,7 +570,7 @@ static tdb_len_t tdb_recovery_size(struct tdb_context *tdb)
 	struct tdb_transaction_el *el;
 	tdb_len_t recovery_size = 0;
 
-	recovery_size = sizeof(u32);
+	recovery_size = sizeof(uint32_t);
 	for (el=tdb->transaction->elements;el;el=el->next) {
 		if (el->offset >= tdb->transaction->old_map_size) {
 			continue;
@@ -676,7 +676,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	struct list_struct *rec;
 	tdb_off_t recovery_offset, recovery_max_size;
 	tdb_off_t old_map_size = tdb->transaction->old_map_size;
-	u32 magic, tailer;
+	uint32_t magic, tailer;
 
 	/*
 	  check that the recovery area has enough space
@@ -779,7 +779,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 {	
 	const struct tdb_methods *methods;
 	tdb_off_t magic_offset = 0;
-	u32 zero = 0;
+	uint32_t zero = 0;
 
 	if (tdb->transaction == NULL) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_commit: no transaction\n"));
@@ -932,7 +932,7 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 {
 	tdb_off_t recovery_head, recovery_eof;
 	unsigned char *data, *p;
-	u32 zero = 0;
+	uint32_t zero = 0;
 	struct list_struct rec;
 
 	/* find the recovery area */
@@ -986,7 +986,7 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 	/* recover the file data */
 	p = data;
 	while (p+8 < data + rec.data_len) {
-		u32 ofs, len;
+		uint32_t ofs, len;
 		if (DOCONV()) {
 			tdb_convert(p, 8);
 		}

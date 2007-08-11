@@ -30,16 +30,12 @@
 #include "system/select.h"
 #include "tdb.h"
 
-#ifndef u32
-#define u32 unsigned
-#endif
-
 #ifndef HAVE_GETPAGESIZE
 #define getpagesize() 0x2000
 #endif
 
-typedef u32 tdb_len_t;
-typedef u32 tdb_off_t;
+typedef uint32_t tdb_len_t;
+typedef uint32_t tdb_off_t;
 
 #ifndef offsetof
 #define offsetof(t,f) ((unsigned int)&((t *)0)->f)
@@ -95,8 +91,8 @@ struct list_struct {
 	tdb_len_t rec_len; /* total byte length of record */
 	tdb_len_t key_len; /* byte length of key */
 	tdb_len_t data_len; /* byte length of data */
-	u32 full_hash; /* the full 32 bit hash of the key */
-	u32 magic;   /* try to catch errors */
+	uint32_t full_hash; /* the full 32 bit hash of the key */
+	uint32_t magic;   /* try to catch errors */
 	/* the following union is implied:
 		union {
 			char record[rec_len];
@@ -104,7 +100,7 @@ struct list_struct {
 				char key[key_len];
 				char data[data_len];
 			}
-			u32 totalsize; (tailer)
+			uint32_t totalsize; (tailer)
 		}
 	*/
 };
@@ -113,8 +109,8 @@ struct list_struct {
 /* this is stored at the front of every database */
 struct tdb_header {
 	char magic_food[32]; /* for /etc/magic */
-	u32 version; /* version of the code */
-	u32 hash_size; /* number of hash entries */
+	uint32_t version; /* version of the code */
+	uint32_t hash_size; /* number of hash entries */
 	tdb_off_t rwlocks; /* obsolete - kept to detect old formats */
 	tdb_off_t recovery_start; /* offset of transaction recovery region */
 	tdb_off_t sequence_number; /* used when TDB_SEQNUM is set */
@@ -123,14 +119,14 @@ struct tdb_header {
 
 struct tdb_lock_type {
 	int list;
-	u32 count;
-	u32 ltype;
+	uint32_t count;
+	uint32_t ltype;
 };
 
 struct tdb_traverse_lock {
 	struct tdb_traverse_lock *next;
-	u32 off;
-	u32 hash;
+	uint32_t off;
+	uint32_t hash;
 	int lock_rw;
 };
 
@@ -138,7 +134,7 @@ struct tdb_traverse_lock {
 struct tdb_methods {
 	int (*tdb_read)(struct tdb_context *, tdb_off_t , void *, tdb_len_t , int );
 	int (*tdb_write)(struct tdb_context *, tdb_off_t, const void *, tdb_len_t);
-	void (*next_hash_chain)(struct tdb_context *, u32 *);
+	void (*next_hash_chain)(struct tdb_context *, uint32_t *);
 	int (*tdb_oob)(struct tdb_context *, tdb_off_t , int );
 	int (*tdb_expand_file)(struct tdb_context *, tdb_off_t , tdb_off_t );
 	int (*tdb_brlock)(struct tdb_context *, tdb_off_t , int, int, int, size_t);
@@ -156,7 +152,7 @@ struct tdb_context {
 	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
-	u32 flags; /* the flags passed to tdb_open */
+	uint32_t flags; /* the flags passed to tdb_open */
 	struct tdb_traverse_lock travlocks; /* current traversal locks */
 	struct tdb_context *next; /* all tdbs to avoid multiple opens */
 	dev_t device;	/* uniquely identifies this tdb */
@@ -188,7 +184,7 @@ int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
 int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
-void *tdb_convert(void *buf, u32 size);
+void *tdb_convert(void *buf, uint32_t size);
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec);
 tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_struct *rec);
 int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
@@ -204,7 +200,7 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		   int (*parser)(TDB_DATA key, TDB_DATA data,
 				 void *private_data),
 		   void *private_data);
-tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash, int locktype,
+tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash, int locktype,
 			   struct list_struct *rec);
 void tdb_io_init(struct tdb_context *tdb);
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size);
