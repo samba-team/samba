@@ -2882,17 +2882,9 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv3);
 	smb_maxcnt = SVAL(req->inbuf,smb_vwv5);
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBreadX);
-		return;
-	}
-
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
-		reply_post_legacy(
-			req,
-			reply_pipe_read_and_X(inbuf,outbuf,length,bufsize));
+		reply_pipe_read_and_X(req);
 		END_PROFILE(SMBreadX);
 		return;
 	}
@@ -2904,6 +2896,12 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 
 	if (!CHECK_READ(fsp,req->inbuf)) {
 		reply_doserror(req, ERRDOS,ERRbadaccess);
+		END_PROFILE(SMBreadX);
+		return;
+	}
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBreadX);
 		return;
 	}

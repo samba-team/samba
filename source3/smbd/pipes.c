@@ -252,11 +252,11 @@ void reply_pipe_write_and_X(struct smb_request *req)
  wrinkles to handle pipes.
 ****************************************************************************/
 
-int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
+void reply_pipe_read_and_X(struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p(SVAL(inbuf,smb_vwv2));
-	int smb_maxcnt = SVAL(inbuf,smb_vwv5);
-	int smb_mincnt = SVAL(inbuf,smb_vwv6);
+	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv2));
+	int smb_maxcnt = SVAL(req->inbuf,smb_vwv5);
+	int smb_mincnt = SVAL(req->inbuf,smb_vwv6);
 	int nread = -1;
 	char *data;
 	BOOL unused;
@@ -265,32 +265,35 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
            is deliberate, instead we always return the next lump of
            data on the pipe */
 #if 0
-	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
+	uint32 smb_offs = IVAL(req->inbuf,smb_vwv3);
 #endif
 
 	if (!p) {
-		return(ERROR_DOS(ERRDOS,ERRbadfid));
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 
-	set_message(inbuf,outbuf,12,0,True);
-	data = smb_buf(outbuf);
+	reply_outbuf(req, 12, smb_maxcnt);
+
+	data = smb_buf(req->outbuf);
 
 	nread = read_from_pipe(p, data, smb_maxcnt, &unused);
 
 	if (nread < 0) {
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
+
+	set_message(NULL, (char *)req->outbuf, 12, nread, False);
   
-	SSVAL(outbuf,smb_vwv5,nread);
-	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
-	SSVAL(smb_buf(outbuf),-2,nread);
+	SSVAL(req->outbuf,smb_vwv5,nread);
+	SSVAL(req->outbuf,smb_vwv6,smb_offset(data,req->outbuf));
+	SSVAL(smb_buf(req->outbuf),-2,nread);
   
 	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
 		 p->pnum, smb_mincnt, smb_maxcnt, nread));
 
-	/* Ensure we set up the message length to include the data length read. */
-	set_message_bcc(inbuf,outbuf,nread);
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	return chain_reply_new(req);
 }
 
 /****************************************************************************
