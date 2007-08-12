@@ -18,5 +18,4 @@ incdir=`dirname $0`
 
 plantest "blackbox.smbclient" dc $incdir/../../testprogs/blackbox/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" "$ADDARGS"
 plantest "blackbox.kinit" dc $incdir/../../testprogs/blackbox/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" "$ADDARGS"
-
 plantest "blackbox.cifsdd" dc $incdir/../../testprogs/blackbox/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$ADDARGS"

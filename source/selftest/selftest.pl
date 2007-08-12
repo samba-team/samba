@@ -114,8 +114,9 @@ use Getopt::Long;
 use POSIX;
 use Cwd qw(abs_path);
 use lib "$RealBin";
-use Samba3;
-use Samba4;
+use env::Samba3;
+use env::Samba4;
+use env::Windows;
 use SocketWrapper;
 
 my $opt_help = 0;
@@ -209,26 +210,13 @@ sub cleanup_pcap($$$)
 	$state->{PCAP_FILE} = undef;
 }
 
-sub run_test($$$$$$)
+sub parse_subunit_results($$$$)
 {
-	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my ($msg_ops, $msg_state, $statistics, $fh) = @_;
 	my $expected_ret = 1;
 	my $open_tests = {};
-	my $msg_state = {
-		ENVNAME	=> $envname,
-		NAME	=> $name,
-		CMD	=> $cmd,
-		INDEX	=> $i,
-		TOTAL	=> $totalsuites,
-		START_TIME	=> time()
-	};
 
-	setup_pcap($msg_state);
-
-	$msg_ops->start_testsuite($msg_state);
-
-	open(RESULT, "$cmd 2>&1|");
-	while (<RESULT>) {
+	while(<$fh>) {
 		$msg_ops->output_msg($msg_state, $_);
 		if (/^test: (.+)\n/) {
 			$open_tests->{$1} = 1;
@@ -237,7 +225,7 @@ sub run_test($$$$$$)
 			my $result = $1;
 			if ($1 eq "success") {
 				delete $open_tests->{$2};
-				if (expecting_failure("$name/$2")) {
+				if (expecting_failure("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_UNEXPECTED_OK}++;
 					$msg_ops->end_test($msg_state, $2, $1, 1);
 				} else {
@@ -246,12 +234,12 @@ sub run_test($$$$$$)
 				}
 			} elsif ($1 eq "failure") {
 				delete $open_tests->{$2};
-				if (expecting_failure("$name/$2")) {
+				if (expecting_failure("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_EXPECTED_FAIL}++;
 					$msg_ops->end_test($msg_state, $2, $1, 0);
 					$expected_ret = 0;
 				} else {
-					print "n:$name/$2\n";
+					print "n:$msg_state->{NAME}/$2\n";
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
 					$msg_ops->end_test($msg_state, $2, $1, 1);
 				}
@@ -271,6 +259,30 @@ sub run_test($$$$$$)
 		$msg_ops->output_msg($msg_state, "$_ was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
 	}
+
+	return $expected_ret;
+}
+
+sub run_test($$$$$$)
+{
+	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my $msg_state = {
+		ENVNAME	=> $envname,
+		NAME	=> $name,
+		CMD	=> $cmd,
+		INDEX	=> $i,
+		TOTAL	=> $totalsuites,
+		START_TIME	=> time()
+	};
+
+	setup_pcap($msg_state);
+
+	open(RESULT, "$cmd 2>&1|");
+	$msg_ops->start_testsuite($msg_state);
+
+	my $expected_ret = parse_subunit_results(
+		$msg_ops, $msg_state, $statistics, *RESULT);
+
 	my $ret = close(RESULT);
 
 	cleanup_pcap($msg_state,  $expected_ret, $ret);

@@ -4,8 +4,6 @@
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-SCRIPTDIR=../testprogs/ejs
-
 PATH=bin:$PATH
 export PATH
 
