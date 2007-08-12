@@ -1677,7 +1677,8 @@ bin/readahead.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READAHEAD_OBJ)
 
 bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_FILEID_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FILEID_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
 #########################################################
 ## IdMap NSS plugins
