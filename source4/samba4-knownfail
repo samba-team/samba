@@ -8,3 +8,4 @@ RAW-OPLOCK/OPLOCK
 RPC-WINREG
 RPC-WKSSVC.*NetWkstaGetInfo
 RPC-WKSSVC.*NetWkstaTransportEnum
+blackbox.smbclient.*USER.*PASSWD

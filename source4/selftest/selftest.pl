@@ -136,6 +136,7 @@ my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
 my $opt_bindir = undef;
 my $opt_no_lazy_setup = undef;
+my $opt_format = "plain";
 
 my $srcdir = ".";
 my $builddir = ".";
@@ -239,7 +240,6 @@ sub parse_subunit_results($$$$)
 					$msg_ops->end_test($msg_state, $2, $1, 0);
 					$expected_ret = 0;
 				} else {
-					print "n:$msg_state->{NAME}/$2\n";
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
 					$msg_ops->end_test($msg_state, $2, $1, 1);
 				}
@@ -285,7 +285,7 @@ sub run_test($$$$$$)
 
 	my $ret = close(RESULT);
 
-	cleanup_pcap($msg_state,  $expected_ret, $ret);
+	cleanup_pcap($msg_state, $expected_ret, $ret);
 
 	$msg_ops->end_testsuite($msg_state, $expected_ret, $ret,
 							getlog_env($msg_state->{ENVNAME}));
@@ -366,6 +366,7 @@ my $result = GetOptions (
 		'no-lazy-setup' => \$opt_no_lazy_setup,
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
+		'format=s' => \$opt_format,
 	    );
 
 exit(1) if (not $result);
@@ -418,8 +419,10 @@ $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
 
 my $tls_enabled = not $opt_quick;
-my $from_build_farm = (defined($ENV{RUN_FROM_BUILD_FARM}) and 
-                      ($ENV{RUN_FROM_BUILD_FARM} eq "yes"));
+if (defined($ENV{RUN_FROM_BUILD_FARM}) and 
+	($ENV{RUN_FROM_BUILD_FARM} eq "yes")) {
+	$opt_format = "buildfarm";
+}
 
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
 $ENV{LD_LDB_MODULE_PATH} = "$old_pwd/bin/modules/ldb";
@@ -551,7 +554,7 @@ push (@torture_options, "--configfile=$conffile");
 # ensure any one smbtorture call doesn't run too long
 push (@torture_options, "--maximum-runtime=$torture_maxtime");
 push (@torture_options, "--target=$opt_target");
-push (@torture_options, "--option=torture:progress=no") if ($from_build_farm);
+push (@torture_options, "--option=torture:progress=no") if ($opt_format eq "buildfarm");
 push (@torture_options, "--format=subunit");
 push (@torture_options, "--option=torture:quick=yes") if ($opt_quick);
 
@@ -692,12 +695,18 @@ sub teardown_env($)
 }
 
 my $msg_ops;
-if ($from_build_farm) {
+if ($opt_format eq "buildfarm") {
 	require output::buildfarm;
 	$msg_ops = new output::buildfarm();
-} else {
+} elsif ($opt_format eq "plain") {
 	require output::plain;
 	$msg_ops = new output::plain($opt_verbose, $opt_immediate, $statistics);
+} elsif ($opt_format eq "html") {
+	require output::html;
+	mkdir "test-results";
+	$msg_ops = new output::html("test-results", $statistics);
+} else {
+	die("Invalid output format '$opt_format'");
 }
 
 if ($opt_no_lazy_setup) {
@@ -737,7 +746,7 @@ $envvarstr
 		my $envname = $$_[1];
 		
 		if (skip($name)) {
-			print "SKIPPED: $name\n";
+			$msg_ops->skip_testsuite($name);
 			$statistics->{SUITES_SKIPPED}++;
 			next;
 		}
@@ -791,7 +800,7 @@ foreach (<$prefix/valgrind.log*>) {
 	}
 }
 
-if ($from_build_farm) {
+if ($opt_format eq "buildfarm") {
 	print "TEST STATUS: $numfailed\n";
 }
 
