@@ -92,6 +92,7 @@ ZERO_STRUCTPN
 ZERO_ARRAY
 ARRAY_SIZE
 PTR_DIFF
+offsetof
 
 Headers:
 stdint.h
