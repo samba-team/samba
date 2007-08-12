@@ -2728,12 +2728,14 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
  Setup readX header.
 ****************************************************************************/
 
-static int setup_readX_header(char *inbuf, char *outbuf, size_t smb_maxcnt)
+static int setup_readX_header(const uint8 *inbuf, uint8 *outbuf,
+			      size_t smb_maxcnt)
 {
 	int outsize;
 	char *data;
 
-	outsize = set_message(inbuf, outbuf,12,smb_maxcnt,False);
+	outsize = set_message((char *)inbuf, (char *)outbuf,12,smb_maxcnt,
+			      False);
 	data = smb_buf(outbuf);
 
 	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
@@ -2757,9 +2759,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 {
 	SMB_STRUCT_STAT sbuf;
 	ssize_t nread = -1;
-	char *data;
-	char *inbuf, *outbuf;
-	int length, len_outbuf;
 
 	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
@@ -2785,7 +2784,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 	if ((chain_size == 0) && (CVAL(req->inbuf,smb_vwv0) == 0xFF) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
-		char headerbuf[smb_size + 12 * 2];
+		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
 
 		/* 
@@ -2796,8 +2795,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 		header = data_blob_const(headerbuf, sizeof(headerbuf));
 
-		construct_reply_common((char *)req->inbuf, headerbuf);
-		setup_readX_header((char *)req->inbuf, headerbuf, smb_maxcnt);
+		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
+		setup_readX_header(req->inbuf, headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
@@ -2845,19 +2844,15 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 normal_read:
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &len_outbuf)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	set_message(inbuf, outbuf, 12, 0, True);
-
-	data = smb_buf(outbuf);
-
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
-		int sendlen = setup_readX_header(inbuf,outbuf,smb_maxcnt) - smb_maxcnt;
+		uint8 headerbuf[smb_size + 2*12];
+
+		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
+		setup_readX_header(req->inbuf, headerbuf, smb_maxcnt);
+
 		/* Send out the header. */
-		if (write_data(smbd_server_fd(),outbuf,sendlen) != sendlen) {
+		if (write_data(smbd_server_fd(), (char *)headerbuf,
+			       sizeof(headerbuf)) != sizeof(headerbuf)) {
 			DEBUG(0,("send_file_readX: write_data failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
 			exit_server_cleanly("send_file_readX sendfile failed");
@@ -2871,14 +2866,16 @@ normal_read:
 		TALLOC_FREE(req->outbuf);
 		return;
 	} else {
-		nread = read_file(fsp,data,startpos,smb_maxcnt);
+		reply_outbuf(req, 12, smb_maxcnt);
 
+		nread = read_file(fsp, smb_buf(req->outbuf), startpos,
+				  smb_maxcnt);
 		if (nread < 0) {
 			reply_unixerror(req, ERRDOS, ERRnoaccess);
 			return;
 		}
 
-		setup_readX_header(inbuf, outbuf,nread);
+		setup_readX_header(req->inbuf, req->outbuf, nread);
 
 		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
