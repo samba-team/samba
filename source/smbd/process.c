@@ -953,8 +953,19 @@ static const struct smb_message_struct {
  allocate and initialize a reply packet
 ********************************************************************/
 
-void reply_outbuf(struct smb_request *req, uint8 num_words, uint16 num_bytes)
+void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 {
+	/*
+         * Protect against integer wrap
+         */
+	if ((num_bytes > 0xffffff)
+	    || ((num_bytes + smb_size + num_words*2) > 0xffffff)) {
+		char *msg;
+		asprintf(&msg, "num_bytes too large: %u",
+			 (unsigned)num_bytes);
+		smb_panic(msg);
+	}
+
 	if (!(req->outbuf = TALLOC_ARRAY(
 		      req, uint8,
 		      smb_size + num_words*2 + num_bytes))) {
