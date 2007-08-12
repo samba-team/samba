@@ -140,12 +140,12 @@ my $srcdir = ".";
 my $builddir = ".";
 my $prefix = "./st";
 
-my $suitesfailed = [];
-my $start = time();
 my @expected_failures = ();
 my @skips = ();
 
 my $statistics = {
+	START_TIME => time(),
+
 	SUITES_FAIL => 0,
 	SUITES_OK => 0,
 	SUITES_SKIPPED => 0,
@@ -180,149 +180,6 @@ sub skip($)
 }
 
 sub getlog_env($);
-
-my $test_output = {};
-
-sub buildfarm_start_testsuite($)
-{
-	my ($state) = @_;
-	my $out = "";
-
-	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
-	$out .= "Running test $state->{NAME} (level 0 stdout)\n";
-	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
-	$out .= scalar(localtime())."\n";
-	$out .= "SELFTEST RUNTIME: " . ($state->{START} - $start) . "s\n";
-	$out .= "NAME: $state->{NAME}\n";
-	$out .= "CMD: $state->{CMD}\n";
-
-	$test_output->{$state->{NAME}} = "";
-
-	print $out;
-}
-
-sub buildfarm_output_msg($$)
-{
-	my ($state, $output) = @_;
-
-	$test_output->{$state->{NAME}} .= $output;
-}
-
-sub buildfarm_end_testsuite($$$)
-{
-	my ($state, $expected_ret, $ret) = @_;
-	my $out = "";
-
-	$out .= "TEST RUNTIME: " . (time() - $state->{START}) . "s\n";
-
-	if ($ret == $expected_ret) {
-		$out .= "ALL OK\n";
-	} else {
-		$out .= "ERROR: $ret";
-		$out .= $test_output->{$state->{NAME}};
-	}
-
-	$out .= "PCAP FILE: $state->{PCAP_FILE}\n" if defined($state->{PCAP_FILE});
-
-	$out .= getlog_env($state->{ENVNAME});
-
-	$out .= "==========================================\n";
-	if ($ret == $expected_ret) {
-		$out .= "TEST PASSED: $state->{NAME}\n";
-	} else {
-		$out .= "TEST FAILED: $state->{NAME} (status $ret)\n";
-	}
-	$out .= "==========================================\n";
-
-	print $out;
-}
-
-sub buildfarm_start_test($$)
-{
-	my ($state, $testname) = @_;
-}
-
-sub buildfarm_end_test($$$$)
-{
-	my ($state, $testname, $result, $expected) = @_;
-}
-
-my $buildfarm_msg_ops = {
-	start_testsuite	=> \&buildfarm_start_testsuite,
-	output_msg	=> \&buildfarm_output_msg,
-	end_testsuite		=> \&buildfarm_end_testsuite,
-	start_test => \&buildfarm_start_test,
-	end_test => \&buildfarm_end_test,
-};
-
-sub plain_output_msg($$);
-
-sub plain_start_testsuite($)
-{
-	my ($state) = @_;
-	my $out = "";
-
-	$out .= "[$state->{INDEX}/$state->{TOTAL} in " . ($state->{START} - $start) . "s";
-	$out .= ", ".($#$suitesfailed+1)." errors" if ($#$suitesfailed+1 > 0);
-	$out .= "] $state->{NAME}\n";
-
-	$test_output->{$state->{NAME}} = "" unless $opt_verbose;
-
-	plain_output_msg($state, "CMD: $state->{CMD}\n");
-
-	print $out;
-}
-
-sub plain_output_msg($$)
-{
-	my ($state, $output) = @_;
-
-	if ($opt_verbose) {
-		print $output;
-	} else {
-		$test_output->{$state->{NAME}} .= $output;
-	}
-}
-
-sub plain_end_testsuite($$$)
-{
-	my ($state, $expected_ret, $ret) = @_;
-	my $out = "";
-
-	if ($ret != $expected_ret) {
-		plain_output_msg($state, "ERROR: $ret\n");
-	}
-
-	if ($ret != $expected_ret and ($opt_immediate or $opt_one) and not $opt_verbose) {
-		$out .= $test_output->{$state->{NAME}};
-	}
-
-	if (not $opt_socket_wrapper_keep_pcap and defined($state->{PCAP_FILE})) {
-		$out .= "PCAP FILE: $state->{PCAP_FILE}\n";
-	}
-
-	$out .= getlog_env($state->{ENVNAME});
-
-	print $out;
-}
-
-sub plain_start_test($$)
-{
-	my ($state, $testname) = @_;
-}
-
-sub plain_end_test($$$$)
-{
-	my ($state, $testname, $result, $expected) = @_;
-}
-
-my $plain_msg_ops = {
-	start_testsuite	=> \&plain_start_testsuite,
-	output_msg	=> \&plain_output_msg,
-	end_testsuite		=> \&plain_end_testsuite,
-	start_test => \&plain_start_test,
-	end_test => \&plain_end_test,
-};
 
 sub setup_pcap($)
 {
@@ -363,65 +220,71 @@ sub run_test($$$$$$)
 		CMD	=> $cmd,
 		INDEX	=> $i,
 		TOTAL	=> $totalsuites,
-		START	=> time()
+		START_TIME	=> time()
 	};
 
 	setup_pcap($msg_state);
 
-	$msg_ops->{start_testsuite}->($msg_state);
+	$msg_ops->start_testsuite($msg_state);
 
 	open(RESULT, "$cmd 2>&1|");
 	while (<RESULT>) {
-		$msg_ops->{output_msg}->($msg_state, $_);
+		$msg_ops->output_msg($msg_state, $_);
 		if (/^test: (.+)\n/) {
 			$open_tests->{$1} = 1;
-			$msg_ops->{start_test}->($msg_state, $1);
+			$msg_ops->start_test($msg_state, $1);
 		} elsif (/^(success|failure|skip|error): (.*?)( \[)?\n/) {
 			my $result = $1;
 			if ($1 eq "success") {
 				delete $open_tests->{$2};
 				if (expecting_failure("$name/$2")) {
 					$statistics->{TESTS_UNEXPECTED_OK}++;
-					$msg_ops->{end_test}->($msg_state, $2, $1, 1);
+					$msg_ops->end_test($msg_state, $2, $1, 1);
 				} else {
 					$statistics->{TESTS_EXPECTED_OK}++;
-					$msg_ops->{end_test}->($msg_state, $2, $1, 0);
+					$msg_ops->end_test($msg_state, $2, $1, 0);
 				}
 			} elsif ($1 eq "failure") {
 				delete $open_tests->{$2};
 				if (expecting_failure("$name/$2")) {
 					$statistics->{TESTS_EXPECTED_FAIL}++;
-					$msg_ops->{end_test}->($msg_state, $2, $1, 0);
+					$msg_ops->end_test($msg_state, $2, $1, 0);
 					$expected_ret = 0;
 				} else {
 					print "n:$name/$2\n";
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
-					$msg_ops->{end_test}->($msg_state, $2, $1, 1);
+					$msg_ops->end_test($msg_state, $2, $1, 1);
 				}
 			} elsif ($1 eq "skip") {
 				delete $open_tests->{$2};
-				$msg_ops->{end_test}->($msg_state, $2, $1, 0);
+				$msg_ops->end_test($msg_state, $2, $1, 0);
 			} elsif ($1 eq "error") {
 				$statistics->{TESTS_ERROR}++;
 				delete $open_tests->{$2};
-				$msg_ops->{end_test}->($msg_state, $2, $1, 1);
+				$msg_ops->end_test($msg_state, $2, $1, 1);
 			}
 		}
 	}
 
 	foreach (keys %$open_tests) {
-		$msg_ops->{end_test}->($msg_state, $_, "error", 1);
-		$msg_ops->{output_msg}->($msg_state, "$_ was started but never finished!");
+		$msg_ops->end_test($msg_state, $_, "error", 1);
+		$msg_ops->output_msg($msg_state, "$_ was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
 	}
 	my $ret = close(RESULT);
 
 	cleanup_pcap($msg_state,  $expected_ret, $ret);
 
-	$msg_ops->{end_testsuite}->($msg_state, $expected_ret, $ret);
+	$msg_ops->end_testsuite($msg_state, $expected_ret, $ret,
+							getlog_env($msg_state->{ENVNAME}));
+
+	if (not $opt_socket_wrapper_keep_pcap and 
+		defined($msg_state->{PCAP_FILE})) {
+		$msg_ops->output_msg($msg_state, 
+			"PCAP FILE: $msg_state->{PCAP_FILE}\n");
+	}
 
 	if ($ret != $expected_ret) {
-		push(@$suitesfailed, $name);
 		$statistics->{SUITES_FAIL}++;
 		exit(1) if ($opt_one);
 	} else {
@@ -818,9 +681,11 @@ sub teardown_env($)
 
 my $msg_ops;
 if ($from_build_farm) {
-	$msg_ops = $buildfarm_msg_ops;
+	require output::buildfarm;
+	$msg_ops = new output::buildfarm();
 } else {
-	$msg_ops = $plain_msg_ops;
+	require output::plain;
+	$msg_ops = new output::plain($opt_verbose, $opt_immediate, $statistics);
 }
 
 if ($opt_no_lazy_setup) {
@@ -867,10 +732,9 @@ $envvarstr
 
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
-			push(@$suitesfailed, $name);
 			$statistics->{SUITES_FAIL}++;
 			$statistics->{TESTS_ERROR}++;
-			print "FAIL: $name (ENV[$envname] not available!)\n";
+			$msg_ops->missing_env($name, $envname);
 			next;
 		}
 
@@ -890,26 +754,15 @@ teardown_env($_) foreach (keys %running_envs);
 
 $target->stop();
 
-my $end = time();
-my $duration = ($end-$start);
-my $numfailed = $#$suitesfailed+1;
+$statistics->{END_TIME} = time();
+my $duration = ($statistics->{END_TIME}-$statistics->{START_TIME});
+my $numfailed = $statistics->{SUITES_FAIL};
 if ($numfailed == 0) {
 	my $ok = $statistics->{TESTS_EXPECTED_OK} + 
 	         $statistics->{TESTS_EXPECTED_FAIL};
 	print "ALL OK ($ok tests in $statistics->{SUITES_OK} testsuites)\n";
 } else {
-	unless ($from_build_farm) {
-		if (not $opt_immediate and not $opt_verbose) {
-			foreach (@$suitesfailed) {
-				print "===============================================================================\n";
-				print "FAIL: $_\n";
-				print $test_output->{$_};
-				print "\n";
-			}
-		}
-
-		print "FAILED ($statistics->{TESTS_UNEXPECTED_FAIL} failures and $statistics->{TESTS_ERROR} errors in $statistics->{SUITES_FAIL} testsuites)\n";
-	}
+	$msg_ops->summary();
 }
 print "DURATION: $duration seconds\n";
 

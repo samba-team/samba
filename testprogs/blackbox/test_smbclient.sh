@@ -141,7 +141,7 @@ testit "Test login with PASSWD" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION /
 oldUSER=$USER
 USER="$USERNAME" 
 export USER
-testit "Test login with USER and PASSWD" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" | failed=`expr $failed + 1`
+testit "Test login with USER and PASSWD" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" || failed=`expr $failed + 1`
 PASSWD=
 export PASSWD
 unset PASSWD
