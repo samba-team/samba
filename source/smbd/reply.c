@@ -2733,16 +2733,28 @@ static int setup_readX_header(char *inbuf, char *outbuf, size_t smb_maxcnt)
  Reply to a read and X - possibly using sendfile.
 ****************************************************************************/
 
-int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
-		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
+static void send_file_readX(connection_struct *conn, struct smb_request *req,
+			    files_struct *fsp, SMB_OFF_T startpos,
+			    size_t smb_maxcnt)
 {
 	SMB_STRUCT_STAT sbuf;
-	int outsize = 0;
 	ssize_t nread = -1;
-	char *data = smb_buf(outbuf);
+	char *data;
+	char *inbuf, *outbuf;
+	int length, len_outbuf;
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &len_outbuf)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	set_message(inbuf, outbuf, 12, 0, True);
+
+	data = smb_buf(outbuf);
 
 	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	if (startpos > sbuf.st_size) {
@@ -2803,8 +2815,9 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 				}
 				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
 					fsp->fnum, (int)smb_maxcnt, (int)nread ) );
-				/* Returning -1 here means successful sendfile. */
-				return -1;
+				/* No outbuf here means successful sendfile. */
+				TALLOC_FREE(req->outbuf);
+				return;
 			}
 
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
@@ -2814,8 +2827,9 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
-		/* Returning -1 here means successful sendfile. */
-		return -1;
+		/* No outbuf here means successful sendfile. */
+		TALLOC_FREE(req->outbuf);
+		return;
 	}
 
 #endif
@@ -2836,21 +2850,24 @@ normal_read:
 				fsp->fsp_name, strerror(errno) ));
 			exit_server_cleanly("send_file_readX: fake_sendfile failed");
 		}
-		return -1;
+		TALLOC_FREE(req->outbuf);
+		return;
 	} else {
 		nread = read_file(fsp,data,startpos,smb_maxcnt);
 
 		if (nread < 0) {
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
+			reply_unixerror(req, ERRDOS, ERRnoaccess);
+			return;
 		}
 
-		outsize = setup_readX_header(inbuf, outbuf,nread);
+		setup_readX_header(inbuf, outbuf,nread);
 
 		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 
-		/* Returning the number of bytes we want to send back - including header. */
-		return outsize;
+		chain_reply_new(req);
+
+		return;
 	}
 }
 
@@ -2862,14 +2879,11 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 {
 	files_struct *fsp;
 	SMB_OFF_T startpos;
-	ssize_t nread = -1;
 	size_t smb_maxcnt;
 	BOOL big_readX = False;
 #if 0
 	size_t smb_mincnt = SVAL(req->inbuf,smb_vwv6);
 #endif
-	char *inbuf, *outbuf;
-	int length, bufsize;
 
 	START_PROFILE(SMBreadX);
 
@@ -2967,28 +2981,7 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBreadX);
-		return;
-	}
-
-	set_message(inbuf,outbuf,12,0,True);
-
-	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp,
-				startpos, smb_maxcnt);
-	/* Only call chain_reply if not an error. */
-	if (nread != -1 && SVAL(outbuf,smb_rcls) == 0) {
-		nread = chain_reply(inbuf,&outbuf,length,bufsize);
-	}
-
-	if (nread == -1) {
-		/*
-		 * Can't use reply_post_legacy here, setup_readX_header has
-		 * set up its (potentially LARGE) size itself already.
-		 */
-		TALLOC_FREE(req->outbuf);
-	}
+	send_file_readX(conn, req, fsp,	startpos, smb_maxcnt);
 
 	END_PROFILE(SMBreadX);
 	return;
