@@ -48,7 +48,7 @@ static struct tdb_errname {
 /* Error string for the last tdb error */
 const char *tdb_errorstr(struct tdb_context *tdb)
 {
-	u32 i;
+	uint32_t i;
 	for (i = 0; i < sizeof(emap) / sizeof(struct tdb_errname); i++)
 		if (tdb->ecode == emap[i].ecode)
 			return emap[i].estring;
