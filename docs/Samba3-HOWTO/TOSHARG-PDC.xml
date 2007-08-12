@@ -425,7 +425,7 @@ sustainable choice and competition in the FIM market place.
 <indexterm><primary>identity information</primary></indexterm>
 Primary domain control, if it is to be scalable to meet the needs of large sites, must therefore be capable of
 using LDAP. The rapid adoption of OpenLDAP, and Samba configurations that use it, is ample proof that the era
-of the directoy has started. Samba-3 does not demand the use of LDAP, but the demand for a mechanism by which
+of the directory has started. Samba-3 does not demand the use of LDAP, but the demand for a mechanism by which
 user and group identity information can be distributed makes it an an unavoidable option.
 </para>
 
