@@ -289,6 +289,9 @@ SELFTEST = $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
     --skip=$(srcdir)/samba4-skip \
     $(TEST_OPTIONS) 
 
+htmltest: everything
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --format=html $(TESTS)
+
 test: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --immediate $(TESTS)
 
