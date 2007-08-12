@@ -43,6 +43,7 @@
 		<arg choice="opt">-S sid</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-u</arg>
+		<arg choice="opt">--uid-info</arg>
 		<arg choice="opt">--user-domgroups sid</arg>
 		<arg choice="opt">--user-sids sid</arg>
 		<arg choice="opt">-U uid</arg>
@@ -281,7 +282,13 @@
 		<refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum></citerefentry>
 		.</para></listitem>
 		</varlistentry>
-		
+
+		<varlistentry>
+		<term>--uid-info</term>
+		<listitem><para>Get user info for the user conencted to
+		uid.</para></listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>--user-domgroups SID</term>
 		<listitem><para>Get user domain groups.
