@@ -2333,9 +2333,22 @@ static void fail_readraw(void)
  Fake (read/write) sendfile. Returns -1 on read or write fail.
 ****************************************************************************/
 
-static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread, char *buf, size_t bufsize)
+static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
+			     size_t nread)
 {
+	size_t bufsize;
 	size_t tosend = nread;
+	char *buf;
+
+	if (nread == 0) {
+		return 0;
+	}
+
+	bufsize = MIN(nread, 65536);
+
+	if (!(buf = SMB_MALLOC_ARRAY(char, bufsize))) {
+		return -1;
+	}
 
 	while (tosend > 0) {
 		ssize_t ret;
@@ -2348,6 +2361,7 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread
 		}
 		ret = read_file(fsp,buf,startpos,cur_read);
 		if (ret == -1) {
+			SAFE_FREE(buf);
 			return -1;
 		}
 
@@ -2357,12 +2371,14 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread
 		}
 
 		if (write_data(smbd_server_fd(),buf,cur_read) != cur_read) {
+			SAFE_FREE(buf);
 			return -1;
 		}
 		tosend -= cur_read;
 		startpos += cur_read;
 	}
 
+	SAFE_FREE(buf);
 	return (ssize_t)nread;
 }
 
@@ -2408,7 +2424,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 				set_use_sendfile(SNUM(conn), False);
 				DEBUG(0,("send_file_readbraw: sendfile not available. Faking..\n"));
 
-				if (fake_sendfile(fsp, startpos, nread, outbuf + 4, out_buffsize - 4) == -1) {
+				if (fake_sendfile(fsp, startpos, nread) == -1) {
 					DEBUG(0,("send_file_readbraw: fake_sendfile failed for file %s (%s).\n",
 						fsp->fsp_name, strerror(errno) ));
 					exit_server_cleanly("send_file_readbraw fake_sendfile failed");
@@ -2806,9 +2822,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 				/* Ensure we don't do this again. */
 				set_use_sendfile(SNUM(conn), False);
 				DEBUG(0,("send_file_readX: sendfile not available. Faking..\n"));
-
-				if ((nread = fake_sendfile(fsp, startpos, smb_maxcnt, data,
-							len_outbuf - (data-outbuf))) == -1) {
+				nread = fake_sendfile(fsp, startpos,
+						      smb_maxcnt);
+				if (nread == -1) {
 					DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
 						fsp->fsp_name, strerror(errno) ));
 					exit_server_cleanly("send_file_readX: fake_sendfile failed");
@@ -2844,8 +2860,8 @@ normal_read:
 				fsp->fsp_name, strerror(errno) ));
 			exit_server_cleanly("send_file_readX sendfile failed");
 		}
-		if ((nread = fake_sendfile(fsp, startpos, smb_maxcnt, data,
-					len_outbuf - (data-outbuf))) == -1) {
+		nread = fake_sendfile(fsp, startpos, smb_maxcnt);
+		if (nread == -1) {
 			DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
 				fsp->fsp_name, strerror(errno) ));
 			exit_server_cleanly("send_file_readX: fake_sendfile failed");
