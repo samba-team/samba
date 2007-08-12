@@ -52,10 +52,6 @@
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
-#ifndef offsetof
-#define offsetof(t,f) ((unsigned int)&((t *)0)->f)
-#endif
-
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 /* force off HAVE_INTTYPES_H so that roken doesn't try to include both,
