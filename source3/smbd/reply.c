@@ -2731,7 +2731,10 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 static int setup_readX_header(char *inbuf, char *outbuf, size_t smb_maxcnt)
 {
 	int outsize;
-	char *data = smb_buf(outbuf);
+	char *data;
+
+	outsize = set_message(inbuf, outbuf,12,smb_maxcnt,False);
+	data = smb_buf(outbuf);
 
 	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,smb_maxcnt);
@@ -2739,7 +2742,6 @@ static int setup_readX_header(char *inbuf, char *outbuf, size_t smb_maxcnt)
 	SSVAL(outbuf,smb_vwv7,(smb_maxcnt >> 16));
 	SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
 	SCVAL(outbuf,smb_vwv0,0xFF);
-	outsize = set_message(inbuf, outbuf,12,smb_maxcnt,False);
 	/* Reset the outgoing length, set_message truncates at 0x1FFFF. */
 	_smb_setlen_large(outbuf,(smb_size + 12*2 + smb_maxcnt - 4));
 	return outsize;
@@ -2758,15 +2760,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	char *data;
 	char *inbuf, *outbuf;
 	int length, len_outbuf;
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &len_outbuf)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	set_message(inbuf, outbuf, 12, 0, True);
-
-	data = smb_buf(outbuf);
 
 	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
@@ -2790,8 +2783,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 * on a train in Germany :-). JRA.
 	 */
 
-	if ((chain_size == 0) && (CVAL(inbuf,smb_vwv0) == 0xFF) &&
+	if ((chain_size == 0) && (CVAL(req->inbuf,smb_vwv0) == 0xFF) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
+		char headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
 
 		/* 
@@ -2800,11 +2794,10 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		 * correct amount of data).
 		 */
 
-		setup_readX_header(inbuf,outbuf,smb_maxcnt);
-		set_message(inbuf,outbuf,12,smb_maxcnt,False);
-		header.data = (uint8 *)outbuf;
-		header.length = data - outbuf;
-		header.free = NULL;
+		header = data_blob_const(headerbuf, sizeof(headerbuf));
+
+		construct_reply_common((char *)req->inbuf, headerbuf);
+		setup_readX_header((char *)req->inbuf, headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
@@ -2851,6 +2844,15 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 #endif
 
 normal_read:
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &len_outbuf)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	set_message(inbuf, outbuf, 12, 0, True);
+
+	data = smb_buf(outbuf);
 
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
 		int sendlen = setup_readX_header(inbuf,outbuf,smb_maxcnt) - smb_maxcnt;
