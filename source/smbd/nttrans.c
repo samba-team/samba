@@ -2402,10 +2402,12 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
  Reply to NT IOCTL
 ****************************************************************************/
 
-static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static void call_nt_transact_ioctl(connection_struct *conn,
+				   struct smb_request *req,
+				   uint16 **ppsetup, uint32 setup_count,
+				   char **ppparams, uint32 parameter_count,
+				   char **ppdata, uint32 data_count,
+				   uint32 max_data_count)
 {
 	uint32 function;
 	uint16 fidnum;
@@ -2417,7 +2419,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 	if (setup_count != 8) {
 		DEBUG(3,("call_nt_transact_ioctl: invalid setup count %d\n", setup_count));
-		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return;
 	}
 
 	function = IVAL(*ppsetup, 0);
@@ -2440,9 +2443,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		   so we can know if we need to pre-allocate or not */
 
 		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X](but not implemented)\n", fidnum));
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
-				0);
-		return -1;
+		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+		return;
 	
 	case FSCTL_CREATE_OR_GET_OBJECT_ID:
 	{
@@ -2454,18 +2456,22 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on FID[0x%04X]\n",fidnum));
 
-		FSP_BELONGS_CONN(fsp, conn);
+		if (!fsp_belongs_conn(conn, req, fsp, &current_user)) {
+			return;
+		}
 
 		data_count = 64;
 		pdata = nttrans_realloc(ppdata, data_count);
 		if (pdata == NULL) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 		push_file_id_16(pdata, &fsp->file_id);
 		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
 		push_file_id_16(pdata+32, &fsp->file_id);
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, pdata, data_count);
-		return -1;
+		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0,
+				    pdata, data_count);
+		return;
 	}
 
 	case FSCTL_GET_REPARSE_POINT:
@@ -2474,7 +2480,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		return ERROR_NT(NT_STATUS_NOT_A_REPARSE_POINT);
+		reply_nterror(req, NT_STATUS_NOT_A_REPARSE_POINT);
+		return;
 
 	case FSCTL_SET_REPARSE_POINT:
 		/* pretend this fail - I'm assuming this because of the FSCTL_GET_REPARSE_POINT case.
@@ -2482,7 +2489,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		return ERROR_NT(NT_STATUS_NOT_A_REPARSE_POINT);
+		reply_nterror(req, NT_STATUS_NOT_A_REPARSE_POINT);
+		return;
 			
 	case FSCTL_GET_SHADOW_COPY_DATA: /* don't know if this name is right...*/
 	{
@@ -2503,12 +2511,15 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		uint32 i;
 		char *cur_pdata;
 
-		FSP_BELONGS_CONN(fsp,conn);
+		if (!fsp_belongs_conn(conn, req, fsp, &current_user)) {
+			return;
+		}
 
 		if (max_data_count < 16) {
 			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) < 16 is invalid!\n",
 				max_data_count));
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		if (max_data_count > 16) {
@@ -2518,14 +2529,16 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		shadow_mem_ctx = talloc_init("SHADOW_COPY_DATA");
 		if (shadow_mem_ctx == NULL) {
 			DEBUG(0,("talloc_init(SHADOW_COPY_DATA) failed!\n"));
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,SHADOW_COPY_DATA);
 		if (shadow_data == NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));
 			talloc_destroy(shadow_mem_ctx);
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 		
 		shadow_data->mem_ctx = shadow_mem_ctx;
@@ -2538,11 +2551,13 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 			if (errno == ENOSYS) {
 				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n", 
 					conn->connectpath));
-				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+				return;
 			} else {
 				DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, failed.\n", 
 					conn->connectpath));
-				return ERROR_NT(NT_STATUS_UNSUCCESSFUL);			
+				reply_nterror(req, NT_STATUS_UNSUCCESSFUL);
+				return;
 			}
 		}
 
@@ -2558,13 +2573,15 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) too small (%u) bytes needed!\n",
 				max_data_count,data_count));
 			talloc_destroy(shadow_data->mem_ctx);
-			return ERROR_NT(NT_STATUS_BUFFER_TOO_SMALL);
+			reply_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
+			return;
 		}
 
 		pdata = nttrans_realloc(ppdata, data_count);
 		if (pdata == NULL) {
 			talloc_destroy(shadow_data->mem_ctx);
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
 		}		
 
 		cur_pdata = pdata;
@@ -2586,7 +2603,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 			shadow_data->num_volumes,fsp->fsp_name));
 		if (labels && shadow_data->labels) {
 			for (i=0;i<shadow_data->num_volumes;i++) {
-				srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+				srvstr_push(pdata, req->flags2,
 					    cur_pdata, shadow_data->labels[i],
 					    2*sizeof(SHADOW_COPY_LABEL),
 					    STR_UNICODE|STR_TERMINATE);
@@ -2597,10 +2614,10 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 		talloc_destroy(shadow_data->mem_ctx);
 
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0,
-				pdata, data_count);
+		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0,
+				    pdata, data_count);
 
-		return -1;
+		return;
         }
         
 	case FSCTL_FIND_FILES_BY_SID: /* I hope this name is right */
@@ -2617,7 +2634,9 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		
 		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: called on FID[0x%04X]\n",fidnum));
 
-		FSP_BELONGS_CONN(fsp,conn);
+		if (!fsp_belongs_conn(conn, req, fsp, &current_user)) {
+			return;
+		}
 
 		/* unknown 4 bytes: this is not the length of the sid :-(  */
 		/*unknown = IVAL(pdata,0);*/
@@ -2650,9 +2669,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 		
 		/* this works for now... */
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0,
-				NULL, 0);
-		return -1;	
+		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+		return;
 	}	
 	default:
 		if (!logged_message) {
@@ -2662,7 +2680,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		}
 	}
 
-	return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 }
 
 
@@ -3068,28 +3086,13 @@ static void handle_nttrans(connection_struct *conn,
 
 		case NT_TRANSACT_IOCTL:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_ioctl);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_ioctl(
-					conn, inbuf, outbuf,
-					size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return));
-
+			call_nt_transact_ioctl(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 			END_PROFILE(NT_transact_ioctl);
 			break;
 		}

@@ -312,6 +312,22 @@ BOOL check_fsp(connection_struct *conn, struct smb_request *req,
 }
 
 /****************************************************************************
+ Check if we have a correct fsp. Replacement for the FSP_BELONGS_CONN macro
+****************************************************************************/
+
+BOOL fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
+		      files_struct *fsp, struct current_user *user)
+{
+	if ((fsp) && (conn) && ((conn)==(fsp)->conn)
+	    && (current_user.vuid==(fsp)->vuid)) {
+		return True;
+	}
+
+	reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+	return False;
+}
+
+/****************************************************************************
  Reply to a (netbios-level) special message.
 ****************************************************************************/
 
