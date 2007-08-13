@@ -16,6 +16,7 @@ OBJ_FILES = \
 		wb_dom_info_trusted.o \
 		wb_sid2domain.o \
 		wb_name2domain.o \
+		wb_gid2sid.o \
 		wb_sid2uid.o \
 		wb_sid2gid.o \
 		wb_uid2sid.o \
