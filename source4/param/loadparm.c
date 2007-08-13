@@ -131,6 +131,8 @@ typedef struct
 	char *ntptr_providor;
 	char *szWinbindSeparator;
 	char *szWinbinddSocketDirectory;
+	char *szTemplateShell;
+	char *szTemplateHomedir;
 	int bWinbindSealedPipes;
 	char *webapps_directory;
 	int tls_enabled;
@@ -563,6 +565,8 @@ static struct parm_struct parm_table[] = {
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 	{"winbindd socket directory", P_STRING, P_GLOBAL, &Globals.szWinbinddSocketDirectory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 	{"winbind sealed pipes", P_BOOL, P_GLOBAL, &Globals.bWinbindSealedPipes, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -696,6 +700,8 @@ static void init_globals(void)
 	do_parameter("winbind separator", "\\", NULL);
 	do_parameter("winbind sealed pipes", "True", NULL);
 	do_parameter("winbindd socket directory", dyn_WINBINDD_SOCKET_DIR, NULL);
+	do_parameter("template shell", "/bin/false", NULL);
+	do_parameter("template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%", NULL);
 
 	do_parameter("client signing", "Yes", NULL);
 	do_parameter("server signing", "auto", NULL);
@@ -854,6 +860,8 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, &Globals.szWINS_CONFIG_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, &Globals.szWinbinddSocketDirectory)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &Globals.bWinbindSealedPipes)
 _PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
