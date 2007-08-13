@@ -74,7 +74,7 @@ static void name2domain_recv_sid(struct composite_context *ctx)
 				struct name2domain_state);
 	struct wb_sid_object *sid;
 
-	DEBUG(1, ("name2domain_recv_sid called\n"));
+	DEBUG(5, ("name2domain_recv_sid called\n"));
 
 	state->ctx->status = wb_cmd_lookupname_recv(ctx, state, &sid);
 	if(!composite_is_ok(state->ctx)) return;
@@ -91,7 +91,7 @@ static void name2domain_recv_domain(struct composite_context *ctx)
 				struct name2domain_state);
 	struct wbsrv_domain *domain;
 
-	DEBUG(1, ("name2domain_recv_domain called\n"));
+	DEBUG(5, ("name2domain_recv_domain called\n"));
 
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if(!composite_is_ok(state->ctx)) return;
@@ -106,7 +106,7 @@ NTSTATUS wb_name2domain_recv(struct composite_context *ctx,
 {
 	NTSTATUS status = composite_wait(ctx);
 
-	DEBUG(1, ("wb_name2domain_recv called\n"));
+	DEBUG(5, ("wb_name2domain_recv called\n"));
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct name2domain_state *state =
@@ -116,15 +116,5 @@ NTSTATUS wb_name2domain_recv(struct composite_context *ctx,
 	}
 	talloc_free(ctx);
 	return status;
-}
-
-NTSTATUS wb_name2domain(TALLOC_CTX *mem_ctx, struct wbsrv_service *service,
-		const char* name, struct wbsrv_domain **result)
-{
-	struct composite_context *c;
-
-	c = wb_name2domain_send(mem_ctx, service, name);
-
-	return wb_name2domain_recv(c, result);
 }
 
