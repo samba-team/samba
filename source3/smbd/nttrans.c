@@ -262,6 +262,24 @@ int send_nt_replies(const char *inbuf,
 	return 0;
 }
 
+void send_nt_replies_new(struct smb_request *req, NTSTATUS nt_error,
+			 char *params, int paramsize,
+			char *pdata, int datasize)
+{
+	char *inbuf, *outbuf;
+	int length, bufsize;
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	reply_post_legacy(
+		req,
+		send_nt_replies(inbuf, outbuf, bufsize, nt_error,
+				params, paramsize, pdata, datasize));
+}
+
 /****************************************************************************
  Is it an NTFS stream name ?
 ****************************************************************************/
