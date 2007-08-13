@@ -73,7 +73,15 @@ void random_traverse(void *p, void *d)
 {
 	printf("%s   ",(char *)d);
 }
-	
+
+static uint32_t calc_checksum = 0;	
+void traverse_checksum(void *p, void *d)
+{
+	int i,j,k;
+
+	sscanf(d, "%d.%d.%d", &i, &j, &k);
+	calc_checksum += i*100+j*10+k;
+}
 				
 /*
   main program
@@ -101,6 +109,7 @@ int main(int argc, const char *argv[])
 	uint32_t key4[3] = {2,10,20};
 	TALLOC_CTX *memctx;
 	uint32_t **u32array;
+	uint32_t checksum;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -245,6 +254,12 @@ int main(int argc, const char *argv[])
 	tree = trbt_create(memctx, 0);
 	i=0;
 	start_timer();
+	checksum = 0;
+	/* add and delete nodes from a 3 level tree fro 60 seconds.
+	   each time a node is added or deleted, traverse the tree and
+	   compute a checksum over the data stored in the tree and compare this
+	   with a checksum we keep which contains what the checksum should be
+	 */
 	while(end_timer() < 60.0){
 		char *str;
 
@@ -253,16 +268,40 @@ int main(int argc, const char *argv[])
 		key[1]=random()%10;
 		key[2]=random()%10;
 		if (random()%2) {
-			str=talloc_asprintf(memctx, "%d.%d.%d", key[0],key[1],key[2]);
-			trbt_insertarray32_callback(tree, 3, key, random_add, str);
+			if (trbt_lookuparray32(tree, 3, key) == NULL) {
+				/* this node does not yet exist, add it to the
+				   tree and update the checksum
+				 */
+				str=talloc_asprintf(memctx, "%d.%d.%d", key[0],key[1],key[2]);
+				trbt_insertarray32_callback(tree, 3, key, random_add, str);
+				checksum += key[0]*100+key[1]*10+key[2];
+			}
 		} else {
-			talloc_free(trbt_lookuparray32(tree, 3, key));
+			if ((str=trbt_lookuparray32(tree, 3, key)) != NULL) {
+				/* this node does exist in  the tree, delete 
+				   it and update the checksum accordingly
+				 */
+				talloc_free(str);
+				checksum -= key[0]*100+key[1]*10+key[2];
+			}
 		}
+		/* traverse all nodes in the tree and calculate the checksum
+		   it better match the one we keep track of in
+		   'checksum'
+		*/
+		calc_checksum = 0;
+		trbt_traversearray32(tree, 3, traverse_checksum, NULL);
+		if(checksum != calc_checksum) {
+			printf("Wrong checksum  %d!=%d\n",checksum, calc_checksum);
+			exit(10);
+		}
+
 		if(i%1000==999)printf(".");fflush(stdout);
 	}
-	printf("\n");
+	printf("\niterations passed:%d\n", i);
 	trbt_traversearray32(tree, 3, random_traverse, NULL);
 	printf("\n");
+
 
 	printf("\ndeleting all entries\n");
 	for(i=0;i<10;i++){
