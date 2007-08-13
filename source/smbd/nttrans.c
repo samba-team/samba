@@ -3384,7 +3384,7 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 
 	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBnttrans);
+		END_PROFILE(SMBnttranss);
 		return;
 	}
 
