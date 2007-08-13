@@ -157,6 +157,14 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_ENDGRENT:
 		return wbsrv_samba3_endgrent(s3call);
 
+	case WINBINDD_SID_TO_UID:
+	case WINBINDD_DUAL_SID2UID:
+		return wbsrv_samba3_sid2uid(s3call);
+
+	case WINBINDD_SID_TO_GID:
+	case WINBINDD_DUAL_SID2GID:
+		return wbsrv_samba3_sid2gid(s3call);
+
 		/* Unimplemented commands */
 
 	case WINBINDD_PAM_CHAUTHTOK:
@@ -165,8 +173,6 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_LIST_USERS:
 	case WINBINDD_LIST_GROUPS:
 	case WINBINDD_LOOKUPRIDS:
-	case WINBINDD_SID_TO_UID:
-	case WINBINDD_SID_TO_GID:
 	case WINBINDD_SIDS_TO_XIDS:
 	case WINBINDD_UID_TO_SID:
 	case WINBINDD_GID_TO_SID:
@@ -182,8 +188,6 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_WINS_BYNAME:
 	case WINBINDD_GETGRLST:
 	case WINBINDD_INIT_CONNECTION:
-	case WINBINDD_DUAL_SID2UID:
-	case WINBINDD_DUAL_SID2GID:
 	case WINBINDD_DUAL_SIDS2XIDS:
 	case WINBINDD_DUAL_UID2SID:
 	case WINBINDD_DUAL_GID2SID:
