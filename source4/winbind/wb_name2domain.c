@@ -41,30 +41,30 @@ struct composite_context *wb_name2domain_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct name2domain_state *state;
 	char *user_dom, *user_name;
+	bool ok;
 
 	DEBUG(5, ("wb_name2domain_send called\n"));
 
 	result = composite_create(mem_ctx, service->task->event_ctx);
-	if (result == NULL) goto failed;
+	if (!result) return NULL;
 
 	state = talloc(result, struct name2domain_state);
-	if (state == NULL) goto failed;
+	if (composite_nomem(state, result)) return result;
 	state->ctx = result;
 	result->private_data = state;
 	state->service = service;
 
-	if(!wb_samba3_split_username(state, name, &user_dom, &user_name))
-		goto failed;
+	ok = wb_samba3_split_username(state, name, &user_dom, &user_name);
+	if(!ok) {
+		composite_error(state->ctx, NT_STATUS_OBJECT_NAME_INVALID);
+		return result;
+	}
 
 	ctx = wb_cmd_lookupname_send(state, service, user_dom, user_name);
-	if (ctx == NULL) goto failed;
+	if (composite_nomem(ctx, state->ctx)) return result;
 
 	composite_continue(result, ctx, name2domain_recv_sid, state);
 	return result;
-
-failed:
-	talloc_free(result);
-	return NULL;
 }
 
 static void name2domain_recv_sid(struct composite_context *ctx)
