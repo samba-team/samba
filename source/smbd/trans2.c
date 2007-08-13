@@ -699,13 +699,15 @@ void send_trans2_replies(struct smb_request *req,
 			SSVAL(req->outbuf,smb_drdisp, pd - pdata);
 		}
 
+		/* Initialize the padding for alignment */
+
+		if (alignment_offset != 0) {
+			memset(smb_buf(req->outbuf), 0, alignment_offset);
+		}
+
 		/* Copy the param bytes into the packet */
 
 		if(params_sent_thistime) {
-			if (alignment_offset != 0) {
-				memset(smb_buf(req->outbuf), 0,
-				       alignment_offset);
-			}
 			memcpy((smb_buf(req->outbuf)+alignment_offset), pp,
 			       params_sent_thistime);
 		}
