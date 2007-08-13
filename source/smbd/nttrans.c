@@ -2239,10 +2239,15 @@ static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
  Reply to query a security descriptor.
 ****************************************************************************/
 
-static int call_nt_transact_query_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static void call_nt_transact_query_security_desc(connection_struct *conn,
+						 struct smb_request *req,
+						 uint16 **ppsetup,
+						 uint32 setup_count,
+						 char **ppparams,
+						 uint32 parameter_count,
+						 char **ppdata,
+						 uint32 data_count,
+						 uint32 max_data_count)
 {
 	char *params = *ppparams;
 	char *data = *ppdata;
@@ -2254,12 +2259,14 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 	files_struct *fsp = NULL;
 
         if(parameter_count < 8) {
-		return ERROR_DOS(ERRDOS,ERRbadfunc);
+		reply_doserror(req, ERRDOS, ERRbadfunc);
+		return;
 	}
 
 	fsp = file_fsp(SVAL(params,0));
 	if(!fsp) {
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 
 	security_info_wanted = IVAL(params,4);
@@ -2269,12 +2276,14 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 
 	params = nttrans_realloc(ppparams, 4);
 	if(params == NULL) {
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		reply_doserror(req, ERRDOS, ERRnomem);
+		return;
 	}
 
 	if ((mem_ctx = talloc_init("call_nt_transact_query_security_desc")) == NULL) {
 		DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		reply_doserror(req, ERRDOS, ERRnomem);
+		return;
 	}
 
 	/*
@@ -2289,7 +2298,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 
 	if (sd_size == 0) {
 		talloc_destroy(mem_ctx);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
@@ -2298,10 +2308,10 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 
 	if(max_data_count < sd_size) {
 
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
-				params, 4, *ppdata, 0);
+		send_nt_replies_new(req, NT_STATUS_BUFFER_TOO_SMALL,
+				    params, 4, *ppdata, 0);
 		talloc_destroy(mem_ctx);
-		return -1;
+		return;
 	}
 
 	/*
@@ -2311,7 +2321,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 	data = nttrans_realloc(ppdata, sd_size);
 	if(data == NULL) {
 		talloc_destroy(mem_ctx);
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		reply_doserror(req, ERRDOS, ERRnomem);
+		return;
 	}
 
 	/*
@@ -2338,7 +2349,8 @@ security descriptor.\n"));
 		 * Return access denied for want of a better error message..
 		 */ 
 		talloc_destroy(mem_ctx);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	/*
@@ -2347,9 +2359,9 @@ security descriptor.\n"));
 
 	talloc_destroy(mem_ctx);
 
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 4, data,
-			(int)sd_size);
-	return -1;
+	send_nt_replies_new(req, NT_STATUS_OK, params, 4, data,
+			    (int)sd_size);
+	return;
 }
 
 /****************************************************************************
@@ -3177,28 +3189,13 @@ static void handle_nttrans(connection_struct *conn,
 
 		case NT_TRANSACT_QUERY_SECURITY_DESC:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_query_security_desc);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_query_security_desc(
-					conn, inbuf, outbuf,
-					size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return));
-
+			call_nt_transact_query_security_desc(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 			END_PROFILE(NT_transact_query_security_desc);
 			break;
 		}
