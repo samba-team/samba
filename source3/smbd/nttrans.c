@@ -1283,10 +1283,12 @@ static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, 
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
 
-static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static void call_nt_transact_create(connection_struct *conn,
+				    struct smb_request *req,
+				    uint16 **ppsetup, uint32 setup_count,
+				    char **ppparams, uint32 parameter_count,
+				    char **ppdata, uint32 data_count,
+				    uint32 max_data_count)
 {
 	pstring fname;
 	char *params = *ppparams;
@@ -1317,10 +1319,17 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	char *pdata = NULL;
 	NTSTATUS status;
 	size_t param_len;
-	struct smb_request req;
 	struct case_semantics_state *case_state = NULL;
 
+	char *inbuf, *outbuf;
+	int length, bufsize;
+
 	DEBUG(5,("call_nt_transact_create\n"));
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
 	/*
 	 * If it's an IPC, use the pipe handler.
@@ -1328,13 +1337,17 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support()) {
-			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
-					bufsize,
+			reply_post_legacy(
+				req,
+				do_nt_transact_create_pipe(
+					conn, inbuf, outbuf, length, bufsize,
 					ppsetup, setup_count,
 					ppparams, parameter_count,
-					ppdata, data_count);
+					ppdata, data_count));
+			return;
 		} else {
-			return ERROR_DOS(ERRDOS,ERRnoaccess);
+			reply_doserror(req, ERRDOS, ERRnoaccess);
+			return;
 		}
 	}
 
@@ -1344,10 +1357,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if(parameter_count < 54) {
 		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)parameter_count));
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
-
-	init_smb_request(&req, (uint8 *)inbuf);
 
 	flags = IVAL(params,0);
 	access_mask = IVAL(params,8);
@@ -1365,25 +1377,29 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			(ea_len + sd_len < ea_len) || (ea_len + sd_len < sd_len)) {
 		DEBUG(10,("call_nt_transact_create - ea_len = %u, sd_len = %u, data_count = %u\n",
 			(unsigned int)ea_len, (unsigned int)sd_len, (unsigned int)data_count ));
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	if (ea_len) {
 		if (!lp_ea_support(SNUM(conn))) {
 			DEBUG(10,("call_nt_transact_create - ea_len = %u but EA's not supported.\n",
 				(unsigned int)ea_len ));
-			return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
+			reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
+			return;
 		}
 
 		if (ea_len < 10) {
 			DEBUG(10,("call_nt_transact_create - ea_len = %u - too small (should be more than 10)\n",
 				(unsigned int)ea_len ));
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	}
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
-		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return;
 	}
 
 	/*
@@ -1398,7 +1414,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		size_t dir_name_len;
 
 		if(!dir_fsp) {
-			return ERROR_DOS(ERRDOS,ERRbadfid);
+			reply_doserror(req, ERRDOS, ERRbadfid);
+			return;
 		}
 
 		if(!dir_fsp->is_directory) {
@@ -1407,7 +1424,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					parameter_count-53, STR_TERMINATE,
 					&status);
 			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
+				reply_nterror(req, status);
+				return;
 			}
 
 			/*
@@ -1415,10 +1433,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			 */
 
 			if( is_ntfs_stream_name(fname)) {
-				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+				reply_nterror(req,
+					      NT_STATUS_OBJECT_PATH_NOT_FOUND);
+				return;
 			}
 
-			return ERROR_DOS(ERRDOS,ERRbadfid);
+			reply_doserror(req, ERRDOS, ERRbadfid);
+			return;
 		}
 
 		/*
@@ -1444,7 +1465,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					parameter_count-53, STR_TERMINATE,
 					&status);
 			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
+				reply_nterror(req, status);
+				return;
 			}
 			pstrcat(fname, tmpname);
 		}
@@ -1453,7 +1475,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				sizeof(fname), parameter_count-53,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 
 		/*
@@ -1461,7 +1484,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 */
 
 		if( is_ntfs_stream_name(fname)) {
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			return;
 		}
 	}
 
@@ -1487,21 +1511,26 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 	/* All file access must go through check_name() */
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	/* This is the correct thing to do (check every time) but can_delete is
@@ -1519,7 +1548,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
 				!can_delete_file_in_directory(conn, fname)) {
 			TALLOC_FREE(case_state);
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
 		}
 	}
 
@@ -1529,7 +1559,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			!user_has_privileges(current_user.nt_user_token,
 				&se_security)) {
 		TALLOC_FREE(case_state);
-		return ERROR_NT(NT_STATUS_PRIVILEGE_NOT_HELD);
+		reply_nterror(req, NT_STATUS_PRIVILEGE_NOT_HELD);
+		return;
 	}
 #endif
 
@@ -1541,7 +1572,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					       ea_len);
 		if (!ea_list ) {
 			TALLOC_FREE(case_state);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	}
 
@@ -1554,7 +1586,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
 			TALLOC_FREE(case_state);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 
 		/*
@@ -1564,7 +1597,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 */
 
 		oplock_request = 0;
-		status = open_directory(conn, &req, fname, &sbuf,
+		status = open_directory(conn, req, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -1573,7 +1606,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					&info, &fsp);
 		if(!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(case_state);
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 
 	} else {
@@ -1582,7 +1616,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * Ordinary file case.
 		 */
 
-		status = open_file_ntcreate(conn,&req,fname,&sbuf,
+		status = open_file_ntcreate(conn,req,fname,&sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -1601,11 +1635,14 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					TALLOC_FREE(case_state);
-					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
+					reply_force_nterror(
+						req,
+						NT_STATUS_FILE_IS_A_DIRECTORY);
+					return;
 				}
 	
 				oplock_request = 0;
-				status = open_directory(conn, &req, fname,
+				status = open_directory(conn, req, fname,
 							&sbuf,
 							access_mask,
 							share_access,
@@ -1615,15 +1652,17 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 							&info, &fsp);
 				if(!NT_STATUS_IS_OK(status)) {
 					TALLOC_FREE(case_state);
-					return ERROR_NT(status);
+					reply_nterror(req, status);
+					return;
 				}
 			} else {
 				TALLOC_FREE(case_state);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
-					return -1;
+					return;
 				}
-				return ERROR_NT(status);
+				reply_nterror(req, status);
+				return;
 			}
 		} 
 	}
@@ -1651,7 +1690,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			talloc_destroy(ctx);
 			close_file(fsp,ERROR_CLOSE);
 			TALLOC_FREE(case_state);
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 		fsp->access_mask = saved_access_mask;
  	}
@@ -1661,7 +1701,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if (!NT_STATUS_IS_OK(status)) {
 			close_file(fsp,ERROR_CLOSE);
 			TALLOC_FREE(case_state);
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 	}
 
@@ -1674,7 +1715,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 	if (!fsp->is_directory && (fattr & aDIR)) {
 		close_file(fsp,ERROR_CLOSE);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		return;
 	} 
 	
 	/* Save the requested allocation size. */
@@ -1688,11 +1730,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			if (fsp->is_directory) {
 				close_file(fsp,ERROR_CLOSE);
 				/* Can't set allocation size on a directory. */
-				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return;
 			}
 			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 				close_file(fsp,ERROR_CLOSE);
-				return ERROR_NT(NT_STATUS_DISK_FULL);
+				reply_nterror(req, NT_STATUS_DISK_FULL);
+				return;
 			}
 		} else {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, (SMB_BIG_UINT)file_len);
@@ -1722,7 +1766,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 	params = nttrans_realloc(ppparams, param_len);
 	if(params == NULL) {
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		reply_doserror(req, ERRDOS, ERRnomem);
+		return;
 	}
 
 	p = params;
@@ -1793,9 +1838,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies_new(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
 
-	return -1;
+	return;
 }
 
 /****************************************************************************
@@ -3059,28 +3104,13 @@ static void handle_nttrans(connection_struct *conn,
 	switch(state->call) {
 		case NT_TRANSACT_CREATE:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_create);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_create(
-					conn, inbuf, outbuf,
-					size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return));
-
+			call_nt_transact_create(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 			END_PROFILE(NT_transact_create);
 			break;
 		}
