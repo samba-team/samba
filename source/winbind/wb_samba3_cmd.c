@@ -750,3 +750,79 @@ NTSTATUS wbsrv_samba3_endgrent(struct wbsrv_samba3_call *s3call)
 	s3call->response.result = WINBINDD_OK;
 	return NT_STATUS_OK;
 }
+
+static void sid2uid_recv(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_sid2uid(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->wbconn->listen_socket->service;
+	struct dom_sid *sid;
+
+	DEBUG(1, ("wbsrv_samba3_sid2uid called\n"));
+
+	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	NT_STATUS_HAVE_NO_MEMORY(sid);
+
+	ctx = wb_sid2uid_send(s3call, service, sid);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = sid2uid_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+
+}
+
+static void sid2uid_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+
+	DEBUG(1, ("sid2uid_recv called\n"));
+
+	status = wb_sid2uid_recv(ctx, &s3call->response.data.uid);
+
+	wbsrv_samba3_async_epilogue(status, s3call);
+}
+
+static void sid2gid_recv(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_sid2gid(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->wbconn->listen_socket->service;
+	struct dom_sid *sid;
+
+	DEBUG(1, ("wbsrv_samba3_sid2gid called\n"));
+
+	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	NT_STATUS_HAVE_NO_MEMORY(sid);
+
+	ctx = wb_sid2gid_send(s3call, service, sid);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = sid2gid_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+
+}
+
+static void sid2gid_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+
+	DEBUG(1, ("sid2gid_recv called\n"));
+
+	status = wb_sid2gid_recv(ctx, &s3call->response.data.gid);
+
+	wbsrv_samba3_async_epilogue(status, s3call);
+}
