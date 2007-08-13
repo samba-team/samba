@@ -1,3 +1,7 @@
+2007-08-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* java/Makefile.am: Add java source code.
+
 2007-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-iprop.in: Don't run this test in AFS since AFS is
