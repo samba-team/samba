@@ -14,7 +14,7 @@
 			<address><email>olem@IDEALX.org</email></address>
 		</affiliation>
 	</author>
-	
+
 	<pubdate>May 24, 2003</pubdate>
 </chapterinfo>
 <title>Account Information Databases</title>
@@ -24,10 +24,9 @@
 <indexterm><primary>password backends</primary></indexterm>
 <indexterm><primary>scalability</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
-Samba-3 implements a new capability to work concurrently with multiple account backends.
-The possible new combinations of password backends allows Samba-3 a degree of flexibility
-and scalability that previously could be achieved only with MS Windows Active Directory (ADS).
-This chapter describes the new functionality and how to get the most out of it.
+Early releases of Samba-3 implemented new capability to work concurrently with multiple account backends. This
+capability was removed beginning with release of Samba 3.0.23. Commencing with Samba 3.0.23 it is possible to
+work with only one specified passwd backend.
 </para>
 
 <para>
@@ -111,7 +110,7 @@ as follows:
 			LanMan and NT-encrypted passwords as well as a field that stores some
 			account information. This form of password backend does not store any of
 			the MS Windows NT/200x SAM (Security Account Manager) information required to
-			provide the extended controls that are needed for more comprehensive 
+			provide the extended controls that are needed for more comprehensive
 			interoperation with MS Windows NT4/200x servers.
 			</para>
 
@@ -194,7 +193,7 @@ Samba-3 introduces a number of new password backend capabilities.
 			<para>
 <indexterm><primary>rich directory backend</primary></indexterm>
 <indexterm><primary>distributed account</primary></indexterm>
-			This provides a rich directory backend for distributed account installation.	
+			This provides a rich directory backend for distributed account installation.
 			</para>
 
 			<para>
@@ -240,7 +239,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	</para>
 
 	<para>
-<indexterm><primary>encrypted passwords</primary></indexterm>	
+<indexterm><primary>encrypted passwords</primary></indexterm>
 <indexterm><primary>LanMan</primary></indexterm>
 <indexterm><primary>plaintext passwords</primary></indexterm>
 <indexterm><primary>registry</primary></indexterm>
@@ -253,11 +252,11 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>UNIX-style encrypted passwords</primary></indexterm>
 <indexterm><primary>converted</primary></indexterm>
 	Many people ask why Samba cannot simply use the UNIX password database. Windows requires
-	passwords that are encrypted in its own format.  The UNIX passwords can't be converted to 
+	passwords that are encrypted in its own format.  The UNIX passwords can't be converted to
 	UNIX-style encrypted passwords. Because of that, you can't use the standard UNIX user
 	database, and you have to store the LanMan and NT hashes somewhere else.
 	</para>
-	
+
 	<para>
 <indexterm><primary>differently encrypted passwords</primary></indexterm>
 <indexterm><primary>profile</primary></indexterm>
@@ -267,7 +266,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	user that is not stored in a UNIX user database: for example, workstations the user may logon from,
 	the location where the user's profile is stored, and so on. Samba retrieves and stores this
 	information using a <smbconfoption name="passdb backend"/>. Commonly available backends are LDAP,
-	tdbsam, and plain text file. For more information, see the man page for &smb.conf; regarding the 
+	tdbsam, and plain text file. For more information, see the man page for &smb.conf; regarding the
 	<smbconfoption name="passdb backend"/> parameter.
 	</para>
 
@@ -294,7 +293,7 @@ Samba-3 introduces a number of new password backend capabilities.
 
 	<sect2>
 	<title>Important Notes About Security</title>
-		
+
 		<para>
 <indexterm><primary>SMB password encryption</primary></indexterm>
 <indexterm><primary>clear-text passwords</primary></indexterm>
@@ -304,7 +303,7 @@ Samba-3 introduces a number of new password backend capabilities.
 		The UNIX and SMB password encryption techniques seem similar on the surface. This
 		similarity is, however, only skin deep. The UNIX scheme typically sends clear-text
 		passwords over the network when logging in. This is bad. The SMB encryption scheme
-		never sends the clear-text password over the network, but it does store the 16-byte 
+		never sends the clear-text password over the network, but it does store the 16-byte
 		hashed values on disk. This is also bad. Why? Because the 16 byte hashed values
 		are a <quote>password equivalent.</quote> You cannot derive the user's password from them, but
 		they could potentially be used in a modified client to gain access to a server.
@@ -314,7 +313,7 @@ Samba-3 introduces a number of new password backend capabilities.
 		passwords of all your users. Its contents must be kept secret, and the file should
 		be protected accordingly.
 		</para>
-		
+
 		<para>
 <indexterm><primary>password scheme</primary></indexterm>
 <indexterm><primary>plaintext passwords</primary></indexterm>
@@ -331,7 +330,7 @@ Samba-3 introduces a number of new password backend capabilities.
 		are disabled from being sent over the wire. This mandates either the use of encrypted
 		password support or editing the Windows NT registry to re-enable plaintext passwords.
 		</para>
-		
+
 		<para>
 <indexterm><primary>domain security</primary></indexterm>
 <indexterm><primary>domain environment</primary></indexterm>
@@ -366,7 +365,7 @@ Samba-3 introduces a number of new password backend capabilities.
 			<listitem><para>Windows 200x Server/Advanced Server.</para></listitem>
 			<listitem><para>Windows XP Professional.</para></listitem>
 		</itemizedlist>
-			
+
 		<para>
 <indexterm><primary>SMB/CIFS</primary></indexterm>
 <indexterm><primary>authentication</primary></indexterm>
@@ -413,7 +412,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>disk</primary></indexterm>
 				Plaintext passwords are not stored anywhere in memory or on disk.
 				</para></listitem>
-			 
+ 
 				<listitem><para>
 <indexterm><primary>encrypted passwords</primary></indexterm>
 <indexterm><primary>user-level security</primary></indexterm>
@@ -448,13 +447,13 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>cached in memory</primary></indexterm>
 				Plaintext passwords are not kept on disk and are not cached in memory.
 				</para></listitem>
-				
+
 				<listitem><para>
 <indexterm><primary>Login</primary></indexterm>
 <indexterm><primary>FTP</primary></indexterm>
 				Plaintext passwords use the same password file as other UNIX services, such as Login and FTP.
 				</para></listitem>
-				
+
 				<listitem><para>
 <indexterm><primary>Telnet</primary></indexterm>
 <indexterm><primary>FTP</primary></indexterm>
@@ -593,7 +592,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>RFC 2307</primary></indexterm>
 <indexterm><primary>PADL</primary></indexterm>
 		<emphasis>idmap_ad:</emphasis> An IDMAP backend that supports the Microsoft Services for
-		UNIX RFC 2307 schema available from the PADL Web 
+		UNIX RFC 2307 schema available from the PADL Web
 		<ulink url="http://www.padl.com/download/xad_oss_plugins.tar.gz">site</ulink>.
 		</para>
 		</listitem>
@@ -646,7 +645,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	through intermediate tools and utilities. The total environment that consists of the LDAP directory
 	and the middle-ware tools and utilities makes it possible for all user access to the UNIX platform
 	to be managed from a central environment and yet distributed to wherever the point of need may
-	be physically located. Applications that benefit from this infrastructure include: UNIX login 
+	be physically located. Applications that benefit from this infrastructure include: UNIX login
 	shells, mail and messaging systems, quota controls, printing systems, DNS servers, DHCP servers,
 	and also Samba.
 	</para>
@@ -673,7 +672,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	Information Tree (DIT) may impact current and future site needs, as well as the ability to meet
 	them. The way that Samba SAM information should be stored within the DIT varies from site to site
 	and with each implementation new experience is gained. It is well understood by LDAP veterans that
-	first implementations create awakening, second implementations of LDAP create fear, and 
+	first implementations create awakening, second implementations of LDAP create fear, and
 	third-generation deployments bring peace and tranquility.
 	</para>
 
@@ -825,7 +824,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>machine accounts</primary></indexterm>
 <indexterm><primary>management tools</primary></indexterm>
 Samba provides two tools for management of user and machine accounts:
-<command>smbpasswd</command> and <command>pdbedit</command>. 
+<command>smbpasswd</command> and <command>pdbedit</command>.
 </para>
 
 <para>
@@ -851,7 +850,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 
 	<sect2>
 	<title>The <command>smbpasswd</command> Tool</title>
-	
+
 		<para>
 <indexterm><primary>smbpasswd</primary></indexterm>
 <indexterm><primary>passwd</primary></indexterm>
@@ -894,11 +893,11 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 			<listitem><para><emphasis>set to NULL</emphasis> user passwords.</para></listitem>
 			<listitem><para><emphasis>manage</emphasis> interdomain trust accounts.</para></listitem>
 		</itemizedlist>
-		
+
 		<para>
 		To run smbpasswd as a normal user, just type:
 		</para>
-		
+
 		<para>
 <screen>
 &prompt;<userinput>smbpasswd</userinput>
@@ -911,27 +910,27 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 <prompt>Repeat New SMB Password: </prompt><userinput><replaceable>new secret</replaceable></userinput>
 </screen>
 		</para>
-		
+
 		<para>
 		If the old value does not match the current value stored for that user, or the two
 		new values do not match each other, then the password will not be changed.
 		</para>
-		
+
 		<para>
 <indexterm><primary>SMB password</primary></indexterm>
 		When invoked by an ordinary user, the command will allow only the user to change his or her own
 		SMB password.
 		</para>
-		
+
 		<para>
 <indexterm><primary>smbpasswd</primary></indexterm>
 <indexterm><primary>SMB password</primary></indexterm>
 		When run by root, <command>smbpasswd</command> may take an optional argument specifying
 		the username whose SMB password you wish to change. When run as root, <command>smbpasswd</command>
-		does not prompt for or check the old password value, thus allowing root to set passwords 
+		does not prompt for or check the old password value, thus allowing root to set passwords
 		for users who have forgotten their passwords.
 		</para>
-		
+
 		<para>
 <indexterm><primary>smbpasswd</primary></indexterm>
 <indexterm><primary>passwd</primary></indexterm>
@@ -959,7 +958,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 		<indexterm><primary>account policy</primary></indexterm>
 		<indexterm><primary>User Accounts</primary><secondary>Adding/Deleting</secondary></indexterm>
 		<command>pdbedit</command> is a tool that can be used only by root. It is used to
-		manage the passdb backend, as well as domain-wide account policy settings. <command>pdbedit</command> 
+		manage the passdb backend, as well as domain-wide account policy settings. <command>pdbedit</command>
 		can be used to:
 		</para>
 
@@ -1122,10 +1121,10 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 
 		<para>
 		<indexterm><primary>pdbedit</primary></indexterm>
-<indexterm><primary>account migration</primary></indexterm>
+<indexterm><primary>account import/export</primary></indexterm>
 <indexterm><primary>passdb backend</primary></indexterm>
 		One particularly important purpose of the <command>pdbedit</command> is to allow
-		the migration of account information from one passdb backend to another. 
+		the import/export of account information from one passdb backend to another.
 		</para>
 
 		<sect3>
@@ -1221,7 +1220,7 @@ marvel$:1011:BF709959C3C94E0B3958B7B84A3BB6F3:
 <indexterm><primary>NT password</primary></indexterm>
 <indexterm><primary>Account Flags</primary></indexterm>
 <indexterm><primary>LCT</primary><see>last change time</see></indexterm>
-		The account information that was returned by this command in order from left to right 
+		The account information that was returned by this command in order from left to right
 		consists of the following colon separated data:
 		</para>
 
@@ -1415,7 +1414,7 @@ Password must change: Fri, 01 Jan 2010 00:00:00 GMT
 <indexterm><primary>account encode_bits</primary></indexterm>
 <indexterm><primary>account control flags</primary></indexterm>
 		The Samba SAM account flags are properly called the ACB (account control block) within
-		the Samba source code. In some parts of the Samba source code they are referred to as the 
+		the Samba source code. In some parts of the Samba source code they are referred to as the
 		account encode_bits, and also as the account control flags.
 		</para>
 
@@ -1510,7 +1509,7 @@ Password must change: Fri, 01 Jan 2010 00:00:00 GMT
 		An example of use of the <command>pdbedit</command> utility to set the account control flags
 		is shown here:
 <screen>
-&rootprompt; pdbedit -r -c "[DLX]" jra
+&rootprompt; pdbedit -r -c "[DLX]" jht
 Unix username:        jht
 NT username:          jht
 Account Flags:        [DHULX      ]
@@ -1537,7 +1536,7 @@ Logon hours         : FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 <indexterm><primary>default settings</primary></indexterm>
 	The flags can be reset to the default settings by executing:
 <screen>
-&rootprompt; pdbedit -r -c "[]" jra
+&rootprompt; pdbedit -r -c "[]" jht
 Unix username:        jht
 NT username:          jht
 Account Flags:        [U          ]
@@ -1635,7 +1634,8 @@ To set the maximum (infinite) lockout time use the value of -1.
 <warning><para>
 Account policies must be set individually on each PDC and BDC. At this time (Samba 3.0.11 to Samba 3.0.14a)
 account policies are not replicated automatically. This may be fixed before Samba 3.0.20 ships or some
-time there after.
+time there after. Please check the WHATSNEW.txt file in the Samba-3 tarball for specific update notiations
+regarding this facility.
 </para></warning>
 
 		</sect4>
@@ -1643,26 +1643,21 @@ time there after.
 		</sect3>
 
 		<sect3>
-		<title>Account Migration</title>
+		<title>Account Import/Export</title>
 
 		<para>
 		<indexterm><primary>pdbedit</primary></indexterm>
-<indexterm><primary>migrate accounts</primary></indexterm>
+<indexterm><primary>iccount mport/export</primary></indexterm>
 <indexterm><primary>authentication</primary></indexterm>
-		The <command>pdbedit</command> tool allows migration of authentication (account)
-		databases from one backend to another. For example, to migrate accounts from an
+		The <command>pdbedit</command> tool allows import/export of authentication (account)
+		databases from one backend to another. For example, to import/export accounts from an
 		old <filename>smbpasswd</filename> database to a <parameter>tdbsam</parameter>
 		backend:
 		</para>
 
 		<procedure>
 			<step><para>
-			Set the <smbconfoption name="passdb backend">tdbsam, smbpasswd</smbconfoption>.
-			</para></step>
-
-			<step><para>
 <indexterm><primary>pdbedit</primary></indexterm>
-			Execute:
 <screen>
 &rootprompt;<userinput>pdbedit -i smbpasswd -e tdbsam</userinput>
 </screen>
@@ -1670,8 +1665,8 @@ time there after.
 
 			<step><para>
 <indexterm><primary>smbpasswd</primary></indexterm>
-			Remove the <parameter>smbpasswd</parameter> from the passdb backend
-			configuration in &smb.conf;.
+			Replace the <parameter>smbpasswd</parameter> with <parameter>tdbsam</parameter> in the
+			<parameter>passdb backend</parameter> configuration in &smb.conf;.
 			</para></step>
 		</procedure>
 
@@ -1685,25 +1680,21 @@ time there after.
 <para>
 <indexterm><primary>account database</primary></indexterm>
 <indexterm><primary>SMB/CIFS server</primary></indexterm>
-Samba offers the greatest flexibility in backend account database design of any SMB/CIFS server
-technology available today. The flexibility is immediately obvious as one begins to explore this
-capability.
+Samba offers flexibility in backend account database design. The flexibility is immediately obvious as one
+begins to explore this capability. Recent changes to Samba (since 3.0.23) have removed the mulitple backend
+feature in order to simplify problems that broke some installations. This removal has made the internal
+operation of Samba-3 more consistent and predictable.
 </para>
 
 <para>
 <indexterm><primary>multiple backends</primary></indexterm>
 <indexterm><primary>tdbsam databases</primary></indexterm>
-It is possible to specify not only multiple password backends, but even multiple
-backends of the same type. For example, to use two different <literal>tdbsam</literal> databases:
-
-<smbconfblock>
-<smbconfoption name="passdb backend">tdbsam:/etc/samba/passdb.tdb tdbsam:/etc/samba/old-passdb.tdb</smbconfoption>
-</smbconfblock>
-
-What is possible is not always sensible. Be careful to avoid complexity to the point that it
-may be said that the solution is <quote>too clever by half!</quote>
+Beginning with Samba 3.0.23 it is no longer possible to specify use of mulitple passdb backends. Earlier
+versions of Samba-3 made it possible to specify multiple password backends, and even multiple
+backends of the same type. The multiple passdb backend capability caused many problems with name to SID and
+SID to name ID resolution.  The Samba team wrestled with the challenges and decided that this feature needed
+to be removed.
 </para>
-
 
 	<sect2>
 	<title>Plaintext</title>
@@ -1715,9 +1706,9 @@ may be said that the solution is <quote>too clever by half!</quote>
 <indexterm><primary>password encryption</primary></indexterm>
 <indexterm><primary>/etc/passwd</primary></indexterm>
 <indexterm><primary>PAM</primary></indexterm>
-		Older versions of Samba retrieved user information from the UNIX user database 
+		Older versions of Samba retrieved user information from the UNIX user database
 		and eventually some other fields from the file <filename>/etc/samba/smbpasswd</filename>
-		or <filename>/etc/smbpasswd</filename>. When password encryption is disabled, no 
+		or <filename>/etc/smbpasswd</filename>. When password encryption is disabled, no
 		SMB-specific data is stored at all. Instead, all operations are conducted via the way
 		that the Samba host OS will access its <filename>/etc/passwd</filename> database.
 		On most Linux systems, for example, all user and group resolution is done via PAM.
@@ -1782,7 +1773,7 @@ may be said that the solution is <quote>too clever by half!</quote>
 		As a result of these deficiencies, a more robust means of storing user attributes
 		used by smbd was developed. The API that defines access to user accounts
 		is commonly referred to as the samdb interface (previously, this was called the passdb
-		API and is still so named in the Samba source code trees). 
+		API and is still so named in the Samba source code trees).
 		</para>
 
 		<para>
@@ -2218,7 +2209,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <indexterm><primary>LDAP</primary></indexterm>
 <indexterm><primary>smbd</primary></indexterm>
 			The following parameters are available in &smb.conf; only if your version of Samba was built with
-			LDAP support. Samba automatically builds with LDAP support if the LDAP libraries are found. The 
+			LDAP support. Samba automatically builds with LDAP support if the LDAP libraries are found. The
 			best method to verify that Samba was built with LDAP support is:
 <screen>
 &rootprompt; smbd -b | grep LDAP
@@ -2256,7 +2247,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			</para>
 
 			<para>
-			These are described in the &smb.conf; man page and so are not repeated here. However, an example 
+			These are described in the &smb.conf; man page and so are not repeated here. However, an example
 			for use with an LDAP directory is shown in <link linkend="confldapex">the Configuration with LDAP.</link>
 			</para>
 
@@ -2337,7 +2328,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			For now, there is no NT-like group system management (global and local
 			groups). Samba-3 knows only about <constant>Domain Groups</constant>
 			and, unlike MS Windows 2000 and Active Directory, Samba-3 does not
-			support nested groups. 
+			support nested groups.
 			</para>
 
 		</sect3>
@@ -2417,7 +2408,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 		<title>LDAP Special Attributes for sambaSamAccounts</title>
 
 			<para> The sambaSamAccount ObjectClass is composed of the attributes shown in next tables: <link
-			linkend="attribobjclPartA">Part A</link>, and <link linkend="attribobjclPartB">Part B</link>. 
+			linkend="attribobjclPartA">Part A</link>, and <link linkend="attribobjclPartB">Part B</link>.
 			</para>
 
 			<table frame="all" id="attribobjclPartA">
@@ -2445,12 +2436,12 @@ access to attrs=SambaLMPassword,SambaNTPassword
 
 				<row><entry><constant>sambaKickoffTime</constant></entry><entry>Specifies the time (UNIX time format) when the user
 				will be locked down and cannot login any longer. If this attribute is omitted, then the account will never expire.
-				Using this attribute together with shadowExpire of the shadowAccount ObjectClass will enable accounts to	
+				Using this attribute together with shadowExpire of the shadowAccount ObjectClass will enable accounts to
 				expire completely on an exact date.</entry></row>
 
 				<row><entry><constant>sambaPwdCanChange</constant></entry><entry>Specifies the time (UNIX time format)
 				after which the user is allowed to change his password. If this attribute is not set, the user will be free
-				to change his password whenever he wants.</entry></row> 
+				to change his password whenever he wants.</entry></row>
 
 				<row><entry><constant>sambaPwdMustChange</constant></entry><entry>Specifies the time (UNIX time format) when the user is
 				forced to change his password. If this value is set to 0, the user will have to change his password at first login.
@@ -2663,7 +2654,7 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 
 		<para><quote>I've installed Samba, but now I can't log on with my UNIX account! </quote></para>
 
-		<para>Make sure your user has been added to the current Samba <smbconfoption name="passdb backend"/>. 
+		<para>Make sure your user has been added to the current Samba <smbconfoption name="passdb backend"/>.
 		Read the <link linkend="acctmgmttools">Account Management Tools,</link> for details.</para>
 
 	</sect2>
