@@ -3046,14 +3046,24 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 }
 #endif /* HAVE_SYS_QUOTAS */
 
-static int handle_nttrans(connection_struct *conn,
-			  struct trans_state *state,
-			  char *inbuf, char *outbuf, int size, int bufsize)
+static void handle_nttrans(connection_struct *conn,
+			   struct trans_state *state,
+			   struct smb_request *req)
 {
-	int outsize;
+	int outsize = -1;
+
+	char *inbuf, *outbuf;
+	int size, bufsize;
 
 	if (Protocol >= PROTOCOL_NT1) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
+		req->flags2 |= 0x40; /* IS_LONG_NAME */
+		SSVAL(req->inbuf,smb_flg2,req->flags2);
+	}
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBnttrans);
+		return;
 	}
 
 	/* Now we must call the relevant NT_TRANS function */
@@ -3163,9 +3173,11 @@ static int handle_nttrans(connection_struct *conn,
 			/* Error in request */
 			DEBUG(0,("handle_nttrans: Unknown request %d in "
 				 "nttrans call\n", state->call));
-			return ERROR_DOS(ERRSRV,ERRerror);
+			reply_doserror(req, ERRSRV, ERRerror);
+			return;
 	}
-	return outsize;
+	reply_post_legacy(req, outsize);
+	return;
 }
 
 /****************************************************************************
@@ -3174,7 +3186,6 @@ static int handle_nttrans(connection_struct *conn,
 
 void reply_nttrans(connection_struct *conn, struct smb_request *req)
 {
-	int  outsize = 0;
 	uint32 pscnt;
 	uint32 psoff;
 	uint32 dscnt;
@@ -3182,9 +3193,7 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 	uint16 function_code;
 	NTSTATUS result;
 	struct trans_state *state;
-
-	char *inbuf, *outbuf;
-	int size, bufsize;
+	int size;
 
 	START_PROFILE(SMBnttrans);
 
@@ -3332,20 +3341,12 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 		dump_data(10, (uint8 *)state->setup, state->setup_count);
 	}
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBnttrans);
-		return;
-	}
-
 	if ((state->received_data == state->total_data) &&
 	    (state->received_param == state->total_param)) {
-		outsize = handle_nttrans(conn, state, inbuf, outbuf,
-					 size, bufsize);
+		handle_nttrans(conn, state, req);
 		SAFE_FREE(state->param);
 		SAFE_FREE(state->data);
 		TALLOC_FREE(state);
-		reply_post_legacy(req, outsize);
 		END_PROFILE(SMBnttrans);
 		return;
 	}
@@ -3354,10 +3355,9 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(inbuf,outbuf,0,0,False);
-	show_msg(outbuf);
+	reply_outbuf(req, 0, 0);
+	show_msg((char *)req->outbuf);
 	END_PROFILE(SMBnttrans);
-	reply_post_legacy(req, outsize);
 	return;
 
   bad_param:
@@ -3377,12 +3377,10 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 
 void reply_nttranss(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 
-	char *inbuf, *outbuf;
-	int size, bufsize;
+	int size;
 
 	START_PROFILE(SMBnttranss);
 
@@ -3461,9 +3459,10 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 		if (ddisp > state->total_data)
 			goto bad_param;
-		if ((smb_base(inbuf) + doff + dcnt
+		if ((smb_base(req->inbuf) + doff + dcnt
 		     > (char *)req->inbuf + size) ||
-		    (smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
+		    (smb_base(req->inbuf) + doff + dcnt
+		     < smb_base(req->inbuf)))
 			goto bad_param;
 		if (state->data + ddisp < state->data)
 			goto bad_param;
@@ -3478,32 +3477,18 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBnttrans);
-		return;
-	}
-
-	/* construct_reply_common has done us the favor to pre-fill the
-	 * command field with SMBnttranss which is wrong :-)
+	/*
+	 * construct_reply_common will copy smb_com from inbuf to
+	 * outbuf. SMBnttranss is wrong here.
 	 */
-	SCVAL(outbuf,smb_com,SMBnttrans);
+	SCVAL(req->inbuf,smb_com,SMBnttrans);
 
-	outsize = handle_nttrans(conn, state, inbuf, outbuf,
-				 size, bufsize);
+	handle_nttrans(conn, state, req);
 
 	DLIST_REMOVE(conn->pending_trans, state);
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
-
-	if (outsize == 0) {
-		reply_doserror(req, ERRSRV, ERRnosupport);
-		END_PROFILE(SMBnttranss);
-		return;
-	}
-	
-	reply_post_legacy(req, outsize);
 	END_PROFILE(SMBnttranss);
 	return;
 
