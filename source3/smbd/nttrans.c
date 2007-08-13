@@ -339,57 +339,11 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
 }
 
 /****************************************************************************
- Reply to an NT create and X call on a pipe -- this will die when all
- callers are converted to nt_open_pipe_new
+ Reply to an NT create and X call on a pipe
 ****************************************************************************/
 
-static int nt_open_pipe(char *fname, connection_struct *conn,
-			char *inbuf, char *outbuf, int *ppnum)
-{
-	smb_np_struct *p = NULL;
-	uint16 vuid = SVAL(inbuf, smb_uid);
-	int i;
- 
-	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
-    
-	/* See if it is one we want to handle. */
-
-	if (lp_disable_spoolss() && strequal(fname, "\\spoolss")) {
-		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
-	}
-
-	for( i = 0; known_nt_pipes[i]; i++ ) {
-		if( strequal(fname,known_nt_pipes[i])) {
-			break;
-		}
-	}
-    
-	if ( known_nt_pipes[i] == NULL ) {
-		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
-	}
-    
-	/* Strip \\ off the name. */
-	fname++;
-    
-	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
-
-	p = open_rpc_pipe_p(fname, conn, vuid);
-	if (!p) {
-		return(ERROR_DOS(ERRSRV,ERRnofids));
-	}
-
-	/* TODO: Add pipe to db */
-	
-	if ( !store_pipe_opendb( p ) ) {
-		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));
-	}
-	
-	*ppnum = p->pnum;
-	return 0;
-}
-
-static void nt_open_pipe_new(char *fname, connection_struct *conn,
-			     struct smb_request *req, int *ppnum)
+static void nt_open_pipe(char *fname, connection_struct *conn,
+			 struct smb_request *req, int *ppnum)
 {
 	smb_np_struct *p = NULL;
 	int i;
@@ -452,7 +406,7 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	srvstr_pull_buf((char *)req->inbuf, req->flags2, fname,
 			smb_buf(req->inbuf), sizeof(fname), STR_TERMINATE);
 
-	nt_open_pipe_new(fname, conn, req, &pnum);
+	nt_open_pipe(fname, conn, req, &pnum);
 
 	if (req->outbuf) {
 		/* error reply */
@@ -1098,14 +1052,14 @@ void reply_ntcreate_and_X(connection_struct *conn,
  Reply to a NT_TRANSACT_CREATE call to open a pipe.
 ****************************************************************************/
 
-static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+static void do_nt_transact_create_pipe(connection_struct *conn,
+				       struct smb_request *req,
+				       uint16 **ppsetup, uint32 setup_count,
+				       char **ppparams, uint32 parameter_count,
+				       char **ppdata, uint32 data_count)
 {
 	pstring fname;
 	char *params = *ppparams;
-	int ret;
 	int pnum = -1;
 	char *p = NULL;
 	NTSTATUS status;
@@ -1118,20 +1072,25 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 
 	if(parameter_count < 54) {
 		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)parameter_count));
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	flags = IVAL(params,0);
 
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, params+53,
+	srvstr_get_path(params, req->flags2, fname, params+53,
 			sizeof(fname), parameter_count-53, STR_TERMINATE,
 			&status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
-	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0) {
-		return ret;
+	nt_open_pipe(fname, conn, req, &pnum);
+
+	if (req->outbuf) {
+		/* Error return */
+		return;
 	}
 	
 	/* Realloc the size of parameters and data we will return */
@@ -1143,7 +1102,8 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	}
 	params = nttrans_realloc(ppparams, param_len);
 	if(params == NULL) {
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		reply_doserror(req, ERRDOS, ERRnomem);
+		return;
 	}
 	
 	p = params;
@@ -1178,9 +1138,9 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 	
 	/* Send the required number of replies */
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies_new(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
 	
-	return -1;
+	return;
 }
 
 /****************************************************************************
@@ -1321,15 +1281,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	size_t param_len;
 	struct case_semantics_state *case_state = NULL;
 
-	char *inbuf, *outbuf;
-	int length, bufsize;
-
 	DEBUG(5,("call_nt_transact_create\n"));
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
 
 	/*
 	 * If it's an IPC, use the pipe handler.
@@ -1337,13 +1289,11 @@ static void call_nt_transact_create(connection_struct *conn,
 
 	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support()) {
-			reply_post_legacy(
-				req,
-				do_nt_transact_create_pipe(
-					conn, inbuf, outbuf, length, bufsize,
-					ppsetup, setup_count,
-					ppparams, parameter_count,
-					ppdata, data_count));
+			do_nt_transact_create_pipe(
+				conn, req,
+				ppsetup, setup_count,
+				ppparams, parameter_count,
+				ppdata, data_count);
 			return;
 		} else {
 			reply_doserror(req, ERRDOS, ERRnoaccess);
@@ -1419,7 +1369,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		}
 
 		if(!dir_fsp->is_directory) {
-			srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname,
+			srvstr_get_path(params, req->flags2, fname,
 					params+53, sizeof(fname),
 					parameter_count-53, STR_TERMINATE,
 					&status);
@@ -1460,7 +1410,7 @@ static void call_nt_transact_create(connection_struct *conn,
 
 		{
 			pstring tmpname;
-			srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), tmpname,
+			srvstr_get_path(params, req->flags2, tmpname,
 					params+53, sizeof(tmpname),
 					parameter_count-53, STR_TERMINATE,
 					&status);
@@ -1471,7 +1421,7 @@ static void call_nt_transact_create(connection_struct *conn,
 			pstrcat(fname, tmpname);
 		}
 	} else {
-		srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, params+53,
+		srvstr_get_path(params, req->flags2, fname, params+53,
 				sizeof(fname), parameter_count-53,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1507,7 +1457,8 @@ static void call_nt_transact_create(connection_struct *conn,
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 		
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1657,7 +1608,7 @@ static void call_nt_transact_create(connection_struct *conn,
 				}
 			} else {
 				TALLOC_FREE(case_state);
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+				if (open_was_deferred(req->mid)) {
 					/* We have re-scheduled this call. */
 					return;
 				}
