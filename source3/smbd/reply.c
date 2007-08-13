@@ -3435,7 +3435,6 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		}
 
 		nwritten = write_file(fsp,data,startpos,numtowrite);
-		reply_outbuf(req, 6, 0);
 	}
   
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
@@ -3444,6 +3443,7 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
+	reply_outbuf(req, 6, 0);
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
 	if (large_writeX)
 		SSVAL(req->outbuf,smb_vwv4,(nwritten>>16)&1);
