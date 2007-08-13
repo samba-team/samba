@@ -2356,10 +2356,15 @@ security descriptor.\n"));
  Reply to set a security descriptor. Map to UNIX perms or POSIX ACLs.
 ****************************************************************************/
 
-static int call_nt_transact_set_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static void call_nt_transact_set_security_desc(connection_struct *conn,
+					       struct smb_request *req,
+					       uint16 **ppsetup,
+					       uint32 setup_count,
+					       char **ppparams,
+					       uint32 parameter_count,
+					       char **ppdata,
+					       uint32 data_count,
+					       uint32 max_data_count)
 {
 	char *params= *ppparams;
 	char *data = *ppdata;
@@ -2368,11 +2373,13 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 	NTSTATUS nt_status;
 
 	if(parameter_count < 8) {
-		return ERROR_DOS(ERRDOS,ERRbadfunc);
+		reply_doserror(req, ERRDOS, ERRbadfunc);
+		return;
 	}
 
 	if((fsp = file_fsp(SVAL(params,0))) == NULL) {
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 
 	if(!lp_nt_acl_support(SNUM(conn))) {
@@ -2385,17 +2392,19 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 		(unsigned int)security_info_sent ));
 
 	if (data_count == 0) {
-		return ERROR_DOS(ERRDOS, ERRnoaccess);
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, data_count, security_info_sent))) {
-		return ERROR_NT(nt_status);
+		reply_nterror(req, nt_status);
+		return;
 	}
 
   done:
 
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
-	return -1;
+	send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+	return;
 }
    
 /****************************************************************************
@@ -3099,27 +3108,13 @@ static void handle_nttrans(connection_struct *conn,
 
 		case NT_TRANSACT_SET_SECURITY_DESC:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_set_security_desc);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_set_security_desc(
-					conn, inbuf, outbuf,
-					size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return));
+			call_nt_transact_set_security_desc(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 			END_PROFILE(NT_transact_set_security_desc);
 			break;
 		}
