@@ -826,3 +826,52 @@ static void sid2gid_recv(struct composite_context *ctx)
 
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
+
+static void uid2sid_recv(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_uid2sid(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->wbconn->listen_socket->service;
+
+	DEBUG(5, ("wbsrv_samba3_uid2sid called\n"));
+
+	ctx = wb_uid2sid_send(s3call, service, s3call->request.data.uid);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = uid2sid_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+
+}
+
+static void uid2sid_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+	struct dom_sid *sid;
+	char *sid_str;
+
+	DEBUG(5, ("uid2sid_recv called\n"));
+
+	status = wb_uid2sid_recv(ctx, s3call, &sid);
+	if(NT_STATUS_IS_OK(status)) {
+		sid_str = dom_sid_string(s3call, sid);
+
+		/* If the conversion failed, bail out with a failure. */
+		if (sid_str == NULL)
+			wbsrv_samba3_async_epilogue(NT_STATUS_NO_MEMORY,s3call);
+
+		/* But we assume this worked, so we'll set the string. Work
+		 * done. */
+		WBSRV_SAMBA3_SET_STRING(s3call->response.data.sid.sid, sid_str);
+		s3call->response.data.sid.type = SID_NAME_USER;
+	}
+
+	wbsrv_samba3_async_epilogue(status, s3call);
+}
+

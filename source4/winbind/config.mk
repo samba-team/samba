@@ -18,6 +18,7 @@ OBJ_FILES = \
 		wb_name2domain.o \
 		wb_sid2uid.o \
 		wb_sid2gid.o \
+		wb_uid2sid.o \
 		wb_connect_lsa.o \
 		wb_connect_sam.o \
 		wb_cmd_lookupname.o \
