@@ -52,7 +52,7 @@
 		<term>require_membership_of=[SID or NAME]</term>
 		<listitem><para>
 		If this option is set, pam_winbind will only succeed if the user is a member of the given SID or NAME. A SID
-		can be either a group-SID, a alias-SID or even a user-SID. It is also possible to give a NAME instead of the
+		can be either a group-SID, an alias-SID or even an user-SID. It is also possible to give a NAME instead of the
 		SID. That name must have the form: <parameter>MYDOMAIN\\mygroup</parameter> or
 		<parameter>MYDOMAIN\\myuser</parameter>.  pam_winbind will, in that case, lookup the SID internally. Note that
 		NAME may not contain any spaces. It is thus recommended to only use SIDs. You can verify the list of SIDs a
