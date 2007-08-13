@@ -1750,61 +1750,76 @@ void reply_ulogoffX(connection_struct *conn, struct smb_request *req)
  Reply to a mknew or a create.
 ****************************************************************************/
 
-int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_mknew(connection_struct *conn, struct smb_request *req)
 {
 	pstring fname;
 	int com;
-	int outsize = 0;
-	uint32 fattr = SVAL(inbuf,smb_vwv0);
+	uint32 fattr = 0;
 	struct timespec ts[2];
 	files_struct *fsp;
-	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+	int oplock_request = 0;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	uint32 access_mask = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
 	uint32 share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
 	uint32 create_disposition;
 	uint32 create_options = 0;
-	struct smb_request req;
 
 	START_PROFILE(SMBcreate);
 
-	init_smb_request(&req, (uint8 *)inbuf);
- 
-	com = SVAL(inbuf,smb_com);
-
-	ts[1] = convert_time_t_to_timespec(srv_make_unix_date3(inbuf + smb_vwv1)); /* mtime. */
-
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, smb_buf(inbuf) + 1,
-			sizeof(fname), 0, STR_TERMINATE, &status);
-	if (!NT_STATUS_IS_OK(status)) {
+        if (req->wct < 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBcreate);
-		return ERROR_NT(status);
+		return;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	fattr = SVAL(req->inbuf,smb_vwv0);
+	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
+	com = SVAL(req->inbuf,smb_com);
+
+	ts[1] =convert_time_t_to_timespec(
+			srv_make_unix_date3(req->inbuf + smb_vwv1));
+			/* mtime. */
+
+	srvstr_get_path((char *)req->inbuf, req->flags2, fname,
+                        smb_buf(req->inbuf) + 1, sizeof(fname), 0,
+		       	STR_TERMINATE, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		END_PROFILE(SMBcreate);
+		return;
+	}
+
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+			fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBcreate);
-		return ERROR_NT(status);
+		return;
 	}
 
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBcreate);
-		return ERROR_NT(status);
+		return;
 	}
 
 	if (fattr & aVOLID) {
-		DEBUG(0,("Attempt to create file (%s) with volid set - please report this\n",fname));
+		DEBUG(0,("Attempt to create file (%s) with volid set - "
+			"please report this\n", fname));
 	}
 
 	if(com == SMBmknew) {
@@ -1816,7 +1831,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	}
 
 	/* Open file using ntcreate. */
-	status = open_file_ntcreate(conn, &req, fname, &sbuf,
+	status = open_file_ntcreate(conn, req, fname, &sbuf,
 				access_mask,
 				share_mode,
 				create_disposition,
@@ -1824,35 +1839,40 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 				fattr,
 				oplock_request,
 				NULL, &fsp);
-  
+
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
- 
+
 	ts[0] = get_atimespec(&sbuf); /* atime. */
 	file_ntimes(conn, fname, ts);
 
-	outsize = set_message(inbuf,outbuf,1,0,True);
-	SSVAL(outbuf,smb_vwv0,fsp->fnum);
+	reply_outbuf(req, 1, 0);
+
+	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf,smb_flg,
+				CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
- 
+
 	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf,smb_flg,
+				CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
- 
+
 	DEBUG( 2, ( "reply_mknew: file %s\n", fname ) );
-	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n", fname, fsp->fh->fd, (unsigned int)fattr ) );
+	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n",
+				fname, fsp->fh->fd, (unsigned int)fattr ) );
 
 	END_PROFILE(SMBcreate);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
