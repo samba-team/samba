@@ -3172,8 +3172,7 @@ static int handle_nttrans(connection_struct *conn,
  Reply to a SMBNTtrans.
 ****************************************************************************/
 
-int reply_nttrans(connection_struct *conn,
-			char *inbuf,char *outbuf,int size,int bufsize)
+void reply_nttrans(connection_struct *conn, struct smb_request *req)
 {
 	int  outsize = 0;
 	uint32 pscnt;
@@ -3184,11 +3183,21 @@ int reply_nttrans(connection_struct *conn,
 	NTSTATUS result;
 	struct trans_state *state;
 
+	char *inbuf, *outbuf;
+	int size, bufsize;
+
 	START_PROFILE(SMBnttrans);
 
-	if (CVAL(inbuf, smb_wct) < 19) {
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBnttrans);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if (CVAL(inbuf, smb_wct) < 19) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBnttrans);
+		return;
 	}
 
 	pscnt = IVAL(inbuf,smb_nt_ParameterCount);
@@ -3198,20 +3207,23 @@ int reply_nttrans(connection_struct *conn,
 	function_code = SVAL( inbuf, smb_nt_Function);
 
 	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
+		reply_doserror(req, ERRSRV, ERRaccess);
 		END_PROFILE(SMBnttrans);
-		return ERROR_DOS(ERRSRV,ERRaccess);
+		return;
 	}
 
 	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid nttrans request: %s\n", nt_errstr(result)));
+		reply_nterror(req, result);
 		END_PROFILE(SMBnttrans);
-		return ERROR_NT(result);
+		return;
 	}
 
 	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
+		reply_doserror(req, ERRSRV, ERRaccess);
 		END_PROFILE(SMBnttrans);
-		return ERROR_DOS(ERRSRV,ERRaccess);
+		return;
 	}
 
 	state->cmd = SMBnttrans;
@@ -3244,8 +3256,9 @@ int reply_nttrans(connection_struct *conn,
 	/* Don't allow more than 128mb for each value. */
 	if ((state->total_data > (1024*1024*128)) ||
 	    (state->total_param > (1024*1024*128))) {
+		reply_doserror(req, ERRDOS, ERRnomem);
 		END_PROFILE(SMBnttrans);
-		return ERROR_DOS(ERRDOS,ERRnomem);
+		return;
 	}
 
 	if ((dscnt > state->total_data) || (pscnt > state->total_param))
@@ -3258,8 +3271,9 @@ int reply_nttrans(connection_struct *conn,
 			DEBUG(0,("reply_nttrans: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
+			reply_doserror(req, ERRDOS, ERRnomem);
 			END_PROFILE(SMBnttrans);
-			return(ERROR_DOS(ERRDOS,ERRnomem));
+			return;
 		} 
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
 			goto bad_param;
@@ -3278,8 +3292,9 @@ int reply_nttrans(connection_struct *conn,
 				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
+			reply_doserror(req, ERRDOS, ERRnomem);
 			END_PROFILE(SMBnttrans);
-			return(ERROR_DOS(ERRDOS,ERRnomem));
+			return;
 		} 
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
 			goto bad_param;
@@ -3302,8 +3317,9 @@ int reply_nttrans(connection_struct *conn,
 			SAFE_FREE(state->data);
 			SAFE_FREE(state->param);
 			TALLOC_FREE(state);
+			reply_doserror(req, ERRDOS, ERRnomem);
 			END_PROFILE(SMBnttrans);
-			return ERROR_DOS(ERRDOS,ERRnomem);
+			return;
 		}
 
 		if ((smb_nt_SetupStart + state->setup_count < smb_nt_SetupStart) ||
@@ -3325,8 +3341,9 @@ int reply_nttrans(connection_struct *conn,
 		SAFE_FREE(state->param);
 		SAFE_FREE(state->data);
 		TALLOC_FREE(state);
+		reply_post_legacy(req, outsize);
 		END_PROFILE(SMBnttrans);
-		return outsize;
+		return;
 	}
 
 	DLIST_ADD(conn->pending_trans, state);
@@ -3336,7 +3353,8 @@ int reply_nttrans(connection_struct *conn,
 	outsize = set_message(inbuf,outbuf,0,0,False);
 	show_msg(outbuf);
 	END_PROFILE(SMBnttrans);
-	return outsize;
+	reply_post_legacy(req, outsize);
+	return;
 
   bad_param:
 
@@ -3344,28 +3362,38 @@ int reply_nttrans(connection_struct *conn,
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
+	reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 	END_PROFILE(SMBnttrans);
-	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	return;
 }
 	
 /****************************************************************************
  Reply to a SMBnttranss
  ****************************************************************************/
 
-int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
-		   int size,int bufsize)
+void reply_nttranss(connection_struct *conn, struct smb_request *req)
 {
 	int outsize = 0;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 
+	char *inbuf, *outbuf;
+	int size, bufsize;
+
 	START_PROFILE(SMBnttranss);
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBnttrans);
+		return;
+	}
 
 	show_msg(inbuf);
 
 	if (CVAL(inbuf, smb_wct) < 18) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnttranss);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	for (state = conn->pending_trans; state != NULL;
@@ -3376,8 +3404,9 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 	}
 
 	if ((state == NULL) || (state->cmd != SMBnttrans)) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnttranss);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	/* Revise state->total_param and state->total_data in case they have
@@ -3441,7 +3470,7 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 	if ((state->received_param < state->total_param) ||
 	    (state->received_data < state->total_data)) {
 		END_PROFILE(SMBnttranss);
-		return -1;
+		return;
 	}
 
 	/* construct_reply_common has done us the favor to pre-fill the
@@ -3458,12 +3487,14 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 	TALLOC_FREE(state);
 
 	if (outsize == 0) {
+		reply_doserror(req, ERRSRV, ERRnosupport);
 		END_PROFILE(SMBnttranss);
-		return(ERROR_DOS(ERRSRV,ERRnosupport));
+		return;
 	}
 	
+	reply_post_legacy(req, outsize);
 	END_PROFILE(SMBnttranss);
-	return(outsize);
+	return;
 
   bad_param:
 
@@ -3472,6 +3503,7 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 	SAFE_FREE(state->data);
 	SAFE_FREE(state->param);
 	TALLOC_FREE(state);
+	reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 	END_PROFILE(SMBnttranss);
-	return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	return;
 }
