@@ -3176,16 +3176,26 @@ int reply_nttrans(connection_struct *conn,
 			char *inbuf,char *outbuf,int size,int bufsize)
 {
 	int  outsize = 0;
-	uint32 pscnt = IVAL(inbuf,smb_nt_ParameterCount);
-	uint32 psoff = IVAL(inbuf,smb_nt_ParameterOffset);
-	uint32 dscnt = IVAL(inbuf,smb_nt_DataCount);
-	uint32 dsoff = IVAL(inbuf,smb_nt_DataOffset);
-	
-	uint16 function_code = SVAL( inbuf, smb_nt_Function);
+	uint32 pscnt;
+	uint32 psoff;
+	uint32 dscnt;
+	uint32 dsoff;
+	uint16 function_code;
 	NTSTATUS result;
 	struct trans_state *state;
 
 	START_PROFILE(SMBnttrans);
+
+	if (CVAL(inbuf, smb_wct) < 19) {
+		END_PROFILE(SMBnttrans);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	pscnt = IVAL(inbuf,smb_nt_ParameterCount);
+	psoff = IVAL(inbuf,smb_nt_ParameterOffset);
+	dscnt = IVAL(inbuf,smb_nt_DataCount);
+	dsoff = IVAL(inbuf,smb_nt_DataOffset);
+	function_code = SVAL( inbuf, smb_nt_Function);
 
 	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
 		END_PROFILE(SMBnttrans);
@@ -3352,6 +3362,11 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 	START_PROFILE(SMBnttranss);
 
 	show_msg(inbuf);
+
+	if (CVAL(inbuf, smb_wct) < 18) {
+		END_PROFILE(SMBnttranss);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	for (state = conn->pending_trans; state != NULL;
 	     state = state->next) {
