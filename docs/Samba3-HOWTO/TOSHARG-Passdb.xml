@@ -1647,7 +1647,7 @@ regarding this facility.
 
 		<para>
 		<indexterm><primary>pdbedit</primary></indexterm>
-<indexterm><primary>iccount mport/export</primary></indexterm>
+<indexterm><primary>account import/export</primary></indexterm>
 <indexterm><primary>authentication</primary></indexterm>
 		The <command>pdbedit</command> tool allows import/export of authentication (account)
 		databases from one backend to another. For example, to import/export accounts from an
