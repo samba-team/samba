@@ -26,6 +26,7 @@ OBJ_FILES = \
 		wb_cmd_lookupsid.o \
 		wb_cmd_getdcname.o \
 		wb_cmd_getpwnam.o \
+		wb_cmd_getpwuid.o \
 		wb_cmd_userdomgroups.o \
 		wb_cmd_usersids.o \
 		wb_cmd_list_trustdom.o \
