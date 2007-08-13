@@ -3050,95 +3050,176 @@ static void handle_nttrans(connection_struct *conn,
 			   struct trans_state *state,
 			   struct smb_request *req)
 {
-	int outsize = -1;
-
-	char *inbuf, *outbuf;
-	int size, bufsize;
-
 	if (Protocol >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(req->inbuf,smb_flg2,req->flags2);
-	}
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBnttrans);
-		return;
 	}
 
 	/* Now we must call the relevant NT_TRANS function */
 	switch(state->call) {
 		case NT_TRANSACT_CREATE:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_create);
-			outsize = call_nt_transact_create(conn, inbuf, outbuf,
-							  size, bufsize, 
-							&state->setup, state->setup_count,
-							&state->param, state->total_param, 
-							&state->data, state->total_data,
-							  state->max_data_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_create(
+					conn, inbuf, outbuf,
+					size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return));
+
 			END_PROFILE(NT_transact_create);
 			break;
 		}
 
 		case NT_TRANSACT_IOCTL:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_ioctl);
-			outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_ioctl(
+					conn, inbuf, outbuf,
+					size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return));
+
 			END_PROFILE(NT_transact_ioctl);
 			break;
 		}
 
 		case NT_TRANSACT_SET_SECURITY_DESC:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_set_security_desc);
-			outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_set_security_desc(
+					conn, inbuf, outbuf,
+					size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return));
 			END_PROFILE(NT_transact_set_security_desc);
 			break;
 		}
 
 		case NT_TRANSACT_NOTIFY_CHANGE:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_notify_change);
-			outsize = call_nt_transact_notify_change(
-				conn, inbuf, outbuf, size, bufsize, 
-				&state->setup, state->setup_count,
-				&state->param, state->total_param, 
-				&state->data, state->total_data,
-				state->max_data_return,
-				state->max_param_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_notify_change(
+					conn, inbuf, outbuf, size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return,
+					state->max_param_return));
+
 			END_PROFILE(NT_transact_notify_change);
 			break;
 		}
 
 		case NT_TRANSACT_RENAME:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_rename);
-			outsize = call_nt_transact_rename(conn, inbuf, outbuf,
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_rename(
+					conn, inbuf, outbuf,
+					size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return));
+
 			END_PROFILE(NT_transact_rename);
 			break;
 		}
 
 		case NT_TRANSACT_QUERY_SECURITY_DESC:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_query_security_desc);
-			outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_query_security_desc(
+					conn, inbuf, outbuf,
+					size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return));
+
 			END_PROFILE(NT_transact_query_security_desc);
 			break;
 		}
@@ -3146,24 +3227,56 @@ static void handle_nttrans(connection_struct *conn,
 #ifdef HAVE_SYS_QUOTAS
 		case NT_TRANSACT_GET_USER_QUOTA:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_get_user_quota);
-			outsize = call_nt_transact_get_user_quota(conn, inbuf, outbuf, 
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_get_user_quota(
+					conn, inbuf, outbuf,
+					size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return));
+
 			END_PROFILE(NT_transact_get_user_quota);
 			break;
 		}
 
 		case NT_TRANSACT_SET_USER_QUOTA:
 		{
+			char *inbuf, *outbuf;
+			int size, bufsize;
+
 			START_PROFILE(NT_transact_set_user_quota);
-			outsize = call_nt_transact_set_user_quota(conn, inbuf, outbuf, 
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+
+			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
+					       &bufsize)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBnttrans);
+				return;
+			}
+
+			reply_post_legacy(
+				req,
+				call_nt_transact_set_user_quota(
+					conn, inbuf, outbuf,
+					size, bufsize,
+					&state->setup, state->setup_count,
+					&state->param, state->total_param,
+					&state->data, state->total_data,
+					state->max_data_return));
+
 			END_PROFILE(NT_transact_set_user_quota);
 			break;					
 		}
@@ -3176,7 +3289,6 @@ static void handle_nttrans(connection_struct *conn,
 			reply_doserror(req, ERRSRV, ERRerror);
 			return;
 	}
-	reply_post_legacy(req, outsize);
 	return;
 }
 
