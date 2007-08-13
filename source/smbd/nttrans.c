@@ -3188,23 +3188,18 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBnttrans);
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBnttrans);
-		return;
-	}
-
-	if (CVAL(inbuf, smb_wct) < 19) {
+	if (req->wct < 19) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnttrans);
 		return;
 	}
 
-	pscnt = IVAL(inbuf,smb_nt_ParameterCount);
-	psoff = IVAL(inbuf,smb_nt_ParameterOffset);
-	dscnt = IVAL(inbuf,smb_nt_DataCount);
-	dsoff = IVAL(inbuf,smb_nt_DataOffset);
-	function_code = SVAL( inbuf, smb_nt_Function);
+	size = smb_len(req->inbuf) + 4;
+	pscnt = IVAL(req->inbuf,smb_nt_ParameterCount);
+	psoff = IVAL(req->inbuf,smb_nt_ParameterOffset);
+	dscnt = IVAL(req->inbuf,smb_nt_DataCount);
+	dsoff = IVAL(req->inbuf,smb_nt_DataOffset);
+	function_code = SVAL(req->inbuf, smb_nt_Function);
 
 	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
 		reply_doserror(req, ERRSRV, ERRaccess);
@@ -3212,7 +3207,7 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
+	result = allow_new_trans(conn->pending_trans, req->mid);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid nttrans request: %s\n", nt_errstr(result)));
 		reply_nterror(req, result);
@@ -3228,17 +3223,17 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 
 	state->cmd = SMBnttrans;
 
-	state->mid = SVAL(inbuf,smb_mid);
-	state->vuid = SVAL(inbuf,smb_uid);
-	state->total_data = IVAL(inbuf, smb_nt_TotalDataCount);
+	state->mid = req->mid;
+	state->vuid = req->vuid;
+	state->total_data = IVAL(req->inbuf, smb_nt_TotalDataCount);
 	state->data = NULL;
-	state->total_param = IVAL(inbuf, smb_nt_TotalParameterCount);
+	state->total_param = IVAL(req->inbuf, smb_nt_TotalParameterCount);
 	state->param = NULL;
-	state->max_data_return = IVAL(inbuf,smb_nt_MaxDataCount);	
-	state->max_param_return = IVAL(inbuf,smb_nt_MaxParameterCount);
+	state->max_data_return = IVAL(req->inbuf,smb_nt_MaxDataCount);
+	state->max_param_return = IVAL(req->inbuf,smb_nt_MaxParameterCount);
 
 	/* setup count is in *words* */
-	state->setup_count = 2*CVAL(inbuf,smb_nt_SetupCount); 
+	state->setup_count = 2*CVAL(req->inbuf,smb_nt_SetupCount);
 	state->setup = NULL;
 	state->call = function_code;
 
@@ -3247,9 +3242,9 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 	 * state->setup_count.  Ensure this is so as a sanity check.
 	 */
 
-	if(CVAL(inbuf, smb_wct) != 19 + (state->setup_count/2)) {
+	if(req->wct != 19 + (state->setup_count/2)) {
 		DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
-			CVAL(inbuf, smb_wct), 19 + (state->setup_count/2)));
+			 req->wct, 19 + (state->setup_count/2)));
 		goto bad_param;
 	}
 
@@ -3277,11 +3272,12 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 		} 
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
 			goto bad_param;
-		if ((smb_base(inbuf)+dsoff+dscnt > inbuf + size) ||
-		    (smb_base(inbuf)+dsoff+dscnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf)+dsoff+dscnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf)+dsoff+dscnt < smb_base(req->inbuf)))
 			goto bad_param;
 
-		memcpy(state->data,smb_base(inbuf)+dsoff,dscnt);
+		memcpy(state->data,smb_base(req->inbuf)+dsoff,dscnt);
 	}
 
 	if (state->total_param) {
@@ -3298,11 +3294,12 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 		} 
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
 			goto bad_param;
-		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
-		    (smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf)+psoff+pscnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf)+psoff+pscnt < smb_base(req->inbuf)))
 			goto bad_param;
 
-		memcpy(state->param,smb_base(inbuf)+psoff,pscnt);
+		memcpy(state->param,smb_base(req->inbuf)+psoff,pscnt);
 	}
 
 	state->received_data  = dscnt;
@@ -3330,8 +3327,15 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 		}
 
-		memcpy( state->setup, &inbuf[smb_nt_SetupStart], state->setup_count);
+		memcpy( state->setup, &req->inbuf[smb_nt_SetupStart],
+			state->setup_count);
 		dump_data(10, (uint8 *)state->setup, state->setup_count);
+	}
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBnttrans);
+		return;
 	}
 
 	if ((state->received_data == state->total_data) &&
@@ -3382,15 +3386,9 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBnttranss);
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBnttranss);
-		return;
-	}
+	show_msg((char *)req->inbuf);
 
-	show_msg(inbuf);
-
-	if (CVAL(inbuf, smb_wct) < 18) {
+	if (req->wct < 18) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnttranss);
 		return;
@@ -3398,7 +3396,7 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 
 	for (state = conn->pending_trans; state != NULL;
 	     state = state->next) {
-		if (state->mid == SVAL(inbuf,smb_mid)) {
+		if (state->mid == req->mid) {
 			break;
 		}
 	}
@@ -3411,20 +3409,24 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 
 	/* Revise state->total_param and state->total_data in case they have
 	   changed downwards */
-	if (IVAL(inbuf, smb_nts_TotalParameterCount) < state->total_param) {
-		state->total_param = IVAL(inbuf, smb_nts_TotalParameterCount);
+	if (IVAL(req->inbuf, smb_nts_TotalParameterCount)
+	    < state->total_param) {
+		state->total_param = IVAL(req->inbuf,
+					  smb_nts_TotalParameterCount);
 	}
-	if (IVAL(inbuf, smb_nts_TotalDataCount) < state->total_data) {
-		state->total_data = IVAL(inbuf, smb_nts_TotalDataCount);
+	if (IVAL(req->inbuf, smb_nts_TotalDataCount) < state->total_data) {
+		state->total_data = IVAL(req->inbuf, smb_nts_TotalDataCount);
 	}
 
-	pcnt = IVAL(inbuf,smb_nts_ParameterCount);
-	poff = IVAL(inbuf, smb_nts_ParameterOffset);
-	pdisp = IVAL(inbuf, smb_nts_ParameterDisplacement);
+	size = smb_len(req->inbuf) + 4;
 
-	dcnt = IVAL(inbuf, smb_nts_DataCount);
-	ddisp = IVAL(inbuf, smb_nts_DataDisplacement);
-	doff = IVAL(inbuf, smb_nts_DataOffset);
+	pcnt = IVAL(req->inbuf,smb_nts_ParameterCount);
+	poff = IVAL(req->inbuf, smb_nts_ParameterOffset);
+	pdisp = IVAL(req->inbuf, smb_nts_ParameterDisplacement);
+
+	dcnt = IVAL(req->inbuf, smb_nts_DataCount);
+	ddisp = IVAL(req->inbuf, smb_nts_DataDisplacement);
+	doff = IVAL(req->inbuf, smb_nts_DataOffset);
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;
@@ -3440,13 +3442,15 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 		if (pdisp > state->total_param)
 			goto bad_param;
-		if ((smb_base(inbuf) + poff + pcnt > inbuf + size) ||
-		    (smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
+		if ((smb_base(req->inbuf) + poff + pcnt
+		     > (char *)req->inbuf + size) ||
+		    (smb_base(req->inbuf) + poff + pcnt
+		     < smb_base(req->inbuf)))
 			goto bad_param;
 		if (state->param + pdisp < state->param)
 			goto bad_param;
 
-		memcpy(state->param+pdisp,smb_base(inbuf)+poff,
+		memcpy(state->param+pdisp, smb_base(req->inbuf)+poff,
 		       pcnt);
 	}
 
@@ -3457,19 +3461,26 @@ void reply_nttranss(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 		if (ddisp > state->total_data)
 			goto bad_param;
-		if ((smb_base(inbuf) + doff + dcnt > inbuf + size) ||
+		if ((smb_base(inbuf) + doff + dcnt
+		     > (char *)req->inbuf + size) ||
 		    (smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
 			goto bad_param;
 		if (state->data + ddisp < state->data)
 			goto bad_param;
 
-		memcpy(state->data+ddisp, smb_base(inbuf)+doff,
+		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,
 		       dcnt);      
 	}
 
 	if ((state->received_param < state->total_param) ||
 	    (state->received_data < state->total_data)) {
 		END_PROFILE(SMBnttranss);
+		return;
+	}
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &size, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBnttrans);
 		return;
 	}
 
