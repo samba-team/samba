@@ -67,7 +67,7 @@ static char *nttrans_realloc(char **ptr, size_t size)
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-int send_nt_replies(const char *inbuf,
+static int send_nt_replies(const char *inbuf,
 			char *outbuf,
 			int bufsize,
 			NTSTATUS nt_error,
