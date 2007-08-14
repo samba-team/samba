@@ -4187,55 +4187,72 @@ void reply_echo(connection_struct *conn, struct smb_request *req)
  Reply to a printopen.
 ****************************************************************************/
 
-int reply_printopen(connection_struct *conn, 
-		    char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_printopen(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	files_struct *fsp;
 	NTSTATUS status;
 	
 	START_PROFILE(SMBsplopen);
-	
-	if (!CAN_PRINT(conn)) {
+
+	if (req->wct < 2) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsplopen);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return;
+	}
+
+	if (!CAN_PRINT(conn)) {
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		END_PROFILE(SMBsplopen);
+		return;
 	}
 
 	/* Open for exclusive use, write only. */
 	status = print_fsp_open(conn, NULL, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBsplopen);
-		return(ERROR_NT(status));
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,1,0,True);
-	SSVAL(outbuf,smb_vwv0,fsp->fnum);
+	reply_outbuf(req, 1, 0);
+	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
   
 	DEBUG(3,("openprint fd=%d fnum=%d\n",
 		 fsp->fh->fd, fsp->fnum));
 
 	END_PROFILE(SMBsplopen);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
  Reply to a printclose.
 ****************************************************************************/
 
-int reply_printclose(connection_struct *conn,
-		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_printclose(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = set_message(inbuf,outbuf,0,0,False);
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
 	NTSTATUS status;
+
 	START_PROFILE(SMBsplclose);
 
-	CHECK_FSP(fsp,conn);
+	if (req->wct < 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBsplclose);
+		return;
+	}
+
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBsplclose);
+                return;
+        }
 
 	if (!CAN_PRINT(conn)) {
+		reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRerror));
 		END_PROFILE(SMBsplclose);
-		return ERROR_NT(NT_STATUS_DOS(ERRSRV, ERRerror));
+		return;
 	}
   
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
@@ -4244,39 +4261,50 @@ int reply_printclose(connection_struct *conn,
 	status = close_file(fsp,NORMAL_CLOSE);
 
 	if(!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBsplclose);
-		return ERROR_NT(status);
+		return;
 	}
 
 	END_PROFILE(SMBsplclose);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
  Reply to a printqueue.
 ****************************************************************************/
 
-int reply_printqueue(connection_struct *conn,
-		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_printqueue(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = set_message(inbuf,outbuf,2,3,True);
-	int max_count = SVAL(inbuf,smb_vwv0);
-	int start_index = SVAL(inbuf,smb_vwv1);
+	int max_count;
+	int start_index;
+
 	START_PROFILE(SMBsplretq);
+
+	if (req->wct < 2) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBsplretq);
+		return;
+	}
+
+	max_count = SVAL(req->inbuf,smb_vwv0);
+	start_index = SVAL(req->inbuf,smb_vwv1);
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only
 	   one printer - I think we should now only accept it if they
 	   get it right (tridge) */
 	if (!CAN_PRINT(conn)) {
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBsplretq);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return;
 	}
 
-	SSVAL(outbuf,smb_vwv0,0);
-	SSVAL(outbuf,smb_vwv1,0);
-	SCVAL(smb_buf(outbuf),0,1);
-	SSVAL(smb_buf(outbuf),1,0);
+	reply_outbuf(req, 2, 3);
+	SSVAL(req->outbuf,smb_vwv0,0);
+	SSVAL(req->outbuf,smb_vwv1,0);
+	SCVAL(smb_buf(req->outbuf),0,1);
+	SSVAL(smb_buf(req->outbuf),1,0);
   
 	DEBUG(3,("printqueue start_index=%d max_count=%d\n",
 		 start_index, max_count));
@@ -4284,7 +4312,6 @@ int reply_printqueue(connection_struct *conn,
 	{
 		print_queue_struct *queue = NULL;
 		print_status_struct status;
-		char *p = smb_buf(outbuf) + 3;
 		int count = print_queue_status(SNUM(conn), &queue, &status);
 		int num_to_get = ABS(max_count);
 		int first = (max_count>0?start_index:start_index+max_count+1);
@@ -4297,22 +4324,33 @@ int reply_printqueue(connection_struct *conn,
     
 
 		for (i=first;i<first+num_to_get;i++) {
+			char blob[28];
+			char *p = blob;
+
 			srv_put_dos_date2(p,0,queue[i].time);
 			SCVAL(p,4,(queue[i].status==LPQ_PRINTING?2:3));
 			SSVAL(p,5, queue[i].job);
 			SIVAL(p,7,queue[i].size);
 			SCVAL(p,11,0);
-			srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p+12,
+			srvstr_push(blob, req->flags2, p+12,
 				    queue[i].fs_user, 16, STR_ASCII);
-			p += 28;
+
+			if (message_push_blob(
+				    &req->outbuf,
+				    data_blob_const(
+					    blob, sizeof(blob))) == -1) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBsplretq);
+				return;
+			}
 		}
 
 		if (count > 0) {
-			outsize = set_message(inbuf,outbuf,2,28*count+3,False); 
-			SSVAL(outbuf,smb_vwv0,count);
-			SSVAL(outbuf,smb_vwv1,(max_count>0?first+count:first-1));
-			SCVAL(smb_buf(outbuf),0,1);
-			SSVAL(smb_buf(outbuf),1,28*count);
+			SSVAL(req->outbuf,smb_vwv0,count);
+			SSVAL(req->outbuf,smb_vwv1,
+			      (max_count>0?first+count:first-1));
+			SCVAL(smb_buf(req->outbuf),0,1);
+			SSVAL(smb_buf(req->outbuf),1,28*count);
 		}
 
 		SAFE_FREE(queue);
@@ -4321,44 +4359,66 @@ int reply_printqueue(connection_struct *conn,
 	}
   
 	END_PROFILE(SMBsplretq);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
  Reply to a printwrite.
 ****************************************************************************/
 
-int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_printwrite(connection_struct *conn, struct smb_request *req)
 {
 	int numtowrite;
-	int outsize = set_message(inbuf,outbuf,0,0,False);
 	char *data;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
 
 	START_PROFILE(SMBsplwr);
+
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBsplwr);
+		return;
+	}
   
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBsplwr);
+                return;
+        }
+
 	if (!CAN_PRINT(conn)) {
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBsplwr);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return;
 	}
 
-	CHECK_FSP(fsp,conn);
 	if (!CHECK_WRITE(fsp)) {
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+		reply_doserror(req, ERRDOS, ERRbadaccess);
+		END_PROFILE(SMBsplwr);
+		return;
 	}
 
-	numtowrite = SVAL(smb_buf(inbuf),1);
-	data = smb_buf(inbuf) + 3;
-  
-	if (write_file(fsp,data,-1,numtowrite) != numtowrite) {
+	numtowrite = SVAL(smb_buf(req->inbuf),1);
+
+	if (smb_buflen(req->inbuf) < numtowrite + 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsplwr);
-		return(UNIXERROR(ERRHRD,ERRdiskfull));
+		return;
+	}
+
+	data = smb_buf(req->inbuf) + 3;
+
+	if (write_file(fsp,data,-1,numtowrite) != numtowrite) {
+		reply_unixerror(req, ERRHRD, ERRdiskfull);
+		END_PROFILE(SMBsplwr);
+		return;
 	}
 
 	DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
   
 	END_PROFILE(SMBsplwr);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
