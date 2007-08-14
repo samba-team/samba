@@ -2501,7 +2501,7 @@ normal_readbraw:
 	outbuf = TALLOC_ARRAY(NULL, char, nread+4);
 	if (!outbuf) {
 		DEBUG(0,("send_file_readbraw: TALLOC_ARRAY failed for size %u.\n",
-			nread+4));
+			(unsigned)(nread+4)));
 		reply_readbraw_error();
 		return;
 	}
