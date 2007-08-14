@@ -2459,9 +2459,7 @@ void send_file_readbraw(connection_struct *conn,
 		DATA_BLOB header_blob;
 
 		_smb_setlen(header,nread);
-		header_blob.data = (uint8 *)header;
-		header_blob.length = 4;
-		header_blob.free = NULL;
+		header_blob = data_blob_const(header, 4);
 
 		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd,
 				&header_blob, startpos, nread) == -1) {
@@ -2594,7 +2592,7 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
 	flush_write_cache(fsp, READRAW_FLUSH);
 
 	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv1);
-	if(CVAL(req->inbuf,smb_wct) == 10) {
+	if(req->wct == 10) {
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
