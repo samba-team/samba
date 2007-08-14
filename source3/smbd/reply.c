@@ -5173,75 +5173,94 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
  Reply to a mv.
 ****************************************************************************/
 
-int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
-	     int dum_buffsize)
+void reply_mv(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	pstring name;
 	pstring newname;
 	char *p;
-	uint32 attrs = SVAL(inbuf,smb_vwv0);
+	uint32 attrs;
 	NTSTATUS status;
 	BOOL src_has_wcard = False;
 	BOOL dest_has_wcard = False;
-	struct smb_request req;
 
 	START_PROFILE(SMBmv);
 
-	init_smb_request(&req, (uint8 *)inbuf);
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBmv);
+		return;
+	}
 
-	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), name, p,
+	attrs = SVAL(req->inbuf,smb_vwv0);
+
+	p = smb_buf(req->inbuf) + 1;
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, name, p,
 				   sizeof(name), 0, STR_TERMINATE, &status,
 				   &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBmv);
-		return ERROR_NT(status);
+		return;
 	}
 	p++;
-	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), newname, p,
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, newname, p,
 				   sizeof(newname), 0, STR_TERMINATE, &status,
 				   &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBmv);
-		return ERROR_NT(status);
+		return;
 	}
 	
-	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name, &src_has_wcard);
+	status = resolve_dfspath_wcard(conn,
+				       req->flags2 & FLAGS2_DFS_PATHNAMES,
+				       name, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBmv);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBmv);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBmv);
+		return;
 	}
 
-	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname, &dest_has_wcard);
+	status = resolve_dfspath_wcard(conn,
+				       req->flags2 & FLAGS2_DFS_PATHNAMES,
+				       newname, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBmv);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBmv);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBmv);
+		return;
 	}
 	
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 	
-	status = rename_internals(conn, &req, name, newname, attrs, False,
+	status = rename_internals(conn, req, name, newname, attrs, False,
 				  src_has_wcard, dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBmv);
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			END_PROFILE(SMBmv);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBmv);
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,0,0,False);
+	reply_outbuf(req, 0, 0);
   
 	END_PROFILE(SMBmv);
-	return(outsize);
+	return;
 }
 
 /*******************************************************************
