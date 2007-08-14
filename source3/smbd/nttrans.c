@@ -67,14 +67,9 @@ static char *nttrans_realloc(char **ptr, size_t size)
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(const char *inbuf,
-			char *outbuf,
-			int bufsize,
-			NTSTATUS nt_error,
-			char *params,
-			int paramsize,
-			char *pdata,
-			int datasize)
+void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
+		     char *params, int paramsize,
+		     char *pdata, int datasize)
 {
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
@@ -89,6 +84,14 @@ static int send_nt_replies(const char *inbuf,
 	 * Initially set the wcnt area to be 18 - this is true for all
 	 * transNT replies.
 	 */
+
+	char *inbuf, *outbuf;
+	int length, bufsize;
+
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
 	set_message(inbuf,outbuf,18,0,True);
 
@@ -106,7 +109,8 @@ static int send_nt_replies(const char *inbuf,
 		if (!send_smb(smbd_server_fd(),outbuf)) {
 			exit_server_cleanly("send_nt_replies: send_smb failed.");
 		}
-		return 0;
+		TALLOC_FREE(req->outbuf);
+		return;
 	}
 
 	/*
@@ -255,29 +259,10 @@ static int send_nt_replies(const char *inbuf,
 		if(params_to_send < 0 || data_to_send < 0) {
 			DEBUG(0,("send_nt_replies failed sanity check pts = %d, dts = %d\n!!!",
 				params_to_send, data_to_send));
-			return -1;
+			TALLOC_FREE(req->outbuf);
+			return;
 		}
 	} 
-
-	return 0;
-}
-
-void send_nt_replies_new(struct smb_request *req, NTSTATUS nt_error,
-			 char *params, int paramsize,
-			char *pdata, int datasize)
-{
-	char *inbuf, *outbuf;
-	int length, bufsize;
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	reply_post_legacy(
-		req,
-		send_nt_replies(inbuf, outbuf, bufsize, nt_error,
-				params, paramsize, pdata, datasize));
 }
 
 /****************************************************************************
@@ -1138,7 +1123,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 	
 	/* Send the required number of replies */
-	send_nt_replies_new(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
 	
 	return;
 }
@@ -1789,7 +1774,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies_new(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
 
 	return;
 }
@@ -2218,7 +2203,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	/*
 	 * Rename was successful.
 	 */
-	send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
 	
 	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
 		 fsp->fsp_name, new_name));
@@ -2316,8 +2301,8 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	if(max_data_count < sd_size) {
 
-		send_nt_replies_new(req, NT_STATUS_BUFFER_TOO_SMALL,
-				    params, 4, *ppdata, 0);
+		send_nt_replies(req, NT_STATUS_BUFFER_TOO_SMALL,
+				params, 4, *ppdata, 0);
 		talloc_destroy(mem_ctx);
 		return;
 	}
@@ -2367,8 +2352,7 @@ security descriptor.\n"));
 
 	talloc_destroy(mem_ctx);
 
-	send_nt_replies_new(req, NT_STATUS_OK, params, 4, data,
-			    (int)sd_size);
+	send_nt_replies(req, NT_STATUS_OK, params, 4, data, (int)sd_size);
 	return;
 }
 
@@ -2423,7 +2407,7 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 
   done:
 
-	send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
 	return;
 }
    
@@ -2472,7 +2456,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		   so we can know if we need to pre-allocate or not */
 
 		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X](but not implemented)\n", fidnum));
-		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+		send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return;
 	
 	case FSCTL_CREATE_OR_GET_OBJECT_ID:
@@ -2498,8 +2482,8 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		push_file_id_16(pdata, &fsp->file_id);
 		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
 		push_file_id_16(pdata+32, &fsp->file_id);
-		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0,
-				    pdata, data_count);
+		send_nt_replies(req, NT_STATUS_OK, NULL, 0,
+				pdata, data_count);
 		return;
 	}
 
@@ -2643,8 +2627,8 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 
 		talloc_destroy(shadow_data->mem_ctx);
 
-		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0,
-				    pdata, data_count);
+		send_nt_replies(req, NT_STATUS_OK, NULL, 0,
+				pdata, data_count);
 
 		return;
         }
@@ -2698,7 +2682,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 */
 		
 		/* this works for now... */
-		send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+		send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return;
 	}	
 	default:
@@ -2983,8 +2967,8 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			break;
 	}
 
-	send_nt_replies_new(req, nt_status, params, param_len,
-			    pdata, data_len);
+	send_nt_replies(req, nt_status, params, param_len,
+			pdata, data_len);
 }
 
 /****************************************************************************
@@ -3113,8 +3097,8 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 		return;
 	}
 
-	send_nt_replies_new(req, NT_STATUS_OK, params, param_len,
-			    pdata, data_len);
+	send_nt_replies(req, NT_STATUS_OK, params, param_len,
+			pdata, data_len);
 }
 #endif /* HAVE_SYS_QUOTAS */
 
