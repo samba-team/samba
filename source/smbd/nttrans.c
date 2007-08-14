@@ -2167,10 +2167,12 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
  Reply to an NT transact rename command.
 ****************************************************************************/
 
-static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static void call_nt_transact_rename(connection_struct *conn,
+				    struct smb_request *req,
+				    uint16 **ppsetup, uint32 setup_count,
+				    char **ppparams, uint32 parameter_count,
+				    char **ppdata, uint32 data_count,
+				    uint32 max_data_count)
 {
 	char *params = *ppparams;
 	pstring new_name;
@@ -2178,44 +2180,46 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	BOOL replace_if_exists = False;
 	BOOL dest_has_wcard = False;
 	NTSTATUS status;
-	struct smb_request req;
-
-	init_smb_request(&req, (uint8 *)inbuf);
 
         if(parameter_count < 5) {
-		return ERROR_DOS(ERRDOS,ERRbadfunc);
+		reply_doserror(req, ERRDOS, ERRbadfunc);
+		return;
 	}
 
 	fsp = file_fsp(SVAL(params, 0));
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
-	CHECK_FSP(fsp, conn);
-	srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), new_name, params+4,
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		return;
+	}
+	srvstr_get_path_wcard(params, req->flags2, new_name, params+4,
 			      sizeof(new_name), parameter_count - 4,
 			      STR_TERMINATE, &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
-	status = rename_internals(conn, &req, fsp->fsp_name,
+	status = rename_internals(conn, req, fsp->fsp_name,
 				  new_name, 0, replace_if_exists, False, dest_has_wcard);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	/*
 	 * Rename was successful.
 	 */
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies_new(req, NT_STATUS_OK, NULL, 0, NULL, 0);
 	
 	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
 		 fsp->fsp_name, new_name));
 	
-	return -1;
+	return;
 }
 
 /******************************************************************************
@@ -3190,28 +3194,13 @@ static void handle_nttrans(connection_struct *conn,
 
 		case NT_TRANSACT_RENAME:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_rename);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_rename(
-					conn, inbuf, outbuf,
-					size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return));
-
+			call_nt_transact_rename(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 			END_PROFILE(NT_transact_rename);
 			break;
 		}
