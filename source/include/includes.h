@@ -1215,11 +1215,6 @@ krb5_error_code smb_krb5_open_keytab(krb5_context context,
  				      const char *keytab_name, 
 				      BOOL write_access, 
 				      krb5_keytab *keytab);
-NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
-			      const char *name,
-			      const char *pass,
-			      time_t time_offset,
-			      PAC_DATA **pac_ret);
 #endif /* HAVE_KRB5 */
 
 
