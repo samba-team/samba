@@ -662,4 +662,45 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 
 	return result;
 }
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
+		      uint32_t flags,
+		      const char *filename,
+		      const char *suffix,
+		      const char **filename_out)
+{
+	const char *tmp = NULL;
+	SMB_STRUCT_STAT sbuf;
+	const char *path = NULL;
+
+	if (flags & GPO_LIST_FLAG_MACHINE) {
+		path = "Machine";
+	} else {
+		path = "User";
+	}
+
+	tmp = talloc_asprintf(mem_ctx, "%s/%s/%s", filename,
+			      path, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(tmp);
+
+	if (sys_stat(tmp, &sbuf) == 0) {
+		*filename_out = tmp;
+		return NT_STATUS_OK;
+	}
+
+	tmp = talloc_asprintf(mem_ctx, "%s/%s/%s", filename,
+			      strupper_static(path), suffix);
+	NT_STATUS_HAVE_NO_MEMORY(tmp);
+
+	if (sys_stat(tmp, &sbuf) == 0) {
+		*filename_out = tmp;
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_NO_SUCH_FILE;
+}
+
 #endif /* HAVE_LDAP */

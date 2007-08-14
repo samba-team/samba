@@ -305,7 +305,7 @@ LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
 	       libaddns/dnsgss.o libaddns/dnsmarshall.o
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(TALLOC_OBJ)
 
-LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_parse.o libgpo/gpo_util.o \
+LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
 LIBGPO_OBJ = $(LIBGPO_OBJ0)
 
