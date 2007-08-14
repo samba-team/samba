@@ -1,18 +1,18 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
  *  Copyright (C) Guenther Deschner 2006
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,13 +25,13 @@ struct sync_context {
 	char *remote_path;
 	char *local_path;
 	pstring mask;
-	uint16 attribute;
+	uint16_t attribute;
 };
 
 static void gpo_sync_func(const char *mnt,
-			   file_info *info,
-			   const char *mask,
-			   void *state);
+			  file_info *info,
+			  const char *mask,
+			  void *state);
 
 NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 		       struct cli_state *cli,
@@ -56,7 +56,7 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 		result = map_nt_error_from_unix(errno);
 		goto out;
 	}
-	 
+
 	if ((data = (char *)SMB_MALLOC(read_size)) == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -111,8 +111,12 @@ static BOOL gpo_sync_files(struct sync_context *ctx)
 {
 	DEBUG(3,("calling cli_list with mask: %s\n", ctx->mask));
 
-	if (cli_list(ctx->cli, ctx->mask, ctx->attribute, gpo_sync_func, ctx) == -1) {
-		DEBUG(1,("listing [%s] failed with error: %s\n", 
+	if (cli_list(ctx->cli,
+		     ctx->mask,
+		     ctx->attribute,
+		     gpo_sync_func,
+		     ctx) == -1) {
+		DEBUG(1,("listing [%s] failed with error: %s\n",
 			ctx->mask, cli_errstr(ctx->cli)));
 		return False;
 	}
@@ -141,7 +145,7 @@ static void gpo_sync_func(const char *mnt,
 		return;
 	}
 
-	DEBUG(5,("gpo_sync_func: got mask: [%s], name: [%s]\n", 
+	DEBUG(5,("gpo_sync_func: got mask: [%s], name: [%s]\n",
 		mask, info->name));
 
 	if (info->mode & aDIR) {
@@ -158,12 +162,13 @@ static void gpo_sync_func(const char *mnt,
 
 		result = gpo_copy_dir(unix_dir);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(1,("failed to copy dir: %s\n", nt_errstr(result)));
+			DEBUG(1,("failed to copy dir: %s\n",
+				nt_errstr(result)));
 		}
 
 		old_nt_dir = ctx->remote_path;
 		ctx->remote_path = nt_dir;
-		
+
 		old_unix_dir = ctx->local_path;
 		ctx->local_path = talloc_strdup(ctx->mem_ctx, unix_dir);
 
@@ -189,9 +194,11 @@ static void gpo_sync_func(const char *mnt,
 	fstrcat(unix_filename, "/");
 	fstrcat(unix_filename, info->name);
 
-	result = gpo_copy_file(ctx->mem_ctx, ctx->cli, nt_filename, unix_filename);
+	result = gpo_copy_file(ctx->mem_ctx, ctx->cli,
+			       nt_filename, unix_filename);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(1,("failed to copy file: %s\n", nt_errstr(result)));
+		DEBUG(1,("failed to copy file: %s\n",
+			nt_errstr(result)));
 	}
 }
 
@@ -200,9 +207,9 @@ static void gpo_sync_func(const char *mnt,
  list a remote directory and download recursivly
 ****************************************************************/
 
-NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx, 
-			      struct cli_state *cli, 
-			      const char *nt_path, 
+NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx,
+			      struct cli_state *cli,
+			      const char *nt_path,
 			      const char *local_path)
 {
 	struct sync_context ctx;
