@@ -5770,8 +5770,7 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_forma
  Reply to a lockingX request.
 ****************************************************************************/
 
-int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
-		   int length, int bufsize)
+void reply_lockingX(connection_struct *conn, struct smb_request *req)
 {
 	files_struct *fsp;
 	unsigned char locktype;
@@ -5787,10 +5786,21 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 	BOOL err;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
+	char *inbuf, *outbuf;
+	int length, bufsize;
+
 	START_PROFILE(SMBlockingX);
 
+	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBlockingX);
+		return;
+	}
+
 	if (CVAL(inbuf, smb_wct) < 8) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBlockingX);
+		return;
 	}
 	
 	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
@@ -5801,7 +5811,9 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 	lock_timeout = IVAL(inbuf,smb_vwv4);
 	large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 
-	CHECK_FSP(fsp,conn);
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		return;
+	}
 	
 	data = smb_buf(inbuf);
 
@@ -5809,7 +5821,9 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		/* we don't support these - and CANCEL_LOCK makes w2k
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
-		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks));
+		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks));
+		END_PROFILE(SMBlockingX);
+		return;
 	}
 	
 	/* Check if this is an oplock break on a file
@@ -5846,10 +5860,12 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			 * send a reply */
 			if (num_locks == 0 && num_ulocks == 0) {
 				END_PROFILE(SMBlockingX);
-				return -1;
+				reply_post_legacy(req, -1);
+				return;
 			} else {
 				END_PROFILE(SMBlockingX);
-				return ERROR_DOS(ERRDOS,ERRlock);
+				reply_doserror(req, ERRDOS, ERRlock);
+				return;
 			}
 		}
 
@@ -5879,7 +5895,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 					 "break is a chained %d request !\n",
 					 (unsigned int)CVAL(inbuf,smb_vwv0) ));
 			END_PROFILE(SMBlockingX);
-			return -1;
+			reply_post_legacy(req, -1);
+			return;
 		}
 	}
 
@@ -5902,7 +5919,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		 */
 		if(err) {
 			END_PROFILE(SMBlockingX);
-			return ERROR_DOS(ERRDOS,ERRnoaccess);
+			reply_doserror(req, ERRDOS, ERRnoaccess);
+			return;
 		}
 
 		DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for "
@@ -5918,7 +5936,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 
 		if (NT_STATUS_V(status)) {
 			END_PROFILE(SMBlockingX);
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 	}
 
@@ -5946,7 +5965,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		 */
 		if(err) {
 			END_PROFILE(SMBlockingX);
-			return ERROR_DOS(ERRDOS,ERRnoaccess);
+			reply_doserror(req, ERRDOS, ERRnoaccess);
+			return;
 		}
 		
 		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid "
@@ -5969,7 +5989,12 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 						locktype,
 						NT_STATUS_FILE_LOCK_CONFLICT)) {
 					END_PROFILE(SMBlockingX);
-					return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRcancelviolation));
+					reply_nterror(
+						req,
+						NT_STATUS_DOS(
+							ERRDOS,
+							ERRcancelviolation));
+					return;
 				}
 			}
 			/* Remove a matching pending lock. */
@@ -6034,7 +6059,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 							block_smbpid)) {
 					TALLOC_FREE(br_lck);
 					END_PROFILE(SMBlockingX);
-					return -1;
+					reply_post_legacy(req, -1);
+					return;
 				}
 			}
 
@@ -6043,7 +6069,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 
 		if (NT_STATUS_V(status)) {
 			END_PROFILE(SMBlockingX);
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 	}
 	
@@ -6070,7 +6097,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			 */
 			if(err) {
 				END_PROFILE(SMBlockingX);
-				return ERROR_DOS(ERRDOS,ERRnoaccess);
+				reply_doserror(req, ERRDOS, ERRnoaccess);
+				return;
 			}
 			
 			do_unlock(smbd_messaging_context(),
@@ -6081,16 +6109,19 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 				WINDOWS_LOCK);
 		}
 		END_PROFILE(SMBlockingX);
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		return;
 	}
 
 	set_message(inbuf,outbuf,2,0,True);
+
+	reply_post_legacy(req, smb_len(outbuf)+4);
 	
 	DEBUG(3, ("lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
 		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
 	
 	END_PROFILE(SMBlockingX);
-	return chain_reply(inbuf,&outbuf,length,bufsize);
+	chain_reply_new(req);
 }
 
 #undef DBGC_CLASS
