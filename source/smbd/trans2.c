@@ -6816,37 +6816,49 @@ static void call_trans2ioctl(connection_struct *conn,
  Reply to a SMBfindclose (stop trans2 directory search).
 ****************************************************************************/
 
-int reply_findclose(connection_struct *conn,
-		    char *inbuf,char *outbuf,int length,int bufsize)
+void reply_findclose(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
-	int dptr_num=SVALS(inbuf,smb_vwv0);
+	int dptr_num;
+
 	START_PROFILE(SMBfindclose);
+
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBfindclose);
+		return;
+	}
+
+	dptr_num = SVALS(req->inbuf,smb_vwv0);
 
 	DEBUG(3,("reply_findclose, dptr_num = %d\n", dptr_num));
 
 	dptr_close(&dptr_num);
 
-	outsize = set_message(inbuf, outbuf,0,0,False);
+	reply_outbuf(req, 0, 0);
 
 	DEBUG(3,("SMBfindclose dptr_num = %d\n", dptr_num));
 
 	END_PROFILE(SMBfindclose);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
  Reply to a SMBfindnclose (stop FINDNOTIFYFIRST directory search).
 ****************************************************************************/
 
-int reply_findnclose(connection_struct *conn, 
-		     char *inbuf,char *outbuf,int length,int bufsize)
+void reply_findnclose(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
-	int dptr_num= -1;
+	int dptr_num;
+
 	START_PROFILE(SMBfindnclose);
+
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBfindnclose);
+		return;
+	}
 	
-	dptr_num = SVAL(inbuf,smb_vwv0);
+	dptr_num = SVAL(req->inbuf,smb_vwv0);
 
 	DEBUG(3,("reply_findnclose, dptr_num = %d\n", dptr_num));
 
@@ -6854,12 +6866,12 @@ int reply_findnclose(connection_struct *conn,
 	   findnotifyfirst - so any dptr_num is ok here. 
 	   Just ignore it. */
 
-	outsize = set_message(inbuf, outbuf,0,0,False);
+	reply_outbuf(req, 0, 0);
 
 	DEBUG(3,("SMB_findnclose dptr_num = %d\n", dptr_num));
 
 	END_PROFILE(SMBfindnclose);
-	return(outsize);
+	return;
 }
 
 static void handle_trans2(connection_struct *conn, struct smb_request *req,
