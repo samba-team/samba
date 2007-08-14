@@ -5773,23 +5773,34 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_forma
 int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		   int length, int bufsize)
 {
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv2));
-	unsigned char locktype = CVAL(inbuf,smb_vwv3);
-	unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
-	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-	uint16 num_locks = SVAL(inbuf,smb_vwv7);
+	files_struct *fsp;
+	unsigned char locktype;
+	unsigned char oplocklevel;
+	uint16 num_ulocks;
+	uint16 num_locks;
 	SMB_BIG_UINT count = 0, offset = 0;
 	uint32 lock_pid;
-	int32 lock_timeout = IVAL(inbuf,smb_vwv4);
+	int32 lock_timeout;
 	int i;
 	char *data;
-	BOOL large_file_format =
-		(locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
+	BOOL large_file_format;
 	BOOL err;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	START_PROFILE(SMBlockingX);
+
+	if (CVAL(inbuf, smb_wct) < 8) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 	
+	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
+	locktype = CVAL(inbuf,smb_vwv3);
+	oplocklevel = CVAL(inbuf,smb_vwv3+1);
+	num_ulocks = SVAL(inbuf,smb_vwv6);
+	num_locks = SVAL(inbuf,smb_vwv7);
+	lock_timeout = IVAL(inbuf,smb_vwv4);
+	large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
+
 	CHECK_FSP(fsp,conn);
 	
 	data = smb_buf(inbuf);
