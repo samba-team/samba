@@ -3903,32 +3903,48 @@ void reply_close(connection_struct *conn, struct smb_request *req)
  Reply to a writeclose (Core+ protocol).
 ****************************************************************************/
 
-int reply_writeclose(connection_struct *conn,
-		     char *inbuf,char *outbuf, int size, int dum_buffsize)
+void reply_writeclose(connection_struct *conn, struct smb_request *req)
 {
 	size_t numtowrite;
 	ssize_t nwritten = -1;
-	int outsize = 0;
 	NTSTATUS close_status = NT_STATUS_OK;
 	SMB_OFF_T startpos;
 	char *data;
 	struct timespec mtime;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
+
 	START_PROFILE(SMBwriteclose);
 
-	CHECK_FSP(fsp,conn);
-	if (!CHECK_WRITE(fsp)) {
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	if (req->wct < 6) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBwriteclose);
+		return;
 	}
 
-	numtowrite = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
-	mtime = convert_time_t_to_timespec(srv_make_unix_date3(inbuf+smb_vwv4));
-	data = smb_buf(inbuf) + 1;
-  
-	if (numtowrite && is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
 		END_PROFILE(SMBwriteclose);
-		return ERROR_DOS(ERRDOS,ERRlock);
+		return;
+	}
+	if (!CHECK_WRITE(fsp)) {
+		reply_doserror(req, ERRDOS,ERRbadaccess);
+		END_PROFILE(SMBwriteclose);
+		return;
+	}
+
+	numtowrite = SVAL(req->inbuf,smb_vwv1);
+	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+	mtime = convert_time_t_to_timespec(srv_make_unix_date3(
+						   req->inbuf+smb_vwv4));
+	data = smb_buf(req->inbuf) + 1;
+  
+	if (numtowrite
+	    && is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)numtowrite,
+			 (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+		reply_doserror(req, ERRDOS,ERRlock);
+		END_PROFILE(SMBwriteclose);
+		return;
 	}
   
 	nwritten = write_file(fsp,data,startpos,numtowrite);
@@ -3951,20 +3967,22 @@ int reply_writeclose(connection_struct *conn,
 		 conn->num_files_open));
   
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
+		reply_doserror(req, ERRHRD, ERRdiskfull);
 		END_PROFILE(SMBwriteclose);
-		return(UNIXERROR(ERRHRD,ERRdiskfull));
+		return;
 	}
  
 	if(!NT_STATUS_IS_OK(close_status)) {
+		reply_nterror(req, close_status);
 		END_PROFILE(SMBwriteclose);
-		return ERROR_NT(close_status);
+		return;
 	}
- 
-	outsize = set_message(inbuf,outbuf,1,0,True);
+
+	reply_outbuf(req, 1, 0);
   
-	SSVAL(outbuf,smb_vwv0,nwritten);
+	SSVAL(req->outbuf,smb_vwv0,nwritten);
 	END_PROFILE(SMBwriteclose);
-	return(outsize);
+	return;
 }
 
 #undef DBGC_CLASS
