@@ -6430,28 +6430,40 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
  Reply to a SMBsetattrE.
 ****************************************************************************/
 
-int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
+void reply_setattrE(connection_struct *conn, struct smb_request *req)
 {
 	struct timespec ts[2];
-	int outsize = 0;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
+
 	START_PROFILE(SMBsetattrE);
 
-	outsize = set_message(inbuf,outbuf,0,0,False);
+	if (req->wct < 7) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBsetattrE);
+		return;
+	}
+
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
 	if(!fsp || (fsp->conn != conn)) {
+		reply_doserror(req, ERRDOS, ERRbadfid);
 		END_PROFILE(SMBsetattrE);
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		return;
 	}
+
 
 	/*
 	 * Convert the DOS times into unix times. Ignore create
 	 * time as UNIX can't set this.
 	 */
 
-	ts[0] = convert_time_t_to_timespec(srv_make_unix_date2(inbuf+smb_vwv3)); /* atime. */
-	ts[1] = convert_time_t_to_timespec(srv_make_unix_date2(inbuf+smb_vwv5)); /* mtime. */
+	ts[0] = convert_time_t_to_timespec(
+		srv_make_unix_date2(req->inbuf+smb_vwv3)); /* atime. */
+	ts[1] = convert_time_t_to_timespec(
+		srv_make_unix_date2(req->inbuf+smb_vwv5)); /* mtime. */
   
+	reply_outbuf(req, 0, 0);
+
 	/* 
 	 * Patch from Ray Frush <frush@engr.colostate.edu>
 	 * Sometimes times are sent as zero - ignore them.
@@ -6464,7 +6476,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 			dbgtext( "ignoring zero request - not setting timestamps of 0\n" );
 		}
 		END_PROFILE(SMBsetattrE);
-		return(outsize);
+		return;
 	} else if (!null_timespec(ts[0]) && null_timespec(ts[1])) {
 		/* set modify time = to access time if modify time was unset */
 		ts[1] = ts[0];
@@ -6473,8 +6485,9 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	/* Set the date on this file */
 	/* Should we set pending modtime here ? JRA */
 	if(file_ntimes(conn, fsp->fsp_name, ts)) {
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBsetattrE);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return;
 	}
   
 	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%u modtime=%u\n",
@@ -6483,7 +6496,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 		(unsigned int)ts[1].tv_sec));
 
 	END_PROFILE(SMBsetattrE);
-	return(outsize);
+	return;
 }
 
 
@@ -6699,25 +6712,33 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
  Reply to a SMBgetattrE.
 ****************************************************************************/
 
-int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
+void reply_getattrE(connection_struct *conn, struct smb_request *req)
 {
 	SMB_STRUCT_STAT sbuf;
-	int outsize = 0;
 	int mode;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
+
 	START_PROFILE(SMBgetattrE);
 
-	outsize = set_message(inbuf,outbuf,11,0,True);
+	if (req->wct < 1) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBgetattrE);
+		return;
+	}
+
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
 	if(!fsp || (fsp->conn != conn)) {
+		reply_doserror(req, ERRDOS, ERRbadfid);
 		END_PROFILE(SMBgetattrE);
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		return;
 	}
 
 	/* Do an fstat on this file */
 	if(fsp_stat(fsp, &sbuf)) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBgetattrE);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		return;
 	}
   
 	mode = dos_mode(conn,fsp->fsp_name,&sbuf);
@@ -6728,23 +6749,27 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	 * this.
 	 */
 
-	srv_put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
-	srv_put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
+	reply_outbuf(req, 11, 0);
+
+	srv_put_dos_date2((char *)req->outbuf, smb_vwv0,
+			  get_create_time(&sbuf,
+					  lp_fake_dir_create_times(SNUM(conn))));
+	srv_put_dos_date2((char *)req->outbuf, smb_vwv2, sbuf.st_atime);
 	/* Should we check pending modtime here ? JRA */
-	srv_put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
+	srv_put_dos_date2((char *)req->outbuf, smb_vwv4, sbuf.st_mtime);
 
 	if (mode & aDIR) {
-		SIVAL(outbuf,smb_vwv6,0);
-		SIVAL(outbuf,smb_vwv8,0);
+		SIVAL(req->outbuf, smb_vwv6, 0);
+		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {
 		uint32 allocation_size = get_allocation_size(conn,fsp, &sbuf);
-		SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
-		SIVAL(outbuf,smb_vwv8,allocation_size);
+		SIVAL(req->outbuf, smb_vwv6, (uint32)sbuf.st_size);
+		SIVAL(req->outbuf, smb_vwv8, allocation_size);
 	}
-	SSVAL(outbuf,smb_vwv10, mode);
+	SSVAL(req->outbuf,smb_vwv10, mode);
   
 	DEBUG( 3, ( "reply_getattrE fnum=%d\n", fsp->fnum));
   
 	END_PROFILE(SMBgetattrE);
-	return(outsize);
+	return;
 }
