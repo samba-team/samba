@@ -716,7 +716,7 @@ static const struct smb_message_struct {
 /* 0x17 */ { NULL, NULL, NULL, 0 },
 /* 0x18 */ { NULL, NULL, NULL, 0 },
 /* 0x19 */ { NULL, NULL, NULL, 0 },
-/* 0x1a */ { "SMBreadbraw",reply_readbraw,NULL,AS_USER},
+/* 0x1a */ { "SMBreadbraw",NULL,reply_readbraw,AS_USER},
 /* 0x1b */ { "SMBreadBmpx",reply_readbmpx,NULL,AS_USER},
 /* 0x1c */ { "SMBreadBs",NULL, NULL,0 },
 /* 0x1d */ { "SMBwritebraw",reply_writebraw,NULL,AS_USER},

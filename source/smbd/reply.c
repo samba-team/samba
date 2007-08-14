@@ -288,6 +288,7 @@ size_t srvstr_get_path(const char *inbuf, uint16 smb_flags2, char *dest,
  Check if we have a correct fsp pointing to a file. Replacement for the
  CHECK_FSP macro.
 ****************************************************************************/
+
 BOOL check_fsp(connection_struct *conn, struct smb_request *req,
 	       files_struct *fsp, struct current_user *user)
 {
@@ -2419,12 +2420,29 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 }
 
 /****************************************************************************
+ Return a readbraw error (4 bytes of zero).
+****************************************************************************/
+
+static void reply_readbraw_error(void)
+{
+	char header[4];
+	SIVAL(header,0,0);
+	if (write_data(smbd_server_fd(),header,4) != 4) {
+		fail_readraw();
+	}
+}
+
+/****************************************************************************
  Use sendfile in readbraw.
 ****************************************************************************/
 
-void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T startpos, size_t nread,
-		ssize_t mincount, char *outbuf, int out_buffsize)
+void send_file_readbraw(connection_struct *conn,
+			files_struct *fsp,
+			SMB_OFF_T startpos,
+			size_t nread,
+			ssize_t mincount)
 {
+	char *outbuf = NULL;
 	ssize_t ret=0;
 
 #if defined(WITH_SENDFILE)
@@ -2437,15 +2455,18 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 	if ( (chain_size == 0) && (nread > 0) &&
 	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
-		DATA_BLOB header;
+		char header[4];
+		DATA_BLOB header_blob;
 
-		_smb_setlen(outbuf,nread);
-		header.data = (uint8 *)outbuf;
-		header.length = 4;
-		header.free = NULL;
+		_smb_setlen(header,nread);
+		header_blob.data = (uint8 *)header;
+		header_blob.length = 4;
+		header_blob.free = NULL;
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, nread) == -1) {
-			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
+		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd,
+				&header_blob, startpos, nread) == -1) {
+			/* Returning ENOSYS means no data at all was sent.
+			 * Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_readbraw;
 			}
@@ -2479,6 +2500,14 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 normal_readbraw:
 
+	outbuf = TALLOC_ARRAY(NULL, char, nread+4);
+	if (!outbuf) {
+		DEBUG(0,("send_file_readbraw: TALLOC_ARRAY failed for size %u.\n",
+			nread+4));
+		reply_readbraw_error();
+		return;
+	}
+
 	if (nread > 0) {
 		ret = read_file(fsp,outbuf+4,startpos,nread);
 #if 0 /* mincount appears to be ignored in a W2K server. JRA. */
@@ -2493,23 +2522,34 @@ normal_readbraw:
 	_smb_setlen(outbuf,ret);
 	if (write_data(smbd_server_fd(),outbuf,4+ret) != 4+ret)
 		fail_readraw();
+
+	TALLOC_FREE(outbuf);
 }
 
 /****************************************************************************
  Reply to a readbraw (core+ protocol).
 ****************************************************************************/
 
-int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int out_buffsize)
+void reply_readbraw(connection_struct *conn, struct smb_request *req)
 {
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
-	char *header = outbuf;
 	files_struct *fsp;
+	SMB_STRUCT_STAT st;
+	SMB_OFF_T size = 0;
+
 	START_PROFILE(SMBreadbraw);
 
 	if (srv_is_signing_active()) {
-		exit_server_cleanly("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+		exit_server_cleanly("reply_readbraw: SMB signing is active - "
+			"raw reads/writes are disallowed.");
+	}
+
+	if (req->wct < 8) {
+		reply_readbraw_error();
+		END_PROFILE(SMBreadbraw);
+		return;
 	}
 
 	/*
@@ -2518,32 +2558,49 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	 * return a zero length response here.
 	 */
 
-	fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
+	/* 
+	 * We have to do a check_fsp by hand here, as
+	 * we must always return 4 zero bytes on error,
+	 * not a NTSTATUS.
+	 */
+
+	if (!fsp || !conn || conn != fsp->conn ||
+			current_user.vuid != fsp->vuid ||
+			fsp->is_directory || fsp->fh->fd == -1) {
 		/*
 		 * fsp could be NULL here so use the value from the packet. JRA.
 		 */
-		DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",(int)SVAL(inbuf,smb_vwv0)));
-		_smb_setlen(header,0);
-		if (write_data(smbd_server_fd(),header,4) != 4)
-			fail_readraw();
+		DEBUG(3,("reply_readbraw: fnum %d not valid "
+			"- cache prime?\n",
+			(int)SVAL(req->inbuf,smb_vwv0)));
+		reply_readbraw_error();
 		END_PROFILE(SMBreadbraw);
-		return(-1);
+		return;
 	}
 
-	CHECK_FSP(fsp,conn);
+	/* Do a "by hand" version of CHECK_READ. */
+	if (!(fsp->can_read ||
+			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) &&
+				(fsp->access_mask & FILE_EXECUTE)))) {
+		DEBUG(3,("reply_readbraw: fnum %d not readable.\n",
+				(int)SVAL(req->inbuf,smb_vwv0)));
+		reply_readbraw_error();
+		END_PROFILE(SMBreadbraw);
+		return;
+	}
 
 	flush_write_cache(fsp, READRAW_FLUSH);
 
-	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv1);
-	if(CVAL(inbuf,smb_wct) == 10) {
+	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv1);
+	if(CVAL(req->inbuf,smb_wct) == 10) {
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
 #ifdef LARGE_SMB_OFF_T
 
-		startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv8)) << 32);
+		startpos |= (((SMB_OFF_T)IVAL(req->inbuf,smb_vwv8)) << 32);
 
 #else /* !LARGE_SMB_OFF_T */
 
@@ -2551,46 +2608,51 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 		 * Ensure we haven't been sent a >32 bit offset.
 		 */
 
-		if(IVAL(inbuf,smb_vwv8) != 0) {
-			DEBUG(0,("readbraw - large offset (%x << 32) used and we don't support \
-64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv8) ));
-			_smb_setlen(header,0);
-			if (write_data(smbd_server_fd(),header,4) != 4)
-				fail_readraw();
+		if(IVAL(req->inbuf,smb_vwv8) != 0) {
+			DEBUG(0,("reply_readbraw: large offset "
+				"(%x << 32) used and we don't support "
+				"64 bit offsets.\n",
+			(unsigned int)IVAL(req->inbuf,smb_vwv8) ));
+			reply_readbraw_error();
 			END_PROFILE(SMBreadbraw);
-			return(-1);
+			return;
 		}
 
 #endif /* LARGE_SMB_OFF_T */
 
 		if(startpos < 0) {
-			DEBUG(0,("readbraw - negative 64 bit readraw offset (%.0f) !\n", (double)startpos ));
-			_smb_setlen(header,0);
-			if (write_data(smbd_server_fd(),header,4) != 4)
-				fail_readraw();
+			DEBUG(0,("reply_readbraw: negative 64 bit "
+				"readraw offset (%.0f) !\n",
+				(double)startpos ));
+			reply_readbraw_error();
 			END_PROFILE(SMBreadbraw);
-			return(-1);
+			return;
 		}      
 	}
-	maxcount = (SVAL(inbuf,smb_vwv3) & 0xFFFF);
-	mincount = (SVAL(inbuf,smb_vwv4) & 0xFFFF);
+
+	maxcount = (SVAL(req->inbuf,smb_vwv3) & 0xFFFF);
+	mincount = (SVAL(req->inbuf,smb_vwv4) & 0xFFFF);
 
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
 
-	if (!is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
-		SMB_STRUCT_STAT st;
-		SMB_OFF_T size = 0;
-  
-		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
-			size = st.st_size;
-		}
+	if (is_locked(fsp,(uint32)req->smbpid,
+			(SMB_BIG_UINT)maxcount,
+			(SMB_BIG_UINT)startpos,
+			READ_LOCK)) {
+		reply_readbraw_error();
+		END_PROFILE(SMBreadbraw);
+		return;
+	}
 
-		if (startpos >= size) {
-			nread = 0;
-		} else {
-			nread = MIN(maxcount,(size - startpos));	  
-		}
+	if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
+		size = st.st_size;
+	}
+
+	if (startpos >= size) {
+		nread = 0;
+	} else {
+		nread = MIN(maxcount,(size - startpos));	  
 	}
 
 #if 0 /* mincount appears to be ignored in a W2K server. JRA. */
@@ -2598,14 +2660,17 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 		nread = 0;
 #endif
   
-	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%lu min=%lu nread=%lu\n", fsp->fnum, (double)startpos,
-				(unsigned long)maxcount, (unsigned long)mincount, (unsigned long)nread ) );
+	DEBUG( 3, ( "reply_readbraw: fnum=%d start=%.0f max=%lu "
+		"min=%lu nread=%lu\n",
+		fsp->fnum, (double)startpos,
+		(unsigned long)maxcount,
+		(unsigned long)mincount,
+		(unsigned long)nread ) );
   
-	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf, out_buffsize);
+	send_file_readbraw(conn, fsp, startpos, nread, mincount);
 
-	DEBUG(5,("readbraw finished\n"));
+	DEBUG(5,("reply_readbraw finished\n"));
 	END_PROFILE(SMBreadbraw);
-	return -1;
 }
 
 #undef DBGC_CLASS
