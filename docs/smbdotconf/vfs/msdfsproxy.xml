@@ -14,5 +14,5 @@
 	options to find out how to set up a Dfs root share.</para>
 </description>
 
-<value type="example">\\otherserver\someshare</value>
+<value type="example">\otherserver\someshare</value>
 </samba:parameter>
