@@ -2547,7 +2547,14 @@ static int net_ads_kerberos_pac(int argc, const char **argv)
 	status = kerberos_return_pac(mem_ctx,
 				     opt_user_name,
 				     opt_password,
-				     0, &pac);
+			     	     0,
+				     NULL,
+				     NULL,
+				     NULL,
+				     True,
+				     True,
+				     2592000, /* one month */
+				     &pac);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to query kerberos PAC: %s\n",
 			nt_errstr(status));
