@@ -708,7 +708,7 @@ static const struct smb_message_struct {
 /* 0x0f */ { "SMBmknew",NULL,reply_mknew,AS_USER},
 /* 0x10 */ { "SMBcheckpath",NULL,reply_checkpath,AS_USER},
 /* 0x11 */ { "SMBexit",NULL,reply_exit,DO_CHDIR},
-/* 0x12 */ { "SMBlseek",reply_lseek,NULL,AS_USER},
+/* 0x12 */ { "SMBlseek",NULL,reply_lseek,AS_USER},
 /* 0x13 */ { "SMBlockread",reply_lockread,NULL,AS_USER},
 /* 0x14 */ { "SMBwriteunlock",reply_writeunlock,NULL,AS_USER},
 /* 0x15 */ { NULL, NULL, NULL, 0 },

@@ -3636,22 +3636,32 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
  Reply to a lseek.
 ****************************************************************************/
 
-int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
+void reply_lseek(connection_struct *conn, struct smb_request *req)
 {
 	SMB_OFF_T startpos;
 	SMB_OFF_T res= -1;
 	int mode,umode;
-	int outsize = 0;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
+
 	START_PROFILE(SMBlseek);
 
-	CHECK_FSP(fsp,conn);
+	if (req->wct < 4) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBlseek);
+		return;
+	}
+
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		return;
+	}
 
 	flush_write_cache(fsp, SEEK_FLUSH);
 
-	mode = SVAL(inbuf,smb_vwv1) & 3;
+	mode = SVAL(req->inbuf,smb_vwv1) & 3;
 	/* NB. This doesn't use IVAL_TO_SMB_OFF_T as startpos can be signed in this case. */
-	startpos = (SMB_OFF_T)IVALS(inbuf,smb_vwv2);
+	startpos = (SMB_OFF_T)IVALS(req->inbuf,smb_vwv2);
 
 	switch (mode) {
 		case 0:
@@ -3678,8 +3688,10 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				SMB_STRUCT_STAT sbuf;
 
 				if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+					reply_unixerror(req, ERRDOS,
+							ERRnoaccess);
 					END_PROFILE(SMBlseek);
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
+					return;
 				}
 
 				current_pos += sbuf.st_size;
@@ -3689,21 +3701,22 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		}
 
 		if(res == -1) {
+			reply_unixerror(req, ERRDOS, ERRnoaccess);
 			END_PROFILE(SMBlseek);
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
+			return;
 		}
 	}
 
 	fsp->fh->pos = res;
-  
-	outsize = set_message(inbuf,outbuf,2,0,True);
-	SIVAL(outbuf,smb_vwv0,res);
+
+	reply_outbuf(req, 2, 0);
+	SIVAL(req->outbuf,smb_vwv0,res);
   
 	DEBUG(3,("lseek fnum=%d ofs=%.0f newpos = %.0f mode=%d\n",
 		fsp->fnum, (double)startpos, (double)res, mode));
 
 	END_PROFILE(SMBlseek);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
