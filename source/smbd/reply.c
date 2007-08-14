@@ -1149,7 +1149,7 @@ void reply_dskattr(connection_struct *conn, struct smb_request *req)
  Can be called from SMBsearch, SMBffirst or SMBfunique.
 ****************************************************************************/
 
-int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_search(connection_struct *conn, struct smb_request *req)
 {
 	pstring mask;
 	pstring directory;
@@ -1158,7 +1158,6 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	uint32 mode;
 	time_t date;
 	uint32 dirtype;
-	int outsize = 0;
 	unsigned int numentries = 0;
 	unsigned int maxentries = 0;
 	BOOL finished = False;
@@ -1171,41 +1170,55 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	BOOL expect_close = False;
 	NTSTATUS nt_status;
 	BOOL mask_contains_wcard = False;
-	BOOL allow_long_path_components = (SVAL(inbuf,smb_flg2) & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
+	BOOL allow_long_path_components = (req->flags2 & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 
 	START_PROFILE(SMBsearch);
 
-	if (lp_posix_pathnames()) {
+	if (req->wct < 2) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsearch);
-		return reply_unknown(inbuf, outbuf);
+		return;
+	}
+
+	if (lp_posix_pathnames()) {
+		reply_unknown_new(req, CVAL(req->inbuf, smb_com));
+		END_PROFILE(SMBsearch);
+		return;
 	}
 
 	*mask = *directory = *fname = 0;
 
 	/* If we were called as SMBffirst then we must expect close. */
-	if(CVAL(inbuf,smb_com) == SMBffirst) {
+	if(CVAL(req->inbuf,smb_com) == SMBffirst) {
 		expect_close = True;
 	}
-  
-	outsize = set_message(inbuf,outbuf,1,3,True);
-	maxentries = SVAL(inbuf,smb_vwv0); 
-	dirtype = SVAL(inbuf,smb_vwv1);
-	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), path, p,
+
+	reply_outbuf(req, 1, 3);
+	maxentries = SVAL(req->inbuf,smb_vwv0);
+	dirtype = SVAL(req->inbuf,smb_vwv1);
+	p = smb_buf(req->inbuf) + 1;
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, path, p,
 				   sizeof(path), 0, STR_TERMINATE, &nt_status,
 				   &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		reply_nterror(req, nt_status);
 		END_PROFILE(SMBsearch);
-		return ERROR_NT(nt_status);
+		return;
 	}
 
-	nt_status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, path, &mask_contains_wcard);
+	nt_status = resolve_dfspath_wcard(conn,
+					  req->flags2 & FLAGS2_DFS_PATHNAMES,
+					  path, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		END_PROFILE(SMBsearch);
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBsearch);
+			return;
 		}
-		return ERROR_NT(nt_status);
+		reply_nterror(req, nt_status);
+		END_PROFILE(SMBsearch);
+		return;
 	}
   
 	p++;
@@ -1220,14 +1233,16 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		pstrcpy(directory,path);
 		nt_status = unix_convert(conn, directory, True, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(nt_status)) {
+			reply_nterror(req, nt_status);
 			END_PROFILE(SMBsearch);
-			return ERROR_NT(nt_status);
+			return;
 		}
 
 		nt_status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(nt_status)) {
+			reply_nterror(req, nt_status);
 			END_PROFILE(SMBsearch);
-			return ERROR_NT(nt_status);
+			return;
 		}
 
 		p = strrchr_m(directory,'/');
@@ -1266,20 +1281,20 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		mask_contains_wcard = ms_has_wild(mask);
 	}
 
-	p = smb_buf(outbuf) + 3;
-     
 	if (status_len == 0) {
 		nt_status = dptr_create(conn,
 					directory,
 					True,
 					expect_close,
-					SVAL(inbuf,smb_pid),
+					req->smbpid,
 					mask,
 					mask_contains_wcard,
 					dirtype,
 					&conn->dirptr);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			return ERROR_NT(nt_status);
+			reply_nterror(req, nt_status);
+			END_PROFILE(SMBsearch);
+			return;
 		}
 		dptr_num = dptr_dnum(conn->dirptr);
 	} else {
@@ -1288,20 +1303,31 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	DEBUG(4,("dptr_num is %d\n",dptr_num));
 
-	if ((dirtype&0x1F) == aVOLID) {	  
-		memcpy(p,status,21);
-		make_dir_struct(p,"???????????",volume_label(SNUM(conn)),
+	if ((dirtype&0x1F) == aVOLID) {
+		char buf[DIR_STRUCT_SIZE];
+		memcpy(buf,status,21);
+		make_dir_struct(buf,"???????????",volume_label(SNUM(conn)),
 				0,aVOLID,0,!allow_long_path_components);
-		dptr_fill(p+12,dptr_num);
-		if (dptr_zero(p+12) && (status_len==0)) {
+		dptr_fill(buf+12,dptr_num);
+		if (dptr_zero(buf+12) && (status_len==0)) {
 			numentries = 1;
 		} else {
 			numentries = 0;
 		}
-		p += DIR_STRUCT_SIZE;
+		if (message_push_blob(&req->outbuf,
+				      data_blob_const(buf, sizeof(buf)))
+		    == -1) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsearch);
+			return;
+		}
 	} else {
 		unsigned int i;
-		maxentries = MIN(maxentries, ((BUFFER_SIZE - (p - outbuf))/DIR_STRUCT_SIZE));
+		maxentries = MIN(
+			maxentries,
+			((BUFFER_SIZE -
+			  ((uint8 *)smb_buf(req->outbuf) + 3 - req->outbuf))
+			 /DIR_STRUCT_SIZE));
 
 		DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
 			conn->dirpath,lp_dontdescend(SNUM(conn))));
@@ -1312,14 +1338,21 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		for (i=numentries;(i<maxentries) && !finished;i++) {
 			finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
 			if (!finished) {
-				memcpy(p,status,21);
-				make_dir_struct(p,mask,fname,size, mode,date,
+				char buf[DIR_STRUCT_SIZE];
+				memcpy(buf,status,21);
+				make_dir_struct(buf,mask,fname,size, mode,date,
 						!allow_long_path_components);
-				if (!dptr_fill(p+12,dptr_num)) {
+				if (!dptr_fill(buf+12,dptr_num)) {
 					break;
 				}
+				if (message_push_blob(&req->outbuf,
+						      data_blob_const(buf, sizeof(buf)))
+				    == -1) {
+					reply_nterror(req, NT_STATUS_NO_MEMORY);
+					END_PROFILE(SMBsearch);
+					return;
+				}
 				numentries++;
-				p += DIR_STRUCT_SIZE;
 			}
 		}
 	}
@@ -1338,49 +1371,51 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
-	if(dptr_num >= 0 && CVAL(inbuf,smb_com) == SMBfunique) {
+	if(dptr_num >= 0 && CVAL(req->inbuf,smb_com) == SMBfunique) {
 		dptr_close(&dptr_num);
 	}
 
 	if ((numentries == 0) && !mask_contains_wcard) {
-		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
+		reply_botherror(req, STATUS_NO_MORE_FILES, ERRDOS, ERRnofiles);
+		END_PROFILE(SMBsearch);
+		return;
 	}
 
-	SSVAL(outbuf,smb_vwv0,numentries);
-	SSVAL(outbuf,smb_vwv1,3 + numentries * DIR_STRUCT_SIZE);
-	SCVAL(smb_buf(outbuf),0,5);
-	SSVAL(smb_buf(outbuf),1,numentries*DIR_STRUCT_SIZE);
+	SSVAL(req->outbuf,smb_vwv0,numentries);
+	SSVAL(req->outbuf,smb_vwv1,3 + numentries * DIR_STRUCT_SIZE);
+	SCVAL(smb_buf(req->outbuf),0,5);
+	SSVAL(smb_buf(req->outbuf),1,numentries*DIR_STRUCT_SIZE);
 
 	/* The replies here are never long name. */
-	SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) & (~FLAGS2_IS_LONG_NAME));
+	SSVAL(req->outbuf, smb_flg2,
+	      SVAL(req->outbuf, smb_flg2) & (~FLAGS2_IS_LONG_NAME));
 	if (!allow_long_path_components) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) & (~FLAGS2_LONG_PATH_COMPONENTS));
+		SSVAL(req->outbuf, smb_flg2,
+		      SVAL(req->outbuf, smb_flg2)
+		      & (~FLAGS2_LONG_PATH_COMPONENTS));
 	}
 
 	/* This SMB *always* returns ASCII names. Remove the unicode bit in flags2. */
-	SSVAL(outbuf,smb_flg2, (SVAL(outbuf, smb_flg2) & (~FLAGS2_UNICODE_STRINGS)));
+	SSVAL(req->outbuf, smb_flg2,
+	      (SVAL(req->outbuf, smb_flg2) & (~FLAGS2_UNICODE_STRINGS)));
 	  
-	outsize += DIR_STRUCT_SIZE*numentries;
-	smb_setlen(inbuf,outbuf,outsize - 4);
-  
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory, sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
 	DEBUG( 4, ( "%s mask=%s path=%s dtype=%d nument=%u of %u\n",
-		smb_fn_name(CVAL(inbuf,smb_com)), 
+		smb_fn_name(CVAL(req->inbuf,smb_com)),
 		mask, directory, dirtype, numentries, maxentries ) );
 
 	END_PROFILE(SMBsearch);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
  Reply to a fclose (stop directory search).
 ****************************************************************************/
 
-int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_fclose(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	int status_len;
 	pstring path;
 	char status[21];
@@ -1392,26 +1427,28 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	START_PROFILE(SMBfclose);
 
 	if (lp_posix_pathnames()) {
+		reply_unknown_new(req, CVAL(req->inbuf, smb_com));
 		END_PROFILE(SMBfclose);
-		return reply_unknown(inbuf, outbuf);
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,1,0,True);
-	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), path, p,
+	p = smb_buf(req->inbuf) + 1;
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, path, p,
 				   sizeof(path), 0, STR_TERMINATE, &err,
 				   &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(err)) {
+		reply_nterror(req, err);
 		END_PROFILE(SMBfclose);
-		return ERROR_NT(err);
+		return;
 	}
 	p++;
 	status_len = SVAL(p,0);
 	p += 2;
 
 	if (status_len == 0) {
+		reply_doserror(req, ERRSRV, ERRsrverror);
 		END_PROFILE(SMBfclose);
-		return ERROR_DOS(ERRSRV,ERRsrverror);
+		return;
 	}
 
 	memcpy(status,p,21);
@@ -1421,12 +1458,13 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		dptr_close(&dptr_num);
 	}
 
-	SSVAL(outbuf,smb_vwv0,0);
+	reply_outbuf(req, 1, 0);
+	SSVAL(req->outbuf,smb_vwv0,0);
 
 	DEBUG(3,("search close\n"));
 
 	END_PROFILE(SMBfclose);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
