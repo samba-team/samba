@@ -4033,37 +4033,50 @@ void reply_lock(connection_struct *conn, struct smb_request *req)
  Reply to a unlock.
 ****************************************************************************/
 
-int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, 
-		 int dum_buffsize)
+void reply_unlock(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = set_message(inbuf,outbuf,0,0,False);
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
+
 	START_PROFILE(SMBunlock);
 
-	CHECK_FSP(fsp,conn);
+	if (req->wct < 5) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBunlock);
+		return;
+	}
+
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBunlock);
+		return;
+	}
 	
-	count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
-	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
+	count = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv1);
+	offset = (SMB_BIG_UINT)IVAL(req->inbuf,smb_vwv3);
 	
 	status = do_unlock(smbd_messaging_context(),
 			fsp,
-			(uint32)SVAL(inbuf,smb_pid),
+			req->smbpid,
 			count,
 			offset,
 			WINDOWS_LOCK);
 
 	if (NT_STATUS_V(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBunlock);
-		return ERROR_NT(status);
+		return;
 	}
 
 	DEBUG( 3, ( "unlock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		    fsp->fh->fd, fsp->fnum, (double)offset, (double)count ) );
-	
+
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBunlock);
-	return(outsize);
+	return;
 }
 
 #undef DBGC_CLASS
