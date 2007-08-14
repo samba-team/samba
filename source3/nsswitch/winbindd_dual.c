@@ -758,8 +758,7 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 	} else {
 		result = methods->lockout_policy(child->domain, mem_ctx, &lockout_policy);
 	}
-
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("account_lockout_policy_handler: lockout_policy failed error %s\n",
