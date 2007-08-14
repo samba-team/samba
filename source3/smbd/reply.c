@@ -5640,9 +5640,8 @@ NTSTATUS copy_file(connection_struct *conn,
  Reply to a file copy.
 ****************************************************************************/
 
-int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_copy(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	pstring name;
 	pstring directory;
 	pstring mask,newname;
@@ -5650,32 +5649,45 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	int count=0;
 	int error = ERRnoaccess;
 	int err = 0;
-	int tid2 = SVAL(inbuf,smb_vwv0);
-	int ofun = SVAL(inbuf,smb_vwv1);
-	int flags = SVAL(inbuf,smb_vwv2);
+	int tid2;
+	int ofun;
+	int flags;
 	BOOL target_is_directory=False;
 	BOOL source_has_wild = False;
 	BOOL dest_has_wild = False;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	NTSTATUS status;
+
 	START_PROFILE(SMBcopy);
+
+	if (req->wct < 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBcopy);
+		return;
+	}
+
+	tid2 = SVAL(req->inbuf,smb_vwv0);
+	ofun = SVAL(req->inbuf,smb_vwv1);
+	flags = SVAL(req->inbuf,smb_vwv2);
 
 	*directory = *mask = 0;
 
-	p = smb_buf(inbuf);
-	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), name, p,
+	p = smb_buf(req->inbuf);
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, name, p,
 				   sizeof(name), 0, STR_TERMINATE, &status,
 				   &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
-		return ERROR_NT(status);
+		return;
 	}
-	p += srvstr_get_path_wcard(inbuf, SVAL(inbuf,smb_flg2), newname, p,
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, newname, p,
 				   sizeof(newname), 0, STR_TERMINATE, &status,
 				   &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
-		return ERROR_NT(status);
+		return;
 	}
    
 	DEBUG(3,("reply_copy : %s -> %s\n",name,newname));
@@ -5683,57 +5695,75 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	if (tid2 != conn->cnum) {
 		/* can't currently handle inter share copies XXXX */
 		DEBUG(3,("Rejecting inter-share copy\n"));
+		reply_doserror(req, ERRSRV, ERRinvdevice);
 		END_PROFILE(SMBcopy);
-		return ERROR_DOS(ERRSRV,ERRinvdevice);
+		return;
 	}
 
-	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, name, &source_has_wild);
+	status = resolve_dfspath_wcard(conn,
+				       req->flags2 & FLAGS2_DFS_PATHNAMES,
+				       name, &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBcopy);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBcopy);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBcopy);
+		return;
 	}
 
-	status = resolve_dfspath_wcard(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newname, &dest_has_wild);
+	status = resolve_dfspath_wcard(conn,
+				       req->flags2 & FLAGS2_DFS_PATHNAMES,
+				       newname, &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBcopy);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBcopy);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBcopy);
+		return;
 	}
 
 	status = unix_convert(conn, name, source_has_wild, NULL, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
-		return ERROR_NT(status);
+		return;
 	}
 
 	status = unix_convert(conn, newname, dest_has_wild, NULL, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
-		return ERROR_NT(status);
+		return;
 	}
 
 	target_is_directory = VALID_STAT_OF_DIR(sbuf2);
 
 	if ((flags&1) && target_is_directory) {
+		reply_doserror(req, ERRDOS, ERRbadfile);
 		END_PROFILE(SMBcopy);
-		return ERROR_DOS(ERRDOS,ERRbadfile);
+		return;
 	}
 
 	if ((flags&2) && !target_is_directory) {
+		reply_doserror(req, ERRDOS, ERRbadpath);
 		END_PROFILE(SMBcopy);
-		return ERROR_DOS(ERRDOS,ERRbadpath);
+		return;
 	}
 
 	if ((flags&(1<<5)) && VALID_STAT_OF_DIR(sbuf1)) {
 		/* wants a tree copy! XXXX */
 		DEBUG(3,("Rejecting tree copy\n"));
+		reply_doserror(req, ERRSRV, ERRerror);
 		END_PROFILE(SMBcopy);
-		return ERROR_DOS(ERRSRV,ERRerror);
+		return;
 	}
 
 	p = strrchr_m(name,'/');
@@ -5764,27 +5794,33 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		pstrcat(directory,mask);
 		if (dest_has_wild) {
 			if (!resolve_wildcards(directory,newname)) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
-				return ERROR_NT(NT_STATUS_NO_MEMORY);
+				return;
 			}
 		}
 
 		status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			END_PROFILE(SMBcopy);
+			return;
 		}
 		
 		status = check_name(conn, newname);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			END_PROFILE(SMBcopy);
+			return;
 		}
 		
 		status = copy_file(conn,directory,newname,ofun,
 					count,target_is_directory);
 
 		if(!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
 			END_PROFILE(SMBcopy);
-			return ERROR_NT(status);
+			return;
 		} else {
 			count++;
 		}
@@ -5799,13 +5835,17 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 		status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(status)) {
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			END_PROFILE(SMBcopy);
+			return;
 		}
 		
 		dir_hnd = OpenDir(conn, directory, mask, 0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			END_PROFILE(SMBcopy);
+			return;
 		}
 
 		error = ERRbadfile;
@@ -5831,12 +5871,16 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
+				reply_nterror(req, status);
+				END_PROFILE(SMBcopy);
+				return;
 			}
 		
 			status = check_name(conn, destname);
 			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
+				reply_nterror(req, status);
+				END_PROFILE(SMBcopy);
+				return;
 			}
 		
 			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname, destname));
@@ -5854,19 +5898,21 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		if(err) {
 			/* Error on close... */
 			errno = err;
+			reply_unixerror(req, ERRHRD, ERRgeneral);
 			END_PROFILE(SMBcopy);
-			return(UNIXERROR(ERRHRD,ERRgeneral));
+			return;
 		}
 
+		reply_doserror(req, ERRDOS, error);
 		END_PROFILE(SMBcopy);
-		return ERROR_DOS(ERRDOS,error);
+		return;
 	}
-  
-	outsize = set_message(inbuf,outbuf,1,0,True);
-	SSVAL(outbuf,smb_vwv0,count);
+
+	reply_outbuf(req, 1, 0);
+	SSVAL(req->outbuf,smb_vwv0,count);
 
 	END_PROFILE(SMBcopy);
-	return(outsize);
+	return;
 }
 
 #undef DBGC_CLASS
