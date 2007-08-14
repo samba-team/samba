@@ -962,6 +962,12 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     const char *name,
 			     const char *pass,
 			     time_t time_offset,
+			     time_t *expire_time,
+			     time_t *renew_till_time,
+			     const char *cache_name,
+			     BOOL request_pac,
+			     BOOL add_netbios_addr,
+			     time_t renewable_time,
 			     PAC_DATA **pac_ret)
 {
 	krb5_error_code ret;
@@ -982,6 +988,10 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (cache_name) {
+		cc = cache_name;
+	}
+
 	if (!strchr_m(name, '@')) {
 		auth_princ = talloc_asprintf(mem_ctx, "%s@%s", name,
 			lp_realm());
@@ -997,17 +1007,40 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	ret = kerberos_kinit_password_ext(auth_princ,
 					  pass,
 					  time_offset,
-					  NULL,
-					  NULL,
+					  expire_time,
+					  renew_till_time,
 					  cc,
-					  True,
-					  True,
-					  0,
+					  request_pac,
+					  add_netbios_addr,
+					  renewable_time,
 					  &status);
 	if (ret) {
+		DEBUG(1,("kinit failed for '%s' with: %s (%d)\n",
+			auth_princ, error_message(ret), ret));
 		/* status already set */
 		goto out;
 	}
+
+	DEBUG(10,("got TGT for %s in %s\n", auth_princ, cc));
+	if (expire_time) {
+		DEBUGADD(10,("\tvalid until: %s (%d)\n",
+			http_timestring(*expire_time),
+			(int)*expire_time));
+	}
+	if (renew_till_time) {
+		DEBUGADD(10,("\trenewable till: %s (%d)\n",
+			http_timestring(*renew_till_time),
+			(int)*renew_till_time));
+	}
+
+	/* we cannot continue with krb5 when UF_DONT_REQUIRE_PREAUTH is set,
+	 * in that case fallback to NTLM - gd */
+
+	if (expire_time && renew_till_time &&
+	    (*expire_time == 0) && (*renew_till_time == 0)) {
+		return NT_STATUS_INVALID_LOGON_TYPE;
+	}
+
 
 	ret = cli_krb5_get_ticket(local_service,
 				  time_offset,
@@ -1017,6 +1050,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 				  cc,
 				  NULL);
 	if (ret) {
+		DEBUG(1,("failed to get ticket for %s: %s\n",
+			local_service, error_message(ret)));
 		status = krb5_to_nt_status(ret);
 		goto out;
 	}
@@ -1031,10 +1066,13 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 				   &sesskey2,
 				   False);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("ads_verify_ticket failed: %s\n",
+			nt_errstr(status)));
 		goto out;
 	}
 
 	if (!pac_data) {
+		DEBUG(1,("no PAC\n"));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
@@ -1042,7 +1080,9 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	*pac_ret = pac_data;
 
 out:
-	ads_kdestroy(cc);
+	if (cc != cache_name) {
+		ads_kdestroy(cc);
+	}
 
 	data_blob_free(&tkt);
 	data_blob_free(&ap_rep);
@@ -1061,6 +1101,12 @@ static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
 					       const char *name,
 					       const char *pass,
 					       time_t time_offset,
+					       time_t *expire_time,
+					       time_t *renew_till_time,
+					       const char *cache_name,
+					       BOOL request_pac,
+					       BOOL add_netbios_addr,
+					       time_t renewable_time,
 					       PAC_LOGON_INFO **logon_info)
 {
 	NTSTATUS status;
@@ -1071,17 +1117,25 @@ static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
 				     name,
 				     pass,
 				     time_offset,
+				     expire_time,
+				     renew_till_time,
+				     cache_name,
+				     request_pac,
+				     add_netbios_addr,
+				     renewable_time,
 				     &pac_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	if (!pac_data) {
+		DEBUG(3,("no pac\n"));
 		return NT_STATUS_INVALID_USER_BUFFER;
 	}
 
 	info = get_logon_info_from_pac(pac_data);
 	if (!info) {
+		DEBUG(1,("no logon_info\n"));
 		return NT_STATUS_INVALID_USER_BUFFER;
 	}
 
@@ -1097,6 +1151,12 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					const char *name,
 					const char *pass,
 					time_t time_offset,
+					time_t *expire_time,
+					time_t *renew_till_time,
+					const char *cache_name,
+					BOOL request_pac,
+					BOOL add_netbios_addr,
+					time_t renewable_time,
 					NET_USER_INFO_3 **info3)
 {
 	NTSTATUS status;
@@ -1106,6 +1166,12 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 						name,
 						pass,
 						time_offset,
+						expire_time,
+						renew_till_time,
+						cache_name,
+						request_pac,
+						add_netbios_addr,
+						renewable_time,
 						&logon_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
