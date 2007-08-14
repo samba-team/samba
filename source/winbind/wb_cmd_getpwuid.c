@@ -117,6 +117,7 @@ static void cmd_getpwuid_recv_domain(struct composite_context *ctx)
 	/* We need the workgroup later, so copy it  */
 	state->workgroup = talloc_strdup(state,
 			state->domain->libnet_ctx->samr.name);
+	if (composite_nomem(state->workgroup, state->ctx)) return;
 
 	ctx = libnet_UserInfo_send(state->domain->libnet_ctx, state, user_info,
 			NULL);
