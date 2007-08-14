@@ -1,18 +1,18 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
  *  Copyright (C) Guenther Deschner 2007
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -70,7 +70,7 @@ static BOOL gpo_sd_check_agp_object(const SEC_ACE *ace)
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_agp_access_bits(uint32 access_mask)
+static BOOL gpo_sd_check_agp_access_bits(uint32_t access_mask)
 {
 	return (access_mask & SEC_RIGHTS_EXTENDED);
 }
@@ -79,9 +79,9 @@ static BOOL gpo_sd_check_agp_access_bits(uint32 access_mask)
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_read_access_bits(uint32 access_mask)
+static BOOL gpo_sd_check_read_access_bits(uint32_t access_mask)
 {
-	uint32 read_bits = SEC_RIGHTS_LIST_CONTENTS |
+	uint32_t read_bits = SEC_RIGHTS_LIST_CONTENTS |
 			   SEC_RIGHTS_READ_ALL_PROP |
 			   SEC_RIGHTS_READ_PERMS;
 
@@ -92,13 +92,14 @@ static BOOL gpo_sd_check_read_access_bits(uint32 access_mask)
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace, 
-					       const struct nt_user_token *token) 
+static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace,
+					       const struct nt_user_token *token)
 {
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
 	    nt_token_check_sid(&ace->trustee, token)) {
-		DEBUG(10,("gpo_sd_check_ace_denied_object: Access denied as of ace for %s\n", 
+		DEBUG(10,("gpo_sd_check_ace_denied_object: "
+			"Access denied as of ace for %s\n",
 			sid_string_static(&ace->trustee)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -109,13 +110,14 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace, 
-						const struct nt_user_token *token) 
+static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace,
+						const struct nt_user_token *token)
 {
 	if (gpo_sd_check_agp_object(ace) &&
-	    gpo_sd_check_agp_access_bits(ace->access_mask) && 
+	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
 	    nt_token_check_sid(&ace->trustee, token)) {
-		DEBUG(10,("gpo_sd_check_ace_allowed_object: Access granted as of ace for %s\n", 
+		DEBUG(10,("gpo_sd_check_ace_allowed_object: "
+			"Access granted as of ace for %s\n",
 			sid_string_static(&ace->trustee)));
 		return NT_STATUS_OK;
 	}
@@ -126,8 +128,8 @@ static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS gpo_sd_check_ace(const SEC_ACE *ace, 
-				 const struct nt_user_token *token) 
+static NTSTATUS gpo_sd_check_ace(const SEC_ACE *ace,
+				 const struct nt_user_token *token)
 {
 	switch (ace->type) {
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
@@ -142,7 +144,7 @@ static NTSTATUS gpo_sd_check_ace(const SEC_ACE *ace,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo, 
+NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
 				      const struct nt_user_token *token)
 {
 	SEC_DESC *sd = gpo->security_descriptor;
