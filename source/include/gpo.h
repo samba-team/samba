@@ -1,22 +1,21 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
- *  Copyright (C) Guenther Deschner 2005
- *  
+ *  Copyright (C) Guenther Deschner 2005-2007
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-
 
 enum GPO_LINK_TYPE {
 	GP_LINK_UNKOWN	= 0,
@@ -38,8 +37,8 @@ enum GPO_LINK_TYPE {
 #define GPO_VERSION_MACHINE(x) (x & 0xffff)
 
 struct GROUP_POLICY_OBJECT {
-	uint32 options;	/* GPFLAGS_* */ 
-	uint32 version;
+	uint32_t options;	/* GPFLAGS_* */
+	uint32_t version;
 	const char *ds_path;
 	const char *file_sys_path;
 	const char *display_name;
@@ -76,15 +75,15 @@ enum GPO_INHERIT {
 
 struct GP_LINK {
 	const char *gp_link;	/* raw link name */
-	uint32 gp_opts;		/* inheritance options GPO_INHERIT */
-	uint32 num_links;	/* number of links */
+	uint32_t gp_opts;		/* inheritance options GPO_INHERIT */
+	uint32_t num_links;	/* number of links */
 	char **link_names;	/* array of parsed link names */
-	uint32 *link_opts;	/* array of parsed link opts GPO_LINK_OPT_* */
+	uint32_t *link_opts;	/* array of parsed link opts GPO_LINK_OPT_* */
 };
 
 struct GP_EXT {
 	const char *gp_extension;	/* raw extension name */
-	uint32 num_exts;
+	uint32_t num_exts;
 	char **extensions;
 	char **extensions_guid;
 	char **snapins;
@@ -93,3 +92,7 @@ struct GP_EXT {
 
 #define GPO_CACHE_DIR "gpo_cache"
 #define GPT_INI "GPT.INI"
+
+#define GP_EXT_SECURITY "827D319E-6EAC-11D2-A4EA-00C04F79F83A"
+#define GP_EXT_REGISTRY "35378EAC-683F-11D2-A89A-00C04FBBCFA2"
+#define GP_EXT_SCRIPTS  "42B5FAAE-6536-11D2-AE5A-0000F87571E3"

@@ -52,7 +52,8 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 	uint32 flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo;
 	NTSTATUS result;
-	
+	struct nt_user_token *token = NULL;
+
 	if (argc < 1) {
 		printf("usage: net ads gpo refresh <username|machinename>\n");
 		return -1;
@@ -82,12 +83,17 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
 		argv[0], dn);
 
-	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, &gpo_list);
+	status = ads_get_sid_token(ads, mem_ctx, dn, &token);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
-	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx, gpo_list))) {
+	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, token, &gpo_list);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx, flags, gpo_list))) {
 		printf("failed to refresh GPOs: %s\n", nt_errstr(result));
 		goto out;
 	}
@@ -206,6 +212,7 @@ static int net_ads_gpo_list(int argc, const char **argv)
 	uint32 uac = 0;
 	uint32 flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo_list;
+	struct nt_user_token *token = NULL;
 
 	if (argc < 1) {
 		printf("usage: net ads gpo list <username|machinename>\n");
@@ -235,7 +242,12 @@ static int net_ads_gpo_list(int argc, const char **argv)
 		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
 		argv[0], dn);
 
-	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, &gpo_list);
+	status = ads_get_sid_token(ads, mem_ctx, dn, &token);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, token, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}

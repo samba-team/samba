@@ -25,13 +25,13 @@
  parse the raw extension string into a GP_EXT structure
 ****************************************************************/
 
-ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
-			    const char *extension_raw,
-			    struct GP_EXT **gp_ext)
+BOOL ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
+		      const char *extension_raw,
+		      struct GP_EXT **gp_ext)
 {
-	ADS_STATUS status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	BOOL ret = False;
 	struct GP_EXT *ext = NULL;
-	char **ext_list;
+	char **ext_list = NULL;
 	char **ext_strings = NULL;
 	int i;
 
@@ -47,7 +47,7 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	}
 
 	ext_list = str_list_make_talloc(mem_ctx, extension_raw, "]");
-	if (ext_list == NULL) {
+	if (!ext_list) {
 		goto parse_error;
 	}
 
@@ -56,24 +56,23 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	}
 
 	ext->num_exts = i;
-	
+
 	if (ext->num_exts) {
-		ext->extensions = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
-		ext->extensions_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
-		ext->snapins = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
-		ext->snapins_guid = TALLOC_ZERO_ARRAY(mem_ctx, char *, ext->num_exts);
-	} else {
-		ext->extensions = NULL;
-		ext->extensions_guid = NULL;
-		ext->snapins = NULL;
-		ext->snapins_guid = NULL;
+		ext->extensions 	= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+							    ext->num_exts);
+		ext->extensions_guid	= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+							    ext->num_exts);
+		ext->snapins		= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+							    ext->num_exts);
+		ext->snapins_guid	= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+							    ext->num_exts);
 	}
 
 	ext->gp_extension = talloc_strdup(mem_ctx, extension_raw);
 
-	if (ext->extensions == NULL || ext->extensions_guid == NULL || 
-	    ext->snapins == NULL || ext->snapins_guid == NULL || 
-	    ext->gp_extension == NULL) {
+	if (!ext->extensions || !ext->extensions_guid ||
+	    !ext->snapins || !ext->snapins_guid ||
+	    !ext->gp_extension) {
 		goto parse_error;
 	}
 
@@ -81,7 +80,7 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 
 		int k;
 		char *p, *q;
-		
+
 		DEBUGADD(10,("extension #%d\n", i));
 
 		p = ext_list[i];
@@ -105,14 +104,15 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			q++;
 		}
 
-		ext->extensions[i] = talloc_strdup(mem_ctx, cse_gpo_guid_string_to_name(q));
+		ext->extensions[i] = talloc_strdup(mem_ctx,
+					   cse_gpo_guid_string_to_name(q));
 		ext->extensions_guid[i] = talloc_strdup(mem_ctx, q);
 
 		/* we might have no name for the guid */
 		if (ext->extensions_guid[i] == NULL) {
 			goto parse_error;
 		}
-		
+
 		for (k = 1; ext_strings[k] != NULL; k++) {
 
 			char *m = ext_strings[k];
@@ -121,8 +121,10 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 				m++;
 			}
 
-			/* FIXME: theoretically there could be more than one snapin per extension */
-			ext->snapins[i] = talloc_strdup(mem_ctx, cse_snapin_gpo_guid_string_to_name(m));
+			/* FIXME: theoretically there could be more than one
+			 * snapin per extension */
+			ext->snapins[i] = talloc_strdup(mem_ctx,
+				cse_snapin_gpo_guid_string_to_name(m));
 			ext->snapins_guid[i] = talloc_strdup(mem_ctx, m);
 
 			/* we might have no name for the guid */
@@ -134,35 +136,38 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 
 	*gp_ext = ext;
 
-	status = ADS_ERROR_NT(NT_STATUS_OK);
+	ret = True;
 
-parse_error:
+ parse_error:
 	if (ext_list) {
-		str_list_free_talloc(mem_ctx, &ext_list); 
+		str_list_free_talloc(mem_ctx, &ext_list);
 	}
 	if (ext_strings) {
-		str_list_free_talloc(mem_ctx, &ext_strings); 
+		str_list_free_talloc(mem_ctx, &ext_strings);
 	}
 
-	return status;
+	return ret;
 }
 
 /****************************************************************
  parse the raw link string into a GP_LINK structure
 ****************************************************************/
 
-static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx, 
+static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 				   const char *gp_link_raw,
-				   uint32 options,
+				   uint32_t options,
 				   struct GP_LINK *gp_link)
 {
+	ADS_STATUS status = ADS_ERROR(LDAP_NO_MEMORY);
 	char **link_list;
 	int i;
-	
+
+	ZERO_STRUCTP(gp_link);
+
 	DEBUG(10,("gpo_parse_gplink: gPLink: %s\n", gp_link_raw));
 
 	link_list = str_list_make_talloc(mem_ctx, gp_link_raw, "]");
-	if (link_list == NULL) {
+	if (!link_list) {
 		goto parse_error;
 	}
 
@@ -172,18 +177,17 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 
 	gp_link->gp_opts = options;
 	gp_link->num_links = i;
-	
+
 	if (gp_link->num_links) {
-		gp_link->link_names = TALLOC_ZERO_ARRAY(mem_ctx, char *, gp_link->num_links);
-		gp_link->link_opts = TALLOC_ZERO_ARRAY(mem_ctx, uint32, gp_link->num_links);
-	} else {
-		gp_link->link_names = NULL;
-		gp_link->link_opts = NULL;
+		gp_link->link_names = TALLOC_ZERO_ARRAY(mem_ctx, char *,
+							gp_link->num_links);
+		gp_link->link_opts = TALLOC_ZERO_ARRAY(mem_ctx, uint32_t,
+						       gp_link->num_links);
 	}
-	
+
 	gp_link->gp_link = talloc_strdup(mem_ctx, gp_link_raw);
 
-	if (gp_link->link_names == NULL || gp_link->link_opts == NULL || gp_link->gp_link == NULL) {
+	if (!gp_link->link_names || !gp_link->link_opts || !gp_link->gp_link) {
 		goto parse_error;
 	}
 
@@ -199,7 +203,7 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 		};
 
 		p = strchr(q, ';');
-		
+
 		if (p == NULL) {
 			goto parse_error;
 		}
@@ -212,23 +216,22 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 
 		gp_link->link_opts[i] = atoi(p + 1);
 
-		DEBUGADD(10,("gpo_parse_gplink: link: %s\n", gp_link->link_names[i]));
-		DEBUGADD(10,("gpo_parse_gplink: opt: %d\n", gp_link->link_opts[i]));
+		DEBUGADD(10,("gpo_parse_gplink: link: %s\n",
+			gp_link->link_names[i]));
+		DEBUGADD(10,("gpo_parse_gplink: opt: %d\n",
+			gp_link->link_opts[i]));
 
 	}
+
+	status = ADS_SUCCESS;
+
+ parse_error:
 
 	if (link_list) {
 		str_list_free_talloc(mem_ctx, &link_list);
 	}
 
-	return ADS_ERROR(LDAP_SUCCESS);
-
-parse_error:
-	if (link_list) {
-		str_list_free_talloc(mem_ctx, &link_list);
-	}
-
-	return ADS_ERROR(LDAP_NO_MEMORY);
+	return status;
 }
 
 /****************************************************************
@@ -244,13 +247,14 @@ ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 	const char *attrs[] = {"gPLink", "gPOptions", NULL};
 	LDAPMessage *res = NULL;
 	const char *gp_link;
-	uint32 gp_options;
+	uint32_t gp_options;
 
 	ZERO_STRUCTP(gp_link_struct);
 
 	status = ads_search_dn(ads, &res, link_dn, attrs);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(10,("ads_get_gpo_link: search failed with %s\n", ads_errstr(status)));
+		DEBUG(10,("ads_get_gpo_link: search failed with %s\n",
+			ads_errstr(status)));
 		return status;
 	}
 
@@ -260,33 +264,34 @@ ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
-	gp_link = ads_pull_string(ads, mem_ctx, res, "gPLink"); 
+	gp_link = ads_pull_string(ads, mem_ctx, res, "gPLink");
 	if (gp_link == NULL) {
 		DEBUG(10,("ads_get_gpo_link: no 'gPLink' attribute found\n"));
 		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);	
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
 	}
 
 	/* perfectly legal to have no options */
 	if (!ads_pull_uint32(ads, res, "gPOptions", &gp_options)) {
-		DEBUG(10,("ads_get_gpo_link: no 'gPOptions' attribute found\n"));
+		DEBUG(10,("ads_get_gpo_link: "
+			"no 'gPOptions' attribute found\n"));
 		gp_options = 0;
 	}
 
 	ads_msgfree(ads, res);
 
-	return gpo_parse_gplink(mem_ctx, gp_link, gp_options, gp_link_struct); 
+	return gpo_parse_gplink(mem_ctx, gp_link, gp_options, gp_link_struct);
 }
 
 /****************************************************************
  helper call to add a gp link
 ****************************************************************/
 
-ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads, 
-			    TALLOC_CTX *mem_ctx, 
-			    const char *link_dn, 
-			    const char *gpo_dn, 
-			    uint32 gpo_opt)
+ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
+			    TALLOC_CTX *mem_ctx,
+			    const char *link_dn,
+			    const char *gpo_dn,
+			    uint32_t gpo_opt)
 {
 	ADS_STATUS status;
 	const char *attrs[] = {"gPLink", NULL};
@@ -298,12 +303,13 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 	 * the gpo_dn is sane */
 
 	if (!strnequal(gpo_dn, "LDAP://CN={", strlen("LDAP://CN={")) != 0) {
-		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);	
+		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
 	}
 
 	status = ads_search_dn(ads, &res, link_dn, attrs);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(10,("ads_add_gpo_link: search failed with %s\n", ads_errstr(status)));
+		DEBUG(10,("ads_add_gpo_link: search failed with %s\n",
+			ads_errstr(status)));
 		return status;
 	}
 
@@ -313,11 +319,13 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
-	gp_link = ads_pull_string(ads, mem_ctx, res, "gPLink"); 
+	gp_link = ads_pull_string(ads, mem_ctx, res, "gPLink");
 	if (gp_link == NULL) {
-		gp_link_new = talloc_asprintf(mem_ctx, "[%s;%d]", gpo_dn, gpo_opt);
+		gp_link_new = talloc_asprintf(mem_ctx, "[%s;%d]",
+			gpo_dn, gpo_opt);
 	} else {
-		gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]", gp_link, gpo_dn, gpo_opt);
+		gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]",
+			gp_link, gpo_dn, gpo_opt);
 	}
 
 	ads_msgfree(ads, res);
@@ -331,7 +339,7 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 		return status;
 	}
 
-	return ads_gen_mod(ads, link_dn, mods); 
+	return ads_gen_mod(ads, link_dn, mods);
 }
 
 /****************************************************************
@@ -339,9 +347,9 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 ****************************************************************/
 
 /* untested & broken */
-ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads, 
-			       TALLOC_CTX *mem_ctx, 
-			       const char *link_dn, 
+ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
+			       TALLOC_CTX *mem_ctx,
+			       const char *link_dn,
 			       const char *gpo_dn)
 {
 	ADS_STATUS status;
@@ -355,7 +363,7 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 		DEBUG(10,("ads_delete_gpo_link: first char not: [\n"));
 		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
 	}
-		
+
 	if (gpo_dn[strlen(gpo_dn)] != ']') {
 		DEBUG(10,("ads_delete_gpo_link: last char not: ]\n"));
 		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
@@ -363,7 +371,8 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 
 	status = ads_search_dn(ads, &res, link_dn, attrs);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(10,("ads_delete_gpo_link: search failed with %s\n", ads_errstr(status)));
+		DEBUG(10,("ads_delete_gpo_link: search failed with %s\n",
+			ads_errstr(status)));
 		return status;
 	}
 
@@ -373,13 +382,14 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
-	gp_link = ads_pull_string(ads, mem_ctx, res, "gPLink"); 
+	gp_link = ads_pull_string(ads, mem_ctx, res, "gPLink");
 	if (gp_link == NULL) {
 		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
 	}
 
 	/* find link to delete */
-	/* gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]", gp_link, gpo_dn, gpo_opt); */
+	/* gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]", gp_link,
+					 gpo_dn, gpo_opt); */
 
 	ads_msgfree(ads, res);
 	ADS_ERROR_HAVE_NO_MEMORY(gp_link_new);
@@ -392,7 +402,7 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 		return status;
 	}
 
-	return ads_gen_mod(ads, link_dn, mods); 
+	return ads_gen_mod(ads, link_dn, mods);
 }
 
 /****************************************************************
@@ -425,19 +435,25 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	gpo->file_sys_path = ads_pull_string(ads, mem_ctx, res, "gPCFileSysPath");
+	gpo->file_sys_path = ads_pull_string(ads, mem_ctx, res,
+		"gPCFileSysPath");
 	ADS_ERROR_HAVE_NO_MEMORY(gpo->file_sys_path);
 
-	gpo->display_name = ads_pull_string(ads, mem_ctx, res, "displayName");
+	gpo->display_name = ads_pull_string(ads, mem_ctx, res,
+		"displayName");
 	ADS_ERROR_HAVE_NO_MEMORY(gpo->display_name);
 
-	gpo->name = ads_pull_string(ads, mem_ctx, res, "name");
+	gpo->name = ads_pull_string(ads, mem_ctx, res,
+		"name");
 	ADS_ERROR_HAVE_NO_MEMORY(gpo->name);
 
-	gpo->machine_extensions = ads_pull_string(ads, mem_ctx, res, "gPCMachineExtensionNames");
-	gpo->user_extensions = ads_pull_string(ads, mem_ctx, res, "gPCUserExtensionNames");
+	gpo->machine_extensions = ads_pull_string(ads, mem_ctx, res,
+		"gPCMachineExtensionNames");
+	gpo->user_extensions = ads_pull_string(ads, mem_ctx, res,
+		"gPCUserExtensionNames");
 
-	ads_pull_sd(ads, mem_ctx, res, "ntSecurityDescriptor", &gpo->security_descriptor);
+	ads_pull_sd(ads, mem_ctx, res, "ntSecurityDescriptor",
+		&gpo->security_descriptor);
 	ADS_ERROR_HAVE_NO_MEMORY(gpo->security_descriptor);
 
 	return ADS_ERROR(LDAP_SUCCESS);
@@ -458,11 +474,20 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 	LDAPMessage *res = NULL;
 	char *dn;
 	const char *filter;
-	const char *attrs[] = { "cn", "displayName", "flags", "gPCFileSysPath", 
-				"gPCFunctionalityVersion", "gPCMachineExtensionNames", 
-				"gPCUserExtensionNames", "gPCWQLFilter", "name", 
-				"versionNumber", "ntSecurityDescriptor", NULL};
-	uint32 sd_flags = DACL_SECURITY_INFORMATION;
+	const char *attrs[] = {
+		"cn",
+		"displayName",
+		"flags",
+		"gPCFileSysPath",
+		"gPCFunctionalityVersion",
+		"gPCMachineExtensionNames",
+		"gPCUserExtensionNames",
+		"gPCWQLFilter",
+		"name",
+		"ntSecurityDescriptor",
+		"versionNumber",
+		NULL};
+	uint32_t sd_flags = DACL_SECURITY_INFORMATION;
 
 	ZERO_STRUCTP(gpo);
 
@@ -471,30 +496,31 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 	}
 
 	if (gpo_dn) {
-	
+
 		if (strnequal(gpo_dn, "LDAP://", strlen("LDAP://")) != 0) {
 			gpo_dn = gpo_dn + strlen("LDAP://");
 		}
 
-		status = ads_search_retry_dn_sd_flags(ads, &res, 
+		status = ads_search_retry_dn_sd_flags(ads, &res,
 						      sd_flags,
 						      gpo_dn, attrs);
-		
+
 	} else if (display_name || guid_name) {
 
-		filter = talloc_asprintf(mem_ctx, 
-					 "(&(objectclass=groupPolicyContainer)(%s=%s))", 
-					 display_name ? "displayName" : "name",
-					 display_name ? display_name : guid_name);
+		filter = talloc_asprintf(mem_ctx,
+				 "(&(objectclass=groupPolicyContainer)(%s=%s))",
+				 display_name ? "displayName" : "name",
+				 display_name ? display_name : guid_name);
 		ADS_ERROR_HAVE_NO_MEMORY(filter);
 
 		status = ads_do_search_all_sd_flags(ads, ads->config.bind_path,
-						    LDAP_SCOPE_SUBTREE, filter, 
+						    LDAP_SCOPE_SUBTREE, filter,
 						    attrs, sd_flags, &res);
 	}
 
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(10,("ads_get_gpo: search failed with %s\n", ads_errstr(status)));
+		DEBUG(10,("ads_get_gpo: search failed with %s\n",
+			ads_errstr(status)));
 		return status;
 	}
 
@@ -509,7 +535,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-	
+
 	status = ads_parse_gpo(ads, mem_ctx, res, dn, gpo);
 	ads_msgfree(ads, res);
 	ads_memfree(ads, dn);
@@ -522,7 +548,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 ****************************************************************/
 
 static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
-					 TALLOC_CTX *mem_ctx, 
+					 TALLOC_CTX *mem_ctx,
 					 struct GROUP_POLICY_OBJECT **gpo_list,
 					 const char *link_dn,
 					 struct GP_LINK *gp_link,
@@ -543,39 +569,47 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 		}
 
 		if (only_add_forced_gpos) {
-		
-			if (! (gp_link->link_opts[i] & GPO_LINK_OPT_ENFORCED)) {
-				DEBUG(10,("skipping nonenforced GPO link because GPOPTIONS_BLOCK_INHERITANCE has been set\n"));
+
+			if (!(gp_link->link_opts[i] & GPO_LINK_OPT_ENFORCED)) {
+				DEBUG(10,("skipping nonenforced GPO link "
+					"because GPOPTIONS_BLOCK_INHERITANCE "
+					"has been set\n"));
 				continue;
 			} else {
-				DEBUG(10,("adding enforced GPO link although the GPOPTIONS_BLOCK_INHERITANCE has been set\n"));
+				DEBUG(10,("adding enforced GPO link although "
+					"the GPOPTIONS_BLOCK_INHERITANCE "
+					"has been set\n"));
 			}
 		}
 
 		new_gpo = TALLOC_ZERO_P(mem_ctx, struct GROUP_POLICY_OBJECT);
 		ADS_ERROR_HAVE_NO_MEMORY(new_gpo);
 
-		status = ads_get_gpo(ads, mem_ctx, gp_link->link_names[i], NULL, NULL, new_gpo);
+		status = ads_get_gpo(ads, mem_ctx, gp_link->link_names[i],
+				     NULL, NULL, new_gpo);
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(10,("failed to get gpo: %s\n", gp_link->link_names[i]));
+			DEBUG(10,("failed to get gpo: %s\n",
+				gp_link->link_names[i]));
 			return status;
 		}
 
-		status = ADS_ERROR_NT(gpo_apply_security_filtering(new_gpo, token));
+		status = ADS_ERROR_NT(gpo_apply_security_filtering(new_gpo,
+								   token));
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(10,("skipping GPO \"%s\" as object has no access to it\n", 
+			DEBUG(10,("skipping GPO \"%s\" as object "
+				"has no access to it\n",
 				new_gpo->display_name));
 			TALLOC_FREE(new_gpo);
 			continue;
 		}
 
 		new_gpo->link = link_dn;
-		new_gpo->link_type = link_type; 
+		new_gpo->link_type = link_type;
 
 		DLIST_ADD(*gpo_list, new_gpo);
 
-		DEBUG(10,("add_gplink_to_gplist: added GPLINK #%d %s to GPO list\n", 
-			i, gp_link->link_names[i]));
+		DEBUG(10,("add_gplink_to_gplist: added GPLINK #%d %s "
+			"to GPO list\n", i, gp_link->link_names[i]));
 	}
 
 	return ADS_ERROR(LDAP_SUCCESS);
@@ -599,7 +633,7 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 	struct nt_user_token *new_token = NULL;
 	int i;
 
-	status = ads_get_tokensids(ads, mem_ctx, dn, 
+	status = ads_get_tokensids(ads, mem_ctx, dn,
 				   &object_sid, &primary_group_sid,
 				   &ad_token_sids, &num_ad_token_sids);
 	if (!ADS_ERR_OK(status)) {
@@ -609,24 +643,24 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 	token_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, 1);
 	ADS_ERROR_HAVE_NO_MEMORY(token_sids);
 
-	if (!add_sid_to_array_unique(mem_ctx, &primary_group_sid, &token_sids, 
+	if (!add_sid_to_array_unique(mem_ctx, &primary_group_sid, &token_sids,
 				     &num_token_sids)) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	for (i = 0; i < num_ad_token_sids; i++) {
-		
+
 		if (sid_check_is_in_builtin(&ad_token_sids[i])) {
 			continue;
 		}
 
-		if (!add_sid_to_array_unique(mem_ctx, &ad_token_sids[i], 
+		if (!add_sid_to_array_unique(mem_ctx, &ad_token_sids[i],
 					     &token_sids, &num_token_sids)) {
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 	}
 
-	new_token = create_local_nt_token(mem_ctx, &object_sid, False, 
+	new_token = create_local_nt_token(mem_ctx, &object_sid, False,
 					  num_token_sids, token_sids);
 	ADS_ERROR_HAVE_NO_MEMORY(new_token);
 
@@ -638,20 +672,47 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 }
 
 /****************************************************************
+****************************************************************/
+
+static ADS_STATUS add_local_policy_to_gpo_list(TALLOC_CTX *mem_ctx,
+					       struct GROUP_POLICY_OBJECT **gpo_list,
+					       enum GPO_LINK_TYPE link_type)
+{
+	struct GROUP_POLICY_OBJECT *gpo = NULL;
+
+	ADS_ERROR_HAVE_NO_MEMORY(gpo_list);
+
+	gpo = TALLOC_ZERO_P(mem_ctx, struct GROUP_POLICY_OBJECT);
+	ADS_ERROR_HAVE_NO_MEMORY(gpo);
+
+	gpo->name = talloc_strdup(mem_ctx, "Local Policy");
+	ADS_ERROR_HAVE_NO_MEMORY(gpo->name);
+
+	gpo->display_name = talloc_strdup(mem_ctx, "Local Policy");
+	ADS_ERROR_HAVE_NO_MEMORY(gpo->display_name);
+
+	gpo->link_type = link_type;
+
+	DLIST_ADD(*gpo_list, gpo);
+
+	return ADS_ERROR_NT(NT_STATUS_OK);
+}
+
+/****************************************************************
  get the full list of GROUP_POLICY_OBJECTs for a given dn
 ****************************************************************/
 
-ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads, 
-			    TALLOC_CTX *mem_ctx, 
+ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
+			    TALLOC_CTX *mem_ctx,
 			    const char *dn,
-			    uint32 flags,
+			    uint32_t flags,
+			    const struct nt_user_token *token,
 			    struct GROUP_POLICY_OBJECT **gpo_list)
 {
 	/* (L)ocal (S)ite (D)omain (O)rganizational(U)nit */
-	
+
 	ADS_STATUS status;
 	struct GP_LINK gp_link;
-	struct nt_user_token *token = NULL;
 	const char *parent_dn, *site_dn, *tmp_dn;
 	BOOL add_only_forced_gpos = False;
 
@@ -663,25 +724,27 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 	DEBUG(10,("ads_get_gpo_list: getting GPO list for [%s]\n", dn));
 
-	status = ads_get_sid_token(ads, mem_ctx, dn, &token);
+	/* (L)ocal */
+	status = add_local_policy_to_gpo_list(mem_ctx, gpo_list,
+					      GP_LINK_UNKOWN);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
 
-	/* (L)ocal */
-	/* not yet... */
-	
 	/* (S)ite */
 
 	/* are site GPOs valid for users as well ??? */
 	if (flags & GPO_LIST_FLAG_MACHINE) {
 
-		status = ads_site_dn_for_machine(ads, mem_ctx, ads->config.ldap_server_name, &site_dn);
+		status = ads_site_dn_for_machine(ads, mem_ctx,
+						 ads->config.ldap_server_name,
+						 &site_dn);
 		if (!ADS_ERR_OK(status)) {
 			return status;
 		}
 
-		DEBUG(10,("ads_get_gpo_list: query SITE: [%s] for GPOs\n", site_dn));
+		DEBUG(10,("ads_get_gpo_list: query SITE: [%s] for GPOs\n",
+			site_dn));
 
 		status = ads_get_gpo_link(ads, mem_ctx, site_dn, &gp_link);
 		if (ADS_ERR_OK(status)) {
@@ -690,8 +753,9 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				dump_gplink(ads, mem_ctx, &gp_link);
 			}
 
-			status = add_gplink_to_gpo_list(ads, mem_ctx, gpo_list, 
-							site_dn, &gp_link, GP_LINK_SITE, 
+			status = add_gplink_to_gpo_list(ads, mem_ctx, gpo_list,
+							site_dn, &gp_link,
+							GP_LINK_SITE,
 							add_only_forced_gpos,
 							token);
 			if (!ADS_ERR_OK(status)) {
@@ -708,33 +772,39 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 	tmp_dn = dn;
 
-	while ( (parent_dn = ads_parent_dn(tmp_dn)) && 
-		(!strequal(parent_dn, ads_parent_dn(ads->config.bind_path))) ) {
+	while ((parent_dn = ads_parent_dn(tmp_dn)) &&
+	       (!strequal(parent_dn, ads_parent_dn(ads->config.bind_path)))) {
 
 		/* (D)omain */
 
 		/* An account can just be a member of one domain */
 		if (strncmp(parent_dn, "DC=", strlen("DC=")) == 0) {
 
-			DEBUG(10,("ads_get_gpo_list: query DC: [%s] for GPOs\n", parent_dn));
+			DEBUG(10,("ads_get_gpo_list: query DC: [%s] for GPOs\n",
+				parent_dn));
 
-			status = ads_get_gpo_link(ads, mem_ctx, parent_dn, &gp_link);
+			status = ads_get_gpo_link(ads, mem_ctx, parent_dn,
+						  &gp_link);
 			if (ADS_ERR_OK(status)) {
-				
+
 				if (DEBUGLEVEL >= 100) {
 					dump_gplink(ads, mem_ctx, &gp_link);
 				}
 
 				/* block inheritance from now on */
-				if (gp_link.gp_opts & GPOPTIONS_BLOCK_INHERITANCE) {
+				if (gp_link.gp_opts &
+				    GPOPTIONS_BLOCK_INHERITANCE) {
 					add_only_forced_gpos = True;
 				}
 
-				status = add_gplink_to_gpo_list(ads, mem_ctx, 
-								gpo_list, parent_dn, 
-								&gp_link, GP_LINK_DOMAIN, 
-								add_only_forced_gpos,
-								token);
+				status = add_gplink_to_gpo_list(ads,
+							mem_ctx,
+							gpo_list,
+							parent_dn,
+							&gp_link,
+							GP_LINK_DOMAIN,
+							add_only_forced_gpos,
+							token);
 				if (!ADS_ERR_OK(status)) {
 					return status;
 				}
@@ -746,19 +816,21 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 	/* reset dn again */
 	tmp_dn = dn;
-	
-	while ( (parent_dn = ads_parent_dn(tmp_dn)) && 
-		(!strequal(parent_dn, ads_parent_dn(ads->config.bind_path))) ) {
+
+	while ((parent_dn = ads_parent_dn(tmp_dn)) &&
+	       (!strequal(parent_dn, ads_parent_dn(ads->config.bind_path)))) {
 
 
 		/* (O)rganizational(U)nit */
 
 		/* An account can be a member of more OUs */
 		if (strncmp(parent_dn, "OU=", strlen("OU=")) == 0) {
-		
-			DEBUG(10,("ads_get_gpo_list: query OU: [%s] for GPOs\n", parent_dn));
 
-			status = ads_get_gpo_link(ads, mem_ctx, parent_dn, &gp_link);
+			DEBUG(10,("ads_get_gpo_list: query OU: [%s] for GPOs\n",
+				parent_dn));
+
+			status = ads_get_gpo_link(ads, mem_ctx, parent_dn,
+						  &gp_link);
 			if (ADS_ERR_OK(status)) {
 
 				if (DEBUGLEVEL >= 100) {
@@ -766,15 +838,19 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				}
 
 				/* block inheritance from now on */
-				if (gp_link.gp_opts & GPOPTIONS_BLOCK_INHERITANCE) {
+				if (gp_link.gp_opts &
+				    GPOPTIONS_BLOCK_INHERITANCE) {
 					add_only_forced_gpos = True;
 				}
 
-				status = add_gplink_to_gpo_list(ads, mem_ctx, 
-								gpo_list, parent_dn, 
-								&gp_link, GP_LINK_OU, 
-								add_only_forced_gpos,
-								token);
+				status = add_gplink_to_gpo_list(ads,
+							mem_ctx,
+							gpo_list,
+							parent_dn,
+							&gp_link,
+							GP_LINK_OU,
+							add_only_forced_gpos,
+							token);
 				if (!ADS_ERR_OK(status)) {
 					return status;
 				}
