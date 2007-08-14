@@ -2741,31 +2741,47 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
  Reply to a lockread (core+ protocol).
 ****************************************************************************/
 
-int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz)
+void reply_lockread(connection_struct *conn, struct smb_request *req)
 {
 	ssize_t nread = -1;
 	char *data;
-	int outsize = 0;
 	SMB_OFF_T startpos;
 	size_t numtoread;
 	NTSTATUS status;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+	files_struct *fsp;
 	struct byte_range_lock *br_lck = NULL;
+
 	START_PROFILE(SMBlockread);
 
-	CHECK_FSP(fsp,conn);
-	if (!CHECK_READ(fsp,inbuf)) {
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	if (req->wct < 5) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBlockread);
+		return;
+	}
+
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBlockread);
+		return;
+	}
+
+	if (!CHECK_READ(fsp,req->inbuf)) {
+		reply_doserror(req, ERRDOS, ERRbadaccess);
+		END_PROFILE(SMBlockread);
+		return;
 	}
 
 	release_level_2_oplocks_on_change(fsp);
 
-	numtoread = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
-  
-	outsize = set_message(inbuf,outbuf,5,3,True);
-	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
-	data = smb_buf(outbuf) + 3;
+	numtoread = SVAL(req->inbuf,smb_vwv1);
+	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+
+	numtoread = MIN(BUFFER_SIZE - (smb_size + 3*2 + 3), numtoread);
+
+	reply_outbuf(req, 5, numtoread + 3);
+
+	data = smb_buf(req->outbuf) + 3;
 	
 	/*
 	 * NB. Discovered by Menny Hamburger at Mainsoft. This is a core+
@@ -2777,7 +2793,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	
 	br_lck = do_lock(smbd_messaging_context(),
 			fsp,
-			(uint32)SVAL(inbuf,smb_pid), 
+			req->smbpid,
 			(SMB_BIG_UINT)numtoread,
 			(SMB_BIG_UINT)startpos,
 			WRITE_LOCK,
@@ -2788,8 +2804,9 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	TALLOC_FREE(br_lck);
 
 	if (NT_STATUS_V(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBlockread);
-		return ERROR_NT(status);
+		return;
 	}
 
 	/*
@@ -2805,20 +2822,22 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	nread = read_file(fsp,data,startpos,numtoread);
 
 	if (nread < 0) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBlockread);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		return;
 	}
 	
-	outsize += nread;
-	SSVAL(outbuf,smb_vwv0,nread);
-	SSVAL(outbuf,smb_vwv5,nread+3);
-	SSVAL(smb_buf(outbuf),1,nread);
+	set_message(NULL, (char *)req->outbuf, 5, nread+3, False);
+
+	SSVAL(req->outbuf,smb_vwv0,nread);
+	SSVAL(req->outbuf,smb_vwv5,nread+3);
+	SSVAL(smb_buf(req->outbuf),1,nread);
 	
 	DEBUG(3,("lockread fnum=%d num=%d nread=%d\n",
 		 fsp->fnum, (int)numtoread, (int)nread));
 
 	END_PROFILE(SMBlockread);
-	return(outsize);
+	return;
 }
 
 #undef DBGC_CLASS
@@ -3341,30 +3360,46 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
  Reply to a writeunlock (core+).
 ****************************************************************************/
 
-int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, 
-		      int size, int dum_buffsize)
+void reply_writeunlock(connection_struct *conn, struct smb_request *req)
 {
 	ssize_t nwritten = -1;
 	size_t numtowrite;
 	SMB_OFF_T startpos;
 	char *data;
 	NTSTATUS status = NT_STATUS_OK;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
-	int outsize = 0;
+	files_struct *fsp;
+
 	START_PROFILE(SMBwriteunlock);
+
+	if (req->wct < 5) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBwriteunlock);
+		return;
+	}
 	
-	CHECK_FSP(fsp,conn);
-	if (!CHECK_WRITE(fsp)) {
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBwriteunlock);
+		return;
 	}
 
-	numtowrite = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
-	data = smb_buf(inbuf) + 3;
-  
-	if (numtowrite && is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (!CHECK_WRITE(fsp)) {
+		reply_doserror(req, ERRDOS,ERRbadaccess);
 		END_PROFILE(SMBwriteunlock);
-		return ERROR_DOS(ERRDOS,ERRlock);
+		return;
+	}
+
+	numtowrite = SVAL(req->inbuf,smb_vwv1);
+	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+	data = smb_buf(req->inbuf) + 3;
+  
+	if (numtowrite
+	    && is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)numtowrite,
+			 (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+		reply_doserror(req, ERRDOS, ERRlock);
+		END_PROFILE(SMBwriteunlock);
+		return;
 	}
 
 	/* The special X/Open SMB protocol handling of
@@ -3378,40 +3413,43 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
   
 	status = sync_file(conn, fsp, False /* write through */);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBwriteunlock);
 		DEBUG(5,("reply_writeunlock: sync_file for %s returned %s\n",
 			fsp->fsp_name, nt_errstr(status) ));
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBwriteunlock);
+		return;
 	}
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
+		reply_unixerror(req, ERRHRD, ERRdiskfull);
 		END_PROFILE(SMBwriteunlock);
-		return(UNIXERROR(ERRHRD,ERRdiskfull));
+		return;
 	}
 
 	if (numtowrite) {
 		status = do_unlock(smbd_messaging_context(),
 				fsp,
-				(uint32)SVAL(inbuf,smb_pid),
+				req->smbpid,
 				(SMB_BIG_UINT)numtowrite, 
 				(SMB_BIG_UINT)startpos,
 				WINDOWS_LOCK);
 
 		if (NT_STATUS_V(status)) {
+			reply_nterror(req, status);
 			END_PROFILE(SMBwriteunlock);
-			return ERROR_NT(status);
+			return;
 		}
 	}
+
+	reply_outbuf(req, 1, 0);
 	
-	outsize = set_message(inbuf,outbuf,1,0,True);
-	
-	SSVAL(outbuf,smb_vwv0,nwritten);
+	SSVAL(req->outbuf,smb_vwv0,nwritten);
 	
 	DEBUG(3,("writeunlock fnum=%d num=%d wrote=%d\n",
 		 fsp->fnum, (int)numtowrite, (int)nwritten));
 	
 	END_PROFILE(SMBwriteunlock);
-	return outsize;
+	return;
 }
 
 #undef DBGC_CLASS
