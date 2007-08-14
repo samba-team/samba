@@ -1924,29 +1924,35 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
  Reply to a create temporary file.
 ****************************************************************************/
 
-int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_ctemp(connection_struct *conn, struct smb_request *req)
 {
 	pstring fname;
-	int outsize = 0;
-	uint32 fattr = SVAL(inbuf,smb_vwv0);
+	uint32 fattr;
 	files_struct *fsp;
-	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+	int oplock_request;
 	int tmpfd;
 	SMB_STRUCT_STAT sbuf;
-	char *p, *s;
+	char *s;
 	NTSTATUS status;
-	unsigned int namelen;
-	struct smb_request req;
 
 	START_PROFILE(SMBctemp);
 
-	init_smb_request(&req, (uint8 *)inbuf);
-
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, smb_buf(inbuf)+1,
-			sizeof(fname), 0, STR_TERMINATE, &status);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (req->wct < 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBctemp);
-		return ERROR_NT(status);
+		return;
+	}
+
+	fattr = SVAL(req->inbuf,smb_vwv0);
+	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
+
+	srvstr_get_path((char *)req->inbuf, req->flags2, fname,
+			smb_buf(req->inbuf)+1, sizeof(fname), 0, STR_TERMINATE,
+			&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		END_PROFILE(SMBctemp);
+		return;
 	}
 	if (*fname) {
 		pstrcat(fname,"/TMXXXXXX");
@@ -1954,37 +1960,45 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		pstrcat(fname,"TMXXXXXX");
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBctemp);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBctemp);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBctemp);
+		return;
 	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBctemp);
-		return ERROR_NT(status);
+		return;
 	}
 
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBctemp);
-		return ERROR_NT(status);
+		return;
 	}
   
 	tmpfd = smb_mkstemp(fname);
 	if (tmpfd == -1) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBctemp);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		return;
 	}
 
 	SMB_VFS_STAT(conn,fname,&sbuf);
 
 	/* We should fail if file does not exist. */
-	status = open_file_ntcreate(conn, &req, fname, &sbuf,
+	status = open_file_ntcreate(conn, req, fname, &sbuf,
 				FILE_GENERIC_READ | FILE_GENERIC_WRITE,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
@@ -1997,16 +2011,18 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	close(tmpfd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBctemp);
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			END_PROFILE(SMBctemp);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBctemp);
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,1,0,True);
-	SSVAL(outbuf,smb_vwv0,fsp->fnum);
+	reply_outbuf(req, 1, 0);
+	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	/* the returned filename is relative to the directory */
 	s = strrchr_m(fname, '/');
@@ -2016,23 +2032,26 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		s++;
 	}
 
-	p = smb_buf(outbuf);
 #if 0
 	/* Tested vs W2K3 - this doesn't seem to be here - null terminated filename is the only
 	   thing in the byte section. JRA */
 	SSVALS(p, 0, -1); /* what is this? not in spec */
 #endif
-	namelen = srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p, s, -1,
-			      STR_ASCII|STR_TERMINATE);
-	p += namelen;
-	outsize = set_message_end(inbuf,outbuf, p);
+	if (message_push_string(&req->outbuf, s, STR_ASCII|STR_TERMINATE)
+	    == -1) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBctemp);
+		return;
+	}
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf, smb_flg,
+		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
   
 	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf, smb_flg,
+		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
 	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fname ) );
@@ -2040,7 +2059,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 			(unsigned int)sbuf.st_mode ) );
 
 	END_PROFILE(SMBctemp);
-	return(outsize);
+	return;
 }
 
 /*******************************************************************
