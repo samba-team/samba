@@ -811,7 +811,7 @@ static void sid2uid_recv(struct composite_context *ctx)
 				struct wbsrv_samba3_call);
 	NTSTATUS status;
 
-	DEBUG(1, ("sid2uid_recv called\n"));
+	DEBUG(5, ("sid2uid_recv called\n"));
 
 	status = wb_sid2uid_recv(ctx, &s3call->response.data.uid);
 
@@ -827,7 +827,7 @@ NTSTATUS wbsrv_samba3_sid2gid(struct wbsrv_samba3_call *s3call)
 		s3call->wbconn->listen_socket->service;
 	struct dom_sid *sid;
 
-	DEBUG(1, ("wbsrv_samba3_sid2gid called\n"));
+	DEBUG(5, ("wbsrv_samba3_sid2gid called\n"));
 
 	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
 	NT_STATUS_HAVE_NO_MEMORY(sid);
@@ -849,7 +849,7 @@ static void sid2gid_recv(struct composite_context *ctx)
 				struct wbsrv_samba3_call);
 	NTSTATUS status;
 
-	DEBUG(1, ("sid2gid_recv called\n"));
+	DEBUG(5, ("sid2gid_recv called\n"));
 
 	status = wb_sid2gid_recv(ctx, &s3call->response.data.gid);
 
