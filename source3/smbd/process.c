@@ -1743,11 +1743,6 @@ char *get_InBuffer(void)
 	return InBuffer;
 }
 
-char *get_OutBuffer(void)
-{
-	return OutBuffer;
-}
-
 /****************************************************************************
  Allocate a new InBuffer. Returns the new and old ones.
 ****************************************************************************/

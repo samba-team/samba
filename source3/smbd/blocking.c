@@ -250,33 +250,19 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 }
 
 /****************************************************************************
- Return a smd with a given size.
-*****************************************************************************/
-
-static void send_blocking_reply(char *outbuf, int outsize, const char *inbuf)
-{
-	if(outsize > 4) {
-		smb_setlen(inbuf, outbuf,outsize - 4);
-	}
-
-	if (!send_smb(smbd_server_fd(),outbuf)) {
-		exit_server_cleanly("send_blocking_reply: send_smb failed.");
-	}
-}
-
-/****************************************************************************
  Return a lockingX success SMB.
 *****************************************************************************/
 
 static void reply_lockingX_success(blocking_lock_record *blr)
 {
-	char *outbuf = get_OutBuffer();
-	int bufsize = BUFFER_SIZE;
-	char *inbuf = blr->inbuf;
-	int outsize = 0;
+	struct smb_request *req;
 
-	construct_reply_common(inbuf, outbuf);
-	set_message(inbuf,outbuf,2,0,True);
+	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+		smb_panic("Could not allocate smb_request");
+	}
+
+	init_smb_request(req, (uint8 *)blr->inbuf);
+	reply_outbuf(req, 2, 0);
 
 	/*
 	 * As this message is a lockingX call we must handle
@@ -286,11 +272,11 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 	 * that here and must set up the chain info manually.
 	 */
 
-	outsize = chain_reply(inbuf,&outbuf,blr->length,bufsize);
+	chain_reply_new(req);
 
-	outsize += chain_size;
-
-	send_blocking_reply(outbuf,outsize,inbuf);
+	if (!send_smb(smbd_server_fd(),(char *)req->outbuf)) {
+		exit_server_cleanly("send_blocking_reply: send_smb failed.");
+	}
 }
 
 /****************************************************************************
@@ -299,8 +285,9 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 
 static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS status)
 {
-	char *outbuf = get_OutBuffer();
+	char outbuf[smb_size];
 	char *inbuf = blr->inbuf;
+
 	construct_reply_common(inbuf, outbuf);
 
 	/* whenever a timeout is given w2k maps LOCK_NOT_GRANTED to
@@ -395,7 +382,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status
 	case SMBtrans2:
 	case SMBtranss2:
 		{
-			char *outbuf = get_OutBuffer();
+			char outbuf[smb_size];
 			char *inbuf = blr->inbuf;
 			construct_reply_common(inbuf, outbuf);
 			/* construct_reply_common has done us the favor to pre-fill the
