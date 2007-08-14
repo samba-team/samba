@@ -106,7 +106,7 @@ static bool test_event_context(struct torture_context *test,
 				
 				return true;
 			} else {
-				torture_fail(test, "Failed event loop\n");
+				torture_fail(test, talloc_asprintf(test, "Failed event loop %s\n", strerror(errno)));
 			}
 		}
 	}
