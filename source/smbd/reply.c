@@ -1402,9 +1402,9 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	int info;
 	SMB_STRUCT_STAT sbuf;
 	files_struct *fsp;
-	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+	int oplock_request;
 	int deny_mode;
-	uint32 dos_attr = SVAL(inbuf,smb_vwv1);
+	uint32 dos_attr;
 	uint32 access_mask;
 	uint32 share_mode;
 	uint32 create_disposition;
@@ -1415,8 +1415,14 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	START_PROFILE(SMBopen);
 
 	init_smb_request(&req, (uint8 *)inbuf);
+
+	if (req.wct < 2) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
  
+	oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	deny_mode = SVAL(inbuf,smb_vwv0);
+	dos_attr = SVAL(inbuf,smb_vwv1);
 
 	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, smb_buf(inbuf)+1,
 			sizeof(fname), 0, STR_TERMINATE, &status);
