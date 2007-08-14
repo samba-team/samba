@@ -80,36 +80,14 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 	int alignment_offset = 3;
 	int data_alignment_offset = 0;
 
-	/*
-	 * Initially set the wcnt area to be 18 - this is true for all
-	 * transNT replies.
-	 */
-
-	char *inbuf, *outbuf;
-	int length, bufsize;
-
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	set_message(inbuf,outbuf,18,0,True);
-
-	if (NT_STATUS_V(nt_error)) {
-		ERROR_NT(nt_error);
-	}
-
 	/* 
 	 * If there genuinely are no parameters or data to send just send
 	 * the empty packet.
 	 */
 
 	if(params_to_send == 0 && data_to_send == 0) {
-		show_msg(outbuf);
-		if (!send_smb(smbd_server_fd(),outbuf)) {
-			exit_server_cleanly("send_nt_replies: send_smb failed.");
-		}
-		TALLOC_FREE(req->outbuf);
+		reply_outbuf(req, 18, 0);
+		show_msg((char *)req->outbuf);
 		return;
 	}
 
@@ -130,9 +108,10 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 	 * NT needs this to work correctly.
 	 */
 
-	useable_space = bufsize - ((smb_buf(outbuf)+
-				alignment_offset+data_alignment_offset) -
-				outbuf);
+	useable_space = max_send - (smb_size
+				    + 2 * 18 /* wct */
+				    + alignment_offset
+				    + data_alignment_offset);
 
 	/*
 	 * useable_space can never be more than max_send minus the
@@ -158,14 +137,14 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 
 		total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
-		set_message(inbuf,outbuf, 18, total_sent_thistime, True);
+		reply_outbuf(req, 18, total_sent_thistime);
 
 		/*
 		 * Set total params and data to be sent.
 		 */
 
-		SIVAL(outbuf,smb_ntr_TotalParameterCount,paramsize);
-		SIVAL(outbuf,smb_ntr_TotalDataCount,datasize);
+		SIVAL(req->outbuf,smb_ntr_TotalParameterCount,paramsize);
+		SIVAL(req->outbuf,smb_ntr_TotalDataCount,datasize);
 
 		/* 
 		 * Calculate how many parameters and data we can fit into
@@ -176,11 +155,12 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 		data_sent_thistime = useable_space - params_sent_thistime;
 		data_sent_thistime = MIN(data_sent_thistime,data_to_send);
 
-		SIVAL(outbuf,smb_ntr_ParameterCount,params_sent_thistime);
+		SIVAL(req->outbuf, smb_ntr_ParameterCount,
+		      params_sent_thistime);
 
 		if(params_sent_thistime == 0) {
-			SIVAL(outbuf,smb_ntr_ParameterOffset,0);
-			SIVAL(outbuf,smb_ntr_ParameterDisplacement,0);
+			SIVAL(req->outbuf,smb_ntr_ParameterOffset,0);
+			SIVAL(req->outbuf,smb_ntr_ParameterDisplacement,0);
 		} else {
 			/*
 			 * smb_ntr_ParameterOffset is the offset from the start of the SMB header to the
@@ -189,33 +169,37 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 			 * them from the calculation.
 			 */
 
-			SIVAL(outbuf,smb_ntr_ParameterOffset,
-				((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
+			SIVAL(req->outbuf,smb_ntr_ParameterOffset,
+			      ((smb_buf(req->outbuf)+alignment_offset)
+			       - smb_base(req->outbuf)));
 			/* 
 			 * Absolute displacement of param bytes sent in this packet.
 			 */
 
-			SIVAL(outbuf,smb_ntr_ParameterDisplacement,pp - params);
+			SIVAL(req->outbuf, smb_ntr_ParameterDisplacement,
+			      pp - params);
 		}
 
 		/*
 		 * Deal with the data portion.
 		 */
 
-		SIVAL(outbuf,smb_ntr_DataCount, data_sent_thistime);
+		SIVAL(req->outbuf, smb_ntr_DataCount, data_sent_thistime);
 
 		if(data_sent_thistime == 0) {
-			SIVAL(outbuf,smb_ntr_DataOffset,0);
-			SIVAL(outbuf,smb_ntr_DataDisplacement, 0);
+			SIVAL(req->outbuf,smb_ntr_DataOffset,0);
+			SIVAL(req->outbuf,smb_ntr_DataDisplacement, 0);
 		} else {
 			/*
 			 * The offset of the data bytes is the offset of the
 			 * parameter bytes plus the number of parameters being sent this time.
 			 */
 
-			SIVAL(outbuf,smb_ntr_DataOffset,((smb_buf(outbuf)+alignment_offset) -
-				smb_base(outbuf)) + params_sent_thistime + data_alignment_offset);
-				SIVAL(outbuf,smb_ntr_DataDisplacement, pd - pdata);
+			SIVAL(req->outbuf, smb_ntr_DataOffset,
+			      ((smb_buf(req->outbuf)+alignment_offset) -
+			       smb_base(req->outbuf))
+			      + params_sent_thistime + data_alignment_offset);
+			SIVAL(req->outbuf,smb_ntr_DataDisplacement, pd - pdata);
 		}
 
 		/* 
@@ -223,7 +207,12 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 		 */
 
 		if(params_sent_thistime) {
-			memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
+			if (alignment_offset != 0) {
+				memset(smb_buf(req->outbuf), 0,
+				       alignment_offset);
+			}
+			memcpy((smb_buf(req->outbuf)+alignment_offset), pp,
+			       params_sent_thistime);
 		}
 
 		/*
@@ -231,20 +220,34 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 		 */
 
 		if(data_sent_thistime) {
-			memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+
-				data_alignment_offset,pd,data_sent_thistime);
+			if (data_alignment_offset != 0) {
+				memset((smb_buf(req->outbuf)+alignment_offset+
+					params_sent_thistime), 0,
+				       data_alignment_offset);
+			}
+			memcpy(smb_buf(req->outbuf)+alignment_offset
+			       +params_sent_thistime+data_alignment_offset,
+			       pd,data_sent_thistime);
 		}
     
 		DEBUG(9,("nt_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
 			params_sent_thistime, data_sent_thistime, useable_space));
 		DEBUG(9,("nt_rep: params_to_send = %d, data_to_send = %d, paramsize = %d, datasize = %d\n",
 			params_to_send, data_to_send, paramsize, datasize));
+
+		if (NT_STATUS_V(nt_error)) {
+			error_packet_set((char *)req->outbuf,
+					 0, 0, nt_error,
+					 __LINE__,__FILE__);
+		}
     
 		/* Send the packet */
-		show_msg(outbuf);
-		if (!send_smb(smbd_server_fd(),outbuf)) {
+		show_msg((char *)req->outbuf);
+		if (!send_smb(smbd_server_fd(),(char *)req->outbuf)) {
 			exit_server_cleanly("send_nt_replies: send_smb failed.");
 		}
+
+		TALLOC_FREE(req->outbuf);
     
 		pp += params_sent_thistime;
 		pd += data_sent_thistime;
@@ -259,7 +262,6 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 		if(params_to_send < 0 || data_to_send < 0) {
 			DEBUG(0,("send_nt_replies failed sanity check pts = %d, dts = %d\n!!!",
 				params_to_send, data_to_send));
-			TALLOC_FREE(req->outbuf);
 			return;
 		}
 	} 
