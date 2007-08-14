@@ -105,7 +105,7 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 }
 
 /*********************************************************************
- get a list of all privleges for all sids the in list
+ get a list of all privileges for all sids in the list
 *********************************************************************/
 
 BOOL get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount)
