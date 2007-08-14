@@ -5786,36 +5786,28 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 	BOOL err;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
-	char *inbuf, *outbuf;
-	int length, bufsize;
-
 	START_PROFILE(SMBlockingX);
 
-	if (!reply_prep_legacy(req, &inbuf, &outbuf, &length, &bufsize)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBlockingX);
-		return;
-	}
-
-	if (CVAL(inbuf, smb_wct) < 8) {
+	if (req->wct < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBlockingX);
 		return;
 	}
 	
-	fsp = file_fsp(SVAL(inbuf,smb_vwv2));
-	locktype = CVAL(inbuf,smb_vwv3);
-	oplocklevel = CVAL(inbuf,smb_vwv3+1);
-	num_ulocks = SVAL(inbuf,smb_vwv6);
-	num_locks = SVAL(inbuf,smb_vwv7);
-	lock_timeout = IVAL(inbuf,smb_vwv4);
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv2));
+	locktype = CVAL(req->inbuf,smb_vwv3);
+	oplocklevel = CVAL(req->inbuf,smb_vwv3+1);
+	num_ulocks = SVAL(req->inbuf,smb_vwv6);
+	num_locks = SVAL(req->inbuf,smb_vwv7);
+	lock_timeout = IVAL(req->inbuf,smb_vwv4);
 	large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 
 	if (!check_fsp(conn, req, fsp, &current_user)) {
+		END_PROFILE(SMBlockingX);
 		return;
 	}
 	
-	data = smb_buf(inbuf);
+	data = smb_buf(req->inbuf);
 
 	if (locktype & LOCKING_ANDX_CHANGE_LOCKTYPE) {
 		/* we don't support these - and CANCEL_LOCK makes w2k
@@ -5890,12 +5882,12 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 		if (num_locks == 0 && num_ulocks == 0) {
 			/* Sanity check - ensure a pure oplock break is not a
 			   chained request. */
-			if(CVAL(inbuf,smb_vwv0) != 0xff)
+			if(CVAL(req->inbuf,smb_vwv0) != 0xff)
 				DEBUG(0,("reply_lockingX: Error : pure oplock "
 					 "break is a chained %d request !\n",
-					 (unsigned int)CVAL(inbuf,smb_vwv0) ));
+					 (unsigned int)CVAL(req->inbuf,
+							    smb_vwv0) ));
 			END_PROFILE(SMBlockingX);
-			reply_post_legacy(req, -1);
 			return;
 		}
 	}
@@ -5906,6 +5898,13 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 	 */
 	
 	release_level_2_oplocks_on_change(fsp);
+
+	if (smb_buflen(req->inbuf) <
+	    (num_ulocks + num_locks) * (large_file_format ? 20 : 10)) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBlockingX);
+		return;
+	}
 	
 	/* Data now points at the beginning of the list
 	   of smb_unlkrng structs */
@@ -6047,7 +6046,8 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 				 * onto the blocking lock queue.
 				 */
 				if(push_blocking_lock_request(br_lck,
-							inbuf, length,
+							(char *)req->inbuf,
+							smb_len(req->inbuf)+4,
 							fsp,
 							lock_timeout,
 							i,
@@ -6113,9 +6113,7 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	set_message(inbuf,outbuf,2,0,True);
-
-	reply_post_legacy(req, smb_len(outbuf)+4);
+	reply_outbuf(req, 2, 0);
 	
 	DEBUG(3, ("lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
 		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
