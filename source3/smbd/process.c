@@ -698,7 +698,7 @@ static const struct smb_message_struct {
 /* 0x05 */ { "SMBflush",NULL,reply_flush,AS_USER},
 /* 0x06 */ { "SMBunlink",NULL,reply_unlink,AS_USER | NEED_WRITE },
 /* 0x07 */ { "SMBmv",NULL,reply_mv,AS_USER | NEED_WRITE },
-/* 0x08 */ { "SMBgetatr",reply_getatr,NULL,AS_USER},
+/* 0x08 */ { "SMBgetatr",NULL,reply_getatr,AS_USER},
 /* 0x09 */ { "SMBsetatr",reply_setatr,NULL,AS_USER | NEED_WRITE},
 /* 0x0a */ { "SMBread",reply_read,NULL,AS_USER},
 /* 0x0b */ { "SMBwrite",reply_write,NULL,AS_USER | CAN_IPC },
