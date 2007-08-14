@@ -1,18 +1,18 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
  *  Copyright (C) Guenther Deschner 2005-2006
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -23,10 +23,10 @@
  explode the GPO CIFS URI into their components
 ****************************************************************/
 
-NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx, 
-				 const char *file_sys_path, 
-				 char **server, 
-				 char **service, 
+NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
+				 const char *file_sys_path,
+				 char **server,
+				 char **service,
 				 char **nt_path,
 				 char **unix_path)
 {
@@ -58,7 +58,8 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ((*nt_path = talloc_asprintf(mem_ctx, "\\%s", file_sys_path)) == NULL) {
+	if ((*nt_path = talloc_asprintf(mem_ctx, "\\%s", file_sys_path))
+		== NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -78,7 +79,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
  prepare the local disc storage for "unix_path"
 ****************************************************************/
 
-static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx, 
+static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 					const char *unix_path)
 {
 	const char *top_dir = lock_path(GPO_CACHE_DIR);
@@ -93,7 +94,7 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 	}
 
 	while (next_token(&unix_path, tok, "/", sizeof(tok))) {
-	
+
 		if (strequal(tok, GPO_CACHE_DIR)) {
 			break;
 		}
@@ -116,15 +117,17 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
  download a full GPO via CIFS
 ****************************************************************/
 
-NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx, 
-			 struct cli_state *cli, 
+NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
+			 struct cli_state *cli,
 			 struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
-	char *server, *service, *nt_path, *unix_path, *nt_ini_path, *unix_ini_path;
+	char *server, *service, *nt_path, *unix_path;
+	char *nt_ini_path, *unix_ini_path;
 
-	result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path, 
-					 &server, &service, &nt_path, &unix_path);
+	result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+					 &server, &service, &nt_path,
+					 &unix_path);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
 	}
@@ -161,13 +164,13 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
  get the locally stored gpt.ini version number
 ****************************************************************/
 
-NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx, 
-				    const char *unix_path, 
-				    uint32 *sysvol_version,
+NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
+				    const char *unix_path,
+				    uint32_t *sysvol_version,
 				    char **display_name)
 {
 	NTSTATUS status;
-	uint32 version = 0;
+	uint32_t version = 0;
 	char *local_path = NULL;
 	char *name = NULL;
 
@@ -180,7 +183,8 @@ NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
 
 	status = parse_gpt_ini(mem_ctx, local_path, &version, &name);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("gpo_get_sysvol_gpt_version: failed to parse ini [%s]: %s\n", 
+		DEBUG(10,("gpo_get_sysvol_gpt_version: "
+			"failed to parse ini [%s]: %s\n",
 			local_path, nt_errstr(status)));
 		return status;
 	}
