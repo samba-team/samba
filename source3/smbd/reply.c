@@ -1392,10 +1392,9 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  Reply to an open.
 ****************************************************************************/
 
-int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_open(connection_struct *conn, struct smb_request *req)
 {
 	pstring fname;
-	int outsize = 0;
 	uint32 fattr=0;
 	SMB_OFF_T size = 0;
 	time_t mtime=0;
@@ -1410,55 +1409,64 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	uint32 create_disposition;
 	uint32 create_options = 0;
 	NTSTATUS status;
-	struct smb_request req;
 
 	START_PROFILE(SMBopen);
 
-	init_smb_request(&req, (uint8 *)inbuf);
-
-	if (req.wct < 2) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	if (req->wct < 2) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBopen);
+		return;
 	}
  
-	oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-	deny_mode = SVAL(inbuf,smb_vwv0);
-	dos_attr = SVAL(inbuf,smb_vwv1);
+	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
+	deny_mode = SVAL(req->inbuf,smb_vwv0);
+	dos_attr = SVAL(req->inbuf,smb_vwv1);
 
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, smb_buf(inbuf)+1,
-			sizeof(fname), 0, STR_TERMINATE, &status);
+	srvstr_get_path((char *)req->inbuf, req->flags2, fname,
+			smb_buf(req->inbuf)+1, sizeof(fname), 0,
+			STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBopen);
-		return ERROR_NT(status);
+		return;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBopen);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBopen);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBopen);
+		return;
 	}
 
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBopen);
-		return ERROR_NT(status);
+		return;
 	}
     
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBopen);
-		return ERROR_NT(status);
+		return;
 	}
 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
 			&access_mask, &share_mode, &create_disposition, &create_options)) {
+		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		END_PROFILE(SMBopen);
-		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
+		return;
 	}
 
-	status = open_file_ntcreate(conn, &req, fname, &sbuf,
+	status = open_file_ntcreate(conn, req, fname, &sbuf,
 			access_mask,
 			share_mode,
 			create_disposition,
@@ -1468,12 +1476,14 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			&info, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBopen);
-		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return -1;
+			END_PROFILE(SMBopen);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBopen);
+		return;
 	}
 
 	size = sbuf.st_size;
@@ -1483,30 +1493,33 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	if (fattr & aDIR) {
 		DEBUG(3,("attempt to open a directory %s\n",fname));
 		close_file(fsp,ERROR_CLOSE);
+		reply_doserror(req, ERRDOS,ERRnoaccess);
 		END_PROFILE(SMBopen);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return;
 	}
-  
-	outsize = set_message(inbuf,outbuf,7,0,True);
-	SSVAL(outbuf,smb_vwv0,fsp->fnum);
-	SSVAL(outbuf,smb_vwv1,fattr);
+
+	reply_outbuf(req, 7, 0);
+	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
+	SSVAL(req->outbuf,smb_vwv1,fattr);
 	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
-		srv_put_dos_date3(outbuf,smb_vwv2,mtime & ~1);
+		srv_put_dos_date3((char *)req->outbuf,smb_vwv2,mtime & ~1);
 	} else {
-		srv_put_dos_date3(outbuf,smb_vwv2,mtime);
+		srv_put_dos_date3((char *)req->outbuf,smb_vwv2,mtime);
 	}
-	SIVAL(outbuf,smb_vwv4,(uint32)size);
-	SSVAL(outbuf,smb_vwv6,deny_mode);
+	SIVAL(req->outbuf,smb_vwv4,(uint32)size);
+	SSVAL(req->outbuf,smb_vwv6,deny_mode);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf,smb_flg,
+		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
     
 	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+		SCVAL(req->outbuf,smb_flg,
+		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 	END_PROFILE(SMBopen);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
