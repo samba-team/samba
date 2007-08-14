@@ -618,6 +618,30 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 	return WERR_OK;
 }
 
+WERROR reg_deleteallvalues(struct registry_key *key)
+{
+	WERROR err;
+	int i;
+
+	if (!(key->key->access_granted & SEC_RIGHTS_SET_VALUE)) {
+		return WERR_ACCESS_DENIED;
+	}
+
+	if (!W_ERROR_IS_OK(err = fill_value_cache(key))) {
+		return err;
+	}
+
+	for (i=0; i<key->values->num_values; i++) {
+		regval_ctr_delvalue(key->values, key->values->values[i]->valuename);
+	}
+
+	if (!store_reg_values(key->key, key->values)) {
+		TALLOC_FREE(key->values);
+		return WERR_REG_IO_FAILURE;
+	}
+
+	return WERR_OK;
+}
 
 /*
  * Utility function to open a complete registry path including the hive
