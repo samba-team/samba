@@ -724,56 +724,72 @@ void reply_unknown_new(struct smb_request *req, uint8 type)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_ioctl(connection_struct *conn,
-		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_ioctl(connection_struct *conn, struct smb_request *req)
 {
-	uint16 device     = SVAL(inbuf,smb_vwv1);
-	uint16 function   = SVAL(inbuf,smb_vwv2);
-	uint32 ioctl_code = (device << 16) + function;
-	int replysize, outsize;
+	uint16 device;
+	uint16 function;
+	uint32 ioctl_code;
+	int replysize;
 	char *p;
+
 	START_PROFILE(SMBioctl);
+
+	if (req->wct < 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBioctl);
+		return;
+	}
+
+	device     = SVAL(req->inbuf,smb_vwv1);
+	function   = SVAL(req->inbuf,smb_vwv2);
+	ioctl_code = (device << 16) + function;
 
 	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
 
 	switch (ioctl_code) {
 	    case IOCTL_QUERY_JOB_INFO:
-		replysize = 32;
-		break;
+		    replysize = 32;
+		    break;
 	    default:
-		END_PROFILE(SMBioctl);
-		return(ERROR_DOS(ERRSRV,ERRnosupport));
+		    reply_doserror(req, ERRSRV, ERRnosupport);
+		    END_PROFILE(SMBioctl);
+		    return;
 	}
 
-	outsize = set_message(inbuf,outbuf,8,replysize+1,True);
-	SSVAL(outbuf,smb_vwv1,replysize); /* Total data bytes returned */
-	SSVAL(outbuf,smb_vwv5,replysize); /* Data bytes this buffer */
-	SSVAL(outbuf,smb_vwv6,52);        /* Offset to data */
-	p = smb_buf(outbuf) + 1;          /* Allow for alignment */
+	reply_outbuf(req, 8, replysize+1);
+	SSVAL(req->outbuf,smb_vwv1,replysize); /* Total data bytes returned */
+	SSVAL(req->outbuf,smb_vwv5,replysize); /* Data bytes this buffer */
+	SSVAL(req->outbuf,smb_vwv6,52);        /* Offset to data */
+	p = smb_buf(req->outbuf) + 1;          /* Allow for alignment */
 
 	switch (ioctl_code) {
 		case IOCTL_QUERY_JOB_INFO:		    
 		{
-			files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
+			files_struct *fsp = file_fsp(SVAL(req->inbuf,
+							  smb_vwv0));
 			if (!fsp) {
+				reply_doserror(req, ERRDOS, ERRbadfid);
 				END_PROFILE(SMBioctl);
-				return(UNIXERROR(ERRDOS,ERRbadfid));
+				return;
 			}
 			SSVAL(p,0,fsp->rap_print_jobid);             /* Job number */
-			srvstr_push(outbuf, SVAL(outbuf, smb_flg2), p+2,
+			srvstr_push((char *)req->outbuf, req->flags2, p+2,
 				    global_myname(), 15,
 				    STR_TERMINATE|STR_ASCII);
 			if (conn) {
-				srvstr_push(outbuf, SVAL(outbuf, smb_flg2),
+				srvstr_push((char *)req->outbuf, req->flags2,
 					    p+18, lp_servicename(SNUM(conn)),
 					    13, STR_TERMINATE|STR_ASCII);
+			}
+			else {
+				memset(p+18, 0, 13);
 			}
 			break;
 		}
 	}
 
 	END_PROFILE(SMBioctl);
-	return outsize;
+	return;
 }
 
 /****************************************************************************

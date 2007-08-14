@@ -729,7 +729,7 @@ static const struct smb_message_struct {
 /* 0x24 */ { "SMBlockingX",NULL,reply_lockingX,AS_USER },
 /* 0x25 */ { "SMBtrans",NULL,reply_trans,AS_USER | CAN_IPC },
 /* 0x26 */ { "SMBtranss",NULL,reply_transs,AS_USER | CAN_IPC},
-/* 0x27 */ { "SMBioctl",reply_ioctl,NULL,0},
+/* 0x27 */ { "SMBioctl",NULL,reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL, NULL,AS_USER},
 /* 0x29 */ { "SMBcopy",reply_copy,NULL,AS_USER | NEED_WRITE },
 /* 0x2a */ { "SMBmove",NULL, NULL,AS_USER | NEED_WRITE },
