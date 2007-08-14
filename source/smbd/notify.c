@@ -154,9 +154,8 @@ static void change_notify_reply_packet(const uint8 *request_buf,
 void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 			 struct notify_change_buf *notify_buf)
 {
-	char *outbuf = NULL;
 	prs_struct ps;
-	size_t buflen;
+	struct smb_request *req = NULL;
 
 	if (notify_buf->num_changes == -1) {
 		change_notify_reply_packet(request_buf, NT_STATUS_OK);
@@ -176,22 +175,18 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 		goto done;
 	}
 
-	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
-
-	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
+	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
-	construct_reply_common((char *)request_buf, outbuf);
+	init_smb_request(req, request_buf);
 
-	if (send_nt_replies((char *)request_buf, outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
-			    prs_offset(&ps), NULL, 0) == -1) {
-		exit_server("change_notify_reply_packet: send_smb failed.");
-	}
+	send_nt_replies_new(req, NT_STATUS_OK, prs_data_p(&ps),
+				prs_offset(&ps), NULL, 0);
 
  done:
-	SAFE_FREE(outbuf);
+	TALLOC_FREE(req);
 	prs_mem_free(&ps);
 
 	TALLOC_FREE(notify_buf->changes);
