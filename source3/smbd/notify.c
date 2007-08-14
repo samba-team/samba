@@ -24,7 +24,7 @@
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
-	char request_buf[smb_size];
+	uint8 request_buf[smb_size];
 	uint32 filter;
 	uint32 max_param;
 	struct notify_mid_map *mid_map;
@@ -128,14 +128,14 @@ static BOOL notify_marshall_changes(int num_changes,
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-static void change_notify_reply_packet(const char *request_buf,
+static void change_notify_reply_packet(const uint8 *request_buf,
 				       NTSTATUS error_code)
 {
-	const char *inbuf = request_buf;
+	const char *inbuf = (char *)request_buf;
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
-	construct_reply_common(request_buf, outbuf);
+	construct_reply_common(inbuf, outbuf);
 
 	ERROR_NT(error_code);
 
@@ -151,7 +151,7 @@ static void change_notify_reply_packet(const char *request_buf,
 				    "failed.");
 }
 
-void change_notify_reply(const char *request_buf, uint32 max_param,
+void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 			 struct notify_change_buf *notify_buf)
 {
 	char *outbuf = NULL;
@@ -183,9 +183,9 @@ void change_notify_reply(const char *request_buf, uint32 max_param,
 		goto done;
 	}
 
-	construct_reply_common(request_buf, outbuf);
+	construct_reply_common((char *)request_buf, outbuf);
 
-	if (send_nt_replies(request_buf, outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
+	if (send_nt_replies((char *)request_buf, outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
 			    prs_offset(&ps), NULL, 0) == -1) {
 		exit_server("change_notify_reply_packet: send_smb failed.");
 	}
@@ -238,7 +238,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	return status;
 }
 
-NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param,
+NTSTATUS change_notify_add_request(const uint8 *inbuf, uint32 max_param,
 				   uint32 filter, BOOL recursive,
 				   struct files_struct *fsp)
 {
