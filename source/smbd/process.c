@@ -731,7 +731,7 @@ static const struct smb_message_struct {
 /* 0x26 */ { "SMBtranss",NULL,reply_transs,AS_USER | CAN_IPC},
 /* 0x27 */ { "SMBioctl",NULL,reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL, NULL,AS_USER},
-/* 0x29 */ { "SMBcopy",reply_copy,NULL,AS_USER | NEED_WRITE },
+/* 0x29 */ { "SMBcopy",NULL,reply_copy,AS_USER | NEED_WRITE },
 /* 0x2a */ { "SMBmove",NULL, NULL,AS_USER | NEED_WRITE },
 /* 0x2b */ { "SMBecho",NULL,reply_echo,0},
 /* 0x2c */ { "SMBwriteclose",NULL,reply_writeclose,AS_USER},
