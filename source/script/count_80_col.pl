@@ -3,7 +3,8 @@
 open( INFILE, "$ARGV[0]" ) || die $@;
 
 $count = 0;
-while ( <INFILE> ) { 
+while ( <INFILE> ) {
+	next if ($_ =~ /^#define/);
 	$count++ if (length($_) > 80);
 }
 
