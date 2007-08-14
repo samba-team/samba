@@ -984,10 +984,9 @@ void reply_getatr(connection_struct *conn, struct smb_request *req)
  Reply to a setatr.
 ****************************************************************************/
 
-int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_setatr(connection_struct *conn, struct smb_request *req)
 {
 	pstring fname;
-	int outsize = 0;
 	int mode;
 	time_t mtime;
 	SMB_STRUCT_STAT sbuf;
@@ -996,33 +995,46 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	START_PROFILE(SMBsetatr);
 
-	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, p,
-			     sizeof(fname), 0, STR_TERMINATE, &status);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBsetatr);
-		return ERROR_NT(status);
+	if (req->wct < 2) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	p = smb_buf(req->inbuf) + 1;
+	p += srvstr_get_path((char *)req->inbuf, req->flags2, fname, p,
+			     sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBsetatr);
+		return;
+	}
+
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBsetatr);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBsetatr);
+		return;
 	}
   
 	status = unix_convert(conn, fname, False, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBsetatr);
-		return ERROR_NT(status);
+		return;
 	}
 
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBsetatr);
-		return ERROR_NT(status);
+		return;
 	}
 
 	if (fname[0] == '.' && fname[1] == '\0') {
@@ -1030,12 +1042,13 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		 * Not sure here is the right place to catch this
 		 * condition. Might be moved to somewhere else later -- vl
 		 */
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBsetatr);
-		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		return;
 	}
 
-	mode = SVAL(inbuf,smb_vwv0);
-	mtime = srv_make_unix_date3(inbuf+smb_vwv1);
+	mode = SVAL(req->inbuf,smb_vwv0);
+	mtime = srv_make_unix_date3(req->inbuf+smb_vwv1);
   
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
 		if (VALID_STAT_OF_DIR(sbuf))
@@ -1044,22 +1057,24 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			mode &= ~aDIR;
 
 		if (file_set_dosmode(conn,fname,mode,&sbuf,False) != 0) {
+			reply_unixerror(req, ERRDOS, ERRnoaccess);
 			END_PROFILE(SMBsetatr);
-			return UNIXERROR(ERRDOS, ERRnoaccess);
+			return;
 		}
 	}
 
 	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBsetatr);
-		return UNIXERROR(ERRDOS, ERRnoaccess);
+		return;
 	}
+
+	reply_outbuf(req, 0, 0);
  
-	outsize = set_message(inbuf,outbuf,0,0,False);
-  
 	DEBUG( 3, ( "setatr name=%s mode=%d\n", fname, mode ) );
   
 	END_PROFILE(SMBsetatr);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
