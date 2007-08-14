@@ -180,10 +180,12 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 		goto done;
 	}
 
+	smb_setlen(NULL, request_buf, smb_size);
+
 	init_smb_request(req, request_buf);
 
-	send_nt_replies_new(req, NT_STATUS_OK, prs_data_p(&ps),
-				prs_offset(&ps), NULL, 0);
+	send_nt_replies(req, NT_STATUS_OK, prs_data_p(&ps),
+			prs_offset(&ps), NULL, 0);
 
  done:
 	TALLOC_FREE(req);
