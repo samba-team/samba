@@ -422,13 +422,6 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 #ifdef HAVE_KRB5
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	krb5_error_code krb5_ret;
-	DATA_BLOB tkt, session_key_krb5;
-	DATA_BLOB ap_rep, session_key;
-	PAC_DATA *pac_data = NULL;
-	PAC_LOGON_INFO *logon_info = NULL;
-	char *client_princ = NULL;
-	char *client_princ_out = NULL;
-	char *local_service = NULL;
 	const char *cc = NULL;
 	const char *principal_s = NULL;
 	const char *service = NULL;
@@ -440,11 +433,6 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	ADS_STRUCT *ads;
 	time_t time_offset = 0;
 	BOOL internal_ccache = True;
-
-	ZERO_STRUCT(session_key);
-	ZERO_STRUCT(session_key_krb5);
-	ZERO_STRUCT(tkt);
-	ZERO_STRUCT(ap_rep);
 
 	ZERO_STRUCTP(info3);
 
@@ -497,114 +485,36 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	/* if this is a user ccache, we need to act as the user to let the krb5
 	 * library handle the chown, etc. */
 
-	/************************ NON-ROOT **********************/
+	/************************ ENTERING NON-ROOT **********************/
 
 	if (!internal_ccache) {
-
 		set_effective_uid(uid);
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
 
-	krb5_ret = kerberos_kinit_password_ext(principal_s, 
-					       state->request.data.auth.pass, 
-					       time_offset, 
-					       &ticket_lifetime,
-					       &renewal_until,
-					       cc, 
-					       True,
-					       True,
-					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-					       &result);
-
-	if (krb5_ret) {
-		DEBUG(1,("winbindd_raw_kerberos_login: kinit failed for '%s' with: %s (%d)\n", 
-			principal_s, error_message(krb5_ret), krb5_ret));
-		goto failed;
-	}
-
-	/* does http_timestring use heimdals libroken strftime?? - Guenther */
-	DEBUG(10,("got TGT for %s in %s (valid until: %s (%d), renewable till: %s (%d))\n", 
-		principal_s, cc, 
-		http_timestring(ticket_lifetime), (int)ticket_lifetime, 
-		http_timestring(renewal_until), (int)renewal_until));
-
-	/* we cannot continue with krb5 when UF_DONT_REQUIRE_PREAUTH is set,
-	 * in that case fallback to NTLM - gd */ 
-
-	if ((ticket_lifetime == 0) && (renewal_until == 0)) {
-		result = NT_STATUS_INVALID_LOGON_TYPE;
-		goto failed;
-	}
-
-	client_princ = talloc_strdup(state->mem_ctx, global_myname());
-	if (client_princ == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-	strlower_m(client_princ);
-
-	local_service = talloc_asprintf(state->mem_ctx, "%s$@%s", client_princ, lp_realm());
-	if (local_service == NULL) {
-		DEBUG(0,("winbindd_raw_kerberos_login: out of memory\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
-	krb5_ret = cli_krb5_get_ticket(local_service, 
-				       time_offset, 
-				       &tkt, 
-				       &session_key_krb5, 
-				       0, 
-				       cc,
-				       NULL);
-	if (krb5_ret) {
-		DEBUG(1,("winbindd_raw_kerberos_login: failed to get ticket for %s: %s\n", 
-			local_service, error_message(krb5_ret)));
-		result = krb5_to_nt_status(krb5_ret);
-		goto failed;
-	}
-
+	result = kerberos_return_info3_from_pac(state->mem_ctx,
+						principal_s,
+						state->request.data.auth.pass,
+						time_offset,
+						&ticket_lifetime,
+						&renewal_until,
+						cc,
+						True,
+						True,
+						WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+						info3);
 	if (!internal_ccache) {
 		gain_root_privilege();
 	}
 
-	/************************ NON-ROOT **********************/
+	/************************ RETURNED TO ROOT **********************/
 
-	result = ads_verify_ticket(state->mem_ctx, 
-				   lp_realm(), 
-				   time_offset,
-				   &tkt, 
-				   &client_princ_out, 
-				   &pac_data, 
-				   &ap_rep, 
-				   &session_key, False);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("winbindd_raw_kerberos_login: ads_verify_ticket failed: %s\n", 
-			nt_errstr(result)));
 		goto failed;
 	}
 
-	if (!pac_data) {
-		DEBUG(3,("winbindd_raw_kerberos_login: no pac data\n"));
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto failed;
-	}
-			
-	logon_info = get_logon_info_from_pac(pac_data);
-	if (logon_info == NULL) {
-		DEBUG(1,("winbindd_raw_kerberos_login: no logon info\n"));
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto failed;
-	}
-
-	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n", 
-		local_service));
-
-
-	/* last step: 
-	 * put results together */
-
-	*info3 = &logon_info->info3;
+	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n",
+		principal_s));
 
 	/* if we had a user's ccache then return that string for the pam
 	 * environment */
@@ -666,16 +576,6 @@ failed:
 	}
 
 done:
-	data_blob_free(&session_key);
-	data_blob_free(&session_key_krb5);
-	data_blob_free(&ap_rep);
-	data_blob_free(&tkt);
-
-	SAFE_FREE(client_princ_out);
-
-	if (!internal_ccache) {
-		gain_root_privilege();
-	}
 
 	return result;
 #else 
