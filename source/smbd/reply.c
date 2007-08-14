@@ -886,10 +886,9 @@ void reply_checkpath(connection_struct *conn, struct smb_request *req)
  Reply to a getatr.
 ****************************************************************************/
 
-int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_getatr(connection_struct *conn, struct smb_request *req)
 {
 	pstring fname;
-	int outsize = 0;
 	SMB_STRUCT_STAT sbuf;
 	int mode=0;
 	SMB_OFF_T size=0;
@@ -899,21 +898,27 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	START_PROFILE(SMBgetatr);
 
-	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), fname, p,
+	p = smb_buf(req->inbuf) + 1;
+	p += srvstr_get_path((char *)req->inbuf, req->flags2, fname, p,
 			     sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBgetatr);
-		return ERROR_NT(status);
+		return;
 	}
 
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+				 fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBgetatr);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBgetatr);
+			return;
 		}
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBgetatr);
+		return;
 	}
   
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
@@ -928,18 +933,22 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	} else {
 		status = unix_convert(conn, fname, False, NULL,&sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
 			END_PROFILE(SMBgetatr);
-			return ERROR_NT(status);
+			return;
 		}
 		status = check_name(conn, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("reply_getatr: check_name of %s failed (%s)\n",fname,nt_errstr(status)));
+			reply_nterror(req, status);
 			END_PROFILE(SMBgetatr);
-			return ERROR_NT(status);
+			return;
 		}
 		if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn,fname,&sbuf) != 0)) {
 			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
-			return UNIXERROR(ERRDOS,ERRbadfile);
+			reply_unixerror(req, ERRDOS,ERRbadfile);
+			END_PROFILE(SMBgetatr);
+			return;
 		}
 
 		mode = dos_mode(conn,fname,&sbuf);
@@ -949,25 +958,26 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			size = 0;
 		}
 	}
-  
-	outsize = set_message(inbuf,outbuf,10,0,True);
 
-	SSVAL(outbuf,smb_vwv0,mode);
+	reply_outbuf(req, 10, 0);
+
+	SSVAL(req->outbuf,smb_vwv0,mode);
 	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
-		srv_put_dos_date3(outbuf,smb_vwv1,mtime & ~1);
+		srv_put_dos_date3((char *)req->outbuf,smb_vwv1,mtime & ~1);
 	} else {
-		srv_put_dos_date3(outbuf,smb_vwv1,mtime);
+		srv_put_dos_date3((char *)req->outbuf,smb_vwv1,mtime);
 	}
-	SIVAL(outbuf,smb_vwv3,(uint32)size);
+	SIVAL(req->outbuf,smb_vwv3,(uint32)size);
 
 	if (Protocol >= PROTOCOL_NT1) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
+		SSVAL(req->outbuf, smb_flg2,
+		      SVAL(req->outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
 	}
   
 	DEBUG(3,("reply_getatr: name=%s mode=%d size=%u\n", fname, mode, (unsigned int)size ) );
   
 	END_PROFILE(SMBgetatr);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
