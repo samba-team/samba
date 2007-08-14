@@ -33,7 +33,7 @@ struct gid2sid_state {
 };
 
 struct composite_context *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
-		struct wbsrv_service *service, uid_t uid)
+		struct wbsrv_service *service, gid_t gid)
 {
 	struct composite_context *result;
 	struct gid2sid_state *state;
@@ -51,8 +51,8 @@ struct composite_context *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 	state->service = service;
 
 	/* FIXME: This is a stub so far.
-	 * We cheat by just using the uid as RID with the domain SID.*/
-	state->sid = dom_sid_add_rid(result, service->primary_sid, uid);
+	 * We cheat by just using the gid as RID with the domain SID.*/
+	state->sid = dom_sid_add_rid(result, service->primary_sid, gid);
 	if (composite_nomem(state->sid, state->ctx)) return result;
 
 	composite_done(state->ctx);
