@@ -5737,59 +5737,6 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	return(outsize);
 }
 
-/****************************************************************************
- Reply to a setdir.
-****************************************************************************/
-
-int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
-{
-	int snum;
-	int outsize = 0;
-	pstring newdir;
-	NTSTATUS status;
-
-	START_PROFILE(pathworks_setdir);
-  
-	snum = SNUM(conn);
-	if (!CAN_SETDIR(snum)) {
-		END_PROFILE(pathworks_setdir);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
-	}
-
-	srvstr_get_path(inbuf, SVAL(inbuf,smb_flg2), newdir,
-			smb_buf(inbuf) + 1, sizeof(newdir), 0, STR_TERMINATE,
-			&status);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(pathworks_setdir);
-		return ERROR_NT(status);
-	}
-  
-	status = resolve_dfspath(conn, SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES, newdir);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(pathworks_setdir);
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
-		}
-		return ERROR_NT(status);
-	}
-
-	if (strlen(newdir) != 0) {
-		if (!vfs_directory_exist(conn,newdir,NULL)) {
-			END_PROFILE(pathworks_setdir);
-			return ERROR_DOS(ERRDOS,ERRbadpath);
-		}
-		set_conn_connectpath(conn,newdir);
-	}
-  
-	outsize = set_message(inbuf,outbuf,0,0,False);
-	SCVAL(outbuf,smb_reh,CVAL(inbuf,smb_reh));
-  
-	DEBUG(3,("setdir %s\n", newdir));
-
-	END_PROFILE(pathworks_setdir);
-	return(outsize);
-}
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
