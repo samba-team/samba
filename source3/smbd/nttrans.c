@@ -2710,10 +2710,15 @@ static void call_nt_transact_ioctl(connection_struct *conn,
  Reply to get user quota 
 ****************************************************************************/
 
-static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static void call_nt_transact_get_user_quota(connection_struct *conn,
+					    struct smb_request *req,
+					    uint16 **ppsetup,
+					    uint32 setup_count,
+					    char **ppparams,
+					    uint32 parameter_count,
+					    char **ppdata,
+					    uint32 data_count,
+					    uint32 max_data_count)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *params = *ppparams;
@@ -2737,7 +2742,8 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 	if (current_user.ut.uid != 0) {
 		DEBUG(1,("get_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	/*
@@ -2746,14 +2752,16 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 
 	if (parameter_count < 4) {
 		DEBUG(0,("TRANSACT_GET_USER_QUOTA: requires %d >= 4 bytes parameters\n",parameter_count));
-		return ERROR_DOS(ERRDOS,ERRinvalidparam);
+		reply_doserror(req, ERRDOS, ERRinvalidparam);
+		return;
 	}
 	
 	/* maybe we can check the quota_fnum */
 	fsp = file_fsp(SVAL(params,0));
 	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return;
 	}
 
 	/* the NULL pointer checking for fsp->fake_file_handle->pd
@@ -2779,7 +2787,8 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 				param_len = 4;
 				params = nttrans_realloc(ppparams, param_len);
 				if(params == NULL) {
-					return ERROR_DOS(ERRDOS,ERRnomem);
+					reply_doserror(req, ERRDOS, ERRnomem);
+					return;
 				}
 
 				data_len = 0;
@@ -2797,14 +2806,17 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 				start_enum = True;
 			}
 
-			if (start_enum && vfs_get_user_ntquota_list(fsp,&(qt_handle->quota_list))!=0)
-				return ERROR_DOS(ERRSRV,ERRerror);
+			if (start_enum && vfs_get_user_ntquota_list(fsp,&(qt_handle->quota_list))!=0) {
+				reply_doserror(req, ERRSRV, ERRerror);
+				return;
+			}
 
 			/* Realloc the size of parameters and data we will return */
 			param_len = 4;
 			params = nttrans_realloc(ppparams, param_len);
 			if(params == NULL) {
-				return ERROR_DOS(ERRDOS,ERRnomem);
+				reply_doserror(req, ERRDOS, ERRnomem);
+				return;
 			}
 
 			/* we should not trust the value in max_data_count*/
@@ -2812,7 +2824,8 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			
 			pdata = nttrans_realloc(ppdata, max_data_count);/* should be max data count from client*/
 			if(pdata == NULL) {
-				return ERROR_DOS(ERRDOS,ERRnomem);
+				reply_doserror(req, ERRDOS, ERRnomem);
+				return;
 			}
 
 			entry = pdata;
@@ -2873,18 +2886,21 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			
 			if (data_count < 8) {
 				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %d bytes data\n",data_count,8));
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);				
+				reply_doserror(req, ERRDOS, ERRunknownlevel);
+				return;
 			}
 
 			sid_len = IVAL(pdata,4);
 			/* Ensure this is less than 1mb. */
 			if (sid_len > (1024*1024)) {
-				return ERROR_DOS(ERRDOS,ERRnomem);
+				reply_doserror(req, ERRDOS, ERRnomem);
+				return;
 			}
 
 			if (data_count < 8+sid_len) {
 				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long)(8+sid_len)));
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);				
+				reply_doserror(req, ERRDOS, ERRunknownlevel);
+				return;
 			}
 
 			data_len = 4+40+sid_len;
@@ -2914,12 +2930,14 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			param_len = 4;
 			params = nttrans_realloc(ppparams, param_len);
 			if(params == NULL) {
-				return ERROR_DOS(ERRDOS,ERRnomem);
+				reply_doserror(req, ERRDOS, ERRnomem);
+				return;
 			}
 
 			pdata = nttrans_realloc(ppdata, data_len);
 			if(pdata == NULL) {
-				return ERROR_DOS(ERRDOS,ERRnomem);
+				reply_doserror(req, ERRDOS, ERRnomem);
+				return;
 			}
 
 			entry = pdata;
@@ -2952,14 +2970,13 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 
 		default:
 			DEBUG(0,("do_nt_transact_get_user_quota: fnum %d unknown level 0x%04hX\n",fsp->fnum,level));
-			return ERROR_DOS(ERRSRV,ERRerror);
+			reply_doserror(req, ERRSRV, ERRerror);
+			return;
 			break;
 	}
 
-	send_nt_replies(inbuf, outbuf, bufsize, nt_status, params, param_len,
-			pdata, data_len);
-
-	return -1;
+	send_nt_replies_new(req, nt_status, params, param_len,
+			    pdata, data_len);
 }
 
 /****************************************************************************
@@ -3203,28 +3220,13 @@ static void handle_nttrans(connection_struct *conn,
 #ifdef HAVE_SYS_QUOTAS
 		case NT_TRANSACT_GET_USER_QUOTA:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_get_user_quota);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_get_user_quota(
-					conn, inbuf, outbuf,
-					size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return));
-
+			call_nt_transact_get_user_quota(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 			END_PROFILE(NT_transact_get_user_quota);
 			break;
 		}
