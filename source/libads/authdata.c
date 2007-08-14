@@ -958,11 +958,11 @@ out:
 /****************************************************************
 ****************************************************************/
 
- NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
-			      const char *name,
-			      const char *pass,
-			      time_t time_offset,
-			      PAC_DATA **pac_ret)
+NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
+			     const char *name,
+			     const char *pass,
+			     time_t time_offset,
+			     PAC_DATA **pac_ret)
 {
 	krb5_error_code ret;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
