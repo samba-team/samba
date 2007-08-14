@@ -637,6 +637,30 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 	return ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
 }
 
+/*
+  non-locking fetch of a record
+ */
+int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+	       TDB_DATA key, TDB_DATA *data)
+{
+	struct ctdb_call call;
+	int ret;
+
+	call.call_id = CTDB_FETCH_FUNC;
+	call.call_data.dptr = NULL;
+	call.call_data.dsize = 0;
+
+	ret = ctdb_call(ctdb_db, &call);
+
+	if (ret == 0) {
+		*data = call.reply_data;
+		talloc_steal(mem_ctx, data->dptr);
+	}
+
+	return ret;
+}
+
+
 struct ctdb_client_control_state {
 	struct ctdb_context *ctdb;
 	uint32_t reqid;
@@ -1432,6 +1456,11 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
 	int ret;
 	int32_t res;
 
+	ctdb_db = ctdb_db_handle(ctdb, name);
+	if (ctdb_db) {
+		return ctdb_db;
+	}
+
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db);
 
@@ -2161,6 +2190,8 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->ev  = ev;
 	ctdb->idr = idr_init(ctdb);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
+
+	ctdb_set_socketname(ctdb, CTDB_PATH);
 
 	return ctdb;
 }
