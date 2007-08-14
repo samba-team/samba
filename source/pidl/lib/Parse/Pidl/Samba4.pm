@@ -62,7 +62,7 @@ sub DeclLong($)
 		$ret.="*" foreach (1..$numstar);
 	}
 	$ret.=$element->{NAME};
-	foreach (@{$element->{ARRAY_LEN}}) {
+	foreach (@{$element->{ORIGINAL}->{ARRAY_LEN}}) {
 		next unless (is_constant($_) and not has_property($element, "charset"));
 		$ret.="[$_]";
 	}
