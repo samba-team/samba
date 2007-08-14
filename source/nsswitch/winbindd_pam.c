@@ -551,9 +551,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	}
 
-	result = NT_STATUS_OK;
-
-	goto done;
+	return NT_STATUS_OK;
 
 failed:
 
@@ -575,10 +573,8 @@ failed:
 			state->request.data.auth.user));
 	}
 
-done:
-
 	return result;
-#else 
+#else
 	return NT_STATUS_NOT_SUPPORTED;
 #endif /* HAVE_KRB5 */
 }
