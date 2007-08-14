@@ -703,7 +703,7 @@ static const struct smb_message_struct {
 /* 0x0a */ { "SMBread",NULL,reply_read,AS_USER},
 /* 0x0b */ { "SMBwrite",NULL,reply_write,AS_USER | CAN_IPC },
 /* 0x0c */ { "SMBlock",NULL,reply_lock,AS_USER},
-/* 0x0d */ { "SMBunlock",reply_unlock,NULL,AS_USER},
+/* 0x0d */ { "SMBunlock",NULL,reply_unlock,AS_USER},
 /* 0x0e */ { "SMBctemp",NULL,reply_ctemp,AS_USER },
 /* 0x0f */ { "SMBmknew",NULL,reply_mknew,AS_USER},
 /* 0x10 */ { "SMBcheckpath",NULL,reply_checkpath,AS_USER},
