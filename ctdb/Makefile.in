@@ -89,19 +89,19 @@ bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(POPT_OBJ) $(LIB_FLAGS)
 
 utils/smnotify/smnotify.h:  utils/smnotify/smnotify.x
 	@echo Generating $@
-	rpcgen -C -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
+	rpcgen -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
 
 utils/smnotify/gen_xdr.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -C -c utils/smnotify/smnotify.x > utils/smnotify/gen_xdr.c 
+	rpcgen -c utils/smnotify/smnotify.x > utils/smnotify/gen_xdr.c 
 
 utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -C -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
+	rpcgen -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
 
 bin/rb_test: $(CTDB_CLIENT_OBJ) tests/rb_test.o 
 	@echo Linking $@
