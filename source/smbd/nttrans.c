@@ -2983,10 +2983,15 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
  Reply to set user quota
 ****************************************************************************/
 
-static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static void call_nt_transact_set_user_quota(connection_struct *conn,
+					    struct smb_request *req,
+					    uint16 **ppsetup,
+					    uint32 setup_count,
+					    char **ppparams,
+					    uint32 parameter_count,
+					    char **ppdata,
+					    uint32 data_count,
+					    uint32 max_data_count)
 {
 	char *params = *ppparams;
 	char *pdata = *ppdata;
@@ -3002,7 +3007,8 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 	if (current_user.ut.uid != 0) {
 		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	/*
@@ -3011,19 +3017,22 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 
 	if (parameter_count < 2) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= 2 bytes parameters\n",parameter_count));
-		return ERROR_DOS(ERRDOS,ERRinvalidparam);
+		reply_doserror(req, ERRDOS, ERRinvalidparam);
+		return;
 	}
 	
 	/* maybe we can check the quota_fnum */
 	fsp = file_fsp(SVAL(params,0));
 	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return;
 	}
 
 	if (data_count < 40) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40));
-		return ERROR_DOS(ERRDOS,ERRunknownlevel);		
+		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		return;
 	}
 
 	/* offset to next quota record.
@@ -3036,7 +3045,8 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 
 	if (data_count < 40+sid_len) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %lu bytes data\n",data_count,(unsigned long)40+sid_len));
-		return ERROR_DOS(ERRDOS,ERRunknownlevel);		
+		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		return;
 	}
 
 	/* unknown 8 bytes in pdata 
@@ -3052,7 +3062,8 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 		((qt.usedspace != 0xFFFFFFFF)||
 		(IVAL(pdata,20)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
-		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		return;
 	}
 #endif /* LARGE_SMB_OFF_T */
 
@@ -3065,7 +3076,8 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 		((qt.softlim != 0xFFFFFFFF)||
 		(IVAL(pdata,28)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
-		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		return;
 	}
 #endif /* LARGE_SMB_OFF_T */
 
@@ -3078,7 +3090,8 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 		((qt.hardlim != 0xFFFFFFFF)||
 		(IVAL(pdata,36)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
-		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		return;
 	}
 #endif /* LARGE_SMB_OFF_T */
 	
@@ -3088,13 +3101,12 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 	/* 44 unknown bytes left... */
 
 	if (vfs_set_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &qt)!=0) {
-		return ERROR_DOS(ERRSRV,ERRerror);	
+		reply_doserror(req, ERRSRV, ERRerror);
+		return;
 	}
 
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len,
-			pdata, data_len);
-
-	return -1;
+	send_nt_replies_new(req, NT_STATUS_OK, params, param_len,
+			    pdata, data_len);
 }
 #endif /* HAVE_SYS_QUOTAS */
 
@@ -3233,28 +3245,13 @@ static void handle_nttrans(connection_struct *conn,
 
 		case NT_TRANSACT_SET_USER_QUOTA:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_set_user_quota);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_set_user_quota(
-					conn, inbuf, outbuf,
-					size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return));
-
+			call_nt_transact_set_user_quota(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return);
 			END_PROFILE(NT_transact_set_user_quota);
 			break;					
 		}
