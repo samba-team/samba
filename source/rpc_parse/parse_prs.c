@@ -122,6 +122,10 @@ BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 
 /*******************************************************************
  Delete the memory in a parse structure - if we own it.
+
+ NOTE: Contrary to the somewhat confusing naming, this function is not
+       intended for freeing memory allocated by prs_alloc_mem().  That memory
+       is attached to the talloc context given by ps->mem_ctx.
  ********************************************************************/
 
 void prs_mem_free(prs_struct *ps)
