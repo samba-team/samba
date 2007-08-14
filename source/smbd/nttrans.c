@@ -2071,15 +2071,15 @@ int reply_ntrename(connection_struct *conn,
  don't allow a directory to be opened.
 ****************************************************************************/
 
-static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
-					  char *outbuf, int length,
-					  int bufsize, 
-					  uint16 **ppsetup, uint32 setup_count,
-					  char **ppparams,
-					  uint32 parameter_count,
-					  char **ppdata, uint32 data_count,
-					  uint32 max_data_count,
-					  uint32 max_param_count)
+static void call_nt_transact_notify_change(connection_struct *conn,
+					   struct smb_request *req,
+					   uint16 **ppsetup,
+					   uint32 setup_count,
+					   char **ppparams,
+					   uint32 parameter_count,
+					   char **ppdata, uint32 data_count,
+					   uint32 max_data_count,
+					   uint32 max_param_count)
 {
 	uint16 *setup = *ppsetup;
 	files_struct *fsp;
@@ -2088,7 +2088,8 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	BOOL recursive;
 
 	if(setup_count < 6) {
-		return ERROR_DOS(ERRDOS,ERRbadfunc);
+		reply_doserror(req, ERRDOS, ERRbadfunc);
+		return;
 	}
 
 	fsp = file_fsp(SVAL(setup,4));
@@ -2098,14 +2099,16 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	DEBUG(3,("call_nt_transact_notify_change\n"));
 
 	if(!fsp) {
-		return ERROR_DOS(ERRDOS,ERRbadfid);
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 
 	{
 		char *filter_string;
 
 		if (!(filter_string = notify_filter_string(NULL, filter))) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
+			reply_nterror(req,NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		DEBUG(3,("call_nt_transact_notify_change: notify change "
@@ -2116,7 +2119,8 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	}
 
 	if((!fsp->is_directory) || (conn != fsp->conn)) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	if (fsp->notify == NULL) {
@@ -2126,7 +2130,8 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("change_notify_create returned %s\n",
 				   nt_errstr(status)));
-			return ERROR_NT(status);
+			reply_nterror(req, status);
+			return;
 		}
 	}
 
@@ -2141,26 +2146,25 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		 * here.
 		 */
 
-		change_notify_reply(inbuf, max_param_count, fsp->notify);
+		change_notify_reply(req->inbuf, max_param_count, fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its
 		 * results
 		 */
-		return -1;
+		return;
 	}
 
 	/*
 	 * No changes pending, queue the request
 	 */
 
-	status = change_notify_add_request(inbuf, max_param_count, filter,
+	status = change_notify_add_request(req->inbuf, max_param_count, filter,
 			recursive, fsp);
 	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
+		reply_nterror(req, status);
 	}
-
-	return -1;
+	return;
 }
 
 /****************************************************************************
@@ -3166,28 +3170,14 @@ static void handle_nttrans(connection_struct *conn,
 
 		case NT_TRANSACT_NOTIFY_CHANGE:
 		{
-			char *inbuf, *outbuf;
-			int size, bufsize;
-
 			START_PROFILE(NT_transact_notify_change);
-
-			if (!reply_prep_legacy(req, &inbuf, &outbuf, &size,
-					       &bufsize)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBnttrans);
-				return;
-			}
-
-			reply_post_legacy(
-				req,
-				call_nt_transact_notify_change(
-					conn, inbuf, outbuf, size, bufsize,
-					&state->setup, state->setup_count,
-					&state->param, state->total_param,
-					&state->data, state->total_data,
-					state->max_data_return,
-					state->max_param_return));
-
+			call_nt_transact_notify_change(
+				conn, req,
+				&state->setup, state->setup_count,
+				&state->param, state->total_param,
+				&state->data, state->total_data,
+				state->max_data_return,
+				state->max_param_return);
 			END_PROFILE(NT_transact_notify_change);
 			break;
 		}
