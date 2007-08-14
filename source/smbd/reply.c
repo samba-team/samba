@@ -3400,36 +3400,51 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
  Reply to a write.
 ****************************************************************************/
 
-int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int dum_buffsize)
+void reply_write(connection_struct *conn, struct smb_request *req)
 {
 	size_t numtowrite;
 	ssize_t nwritten = -1;
 	SMB_OFF_T startpos;
 	char *data;
-	files_struct *fsp = file_fsp(SVAL(inbuf,smb_vwv0));
-	int outsize = 0;
+	files_struct *fsp;
 	NTSTATUS status;
+
 	START_PROFILE(SMBwrite);
+
+	if (req->wct < 5) {
+		END_PROFILE(SMBwrite);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
+		reply_pipe_write(req);
 		END_PROFILE(SMBwrite);
-		return reply_pipe_write(inbuf,outbuf,size,dum_buffsize);
+		return;
 	}
 
-	CHECK_FSP(fsp,conn);
+	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
+
+	if (!check_fsp(conn, req, fsp, &current_user)) {
+		return;
+	}
+
 	if (!CHECK_WRITE(fsp)) {
+		reply_doserror(req, ERRDOS, ERRbadaccess);
 		END_PROFILE(SMBwrite);
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+		return;
 	}
 
-	numtowrite = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
-	data = smb_buf(inbuf) + 3;
+	numtowrite = SVAL(req->inbuf,smb_vwv1);
+	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+	data = smb_buf(req->inbuf) + 3;
   
-	if (is_locked(fsp,(uint32)SVAL(inbuf,smb_pid),(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp, (uint32)req->smbpid, (SMB_BIG_UINT)numtowrite,
+		      (SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+		reply_doserror(req, ERRDOS, ERRlock);
 		END_PROFILE(SMBwrite);
-		return ERROR_DOS(ERRDOS,ERRlock);
+		return;
 	}
 
 	/*
@@ -3444,43 +3459,47 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 		 */
 		nwritten = vfs_allocate_file_space(fsp, (SMB_OFF_T)startpos);
 		if (nwritten < 0) {
+			reply_nterror(req, NT_STATUS_DISK_FULL);
 			END_PROFILE(SMBwrite);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
+			return;
 		}
 		nwritten = vfs_set_filelen(fsp, (SMB_OFF_T)startpos);
 		if (nwritten < 0) {
+			reply_nterror(req, NT_STATUS_DISK_FULL);
 			END_PROFILE(SMBwrite);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
+			return;
 		}
 	} else
 		nwritten = write_file(fsp,data,startpos,numtowrite);
   
 	status = sync_file(conn, fsp, False);
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBwrite);
 		DEBUG(5,("reply_write: sync_file for %s returned %s\n",
 			fsp->fsp_name, nt_errstr(status) ));
-		return ERROR_NT(status);
+		reply_nterror(req, status);
+		END_PROFILE(SMBwrite);
+		return;
 	}
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
+		reply_unixerror(req, ERRHRD, ERRdiskfull);
 		END_PROFILE(SMBwrite);
-		return(UNIXERROR(ERRHRD,ERRdiskfull));
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,1,0,True);
+	reply_outbuf(req, 1, 0);
   
-	SSVAL(outbuf,smb_vwv0,nwritten);
+	SSVAL(req->outbuf,smb_vwv0,nwritten);
 
 	if (nwritten < (ssize_t)numtowrite) {
-		SCVAL(outbuf,smb_rcls,ERRHRD);
-		SSVAL(outbuf,smb_err,ERRdiskfull);      
+		SCVAL(req->outbuf,smb_rcls,ERRHRD);
+		SSVAL(req->outbuf,smb_err,ERRdiskfull);
 	}
   
 	DEBUG(3,("write fnum=%d num=%d wrote=%d\n", fsp->fnum, (int)numtowrite, (int)nwritten));
 
 	END_PROFILE(SMBwrite);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
