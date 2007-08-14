@@ -701,7 +701,7 @@ static const struct smb_message_struct {
 /* 0x08 */ { "SMBgetatr",NULL,reply_getatr,AS_USER},
 /* 0x09 */ { "SMBsetatr",NULL,reply_setatr,AS_USER | NEED_WRITE},
 /* 0x0a */ { "SMBread",reply_read,NULL,AS_USER},
-/* 0x0b */ { "SMBwrite",reply_write,NULL,AS_USER | CAN_IPC },
+/* 0x0b */ { "SMBwrite",NULL,reply_write,AS_USER | CAN_IPC },
 /* 0x0c */ { "SMBlock",reply_lock,NULL,AS_USER},
 /* 0x0d */ { "SMBunlock",reply_unlock,NULL,AS_USER},
 /* 0x0e */ { "SMBctemp",NULL,reply_ctemp,AS_USER },

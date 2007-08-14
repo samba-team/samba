@@ -138,24 +138,24 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
  Reply to a write on a pipe.
 ****************************************************************************/
 
-int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
+void reply_pipe_write(struct smb_request *req)
 {
-	smb_np_struct *p = get_rpc_pipe_p(SVAL(inbuf,smb_vwv0));
-	uint16 vuid = SVAL(inbuf,smb_uid);
-	size_t numtowrite = SVAL(inbuf,smb_vwv1);
+	smb_np_struct *p = get_rpc_pipe_p(SVAL(req->inbuf,smb_vwv0));
+	size_t numtowrite = SVAL(req->inbuf,smb_vwv1);
 	int nwritten;
-	int outsize;
 	char *data;
 
 	if (!p) {
-		return(ERROR_DOS(ERRDOS,ERRbadfid));
+		reply_doserror(req, ERRDOS, ERRbadfid);
+		return;
 	}
 
-	if (p->vuid != vuid) {
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+	if (p->vuid != req->vuid) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return;
 	}
 
-	data = smb_buf(inbuf) + 3;
+	data = smb_buf(req->inbuf) + 3;
 
 	if (numtowrite == 0) {
 		nwritten = 0;
@@ -164,16 +164,17 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
-		return (UNIXERROR(ERRDOS,ERRnoaccess));
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
-  
-	outsize = set_message(inbuf,outbuf,1,0,True);
 
-	SSVAL(outbuf,smb_vwv0,nwritten);
+	reply_outbuf(req, 1, 0);
+
+	SSVAL(req->outbuf,smb_vwv0,nwritten);
   
 	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n", p->pnum, nwritten));
 
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
