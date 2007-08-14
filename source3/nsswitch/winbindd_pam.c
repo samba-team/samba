@@ -686,13 +686,11 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	E_md4hash(state->request.data.auth.pass, new_nt_pass);
 
-#if DEBUG_PASSWORD
-	dump_data(100, new_nt_pass, NT_HASH_LEN);
-	dump_data(100, cached_nt_pass, NT_HASH_LEN);
+	dump_data_pw("new_nt_pass", new_nt_pass, NT_HASH_LEN);
+	dump_data_pw("cached_nt_pass", cached_nt_pass, NT_HASH_LEN);
 	if (cached_salt) {
-		dump_data(100, cached_salt, NT_HASH_LEN);
+		dump_data_pw("cached_salt", cached_salt, NT_HASH_LEN);
 	}
-#endif
 
 	if (cached_salt) {
 		/* In this case we didn't store the nt_hash itself,
