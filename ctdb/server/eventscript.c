@@ -25,6 +25,8 @@
 
 /*
   run the event script - varargs version
+  this function is called and run in the context of a forked child
+  which allows it to do blocking calls such as system()
  */
 static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_list ap)
 {
