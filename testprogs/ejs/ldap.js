@@ -439,7 +439,7 @@ objectClass: user
 //	assert(res.msgs[0].userAccountControl == 4098);
 
 
-        var attrs = new Array("cn", "name", "objectClass", "objectGUID", "whenCreated", "ntSecurityDescriptor");
+        var attrs = new Array("cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor");
 	println("Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestUSer2)(objectClass=user))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.error != 0 || res.msgs.length != 1) {
@@ -457,7 +457,8 @@ objectClass: user
 	assert(res.msgs[0].objectClass[3] == "user");
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
-	assert(res.msgs[0].ntSecurityDescriptor != undefined);
+	assert(res.msgs[0].nTSecurityDescriptor != undefined);
+
 
 	ok = ldb.del(res.msgs[0].dn);
 	if (ok.error != 0) {
@@ -575,6 +576,47 @@ objectClass: user
 	assert(res.msgs[0].objectClass[0] == "top");
 	assert(res.msgs[0].objectClass[1] == "domain");
 	assert(res.msgs[0].objectClass[2] == "domainDNS");
+
+//  check enumeration
+
+ 	var attrs = new Array("cn");
+	println("Testing ldb.search for objectCategory=person");
+	var res = ldb.search("objectCategory=person", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	assert(res.error == 0);
+	assert(res.msgs.length > 0);
+
+ 	var attrs = new Array("cn");
+	var controls = new Array("domain_scope:1");
+	println("Testing ldb.search for objectCategory=person with domain scope control");
+	var res = ldb.search("objectCategory=person", base_dn, ldb.SCOPE_SUBTREE, attrs, controls);
+	assert(res.error == 0);
+	assert(res.msgs.length > 0);
+ 
+	var attrs = new Array("cn");
+	println("Testing ldb.search for objectCategory=user");
+	var res = ldb.search("objectCategory=user", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	assert(res.error == 0);
+	assert(res.msgs.length > 0);
+
+ 	var attrs = new Array("cn");
+	var controls = new Array("domain_scope:1");
+	println("Testing ldb.search for objectCategory=user with domain scope control");
+	var res = ldb.search("objectCategory=user", base_dn, ldb.SCOPE_SUBTREE, attrs, controls);
+	assert(res.error == 0);
+	assert(res.msgs.length > 0);
+	
+ 	var attrs = new Array("cn");
+	println("Testing ldb.search for objectCategory=group");
+	var res = ldb.search("objectCategory=group", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	assert(res.error == 0);
+	assert(res.msgs.length > 0);
+
+ 	var attrs = new Array("cn");
+	var controls = new Array("domain_scope:1");
+	println("Testing ldb.search for objectCategory=group with domain scope control");
+	var res = ldb.search("objectCategory=group", base_dn, ldb.SCOPE_SUBTREE, attrs, controls);
+	assert(res.error == 0);
+	assert(res.msgs.length > 0);
 	
 }
 

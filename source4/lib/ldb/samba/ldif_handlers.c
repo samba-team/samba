@@ -2,7 +2,7 @@
    ldb database library - ldif handlers for Samba
 
    Copyright (C) Andrew Tridgell 2005
-   Copyright (C) Andrew Bartlett 2006
+   Copyright (C) Andrew Bartlett 2006-2007
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
@@ -309,24 +309,17 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 	if ( ! ldb_dn_validate(dn1)) {
 		const char *lDAPDisplayName = talloc_strndup(mem_ctx, (char *)in->data, in->length);
 		class = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
-		talloc_free(lDAPDisplayName);
-	} else if (ldb_dn_get_comp_num(dn1) >= 1 && ldb_attr_cmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
-		const struct ldb_val *val = ldb_dn_get_rdn_val(dn1);
-		const char *cn = talloc_strndup(mem_ctx, (char *)val->data, val->length);
-		class = dsdb_class_by_cn(schema, cn);
-		talloc_free(cn);
-	} else {
-		talloc_free(dn1);
-		return -1;
+		if (class) {
+			struct ldb_dn *dn = ldb_dn_new(mem_ctx, ldb,  
+						       class->defaultObjectCategory);
+			*out = data_blob_string_const(ldb_dn_get_casefold(dn));
+			return LDB_SUCCESS;
+		} else {
+			*out = data_blob_talloc(mem_ctx, in->data, in->length);
+			return LDB_SUCCESS;
+		}
 	}
-	talloc_free(dn1);
-
-	if (!class) {
-		return -1;
-	}
-	
-	*out = data_blob_string_const(talloc_strdup(mem_ctx, class->lDAPDisplayName));
-
+	*out = data_blob_string_const(ldb_dn_get_casefold(dn1));
 	return LDB_SUCCESS;
 }
 
@@ -341,9 +334,9 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 	ret2 = ldif_canonicalise_objectCategory(ldb, mem_ctx, v2, &v2_canon);
 
 	if (ret1 == LDB_SUCCESS && ret2 == LDB_SUCCESS) {
-		return ldb_attr_cmp(v1_canon.data, v2_canon.data);
+		return data_blob_cmp(&v1_canon, &v2_canon);
 	} else {
-		return strcasecmp(v1->data, v2->data);
+		return data_blob_cmp(v1, v2);
 	}
 }
 
