@@ -167,6 +167,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 			return ret;
 		}
 
+		/* remove this script from the tree */
 		talloc_free(script);
 	}
 	
