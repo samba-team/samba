@@ -16,6 +16,7 @@ use Parse::Pidl::Typelist qw(hasType getType mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(has_property is_constant ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 use Parse::Pidl::Samba4 qw(DeclLong);
+use Parse::Pidl::Samba4::NDR::Parser qw(GenerateFunctionInEnv);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -31,20 +32,6 @@ sub new($)
 	my ($class) = shift;
 	my $self = { res => "", res_hdr => "", tabs => "" };
 	bless($self, $class);
-}
-
-sub GenerateFunctionInEnv($)
-{
-	my $fn = shift;
-	my %env;
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = "r.in.$e->{NAME}";
-		}
-	}
-
-	return \%env;
 }
 
 sub ParseFunction($$$)
@@ -110,7 +97,7 @@ sub ParseFunction($$$)
 			# Since the data is being copied into a user-provided data 
 			# structure, the user should be able to know the size beforehand 
 			# to allocate a structure of the right size.
-			my $env = GenerateFunctionInEnv($fn);
+			my $env = GenerateFunctionInEnv($fn, "r.");
 			my $size_is = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e);
 			$self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is);");
 		} else {

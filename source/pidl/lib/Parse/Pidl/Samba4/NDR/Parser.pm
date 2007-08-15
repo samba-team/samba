@@ -243,30 +243,34 @@ sub EnvSubstituteValue($$)
 	return $env;
 }
 
-sub GenerateFunctionInEnv($)
+sub GenerateFunctionInEnv($;$)
 {
-	my $fn = shift;
+	my ($fn, $base) = @_;
 	my %env;
+
+	$base = "r->" unless defined($base);
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = "r->in.$e->{NAME}";
+			$env{$e->{NAME}} = $base."in.$e->{NAME}";
 		}
 	}
 
 	return \%env;
 }
 
-sub GenerateFunctionOutEnv($)
+sub GenerateFunctionOutEnv($;$)
 {
-	my $fn = shift;
+	my ($fn, $base) = @_;
 	my %env;
+
+	$base = "r->" unless defined($base);
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep (/out/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = "r->out.$e->{NAME}";
+			$env{$e->{NAME}} = $base."out.$e->{NAME}";
 		} elsif (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = "r->in.$e->{NAME}";
+			$env{$e->{NAME}} = $base."in.$e->{NAME}";
 		}
 	}
 
