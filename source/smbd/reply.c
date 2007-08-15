@@ -1505,6 +1505,16 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 			/* We have re-scheduled this call. */
 			return -1;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_COLLISION,
+					  ERRDOS, ERRfilexists);
+		}
 		return ERROR_NT(status);
 	}
 
