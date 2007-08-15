@@ -257,7 +257,7 @@
 	WERROR svcctl_StartServiceW(
 		[in,ref] policy_handle *handle,
 		[in] uint32 NumArgs,
-		[in,length_is(NumArgs)] [string,charset(UTF16)] uint16 *Arguments
+		[in/*FIXME:,length_is(NumArgs)*/] [string,charset(UTF16)] uint16 *Arguments
 	);
 
 	/*****************/
@@ -385,7 +385,7 @@
 	WERROR svcctl_StartServiceA(
 		[in,ref] policy_handle *handle,
 		[in] uint32 NumArgs,
-		[in,length_is(NumArgs)] [string,charset(UTF16)] uint16 *Arguments
+		[in/*FIXME:,length_is(NumArgs)*/] [string,charset(UTF16)] uint16 *Arguments
 	);
 
 	/*****************/
