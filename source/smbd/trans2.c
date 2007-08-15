@@ -907,10 +907,21 @@ static void call_trans2open(connection_struct *conn,
 		open_attr,
 		oplock_request,
 		&smb_action, &fsp);
-      
+
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
+			return;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
+				ERRDOS, ERRfilexists);
 			return;
 		}
 		reply_nterror(req, status);
