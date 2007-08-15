@@ -76,3 +76,7 @@ void *trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key);
 
 /* Traverse a tree with a key based on an array of uint32 */
 void trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, void (*callback)(void *param, void *data), void *param);
+
+/* Lookup the first node in the tree with a key based on an array of uint32 
+   and return a pointer to data or NULL */
+void *trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen);

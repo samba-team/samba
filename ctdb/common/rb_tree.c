@@ -962,6 +962,43 @@ trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen,
 }
 
 
+/* this function will return the first node in a tree where
+   the key is an array of uint32_t
+*/
+void *
+trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen)
+{
+	trbt_node_t *node;
+
+	if (keylen < 1) {
+		return NULL;
+	}
+	
+	if (tree == NULL) {
+		return NULL;
+	}
+
+	node=tree->root;
+	if (node == NULL) {
+		return NULL;
+	}
+
+	while (node->left) {
+		node = node->left;
+	}
+
+	/* we found our node so return the data */
+	if (keylen == 1) {
+		return node->data;
+	}
+
+	/* we are still traversing subtrees so find the first node in the
+	   next level of trees
+	*/
+	return trbt_findfirstarray32(node->data, keylen-1);
+}
+
+
 #if 0
 static void printtree(trbt_node_t *node, int levels)
 {
