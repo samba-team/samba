@@ -947,6 +947,23 @@ struct ctdb_killtcp_con {
 	struct ctdb_kill_tcp *killtcp;
 };
 
+/* this function is used to create a key to represent this socketpair
+   in the killtcp tree.
+   this key is used to insert and lookup matching socketpairs that are
+   to be tickled and RST
+*/
+#define KILLTCP_KEYLEN	4
+static uint32_t *killtcp_key(struct sockaddr_in *src, struct sockaddr_in *dst)
+{
+	static uint32_t key[KILLTCP_KEYLEN];
+
+	key[0]	= dst->sin_addr.s_addr;
+	key[1]	= src->sin_addr.s_addr;
+	key[2]	= dst->sin_port;
+	key[3]	= src->sin_port;
+
+	return key;
+}
 
 /*
   called when we get a read event on the raw socket
@@ -958,7 +975,6 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 	struct ctdb_killtcp_con *con;
 	struct sockaddr_in src, dst;
 	uint32_t ack_seq, seq;
-	uint32_t key[4];
 
 	if (!(flags & EVENT_FD_READ)) {
 		return;
@@ -975,11 +991,8 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 	/* check if we have this guy in our list of connections
 	   to kill
 	*/
-	key[0]	= dst.sin_addr.s_addr;
-	key[1]	= src.sin_addr.s_addr;
-	key[2]	= dst.sin_port;
-	key[3]	= src.sin_port;
-	con = trbt_lookuparray32(killtcp->connections, 4, key);
+	con = trbt_lookuparray32(killtcp->connections, 
+			KILLTCP_KEYLEN, killtcp_key(&src, &dst));
 	if (con == NULL) {
 		/* no this was some other packet we can just ignore */
 		return;
@@ -1028,7 +1041,7 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
 
 
 	/* loop over all connections sending tickle ACKs */
-	trbt_traversearray32(killtcp->connections, 4, tickle_connection_traverse, killtcp);
+	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, killtcp);
 
 
 	/* If there are no more connections to kill we can remove the
@@ -1080,7 +1093,6 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 {
 	struct ctdb_kill_tcp *killtcp = ctdb->killtcp;
 	struct ctdb_killtcp_con *con;
-	uint32_t key[4];
 	
 	/* If this is the first connection to kill we must allocate
 	   a new structure
@@ -1111,12 +1123,9 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	con->killtcp = killtcp;
 
 
-	key[0]	= con->src.sin_addr.s_addr;
-	key[1]	= con->dst.sin_addr.s_addr;
-	key[2]	= con->src.sin_port;
-	key[3]	= con->dst.sin_port;
-	trbt_insertarray32_callback(killtcp->connections, 4, key, add_killtcp_callback, con);
-
+	trbt_insertarray32_callback(killtcp->connections,
+			KILLTCP_KEYLEN, killtcp_key(&con->dst, &con->src),
+			add_killtcp_callback, con);
 
 	/* 
 	   If we dont have a socket to send from yet we must create it
