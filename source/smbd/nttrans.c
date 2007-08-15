@@ -743,16 +743,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					&info, &fsp);
 
 		TALLOC_FREE(case_state);
-
-		if(!NT_STATUS_IS_OK(status)) {
-			if (!use_nt_status() && NT_STATUS_EQUAL(
-				    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-				status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
-			}
-			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(status);
-		}
-
 	} else {
 
 		/*
@@ -781,7 +771,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					oplock_request,
 					&info, &fsp);
 
-		if (!NT_STATUS_IS_OK(status)) { 
+		if (!NT_STATUS_IS_OK(status)) {
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
 			 * where the NT client will attempt to
@@ -813,7 +803,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					END_PROFILE(SMBntcreateX);
 					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
-	
+
 				oplock_request = 0;
 				status = open_directory(conn, &req, fname,
 							&sbuf,
@@ -823,29 +813,32 @@ int reply_ntcreate_and_X(connection_struct *conn,
 							create_options,
 							file_attributes,
 							&info, &fsp);
-
-				if(!NT_STATUS_IS_OK(status)) {
-					TALLOC_FREE(case_state);
-					if (!use_nt_status() && NT_STATUS_EQUAL(
-						    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-						status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
-					}
-					END_PROFILE(SMBntcreateX);
-					return ERROR_NT(status);
-				}
-			} else {
-				TALLOC_FREE(case_state);
-				END_PROFILE(SMBntcreateX);
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return ERROR_NT(status);
 			}
-		} 
+		}
 	}
-		
+
 	TALLOC_FREE(case_state);
+
+	if(!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntcreateX);
+
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_COLLISION,
+				ERRDOS, ERRfilexists);
+		}
+		return ERROR_NT(status);
+	}
 
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
@@ -1463,11 +1456,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					create_options,
 					file_attributes,
 					&info, &fsp);
-		if(!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(case_state);
-			return ERROR_NT(status);
-		}
-
 	} else {
 
 		/*
@@ -1483,7 +1471,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					oplock_request,
 					&info, &fsp);
 
-		if (!NT_STATUS_IS_OK(status)) { 
+		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
 					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
@@ -1495,7 +1483,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					TALLOC_FREE(case_state);
 					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
-	
+
 				oplock_request = 0;
 				status = open_directory(conn, &req, fname,
 							&sbuf,
@@ -1509,15 +1497,30 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					TALLOC_FREE(case_state);
 					return ERROR_NT(status);
 				}
-			} else {
-				TALLOC_FREE(case_state);
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return ERROR_NT(status);
 			}
-		} 
+		}
+	}
+
+	TALLOC_FREE(case_state);
+
+	if(!NT_STATUS_IS_OK(status)) {
+
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_COLLISION,
+				ERRDOS, ERRfilexists);
+		}
+		return ERROR_NT(status);
 	}
 
 	/*
