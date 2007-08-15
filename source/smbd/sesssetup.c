@@ -234,8 +234,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	fstring netbios_domain_name;
 	struct passwd *pw;
 	fstring user;
-	int sess_vuid = SVAL(inbuf, smb_uid);
-	user_struct *vuser = NULL;
+	int sess_vuid;
 	NTSTATUS ret;
 	PAC_DATA *pac_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
@@ -512,11 +511,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	/* register_vuid keeps the server info */
 	/* register_vuid takes ownership of session_key, no need to free after this.
  	   A better interface would copy it.... */
-	if (!is_partial_auth_vuid(sess_vuid)) {
-		sess_vuid = register_initial_vuid();
-
-	}
-	sess_vuid = register_existing_vuid(vuid, server_info, session_key, nullblob, client);
+	sess_vuid = register_vuid(server_info, session_key, nullblob, client);
 
 	SAFE_FREE(client);
 
@@ -567,8 +562,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *outbuf,
 				 uint16 vuid,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
-				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status,
-				 BOOL wrap)
+				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status, 
+				 BOOL wrap) 
 {
 	BOOL ret;
 	DATA_BLOB response;
@@ -577,49 +572,40 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 	if (NT_STATUS_IS_OK(nt_status)) {
 		server_info = (*auth_ntlmssp_state)->server_info;
 	} else {
-		nt_status = do_map_to_guest(nt_status,
-					    &server_info,
+		nt_status = do_map_to_guest(nt_status, 
+					    &server_info, 
 					    (*auth_ntlmssp_state)->ntlmssp_state->user, 
 					    (*auth_ntlmssp_state)->ntlmssp_state->domain);
 	}
 
 	if (NT_STATUS_IS_OK(nt_status)) {
+		int sess_vuid;
 		DATA_BLOB nullblob = data_blob_null;
 		DATA_BLOB session_key = data_blob((*auth_ntlmssp_state)->ntlmssp_state->session_key.data, (*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
 
-		if (!is_partial_auth_vuid(vuid)) {
-			nt_status = NT_STATUS_LOGON_FAILURE;
-			goto out;
-
-		}
-
-		/* register_existing_vuid keeps the server info */
-		if (register_existing_vuid(vuid, server_info,
-				session_key, nullblob,
-				(*auth_ntlmssp_state)->ntlmssp_state->user) ==
-						vuid) {
-				nt_status = NT_STATUS_LOGON_FAILURE;
-				goto out;
-		}
-
+		/* register_vuid keeps the server info */
+		sess_vuid = register_vuid(server_info, session_key, nullblob, (*auth_ntlmssp_state)->ntlmssp_state->user);
 		(*auth_ntlmssp_state)->server_info = NULL;
 
-		/* current_user_info is changed on new vuid */
-		reload_services( True );
+		if (sess_vuid == UID_FIELD_INVALID ) {
+			nt_status = NT_STATUS_LOGON_FAILURE;
+		} else {
+			
+			/* current_user_info is changed on new vuid */
+			reload_services( True );
 
-		set_message(outbuf,4,0,True);
-		SSVAL(outbuf, smb_vwv3, 0);
+			set_message(outbuf,4,0,True);
+			SSVAL(outbuf, smb_vwv3, 0);
+			
+			if (server_info->guest) {
+				SSVAL(outbuf,smb_vwv2,1);
+			}
+			
+			SSVAL(outbuf,smb_uid,sess_vuid);
 
-		if (server_info->guest) {
-			SSVAL(outbuf,smb_vwv2,1);
+			sessionsetup_start_signing_engine(server_info, inbuf);
 		}
-
-		SSVAL(outbuf,smb_uid,vuid);
-
-		sessionsetup_start_signing_engine(server_info, inbuf);
 	}
-
-  out:
 
 	if (wrap) {
 		response = spnego_gen_auth_response(ntlmssp_blob, nt_status, OID_NTLMSSP);
@@ -1052,7 +1038,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 		}
 
 	}
-
+		
 	p = (uint8 *)smb_buf(inbuf);
 
 	if (data_blob_len == 0) {
@@ -1075,7 +1061,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 			      sizeof(native_lanman), STR_TERMINATE);
 	p2 += srvstr_pull_buf(inbuf, smb_flag2, primary_domain, p2,
 			      sizeof(primary_domain), STR_TERMINATE);
-	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n",
+	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n", 
 		native_os, native_lanman, primary_domain));
 
 	if ( ra_type == RA_WIN2K ) {
@@ -1083,43 +1069,43 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 
 		if ( !strlen(native_os) && !strlen(native_lanman) )
 			set_remote_arch(RA_VISTA);
-
-		/* Windows 2003 doesn't set the native lanman string,
+		
+		/* Windows 2003 doesn't set the native lanman string, 
 		   but does set primary domain which is a bug I think */
-
+			   
 		if ( !strlen(native_lanman) ) {
 			ra_lanman_string( primary_domain );
 		} else {
 			ra_lanman_string( native_lanman );
 		}
 	}
-
-	/* Did we get a valid vuid ? */
-	if (!is_partial_auth_vuid(vuid)) {
-		/* No, then try and see if this is an intermediate sessionsetup
-		 * for a large SPNEGO packet. */
+		
+	vuser = get_partial_auth_user_struct(vuid);
+	if (!vuser) {
 		struct pending_auth_data *pad = get_pending_auth_data(smbpid);
 		if (pad) {
 			DEBUG(10,("reply_sesssetup_and_X_spnego: found pending vuid %u\n",
 				(unsigned int)pad->vuid ));
 			vuid = pad->vuid;
+			vuser = get_partial_auth_user_struct(vuid);
 		}
 	}
 
-	if (!is_partial_auth_vuid(vuid)) {
-		vuid = register_initial_vuid();
-		if (vuid == UID_FIELD_INVALID) {
+	if (!vuser) {
+		vuid = register_vuid(NULL, data_blob_null, data_blob_null, NULL);
+		if (vuid == UID_FIELD_INVALID ) {
 			data_blob_free(&blob1);
 			return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 		}
+	
 		vuser = get_partial_auth_user_struct(vuid);
 	}
 
-	if (!is_partial_auth_vuid(vuid)) {
+	if (!vuser) {
 		data_blob_free(&blob1);
 		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
-
+	
 	SSVAL(outbuf,smb_uid,vuid);
 
 	/* Large (greater than 4k) SPNEGO blobs are split into multiple
@@ -1568,15 +1554,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		data_blob_free(&session_key);
 		TALLOC_FREE(server_info);
 	} else {
-		int sess_vuid = register_initial_vuid();
-		if (sess_vuid == UID_FIELD_INVALID) {
-			data_blob_free(&nt_resp);
-			data_blob_free(&lm_resp);
-			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
-		}
-
-		/* register_existing_vuid keeps the server info */
-		sess_vuid = register_existing_vuid(vuid, server_info, session_key,
+		/* register_vuid keeps the server info */
+		sess_vuid = register_vuid(server_info, session_key,
 					  nt_resp.data ? nt_resp : lm_resp,
 					  sub_user);
 		if (sess_vuid == UID_FIELD_INVALID) {
