@@ -371,8 +371,18 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 */
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script)
 {
-	ctdb->takeover.event_script = talloc_strdup(ctdb, script);
-	CTDB_NO_MEMORY(ctdb, ctdb->takeover.event_script);
+	ctdb->takeover.main_event_script = talloc_strdup(ctdb, script);
+	CTDB_NO_MEMORY(ctdb, ctdb->takeover.main_event_script);
+	return 0;
+}
+
+/*
+  setup the event script directory
+*/
+int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir)
+{
+	ctdb->takeover.event_script_dir = talloc_strdup(ctdb, script_dir);
+	CTDB_NO_MEMORY(ctdb, ctdb->takeover.event_script_dir);
 	return 0;
 }
 

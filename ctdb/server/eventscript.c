@@ -22,6 +22,9 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "lib/events/events.h"
+#include "../common/rb_tree.h"
+#include <dirent.h>
+#include <ctype.h>
 
 /*
   run the event script - varargs version
@@ -34,30 +37,141 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	int ret;
 	va_list ap2;
 	struct stat st;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	trbt_tree_t *tree;
+	DIR *dir;
+	struct dirent *de;
+	char *script;
 
-	if (stat(ctdb->takeover.event_script, &st) != 0 && 
+	/* 
+	   run the main event script
+	 */
+	if (stat(ctdb->takeover.main_event_script, &st) != 0 && 
 	    errno == ENOENT) {
-		DEBUG(0,("No event script found at '%s'\n", ctdb->takeover.event_script));
+		DEBUG(0,("No event script found at '%s'\n", ctdb->takeover.main_event_script));
+		talloc_free(tmp_ctx);
 		return 0;
 	}
 
 	va_copy(ap2, ap);
-	options  = talloc_vasprintf(ctdb, fmt, ap2);
+	options  = talloc_vasprintf(tmp_ctx, fmt, ap2);
 	va_end(ap2);
 	CTDB_NO_MEMORY(ctdb, options);
 
-	cmdstr = talloc_asprintf(ctdb, "%s %s", ctdb->takeover.event_script, options);
+	cmdstr = talloc_asprintf(tmp_ctx, "%s %s", 
+			ctdb->takeover.main_event_script, options);
 	CTDB_NO_MEMORY(ctdb, cmdstr);
 
+
 	ret = system(cmdstr);
+	/* if the system() call was successful, translate ret into the
+	   return code from the command
+	*/
 	if (ret != -1) {
 		ret = WEXITSTATUS(ret);
 	}
+	/* return an error if the script failed */
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
-	talloc_free(cmdstr);
-	talloc_free(options);
 
-	return ret;
+	
+	/*
+	  the service specific event scripts 
+	*/
+	if (stat(ctdb->takeover.event_script_dir, &st) != 0 && 
+	    errno == ENOENT) {
+		DEBUG(0,("No event script directory found at '%s'\n", ctdb->takeover.event_script_dir));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	/* create a tree to store all the script names in */
+	tree = trbt_create(tmp_ctx, 0);
+
+	/* scan all directory entries and insert all valid scripts into the 
+	   tree
+	*/
+	dir = opendir(ctdb->takeover.event_script_dir);
+	if (dir == NULL) {
+		DEBUG(0,("Failed to open event script directory '%s'\n", ctdb->takeover.event_script_dir));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+	while ((de=readdir(dir)) != NULL) {
+		int namlen;
+		int num;
+
+		namlen = strlen(de->d_name);
+
+		if (namlen < 3) {
+			continue;
+		}
+
+		if (de->d_name[namlen-1] == '~') {
+			/* skip files emacs left behind */
+			continue;
+		}
+
+		if (de->d_name[2] != '.') {
+			continue;
+		}
+
+		if ( (!isdigit(de->d_name[0])) || (!isdigit(de->d_name[1])) ) {
+			continue;
+		}
+
+		sscanf(de->d_name, "%2d.", &num);
+		
+		/* store the event script in the tree */		
+		script = trbt_insert32(tree, num, talloc_strdup(tmp_ctx, de->d_name));
+		if (script != NULL) {
+			DEBUG(0,("CONFIG ERROR: Multiple event scripts with the same prefix : %s and %s. Each event script MUST have a unique prefix\n", script, de->d_name));
+			talloc_free(tmp_ctx);
+			closedir(dir);
+			return -1;
+		}
+	}
+	closedir(dir);
+
+
+	/* fetch the scripts from the tree one by one and execute
+	   them
+	 */
+	while ((script=trbt_findfirstarray32(tree, 1)) != NULL) {
+		va_copy(ap2, ap);
+		options  = talloc_vasprintf(tmp_ctx, fmt, ap2);
+		va_end(ap2);
+		CTDB_NO_MEMORY(ctdb, options);
+
+		cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
+				ctdb->takeover.event_script_dir,
+				script, options);
+		CTDB_NO_MEMORY(ctdb, cmdstr);
+
+		DEBUG(1,("Executing event script %s\n",cmdstr));
+
+		ret = system(cmdstr);
+		/* if the system() call was successful, translate ret into the
+		   return code from the command
+		*/
+		if (ret != -1) {
+			ret = WEXITSTATUS(ret);
+		}
+		/* return an error if the script failed */
+		if (ret != 0) {
+			DEBUG(0,("Event script %s failed with error %d\n", cmdstr, ret));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		talloc_free(script);
+	}
+	
+	talloc_free(tmp_ctx);
+	return 0;
 }
 
 struct ctdb_event_script_state {

@@ -44,6 +44,7 @@ static struct {
 	const char *public_address_list;
 	const char *public_interface;
 	const char *event_script;
+	const char *event_script_dir;
 	const char *logfile;
 	const char *recovery_lock_file;
 	const char *db_dir;
@@ -52,6 +53,7 @@ static struct {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
 	.event_script = ETCDIR "/ctdb/events",
+	.event_script_dir = ETCDIR "/ctdb/events.d",
 	.logfile = VARDIR "/log/log.ctdb",
 	.db_dir = VARDIR "/ctdb",
 };
@@ -103,6 +105,7 @@ int main(int argc, const char *argv[])
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "event-script", 0, POPT_ARG_STRING, &options.event_script, 0, "event script", "filename" },
+		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
@@ -215,6 +218,12 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_event_script(ctdb, options.event_script);
 	if (ret == -1) {
 		printf("Unable to setup event script\n");
+		exit(1);
+	}
+
+	ret = ctdb_set_event_script_dir(ctdb, options.event_script_dir);
+	if (ret == -1) {
+		printf("Unable to setup event script directory\n");
 		exit(1);
 	}
 
