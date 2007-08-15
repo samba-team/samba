@@ -57,8 +57,8 @@ extern int max_send;
 
 void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 {
-	size_t req_size = smb_len(inbuf);
-	/* Ensure we have at smb_size request. */
+	size_t req_size = smb_len(inbuf) + 4;
+	/* Ensure we have at least smb_size bytes. */
 	if (req_size < smb_size) {
 		DEBUG(0,("init_smb_request: invalid request size %u\n",
 			(unsigned int)req_size ));
