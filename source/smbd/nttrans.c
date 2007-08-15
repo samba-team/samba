@@ -788,18 +788,6 @@ void reply_ntcreate_and_X(connection_struct *conn,
 					file_attributes,
 					&info, &fsp);
 
-		TALLOC_FREE(case_state);
-
-		if(!NT_STATUS_IS_OK(status)) {
-			if (!use_nt_status() && NT_STATUS_EQUAL(
-				    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-				status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
-			}
-			reply_nterror(req, status);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-
 	} else {
 
 		/*
@@ -861,7 +849,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 					END_PROFILE(SMBntcreateX);
 					return;
 				}
-	
+
 				oplock_request = 0;
 				status = open_directory(conn, req, fname,
 							&sbuf,
@@ -872,30 +860,32 @@ void reply_ntcreate_and_X(connection_struct *conn,
 							file_attributes,
 							&info, &fsp);
 
-				if(!NT_STATUS_IS_OK(status)) {
-					TALLOC_FREE(case_state);
-					if (!use_nt_status() && NT_STATUS_EQUAL(
-						    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-						status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
-					}
-					reply_nterror(req, status);
-					END_PROFILE(SMBntcreateX);
-					return;
-				}
-			} else {
-				TALLOC_FREE(case_state);
-				END_PROFILE(SMBntcreateX);
-				if (open_was_deferred(req->mid)) {
-					/* We have re-scheduled this call. */
-					return;
-				}
-				reply_nterror(req, status);
-				return;
 			}
-		} 
+		}
 	}
-		
+
 	TALLOC_FREE(case_state);
+
+        if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntcreateX);
+		if (open_was_deferred(req->mid)) {
+			/* We have re-scheduled this call. */
+			return;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
+				ERRDOS, ERRfilexists);
+			return;
+		}
+		reply_nterror(req, status);
+		return;
+	}
 
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
