@@ -114,7 +114,7 @@ recovered
 Additional note for takeip, releaseip, recovered:
 
 ALL services that depend on the ip address configuration of the node must 
-implement all three of these services.
+implement all three of these events.
 
 ALL services that use TCP should also implement these events and at least
 kill off any tcp connections to the service if the ip address config has 
