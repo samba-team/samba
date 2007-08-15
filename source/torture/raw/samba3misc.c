@@ -288,6 +288,39 @@ static NTSTATUS raw_smbcli_t2open(struct smbcli_tree *tree, const char *fname, i
         return status;
 }
 
+static NTSTATUS raw_smbcli_ntcreate(struct smbcli_tree *tree, const char *fname, int *fnum)
+{
+        union smb_open io;
+        TALLOC_CTX *mem_ctx;
+        NTSTATUS status;
+
+        mem_ctx = talloc_init("raw_t2open");
+        if (!mem_ctx) return NT_STATUS_NO_MEMORY;
+
+	memset(&io, '\0', sizeof(io));
+        io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+        status = smb_raw_open(tree, mem_ctx, &io);
+        talloc_free(mem_ctx);
+
+        if (fnum && NT_STATUS_IS_OK(status)) {
+                *fnum = io.openx.out.file.fnum;
+        }
+
+        return status;
+}
+
 
 BOOL torture_samba3_badpath(struct torture_context *torture)
 {
@@ -493,6 +526,11 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = raw_smbcli_t2open(cli_nt->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 	status = raw_smbcli_t2open(cli_dos->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
+
+	status = raw_smbcli_ntcreate(cli_nt->tree, fpath, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+	status = raw_smbcli_ntcreate(cli_dos->tree, fpath, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
 
 	goto done;
