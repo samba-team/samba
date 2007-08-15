@@ -5142,7 +5142,6 @@ cacl_set(TALLOC_CTX *ctx,
 	switch (mode) {
 	case SMBC_XATTR_MODE_REMOVE_ALL:
                 old->dacl->num_aces = 0;
-                old->dacl = NULL;
                 dacl = old->dacl;
                 break;
 
@@ -5159,9 +5158,6 @@ cacl_set(TALLOC_CTX *ctx,
                                                         old->dacl->aces[k+1];
 					}
 					old->dacl->num_aces--;
-					if (old->dacl->num_aces == 0) {
-						old->dacl = NULL;
-					}
 					found = True;
                                         dacl = old->dacl;
 					break;
