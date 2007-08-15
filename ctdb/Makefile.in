@@ -35,7 +35,7 @@ UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util
 
 CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
-	lib/util/debug.o @CTDB_SYSTEM_OBJ@
+	lib/util/debug.o common/rb_tree.o @CTDB_SYSTEM_OBJ@
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
@@ -50,7 +50,9 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	server/ctdb_traverse.o server/eventscript.o server/ctdb_takeover.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
-TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store @INFINIBAND_BINS@
+TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store bin/rb_test \
+	@INFINIBAND_BINS@
+
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify
 SBINS = bin/ctdbd
 
@@ -87,19 +89,23 @@ bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(POPT_OBJ) $(LIB_FLAGS)
 
 utils/smnotify/smnotify.h:  utils/smnotify/smnotify.x
 	@echo Generating $@
-	rpcgen -C -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
+	rpcgen -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
 
 utils/smnotify/gen_xdr.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -C -c utils/smnotify/smnotify.x > utils/smnotify/gen_xdr.c 
+	rpcgen -c utils/smnotify/smnotify.x > utils/smnotify/gen_xdr.c 
 
 utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -C -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
+	rpcgen -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
+
+bin/rb_test: $(CTDB_CLIENT_OBJ) tests/rb_test.o 
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/rb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/ctdb_bench.o 
 	@echo Linking $@

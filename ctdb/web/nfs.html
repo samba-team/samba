@@ -43,7 +43,10 @@ This file should look something like :
   LOCKD_TCPPORT=599
   LOCKD_UDPPORT=599
   STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
-  STATD_HOSTNAME="ctdb -P $STATD_SHARED_DIRECTORY/192.168.1.1 -H /etc/ctdb/statd-callout -p 97"
+  PUBLIC_IP=`ctdb publicip 2>/dev/null`
+  [ -z "$PUBLIC_IP" ] || {
+    STATD_HOSTNAME="ctdb -P "$STATD_SHARED_DIRECTORY/$PUBLIC_IP" -H /etc/ctdb/statd-callout -p 97"
+  }
 </pre>
 
 The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
