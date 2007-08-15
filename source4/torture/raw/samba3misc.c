@@ -183,7 +183,9 @@ static NTSTATUS raw_smbcli_open(struct smbcli_tree *tree, const char *fname, int
                 accessmode |= OPENX_MODE_ACCESS_RDWR;
         } else if ((flags & O_ACCMODE) == O_WRONLY) {
                 accessmode |= OPENX_MODE_ACCESS_WRITE;
-        }
+        } else if ((flags & O_ACCMODE) == O_RDONLY) {
+                accessmode |= OPENX_MODE_ACCESS_READ;
+	}
 
 #if defined(O_SYNC)
         if ((flags & O_SYNC) == O_SYNC) {
@@ -215,6 +217,77 @@ static NTSTATUS raw_smbcli_open(struct smbcli_tree *tree, const char *fname, int
 
         return status;
 }
+
+static NTSTATUS raw_smbcli_t2open(struct smbcli_tree *tree, const char *fname, int flags, int share_mode, int *fnum)
+{
+        union smb_open io;
+        uint_t openfn=0;
+        uint_t accessmode=0;
+        TALLOC_CTX *mem_ctx;
+        NTSTATUS status;
+
+        mem_ctx = talloc_init("raw_t2open");
+        if (!mem_ctx) return NT_STATUS_NO_MEMORY;
+
+        if (flags & O_CREAT) {
+                openfn |= OPENX_OPEN_FUNC_CREATE;
+        }
+        if (!(flags & O_EXCL)) {
+                if (flags & O_TRUNC) {
+                        openfn |= OPENX_OPEN_FUNC_TRUNC;
+                } else {
+                        openfn |= OPENX_OPEN_FUNC_OPEN;
+                }
+        }
+
+        accessmode = (share_mode<<OPENX_MODE_DENY_SHIFT);
+
+        if ((flags & O_ACCMODE) == O_RDWR) {
+                accessmode |= OPENX_MODE_ACCESS_RDWR;
+        } else if ((flags & O_ACCMODE) == O_WRONLY) {
+                accessmode |= OPENX_MODE_ACCESS_WRITE;
+        } else if ((flags & O_ACCMODE) == O_RDONLY) {
+                accessmode |= OPENX_MODE_ACCESS_READ;
+	}
+
+#if defined(O_SYNC)
+        if ((flags & O_SYNC) == O_SYNC) {
+                accessmode |= OPENX_MODE_WRITE_THRU;
+        }
+#endif
+
+        if (share_mode == DENY_FCB) {
+                accessmode = OPENX_MODE_ACCESS_FCB | OPENX_MODE_DENY_FCB;
+        }
+
+	memset(&io, '\0', sizeof(io));
+        io.t2open.level = RAW_OPEN_T2OPEN;
+        io.t2open.in.flags = 0;
+        io.t2open.in.open_mode = accessmode;
+        io.t2open.in.search_attrs = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+        io.t2open.in.file_attrs = 0;
+        io.t2open.in.write_time = 0;
+        io.t2open.in.open_func = openfn;
+        io.t2open.in.size = 0;
+        io.t2open.in.timeout = 0;
+        io.t2open.in.fname = fname;
+
+        io.t2open.in.num_eas = 1;
+	io.t2open.in.eas = talloc_array(mem_ctx, struct ea_struct, io.t2open.in.num_eas);
+	io.t2open.in.eas[0].flags = 0;
+	io.t2open.in.eas[0].name.s = ".CLASSINFO";
+	io.t2open.in.eas[0].value = data_blob_talloc(mem_ctx, "first value", 11);
+
+        status = smb_raw_open(tree, mem_ctx, &io);
+        talloc_free(mem_ctx);
+
+        if (fnum && NT_STATUS_IS_OK(status)) {
+                *fnum = io.openx.out.file.fnum;
+        }
+
+        return status;
+}
+
 
 BOOL torture_samba3_badpath(struct torture_context *torture)
 {
@@ -410,6 +483,17 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = raw_smbcli_open(cli_dos->tree, "<\\bla", O_RDONLY, DENY_NONE, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	/* Let's test EEXIST error code mapping. */
+	status = raw_smbcli_open(cli_nt->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+	status = raw_smbcli_open(cli_dos->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
+
+	status = raw_smbcli_t2open(cli_nt->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+	status = raw_smbcli_t2open(cli_dos->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
 
 	goto done;
 
