@@ -387,17 +387,6 @@ typedef struct time_info {
 	uint32 time;
 } UTIME;
 
-/* Structure used when SMBwritebmpx is active */
-typedef struct {
-	size_t wr_total_written; /* So we know when to discard this */
-	int32 wr_timeout;
-	int32 wr_errclass; /* Cached errors */
-	int32 wr_error; /* Cached errors */
-	NTSTATUS wr_status; /* Cached errors */
-	BOOL  wr_mode; /* write through mode) */
-	BOOL  wr_discard; /* discard all further data */
-} write_bmpx_struct;
-
 typedef struct write_cache {
 	SMB_OFF_T file_size;
 	SMB_OFF_T offset;
@@ -495,7 +484,6 @@ typedef struct files_struct {
 	mode_t mode;
 	uint16 file_pid;
 	uint16 vuid;
-	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
 	struct timeval open_time;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */

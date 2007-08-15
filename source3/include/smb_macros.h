@@ -158,12 +158,6 @@
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
-/* Macro to test if an error has been cached for this fnum */
-#define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
-                (fsp)->wbmpx_ptr->wr_discard)
-/* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(inbuf,outbuf,fsp,__LINE__,__FILE__)
-
 #define ERROR_DOS(class,code) error_packet(inbuf,outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
 #define ERROR_NT(status) error_packet(inbuf,outbuf,0,0,status,__LINE__,__FILE__)
 #define ERROR_FORCE_NT(status) error_packet(inbuf,outbuf,-1,-1,status,__LINE__,__FILE__)

@@ -82,7 +82,6 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
-	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
 	SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;
