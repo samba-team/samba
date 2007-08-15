@@ -57,12 +57,26 @@ extern int max_send;
 
 void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 {
+	size_t req_size = smb_len(inbuf);
+	/* Ensure we have at smb_size request. */
+	if (req_size < smb_size) {
+		DEBUG(0,("init_smb_request: invalid request size %u\n",
+			(unsigned int)req_size ));
+		exit_server_cleanly("Invalid SMB request");
+	}
 	req->flags2 = SVAL(inbuf, smb_flg2);
 	req->smbpid = SVAL(inbuf, smb_pid);
 	req->mid    = SVAL(inbuf, smb_mid);
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
+	/* Ensure we have at least wct words. */
+	if (smb_size + req->wct*2 > req_size) {
+		DEBUG(0,("init_smb_request: invalid wct number %u (size %u)\n",
+			(unsigned int)req->wct,
+			(unsigned int)req_size));
+		exit_server_cleanly("Invalid SMB request");
+	}
 	req->inbuf  = inbuf;
 	req->outbuf = NULL;
 }
