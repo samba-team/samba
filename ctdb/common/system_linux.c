@@ -45,6 +45,8 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	unsigned char buffer[64]; /*minimum eth frame size */
 	char *ptr;
 
+	ZERO_STRUCT(sa);
+
 	/* for now, we only handle AF_INET addresses */
 	if (saddr->sin_family != AF_INET) {
 		DEBUG(0,(__location__ " not an ipv4 address (family is %u)\n", saddr->sin_family));
