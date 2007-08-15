@@ -12,6 +12,7 @@ use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(ParseExpr has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel);
 use Parse::Pidl::Samba4 qw(DeclLong);
+use Parse::Pidl::Samba4::NDR::Parser qw(GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -123,12 +124,10 @@ sub ParseFunction($$)
 	pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, &r);";
 	pidl "";
 
-	my %env = ();
+	my $env = GenerateFunctionOutEnv($fn, "r.");
 	my $hasout = 0;
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/, @{$_->{DIRECTION}})) { $hasout = 1; }
-		next unless (grep (/in/, @{$_->{DIRECTION}}));
-		$env{$_->{NAME}} = "r.in.$_->{NAME}";
 	}
 
 	pidl "ZERO_STRUCT(r.out);" if ($hasout);
@@ -141,7 +140,7 @@ sub ParseFunction($$)
 			pidl "r.out.$_->{NAME} = r.in.$_->{NAME};";
 		} elsif (grep(/out/, @dir) and not 
 				 has_property($_, "represent_as")) {
-			AllocOutVar($_, "mem_ctx", "r.out.$_->{NAME}", \%env);
+			AllocOutVar($_, "mem_ctx", "r.out.$_->{NAME}", $env);
 		}
 	}
 	$ret .= ")";
