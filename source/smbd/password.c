@@ -57,27 +57,27 @@ user_struct *get_valid_user_struct(uint16 vuid)
 }
 
 /****************************************************************************
- Get the user struct of a partial NTLMSSP login
+ Is the vuid valid for a partial NTLMSSP login ?
 ****************************************************************************/
 
-user_struct *get_partial_auth_user_struct(uint16 vuid)
+BOOL is_partial_auth_vuid(uint16 vuid)
 {
 	user_struct *usp;
 	int count=0;
 
 	if (vuid == UID_FIELD_INVALID)
-		return NULL;
+		return False;
 
 	for (usp=validated_users;usp;usp=usp->next,count++) {
 		if (vuid == usp->vuid && !usp->server_info) {
 			if (count > 10) {
 				DLIST_PROMOTE(validated_users, usp);
 			}
-			return usp;
+			return True;
 		}
 	}
 
-	return NULL;
+	return False;
 }
 
 /****************************************************************************
@@ -90,7 +90,7 @@ void invalidate_vuid(uint16 vuid)
 
 	if (vuser == NULL)
 		return;
-	
+
 	session_yield(vuser);
 
 	data_blob_free(&vuser->session_key);
@@ -115,9 +115,242 @@ void invalidate_all_vuids(void)
 
 	for (usp=validated_users;usp;usp=next) {
 		next = usp->next;
-		
+
 		invalidate_vuid(usp->vuid);
 	}
+}
+
+/****************************************************
+ Create a new partial auth user struct.
+*****************************************************/
+
+int register_initial_vuid(void)
+{
+	user_struct *vuser;
+
+	/* Paranoia check. */
+	if(lp_security() == SEC_SHARE) {
+		smb_panic("Tried to register uid in security=share");
+	}
+
+	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
+	if (num_validated_vuids >= 0xFFFF-VUID_OFFSET) {
+		data_blob_free(&session_key);
+		return UID_FIELD_INVALID;
+	}
+
+	if((vuser = talloc_zero(NULL, user_struct)) == NULL) {
+		DEBUG(0,("Failed to talloc users struct!\n"));
+		data_blob_free(&session_key);
+		return NULL;
+	}
+
+	/* Allocate a free vuid. Yes this is a linear search... :-) */
+	while( get_valid_user_struct(next_vuid) != NULL ) {
+		next_vuid++;
+		/* Check for vuid wrap. */
+		if (next_vuid == UID_FIELD_INVALID)
+			next_vuid = VUID_OFFSET;
+	}
+
+	DEBUG(10,("register_initial_vuid: allocated vuid = %u\n",
+		  (unsigned int)next_vuid ));
+
+	vuser->vuid = next_vuid;
+
+	/*
+	 * This happens in an unfinished NTLMSSP session setup. We
+	 * need to allocate a vuid between the first and second calls
+	 * to NTLMSSP.
+	 */
+	next_vuid++;
+	num_validated_vuids++;
+
+	vuser->server_info = NULL;
+
+	DLIST_ADD(validated_users, vuser);
+
+	return vuser->vuid;
+}
+
+/**
+ *  register that a valid login has been performed, establish 'session'.
+ *  @param server_info The token returned from the authentication process. 
+ *   (now 'owned' by register_vuid)
+ *
+ *  @param session_key The User session key for the login session (now also
+ *  'owned' by register_vuid)
+ *
+ *  @param respose_blob The NT challenge-response, if available.  (May be
+ *  freed after this call)
+ *
+ *  @param smb_name The untranslated name of the user
+ *
+ *  @return vuid, biased by an offset. (This allows us to
+ *   tell random client vuid's (normally zero) from valid vuids.)
+ *
+ */
+
+int register_existing_vuid(uint16 vuid,
+			auth_serversupplied_info *server_info,
+			DATA_BLOB session_key,
+			DATA_BLOB response_blob,
+			const char *smb_name)
+{
+	user_struct *vuser = get_partial_auth_user_struct(vuid);
+	if (!vuser) {
+		return UID_FIELD_INVALID;
+	}
+
+	/* Use this to keep tabs on all our info from the authentication */
+	vuser->server_info = server_info;
+	/* Ensure that the server_info will dissapear with the vuser it is now attached to */
+	talloc_steal(vuser, vuser->server_info);
+
+	/* the next functions should be done by a SID mapping system (SMS) as
+	 * the new real sam db won't have reference to unix uids or gids
+	 */
+
+	vuser->uid = server_info->uid;
+	vuser->gid = server_info->gid;
+
+	vuser->n_groups = server_info->n_groups;
+	if (vuser->n_groups) {
+		if (!(vuser->groups = (gid_t *)talloc_memdup(vuser, server_info->groups,
+							     sizeof(gid_t) *
+							     vuser->n_groups))) {
+			DEBUG(0,("register_vuid: failed to talloc_memdup "
+				 "vuser->groups\n"));
+			data_blob_free(&session_key);
+			TALLOC_FREE(vuser);
+			return UID_FIELD_INVALID;
+		}
+	}
+
+	vuser->guest = server_info->guest;
+	fstrcpy(vuser->user.unix_name, server_info->unix_name);
+
+	/* This is a potentially untrusted username */
+	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$",
+		     sizeof(vuser->user.smb_name));
+
+	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
+	fstrcpy(vuser->user.full_name,
+		pdb_get_fullname(server_info->sam_account));
+
+	{
+		/* Keep the homedir handy */
+		const char *homedir =
+			pdb_get_homedir(server_info->sam_account);
+		const char *logon_script =
+			pdb_get_logon_script(server_info->sam_account);
+
+		if (!IS_SAM_DEFAULT(server_info->sam_account,
+				    PDB_UNIXHOMEDIR)) {
+			const char *unix_homedir =
+				pdb_get_unix_homedir(server_info->sam_account);
+			if (unix_homedir) {
+				vuser->unix_homedir = unix_homedir;
+			}
+		} else {
+			struct passwd *passwd =
+				getpwnam_alloc(vuser, vuser->user.unix_name);
+			if (passwd) {
+				vuser->unix_homedir = passwd->pw_dir;
+				/* Ensure that the unix_homedir now
+				 * belongs to vuser, so it goes away
+				 * with it, not with passwd below: */
+				talloc_steal(vuser, vuser->unix_homedir);
+				TALLOC_FREE(passwd);
+			}
+		}
+
+		if (homedir) {
+			vuser->homedir = homedir;
+		}
+		if (logon_script) {
+			vuser->logon_script = logon_script;
+		}
+	}
+
+	vuser->session_key = session_key;
+
+	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n",
+		  (unsigned int)vuser->uid,
+		  (unsigned int)vuser->gid,
+		  vuser->user.unix_name, vuser->user.smb_name,
+		  vuser->user.domain, vuser->guest ));
+
+	DEBUG(3, ("User name: %s\tReal name: %s\n", vuser->user.unix_name,
+		  vuser->user.full_name));
+
+ 	if (server_info->ptok) {
+		vuser->nt_user_token = dup_nt_token(vuser, server_info->ptok);
+	} else {
+		DEBUG(1, ("server_info does not contain a user_token - "
+			  "cannot continue\n"));
+		TALLOC_FREE(vuser);
+		data_blob_free(&session_key);
+		return UID_FIELD_INVALID;
+	}
+
+	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",
+		 (int)vuser->uid,vuser->user.unix_name, vuser->vuid));
+
+	next_vuid++;
+	num_validated_vuids++;
+
+	DLIST_ADD(validated_users, vuser);
+
+	if (!session_claim(vuser)) {
+		DEBUG(1, ("Failed to claim session for vuid=%d\n",
+			  vuser->vuid));
+		invalidate_vuid(vuser->vuid);
+		return UID_FIELD_INVALID;
+	}
+
+	/* Register a home dir service for this user iff
+
+	   (a) This is not a guest connection,
+	   (b) we have a home directory defined
+	   (c) there s not an existing static share by that name
+
+	   If a share exists by this name (autoloaded or not) reuse it . */
+
+	vuser->homes_snum = -1;
+
+	if ( (!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir))
+	{
+		int servicenumber = lp_servicenumber(vuser->user.unix_name);
+
+		if ( servicenumber == -1 ) {
+			DEBUG(3, ("Adding homes service for user '%s' using "
+				  "home directory: '%s'\n",
+				vuser->user.unix_name, vuser->unix_homedir));
+			vuser->homes_snum =
+				add_home_service(vuser->user.unix_name,
+						 vuser->user.unix_name,
+						 vuser->unix_homedir);
+		} else {
+			DEBUG(3, ("Using static (or previously created) "
+				  "service for user '%s'; path = '%s'\n",
+				  vuser->user.unix_name,
+				  lp_pathname(servicenumber) ));
+			vuser->homes_snum = servicenumber;
+		}
+	}
+
+	if (srv_is_signing_negotiated() && !vuser->guest &&
+	    !srv_signing_started()) {
+		/* Try and turn on server signing on the first non-guest
+		 * sessionsetup. */
+		srv_set_signing(vuser->session_key, response_blob);
+	}
+
+	/* fill in the current_user_info struct */
+	set_current_user_info( &vuser->user );
+
+	return vuser->vuid;
 }
 
 /**
