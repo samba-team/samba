@@ -83,31 +83,35 @@ sub ParseFunction($$$)
 	$self->pidl("/* Return variables */");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
+		my $level = 0;
 
 		fatal($e, "[out] argument is not a pointer or array") if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY");
 
-		if ( ($e->{LEVELS}[0]->{TYPE} eq "POINTER") and
-			 ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref") ) {
-			$self->pidl("if ( $e->{NAME} ) {");
-			$self->indent;
+		if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
+			$level = 1;
+			if ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref") {
+				$self->pidl("if ( $e->{NAME} ) {");
+				$self->indent;
+			}
 		}
 
-		if ($e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
+		if ($e->{LEVELS}[$level]->{TYPE} eq "ARRAY") {
 			# This is a call to GenerateFunctionInEnv intentionally. 
 			# Since the data is being copied into a user-provided data 
 			# structure, the user should be able to know the size beforehand 
 			# to allocate a structure of the right size.
 			my $env = GenerateFunctionInEnv($fn, "r.");
-			my $size_is = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e);
+			my $size_is = ParseExpr($e->{LEVELS}[$level]->{SIZE_IS}, $env, $e->{ORIGINAL});
 			$self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is);");
 		} else {
 			$self->pidl("*$e->{NAME} = *r.out.$e->{NAME};");
 		}
 
-		if ( ($e->{LEVELS}[0]->{TYPE} eq "POINTER") and
-			 ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref") ) {
-			$self->deindent;
-			$self->pidl("}");
+		if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
+			if ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref") {
+				$self->deindent;
+				$self->pidl("}");
+			}
 		}
 	}
 
