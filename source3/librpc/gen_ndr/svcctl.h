@@ -357,7 +357,7 @@ struct svcctl_StartServiceW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t NumArgs;
-		const char *Arguments;/* [unique,charset(UTF16),length_is(NumArgs)] */
+		const char *Arguments;/* [unique,charset(UTF16)] */
 	} in;
 
 	struct {
@@ -560,7 +560,7 @@ struct svcctl_StartServiceA {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t NumArgs;
-		const char *Arguments;/* [unique,charset(UTF16),length_is(NumArgs)] */
+		const char *Arguments;/* [unique,charset(UTF16)] */
 	} in;
 
 	struct {
