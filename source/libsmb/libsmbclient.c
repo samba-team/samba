@@ -3742,32 +3742,94 @@ smbc_utimes_ctx(SMBCCTX *context,
 }
 
 
-/* The MSDN is contradictory over the ordering of ACE entries in an ACL.
-   However NT4 gives a "The information may have been modified by a
-   computer running Windows NT 5.0" if denied ACEs do not appear before
-   allowed ACEs. */
+/*
+ * Sort ACEs according to the documentation at
+ * http://support.microsoft.com/kb/269175, at least as far as it defines the
+ * order.
+ */
 
 static int
 ace_compare(SEC_ACE *ace1,
             SEC_ACE *ace2)
 {
-	if (sec_ace_equal(ace1, ace2)) 
+        BOOL b1;
+        BOOL b2;
+
+        /* If the ACEs are equal, we have nothing more to do. */
+        if (sec_ace_equal(ace1, ace2)) {
 		return 0;
+        }
 
-	if (ace1->type != ace2->type) 
+        /* Inherited follow non-inherited */
+        b1 = ((ace1->flags & SEC_ACE_FLAG_INHERITED_ACE) != 0);
+        b2 = ((ace2->flags & SEC_ACE_FLAG_INHERITED_ACE) != 0);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /*
+         * What shall we do with AUDITs and ALARMs?  It's undefined.  We'll
+         * sort them after DENY and ALLOW.
+         */
+        b1 = (ace1->type != SEC_ACE_TYPE_ACCESS_ALLOWED &&
+              ace1->type != SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT &&
+              ace1->type != SEC_ACE_TYPE_ACCESS_DENIED &&
+              ace1->type != SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        b2 = (ace2->type != SEC_ACE_TYPE_ACCESS_ALLOWED &&
+              ace2->type != SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT &&
+              ace2->type != SEC_ACE_TYPE_ACCESS_DENIED &&
+              ace2->type != SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /* Allowed ACEs follow denied ACEs */
+        b1 = (ace1->type == SEC_ACE_TYPE_ACCESS_ALLOWED ||
+              ace1->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT);
+        b2 = (ace2->type == SEC_ACE_TYPE_ACCESS_ALLOWED ||
+              ace2->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /*
+         * ACEs applying to an entity's object follow those applying to the
+         * entity itself
+         */
+        b1 = (ace1->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+              ace1->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        b2 = (ace2->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+              ace2->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /*
+         * If we get this far, the ACEs are similar as far as the
+         * characteristics we typically care about (those defined by the
+         * referenced MS document).  We'll now sort by characteristics that
+         * just seems reasonable.
+         */
+        
+	if (ace1->type != ace2->type) {
 		return ace2->type - ace1->type;
+        }
 
-	if (sid_compare(&ace1->trustee, &ace2->trustee)) 
+	if (sid_compare(&ace1->trustee, &ace2->trustee)) {
 		return sid_compare(&ace1->trustee, &ace2->trustee);
+        }
 
-	if (ace1->flags != ace2->flags) 
+	if (ace1->flags != ace2->flags) {
 		return ace1->flags - ace2->flags;
+        }
 
-	if (ace1->access_mask != ace2->access_mask) 
+	if (ace1->access_mask != ace2->access_mask) {
 		return ace1->access_mask - ace2->access_mask;
+        }
 
-	if (ace1->size != ace2->size) 
+	if (ace1->size != ace2->size) {
 		return ace1->size - ace2->size;
+        }
 
 	return memcmp(ace1, ace2, sizeof(SEC_ACE));
 }
