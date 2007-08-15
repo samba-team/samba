@@ -1404,7 +1404,7 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli, TALLO
 	
 	/* Return variables */
 	*count = *r.out.count;
-	*trusts = *r.out.trusts;
+	memcpy(trusts, r.out.trusts, count);
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
