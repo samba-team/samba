@@ -77,6 +77,13 @@ echo "Extended DN Control test returned 0 items"
 failed=`expr $failed + 1`
 fi
 
+echo "Test Domain scope Control"
+nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=domain_scope:1 '(objectclass=user)' | grep sAMAccountName | wc -l`
+if [ $nentries -lt 1 ]; then
+echo "Extended Domain scope Control test returned 0 items"
+failed=`expr $failed + 1`
+fi
+
 echo "Test Attribute Scope Query Control"
 nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=asq:1:member -s base -b "CN=Administrators,CN=Builtin,$BASEDN" | grep sAMAccountName | wc -l`
 if [ $nentries -lt 1 ]; then

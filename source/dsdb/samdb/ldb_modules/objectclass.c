@@ -318,9 +318,9 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 					ldb_msg_add_string(msg, "objectCategory", 
 							   objectclass->defaultObjectCategory);
 				}
-				if (!ldb_msg_find_element(msg, "ntSecurityDescriptor")) {
+				if (!ldb_msg_find_element(msg, "nTSecurityDescriptor")) {
 					DATA_BLOB *sd = get_sd(module, mem_ctx, objectclass);
-					ldb_msg_add_steal_value(msg, "ntSecurityDescriptor", sd);
+					ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
 				}
 			}
 		}

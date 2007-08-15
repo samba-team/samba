@@ -36,7 +36,6 @@
 #include "librpc/ndr/libndr.h"
 
 struct entryUUID_private {
-	struct ldb_result *objectclass_res;	
 	struct ldb_dn **base_dns;
 };
 
@@ -148,28 +147,17 @@ static struct ldb_val sid_always_binary(struct ldb_module *module, TALLOC_CTX *c
 	return out;
 }
 
+/* Ensure we always convert objectCategory into a DN */
 static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	int i;
-	struct map_private *map_private;
-	struct entryUUID_private *entryUUID_private;
-	struct ldb_result *list;
+	struct ldb_val out = data_blob(NULL, 0);
+	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, "objectSid");
 
-	if (ldb_dn_validate(ldb_dn_new(ctx, module->ldb, (const char *)val->data))) {
-		return *val;
+	if (a->syntax->canonicalise_fn(module->ldb, ctx, val, &out) != LDB_SUCCESS) {
+		return data_blob(NULL, 0);
 	}
-	map_private = talloc_get_type(module->private_data, struct map_private);
 
-	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
-	list = entryUUID_private->objectclass_res;
-
-	for (i=0; list && (i < list->count); i++) {
-		if (ldb_attr_cmp((const char *)val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
-			char *dn = ldb_dn_alloc_linearized(ctx, list->msgs[i]->dn);
-			return data_blob_string_const(dn);
-		}
-	}
-	return *val;
+	return out;
 }
 
 static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
@@ -588,70 +576,6 @@ static const char * const nsuniqueid_wildcard_attributes[] = {
 	NULL
 };
 
-static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
-{
-	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
-	struct ldb_dn *schema_dn;
-	struct ldb_dn *basedn = ldb_dn_new(mem_ctx, ldb, NULL);
-	struct ldb_result *rootdse_res;
-	int ldb_ret;
-	if (!basedn) {
-		return NULL;
-	}
-	
-	/* Search for rootdse */
-	ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, rootdse_attrs, &rootdse_res);
-	if (ldb_ret != LDB_SUCCESS) {
-		return NULL;
-	}
-	
-	talloc_steal(mem_ctx, rootdse_res);
-
-	if (rootdse_res->count != 1) {
-		ldb_asprintf_errstring(ldb, "Failed to find rootDSE: count %d", rootdse_res->count);
-		return NULL;
-	}
-	
-	/* Locate schema */
-	schema_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
-	if (!schema_dn) {
-		return NULL;
-	}
-
-	talloc_free(rootdse_res);
-	return schema_dn;
-}
-
-static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
-			      TALLOC_CTX *mem_ctx, 
-			      struct ldb_result **objectclass_res)
-{
-	TALLOC_CTX *local_ctx = talloc_new(mem_ctx);
-	int ret;
-	const char *attrs[] = {
-		"lDAPDisplayName",
-		"governsID",
-		NULL
-	};
-
-	if (!local_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	/* Downlaod schema */
-	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
-			 "objectClass=classSchema", 
-			 attrs, objectclass_res);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	talloc_steal(mem_ctx, objectclass_res);
-
-	return ret;
-}
-
-
 static int get_remote_rootdse(struct ldb_context *ldb, void *context, 
 		       struct ldb_reply *ares) 
 {
@@ -730,7 +654,6 @@ static int entryUUID_init(struct ldb_module *module)
         int ret;
 	struct map_private *map_private;
 	struct entryUUID_private *entryUUID_private;
-	struct ldb_dn *schema_dn;
 
 	ret = ldb_map_init(module, entryUUID_attributes, entryUUID_objectclasses, entryUUID_wildcard_attributes, NULL);
         if (ret != LDB_SUCCESS)
@@ -740,19 +663,6 @@ static int entryUUID_init(struct ldb_module *module)
 
 	entryUUID_private = talloc_zero(map_private, struct entryUUID_private);
 	map_private->caller_private = entryUUID_private;
-
-	schema_dn = find_schema_dn(module->ldb, map_private);
-	if (!schema_dn) {
-		/* Perhaps no schema yet */
-		return LDB_SUCCESS;
-	}
-	
-	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, 
-				       &entryUUID_private->objectclass_res);
-	if (ret != LDB_SUCCESS) {
-		/* Perhaps no schema yet */
-		return LDB_SUCCESS;
-	}	
 
 	ret = find_base_dns(module, entryUUID_private);
 
@@ -765,7 +675,6 @@ static int nsuniqueid_init(struct ldb_module *module)
         int ret;
 	struct map_private *map_private;
 	struct entryUUID_private *entryUUID_private;
-	struct ldb_dn *schema_dn;
 
 	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, NULL);
         if (ret != LDB_SUCCESS)
@@ -775,19 +684,6 @@ static int nsuniqueid_init(struct ldb_module *module)
 
 	entryUUID_private = talloc_zero(map_private, struct entryUUID_private);
 	map_private->caller_private = entryUUID_private;
-
-	schema_dn = find_schema_dn(module->ldb, map_private);
-	if (!schema_dn) {
-		/* Perhaps no schema yet */
-		return LDB_SUCCESS;
-	}
-	
-	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, 
-				       &entryUUID_private->objectclass_res);
-	if (ret != LDB_SUCCESS) {
-		/* Perhaps no schema yet */
-		return LDB_SUCCESS;
-	}	
 
 	ret = find_base_dns(module, entryUUID_private);
 
