@@ -92,9 +92,9 @@ fi
 %config(noreplace) %{_sysconfdir}/sysconfig/ctdb
 %attr(755,root,root) %config %{initdir}/ctdb
 
-%{_sysconfdir}/ctdb/events
 %{_sysconfdir}/ctdb/functions
 %{_sysconfdir}/ctdb/events.d/README
+%{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
 %{_sysconfdir}/ctdb/events.d/50.samba

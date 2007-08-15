@@ -35,11 +35,6 @@
 # defaults to /var/ctdb
 # CTDB_DBDIR=/var/ctdb
 
-# the main script to run when ctdb needs to ask the OS for help,
-# such as when a IP address needs to be taken or released
-# defaults to /etc/ctdb/events
-# CTDB_EVENT_SCRIPT=/etc/ctdb/events
-
 # the directory where service specific event scripts are stored
 # defaults to /etc/ctdb/events.d
 # CTDB_EVENT_SCRIPT_DIR=/etc/ctdb/events.d

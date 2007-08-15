@@ -43,41 +43,6 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	struct dirent *de;
 	char *script;
 
-	/* 
-	   run the main event script
-	 */
-	if (stat(ctdb->takeover.main_event_script, &st) != 0 && 
-	    errno == ENOENT) {
-		DEBUG(0,("No event script found at '%s'\n", ctdb->takeover.main_event_script));
-		talloc_free(tmp_ctx);
-		return 0;
-	}
-
-	va_copy(ap2, ap);
-	options  = talloc_vasprintf(tmp_ctx, fmt, ap2);
-	va_end(ap2);
-	CTDB_NO_MEMORY(ctdb, options);
-
-	cmdstr = talloc_asprintf(tmp_ctx, "%s %s", 
-			ctdb->takeover.main_event_script, options);
-	CTDB_NO_MEMORY(ctdb, cmdstr);
-
-
-	ret = system(cmdstr);
-	/* if the system() call was successful, translate ret into the
-	   return code from the command
-	*/
-	if (ret != -1) {
-		ret = WEXITSTATUS(ret);
-	}
-	/* return an error if the script failed */
-	if (ret != 0) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-
-	
 	/*
 	  the service specific event scripts 
 	*/

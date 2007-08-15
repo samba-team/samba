@@ -154,10 +154,10 @@ install: all
 	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
-	${INSTALLCMD} -m 755 config/events $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/events.d/README $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/50.samba $(DESTDIR)$(etcdir)/ctdb/events.d

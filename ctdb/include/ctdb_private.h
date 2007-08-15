@@ -301,7 +301,6 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 struct ctdb_takeover {
 	bool enabled;
 	const char *interface;
-	const char *main_event_script;
 	const char *event_script_dir;
 	TALLOC_CTX *last_ctx;
 };
