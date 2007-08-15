@@ -244,15 +244,15 @@ sub GetElementLevelTable($)
 	}
 
 	if (scalar(@size_is) > 0) {
-		warning($e, "size_is() on non-array element");
+		fatal($e, "size_is() on non-array element");
 	}
 
 	if (scalar(@length_is) > 0) {
-		warning($e, "length_is() on non-array element");
+		fatal($e, "length_is() on non-array element");
 	}
 
 	if (has_property($e, "string")) {
-		warning($e, "string() attribute on non-array element");
+		fatal($e, "string() attribute on non-array element");
 	}
 
 	push (@$order, {
@@ -1142,7 +1142,7 @@ sub Validate($)
 		($x->{TYPE} eq "INTERFACE") && 
 		    ValidInterface($x);
 		($x->{TYPE} eq "IMPORTLIB") &&
-			warning($x, "importlib() not supported");
+			fatal($x, "importlib() not supported");
 	}
 }
 
