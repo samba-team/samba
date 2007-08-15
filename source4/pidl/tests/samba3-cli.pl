@@ -4,22 +4,26 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 7;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Samba3::ClientNDR qw(GenerateFunctionInEnv ParseFunction);
+use Parse::Pidl::Samba3::ClientNDR qw(ParseFunction);
+use Parse::Pidl::Samba4::NDR::Parser qw(GenerateFunctionInEnv GenerateFunctionOutEnv);
 
 # Make sure GenerateFunctionInEnv and GenerateFunctionOutEnv work
 my $fn = { ELEMENTS => [ { DIRECTION => ["in"], NAME => "foo" } ] };
-is_deeply({ "foo" => "r.in.foo" }, GenerateFunctionInEnv($fn));
+is_deeply({ "foo" => "r.in.foo" }, GenerateFunctionInEnv($fn, "r."));
+is_deeply({ "foo" => "r.in.foo" }, GenerateFunctionOutEnv($fn, "r."));
 
 $fn = { ELEMENTS => [ { DIRECTION => ["out", "in"], NAME => "foo" } ] };
-is_deeply({ "foo" => "r.in.foo" }, GenerateFunctionInEnv($fn));
+is_deeply({ "foo" => "r.in.foo" }, GenerateFunctionInEnv($fn, "r."));
+is_deeply({ "foo" => "r.out.foo" }, GenerateFunctionOutEnv($fn, "r."));
 
 $fn = { ELEMENTS => [ { DIRECTION => ["out"], NAME => "foo" } ] };
-is_deeply({ }, GenerateFunctionInEnv($fn));
+is_deeply({ }, GenerateFunctionInEnv($fn, "r."));
+is_deeply({ "foo" => "r.out.foo" }, GenerateFunctionOutEnv($fn, "r."));
 
 my $x = new Parse::Pidl::Samba3::ClientNDR();
 
