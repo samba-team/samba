@@ -429,16 +429,12 @@ void reply_special(char *inbuf)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_tcon(connection_struct *conn,
-	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_tcon(connection_struct *conn, struct smb_request *req)
 {
-	TALLOC_CTX *ctx;
 	const char *service;
 	char *service_buf = NULL;
 	char *password = NULL;
 	char *dev = NULL;
-	int outsize = 0;
-	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
 	NTSTATUS nt_status;
 	char *p;
@@ -446,25 +442,26 @@ int reply_tcon(connection_struct *conn,
 
 	START_PROFILE(SMBtcon);
 
-	ctx = talloc_init("reply_tcon");
-	if (!ctx) {
-		END_PROFILE(SMBtcon);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
+	/********************************************************************
+	 * Warning! I'm not sure that the inbuf length check is actually 
+	 * correct here. -- vl
+	 *
+	 * Jeremy, please check and remove this comment :-)
+	 ********************************************************************/
 
-	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2),
-			&service_buf, p, STR_TERMINATE) + 1;
-	pwlen = srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2),
-			&password, p, STR_TERMINATE) + 1;
+	p = smb_buf(req->inbuf)+1;
+	p += srvstr_pull_buf_talloc(req, req->inbuf, req->flags2,
+				    &service_buf, p, STR_TERMINATE) + 1;
+	pwlen = srvstr_pull_buf_talloc(req, req->inbuf, req->flags2,
+				       &password, p, STR_TERMINATE) + 1;
 	p += pwlen;
-	p += srvstr_pull_buf_talloc(ctx, inbuf, SVAL(inbuf, smb_flg2),
-			&dev, p, STR_TERMINATE) + 1;
+	p += srvstr_pull_buf_talloc(req, req->inbuf, req->flags2,
+				    &dev, p, STR_TERMINATE) + 1;
 
 	if (service_buf == NULL || password == NULL || dev == NULL) {
-		TALLOC_FREE(ctx);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtcon);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 	p = strrchr_m(service_buf,'\\');
 	if (p) {
@@ -475,27 +472,26 @@ int reply_tcon(connection_struct *conn,
 
 	password_blob = data_blob(password, pwlen+1);
 
-	conn = make_connection(service,password_blob,dev,vuid,&nt_status);
+	conn = make_connection(service,password_blob,dev,req->vuid,&nt_status);
 
 	data_blob_clear_free(&password_blob);
 
 	if (!conn) {
-		TALLOC_FREE(ctx);
+		reply_nterror(req, nt_status);
 		END_PROFILE(SMBtcon);
-		return ERROR_NT(nt_status);
+		return;
 	}
 
-	outsize = set_message(inbuf,outbuf,2,0,True);
-	SSVAL(outbuf,smb_vwv0,max_recv);
-	SSVAL(outbuf,smb_vwv1,conn->cnum);
-	SSVAL(outbuf,smb_tid,conn->cnum);
+	reply_outbuf(req, 2, 0);
+	SSVAL(req->outbuf,smb_vwv0,max_recv);
+	SSVAL(req->outbuf,smb_vwv1,conn->cnum);
+	SSVAL(req->outbuf,smb_tid,conn->cnum);
 
 	DEBUG(3,("tcon service=%s cnum=%d\n", 
 		 service, conn->cnum));
 
 	END_PROFILE(SMBtcon);
-	TALLOC_FREE(ctx);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************

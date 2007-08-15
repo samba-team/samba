@@ -802,7 +802,7 @@ static const struct smb_message_struct {
 /* 0x6d */ { NULL, NULL, NULL, 0 },
 /* 0x6e */ { NULL, NULL, NULL, 0 },
 /* 0x6f */ { NULL, NULL, NULL, 0 },
-/* 0x70 */ { "SMBtcon",reply_tcon,NULL,0},
+/* 0x70 */ { "SMBtcon",NULL,reply_tcon,0},
 /* 0x71 */ { "SMBtdis",NULL,reply_tdis,DO_CHDIR},
 /* 0x72 */ { "SMBnegprot",NULL,reply_negprot,0},
 /* 0x73 */ { "SMBsesssetupX",NULL,reply_sesssetup_and_X,0},
