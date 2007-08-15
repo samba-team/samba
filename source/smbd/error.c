@@ -25,22 +25,6 @@ extern struct unix_error_map unix_dos_nt_errmap[];
 extern uint32 global_client_caps;
 
 /****************************************************************************
- Create an error packet from a cached error.
-****************************************************************************/
- 
-int cached_error_packet(const char *inbuf,char *outbuf,files_struct *fsp,int line,const char *file)
-{
-	write_bmpx_struct *wbmpx = fsp->wbmpx_ptr;
-	int32 eclass = wbmpx->wr_errclass;
-	int32 err = wbmpx->wr_error;
-	NTSTATUS ntstatus = wbmpx->wr_status;
- 
-	/* We can now delete the auxiliary struct */
-	SAFE_FREE(fsp->wbmpx_ptr);
-	return error_packet(inbuf,outbuf,eclass,err,ntstatus,line,file);
-}
-
-/****************************************************************************
  Create an error packet from errno.
 ****************************************************************************/
 
