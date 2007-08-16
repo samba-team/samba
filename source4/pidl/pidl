@@ -619,7 +619,7 @@ sub process_file($)
 	my $gen_header = ($opt_header or "$outputdir/$basename.h");
 	if (defined($opt_header)) {
 		require Parse::Pidl::Samba4::Header;
-		FileSave($gen_header, Parse::Pidl::Samba4::Header::Parse($pidl));
+		FileSave($gen_header, Parse::Pidl::Samba4::Header::Parse($ndr));
 	}
 
 	my $h_filename = "$outputdir/ndr_$basename.h";
