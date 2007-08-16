@@ -53,7 +53,7 @@
 # 4.8 Ceificate Policies
 incomplete4.8.2 p AllCertificatesNoPoliciesTest2EE.crt NoPoliciesCACert.crt NoPoliciesCACRL.crl
 incomplete4.8.10 p AllCertificatesSamePoliciesTest10EE.crt PoliciesP12CACert.crt PoliciesP12CACRL.crl
-incomplete4.8.13 p AllCertificatesSamePoliciesTest13EE.Crt PoliciesP123CACert.crt PoliciesP123CACRL.crl
+incomplete4.8.13 p AllCertificatesSamePoliciesTest13EE.crt PoliciesP123CACert.crt PoliciesP123CACRL.crl
 incomplete4.8.11 p AllCertificatesanyPolicyTest11EE.crt anyPolicyCACert.crt anyPolicyCACRL.crl
 unknown p AnyPolicyTest14EE.crt anyPolicyCACert.crt anyPolicyCACRL.crl
 unknown f BadSignedCACert.crt
