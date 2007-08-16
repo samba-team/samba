@@ -2196,6 +2196,7 @@ FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrappi
 
 static int map_parameter(const char *pszParmName);
 static BOOL set_boolean(BOOL *pb, const char *pszParmValue);
+static const char *get_boolean(BOOL bool_value);
 static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
@@ -2818,6 +2819,49 @@ BOOL lp_parameter_is_global(const char *pszParmName)
 	return False;
 }
 
+/**************************************************************************
+ Determine the canonical name for a parameter.
+ Indicate when it is an inverse (boolean) synonym instead of a
+ "usual" synonym.
+**************************************************************************/
+
+BOOL lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
+			       BOOL *inverse)
+{
+	int num, canon_num;
+
+	if (!lp_parameter_is_valid(parm_name)) {
+		*canon_parm = NULL;
+		return False;
+	}
+
+	*inverse = False;
+	num = map_parameter(parm_name);
+	if (num < 0 && !(parm_table[num].flags & FLAG_HIDE)) {
+		/* it is already canonical (parametric are canonical anyways) */
+		*canon_parm = parm_name;
+		return True;
+	}
+
+	for (canon_num = 0; parm_table[canon_num].label; canon_num++) {
+		if (!(parm_table[canon_num].flags & FLAG_HIDE) &&
+		    (parm_table[num].ptr == parm_table[canon_num].ptr))
+		{
+			*canon_parm = parm_table[canon_num].label;
+			if ((parm_table[canon_num].type == P_BOOL) &&
+			    (parm_table[num].type == P_BOOLREV))
+			{
+				*inverse = True;
+			}
+			return True;
+		}
+	}
+
+	/* 'include', 'copy', 'config file' and friends left */
+	*canon_parm = parm_name;
+	return True;
+}
+
 /***************************************************************************
  Map a parameter's string representation to something we can use. 
  Returns False if the parameter string is not recognised, else TRUE.
@@ -2922,6 +2966,54 @@ static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 		bRetval = False;
 	}
 	return (bRetval);
+}
+
+/***************************************************************************
+ Get the standard string representation of a boolean value ("yes" or "no")
+***************************************************************************/
+
+static const char *get_boolean(BOOL bool_value)
+{
+	static const char *yes_str = "yes";
+	static const char *no_str = "no";
+
+	return (bool_value ? yes_str : no_str);
+}
+
+/***************************************************************************
+ Provide the string of the negated boolean value associated to the boolean
+ given as a string. Returns False if the passed string does not correctly
+ represent a boolean.
+***************************************************************************/
+
+BOOL lp_invert_boolean(const char *str, const char **inverse_str)
+{
+	BOOL val;
+
+	if (!set_boolean(&val, str)) {
+		return False;
+	}
+
+	*inverse_str = get_boolean(!val);
+	return True;
+}
+
+/***************************************************************************
+ Provide the canonical string representation of a boolean value given
+ as a string. Return True on success, False if the string given does
+ not correctly represent a boolean.
+***************************************************************************/
+
+BOOL lp_canonicalize_boolean(const char *str, const char**canon_str)
+{
+	BOOL val;
+
+	if (!set_boolean(&val, str)) {
+		return False;
+	}
+
+	*canon_str = get_boolean(val);
+	return True;
 }
 
 /***************************************************************************
@@ -4325,6 +4417,22 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 	}
 
 	return result;
+}
+
+/***************************************************************************
+ Return info about the requested parameter (given as a string).
+ Return NULL when the string is not a valid parameter name.
+***************************************************************************/
+
+struct parm_struct *lp_get_parameter(const char *param_name)
+{
+	int num = map_parameter(param_name);
+
+	if (num < 0) {
+		return NULL;
+	}
+
+	return &parm_table[num];
 }
 
 /***************************************************************************
