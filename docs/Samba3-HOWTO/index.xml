@@ -224,7 +224,7 @@ The chapters in this part each cover specific Samba features.
 -->
 	<?latex \cleardoublepage ?>
 
-<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
+<xi:include href="gpl-3.0.xml"/>
 
 	<?latex \cleardoublepage ?>
 <xi:include href="TOSHARG-glossary.xml"/>
