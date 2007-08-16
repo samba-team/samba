@@ -742,7 +742,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					file_attributes,
 					&info, &fsp);
 
-		TALLOC_FREE(case_state);
 	} else {
 
 		/*
@@ -826,18 +825,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			/*
-			 * We hit an existing file, and if we're returning DOS
-			 * error codes OBJECT_NAME_COLLISION would map to
-			 * ERRDOS/183, we need to return ERRDOS/80, see bug
-			 * 4852.
-			 */
-			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_COLLISION,
-				ERRDOS, ERRfilexists);
-		}
-		return ERROR_NT(status);
+		return ERROR_OPEN(status);
 	}
 
 	file_len = sbuf.st_size;
@@ -1493,10 +1481,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 							create_options,
 							file_attributes,
 							&info, &fsp);
-				if(!NT_STATUS_IS_OK(status)) {
-					TALLOC_FREE(case_state);
-					return ERROR_NT(status);
-				}
 			}
 		}
 	}
@@ -1504,23 +1488,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	TALLOC_FREE(case_state);
 
 	if(!NT_STATUS_IS_OK(status)) {
-
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			/*
-			 * We hit an existing file, and if we're returning DOS
-			 * error codes OBJECT_NAME_COLLISION would map to
-			 * ERRDOS/183, we need to return ERRDOS/80, see bug
-			 * 4852.
-			 */
-			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_COLLISION,
-				ERRDOS, ERRfilexists);
-		}
-		return ERROR_NT(status);
+		return ERROR_OPEN(status);
 	}
 
 	/*
