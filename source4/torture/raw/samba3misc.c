@@ -327,8 +327,10 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	struct smbcli_state *cli_nt;
 	struct smbcli_state *cli_dos;
 	const char *fname = "test.txt";
+	const char *fname1 = "test1.txt";
 	const char *dirname = "testdir";
 	char *fpath;
+	char *fpath1;
 	int fnum;
 	NTSTATUS status;
 	BOOL ret = True;
@@ -401,6 +403,17 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	fnum = smbcli_open(cli_nt->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		d_printf("Could not create file %s: %s\n", fpath,
+			 smbcli_errstr(cli_nt->tree));
+		goto fail;
+	}
+	smbcli_close(cli_nt->tree, fnum);
+
+	if (!(fpath1 = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname1))) {
+		goto fail;
+	}
+	fnum = smbcli_open(cli_nt->tree, fpath1, O_RDWR | O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		d_printf("Could not create file %s: %s\n", fpath1,
 			 smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
@@ -532,6 +545,18 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 	status = raw_smbcli_ntcreate(cli_dos->tree, fpath, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
+
+	/* Try the rename test. */
+	{
+		union smb_rename io;
+		io.rename.in.pattern1 = fpath1;
+		io.rename.in.pattern2 = fpath;
+
+		status = smb_raw_rename(cli_nt->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+		status = smb_raw_rename(cli_dos->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRrename));
+	}
 
 	goto done;
 
