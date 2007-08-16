@@ -134,6 +134,9 @@ HEIMDAL_CRYPTO_1.0 {
 		hc_EVP_aes_192_cbc;
 		hc_EVP_aes_256_cbc;
 		hc_EVP_des_ede3_cbc;
+		hc_EVP_camellia_128_cbc;
+		hc_EVP_camellia_192_cbc;
+		hc_EVP_camellia_256_cbc;
 		hc_EVP_enc_null;
 		hc_EVP_get_cipherbyname;
 		hc_EVP_md2;
