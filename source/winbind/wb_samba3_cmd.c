@@ -789,7 +789,7 @@ NTSTATUS wbsrv_samba3_sid2uid(struct wbsrv_samba3_call *s3call)
 		s3call->wbconn->listen_socket->service;
 	struct dom_sid *sid;
 
-	DEBUG(1, ("wbsrv_samba3_sid2uid called\n"));
+	DEBUG(5, ("wbsrv_samba3_sid2uid called\n"));
 
 	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
 	NT_STATUS_HAVE_NO_MEMORY(sid);
