@@ -34,7 +34,7 @@ What is WINS?
 </para>
 <para>
 WINS is a facility that provides resolution of a NetBIOS name to its IP address. WINS is like a
-Dynamic-DNS service for NetBIOS networking names. 
+Dynamic-DNS service for NetBIOS networking names.
 </para></note>
 
 <note><para>
@@ -42,7 +42,7 @@ Dynamic-DNS service for NetBIOS networking names.
 <indexterm><primary>NetBIOS over TCP/IP</primary></indexterm>
 <indexterm><primary>DNS</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
-MS Windows 2000 and later versions can be configured to operate with no NetBIOS 
+MS Windows 2000 and later versions can be configured to operate with no NetBIOS
 over TCP/IP. Samba-3 and later versions also support this mode of operation.
 When the use of NetBIOS over TCP/IP has been disabled, the primary
 means for resolution of MS Windows machine names is via DNS and Active Directory.
@@ -199,7 +199,7 @@ parameters is set, <filename>nmbd</filename> will still do its job.
 For Samba, the WINS Server and WINS Support are mutually exclusive options. When <command>nmbd</command> is
 started it will fail to execute if both options are set in the &smb.conf; file. The <command>nmbd</command>
 understands that when it spawns an instance of itself to run as a WINS server that it has to use its own WINS
-server also. 
+server also.
 </para>
 
 </sect1>
@@ -232,15 +232,14 @@ TCP/IP, this uses UDP-based messaging.  UDP messages can be broadcast or unicast
 
 <para>
 <indexterm><primary>UDP</primary></indexterm>
-Normally, only unicast UDP messaging can be forwarded by routers. The
-<smbconfoption name="remote announce"/> parameter to smb.conf helps to project browse announcements
-to remote network segments via unicast UDP. Similarly, the 
-<smbconfoption name="remote browse sync"/> parameter of &smb.conf;
-implements browse list collation using unicast UDP.
+Normally, only unicast UDP messaging can be forwarded by routers. The <smbconfoption name="remote announce"/>
+parameter to smb.conf helps to project browse announcements to remote network segments via unicast UDP.
+Similarly, the <smbconfoption name="remote browse sync"/> parameter of &smb.conf; implements browse list
+collation using unicast UDP.
 </para>
 
 <para>
-The methods used by MS Windows to perform name lookup requests (name resolution) is determined by a 
+The methods used by MS Windows to perform name lookup requests (name resolution) is determined by a
 configuration parameter called the NetBIOS node-type. There are four basic NetBIOS node types:
 </para>
 
@@ -258,10 +257,10 @@ configuration parameter called the NetBIOS node-type. There are four basic NetBI
 	<listitem><para><emphasis>p-node (type 0x02):</emphasis> The Windows client will use point-to-point
 	(NetBIOS unicast) requests using UDP unicast directed to a WINS server.</para></listitem>
 	<listitem><para><emphasis>m-node (type 0x04):</emphasis> The Windows client will first use
-	NetBIOS broadcast requests using UDP broadcast, then it will use (NetBIOS unicast) 
+	NetBIOS broadcast requests using UDP broadcast, then it will use (NetBIOS unicast)
 	requests using UDP unicast directed to a WINS server.</para></listitem>
-	<listitem><para><emphasis>h-node (type 0x08):</emphasis> The Windows client will use 
-	(NetBIOS unicast) requests using UDP unicast directed to a WINS server, then it will use 
+	<listitem><para><emphasis>h-node (type 0x08):</emphasis> The Windows client will use
+	(NetBIOS unicast) requests using UDP unicast directed to a WINS server, then it will use
 	NetBIOS broadcast requests using UDP broadcast.</para></listitem>
 </itemizedlist>
 
@@ -295,7 +294,7 @@ browse sync"/> parameters to your &smb.conf; file.
 <para>
 <indexterm><primary>WINS</primary></indexterm>
 If only one WINS server is used for an entire multisegment network, then
-the use of the <smbconfoption name="remote announce"/> and the 
+the use of the <smbconfoption name="remote announce"/> and the
 <smbconfoption name="remote browse sync"/> parameters should not be necessary.
 </para>
 
@@ -551,7 +550,7 @@ and MS DNS.
 		top of the domain. This must list port 3268.
 		</para></listitem>
 	</itemizedlist>
-	
+
 	<para>
 	The following records are also used by the Windows domain member client to locate vital
 	services on the Windows ADS domain controllers.
@@ -827,7 +826,7 @@ parameter sets Samba high enough so it should win any browser elections.
 <para>
 <indexterm><primary>disable LMB</primary></indexterm>
 If you have an NT machine on the subnet that you wish to be the LMB, you can disable Samba from
-becoming an LMB by setting the following options in the <smbconfsection name="[global]"/> section of the 
+becoming an LMB by setting the following options in the <smbconfsection name="[global]"/> section of the
 &smb.conf; file as shown in <link linkend="nombexample">smb.conf for Not Being a Master Browser</link>.
 </para>
 
@@ -1067,8 +1066,9 @@ If, however, both Samba and your clients are using a WINS server, then:
 
 <para>
 <indexterm><primary>zero-based broadcast</primary></indexterm>
-If your network uses a zero-based broadcast address (for example, if it ends in a 0), then you will strike problems. Windows for Workgroups
-does not seem to support a zeros broadcast, and you will probably find that browsing and name lookups will not work.
+If your network uses a zero-based broadcast address (for example, if it ends in a 0), then you will strike
+problems. Windows for Workgroups does not seem to support a zeros broadcast, and you will probably find that
+browsing and name lookups will not work.
 </para>
 </sect2>
 
@@ -1107,10 +1107,9 @@ ethernet interface requires the use of a firewall to block ports 137 and 138 (UD
 <sect2>
 <title>Use of the Remote Announce Parameter</title>
 <para>
-The <smbconfoption name="remote announce"/> parameter of 
-&smb.conf; can be used to forcibly ensure
-that all the NetBIOS names on a network get announced to a remote network.
-The syntax of the <smbconfoption name="remote announce"/> parameter is:
+The <smbconfoption name="remote announce"/> parameter of &smb.conf; can be used to forcibly ensure that all
+the NetBIOS names on a network get announced to a remote network.  The syntax of the <smbconfoption
+name="remote announce"/> parameter is:
 <smbconfblock>
 <smbconfoption name="remote announce">192.168.12.23 [172.16.21.255] ...</smbconfoption>
 </smbconfblock>
@@ -1241,7 +1240,7 @@ errors.
 </para>
 
 <para>
-To configure Samba as a WINS server, just add 
+To configure Samba as a WINS server, just add
 <smbconfoption name="wins support">yes</smbconfoption> to the &smb.conf;
 file [global] section.
 </para>
@@ -1283,15 +1282,14 @@ least set the parameter to <quote>no</quote> on all these machines.
 </para>
 
 <para>
-Machines configured with <smbconfoption name="wins support">yes</smbconfoption> will keep a list of 
+Machines configured with <smbconfoption name="wins support">yes</smbconfoption> will keep a list of
 all NetBIOS names registered with them, acting as a DNS for NetBIOS names.
 </para>
 
 <para>
 <indexterm><primary>only one WINS server</primary></indexterm>
-It is strongly recommended to set up only one WINS server. Do not set the
-<smbconfoption name="wins support">yes</smbconfoption> option on more than one Samba 
-server on a network.
+It is strongly recommended to set up only one WINS server. Do not set the <smbconfoption name="wins
+support">yes</smbconfoption> option on more than one Samba server on a network.
 </para>
 
 <para>
@@ -1328,7 +1326,7 @@ machine or its IP address.
 <para>
 This line must not be set in the &smb.conf; file of the Samba
 server acting as the WINS server itself. If you set both the
-<smbconfoption name="wins support">yes</smbconfoption> option and the 
+<smbconfoption name="wins support">yes</smbconfoption> option and the
 <smbconfoption name="wins server">&lt;name&gt;</smbconfoption> option then
 <command>nmbd</command> will fail to start.
 </para>
@@ -1353,12 +1351,12 @@ browsing on networks that contain NT domains.
 <para>
 <indexterm><primary>replication</primary><secondary>WINS</secondary></indexterm>
 <indexterm><primary>WINS replication</primary></indexterm>
-Samba-3 does not support native WINS replication. There was an approach to implement it, called 
+Samba-3 does not support native WINS replication. There was an approach to implement it, called
 <filename>wrepld</filename>, but it was never ready for action and the development is now discontinued.
 </para>
 <para>
 Meanwhile, there is a project named <filename>samba4WINS</filename>, which makes it possible to
-run the Samba-4 WINS server parallel to Samba-3 since version 3.0.21. More information about 
+run the Samba-4 WINS server parallel to Samba-3 since version 3.0.21. More information about
 <filename>samba4WINS</filename> are available at http://ftp.sernet.de/pub/samba4WINS.
 
 </para>
@@ -1480,12 +1478,11 @@ cease to function as an LMB, and browse list operation on all TCP/IP-only machin
 <para>
 <indexterm><primary>Windows 9x/Me</primary></indexterm>
 <indexterm><primary>extended protocol</primary></indexterm>
-Windows 95, 98, 98se, and Me are referred to generically as Windows 9x/Me.
-The Windows NT4, 200x, and XP use common protocols. These are roughly
-referred to as the Windows NT family, but it should be recognized that 2000 and
-XP/2003 introduce new protocol extensions that cause them to behave 
-differently from MS Windows NT4. Generally, where a server does not support
-the newer or extended protocol, these will fall back to the NT4 protocols.
+Windows 95, 98, 98se, and Me are referred to generically as Windows 9x/Me.  The Windows NT4, 200x, and XP use
+common protocols. These are roughly referred to as the Windows NT family, but it should be recognized that
+2000 and XP/2003 introduce new protocol extensions that cause them to behave differently from MS Windows NT4.
+Generally, where a server does not support the newer or extended protocol, these will fall back to the NT4
+protocols.
 </para>
 
 <para>
@@ -1633,11 +1630,9 @@ to control what workgroup Samba becomes a part of.
 
 <para>
 <indexterm><primary>browsing another subnet</primary></indexterm>
-Samba also has a useful option for a Samba server to offer itself for
-browsing on another subnet. It is recommended that this option is
-used only for <quote>unusual</quote> purposes: announcements over the Internet, for
-example. See <smbconfoption name="remote announce"/> in the 
-&smb.conf; man page. 
+Samba also has a useful option for a Samba server to offer itself for browsing on another subnet. It is
+recommended that this option is used only for <quote>unusual</quote> purposes: announcements over the
+Internet, for example. See <smbconfoption name="remote announce"/> in the &smb.conf; man page.
 </para>
 </sect2>
 
@@ -1675,12 +1670,12 @@ IPC$ connection that lists the shares is done as guest and so you must have a va
 <indexterm><primary>browse resources</primary></indexterm>
 <indexterm><primary>Network Neighborhood</primary></indexterm>
 <indexterm><primary>My Network Places</primary></indexterm>
-The <literal>IPC$</literal> share is used by all SMB/CIFS clients to obtain the list of resources
-that is available on the server. This is the source of the list of shares and printers when browsing
-an SMB/CIFS server (also Windows machines) using the Windows Explorer to browse resources through
-the Windows Network Neighborhood (also called My Network Places) through to a Windows server. At 
-this point, the client has opened a connection to the <literal>\\server\IPC4</literal> resource. 
-Clicking on a share will then open up a connection to the <literal>\\server\share</literal>.
+The <literal>IPC$</literal> share is used by all SMB/CIFS clients to obtain the list of resources that is
+available on the server. This is the source of the list of shares and printers when browsing an SMB/CIFS
+server (also Windows machines) using the Windows Explorer to browse resources through the Windows Network
+Neighborhood (also called My Network Places) through to a Windows server. At this point, the client has opened
+a connection to the <literal>\\server\IPC4</literal> resource.  Clicking on a share will then open up a
+connection to the <literal>\\server\share</literal>.
 </para></note>
 
 <para>
@@ -1772,7 +1767,7 @@ Consider a network set up as in <link linkend="browsing1">Cross-Subnet Browsing 
 	<title>Cross-Subnet Browsing Example.</title>
 	<imagefile scale="40">browsing1</imagefile>
 </figure>
-	
+
 <para>
 <indexterm><primary>broadcasts</primary></indexterm>
 <indexterm><primary>DMB</primary></indexterm>
@@ -1800,14 +1795,11 @@ LMB on subnet 1 because it is set up as DMB.
 <para>
 <indexterm><primary>LMB</primary></indexterm>
 <indexterm><primary>browse list</primary></indexterm>
-On each of the three networks, machines that are configured to 
-offer sharing services will broadcast that they are offering
-these services. The LMB on each subnet will
-receive these broadcasts and keep a record of the fact that
-the machine is offering a service. This list of records is
-the basis of the browse list. For this case, assume that
-all the machines are configured to offer services, so all machines
-will be on the browse list.
+On each of the three networks, machines that are configured to offer sharing services will broadcast that they
+are offering these services. The LMB on each subnet will receive these broadcasts and keep a record of the
+fact that the machine is offering a service. This list of records is the basis of the browse list. For this
+case, assume that all the machines are configured to offer services, so all machines will be on the browse
+list.
 </para>
 
 <para>
@@ -1829,13 +1821,14 @@ called <emphasis>non-authoritative.</emphasis>
 
 <para>
 <indexterm><primary>network neighborhood</primary></indexterm>
-At this point the browse lists appear as shown in <link linkend="browsubnet">Browse Subnet Example 1</link> (these are 
-the machines you would see in your network neighborhood if you looked in it on a particular network right now).
+At this point the browse lists appear as shown in <link linkend="browsubnet">Browse Subnet Example 1</link>
+(these are the machines you would see in your network neighborhood if you looked in it on a particular network
+right now).
 </para>
 
 <para>
 <table frame="all" id="browsubnet">
-	<title>Browse Subnet Example 1</title>		
+	<title>Browse Subnet Example 1</title>
 	<tgroup align="left" cols="3">
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>
@@ -1859,12 +1852,10 @@ At this point all the subnets are separate, and no machine is seen across any of
 <indexterm><primary>LMB</primary></indexterm>
 <indexterm><primary>synchronize</primary></indexterm>
 <indexterm><primary>WINS</primary></indexterm>
-Now examine subnet 2 in <link linkend="brsbex">Browse Subnet Example 2</link>.
-As soon as N2_B has become the LMB, it looks for a DMB with which to synchronize
-its browse list. It does this by querying the WINS server
-(N2_D) for the IP address associated with the NetBIOS name 
-WORKGROUP&lt;1B&gt;. This name was registered by the DMB
-(N1_C) with the WINS server as soon as it was started.
+Now examine subnet 2 in <link linkend="brsbex">Browse Subnet Example 2</link>.  As soon as N2_B has become the
+LMB, it looks for a DMB with which to synchronize its browse list. It does this by querying the WINS server
+(N2_D) for the IP address associated with the NetBIOS name WORKGROUP&lt;1B&gt;. This name was registered by
+the DMB (N1_C) with the WINS server as soon as it was started.
 </para>
 
 <para>
@@ -1872,19 +1863,16 @@ WORKGROUP&lt;1B&gt;. This name was registered by the DMB
 <indexterm><primary>NetServerEnum2</primary></indexterm>
 <indexterm><primary>synchronization</primary></indexterm>
 <indexterm><primary>browse lists</primary></indexterm>
-Once N2_B knows the address of the DMB, it
-tells it that is the LMB for subnet 2 by
-sending a <emphasis>MasterAnnouncement</emphasis> packet as a UDP port 138 packet.
-It then synchronizes with it by doing a <emphasis>NetServerEnum2</emphasis> call. This
-tells the DMB to send it all the server
-names it knows about. Once the DMB receives
-the <emphasis>MasterAnnouncement</emphasis> packet, it schedules a synchronization
-request to the sender of that packet. After both synchronizations
-are complete, the browse lists look like those in <link linkend="brsbex">Browse Subnet Example 2</link>
+Once N2_B knows the address of the DMB, it tells it that is the LMB for subnet 2 by sending a
+<emphasis>MasterAnnouncement</emphasis> packet as a UDP port 138 packet.  It then synchronizes with it by
+doing a <emphasis>NetServerEnum2</emphasis> call. This tells the DMB to send it all the server names it knows
+about. Once the DMB receives the <emphasis>MasterAnnouncement</emphasis> packet, it schedules a
+synchronization request to the sender of that packet. After both synchronizations are complete, the browse
+lists look like those in <link linkend="brsbex">Browse Subnet Example 2</link>
 </para>
 
 <table frame="all" id="brsbex">
-	<title>Browse Subnet Example 2</title>		
+	<title>Browse Subnet Example 2</title>
 	<tgroup	cols="3">
 		<colspec align="left"/>
 		<colspec align="left"/>
@@ -1896,7 +1884,7 @@ are complete, the browse lists look like those in <link linkend="brsbex">Browse 
 	<tbody>
 		<row><entry>Subnet1</entry><entry>N1_C</entry><entry>N1_A, N1_B, N1_C, N1_D, N1_E,
 N2_A(*), N2_B(*), N2_C(*), N2_D(*)</entry></row>
-		<row><entry>Subnet2</entry><entry>N2_B</entry><entry>N2_A, N2_B, N2_C, N2_D, N1_A(*), 
+		<row><entry>Subnet2</entry><entry>N2_B</entry><entry>N2_A, N2_B, N2_C, N2_D, N1_A(*),
 N1_B(*), N1_C(*), N1_D(*), N1_E(*)</entry></row>
 		<row><entry>Subnet3</entry><entry>N3_D</entry><entry>N3_A, N3_B, N3_C, N3_D</entry></row>
 	</tbody>
@@ -1910,19 +1898,16 @@ Servers with an (*) after them are non-authoritative names.
 
 <para>
 <indexterm><primary>Network Neighborhood</primary></indexterm>
-At this point users looking in their Network Neighborhood on
-subnets 1 or 2 will see all the servers on both; users on
-subnet 3 will still see only the servers on their own subnet.
+At this point users looking in their Network Neighborhood on subnets 1 or 2 will see all the servers on both;
+users on subnet 3 will still see only the servers on their own subnet.
 </para>
 
 <para>
 <indexterm><primary>DMB</primary></indexterm>
-The same sequence of events that occurred for N2_B now occurs
-for the LMB on subnet 3 (N3_D). When it
-synchronizes browse lists with the DMB (N1_A)
-it gets both the server entries on subnet 1 and those on
-subnet 2. After N3_D has synchronized with N1_C and vica versa,
-the browse lists will appear as shown in <link linkend="brsex2">Browse Subnet Example 3</link>
+The same sequence of events that occurred for N2_B now occurs for the LMB on subnet 3 (N3_D). When it
+synchronizes browse lists with the DMB (N1_A) it gets both the server entries on subnet 1 and those on subnet
+2. After N3_D has synchronized with N1_C and vica versa, the browse lists will appear as shown in <link
+linkend="brsex2">Browse Subnet Example 3</link>
 </para>
 
 <table frame="all" id="brsex2">
@@ -1937,11 +1922,11 @@ the browse lists will appear as shown in <link linkend="brsex2">Browse Subnet Ex
 	</thead>
 
 	<tbody>
-		<row><entry>Subnet1</entry><entry>N1_C</entry><entry>N1_A, N1_B, N1_C, N1_D, N1_E, 
+		<row><entry>Subnet1</entry><entry>N1_C</entry><entry>N1_A, N1_B, N1_C, N1_D, N1_E,
 N2_A(*), N2_B(*), N2_C(*), N2_D(*), N3_A(*), N3_B(*), N3_C(*), N3_D(*)</entry></row>
-		<row><entry>Subnet2</entry><entry>N2_B</entry><entry>N2_A, N2_B, N2_C, N2_D, N1_A(*), 
+		<row><entry>Subnet2</entry><entry>N2_B</entry><entry>N2_A, N2_B, N2_C, N2_D, N1_A(*),
 N1_B(*), N1_C(*), N1_D(*), N1_E(*)</entry></row>
-		<row><entry>Subnet3</entry><entry>N3_D</entry><entry>N3_A, N3_B, N3_C, N3_D, N1_A(*), 
+		<row><entry>Subnet3</entry><entry>N3_D</entry><entry>N3_A, N3_B, N3_C, N3_D, N1_A(*),
 N1_B(*), N1_C(*), N1_D(*), N1_E(*), N2_A(*), N2_B(*), N2_C(*), N2_D(*)</entry></row>
 	</tbody>
 	</tgroup>
@@ -1969,7 +1954,7 @@ as shown in <link linkend="brsex3">Browse Subnet Example 4</link>.
 </para>
 
 <table frame="all" id="brsex3">
-	<title>Browse Subnet Example 4</title>		
+	<title>Browse Subnet Example 4</title>
 	<tgroup cols="3" align="left">
 		<colspec align="left"/>
 		<colspec align="left"/>
@@ -1981,13 +1966,13 @@ as shown in <link linkend="brsex3">Browse Subnet Example 4</link>.
 
 	<tbody>
 		<row><entry>Subnet1</entry><entry>N1_C</entry><entry>N1_A, N1_B, N1_C, N1_D, N1_E,
-N2_A(*), N2_B(*), N2_C(*), N2_D(*), N3_A(*), N3_B(*), 
+N2_A(*), N2_B(*), N2_C(*), N2_D(*), N3_A(*), N3_B(*),
 N3_C(*), N3_D(*)</entry></row>
-		<row><entry>Subnet2</entry><entry>N2_B</entry><entry>N2_A, N2_B, N2_C, N2_D, N1_A(*), 
-N1_B(*), N1_C(*), N1_D(*), N1_E(*), N3_A(*), N3_B(*), 
+		<row><entry>Subnet2</entry><entry>N2_B</entry><entry>N2_A, N2_B, N2_C, N2_D, N1_A(*),
+N1_B(*), N1_C(*), N1_D(*), N1_E(*), N3_A(*), N3_B(*),
 N3_C(*), N3_D(*)</entry></row>
-		<row><entry>Subnet3</entry><entry>N3_D</entry><entry>N3_A, N3_B, N3_C, N3_D, N1_A(*), 
-N1_B(*), N1_C(*), N1_D(*), N1_E(*), N2_A(*), N2_B(*), 
+		<row><entry>Subnet3</entry><entry>N3_D</entry><entry>N3_A, N3_B, N3_C, N3_D, N1_A(*),
+N1_B(*), N1_C(*), N1_D(*), N1_E(*), N2_A(*), N2_B(*),
 N2_C(*), N2_D(*)</entry></row>
 	</tbody>
 	</tgroup>
@@ -2075,13 +2060,13 @@ This may take a long time on some networks (perhaps months).
 </para>
 
 </sect2>
- 
+
 <sect2>
 	<title>Server Resources Cannot Be Listed</title>
 
 <para><quote>My Client Reports "<quote>This server is not configured to list shared resources."</quote></quote></para>
 
-		
+
 <para>
 Your guest account is probably invalid for some reason. Samba uses the
 guest account for browsing in <command>smbd</command>. Check that your guest account is
@@ -2098,13 +2083,13 @@ valid.
 	<para>This error can have multiple causes:
 <indexterm><primary>browsing problems</primary></indexterm>
 	</para>
-	
+
 	<itemizedlist>
-		<listitem><para>There is no LMB. Configure &nmbd; 
+		<listitem><para>There is no LMB. Configure &nmbd;
 			or any other machine to serve as LMB.</para></listitem>
-		<listitem><para>You cannot log onto the machine that is the LMB. 
+		<listitem><para>You cannot log onto the machine that is the LMB.
 			Can you log on to it as a guest user? </para></listitem>
-		<listitem><para>There is no IP connectivity to the LMB. 
+		<listitem><para>There is no IP connectivity to the LMB.
 			Can you reach it by broadcast?</para></listitem>
 </itemizedlist>
 </sect2>
@@ -2123,7 +2108,7 @@ Windows Explorer will respond and displays files and directories without problem
 
 <para><quote>
 <indexterm><primary>cmd</primary></indexterm>
-But, the share is immediately available from a command shell (<command>cmd</command>, followed by 
+But, the share is immediately available from a command shell (<command>cmd</command>, followed by
 exploration with DOS command. Is this a Samba problem, or is it a Windows problem? How can I solve this?
 </quote></para>
 
@@ -2147,7 +2132,7 @@ Here are a few possibilities:
 		but not all.
 		</para></listitem>
 	</varlistentry>
-	
+
 	<varlistentry>
 		<term>The Windows XP WebClient</term>
 		<listitem><para>
@@ -2157,7 +2142,7 @@ Here are a few possibilities:
 		that should be explored because it is a simple solution &smbmdash; if it works.
 		</para></listitem>
 	</varlistentry>
-	
+
 	<varlistentry>
 		<term>Inconsistent WINS Configuration</term>
 		<listitem><para>
@@ -2171,7 +2156,7 @@ Here are a few possibilities:
 		server, nor should it be configured to use one.
 		</para></listitem>
 	</varlistentry>
-	
+
 	<varlistentry>
 		<term>Incorrect DNS Configuration</term>
 		<listitem><para>
@@ -2188,6 +2173,8 @@ Here are a few possibilities:
 <sect2>
 <title>Invalid Cached Share References Affects Network Browsing</title>
 <para>
+<indexterm><primary>cached references</primary></indexterm>
+<indexterm><primary>stale network links</primary></indexterm>
 Cached references on your MS Windows client (workstation or server) to shares or servers that no longer exist
 can cause MS Windows Explorer to appear unresponsive as it tries to connect to these shares. After a delay
 (can take a long time) it times out and browsing will appear to be mostly normal again.
@@ -2201,18 +2188,24 @@ invalid shares or servers it is necessary to edit the Windows Registry under
 <literal>HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\</literal>. Edit the entry
 <literal>MountPoints2</literal> (on Windows XP and later, or <literal>MountPoints</literal> on Windows 2000
 and earlier). Remove all keys named <literal>\\server\share</literal> (where 'server' and 'share' refer to a
-non-existent server or share). Note that this must be done for every user profile that has such stale
-references. Alternately, you can delete the shortcuts from the MS Windows Explorer in <literal>My Network
-Places</literal> just by right-clicking them and selecting <emphasis>Delete.</emphasis>
+non-existent server or share).
 </para>
 
+<note><para>
+Removal of stale network links needs to be done on a per-user basis. Alternately, you can delete the
+shortcuts from the MS Windows Explorer in <literal>My Network Places</literal> just by right-clicking them and
+selecting <emphasis>Delete.</emphasis>
+</para></note>
+
 <para>
+<indexterm><primary>slow network browsing</primary></indexterm>
 Samba users have reported that these stale references negatively affect network browsing with Windows, Samba,
 and Novell servers. It is suspected to be a universal problem not directly related to the Samba
 server. Samba users may experience this more often due to Samba being somewhat viewed as an experimenter's
 toolkit. This results from the fact that a user might go through several reconfigurations and incarnations of
 their Samba server, by different names, with different shares, increasing the chances for having stale
-(invalid) cached share references. Windows clients do not seem to expire these references.
+(invalid) cached share references. Windows clients do not expire these references thus necessitating manual
+removal.
 </para>
 
 <para>
