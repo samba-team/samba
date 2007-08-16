@@ -70,9 +70,18 @@ void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
-	/* Ensure we have at least wct words. */
+	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
 		DEBUG(0,("init_smb_request: invalid wct number %u (size %u)\n",
+			(unsigned int)req->wct,
+			(unsigned int)req_size));
+		exit_server_cleanly("Invalid SMB request");
+	}
+	/* Ensure bcc is correct. */
+	if (((uint8 *)smb_buf(inbuf)) + smb_buflen(inbuf) > inbuf + req_size) {
+		DEBUG(0,("init_smb_request: invalid bcc number %u "
+			"(wct = %u, size %u)\n",
+			(unsigned int)smb_buflen(inbuf),
 			(unsigned int)req->wct,
 			(unsigned int)req_size));
 		exit_server_cleanly("Invalid SMB request");
