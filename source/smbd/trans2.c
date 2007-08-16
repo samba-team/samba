@@ -6523,8 +6523,10 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				 * ERRDOS/183, we need to return ERRDOS/80, see bug
 				 * 4852.
 				 */
-				return ERROR_BOTH(NT_STATUS_OBJECT_NAME_COLLISION,
+				reply_botherror(req,
+					NT_STATUS_OBJECT_NAME_COLLISION,
 					ERRDOS, ERRfilexists);
+				return;
 		}
 
 		reply_nterror(req, status);

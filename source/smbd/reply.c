@@ -1551,13 +1551,23 @@ void reply_open(connection_struct *conn, struct smb_request *req)
 			&info, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBopen);
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBopen);
+			return;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
+					ERRDOS, ERRfilexists);
 			return;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBopen);
 		return;
 	}
 
@@ -1718,7 +1728,6 @@ void reply_open_and_X(connection_struct *conn, struct smb_request *req)
 		END_PROFILE(SMBopenX);
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBopenX);
 			return;
 		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
@@ -1730,11 +1739,9 @@ void reply_open_and_X(connection_struct *conn, struct smb_request *req)
 			 */
 			reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
 					ERRDOS, ERRfilexists);
-			END_PROFILE(SMBopenX);
 			return;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBopenX);
 		return;
 	}
 
@@ -2075,13 +2082,23 @@ void reply_ctemp(connection_struct *conn, struct smb_request *req)
 	close(tmpfd);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBctemp);
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBctemp);
+			return;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
+					ERRDOS, ERRfilexists);
 			return;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBctemp);
 		return;
 	}
 
