@@ -1,3 +1,7 @@
+2007-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_cipher.c: Make camellia-128-cbc tests pass.
+
 2007-08-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_cipher.c: Sprinkle EVP cipher names.
