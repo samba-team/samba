@@ -187,6 +187,8 @@ NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 		return status;
 	} 
 
+	/* TODO: take a look at tconx.in.flags! */
+
 	status = make_connection(req, con->tconx.in.path, con->tconx.in.password, 
 				 con->tconx.in.device);
 	if (!NT_STATUS_IS_OK(status)) {
