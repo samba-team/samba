@@ -314,6 +314,7 @@ xslt/pearson.xsl:
 
 distclean clobber: clean
 	rm Makefile.settings config.status config.log configure
+	rm -rf autom4te.cache
 
 
 # Always keep intermediate files if we can
