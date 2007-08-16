@@ -6187,6 +6187,17 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
 		}
+		if (info_level == SMB_POSIX_PATH_OPEN &&
+				NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			/*
+			 * We hit an existing file, and if we're returning DOS
+			 * error codes OBJECT_NAME_COLLISION would map to
+			 * ERRDOS/183, we need to return ERRDOS/80, see bug
+			 * 4852.
+			 */
+			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_COLLISION,
+				ERRDOS, ERRfilexists);
+		}
 		return ERROR_NT(status);
 	}
 
