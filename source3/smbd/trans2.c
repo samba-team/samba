@@ -913,18 +913,7 @@ static void call_trans2open(connection_struct *conn,
 			/* We have re-scheduled this call. */
 			return;
 		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			/*
-			 * We hit an existing file, and if we're returning DOS
-			 * error codes OBJECT_NAME_COLLISION would map to
-			 * ERRDOS/183, we need to return ERRDOS/80, see bug
-			 * 4852.
-			 */
-			reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
-				ERRDOS, ERRfilexists);
-			return;
-		}
-		reply_nterror(req, status);
+		reply_openerror(req, status);
 		return;
 	}
 
@@ -6515,18 +6504,9 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 					ERRSRV, ERRbadpath);
 			return;
 		}
-		if (info_level == SMB_POSIX_PATH_OPEN &&
-			NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-				/*
-				 * We hit an existing file, and if we're returning DOS
-				 * error codes OBJECT_NAME_COLLISION would map to
-				 * ERRDOS/183, we need to return ERRDOS/80, see bug
-				 * 4852.
-				 */
-				reply_botherror(req,
-					NT_STATUS_OBJECT_NAME_COLLISION,
-					ERRDOS, ERRfilexists);
-				return;
+		if (info_level == SMB_POSIX_PATH_OPEN) {
+			reply_openerror(req, status);
+			return;
 		}
 
 		reply_nterror(req, status);

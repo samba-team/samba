@@ -816,51 +816,50 @@ void reply_ntcreate_and_X(connection_struct *conn,
 					oplock_request,
 					&info, &fsp);
 
-		if (!NT_STATUS_IS_OK(status)) { 
-			/* We cheat here. There are two cases we
-			 * care about. One is a directory rename,
-			 * where the NT client will attempt to
-			 * open the source directory for
-			 * DELETE access. Note that when the
-			 * NT client does this it does *not*
-			 * set the directory bit in the
-			 * request packet. This is translated
-			 * into a read/write open
-			 * request. POSIX states that any open
-			 * for write request on a directory
-			 * will generate an EISDIR error, so
-			 * we can catch this here and open a
-			 * pseudo handle that is flagged as a
-			 * directory. The second is an open
-			 * for a permissions read only, which
-			 * we handle in the open_file_stat case. JRA.
+		/* We cheat here. There are two cases we
+		 * care about. One is a directory rename,
+		 * where the NT client will attempt to
+		 * open the source directory for
+		 * DELETE access. Note that when the
+		 * NT client does this it does *not*
+		 * set the directory bit in the
+		 * request packet. This is translated
+		 * into a read/write open
+		 * request. POSIX states that any open
+		 * for write request on a directory
+		 * will generate an EISDIR error, so
+		 * we can catch this here and open a
+		 * pseudo handle that is flagged as a
+		 * directory. The second is an open
+		 * for a permissions read only, which
+		 * we handle in the open_file_stat case. JRA.
+		 */
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+
+			/*
+			 * Fail the open if it was explicitly a non-directory
+			 * file.
 			 */
 
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
-
-				/*
-				 * Fail the open if it was explicitly a non-directory file.
-				 */
-
-				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					TALLOC_FREE(case_state);
-					reply_force_nterror(req, NT_STATUS_FILE_IS_A_DIRECTORY);
-					END_PROFILE(SMBntcreateX);
-					return;
-				}
-
-				oplock_request = 0;
-				status = open_directory(conn, req, fname,
-							&sbuf,
-							access_mask,
-							share_access,
-							create_disposition,
-							create_options,
-							file_attributes,
-							&info, &fsp);
-
+			if (create_options & FILE_NON_DIRECTORY_FILE) {
+				TALLOC_FREE(case_state);
+				reply_force_nterror(req,
+						NT_STATUS_FILE_IS_A_DIRECTORY);
+				END_PROFILE(SMBntcreateX);
+				return;
 			}
+
+			oplock_request = 0;
+			status = open_directory(conn, req, fname,
+						&sbuf,
+						access_mask,
+						share_access,
+						create_disposition,
+						create_options,
+						file_attributes,
+						&info, &fsp);
+
 		}
 	}
 
@@ -872,18 +871,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			/* We have re-scheduled this call. */
 			return;
 		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			/*
-			 * We hit an existing file, and if we're returning DOS
-			 * error codes OBJECT_NAME_COLLISION would map to
-			 * ERRDOS/183, we need to return ERRDOS/80, see bug
-			 * 4852.
-			 */
-			reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
-				ERRDOS, ERRfilexists);
-			return;
-		}
-		reply_nterror(req, status);
+		reply_openerror(req, status);
 		return;
 	}
 
@@ -1532,12 +1520,6 @@ static void call_nt_transact_create(connection_struct *conn,
 					create_options,
 					file_attributes,
 					&info, &fsp);
-		if(!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(case_state);
-			reply_nterror(req, status);
-			return;
-		}
-
 	} else {
 
 		/*
@@ -1553,46 +1535,41 @@ static void call_nt_transact_create(connection_struct *conn,
 					oplock_request,
 					&info, &fsp);
 
-		if (!NT_STATUS_IS_OK(status)) { 
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
-				/*
-				 * Fail the open if it was explicitly a non-directory file.
-				 */
+			/*
+			 * Fail the open if it was explicitly a non-directory file.
+			 */
 
-				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					TALLOC_FREE(case_state);
-					reply_force_nterror(
-						req,
-						NT_STATUS_FILE_IS_A_DIRECTORY);
-					return;
-				}
-	
-				oplock_request = 0;
-				status = open_directory(conn, req, fname,
-							&sbuf,
-							access_mask,
-							share_access,
-							create_disposition,
-							create_options,
-							file_attributes,
-							&info, &fsp);
-				if(!NT_STATUS_IS_OK(status)) {
-					TALLOC_FREE(case_state);
-					reply_nterror(req, status);
-					return;
-				}
-			} else {
+			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				TALLOC_FREE(case_state);
-				if (open_was_deferred(req->mid)) {
-					/* We have re-scheduled this call. */
-					return;
-				}
-				reply_nterror(req, status);
+				reply_force_nterror(
+					req,
+					NT_STATUS_FILE_IS_A_DIRECTORY);
 				return;
 			}
-		} 
+
+			oplock_request = 0;
+			status = open_directory(conn, req, fname,
+						&sbuf,
+						access_mask,
+						share_access,
+						create_disposition,
+						create_options,
+						file_attributes,
+						&info, &fsp);
+		}
+	}
+
+	TALLOC_FREE(case_state);
+
+	if(!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(req->mid)) {
+			/* We have re-scheduled this call. */
+			return;
+		}
+		reply_openerror(req, status);
+		return;
 	}
 
 	/*
