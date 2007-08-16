@@ -179,3 +179,20 @@ void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
 	error_packet_set((char *)req->outbuf, eclass, ecode, ntstatus,
 			 line, file);
 }
+
+void reply_openerror(struct smb_request *req, NTSTATUS status)
+{
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		/*
+		 * We hit an existing file, and if we're returning DOS
+		 * error codes OBJECT_NAME_COLLISION would map to
+		 * ERRDOS/183, we need to return ERRDOS/80, see bug
+		 * 4852.
+		 */
+		reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
+			ERRDOS, ERRfilexists);
+	} else {
+		reply_nterror(req, status);
+	}
+}
+
