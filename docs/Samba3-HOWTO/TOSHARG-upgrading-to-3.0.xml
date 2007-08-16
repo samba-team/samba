@@ -5,25 +5,56 @@
 	&author.jelmer;
 	&author.jht;
 	&author.jerry;
-	<pubdate>June 30, 2003</pubdate>
+	<pubdate>August 16, 2007</pubdate>
 </chapterinfo>
 
-<title>Upgrading from Samba-2.x to Samba-3.0.23</title>
+<title>Updating and Upgrading Samba</title>
+<para>
+This chapter provides a detailed record of changes made during the 3.x series releases. At this time this
+series consists of the 3.0.x series that is under the GNU GPL version 2 license, and the Samba 3.2.x series
+that is being released under the terms of the GNU GPL version 3 license.
+</para>
 
+<sect1>
+<title>Key Update Requirements</title>
+<para>
+Samba is a fluid product in which there may be significant changes between releases. Some of these changes are
+brought about as a result of changes in the protocols that are used by Microsoft Windows network clients as a
+result of security or functionality updates through official Microsoft patches and updates. Samba must track
+such changes, particularly where they affect the internal operation of Samba itself.
+</para>
+
+<para>
+Please refer to any notes below that make explicit mention of the version of Samba you are using. In general,
+all changes that apply to a new release will apply to follow-on releases also. For example, changes to Samba
+3.0.23 affect all releases up to an including 3.0.25 and later.  Samba 3.2.x was originaly cut from Samba
+3.0.25 before 3.2.0-specific changes were applied. Unless a 3.0.x series feature is specifically revoked, the
+behavior of the 3.2.x series can be expected to follow the earlier pattern.
+</para>
+
+<sect2>
+<title>Upgrading from Samba-3.0.x to Samba-3.2.0</title>
+<para>
+</para>
+</sect2>
+
+<sect2 id="oldupdatenotes">
+<title>Upgrading from Samba-2.x to Samba-3.0.25</title>
 <para>
 <indexterm><primary>Samba differences</primary></indexterm>
 <indexterm><primary>changed parameters</primary></indexterm>
 <indexterm><primary>simple guide</primary></indexterm>
-This chapter deals exclusively with the differences between Samba-3.0.23 and Samba-2.2.8a.
-It points out where configuration parameters have changed, and provides a simple guide for 
-the move from 2.2.x to 3.0.23.
+This chapter deals exclusively with the differences between Samba-3.0.25 and Samba-2.2.8a.
+It points out where configuration parameters have changed, and provides a simple guide for
+the move from 2.2.x to 3.0.25.
 </para>
+</sect2>
 
-<sect1>
+<sect2>
 <title>Quick Migration Guide</title>
 
 <para>
-Samba-3.0.23 default behavior should be approximately the same as Samba-2.2.x.
+Samba-3.0.25 default behavior should be approximately the same as Samba-2.2.x.
 The default behavior when the new parameter <smbconfoption name="passdb backend"/>
 is not defined in the &smb.conf; file provides the same default behavior as Samba-2.2.x
 with <smbconfoption name="encrypt passwords">Yes</smbconfoption> and
@@ -34,7 +65,7 @@ will use the <filename>smbpasswd</filename> database.
 <indexterm><primary>behavior approximately same</primary></indexterm>
 <indexterm><primary>differing protocol</primary></indexterm>
 So why say that <emphasis>behavior should be approximately the same as Samba-2.2.x</emphasis>? Because
-Samba-3.0.23 can negotiate new protocols, such as support for native Unicode, that may result in
+Samba-3.0.25 can negotiate new protocols, such as support for native Unicode, that may result in
 differing protocol code paths being taken. The new behavior under such circumstances is not
 exactly the same as the old one. The good news is that the domain and machine SIDs will be
 preserved across the upgrade.
@@ -53,17 +84,29 @@ to migrate the old LDAP database to the new one through use of the <command>pdbe
 See <link linkend="pdbeditthing">The <emphasis>pdbedit</emphasis> Command</link>.
 </para>
 
+</sect2>
 </sect1>
 
 <sect1>
-<title>New Features in Samba-3</title>
+<title>New Featuers in Samba-3.x Series</title>
+<para>
+</para>
+
+<sect2>
+<title>New Features in Samba-3.2.x Series</title>
+<para>
+</para>
+</sect2>
+
+<sect2>
+<title>New Features in Samba-3.0.x</title>
 
 <para>
 The major new features are:
 </para>
 
 <orderedlist numeration="arabic">
-	<listitem><para> 
+	<listitem><para>
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>LDAP/Kerberos</primary></indexterm>
 	Active Directory support. This release is able to join an ADS realm
@@ -163,14 +206,13 @@ The major new features are:
 Plus lots of other improvements!
 </para>
 
-</sect1>
 
-<sect1>
+<sect3>
 <title>Configuration Parameter Changes</title>
 
 <para>
 This section contains a brief listing of changes to &smb.conf; options since the Samba-2.2.x series up to and
-including Samba-3.0.23.
+including Samba-3.0.25.
 </para>
 
 <para>
@@ -181,16 +223,18 @@ parameters.
 <para>
 Whenever a Samba update or upgrade is performed it is highly recommended to read the file called
 <emphasis>WHATSNEW.txt</emphasis> that is part of the Samba distribution tarball. This file may also
-be obtain on-line from the Samba <ulink url="http://www.samba.org/samba/">web site</ulink>, in 
+be obtain on-line from the Samba <ulink url="http://www.samba.org/samba/">web site</ulink>, in
 the right column, under Current Stable Release, by clicking on <emphasis>Release Notes</emphasis>.
 </para>
 
-<sect2>
+</sect3>
+
+<sect3>
 <title>Removed Parameters</title>
 
 <indexterm><primary>deleted parameters</primary></indexterm>
 <para>
-In alphabetical order, these are the parameters eliminated from Samba-2.2.x through 3.0.23.
+In alphabetical order, these are the parameters eliminated from Samba-2.2.x through 3.0.25.
 </para>
 
 <itemizedlist>
@@ -228,12 +272,12 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>wins partners</para></listitem>
 </itemizedlist>
 
-</sect2>
+</sect3>
 
-<sect2>
+<sect3>
 <title>New Parameters</title>
 
-<para>The following new parameters have been released up to and including Samba 3.0.23 (grouped by function:)</para>
+<para>The following new parameters have been released up to and including Samba 3.0.25 (grouped by function:)</para>
 
 <para>Remote Management</para>
 
@@ -390,9 +434,9 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>privatedir</para></listitem>
 </itemizedlist>
 
-</sect2>
+</sect3>
 
-<sect2>
+<sect3>
 <title>Modified Parameters (Changes in Behavior)</title>
 
 <itemizedlist>
@@ -423,11 +467,11 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>write cache (deprecated)</para></listitem>
 </itemizedlist>
 
+</sect3>
+
 </sect2>
 
-</sect1>
-
-<sect1>
+<sect2>
 <title>New Functionality</title>
 
 	<para>
@@ -438,7 +482,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	life of the current Samba release.
 	</para>
 
-	<sect2>
+	<sect3>
 	<title>TDB Data Files</title>
 
 <indexterm><primary>tdb data files</primary></indexterm>
@@ -450,9 +494,9 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 
 	<para>
 <indexterm><primary>tdb file backup</primary></indexterm>
-	Please remember to back up your existing ${lock directory}/*tdb before upgrading to Samba-3. If necessary, Samba will 
-	upgrade databases as they are opened. Downgrading from Samba-3 to 2.2, or reversion to an earlier version
-	of Samba-3 from a later release, is an unsupported path.
+	Please remember to back up your existing ${lock directory}/*tdb before upgrading to Samba-3. If necessary,
+	Samba will upgrade databases as they are opened. Downgrading from Samba-3 to 2.2, or reversion to an earlier
+	version of Samba-3 from a later release, is an unsupported path.
 	</para>
 
 	<para>
@@ -556,9 +600,9 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	</tgroup>
 	</table>
 
-	</sect2>
+	</sect3>
 
-	<sect2>
+	<sect3>
 	<title>Changes in Behavior</title>
 
 	<para>
@@ -589,9 +633,9 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 		</para></listitem>
 	</orderedlist>
 
-	</sect2>
+	</sect3>
 
-	<sect2>
+	<sect3>
 	<title>Passdb Backends and Authentication</title>
 
 	<para>
@@ -636,16 +680,16 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	utility. See the respective man pages for details.
 	</para>
 
-	</sect2>
+	</sect3>
 
-	<sect2>
+	<sect3>
 	<title>LDAP</title>
 
 	<para>
 	This section outlines the new features effecting Samba/LDAP integration.
 	</para>
 
-		<sect3>
+		<sect4>
 		<title>New Schema</title>
 
 		<para>
@@ -671,7 +715,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 
 		<para>
 <indexterm><primary>net</primary><secondary>getlocalsid</secondary></indexterm>
-		The &lt;DOM SID&gt; can be obtained by running 
+		The &lt;DOM SID&gt; can be obtained by running
 <screen>
 &prompt;<userinput>net getlocalsid &lt;DOMAINNAME&gt;</userinput>
 </screen>
@@ -748,9 +792,9 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 			</para></listitem>
 		</itemizedlist>
 
-		</sect3>
+		</sect4>
 
-		<sect3>
+		<sect4>
 		<title>New Suffix for Searching</title>
 
 		<para>
@@ -788,9 +832,9 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 		the domain names with quotation marks.
 		</para>
 
-		</sect3>
+		</sect4>
 
-		<sect3>
+		<sect4>
 		<title>IdMap LDAP Support</title>
 
 		<para>
@@ -815,6 +859,8 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 		share a UID/GID number space, thus avoiding the interoperability problems
 		with NFS that were present in Samba-2.2.
 		</para>
+
+		</sect4>
 
 		</sect3>
 
