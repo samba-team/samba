@@ -602,6 +602,8 @@ sub FindNestedTypes($$)
 	my ($l, $t) = @_;
 
 	return if not defined($t->{ELEMENTS});
+	return if ($t->{TYPE} eq "ENUM");
+	return if ($t->{TYPE} eq "BITMAP");
 
 	foreach (@{$t->{ELEMENTS}}) {
 		if (ref($_->{TYPE}) eq "HASH") {
