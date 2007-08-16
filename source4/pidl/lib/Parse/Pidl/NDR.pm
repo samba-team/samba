@@ -392,6 +392,18 @@ sub ParseStruct($$)
 	my @elements = ();
 	my $surrounding = undef;
 
+	return {
+		TYPE => "STRUCT",
+		NAME => $struct->{NAME},
+		SURROUNDING_ELEMENT => undef,
+		ELEMENTS => undef,
+		PROPERTIES => $struct->{PROPERTIES},
+		ORIGINAL => $struct,
+		ALIGN => undef
+	} unless defined($struct->{ELEMENTS});
+
+	CheckPointerTypes($struct, $pointer_default);
+
 	foreach my $x (@{$struct->{ELEMENTS}}) 
 	{
 		my $e = ParseElement($x, $pointer_default);
@@ -433,12 +445,23 @@ sub ParseUnion($$)
 {
 	my ($e, $pointer_default) = @_;
 	my @elements = ();
+	my $hasdefault = 0;
 	my $switch_type = has_property($e, "switch_type");
 	unless (defined($switch_type)) { $switch_type = "uint32"; }
-
 	if (has_property($e, "nodiscriminant")) { $switch_type = undef; }
-	
-	my $hasdefault = 0;
+
+	return {
+		TYPE => "UNION",
+		NAME => $e->{NAME},
+		SWITCH_TYPE => $switch_type,
+		ELEMENTS => undef,
+		PROPERTIES => $e->{PROPERTIES},
+		HAS_DEFAULT => $hasdefault,
+		ORIGINAL => $e
+	} unless defined($e->{ELEMENTS});
+
+	CheckPointerTypes($e, $pointer_default);
+
 	foreach my $x (@{$e->{ELEMENTS}}) 
 	{
 		my $t;
@@ -500,11 +523,6 @@ sub ParseBitmap($$)
 sub ParseType($$)
 {
 	my ($d, $pointer_default) = @_;
-
-	if ($d->{TYPE} eq "STRUCT" or $d->{TYPE} eq "UNION") {
-		return $d if (not defined($d->{ELEMENTS}));
-		CheckPointerTypes($d, $pointer_default);
-	}
 
 	my $data = {
 		STRUCT => \&ParseStruct,
@@ -588,6 +606,8 @@ sub ParseFunction($$$)
 sub CheckPointerTypes($$)
 {
 	my ($s,$default) = @_;
+
+	return unless defined($s->{ELEMENTS});
 
 	foreach my $e (@{$s->{ELEMENTS}}) {
 		if ($e->{POINTERS} and not defined(pointer_type($e))) {
@@ -1005,6 +1025,8 @@ sub ValidStruct($)
 
 	ValidProperties($struct, "STRUCT");
 
+	return unless defined($struct->{ELEMENTS});
+
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		$e->{PARENT} = $struct;
 		ValidElement($e);
@@ -1022,7 +1044,9 @@ sub ValidUnion($)
 	if (has_property($union->{PARENT}, "nodiscriminant") and has_property($union->{PARENT}, "switch_type")) {
 		fatal($union->{PARENT}, $union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
 	}
-	
+
+	return unless defined($union->{ELEMENTS});
+
 	foreach my $e (@{$union->{ELEMENTS}}) {
 		$e->{PARENT} = $union;
 
@@ -1129,7 +1153,7 @@ sub ValidInterface($)
 		 $d->{TYPE} eq "STRUCT" or
 	 	 $d->{TYPE} eq "UNION" or 
 	 	 $d->{TYPE} eq "ENUM" or
-	     $d->{TYPE} eq "BITMAP") && ValidType($d);
+		 $d->{TYPE} eq "BITMAP") && ValidType($d);
 	}
 
 }

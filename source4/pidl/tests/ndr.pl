@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 26;
+use Test::More tests => 27;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -225,5 +225,31 @@ is(mapToScalar({TYPE => "BITMAP", PROPERTIES => { bitmap64bit => 1 } }),
 	"hyper");
 is(mapToScalar({TYPE => "TYPEDEF", DATA => {TYPE => "ENUM", PARENT => { PROPERTIES => { enum8bit => 1 } } }}), "uint8");
 
-is_deeply(ParseType({TYPE => "STRUCT", NAME => "foo" }, "ref"), 
-	{TYPE => "STRUCT", NAME => "foo" });
+my $t;
+$t = {
+	TYPE => "STRUCT",
+	NAME => "foo",
+	SURROUNDING_ELEMENT => undef,
+	ELEMENTS => undef,
+	PROPERTIES => undef,
+	ORIGINAL => {
+		TYPE => "STRUCT",
+		NAME => "foo"
+	},
+	ALIGN => undef
+};
+is_deeply(ParseType($t->{ORIGINAL}, "ref"), $t); 
+
+$t = {
+	TYPE => "UNION",
+	NAME => "foo",
+	SWITCH_TYPE => "uint32",
+	ELEMENTS => undef,
+	PROPERTIES => undef,
+	HAS_DEFAULT => 0,
+	ORIGINAL => {
+		TYPE => "UNION",
+		NAME => "foo"
+	}
+};
+is_deeply(ParseType($t->{ORIGINAL}, "ref"), $t); 
