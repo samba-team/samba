@@ -48,12 +48,14 @@ sub test_samba4_ndr
 {
 	my ($name,$idl,$c,$extra) = @_;
 	my $pidl = Parse::Pidl::IDL::parse_string("interface echo { $idl }; ", "<$name>");
-	
 	ok(defined($pidl), "($name) parse idl");
-	my $header = Parse::Pidl::Samba4::Header::Parse($pidl);
-	ok(defined($header), "($name) generate generic header");
+
 	my $pndr = Parse::Pidl::NDR::Parse($pidl);
 	ok(defined($pndr), "($name) generate NDR tree");
+
+	my $header = Parse::Pidl::Samba4::Header::Parse($pndr);
+	ok(defined($header), "($name) generate generic header");
+
 	my $generator = new Parse::Pidl::Samba4::NDR::Parser();
 	my ($ndrheader,$ndrparser) = $generator->Parse($pndr, undef, undef);
 	ok(defined($ndrparser), "($name) generate NDR parser");
