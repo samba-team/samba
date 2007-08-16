@@ -351,17 +351,16 @@ sub HeaderInterface($)
 	pidl "#ifndef _HEADER_$interface->{NAME}\n";
 	pidl "#define _HEADER_$interface->{NAME}\n\n";
 
-	foreach my $d (@{$interface->{DATA}}) {
-		next if ($d->{TYPE} ne "CONST");
+	foreach my $d (@{$interface->{CONSTS}}) {
 		HeaderConst($d);
 	}
 
-	foreach my $d (@{$interface->{DATA}}) {
-		HeaderTypedef($d) if ($d->{TYPE} eq "TYPEDEF");
-		HeaderStruct($d, $d->{NAME}) if ($d->{TYPE} eq "STRUCT");
-		HeaderUnion($d, $d->{NAME}) if ($d->{TYPE} eq "UNION");
-		HeaderEnum($d, $d->{NAME}) if ($d->{TYPE} eq "ENUM");
-		HeaderBitmap($d, $d->{NAME}) if ($d->{TYPE} eq "BITMAP");
+	foreach my $d (@{$interface->{TYPES}}) {
+		HeaderTypedef($d->{ORIGINAL}) if ($d->{TYPE} eq "TYPEDEF");
+		HeaderStruct($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "STRUCT");
+		HeaderUnion($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "UNION");
+		HeaderEnum($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "ENUM");
+		HeaderBitmap($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "BITMAP");
 		pidl ";\n\n" if ($d->{TYPE} eq "BITMAP" or 
 				 $d->{TYPE} eq "STRUCT" or 
 				 $d->{TYPE} eq "TYPEDEF" or 
@@ -369,10 +368,8 @@ sub HeaderInterface($)
 				 $d->{TYPE} eq "ENUM");
 	}
 
-	foreach my $d (@{$interface->{DATA}}) {
-		next if ($d->{TYPE} ne "FUNCTION");
-
-		HeaderFunction($d);
+	foreach my $d (@{$interface->{FUNCTIONS}}) {
+		HeaderFunction($d->{ORIGINAL});
 	}
 
 	pidl "#endif /* _HEADER_$interface->{NAME} */\n";
@@ -382,7 +379,7 @@ sub HeaderInterface($)
 # parse a parsed IDL into a C header
 sub Parse($)
 {
-	my($idl) = shift;
+	my($ndr) = shift;
 	$tab_depth = 0;
 
 	$res = "";
@@ -394,7 +391,7 @@ sub Parse($)
 	pidl "#include <stdint.h>\n";
 	pidl "\n";
 
-	foreach (@{$idl}) {
+	foreach (@{$ndr}) {
 		($_->{TYPE} eq "INTERFACE") && HeaderInterface($_);
 		($_->{TYPE} eq "IMPORT") && HeaderImport(@{$_->{PATHS}});
 		($_->{TYPE} eq "INCLUDE") && HeaderInclude(@{$_->{PATHS}});
