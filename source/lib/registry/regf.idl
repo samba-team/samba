@@ -73,7 +73,7 @@ interface regf
 	     */
 	};
 
-	[base_type(uint16),noprint] enum reg_key_type { 
+	[noprint] enum reg_key_type { 
 		REG_ROOT_KEY = 0x20, 
 		REG_SUB_KEY  = 0x2C, 
 		REG_SYM_LINK = 0x10 
