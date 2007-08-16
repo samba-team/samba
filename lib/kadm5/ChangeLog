@@ -1,3 +1,12 @@
+2007-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* version-script.map: export _kadm5_unmarshal_params,
+	_kadm5_acl_check_permission
+
+	* version-script.map: export kadm5_log_ symbols.
+
+	* log.c: Unexport the specific log replay operations.
+	
 2007-08-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: build sample_passwd_check.la as part of noinst.
