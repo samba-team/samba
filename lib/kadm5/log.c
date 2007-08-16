@@ -264,7 +264,7 @@ kadm5_log_create (kadm5_server_context *context,
  * database.
  */
 
-kadm5_ret_t
+static kadm5_ret_t
 kadm5_log_replay_create (kadm5_server_context *context,
 			 uint32_t ver,
 			 uint32_t len,
@@ -346,7 +346,7 @@ out:
  * Read a `delete' log operation from `sp' and apply it.
  */
 
-kadm5_ret_t
+static kadm5_ret_t
 kadm5_log_replay_delete (kadm5_server_context *context,
 			 uint32_t ver,
 			 uint32_t len,
@@ -437,7 +437,7 @@ failed:
  * Read a `rename' log operation from `sp' and apply it.
  */
 
-kadm5_ret_t
+static kadm5_ret_t
 kadm5_log_replay_rename (kadm5_server_context *context,
 			 uint32_t ver,
 			 uint32_t len,
@@ -543,7 +543,7 @@ failed:
  * Read a `modify' log operation from `sp' and apply it.
  */
 
-kadm5_ret_t
+static kadm5_ret_t
 kadm5_log_replay_modify (kadm5_server_context *context,
 			 uint32_t ver,
 			 uint32_t len,
@@ -768,7 +768,7 @@ kadm5_log_nop (kadm5_server_context *context)
  * Read a `nop' log operation from `sp' and apply it.
  */
 
-kadm5_ret_t
+static kadm5_ret_t
 kadm5_log_replay_nop (kadm5_server_context *context,
 		      uint32_t ver,
 		      uint32_t len,
