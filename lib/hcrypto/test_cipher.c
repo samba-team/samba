@@ -199,7 +199,7 @@ main(int argc, char **argv)
     for (i = 0; i < sizeof(des_ede3_tests)/sizeof(des_ede3_tests[0]); i++)
 	ret += test_cipher(EVP_des_ede3_cbc(), &des_ede3_tests[i]);
     for (i = 0; i < sizeof(camellia128_tests)/sizeof(camellia128_tests[0]); i++)
-	ret += test_cipher(EVP_des_ede3_cbc(), &camellia128_tests[i]);
+	ret += test_cipher(EVP_camellia_128_cbc(), &camellia128_tests[i]);
 
     return ret;
 }
