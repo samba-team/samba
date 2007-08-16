@@ -124,6 +124,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_LIST_TRUSTDOM:
 		return wbsrv_samba3_list_trustdom(s3call);
 
+	case WINBINDD_LIST_USERS:
+		return wbsrv_samba3_list_users(s3call);
+
 	case WINBINDD_GETPWNAM:
 		return wbsrv_samba3_getpwnam(s3call);
 
@@ -178,7 +181,6 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_PAM_CHAUTHTOK:
 	case WINBINDD_PAM_LOGOFF:
 	case WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP:
-	case WINBINDD_LIST_USERS:
 	case WINBINDD_LIST_GROUPS:
 	case WINBINDD_LOOKUPRIDS:
 	case WINBINDD_SIDS_TO_XIDS:
