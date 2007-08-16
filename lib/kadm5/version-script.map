@@ -36,6 +36,12 @@ HEIMDAL_KAMD5_SERVER_1.0 {
 		kadm5_store_principal_ent;
 		kadm5_store_principal_ent_mask;
 		kadm5_store_tl_data;
+		kadm5_s_init_with_password_ctx;
+		kadm5_s_init_with_password;
+		kadm5_s_init_with_skey_ctx;
+		kadm5_s_init_with_skey;
+		kadm5_s_init_with_creds_ctx;
+		kadm5_s_init_with_creds;
 		kadm5_log_set_version;
 		kadm5_log_signal_socket;
 		kadm5_log_previous;
