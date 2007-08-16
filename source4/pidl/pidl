@@ -601,12 +601,18 @@ sub process_file($)
 	}
 
 	if (defined($opt_ws_parser) or 
-	    defined($opt_client) or defined($opt_server) or 
-	    defined($opt_ndr_parser) or defined($opt_ejs) or 
-		defined($opt_dump_ndr_tree) or defined($opt_samba3_header) or 
-	    defined($opt_samba3_parser) or defined($opt_samba3_server) or 
-		defined($opt_swig) or defined($opt_samba3_ndr_client) or
-		defined($opt_samba3_ndr_server)) {
+	    defined($opt_client) or
+	    defined($opt_server) or 
+	    defined($opt_header) or
+	    defined($opt_ndr_parser) or
+	    defined($opt_ejs) or 
+	    defined($opt_dump_ndr_tree) or
+	    defined($opt_samba3_header) or 
+	    defined($opt_samba3_parser) or 
+	    defined($opt_samba3_server) or 
+	    defined($opt_swig) or
+	    defined($opt_samba3_ndr_client) or
+	    defined($opt_samba3_ndr_server)) {
 		require Parse::Pidl::NDR;
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
 	}
