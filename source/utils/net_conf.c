@@ -151,12 +151,10 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 	struct registry_value val;
 	WERROR werr = WERR_OK;
 	char *subkeyname;
-
-	ZERO_STRUCT(val);
-
-	val.type = REG_SZ;
-	val.v.sz.str = CONST_DISCARD(char *, valstr);
-	val.v.sz.len = strlen(valstr) + 1;
+	const char *canon_valname;
+	const char *canon_valstr;
+	BOOL canon_inverse;
+	struct parm_struct *parm;
 
 	if (!lp_parameter_is_valid(valname)) {
 		d_fprintf(stderr, "Invalid parameter '%s' given.\n", valname);
@@ -164,9 +162,45 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 		goto done;
 	}
 
-	if (registry_smbconf_valname_forbidden(valname)) {
+	if (!lp_canonicalize_parameter(valname, &canon_valname, &canon_inverse))
+	{
+		d_fprintf(stderr, "ERROR: could not canonicalize parameter "
+			  "'%s' after successful validation: this should not "
+			  "happen!\n", valname);
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+	if (canon_inverse) {
+		if (!lp_invert_boolean(valstr, &canon_valstr)) {
+			d_fprintf(stderr, "invalid value '%s' given for "
+				  "parameter '%s'\n", valstr, canon_valname);
+			werr = WERR_INVALID_PARAM;
+			goto done;
+		}
+	} else {
+		parm = lp_get_parameter(canon_valname);
+		if (parm->type == P_BOOL) {
+			if (!lp_canonicalize_boolean(valstr, &canon_valstr)) {
+				d_fprintf(stderr, "invalied value '%s' given "
+					  "for parameter '%s'\n", valstr,
+					  canon_valname);
+				werr = WERR_INVALID_PARAM;
+				goto done;
+			}
+		} else {
+			canon_valstr = valstr;
+		}
+	}
+
+	ZERO_STRUCT(val);
+
+	val.type = REG_SZ;
+	val.v.sz.str = CONST_DISCARD(char *, canon_valstr);
+	val.v.sz.len = strlen(canon_valstr) + 1;
+
+	if (registry_smbconf_valname_forbidden(canon_valname)) {
 		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
-			  valname);
+			  canon_valname);
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -183,18 +217,18 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 	    lp_parameter_is_global(valname))
 	{
 		d_fprintf(stderr, "Global paramter '%s' not allowed in "
-			  "service definition ('%s').\n", valname,
+			  "service definition ('%s').\n", canon_valname,
 			  subkeyname);
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
 
-	werr = reg_setvalue(key, valname, &val);
+	werr = reg_setvalue(key, canon_valname, &val);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr,
 			  "Error adding value '%s' to "
 			  "key '%s': %s\n",
-			  valname, key->key->name, dos_errstr(werr));
+			  canon_valname, key->key->name, dos_errstr(werr));
 	}
 
 done:
