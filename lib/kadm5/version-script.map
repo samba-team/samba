@@ -59,6 +59,7 @@ HEIMDAL_KAMD5_SERVER_1.0 {
 		_kadm5_acl_check_permission;
 		_kadm5_unmarshal_params;
 		_kadm5_s_get_db;
+		_kadm5_privs_to_string;
 	local:
 		*;
 };
