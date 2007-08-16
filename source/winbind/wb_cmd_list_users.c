@@ -152,7 +152,7 @@ static void cmd_list_users_recv_user_list(struct composite_context *ctx)
 	 * So we'll trim off the trailing ',' and are done.*/
 	if (NT_STATUS_IS_OK(status)) {
 		int str_len = strlen(state->result);
-		DEBUG(1, ("list_UserList_recv returned NT_STATUS_OK\n"));
+		DEBUG(5, ("list_UserList_recv returned NT_STATUS_OK\n"));
 		state->result[str_len - 1] = '\0';
 		composite_done(state->ctx);
 		return;
