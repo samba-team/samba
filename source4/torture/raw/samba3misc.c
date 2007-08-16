@@ -549,8 +549,23 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	/* Try the rename test. */
 	{
 		union smb_rename io;
+		memset(&io, '\0', sizeof(io));
 		io.rename.in.pattern1 = fpath1;
 		io.rename.in.pattern2 = fpath;
+
+		/* Try with SMBmv rename. */
+		status = smb_raw_rename(cli_nt->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+		status = smb_raw_rename(cli_dos->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRrename));
+
+		/* Try with NT rename. */
+		io.generic.level = RAW_RENAME_NTRENAME;
+		io.ntrename.in.old_name = fpath1;
+		io.ntrename.in.new_name = fpath;
+		io.ntrename.in.attrib = 0;
+		io.ntrename.in.cluster_size = 0;
+		io.ntrename.in.flags = RENAME_FLAG_RENAME;
 
 		status = smb_raw_rename(cli_nt->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
