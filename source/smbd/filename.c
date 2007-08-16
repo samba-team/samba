@@ -603,8 +603,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 
  done:
 	result = NT_STATUS_OK;
-	pstrcpy(orig_path, name);
  fail:
+	pstrcpy(orig_path, name);
 	SAFE_FREE(name);
 	SAFE_FREE(dirpath);
 	return result;
