@@ -36,6 +36,20 @@ HEIMDAL_KAMD5_SERVER_1.0 {
 		kadm5_store_principal_ent;
 		kadm5_store_principal_ent_mask;
 		kadm5_store_tl_data;
+		kadm5_log_set_version;
+		kadm5_log_signal_socket;
+		kadm5_log_previous;
+		kadm5_log_goto_end;
+		kadm5_log_foreach;
+		kadm5_log_get_version_fd;
+		kadm5_log_get_version;
+		kadm5_log_replay;
+		kadm5_log_end;
+		kadm5_log_reinit;
+		kadm5_log_init;
+		kadm5_log_nop;
+		kadm5_log_truncate;
+		kadm5_log_modify;
 	local:
 		*;
 };
