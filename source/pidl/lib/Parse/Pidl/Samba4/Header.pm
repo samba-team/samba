@@ -217,13 +217,30 @@ sub HeaderType($$$)
 		pidl mapTypeName($e->{TYPE});
 	}
 }
+sub HeaderTypeNew($$$)
+{
+	my($e,$data,$name) = @_;
+	if (ref($data) eq "HASH") {
+		($data->{TYPE} eq "ENUM") && HeaderEnum($data->{ORIGINAL}, $name);
+		($data->{TYPE} eq "BITMAP") && HeaderBitmap($data->{ORIGINAL}, $name);
+		($data->{TYPE} eq "STRUCT") && HeaderStruct($data->{ORIGINAL}, $name);
+		($data->{TYPE} eq "UNION") && HeaderUnion($data->{ORIGINAL}, $name);
+		return;
+	}
+
+	if (has_property($e, "charset")) {
+		pidl "const char";
+	} else {
+		pidl mapTypeName($e->{TYPE});
+	}
+}
 
 #####################################################################
 # parse a typedef
 sub HeaderTypedef($)
 {
 	my($typedef) = shift;
-	HeaderType($typedef, $typedef->{DATA}->{ORIGINAL}, $typedef->{NAME});
+	HeaderTypeNew($typedef, $typedef->{DATA}, $typedef->{NAME});
 }
 
 #####################################################################
