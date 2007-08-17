@@ -85,7 +85,7 @@ sub ParseFunction($$$)
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 		my $level = 0;
 
-		fatal($e, "[out] argument is not a pointer or array") if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY");
+		fatal($e->{ORIGINAL}, "[out] argument is not a pointer or array") if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY");
 
 		if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
 			$level = 1;
