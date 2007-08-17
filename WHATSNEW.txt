@@ -1,11 +1,137 @@
                    ===============================
+                   Release Notes for Samba 3.0.25c
+                             Aug 20, 2007
+                   ===============================
+
+This is the fourth production release of the Samba 3.0.25 code 
+base and is the version that servers should be run for for all 
+current bug fixes.  
+
+Major bug fixes included in Samba 3.0.25c are:
+
+  o File sharing with Widows 9x clients.
+  o Winbind running out of file descriptors due to stalled 
+    child processes.
+  o MS-DFS inter-operability issues.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25a
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Fix incorrect log messages in tdbbackup.
+    * Fix a bug in pwrite error detection in tdb_expand_file().
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 4711: Make cli_connect() return NT_STATUS codes.
+    * Ensure we obey Unicode consortium restrictions.  Based on 
+      patch from MORIYAMA Masayuki.
+    * BUG 3204: Cope with stalled winbindd child processes and 
+      prevent the parent winbindd process from running out of file  
+      descriptors.
+    * Fix realloc leak on failure case from Jim Meyering.
+    * BUG 4759: Fix crash in ber_printf() caused invalid tag.
+    * BUG 4763: Limit notify responses to client max buf size.      
+    * BUG 4777: Doing a DFS traverse through a deep link could fail
+      (not using explorer).
+    * BUG 4779: Setting the allocation size updates the modified 
+      time as a write does.
+    * BUG 4308: Fix interaction with MS Excel and POSIX ACLs.
+    * Fix POSIX unlink bug found by the Linux CIFS fs client.
+    * Stop counting locks if we get a POSIX lock request.
+    * Fix interaction between Linux CIFS fs client and Windows
+      clients when the former tries to remove a file opened by the 
+      latter.
+    * Fix incorrect mapping of invalid resume names in FindNext 
+      commands.
+    * Cope with dead entries in the locking database tied to 
+      non-existent processes (merge from 3.2-ctdb).
+    * Fix MS-DFS related renaming bug in smbclient.
+    * Fix for write cache corruption bug.
+    * Fix invalid vuid from being returned by a failed call to
+      cli_session_setup_spnego.().
+    * Fixes for error mappings from NT_STATUS to the appropriate DOS
+      error codes in reply_opeNXXX() calls.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Fix vfs_readahead: transparent modules should always pass 
+      through.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Remove redundant pointer checks when freeing memory in winbindd.
+    * BUG 4408: Remove last traces of Heimdal KCM support.
+    * Fix bug in user Krb5 ticket refresh feature in winbindd.
+    * Fix Heimdal path in the krb5 renew routine.
+    * Unused code cleanup in winbindd.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 4750: smbc_telldir_ctx() was not returning a value useful 
+      to smbc_lseekdir_ctx().
+
+
+o   Bjoern Jacke <bj@sernet.de>
+    * Add support for Extended Attributes on Solaris.
+
+
+o   Matthijs Kooijman <matthijs@stdin.nl>
+    * BUG 4836: Fix incorrect log message in the nss_info 
+      plugin init call.
+    * BUG 4849: Fix "net ads dns register" usage text.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Port cli_connect() NT_STATUS fixes to smbmount.
+    * Add notes about smbfs/cifs to usage() in smb[u]mount.
+    * BUG 4792: Fix pidfile name bug.
+    * Fix missing END_PROFILE() call in the SMBunlink reply.
+    * Coverity fixes.
+    * Correct logic error in change notify code that would result in 
+      an endless loop.
+    * Fix uninitialized reads in the spoolss GetPrinterData() replies.
+    * Fix file overwrites from Windows 9x clients.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Unused code cleanup.
+    * Avoid a crash in "net rpc info" when no username has 
+      been specified.
+    * Remove biconv detection on *BSD.
+
+
+o   Derrell Lipman <derrell@samba.org>
+    * Get/Set ACL fixes in libsmbclient.
+
+
+o   Jan Martin <Jan.Martin@rwedea.com>
+    * BUG 4860: Patches for fixing MS-DFS links with trailing 
+      back slashes.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 4719: "Must change password" is not set from usrmgr.exe.
+
+
+o   Atsushi Nakabayashi <nakabayashi@miraclelinux.com>
+    * Ensure proper exit when nmbd is unable to reopen the wins.tdb.
+    * Fix error path memleaks in the messaging subsystem.
+
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+                   ===============================
                    Release Notes for Samba 3.0.25b
                              June 26, 2007
                    ===============================
-
-This is the third production release of the Samba 3.0.25 code 
-base and is the version that servers should be run for for all 
-current bug fixes.  
 
 Major bug fixes included in Samba 3.0.25b are:
 
