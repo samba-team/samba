@@ -442,12 +442,11 @@ void reply_tcon(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBtcon);
 
-	/********************************************************************
-	 * Warning! I'm not sure that the inbuf length check is actually 
-	 * correct here. -- vl
-	 *
-	 * Jeremy, please check and remove this comment :-)
-	 ********************************************************************/
+	if (smb_buflen(req->inbuf) < 4) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBtcon);
+		return;
+	}
 
 	p = smb_buf(req->inbuf)+1;
 	p += srvstr_pull_buf_talloc(req, req->inbuf, req->flags2,
