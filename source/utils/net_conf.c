@@ -154,43 +154,20 @@ static WERROR reg_setvalue_internal(struct registry_key *key,
 	char *subkeyname;
 	const char *canon_valname;
 	const char *canon_valstr;
-	BOOL canon_inverse;
-	struct parm_struct *parm;
 
-	if (!lp_parameter_is_valid(valname)) {
-		d_fprintf(stderr, "Invalid parameter '%s' given.\n", valname);
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	if (!lp_canonicalize_parameter(valname, &canon_valname, &canon_inverse))
+	if (!lp_canonicalize_parameter_with_value(valname, valstr,
+						  &canon_valname,
+						  &canon_valstr))
 	{
-		d_fprintf(stderr, "ERROR: could not canonicalize parameter "
-			  "'%s' after successful validation: this should not "
-			  "happen!\n", valname);
+		if (canon_valname == NULL) {
+			d_fprintf(stderr, "invalid parameter '%s' given\n",
+			  	  valname);
+		} else {
+			d_fprintf(stderr, "invalid value '%s' given for "
+				  "parameter '%s'\n", valstr, valname);
+		}
 		werr = WERR_INVALID_PARAM;
 		goto done;
-	}
-	if (canon_inverse) {
-		if (!lp_invert_boolean(valstr, &canon_valstr)) {
-			d_fprintf(stderr, "invalid value '%s' given for "
-				  "parameter '%s'\n", valstr, canon_valname);
-			werr = WERR_INVALID_PARAM;
-			goto done;
-		}
-	} else {
-		parm = lp_get_parameter(canon_valname);
-		if (parm->type == P_BOOL) {
-			if (!lp_canonicalize_boolean(valstr, &canon_valstr)) {
-				d_fprintf(stderr, "invalied value '%s' given "
-					  "for parameter '%s'\n", valstr,
-					  canon_valname);
-				werr = WERR_INVALID_PARAM;
-				goto done;
-			}
-		} else {
-			canon_valstr = valstr;
-		}
 	}
 
 	ZERO_STRUCT(val);
