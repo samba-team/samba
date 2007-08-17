@@ -113,6 +113,8 @@ sub GetElementLevelTable($)
 		my $is_varying = 0;
 		my $is_conformant = 0;
 		my $is_string = 0;
+		my $is_fixed = 0;
+		my $is_inline = 0;
 
 		if ($d eq "*") {
 			$is_conformant = 1;
@@ -136,17 +138,20 @@ sub GetElementLevelTable($)
 			}
 		}
 
+		$is_fixed = 1 if (not $is_conformant and Parse::Pidl::Util::is_constant($size));
+		$is_inline = 1 if (not $is_conformant and not Parse::Pidl::Util::is_constant($size));
+
 		push (@$order, {
 			TYPE => "ARRAY",
 			SIZE_IS => $size,
 			LENGTH_IS => $length,
-			IS_DEFERRED => "$is_deferred",
-			IS_SURROUNDING => "$is_surrounding",
-			IS_ZERO_TERMINATED => "$is_string",
-			IS_VARYING => "$is_varying",
-			IS_CONFORMANT => "$is_conformant",
-			IS_FIXED => (not $is_conformant and Parse::Pidl::Util::is_constant($size)),
-			IS_INLINE => (not $is_conformant and not Parse::Pidl::Util::is_constant($size))
+			IS_DEFERRED => $is_deferred,
+			IS_SURROUNDING => $is_surrounding,
+			IS_ZERO_TERMINATED => $is_string,
+			IS_VARYING => $is_varying,
+			IS_CONFORMANT => $is_conformant,
+			IS_FIXED => $is_fixed,
+			IS_INLINE => $is_inline
 		});
 	}
 
@@ -204,15 +209,15 @@ sub GetElementLevelTable($)
 		if ($array_size or $is_string) {
 			push (@$order, {
 				TYPE => "ARRAY",
-				IS_ZERO_TERMINATED => "$is_string",
 				SIZE_IS => $array_size,
 				LENGTH_IS => $array_length,
-				IS_DEFERRED => "$is_deferred",
+				IS_DEFERRED => $is_deferred,
 				IS_SURROUNDING => 0,
-				IS_VARYING => "$is_varying",
-				IS_CONFORMANT => "$is_conformant",
+				IS_ZERO_TERMINATED => $is_string,
+				IS_VARYING => $is_varying,
+				IS_CONFORMANT => $is_conformant,
 				IS_FIXED => 0,
-				IS_INLINE => 0,
+				IS_INLINE => 0
 			});
 
 			$is_deferred = 0;
