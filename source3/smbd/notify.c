@@ -156,6 +156,7 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 {
 	prs_struct ps;
 	struct smb_request *req = NULL;
+	uint8 tmp_request[smb_size];
 
 	if (notify_buf->num_changes == -1) {
 		change_notify_reply_packet(request_buf, NT_STATUS_OK);
@@ -180,9 +181,16 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 		goto done;
 	}
 
-	smb_setlen(NULL, request_buf, smb_size);
+	memcpy(tmp_request, request_buf, smb_size);
 
-	init_smb_request(req, request_buf);
+	/*
+	 * We're only interested in the header fields here
+	 */
+
+	smb_setlen(NULL, (char *)tmp_request, smb_size);
+	SCVAL(tmp_request, smb_wct, 0);
+
+	init_smb_request(req, tmp_request);
 
 	send_nt_replies(req, NT_STATUS_OK, prs_data_p(&ps),
 			prs_offset(&ps), NULL, 0);
