@@ -56,12 +56,10 @@ struct epoll_event_context {
   called when a epoll call fails, and we should fallback
   to using select
 */
-static void epoll_fallback_to_select(struct epoll_event_context *epoll_ev, const char *reason)
+static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
-	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
-	close(epoll_ev->epoll_fd);
-	epoll_ev->epoll_fd = -1;
-	talloc_set_destructor(epoll_ev, NULL);
+	DEBUG(0,("%s (%s) - calling abort()\n", reason, strerror(errno)));
+	abort();
 }
 
 /*
@@ -88,11 +86,15 @@ static int epoll_ctx_destructor(struct epoll_event_context *epoll_ev)
 /*
  init the epoll fd
 */
-static void epoll_init_ctx(struct epoll_event_context *epoll_ev)
+static int epoll_init_ctx(struct epoll_event_context *epoll_ev)
 {
 	epoll_ev->epoll_fd = epoll_create(64);
 	epoll_ev->pid = getpid();
 	talloc_set_destructor(epoll_ev, epoll_ctx_destructor);
+	if (epoll_ev->epoll_fd == -1) {
+		return -1;
+	}
+	return 0;
 }
 
 static void epoll_add_event(struct epoll_event_context *epoll_ev, struct fd_event *fde);
@@ -144,7 +146,7 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct fd_even
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event) != 0) {
-		epoll_fallback_to_select(epoll_ev, "EPOLL_CTL_ADD failed");
+		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed");
 	}
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
@@ -193,7 +195,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct fd_even
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
-		epoll_fallback_to_select(epoll_ev, "EPOLL_CTL_MOD failed");
+		epoll_panic(epoll_ev, "EPOLL_CTL_MOD failed");
 	}
 
 	/* only if we want to read we want to tell the event handler about errors */
@@ -268,7 +270,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	if (ret == -1 && errno != EINTR) {
-		epoll_fallback_to_select(epoll_ev, "epoll_wait() failed");
+		epoll_panic(epoll_ev, "epoll_wait() failed");
 		return -1;
 	}
 
@@ -284,7 +286,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		uint16_t flags = 0;
 
 		if (fde == NULL) {
-			epoll_fallback_to_select(epoll_ev, "epoll_wait() gave bad data");
+			epoll_panic(epoll_ev, "epoll_wait() gave bad data");
 			return -1;
 		}
 		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
@@ -319,6 +321,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 */
 static int epoll_event_context_init(struct event_context *ev)
 {
+	int ret;
 	struct epoll_event_context *epoll_ev;
 
 	epoll_ev = talloc_zero(ev, struct epoll_event_context);
@@ -326,7 +329,11 @@ static int epoll_event_context_init(struct event_context *ev)
 	epoll_ev->ev = ev;
 	epoll_ev->epoll_fd = -1;
 
-	epoll_init_ctx(epoll_ev);
+	ret = epoll_init_ctx(epoll_ev);
+	if (ret != 0) {
+		talloc_free(epoll_ev);
+		return ret;
+	}
 
 	ev->additional_data = epoll_ev;
 	return 0;
