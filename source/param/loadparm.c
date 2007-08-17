@@ -2207,6 +2207,7 @@ static void init_copymap(service * pservice);
 static BOOL hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static char * canonicalize_servicename(const char *name);
+static void show_parameter(int parmIndex);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -2888,14 +2889,14 @@ static int map_parameter(const char *pszParmName)
 }
 
 /***************************************************************************
- Show all parameter's name, type, [values,] and flags.
+ Show one parameter's name, type, [values,] and flags.
+ (helper functions for show_parameter_list)
 ***************************************************************************/
 
-void show_parameter_list(void)
+static void show_parameter(int parmIndex)
 {
-	int classIndex, parmIndex, enumIndex, flagIndex;
+	int enumIndex, flagIndex;
 	BOOL hadFlag;
-	const char *section_names[] = { "local", "global", NULL};
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
 		"P_UGSTRING", "P_ENUM", "P_SEP"};
@@ -2906,35 +2907,46 @@ void show_parameter_list(void)
 		"FLAG_GLOBAL", "FLAG_WIZARD", "FLAG_ADVANCED", "FLAG_DEVELOPER",
 		"FLAG_DEPRECATED", "FLAG_HIDE", "FLAG_DOS_STRING", NULL};
 
-	for ( classIndex=0; section_names[classIndex]; classIndex++) {
+	printf("%s=%s", parm_table[parmIndex].label,
+	       type[parm_table[parmIndex].type]);
+	if (parm_table[parmIndex].type == P_ENUM) {
+		printf(",");
+		for (enumIndex=0;
+		     parm_table[parmIndex].enum_list[enumIndex].name;
+		     enumIndex++)
+		{
+			printf("%s%s",
+			       enumIndex ? "|" : "",
+			       parm_table[parmIndex].enum_list[enumIndex].name);
+		}
+	}
+	printf(",");
+	hadFlag = False;
+	for (flagIndex=0; flag_names[flagIndex]; flagIndex++) {
+		if (parm_table[parmIndex].flags & flags[flagIndex]) {
+			printf("%s%s",
+				hadFlag ? "|" : "",
+				flag_names[flagIndex]);
+			hadFlag = True;
+		}
+	}
+	printf("\n");
+}
+
+/***************************************************************************
+ Show all parameter's name, type, [values,] and flags.
+***************************************************************************/
+
+void show_parameter_list(void)
+{
+	int classIndex, parmIndex;
+	const char *section_names[] = { "local", "global", NULL};
+
+	for (classIndex=0; section_names[classIndex]; classIndex++) {
 		printf("[%s]\n", section_names[classIndex]);
 		for (parmIndex = 0; parm_table[parmIndex].label; parmIndex++) {
 			if (parm_table[parmIndex].p_class == classIndex) {
-				printf("%s=%s", 
-					parm_table[parmIndex].label,
-					type[parm_table[parmIndex].type]);
-				switch (parm_table[parmIndex].type) {
-				case P_ENUM:
-					printf(",");
-					for (enumIndex=0; parm_table[parmIndex].enum_list[enumIndex].name; enumIndex++)
-						printf("%s%s",
-							enumIndex ? "|" : "",
-							parm_table[parmIndex].enum_list[enumIndex].name);
-					break;
-				default:
-					break;
-				}
-				printf(",");
-				hadFlag = False;
-				for ( flagIndex=0; flag_names[flagIndex]; flagIndex++ ) {
-					if (parm_table[parmIndex].flags & flags[flagIndex]) {
-						printf("%s%s",
-							hadFlag ? "|" : "",
-							flag_names[flagIndex]);
-						hadFlag = True;
-					}
-				}
-				printf("\n");
+				show_parameter(parmIndex);
 			}
 		}
 	}
