@@ -63,11 +63,11 @@ sub HeaderElement($)
 			HeaderType($element, $element->{TYPE}, "");
 		}
 		pidl " ";
-		my $numstar = $element->{POINTERS};
+		my $numstar = $element->{ORIGINAL}->{POINTERS};
 		if ($numstar >= 1) {
 			$numstar-- if (scalar_is_reference($element->{TYPE}));
 		}
-		foreach (@{$element->{ARRAY_LEN}})
+		foreach (@{$element->{ORIGINAL}->{ARRAY_LEN}})
 		{
 			next if is_constant($_) and 
 				not has_property($element, "charset");
@@ -76,7 +76,7 @@ sub HeaderElement($)
 		pidl "*" foreach (1..$numstar);
 	}
 	pidl $element->{NAME};
-	foreach (@{$element->{ARRAY_LEN}}) {
+	foreach (@{$element->{ORIGINAL}->{ARRAY_LEN}}) {
 		next unless (is_constant($_) and 
 			not has_property($element, "charset"));
 		pidl "[$_]";
@@ -124,11 +124,13 @@ sub HeaderEnum($$)
 	pidl "#ifndef USE_UINT_ENUMS\n";
 	pidl "enum $name {\n";
 	$tab_depth++;
-	foreach my $e (@{$enum->{ELEMENTS}}) {
-		unless ($first) { pidl ",\n"; }
-		$first = 0;
-		pidl tabs();
-		pidl $e;
+	if (defined($enum->{ELEMENTS})) {
+		foreach my $e (@{$enum->{ELEMENTS}}) {
+			unless ($first) { pidl ",\n"; }
+			$first = 0;
+			pidl tabs();
+			pidl $e;
+		}
 	}
 	pidl "\n";
 	$tab_depth--;
@@ -138,24 +140,26 @@ sub HeaderEnum($$)
 	pidl "enum $name { __donnot_use_enum_$name=0x7FFFFFFF}\n";
 	my $with_val = 0;
 	my $without_val = 0;
-	foreach my $e (@{$enum->{ELEMENTS}}) {
-		my $t = "$e";
-		my $name;
-		my $value;
-		if ($t =~ /(.*)=(.*)/) {
-			$name = $1;
-			$value = $2;
-			$with_val = 1;
-			die ("you can't mix enum member with values and without values when using --uint-enums!")
-				unless ($without_val == 0);
-		} else {
-			$name = $t;
-			$value = $count++;
-			$without_val = 1;
-			die ("you can't mix enum member with values and without values when using --uint-enums!")
-				unless ($with_val == 0);
+	if (defined($enum->{ELEMENTS})) {
+		foreach my $e (@{$enum->{ELEMENTS}}) {
+			my $t = "$e";
+			my $name;
+			my $value;
+			if ($t =~ /(.*)=(.*)/) {
+				$name = $1;
+				$value = $2;
+				$with_val = 1;
+				die ("you can't mix enum member with values and without values!")
+					unless ($without_val == 0);
+			} else {
+				$name = $t;
+				$value = $count++;
+				$without_val = 1;
+				die ("you can't mix enum member with values and without values!")
+					unless ($with_val == 0);
+			}
+			pidl "#define $name ( $value )\n";
 		}
-		pidl "#define $name ( $value )\n";
 	}
 	pidl "#endif\n";
 }
@@ -165,6 +169,8 @@ sub HeaderEnum($$)
 sub HeaderBitmap($$)
 {
 	my($bitmap,$name) = @_;
+
+	return unless defined($bitmap->{ELEMENTS});
 
 	pidl "/* bitmap $name */\n";
 	pidl "#define $_\n" foreach (@{$bitmap->{ELEMENTS}});
@@ -217,30 +223,13 @@ sub HeaderType($$$)
 		pidl mapTypeName($e->{TYPE});
 	}
 }
-sub HeaderTypeNew($$$)
-{
-	my($e,$data,$name) = @_;
-	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "ENUM") && HeaderEnum($data->{ORIGINAL}, $name);
-		($data->{TYPE} eq "BITMAP") && HeaderBitmap($data->{ORIGINAL}, $name);
-		($data->{TYPE} eq "STRUCT") && HeaderStruct($data->{ORIGINAL}, $name);
-		($data->{TYPE} eq "UNION") && HeaderUnion($data->{ORIGINAL}, $name);
-		return;
-	}
-
-	if (has_property($e, "charset")) {
-		pidl "const char";
-	} else {
-		pidl mapTypeName($e->{TYPE});
-	}
-}
 
 #####################################################################
 # parse a typedef
 sub HeaderTypedef($)
 {
 	my($typedef) = shift;
-	HeaderTypeNew($typedef, $typedef->{DATA}, $typedef->{NAME});
+	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
 }
 
 #####################################################################
@@ -274,7 +263,7 @@ sub HeaderFunctionInOut($$)
 	return unless defined($fn->{ELEMENTS});
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
-		HeaderElement($e->{ORIGINAL}) if (ElementDirection($e) eq $prop);
+		HeaderElement($e) if (ElementDirection($e) eq $prop);
 	}
 }
 
@@ -372,21 +361,21 @@ sub HeaderInterface($)
 	pidl "#ifndef _HEADER_$interface->{NAME}\n";
 	pidl "#define _HEADER_$interface->{NAME}\n\n";
 
-	foreach my $d (@{$interface->{CONSTS}}) {
-		HeaderConst($d);
+	foreach my $c (@{$interface->{CONSTS}}) {
+		HeaderConst($c);
 	}
 
-	foreach my $d (@{$interface->{TYPES}}) {
-		HeaderTypedef($d) if ($d->{TYPE} eq "TYPEDEF");
-		HeaderStruct($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "STRUCT");
-		HeaderUnion($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "UNION");
-		HeaderEnum($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "ENUM");
-		HeaderBitmap($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "BITMAP");
-		pidl ";\n\n" if ($d->{TYPE} eq "BITMAP" or 
-				 $d->{TYPE} eq "STRUCT" or 
-				 $d->{TYPE} eq "TYPEDEF" or 
-				 $d->{TYPE} eq "UNION" or 
-				 $d->{TYPE} eq "ENUM");
+	foreach my $t (@{$interface->{TYPES}}) {
+		HeaderTypedef($t) if ($t->{TYPE} eq "TYPEDEF");
+		HeaderStruct($t, $t->{NAME}) if ($t->{TYPE} eq "STRUCT");
+		HeaderUnion($t, $t->{NAME}) if ($t->{TYPE} eq "UNION");
+		HeaderEnum($t, $t->{NAME}) if ($t->{TYPE} eq "ENUM");
+		HeaderBitmap($t, $t->{NAME}) if ($t->{TYPE} eq "BITMAP");
+		pidl ";\n\n" if ($t->{TYPE} eq "BITMAP" or 
+				 $t->{TYPE} eq "STRUCT" or 
+				 $t->{TYPE} eq "TYPEDEF" or 
+				 $t->{TYPE} eq "UNION" or 
+				 $t->{TYPE} eq "ENUM");
 	}
 
 	foreach my $fn (@{$interface->{FUNCTIONS}}) {
