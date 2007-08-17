@@ -290,24 +290,24 @@ sub HeaderFunction($)
 	$tab_depth++;
 	my $needed = 0;
 
-	if (HeaderFunctionInOut_needed($fn, "in") or
-	    HeaderFunctionInOut_needed($fn, "inout")) {
+	if (HeaderFunctionInOut_needed($fn->{ORIGINAL}, "in") or
+	    HeaderFunctionInOut_needed($fn->{ORIGINAL}, "inout")) {
 		pidl tabs()."struct {\n";
 		$tab_depth++;
-		HeaderFunctionInOut($fn, "in");
-		HeaderFunctionInOut($fn, "inout");
+		HeaderFunctionInOut($fn->{ORIGINAL}, "in");
+		HeaderFunctionInOut($fn->{ORIGINAL}, "inout");
 		$tab_depth--;
 		pidl tabs()."} in;\n\n";
 		$needed++;
 	}
 
-	if (HeaderFunctionInOut_needed($fn, "out") or
-	    HeaderFunctionInOut_needed($fn, "inout")) {
+	if (HeaderFunctionInOut_needed($fn->{ORIGINAL}, "out") or
+	    HeaderFunctionInOut_needed($fn->{ORIGINAL}, "inout")) {
 		pidl tabs()."struct {\n";
 		$tab_depth++;
-		HeaderFunctionInOut($fn, "out");
-		HeaderFunctionInOut($fn, "inout");
-		if ($fn->{RETURN_TYPE} ne "void") {
+		HeaderFunctionInOut($fn->{ORIGINAL}, "out");
+		HeaderFunctionInOut($fn->{ORIGINAL}, "inout");
+		if (defined($fn->{RETURN_TYPE})) {
 			pidl tabs().mapTypeName($fn->{RETURN_TYPE}) . " result;\n";
 		}
 		$tab_depth--;
@@ -368,8 +368,8 @@ sub HeaderInterface($)
 				 $d->{TYPE} eq "ENUM");
 	}
 
-	foreach my $d (@{$interface->{FUNCTIONS}}) {
-		HeaderFunction($d->{ORIGINAL});
+	foreach my $fn (@{$interface->{FUNCTIONS}}) {
+		HeaderFunction($fn);
 	}
 
 	pidl "#endif /* _HEADER_$interface->{NAME} */\n";
