@@ -7,6 +7,7 @@
 package Parse::Pidl::Samba4::Header;
 
 use strict;
+use Parse::Pidl qw(fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::Samba4 qw(is_intree);
@@ -149,13 +150,13 @@ sub HeaderEnum($$)
 				$name = $1;
 				$value = $2;
 				$with_val = 1;
-				die ("you can't mix enum member with values and without values!")
+				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
 					unless ($without_val == 0);
 			} else {
 				$name = $t;
 				$value = $count++;
 				$without_val = 1;
-				die ("you can't mix enum member with values and without values!")
+				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
 					unless ($with_val == 0);
 			}
 			pidl "#define $name ( $value )\n";
