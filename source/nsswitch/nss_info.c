@@ -156,7 +156,7 @@ static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
 
 		if ( !parse_nss_parm(nss_list[i], &backend, &domain) ) 	{
 			DEBUG(0,("nss_init: failed to parse \"%s\"!\n",
-				 nss_list[0]));
+				 nss_list[i]));
 			continue;			
 		}
 

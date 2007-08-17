@@ -3372,11 +3372,17 @@ static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
 	uint32 len;
 	pstring plaintext_buf;
 	uint32 acct_ctrl;
+	time_t last_set_time;
+	enum pdb_value_state last_set_state;
  
 	DEBUG(5, ("Attempting administrator password change for user %s\n",
 		  pdb_get_username(pwd)));
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
+	/* we need to know if it's expired, because this is an admin change, not a
+	   user change, so it's still expired when we're done */
+	last_set_state = pdb_get_init_flags(pwd, PDB_PASSLASTSET);
+	last_set_time = pdb_get_pass_last_set_time(pwd);
 
 	ZERO_STRUCT(plaintext_buf);
  
@@ -3418,6 +3424,9 @@ static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
 	}
  
 	ZERO_STRUCT(plaintext_buf);
+
+	/* restore last set time as this is an admin change, not a user pw change */
+	pdb_set_pass_last_set_time (pwd, last_set_time, last_set_state);
  
 	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
  

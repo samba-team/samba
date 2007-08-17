@@ -77,7 +77,7 @@ static int copy_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 	TDB_CONTEXT *tdb_new = (TDB_CONTEXT *)state;
 
 	if (tdb_store(tdb_new, key, dbuf, TDB_INSERT) != 0) {
-		fprintf(stderr,"Failed to insert into %s\n", tdb_name(tdb));
+		fprintf(stderr,"Failed to insert into %s\n", tdb_name(tdb_new));
 		failed = 1;
 		return 1;
 	}

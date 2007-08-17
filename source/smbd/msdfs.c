@@ -388,7 +388,8 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 
 	pstrcpy(localpath, pdp->reqpath);
 	status = unix_convert(conn, localpath, search_flag, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,
+					NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 		return status;
 	}
 
@@ -418,6 +419,14 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 	if (!pdp->posix_path) {
 		string_replace(canon_dfspath, '\\', '/');
 	}
+
+	/*
+	 * localpath comes out of unix_convert, so it has
+	 * no trailing backslash. Make sure that canon_dfspath hasn't either.
+	 * Fix for bug #4860 from Jan Martin <Jan.Martin@rwedea.com>.
+	 */
+
+	trim_char(canon_dfspath,0,'/');
 
 	/*
 	 * Redirect if any component in the path is a link.

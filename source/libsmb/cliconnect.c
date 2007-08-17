@@ -584,6 +584,7 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			DEBUG(0, ("cli_session_setup_blob: recieve failed (%s)\n",
 				nt_errstr(cli_get_nt_error(cli)) ));
+			cli->vuid = 0;
 			return False;
 		}
 	}
@@ -770,6 +771,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 
 	ntlmssp_end(&ntlmssp_state);
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		cli->vuid = 0;
+	}
 	return nt_status;
 }
 
@@ -1402,7 +1406,7 @@ BOOL cli_session_request(struct cli_state *cli,
  Open the client sockets.
 ****************************************************************************/
 
-BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
+NTSTATUS cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	int name_type = 0x20;
 	char *p;
@@ -1420,7 +1424,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	
 	if (!ip || is_zero_ip(*ip)) {
                 if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
-                        return False;
+			return NT_STATUS_BAD_NETWORK_NAME;
                 }
 		if (ip) *ip = cli->dest_ip;
 	} else {
@@ -1445,12 +1449,12 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	if (cli->fd == -1) {
 		DEBUG(1,("Error connecting to %s (%s)\n",
 			 ip?inet_ntoa(*ip):host,strerror(errno)));
-		return False;
+		return map_nt_error_from_unix(errno);
 	}
 
 	set_socket_options(cli->fd,user_socket_options);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /**
@@ -1504,15 +1508,12 @@ again:
 
 	DEBUG(3,("Connecting to host=%s\n", dest_host));
 	
-	if (!cli_connect(cli, dest_host, &ip)) {
-		DEBUG(1,("cli_start_connection: failed to connect to %s (%s)\n",
-			 nmb_namestr(&called), inet_ntoa(ip)));
+	nt_status = cli_connect(cli, dest_host, &ip);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1,("cli_start_connection: failed to connect to %s (%s). Error %s\n",
+			 nmb_namestr(&called), inet_ntoa(ip), nt_errstr(nt_status) ));
 		cli_shutdown(cli);
-		if (is_zero_ip(ip)) {
-			return NT_STATUS_BAD_NETWORK_NAME;
-		} else {
-			return NT_STATUS_CONNECTION_REFUSED;
-		}
+		return nt_status;
 	}
 
 	if (retry)
@@ -1657,6 +1658,7 @@ BOOL attempt_netbios_session_request(struct cli_state **ppcli, const char *srcho
 	}
 
 	if (!cli_session_request(*ppcli, &calling, &called)) {
+		NTSTATUS status;
 		struct nmb_name smbservername;
 
 		make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
@@ -1686,7 +1688,8 @@ with error %s.\n", desthost, cli_errstr(*ppcli) ));
 			return False;
 		}
 
-		if (!cli_connect(*ppcli, desthost, pdest_ip) ||
+		status = cli_connect(*ppcli, desthost, pdest_ip);
+		if (!NT_STATUS_IS_OK(status) ||
 				!cli_session_request(*ppcli, &calling, &smbservername)) {
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
 name *SMBSERVER with error %s\n", desthost, cli_errstr(*ppcli) ));

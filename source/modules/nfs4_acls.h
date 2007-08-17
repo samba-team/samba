@@ -138,7 +138,7 @@ size_t smb_get_nt_acl_nfs4(files_struct *fsp,
  * when applicable */
 typedef BOOL (*set_nfs4acl_native_fn_t)(files_struct *, SMB4ACL_T *);
 
-BOOL smb_set_nt_acl_nfs4(files_struct *fsp,
+NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info_sent,
 	SEC_DESC *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native);

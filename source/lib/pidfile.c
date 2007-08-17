@@ -100,7 +100,8 @@ void pidfile_create(const char *program_name)
 			/* full/relative path provided */
 			short_configfile++;
 		}
-		slprintf( name, sizeof( name)-1, "%s-%s", program_name, short_configfile+1);
+		slprintf( name, sizeof( name)-1, "%s-%s", program_name,
+			  short_configfile );
 	}
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);

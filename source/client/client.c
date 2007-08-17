@@ -2649,7 +2649,8 @@ static int cmd_rename(void)
 	pstring src,dest;
 	pstring buf,buf2;
 	struct cli_state *targetcli;
-	pstring targetname;
+	pstring targetsrc;
+	pstring targetdest;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -2663,13 +2664,21 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
-		d_printf("chown %s: %s\n", src, cli_errstr(cli));
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetsrc ) ) {
+		d_printf("rename %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
 
-	if (!cli_rename(targetcli, targetname, dest)) {
-		d_printf("%s renaming files\n",cli_errstr(targetcli));
+	if ( !cli_resolve_path( "", cli, dest, &targetcli, targetdest ) ) {
+		d_printf("rename %s: %s\n", dest, cli_errstr(cli));
+		return 1;
+	}
+
+	if (!cli_rename(targetcli, targetsrc, targetdest)) {
+		d_printf("%s renaming files %s -> %s \n",
+			cli_errstr(targetcli),
+			targetsrc,
+			targetdest);
 		return 1;
 	}
 	
@@ -3796,6 +3805,7 @@ static int do_message_op(void)
 	fstring server_name;
 	char name_type_hex[10];
 	int msg_port;
+	NTSTATUS status;
 
 	make_nmb_name(&calling, calling_name, 0x0);
 	make_nmb_name(&called , desthost, name_type);
@@ -3812,9 +3822,14 @@ static int do_message_op(void)
 
 	msg_port = port ? port : 139;
 
-	if (!(cli=cli_initialise()) || (cli_set_port(cli, msg_port) != msg_port) ||
-	    !cli_connect(cli, server_name, &ip)) {
+	if (!(cli=cli_initialise()) || (cli_set_port(cli, msg_port) != msg_port)) {
 		d_printf("Connection to %s failed\n", desthost);
+		return 1;
+	}
+
+	status = cli_connect(cli, server_name, &ip);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
 		return 1;
 	}
 

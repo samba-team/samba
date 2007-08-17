@@ -132,3 +132,22 @@ int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, in
 	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }
+
+/*******************************************************************************
+ Special error map processing needed for returning DOS errors on open calls.
+*******************************************************************************/
+
+int error_open(char *outbuf, NTSTATUS status, int line, const char *file)
+{
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		/*
+		 * We hit an existing file, and if we're returning DOS
+		 * error codes OBJECT_NAME_COLLISION would map to
+		 * ERRDOS/183, we need to return ERRDOS/80, see bug
+		 * 4852.
+		 */
+		return error_packet(outbuf, ERRDOS, ERRfilexists,
+				NT_STATUS_OBJECT_NAME_COLLISION, line, file);
+	}
+	return error_packet(outbuf,0,0,status,line,file);
+}

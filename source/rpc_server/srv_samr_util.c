@@ -670,4 +670,47 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 			pdb_set_acct_ctrl(to, from->acb_info, PDB_CHANGED);
 		}
 	}
+
+	if (from->fields_present & ACCT_LOGON_HOURS) {
+		DEBUG(15,("INFO_25 LOGON_DIVS: %08X -> %08X\n",pdb_get_logon_divs(to),from->logon_divs));
+		if (from->logon_divs != pdb_get_logon_divs(to)) {
+			pdb_set_logon_divs(to, from->logon_divs, PDB_CHANGED);
+		}
+
+		DEBUG(15,("INFO_25 LOGON_HRS.LEN: %08X -> %08X\n",pdb_get_hours_len(to),from->logon_hrs.len));
+		if (from->logon_hrs.len != pdb_get_hours_len(to)) {
+			pdb_set_hours_len(to, from->logon_hrs.len, PDB_CHANGED);
+		}
+
+		DEBUG(15,("INFO_25 LOGON_HRS.HOURS: %s -> %s\n",pdb_get_hours(to),from->logon_hrs.hours));
+		/* Fix me: only update if it changes --metze */
+		pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
+	}
+
+	if (from->fields_present & ACCT_BAD_PWD_COUNT) {
+		DEBUG(10,("INFO_25 BAD_PASSWORD_COUNT: %08X -> %08X\n",pdb_get_bad_password_count(to),from->bad_password_count));
+		if (from->bad_password_count != pdb_get_bad_password_count(to)) {
+			pdb_set_bad_password_count(to, from->bad_password_count, PDB_CHANGED);
+		}
+	}
+
+	if (from->fields_present & ACCT_NUM_LOGONS) {
+		DEBUG(10,("INFO_25 LOGON_COUNT: %08X -> %08X\n",pdb_get_logon_count(to),from->logon_count));
+		if (from->logon_count != pdb_get_logon_count(to)) {
+			pdb_set_logon_count(to, from->logon_count, PDB_CHANGED);
+		}
+	}
+
+	/* If the must change flag is set, the last set time goes to zero.
+	   the must change and can change fields also do, but they are 
+	   calculated from policy, not set from the wire */
+
+	if (from->fields_present & ACCT_EXPIRED_FLAG) {
+		DEBUG(10,("INFO_25 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
+		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
+			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
+		} else {
+			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
+		}
+	}
 }

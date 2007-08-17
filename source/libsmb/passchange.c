@@ -39,7 +39,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	*err_str = '\0';
 
 	if(!resolve_name( remote_machine, &ip, 0x20)) {
-		slprintf(err_str, err_str_len-1, "unable to find an IP address for machine %s.\n",
+		slprintf(err_str, err_str_len-1, "Unable to find an IP address for machine %s.\n",
 			remote_machine );
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -49,10 +49,10 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!cli_connect(cli, remote_machine, &ip)) {
-		slprintf(err_str, err_str_len-1, "unable to connect to SMB server on machine %s. Error was : %s.\n",
-			remote_machine, cli_errstr(cli) );
-		result = cli_nt_error(cli);
+	result = cli_connect(cli, remote_machine, &ip);
+	if (!NT_STATUS_IS_OK(result)) {
+		slprintf(err_str, err_str_len-1, "Unable to connect to SMB server on machine %s. Error was : %s.\n",
+			remote_machine, nt_errstr(result) );
 		cli_shutdown(cli);
 		return result;
 	}

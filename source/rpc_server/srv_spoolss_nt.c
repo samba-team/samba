@@ -2263,6 +2263,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = REG_DWORD;
 		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
+		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;
 		return WERR_OK;
 	}

@@ -6314,6 +6314,7 @@ BOOL net_rpc_check(unsigned flags)
 	BOOL ret = False;
 	struct in_addr server_ip;
 	char *server_name = NULL;
+	NTSTATUS status;
 
 	/* flags (i.e. server type) may depend on command */
 	if (!net_find_server(NULL, flags, &server_ip, &server_name))
@@ -6323,7 +6324,8 @@ BOOL net_rpc_check(unsigned flags)
 		return False;
 	}
 
-	if (!cli_connect(cli, server_name, &server_ip))
+	status = cli_connect(cli, server_name, &server_ip);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 	if (!attempt_netbios_session_request(&cli, global_myname(), 
 					     server_name, &server_ip))

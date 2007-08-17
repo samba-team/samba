@@ -6064,8 +6064,25 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 	if(!prs_uint32("fields_present ", ps, depth, &usr->fields_present))
 		return False;
 
-	if(!prs_uint32s(False, "unknown_5      ", ps, depth, usr->unknown_5, 5))
+	if(!prs_uint16("logon_divs    ", ps, depth, &usr->logon_divs))	/* logon divisions per week */
 		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("ptr_logon_hrs ", ps, depth, &usr->ptr_logon_hrs))
+		return False;
+
+	if(!prs_uint16("bad_password_count     ", ps, depth, &usr->bad_password_count))
+		return False;
+	if(!prs_uint16("logon_count     ", ps, depth, &usr->logon_count))
+		return False;
+
+	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1)))
+		return False;
+	if(!prs_uint8("passmustchange ", ps, depth, &usr->passmustchange))
+		return False;
+	if(!prs_uint8("padding2       ", ps, depth, &usr->padding2))
+		return False;
+
 
 	if(!prs_uint8s(False, "password      ", ps, depth, usr->pass, sizeof(usr->pass)))
 		return False;
@@ -6102,13 +6119,11 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth))
 		return False;
 
-#if 0 /* JRA - unknown... */
 	/* ok, this is only guess-work (as usual) */
 	if (usr->ptr_logon_hrs) {
 		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
 			return False;
 	} 
-#endif
 
 	return True;
 }

@@ -2618,7 +2618,7 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 	if (*site_dn == NULL) {
 		ads_msgfree(ads, res);
 		ads_memfree(ads, dn);
-		ADS_ERROR(LDAP_NO_MEMORY);
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	ads_memfree(ads, dn);

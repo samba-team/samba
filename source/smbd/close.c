@@ -153,6 +153,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
+	int ret;
 
 	/*
 	 * Lock the share entries, and determine if we should delete
@@ -245,8 +246,14 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	/* We can only delete the file if the name we have is still valid and
 	   hasn't been renamed. */
-	
-	if(SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) != 0) {
+
+	if (fsp->posix_open) {
+		ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+	} else {
+		ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+	}
+
+	if (ret != 0) {
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and stat failed with error %s\n",
 			 fsp->fsp_name, strerror(errno) ));

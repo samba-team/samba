@@ -1321,7 +1321,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return ERROR_NT(status);
+		return ERROR_OPEN(status);
 	}
 
 	size = sbuf.st_size;
@@ -1455,7 +1455,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return ERROR_NT(status);
+		return ERROR_OPEN(status);
 	}
 
 	/* Setting the "size" field in vwv9 and vwv10 causes the file to be set to this size,
@@ -1644,7 +1644,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return ERROR_NT(status);
+		return ERROR_OPEN(status);
 	}
  
 	ts[0] = get_atimespec(&sbuf); /* atime. */
@@ -1746,7 +1746,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return ERROR_NT(status);
+		return ERROR_OPEN(status);
 	}
 
 	outsize = set_message(outbuf,1,0,True);
@@ -2126,6 +2126,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	status = unlink_internals(conn, dirtype, name, path_contains_wcard,
 				  True);
 	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBunlink);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;

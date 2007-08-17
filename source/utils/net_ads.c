@@ -1720,7 +1720,7 @@ static int net_ads_dns_register(int argc, const char **argv)
 #endif
 	
 	if (argc > 0) {
-		d_fprintf(stderr, "net ads dns register <name> <ip>\n");
+		d_fprintf(stderr, "net ads dns register\n");
 		return -1;
 	}
 

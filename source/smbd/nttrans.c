@@ -716,18 +716,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					create_options,
 					new_file_attributes,
 					&info, &fsp);
-
-		restore_case_semantics(conn, file_attributes);
-
-		if(!NT_STATUS_IS_OK(status)) {
-			if (!use_nt_status() && NT_STATUS_EQUAL(
-				    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-				status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
-			}
-			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(status);
-		}
-
 	} else {
 
 		/*
@@ -756,7 +744,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					oplock_request,
 					&info, &fsp);
 
-		if (!NT_STATUS_IS_OK(status)) { 
+		if (!NT_STATUS_IS_OK(status)) {
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
 			 * where the NT client will attempt to
@@ -788,7 +776,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					END_PROFILE(SMBntcreateX);
 					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
-	
+
 				oplock_request = 0;
 				status = open_directory(conn, fname, &sbuf,
 							access_mask,
@@ -798,28 +786,22 @@ int reply_ntcreate_and_X(connection_struct *conn,
 							new_file_attributes,
 							&info, &fsp);
 
-				if(!NT_STATUS_IS_OK(status)) {
-					restore_case_semantics(conn, file_attributes);
-					if (!use_nt_status() && NT_STATUS_EQUAL(
-						    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-						status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
-					}
-					END_PROFILE(SMBntcreateX);
-					return ERROR_NT(status);
-				}
-			} else {
-				restore_case_semantics(conn, file_attributes);
-				END_PROFILE(SMBntcreateX);
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return ERROR_NT(status);
 			}
-		} 
+		}
 	}
-		
+
 	restore_case_semantics(conn, file_attributes);
+
+	if(!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntcreateX);
+
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
+
+		return ERROR_OPEN(status);
+	}
 
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
@@ -1416,11 +1398,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					create_options,
 					new_file_attributes,
 					&info, &fsp);
-		if(!NT_STATUS_IS_OK(status)) {
-			restore_case_semantics(conn, file_attributes);
-			return ERROR_NT(status);
-		}
-
 	} else {
 
 		/*
@@ -1436,7 +1413,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					oplock_request,
 					&info, &fsp);
 
-		if (!NT_STATUS_IS_OK(status)) { 
+		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
 					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
@@ -1448,7 +1425,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					restore_case_semantics(conn, file_attributes);
 					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
-	
+
 				oplock_request = 0;
 				status = open_directory(conn, fname, &sbuf,
 							access_mask,
@@ -1457,26 +1434,26 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 							create_options,
 							new_file_attributes,
 							&info, &fsp);
-				if(!NT_STATUS_IS_OK(status)) {
-					restore_case_semantics(conn, file_attributes);
-					return ERROR_NT(status);
-				}
-			} else {
-				restore_case_semantics(conn, file_attributes);
-				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
-					/* We have re-scheduled this call. */
-					return -1;
-				}
-				return ERROR_NT(status);
 			}
-		} 
+		}
+	}
+
+	restore_case_semantics(conn, file_attributes);
+	if(!NT_STATUS_IS_OK(status)) {
+
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
+
+		return ERROR_OPEN(status);
 	}
 
 	/*
 	 * According to the MS documentation, the only time the security
 	 * descriptor is applied to the opened file is iff we *created* the
 	 * file; an existing file stays the same.
-	 * 
+	 *
 	 * Also, it seems (from observation) that you can open the file with
 	 * any access mask but you can still write the sd. We need to override
 	 * the granted access before we call set_sd
@@ -1979,7 +1956,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		 * here.
 		 */
 
-		change_notify_reply(inbuf, fsp->notify);
+		change_notify_reply(inbuf, max_param_count, fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its
@@ -1992,7 +1969,8 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 	 * No changes pending, queue the request
 	 */
 
-	status = change_notify_add_request(inbuf, filter, recursive, fsp);
+	status = change_notify_add_request(inbuf, max_param_count, filter,
+			recursive, fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}

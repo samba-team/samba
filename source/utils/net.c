@@ -999,6 +999,10 @@ static struct functable net_func[] = {
 		opt_user_name = getenv("LOGNAME");
 	}
 
+	if (!opt_user_name) {
+		opt_user_name = "";
+	}
+
 	if (!opt_workgroup) {
 		opt_workgroup = smb_xstrdup(lp_workgroup());
 	}

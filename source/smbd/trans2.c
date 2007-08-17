@@ -866,13 +866,13 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		open_attr,
 		oplock_request,
 		&smb_action, &fsp);
-      
+
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return ERROR_NT(status);
+		return ERROR_OPEN(status);
 	}
 
 	size = get_file_size(sbuf);
@@ -1999,11 +1999,11 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 		   complain (it thinks we're asking for the directory above the shared
 		   path or an invalid name). Catch this as the resume name is only compared, never used in
 		   a file access. JRA. */
-		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
-			pstrcpy(resume_name, "..");
-		} else if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_OBJECT_NAME_INVALID)) {
-			pstrcpy(resume_name, ".");
-		} else {
+		srvstr_pull(inbuf, resume_name, params+12,
+					sizeof(resume_name), total_params - 12,
+					STR_TERMINATE);
+
+		if (!(ISDOT(resume_name) || ISDOTDOT(resume_name))) {
 			return ERROR_NT(ntstatus);
 		}
 	}
@@ -4845,17 +4845,24 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		allocation_size = smb_roundup(conn, allocation_size);
 	}
 
-	if(allocation_size == get_file_size(*psbuf)) {
-		return NT_STATUS_OK;
-	}
- 
 	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new allocation size to %.0f\n",
 			fname, (double)allocation_size ));
- 
+
 	if (fsp && fsp->fh->fd != -1) {
 		/* Open file handle. */
-		if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
-			return map_nt_error_from_unix(errno);
+		/* Only change if needed. */
+		if (allocation_size != get_file_size(*psbuf)) {
+			if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
+				return map_nt_error_from_unix(errno);
+			}
+		}
+		/* But always update the time. */
+		if (null_timespec(fsp->pending_modtime)) {
+			/*
+			 * This is equivalent to a write. Ensure it's seen immediately
+			 * if there are no pending writes.
+			 */
+			set_filetime(fsp->conn, fsp->fsp_name, timespec_current());
 		}
 		return NT_STATUS_OK;
 	}
@@ -4870,16 +4877,26 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 				FILE_ATTRIBUTE_NORMAL,
 				FORCE_OPLOCK_BREAK_TO_NONE,
 				NULL, &new_fsp);
- 
+
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
 		return status;
 	}
-	if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
-		status = map_nt_error_from_unix(errno);
-		close_file(new_fsp,NORMAL_CLOSE);
-		return status;
+
+	/* Only change if needed. */
+	if (allocation_size != get_file_size(*psbuf)) {
+		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
+			status = map_nt_error_from_unix(errno);
+			close_file(new_fsp,NORMAL_CLOSE);
+			return status;
+		}
 	}
+
+	/* Changing the allocation size should set the last mod time. */
+	/* Don't need to call set_filetime as this will be flushed on
+	 * close. */
+
+	fsp_set_pending_modtime(new_fsp, timespec_current());
 
 	close_file(new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
@@ -5525,7 +5542,10 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	uint16 flags = 0;
+	char del = 1;
 	int info = 0;
+	int i;
+	struct share_mode_lock *lck = NULL;
 
 	if (total_data < 2) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -5553,12 +5573,11 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 					DELETE_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 					FILE_OPEN,
-					FILE_DELETE_ON_CLOSE,
+					0,
 					FILE_FLAG_POSIX_SEMANTICS|0777,
-					&info,				
+					&info,
 					&fsp);
 	} else {
-		char del = 1;
 
 		status = open_file_ntcreate(conn,
 				fname,
@@ -5571,26 +5590,59 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				0, /* No oplock, but break existing ones. */
 				&info,
 				&fsp);
-		/* 
-		 * For file opens we must set the delete on close
-		 * after the open.
-		 */
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		status = smb_set_file_disposition_info(conn,
-							&del,
-							1,
-							fsp,
-							fname,
-							psbuf);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	/*
+	 * Don't lie to client. If we can't really delete due to
+	 * non-POSIX opens return SHARING_VIOLATION.
+	 */
+
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
+	if (lck == NULL) {
+		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
+			"lock for file %s\n", fsp->fsp_name));
+		close_file(fsp, NORMAL_CLOSE);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*
+	 * See if others still have the file open. If this is the case, then
+	 * don't delete. If all opens are POSIX delete we can set the delete
+	 * on close disposition.
+	 */
+	for (i=0; i<lck->num_share_modes; i++) {
+		struct share_mode_entry *e = &lck->share_modes[i];
+		if (is_valid_share_mode_entry(e)) {
+			if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
+				continue;
+			}
+			/* Fail with sharing violation. */
+			close_file(fsp, NORMAL_CLOSE);
+			TALLOC_FREE(lck);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+	}
+
+	/*
+	 * Set the delete on close.
+	 */
+	status = smb_set_file_disposition_info(conn,
+						&del,
+						1,
+						fsp,
+						fname,
+						psbuf);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		close_file(fsp, NORMAL_CLOSE);
+		TALLOC_FREE(lck);
+		return status;
+	}
+	TALLOC_FREE(lck);
 	return close_file(fsp, NORMAL_CLOSE);
 }
 
@@ -5985,6 +6037,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		}
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED, ERRSRV, ERRbadpath);
+		}
+		if (info_level == SMB_POSIX_PATH_OPEN) {
+			return ERROR_OPEN(status);
 		}
 		return ERROR_NT(status);
 	}

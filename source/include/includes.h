@@ -225,6 +225,10 @@ typedef int ber_int_t;
 #include <sys/attributes.h>
 #endif
 
+#ifndef ENOATTR
+#define ENOATTR ENODATA
+#endif
+
 /* mutually exclusive (SuSE 8.2) */
 #if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
@@ -756,8 +760,6 @@ struct functable2 {
    header file dependencies */
 
 struct printjob;
-
-struct smb_ldap_privates;
 
 /* forward declarations from smbldap.c */
 

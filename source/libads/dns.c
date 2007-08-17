@@ -606,8 +606,6 @@ static char *sitename_key(const char *realm)
 /****************************************************************************
  Store the AD client sitename.
  We store indefinately as every new CLDAP query will re-write this.
- If the sitename is "Default-First-Site-Name" we don't store it
- as this isn't a valid DNS name.
 ****************************************************************************/
 
 BOOL sitename_store(const char *realm, const char *sitename)
@@ -621,7 +619,7 @@ BOOL sitename_store(const char *realm, const char *sitename)
 	}
 
 	if (!realm || (strlen(realm) == 0)) {
-		DEBUG(0,("no realm\n"));
+		DEBUG(0,("sitename_store: no realm\n"));
 		return False;
 	}
 	
@@ -692,7 +690,7 @@ BOOL stored_sitename_changed(const char *realm, const char *sitename)
 	char *new_sitename;
 
 	if (!realm || (strlen(realm) == 0)) {
-		DEBUG(0,("no realm\n"));
+		DEBUG(0,("stored_sitename_changed: no realm\n"));
 		return False;
 	}
 

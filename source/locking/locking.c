@@ -41,6 +41,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
+#define NO_LOCKING_COUNT (-1)
+
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
 
@@ -224,11 +226,19 @@ struct byte_range_lock *do_lock(files_struct *fsp,
 			blocking_lock,
 			plock_pid);
 
-	/* blocking ie. pending, locks also count here,
-	 * as this is an efficiency counter to avoid checking
-	 * the lock db. on close. JRA. */
+	if (lock_flav == WINDOWS_LOCK &&
+			fsp->current_lock_count != NO_LOCKING_COUNT) {
+		/* blocking ie. pending, locks also count here,
+		 * as this is an efficiency counter to avoid checking
+		 * the lock db. on close. JRA. */
 
-	fsp->current_lock_count++;
+		fsp->current_lock_count++;
+	} else {
+		/* Notice that this has had a POSIX lock request.
+		 * We can't count locks after this so forget them.
+		 */
+		fsp->current_lock_count = NO_LOCKING_COUNT;
+	}
 
 	return br_lck;
 }
@@ -276,8 +286,11 @@ NTSTATUS do_unlock(files_struct *fsp,
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
-	SMB_ASSERT(fsp->current_lock_count > 0);
-	fsp->current_lock_count--;
+	if (lock_flav == WINDOWS_LOCK &&
+			fsp->current_lock_count != NO_LOCKING_COUNT) {
+		SMB_ASSERT(fsp->current_lock_count > 0);
+		fsp->current_lock_count--;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -326,8 +339,11 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
-	SMB_ASSERT(fsp->current_lock_count > 0);
-	fsp->current_lock_count--;
+	if (lock_flav == WINDOWS_LOCK &&
+			fsp->current_lock_count != NO_LOCKING_COUNT) {
+		SMB_ASSERT(fsp->current_lock_count > 0);
+		fsp->current_lock_count--;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -912,6 +928,14 @@ BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 BOOL is_valid_share_mode_entry(const struct share_mode_entry *e)
 {
 	int num_props = 0;
+
+	if (e->op_type == UNUSED_SHARE_MODE_ENTRY) {
+		/* cope with dead entries from the process not
+		   existing. These should not be considered valid,
+		   otherwise we end up doing zero timeout sharing
+		   violation */
+		return False;
+	}
 
 	num_props += ((e->op_type == NO_OPLOCK) ? 1 : 0);
 	num_props += (EXCLUSIVE_OPLOCK_TYPE(e->op_type) ? 1 : 0);

@@ -1833,8 +1833,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
 
 BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensitive)
 {
-	pstring last_component;
-	char *p;
+	const char *last_component;
 
 	/* if we have no list it's obviously not in the path */
 	if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) {
@@ -1844,8 +1843,12 @@ BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensit
 	DEBUG(8, ("is_in_path: %s\n", name));
 
 	/* Get the last component of the unix name. */
-	p = strrchr_m(name, '/');
-	pstrcpy(last_component, p ? ++p : name);
+	last_component = strrchr_m(name, '/');
+	if (!last_component) {
+		last_component = name;
+	} else {
+		last_component++; /* Go past '/' */
+	}
 
 	for(; namelist->name != NULL; namelist++) {
 		if(namelist->is_wild) {
@@ -1862,7 +1865,6 @@ BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensit
 		}
 	}
 	DEBUG(8,("is_in_path: match not found\n"));
- 
 	return False;
 }
 
@@ -2748,7 +2750,7 @@ BOOL ms_has_wild_w(const smb_ucs2_t *s)
  of the ".." name.
 *******************************************************************/
 
-BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
+BOOL mask_match(const char *string, const char *pattern, BOOL is_case_sensitive)
 {
 	if (strcmp(string,"..") == 0)
 		string = ".";
@@ -2764,7 +2766,7 @@ BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
  pattern translation.
 *******************************************************************/
 
-BOOL mask_match_search(const char *string, char *pattern, BOOL is_case_sensitive)
+BOOL mask_match_search(const char *string, const char *pattern, BOOL is_case_sensitive)
 {
 	if (strcmp(string,"..") == 0)
 		string = ".";

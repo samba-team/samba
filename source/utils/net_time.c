@@ -29,14 +29,16 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 	struct nmb_name calling, called;
 	time_t ret = 0;
 	struct cli_state *cli = NULL;
+	NTSTATUS status;
 
 	cli = cli_initialise();
 	if (!cli) {
 		goto done;
 	}
 
-	if (!cli_connect(cli, host, ip)) {
-		fprintf(stderr,"Can't contact server\n");
+	status = cli_connect(cli, host, ip);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,"Can't contact server %s. Error %s\n", host, nt_errstr(status));
 		goto done;
 	}
 

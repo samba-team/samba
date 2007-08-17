@@ -281,12 +281,14 @@ static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
 			if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
 				DEBUG(0,("message_send_pid_internal: failed to get "
 					 "chainlock with timeout %ul.\n", timeout));
+				SAFE_FREE(dbuf.dptr);
 				return NT_STATUS_IO_TIMEOUT;
 			}
 		} else {
 			if (tdb_chainlock(tdb, kbuf) == -1) {
 				DEBUG(0,("message_send_pid_internal: failed to get "
 					 "chainlock.\n"));
+				SAFE_FREE(dbuf.dptr);
 				return NT_STATUS_LOCK_NOT_GRANTED;
 			}
 		}	
@@ -303,12 +305,14 @@ static NTSTATUS message_send_pid_internal(struct process_id pid, int msg_type,
 		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
 			DEBUG(0,("message_send_pid_internal: failed to get chainlock "
 				 "with timeout %ul.\n", timeout));
+			SAFE_FREE(dbuf.dptr);
 			return NT_STATUS_IO_TIMEOUT;
 		}
 	} else {
 		if (tdb_chainlock(tdb, kbuf) == -1) {
 			DEBUG(0,("message_send_pid_internal: failed to get "
 				 "chainlock.\n"));
+			SAFE_FREE(dbuf.dptr);
 			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
 	}	

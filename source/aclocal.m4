@@ -362,23 +362,6 @@ AC_DEFUN(jm_ICONV,
             jm_cv_func_iconv=yes
             jm_cv_lib_iconv="iconv")
           LIBS="$jm_save_LIBS"
-
-          if test "$jm_cv_lib_iconv" != yes; then
-            jm_save_LIBS="$LIBS"
-            LIBS="$LIBS -lbiconv"
-            AC_TRY_LINK([#include <stdlib.h>
-#include <biconv.h>],
-              [iconv_t cd = iconv_open("","");
-               iconv(cd,NULL,NULL,NULL,NULL);
-               iconv_close(cd);],
-              jm_cv_lib_iconv=yes
-              jm_cv_func_iconv=yes
-              jm_cv_include="biconv.h"
-              jm_cv_biconv=yes
-              jm_cv_lib_iconv="biconv")
-
-            LIBS="$jm_save_LIBS"
-	  fi
         fi
       fi
     fi

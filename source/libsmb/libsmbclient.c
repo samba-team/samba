@@ -675,7 +675,8 @@ smbc_server(SMBCCTX *context,
         int port_try_first;
         int port_try_next;
         const char *username_used;
-  
+ 	NTSTATUS status;
+
 	zero_ip(&ip);
 	ZERO_STRUCT(c);
 
@@ -795,17 +796,19 @@ smbc_server(SMBCCTX *context,
 
         c->port = port_try_first;
 
-	if (!cli_connect(c, server_n, &ip)) {
+	status = cli_connect(c, server_n, &ip);
+	if (!NT_STATUS_IS_OK(status)) {
 
                 /* First connection attempt failed.  Try alternate port. */
                 c->port = port_try_next;
 
-                if (!cli_connect(c, server_n, &ip)) {
-                        cli_shutdown(c);
-                        errno = ETIMEDOUT;
-                        return NULL;
-                }
- 	}
+                status = cli_connect(c, server_n, &ip);
+		if (!NT_STATUS_IS_OK(status)) {
+			cli_shutdown(c);
+			errno = ETIMEDOUT;
+			return NULL;
+		}
+	}
 
 	if (!cli_session_request(c, &calling, &called)) {
 		cli_shutdown(c);
@@ -3442,8 +3445,6 @@ static off_t
 smbc_telldir_ctx(SMBCCTX *context,
                  SMBCFILE *dir)
 {
-	off_t ret_val; /* Squash warnings about cast */
-
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 
@@ -3466,12 +3467,16 @@ smbc_telldir_ctx(SMBCCTX *context,
 
 	}
 
+        /* See if we're already at the end. */
+        if (dir->dir_next == NULL) {
+                /* We are. */
+                return -1;
+        }
+
 	/*
 	 * We return the pointer here as the offset
 	 */
-	ret_val = (off_t)(long)dir->dir_next;
-	return ret_val;
-
+        return (off_t)(long)dir->dir_next->dirent;
 }
 
 /*
@@ -3541,6 +3546,11 @@ smbc_lseekdir_ctx(SMBCCTX *context,
 		return 0;
 
 	}
+
+        if (offset == -1) {     /* Seek to the end of the list */
+                dir->dir_next = NULL;
+                return 0;
+        }
 
 	/* Now, run down the list and make sure that the entry is OK       */
 	/* This may need to be changed if we change the format of the list */
@@ -4534,6 +4544,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_nt_owner) {
@@ -4581,6 +4592,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_nt_group) {
@@ -4626,6 +4638,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_nt_acl) {
@@ -4716,6 +4729,7 @@ cacl_get(SMBCCTX *context,
                                 buf += n;
                                 n_used += n;
                                 bufsize -= n;
+                                n = 0;
                         }
                 }
 
@@ -4790,6 +4804,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_size) {
@@ -4834,6 +4849,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_create_time &&
@@ -4876,6 +4892,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_access_time) {
@@ -4917,6 +4934,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_write_time) {
@@ -4958,6 +4976,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_change_time) {
@@ -4999,6 +5018,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_inode) {
@@ -5043,6 +5063,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 /* Restore name pointer to its original value */
@@ -5137,8 +5158,8 @@ cacl_set(TALLOC_CTX *ctx,
 	switch (mode) {
 	case SMBC_XATTR_MODE_REMOVE_ALL:
                 old->dacl->num_aces = 0;
-                SAFE_FREE(old->dacl->aces);
-                SAFE_FREE(old->dacl);
+                prs_mem_free(old->dacl->aces);
+                prs_mem_free(&old->dacl);
                 old->dacl = NULL;
                 dacl = old->dacl;
                 break;
@@ -5157,8 +5178,8 @@ cacl_set(TALLOC_CTX *ctx,
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
-						SAFE_FREE(old->dacl->aces);
-						SAFE_FREE(old->dacl);
+                                                prs_mem_free(&old->dacl->aces);
+                                                prs_mem_free(&old->dacl);
 						old->dacl = NULL;
 					}
 					found = True;
