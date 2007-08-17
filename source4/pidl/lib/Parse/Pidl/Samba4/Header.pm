@@ -223,7 +223,7 @@ sub HeaderType($$$)
 sub HeaderTypedef($)
 {
 	my($typedef) = shift;
-	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
+	HeaderType($typedef, $typedef->{DATA}->{ORIGINAL}, $typedef->{NAME});
 }
 
 #####################################################################
@@ -360,7 +360,7 @@ sub HeaderInterface($)
 	}
 
 	foreach my $d (@{$interface->{TYPES}}) {
-		HeaderTypedef($d->{ORIGINAL}) if ($d->{TYPE} eq "TYPEDEF");
+		HeaderTypedef($d) if ($d->{TYPE} eq "TYPEDEF");
 		HeaderStruct($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "STRUCT");
 		HeaderUnion($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "UNION");
 		HeaderEnum($d->{ORIGINAL}, $d->{NAME}) if ($d->{TYPE} eq "ENUM");
