@@ -10,6 +10,7 @@ use strict;
 use Parse::Pidl qw(fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(has_property is_constant);
+use Parse::Pidl::NDR qw(GetPrevLevel);
 use Parse::Pidl::Samba4 qw(is_intree);
 
 use vars qw($VERSION);
@@ -64,23 +65,30 @@ sub HeaderElement($)
 			HeaderType($element, $element->{TYPE}, "");
 		}
 		pidl " ";
-		my $numstar = $element->{ORIGINAL}->{POINTERS};
+		my $numstar = 0;
+		foreach my $l (@{$element->{LEVELS}}) {
+			next unless ($l->{TYPE} eq "POINTER");
+			$numstar++;
+		}
 		if ($numstar >= 1) {
 			$numstar-- if (scalar_is_reference($element->{TYPE}));
 		}
-		foreach (@{$element->{ORIGINAL}->{ARRAY_LEN}})
-		{
-			next if is_constant($_) and 
+		foreach my $l (@{$element->{LEVELS}}) {
+			next unless ($l->{TYPE} eq "ARRAY");
+			next if ($l->{IS_FIXED}) and
 				not has_property($element, "charset");
+			my $pl = GetPrevLevel($element, $l);
+			next if (defined($pl) and $pl->{TYPE} eq "POINTER");
 			$numstar++;
 		}
 		pidl "*" foreach (1..$numstar);
 	}
 	pidl $element->{NAME};
-	foreach (@{$element->{ORIGINAL}->{ARRAY_LEN}}) {
-		next unless (is_constant($_) and 
+	foreach my $l (@{$element->{LEVELS}}) {
+		next unless ($l->{TYPE} eq "ARRAY");
+		next unless ($l->{IS_FIXED} and
 			not has_property($element, "charset"));
-		pidl "[$_]";
+		pidl "[$l->{SIZE_IS}]";
 	}
 
 	pidl ";";
