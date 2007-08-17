@@ -11,7 +11,7 @@ use Parse::Pidl qw(warning fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(ParseExpr has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel);
-use Parse::Pidl::Samba4 qw(DeclLong);
+use Parse::Pidl::Samba4 qw(ElementStars DeclLong);
 use Parse::Pidl::Samba4::NDR::Parser qw(GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
@@ -28,36 +28,20 @@ sub fn_declare($) { my ($n) = @_; pidl $n; pidl_hdr "$n;"; }
 
 sub DeclLevel($$) 
 {
-	sub DeclLevel($$);
 	my ($e, $l) = @_;
-
-	my $ret = "";
+	my $res = "";
 
 	if (has_property($e, "charset")) {
-		$ret.="const char";
+		$res .= "const char";
 	} else {
-		$ret.=mapTypeName($e->{TYPE});
+		$res .= mapTypeName($e->{TYPE});
 	}
 
-	my $numstar = $e->{ORIGINAL}->{POINTERS};
-	if ($numstar >= 1) {
-		$numstar-- if scalar_is_reference($e->{TYPE});
-	}
-	foreach (@{$e->{ORIGINAL}->{ARRAY_LEN}})
-	{
-		next if is_constant($_) and 
-			not has_property($e, "charset");
-		$numstar++;
-	}
-	$numstar -= $l;
-	die ("Too few pointers") if $numstar < 0;
-	if ($numstar > 0) 
-	{
-		$ret.=" ";
-		$ret.="*" foreach (1..$numstar);
-	}
+	my $stars = ElementStars($e, $l);
 
-	return $ret;
+	$res .= " ".$stars unless ($stars eq "");
+
+	return $res;
 }
 
 sub AllocOutVar($$$$)
