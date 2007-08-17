@@ -95,7 +95,7 @@ sub ArrayBrackets($)
 
 sub DeclLong($)
 {
-	my ($e, $d) = shift;
+	my ($e) = shift;
 	my $res = "";
 
 	if (has_property($e, "represent_as")) {
