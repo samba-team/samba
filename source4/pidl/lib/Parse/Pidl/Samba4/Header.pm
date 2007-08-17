@@ -254,8 +254,10 @@ sub HeaderFunctionInOut($$)
 {
 	my($fn,$prop) = @_;
 
-	foreach (@{$fn->{ELEMENTS}}) {
-		HeaderElement($_) if (ElementDirection($_) eq $prop);
+	return unless defined($fn->{ELEMENTS});
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		HeaderElement($e->{ORIGINAL}) if (ElementDirection($e) eq $prop);
 	}
 }
 
@@ -265,10 +267,12 @@ sub HeaderFunctionInOut_needed($$)
 {
 	my($fn,$prop) = @_;
 
-	return 1 if ($prop eq "out" && $fn->{RETURN_TYPE} ne "void");
+	return 1 if ($prop eq "out" && defined($fn->{RETURN_TYPE}));
 
-	foreach (@{$fn->{ELEMENTS}}) {
-		return 1 if (ElementDirection($_) eq $prop);
+	return undef unless defined($fn->{ELEMENTS});
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		return 1 if (ElementDirection($e) eq $prop);
 	}
 
 	return undef;
@@ -290,23 +294,23 @@ sub HeaderFunction($)
 	$tab_depth++;
 	my $needed = 0;
 
-	if (HeaderFunctionInOut_needed($fn->{ORIGINAL}, "in") or
-	    HeaderFunctionInOut_needed($fn->{ORIGINAL}, "inout")) {
+	if (HeaderFunctionInOut_needed($fn, "in") or
+	    HeaderFunctionInOut_needed($fn, "inout")) {
 		pidl tabs()."struct {\n";
 		$tab_depth++;
-		HeaderFunctionInOut($fn->{ORIGINAL}, "in");
-		HeaderFunctionInOut($fn->{ORIGINAL}, "inout");
+		HeaderFunctionInOut($fn, "in");
+		HeaderFunctionInOut($fn, "inout");
 		$tab_depth--;
 		pidl tabs()."} in;\n\n";
 		$needed++;
 	}
 
-	if (HeaderFunctionInOut_needed($fn->{ORIGINAL}, "out") or
-	    HeaderFunctionInOut_needed($fn->{ORIGINAL}, "inout")) {
+	if (HeaderFunctionInOut_needed($fn, "out") or
+	    HeaderFunctionInOut_needed($fn, "inout")) {
 		pidl tabs()."struct {\n";
 		$tab_depth++;
-		HeaderFunctionInOut($fn->{ORIGINAL}, "out");
-		HeaderFunctionInOut($fn->{ORIGINAL}, "inout");
+		HeaderFunctionInOut($fn, "out");
+		HeaderFunctionInOut($fn, "inout");
 		if (defined($fn->{RETURN_TYPE})) {
 			pidl tabs().mapTypeName($fn->{RETURN_TYPE}) . " result;\n";
 		}
