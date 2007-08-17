@@ -620,7 +620,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.ctx_list[0].syntax = ndr_transfer_syntax;
 	pkt.u.bind_ack.auth_info = data_blob(NULL, 0);
 
-	if (!dcesrv_auth_bind_ack(call, &pkt)) {
+	status = dcesrv_auth_bind_ack(call, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_bind_nak(call, 0);
 	}
 
@@ -769,8 +770,15 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.u.alter_resp.auth_info = data_blob(NULL, 0);
 	pkt.u.alter_resp.secondary_address = "";
 
-	if (!dcesrv_auth_alter_ack(call, &pkt)) {
-		return dcesrv_bind_nak(call, 0);
+	status = dcesrv_auth_alter_ack(call, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)
+		    || NT_STATUS_EQUAL(status, NT_STATUS_LOGON_FAILURE)
+		    || NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
+		    || NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
+		return dcesrv_fault(call, 0);
 	}
 
 	rep = talloc(call, struct data_blob_list_item);

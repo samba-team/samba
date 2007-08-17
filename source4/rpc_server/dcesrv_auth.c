@@ -98,13 +98,13 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
   add any auth information needed in a bind ack, and process the authentication
   information found in the bind.
 */
-BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
+NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
 	if (!call->conn->auth_state.gensec_security) {
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	status = gensec_update(dce_conn->auth_state.gensec_security,
@@ -117,19 +117,19 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packet *p
 					     &dce_conn->auth_state.session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
-			return False;
+			return status;
 		}
 
 		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
-		return True;
+		return NT_STATUS_OK;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		dce_conn->auth_state.auth_info->auth_pad_length = 0;
 		dce_conn->auth_state.auth_info->auth_reserved = 0;
-		return True;
+		return NT_STATUS_OK;
 	} else {
 		DEBUG(2, ("Failed to start dcesrv auth negotiate: %s\n", nt_errstr(status)));
-		return False;
+		return status;
 	}
 }
 
@@ -223,7 +223,7 @@ BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
   add any auth information needed in a alter ack, and process the authentication
   information found in the alter.
 */
-BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
+NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
@@ -232,11 +232,11 @@ BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *
 	   setup */
 	if (!call->conn->auth_state.auth_info ||
 	    dce_conn->auth_state.auth_info->credentials.length == 0) {
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	if (!call->conn->auth_state.gensec_security) {
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = gensec_update(dce_conn->auth_state.gensec_security,
@@ -249,20 +249,20 @@ BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *
 					     &dce_conn->auth_state.session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
-			return False;
+			return status;
 		}
 
 		/* Now that we are authenticated, got back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
-		return True;
+		return NT_STATUS_OK;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		dce_conn->auth_state.auth_info->auth_pad_length = 0;
 		dce_conn->auth_state.auth_info->auth_reserved = 0;
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(2, ("Failed to finish dcesrv auth alter_ack: %s\n", nt_errstr(status)));
-	return False;
+	return status;
 }
 
 /*
