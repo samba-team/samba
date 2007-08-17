@@ -2208,6 +2208,7 @@ static BOOL hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static char * canonicalize_servicename(const char *name);
 static void show_parameter(int parmIndex);
+static BOOL is_synonym_of(int parm1, int parm2, BOOL *inverse);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -2845,15 +2846,8 @@ BOOL lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
 	}
 
 	for (canon_num = 0; parm_table[canon_num].label; canon_num++) {
-		if (!(parm_table[canon_num].flags & FLAG_HIDE) &&
-		    (parm_table[num].ptr == parm_table[canon_num].ptr))
-		{
+		if (is_synonym_of(num, canon_num, inverse)) {
 			*canon_parm = parm_table[canon_num].label;
-			if ((parm_table[canon_num].type == P_BOOL) &&
-			    (parm_table[num].type == P_BOOLREV))
-			{
-				*inverse = True;
-			}
 			return True;
 		}
 	}
@@ -2889,6 +2883,31 @@ static int map_parameter(const char *pszParmName)
 }
 
 /***************************************************************************
+ return true if parameter number parm1 is a synonym of parameter
+ number parm2 (parm2 being the principal name).
+ set inverse to True if parm1 is P_BOOLREV and parm2 is P_BOOL,
+ False otherwise.
+***************************************************************************/
+
+static BOOL is_synonym_of(int parm1, int parm2, BOOL *inverse)
+{
+	if ((parm_table[parm1].ptr == parm_table[parm2].ptr) &&
+	    (parm_table[parm1].flags & FLAG_HIDE) &&
+	    !(parm_table[parm2].flags & FLAG_HIDE))
+	{
+		if ((parm_table[parm1].type == P_BOOLREV) &&
+		    (parm_table[parm2].type == P_BOOL))
+		{
+			*inverse = True;
+		} else {
+			*inverse = False;
+		}
+		return True;
+	}
+	return False;
+}
+
+/***************************************************************************
  Show one parameter's name, type, [values,] and flags.
  (helper functions for show_parameter_list)
 ***************************************************************************/
@@ -2896,7 +2915,10 @@ static int map_parameter(const char *pszParmName)
 static void show_parameter(int parmIndex)
 {
 	int enumIndex, flagIndex;
+	int parmIndex2;
 	BOOL hadFlag;
+	BOOL hadSyn;
+	BOOL inverse;
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
 		"P_UGSTRING", "P_ENUM", "P_SEP"};
@@ -2930,6 +2952,28 @@ static void show_parameter(int parmIndex)
 			hadFlag = True;
 		}
 	}
+
+	/* output synonyms */
+	hadSyn = False;
+	for (parmIndex2=0; parm_table[parmIndex2].label; parmIndex2++) {
+		if (is_synonym_of(parmIndex, parmIndex2, &inverse)) {
+			printf(" (%ssynonym of %s)", inverse ? "inverse " : "",
+			       parm_table[parmIndex2].label);
+		} else if (is_synonym_of(parmIndex2, parmIndex, &inverse)) {
+			if (!hadSyn) {
+				printf(" (synonyms: ");
+				hadSyn = True;
+			} else {
+				printf(", ");
+			}
+			printf("%s%s", parm_table[parmIndex2].label,
+			       inverse ? "[i]" : "");
+		}
+	}
+	if (hadSyn) {
+		printf(")");
+	}
+
 	printf("\n");
 }
 
