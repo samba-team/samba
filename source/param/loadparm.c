@@ -2850,6 +2850,51 @@ BOOL lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
 
 }
 
+/**************************************************************************
+ Determine the canonical name for a parameter.
+ Turn the value given into the inverse boolean expression when
+ the synonym is an invers boolean synonym.
+
+ Return True if parm_name is a valid parameter name and
+ in case it is an invers boolean synonym, if the val string could
+ successfully be converted to the reverse bool.
+ Return false in all other cases.
+**************************************************************************/
+
+BOOL lp_canonicalize_parameter_with_value(const char *parm_name,
+					  const char *val,
+					  const char **canon_parm,
+					  const char **canon_val)
+{
+	int num;
+	BOOL inverse;
+
+	if (!lp_parameter_is_valid(parm_name)) {
+		*canon_parm = NULL;
+		*canon_val = NULL;
+		return False;
+	}
+
+	num = map_parameter_canonical(parm_name, &inverse);
+	if (num < 0) {
+		/* parametric option */
+		*canon_parm = parm_name;
+		*canon_val = val;
+	} else {
+		*canon_parm = parm_table[num].label;
+		if (inverse) {
+			if (!lp_invert_boolean(val, canon_val)) {
+				*canon_val = NULL;
+				return False;
+			}
+		} else {
+			*canon_val = val;
+		}
+	}
+
+	return True;
+}
+
 /***************************************************************************
  Map a parameter's string representation to something we can use. 
  Returns False if the parameter string is not recognised, else TRUE.
