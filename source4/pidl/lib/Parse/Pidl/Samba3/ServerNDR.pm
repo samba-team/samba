@@ -65,17 +65,15 @@ sub AllocOutVar($$$$)
 	my ($e, $mem_ctx, $name, $env) = @_;
 
 	my $l = $e->{LEVELS}[0];
-	my $nl = $l;
 
+	# we skip pointer to arrays
 	if ($l->{TYPE} eq "POINTER") {
-		$nl = GetNextLevel($e, $l);
+		my $nl = GetNextLevel($e, $l);
+		$l = $nl if ($nl->{TYPE} eq "ARRAY");
 	}
 
 	if ($l->{TYPE} eq "ARRAY") {
 		my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
-		pidl "$name = talloc_zero_array($mem_ctx, " . DeclLevel($e, 1) . ", $size);";
-	} elsif ($l->{TYPE} eq "POINTER" and $nl->{TYPE} eq "ARRAY") {
-		my $size = ParseExpr($nl->{SIZE_IS}, $env, $e);
 		pidl "$name = talloc_zero_array($mem_ctx, " . DeclLevel($e, 1) . ", $size);";
 	} else {
 		pidl "$name = talloc_zero($mem_ctx, " . DeclLevel($e, 1) . ");";
