@@ -102,6 +102,8 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		status = ndr_pull_struct_blob(&in, out_mem_ctx, &bind_schannel, 
 					      (ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Could not parse incoming schannel bind: %s\n",
+				  nt_errstr(status)));
 			return status;
 		}
 		
@@ -119,6 +121,9 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",
 				  workstation, nt_errstr(status)));
+			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+				return NT_STATUS_LOGON_FAILURE;
+			}
 			return status;
 		}
 
