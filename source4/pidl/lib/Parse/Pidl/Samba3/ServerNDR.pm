@@ -72,6 +72,14 @@ sub AllocOutVar($$$$)
 		$l = $nl if ($nl->{TYPE} eq "ARRAY");
 	}
 
+	# we don't support multi-dimentional arrays yet
+	if ($l->{TYPE} eq "ARRAY") {
+		my $nl = GetNextLevel($e, $l);
+		if ($nl->{TYPE} eq "ARRAY") {
+			fatal($e->{ORIGINAL},"multi-dimentional [out] arrays are not supported!");
+		}
+	}
+
 	if ($l->{TYPE} eq "ARRAY") {
 		my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
 		pidl "$name = talloc_zero_array($mem_ctx, " . DeclLevel($e, 1) . ", $size);";
