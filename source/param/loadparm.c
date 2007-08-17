@@ -2195,6 +2195,7 @@ FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrappi
 /* local prototypes */
 
 static int map_parameter(const char *pszParmName);
+static int map_parameter_canonical(const char *pszParmName, BOOL *inverse);
 static BOOL set_boolean(BOOL *pb, const char *pszParmValue);
 static const char *get_boolean(BOOL bool_value);
 static int getservicebyname(const char *pszServiceName,
@@ -2830,31 +2831,23 @@ BOOL lp_parameter_is_global(const char *pszParmName)
 BOOL lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
 			       BOOL *inverse)
 {
-	int num, canon_num;
+	int num;
 
 	if (!lp_parameter_is_valid(parm_name)) {
 		*canon_parm = NULL;
 		return False;
 	}
 
-	*inverse = False;
-	num = map_parameter(parm_name);
-	if ((num < 0) || !(parm_table[num].flags & FLAG_HIDE)) {
-		/* it is already canonical (parametric are canonical anyways) */
+	num = map_parameter_canonical(parm_name, inverse);
+	if (num < 0) {
+		/* parametric option */
 		*canon_parm = parm_name;
-		return True;
+	} else {
+		*canon_parm = parm_table[num].label;
 	}
 
-	for (canon_num = 0; parm_table[canon_num].label; canon_num++) {
-		if (is_synonym_of(num, canon_num, inverse)) {
-			*canon_parm = parm_table[canon_num].label;
-			return True;
-		}
-	}
-
-	/* 'include', 'copy', 'config file' and friends left */
-	*canon_parm = parm_name;
 	return True;
+
 }
 
 /***************************************************************************
@@ -2880,6 +2873,33 @@ static int map_parameter(const char *pszParmName)
 	   stored in different storage
 	 */
 	return (-1);
+}
+
+/***************************************************************************
+ Map a parameter's string representation to the index of the canonical
+ form of the parameter (it might be a synonym).
+ Returns -1 if the parameter string is not recognised.
+***************************************************************************/
+
+static int map_parameter_canonical(const char *pszParmName, BOOL *inverse)
+{
+	int parm_num, canon_num;
+
+	*inverse = False;
+
+	parm_num = map_parameter(pszParmName);
+	if ((parm_num < 0) || !(parm_table[parm_num].flags & FLAG_HIDE)) {
+		/* invalid, parametric or no canidate for synonyms ... */
+		return parm_num;
+	}
+
+	for (canon_num = 0; parm_table[canon_num].label; canon_num++) {
+		if (is_synonym_of(parm_num, canon_num, inverse)) {
+			return canon_num;
+		}
+	}
+
+	return parm_num;
 }
 
 /***************************************************************************
