@@ -7,7 +7,7 @@ package Parse::Pidl::Samba4;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(is_intree choose_header DeclLong);
+@EXPORT = qw(is_intree choose_header NumStars ElementStars ArrayBrackets DeclLong);
 
 use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel);
