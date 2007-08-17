@@ -10,7 +10,7 @@ use strict;
 use Parse::Pidl qw(fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(has_property is_constant);
-use Parse::Pidl::NDR qw(GetPrevLevel);
+use Parse::Pidl::NDR qw(GetNextLevel);
 use Parse::Pidl::Samba4 qw(is_intree);
 
 use vars qw($VERSION);
@@ -68,6 +68,10 @@ sub HeaderElement($)
 		my $numstar = 0;
 		foreach my $l (@{$element->{LEVELS}}) {
 			next unless ($l->{TYPE} eq "POINTER");
+
+			my $nl = GetNextLevel($element, $l);
+			next if (defined($nl) and $nl->{TYPE} eq "ARRAY");
+
 			$numstar++;
 		}
 		if ($numstar >= 1) {
@@ -77,8 +81,6 @@ sub HeaderElement($)
 			next unless ($l->{TYPE} eq "ARRAY");
 			next if ($l->{IS_FIXED}) and
 				not has_property($element, "charset");
-			my $pl = GetPrevLevel($element, $l);
-			next if (defined($pl) and $pl->{TYPE} eq "POINTER");
 			$numstar++;
 		}
 		pidl "*" foreach (1..$numstar);
