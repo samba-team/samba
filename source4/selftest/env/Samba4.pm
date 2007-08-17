@@ -232,6 +232,26 @@ moduleload	syncprov
 		close(CONF);
 	}
 
+	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
+		open(CONF, ">$modconf"); 
+		# enable slapd modules (Fedora layout)
+		print CONF "
+modulepath	/usr/lib/openldap
+moduleload	syncprov
+";
+		close(CONF);
+	}
+
+	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
+		open(CONF, ">$modconf"); 
+		# enable slapd modules (Fedora x86_64 layout)
+		print CONF "
+modulepath	/usr/lib64/openldap
+moduleload	syncprov
+";
+		close(CONF);
+	}
+
 	system("slaptest -u -f $slapd_conf") == 0 or die("slaptest still fails after adding modules");
 
     
