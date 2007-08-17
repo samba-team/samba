@@ -2837,7 +2837,7 @@ BOOL lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
 
 	*inverse = False;
 	num = map_parameter(parm_name);
-	if (num < 0 && !(parm_table[num].flags & FLAG_HIDE)) {
+	if ((num < 0) || !(parm_table[num].flags & FLAG_HIDE)) {
 		/* it is already canonical (parametric are canonical anyways) */
 		*canon_parm = parm_name;
 		return True;
