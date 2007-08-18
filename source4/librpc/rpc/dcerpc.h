@@ -158,24 +158,14 @@ struct dcerpc_pipe {
 /* this triggers the DCERPC_PFC_FLAG_CONC_MPX flag in the bind request */
 #define DCERPC_CONCURRENT_MULTIPLEX     (1<<19)
 
-struct dcerpc_endpoint_list {
-	uint32_t count;
-	const char * const *names;
-};
-
-struct dcerpc_authservice_list {
-	uint32_t count;
-	const char * const *names;
-};
-
 struct dcerpc_interface_table {
 	const char *name;
 	struct ndr_syntax_id syntax_id;
 	const char *helpstring;
 	uint32_t num_calls;
 	const struct ndr_interface_call *calls;
-	const struct dcerpc_endpoint_list *endpoints;
-	const struct dcerpc_authservice_list *authservices;
+	const struct ndr_interface_string_array *endpoints;
+	const struct ndr_interface_string_array *authservices;
 };
 
 struct dcerpc_interface_list {

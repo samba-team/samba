@@ -2307,7 +2307,7 @@ sub FunctionTable($$)
 	$self->pidl("};");
 	$self->pidl("");
 
-	$self->pidl("static const struct dcerpc_endpoint_list $interface->{NAME}\_endpoints = {");
+	$self->pidl("static const struct ndr_interface_string_array $interface->{NAME}\_endpoints = {");
 	$self->pidl("\t.count\t= $endpoint_count,");
 	$self->pidl("\t.names\t= $interface->{NAME}\_endpoint_strings");
 	$self->pidl("};");
@@ -2327,7 +2327,7 @@ sub FunctionTable($$)
 	$self->pidl("};");
 	$self->pidl("");
 
-	$self->pidl("static const struct dcerpc_authservice_list $interface->{NAME}\_authservices = {");
+	$self->pidl("static const struct ndr_interface_string_array $interface->{NAME}\_authservices = {");
 	$self->pidl("\t.count\t= $endpoint_count,");
 	$self->pidl("\t.names\t= $interface->{NAME}\_authservice_strings");
 	$self->pidl("};");

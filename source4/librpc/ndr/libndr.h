@@ -299,6 +299,11 @@ struct ndr_interface_call {
 	BOOL async;
 };
 
+struct ndr_interface_string_array {
+	uint32_t count;
+	const char * const *names;
+};
+
 /* FIXME: Use represent_as instead */
 struct dom_sid;
 NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
