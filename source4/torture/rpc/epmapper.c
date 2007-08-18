@@ -47,7 +47,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct GUID uuid;
 	struct policy_handle handle;
 	int i;
-	struct dcerpc_syntax_id syntax;
+	struct ndr_syntax_id syntax;
 	uint32_t num_towers;
 
 	ZERO_STRUCT(uuid);

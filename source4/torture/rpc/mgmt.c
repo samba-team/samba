@@ -32,7 +32,7 @@
 BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     BOOL (*per_id_test)(const struct dcerpc_interface_table *iface,
 					 TALLOC_CTX *mem_ctx,
-					 struct dcerpc_syntax_id *id),
+					 struct ndr_syntax_id *id),
 		     const void *priv)
 {
 	NTSTATUS status;
@@ -60,7 +60,7 @@ BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0;i<vector->count;i++) {
-		struct dcerpc_syntax_id *id = vector->if_id[i].id;
+		struct ndr_syntax_id *id = vector->if_id[i].id;
 		if (!id) continue;
 
 		printf("\tuuid %s  version 0x%08x  '%s'\n",

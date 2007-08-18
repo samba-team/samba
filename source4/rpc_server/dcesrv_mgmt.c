@@ -39,7 +39,7 @@ static WERROR dcesrv_mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_
 	vector->if_id = NULL;
 	for (l = ep->interface_list; l; l = l->next) {
 		vector->count++;
-		vector->if_id = talloc_realloc(mem_ctx, vector->if_id, struct dcerpc_syntax_id_p, vector->count);
+		vector->if_id = talloc_realloc(mem_ctx, vector->if_id, struct ndr_syntax_id_p, vector->count);
 		vector->if_id[vector->count-1].id = &l->iface.syntax_id;
 	}
 	return WERR_OK;

@@ -30,8 +30,8 @@
   return the rpc syntax and transfer syntax given the pipe uuid and version
 */
 static NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
-			      struct dcerpc_syntax_id *syntax,
-			      struct dcerpc_syntax_id *transfer_syntax)
+			      struct ndr_syntax_id *syntax,
+			      struct ndr_syntax_id *transfer_syntax)
 {
 	syntax->uuid = table->syntax_id.uuid;
 	syntax->if_version = table->syntax_id.if_version;
@@ -49,8 +49,8 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 						     struct dcerpc_pipe *p,
 						     const struct dcerpc_interface_table *table)
 {
-	struct dcerpc_syntax_id syntax;
-	struct dcerpc_syntax_id transfer_syntax;
+	struct ndr_syntax_id syntax;
+	struct ndr_syntax_id transfer_syntax;
 
 	struct composite_context *c;
 
@@ -218,7 +218,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	struct bind_auth_state *state;
 	struct dcerpc_security *sec;
 
-	struct dcerpc_syntax_id syntax, transfer_syntax;
+	struct ndr_syntax_id syntax, transfer_syntax;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, p->conn->event_ctx);

@@ -691,8 +691,8 @@ static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event 
 */
 struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 					   TALLOC_CTX *mem_ctx,
-					   const struct dcerpc_syntax_id *syntax,
-					   const struct dcerpc_syntax_id *transfer_syntax)
+					   const struct ndr_syntax_id *syntax,
+					   const struct ndr_syntax_id *transfer_syntax)
 {
 	struct composite_context *c;
 	struct ncacn_packet pkt;
@@ -1562,8 +1562,8 @@ static void dcerpc_alter_recv_handler(struct rpc_request *req,
 */
 struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p, 
 						    TALLOC_CTX *mem_ctx,
-						    const struct dcerpc_syntax_id *syntax,
-						    const struct dcerpc_syntax_id *transfer_syntax)
+						    const struct ndr_syntax_id *syntax,
+						    const struct ndr_syntax_id *transfer_syntax)
 {
 	struct composite_context *c;
 	struct ncacn_packet pkt;
@@ -1646,8 +1646,8 @@ NTSTATUS dcerpc_alter_context_recv(struct composite_context *ctx)
 */
 NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p, 
 			      TALLOC_CTX *mem_ctx,
-			      const struct dcerpc_syntax_id *syntax,
-			      const struct dcerpc_syntax_id *transfer_syntax)
+			      const struct ndr_syntax_id *syntax,
+			      const struct ndr_syntax_id *transfer_syntax)
 {
 	struct composite_context *creq;
 	creq = dcerpc_alter_context_send(p, mem_ctx, syntax, transfer_syntax);

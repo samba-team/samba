@@ -98,8 +98,8 @@ struct dcerpc_pipe {
 
 	uint32_t assoc_group_id;
 
-	struct dcerpc_syntax_id syntax;
-	struct dcerpc_syntax_id transfer_syntax;
+	struct ndr_syntax_id syntax;
+	struct ndr_syntax_id transfer_syntax;
 
 	struct dcerpc_connection *conn;
 	struct dcerpc_binding *binding;
@@ -182,7 +182,7 @@ struct dcerpc_authservice_list {
 
 struct dcerpc_interface_table {
 	const char *name;
-	struct dcerpc_syntax_id syntax_id;
+	struct ndr_syntax_id syntax_id;
 	const char *helpstring;
 	uint32_t num_calls;
 	const struct dcerpc_interface_call *calls;
@@ -198,7 +198,7 @@ struct dcerpc_interface_list {
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
-	struct dcerpc_syntax_id object;
+	struct ndr_syntax_id object;
 	const char *host;
 	const char *target_hostname;
 	const char *endpoint;

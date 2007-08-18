@@ -34,8 +34,8 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 	BOOL ret = True;
 	struct policy_handle *handle;
 	struct dcerpc_interface_table tmptbl;
-	struct dcerpc_syntax_id syntax;
-	struct dcerpc_syntax_id transfer_syntax;
+	struct ndr_syntax_id syntax;
+	struct ndr_syntax_id transfer_syntax;
 
 	mem_ctx = talloc_init("torture_rpc_alter_context");
 

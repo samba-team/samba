@@ -12,16 +12,11 @@ import "misc.idl";
 
 interface dcerpc
 {
-	typedef [public] struct {
-		GUID uuid;
-		uint32 if_version;
-	} dcerpc_syntax_id;
-
 	typedef struct {
 		uint16 context_id;
 		uint8 num_transfer_syntaxes;
-		dcerpc_syntax_id abstract_syntax;
-		dcerpc_syntax_id transfer_syntaxes[num_transfer_syntaxes];
+		ndr_syntax_id abstract_syntax;
+		ndr_syntax_id transfer_syntaxes[num_transfer_syntaxes];
 	} dcerpc_ctx_list;
 
 	typedef struct {
@@ -62,7 +57,7 @@ interface dcerpc
 	typedef struct {
 		uint16 result;
 		uint16 reason;
-		dcerpc_syntax_id syntax;
+		ndr_syntax_id syntax;
 	} dcerpc_ack_ctx;
 
 	typedef struct {

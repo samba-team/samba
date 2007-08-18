@@ -173,7 +173,7 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 	enum dcerpc_transport_t transport;
-	struct dcerpc_syntax_id ndr_syntax;
+	struct ndr_syntax_id ndr_syntax;
 
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 

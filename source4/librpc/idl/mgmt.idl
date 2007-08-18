@@ -11,12 +11,12 @@
 interface mgmt
 {
 	typedef struct {
-		dcerpc_syntax_id *id;
-	} dcerpc_syntax_id_p;
+		ndr_syntax_id *id;
+	} ndr_syntax_id_p;
 
 	typedef struct {
 		uint32              count;
-		[size_is(count)] dcerpc_syntax_id_p if_id[*];
+		[size_is(count)] ndr_syntax_id_p if_id[*];
 	} rpc_if_id_vector_t;
 
 

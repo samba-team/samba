@@ -30,7 +30,7 @@
  */
 static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 			   TALLOC_CTX *mem_ctx,
-			   struct dcerpc_syntax_id *id)
+			   struct ndr_syntax_id *id)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
@@ -40,7 +40,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	struct dcerpc_interface_table tbl;
 
 	/* FIXME: This should be fixed when torture_rpc_connection 
-	 * takes a dcerpc_syntax_id */
+	 * takes a ndr_syntax_id */
 	tbl.name = iface->name;
 	tbl.syntax_id = *id;
 

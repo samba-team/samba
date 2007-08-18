@@ -34,12 +34,12 @@
 #define NDR_BASE_MARSHALL_SIZE 1024
 
 /* this guid indicates NDR encoding in a protocol tower */
-const struct dcerpc_syntax_id ndr_transfer_syntax = {
+const struct ndr_syntax_id ndr_transfer_syntax = {
   { 0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60} },
   2
 };
 
-const struct dcerpc_syntax_id ndr64_transfer_syntax = {
+const struct ndr_syntax_id ndr64_transfer_syntax = {
   { 0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36} },
   1
 };

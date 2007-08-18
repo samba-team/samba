@@ -17,6 +17,11 @@ interface misc
 	} GUID;
 
 	typedef [public] struct {
+		GUID uuid;
+		uint32 if_version;
+	} ndr_syntax_id;
+
+	typedef [public] struct {
 		uint32 handle_type;
 		GUID   uuid;
 	} policy_handle;
