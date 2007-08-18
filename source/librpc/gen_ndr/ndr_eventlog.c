@@ -1614,7 +1614,7 @@ const char * const eventlog_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\eventlog]", 
 };
 
-const struct dcerpc_endpoint_list eventlog_endpoints = {
+const struct ndr_interface_string_array eventlog_endpoints = {
 	.count	= 1,
 	.names	= eventlog_endpoint_strings
 };
@@ -1623,7 +1623,7 @@ const char * const eventlog_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list eventlog_authservices = {
+const struct ndr_interface_string_array eventlog_authservices = {
 	.count	= 1,
 	.names	= eventlog_authservice_strings
 };

@@ -2656,7 +2656,7 @@ const char * const epmapper_endpoint_strings[] = {
 	"ncalrpc:[EPMAPPER]", 
 };
 
-const struct dcerpc_endpoint_list epmapper_endpoints = {
+const struct ndr_interface_string_array epmapper_endpoints = {
 	.count	= 3,
 	.names	= epmapper_endpoint_strings
 };
@@ -2665,7 +2665,7 @@ const char * const epmapper_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list epmapper_authservices = {
+const struct ndr_interface_string_array epmapper_authservices = {
 	.count	= 3,
 	.names	= epmapper_authservice_strings
 };

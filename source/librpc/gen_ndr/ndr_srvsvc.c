@@ -19539,7 +19539,7 @@ const char * const srvsvc_endpoint_strings[] = {
 	"ncalrpc:", 
 };
 
-const struct dcerpc_endpoint_list srvsvc_endpoints = {
+const struct ndr_interface_string_array srvsvc_endpoints = {
 	.count	= 3,
 	.names	= srvsvc_endpoint_strings
 };
@@ -19548,7 +19548,7 @@ const char * const srvsvc_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list srvsvc_authservices = {
+const struct ndr_interface_string_array srvsvc_authservices = {
 	.count	= 3,
 	.names	= srvsvc_authservice_strings
 };

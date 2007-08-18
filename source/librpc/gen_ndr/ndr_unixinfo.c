@@ -496,7 +496,7 @@ const char * const unixinfo_endpoint_strings[] = {
 	"ncalrpc:", 
 };
 
-const struct dcerpc_endpoint_list unixinfo_endpoints = {
+const struct ndr_interface_string_array unixinfo_endpoints = {
 	.count	= 3,
 	.names	= unixinfo_endpoint_strings
 };
@@ -505,7 +505,7 @@ const char * const unixinfo_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list unixinfo_authservices = {
+const struct ndr_interface_string_array unixinfo_authservices = {
 	.count	= 3,
 	.names	= unixinfo_authservice_strings
 };

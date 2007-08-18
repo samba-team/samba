@@ -4757,7 +4757,7 @@ const char * const wkssvc_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\wkssvc]", 
 };
 
-const struct dcerpc_endpoint_list wkssvc_endpoints = {
+const struct ndr_interface_string_array wkssvc_endpoints = {
 	.count	= 1,
 	.names	= wkssvc_endpoint_strings
 };
@@ -4766,7 +4766,7 @@ const char * const wkssvc_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list wkssvc_authservices = {
+const struct ndr_interface_string_array wkssvc_authservices = {
 	.count	= 1,
 	.names	= wkssvc_authservice_strings
 };
