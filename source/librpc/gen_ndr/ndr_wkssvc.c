@@ -4501,7 +4501,7 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call wkssvc_calls[] = {
+const struct ndr_interface_call wkssvc_calls[] = {
 	{
 		"wkssvc_NetWkstaGetInfo",
 		sizeof(struct wkssvc_NetWkstaGetInfo),

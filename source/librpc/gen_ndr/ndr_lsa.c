@@ -10376,7 +10376,7 @@ _PUBLIC_ void ndr_print_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call lsarpc_calls[] = {
+const struct ndr_interface_call lsarpc_calls[] = {
 	{
 		"lsa_Close",
 		sizeof(struct lsa_Close),

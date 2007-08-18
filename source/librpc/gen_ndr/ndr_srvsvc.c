@@ -19097,7 +19097,7 @@ _PUBLIC_ void ndr_print_srvsvc_NETRSERVERTRANSPORTDELEX(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call srvsvc_calls[] = {
+const struct ndr_interface_call srvsvc_calls[] = {
 	{
 		"srvsvc_NetCharDevEnum",
 		sizeof(struct srvsvc_NetCharDevEnum),

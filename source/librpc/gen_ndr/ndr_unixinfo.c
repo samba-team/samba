@@ -446,7 +446,7 @@ _PUBLIC_ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call unixinfo_calls[] = {
+const struct ndr_interface_call unixinfo_calls[] = {
 	{
 		"unixinfo_SidToUid",
 		sizeof(struct unixinfo_SidToUid),

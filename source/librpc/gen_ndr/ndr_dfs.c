@@ -5121,7 +5121,7 @@ _PUBLIC_ void ndr_print_dfs_SetInfo2(struct ndr_print *ndr, const char *name, in
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call netdfs_calls[] = {
+const struct ndr_interface_call netdfs_calls[] = {
 	{
 		"dfs_GetManagerVersion",
 		sizeof(struct dfs_GetManagerVersion),

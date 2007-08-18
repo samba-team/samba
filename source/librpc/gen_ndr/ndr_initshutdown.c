@@ -367,7 +367,7 @@ _PUBLIC_ void ndr_print_initshutdown_InitEx(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call initshutdown_calls[] = {
+const struct ndr_interface_call initshutdown_calls[] = {
 	{
 		"initshutdown_Init",
 		sizeof(struct initshutdown_Init),

@@ -1414,7 +1414,7 @@ _PUBLIC_ void ndr_print_eventlog_FlushEventLog(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call eventlog_calls[] = {
+const struct ndr_interface_call eventlog_calls[] = {
 	{
 		"eventlog_ClearEventLogW",
 		sizeof(struct eventlog_ClearEventLogW),

@@ -4099,7 +4099,7 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues2(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call winreg_calls[] = {
+const struct ndr_interface_call winreg_calls[] = {
 	{
 		"winreg_OpenHKCR",
 		sizeof(struct winreg_OpenHKCR),

@@ -1340,7 +1340,7 @@ _PUBLIC_ void ndr_print_echo_TestDoublePointer(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call rpcecho_calls[] = {
+const struct ndr_interface_call rpcecho_calls[] = {
 	{
 		"echo_AddOne",
 		sizeof(struct echo_AddOne),
