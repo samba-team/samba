@@ -2836,7 +2836,7 @@ static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.trusts = talloc_zero_array(mem_ctx, struct netr_DomainTrust *, count);
+	r.out.trusts = talloc_zero_array(mem_ctx, struct netr_DomainTrust *, r.out.count);
 	if (r.out.trusts == NULL) {
 		talloc_free(mem_ctx);
 		return False;
