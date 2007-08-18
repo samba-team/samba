@@ -27,7 +27,7 @@
 #include "librpc/rpc/dcerpc_table.h"
 #endif
 
-static const struct dcerpc_interface_call *find_function(
+static const struct ndr_interface_call *find_function(
 	const struct dcerpc_interface_table *p,
 	const char *function)
 {
@@ -133,7 +133,7 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
  int main(int argc, const char *argv[])
 {
 	const struct dcerpc_interface_table *p = NULL;
-	const struct dcerpc_interface_call *f;
+	const struct ndr_interface_call *f;
 	const char *pipe_name, *function, *inout, *filename;
 	uint8_t *data;
 	size_t size;

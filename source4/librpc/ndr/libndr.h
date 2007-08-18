@@ -290,6 +290,15 @@ typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, cons
 extern const struct ndr_syntax_id ndr_transfer_syntax;
 extern const struct ndr_syntax_id ndr64_transfer_syntax;
 
+struct ndr_interface_call {
+	const char *name;
+	size_t struct_size;
+	ndr_push_flags_fn_t ndr_push;
+	ndr_pull_flags_fn_t ndr_pull;
+	ndr_print_function_t ndr_print;
+	BOOL async;
+};
+
 /* FIXME: Use represent_as instead */
 struct dom_sid;
 NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);

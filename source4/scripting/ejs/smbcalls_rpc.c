@@ -182,7 +182,7 @@ static int ejs_irpc_call(int eid, struct MprVar *io,
 	NTSTATUS status;
 	void *ptr;
 	struct ejs_rpc *ejs;
-	const struct dcerpc_interface_call *call;
+	const struct ndr_interface_call *call;
 	struct ejs_irpc_connection *p;
 	struct irpc_request **reqs;
 	int i, count;
@@ -285,7 +285,7 @@ done:
 	void *ptr;
 	struct rpc_request *req;
 	struct ejs_rpc *ejs;
-	const struct dcerpc_interface_call *call;
+	const struct ndr_interface_call *call;
 
 	if (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "rpc_call invalid arguments");
