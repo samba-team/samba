@@ -322,7 +322,7 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.count = r.in.count;
-	r.out.infos = talloc_zero_array(mem_ctx, struct unixinfo_GetPWUidInfo, *r.in.count);
+	r.out.infos = talloc_zero_array(mem_ctx, struct unixinfo_GetPWUidInfo, *r.out.count);
 	if (r.out.infos == NULL) {
 		talloc_free(mem_ctx);
 		return False;
