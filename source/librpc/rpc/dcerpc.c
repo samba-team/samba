@@ -1317,7 +1317,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 						TALLOC_CTX *mem_ctx, 
 						void *r)
 {
-	const struct dcerpc_interface_call *call;
+	const struct ndr_interface_call *call;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB request;
@@ -1391,7 +1391,7 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	void *r = req->ndr.struct_ptr;
 	uint32_t opnum = req->ndr.opnum;
 	const struct dcerpc_interface_table *table = req->ndr.table;
-	const struct dcerpc_interface_call *call = &table->calls[opnum];
+	const struct ndr_interface_call *call = &table->calls[opnum];
 
 	/* make sure the recv code doesn't free the request, as we
 	   need to grab the flags element before it is freed */

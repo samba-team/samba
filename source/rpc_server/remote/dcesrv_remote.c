@@ -156,7 +156,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	struct dcesrv_remote_private *private = dce_call->context->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const struct dcerpc_interface_table *table = dce_call->context->iface->private;
-	const struct dcerpc_interface_call *call;
+	const struct ndr_interface_call *call;
 	const char *name;
 
 	name = table->calls[opnum].name;

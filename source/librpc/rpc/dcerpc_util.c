@@ -33,8 +33,8 @@
 /*
   find a dcerpc call on an interface by name
 */
-const struct dcerpc_interface_call *dcerpc_iface_find_call(const struct dcerpc_interface_table *iface,
-							   const char *name)
+const struct ndr_interface_call *dcerpc_iface_find_call(const struct dcerpc_interface_table *iface,
+							const char *name)
 {
 	int i;
 	for (i=0;i<iface->num_calls;i++) {

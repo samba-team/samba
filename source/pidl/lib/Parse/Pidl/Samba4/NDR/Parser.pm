@@ -2281,7 +2281,7 @@ sub FunctionTable($$)
 	return if ($#{$interface->{FUNCTIONS}}+1 == 0);
 	return unless defined ($interface->{PROPERTIES}->{uuid});
 
-	$self->pidl("static const struct dcerpc_interface_call $interface->{NAME}\_calls[] = {");
+	$self->pidl("static const struct ndr_interface_call $interface->{NAME}\_calls[] = {");
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
 		next if not defined($d->{OPNUM});
 		$self->pidl("\t{");
