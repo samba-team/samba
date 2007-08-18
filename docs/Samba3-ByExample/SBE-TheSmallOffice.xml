@@ -5,11 +5,11 @@
 
 	<para>
 	<link linkend="simple"/> focused on the basics of simple yet effective
-	network solutions. Network administrators who take pride in their work 
-	(that's most of us, right?) take care to deliver what our users want, 
+	network solutions. Network administrators who take pride in their work
+	(that's most of us, right?) take care to deliver what our users want,
 	but not too much more. If we make things too complex, we confound our users
-	and increase costs of network ownership. A professional network manager 
-	avoids the temptation to put too much pizazz into the way that the network 
+	and increase costs of network ownership. A professional network manager
+	avoids the temptation to put too much pizazz into the way that the network
 	operates. Some creativity is helpful, but keep it under control &smbmdash;
 	good advice that the following two scenarios illustrate.
 	</para>
@@ -60,10 +60,9 @@
 	</para>
 
 	<para>
-	Some of the Windows clients are nearly past their use-by date. 
-	You found damaged and unusable software on some of the workstations
-	that came with the acquired business and found some machines 
-	in need of both hardware and software maintenance. 
+	Some of the Windows clients are nearly past their use-by date.  You found damaged and unusable software on
+	some of the workstations that came with the acquired business and found some machines in need of both
+	hardware and software maintenance.
 	</para>
 
 	<sect2>
@@ -143,11 +142,11 @@
 	</itemizedlist>
 
 	<para>
-	In this instance the installed Linux system is assumed to be a Red Hat Linux Fedora Core2 server 
+	In this instance the installed Linux system is assumed to be a Red Hat Linux Fedora Core2 server
 	(as in <link linkend="AccountingOffice"/>).
-	
+
 	</para>
-	
+
 
 	<sect2>
 		<title>Technical Issues</title>
@@ -165,7 +164,7 @@
 		</para>
 
                 <para>
-		All printers will be configured as DHCP clients. The DHCP server will assign 
+		All printers will be configured as DHCP clients. The DHCP server will assign
 		the printer a fixed IP address by way of its Ethernet interface (MAC) address.
 		See <link linkend="dhcp01"/>.
                 </para>
@@ -189,8 +188,8 @@
 		<indexterm><primary>Ethernet switch</primary></indexterm>
 		You have split the network into two separate areas. Each has its own Ethernet switch.
 		There are 20 users on the accounting network and 32 users on the financial services
-		network. The server has two network interfaces, one serving each network. The 
-		network printers will be located in a central area. You plan to install the new 
+		network. The server has two network interfaces, one serving each network. The
+		network printers will be located in a central area. You plan to install the new
 		printers and keep the old printer in use also.
 		</para>
 
@@ -202,7 +201,7 @@
 		</para>
 
 		<para>
-		Given that DNS will not be used, you will configure WINS name resolution for UNIX 
+		Given that DNS will not be used, you will configure WINS name resolution for UNIX
 		hostname name resolution.
 		</para>
 
@@ -339,7 +338,7 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 		</para></step>
 
 		<step><para>
-		Install the &smb.conf; file as shown in <link linkend="acct2conf"/> and 
+		Install the &smb.conf; file as shown in <link linkend="acct2conf"/> and
 		<link linkend="acct3conf"/>. Combine these two examples to form a single
 		<filename>/etc/samba/smb.conf</filename> file.
 		</para></step>
@@ -362,7 +361,7 @@ Retype new SMB password: XXXXXXX
 
 		<step><para>
 		<indexterm><primary>username map</primary></indexterm>
-		Create the username map file to permit the <constant>root</constant> account to be called 
+		Create the username map file to permit the <constant>root</constant> account to be called
 		<constant>Administrator</constant> from the Windows network environment. To do this, create
 		the file <filename>/etc/samba/smbusers</filename> with the following contents:
 <screen>
@@ -392,7 +391,7 @@ root = Administrator
 		<step><para>
 		<indexterm><primary>initGrps.sh</primary></indexterm>
 		Create and map Windows Domain Groups to UNIX groups. A sample script is provided in
-		<link linkend="initGrps"/>. Create a file containing this script. We called ours 
+		<link linkend="initGrps"/>. Create a file containing this script. We called ours
 		<filename>/etc/samba/initGrps.sh</filename>. Set this file so it can be executed,
 		and then execute the script. Sample output should be as follows:
 
@@ -422,7 +421,7 @@ net groupmap add ntgroup="Financial Services" unixgroup=finsrvcs type=d
 
 <screen>
 &rootprompt; chmod 755 initGrps.sh
-&rootprompt; cd /etc/samba 
+&rootprompt; cd /etc/samba
 &rootprompt; ./initGrps.sh
 Updated mapping entry for Domain Admins
 Updated mapping entry for Domain Users
@@ -432,7 +431,7 @@ Successfully added group Accounts Dept to the mapping db
 No rid or sid specified, choosing algorithmic mapping
 Successfully added group Domain Guests to the mapping db
 
-&rootprompt; cd /etc/samba 
+&rootprompt; cd /etc/samba
 &rootprompt; net groupmap list | sort
 Account Operators (S-1-5-32-548) -> -1
 Accounts Dept (S-1-5-21-194350-25496802-3394589-2003) -> acctsdep
@@ -479,7 +478,7 @@ Users (S-1-5-32-545) -> -1
 		Create the directory mount point for the disk subsystem that is mounted to provide
 		data storage for company files. In this case the mount point is indicated in the &smb.conf;
 		file is <filename>/data</filename>. Format the file system as required, mount the formatted
-		file system partition using <command>mount</command>, 
+		file system partition using <command>mount</command>,
 		and make the appropriate changes in <filename>/etc/fstab</filename>.
 		</para></step>
 
@@ -642,11 +641,11 @@ hosts:	files wins
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="show add printer wizard">No</smbconfoption>
-<smbconfoption name="add user script">/usr/sbin/useradd -m '%u'</smbconfoption>
+<smbconfoption name="add user script">/usr/sbin/useradd -m -G users '%u'</smbconfoption>
 <smbconfoption name="delete user script">/usr/sbin/userdel -r '%u'</smbconfoption>
 <smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
 <smbconfoption name="delete group script">/usr/sbin/groupdel '%g'</smbconfoption>
-<smbconfoption name="add user to group script">/usr/sbin/usermod -G '%g' '%u'</smbconfoption>
+<smbconfoption name="add user to group script">/usr/sbin/usermod -A '%g' '%u'</smbconfoption>
 <smbconfoption name="add machine script">/usr/sbin/useradd -s /bin/false -d /var/lib/nobody '%u'</smbconfoption>
 <smbconfoption name="logon script">scripts\login.bat</smbconfoption>
 <smbconfoption name="logon path"> </smbconfoption>
@@ -730,12 +729,12 @@ Loaded services file OK.
         name resolve order = wins bcast hosts
         printcap name = CUPS
         show add printer wizard = No
-        add user script = /usr/sbin/useradd -m '%u'
+        add user script = /usr/sbin/useradd -m -G users '%u'
         delete user script = /usr/sbin/userdel -r '%u'
         add group script = /usr/sbin/groupadd '%g'
         delete group script = /usr/sbin/groupdel '%g'
-        add user to group script = /usr/sbin/usermod -G '%g' '%u'
-        add machine script = /usr/sbin/useradd 
+        add user to group script = /usr/sbin/usermod -A '%g' '%u'
+        add machine script = /usr/sbin/useradd
 				-s /bin/false -d /var/lib/nobody '%u'
         logon script = scripts\logon.bat
         logon path =
@@ -776,7 +775,7 @@ $rootprompt; ps ax | grep winbind
 			<emphasis>TOSHARG2</emphasis>, Chapter 23, Section 23.3. The single instance of
 			<command>smbd</command> is normal.
 			</para></step>
-	
+
 			<step><para>
 			<indexterm><primary>anonymous connection</primary></indexterm>
 			Check that an anonymous connection can be made to the Samba server:
@@ -830,7 +829,7 @@ hplj4 (192.168.1.11) at 08:00:46:7A:35:E4 [ether] on eth0
 			IP address from which the printer has responded and the entry for it in the
 			<filename>/etc/dhcpd.conf</filename> file.
 			</para></step>
-	
+
 			<step><para>
 			<indexterm><primary>authenticated connection</primary></indexterm>
 			Make an authenticated connection to the server using the <command>smbclient</command> tool:
@@ -850,7 +849,7 @@ smb: \&gt; dir
 smb: \> q
 </screen>
 			</para></step>
-	
+
 		</procedure>
 
 		</sect2>
@@ -871,7 +870,7 @@ smb: \> q
 		Join the Windows Domain called <constant>BILLMORE</constant>. Use the Domain Administrator
 		username <constant>root</constant> and the SMB password you assigned to this account.
 		A detailed step-by-step procedure for joining a Windows 200x/XP Professional client to
-		a Windows Domain is given in <link linkend="appendix"/>, <link linkend="domjoin"/>. 
+		a Windows Domain is given in <link linkend="appendix"/>, <link linkend="domjoin"/>.
 		Reboot the machine as prompted and then log on using a Domain User account.
 		</para></step>
 
@@ -931,7 +930,7 @@ smb: \> q
 				<step><para>
 				In the <guimenuitem>Network</guimenuitem> panel, enter the name of
 				the print queue on the Samba server as follows: <constant>\\SERVER\hplj4</constant>.
-				Click <menuchoice> 
+				Click <menuchoice>
 					<guibutton>OK</guibutton>
 					<guibutton>OK</guibutton>
 					</menuchoice> to complete the installation.
@@ -1156,7 +1155,7 @@ smb: \> q
 	<answer>
 
 		<para>
-		This is a nasty problem. Fortunately, there is a solution. 
+		This is a nasty problem. Fortunately, there is a solution.
 		</para>
 
 		<procedure>
@@ -1165,7 +1164,7 @@ smb: \> q
 			</para></step>
 
 			<step><para>
-			Rename the <filename>group_mapping.tdb</filename> file. 
+			Rename the <filename>group_mapping.tdb</filename> file.
 			</para></step>
 
 			<step><para>
@@ -1193,7 +1192,7 @@ smb: \> q
 
 		<para>
 		The group called <guimenu>Administrators</guimenu> is representative of the same account that would be
-		present as the Local Group account on a Domain Member server or workstation. Samba uses only Domain 
+		present as the Local Group account on a Domain Member server or workstation. Samba uses only Domain
 		Groups at this time. A Workstation or Server Local Group has no meaning in a Samba context. This
 		may change at some later date. These accounts are provided only so that security objects are correctly shown.
 		</para>
