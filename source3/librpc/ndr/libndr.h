@@ -296,6 +296,11 @@ struct ndr_interface_call {
         BOOL async;
 };
 
+struct ndr_interface_string_array {
+	uint32_t count;
+	const char * const *names;
+};
+
 #include "dcerpc.h"
 
 #endif /* __LIBNDR_H__ */

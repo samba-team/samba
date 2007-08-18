@@ -11044,7 +11044,7 @@ const char * const lsarpc_endpoint_strings[] = {
 	"ncalrpc:", 
 };
 
-const struct dcerpc_endpoint_list lsarpc_endpoints = {
+const struct ndr_interface_string_array lsarpc_endpoints = {
 	.count	= 5,
 	.names	= lsarpc_endpoint_strings
 };
@@ -11053,7 +11053,7 @@ const char * const lsarpc_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list lsarpc_authservices = {
+const struct ndr_interface_string_array lsarpc_authservices = {
 	.count	= 5,
 	.names	= lsarpc_authservice_strings
 };
