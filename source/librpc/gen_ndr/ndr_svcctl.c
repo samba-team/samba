@@ -5291,7 +5291,7 @@ _PUBLIC_ void ndr_print_svcctl_SCSendTSMessage(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call svcctl_calls[] = {
+const struct ndr_interface_call svcctl_calls[] = {
 	{
 		"svcctl_CloseServiceHandle",
 		sizeof(struct svcctl_CloseServiceHandle),

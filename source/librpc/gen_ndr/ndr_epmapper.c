@@ -2582,7 +2582,7 @@ _PUBLIC_ void ndr_print_epm_MapAuth(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call epmapper_calls[] = {
+const struct ndr_interface_call epmapper_calls[] = {
 	{
 		"epm_Insert",
 		sizeof(struct epm_Insert),

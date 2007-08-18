@@ -287,6 +287,15 @@ typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, cons
 extern const struct ndr_syntax_id ndr_transfer_syntax;
 extern const struct ndr_syntax_id ndr64_transfer_syntax;
 
+struct ndr_interface_call {
+        const char *name;
+        size_t struct_size;
+        ndr_push_flags_fn_t ndr_push;
+        ndr_pull_flags_fn_t ndr_pull;
+        ndr_print_function_t ndr_print;
+        BOOL async;
+};
+
 #include "dcerpc.h"
 
 #endif /* __LIBNDR_H__ */

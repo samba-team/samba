@@ -12713,7 +12713,7 @@ _PUBLIC_ void ndr_print_netr_NETRSERVERGETTRUSTINFO(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-const struct dcerpc_interface_call netlogon_calls[] = {
+const struct ndr_interface_call netlogon_calls[] = {
 	{
 		"netr_LogonUasLogon",
 		sizeof(struct netr_LogonUasLogon),
