@@ -13099,7 +13099,7 @@ const char * const netlogon_endpoint_strings[] = {
 	"ncalrpc:", 
 };
 
-const struct dcerpc_endpoint_list netlogon_endpoints = {
+const struct ndr_interface_string_array netlogon_endpoints = {
 	.count	= 3,
 	.names	= netlogon_endpoint_strings
 };
@@ -13108,7 +13108,7 @@ const char * const netlogon_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list netlogon_authservices = {
+const struct ndr_interface_string_array netlogon_authservices = {
 	.count	= 3,
 	.names	= netlogon_authservice_strings
 };

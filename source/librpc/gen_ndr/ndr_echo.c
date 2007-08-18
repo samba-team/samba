@@ -1430,7 +1430,7 @@ const char * const rpcecho_endpoint_strings[] = {
 	"ncalrpc:", 
 };
 
-const struct dcerpc_endpoint_list rpcecho_endpoints = {
+const struct ndr_interface_string_array rpcecho_endpoints = {
 	.count	= 3,
 	.names	= rpcecho_endpoint_strings
 };
@@ -1439,7 +1439,7 @@ const char * const rpcecho_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list rpcecho_authservices = {
+const struct ndr_interface_string_array rpcecho_authservices = {
 	.count	= 3,
 	.names	= rpcecho_authservice_strings
 };

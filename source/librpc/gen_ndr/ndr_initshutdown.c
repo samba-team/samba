@@ -399,7 +399,7 @@ const char * const initshutdown_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\InitShutdown]", 
 };
 
-const struct dcerpc_endpoint_list initshutdown_endpoints = {
+const struct ndr_interface_string_array initshutdown_endpoints = {
 	.count	= 1,
 	.names	= initshutdown_endpoint_strings
 };
@@ -408,7 +408,7 @@ const char * const initshutdown_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list initshutdown_authservices = {
+const struct ndr_interface_string_array initshutdown_authservices = {
 	.count	= 1,
 	.names	= initshutdown_authservice_strings
 };

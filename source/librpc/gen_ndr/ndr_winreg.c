@@ -4389,7 +4389,7 @@ const char * const winreg_endpoint_strings[] = {
 	"ncalrpc:", 
 };
 
-const struct dcerpc_endpoint_list winreg_endpoints = {
+const struct ndr_interface_string_array winreg_endpoints = {
 	.count	= 3,
 	.names	= winreg_endpoint_strings
 };
@@ -4398,7 +4398,7 @@ const char * const winreg_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list winreg_authservices = {
+const struct ndr_interface_string_array winreg_authservices = {
 	.count	= 3,
 	.names	= winreg_authservice_strings
 };

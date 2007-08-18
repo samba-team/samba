@@ -5313,7 +5313,7 @@ const char * const netdfs_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\netdfs]", 
 };
 
-const struct dcerpc_endpoint_list netdfs_endpoints = {
+const struct ndr_interface_string_array netdfs_endpoints = {
 	.count	= 1,
 	.names	= netdfs_endpoint_strings
 };
@@ -5322,7 +5322,7 @@ const char * const netdfs_authservice_strings[] = {
 	"host", 
 };
 
-const struct dcerpc_authservice_list netdfs_authservices = {
+const struct ndr_interface_string_array netdfs_authservices = {
 	.count	= 1,
 	.names	= netdfs_authservice_strings
 };
