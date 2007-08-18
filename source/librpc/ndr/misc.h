@@ -11,6 +11,11 @@ struct GUID {
 	uint8_t node[6];
 }/* [noprint,gensize,public,noejs] */;
 
+struct ndr_syntax_id {
+	struct GUID uuid;
+	uint32_t if_version;
+}/* [public] */;
+
 struct policy_handle {
 	uint32_t handle_type;
 	struct GUID uuid;

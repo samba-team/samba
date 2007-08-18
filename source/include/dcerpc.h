@@ -24,7 +24,7 @@ struct dcerpc_authservice_list {
 
 struct dcerpc_interface_table {
         const char *name;
-        struct dcerpc_syntax_id syntax_id;
+        struct ndr_syntax_id syntax_id;
         const char *helpstring;
         uint32_t num_calls;
         const struct dcerpc_interface_call *calls;

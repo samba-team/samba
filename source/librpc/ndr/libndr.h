@@ -25,11 +25,6 @@
 #include "librpc/ndr/misc.h"
 #include "librpc/ndr/security.h"
 
-struct dcerpc_syntax_id {
-	struct GUID uuid;
-	uint32_t if_version;
-}/* [public] */;
-
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
 */
@@ -289,8 +284,8 @@ typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, const void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, const void *);
 
-extern const struct dcerpc_syntax_id ndr_transfer_syntax;
-extern const struct dcerpc_syntax_id ndr64_transfer_syntax;
+extern const struct ndr_syntax_id ndr_transfer_syntax;
+extern const struct ndr_syntax_id ndr64_transfer_syntax;
 
 #include "dcerpc.h"
 
