@@ -831,6 +831,119 @@ shared using Samba.  samba-vscan supports various virus scanners and is maintain
 </para>
 
 </sect2>
+
+<sect2>
+<title>vscan-clamav</title>
+<para>
+Samba users have been using the RPMS from SerNet without a problem.
+OpenSUSE Linux users have also used the vscan scanner for quite some time
+with excellent results. It does impact overall write performance though.
+</para>
+
+<para>
+The following share stanza is a good guide for those wanting to configure vscan-clamav:
+</para>
+
+<screen>
+[share]
+vfs objects = vscan-clamav
+vscan-clamav: config-file = /etc/samba/vscan-clamav.conf
+</screen>
+
+<para>
+The following example of the <filename>vscan-clamav.conf</filename> file may help to get this
+fully operational:
+</para>
+
+<screen>
+<title>VFS: Vscan ClamAV Control File</title>
+#
+# /etc/samba/vscan-clamav.conf
+#
+
+[samba-vscan]
+; run-time configuration for vscan-samba using
+; clamd
+; all options are set to default values
+
+; do not scan files larger than X bytes. If set to 0 (default),
+; this feature is disable (i.e. all files are scanned)
+max file size = 10485760
+
+; log all file access (yes/no). If set to yes, every access will
+; be logged. If set to no (default), only access to infected files
+; will be logged
+verbose file logging = no
+
+; if set to yes (default), a file will be scanned while opening
+scan on open = yes
+; if set to yes, a file will be scanned while closing (default is yes)
+scan on close = yes
+
+; if communication to clamd fails, should access to file denied?
+; (default: yes)
+deny access on error = no
+
+; if daemon failes with a minor error (corruption, etc.),
+; should access to file denied?
+; (default: yes)
+deny access on minor error = no
+
+; send a warning message via Windows Messenger service
+; when virus is found?
+; (default: yes)
+send warning message = yes
+
+; what to do with an infected file
+; quarantine: try to move to quantine directory
+; delete:     delete infected file
+; nothing:    do nothing (default)
+infected file action = quarantine
+
+; where to put infected files - you really want to change this!
+quarantine directory  = /opt/clamav/quarantine
+; prefix for files in quarantine
+quarantine prefix = vir-
+
+; as Windows tries to open a file multiple time in a (very) short time
+; of period, samba-vscan use a last recently used file mechanism to avoid
+; multiple scans of a file. This setting specified the maximum number of
+; elements of the last recently used file list. (default: 100)
+max lru files entries = 100
+
+; an entry is invalidad after lru file entry lifetime (in seconds).
+; (Default: 5)
+lru file entry lifetime = 5
+
+; exclude files from being scanned based on the MIME-type! Semi-colon
+; seperated list (default: empty list). Use this with care!
+exclude file types =
+
+; socket name of clamd (default: /var/run/clamd). Setting will be ignored if
+; libclamav is used
+clamd socket name = /tmp/clamd
+
+; limits, if vscan-clamav was build for using the clamav library (libclamav)
+; instead of clamd
+
+; maximum number of files in archive (default: 1000)
+libclamav max files in archive = 1000
+
+; maximum archived file size, in bytes (default: 10 MB)
+libclamav max archived file size = 5242880
+
+; maximum recursion level (default: 5)
+libclamav max recursion level = 5
+</screen>
+
+<para>
+Obviously, a running clam daemon is necessary for this to work. This is a working example for me using ClamAV.
+The ClamAV documentation should provide additional configuration examples. On your system these may be located
+under the <filename>/usr/share/doc/</filename> directory. Some examples may also target other virus scanners,
+any of which can be used.
+</para>
+
+</sect2>
 </sect1>
 
 </chapter>
