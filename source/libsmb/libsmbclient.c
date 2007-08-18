@@ -3536,6 +3536,11 @@ smbc_lseekdir_ctx(SMBCCTX *context,
 
 	}
 
+        if (offset == -1) {     /* Seek to the end of the list */
+                dir->dir_next = NULL;
+                return 0;
+        }
+
 	/* Now, run down the list and make sure that the entry is OK       */
 	/* This may need to be changed if we change the format of the list */
 
