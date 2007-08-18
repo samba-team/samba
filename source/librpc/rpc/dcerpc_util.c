@@ -151,7 +151,7 @@ static const struct {
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
-	struct dcerpc_syntax_id syntax;
+	struct ndr_syntax_id syntax;
 	NTSTATUS status;
 
 	switch(epm_floor->lhs.protocol) {
@@ -422,7 +422,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct dcerpc_syntax_id *syntax)
+NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
 	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
@@ -445,7 +445,7 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct dcerpc_sy
 	return status;
 }
 
-static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct dcerpc_syntax_id *syntax)
+static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
 

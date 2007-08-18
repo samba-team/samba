@@ -42,7 +42,7 @@ struct dcesrv_connection_context;
 
 struct dcesrv_interface {
 	const char *name;
-	struct dcerpc_syntax_id syntax_id;
+	struct ndr_syntax_id syntax_id;
 
 	/* this function is called when the client binds to this interface  */
 	NTSTATUS (*bind)(struct dcesrv_call_state *, const struct dcesrv_interface *);
