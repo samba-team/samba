@@ -243,7 +243,58 @@ is the best tool in your network environment.
 	</itemizedlist>
 
 	</sect2>
+	<sect2>
+	<title>Remote Management with ThinLinc</title>
+	<para>
+	Another alternative for remote access is <emphasis>ThinLinc</emphasis> from Cendio.
+	</para>
 
+	<para>
+<indexterm><primary>ThinLinc</primary></indexterm>
+<indexterm><primary>terminal server</primary></indexterm>
+<indexterm><primary>Linux</primary></indexterm>
+<indexterm><primary>Solaris</primary></indexterm>
+<indexterm><primary>TightVNC</primary></indexterm>
+<indexterm><primary>SSH</primary></indexterm>
+<indexterm><primary>NFS</primary></indexterm>
+<indexterm><primary>PulseAudio</primary></indexterm>
+	ThinLinc is a terminal server solution that is available for Linux and Solaris based on standard
+	protocols such as SSH, TightVNC, NFS and PulseAudio.
+	</para>
+
+	<para>
+<indexterm><primary>LAN</primary></indexterm>
+<indexterm><primary>thin client</primary></indexterm>
+	ThinLinc an be used both in the LAN environment to implement a Thin Client strategy for an organization, and as
+	secure remote access solution for people working from remote locations, even over smallband connections.
+	ThinLinc is free to use for a single concurrent user.
+	</para>
+
+	<para>
+<indexterm><primary>Citrix</primary></indexterm>
+<indexterm><primary>Windows Terminal Server</primary></indexterm>
+<indexterm><primary>Java</primary></indexterm>
+	The product can also be used as a frontend to access Windows Terminal Server or Citrix farms, or even Windows
+	XP machines, securing the connection via the ssh protocol. The client is available both for Linux (supporting
+	all Linux distributions as well as numerous thin terminals) and for Windows. A Java-based Web client is also
+	available.
+	</para>
+
+	<para>
+	ThinLinc may be evaluated by connecting to Cendio's demo system, see
+	<ulink noescape="1" url="http://www.cendio.com">Cendio's</ulink> web site
+	<ulink noescape="1" url="http://www.cendio.com/testdrive">testdrive</ulink> center.
+	</para>
+
+	<para>
+	Cendio is a major contributor to several open source projects including
+	<ulink noescape="1" url="http://www.tightvnc.com">TightVNC</ulink>,
+	<ulink noescape="1" url="http://pulseaudio.org">PulseAudio</ulink> , unfsd,
+	<ulink noescape="1" url="http://www.python.org">Python</ulink> and
+	<ulink noescape="1" url="http://www.rdesktop.org">rdesktop</ulink>.
+	</para>
+
+	</sect2>
 </sect1>
 
 <sect1>
