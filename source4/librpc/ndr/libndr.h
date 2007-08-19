@@ -304,6 +304,21 @@ struct ndr_interface_string_array {
 	const char * const *names;
 };
 
+struct ndr_interface_table {
+	const char *name;
+	struct ndr_syntax_id syntax_id;
+	const char *helpstring;
+	uint32_t num_calls;
+	const struct ndr_interface_call *calls;
+	const struct ndr_interface_string_array *endpoints;
+	const struct ndr_interface_string_array *authservices;
+};
+
+struct ndr_interface_list {
+	struct ndr_interface_list *prev, *next;
+	const struct ndr_interface_table *table;
+};
+
 /* FIXME: Use represent_as instead */
 struct dom_sid;
 NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);

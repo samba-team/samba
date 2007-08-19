@@ -30,7 +30,7 @@
 /* open a rpc connection to the chosen binding string */
 _PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
 				struct dcerpc_pipe **p, 
-				const struct dcerpc_interface_table *table)
+				const struct ndr_interface_table *table)
 {
         NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -54,7 +54,7 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 /* open a rpc connection to a specific transport */
 NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx, 
 					  struct dcerpc_pipe **p, 
-					  const struct dcerpc_interface_table *table,
+					  const struct ndr_interface_table *table,
 					  enum dcerpc_transport_t transport,
 					  uint32_t assoc_group_id)
 {
@@ -97,7 +97,7 @@ static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 	
 	status = torture_rpc_connection(tctx, 
 				(struct dcerpc_pipe **)data, 
-				(const struct dcerpc_interface_table *)tctx->active_tcase->data);
+				(const struct ndr_interface_table *)tctx->active_tcase->data);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
@@ -112,7 +112,7 @@ static bool torture_rpc_teardown (struct torture_context *tcase, void *data)
 
 _PUBLIC_ struct torture_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
 								const char *name,
-								const struct dcerpc_interface_table *table)
+								const struct ndr_interface_table *table)
 {
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, name);
 

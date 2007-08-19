@@ -285,7 +285,7 @@ NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c)
 struct auth_schannel_state {
 	struct dcerpc_pipe *pipe;
 	struct cli_credentials *credentials;
-	const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
 	uint8_t auth_level;
 };
 
@@ -344,7 +344,7 @@ static void continue_bind_auth(struct composite_context *ctx)
 */
 struct composite_context *dcerpc_bind_auth_schannel_send(TALLOC_CTX *tmp_ctx, 
 							 struct dcerpc_pipe *p,
-							 const struct dcerpc_interface_table *table,
+							 const struct ndr_interface_table *table,
 							 struct cli_credentials *credentials,
 							 uint8_t auth_level)
 {
@@ -392,7 +392,7 @@ NTSTATUS dcerpc_bind_auth_schannel_recv(struct composite_context *c)
  */
 NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
 				   struct dcerpc_pipe *p,
-				   const struct dcerpc_interface_table *table,
+				   const struct ndr_interface_table *table,
 				   struct cli_credentials *credentials,
 				   uint8_t auth_level)
 {

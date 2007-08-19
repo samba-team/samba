@@ -459,7 +459,7 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc_recv(struct composite_context *c)
 struct pipe_connect_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding *binding;
-	const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
 	struct cli_credentials *credentials;
 };
 
@@ -693,7 +693,7 @@ static void dcerpc_connect_timeout_handler(struct event_context *ev, struct time
 */
 struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 						     struct dcerpc_binding *binding,
-						     const struct dcerpc_interface_table *table,
+						     const struct ndr_interface_table *table,
 						     struct cli_credentials *credentials,
 						     struct event_context *ev)
 {
@@ -781,7 +781,7 @@ NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem
 NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_pipe **pp,
 			       struct dcerpc_binding *binding,
-			       const struct dcerpc_interface_table *table,
+			       const struct ndr_interface_table *table,
 			       struct cli_credentials *credentials,
 			       struct event_context *ev)
 {
@@ -808,7 +808,7 @@ static void continue_pipe_connect_b(struct composite_context *ctx);
 */
 struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 						   const char *binding,
-						   const struct dcerpc_interface_table *table,
+						   const struct ndr_interface_table *table,
 						   struct cli_credentials *credentials,
 						   struct event_context *ev)
 {
@@ -904,7 +904,7 @@ NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
 NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
 			     struct dcerpc_pipe **pp, 
 			     const char *binding,
-			     const struct dcerpc_interface_table *table,
+			     const struct ndr_interface_table *table,
 			     struct cli_credentials *credentials,
 			     struct event_context *ev)
 {

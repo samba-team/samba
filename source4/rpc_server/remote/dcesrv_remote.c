@@ -37,7 +37,7 @@ static NTSTATUS remote_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
         NTSTATUS status;
-		const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
         struct dcesrv_remote_private *private;
 	const char *binding = lp_parm_string(-1, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
@@ -124,7 +124,7 @@ static void remote_op_unbind(struct dcesrv_connection_context *context, const st
 static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
 	NTSTATUS status;
-	const struct dcerpc_interface_table *table = dce_call->context->iface->private;
+	const struct ndr_interface_table *table = dce_call->context->iface->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
 	dce_call->fault_code = 0;
@@ -155,7 +155,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 {
 	struct dcesrv_remote_private *private = dce_call->context->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
-	const struct dcerpc_interface_table *table = dce_call->context->iface->private;
+	const struct ndr_interface_table *table = dce_call->context->iface->private;
 	const struct ndr_interface_call *call;
 	const char *name;
 
@@ -188,7 +188,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
 {
 	NTSTATUS status;
-	const struct dcerpc_interface_table *table = dce_call->context->iface->private;
+	const struct ndr_interface_table *table = dce_call->context->iface->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
         /* unravel the NDR for the packet */
@@ -204,7 +204,7 @@ static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const struct dcesrv_interface *iface)
 {
 	int i;
-	const struct dcerpc_interface_table *table = iface->private;
+	const struct ndr_interface_table *table = iface->private;
 
 	for (i=0;i<table->endpoints->count;i++) {
 		NTSTATUS ret;
@@ -252,7 +252,7 @@ static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const stru
 	return NT_STATUS_OK;
 }
 
-static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct dcerpc_interface_table *if_tabl)
+static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct ndr_interface_table *if_tabl)
 {
 	iface->name = if_tabl->name;
 	iface->syntax_id = if_tabl->syntax_id;
@@ -272,7 +272,7 @@ static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct d
 
 static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const struct GUID *uuid, uint32_t if_version)
 {
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
 		if (l->table->syntax_id.if_version == if_version &&
@@ -286,7 +286,7 @@ static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const st
 
 static BOOL remote_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
-	const struct dcerpc_interface_table *tbl = idl_iface_by_name(name);
+	const struct ndr_interface_table *tbl = idl_iface_by_name(name);
 
 	if (tbl)
 		return remote_fill_interface(iface, tbl);

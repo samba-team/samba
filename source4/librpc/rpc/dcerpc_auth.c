@@ -29,7 +29,7 @@
 /*
   return the rpc syntax and transfer syntax given the pipe uuid and version
 */
-static NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
+static NTSTATUS dcerpc_init_syntaxes(const struct ndr_interface_table *table,
 			      struct ndr_syntax_id *syntax,
 			      struct ndr_syntax_id *transfer_syntax)
 {
@@ -47,7 +47,7 @@ static NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
 */
 struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 						     struct dcerpc_pipe *p,
-						     const struct dcerpc_interface_table *table)
+						     const struct ndr_interface_table *table)
 {
 	struct ndr_syntax_id syntax;
 	struct ndr_syntax_id transfer_syntax;
@@ -86,7 +86,7 @@ NTSTATUS dcerpc_bind_auth_none_recv(struct composite_context *ctx)
   Perform sync non-authenticated dcerpc bind
 */
 NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
-			       const struct dcerpc_interface_table *table)
+			       const struct ndr_interface_table *table)
 {
 	struct composite_context *ctx;
 
@@ -209,7 +209,7 @@ static void bind_auth_recv_bindreply(struct composite_context *creq)
 
 struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 						struct dcerpc_pipe *p,
-						const struct dcerpc_interface_table *table,
+						const struct ndr_interface_table *table,
 						struct cli_credentials *credentials,
 						uint8_t auth_type, uint8_t auth_level,
 						const char *service)
@@ -370,7 +370,7 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 */
 
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
-			  const struct dcerpc_interface_table *table,
+			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
 			  uint8_t auth_type, uint8_t auth_level,
 			  const char *service)

@@ -47,7 +47,7 @@ BOOL torture_async_bind(struct torture_context *torture)
 
 	struct composite_context **bind_req;
 	struct dcerpc_pipe **pipe;
-	const struct dcerpc_interface_table **table;
+	const struct ndr_interface_table **table;
 
 	if (!torture_setting_bool(torture, "async", False)) {
 		printf("async bind test disabled - enable async tests to use\n");
@@ -64,7 +64,7 @@ BOOL torture_async_bind(struct torture_context *torture)
 	if (bind_req == NULL) return False;
 	pipe     = talloc_array(torture, struct dcerpc_pipe*, torture_numasync);
 	if (pipe == NULL) return False;
-	table    = talloc_array(torture, const struct dcerpc_interface_table*, torture_numasync);
+	table    = talloc_array(torture, const struct ndr_interface_table*, torture_numasync);
 	if (table == NULL) return False;
 	
 	/* credentials */

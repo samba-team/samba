@@ -110,7 +110,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 {
 	const char *binding, *pipe_name;
-	const struct dcerpc_interface_table *iface;
+	const struct ndr_interface_table *iface;
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	struct cli_credentials *creds;
@@ -176,7 +176,7 @@ done:
   make an irpc call - called via the same interface as rpc
 */
 static int ejs_irpc_call(int eid, struct MprVar *io, 
-			 const struct dcerpc_interface_table *iface, int callnum,
+			 const struct ndr_interface_table *iface, int callnum,
 			 ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
 {
 	NTSTATUS status;
@@ -276,7 +276,7 @@ done:
   code
 */
  int ejs_rpc_call(int eid, int argc, struct MprVar **argv,
-		  const struct dcerpc_interface_table *iface, int callnum,
+		  const struct ndr_interface_table *iface, int callnum,
 		  ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
 {
 	struct MprVar *io;

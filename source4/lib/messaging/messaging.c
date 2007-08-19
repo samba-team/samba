@@ -620,7 +620,7 @@ struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx,
 struct irpc_list {
 	struct irpc_list *next, *prev;
 	struct GUID uuid;
-	const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
 	int callnum;
 	irpc_function_t fn;
 	void *private;
@@ -631,7 +631,7 @@ struct irpc_list {
   register a irpc server function
 */
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
-		       const struct dcerpc_interface_table *table, 
+		       const struct ndr_interface_table *table, 
 		       int callnum, irpc_function_t fn, void *private)
 {
 	struct irpc_list *irpc;
@@ -843,7 +843,7 @@ static void irpc_timeout(struct event_context *ev, struct timed_event *te,
 */
 struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
 				    struct server_id server_id, 
-				    const struct dcerpc_interface_table *table, 
+				    const struct ndr_interface_table *table, 
 				    int callnum, void *r, TALLOC_CTX *ctx)
 {
 	struct irpc_header header;
@@ -933,7 +933,7 @@ NTSTATUS irpc_call_recv(struct irpc_request *irpc)
 */
 NTSTATUS irpc_call(struct messaging_context *msg_ctx, 
 		   struct server_id server_id, 
-		   const struct dcerpc_interface_table *table, 
+		   const struct ndr_interface_table *table, 
 		   int callnum, void *r,
 		   TALLOC_CTX *mem_ctx)
 {

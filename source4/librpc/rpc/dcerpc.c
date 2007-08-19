@@ -1312,7 +1312,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
  */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 						const struct GUID *object,
-						const struct dcerpc_interface_table *table,
+						const struct ndr_interface_table *table,
 						uint32_t opnum, 
 						TALLOC_CTX *mem_ctx, 
 						void *r)
@@ -1390,7 +1390,7 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	TALLOC_CTX *mem_ctx = req->ndr.mem_ctx;
 	void *r = req->ndr.struct_ptr;
 	uint32_t opnum = req->ndr.opnum;
-	const struct dcerpc_interface_table *table = req->ndr.table;
+	const struct ndr_interface_table *table = req->ndr.table;
 	const struct ndr_interface_call *call = &table->calls[opnum];
 
 	/* make sure the recv code doesn't free the request, as we
@@ -1469,7 +1469,7 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 */
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 			    const struct GUID *object,
-			    const struct dcerpc_interface_table *table,
+			    const struct ndr_interface_table *table,
 			    uint32_t opnum, 
 			    TALLOC_CTX *mem_ctx, 
 			    void *r)

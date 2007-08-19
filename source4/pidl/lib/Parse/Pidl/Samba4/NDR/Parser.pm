@@ -2333,7 +2333,7 @@ sub FunctionTable($$)
 	$self->pidl("};");
 	$self->pidl("");
 
-	$self->pidl("\nconst struct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {");
+	$self->pidl("\nconst struct ndr_interface_table dcerpc_table_$interface->{NAME} = {");
 	$self->pidl("\t.name\t\t= \"$interface->{NAME}\",");
 	$self->pidl("\t.syntax_id\t= {");
 	$self->pidl("\t\t" . print_uuid($interface->{UUID}) .",");
@@ -2406,7 +2406,7 @@ sub HeaderInterface($$)
 		if(!defined $interface->{PROPERTIES}->{helpstring}) { $interface->{PROPERTIES}->{helpstring} = "NULL"; }
 		$self->pidl_hdr("#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}");
 
-		$self->pidl_hdr("extern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};");
+		$self->pidl_hdr("extern const struct ndr_interface_table dcerpc_table_$interface->{NAME};");
 		$self->pidl_hdr("NTSTATUS dcerpc_server_$interface->{NAME}_init(void);");
 	}
 
