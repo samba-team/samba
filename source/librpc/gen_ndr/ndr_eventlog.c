@@ -1629,7 +1629,7 @@ const struct ndr_interface_string_array eventlog_authservices = {
 };
 
 
-const struct dcerpc_interface_table dcerpc_table_eventlog = {
+const struct ndr_interface_table dcerpc_table_eventlog = {
 	.name		= "eventlog",
 	.syntax_id	= {
 		{0x82273fdc,0xe32a,0x18c3,{0x3f,0x78},{0x82,0x79,0x29,0xdc,0x23,0xea}},

@@ -4404,7 +4404,7 @@ const struct ndr_interface_string_array winreg_authservices = {
 };
 
 
-const struct dcerpc_interface_table dcerpc_table_winreg = {
+const struct ndr_interface_table dcerpc_table_winreg = {
 	.name		= "winreg",
 	.syntax_id	= {
 		{0x338cd001,0x2244,0x31f1,{0xaa,0xaa},{0x90,0x00,0x38,0x00,0x10,0x03}},

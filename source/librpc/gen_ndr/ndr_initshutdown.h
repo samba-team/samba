@@ -10,7 +10,7 @@
 #define DCERPC_INITSHUTDOWN_VERSION 1.0
 #define DCERPC_INITSHUTDOWN_NAME "initshutdown"
 #define DCERPC_INITSHUTDOWN_HELPSTRING "Init shutdown service"
-extern const struct dcerpc_interface_table dcerpc_table_initshutdown;
+extern const struct ndr_interface_table dcerpc_table_initshutdown;
 NTSTATUS dcerpc_server_initshutdown_init(void);
 #define DCERPC_INITSHUTDOWN_INIT (0x00)
 

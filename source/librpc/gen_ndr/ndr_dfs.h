@@ -10,7 +10,7 @@
 #define DCERPC_NETDFS_VERSION 3.0
 #define DCERPC_NETDFS_NAME "netdfs"
 #define DCERPC_NETDFS_HELPSTRING "Settings for Microsoft Distributed File System"
-extern const struct dcerpc_interface_table dcerpc_table_netdfs;
+extern const struct ndr_interface_table dcerpc_table_netdfs;
 NTSTATUS dcerpc_server_netdfs_init(void);
 #define DCERPC_DFS_GETMANAGERVERSION (0x00)
 
