@@ -145,8 +145,12 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(ctx, gp_inifile_free_context);
 
+#ifdef HAVE_LDAP
 	status = gp_find_file(mem_ctx, flags, unix_path, suffix,
 			      &ini_filename);
+#else
+	status = NT_STATUS_NOT_IMPLEMENTED;
+#endif
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
