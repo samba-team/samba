@@ -19,7 +19,7 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uin
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Insert, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_INSERT, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Insert, (ndr_push_flags_fn_t)ndr_push_epm_Insert);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_INSERT, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Insert, (ndr_push_flags_fn_t)ndr_push_epm_Insert);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -50,7 +50,7 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uin
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Delete, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_DELETE, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Delete, (ndr_push_flags_fn_t)ndr_push_epm_Delete);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_DELETE, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Delete, (ndr_push_flags_fn_t)ndr_push_epm_Delete);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -85,7 +85,7 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uin
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Lookup, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_LOOKUP, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Lookup, (ndr_push_flags_fn_t)ndr_push_epm_Lookup);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_LOOKUP, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Lookup, (ndr_push_flags_fn_t)ndr_push_epm_Lookup);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -121,7 +121,7 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Map, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_MAP, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Map, (ndr_push_flags_fn_t)ndr_push_epm_Map);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_MAP, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_Map, (ndr_push_flags_fn_t)ndr_push_epm_Map);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -154,7 +154,7 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_LookupHandleFree, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_LOOKUPHANDLEFREE, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_LookupHandleFree, (ndr_push_flags_fn_t)ndr_push_epm_LookupHandleFree);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_LOOKUPHANDLEFREE, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_LookupHandleFree, (ndr_push_flags_fn_t)ndr_push_epm_LookupHandleFree);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -185,7 +185,7 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_InqObject, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_INQOBJECT, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_InqObject, (ndr_push_flags_fn_t)ndr_push_epm_InqObject);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_INQOBJECT, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_InqObject, (ndr_push_flags_fn_t)ndr_push_epm_InqObject);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -217,7 +217,7 @@ NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_MgmtDelete, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_MGMTDELETE, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_MgmtDelete, (ndr_push_flags_fn_t)ndr_push_epm_MgmtDelete);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_MGMTDELETE, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_MgmtDelete, (ndr_push_flags_fn_t)ndr_push_epm_MgmtDelete);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -246,7 +246,7 @@ NTSTATUS rpccli_epm_MapAuth(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_MapAuth, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, DCERPC_EPM_MAPAUTH, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_MapAuth, (ndr_push_flags_fn_t)ndr_push_epm_MapAuth);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, NDR_EPM_MAPAUTH, &r, (ndr_pull_flags_fn_t)ndr_pull_epm_MapAuth, (ndr_push_flags_fn_t)ndr_push_epm_MapAuth);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

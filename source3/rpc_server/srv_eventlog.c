@@ -67,7 +67,7 @@ static BOOL api_eventlog_open_eventlog(pipes_struct *p)
 
 static BOOL api_eventlog_close_eventlog(pipes_struct *p)
 {
-	return proxy_eventlog_call( p, DCERPC_EVENTLOG_CLOSEEVENTLOG );	
+	return proxy_eventlog_call( p, NDR_EVENTLOG_CLOSEEVENTLOG );	
 }
 
 static BOOL api_eventlog_get_num_records(pipes_struct *p)

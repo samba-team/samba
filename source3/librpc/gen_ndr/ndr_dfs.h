@@ -6,59 +6,59 @@
 #define _HEADER_NDR_netdfs
 
 #include "librpc/ndr/libndr.h"
-#define DCERPC_NETDFS_UUID "4fc742e0-4a10-11cf-8273-00aa004ae673"
-#define DCERPC_NETDFS_VERSION 3.0
-#define DCERPC_NETDFS_NAME "netdfs"
-#define DCERPC_NETDFS_HELPSTRING "Settings for Microsoft Distributed File System"
+#define NDR_NETDFS_UUID "4fc742e0-4a10-11cf-8273-00aa004ae673"
+#define NDR_NETDFS_VERSION 3.0
+#define NDR_NETDFS_NAME "netdfs"
+#define NDR_NETDFS_HELPSTRING "Settings for Microsoft Distributed File System"
 extern const struct ndr_interface_table ndr_table_netdfs;
 NTSTATUS dcerpc_server_netdfs_init(void);
-#define DCERPC_DFS_GETMANAGERVERSION (0x00)
+#define NDR_DFS_GETMANAGERVERSION (0x00)
 
-#define DCERPC_DFS_ADD (0x01)
+#define NDR_DFS_ADD (0x01)
 
-#define DCERPC_DFS_REMOVE (0x02)
+#define NDR_DFS_REMOVE (0x02)
 
-#define DCERPC_DFS_SETINFO (0x03)
+#define NDR_DFS_SETINFO (0x03)
 
-#define DCERPC_DFS_GETINFO (0x04)
+#define NDR_DFS_GETINFO (0x04)
 
-#define DCERPC_DFS_ENUM (0x05)
+#define NDR_DFS_ENUM (0x05)
 
-#define DCERPC_DFS_RENAME (0x06)
+#define NDR_DFS_RENAME (0x06)
 
-#define DCERPC_DFS_MOVE (0x07)
+#define NDR_DFS_MOVE (0x07)
 
-#define DCERPC_DFS_MANAGERGETCONFIGINFO (0x08)
+#define NDR_DFS_MANAGERGETCONFIGINFO (0x08)
 
-#define DCERPC_DFS_MANAGERSENDSITEINFO (0x09)
+#define NDR_DFS_MANAGERSENDSITEINFO (0x09)
 
-#define DCERPC_DFS_ADDFTROOT (0x0a)
+#define NDR_DFS_ADDFTROOT (0x0a)
 
-#define DCERPC_DFS_REMOVEFTROOT (0x0b)
+#define NDR_DFS_REMOVEFTROOT (0x0b)
 
-#define DCERPC_DFS_ADDSTDROOT (0x0c)
+#define NDR_DFS_ADDSTDROOT (0x0c)
 
-#define DCERPC_DFS_REMOVESTDROOT (0x0d)
+#define NDR_DFS_REMOVESTDROOT (0x0d)
 
-#define DCERPC_DFS_MANAGERINITIALIZE (0x0e)
+#define NDR_DFS_MANAGERINITIALIZE (0x0e)
 
-#define DCERPC_DFS_ADDSTDROOTFORCED (0x0f)
+#define NDR_DFS_ADDSTDROOTFORCED (0x0f)
 
-#define DCERPC_DFS_GETDCADDRESS (0x10)
+#define NDR_DFS_GETDCADDRESS (0x10)
 
-#define DCERPC_DFS_SETDCADDRESS (0x11)
+#define NDR_DFS_SETDCADDRESS (0x11)
 
-#define DCERPC_DFS_FLUSHFTTABLE (0x12)
+#define NDR_DFS_FLUSHFTTABLE (0x12)
 
-#define DCERPC_DFS_ADD2 (0x13)
+#define NDR_DFS_ADD2 (0x13)
 
-#define DCERPC_DFS_REMOVE2 (0x14)
+#define NDR_DFS_REMOVE2 (0x14)
 
-#define DCERPC_DFS_ENUMEX (0x15)
+#define NDR_DFS_ENUMEX (0x15)
 
-#define DCERPC_DFS_SETINFO2 (0x16)
+#define NDR_DFS_SETINFO2 (0x16)
 
-#define DCERPC_NETDFS_CALL_COUNT (23)
+#define NDR_NETDFS_CALL_COUNT (23)
 void ndr_print_dfs_ManagerVersion(struct ndr_print *ndr, const char *name, enum dfs_ManagerVersion r);
 void ndr_print_dfs_Info0(struct ndr_print *ndr, const char *name, const struct dfs_Info0 *r);
 void ndr_print_dfs_Info1(struct ndr_print *ndr, const char *name, const struct dfs_Info1 *r);

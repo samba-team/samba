@@ -5332,9 +5332,9 @@ const struct ndr_interface_table ndr_table_netdfs = {
 	.name		= "netdfs",
 	.syntax_id	= {
 		{0x4fc742e0,0x4a10,0x11cf,{0x82,0x73},{0x00,0xaa,0x00,0x4a,0xe6,0x73}},
-		DCERPC_NETDFS_VERSION
+		NDR_NETDFS_VERSION
 	},
-	.helpstring	= DCERPC_NETDFS_HELPSTRING,
+	.helpstring	= NDR_NETDFS_HELPSTRING,
 	.num_calls	= 23,
 	.calls		= netdfs_calls,
 	.endpoints	= &netdfs_endpoints,

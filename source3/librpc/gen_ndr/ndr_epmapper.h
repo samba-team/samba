@@ -6,29 +6,29 @@
 #define _HEADER_NDR_epmapper
 
 #include "librpc/ndr/libndr.h"
-#define DCERPC_EPMAPPER_UUID "e1af8308-5d1f-11c9-91a4-08002b14a0fa"
-#define DCERPC_EPMAPPER_VERSION 3.0
-#define DCERPC_EPMAPPER_NAME "epmapper"
-#define DCERPC_EPMAPPER_HELPSTRING "EndPoint Mapper"
+#define NDR_EPMAPPER_UUID "e1af8308-5d1f-11c9-91a4-08002b14a0fa"
+#define NDR_EPMAPPER_VERSION 3.0
+#define NDR_EPMAPPER_NAME "epmapper"
+#define NDR_EPMAPPER_HELPSTRING "EndPoint Mapper"
 extern const struct ndr_interface_table ndr_table_epmapper;
 NTSTATUS dcerpc_server_epmapper_init(void);
-#define DCERPC_EPM_INSERT (0x00)
+#define NDR_EPM_INSERT (0x00)
 
-#define DCERPC_EPM_DELETE (0x01)
+#define NDR_EPM_DELETE (0x01)
 
-#define DCERPC_EPM_LOOKUP (0x02)
+#define NDR_EPM_LOOKUP (0x02)
 
-#define DCERPC_EPM_MAP (0x03)
+#define NDR_EPM_MAP (0x03)
 
-#define DCERPC_EPM_LOOKUPHANDLEFREE (0x04)
+#define NDR_EPM_LOOKUPHANDLEFREE (0x04)
 
-#define DCERPC_EPM_INQOBJECT (0x05)
+#define NDR_EPM_INQOBJECT (0x05)
 
-#define DCERPC_EPM_MGMTDELETE (0x06)
+#define NDR_EPM_MGMTDELETE (0x06)
 
-#define DCERPC_EPM_MAPAUTH (0x07)
+#define NDR_EPM_MAPAUTH (0x07)
 
-#define DCERPC_EPMAPPER_CALL_COUNT (8)
+#define NDR_EPMAPPER_CALL_COUNT (8)
 void ndr_print_epm_protocol(struct ndr_print *ndr, const char *name, enum epm_protocol r);
 void ndr_print_epm_rhs_dnet_nsp(struct ndr_print *ndr, const char *name, const struct epm_rhs_dnet_nsp *r);
 void ndr_print_epm_rhs_osi_tp4(struct ndr_print *ndr, const char *name, const struct epm_rhs_osi_tp4 *r);
