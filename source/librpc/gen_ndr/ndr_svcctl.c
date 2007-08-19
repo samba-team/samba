@@ -5667,7 +5667,7 @@ const struct ndr_interface_string_array svcctl_authservices = {
 };
 
 
-const struct ndr_interface_table dcerpc_table_svcctl = {
+const struct ndr_interface_table ndr_table_svcctl = {
 	.name		= "svcctl",
 	.syntax_id	= {
 		{0x367abb81,0x9844,0x35f1,{0xad,0x32},{0x98,0xf0,0x38,0x00,0x10,0x03}},

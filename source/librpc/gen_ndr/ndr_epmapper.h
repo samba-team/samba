@@ -10,7 +10,7 @@
 #define DCERPC_EPMAPPER_VERSION 3.0
 #define DCERPC_EPMAPPER_NAME "epmapper"
 #define DCERPC_EPMAPPER_HELPSTRING "EndPoint Mapper"
-extern const struct ndr_interface_table dcerpc_table_epmapper;
+extern const struct ndr_interface_table ndr_table_epmapper;
 NTSTATUS dcerpc_server_epmapper_init(void);
 #define DCERPC_EPM_INSERT (0x00)
 

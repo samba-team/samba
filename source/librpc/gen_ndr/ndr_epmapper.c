@@ -2671,7 +2671,7 @@ const struct ndr_interface_string_array epmapper_authservices = {
 };
 
 
-const struct ndr_interface_table dcerpc_table_epmapper = {
+const struct ndr_interface_table ndr_table_epmapper = {
 	.name		= "epmapper",
 	.syntax_id	= {
 		{0xe1af8308,0x5d1f,0x11c9,{0x91,0xa4},{0x08,0x00,0x2b,0x14,0xa0,0xfa}},

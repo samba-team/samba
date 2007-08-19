@@ -10,7 +10,7 @@
 #define DCERPC_LSARPC_VERSION 0.0
 #define DCERPC_LSARPC_NAME "lsarpc"
 #define DCERPC_LSARPC_HELPSTRING "Local Security Authority"
-extern const struct ndr_interface_table dcerpc_table_lsarpc;
+extern const struct ndr_interface_table ndr_table_lsarpc;
 NTSTATUS dcerpc_server_lsarpc_init(void);
 #define DCERPC_LSA_CLOSE (0x00)
 

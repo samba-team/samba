@@ -19554,7 +19554,7 @@ const struct ndr_interface_string_array srvsvc_authservices = {
 };
 
 
-const struct ndr_interface_table dcerpc_table_srvsvc = {
+const struct ndr_interface_table ndr_table_srvsvc = {
 	.name		= "srvsvc",
 	.syntax_id	= {
 		{0x4b324fc8,0x1670,0x01d3,{0x12,0x78},{0x5a,0x47,0xbf,0x6e,0xe1,0x88}},

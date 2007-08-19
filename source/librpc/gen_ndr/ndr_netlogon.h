@@ -10,7 +10,7 @@
 #define DCERPC_NETLOGON_VERSION 1.0
 #define DCERPC_NETLOGON_NAME "netlogon"
 #define DCERPC_NETLOGON_HELPSTRING NULL
-extern const struct ndr_interface_table dcerpc_table_netlogon;
+extern const struct ndr_interface_table ndr_table_netlogon;
 NTSTATUS dcerpc_server_netlogon_init(void);
 #define DCERPC_NETR_LOGONUASLOGON (0x00)
 

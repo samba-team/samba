@@ -414,7 +414,7 @@ const struct ndr_interface_string_array initshutdown_authservices = {
 };
 
 
-const struct ndr_interface_table dcerpc_table_initshutdown = {
+const struct ndr_interface_table ndr_table_initshutdown = {
 	.name		= "initshutdown",
 	.syntax_id	= {
 		{0x894de0c0,0x0d55,0x11d3,{0xa3,0x22},{0x00,0xc0,0x4f,0xa3,0x21,0xa1}},

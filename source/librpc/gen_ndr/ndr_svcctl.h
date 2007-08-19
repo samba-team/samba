@@ -10,7 +10,7 @@
 #define DCERPC_SVCCTL_VERSION 2.0
 #define DCERPC_SVCCTL_NAME "svcctl"
 #define DCERPC_SVCCTL_HELPSTRING "Service Control"
-extern const struct ndr_interface_table dcerpc_table_svcctl;
+extern const struct ndr_interface_table ndr_table_svcctl;
 NTSTATUS dcerpc_server_svcctl_init(void);
 #define DCERPC_SVCCTL_CLOSESERVICEHANDLE (0x00)
 

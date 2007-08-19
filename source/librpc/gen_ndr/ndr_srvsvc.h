@@ -10,7 +10,7 @@
 #define DCERPC_SRVSVC_VERSION 3.0
 #define DCERPC_SRVSVC_NAME "srvsvc"
 #define DCERPC_SRVSVC_HELPSTRING "Server Service"
-extern const struct ndr_interface_table dcerpc_table_srvsvc;
+extern const struct ndr_interface_table ndr_table_srvsvc;
 NTSTATUS dcerpc_server_srvsvc_init(void);
 #define DCERPC_SRVSVC_NETCHARDEVENUM (0x00)
 

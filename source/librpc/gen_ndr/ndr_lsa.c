@@ -11059,7 +11059,7 @@ const struct ndr_interface_string_array lsarpc_authservices = {
 };
 
 
-const struct ndr_interface_table dcerpc_table_lsarpc = {
+const struct ndr_interface_table ndr_table_lsarpc = {
 	.name		= "lsarpc",
 	.syntax_id	= {
 		{0x12345778,0x1234,0xabcd,{0xef,0x00},{0x01,0x23,0x45,0x67,0x89,0xab}},
