@@ -10,7 +10,7 @@
 #define DCERPC_UNIXINFO_VERSION 0.0
 #define DCERPC_UNIXINFO_NAME "unixinfo"
 #define DCERPC_UNIXINFO_HELPSTRING "Unixinfo specific stuff"
-extern const struct ndr_interface_table dcerpc_table_unixinfo;
+extern const struct ndr_interface_table ndr_table_unixinfo;
 NTSTATUS dcerpc_server_unixinfo_init(void);
 #define DCERPC_UNIXINFO_SIDTOUID (0x00)
 

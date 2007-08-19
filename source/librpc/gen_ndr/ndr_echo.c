@@ -1445,7 +1445,7 @@ const struct ndr_interface_string_array rpcecho_authservices = {
 };
 
 
-const struct ndr_interface_table dcerpc_table_rpcecho = {
+const struct ndr_interface_table ndr_table_rpcecho = {
 	.name		= "rpcecho",
 	.syntax_id	= {
 		{0x60a15ec5,0x4de8,0x11d7,{0xa6,0x37},{0x00,0x50,0x56,0xa2,0x01,0x82}},

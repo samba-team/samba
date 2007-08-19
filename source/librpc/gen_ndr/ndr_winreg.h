@@ -10,7 +10,7 @@
 #define DCERPC_WINREG_VERSION 1.0
 #define DCERPC_WINREG_NAME "winreg"
 #define DCERPC_WINREG_HELPSTRING "Remote Registry Service"
-extern const struct ndr_interface_table dcerpc_table_winreg;
+extern const struct ndr_interface_table ndr_table_winreg;
 NTSTATUS dcerpc_server_winreg_init(void);
 #define DCERPC_WINREG_OPENHKCR (0x00)
 
