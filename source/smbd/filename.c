@@ -173,7 +173,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 			result =determine_path_error(
 				&orig_path[2], allow_wcard_last_component);
 		}
-		goto fail;
+		return result;
 	}
 
 	/*
@@ -222,8 +222,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 	if ((dirpath == NULL) && (!(dirpath = SMB_STRDUP("")))) {
 		DEBUG(0, ("strdup failed\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto fail;
+		SAFE_FREE(name);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
@@ -602,9 +602,15 @@ NTSTATUS unix_convert(connection_struct *conn,
 	DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 
  done:
-	result = NT_STATUS_OK;
 	pstrcpy(orig_path, name);
+	SAFE_FREE(name);
+	SAFE_FREE(dirpath);
+	return NT_STATUS_OK;
  fail:
+	DEBUG(10, ("dirpath = [%s] start = [%s]\n", dirpath, start));
+	pstrcpy(orig_path, dirpath);
+	pstrcat(orig_path, "/");
+	pstrcat(orig_path, start);
 	SAFE_FREE(name);
 	SAFE_FREE(dirpath);
 	return result;
