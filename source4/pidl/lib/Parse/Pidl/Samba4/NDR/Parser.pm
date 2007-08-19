@@ -2407,7 +2407,6 @@ sub HeaderInterface($$)
 		$self->pidl_hdr("#define NDR_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}");
 
 		$self->pidl_hdr("extern const struct ndr_interface_table ndr_table_$interface->{NAME};");
-		$self->pidl_hdr("NTSTATUS dcerpc_server_$interface->{NAME}_init(void);");
 	}
 
 	foreach (@{$interface->{FUNCTIONS}}) {
@@ -2600,8 +2599,6 @@ sub GenerateIncludes($)
 	if (is_intree() != 3) {
 		$self->pidl(choose_header("libcli/util/nterr.h", "core/nterr.h"));
 		$self->pidl(choose_header("librpc/gen_ndr/ndr_misc.h", "gen_ndr/ndr_misc.h"));
-		$self->pidl(choose_header("librpc/gen_ndr/ndr_dcerpc.h", "gen_ndr/ndr_dcerpc.h"));
-		$self->pidl(choose_header("librpc/rpc/dcerpc.h", "dcerpc.h")); #FIXME: This shouldn't be here!
 	}
 }
 
