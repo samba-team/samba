@@ -11,7 +11,6 @@
 #define NDR_NETDFS_NAME "netdfs"
 #define NDR_NETDFS_HELPSTRING "Settings for Microsoft Distributed File System"
 extern const struct ndr_interface_table ndr_table_netdfs;
-NTSTATUS dcerpc_server_netdfs_init(void);
 #define NDR_DFS_GETMANAGERVERSION (0x00)
 
 #define NDR_DFS_ADD (0x01)

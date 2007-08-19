@@ -11,7 +11,6 @@
 #define NDR_RPCECHO_NAME "rpcecho"
 #define NDR_RPCECHO_HELPSTRING "Simple echo pipe"
 extern const struct ndr_interface_table ndr_table_rpcecho;
-NTSTATUS dcerpc_server_rpcecho_init(void);
 #define NDR_ECHO_ADDONE (0x00)
 
 #define NDR_ECHO_ECHODATA (0x01)

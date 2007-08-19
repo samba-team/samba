@@ -11,7 +11,6 @@
 #define NDR_WKSSVC_NAME "wkssvc"
 #define NDR_WKSSVC_HELPSTRING "Workstation Service"
 extern const struct ndr_interface_table ndr_table_wkssvc;
-NTSTATUS dcerpc_server_wkssvc_init(void);
 #define NDR_WKSSVC_NETWKSTAGETINFO (0x00)
 
 #define NDR_WKSSVC_NETWKSTASETINFO (0x01)

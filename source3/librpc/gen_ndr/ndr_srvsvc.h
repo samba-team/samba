@@ -11,7 +11,6 @@
 #define NDR_SRVSVC_NAME "srvsvc"
 #define NDR_SRVSVC_HELPSTRING "Server Service"
 extern const struct ndr_interface_table ndr_table_srvsvc;
-NTSTATUS dcerpc_server_srvsvc_init(void);
 #define NDR_SRVSVC_NETCHARDEVENUM (0x00)
 
 #define NDR_SRVSVC_NETCHARDEVGETINFO (0x01)

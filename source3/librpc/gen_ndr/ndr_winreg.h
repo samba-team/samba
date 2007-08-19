@@ -11,7 +11,6 @@
 #define NDR_WINREG_NAME "winreg"
 #define NDR_WINREG_HELPSTRING "Remote Registry Service"
 extern const struct ndr_interface_table ndr_table_winreg;
-NTSTATUS dcerpc_server_winreg_init(void);
 #define NDR_WINREG_OPENHKCR (0x00)
 
 #define NDR_WINREG_OPENHKCU (0x01)
