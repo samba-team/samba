@@ -1686,12 +1686,12 @@ int sys_dup2(int oldfd, int newfd)
 /******** Solaris EA helper function prototypes ********/
 #ifdef HAVE_ATTROPEN
 #define SOLARIS_ATTRMODE S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP
-int solaris_write_xattr(int attrfd, const char *value, size_t size);
-ssize_t solaris_read_xattr(int attrfd, void *value, size_t size);
-ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size);
-int solaris_unlinkat(int attrdirfd, const char *name);
-int solaris_attropen(const char *path, const char *attrpath, int oflag, mode_t mode);
-int solaris_openat(int fildes, const char *path, int oflag, mode_t mode);
+static int solaris_write_xattr(int attrfd, const char *value, size_t size);
+static ssize_t solaris_read_xattr(int attrfd, void *value, size_t size);
+static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size);
+static int solaris_unlinkat(int attrdirfd, const char *name);
+static int solaris_attropen(const char *path, const char *attrpath, int oflag, mode_t mode);
+static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode);
 #endif
 
 /**************************************************************************
