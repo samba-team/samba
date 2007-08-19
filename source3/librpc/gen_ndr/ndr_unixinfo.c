@@ -511,7 +511,7 @@ const struct ndr_interface_string_array unixinfo_authservices = {
 };
 
 
-const struct dcerpc_interface_table dcerpc_table_unixinfo = {
+const struct ndr_interface_table dcerpc_table_unixinfo = {
 	.name		= "unixinfo",
 	.syntax_id	= {
 		{0x9c54e310,0xa955,0x4885,{0xbd,0x31},{0x78,0x78,0x71,0x47,0xdf,0xa6}},

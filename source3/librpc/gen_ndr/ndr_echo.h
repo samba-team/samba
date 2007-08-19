@@ -10,7 +10,7 @@
 #define DCERPC_RPCECHO_VERSION 1.0
 #define DCERPC_RPCECHO_NAME "rpcecho"
 #define DCERPC_RPCECHO_HELPSTRING "Simple echo pipe"
-extern const struct dcerpc_interface_table dcerpc_table_rpcecho;
+extern const struct ndr_interface_table dcerpc_table_rpcecho;
 NTSTATUS dcerpc_server_rpcecho_init(void);
 #define DCERPC_ECHO_ADDONE (0x00)
 

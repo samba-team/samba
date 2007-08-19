@@ -10,7 +10,7 @@
 #define DCERPC_EVENTLOG_VERSION 0.0
 #define DCERPC_EVENTLOG_NAME "eventlog"
 #define DCERPC_EVENTLOG_HELPSTRING "Event Logger"
-extern const struct dcerpc_interface_table dcerpc_table_eventlog;
+extern const struct ndr_interface_table dcerpc_table_eventlog;
 NTSTATUS dcerpc_server_eventlog_init(void);
 #define DCERPC_EVENTLOG_CLEAREVENTLOGW (0x00)
 
