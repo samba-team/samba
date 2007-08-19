@@ -11,7 +11,6 @@
 #define NDR_NETLOGON_NAME "netlogon"
 #define NDR_NETLOGON_HELPSTRING NULL
 extern const struct ndr_interface_table ndr_table_netlogon;
-NTSTATUS dcerpc_server_netlogon_init(void);
 #define NDR_NETR_LOGONUASLOGON (0x00)
 
 #define NDR_NETR_LOGONUASLOGOFF (0x01)

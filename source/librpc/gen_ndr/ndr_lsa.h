@@ -11,7 +11,6 @@
 #define NDR_LSARPC_NAME "lsarpc"
 #define NDR_LSARPC_HELPSTRING "Local Security Authority"
 extern const struct ndr_interface_table ndr_table_lsarpc;
-NTSTATUS dcerpc_server_lsarpc_init(void);
 #define NDR_LSA_CLOSE (0x00)
 
 #define NDR_LSA_DELETE (0x01)
