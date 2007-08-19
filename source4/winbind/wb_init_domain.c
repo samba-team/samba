@@ -79,7 +79,7 @@ static void init_domain_recv_ldapconn(struct composite_context *ctx);
 static void init_domain_recv_samr(struct composite_context *ctx);
 
 static struct dcerpc_binding *init_domain_binding(struct init_domain_state *state, 
-						  const struct dcerpc_interface_table *table) 
+						  const struct ndr_interface_table *table) 
 {
 	struct dcerpc_binding *binding;
 	NTSTATUS status;
@@ -235,7 +235,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 
 static bool retry_with_schannel(struct init_domain_state *state, 
 				struct dcerpc_binding *binding,
-				const struct dcerpc_interface_table *table,
+				const struct ndr_interface_table *table,
 				void (*continuation)(struct composite_context *))
 {
 	struct composite_context *ctx;
