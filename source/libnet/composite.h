@@ -39,6 +39,8 @@
 #define  mon_LsaOpenPolicy         (0x0000000D)
 #define  mon_LsaQueryPolicy        (0x0000000E)
 #define  mon_LsaClose              (0x0000000F)
+#define  mon_SamrOpenGroup         (0x00000010)
+#define  mon_SamrQueryGroup        (0x00000011)
 
 #define  mon_NetLookupDc           (0x00000100)
 #define  mon_NetRpcConnect         (0x00000200)

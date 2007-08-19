@@ -25,6 +25,7 @@ OBJ_FILES = \
 		libnet_lookup.o \
 		libnet_domain.o \
 		userinfo.o \
+		groupinfo.o \
 		userman.o \
 		prereq_domain.o
 PUBLIC_DEPENDENCIES = CREDENTIALS dcerpc dcerpc_samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBSAMBA3 LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel
