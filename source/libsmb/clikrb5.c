@@ -1440,7 +1440,7 @@ done:
 
 	*opt = NULL;
 
-	if ((my_opt = SMB_MALLOC(sizeof(krb5_get_init_creds_opt))) == NULL) {
+	if ((my_opt = SMB_MALLOC_P(krb5_get_init_creds_opt)) == NULL) {
 		return ENOMEM;
 	}
 

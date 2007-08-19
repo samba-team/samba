@@ -75,7 +75,8 @@ BOOL reg_io_q_open_hive(const char *desc, REG_Q_OPEN_HIVE *q_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+	if(!prs_pointer("server", ps, depth, (void*)&q_u->server,
+			sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 
 	if(!prs_align(ps))
@@ -275,7 +276,8 @@ BOOL reg_io_q_create_key_ex(const char *desc,  REG_Q_CREATE_KEY_EX *q_u,
 	if(!prs_uint32("access", ps, depth, &q_u->access))
 		return False;
 
-	if(!prs_pointer("sec_info", ps, depth, (void**)&q_u->sec_info, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("sec_info", ps, depth, (void*)&q_u->sec_info,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	if ( q_u->sec_info ) {
@@ -285,7 +287,8 @@ BOOL reg_io_q_create_key_ex(const char *desc,  REG_Q_CREATE_KEY_EX *q_u,
 			return False;
 	}
 
-	if(!prs_pointer("disposition", ps, depth, (void**)&q_u->disposition, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("disposition", ps, depth, (void*)&q_u->disposition,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	return True;
@@ -999,17 +1002,21 @@ BOOL reg_io_r_query_value(const char *desc, REG_R_QUERY_VALUE *r_u, prs_struct *
 	if(!prs_align(ps))
 		return False;
 	
-	if ( !prs_pointer("type", ps, depth, (void**)&r_u->type, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if ( !prs_pointer("type", ps, depth, (void*)&r_u->type,
+			  sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
-	if ( !prs_pointer("value", ps, depth, (void**)&r_u->value, sizeof(REGVAL_BUFFER), (PRS_POINTER_CAST)smb_io_regval_buffer))
+	if ( !prs_pointer("value", ps, depth, (void*)&r_u->value,
+			  sizeof(REGVAL_BUFFER), (PRS_POINTER_CAST)smb_io_regval_buffer))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if ( !prs_pointer("buf_max_len", ps, depth, (void**)&r_u->buf_max_len, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if ( !prs_pointer("buf_max_len", ps, depth, (void*)&r_u->buf_max_len,
+			  sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
-	if ( !prs_pointer("buf_len", ps, depth, (void**)&r_u->buf_len, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if ( !prs_pointer("buf_len", ps, depth, (void*)&r_u->buf_len,
+			  sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
@@ -1146,17 +1153,22 @@ BOOL reg_io_q_enum_val(const char *desc,  REG_Q_ENUM_VALUE *q_u, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("type", ps, depth, (void**)&q_u->type, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("type", ps, depth, (void*)&q_u->type,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
-	if ( !prs_pointer("value", ps, depth, (void**)&q_u->value, sizeof(REGVAL_BUFFER), (PRS_POINTER_CAST)smb_io_regval_buffer))
+	if ( !prs_pointer("value", ps, depth, (void*)&q_u->value,
+			  sizeof(REGVAL_BUFFER),
+			  (PRS_POINTER_CAST)smb_io_regval_buffer))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("buffer_len", ps, depth, (void**)&q_u->buffer_len, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("buffer_len", ps, depth, (void*)&q_u->buffer_len,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
-	if(!prs_pointer("name_len", ps, depth, (void**)&q_u->name_len, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("name_len", ps, depth, (void*)&q_u->name_len,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	return True;
@@ -1182,17 +1194,22 @@ BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *r_u, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("type", ps, depth, (void**)&r_u->type, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("type", ps, depth, (void*)&r_u->type,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
-	if ( !prs_pointer("value", ps, depth, (void**)&r_u->value, sizeof(REGVAL_BUFFER), (PRS_POINTER_CAST)smb_io_regval_buffer))
+	if ( !prs_pointer("value", ps, depth, (void*)&r_u->value,
+			  sizeof(REGVAL_BUFFER),
+			  (PRS_POINTER_CAST)smb_io_regval_buffer))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("buffer_len1", ps, depth, (void**)&r_u->buffer_len1, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("buffer_len1", ps, depth, (void*)&r_u->buffer_len1,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
-	if(!prs_pointer("buffer_len2", ps, depth, (void**)&r_u->buffer_len2, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("buffer_len2", ps, depth, (void*)&r_u->buffer_len2,
+			sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
@@ -1396,12 +1413,14 @@ BOOL reg_io_r_enum_key(const char *desc,  REG_R_ENUM_KEY *q_u, prs_struct *ps, i
 	
 	if(!prs_align(ps))
 		return False;
-	if (!prs_pointer("class", ps, depth, (void**)&q_u->classname, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
+	if (!prs_pointer("class", ps, depth, (void*)&q_u->classname,
+			 sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
 
 	if(!prs_align(ps))
 		return False;
-	if (!prs_pointer("time", ps, depth, (void**)&q_u->time, sizeof(NTTIME), (PRS_POINTER_CAST)smb_io_nttime))
+	if (!prs_pointer("time", ps, depth, (void*)&q_u->time, sizeof(NTTIME),
+			 (PRS_POINTER_CAST)smb_io_nttime))
 		return False;
 
 	if(!prs_align(ps))
@@ -1559,12 +1578,14 @@ BOOL reg_io_q_shutdown(const char *desc, REG_Q_SHUTDOWN *q_u, prs_struct *ps,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+	if (!prs_pointer("server", ps, depth, (void*)&q_u->server,
+			 sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("message", ps, depth, (void**)&q_u->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
+	if (!prs_pointer("message", ps, depth, (void*)&q_u->message,
+			 sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
 
 	if (!prs_align(ps))
@@ -1619,12 +1640,14 @@ BOOL reg_io_q_shutdown_ex(const char *desc, REG_Q_SHUTDOWN_EX *q_u, prs_struct *
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+	if (!prs_pointer("server", ps, depth, (void*)&q_u->server,
+			 sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("message", ps, depth, (void**)&q_u->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
+	if (!prs_pointer("message", ps, depth, (void*)&q_u->message,
+			 sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
 
 	if (!prs_align(ps))
@@ -1698,7 +1721,8 @@ BOOL reg_io_q_abort_shutdown(const char *desc, REG_Q_ABORT_SHUTDOWN *q_u,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+	if (!prs_pointer("server", ps, depth, (void*)&q_u->server,
+			 sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 	if (!prs_align(ps))
 		return False;
