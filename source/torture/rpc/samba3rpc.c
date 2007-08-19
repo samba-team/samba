@@ -113,7 +113,7 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	status = dcerpc_bind_auth_none(lsa_pipe, &dcerpc_table_lsarpc);
+	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_bind_auth_none failed: %s\n",
 			 nt_errstr(status));
@@ -229,7 +229,7 @@ static BOOL bindtest(struct smbcli_state *cli,
 		goto done;
 	}
 
-	status = dcerpc_bind_auth(lsa_pipe, &dcerpc_table_lsarpc,
+	status = dcerpc_bind_auth(lsa_pipe, &ndr_table_lsarpc,
 				  credentials, auth_type, auth_level,
 				  NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -369,7 +369,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	}
 
 	if (admin_creds != NULL) {
-		status = dcerpc_bind_auth(samr_pipe, &dcerpc_table_samr,
+		status = dcerpc_bind_auth(samr_pipe, &ndr_table_samr,
 					  admin_creds, auth_type, auth_level,
 					  NULL);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -379,7 +379,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		}
 	} else {
 		/* We must have an authenticated SMB connection */
-		status = dcerpc_bind_auth_none(samr_pipe, &dcerpc_table_samr);
+		status = dcerpc_bind_auth_none(samr_pipe, &ndr_table_samr);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("dcerpc_bind_auth_none failed: %s\n",
 				 nt_errstr(status));
@@ -834,7 +834,7 @@ static BOOL auth2(struct smbcli_state *cli,
 		goto done;
 	}
 
-	status = dcerpc_bind_auth_none(net_pipe, &dcerpc_table_netlogon);
+	status = dcerpc_bind_auth_none(net_pipe, &ndr_table_netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_bind_auth_none failed: %s\n",
 			 nt_errstr(status));
@@ -941,12 +941,12 @@ static BOOL schan(struct smbcli_state *cli,
 #endif
 #if 1
 	net_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
-	status = dcerpc_bind_auth(net_pipe, &dcerpc_table_netlogon,
+	status = dcerpc_bind_auth(net_pipe, &ndr_table_netlogon,
 				  wks_creds, DCERPC_AUTH_TYPE_SCHANNEL,
 				  DCERPC_AUTH_LEVEL_PRIVACY,
 				  NULL);
 #else
-	status = dcerpc_bind_auth_none(net_pipe, &dcerpc_table_netlogon);
+	status = dcerpc_bind_auth_none(net_pipe, &ndr_table_netlogon);
 #endif
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("schannel bind failed: %s\n", nt_errstr(status));
@@ -1500,7 +1500,7 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
 	struct dom_sid *result;
 
 	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\lsarpc",
-			       &dcerpc_table_lsarpc, &lsa);
+			       &ndr_table_lsarpc, &lsa);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) Could not bind to LSA: %s\n",
 			 __location__, nt_errstr(status));
@@ -1838,7 +1838,7 @@ BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
 	}
 
 	status = pipe_bind_smb(mem_ctx, cli->tree, "\\pipe\\srvsvc",
-			       &dcerpc_table_srvsvc, &p);
+			       &ndr_table_srvsvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
 			 __location__, nt_errstr(status));
@@ -1881,7 +1881,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 	}
 
 	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
-			       &dcerpc_table_srvsvc, &p);
+			       &ndr_table_srvsvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
 			 __location__, nt_errstr(status));
@@ -1936,7 +1936,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 	}
 
 	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
-			       &dcerpc_table_srvsvc, &p);
+			       &ndr_table_srvsvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
 			 __location__, nt_errstr(status));
@@ -2126,7 +2126,7 @@ BOOL torture_samba3_rpc_lsa(struct torture_context *torture)
 	}
 
 	status = pipe_bind_smb(mem_ctx, cli->tree, "\\lsarpc",
-			       &dcerpc_table_lsarpc, &p);
+			       &ndr_table_lsarpc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
 			 nt_errstr(status));
@@ -2223,7 +2223,7 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pipe_bind_smb(mem_ctx, tree, "\\srvsvc", &dcerpc_table_srvsvc,
+	status = pipe_bind_smb(mem_ctx, tree, "\\srvsvc", &ndr_table_srvsvc,
 			       &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("could not bind to srvsvc pipe\n");
@@ -2424,7 +2424,7 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 	}
 
 	status = pipe_bind_smb(mem_ctx, cli->tree, "\\spoolss",
-			       &dcerpc_table_spoolss, &p);
+			       &ndr_table_spoolss, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
 			 nt_errstr(status));
@@ -2598,7 +2598,7 @@ BOOL torture_samba3_rpc_wkssvc(struct torture_context *torture)
 	}
 
 	status = pipe_bind_smb(mem_ctx, cli->tree, "\\wkssvc",
-			       &dcerpc_table_wkssvc, &p);
+			       &ndr_table_wkssvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
 			 nt_errstr(status));
@@ -2824,7 +2824,7 @@ BOOL torture_samba3_rpc_winreg(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_winreg);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_winreg);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

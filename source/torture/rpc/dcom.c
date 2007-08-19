@@ -32,7 +32,7 @@ BOOL torture_rpc_dcom(void)
 
 	mem_ctx = talloc_init("torture_rpc_dcom");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_IOXIDResolver);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_IOXIDResolver);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
 	}

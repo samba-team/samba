@@ -370,7 +370,7 @@ done:
 */
 int ejs_rpc_init(struct MprVar *obj, const char *name)
 {
-	dcerpc_table_init();
+	ndr_table_init();
 
 	mprSetStringCFunction(obj, "connect", ejs_rpc_connect);
 	if (mprGetProperty(obj, "pipe_name", NULL) == NULL) {

@@ -45,16 +45,16 @@ typedef NTSTATUS (*irpc_function_t)(struct irpc_message *, void *r);
 
 /* register a server function with the irpc messaging system */
 #define IRPC_REGISTER(msg_ctx, pipename, funcname, function, private) \
-   irpc_register(msg_ctx, &dcerpc_table_ ## pipename, \
+   irpc_register(msg_ctx, &ndr_table_ ## pipename, \
                           DCERPC_ ## funcname, \
 			  (irpc_function_t)function, private)
 
 /* make a irpc call */
 #define IRPC_CALL(msg_ctx, server_id, pipename, funcname, ptr, ctx) \
-   irpc_call(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr, ctx)
+   irpc_call(msg_ctx, server_id, &ndr_table_ ## pipename, DCERPC_ ## funcname, ptr, ctx)
 
 #define IRPC_CALL_SEND(msg_ctx, server_id, pipename, funcname, ptr, ctx) \
-   irpc_call_send(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr, ctx)
+   irpc_call_send(msg_ctx, server_id, &ndr_table_ ## pipename, DCERPC_ ## funcname, ptr, ctx)
 
 
 /*

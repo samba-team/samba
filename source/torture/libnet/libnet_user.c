@@ -298,7 +298,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 
 	status = torture_rpc_connection(prep_mem_ctx,
 					&p,
-					&dcerpc_table_samr);
+					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
 		goto done;
@@ -485,7 +485,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	status = torture_rpc_connection(prep_mem_ctx,
 					&p,
-					&dcerpc_table_samr);
+					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
 		goto done;
@@ -626,7 +626,7 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 
 	status = torture_rpc_connection(prep_mem_ctx,
 					&p,
-					&dcerpc_table_samr);
+					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

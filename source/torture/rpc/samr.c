@@ -4364,7 +4364,7 @@ BOOL torture_rpc_samr(struct torture_context *torture)
 	BOOL ret = True;
 	struct policy_handle handle;
 
-	status = torture_rpc_connection(torture, &p, &dcerpc_table_samr);
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -4392,7 +4392,7 @@ BOOL torture_rpc_samr_users(struct torture_context *torture)
 	BOOL ret = True;
 	struct policy_handle handle;
 
-	status = torture_rpc_connection(torture, &p, &dcerpc_table_samr);
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -4420,7 +4420,7 @@ BOOL torture_rpc_samr_passwords(struct torture_context *torture)
 	BOOL ret = True;
 	struct policy_handle handle;
 
-	status = torture_rpc_connection(torture, &p, &dcerpc_table_samr);
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

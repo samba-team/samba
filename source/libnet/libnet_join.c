@@ -110,7 +110,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	status = dcerpc_pipe_connect_b(tmp_ctx, 
 				       &drsuapi_pipe,
 				       drsuapi_binding,
-				       &dcerpc_table_drsuapi,
+				       &ndr_table_drsuapi,
 				       ctx->cred, 
 				       ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -479,7 +479,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	/* This level makes a connection to the LSA pipe on the way,
 	 * to get some useful bits of information about the domain */
 	connect_with_info->level              = LIBNET_RPC_CONNECT_DC_INFO;
-	connect_with_info->in.dcerpc_iface    = &dcerpc_table_samr;
+	connect_with_info->in.dcerpc_iface    = &ndr_table_samr;
 
 	/*
 	  establish the SAMR connection
@@ -503,7 +503,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	status = dcerpc_pipe_auth(tmp_ctx, &samr_pipe,
 				  connect_with_info->out.dcerpc_pipe->binding, 
-				  &dcerpc_table_samr, ctx->cred);
+				  &ndr_table_samr, ctx->cred);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						"SAMR bind failed: %s",

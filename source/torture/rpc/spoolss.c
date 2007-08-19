@@ -1650,7 +1650,7 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 		return False;
 	}
 
-	status = dcerpc_bind_auth_none(p2, &dcerpc_table_spoolss);
+	status = dcerpc_bind_auth_none(p2, &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to create bind on secondary connection\n");
 		talloc_free(p2);
@@ -2086,7 +2086,7 @@ BOOL torture_rpc_spoolss(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_spoolss");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_spoolss);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

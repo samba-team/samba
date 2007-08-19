@@ -126,7 +126,7 @@ struct torture_suite *torture_rpc_atsvc(void)
 	struct torture_tcase *tcase;
 	
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "atsvc", 
-											  &dcerpc_table_atsvc);
+											  &ndr_table_atsvc);
 
 	torture_rpc_tcase_add_test(tcase, "JobEnum", test_JobEnum);
 	torture_rpc_tcase_add_test(tcase, "JobAdd", test_JobAdd);

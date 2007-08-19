@@ -2548,7 +2548,7 @@ static BOOL browse_host(const char *query_host)
 	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", query_host);
 
 	status = dcerpc_pipe_connect(mem_ctx, &p, binding, 
-					 &dcerpc_table_srvsvc,
+					 &ndr_table_srvsvc,
 				     cmdline_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 

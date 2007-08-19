@@ -186,10 +186,10 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 		/* reference created pipe structure to long-term libnet_context
 		   so that it can be used by other api functions even after short-term
 		   mem_ctx is freed */
-		if (r->in.dcerpc_iface == &dcerpc_table_samr) {
+		if (r->in.dcerpc_iface == &ndr_table_samr) {
 			ctx->samr.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 
-		} else if (r->in.dcerpc_iface == &dcerpc_table_lsarpc) {
+		} else if (r->in.dcerpc_iface == &ndr_table_lsarpc) {
 			ctx->lsa.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 		}
 
@@ -397,10 +397,10 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 		/* reference created pipe structure to long-term libnet_context
 		   so that it can be used by other api functions even after short-term
 		   mem_ctx is freed */
-		if (r->in.dcerpc_iface == &dcerpc_table_samr) {
+		if (r->in.dcerpc_iface == &ndr_table_samr) {
 			ctx->samr.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 
-		} else if (r->in.dcerpc_iface == &dcerpc_table_lsarpc) {
+		} else if (r->in.dcerpc_iface == &ndr_table_lsarpc) {
 			ctx->lsa.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 		}
 
@@ -487,7 +487,7 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	}
 
 	/* we need to query information on lsarpc interface first */
-	s->rpc_conn.in.dcerpc_iface    = &dcerpc_table_lsarpc;
+	s->rpc_conn.in.dcerpc_iface    = &ndr_table_lsarpc;
 	
 	/* request connection to the lsa pipe on the pdc */
 	conn_req = libnet_RpcConnect_send(ctx, c, &s->rpc_conn, s->monitor_fn);
@@ -856,10 +856,10 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 		/* reference created pipe structure to long-term libnet_context
 		   so that it can be used by other api functions even after short-term
 		   mem_ctx is freed */
-		if (r->in.dcerpc_iface == &dcerpc_table_samr) {
+		if (r->in.dcerpc_iface == &ndr_table_samr) {
 			ctx->samr.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 
-		} else if (r->in.dcerpc_iface == &dcerpc_table_lsarpc) {
+		} else if (r->in.dcerpc_iface == &ndr_table_lsarpc) {
 			ctx->lsa.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 		}
 

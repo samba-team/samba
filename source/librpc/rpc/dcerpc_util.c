@@ -956,7 +956,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	epmapper_binding->endpoint		= NULL;
 
 	/* initiate rpc pipe connection */
-	pipe_connect_req = dcerpc_pipe_connect_b_send(c, epmapper_binding, &dcerpc_table_epmapper,
+	pipe_connect_req = dcerpc_pipe_connect_b_send(c, epmapper_binding, &ndr_table_epmapper,
 						      anon_creds, c->event_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 	

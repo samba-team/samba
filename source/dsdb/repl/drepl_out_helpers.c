@@ -76,7 +76,7 @@ static struct composite_context *dreplsrv_out_drsuapi_send(struct dreplsrv_out_c
 	st->drsuapi	= talloc_zero(st, struct dreplsrv_drsuapi_connection);
 	if (composite_nomem(st->drsuapi, c)) return c;
 
-	creq = dcerpc_pipe_connect_b_send(st, conn->binding, &dcerpc_table_drsuapi,
+	creq = dcerpc_pipe_connect_b_send(st, conn->binding, &ndr_table_drsuapi,
 					  conn->service->system_session_info->credentials,
 					  c->event_ctx);
 	composite_continue(c, creq, dreplsrv_out_drsuapi_connect_recv, st);

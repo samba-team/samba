@@ -223,7 +223,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	}
 	
 	/* prepare connect to the NETLOGON pipe of PDC */
-	c->in.dcerpc_iface      = &dcerpc_table_netlogon;
+	c->in.dcerpc_iface      = &ndr_table_netlogon;
 
 	/* We must do this as the machine, not as any command-line
 	 * user.  So we override the credentials in the
@@ -268,7 +268,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return nt_status;
 	}
 
-	nt_status = dcerpc_bind_auth_schannel(samsync_ctx, p, &dcerpc_table_netlogon,
+	nt_status = dcerpc_bind_auth_schannel(samsync_ctx, p, &ndr_table_netlogon,
 					      machine_account, DCERPC_AUTH_LEVEL_PRIVACY);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

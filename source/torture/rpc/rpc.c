@@ -161,7 +161,7 @@ NTSTATUS torture_rpc_init(void)
 
 	dcerpc_init();
 
-	dcerpc_table_init();
+	ndr_table_init();
 
 	torture_suite_add_simple_test(suite, "LSA", torture_rpc_lsa);
 	torture_suite_add_simple_test(suite, "LSALOOKUP", torture_rpc_lsa_lookup);

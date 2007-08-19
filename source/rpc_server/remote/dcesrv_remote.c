@@ -318,7 +318,7 @@ NTSTATUS dcerpc_server_remote_init(void)
 	}
 
 	/* We need the full DCE/RPC interface table */
-	dcerpc_table_init();
+	ndr_table_init();
 
 	return ret;
 }

@@ -107,7 +107,7 @@ BOOL torture_rpc_remact(struct torture_context *torture)
 
 	status = torture_rpc_connection(mem_ctx,
 					&p, 
-					&dcerpc_table_IRemoteActivation);
+					&ndr_table_IRemoteActivation);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

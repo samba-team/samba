@@ -88,7 +88,7 @@ BOOL torture_domainopen(struct torture_context *torture)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&net_ctx->samr.pipe,
-					&dcerpc_table_samr);
+					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;

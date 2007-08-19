@@ -269,7 +269,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
-	status = dcerpc_pipe_connect_b(test_ctx, &p, b, &dcerpc_table_samr,
+	status = dcerpc_pipe_connect_b(test_ctx, &p, b, &ndr_table_samr,
 				       credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
@@ -286,7 +286,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	 * the second */
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(test_ctx, b, &dcerpc_table_netlogon, NULL);
+	status = dcerpc_epm_map_binding(test_ctx, b, &ndr_table_netlogon, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -298,7 +298,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	status = dcerpc_bind_auth(p_netlogon, &dcerpc_table_netlogon,
+	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
@@ -324,7 +324,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Swap the binding details from SAMR to LSARPC */
-	status = dcerpc_epm_map_binding(test_ctx, b, &dcerpc_table_lsarpc, NULL);
+	status = dcerpc_epm_map_binding(test_ctx, b, &ndr_table_lsarpc, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -336,7 +336,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	status = dcerpc_bind_auth(p_lsa, &dcerpc_table_lsarpc,
+	status = dcerpc_bind_auth(p_lsa, &ndr_table_lsarpc,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
@@ -365,7 +365,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
-	status = dcerpc_pipe_connect_b(test_ctx, &p_samr2, b, &dcerpc_table_samr,
+	status = dcerpc_pipe_connect_b(test_ctx, &p_samr2, b, &ndr_table_samr,
 				       credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
@@ -379,7 +379,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(test_ctx, b, &dcerpc_table_netlogon, NULL);
+	status = dcerpc_epm_map_binding(test_ctx, b, &ndr_table_netlogon, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -391,7 +391,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	}
 
 	/* and now setup an SCHANNEL bind on netlogon */
-	status = dcerpc_bind_auth(p_netlogon2, &dcerpc_table_netlogon,
+	status = dcerpc_bind_auth(p_netlogon2, &ndr_table_netlogon,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p_samr2->conn),
 				  NULL);
@@ -419,7 +419,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	/* We don't want schannel for this test */
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 
-	status = dcerpc_pipe_connect_b(test_ctx, &p_netlogon3, b, &dcerpc_table_netlogon,
+	status = dcerpc_pipe_connect_b(test_ctx, &p_netlogon3, b, &ndr_table_netlogon,
 				       credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect without schannel: %s\n", nt_errstr(status));
@@ -527,7 +527,7 @@ BOOL torture_rpc_schannel2(struct torture_context *torture)
 	b->flags |= dcerpc_flags;
 
 	printf("Opening first connection\n");
-	status = dcerpc_pipe_connect_b(test_ctx, &p1, b, &dcerpc_table_netlogon,
+	status = dcerpc_pipe_connect_b(test_ctx, &p1, b, &ndr_table_netlogon,
 				       credentials1, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
@@ -535,7 +535,7 @@ BOOL torture_rpc_schannel2(struct torture_context *torture)
 	}
 
 	printf("Opening second connection\n");
-	status = dcerpc_pipe_connect_b(test_ctx, &p2, b, &dcerpc_table_netlogon,
+	status = dcerpc_pipe_connect_b(test_ctx, &p2, b, &ndr_table_netlogon,
 				       credentials2, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with schannel: %s\n", nt_errstr(status));

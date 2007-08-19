@@ -224,7 +224,7 @@ BOOL torture_delshare(struct torture_context *torture)
 
 	status = torture_rpc_connection(mem_ctx,
 					&p,
-					&dcerpc_table_srvsvc);
+					&ndr_table_srvsvc);
 
 	if (!test_addshare(p, mem_ctx, host, TEST_SHARENAME)) {
 		ret = False;

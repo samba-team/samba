@@ -40,7 +40,7 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_alter_context");
 
 	printf("opening LSA connection\n");
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_lsarpc);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
@@ -51,14 +51,14 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 	}
 
 	printf("Opening secondary DSSETUP context\n");
-	status = dcerpc_secondary_context(p, &p2, &dcerpc_table_dssetup);
+	status = dcerpc_secondary_context(p, &p2, &ndr_table_dssetup);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	tmptbl = dcerpc_table_dssetup;
+	tmptbl = ndr_table_dssetup;
 	tmptbl.syntax_id.if_version += 100;
 	printf("Opening bad secondary connection\n");
 	status = dcerpc_secondary_context(p, &p2, &tmptbl);

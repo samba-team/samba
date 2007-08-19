@@ -157,7 +157,7 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 		cli_credentials_set_machine_account(state->domain->libnet_ctx->cred);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
 
-	state->domain->netlogon_binding = init_domain_binding(state, &dcerpc_table_netlogon);
+	state->domain->netlogon_binding = init_domain_binding(state, &ndr_table_netlogon);
 
 	state->domain->netlogon_pipe = NULL;
 
@@ -179,7 +179,7 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	/* No encryption on anonymous pipes */
 
 	ctx = dcerpc_pipe_connect_b_send(state, state->domain->netlogon_binding, 
-					 &dcerpc_table_netlogon,
+					 &ndr_table_netlogon,
 					 state->domain->libnet_ctx->cred,
 					 service->task->event_ctx);
 	
@@ -212,7 +212,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	}
 	talloc_steal(state->domain->netlogon_pipe, state->domain->netlogon_binding);
 
-	state->domain->lsa_binding = init_domain_binding(state, &dcerpc_table_lsarpc);
+	state->domain->lsa_binding = init_domain_binding(state, &ndr_table_lsarpc);
 
 	/* For debugging, it can be a real pain if all the traffic is encrypted */
 	if (lp_winbind_sealed_pipes()) {
@@ -227,7 +227,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	   secured with SPNEGO or NTLMSSP */
 	ctx = dcerpc_secondary_auth_connection_send(state->domain->netlogon_pipe,
 						    state->domain->lsa_binding,
-						    &dcerpc_table_lsarpc,
+						    &ndr_table_lsarpc,
 						    state->domain->libnet_ctx->cred
 		);
 	composite_continue(state->ctx, ctx, init_domain_recv_lsa_pipe, state);
@@ -275,7 +275,7 @@ static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 								   &state->domain->libnet_ctx->lsa.pipe);
 	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_LOGON_FAILURE)) {
 		if (retry_with_schannel(state, state->domain->lsa_binding, 
-					&dcerpc_table_lsarpc,
+					&ndr_table_lsarpc,
 					init_domain_recv_lsa_pipe)) {
 			return;
 		}
@@ -315,7 +315,7 @@ static void init_domain_recv_lsa_policy(struct rpc_request *req)
 	if ((!NT_STATUS_IS_OK(state->ctx->status)
 	      || !NT_STATUS_IS_OK(state->lsa_openpolicy.out.result))) {
 		if (retry_with_schannel(state, state->domain->lsa_binding, 
-					&dcerpc_table_lsarpc,
+					&ndr_table_lsarpc,
 					init_domain_recv_lsa_pipe)) {
 			return;
 		}
@@ -365,7 +365,7 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 		return;
 	}
 
-	state->domain->samr_binding = init_domain_binding(state, &dcerpc_table_samr);
+	state->domain->samr_binding = init_domain_binding(state, &ndr_table_samr);
 
 	/* We want to use the same flags as the LSA pipe did (so, if
 	 * it needed schannel, then we need that here too) */

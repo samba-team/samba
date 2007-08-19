@@ -92,7 +92,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 	}
 
 	/* bind to the LSA pipe */
-	status = dcerpc_bind_auth_none(lsa->pipe, &dcerpc_table_lsarpc);
+	status = dcerpc_bind_auth_none(lsa->pipe, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lsa);
                 return status;
