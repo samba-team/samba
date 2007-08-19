@@ -11,7 +11,6 @@
 #define NDR_UNIXINFO_NAME "unixinfo"
 #define NDR_UNIXINFO_HELPSTRING "Unixinfo specific stuff"
 extern const struct ndr_interface_table ndr_table_unixinfo;
-NTSTATUS dcerpc_server_unixinfo_init(void);
 #define NDR_UNIXINFO_SIDTOUID (0x00)
 
 #define NDR_UNIXINFO_UIDTOSID (0x01)

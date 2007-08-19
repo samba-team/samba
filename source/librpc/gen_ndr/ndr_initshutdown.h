@@ -11,7 +11,6 @@
 #define NDR_INITSHUTDOWN_NAME "initshutdown"
 #define NDR_INITSHUTDOWN_HELPSTRING "Init shutdown service"
 extern const struct ndr_interface_table ndr_table_initshutdown;
-NTSTATUS dcerpc_server_initshutdown_init(void);
 #define NDR_INITSHUTDOWN_INIT (0x00)
 
 #define NDR_INITSHUTDOWN_ABORT (0x01)

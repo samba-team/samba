@@ -11,7 +11,6 @@
 #define NDR_EVENTLOG_NAME "eventlog"
 #define NDR_EVENTLOG_HELPSTRING "Event Logger"
 extern const struct ndr_interface_table ndr_table_eventlog;
-NTSTATUS dcerpc_server_eventlog_init(void);
 #define NDR_EVENTLOG_CLEAREVENTLOGW (0x00)
 
 #define NDR_EVENTLOG_BACKUPEVENTLOGW (0x01)

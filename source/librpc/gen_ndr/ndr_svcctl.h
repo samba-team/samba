@@ -11,7 +11,6 @@
 #define NDR_SVCCTL_NAME "svcctl"
 #define NDR_SVCCTL_HELPSTRING "Service Control"
 extern const struct ndr_interface_table ndr_table_svcctl;
-NTSTATUS dcerpc_server_svcctl_init(void);
 #define NDR_SVCCTL_CLOSESERVICEHANDLE (0x00)
 
 #define NDR_SVCCTL_CONTROLSERVICE (0x01)

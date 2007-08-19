@@ -11,7 +11,6 @@
 #define NDR_EPMAPPER_NAME "epmapper"
 #define NDR_EPMAPPER_HELPSTRING "EndPoint Mapper"
 extern const struct ndr_interface_table ndr_table_epmapper;
-NTSTATUS dcerpc_server_epmapper_init(void);
 #define NDR_EPM_INSERT (0x00)
 
 #define NDR_EPM_DELETE (0x01)
