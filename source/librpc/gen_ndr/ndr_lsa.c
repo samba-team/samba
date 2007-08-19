@@ -11063,9 +11063,9 @@ const struct ndr_interface_table ndr_table_lsarpc = {
 	.name		= "lsarpc",
 	.syntax_id	= {
 		{0x12345778,0x1234,0xabcd,{0xef,0x00},{0x01,0x23,0x45,0x67,0x89,0xab}},
-		DCERPC_LSARPC_VERSION
+		NDR_LSARPC_VERSION
 	},
-	.helpstring	= DCERPC_LSARPC_HELPSTRING,
+	.helpstring	= NDR_LSARPC_HELPSTRING,
 	.num_calls	= 82,
 	.calls		= lsarpc_calls,
 	.endpoints	= &lsarpc_endpoints,

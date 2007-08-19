@@ -202,9 +202,9 @@ static BOOL api_initshutdown_InitEx(pipes_struct *p)
 /* Tables */
 static struct api_struct api_initshutdown_cmds[] = 
 {
-	{"INITSHUTDOWN_INIT", DCERPC_INITSHUTDOWN_INIT, api_initshutdown_Init},
-	{"INITSHUTDOWN_ABORT", DCERPC_INITSHUTDOWN_ABORT, api_initshutdown_Abort},
-	{"INITSHUTDOWN_INITEX", DCERPC_INITSHUTDOWN_INITEX, api_initshutdown_InitEx},
+	{"INITSHUTDOWN_INIT", NDR_INITSHUTDOWN_INIT, api_initshutdown_Init},
+	{"INITSHUTDOWN_ABORT", NDR_INITSHUTDOWN_ABORT, api_initshutdown_Abort},
+	{"INITSHUTDOWN_INITEX", NDR_INITSHUTDOWN_INITEX, api_initshutdown_InitEx},
 };
 
 void initshutdown_get_pipe_fns(struct api_struct **fns, int *n_fns)

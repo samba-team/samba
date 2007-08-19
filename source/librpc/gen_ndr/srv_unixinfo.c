@@ -366,11 +366,11 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 /* Tables */
 static struct api_struct api_unixinfo_cmds[] = 
 {
-	{"UNIXINFO_SIDTOUID", DCERPC_UNIXINFO_SIDTOUID, api_unixinfo_SidToUid},
-	{"UNIXINFO_UIDTOSID", DCERPC_UNIXINFO_UIDTOSID, api_unixinfo_UidToSid},
-	{"UNIXINFO_SIDTOGID", DCERPC_UNIXINFO_SIDTOGID, api_unixinfo_SidToGid},
-	{"UNIXINFO_GIDTOSID", DCERPC_UNIXINFO_GIDTOSID, api_unixinfo_GidToSid},
-	{"UNIXINFO_GETPWUID", DCERPC_UNIXINFO_GETPWUID, api_unixinfo_GetPWUid},
+	{"UNIXINFO_SIDTOUID", NDR_UNIXINFO_SIDTOUID, api_unixinfo_SidToUid},
+	{"UNIXINFO_UIDTOSID", NDR_UNIXINFO_UIDTOSID, api_unixinfo_UidToSid},
+	{"UNIXINFO_SIDTOGID", NDR_UNIXINFO_SIDTOGID, api_unixinfo_SidToGid},
+	{"UNIXINFO_GIDTOSID", NDR_UNIXINFO_GIDTOSID, api_unixinfo_GidToSid},
+	{"UNIXINFO_GETPWUID", NDR_UNIXINFO_GETPWUID, api_unixinfo_GetPWUid},
 };
 
 void unixinfo_get_pipe_fns(struct api_struct **fns, int *n_fns)

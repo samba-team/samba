@@ -418,9 +418,9 @@ const struct ndr_interface_table ndr_table_initshutdown = {
 	.name		= "initshutdown",
 	.syntax_id	= {
 		{0x894de0c0,0x0d55,0x11d3,{0xa3,0x22},{0x00,0xc0,0x4f,0xa3,0x21,0xa1}},
-		DCERPC_INITSHUTDOWN_VERSION
+		NDR_INITSHUTDOWN_VERSION
 	},
-	.helpstring	= DCERPC_INITSHUTDOWN_HELPSTRING,
+	.helpstring	= NDR_INITSHUTDOWN_HELPSTRING,
 	.num_calls	= 3,
 	.calls		= initshutdown_calls,
 	.endpoints	= &initshutdown_endpoints,

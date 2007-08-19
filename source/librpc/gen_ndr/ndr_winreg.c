@@ -4408,9 +4408,9 @@ const struct ndr_interface_table ndr_table_winreg = {
 	.name		= "winreg",
 	.syntax_id	= {
 		{0x338cd001,0x2244,0x31f1,{0xaa,0xaa},{0x90,0x00,0x38,0x00,0x10,0x03}},
-		DCERPC_WINREG_VERSION
+		NDR_WINREG_VERSION
 	},
-	.helpstring	= DCERPC_WINREG_HELPSTRING,
+	.helpstring	= NDR_WINREG_HELPSTRING,
 	.num_calls	= 35,
 	.calls		= winreg_calls,
 	.endpoints	= &winreg_endpoints,

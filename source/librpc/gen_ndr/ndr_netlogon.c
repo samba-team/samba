@@ -13118,9 +13118,9 @@ const struct ndr_interface_table ndr_table_netlogon = {
 	.name		= "netlogon",
 	.syntax_id	= {
 		{0x12345678,0x1234,0xabcd,{0xef,0x00},{0x01,0x23,0x45,0x67,0xcf,0xfb}},
-		DCERPC_NETLOGON_VERSION
+		NDR_NETLOGON_VERSION
 	},
-	.helpstring	= DCERPC_NETLOGON_HELPSTRING,
+	.helpstring	= NDR_NETLOGON_HELPSTRING,
 	.num_calls	= 47,
 	.calls		= netlogon_calls,
 	.endpoints	= &netlogon_endpoints,

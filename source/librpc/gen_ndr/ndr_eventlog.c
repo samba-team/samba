@@ -1633,9 +1633,9 @@ const struct ndr_interface_table ndr_table_eventlog = {
 	.name		= "eventlog",
 	.syntax_id	= {
 		{0x82273fdc,0xe32a,0x18c3,{0x3f,0x78},{0x82,0x79,0x29,0xdc,0x23,0xea}},
-		DCERPC_EVENTLOG_VERSION
+		NDR_EVENTLOG_VERSION
 	},
-	.helpstring	= DCERPC_EVENTLOG_HELPSTRING,
+	.helpstring	= NDR_EVENTLOG_HELPSTRING,
 	.num_calls	= 24,
 	.calls		= eventlog_calls,
 	.endpoints	= &eventlog_endpoints,

@@ -691,16 +691,16 @@ static BOOL api_echo_TestDoublePointer(pipes_struct *p)
 /* Tables */
 static struct api_struct api_rpcecho_cmds[] = 
 {
-	{"ECHO_ADDONE", DCERPC_ECHO_ADDONE, api_echo_AddOne},
-	{"ECHO_ECHODATA", DCERPC_ECHO_ECHODATA, api_echo_EchoData},
-	{"ECHO_SINKDATA", DCERPC_ECHO_SINKDATA, api_echo_SinkData},
-	{"ECHO_SOURCEDATA", DCERPC_ECHO_SOURCEDATA, api_echo_SourceData},
-	{"ECHO_TESTCALL", DCERPC_ECHO_TESTCALL, api_echo_TestCall},
-	{"ECHO_TESTCALL2", DCERPC_ECHO_TESTCALL2, api_echo_TestCall2},
-	{"ECHO_TESTSLEEP", DCERPC_ECHO_TESTSLEEP, api_echo_TestSleep},
-	{"ECHO_TESTENUM", DCERPC_ECHO_TESTENUM, api_echo_TestEnum},
-	{"ECHO_TESTSURROUNDING", DCERPC_ECHO_TESTSURROUNDING, api_echo_TestSurrounding},
-	{"ECHO_TESTDOUBLEPOINTER", DCERPC_ECHO_TESTDOUBLEPOINTER, api_echo_TestDoublePointer},
+	{"ECHO_ADDONE", NDR_ECHO_ADDONE, api_echo_AddOne},
+	{"ECHO_ECHODATA", NDR_ECHO_ECHODATA, api_echo_EchoData},
+	{"ECHO_SINKDATA", NDR_ECHO_SINKDATA, api_echo_SinkData},
+	{"ECHO_SOURCEDATA", NDR_ECHO_SOURCEDATA, api_echo_SourceData},
+	{"ECHO_TESTCALL", NDR_ECHO_TESTCALL, api_echo_TestCall},
+	{"ECHO_TESTCALL2", NDR_ECHO_TESTCALL2, api_echo_TestCall2},
+	{"ECHO_TESTSLEEP", NDR_ECHO_TESTSLEEP, api_echo_TestSleep},
+	{"ECHO_TESTENUM", NDR_ECHO_TESTENUM, api_echo_TestEnum},
+	{"ECHO_TESTSURROUNDING", NDR_ECHO_TESTSURROUNDING, api_echo_TestSurrounding},
+	{"ECHO_TESTDOUBLEPOINTER", NDR_ECHO_TESTDOUBLEPOINTER, api_echo_TestDoublePointer},
 };
 
 void rpcecho_get_pipe_fns(struct api_struct **fns, int *n_fns)

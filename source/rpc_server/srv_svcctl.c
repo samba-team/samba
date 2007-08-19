@@ -45,7 +45,7 @@ static BOOL proxy_svcctl_call(pipes_struct *p, uint8 opnum)
 
 static BOOL api_svcctl_close_service(pipes_struct *p)
 {
-	return proxy_svcctl_call( p, DCERPC_SVCCTL_CLOSESERVICEHANDLE );
+	return proxy_svcctl_call( p, NDR_SVCCTL_CLOSESERVICEHANDLE );
 }
 
 /*******************************************************************

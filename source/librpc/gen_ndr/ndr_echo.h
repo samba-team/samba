@@ -6,33 +6,33 @@
 #define _HEADER_NDR_rpcecho
 
 #include "librpc/ndr/libndr.h"
-#define DCERPC_RPCECHO_UUID "60a15ec5-4de8-11d7-a637-005056a20182"
-#define DCERPC_RPCECHO_VERSION 1.0
-#define DCERPC_RPCECHO_NAME "rpcecho"
-#define DCERPC_RPCECHO_HELPSTRING "Simple echo pipe"
+#define NDR_RPCECHO_UUID "60a15ec5-4de8-11d7-a637-005056a20182"
+#define NDR_RPCECHO_VERSION 1.0
+#define NDR_RPCECHO_NAME "rpcecho"
+#define NDR_RPCECHO_HELPSTRING "Simple echo pipe"
 extern const struct ndr_interface_table ndr_table_rpcecho;
 NTSTATUS dcerpc_server_rpcecho_init(void);
-#define DCERPC_ECHO_ADDONE (0x00)
+#define NDR_ECHO_ADDONE (0x00)
 
-#define DCERPC_ECHO_ECHODATA (0x01)
+#define NDR_ECHO_ECHODATA (0x01)
 
-#define DCERPC_ECHO_SINKDATA (0x02)
+#define NDR_ECHO_SINKDATA (0x02)
 
-#define DCERPC_ECHO_SOURCEDATA (0x03)
+#define NDR_ECHO_SOURCEDATA (0x03)
 
-#define DCERPC_ECHO_TESTCALL (0x04)
+#define NDR_ECHO_TESTCALL (0x04)
 
-#define DCERPC_ECHO_TESTCALL2 (0x05)
+#define NDR_ECHO_TESTCALL2 (0x05)
 
-#define DCERPC_ECHO_TESTSLEEP (0x06)
+#define NDR_ECHO_TESTSLEEP (0x06)
 
-#define DCERPC_ECHO_TESTENUM (0x07)
+#define NDR_ECHO_TESTENUM (0x07)
 
-#define DCERPC_ECHO_TESTSURROUNDING (0x08)
+#define NDR_ECHO_TESTSURROUNDING (0x08)
 
-#define DCERPC_ECHO_TESTDOUBLEPOINTER (0x09)
+#define NDR_ECHO_TESTDOUBLEPOINTER (0x09)
 
-#define DCERPC_RPCECHO_CALL_COUNT (10)
+#define NDR_RPCECHO_CALL_COUNT (10)
 void ndr_print_echo_info1(struct ndr_print *ndr, const char *name, const struct echo_info1 *r);
 void ndr_print_echo_info2(struct ndr_print *ndr, const char *name, const struct echo_info2 *r);
 void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, const struct echo_info3 *r);

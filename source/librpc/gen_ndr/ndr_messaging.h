@@ -6,7 +6,7 @@
 #define _HEADER_NDR_messaging
 
 #include "librpc/ndr/libndr.h"
-#define DCERPC_MESSAGING_CALL_COUNT (0)
+#define NDR_MESSAGING_CALL_COUNT (0)
 NTSTATUS ndr_push_messaging_rec(struct ndr_push *ndr, int ndr_flags, const struct messaging_rec *r);
 NTSTATUS ndr_pull_messaging_rec(struct ndr_pull *ndr, int ndr_flags, struct messaging_rec *r);
 void ndr_print_messaging_rec(struct ndr_print *ndr, const char *name, const struct messaging_rec *r);

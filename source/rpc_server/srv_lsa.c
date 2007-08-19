@@ -234,7 +234,7 @@ static BOOL api_lsa_lookup_names(pipes_struct *p)
 
 static BOOL api_lsa_close(pipes_struct *p)
 {
-	return proxy_lsa_call(p, DCERPC_LSA_CLOSE);
+	return proxy_lsa_call(p, NDR_LSA_CLOSE);
 }
 
 /***************************************************************************
@@ -243,7 +243,7 @@ static BOOL api_lsa_close(pipes_struct *p)
 
 static BOOL api_lsa_open_secret(pipes_struct *p)
 {
-	return proxy_lsa_call(p, DCERPC_LSA_OPENSECRET);
+	return proxy_lsa_call(p, NDR_LSA_OPENSECRET);
 }
 
 /***************************************************************************
@@ -745,7 +745,7 @@ static BOOL api_lsa_lookup_priv_value(pipes_struct *p)
 
 static BOOL api_lsa_open_trust_dom(pipes_struct *p)
 {
-	return proxy_lsa_call(p, DCERPC_LSA_OPENTRUSTEDDOMAIN);
+	return proxy_lsa_call(p, NDR_LSA_OPENTRUSTEDDOMAIN);
 }
 
 /***************************************************************************
@@ -753,7 +753,7 @@ static BOOL api_lsa_open_trust_dom(pipes_struct *p)
 
 static BOOL api_lsa_create_trust_dom(pipes_struct *p)
 {
-	return proxy_lsa_call(p, DCERPC_LSA_CREATETRUSTEDDOMAIN);
+	return proxy_lsa_call(p, NDR_LSA_CREATETRUSTEDDOMAIN);
 }
 
 /***************************************************************************
@@ -761,7 +761,7 @@ static BOOL api_lsa_create_trust_dom(pipes_struct *p)
 
 static BOOL api_lsa_create_secret(pipes_struct *p)
 {
-	return proxy_lsa_call(p, DCERPC_LSA_CREATESECRET);
+	return proxy_lsa_call(p, NDR_LSA_CREATESECRET);
 }
 
 /***************************************************************************
@@ -769,7 +769,7 @@ static BOOL api_lsa_create_secret(pipes_struct *p)
 
 static BOOL api_lsa_set_secret(pipes_struct *p)
 {
-	return proxy_lsa_call(p, DCERPC_LSA_SETSECRET);
+	return proxy_lsa_call(p, NDR_LSA_SETSECRET);
 }
 
 /***************************************************************************

@@ -21,7 +21,7 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(initshutdown_Init, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, DCERPC_INITSHUTDOWN_INIT, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_Init, (ndr_push_flags_fn_t)ndr_push_initshutdown_Init);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, NDR_INITSHUTDOWN_INIT, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_Init, (ndr_push_flags_fn_t)ndr_push_initshutdown_Init);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -51,7 +51,7 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, DCERPC_INITSHUTDOWN_ABORT, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_Abort, (ndr_push_flags_fn_t)ndr_push_initshutdown_Abort);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, NDR_INITSHUTDOWN_ABORT, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_Abort, (ndr_push_flags_fn_t)ndr_push_initshutdown_Abort);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -86,7 +86,7 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, DCERPC_INITSHUTDOWN_INITEX, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_InitEx, (ndr_push_flags_fn_t)ndr_push_initshutdown_InitEx);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, NDR_INITSHUTDOWN_INITEX, &r, (ndr_pull_flags_fn_t)ndr_pull_initshutdown_InitEx, (ndr_push_flags_fn_t)ndr_push_initshutdown_InitEx);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

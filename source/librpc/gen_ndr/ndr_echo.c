@@ -1449,9 +1449,9 @@ const struct ndr_interface_table ndr_table_rpcecho = {
 	.name		= "rpcecho",
 	.syntax_id	= {
 		{0x60a15ec5,0x4de8,0x11d7,{0xa6,0x37},{0x00,0x50,0x56,0xa2,0x01,0x82}},
-		DCERPC_RPCECHO_VERSION
+		NDR_RPCECHO_VERSION
 	},
-	.helpstring	= DCERPC_RPCECHO_HELPSTRING,
+	.helpstring	= NDR_RPCECHO_HELPSTRING,
 	.num_calls	= 10,
 	.calls		= rpcecho_calls,
 	.endpoints	= &rpcecho_endpoints,
