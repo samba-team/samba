@@ -4772,7 +4772,7 @@ const struct ndr_interface_string_array wkssvc_authservices = {
 };
 
 
-const struct dcerpc_interface_table dcerpc_table_wkssvc = {
+const struct ndr_interface_table dcerpc_table_wkssvc = {
 	.name		= "wkssvc",
 	.syntax_id	= {
 		{0x6bffd098,0xa112,0x3610,{0x98,0x33},{0x46,0xc3,0xf8,0x7e,0x34,0x5a}},

@@ -10,7 +10,7 @@
 #define DCERPC_WKSSVC_VERSION 1.0
 #define DCERPC_WKSSVC_NAME "wkssvc"
 #define DCERPC_WKSSVC_HELPSTRING "Workstation Service"
-extern const struct dcerpc_interface_table dcerpc_table_wkssvc;
+extern const struct ndr_interface_table dcerpc_table_wkssvc;
 NTSTATUS dcerpc_server_wkssvc_init(void);
 #define DCERPC_WKSSVC_NETWKSTAGETINFO (0x00)
 

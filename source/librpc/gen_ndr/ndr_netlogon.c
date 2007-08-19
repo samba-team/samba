@@ -13114,7 +13114,7 @@ const struct ndr_interface_string_array netlogon_authservices = {
 };
 
 
-const struct dcerpc_interface_table dcerpc_table_netlogon = {
+const struct ndr_interface_table dcerpc_table_netlogon = {
 	.name		= "netlogon",
 	.syntax_id	= {
 		{0x12345678,0x1234,0xabcd,{0xef,0x00},{0x01,0x23,0x45,0x67,0xcf,0xfb}},

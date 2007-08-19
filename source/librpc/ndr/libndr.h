@@ -301,6 +301,19 @@ struct ndr_interface_string_array {
 	const char * const *names;
 };
 
-#include "dcerpc.h"
+struct ndr_interface_table {
+	const char *name;
+	struct ndr_syntax_id syntax_id;
+	const char *helpstring;
+	uint32_t num_calls;
+	const struct ndr_interface_call *calls;
+	const struct ndr_interface_string_array *endpoints;
+	const struct ndr_interface_string_array *authservices;
+};
+
+struct ndr_interface_list {
+	struct ndr_interface_list *prev, *next;
+	const struct ndr_interface_table *table;
+};
 
 #endif /* __LIBNDR_H__ */
