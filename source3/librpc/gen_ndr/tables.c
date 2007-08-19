@@ -21,40 +21,40 @@ NTSTATUS dcerpc_register_builtin_interfaces(void)
 {
 	NTSTATUS status;
 
-	status = librpc_register_interface(&dcerpc_table_netdfs);
+	status = librpc_register_interface(&ndr_table_netdfs);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_rpcecho);
+	status = librpc_register_interface(&ndr_table_rpcecho);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_epmapper);
+	status = librpc_register_interface(&ndr_table_epmapper);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_eventlog);
+	status = librpc_register_interface(&ndr_table_eventlog);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_initshutdown);
+	status = librpc_register_interface(&ndr_table_initshutdown);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_lsarpc);
+	status = librpc_register_interface(&ndr_table_lsarpc);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_netlogon);
+	status = librpc_register_interface(&ndr_table_netlogon);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_srvsvc);
+	status = librpc_register_interface(&ndr_table_srvsvc);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_svcctl);
+	status = librpc_register_interface(&ndr_table_svcctl);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_unixinfo);
+	status = librpc_register_interface(&ndr_table_unixinfo);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_winreg);
+	status = librpc_register_interface(&ndr_table_winreg);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_wkssvc);
+	status = librpc_register_interface(&ndr_table_wkssvc);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
 

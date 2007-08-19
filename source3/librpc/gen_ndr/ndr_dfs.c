@@ -5328,7 +5328,7 @@ const struct ndr_interface_string_array netdfs_authservices = {
 };
 
 
-const struct ndr_interface_table dcerpc_table_netdfs = {
+const struct ndr_interface_table ndr_table_netdfs = {
 	.name		= "netdfs",
 	.syntax_id	= {
 		{0x4fc742e0,0x4a10,0x11cf,{0x82,0x73},{0x00,0xaa,0x00,0x4a,0xe6,0x73}},

@@ -116,7 +116,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 		return NULL;
 	}
 
-	symbol = talloc_asprintf(NULL, "dcerpc_table_%s", pipe_name);
+	symbol = talloc_asprintf(NULL, "ndr_table_%s", pipe_name);
 	p = (const struct ndr_interface_table *)dlsym(handle, symbol);
 
 	if (!p) {
@@ -164,7 +164,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	};
 
 #if (_SAMBA_BUILD_ >= 4)
-	dcerpc_table_init();
+	ndr_table_init();
 #else
 	/* Initialise samba stuff */
 	load_case_tables();
