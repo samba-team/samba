@@ -4630,9 +4630,28 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	pstrcat(base_name, newname);
 
 	if (fsp) {
+		SMB_STRUCT_STAT sbuf;
+		pstring newname_last_component;
+
+		ZERO_STRUCT(sbuf);
+
+		status = unix_convert(conn, newname, False,
+				      newname_last_component, &sbuf);
+
+		/* If an error we expect this to be
+		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
+
+		if (!NT_STATUS_IS_OK(status)
+		    && !NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND,
+					status)) {
+			return status;
+		}
+
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
 			fsp->fnum, fsp->fsp_name, base_name ));
-		status = rename_internals_fsp(conn, fsp, base_name, 0, overwrite);
+		status = rename_internals_fsp(conn, fsp, base_name,
+					      newname_last_component, 0,
+					      overwrite);
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, newname ));

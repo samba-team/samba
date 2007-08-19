@@ -4361,23 +4361,17 @@ static void notify_rename(connection_struct *conn, BOOL is_dir,
  Rename an open file - given an fsp.
 ****************************************************************************/
 
-NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, pstring newname, uint32 attrs, BOOL replace_if_exists)
+NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp,
+			      pstring newname,
+			      const char *newname_last_component,
+			      uint32 attrs, BOOL replace_if_exists)
 {
 	SMB_STRUCT_STAT sbuf, sbuf1;
-	pstring newname_last_component;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
 	BOOL dst_exists;
 
 	ZERO_STRUCT(sbuf);
-
-	status = unix_convert(conn, newname, False, newname_last_component, &sbuf);
-
-	/* If an error we expect this to be NT_STATUS_OBJECT_PATH_NOT_FOUND */
-
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND, status)) {
-		return status;
-	}
 
 	status = check_name(conn, newname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4670,8 +4664,9 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 			return status;
 		}
 
-		status = rename_internals_fsp(conn, fsp, newname, attrs,
-					      replace_if_exists);
+		status = rename_internals_fsp(conn, fsp, newname,
+					      last_component_dest,
+					      attrs, replace_if_exists);
 
 		close_file(fsp, NORMAL_CLOSE);
 
@@ -4767,8 +4762,8 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 			break;
 		}
 
-		status = rename_internals_fsp(conn, fsp, destname, attrs,
-					      replace_if_exists);
+		status = rename_internals_fsp(conn, fsp, destname, dname,
+					      attrs, replace_if_exists);
 
 		close_file(fsp, NORMAL_CLOSE);
 
