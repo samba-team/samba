@@ -17,7 +17,7 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli, TALLOC_CT
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_CloseServiceHandle, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CLOSESERVICEHANDLE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CloseServiceHandle, (ndr_push_flags_fn_t)ndr_push_svcctl_CloseServiceHandle);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CLOSESERVICEHANDLE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CloseServiceHandle, (ndr_push_flags_fn_t)ndr_push_svcctl_CloseServiceHandle);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -49,7 +49,7 @@ NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ControlService, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CONTROLSERVICE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ControlService, (ndr_push_flags_fn_t)ndr_push_svcctl_ControlService);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CONTROLSERVICE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ControlService, (ndr_push_flags_fn_t)ndr_push_svcctl_ControlService);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -80,7 +80,7 @@ NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_DeleteService, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_DELETESERVICE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_DeleteService, (ndr_push_flags_fn_t)ndr_push_svcctl_DeleteService);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_DELETESERVICE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_DeleteService, (ndr_push_flags_fn_t)ndr_push_svcctl_DeleteService);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -110,7 +110,7 @@ NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_C
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_LockServiceDatabase, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_LOCKSERVICEDATABASE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_LockServiceDatabase, (ndr_push_flags_fn_t)ndr_push_svcctl_LockServiceDatabase);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_LOCKSERVICEDATABASE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_LockServiceDatabase, (ndr_push_flags_fn_t)ndr_push_svcctl_LockServiceDatabase);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -140,7 +140,7 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli, T
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceObjectSecurity, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICEOBJECTSECURITY, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceObjectSecurity, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceObjectSecurity);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceObjectSecurity, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceObjectSecurity);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -169,7 +169,7 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli, TAL
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceObjectSecurity, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SETSERVICEOBJECTSECURITY, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SetServiceObjectSecurity, (ndr_push_flags_fn_t)ndr_push_svcctl_SetServiceObjectSecurity);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_SETSERVICEOBJECTSECURITY, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SetServiceObjectSecurity, (ndr_push_flags_fn_t)ndr_push_svcctl_SetServiceObjectSecurity);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -199,7 +199,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CT
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatus, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICESTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceStatus);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICESTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceStatus);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -229,7 +229,7 @@ NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceStatus, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SETSERVICESTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SetServiceStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_SetServiceStatus);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_SETSERVICESTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SetServiceStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_SetServiceStatus);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -259,7 +259,7 @@ NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli, TALLOC
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_UnlockServiceDatabase, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_UNLOCKSERVICEDATABASE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_UnlockServiceDatabase, (ndr_push_flags_fn_t)ndr_push_svcctl_UnlockServiceDatabase);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_UNLOCKSERVICEDATABASE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_UnlockServiceDatabase, (ndr_push_flags_fn_t)ndr_push_svcctl_UnlockServiceDatabase);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -289,7 +289,7 @@ NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_NotifyBootConfigStatus, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_NOTIFYBOOTCONFIGSTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_NotifyBootConfigStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_NotifyBootConfigStatus);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_NotifyBootConfigStatus, (ndr_push_flags_fn_t)ndr_push_svcctl_NotifyBootConfigStatus);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -322,7 +322,7 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli, TALLOC_CTX
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SCSETSERVICEBITSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSetServiceBitsW, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSetServiceBitsW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_SCSETSERVICEBITSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSetServiceBitsW, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSetServiceBitsW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -361,7 +361,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli, TALLOC_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIGW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfigW, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfigW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CHANGESERVICECONFIGW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfigW, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfigW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -406,7 +406,7 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_CreateServiceW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CREATESERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CreateServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_CreateServiceW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CREATESERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CreateServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_CreateServiceW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -442,7 +442,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMDEPENDENTSERVICESW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumDependentServicesW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumDependentServicesW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_ENUMDEPENDENTSERVICESW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumDependentServicesW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumDependentServicesW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -481,7 +481,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_C
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMSERVICESSTATUSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServicesStatusW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServicesStatusW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_ENUMSERVICESSTATUSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServicesStatusW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServicesStatusW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -519,7 +519,7 @@ NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSCMANAGERW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenSCManagerW, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenSCManagerW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_OPENSCMANAGERW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenSCManagerW, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenSCManagerW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -552,7 +552,7 @@ NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenServiceW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_OPENSERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenServiceW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -584,7 +584,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_C
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIGW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfigW, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfigW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICECONFIGW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfigW, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfigW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -617,7 +617,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALL
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICELOCKSTATUSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceLockStatusW, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceLockStatusW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICELOCKSTATUSW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceLockStatusW, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceLockStatusW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -651,7 +651,7 @@ NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_STARTSERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_StartServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_StartServiceW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_STARTSERVICEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_StartServiceW, (ndr_push_flags_fn_t)ndr_push_svcctl_StartServiceW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -683,7 +683,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEDISPLAYNAMEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceDisplayNameW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceDisplayNameW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_GETSERVICEDISPLAYNAMEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceDisplayNameW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceDisplayNameW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -719,7 +719,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli, TALLOC_CT
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEKEYNAMEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceKeyNameW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceKeyNameW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_GETSERVICEKEYNAMEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceKeyNameW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceKeyNameW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -756,7 +756,7 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli, TALLOC_CTX
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SCSETSERVICEBITSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSetServiceBitsA, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSetServiceBitsA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_SCSETSERVICEBITSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSetServiceBitsA, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSetServiceBitsA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -795,7 +795,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli, TALLOC_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIGA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfigA, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfigA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CHANGESERVICECONFIGA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfigA, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfigA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -837,7 +837,7 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_CreateServiceA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CREATESERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CreateServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_CreateServiceA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CREATESERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_CreateServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_CreateServiceA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -872,7 +872,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMDEPENDENTSERVICESA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumDependentServicesA, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumDependentServicesA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_ENUMDEPENDENTSERVICESA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumDependentServicesA, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumDependentServicesA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -911,7 +911,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_C
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMSERVICESSTATUSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServicesStatusA, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServicesStatusA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_ENUMSERVICESSTATUSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServicesStatusA, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServicesStatusA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -949,7 +949,7 @@ NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSCMANAGERA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenSCManagerA, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenSCManagerA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_OPENSCMANAGERA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenSCManagerA, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenSCManagerA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -982,7 +982,7 @@ NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_OPENSERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenServiceA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_OPENSERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_OpenServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_OpenServiceA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1013,7 +1013,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_C
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIGA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfigA, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfigA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICECONFIGA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfigA, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfigA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1046,7 +1046,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALL
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICELOCKSTATUSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceLockStatusA, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceLockStatusA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICELOCKSTATUSA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceLockStatusA, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceLockStatusA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1080,7 +1080,7 @@ NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_STARTSERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_StartServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_StartServiceA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_STARTSERVICEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_StartServiceA, (ndr_push_flags_fn_t)ndr_push_svcctl_StartServiceA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1112,7 +1112,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEDISPLAYNAMEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceDisplayNameA, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceDisplayNameA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_GETSERVICEDISPLAYNAMEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceDisplayNameA, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceDisplayNameA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1148,7 +1148,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli, TALLOC_CT
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETSERVICEKEYNAMEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceKeyNameA, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceKeyNameA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_GETSERVICEKEYNAMEA, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetServiceKeyNameA, (ndr_push_flags_fn_t)ndr_push_svcctl_GetServiceKeyNameA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1181,7 +1181,7 @@ NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetCurrentGroupeStateW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_GETCURRENTGROUPESTATEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetCurrentGroupeStateW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetCurrentGroupeStateW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_GETCURRENTGROUPESTATEW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_GetCurrentGroupeStateW, (ndr_push_flags_fn_t)ndr_push_svcctl_GetCurrentGroupeStateW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1210,7 +1210,7 @@ NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli, TALLOC_CTX
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServiceGroupW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_ENUMSERVICEGROUPW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServiceGroupW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServiceGroupW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_ENUMSERVICEGROUPW, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_EnumServiceGroupW, (ndr_push_flags_fn_t)ndr_push_svcctl_EnumServiceGroupW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1242,7 +1242,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli, TALLOC
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2A, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIG2A, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfig2A, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfig2A);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CHANGESERVICECONFIG2A, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfig2A, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfig2A);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1274,7 +1274,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli, TALLOC
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2W, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_CHANGESERVICECONFIG2W, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfig2W, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfig2W);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_CHANGESERVICECONFIG2W, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_ChangeServiceConfig2W, (ndr_push_flags_fn_t)ndr_push_svcctl_ChangeServiceConfig2W);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1306,7 +1306,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2A, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIG2A, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfig2A, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfig2A);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICECONFIG2A, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfig2A, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfig2A);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1340,7 +1340,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2W, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICECONFIG2W, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfig2W, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfig2W);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICECONFIG2W, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceConfig2W, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceConfig2W);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1374,7 +1374,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli, TALLOC_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatusEx, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_QUERYSERVICESTATUSEX, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceStatusEx, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceStatusEx);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_QUERYSERVICESTATUSEX, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_QueryServiceStatusEx, (ndr_push_flags_fn_t)ndr_push_svcctl_QueryServiceStatusEx);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1411,7 +1411,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExA, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_ENUMSERVICESSTATUSEXA, &r, (ndr_pull_flags_fn_t)ndr_pull_EnumServicesStatusExA, (ndr_push_flags_fn_t)ndr_push_EnumServicesStatusExA);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_ENUMSERVICESSTATUSEXA, &r, (ndr_pull_flags_fn_t)ndr_pull_EnumServicesStatusExA, (ndr_push_flags_fn_t)ndr_push_EnumServicesStatusExA);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1453,7 +1453,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExW, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_ENUMSERVICESSTATUSEXW, &r, (ndr_pull_flags_fn_t)ndr_pull_EnumServicesStatusExW, (ndr_push_flags_fn_t)ndr_push_EnumServicesStatusExW);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_ENUMSERVICESSTATUSEXW, &r, (ndr_pull_flags_fn_t)ndr_pull_EnumServicesStatusExW, (ndr_push_flags_fn_t)ndr_push_EnumServicesStatusExW);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1489,7 +1489,7 @@ NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli, TALLOC_CTX *
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSendTSMessage, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, DCERPC_SVCCTL_SCSENDTSMESSAGE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSendTSMessage, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSendTSMessage);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, NDR_SVCCTL_SCSENDTSMESSAGE, &r, (ndr_pull_flags_fn_t)ndr_pull_svcctl_SCSendTSMessage, (ndr_push_flags_fn_t)ndr_push_svcctl_SCSendTSMessage);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

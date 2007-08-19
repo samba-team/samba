@@ -6,7 +6,7 @@
 #define _HEADER_NDR_notify
 
 #include "librpc/ndr/libndr.h"
-#define DCERPC_NOTIFY_CALL_COUNT (0)
+#define NDR_NOTIFY_CALL_COUNT (0)
 NTSTATUS ndr_push_notify_entry(struct ndr_push *ndr, int ndr_flags, const struct notify_entry *r);
 NTSTATUS ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_flags, struct notify_entry *r);
 void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, const struct notify_entry *r);

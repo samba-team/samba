@@ -552,14 +552,14 @@ static BOOL api_epm_MapAuth(pipes_struct *p)
 /* Tables */
 static struct api_struct api_epmapper_cmds[] = 
 {
-	{"EPM_INSERT", DCERPC_EPM_INSERT, api_epm_Insert},
-	{"EPM_DELETE", DCERPC_EPM_DELETE, api_epm_Delete},
-	{"EPM_LOOKUP", DCERPC_EPM_LOOKUP, api_epm_Lookup},
-	{"EPM_MAP", DCERPC_EPM_MAP, api_epm_Map},
-	{"EPM_LOOKUPHANDLEFREE", DCERPC_EPM_LOOKUPHANDLEFREE, api_epm_LookupHandleFree},
-	{"EPM_INQOBJECT", DCERPC_EPM_INQOBJECT, api_epm_InqObject},
-	{"EPM_MGMTDELETE", DCERPC_EPM_MGMTDELETE, api_epm_MgmtDelete},
-	{"EPM_MAPAUTH", DCERPC_EPM_MAPAUTH, api_epm_MapAuth},
+	{"EPM_INSERT", NDR_EPM_INSERT, api_epm_Insert},
+	{"EPM_DELETE", NDR_EPM_DELETE, api_epm_Delete},
+	{"EPM_LOOKUP", NDR_EPM_LOOKUP, api_epm_Lookup},
+	{"EPM_MAP", NDR_EPM_MAP, api_epm_Map},
+	{"EPM_LOOKUPHANDLEFREE", NDR_EPM_LOOKUPHANDLEFREE, api_epm_LookupHandleFree},
+	{"EPM_INQOBJECT", NDR_EPM_INQOBJECT, api_epm_InqObject},
+	{"EPM_MGMTDELETE", NDR_EPM_MGMTDELETE, api_epm_MgmtDelete},
+	{"EPM_MAPAUTH", NDR_EPM_MAPAUTH, api_epm_MapAuth},
 };
 
 void epmapper_get_pipe_fns(struct api_struct **fns, int *n_fns)

@@ -515,9 +515,9 @@ const struct ndr_interface_table ndr_table_unixinfo = {
 	.name		= "unixinfo",
 	.syntax_id	= {
 		{0x9c54e310,0xa955,0x4885,{0xbd,0x31},{0x78,0x78,0x71,0x47,0xdf,0xa6}},
-		DCERPC_UNIXINFO_VERSION
+		NDR_UNIXINFO_VERSION
 	},
-	.helpstring	= DCERPC_UNIXINFO_HELPSTRING,
+	.helpstring	= NDR_UNIXINFO_HELPSTRING,
 	.num_calls	= 5,
 	.calls		= unixinfo_calls,
 	.endpoints	= &unixinfo_endpoints,

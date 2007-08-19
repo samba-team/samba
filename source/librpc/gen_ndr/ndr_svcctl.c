@@ -5671,9 +5671,9 @@ const struct ndr_interface_table ndr_table_svcctl = {
 	.name		= "svcctl",
 	.syntax_id	= {
 		{0x367abb81,0x9844,0x35f1,{0xad,0x32},{0x98,0xf0,0x38,0x00,0x10,0x03}},
-		DCERPC_SVCCTL_VERSION
+		NDR_SVCCTL_VERSION
 	},
-	.helpstring	= DCERPC_SVCCTL_HELPSTRING,
+	.helpstring	= NDR_SVCCTL_HELPSTRING,
 	.num_calls	= 44,
 	.calls		= svcctl_calls,
 	.endpoints	= &svcctl_endpoints,

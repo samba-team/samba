@@ -4776,9 +4776,9 @@ const struct ndr_interface_table ndr_table_wkssvc = {
 	.name		= "wkssvc",
 	.syntax_id	= {
 		{0x6bffd098,0xa112,0x3610,{0x98,0x33},{0x46,0xc3,0xf8,0x7e,0x34,0x5a}},
-		DCERPC_WKSSVC_VERSION
+		NDR_WKSSVC_VERSION
 	},
-	.helpstring	= DCERPC_WKSSVC_HELPSTRING,
+	.helpstring	= NDR_WKSSVC_HELPSTRING,
 	.num_calls	= 31,
 	.calls		= wkssvc_calls,
 	.endpoints	= &wkssvc_endpoints,
