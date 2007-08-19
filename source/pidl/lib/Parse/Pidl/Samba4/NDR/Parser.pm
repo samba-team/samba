@@ -2337,9 +2337,9 @@ sub FunctionTable($$)
 	$self->pidl("\t.name\t\t= \"$interface->{NAME}\",");
 	$self->pidl("\t.syntax_id\t= {");
 	$self->pidl("\t\t" . print_uuid($interface->{UUID}) .",");
-	$self->pidl("\t\tDCERPC_$uname\_VERSION");
+	$self->pidl("\t\tNDR_$uname\_VERSION");
 	$self->pidl("\t},");
-	$self->pidl("\t.helpstring\t= DCERPC_$uname\_HELPSTRING,");
+	$self->pidl("\t.helpstring\t= NDR_$uname\_HELPSTRING,");
 	$self->pidl("\t.num_calls\t= $count,");
 	$self->pidl("\t.calls\t\t= $interface->{NAME}\_calls,");
 	$self->pidl("\t.endpoints\t= &$interface->{NAME}\_endpoints,");
@@ -2395,16 +2395,16 @@ sub HeaderInterface($$)
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
 		my $name = uc $interface->{NAME};
-		$self->pidl_hdr("#define DCERPC_$name\_UUID " . 
+		$self->pidl_hdr("#define NDR_$name\_UUID " . 
 		Parse::Pidl::Util::make_str(lc($interface->{PROPERTIES}->{uuid})));
 
 		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
-		$self->pidl_hdr("#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}");
+		$self->pidl_hdr("#define NDR_$name\_VERSION $interface->{PROPERTIES}->{version}");
 
-		$self->pidl_hdr("#define DCERPC_$name\_NAME \"$interface->{NAME}\"");
+		$self->pidl_hdr("#define NDR_$name\_NAME \"$interface->{NAME}\"");
 
 		if(!defined $interface->{PROPERTIES}->{helpstring}) { $interface->{PROPERTIES}->{helpstring} = "NULL"; }
-		$self->pidl_hdr("#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}");
+		$self->pidl_hdr("#define NDR_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}");
 
 		$self->pidl_hdr("extern const struct ndr_interface_table ndr_table_$interface->{NAME};");
 		$self->pidl_hdr("NTSTATUS dcerpc_server_$interface->{NAME}_init(void);");
@@ -2417,10 +2417,10 @@ sub HeaderInterface($$)
 	
 		my $val = sprintf("0x%02x", $count);
 		if (defined($interface->{BASE})) {
-			$val .= " + DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT";
+			$val .= " + NDR_" . uc $interface->{BASE} . "_CALL_COUNT";
 		}
 		
-		$self->pidl_hdr("#define DCERPC_$u_name ($val)");
+		$self->pidl_hdr("#define NDR_$u_name ($val)");
 
 		$self->pidl_hdr("");
 		$count++;
@@ -2429,10 +2429,10 @@ sub HeaderInterface($$)
 	my $val = $count;
 
 	if (defined($interface->{BASE})) {
-		$val .= " + DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT";
+		$val .= " + NDR_" . uc $interface->{BASE} . "_CALL_COUNT";
 	}
 
-	$self->pidl_hdr("#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT ($val)");
+	$self->pidl_hdr("#define NDR_" . uc $interface->{NAME} . "_CALL_COUNT ($val)");
 
 }
 

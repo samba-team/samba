@@ -68,7 +68,7 @@ static void continue_epm_map_binding(struct composite_context *ctx)
 	c->status = dcerpc_epm_map_binding_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n",
-			 DCERPC_NETLOGON_UUID, nt_errstr(c->status)));
+			 NDR_NETLOGON_UUID, nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return;
 	}

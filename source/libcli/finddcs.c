@@ -151,7 +151,7 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	state->r.in.domain_sid = state->domain_sid;
 
 	ireq = irpc_call_send(state->msg_ctx, nbt_servers[0],
-			      &ndr_table_irpc, DCERPC_NBTD_GETDCNAME,
+			      &ndr_table_irpc, NDR_NBTD_GETDCNAME,
 			      &state->r, state);
 	if (!ireq) {
 		fallback_node_status(state);
