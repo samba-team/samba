@@ -29,7 +29,7 @@
 
 	
 BOOL count_calls(TALLOC_CTX *mem_ctx,
-		 const struct dcerpc_interface_table *iface,
+		 const struct ndr_interface_table *iface,
 	BOOL all) 
 {
 	struct dcerpc_pipe *p;
@@ -102,10 +102,10 @@ BOOL count_calls(TALLOC_CTX *mem_ctx,
 
 BOOL torture_rpc_countcalls(struct torture_context *torture)
 {
-	const struct dcerpc_interface_table *iface;
+	const struct ndr_interface_table *iface;
 	const char *iface_name;
 	BOOL ret = True;
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	TALLOC_CTX *mem_ctx = talloc_named(torture, 0, "torture_rpc_countcalls context");
 	if (!mem_ctx) {
 		return False;

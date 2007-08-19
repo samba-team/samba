@@ -222,7 +222,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
 struct sec_auth_conn_state {
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
-	const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
 	struct cli_credentials *credentials;
 	struct composite_context *ctx;
 };
@@ -232,7 +232,7 @@ static void dcerpc_secondary_auth_connection_continue(struct composite_context *
 
 struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
 								struct dcerpc_binding *binding,
-								const struct dcerpc_interface_table *table,
+								const struct ndr_interface_table *table,
 								struct cli_credentials *credentials)
 {
 

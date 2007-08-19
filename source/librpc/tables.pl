@@ -51,7 +51,7 @@ sub process_file($)
 	my $found = 0;
 
 	while (my $line = <FILE>) {
-		if ($line =~ /extern const struct dcerpc_interface_table (\w+);/) {
+		if ($line =~ /extern const struct ndr_interface_table (\w+);/) {
 			$found = 1;
 			$init_fns.="\tstatus = librpc_register_interface(&$1);\n";
 			$init_fns.="\tif (NT_STATUS_IS_ERR(status)) return status;\n\n";

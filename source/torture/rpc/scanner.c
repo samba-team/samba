@@ -28,7 +28,7 @@
 /*
   work out how many calls there are for an interface
  */
-static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
+static BOOL test_num_calls(const struct ndr_interface_table *iface,
 			   TALLOC_CTX *mem_ctx,
 			   struct ndr_syntax_id *id)
 {
@@ -37,7 +37,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	int i;
 	DATA_BLOB stub_in, stub_out;
 	int idl_calls;
-	struct dcerpc_interface_table tbl;
+	struct ndr_interface_table tbl;
 
 	/* FIXME: This should be fixed when torture_rpc_connection 
 	 * takes a ndr_syntax_id */
@@ -98,7 +98,7 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct dcerpc_binding *b;
 

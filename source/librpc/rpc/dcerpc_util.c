@@ -33,7 +33,7 @@
 /*
   find a dcerpc call on an interface by name
 */
-const struct ndr_interface_call *dcerpc_iface_find_call(const struct dcerpc_interface_table *iface,
+const struct ndr_interface_call *dcerpc_iface_find_call(const struct ndr_interface_table *iface,
 							const char *name)
 {
 	int i;
@@ -770,7 +770,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 
 struct epm_map_binding_state {
 	struct dcerpc_binding *binding;
-	const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
 	struct dcerpc_pipe *pipe;
 	struct policy_handle handle;
 	struct GUID guid;
@@ -871,7 +871,7 @@ static void continue_epm_map(struct rpc_request *req)
 */
 struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 						      struct dcerpc_binding *binding,
-						      const struct dcerpc_interface_table *table,
+						      const struct ndr_interface_table *table,
 						      struct event_context *ev)
 {
 	struct composite_context *c;
@@ -981,7 +981,7 @@ NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
   Get endpoint mapping for rpc connection
 */
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
-				const struct dcerpc_interface_table *table, struct event_context *ev)
+				const struct ndr_interface_table *table, struct event_context *ev)
 {
 	struct composite_context *c;
 
@@ -993,7 +993,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 struct pipe_auth_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding *binding;
-	const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
 	struct cli_credentials *credentials;
 };
 
@@ -1156,7 +1156,7 @@ static void continue_auth_none(struct composite_context *ctx)
 */
 struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p, 
 						struct dcerpc_binding *binding,
-						const struct dcerpc_interface_table *table,
+						const struct ndr_interface_table *table,
 						struct cli_credentials *credentials)
 {
 	struct composite_context *c;
@@ -1298,7 +1298,7 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 			  struct dcerpc_pipe **p, 
 			  struct dcerpc_binding *binding,
-			  const struct dcerpc_interface_table *table,
+			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials)
 {
 	struct composite_context *c;
@@ -1333,7 +1333,7 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 
   this triggers on a debug level of >= 10
 */
-void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
+void dcerpc_log_packet(const struct ndr_interface_table *ndr,
 		       uint32_t opnum, uint32_t flags, DATA_BLOB *pkt)
 {
 	const int num_examples = 20;
@@ -1369,7 +1369,7 @@ void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
 */
 NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
 				  struct dcerpc_pipe **pp2,
-				  const struct dcerpc_interface_table *table)
+				  const struct ndr_interface_table *table)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;

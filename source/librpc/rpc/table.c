@@ -25,14 +25,14 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_table.h"
 
-struct dcerpc_interface_list *dcerpc_pipes = NULL;
+struct ndr_interface_list *dcerpc_pipes = NULL;
 
 /*
   register a dcerpc client interface
 */
-NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface)
+NTSTATUS librpc_register_interface(const struct ndr_interface_table *interface)
 {
-	struct dcerpc_interface_list *l;
+	struct ndr_interface_list *l;
 
 	for (l = dcerpc_pipes; l; l = l->next) {
 		if (GUID_equal(&interface->syntax_id.uuid, &l->table->syntax_id.uuid)) {
@@ -43,7 +43,7 @@ NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interfac
 		}
 	}
 		
-	l = talloc(talloc_autofree_context(), struct dcerpc_interface_list);
+	l = talloc(talloc_autofree_context(), struct ndr_interface_list);
 	l->table = interface;
 
 	DLIST_ADD(dcerpc_pipes, l);
@@ -56,7 +56,7 @@ NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interfac
 */
 const char *idl_pipe_name(const struct GUID *uuid, uint32_t if_version)
 {
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid) &&
 		    l->table->syntax_id.if_version == if_version) {
@@ -71,7 +71,7 @@ const char *idl_pipe_name(const struct GUID *uuid, uint32_t if_version)
 */
 int idl_num_calls(const struct GUID *uuid, uint32_t if_version)
 {
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next){
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid) &&
 		    l->table->syntax_id.if_version == if_version) {
@@ -85,9 +85,9 @@ int idl_num_calls(const struct GUID *uuid, uint32_t if_version)
 /*
   find a dcerpc interface by name
 */
-const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
+const struct ndr_interface_table *idl_iface_by_name(const char *name)
 {
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
 		if (strcasecmp(l->table->name, name) == 0) {
 			return l->table;
@@ -99,9 +99,9 @@ const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
 /*
   find a dcerpc interface by uuid
 */
-const struct dcerpc_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
+const struct ndr_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
 {
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid)) {
 			return l->table;
@@ -113,7 +113,7 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
 /*
   return the list of registered dcerpc_pipes
 */
-const struct dcerpc_interface_list *librpc_dcerpc_pipes(void)
+const struct ndr_interface_list *librpc_dcerpc_pipes(void)
 {
 	return dcerpc_pipes;
 }

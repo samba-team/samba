@@ -89,7 +89,7 @@ static void fill_blob_handle(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 
 static void reopen(TALLOC_CTX *mem_ctx, 
 		   struct dcerpc_pipe **p, 
-		   const struct dcerpc_interface_table *iface)
+		   const struct ndr_interface_table *iface)
 {
 	NTSTATUS status;
 
@@ -111,10 +111,10 @@ static void print_depth(int depth)
 	}
 }
 
-static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface, 
+static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, 
 			  int opnum, DATA_BLOB *base_in, int min_ofs, int max_ofs, int depth);
 
-static void try_expand(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface, 
+static void try_expand(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, 
 		       int opnum, DATA_BLOB *base_in, int insert_ofs, int depth)
 {
 	DATA_BLOB stub_in, stub_out;
@@ -156,7 +156,7 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table 
 }
 
 
-static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface, 
+static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, 
 			  int opnum, DATA_BLOB *base_in, int min_ofs, int max_ofs, int depth)
 {
 	DATA_BLOB stub_in, stub_out;
@@ -196,7 +196,7 @@ static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_tab
 }
 	
 
-static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface, int opnum)
+static void test_scan_call(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, int opnum)
 {
 	DATA_BLOB stub_in, stub_out;
 	int i;
@@ -254,7 +254,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 }
 
 
-static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface)
+static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface)
 {
 	test_scan_call(mem_ctx, iface, 2);
 }
@@ -262,7 +262,7 @@ static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 BOOL torture_rpc_autoidl(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
-	const struct dcerpc_interface_table *iface;
+	const struct ndr_interface_table *iface;
 		
 	iface = idl_iface_by_name("drsuapi");
 	if (!iface) {

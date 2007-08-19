@@ -33,7 +33,7 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle *handle;
-	struct dcerpc_interface_table tmptbl;
+	struct ndr_interface_table tmptbl;
 	struct ndr_syntax_id syntax;
 	struct ndr_syntax_id transfer_syntax;
 

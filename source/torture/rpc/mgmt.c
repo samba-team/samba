@@ -30,7 +30,7 @@
   ask the server what interface IDs are available on this endpoint
 */
 BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		     BOOL (*per_id_test)(const struct dcerpc_interface_table *iface,
+		     BOOL (*per_id_test)(const struct ndr_interface_table *iface,
 					 TALLOC_CTX *mem_ctx,
 					 struct ndr_syntax_id *id),
 		     const void *priv)
@@ -194,7 +194,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
 	const char *binding = torture_setting_string(torture, "binding", NULL);
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	struct dcerpc_binding *b;
 
 	mem_ctx = talloc_init("torture_rpc_mgmt");

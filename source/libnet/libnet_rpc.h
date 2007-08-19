@@ -44,7 +44,7 @@ struct libnet_RpcConnect {
 		const char *name;
 		const char *address;
 		const char *binding;
-		const struct dcerpc_interface_table *dcerpc_iface;
+		const struct ndr_interface_table *dcerpc_iface;
 	} in;
 	struct {
 		struct dcerpc_pipe *dcerpc_pipe;

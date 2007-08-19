@@ -1368,7 +1368,7 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 static NTSTATUS pipe_bind_smb(TALLOC_CTX *mem_ctx,
 			      struct smbcli_tree *tree,
 			      const char *pipe_name,
-			      const struct dcerpc_interface_table *iface,
+			      const struct ndr_interface_table *iface,
 			      struct dcerpc_pipe **p)
 {
 	struct dcerpc_pipe *result;

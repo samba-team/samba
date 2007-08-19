@@ -28,7 +28,7 @@
 #endif
 
 static const struct ndr_interface_call *find_function(
-	const struct dcerpc_interface_table *p,
+	const struct ndr_interface_table *p,
 	const char *function)
 {
 	int i;
@@ -52,7 +52,7 @@ static const struct ndr_interface_call *find_function(
 
 static void show_pipes(void)
 {
-	const struct dcerpc_interface_list *l;
+	const struct ndr_interface_list *l;
 	printf("\nYou must specify a pipe\n");
 	printf("known pipes are:\n");
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
@@ -67,7 +67,7 @@ static void show_pipes(void)
 
 #endif
 
-static void show_functions(const struct dcerpc_interface_table *p)
+static void show_functions(const struct ndr_interface_table *p)
 {
 	int i;
 	printf("\nYou must specify a function\n");
@@ -104,9 +104,9 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	return result;
 }
 
-const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, const char *pipe_name)
+const struct ndr_interface_table *load_iface_from_plugin(const char *plugin, const char *pipe_name)
 {
-	const struct dcerpc_interface_table *p;
+	const struct ndr_interface_table *p;
 	void *handle;
 	char *symbol;
 
@@ -132,7 +132,7 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 
  int main(int argc, const char *argv[])
 {
-	const struct dcerpc_interface_table *p = NULL;
+	const struct ndr_interface_table *p = NULL;
 	const struct ndr_interface_call *f;
 	const char *pipe_name, *function, *inout, *filename;
 	uint8_t *data;

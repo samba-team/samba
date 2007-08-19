@@ -62,7 +62,7 @@ typedef NTSTATUS (*irpc_function_t)(struct irpc_message *, void *r);
 */
 struct irpc_request {
 	struct messaging_context *msg_ctx;
-	const struct dcerpc_interface_table *table;
+	const struct ndr_interface_table *table;
 	int callnum;
 	int callid;
 	void *r;
@@ -103,16 +103,16 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
 
 
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
-		       const struct dcerpc_interface_table *table, 
+		       const struct ndr_interface_table *table, 
 		       int call, irpc_function_t fn, void *private);
 struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
 				    struct server_id server_id, 
-				    const struct dcerpc_interface_table *table, 
+				    const struct ndr_interface_table *table, 
 				    int callnum, void *r, TALLOC_CTX *ctx);
 NTSTATUS irpc_call_recv(struct irpc_request *irpc);
 NTSTATUS irpc_call(struct messaging_context *msg_ctx, 
 		   struct server_id server_id, 
-		   const struct dcerpc_interface_table *table, 
+		   const struct ndr_interface_table *table, 
 		   int callnum, void *r, TALLOC_CTX *ctx);
 
 NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);

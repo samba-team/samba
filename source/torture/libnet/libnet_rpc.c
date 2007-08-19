@@ -32,7 +32,7 @@
 
 
 static BOOL test_connect_service(struct libnet_context *ctx,
-				 const struct dcerpc_interface_table *iface,
+				 const struct ndr_interface_table *iface,
 				 const char *binding_string,
 				 const char *hostname,
 				 const enum libnet_RpcConnect_level level,

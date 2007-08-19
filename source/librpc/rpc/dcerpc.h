@@ -158,21 +158,6 @@ struct dcerpc_pipe {
 /* this triggers the DCERPC_PFC_FLAG_CONC_MPX flag in the bind request */
 #define DCERPC_CONCURRENT_MULTIPLEX     (1<<19)
 
-struct dcerpc_interface_table {
-	const char *name;
-	struct ndr_syntax_id syntax_id;
-	const char *helpstring;
-	uint32_t num_calls;
-	const struct ndr_interface_call *calls;
-	const struct ndr_interface_string_array *endpoints;
-	const struct ndr_interface_string_array *authservices;
-};
-
-struct dcerpc_interface_list {
-	struct dcerpc_interface_list *prev, *next;
-	const struct dcerpc_interface_table *table;
-};
-
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
@@ -190,7 +175,7 @@ struct dcerpc_pipe_connect {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding *binding;
 	const char *pipe_name;
-	const struct dcerpc_interface_table *interface;
+	const struct ndr_interface_table *interface;
 	struct cli_credentials *creds;
 };
 
@@ -227,7 +212,7 @@ struct rpc_request {
 
 	/* use by the ndr level async recv call */
 	struct {
-		const struct dcerpc_interface_table *table;
+		const struct ndr_interface_table *table;
 		uint32_t opnum;
 		void *struct_ptr;
 		TALLOC_CTX *mem_ctx;
