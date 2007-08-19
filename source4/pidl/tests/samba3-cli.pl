@@ -39,7 +39,7 @@ is($x->{res}, "NTSTATUS rpccli_bar(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 \tif (DEBUGLEVEL >= 10)
 \t\tNDR_PRINT_IN_DEBUG(bar, &r);
 \t
-\tstatus = cli_do_rpc_ndr(cli, mem_ctx, PI_foo, DCERPC_BAR, &r, (ndr_pull_flags_fn_t)ndr_pull_bar, (ndr_push_flags_fn_t)ndr_push_bar);
+\tstatus = cli_do_rpc_ndr(cli, mem_ctx, PI_foo, NDR_BAR, &r, (ndr_pull_flags_fn_t)ndr_pull_bar, (ndr_push_flags_fn_t)ndr_push_bar);
 \t
 \tif (!NT_STATUS_IS_OK(status)) {
 \t\treturn status;

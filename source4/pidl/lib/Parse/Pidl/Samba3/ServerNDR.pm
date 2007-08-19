@@ -199,7 +199,7 @@ sub ParseInterface($)
 	indent;
 
 	foreach (@{$if->{FUNCTIONS}}) {
-		pidl "{\"" . uc($_->{NAME}) . "\", DCERPC_" . uc($_->{NAME}) . ", api_$_->{NAME}},";
+		pidl "{\"" . uc($_->{NAME}) . "\", NDR_" . uc($_->{NAME}) . ", api_$_->{NAME}},";
 	}
 
 	deindent;

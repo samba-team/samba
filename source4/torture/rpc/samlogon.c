@@ -146,7 +146,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	}
 	
 	switch (samlogon_state->function_level) {
-	case DCERPC_NETR_LOGONSAMLOGON: 
+	case NDR_NETR_LOGONSAMLOGON: 
 		ZERO_STRUCT(samlogon_state->auth2);
 		creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
 
@@ -179,7 +179,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			break;
 		}
 		break;
-	case DCERPC_NETR_LOGONSAMLOGONEX: 
+	case NDR_NETR_LOGONSAMLOGONEX: 
 		status = dcerpc_netr_LogonSamLogonEx(samlogon_state->p, samlogon_state->mem_ctx, r_ex);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
@@ -204,7 +204,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			break;
 		}
 		break;
-	case DCERPC_NETR_LOGONSAMLOGONWITHFLAGS: 
+	case NDR_NETR_LOGONSAMLOGONWITHFLAGS: 
 		ZERO_STRUCT(samlogon_state->auth2);
 		creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
 
@@ -1320,9 +1320,9 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	int validation_levels[] = {2,3,6};
 	int logon_levels[] = { 2, 6 };
 	int function_levels[] = { 
-		DCERPC_NETR_LOGONSAMLOGON,
-		DCERPC_NETR_LOGONSAMLOGONEX,
-		DCERPC_NETR_LOGONSAMLOGONWITHFLAGS };
+		NDR_NETR_LOGONSAMLOGON,
+		NDR_NETR_LOGONSAMLOGONEX,
+		NDR_NETR_LOGONSAMLOGONWITHFLAGS };
 	struct samlogon_state samlogon_state;
 	
 	d_printf("testing netr_LogonSamLogon and netr_LogonSamLogonWithFlags\n");
@@ -1594,7 +1594,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
-								   &ndr_table_netlogon,
+				       &ndr_table_netlogon,
 				       machine_credentials, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {

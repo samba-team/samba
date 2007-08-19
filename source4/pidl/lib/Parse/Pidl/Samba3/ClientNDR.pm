@@ -40,7 +40,7 @@ sub ParseFunction($$$)
 
 	my $inargs = "";
 	my $defargs = "";
-	my $ufn = "DCERPC_".uc($fn->{NAME});
+	my $ufn = "NDR_".uc($fn->{NAME});
 
 	foreach (@{$fn->{ELEMENTS}}) {
 		$defargs .= ", " . DeclLong($_);

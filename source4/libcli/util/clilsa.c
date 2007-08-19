@@ -85,7 +85,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 	}
 
 	/* open the LSA pipe */
-	status = dcerpc_pipe_open_smb(lsa->pipe, lsa->ipc_tree, DCERPC_LSARPC_NAME);
+	status = dcerpc_pipe_open_smb(lsa->pipe, lsa->ipc_tree, NDR_LSARPC_NAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lsa);
 		return status;
