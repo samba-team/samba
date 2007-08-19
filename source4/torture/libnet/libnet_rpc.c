@@ -91,35 +91,35 @@ static BOOL torture_rpc_connect(struct torture_context *torture,
 	ctx->cred = cmdline_credentials;
 	
 	d_printf("Testing connection to LSA interface\n");
-	if (!test_connect_service(ctx, &dcerpc_table_lsarpc, bindstr,
+	if (!test_connect_service(ctx, &ndr_table_lsarpc, bindstr,
 				  hostname, level, False, NT_STATUS_OK)) {
 		d_printf("failed to connect LSA interface\n");
 		return False;
 	}
 
 	d_printf("Testing connection to SAMR interface\n");
-	if (!test_connect_service(ctx, &dcerpc_table_samr, bindstr,
+	if (!test_connect_service(ctx, &ndr_table_samr, bindstr,
 				  hostname, level, False, NT_STATUS_OK)) {
 		d_printf("failed to connect SAMR interface\n");
 		return False;
 	}
 
 	d_printf("Testing connection to SRVSVC interface\n");
-	if (!test_connect_service(ctx, &dcerpc_table_srvsvc, bindstr,
+	if (!test_connect_service(ctx, &ndr_table_srvsvc, bindstr,
 				  hostname, level, False, NT_STATUS_OK)) {
 		d_printf("failed to connect SRVSVC interface\n");
 		return False;
 	}
 
 	d_printf("Testing connection to LSA interface with wrong credentials\n");
-	if (!test_connect_service(ctx, &dcerpc_table_lsarpc, bindstr,
+	if (!test_connect_service(ctx, &ndr_table_lsarpc, bindstr,
 				  hostname, level, True, NT_STATUS_LOGON_FAILURE)) {
 		d_printf("failed to test wrong credentials on LSA interface\n");
 		return False;
 	}
 
 	d_printf("Testing connection to SAMR interface with wrong credentials\n");
-	if (!test_connect_service(ctx, &dcerpc_table_samr, bindstr,
+	if (!test_connect_service(ctx, &ndr_table_samr, bindstr,
 				  hostname, level, True, NT_STATUS_LOGON_FAILURE)) {
 		d_printf("failed to test wrong credentials on SAMR interface\n");
 		return False;

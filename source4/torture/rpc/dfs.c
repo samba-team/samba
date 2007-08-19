@@ -483,7 +483,7 @@ struct torture_suite *torture_rpc_dfs(void)
 
 #if 0
 	struct torture_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, 
-												"dfs", &dcerpc_table_netdfs);
+												"dfs", &ndr_table_netdfs);
 
 	torture_rpc_tcase_add_test(tcase, "GetManagerVersion", 
 							   test_GetManagerVersion);

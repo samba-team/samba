@@ -121,7 +121,7 @@ const struct ndr_interface_list *librpc_dcerpc_pipes(void)
 
 NTSTATUS dcerpc_register_builtin_interfaces(void);
 
-NTSTATUS dcerpc_table_init(void)
+NTSTATUS ndr_table_init(void)
 {
 	static BOOL initialized = False;
 

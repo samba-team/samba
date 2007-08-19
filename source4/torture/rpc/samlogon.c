@@ -1594,7 +1594,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
-								   &dcerpc_table_netlogon,
+								   &ndr_table_netlogon,
 				       machine_credentials, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {

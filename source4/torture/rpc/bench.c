@@ -105,7 +105,7 @@ BOOL torture_bench_rpc(struct torture_context *torture)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p,
-					&dcerpc_table_srvsvc);
+					&ndr_table_srvsvc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

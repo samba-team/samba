@@ -240,7 +240,7 @@ struct torture_suite *torture_rpc_eventlog(void)
 
 	suite = torture_suite_create(talloc_autofree_context(), "EVENTLOG");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "eventlog", 
-						  &dcerpc_table_eventlog);
+						  &ndr_table_eventlog);
 
 	torture_rpc_tcase_add_test(tcase, "OpenEventLog", test_OpenEventLog);
 	torture_rpc_tcase_add_test(tcase, "ClearEventLog", test_ClearEventLog);

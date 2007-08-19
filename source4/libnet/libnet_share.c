@@ -37,7 +37,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 
 	c.level               = LIBNET_RPC_CONNECT_SERVER;
 	c.in.name             = r->in.server_name;
-	c.in.dcerpc_iface     = &dcerpc_table_srvsvc;
+	c.in.dcerpc_iface     = &ndr_table_srvsvc;
 
 	s.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", c.in.name);
 
@@ -118,7 +118,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 
 	c.level              = LIBNET_RPC_CONNECT_SERVER;
 	c.in.name            = r->in.server_name;
-	c.in.dcerpc_iface    = &dcerpc_table_srvsvc;
+	c.in.dcerpc_iface    = &ndr_table_srvsvc;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -165,7 +165,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 
 	c.level               = LIBNET_RPC_CONNECT_SERVER;
 	c.in.name             = r->in.server_name;
-	c.in.dcerpc_iface     = &dcerpc_table_srvsvc;
+	c.in.dcerpc_iface     = &ndr_table_srvsvc;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {

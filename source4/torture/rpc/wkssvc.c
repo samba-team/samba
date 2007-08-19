@@ -84,7 +84,7 @@ struct torture_suite *torture_rpc_wkssvc(void)
 
 	suite = torture_suite_create(talloc_autofree_context(), "WKSSVC");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "wkssvc",
-						  &dcerpc_table_wkssvc);
+						  &ndr_table_wkssvc);
 
 	torture_rpc_tcase_add_test(tcase, "NetWkstaGetInfo", test_NetWkstaGetInfo);
 	torture_rpc_tcase_add_test(tcase, "NetWkstaTransportEnum", 

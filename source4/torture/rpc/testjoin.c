@@ -139,13 +139,13 @@ struct test_join *torture_create_testuser(const char *username,
 		status = dcerpc_pipe_connect(join,
 					     &join->p,
 					     dc_binding,
-					     &dcerpc_table_samr,
+					     &ndr_table_samr,
 					     cmdline_credentials, NULL);
 					     
 	} else {
 		status = torture_rpc_connection(join, 
 						&join->p, 
-						&dcerpc_table_samr);
+						&ndr_table_samr);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;

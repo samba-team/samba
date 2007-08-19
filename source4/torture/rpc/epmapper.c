@@ -263,7 +263,7 @@ static BOOL test_InqObject(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct epm_InqObject r;
 
 	r.in.epm_object = talloc(mem_ctx, struct GUID);
-	*r.in.epm_object = dcerpc_table_epmapper.syntax_id.uuid;
+	*r.in.epm_object = ndr_table_epmapper.syntax_id.uuid;
 
 	status = dcerpc_epm_InqObject(p, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -283,7 +283,7 @@ BOOL torture_rpc_epmapper(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_epmapper");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_epmapper);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_epmapper);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

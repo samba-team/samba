@@ -751,7 +751,7 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					&dcerpc_table_drsuapi);
+					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_leave_domain(priv.join);
 		talloc_free(mem_ctx);
@@ -811,7 +811,7 @@ BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					&dcerpc_table_drsuapi);
+					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_leave_domain(priv.join);
 		talloc_free(mem_ctx);

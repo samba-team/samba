@@ -59,18 +59,18 @@ BOOL torture_multi_bind(struct torture_context *torture)
 		return False;
 	}
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_lsarpc);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	status = dcerpc_pipe_auth(mem_ctx, &p, binding, &dcerpc_table_lsarpc, cmdline_credentials);
+	status = dcerpc_pipe_auth(mem_ctx, &p, binding, &ndr_table_lsarpc, cmdline_credentials);
 
 	if (NT_STATUS_IS_OK(status)) {
 		printf("(incorrectly) allowed re-bind to uuid %s - %s\n", 
-			GUID_string(mem_ctx, &dcerpc_table_lsarpc.syntax_id.uuid), nt_errstr(status));
+			GUID_string(mem_ctx, &ndr_table_lsarpc.syntax_id.uuid), nt_errstr(status));
 		ret = False;
 	} else {
 		printf("\n");

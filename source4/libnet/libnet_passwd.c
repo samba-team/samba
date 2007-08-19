@@ -54,7 +54,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	/* prepare connect to the SAMR pipe of the users domain PDC */
 	c.level                    = LIBNET_RPC_CONNECT_PDC;
 	c.in.name                  = r->samr.in.domain_name;
-	c.in.dcerpc_iface     	   = &dcerpc_table_samr;
+	c.in.dcerpc_iface     	   = &ndr_table_samr;
 
 	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
@@ -538,7 +538,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare connect to the SAMR pipe of users domain PDC */
 	c.level               = LIBNET_RPC_CONNECT_PDC;
 	c.in.name             = r->samr.in.domain_name;
-	c.in.dcerpc_iface     = &dcerpc_table_samr;
+	c.in.dcerpc_iface     = &ndr_table_samr;
 
 	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);

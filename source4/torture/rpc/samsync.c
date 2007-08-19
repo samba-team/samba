@@ -1505,7 +1505,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 
 	status = torture_rpc_connection(samsync_state,
 					&samsync_state->p_lsa, 
-					&dcerpc_table_lsarpc);
+					&ndr_table_lsarpc);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
@@ -1557,7 +1557,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 
 	status = dcerpc_pipe_connect_b(samsync_state,
 				       &samsync_state->p, b, 
-					   &dcerpc_table_netlogon,
+					   &ndr_table_netlogon,
 				       credentials, NULL);
 	
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1596,7 +1596,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	status = dcerpc_pipe_connect_b(samsync_state, 
 				       &samsync_state->p_netlogon_wksta, 
 				       b_netlogon_wksta, 
-					   &dcerpc_table_netlogon,
+					   &ndr_table_netlogon,
 				       credentials_wksta, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {

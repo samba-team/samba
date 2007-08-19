@@ -1999,7 +1999,7 @@ BOOL torture_rpc_lsa(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_lsarpc);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2087,7 +2087,7 @@ BOOL torture_rpc_lsa_get_user(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_lsa_get_user");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_lsarpc);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

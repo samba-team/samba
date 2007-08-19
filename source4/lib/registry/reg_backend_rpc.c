@@ -372,7 +372,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, struct auth_sessi
 
 	status = dcerpc_pipe_connect(*ctx /* TALLOC_CTX */, 
 				     &p, location, 
-					 &dcerpc_table_winreg,
+					 &ndr_table_winreg,
 				     credentials, ev);
 	(*ctx)->backend_data = p;
 

@@ -102,7 +102,7 @@ static void continue_secondary_connection(struct composite_context *ctx)
 	talloc_steal(s, s->pipe2);
 
 	/* initiate a non-authenticated bind */
-	auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe2, &dcerpc_table_netlogon);
+	auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe2, &ndr_table_netlogon);
 	if (composite_nomem(auth_none_req, c)) return;
 
 	composite_continue(c, auth_none_req, continue_bind_auth_none, c);
@@ -261,7 +261,7 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 
 	/* request the netlogon endpoint mapping */
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->binding,
-						  &dcerpc_table_netlogon,
+						  &ndr_table_netlogon,
 						  s->pipe->conn->event_ctx);
 	if (composite_nomem(epm_map_req, c)) return c;
 

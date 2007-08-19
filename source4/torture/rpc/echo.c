@@ -433,7 +433,7 @@ struct torture_suite *torture_rpc_echo(void)
 	struct torture_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "echo", 
-						  &dcerpc_table_rpcecho);
+						  &ndr_table_rpcecho);
 
 	torture_rpc_tcase_add_test(tcase, "addone", test_addone);
 	torture_rpc_tcase_add_test(tcase, "sinkdata", test_sinkdata);

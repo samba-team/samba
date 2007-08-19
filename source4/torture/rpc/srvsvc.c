@@ -1101,7 +1101,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_srvsvc");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_srvsvc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1122,7 +1122,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 	ret &= test_NetShareAddSetDel(p, mem_ctx);
 	ret &= test_NetNameValidate(p, mem_ctx);
 	
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_srvsvc);
 
 	if (!binding) {
 		d_printf("You must specify a ncacn binding string\n");
@@ -1132,7 +1132,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 	anon_credentials = cli_credentials_init_anon(mem_ctx);
 
 	status = dcerpc_pipe_connect(mem_ctx, 
-				     &p, binding, &dcerpc_table_srvsvc,
+				     &p, binding, &ndr_table_srvsvc,
 				     anon_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

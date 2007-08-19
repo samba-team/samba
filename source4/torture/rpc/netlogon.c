@@ -1563,7 +1563,7 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	status = dcerpc_bind_auth_none(p2, &dcerpc_table_lsarpc);
+	status = dcerpc_bind_auth_none(p2, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
    		printf("Failed to create bind on secondary connection\n");
 		return False;
@@ -1652,7 +1652,7 @@ BOOL torture_rpc_netlogon(struct torture_context *torture)
 
 	machine_password = cli_credentials_get_password(machine_credentials);
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_netlogon);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

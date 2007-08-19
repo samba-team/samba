@@ -117,7 +117,7 @@ BOOL torture_rpc_svcctl(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_svcctl");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_svcctl);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_svcctl);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

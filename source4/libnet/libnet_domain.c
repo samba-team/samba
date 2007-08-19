@@ -284,7 +284,7 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 		/* attempting to connect a domain controller */
 		s->rpcconn.level           = LIBNET_RPC_CONNECT_DC;
 		s->rpcconn.in.name         = io->in.domain_name;
-		s->rpcconn.in.dcerpc_iface = &dcerpc_table_samr;
+		s->rpcconn.in.dcerpc_iface = &ndr_table_samr;
 		
 		/* send rpc pipe connect request */
 		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn, s->monitor_fn);
@@ -427,7 +427,7 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 		/* attempting to connect a domain controller */
 		s->rpcconn.level           = LIBNET_RPC_CONNECT_DC;
 		s->rpcconn.in.name         = talloc_strdup(c, io->in.domain_name);
-		s->rpcconn.in.dcerpc_iface = &dcerpc_table_lsarpc;
+		s->rpcconn.in.dcerpc_iface = &ndr_table_lsarpc;
 		
 		/* send rpc pipe connect request */
 		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn, s->monitor_fn);
@@ -1175,7 +1175,7 @@ struct composite_context* libnet_DomainList_send(struct libnet_context *ctx,
 		/* prepare rpc connect call */
 		s->rpcconn.level           = LIBNET_RPC_CONNECT_SERVER;
 		s->rpcconn.in.name         = s->hostname;
-		s->rpcconn.in.dcerpc_iface = &dcerpc_table_samr;
+		s->rpcconn.in.dcerpc_iface = &ndr_table_samr;
 
 		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn, s->monitor_fn);
 		if (composite_nomem(rpcconn_req, c)) return c;

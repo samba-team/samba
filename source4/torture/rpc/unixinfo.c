@@ -132,7 +132,7 @@ struct torture_suite *torture_rpc_unixinfo(void)
 
 	suite = torture_suite_create(talloc_autofree_context(), "UNIXINFO");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "unixinfo", 
-						  &dcerpc_table_unixinfo);
+						  &ndr_table_unixinfo);
 
 	torture_rpc_tcase_add_test(tcase, "sidtouid", test_sidtouid);
 	torture_rpc_tcase_add_test(tcase, "uidtosid", test_uidtosid);

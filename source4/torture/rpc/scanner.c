@@ -142,7 +142,7 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, b));
 
-		status = torture_rpc_connection(loop_ctx, &p, &dcerpc_table_mgmt);
+		status = torture_rpc_connection(loop_ctx, &p, &ndr_table_mgmt);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(loop_ctx);
 			ret = False;

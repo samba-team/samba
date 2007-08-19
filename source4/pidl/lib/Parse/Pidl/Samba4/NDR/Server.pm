@@ -106,18 +106,18 @@ static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	dce_call->fault_code = 0;
 
-	if (opnum >= dcerpc_table_$name.num_calls) {
+	if (opnum >= ndr_table_$name.num_calls) {
 		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	*r = talloc_size(mem_ctx, dcerpc_table_$name.calls[opnum].struct_size);
+	*r = talloc_size(mem_ctx, ndr_table_$name.calls[opnum].struct_size);
 	NT_STATUS_HAVE_NO_MEMORY(*r);
 
         /* unravel the NDR for the packet */
-	status = dcerpc_table_$name.calls[opnum].ndr_pull(pull, NDR_IN, *r);
+	status = ndr_table_$name.calls[opnum].ndr_pull(pull, NDR_IN, *r);
 	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_log_packet(&dcerpc_table_$name, opnum, NDR_IN,
+		dcerpc_log_packet(&ndr_table_$name, opnum, NDR_IN,
 				  &dce_call->pkt.u.request.stub_and_verifier);
 		dce_call->fault_code = DCERPC_FAULT_NDR;
 		return NT_STATUS_NET_WRITE_FAULT;
@@ -141,7 +141,7 @@ pidl "
 	}
 
 	if (dce_call->fault_code != 0) {
-		dcerpc_log_packet(&dcerpc_table_$name, opnum, NDR_IN,
+		dcerpc_log_packet(&ndr_table_$name, opnum, NDR_IN,
 				  &dce_call->pkt.u.request.stub_and_verifier);
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
@@ -164,7 +164,7 @@ pidl "
 	}
 
 	if (dce_call->fault_code != 0) {
-		dcerpc_log_packet(&dcerpc_table_$name, opnum, NDR_IN,
+		dcerpc_log_packet(&ndr_table_$name, opnum, NDR_IN,
 				  &dce_call->pkt.u.request.stub_and_verifier);
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
@@ -177,7 +177,7 @@ static NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_C
 	NTSTATUS status;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
-	status = dcerpc_table_$name.calls[opnum].ndr_push(push, NDR_OUT, r);
+	status = ndr_table_$name.calls[opnum].ndr_push(push, NDR_OUT, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		dce_call->fault_code = DCERPC_FAULT_NDR;
 		return NT_STATUS_NET_WRITE_FAULT;
@@ -213,9 +213,9 @@ static NTSTATUS $name\__op_init_server(struct dcesrv_context *dce_ctx, const str
 {
 	int i;
 
-	for (i=0;i<dcerpc_table_$name.endpoints->count;i++) {
+	for (i=0;i<ndr_table_$name.endpoints->count;i++) {
 		NTSTATUS ret;
-		const char *name = dcerpc_table_$name.endpoints->names[i];
+		const char *name = ndr_table_$name.endpoints->names[i];
 
 		ret = dcesrv_interface_register(dce_ctx, name, &dcesrv_$name\_interface, NULL);
 		if (!NT_STATUS_IS_OK(ret)) {

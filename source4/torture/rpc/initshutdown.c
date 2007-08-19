@@ -121,7 +121,7 @@ BOOL torture_rpc_initshutdown(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_initshutdown");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_initshutdown);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_initshutdown);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
