@@ -579,6 +579,27 @@ failed:
 #endif /* HAVE_KRB5 */
 }
 
+/****************************************************************
+****************************************************************/
+
+static BOOL check_request_flags(uint32_t flags)
+{
+	uint32_t flags_edata = WBFLAG_PAM_AFS_TOKEN |
+			       WBFLAG_PAM_UNIX_NAME |
+			       WBFLAG_PAM_INFO3_NDR;
+
+	if ( ( (flags & flags_edata) == WBFLAG_PAM_AFS_TOKEN) ||
+	     ( (flags & flags_edata) == WBFLAG_PAM_INFO3_NDR) ||
+	     ( (flags & flags_edata) == WBFLAG_PAM_UNIX_NAME) ||
+	      !(flags & flags_edata) ) {
+		return True;
+	}
+
+	DEBUG(1,("check_request_flags: invalid request flags\n"));
+
+	return False;
+}
+
 void winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
@@ -595,6 +616,11 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: pam auth %s\n", (unsigned long)state->pid,
 		  state->request.data.auth.user));
+
+	if (!check_request_flags(state->request.flags)) {
+		result = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto done;
+	}
 
 	/* Parse domain and username */
 	
@@ -1185,6 +1211,11 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: dual pam auth %s\n", (unsigned long)state->pid,
 		  state->request.data.auth.user));
 
+	if (!check_request_flags(state->request.flags)) {
+		result = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto done;
+	}
+
 	/* Parse domain and username */
 	
 	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
@@ -1526,6 +1557,11 @@ void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	const char *domain_name = NULL;
 	NTSTATUS result;
 
+	if (!check_request_flags(state->request.flags)) {
+		result = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto done;
+	}
+
 	if (!state->privileged) {
 		char *error_string = NULL;
 		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access "
@@ -1605,6 +1641,11 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	/* Ensure null termination */
 	state->request.data.auth_crap.user[sizeof(state->request.data.auth_crap.user)-1]=0;
 	state->request.data.auth_crap.domain[sizeof(state->request.data.auth_crap.domain)-1]=0;
+
+	if (!check_request_flags(state->request.flags)) {
+		result = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto done;
+	}
 
 	name_user = state->request.data.auth_crap.user;
 
