@@ -572,7 +572,7 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 
 static BOOL api_srv_net_file_close(pipes_struct *p)
 {
-	return proxy_srvsvc_call( p, DCERPC_SRVSVC_NETFILECLOSE );
+	return proxy_srvsvc_call( p, NDR_SRVSVC_NETFILECLOSE );
 }
 
 /*******************************************************************

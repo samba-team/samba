@@ -53,7 +53,7 @@ static BOOL proxy_winreg_call(pipes_struct *p, uint8 opnum)
 
 static BOOL api_reg_close(pipes_struct *p)
 {
-	return proxy_winreg_call( p, DCERPC_WINREG_CLOSEKEY );
+	return proxy_winreg_call( p, NDR_WINREG_CLOSEKEY );
 }
 
 /*******************************************************************
