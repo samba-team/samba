@@ -328,7 +328,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		ret = ldb_search(ldb, mods_dn, LDB_SCOPE_BASE, "", attrs, &res);
 		talloc_steal(mods_dn, res);
 		if (ret == LDB_SUCCESS && (res->count == 0 || res->msgs[0]->num_elements == 0)) {
-			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
+			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
 		} else {
 			if (ret != LDB_SUCCESS) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb error (%s) occurred searching for modules, bailing out\n", ldb_errstring(ldb));
@@ -356,7 +356,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			return ret;
 		}
 	} else {
-		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database\n");
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database");
 	}
 
 	return ldb_init_module_chain(ldb, ldb->modules);
