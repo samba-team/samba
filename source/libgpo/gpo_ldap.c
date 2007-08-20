@@ -1,25 +1,23 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
  *  Copyright (C) Guenther Deschner 2005,2007
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "includes.h"
-
-#ifdef HAVE_LDAP
 
 /****************************************************************
  parse the raw extension string into a GP_EXT structure
@@ -149,6 +147,8 @@ BOOL ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+#ifdef HAVE_LDAP
+
 /****************************************************************
  parse the raw link string into a GP_LINK structure
 ****************************************************************/
@@ -158,7 +158,7 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 				   uint32_t options,
 				   struct GP_LINK *gp_link)
 {
-	ADS_STATUS status = ADS_ERROR(LDAP_NO_MEMORY);
+	ADS_STATUS status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	char **link_list;
 	int i;
 
