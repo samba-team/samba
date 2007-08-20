@@ -2823,6 +2823,22 @@ BOOL lp_parameter_is_global(const char *pszParmName)
 }
 
 /**************************************************************************
+ Check whether the given name is the canonical name of a parameter.
+ Returns False if it is not a valid parameter Name.
+ For parametric options, True is returned.
+**************************************************************************/
+
+BOOL lp_parameter_is_canonical(const char *parm_name)
+{
+	if (!lp_parameter_is_valid(parm_name)) {
+		return False;
+	}
+
+	return (map_parameter(parm_name) ==
+		map_parameter_canonical(parm_name, NULL));
+}
+
+/**************************************************************************
  Determine the canonical name for a parameter.
  Indicate when it is an inverse (boolean) synonym instead of a
  "usual" synonym.
@@ -2929,21 +2945,25 @@ static int map_parameter(const char *pszParmName)
 static int map_parameter_canonical(const char *pszParmName, BOOL *inverse)
 {
 	int parm_num, canon_num;
-
-	*inverse = False;
+	BOOL loc_inverse = False;
 
 	parm_num = map_parameter(pszParmName);
 	if ((parm_num < 0) || !(parm_table[parm_num].flags & FLAG_HIDE)) {
 		/* invalid, parametric or no canidate for synonyms ... */
-		return parm_num;
+		goto done;
 	}
 
 	for (canon_num = 0; parm_table[canon_num].label; canon_num++) {
-		if (is_synonym_of(parm_num, canon_num, inverse)) {
-			return canon_num;
+		if (is_synonym_of(parm_num, canon_num, &loc_inverse)) {
+			parm_num = canon_num;
+			goto done;
 		}
 	}
 
+done:
+	if (inverse != NULL) {
+		*inverse = loc_inverse;
+	}
 	return parm_num;
 }
 
@@ -2960,12 +2980,14 @@ static BOOL is_synonym_of(int parm1, int parm2, BOOL *inverse)
 	    (parm_table[parm1].flags & FLAG_HIDE) &&
 	    !(parm_table[parm2].flags & FLAG_HIDE))
 	{
-		if ((parm_table[parm1].type == P_BOOLREV) &&
-		    (parm_table[parm2].type == P_BOOL))
-		{
-			*inverse = True;
-		} else {
-			*inverse = False;
+		if (inverse != NULL) {
+			if ((parm_table[parm1].type == P_BOOLREV) &&
+			    (parm_table[parm2].type == P_BOOL))
+			{
+				*inverse = True;
+			} else {
+				*inverse = False;
+			}
 		}
 		return True;
 	}
