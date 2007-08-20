@@ -51,6 +51,8 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum = -1;
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
+	const char *Fname1 = BASEDIR "\\Test1.txt";
+	union smb_fileinfo finfo;
 	union smb_open op;
 
 	printf("Testing SMBmv\n");
@@ -108,6 +110,24 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.rename.in.pattern2 = fname1;
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Trying case-changing rename\n");
+	io.rename.in.pattern1 = fname1;
+	io.rename.in.pattern2 = Fname1;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.all_info.in.file.path = fname1;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	if (strcmp(finfo.all_info.out.fname.s, Fname1) != 0) {
+		printf("(%s) Incorrect filename [%s] after case-changing "
+		       "rename, should be [%s]\n", __location__,
+		       finfo.all_info.out.fname.s, Fname1);
+		ret = False;
+		goto done;
+	}
 
 	io.rename.in.pattern1 = fname1;
 	io.rename.in.pattern2 = fname2;
