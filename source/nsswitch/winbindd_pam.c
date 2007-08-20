@@ -109,6 +109,111 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
+				     struct winbindd_cli_state *state,
+				     const NET_USER_INFO_3 *info3,
+				     const char *name_domain,
+				     const char *name_user)
+{
+	/* We've been asked to return the unix username, per
+	   'winbind use default domain' settings and the like */
+
+	fstring username_out;
+	const char *nt_username, *nt_domain;
+
+	if (!(nt_domain = unistr2_tdup(mem_ctx,
+				       &info3->uni_logon_dom))) {
+		/* If the server didn't give us one, just use the one
+		 * we sent them */
+		nt_domain = name_domain;
+	}
+
+	if (!(nt_username = unistr2_tdup(mem_ctx,
+					 &info3->uni_user_name))) {
+		/* If the server didn't give us one, just use the one
+		 * we sent them */
+		nt_username = name_user;
+	}
+
+	fill_domain_username(username_out, nt_domain, nt_username,
+			     True);
+
+	DEBUG(5,("Setting unix username to [%s]\n", username_out));
+
+	SAFE_FREE(state->response.extra_data.data);
+	state->response.extra_data.data = SMB_STRDUP(username_out);
+	if (!state->response.extra_data.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->response.length +=
+		strlen((const char *)state->response.extra_data.data)+1;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
+				 struct winbindd_cli_state *state,
+				 const NET_USER_INFO_3 *info3,
+				 const char *name_domain,
+				 const char *name_user)
+{
+	char *afsname = NULL;
+	char *cell;
+
+	afsname = talloc_strdup(mem_ctx, lp_afs_username_map());
+	if (afsname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	afsname = talloc_string_sub(mem_ctx,
+				    lp_afs_username_map(),
+				    "%D", name_domain);
+	afsname = talloc_string_sub(mem_ctx, afsname,
+				    "%u", name_user);
+	afsname = talloc_string_sub(mem_ctx, afsname,
+				    "%U", name_user);
+
+	{
+		DOM_SID user_sid;
+		fstring sidstr;
+
+		sid_copy(&user_sid, &info3->dom_sid.sid);
+		sid_append_rid(&user_sid, info3->user_rid);
+		sid_to_string(sidstr, &user_sid);
+		afsname = talloc_string_sub(mem_ctx, afsname,
+					    "%s", sidstr);
+	}
+
+	if (afsname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	strlower_m(afsname);
+
+	DEBUG(10, ("Generating token for user %s\n", afsname));
+
+	cell = strchr(afsname, '@');
+
+	if (cell == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*cell = '\0';
+	cell += 1;
+
+	/* Append an AFS token string */
+	SAFE_FREE(state->response.extra_data.data);
+	state->response.extra_data.data =
+		afs_createtoken_str(afsname, cell);
+
+	if (state->response.extra_data.data != NULL) {
+		state->response.length +=
+			strlen((const char *)state->response.extra_data.data)+1;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx, 
 				     NET_USER_INFO_3 *info3,
 				     const char *group_sid) 
@@ -598,6 +703,74 @@ static BOOL check_request_flags(uint32_t flags)
 	DEBUG(1,("check_request_flags: invalid request flags\n"));
 
 	return False;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS append_data(struct winbindd_cli_state *state,
+			    NET_USER_INFO_3 *info3,
+			    const char *name_domain,
+			    const char *name_user)
+{
+	NTSTATUS result;
+	uint32_t flags = state->request.flags;
+
+	if (flags & WBFLAG_PAM_USER_SESSION_KEY) {
+		memcpy(state->response.data.auth.user_session_key,
+		       info3->user_sess_key,
+		       sizeof(state->response.data.auth.user_session_key)
+		       /* 16 */);
+	}
+
+	if (flags & WBFLAG_PAM_LMKEY) {
+		memcpy(state->response.data.auth.first_8_lm_hash,
+		       info3->lm_sess_key,
+		       sizeof(state->response.data.auth.first_8_lm_hash)
+		       /* 8 */);
+	}
+
+	if (flags & WBFLAG_PAM_INFO3_TEXT) {
+		result = append_info3_as_txt(state->mem_ctx, state, info3);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+	}
+
+	/* currently, anything from here on potentially overwrites extra_data. */
+
+	if (flags & WBFLAG_PAM_INFO3_NDR) {
+		result = append_info3_as_ndr(state->mem_ctx, state, info3);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("Failed to append INFO3 (NDR): %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+	}
+
+	if (flags & WBFLAG_PAM_UNIX_NAME) {
+		result = append_unix_username(state->mem_ctx, state, info3,
+					      name_domain, name_user);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("Failed to append Unix Username: %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+	}
+
+	if (flags & WBFLAG_PAM_AFS_TOKEN) {
+		result = append_afs_token(state->mem_ctx, state, info3,
+					  name_domain, name_user);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("Failed to append AFS token: %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 void winbindd_pam_auth(struct winbindd_cli_state *state)
@@ -1372,21 +1545,9 @@ process_result:
 			goto done;
 		}
 
-		if (state->request.flags & WBFLAG_PAM_INFO3_NDR) {
-			result = append_info3_as_ndr(state->mem_ctx, state, info3);
-			if (!NT_STATUS_IS_OK(result)) {
-				DEBUG(10,("Failed to append INFO3 (NDR): %s\n", nt_errstr(result)));
-				goto done;
-			}
-		}
-
-		if (state->request.flags & WBFLAG_PAM_INFO3_TEXT) {
-			result = append_info3_as_txt(state->mem_ctx, state, info3);
-			if (!NT_STATUS_IS_OK(result)) {
-				DEBUG(10,("Failed to append INFO3 (TXT): %s\n", nt_errstr(result)));
-				goto done;
-			}
-
+		result = append_data(state, info3, name_domain, name_user);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
 		}
 
 		if ((state->request.flags & WBFLAG_PAM_CACHED_LOGIN)) {
@@ -1428,39 +1589,7 @@ process_result:
 		}
 
 		result = NT_STATUS_OK;		
-
-		if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
-			/* We've been asked to return the unix username, per 
-			   'winbind use default domain' settings and the like */
-
-			fstring username_out;
-			const char *nt_username, *nt_domain;
-
-			if (!(nt_username = unistr2_tdup(state->mem_ctx, &info3->uni_user_name))) {
-				/* If the server didn't give us one, just use the one we sent them */
-				nt_username = name_user;
-			}
-
-			if (!(nt_domain = unistr2_tdup(state->mem_ctx, &info3->uni_logon_dom))) {
-				/* If the server didn't give us one, just use the one we sent them */
-				nt_domain = name_domain;
-			}
-
-			fill_domain_username(username_out, nt_domain, nt_username, True);
-
-			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
-
-			SAFE_FREE(state->response.extra_data.data);
-			state->response.extra_data.data = SMB_STRDUP(username_out);
-			if (!state->response.extra_data.data) {
-				result = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-			state->response.length +=
-				strlen((const char *)state->response.extra_data.data)+1;
-		}
 	}
- 
 
 done:
 	/* give us a more useful (more correct?) error code */
@@ -1482,67 +1611,6 @@ done:
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
 
-	if ( NT_STATUS_IS_OK(result) && info3 &&
-	     (state->request.flags & WBFLAG_PAM_AFS_TOKEN) ) {
-
-		char *afsname = talloc_strdup(state->mem_ctx,
-					      lp_afs_username_map());
-		char *cell;
-
-		if (afsname == NULL) {
-			goto no_token;
-		}
-
-		afsname = talloc_string_sub(state->mem_ctx,
-					    lp_afs_username_map(),
-					    "%D", name_domain);
-		afsname = talloc_string_sub(state->mem_ctx, afsname,
-					    "%u", name_user);
-		afsname = talloc_string_sub(state->mem_ctx, afsname,
-					    "%U", name_user);
-
-		{
-			DOM_SID user_sid;
-			fstring sidstr;
-
-			sid_copy(&user_sid, &info3->dom_sid.sid);
-			sid_append_rid(&user_sid, info3->user_rid);
-			sid_to_string(sidstr, &user_sid);
-			afsname = talloc_string_sub(state->mem_ctx, afsname,
-						    "%s", sidstr);
-		}
-
-		if (afsname == NULL) {
-			goto no_token;
-		}
-
-		strlower_m(afsname);
-
-		DEBUG(10, ("Generating token for user %s\n", afsname));
-
-		cell = strchr(afsname, '@');
-
-		if (cell == NULL) {
-			goto no_token;
-		}
-
-		*cell = '\0';
-		cell += 1;
-
-		/* Append an AFS token string */
-		SAFE_FREE(state->response.extra_data.data);
-		state->response.extra_data.data =
-			afs_createtoken_str(afsname, cell);
-
-		if (state->response.extra_data.data != NULL) {
-			state->response.length +=
-				strlen((const char *)state->response.extra_data.data)+1;
-		}
-
-	no_token:
-		TALLOC_FREE(afsname);
-	}
-	
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
@@ -1770,45 +1838,9 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		if (state->request.flags & WBFLAG_PAM_INFO3_NDR) {
-			result = append_info3_as_ndr(state->mem_ctx, state, &info3);
-		} else if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
-			/* ntlm_auth should return the unix username, per 
-			   'winbind use default domain' settings and the like */
-
-			fstring username_out;
-			const char *nt_username, *nt_domain;
-			if (!(nt_username = unistr2_tdup(state->mem_ctx, &(info3.uni_user_name)))) {
-				/* If the server didn't give us one, just use the one we sent them */
-				nt_username = name_user;
-			}
-
-			if (!(nt_domain = unistr2_tdup(state->mem_ctx, &(info3.uni_logon_dom)))) {
-				/* If the server didn't give us one, just use the one we sent them */
-				nt_domain = name_domain;
-			}
-
-			fill_domain_username(username_out, nt_domain, nt_username, True);
-
-			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
-
-			SAFE_FREE(state->response.extra_data.data);
-			state->response.extra_data.data = SMB_STRDUP(username_out);
-			if (!state->response.extra_data.data) {
-				result = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-			state->response.length +=
-				strlen((const char *)state->response.extra_data.data)+1;
-		}
-		
-		if (state->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
-			memcpy(state->response.data.auth.user_session_key, info3.user_sess_key,
-					sizeof(state->response.data.auth.user_session_key) /* 16 */);
-		}
-		if (state->request.flags & WBFLAG_PAM_LMKEY) {
-			memcpy(state->response.data.auth.first_8_lm_hash, info3.lm_sess_key,
-					sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
+		result = append_data(state, &info3, name_domain, name_user);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
 		}
 	}
 
