@@ -113,4 +113,4 @@ test_dbinfo_LIBS = libhdb.la
 
 hdb_err.h: hdb_err.et
 
-EXTRA_DIST = hdb.asn1 hdb_err.et
+EXTRA_DIST = hdb.asn1 hdb_err.et hdb.schema
