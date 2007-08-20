@@ -17,7 +17,7 @@ tests/start_daemons.sh $NUMNODES nodes.txt || exit 1
 killall -9 ctdb_bench
 echo "Trying $NUMNODES nodes"
 for i in `seq 1 $NUMNODES`; do
-  valgrind -q $VALGRIND bin/ctdb_bench --socket sock.$i -n $NUMNODES $*  &
+  $VALGRIND bin/ctdb_bench --socket sock.$i -n $NUMNODES $*  &
 done
 
 wait

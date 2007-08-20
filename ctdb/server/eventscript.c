@@ -20,11 +20,28 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "system/dir.h"
+#include "system/locale.h"
 #include "../include/ctdb_private.h"
 #include "lib/events/events.h"
 #include "../common/rb_tree.h"
-#include <dirent.h>
-#include <ctype.h>
+
+static struct {
+	struct timeval start;
+	const char *script_running;
+} child_state;
+
+/*
+  ctdbd sends us a SIGTERM when we should time out the current script
+ */
+static void sigterm(int sig)
+{
+	DEBUG(0,("Timed out running script '%s' after %.1f seconds\n", 
+		 child_state.script_running, timeval_elapsed(&child_state.start)));
+	/* all the child processes will be running in the same process group */
+	kill(-getpgrp(), SIGKILL);
+	exit(1);
+}
 
 /*
   run the event script - varargs version
@@ -43,6 +60,18 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	struct dirent *de;
 	char *script;
 
+	if (setpgid(0,0) != 0) {
+		DEBUG(0,("Failed to create process group for event scripts - %s\n",
+			 strerror(errno)));
+		talloc_free(tmp_ctx);
+		return -1;		
+	}
+
+	signal(SIGTERM, sigterm);
+
+	child_state.start = timeval_current();
+	child_state.script_running = "startup";
+
 	/*
 	  the service specific event scripts 
 	*/
@@ -50,7 +79,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	    errno == ENOENT) {
 		DEBUG(0,("No event script directory found at '%s'\n", ctdb->takeover.event_script_dir));
 		talloc_free(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	/* create a tree to store all the script names in */
@@ -63,11 +92,12 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	if (dir == NULL) {
 		DEBUG(0,("Failed to open event script directory '%s'\n", ctdb->takeover.event_script_dir));
 		talloc_free(tmp_ctx);
-		return 0;
+		return -1;
 	}
+
 	while ((de=readdir(dir)) != NULL) {
 		int namlen;
-		int num;
+		unsigned num;
 
 		namlen = strlen(de->d_name);
 
@@ -84,23 +114,20 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 			continue;
 		}
 
-		if ( (!isdigit(de->d_name[0])) || (!isdigit(de->d_name[1])) ) {
+		if (sscanf(de->d_name, "%02u.", &num) != 1) {
 			continue;
 		}
-
-		sscanf(de->d_name, "%2d.", &num);
 		
 		/* store the event script in the tree */		
-		script = trbt_insert32(tree, num, talloc_strdup(tmp_ctx, de->d_name));
+		script = trbt_insert32(tree, num, talloc_strdup(tree, de->d_name));
 		if (script != NULL) {
-			DEBUG(0,("CONFIG ERROR: Multiple event scripts with the same prefix : %s and %s. Each event script MUST have a unique prefix\n", script, de->d_name));
+			DEBUG(0,("CONFIG ERROR: Multiple event scripts with the same prefix : '%s' and '%s'. Each event script MUST have a unique prefix\n", script, de->d_name));
 			talloc_free(tmp_ctx);
 			closedir(dir);
 			return -1;
 		}
 	}
 	closedir(dir);
-
 
 	/* fetch the scripts from the tree one by one and execute
 	   them
@@ -117,6 +144,9 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		CTDB_NO_MEMORY(ctdb, cmdstr);
 
 		DEBUG(1,("Executing event script %s\n",cmdstr));
+
+		child_state.start = timeval_current();
+		child_state.script_running = cmdstr;
 
 		ret = system(cmdstr);
 		/* if the system() call was successful, translate ret into the
@@ -135,6 +165,9 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		/* remove this script from the tree */
 		talloc_free(script);
 	}
+
+	child_state.start = timeval_current();
+	child_state.script_running = "finished";
 	
 	talloc_free(tmp_ctx);
 	return 0;
@@ -178,7 +211,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 
-	DEBUG(0,("event script timed out. Increase debuglevel to 1 or higher to see which script timedout.\n"));
+	DEBUG(0,("event script timed out\n"));
 	talloc_free(state);
 	callback(ctdb, -1, private_data);
 }
@@ -188,7 +221,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
  */
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
-	kill(state->child, SIGKILL);
+	kill(state->child, SIGTERM);
 	waitpid(state->child, NULL, 0);
 	return 0;
 }
