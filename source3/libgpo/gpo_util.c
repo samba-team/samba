@@ -19,8 +19,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_LDAP
-
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"
 #define DEFAULT_DOMAIN_CONTROLLERS_POLICY "Default Domain Controllers Policy"
 
@@ -216,6 +214,8 @@ void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel)
 	}
 }
 
+#ifdef HAVE_LDAP
+
 /****************************************************************
 ****************************************************************/
 
@@ -395,6 +395,8 @@ void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 	}
 }
 
+#endif /* HAVE_LDAP */
+
 /****************************************************************
 ****************************************************************/
 
@@ -441,7 +443,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 
 			if (!ads_parse_gp_ext(mem_ctx, gpo->machine_extensions,
 					      &gp_ext)) {
-				return ADS_ERROR(LDAP_PARAM_ERROR);
+				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
 		} else {
@@ -455,7 +457,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 
 			if (!ads_parse_gp_ext(mem_ctx, gpo->user_extensions,
 					      &gp_ext)) {
-				return ADS_ERROR(LDAP_PARAM_ERROR);
+				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 		} else {
 			/* nothing to apply */
@@ -703,4 +705,3 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_NO_SUCH_FILE;
 }
 
-#endif /* HAVE_LDAP */
