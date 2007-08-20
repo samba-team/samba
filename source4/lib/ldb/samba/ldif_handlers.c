@@ -300,26 +300,48 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 	struct ldb_dn *dn1 = NULL;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	const struct dsdb_class *class;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	if (!schema) {
 		*out = data_blob_talloc(mem_ctx, in->data, in->length);
+		if (in->data && !out->data) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		return LDB_SUCCESS;
 	}
-	dn1 = ldb_dn_new(mem_ctx, ldb, (char *)in->data);
+	dn1 = ldb_dn_new(tmp_ctx, ldb, (char *)in->data);
 	if ( ! ldb_dn_validate(dn1)) {
-		const char *lDAPDisplayName = talloc_strndup(mem_ctx, (char *)in->data, in->length);
+		const char *lDAPDisplayName = talloc_strndup(tmp_ctx, (char *)in->data, in->length);
 		class = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
 		if (class) {
 			struct ldb_dn *dn = ldb_dn_new(mem_ctx, ldb,  
 						       class->defaultObjectCategory);
-			*out = data_blob_string_const(ldb_dn_get_casefold(dn));
+			*out = data_blob_string_const(ldb_dn_alloc_casefold(mem_ctx, dn));
+			talloc_free(tmp_ctx);
+
+			if (!out->data) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 			return LDB_SUCCESS;
 		} else {
 			*out = data_blob_talloc(mem_ctx, in->data, in->length);
+			talloc_free(tmp_ctx);
+
+			if (in->data && !out->data) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 			return LDB_SUCCESS;
 		}
 	}
-	*out = data_blob_string_const(ldb_dn_get_casefold(dn1));
+	*out = data_blob_string_const(ldb_dn_alloc_casefold(mem_ctx, dn1));
+	talloc_free(tmp_ctx);
+
+	if (!out->data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	return LDB_SUCCESS;
 }
 
@@ -328,16 +350,25 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 					  const struct ldb_val *v2)
 {
 
-	int ret1, ret2;
+	int ret, ret1, ret2;
 	struct ldb_val v1_canon, v2_canon;
-	ret1 = ldif_canonicalise_objectCategory(ldb, mem_ctx, v1, &v1_canon);
-	ret2 = ldif_canonicalise_objectCategory(ldb, mem_ctx, v2, &v2_canon);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	/* I could try and bail if tmp_ctx was NULL, but what return
+	 * value would I use?
+	 *
+	 * It seems easier to continue on the NULL context 
+	 */
+	ret1 = ldif_canonicalise_objectCategory(ldb, tmp_ctx, v1, &v1_canon);
+	ret2 = ldif_canonicalise_objectCategory(ldb, tmp_ctx, v2, &v2_canon);
 
 	if (ret1 == LDB_SUCCESS && ret2 == LDB_SUCCESS) {
-		return data_blob_cmp(&v1_canon, &v2_canon);
+		ret = data_blob_cmp(&v1_canon, &v2_canon);
 	} else {
-		return data_blob_cmp(v1, v2);
+		ret = data_blob_cmp(v1, v2);
 	}
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 #define LDB_SYNTAX_SAMBA_SID			"LDB_SYNTAX_SAMBA_SID"
