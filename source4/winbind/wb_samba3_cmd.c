@@ -807,7 +807,14 @@ NTSTATUS wbsrv_samba3_getpwent(struct wbsrv_samba3_call *s3call)
 
 NTSTATUS wbsrv_samba3_endpwent(struct wbsrv_samba3_call *s3call)
 {
+	struct wbsrv_pwent *pwent =
+		talloc_get_type(s3call->wbconn->protocol_private_data,
+				struct wbsrv_pwent);
 	DEBUG(5, ("wbsrv_samba3_endpwent called\n"));
+
+	talloc_free(pwent);
+
+	s3call->wbconn->protocol_private_data = NULL;
 	s3call->response.result = WINBINDD_OK;
 	return NT_STATUS_OK;
 }
