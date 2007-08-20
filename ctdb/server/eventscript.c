@@ -98,6 +98,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	while ((de=readdir(dir)) != NULL) {
 		int namlen;
 		unsigned num;
+		char *str;
 
 		namlen = strlen(de->d_name);
 
@@ -117,6 +118,18 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		if (sscanf(de->d_name, "%02u.", &num) != 1) {
 			continue;
 		}
+
+		/* Make sure the event script is executable */
+		str = talloc_asprintf(tree, "%s/%s", ctdb->takeover.event_script_dir, de->d_name);
+		if (stat(str, &st) != 0) {
+			DEBUG(0,("Could not stat event script %s. Ignoring this event script\n", str));
+			continue;
+		}
+		if (!(st.st_mode & S_IXUSR)) {
+			DEBUG(0,("Event script %s is not executable. Ignoring this event script\n", str));
+			continue;
+		}
+		
 		
 		/* store the event script in the tree */		
 		script = trbt_insert32(tree, num, talloc_strdup(tree, de->d_name));
