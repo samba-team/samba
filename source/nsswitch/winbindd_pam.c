@@ -583,6 +583,7 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring name_domain, name_user;
+	NTSTATUS result;
 
 	/* Ensure null termination */
 	state->request.data.auth.user
@@ -601,30 +602,27 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	if (!canonicalize_username(state->request.data.auth.user,
 			       name_domain, name_user)) {
-		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
-		DEBUG(5, ("Plain text authentication for %s returned %s "
-			  "(PAM: %d)\n",
-			  state->request.data.auth.user, 
-			  state->response.data.auth.nt_status_string,
-			  state->response.data.auth.pam_error));
-		request_error(state);
-		return;
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	}
 
 	domain = find_auth_domain(state, name_domain);
 
 	if (domain == NULL) {
-		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
-		DEBUG(5, ("Plain text authentication for %s returned %s "
-			  "(PAM: %d)\n",
-			  state->request.data.auth.user, 
-			  state->response.data.auth.nt_status_string,
-			  state->response.data.auth.pam_error));
-		request_error(state);
-		return;
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	}
 
 	sendto_domain(state, domain);
+	return;
+ done:
+	set_auth_errors(&state->response, result);
+	DEBUG(5, ("Plain text authentication for %s returned %s "
+		  "(PAM: %d)\n",
+		  state->request.data.auth.user,
+		  state->response.data.auth.nt_status_string,
+		  state->response.data.auth.pam_error));
+	request_error(state);
 }
 
 NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
