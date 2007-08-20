@@ -9,3 +9,4 @@ RPC-WINREG
 RPC-WKSSVC.*NetWkstaGetInfo
 RPC-WKSSVC.*NetWkstaTransportEnum
 blackbox.smbclient.*USER.*PASSWD
+RAW-SAMBA3CASEINSENSITIVE
