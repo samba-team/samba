@@ -61,7 +61,7 @@
        	</itemizedlist>
 	</para>
 
-       	<para>The <command>vfs_shadow_copy</command> snapshot naming convention can be produced with the following 
+       	<para>The <command>vfs_shadow_copy</command> snapshot naming convention can be produced with the following
 	<citerefentry><refentrytitle>date</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry> command:
 	<programlisting>

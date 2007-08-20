@@ -25,16 +25,16 @@
 <refsect1>
 	<title>IDMAP OPTIONS</title>
 
-	<variablelist>		
+	<variablelist>
                 <varlistentry>
 		<term>range = low - high</term>
                 <listitem><para>
 			Defines the available matching uid and gid range for which the
 			backend is authoritative.  Note that the range commonly matches
 			the allocation range due to the fact that the same backend will
-			store and retrieve SID/uid/gid mapping entries.  If the parameter 
-			is absent, Winbind fail over to use the &quot;idmap uid&quot; and 
-			&quot;idmap gid&quot; options from smb.conf.  
+			store and retrieve SID/uid/gid mapping entries.  If the parameter
+			is absent, Winbind fail over to use the &quot;idmap uid&quot; and
+			&quot;idmap gid&quot; options from smb.conf.
                 </para></listitem>
                 </varlistentry>
 	</variablelist>
@@ -47,9 +47,9 @@
                 <varlistentry>
 		<term>range = low - high</term>
                 <listitem><para>
-			Defines the available matching uid and gid range from which 
-			winbindd can allocate for users and groups.  If the parameter 
-			is absent, Winbind fail over to use the &quot;idmap uid&quot; 
+			Defines the available matching uid and gid range from which
+			winbindd can allocate for users and groups.  If the parameter
+			is absent, Winbind fail over to use the &quot;idmap uid&quot;
 			and &quot;idmap gid&quot; options from smb.conf.
                 </para></listitem>
                 </varlistentry>
@@ -60,7 +60,7 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	The following example is equivalent to the pre-3.0.25 default idmap 
+	The following example is equivalent to the pre-3.0.25 default idmap
 	configuration using the &quot;idmap backend = tdb&quot; setting.
 	</para>
 
@@ -80,11 +80,11 @@
 	<title>AUTHOR</title>
 
 	<para>
-	The original Samba software and related utilities 
+	The original Samba software and related utilities
 	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
+	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.
-	</para>	
+	</para>
 </refsect1>
 
 </refentry>

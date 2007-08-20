@@ -19,7 +19,7 @@
 	<para>The idmap_nss plugin provides a means to map Unix users and groups
 	to Windows accounts and obseletes the &quot;winbind trusted domains only&quot;
 	smb.conf option.  This provides a simple means of ensuring that the SID
-	for a Unix user named jsmith is reported as the one assigned to 
+	for a Unix user named jsmith is reported as the one assigned to
 	DOMAIN\jsmith which is necessary for reporting ACLs on files and printers
 	stored on a Samba member server.
 	</para>
@@ -53,11 +53,11 @@
 	<title>AUTHOR</title>
 
 	<para>
-	The original Samba software and related utilities 
+	The original Samba software and related utilities
 	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
+	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.
-	</para>	
+	</para>
 </refsect1>
 
 </refentry>
