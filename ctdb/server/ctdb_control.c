@@ -230,7 +230,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb_release_all_ips(ctdb);
 		ctdb->methods->shutdown(ctdb);
 		ctdb_event_script(ctdb, "shutdown");
-		DEBUG(0,("shutting down\n"));
+		DEBUG(0,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		exit(0);
 
 	case CTDB_CONTROL_MAX_RSN: 
