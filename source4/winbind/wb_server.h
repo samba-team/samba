@@ -23,7 +23,6 @@
 #include "nsswitch/winbindd_nss.h"
 #include "libnet/libnet.h"
 
-
 #define WINBINDD_SAMBA3_SOCKET "pipe"
 /* the privileged socket is in smbd_tmp_dir() */
 #define WINBINDD_SAMBA3_PRIVILEGED_SOCKET "winbind_pipe"
@@ -105,6 +104,20 @@ struct wbsrv_connection {
 #define WBSRV_SAMBA3_SET_STRING(dest, src) do { \
 	safe_strcpy(dest, src, sizeof(dest)-1);\
 } while(0)
+
+/*
+  state of a pwent query
+*/
+struct wbsrv_pwent {
+	/* Current UserList structure, contains 1+ user structs */
+	struct libnet_UserList *user_list;
+
+	/* Index of the next user struct in the current UserList struct */
+	uint32_t page_index;
+
+	/* The libnet_ctx to use for the libnet_UserList call */
+	struct libnet_context *libnet_ctx;
+};
 
 /*
   state of one request
