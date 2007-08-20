@@ -616,6 +616,10 @@ static int unlink_destructor(const char *name)
 	return 0;
 }
 
+static void print_exit_message(void)
+{
+	DEBUG(0,("CTDB daemon shutting down\n"));
+}
 
 /*
   start the protocol going as a daemon
@@ -639,6 +643,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	if (do_fork && fork()) {
 		return 0;
 	}
+
+	/* Make sure we log something when the daemon terminates */
+	atexit(print_exit_message);
 
 	tdb_reopen_all(False);
 
