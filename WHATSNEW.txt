@@ -3,7 +3,7 @@
                              Aug 20, 2007
                    ===============================
 
-This is the fourth production release of the Samba 3.0.25 code 
+This is the latest production release of the Samba 3.0.25 code 
 base and is the version that servers should be run for for all 
 current bug fixes.  
 
@@ -59,9 +59,18 @@ o   Jeremy Allison <jra@samba.org>
       error codes in reply_opeNXXX() calls.
 
 
+o   Ofir Azoulay <Ofir.Azoulay@expand.com>
+    * Only look at errno set by SMB_VFS_CLOSE() if the call actually 
+      failed.
+
+
 o   Alexander Bokovoy <ab@samba.org>
     * Fix vfs_readahead: transparent modules should always pass 
       through.
+
+
+o   David S. Collier-Brown <davecb@spamcop.net>
+    * BUG 4897: Fix Solaris xattr misdeclarations.
 
 
 o   Guenther Deschner <gd@samba.org>
