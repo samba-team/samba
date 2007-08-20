@@ -205,16 +205,16 @@
 	RCN: 0
 	TMG: 1128631322
 	TMW: 1128631322
-	EID: 1000 
+	EID: 1000
 	ETP: INFO
-	ECT: 0 
+	ECT: 0
 	RS2: 0
 	CRN: 0
 	USL: 0
 	SRC: cron
 	SRN: dmlinux
 	STR: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.hourly)
-	DAT: 
+	DAT:
 	</programlisting>
 
 	<para>Set up an eventlog source, specifying a message file DLL:</para>
