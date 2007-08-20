@@ -671,7 +671,7 @@ static void list_users_recv(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
 	uint32_t extra_data_len;
-	uint8_t *extra_data;
+	char *extra_data;
 	NTSTATUS status;
 
 	DEBUG(5, ("list_users_recv called\n"));
