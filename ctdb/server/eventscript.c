@@ -211,7 +211,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 
-	DEBUG(0,("event script timed out. Increase debuglevel to 1 or higher to see which script timedout.\n"));
+	DEBUG(0,("event script timed out\n"));
 	talloc_free(state);
 	callback(ctdb, -1, private_data);
 }
