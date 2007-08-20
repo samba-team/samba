@@ -762,11 +762,40 @@ static void getpwuid_recv(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
+static void setpwent_recv(struct composite_context *ctx);
+
 NTSTATUS wbsrv_samba3_setpwent(struct wbsrv_samba3_call *s3call)
 {
+	struct composite_context *ctx;
+	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
+
 	DEBUG(5, ("wbsrv_samba3_setpwent called\n"));
-	s3call->response.result = WINBINDD_OK;
+
+	ctx = wb_cmd_setpwent_send(s3call, service);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = setpwent_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
+}
+
+static void setpwent_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+	struct wbsrv_pwent *pwent;
+
+	DEBUG(5, ("setpwent_recv called\n"));
+
+	status = wb_cmd_setpwent_recv(ctx, s3call->wbconn, &pwent);
+	if (NT_STATUS_IS_OK(status)) {
+		s3call->wbconn->protocol_private_data = pwent;
+	}
+
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 NTSTATUS wbsrv_samba3_getpwent(struct wbsrv_samba3_call *s3call)
