@@ -301,7 +301,7 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 struct ctdb_takeover {
 	bool enabled;
 	const char *interface;
-	const char *event_script;
+	const char *event_script_dir;
 	TALLOC_CTX *last_ctx;
 };
 
@@ -1040,6 +1040,7 @@ int ctdb_sys_send_tcp(int fd,
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
+int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 

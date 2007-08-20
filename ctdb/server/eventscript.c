@@ -20,11 +20,33 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "system/dir.h"
+#include "system/locale.h"
 #include "../include/ctdb_private.h"
 #include "lib/events/events.h"
+#include "../common/rb_tree.h"
+
+static struct {
+	struct timeval start;
+	const char *script_running;
+} child_state;
+
+/*
+  ctdbd sends us a SIGTERM when we should time out the current script
+ */
+static void sigterm(int sig)
+{
+	DEBUG(0,("Timed out running script '%s' after %.1f seconds\n", 
+		 child_state.script_running, timeval_elapsed(&child_state.start)));
+	/* all the child processes will be running in the same process group */
+	kill(-getpgrp(), SIGKILL);
+	exit(1);
+}
 
 /*
   run the event script - varargs version
+  this function is called and run in the context of a forked child
+  which allows it to do blocking calls such as system()
  */
 static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_list ap)
 {
@@ -32,30 +54,123 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	int ret;
 	va_list ap2;
 	struct stat st;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	trbt_tree_t *tree;
+	DIR *dir;
+	struct dirent *de;
+	char *script;
 
-	if (stat(ctdb->takeover.event_script, &st) != 0 && 
+	if (setpgid(0,0) != 0) {
+		DEBUG(0,("Failed to create process group for event scripts - %s\n",
+			 strerror(errno)));
+		talloc_free(tmp_ctx);
+		return -1;		
+	}
+
+	signal(SIGTERM, sigterm);
+
+	child_state.start = timeval_current();
+	child_state.script_running = "startup";
+
+	/*
+	  the service specific event scripts 
+	*/
+	if (stat(ctdb->takeover.event_script_dir, &st) != 0 && 
 	    errno == ENOENT) {
-		DEBUG(0,("No event script found at '%s'\n", ctdb->takeover.event_script));
-		return 0;
+		DEBUG(0,("No event script directory found at '%s'\n", ctdb->takeover.event_script_dir));
+		talloc_free(tmp_ctx);
+		return -1;
 	}
 
-	va_copy(ap2, ap);
-	options  = talloc_vasprintf(ctdb, fmt, ap2);
-	va_end(ap2);
-	CTDB_NO_MEMORY(ctdb, options);
+	/* create a tree to store all the script names in */
+	tree = trbt_create(tmp_ctx, 0);
 
-	cmdstr = talloc_asprintf(ctdb, "%s %s", ctdb->takeover.event_script, options);
-	CTDB_NO_MEMORY(ctdb, cmdstr);
-
-	ret = system(cmdstr);
-	if (ret != -1) {
-		ret = WEXITSTATUS(ret);
+	/* scan all directory entries and insert all valid scripts into the 
+	   tree
+	*/
+	dir = opendir(ctdb->takeover.event_script_dir);
+	if (dir == NULL) {
+		DEBUG(0,("Failed to open event script directory '%s'\n", ctdb->takeover.event_script_dir));
+		talloc_free(tmp_ctx);
+		return -1;
 	}
 
-	talloc_free(cmdstr);
-	talloc_free(options);
+	while ((de=readdir(dir)) != NULL) {
+		int namlen;
+		unsigned num;
 
-	return ret;
+		namlen = strlen(de->d_name);
+
+		if (namlen < 3) {
+			continue;
+		}
+
+		if (de->d_name[namlen-1] == '~') {
+			/* skip files emacs left behind */
+			continue;
+		}
+
+		if (de->d_name[2] != '.') {
+			continue;
+		}
+
+		if (sscanf(de->d_name, "%02u.", &num) != 1) {
+			continue;
+		}
+		
+		/* store the event script in the tree */		
+		script = trbt_insert32(tree, num, talloc_strdup(tree, de->d_name));
+		if (script != NULL) {
+			DEBUG(0,("CONFIG ERROR: Multiple event scripts with the same prefix : '%s' and '%s'. Each event script MUST have a unique prefix\n", script, de->d_name));
+			talloc_free(tmp_ctx);
+			closedir(dir);
+			return -1;
+		}
+	}
+	closedir(dir);
+
+	/* fetch the scripts from the tree one by one and execute
+	   them
+	 */
+	while ((script=trbt_findfirstarray32(tree, 1)) != NULL) {
+		va_copy(ap2, ap);
+		options  = talloc_vasprintf(tmp_ctx, fmt, ap2);
+		va_end(ap2);
+		CTDB_NO_MEMORY(ctdb, options);
+
+		cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
+				ctdb->takeover.event_script_dir,
+				script, options);
+		CTDB_NO_MEMORY(ctdb, cmdstr);
+
+		DEBUG(1,("Executing event script %s\n",cmdstr));
+
+		child_state.start = timeval_current();
+		child_state.script_running = cmdstr;
+
+		ret = system(cmdstr);
+		/* if the system() call was successful, translate ret into the
+		   return code from the command
+		*/
+		if (ret != -1) {
+			ret = WEXITSTATUS(ret);
+		}
+		/* return an error if the script failed */
+		if (ret != 0) {
+			DEBUG(0,("Event script %s failed with error %d\n", cmdstr, ret));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		/* remove this script from the tree */
+		talloc_free(script);
+	}
+
+	child_state.start = timeval_current();
+	child_state.script_running = "finished";
+	
+	talloc_free(tmp_ctx);
+	return 0;
 }
 
 struct ctdb_event_script_state {
@@ -96,7 +211,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 
-	DEBUG(0,("event script timed out\n"));
+	DEBUG(0,("event script timed out. Increase debuglevel to 1 or higher to see which script timedout.\n"));
 	talloc_free(state);
 	callback(ctdb, -1, private_data);
 }
@@ -106,7 +221,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
  */
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
-	kill(state->child, SIGKILL);
+	kill(state->child, SIGTERM);
 	waitpid(state->child, NULL, 0);
 	return 0;
 }

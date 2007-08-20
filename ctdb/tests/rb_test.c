@@ -301,6 +301,7 @@ int main(int argc, const char *argv[])
 	printf("\niterations passed:%d\n", i);
 	trbt_traversearray32(tree, 3, random_traverse, NULL);
 	printf("\n");
+	printf("first node: %s\n", (char *)trbt_findfirstarray32(tree, 3));
 
 
 	printf("\ndeleting all entries\n");

@@ -41,8 +41,8 @@ case $cmd in
 	# start Samba service. Start it reniced, as under very heavy load 
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
-	nice service smb start
 	service winbind start
+	nice service smb start
 
 	# wait for the Samba tcp ports to become available
 	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`

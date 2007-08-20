@@ -35,17 +35,5 @@ case $cmd in
 	;;
 esac
 
-#######################################
-# call all application or local scripts
-[ -d /etc/ctdb/events.d ] && {
-    # only accept scripts of the form NN.name
-    scripts=`/bin/ls /etc/ctdb/events.d | /bin/grep '^[0-9]*\.\w*$' | sort -n`
-    for SCRIPT in $scripts; do
-	[ -x /etc/ctdb/events.d/$SCRIPT ] && {
-	    /etc/ctdb/events.d/$SCRIPT $cmd "$1" "$2" "$3" || exit 1
-	}
-    done
-}
-
 # all OK
 exit 0
