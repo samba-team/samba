@@ -640,7 +640,10 @@ NTSTATUS fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		 */
 		ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
 		fsp->fh->fd = -1;
-		return map_nt_error_from_unix(errno);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		return NT_STATUS_OK;
 	}
 
 	if (get_windows_lock_ref_count(fsp)) {
