@@ -598,3 +598,70 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 
 	return ret;
 }
+
+static void count_fn(struct clilist_file_info *info, const char *name,
+		     void *private_data)
+{
+	int *counter = (int *)private_data;
+	*counter += 1;
+}
+
+BOOL torture_samba3_caseinsensitive(struct torture_context *torture)
+{
+	struct smbcli_state *cli;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	const char *dirname = "insensitive";
+	const char *ucase_dirname = "InSeNsItIvE";
+	const char *fname = "foo";
+	char *fpath;
+	int fnum;
+	int counter = 0;
+	BOOL ret = True;
+
+	if (!(mem_ctx = talloc_init("torture_samba3_caseinsensitive"))) {
+		d_printf("talloc_init failed\n");
+		return False;
+	}
+
+	if (!torture_open_connection(&cli, 0)) {
+		goto done;
+	}
+
+	smbcli_deltree(cli->tree, dirname);
+
+	status = smbcli_mkdir(cli->tree, dirname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smbcli_mkdir failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+
+	if (!(fpath = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname))) {
+		goto done;
+	}
+	fnum = smbcli_open(cli->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		d_printf("Could not create file %s: %s\n", fpath,
+			 smbcli_errstr(cli->tree));
+		goto done;
+	}
+	smbcli_close(cli->tree, fnum);
+
+	smbcli_list(cli->tree, talloc_asprintf(
+			    mem_ctx, "%s\\*", ucase_dirname),
+		    FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN
+		    |FILE_ATTRIBUTE_SYSTEM,
+		    count_fn, (void *)&counter);
+
+	if (counter == 3) {
+		ret = True;
+	}
+	else {
+		d_fprintf(stderr, "expected 3 entries, got %d\n", counter);
+		ret = False;
+	}
+
+ done:
+	talloc_free(mem_ctx);
+	return ret;
+}
