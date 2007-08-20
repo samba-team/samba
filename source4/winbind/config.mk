@@ -32,6 +32,7 @@ OBJ_FILES = \
 		wb_cmd_list_trustdom.o \
 		wb_cmd_list_users.o \
 		wb_cmd_setpwent.o \
+		wb_cmd_getpwent.o \
 		wb_pam_auth.o \
 		wb_sam_logon.o
 PRIVATE_DEPENDENCIES = \

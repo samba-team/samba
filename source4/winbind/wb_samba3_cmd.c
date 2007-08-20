@@ -798,11 +798,53 @@ static void setpwent_recv(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
+static void getpwent_recv(struct composite_context *ctx);
+
 NTSTATUS wbsrv_samba3_getpwent(struct wbsrv_samba3_call *s3call)
 {
+	struct composite_context *ctx;
+	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
+	struct wbsrv_pwent *pwent;
+
 	DEBUG(5, ("wbsrv_samba3_getpwent called\n"));
-	s3call->response.result = WINBINDD_ERROR;
+
+	NT_STATUS_HAVE_NO_MEMORY(s3call->wbconn->protocol_private_data);
+
+	pwent = talloc_get_type(s3call->wbconn->protocol_private_data,
+			struct wbsrv_pwent);
+	NT_STATUS_HAVE_NO_MEMORY(pwent);
+
+	ctx = wb_cmd_getpwent_send(s3call, service, pwent,
+			s3call->request.data.num_entries);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = getpwent_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
+}
+
+static void getpwent_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+	struct winbindd_pw *pw;
+	uint32_t num_users;
+
+	DEBUG(5, ("getpwent_recv called\n"));
+
+	status = wb_cmd_getpwent_recv(ctx, s3call, &pw, &num_users);
+	if (NT_STATUS_IS_OK(status)) {
+		uint32_t extra_len = sizeof(struct winbindd_pw) * num_users;
+
+		s3call->response.data.num_entries = num_users;
+		s3call->response.extra_data.data = pw;
+		s3call->response.length += extra_len;
+	}
+
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 NTSTATUS wbsrv_samba3_endpwent(struct wbsrv_samba3_call *s3call)
