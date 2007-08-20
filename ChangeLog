@@ -1,3 +1,7 @@
+2007-08-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/Makefile.am: EXTRA_DIST += hdb.schema
+
 2007-07-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check return value of alloc functions, from Charles Longeau
