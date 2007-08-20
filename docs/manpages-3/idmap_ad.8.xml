@@ -42,7 +42,7 @@
 		<varlistentry>
 		<term>schema_mode = &lt;rfc2307 | sfu &gt;</term>
 		<listitem><para>
-			Defines the schema that idmap_ad should use when querying 
+			Defines the schema that idmap_ad should use when querying
 			Active Directory regarding user and group information.
 			This can either the RFC2307 schema support included
 			in Windows 2003 R2 or the Service for Unix (SFU) schema.
@@ -79,11 +79,11 @@
 	<title>AUTHOR</title>
 
 	<para>
-	The original Samba software and related utilities 
+	The original Samba software and related utilities
 	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
+	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.
-	</para>	
+	</para>
 </refsect1>
 
 </refentry>
