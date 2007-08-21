@@ -61,7 +61,7 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 				err = WERR_NOMEM;
 				goto error;
 			}
-			tmp[0] = 2;
+			tmp[0] = 0;
 			tmp[1] = 0;
 		}
 		else if ((length % 2) != 0) {
