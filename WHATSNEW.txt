@@ -19,7 +19,7 @@ Major bug fixes included in Samba 3.0.25c are:
 Changes
 #######
 
-Changes since 3.0.25a
+Changes since 3.0.25b
 ---------------------
 
 o   Michael Adam <obnox@samba.org>
