@@ -38,6 +38,9 @@ struct lockwait_handle {
 	struct timeval start_time;
 };
 
+
+/* This handler is called when a lockwait child process has completed the lock
+ */
 static void lockwait_handler(struct event_context *ev, struct fd_event *fde, 
 			     uint16_t flags, void *private_data)
 {
@@ -49,10 +52,20 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	TDB_DATA key = h->key;
 	struct tdb_context *tdb = h->ctdb_db->ltdb->tdb;
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
+	double l;
 
 	key.dptr = talloc_memdup(tmp_ctx, key.dptr, key.dsize);
 
 	talloc_set_destructor(h, NULL);
+
+	/* If a lockwait takes excessive time to complete we want 
+	   this logged 
+	*/
+	l = timeval_elapsed(&h->start_time);
+	if (l > 1.0) {
+		DEBUG(0,("Lockwait took %.6f seconds to complete for database %s\n", l, h->ctdb_db->db_name));
+	}
+
 	ctdb_latency(&h->ctdb->statistics.max_lockwait_latency, h->start_time);
 	h->ctdb->statistics.pending_lockwait_calls--;
 
