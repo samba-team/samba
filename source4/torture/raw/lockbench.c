@@ -251,8 +251,7 @@ static void lock_completion(struct smbcli_request *req)
 
 static void echo_completion(struct smbcli_request *req)
 {
-	struct benchlock_state *state = talloc_get_type(req->async.private, 
-							struct benchlock_state);
+	struct benchlock_state *state = (struct benchlock_state *)req->async.private;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
