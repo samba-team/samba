@@ -17,7 +17,7 @@ NTSTATUS rpccli_unixinfo_SidToUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(unixinfo_SidToUid, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, NDR_UNIXINFO_SIDTOUID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_SidToUid, (ndr_push_flags_fn_t)ndr_push_unixinfo_SidToUid);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, &ndr_table_unixinfo, NDR_UNIXINFO_SIDTOUID, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -48,7 +48,7 @@ NTSTATUS rpccli_unixinfo_UidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(unixinfo_UidToSid, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, NDR_UNIXINFO_UIDTOSID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_UidToSid, (ndr_push_flags_fn_t)ndr_push_unixinfo_UidToSid);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, &ndr_table_unixinfo, NDR_UNIXINFO_UIDTOSID, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -79,7 +79,7 @@ NTSTATUS rpccli_unixinfo_SidToGid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(unixinfo_SidToGid, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, NDR_UNIXINFO_SIDTOGID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_SidToGid, (ndr_push_flags_fn_t)ndr_push_unixinfo_SidToGid);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, &ndr_table_unixinfo, NDR_UNIXINFO_SIDTOGID, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -110,7 +110,7 @@ NTSTATUS rpccli_unixinfo_GidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(unixinfo_GidToSid, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, NDR_UNIXINFO_GIDTOSID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_GidToSid, (ndr_push_flags_fn_t)ndr_push_unixinfo_GidToSid);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, &ndr_table_unixinfo, NDR_UNIXINFO_GIDTOSID, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -142,7 +142,7 @@ NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(unixinfo_GetPWUid, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, NDR_UNIXINFO_GETPWUID, &r, (ndr_pull_flags_fn_t)ndr_pull_unixinfo_GetPWUid, (ndr_push_flags_fn_t)ndr_push_unixinfo_GetPWUid);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_UNIXINFO, &ndr_table_unixinfo, NDR_UNIXINFO_GETPWUID, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

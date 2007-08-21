@@ -22,24 +22,29 @@
 #include "includes.h"
 
 
-NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			int p_idx, int opnum, void *data, 
-			ndr_pull_flags_fn_t pull_fn, ndr_push_flags_fn_t push_fn)
+NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
+			TALLOC_CTX *mem_ctx, int p_idx,
+			const struct ndr_interface_table *table,
+			uint32 opnum, void *r)
 {
 	prs_struct q_ps, r_ps;
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	DATA_BLOB blob;
 	struct ndr_push *push;
 	NTSTATUS status;
 
 	SMB_ASSERT(cli->pipe_idx == p_idx);
+	SMB_ASSERT(table->num_calls > opnum);
+
+	call = &table->calls[opnum];
 
 	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = push_fn(push, NDR_IN, data);
+	status = call->ndr_push(push, NDR_IN, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -80,7 +85,7 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	/* have the ndr parser alloc memory for us */
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = pull_fn(pull, NDR_OUT, data);
+	status = call->ndr_pull(pull, NDR_OUT, r);
 	talloc_free(pull);
 
 	if (!NT_STATUS_IS_OK(status)) {

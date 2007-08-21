@@ -18,7 +18,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaGetInfo, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETWKSTAGETINFO, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetWkstaGetInfo, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetWkstaGetInfo);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETWKSTAGETINFO, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -52,7 +52,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaSetInfo, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETWKSTASETINFO, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetWkstaSetInfo, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetWkstaSetInfo);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETWKSTASETINFO, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -87,7 +87,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli, TALLOC_CTX
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaEnumUsers, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETWKSTAENUMUSERS, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetWkstaEnumUsers, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetWkstaEnumUsers);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETWKSTAENUMUSERS, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -124,7 +124,7 @@ NTSTATUS rpccli_WKSSVC_NETRWKSTAUSERGETINFO(struct rpc_pipe_client *cli, TALLOC_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRWKSTAUSERGETINFO, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRWKSTAUSERGETINFO, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRWKSTAUSERGETINFO);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRWKSTAUSERGETINFO, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -153,7 +153,7 @@ NTSTATUS rpccli_WKSSVC_NETRWKSTAUSERSETINFO(struct rpc_pipe_client *cli, TALLOC_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRWKSTAUSERSETINFO, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRWKSTAUSERSETINFO, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRWKSTAUSERSETINFO);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRWKSTAUSERSETINFO, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -187,7 +187,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli, TALLOC
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaTransportEnum, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETWKSTATRANSPORTENUM, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetWkstaTransportEnum, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetWkstaTransportEnum);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETWKSTATRANSPORTENUM, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -222,7 +222,7 @@ NTSTATUS rpccli_WKSSVC_NETRWKSTATRANSPORTADD(struct rpc_pipe_client *cli, TALLOC
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRWKSTATRANSPORTADD, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRWKSTATRANSPORTADD, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRWKSTATRANSPORTADD);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRWKSTATRANSPORTADD, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -251,7 +251,7 @@ NTSTATUS rpccli_WKSSVC_NETRWKSTATRANSPORTDEL(struct rpc_pipe_client *cli, TALLOC
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRWKSTATRANSPORTDEL, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRWKSTATRANSPORTDEL, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRWKSTATRANSPORTDEL);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRWKSTATRANSPORTDEL, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -280,7 +280,7 @@ NTSTATUS rpccli_WKSSVC_NETRUSEADD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEADD, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRUSEADD, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRUSEADD, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRUSEADD);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRUSEADD, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -309,7 +309,7 @@ NTSTATUS rpccli_WKSSVC_NETRUSEGETINFO(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEGETINFO, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRUSEGETINFO, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRUSEGETINFO, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRUSEGETINFO);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRUSEGETINFO, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -338,7 +338,7 @@ NTSTATUS rpccli_WKSSVC_NETRUSEDEL(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEDEL, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRUSEDEL, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRUSEDEL, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRUSEDEL);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRUSEDEL, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -367,7 +367,7 @@ NTSTATUS rpccli_WKSSVC_NETRUSEENUM(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEENUM, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRUSEENUM, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRUSEENUM, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRUSEENUM);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRUSEENUM, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -396,7 +396,7 @@ NTSTATUS rpccli_WKSSVC_NETRMESSAGEBUFFERSEND(struct rpc_pipe_client *cli, TALLOC
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRMESSAGEBUFFERSEND, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRMESSAGEBUFFERSEND, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRMESSAGEBUFFERSEND);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRMESSAGEBUFFERSEND, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -425,7 +425,7 @@ NTSTATUS rpccli_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct rpc_pipe_client *cli,
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRWORKSTATIONSTATISTICSGET, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRWORKSTATIONSTATISTICSGET);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -454,7 +454,7 @@ NTSTATUS rpccli_WKSSVC_NETRLOGONDOMAINNAMEADD(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRLOGONDOMAINNAMEADD, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEADD, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRLOGONDOMAINNAMEADD);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRLOGONDOMAINNAMEADD, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -483,7 +483,7 @@ NTSTATUS rpccli_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEDEL, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRLOGONDOMAINNAMEDEL);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -512,7 +512,7 @@ NTSTATUS rpccli_WKSSVC_NETRJOINDOMAIN(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRJOINDOMAIN, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRJOINDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRJOINDOMAIN, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRJOINDOMAIN);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRJOINDOMAIN, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -541,7 +541,7 @@ NTSTATUS rpccli_WKSSVC_NETRUNJOINDOMAIN(struct rpc_pipe_client *cli, TALLOC_CTX 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUNJOINDOMAIN, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRUNJOINDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRUNJOINDOMAIN, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRUNJOINDOMAIN);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRUNJOINDOMAIN, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -570,7 +570,7 @@ NTSTATUS rpccli_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct rpc_pipe_client *cli, TA
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRRENAMEMACHINEINDOMAIN, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRRENAMEMACHINEINDOMAIN);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -599,7 +599,7 @@ NTSTATUS rpccli_WKSSVC_NETRVALIDATENAME(struct rpc_pipe_client *cli, TALLOC_CTX 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRVALIDATENAME, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRVALIDATENAME, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRVALIDATENAME);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRVALIDATENAME, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -628,7 +628,7 @@ NTSTATUS rpccli_WKSSVC_NETRGETJOININFORMATION(struct rpc_pipe_client *cli, TALLO
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOININFORMATION, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRGETJOININFORMATION, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRGETJOININFORMATION, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRGETJOININFORMATION);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRGETJOININFORMATION, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -657,7 +657,7 @@ NTSTATUS rpccli_WKSSVC_NETRGETJOINABLEOUS(struct rpc_pipe_client *cli, TALLOC_CT
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRGETJOINABLEOUS, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRGETJOINABLEOUS, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRGETJOINABLEOUS);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRGETJOINABLEOUS, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -692,7 +692,7 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain2(struct rpc_pipe_client *cli, TALLOC_CTX *
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain2, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRJOINDOMAIN2, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetrJoinDomain2, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetrJoinDomain2);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRJOINDOMAIN2, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -725,7 +725,7 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain2(struct rpc_pipe_client *cli, TALLOC_CTX
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain2, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRUNJOINDOMAIN2, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetrUnjoinDomain2, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetrUnjoinDomain2);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRUNJOINDOMAIN2, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -759,7 +759,7 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain2(struct rpc_pipe_client *cli, T
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain2, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetrRenameMachineInDomain2, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetrRenameMachineInDomain2);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -788,7 +788,7 @@ NTSTATUS rpccli_WKSSVC_NETRVALIDATENAME2(struct rpc_pipe_client *cli, TALLOC_CTX
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME2, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRVALIDATENAME2, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRVALIDATENAME2, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRVALIDATENAME2);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRVALIDATENAME2, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -817,7 +817,7 @@ NTSTATUS rpccli_WKSSVC_NETRGETJOINABLEOUS2(struct rpc_pipe_client *cli, TALLOC_C
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRGETJOINABLEOUS2, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRGETJOINABLEOUS2, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRGETJOINABLEOUS2);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRGETJOINABLEOUS2, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -851,7 +851,7 @@ NTSTATUS rpccli_wkssvc_NetrAddAlternateComputerName(struct rpc_pipe_client *cli,
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrAddAlternateComputerName, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetrAddAlternateComputerName, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetrAddAlternateComputerName);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -885,7 +885,7 @@ NTSTATUS rpccli_wkssvc_NetrRemoveAlternateComputerName(struct rpc_pipe_client *c
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_wkssvc_NetrRemoveAlternateComputerName, (ndr_push_flags_fn_t)ndr_push_wkssvc_NetrRemoveAlternateComputerName);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -914,7 +914,7 @@ NTSTATUS rpccli_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct rpc_pipe_client *cli, T
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRSETPRIMARYCOMPUTERNAME, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRSETPRIMARYCOMPUTERNAME);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -943,7 +943,7 @@ NTSTATUS rpccli_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct rpc_pipe_client *cli, T
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES, &r, (ndr_pull_flags_fn_t)ndr_pull_WKSSVC_NETRENUMERATECOMPUTERNAMES, (ndr_push_flags_fn_t)ndr_push_WKSSVC_NETRENUMERATECOMPUTERNAMES);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_WKSSVC, &ndr_table_wkssvc, NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

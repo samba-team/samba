@@ -17,7 +17,7 @@ NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, ui
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_AddOne, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_ADDONE, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_AddOne, (ndr_push_flags_fn_t)ndr_push_echo_AddOne);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_ADDONE, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -49,7 +49,7 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_EchoData, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_ECHODATA, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_EchoData, (ndr_push_flags_fn_t)ndr_push_echo_EchoData);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_ECHODATA, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -81,7 +81,7 @@ NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_SinkData, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_SINKDATA, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_SinkData, (ndr_push_flags_fn_t)ndr_push_echo_SinkData);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_SINKDATA, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -111,7 +111,7 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_SourceData, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_SOURCEDATA, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_SourceData, (ndr_push_flags_fn_t)ndr_push_echo_SourceData);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_SOURCEDATA, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -142,7 +142,7 @@ NTSTATUS rpccli_echo_TestCall(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestCall, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_TESTCALL, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestCall, (ndr_push_flags_fn_t)ndr_push_echo_TestCall);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_TESTCALL, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -173,7 +173,7 @@ NTSTATUS rpccli_echo_TestCall2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestCall2, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_TESTCALL2, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestCall2, (ndr_push_flags_fn_t)ndr_push_echo_TestCall2);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_TESTCALL2, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -204,7 +204,7 @@ NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestSleep, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_TESTSLEEP, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestSleep, (ndr_push_flags_fn_t)ndr_push_echo_TestSleep);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_TESTSLEEP, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -236,7 +236,7 @@ NTSTATUS rpccli_echo_TestEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestEnum, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_TESTENUM, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestEnum, (ndr_push_flags_fn_t)ndr_push_echo_TestEnum);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_TESTENUM, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -269,7 +269,7 @@ NTSTATUS rpccli_echo_TestSurrounding(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestSurrounding, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_TESTSURROUNDING, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestSurrounding, (ndr_push_flags_fn_t)ndr_push_echo_TestSurrounding);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_TESTSURROUNDING, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -300,7 +300,7 @@ NTSTATUS rpccli_echo_TestDoublePointer(struct rpc_pipe_client *cli, TALLOC_CTX *
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(echo_TestDoublePointer, &r);
 	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, NDR_ECHO_TESTDOUBLEPOINTER, &r, (ndr_pull_flags_fn_t)ndr_pull_echo_TestDoublePointer, (ndr_push_flags_fn_t)ndr_push_echo_TestDoublePointer);
+	status = cli_do_rpc_ndr(cli, mem_ctx, PI_RPCECHO, &ndr_table_rpcecho, NDR_ECHO_TESTDOUBLEPOINTER, &r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
