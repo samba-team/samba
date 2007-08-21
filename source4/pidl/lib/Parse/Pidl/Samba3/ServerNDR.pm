@@ -72,7 +72,7 @@ sub AllocOutVar($$$$)
 	}
 
 	pidl "if ($name == NULL) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\ttalloc_free($mem_ctx);";
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
@@ -82,62 +82,71 @@ sub ParseFunction($$)
 {
 	my ($if,$fn) = @_;
 
+	my $op = "NDR_".uc($fn->{NAME});
+
 	pidl "static BOOL api_$fn->{NAME}(pipes_struct *p)";
 	pidl "{";
 	indent;
+	pidl "const struct ndr_interface_call *call;";
 	pidl "struct ndr_pull *pull;";
 	pidl "struct ndr_push *push;";
 	pidl "NTSTATUS status;";
 	pidl "DATA_BLOB blob;";
-	pidl "struct $fn->{NAME} r;";
-	pidl "TALLOC_CTX *mem_ctx = talloc_init(\"api_$fn->{NAME}\");";
+	pidl "struct $fn->{NAME} *r;";
 	pidl "";
-	pidl "if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "call = &ndr_table_$if->{NAME}.calls[$op];";
+	pidl "";
+	pidl "r = talloc(NULL, struct $fn->{NAME});";
+	pidl "if (r == NULL) {";
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
-	pidl "pull = ndr_pull_init_blob(&blob, mem_ctx);";
+	pidl "if (!prs_data_blob(&p->in_data.data, &blob, r)) {";
+	pidl "\ttalloc_free(r);";
+	pidl "\treturn False;";
+	pidl "}";
+	pidl "";
+	pidl "pull = ndr_pull_init_blob(&blob, r);";
 	pidl "if (pull == NULL) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\ttalloc_free(r);";
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
 	pidl "pull->flags |= LIBNDR_FLAG_REF_ALLOC;";
-	pidl "status = ndr_pull_$fn->{NAME}(pull, NDR_IN, &r);";
+	pidl "status = call->ndr_pull(pull, NDR_IN, r);";
 	pidl "if (NT_STATUS_IS_ERR(status)) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\ttalloc_free(r);";
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
 	pidl "if (DEBUGLEVEL >= 10)";
-	pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, &r);";
+	pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, r);";
 	pidl "";
 
-	my $env = GenerateFunctionOutEnv($fn, "r.");
+	my $env = GenerateFunctionOutEnv($fn);
 	my $hasout = 0;
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/, @{$_->{DIRECTION}})) { $hasout = 1; }
 	}
 
-	pidl "ZERO_STRUCT(r.out);" if ($hasout);
+	pidl "ZERO_STRUCT(r->out);" if ($hasout);
 
 	my $proto = "_$fn->{NAME}(pipes_struct *p, struct $fn->{NAME} *r";
-	my $ret = "_$fn->{NAME}(p, &r";
+	my $ret = "_$fn->{NAME}(p, r";
 	foreach (@{$fn->{ELEMENTS}}) {
 		my @dir = @{$_->{DIRECTION}};
 		if (grep(/in/, @dir) and grep(/out/, @dir)) {
-			pidl "r.out.$_->{NAME} = r.in.$_->{NAME};";
+			pidl "r->out.$_->{NAME} = r->in.$_->{NAME};";
 		} elsif (grep(/out/, @dir) and not 
 				 has_property($_, "represent_as")) {
-			AllocOutVar($_, "mem_ctx", "r.out.$_->{NAME}", $env);
+			AllocOutVar($_, "r", "r->out.$_->{NAME}", $env);
 		}
 	}
 	$ret .= ")";
 	$proto .= ");";
 
 	if ($fn->{RETURN_TYPE}) {
-		$ret = "r.out.result = $ret";
+		$ret = "r->out.result = $ret";
 		$proto = "$fn->{RETURN_TYPE} $proto";
 	} else {
 		$proto = "void $proto";
@@ -148,33 +157,33 @@ sub ParseFunction($$)
 
 	pidl "";
 	pidl "if (p->rng_fault_state) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\ttalloc_free(r);";
 	pidl "\t/* Return True here, srv_pipe_hnd.c will take care */";
 	pidl "\treturn True;";
 	pidl "}";
 	pidl "";
 	pidl "if (DEBUGLEVEL >= 10)";
-	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, &r);";
+	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, r);";
 	pidl "";
-	pidl "push = ndr_push_init_ctx(mem_ctx);";
+	pidl "push = ndr_push_init_ctx(r);";
 	pidl "if (push == NULL) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\ttalloc_free(r);";
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
-	pidl "status = ndr_push_$fn->{NAME}(push, NDR_OUT, &r);";
+	pidl "status = call->ndr_push(push, NDR_OUT, r);";
 	pidl "if (NT_STATUS_IS_ERR(status)) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\ttalloc_free(r);";
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
 	pidl "blob = ndr_push_blob(push);";
 	pidl "if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {";
-	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\ttalloc_free(r);";
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
-	pidl "talloc_free(mem_ctx);";
+	pidl "talloc_free(r);";
 	pidl "";
 	pidl "return True;";
 	deindent;
