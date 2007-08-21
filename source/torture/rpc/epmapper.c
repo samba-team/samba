@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/ndr_table.h"
 #include "torture/rpc/rpc.h"
 
 
@@ -63,7 +63,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	dcerpc_floor_get_lhs_data(&twr->tower.floors[0], &syntax);
 
 	printf("epm_Map results for '%s':\n", 
-	       idl_pipe_name(&syntax.uuid, syntax.if_version));
+	       ndr_interface_name(&syntax.uuid, syntax.if_version));
 
 	twr->tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
 	twr->tower.floors[2].lhs.lhs_data = data_blob(NULL, 0);

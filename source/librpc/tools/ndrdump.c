@@ -23,8 +23,8 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 #include "system/locale.h"
-#include "librpc/rpc/dcerpc.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/ndr/ndr_table.h"
 #endif
 
 static const struct ndr_interface_call *find_function(
@@ -55,7 +55,7 @@ static void show_pipes(void)
 	const struct ndr_interface_list *l;
 	printf("\nYou must specify a pipe\n");
 	printf("known pipes are:\n");
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
+	for (l=ndr_table_list();l;l=l->next) {
 		if(l->table->helpstring) {
 			printf("\t%s - %s\n", l->table->name, l->table->helpstring);
 		} else {
@@ -218,7 +218,7 @@ const struct ndr_interface_table *load_iface_from_plugin(const char *plugin, con
 	}
 #else
 	if (!p) {
-		p = idl_iface_by_name(pipe_name);
+		p = ndr_table_by_name(pipe_name);
 	}
 
 	if (!p) {
@@ -227,7 +227,7 @@ const struct ndr_interface_table *load_iface_from_plugin(const char *plugin, con
 		status = GUID_from_string(pipe_name, &uuid);
 
 		if (NT_STATUS_IS_OK(status)) {
-			p = idl_iface_by_uuid(&uuid);
+			p = ndr_table_by_uuid(&uuid);
 		}
 	}
 #endif

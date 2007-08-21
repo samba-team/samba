@@ -22,42 +22,42 @@
 
 #include "includes.h"
 #include "lib/util/dlinklist.h"
-#include "librpc/rpc/dcerpc.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/ndr/ndr_table.h"
 
-struct ndr_interface_list *dcerpc_pipes = NULL;
+static struct ndr_interface_list *ndr_interfaces;
 
 /*
-  register a dcerpc client interface
+  register a ndr interface table
 */
-NTSTATUS librpc_register_interface(const struct ndr_interface_table *interface)
+NTSTATUS ndr_table_register(const struct ndr_interface_table *table)
 {
 	struct ndr_interface_list *l;
 
-	for (l = dcerpc_pipes; l; l = l->next) {
-		if (GUID_equal(&interface->syntax_id.uuid, &l->table->syntax_id.uuid)) {
+	for (l = ndr_interfaces; l; l = l->next) {
+		if (GUID_equal(&table->syntax_id.uuid, &l->table->syntax_id.uuid)) {
 			DEBUG(0, ("Attempt to register interface %s which has the "
-					  "same UUID as already registered interface %s\n", 
-					  interface->name, l->table->name));
+				  "same UUID as already registered interface %s\n", 
+				  table->name, l->table->name));
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 	}
-		
-	l = talloc(talloc_autofree_context(), struct ndr_interface_list);
-	l->table = interface;
 
-	DLIST_ADD(dcerpc_pipes, l);
-	
+	l = talloc(talloc_autofree_context(), struct ndr_interface_list);
+	l->table = table;
+
+	DLIST_ADD(ndr_interfaces, l);
+
   	return NT_STATUS_OK;
 }
 
 /*
   find the pipe name for a local IDL interface
 */
-const char *idl_pipe_name(const struct GUID *uuid, uint32_t if_version)
+const char *ndr_interface_name(const struct GUID *uuid, uint32_t if_version)
 {
 	const struct ndr_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
+	for (l=ndr_table_list();l;l=l->next) {
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid) &&
 		    l->table->syntax_id.if_version == if_version) {
 			return l->table->name;
@@ -69,10 +69,10 @@ const char *idl_pipe_name(const struct GUID *uuid, uint32_t if_version)
 /*
   find the number of calls defined by local IDL
 */
-int idl_num_calls(const struct GUID *uuid, uint32_t if_version)
+int ndr_interface_num_calls(const struct GUID *uuid, uint32_t if_version)
 {
 	const struct ndr_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next){
+	for (l=ndr_interfaces;l;l=l->next){
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid) &&
 		    l->table->syntax_id.if_version == if_version) {
 			return l->table->num_calls;
@@ -85,10 +85,10 @@ int idl_num_calls(const struct GUID *uuid, uint32_t if_version)
 /*
   find a dcerpc interface by name
 */
-const struct ndr_interface_table *idl_iface_by_name(const char *name)
+const struct ndr_interface_table *ndr_table_by_name(const char *name)
 {
 	const struct ndr_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
+	for (l=ndr_interfaces;l;l=l->next) {
 		if (strcasecmp(l->table->name, name) == 0) {
 			return l->table;
 		}
@@ -99,10 +99,10 @@ const struct ndr_interface_table *idl_iface_by_name(const char *name)
 /*
   find a dcerpc interface by uuid
 */
-const struct ndr_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
+const struct ndr_interface_table *ndr_table_by_uuid(const struct GUID *uuid)
 {
 	const struct ndr_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
+	for (l=ndr_interfaces;l;l=l->next) {
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid)) {
 			return l->table;
 		}
@@ -113,13 +113,13 @@ const struct ndr_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
 /*
   return the list of registered dcerpc_pipes
 */
-const struct ndr_interface_list *librpc_dcerpc_pipes(void)
+const struct ndr_interface_list *ndr_table_list(void)
 {
-	return dcerpc_pipes;
+	return ndr_interfaces;
 }
 
 
-NTSTATUS dcerpc_register_builtin_interfaces(void);
+NTSTATUS ndr_table_register_builtin_tables(void);
 
 NTSTATUS ndr_table_init(void)
 {
@@ -128,7 +128,7 @@ NTSTATUS ndr_table_init(void)
 	if (initialized) return NT_STATUS_OK;
 	initialized = True;
 
-	dcerpc_register_builtin_interfaces();
+	ndr_table_register_builtin_tables();
 
 	return NT_STATUS_OK;
 }

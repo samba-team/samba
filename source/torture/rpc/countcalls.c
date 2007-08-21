@@ -22,8 +22,8 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "librpc/rpc/dcerpc.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/ndr/ndr_table.h"
 #include "torture/rpc/rpc.h"
 
 
@@ -112,7 +112,7 @@ BOOL torture_rpc_countcalls(struct torture_context *torture)
 	}
 	iface_name = lp_parm_string(-1, "countcalls", "interface");
 	if (iface_name != NULL) {
-		iface = idl_iface_by_name(iface_name);
+		iface = ndr_table_by_name(iface_name);
 		if (!iface) {
 			printf("Unknown interface '%s'\n", iface_name);
 			return False;
@@ -120,7 +120,7 @@ BOOL torture_rpc_countcalls(struct torture_context *torture)
 		return count_calls(mem_ctx, iface, False);
 	}
 
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {		
+	for (l=ndr_table_list();l;l=l->next) {		
 		TALLOC_CTX *loop_ctx;
 		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_councalls loop context");
 		ret &= count_calls(loop_ctx, l->table, True);
