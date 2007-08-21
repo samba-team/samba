@@ -8,356 +8,391 @@
 
 static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct unixinfo_SidToUid r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_unixinfo_SidToUid");
+	struct unixinfo_SidToUid *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_SIDTOUID];
+	
+	r = talloc(NULL, struct unixinfo_SidToUid);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_unixinfo_SidToUid(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(unixinfo_SidToUid, &r);
+		NDR_PRINT_IN_DEBUG(unixinfo_SidToUid, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.uid = talloc_zero(mem_ctx, uint64_t);
-	if (r.out.uid == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.uid = talloc_zero(r, uint64_t);
+	if (r->out.uid == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _unixinfo_SidToUid(p, &r);
+	r->out.result = _unixinfo_SidToUid(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(unixinfo_SidToUid, &r);
+		NDR_PRINT_OUT_DEBUG(unixinfo_SidToUid, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_unixinfo_SidToUid(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct unixinfo_UidToSid r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_unixinfo_UidToSid");
+	struct unixinfo_UidToSid *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_UIDTOSID];
+	
+	r = talloc(NULL, struct unixinfo_UidToSid);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_unixinfo_UidToSid(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(unixinfo_UidToSid, &r);
+		NDR_PRINT_IN_DEBUG(unixinfo_UidToSid, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.sid = talloc_zero(mem_ctx, struct dom_sid);
-	if (r.out.sid == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.sid = talloc_zero(r, struct dom_sid);
+	if (r->out.sid == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _unixinfo_UidToSid(p, &r);
+	r->out.result = _unixinfo_UidToSid(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(unixinfo_UidToSid, &r);
+		NDR_PRINT_OUT_DEBUG(unixinfo_UidToSid, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_unixinfo_UidToSid(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct unixinfo_SidToGid r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_unixinfo_SidToGid");
+	struct unixinfo_SidToGid *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_SIDTOGID];
+	
+	r = talloc(NULL, struct unixinfo_SidToGid);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_unixinfo_SidToGid(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(unixinfo_SidToGid, &r);
+		NDR_PRINT_IN_DEBUG(unixinfo_SidToGid, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.gid = talloc_zero(mem_ctx, uint64_t);
-	if (r.out.gid == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.gid = talloc_zero(r, uint64_t);
+	if (r->out.gid == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _unixinfo_SidToGid(p, &r);
+	r->out.result = _unixinfo_SidToGid(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(unixinfo_SidToGid, &r);
+		NDR_PRINT_OUT_DEBUG(unixinfo_SidToGid, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_unixinfo_SidToGid(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct unixinfo_GidToSid r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_unixinfo_GidToSid");
+	struct unixinfo_GidToSid *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_GIDTOSID];
+	
+	r = talloc(NULL, struct unixinfo_GidToSid);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_unixinfo_GidToSid(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(unixinfo_GidToSid, &r);
+		NDR_PRINT_IN_DEBUG(unixinfo_GidToSid, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.sid = talloc_zero(mem_ctx, struct dom_sid);
-	if (r.out.sid == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.sid = talloc_zero(r, struct dom_sid);
+	if (r->out.sid == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _unixinfo_GidToSid(p, &r);
+	r->out.result = _unixinfo_GidToSid(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(unixinfo_GidToSid, &r);
+		NDR_PRINT_OUT_DEBUG(unixinfo_GidToSid, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_unixinfo_GidToSid(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct unixinfo_GetPWUid r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_unixinfo_GetPWUid");
+	struct unixinfo_GetPWUid *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_GETPWUID];
+	
+	r = talloc(NULL, struct unixinfo_GetPWUid);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_unixinfo_GetPWUid(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(unixinfo_GetPWUid, &r);
+		NDR_PRINT_IN_DEBUG(unixinfo_GetPWUid, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.count = r.in.count;
-	r.out.infos = talloc_zero_array(mem_ctx, struct unixinfo_GetPWUidInfo, *r.out.count);
-	if (r.out.infos == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.count = r->in.count;
+	r->out.infos = talloc_zero_array(r, struct unixinfo_GetPWUidInfo, *r->out.count);
+	if (r->out.infos == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _unixinfo_GetPWUid(p, &r);
+	r->out.result = _unixinfo_GetPWUid(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(unixinfo_GetPWUid, &r);
+		NDR_PRINT_OUT_DEBUG(unixinfo_GetPWUid, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_unixinfo_GetPWUid(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
