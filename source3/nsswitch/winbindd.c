@@ -1012,10 +1012,16 @@ int main(int argc, char **argv, char **envp)
 
 	/* Initialise samba/rpc client stuff */
 
-	pc = poptGetContext("winbindd", argc, (const char **)argv, long_options,
-						POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext("winbindd", argc, (const char **)argv, long_options, 0);
 
-	while ((opt = poptGetNextOpt(pc)) != -1) {}
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+				  poptBadOption(pc, 0), poptStrerror(opt));
+			exit(1);
+		}
+	}
 
 	if (server_mode == SERVER_MODE_INTERACTIVE) {
 		log_stdout = True;

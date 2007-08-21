@@ -652,6 +652,7 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	BOOL no_process_group = False;
 	BOOL log_stdout = False;
 	enum smb_server_mode server_mode = SERVER_MODE_DAEMON;
+	int opt;
 
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
@@ -674,7 +675,14 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	global_nmb_port = NMB_PORT;
 
 	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
-	while (poptGetNextOpt(pc) != -1) {};
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+				  poptBadOption(pc, 0), poptStrerror(opt));
+			exit(1);
+		}
+	};
 	poptFreeContext(pc);
 
 	global_in_nmbd = True;
