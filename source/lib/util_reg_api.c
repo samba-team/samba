@@ -63,6 +63,8 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 			}
 			tmp[0] = 0;
 			tmp[1] = 0;
+			DEBUG(10, ("got REG_SZ value of length 1 - workaround "
+				   "activated.\n"));
 		}
 		else if ((length % 2) != 0) {
 			err = WERR_INVALID_PARAM;
