@@ -659,6 +659,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	poptContext pc;
 	static char *p_lmhosts = dyn_LMHOSTSFILE;
 	static BOOL no_process_group = False;
+	int opt;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
@@ -677,7 +678,14 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	global_nmb_port = NMB_PORT;
 
 	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
-	while (poptGetNextOpt(pc) != -1) {};
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+				  poptBadOption(pc, 0), poptStrerror(opt));
+			exit(1);
+		}
+	};
 	poptFreeContext(pc);
 
 	global_in_nmbd = True;

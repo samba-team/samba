@@ -975,8 +975,7 @@ int main(int argc, char **argv, char **envp)
 
 	/* Initialise samba/rpc client stuff */
 
-	pc = poptGetContext("winbindd", argc, (const char **)argv, long_options,
-						POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext("winbindd", argc, (const char **)argv, long_options, 0);
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -986,9 +985,12 @@ int main(int argc, char **argv, char **envp)
 			log_stdout = True;
 			Fork = False;
 			break;
+		default:
+			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+				  poptBadOption(pc, 0), poptStrerror(opt));
+			exit(1);
 		}
 	}
-
 
 	if (log_stdout && Fork) {
 		printf("Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n");

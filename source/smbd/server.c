@@ -892,7 +892,10 @@ extern void build_options(BOOL screen);
 		case 'b':
 			build_options(True); /* Display output to screen as well as debug */ 
 			exit(0);
-			break;
+		default:
+			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+				  poptBadOption(pc, 0), poptStrerror(opt));
+			exit(1);
 		}
 	}
 
