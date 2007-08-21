@@ -330,7 +330,7 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 		p.in.size = 0;
 		p.in.data = NULL;
 		req = smb_raw_echo_send(state[i].tree->session->transport, &p);
-		req->async.private = state;
+		req->async.private = &state[i];
 		req->async.fn      = echo_completion;
 	}
 }
