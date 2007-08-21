@@ -51,7 +51,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	/* don't get the disconnected flag from the other node */
 	ctdb->nodes[c->vnn]->flags = 
 		(ctdb->nodes[c->vnn]->flags&NODE_FLAGS_DISCONNECTED) 
-		| (c->flags & ~NODE_FLAGS_DISCONNECTED);	
+		| (c->new_flags & ~NODE_FLAGS_DISCONNECTED);	
 	DEBUG(2,("Node flags for node %u are now 0x%x\n", c->vnn, ctdb->nodes[c->vnn]->flags));
 
 	/* make sure we don't hold any IPs when we shouldn't */
