@@ -1,18 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Tridgell 1992-1998
-   
+   Copyright (C) Jeremy Allison 2007.
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -76,7 +77,8 @@ static user_struct *get_valid_user_struct_internal(uint16 vuid,
 
 user_struct *get_valid_user_struct(uint16 vuid)
 {
-	return get_valid_user_struct_internal(vuid, SERVER_ALLOCATED_REQUIRED_YES);
+	return get_valid_user_struct_internal(vuid,
+			SERVER_ALLOCATED_REQUIRED_YES);
 }
 
 BOOL is_partial_auth_vuid(uint16 vuid)
@@ -461,7 +463,8 @@ BOOL user_in_netgroup(const char *user, const char *ngname)
 		yp_get_default_domain(&mydomain);
 
 	if(mydomain == NULL) {
-		DEBUG(5,("Unable to get default yp domain, let's try without specifying it\n"));
+		DEBUG(5,("Unable to get default yp domain, "
+			"let's try without specifying it\n"));
 	}
 
 	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
@@ -479,7 +482,7 @@ BOOL user_in_netgroup(const char *user, const char *ngname)
 
 		fstrcpy(lowercase_user, user);
 		strlower_m(lowercase_user);
-	
+
 		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
 			lowercase_user, mydomain?mydomain:"(ANY)", ngname));
 
@@ -568,7 +571,7 @@ BOOL user_in_list(const char *user,const char **list)
 					return True;
 			}
 		}
-    
+
 		list++;
 	}
 	return(False);
@@ -654,7 +657,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 		endnetgrent();
 	}
 #endif
-  
+
 #ifdef HAVE_GETGRENT
 	{
 		struct group *gptr;
@@ -727,26 +730,26 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
  Note this is *NOT* used when logging on using sessionsetup_and_X.
 ****************************************************************************/
 
-BOOL authorise_login(int snum, fstring user, DATA_BLOB password, 
+BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 		     BOOL *guest)
 {
 	BOOL ok = False;
-	
+
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("authorise_login: checking authorisation on "
 		   "user=%s pass=%s\n", user,password.data));
 #endif
 
 	*guest = False;
-  
+
 	/* there are several possibilities:
 		1) login as the given user with given password
-		2) login as a previously registered username with the given 
+		2) login as a previously registered username with the given
 		   password
 		3) login as a session list username with the given password
 		4) login as a previously validated user/password pair
 		5) login as the "user =" user with given password
-		6) login as the "user =" user with no password 
+		6) login as the "user =" user with no password
 		   (guest connection)
 		7) login as guest user with no password
 
@@ -765,14 +768,14 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 
 		if (!user_list)
 			return(False);
-		
+
 		for (auser=strtok(user_list,LIST_SEP); !ok && auser;
 		     auser = strtok(NULL,LIST_SEP)) {
 			fstring user2;
 			fstrcpy(user2,auser);
 			if (!user_ok(user2,snum))
 				continue;
-			
+
 			if (password_ok(user2,password)) {
 				ok = True;
 				fstrcpy(user,user2);
@@ -784,15 +787,15 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 
 		SAFE_FREE(user_list);
 	}
-	
+
 	/* check the user= fields and the given password */
 	if (!ok && lp_username(snum)) {
 		char *auser;
 		pstring user_list;
 		pstrcpy(user_list,lp_username(snum));
-		
+
 		pstring_sub(user_list,"%S",lp_servicename(snum));
-		
+
 		for (auser=strtok(user_list,LIST_SEP); auser && !ok;
 		     auser = strtok(NULL,LIST_SEP)) {
 			if (*auser == '@') {
