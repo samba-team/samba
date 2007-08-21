@@ -163,6 +163,7 @@ static BOOL cache_init(void)
 
 	prefix_cache_hashes = SMB_CALLOC_ARRAY(unsigned int, MANGLE_CACHE_SIZE);
 	if (!prefix_cache_hashes) {
+		SAFE_FREE(prefix_cache);
 		return False;
 	}
 
