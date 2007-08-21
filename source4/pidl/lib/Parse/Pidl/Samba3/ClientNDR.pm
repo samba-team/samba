@@ -36,10 +36,11 @@ sub new($)
 
 sub ParseFunction($$$)
 {
-	my ($self, $uif, $fn) = @_;
+	my ($self, $if, $fn) = @_;
 
 	my $inargs = "";
 	my $defargs = "";
+	my $uif = uc($if);
 	my $ufn = "NDR_".uc($fn->{NAME});
 
 	foreach (@{$fn->{ELEMENTS}}) {
@@ -63,7 +64,7 @@ sub ParseFunction($$$)
 	$self->pidl("if (DEBUGLEVEL >= 10)");
 	$self->pidl("\tNDR_PRINT_IN_DEBUG($fn->{NAME}, &r);");
 	$self->pidl("");
-	$self->pidl("status = cli_do_rpc_ndr(cli, mem_ctx, PI_$uif, $ufn, &r, (ndr_pull_flags_fn_t)ndr_pull_$fn->{NAME}, (ndr_push_flags_fn_t)ndr_push_$fn->{NAME});");
+	$self->pidl("status = cli_do_rpc_ndr(cli, mem_ctx, PI_$uif, &ndr_table_$if, $ufn, &r);");
 	$self->pidl("");
 
 	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
@@ -141,7 +142,7 @@ sub ParseInterface($$)
 
 	$self->pidl_hdr("#ifndef __CLI_$uif\__");
 	$self->pidl_hdr("#define __CLI_$uif\__");
-	$self->ParseFunction(uc($if->{NAME}), $_) foreach (@{$if->{FUNCTIONS}});
+	$self->ParseFunction($if->{NAME}, $_) foreach (@{$if->{FUNCTIONS}});
 	$self->pidl_hdr("#endif /* __CLI_$uif\__ */");
 }
 
