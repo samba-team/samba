@@ -287,8 +287,8 @@ librpc/gen_ndr/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	mv librpc/gen_ndr/tables.x librpc/gen_ndr/tables.c
 
 [SUBSYSTEM::NDR_TABLE]
-OBJ_FILES = rpc/table.o gen_ndr/tables.o
-PRIVATE_PROTO_HEADER = rpc/dcerpc_table.h
+OBJ_FILES = ndr/ndr_table.o gen_ndr/tables.o
+PRIVATE_PROTO_HEADER = ndr/ndr_table.h
 PUBLIC_DEPENDENCIES = \
 	NDR_AUDIOSRV NDR_ECHO NDR_DCERPC \
 	NDR_DSBACKUP NDR_EFS NDR_MISC NDR_LSA NDR_DFS NDR_DRSUAPI \

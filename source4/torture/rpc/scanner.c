@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_mgmt_c.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/ndr_table.h"
 #include "torture/rpc/rpc.h"
 
 /*
@@ -76,7 +76,7 @@ static BOOL test_num_calls(const struct ndr_interface_table *iface,
 	}
 
 	printf("\t%d calls available\n", i);
-	idl_calls = idl_num_calls(&id->uuid, id->if_version);
+	idl_calls = ndr_interface_num_calls(&id->uuid, id->if_version);
 	if (idl_calls == -1) {
 		printf("\tinterface not known in local IDL\n");
 	} else if (i != idl_calls) {
@@ -117,7 +117,7 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
 		return False;
 	}
 
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {		
+	for (l=ndr_table_list();l;l=l->next) {		
 		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_scanner loop context");
 		/* some interfaces are not mappable */
 		if (l->table->num_calls == 0 ||

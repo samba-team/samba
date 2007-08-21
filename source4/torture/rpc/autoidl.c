@@ -23,7 +23,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/ndr_table.h"
 #include "torture/rpc/rpc.h"
 
 
@@ -264,7 +264,7 @@ BOOL torture_rpc_autoidl(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	const struct ndr_interface_table *iface;
 		
-	iface = idl_iface_by_name("drsuapi");
+	iface = ndr_table_by_name("drsuapi");
 	if (!iface) {
 		printf("Unknown interface!\n");
 		return False;

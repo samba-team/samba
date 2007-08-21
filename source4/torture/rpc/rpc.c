@@ -24,7 +24,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 #include "torture/torture.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/ndr_table.h"
 #include "lib/util/dlinklist.h"
 
 /* open a rpc connection to the chosen binding string */

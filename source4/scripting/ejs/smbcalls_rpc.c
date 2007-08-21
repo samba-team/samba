@@ -28,7 +28,7 @@
 #include "scripting/ejs/ejsrpc.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/ndr_table.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc.h"
 #include "cluster/cluster.h"
@@ -136,7 +136,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 		pipe_name = mprToString(mprGetProperty(this, "pipe_name", NULL));
 	}
 
-	iface = idl_iface_by_name(pipe_name);
+	iface = ndr_table_by_name(pipe_name);
 	if (iface == NULL) {
 		status = NT_STATUS_OBJECT_NAME_INVALID;
 		goto done;

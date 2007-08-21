@@ -22,7 +22,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_mgmt_c.h"
 #include "auth/gensec/gensec.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/ndr_table.h"
 #include "torture/rpc/rpc.h"
 
 
@@ -65,7 +65,8 @@ BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		printf("\tuuid %s  version 0x%08x  '%s'\n",
 		       GUID_string(mem_ctx, &id->uuid),
-		       id->if_version, idl_pipe_name(&id->uuid, id->if_version));
+		       id->if_version,
+		       ndr_interface_name(&id->uuid, id->if_version));
 
 		if (per_id_test) {
 			per_id_test(priv, mem_ctx, id);
@@ -211,7 +212,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 		return False;
 	}
 
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {		
+	for (l=ndr_table_list();l;l=l->next) {		
 		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_mgmt loop context");
 		
 		/* some interfaces are not mappable */

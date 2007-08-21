@@ -22,7 +22,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
-#include "librpc/rpc/dcerpc_table.h"
+#include "librpc/ndr/ndr_table.h"
 
 
 struct dcesrv_remote_private {
@@ -63,7 +63,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	pass = lp_parm_string(-1, "dcerpc_remote", "password");
 	domain = lp_parm_string(-1, "dceprc_remote", "domain");
 
-	table = idl_iface_by_uuid(&iface->syntax_id.uuid); /* FIXME: What about if_version ? */
+	table = ndr_table_by_uuid(&iface->syntax_id.uuid); /* FIXME: What about if_version ? */
 	if (!table) {
 		dce_call->fault_code = DCERPC_FAULT_UNK_IF;
 		return NT_STATUS_NET_WRITE_FAULT;
@@ -274,7 +274,7 @@ static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const st
 {
 	const struct ndr_interface_list *l;
 
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
+	for (l=ndr_table_list();l;l=l->next) {
 		if (l->table->syntax_id.if_version == if_version &&
 			GUID_equal(&l->table->syntax_id.uuid, uuid)==0) {
 			return remote_fill_interface(iface, l->table);
@@ -286,7 +286,7 @@ static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const st
 
 static BOOL remote_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
-	const struct ndr_interface_table *tbl = idl_iface_by_name(name);
+	const struct ndr_interface_table *tbl = ndr_table_by_name(name);
 
 	if (tbl)
 		return remote_fill_interface(iface, tbl);
