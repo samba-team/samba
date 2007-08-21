@@ -155,8 +155,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 	if (!*orig_path) {
 		if (!(name = SMB_STRDUP("."))) {
-			result = NT_STATUS_NO_MEMORY;
-			goto fail;
+			return NT_STATUS_NO_MEMORY;
 		}
 		if (SMB_VFS_STAT(conn,name,&st) == 0) {
 			*pst = st;
