@@ -8,1571 +8,1739 @@
 
 static BOOL api_eventlog_ClearEventLogW(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_ClearEventLogW r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_ClearEventLogW");
+	struct eventlog_ClearEventLogW *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CLEAREVENTLOGW];
+	
+	r = talloc(NULL, struct eventlog_ClearEventLogW);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_ClearEventLogW(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, r);
 	
-	r.out.result = _eventlog_ClearEventLogW(p, &r);
+	r->out.result = _eventlog_ClearEventLogW(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogW, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogW, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_ClearEventLogW(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_BackupEventLogW(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_BackupEventLogW r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_BackupEventLogW");
+	struct eventlog_BackupEventLogW *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_BACKUPEVENTLOGW];
+	
+	r = talloc(NULL, struct eventlog_BackupEventLogW);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_BackupEventLogW(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, r);
 	
-	r.out.result = _eventlog_BackupEventLogW(p, &r);
+	r->out.result = _eventlog_BackupEventLogW(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogW, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogW, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_BackupEventLogW(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_CloseEventLog(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_CloseEventLog r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_CloseEventLog");
+	struct eventlog_CloseEventLog *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CLOSEEVENTLOG];
+	
+	r = talloc(NULL, struct eventlog_CloseEventLog);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_CloseEventLog(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_CloseEventLog, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_CloseEventLog, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.handle = r.in.handle;
-	r.out.result = _eventlog_CloseEventLog(p, &r);
+	ZERO_STRUCT(r->out);
+	r->out.handle = r->in.handle;
+	r->out.result = _eventlog_CloseEventLog(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_CloseEventLog, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_CloseEventLog, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_CloseEventLog(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_DeregisterEventSource(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_DeregisterEventSource r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_DeregisterEventSource");
+	struct eventlog_DeregisterEventSource *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_DEREGISTEREVENTSOURCE];
+	
+	r = talloc(NULL, struct eventlog_DeregisterEventSource);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_DeregisterEventSource(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, r);
 	
-	r.out.result = _eventlog_DeregisterEventSource(p, &r);
+	r->out.result = _eventlog_DeregisterEventSource(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterEventSource, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterEventSource, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_DeregisterEventSource(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_GetNumRecords(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_GetNumRecords r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_GetNumRecords");
+	struct eventlog_GetNumRecords *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETNUMRECORDS];
+	
+	r = talloc(NULL, struct eventlog_GetNumRecords);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_GetNumRecords(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_GetNumRecords, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_GetNumRecords, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.number = talloc_zero(mem_ctx, uint32_t);
-	if (r.out.number == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.number = talloc_zero(r, uint32_t);
+	if (r->out.number == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _eventlog_GetNumRecords(p, &r);
+	r->out.result = _eventlog_GetNumRecords(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_GetNumRecords, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_GetNumRecords, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_GetNumRecords(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_GetOldestRecord(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_GetOldestRecord r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_GetOldestRecord");
+	struct eventlog_GetOldestRecord *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETOLDESTRECORD];
+	
+	r = talloc(NULL, struct eventlog_GetOldestRecord);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_GetOldestRecord(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, r);
 	
-	r.out.result = _eventlog_GetOldestRecord(p, &r);
+	r->out.result = _eventlog_GetOldestRecord(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_GetOldestRecord, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_GetOldestRecord, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_GetOldestRecord(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_ChangeNotify(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_ChangeNotify r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_ChangeNotify");
+	struct eventlog_ChangeNotify *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CHANGENOTIFY];
+	
+	r = talloc(NULL, struct eventlog_ChangeNotify);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_ChangeNotify(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_ChangeNotify, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_ChangeNotify, r);
 	
-	r.out.result = _eventlog_ChangeNotify(p, &r);
+	r->out.result = _eventlog_ChangeNotify(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_ChangeNotify, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_ChangeNotify, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_ChangeNotify(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_OpenEventLogW(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_OpenEventLogW r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_OpenEventLogW");
+	struct eventlog_OpenEventLogW *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENEVENTLOGW];
+	
+	r = talloc(NULL, struct eventlog_OpenEventLogW);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_OpenEventLogW(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_zero(mem_ctx, struct policy_handle);
-	if (r.out.handle == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.handle = talloc_zero(r, struct policy_handle);
+	if (r->out.handle == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _eventlog_OpenEventLogW(p, &r);
+	r->out.result = _eventlog_OpenEventLogW(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogW, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogW, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_OpenEventLogW(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_RegisterEventSourceW(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_RegisterEventSourceW r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_RegisterEventSourceW");
+	struct eventlog_RegisterEventSourceW *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REGISTEREVENTSOURCEW];
+	
+	r = talloc(NULL, struct eventlog_RegisterEventSourceW);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_RegisterEventSourceW(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, r);
 	
-	r.out.result = _eventlog_RegisterEventSourceW(p, &r);
+	r->out.result = _eventlog_RegisterEventSourceW(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceW, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceW, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_RegisterEventSourceW(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_OpenBackupEventLogW(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_OpenBackupEventLogW r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_OpenBackupEventLogW");
+	struct eventlog_OpenBackupEventLogW *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENBACKUPEVENTLOGW];
+	
+	r = talloc(NULL, struct eventlog_OpenBackupEventLogW);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_OpenBackupEventLogW(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, r);
 	
-	r.out.result = _eventlog_OpenBackupEventLogW(p, &r);
+	r->out.result = _eventlog_OpenBackupEventLogW(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogW, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogW, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_OpenBackupEventLogW(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_ReadEventLogW(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_ReadEventLogW r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_ReadEventLogW");
+	struct eventlog_ReadEventLogW *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_READEVENTLOGW];
+	
+	r = talloc(NULL, struct eventlog_ReadEventLogW);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_ReadEventLogW(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogW, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogW, r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.data = talloc_zero_array(mem_ctx, uint8_t, r.in.number_of_bytes);
-	if (r.out.data == NULL) {
-		talloc_free(mem_ctx);
+	ZERO_STRUCT(r->out);
+	r->out.data = talloc_zero_array(r, uint8_t, r->in.number_of_bytes);
+	if (r->out.data == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.sent_size = talloc_zero(mem_ctx, uint32_t);
-	if (r.out.sent_size == NULL) {
-		talloc_free(mem_ctx);
+	r->out.sent_size = talloc_zero(r, uint32_t);
+	if (r->out.sent_size == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.real_size = talloc_zero(mem_ctx, uint32_t);
-	if (r.out.real_size == NULL) {
-		talloc_free(mem_ctx);
+	r->out.real_size = talloc_zero(r, uint32_t);
+	if (r->out.real_size == NULL) {
+		talloc_free(r);
 		return False;
 	}
 	
-	r.out.result = _eventlog_ReadEventLogW(p, &r);
+	r->out.result = _eventlog_ReadEventLogW(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogW, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogW, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_ReadEventLogW(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_ReportEventW(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_ReportEventW r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_ReportEventW");
+	struct eventlog_ReportEventW *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REPORTEVENTW];
+	
+	r = talloc(NULL, struct eventlog_ReportEventW);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_ReportEventW(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, r);
 	
-	r.out.result = _eventlog_ReportEventW(p, &r);
+	r->out.result = _eventlog_ReportEventW(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventW, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventW, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_ReportEventW(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_ClearEventLogA(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_ClearEventLogA r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_ClearEventLogA");
+	struct eventlog_ClearEventLogA *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CLEAREVENTLOGA];
+	
+	r = talloc(NULL, struct eventlog_ClearEventLogA);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_ClearEventLogA(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogA, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogA, r);
 	
-	r.out.result = _eventlog_ClearEventLogA(p, &r);
+	r->out.result = _eventlog_ClearEventLogA(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogA, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogA, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_ClearEventLogA(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_BackupEventLogA(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_BackupEventLogA r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_BackupEventLogA");
+	struct eventlog_BackupEventLogA *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_BACKUPEVENTLOGA];
+	
+	r = talloc(NULL, struct eventlog_BackupEventLogA);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_BackupEventLogA(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogA, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogA, r);
 	
-	r.out.result = _eventlog_BackupEventLogA(p, &r);
+	r->out.result = _eventlog_BackupEventLogA(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogA, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogA, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_BackupEventLogA(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_OpenEventLogA(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_OpenEventLogA r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_OpenEventLogA");
+	struct eventlog_OpenEventLogA *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENEVENTLOGA];
+	
+	r = talloc(NULL, struct eventlog_OpenEventLogA);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_OpenEventLogA(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogA, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogA, r);
 	
-	r.out.result = _eventlog_OpenEventLogA(p, &r);
+	r->out.result = _eventlog_OpenEventLogA(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogA, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogA, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_OpenEventLogA(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_RegisterEventSourceA(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_RegisterEventSourceA r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_RegisterEventSourceA");
+	struct eventlog_RegisterEventSourceA *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REGISTEREVENTSOURCEA];
+	
+	r = talloc(NULL, struct eventlog_RegisterEventSourceA);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_RegisterEventSourceA(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceA, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceA, r);
 	
-	r.out.result = _eventlog_RegisterEventSourceA(p, &r);
+	r->out.result = _eventlog_RegisterEventSourceA(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceA, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceA, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_RegisterEventSourceA(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_OpenBackupEventLogA(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_OpenBackupEventLogA r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_OpenBackupEventLogA");
+	struct eventlog_OpenBackupEventLogA *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENBACKUPEVENTLOGA];
+	
+	r = talloc(NULL, struct eventlog_OpenBackupEventLogA);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_OpenBackupEventLogA(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogA, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogA, r);
 	
-	r.out.result = _eventlog_OpenBackupEventLogA(p, &r);
+	r->out.result = _eventlog_OpenBackupEventLogA(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogA, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogA, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_OpenBackupEventLogA(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_ReadEventLogA(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_ReadEventLogA r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_ReadEventLogA");
+	struct eventlog_ReadEventLogA *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_READEVENTLOGA];
+	
+	r = talloc(NULL, struct eventlog_ReadEventLogA);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_ReadEventLogA(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogA, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogA, r);
 	
-	r.out.result = _eventlog_ReadEventLogA(p, &r);
+	r->out.result = _eventlog_ReadEventLogA(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogA, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogA, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_ReadEventLogA(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_ReportEventA(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_ReportEventA r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_ReportEventA");
+	struct eventlog_ReportEventA *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REPORTEVENTA];
+	
+	r = talloc(NULL, struct eventlog_ReportEventA);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_ReportEventA(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventA, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_ReportEventA, r);
 	
-	r.out.result = _eventlog_ReportEventA(p, &r);
+	r->out.result = _eventlog_ReportEventA(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventA, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventA, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_ReportEventA(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_RegisterClusterSvc(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_RegisterClusterSvc r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_RegisterClusterSvc");
+	struct eventlog_RegisterClusterSvc *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REGISTERCLUSTERSVC];
+	
+	r = talloc(NULL, struct eventlog_RegisterClusterSvc);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_RegisterClusterSvc(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterClusterSvc, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_RegisterClusterSvc, r);
 	
-	r.out.result = _eventlog_RegisterClusterSvc(p, &r);
+	r->out.result = _eventlog_RegisterClusterSvc(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterClusterSvc, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_RegisterClusterSvc, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_RegisterClusterSvc(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_DeregisterClusterSvc(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_DeregisterClusterSvc r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_DeregisterClusterSvc");
+	struct eventlog_DeregisterClusterSvc *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_DEREGISTERCLUSTERSVC];
+	
+	r = talloc(NULL, struct eventlog_DeregisterClusterSvc);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_DeregisterClusterSvc(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_DeregisterClusterSvc, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_DeregisterClusterSvc, r);
 	
-	r.out.result = _eventlog_DeregisterClusterSvc(p, &r);
+	r->out.result = _eventlog_DeregisterClusterSvc(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterClusterSvc, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterClusterSvc, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_DeregisterClusterSvc(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_WriteClusterEvents(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_WriteClusterEvents r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_WriteClusterEvents");
+	struct eventlog_WriteClusterEvents *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_WRITECLUSTEREVENTS];
+	
+	r = talloc(NULL, struct eventlog_WriteClusterEvents);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_WriteClusterEvents(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_WriteClusterEvents, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_WriteClusterEvents, r);
 	
-	r.out.result = _eventlog_WriteClusterEvents(p, &r);
+	r->out.result = _eventlog_WriteClusterEvents(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_WriteClusterEvents, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_WriteClusterEvents, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_WriteClusterEvents(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_GetLogIntormation(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_GetLogIntormation r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_GetLogIntormation");
+	struct eventlog_GetLogIntormation *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETLOGINTORMATION];
+	
+	r = talloc(NULL, struct eventlog_GetLogIntormation);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_GetLogIntormation(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, r);
 	
-	r.out.result = _eventlog_GetLogIntormation(p, &r);
+	r->out.result = _eventlog_GetLogIntormation(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_GetLogIntormation, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_GetLogIntormation, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_GetLogIntormation(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
 
 static BOOL api_eventlog_FlushEventLog(pipes_struct *p)
 {
+	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct eventlog_FlushEventLog r;
-	TALLOC_CTX *mem_ctx = talloc_init("api_eventlog_FlushEventLog");
+	struct eventlog_FlushEventLog *r;
 	
-	if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {
-		talloc_free(mem_ctx);
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_FLUSHEVENTLOG];
+	
+	r = talloc(NULL, struct eventlog_FlushEventLog);
+	if (r == NULL) {
 		return False;
 	}
 	
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return False;
+	}
+	
+	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull_eventlog_FlushEventLog(pull, NDR_IN, &r);
+	status = call->ndr_pull(pull, NDR_IN, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(eventlog_FlushEventLog, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_FlushEventLog, r);
 	
-	r.out.result = _eventlog_FlushEventLog(p, &r);
+	r->out.result = _eventlog_FlushEventLog(p, r);
 	
 	if (p->rng_fault_state) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		/* Return True here, srv_pipe_hnd.c will take care */
 		return True;
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(eventlog_FlushEventLog, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_FlushEventLog, r);
 	
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	status = ndr_push_eventlog_FlushEventLog(push, NDR_OUT, &r);
+	status = call->ndr_push(push, NDR_OUT, r);
 	if (NT_STATUS_IS_ERR(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
 	blob = ndr_push_blob(push);
 	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
-		talloc_free(mem_ctx);
+		talloc_free(r);
 		return False;
 	}
 	
-	talloc_free(mem_ctx);
+	talloc_free(r);
 	
 	return True;
 }
