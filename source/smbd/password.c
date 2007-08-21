@@ -1,18 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Tridgell 1992-1998
-   
+   Copyright (C) Jeremy Allison 2007.
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -30,6 +31,44 @@ static user_struct *validated_users;
 static int next_vuid = VUID_OFFSET;
 static int num_validated_vuids;
 
+enum server_allocated_state { SERVER_ALLOCATED_REQUIRED_YES,
+				SERVER_ALLOCATED_REQUIRED_NO,
+				SERVER_ALLOCATED_REQUIRED_ANY};
+
+static user_struct *get_valid_user_struct_internal(uint16 vuid,
+			enum server_allocated_state server_allocated)
+{
+	user_struct *usp;
+	int count=0;
+
+	if (vuid == UID_FIELD_INVALID)
+		return NULL;
+
+	for (usp=validated_users;usp;usp=usp->next,count++) {
+		if (vuid == usp->vuid) {
+			switch (server_allocated) {
+				case SERVER_ALLOCATED_REQUIRED_YES:
+					if (usp->server_info == NULL) {
+						continue;
+					}
+					break;
+				case SERVER_ALLOCATED_REQUIRED_NO:
+					if (usp->server_info != NULL) {
+						continue;
+					}
+				case SERVER_ALLOCATED_REQUIRED_ANY:
+					break;
+			}
+			if (count > 10) {
+				DLIST_PROMOTE(validated_users, usp);
+			}
+			return usp;
+		}
+	}
+
+	return NULL;
+}
+
 /****************************************************************************
  Check if a uid has been validated, and return an pointer to the user_struct
  if it has. NULL if not. vuid is biased by an offset. This allows us to
@@ -38,22 +77,17 @@ static int num_validated_vuids;
 
 user_struct *get_valid_user_struct(uint16 vuid)
 {
-	user_struct *usp;
-	int count=0;
+	return get_valid_user_struct_internal(vuid,
+			SERVER_ALLOCATED_REQUIRED_YES);
+}
 
-	if (vuid == UID_FIELD_INVALID)
-		return NULL;
-
-	for (usp=validated_users;usp;usp=usp->next,count++) {
-		if (vuid == usp->vuid && usp->server_info) {
-			if (count > 10) {
-				DLIST_PROMOTE(validated_users, usp);
-			}
-			return usp;
-		}
+BOOL is_partial_auth_vuid(uint16 vuid)
+{
+	if (vuid == UID_FIELD_INVALID) {
+		return False;
 	}
-
-	return NULL;
+	return get_valid_user_struct_internal(vuid,
+			SERVER_ALLOCATED_REQUIRED_NO) ? True : False;
 }
 
 /****************************************************************************
@@ -62,22 +96,8 @@ user_struct *get_valid_user_struct(uint16 vuid)
 
 user_struct *get_partial_auth_user_struct(uint16 vuid)
 {
-	user_struct *usp;
-	int count=0;
-
-	if (vuid == UID_FIELD_INVALID)
-		return NULL;
-
-	for (usp=validated_users;usp;usp=usp->next,count++) {
-		if (vuid == usp->vuid && !usp->server_info) {
-			if (count > 10) {
-				DLIST_PROMOTE(validated_users, usp);
-			}
-			return usp;
-		}
-	}
-
-	return NULL;
+	return get_valid_user_struct_internal(vuid,
+			SERVER_ALLOCATED_REQUIRED_NO);
 }
 
 /****************************************************************************
@@ -86,11 +106,18 @@ user_struct *get_partial_auth_user_struct(uint16 vuid)
 
 void invalidate_vuid(uint16 vuid)
 {
-	user_struct *vuser = get_valid_user_struct(vuid);
+	user_struct *vuser = NULL;
 
-	if (vuser == NULL)
+	if (vuid == UID_FIELD_INVALID) {
 		return;
-	
+	}
+
+	vuser = get_valid_user_struct_internal(vuid,
+			SERVER_ALLOCATED_REQUIRED_ANY);
+	if (vuser == NULL) {
+		return;
+	}
+
 	session_yield(vuser);
 
 	data_blob_free(&vuser->session_key);
@@ -115,18 +142,69 @@ void invalidate_all_vuids(void)
 
 	for (usp=validated_users;usp;usp=next) {
 		next = usp->next;
-		
 		invalidate_vuid(usp->vuid);
 	}
 }
 
+/****************************************************
+ Create a new partial auth user struct.
+*****************************************************/
+
+int register_initial_vuid(void)
+{
+	user_struct *vuser;
+
+	/* Paranoia check. */
+	if(lp_security() == SEC_SHARE) {
+		smb_panic("register_initial_vuid: "
+			"Tried to register uid in security=share");
+	}
+
+	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
+	if (num_validated_vuids >= 0xFFFF-VUID_OFFSET) {
+		return UID_FIELD_INVALID;
+	}
+
+	if((vuser = talloc_zero(NULL, user_struct)) == NULL) {
+		DEBUG(0,("register_initial_vuid: "
+				"Failed to talloc users struct!\n"));
+		return UID_FIELD_INVALID;
+	}
+
+	/* Allocate a free vuid. Yes this is a linear search... */
+	while( get_valid_user_struct_internal(next_vuid,
+			SERVER_ALLOCATED_REQUIRED_ANY) != NULL ) {
+		next_vuid++;
+		/* Check for vuid wrap. */
+		if (next_vuid == UID_FIELD_INVALID) {
+			next_vuid = VUID_OFFSET;
+		}
+	}
+
+	DEBUG(10,("register_initial_vuid: allocated vuid = %u\n",
+		(unsigned int)next_vuid ));
+
+	vuser->vuid = next_vuid;
+
+	/*
+	 * This happens in an unfinished NTLMSSP session setup. We
+	 * need to allocate a vuid between the first and second calls
+	 * to NTLMSSP.
+	 */
+	next_vuid++;
+	num_validated_vuids++;
+
+	DLIST_ADD(validated_users, vuser);
+	return vuser->vuid;
+}
+
 /**
  *  register that a valid login has been performed, establish 'session'.
- *  @param server_info The token returned from the authentication process. 
- *   (now 'owned' by register_vuid)
+ *  @param server_info The token returned from the authentication process.
+ *   (now 'owned' by register_existing_vuid)
  *
  *  @param session_key The User session key for the login session (now also
- *  'owned' by register_vuid)
+ *  'owned' by register_existing_vuid)
  *
  *  @param respose_blob The NT challenge-response, if available.  (May be
  *  freed after this call)
@@ -138,93 +216,53 @@ void invalidate_all_vuids(void)
  *
  */
 
-int register_vuid(auth_serversupplied_info *server_info,
-		  DATA_BLOB session_key, DATA_BLOB response_blob,
-		  const char *smb_name)
+int register_existing_vuid(uint16 vuid,
+			auth_serversupplied_info *server_info,
+			DATA_BLOB session_key,
+			DATA_BLOB response_blob,
+			const char *smb_name)
 {
-	user_struct *vuser;
-
-	/* Paranoia check. */
-	if(lp_security() == SEC_SHARE) {
-		smb_panic("Tried to register uid in security=share");
+	user_struct *vuser = get_partial_auth_user_struct(vuid);
+	if (!vuser) {
+		goto fail;
 	}
 
-	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
-	if (num_validated_vuids >= 0xFFFF-VUID_OFFSET) {
-		data_blob_free(&session_key);
-		return UID_FIELD_INVALID;
-	}
-
-	if((vuser = talloc_zero(NULL, user_struct)) == NULL) {
-		DEBUG(0,("Failed to talloc users struct!\n"));
-		data_blob_free(&session_key);
-		return UID_FIELD_INVALID;
-	}
-
-	/* Allocate a free vuid. Yes this is a linear search... :-) */
-	while( get_valid_user_struct(next_vuid) != NULL ) {
-		next_vuid++;
-		/* Check for vuid wrap. */
-		if (next_vuid == UID_FIELD_INVALID)
-			next_vuid = VUID_OFFSET;
-	}
-
-	DEBUG(10,("register_vuid: allocated vuid = %u\n",
-		  (unsigned int)next_vuid ));
-
-	vuser->vuid = next_vuid;
-
-	if (!server_info) {
-		/*
-		 * This happens in an unfinished NTLMSSP session setup. We
-		 * need to allocate a vuid between the first and second calls
-		 * to NTLMSSP.
-		 */
-		next_vuid++;
-		num_validated_vuids++;
-		
-		vuser->server_info = NULL;
-		
-		DLIST_ADD(validated_users, vuser);
-		
-		return vuser->vuid;
-	}
-
-	/* use this to keep tabs on all our info from the authentication */
+	/* Use this to keep tabs on all our info from the authentication */
 	vuser->server_info = server_info;
-	/* Ensure that the server_info will dissapear with the vuser it is now attached to */
+
+	/* Ensure that the server_info will disappear with
+	 * the vuser it is now attached to */
+
 	talloc_steal(vuser, vuser->server_info);
 
 	/* the next functions should be done by a SID mapping system (SMS) as
 	 * the new real sam db won't have reference to unix uids or gids
 	 */
-	
+
 	vuser->uid = server_info->uid;
 	vuser->gid = server_info->gid;
-	
+
 	vuser->n_groups = server_info->n_groups;
 	if (vuser->n_groups) {
-		if (!(vuser->groups = (gid_t *)talloc_memdup(vuser, server_info->groups,
-							     sizeof(gid_t) *
-							     vuser->n_groups))) {
-			DEBUG(0,("register_vuid: failed to talloc_memdup "
-				 "vuser->groups\n"));
-			data_blob_free(&session_key);
-			TALLOC_FREE(vuser);
-			return UID_FIELD_INVALID;
+		if (!(vuser->groups = (gid_t *)talloc_memdup(vuser,
+					server_info->groups,
+					sizeof(gid_t)*vuser->n_groups))) {
+			DEBUG(0,("register_existing_vuid: "
+				"failed to talloc_memdup vuser->groups\n"));
+			goto fail;
 		}
 	}
 
 	vuser->guest = server_info->guest;
-	fstrcpy(vuser->user.unix_name, server_info->unix_name); 
+	fstrcpy(vuser->user.unix_name, server_info->unix_name);
 
 	/* This is a potentially untrusted username */
 	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$",
-		     sizeof(vuser->user.smb_name));
+		sizeof(vuser->user.smb_name));
 
 	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
 	fstrcpy(vuser->user.full_name,
-		pdb_get_fullname(server_info->sam_account));
+	pdb_get_fullname(server_info->sam_account));
 
 	{
 		/* Keep the homedir handy */
@@ -234,7 +272,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 			pdb_get_logon_script(server_info->sam_account);
 
 		if (!IS_SAM_DEFAULT(server_info->sam_account,
-				    PDB_UNIXHOMEDIR)) {
+					PDB_UNIXHOMEDIR)) {
 			const char *unix_homedir =
 				pdb_get_unix_homedir(server_info->sam_account);
 			if (unix_homedir) {
@@ -252,7 +290,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 				TALLOC_FREE(passwd);
 			}
 		}
-		
+
 		if (homedir) {
 			vuser->homedir = homedir;
 		}
@@ -260,86 +298,83 @@ int register_vuid(auth_serversupplied_info *server_info,
 			vuser->logon_script = logon_script;
 		}
 	}
-
 	vuser->session_key = session_key;
 
-	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
-		  (unsigned int)vuser->uid, 
-		  (unsigned int)vuser->gid,
-		  vuser->user.unix_name, vuser->user.smb_name,
-		  vuser->user.domain, vuser->guest ));
+	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
+			(unsigned int)vuser->uid,
+			(unsigned int)vuser->gid,
+			vuser->user.unix_name, vuser->user.smb_name,
+			vuser->user.domain, vuser->guest ));
 
-	DEBUG(3, ("User name: %s\tReal name: %s\n", vuser->user.unix_name,
-		  vuser->user.full_name));	
+	DEBUG(3, ("register_existing_vuid: User name: %s\t"
+		"Real name: %s\n", vuser->user.unix_name,
+		vuser->user.full_name));
 
- 	if (server_info->ptok) {
+	if (server_info->ptok) {
 		vuser->nt_user_token = dup_nt_token(vuser, server_info->ptok);
 	} else {
-		DEBUG(1, ("server_info does not contain a user_token - "
-			  "cannot continue\n"));
-		TALLOC_FREE(vuser);
-		data_blob_free(&session_key);
-		return UID_FIELD_INVALID;
+		DEBUG(1, ("register_existing_vuid: server_info does not "
+			"contain a user_token - cannot continue\n"));
+		goto fail;
 	}
 
-	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",
-		 (int)vuser->uid,vuser->user.unix_name, vuser->vuid));
+	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
+		"and will be vuid %u\n",
+		(int)vuser->uid,vuser->user.unix_name, vuser->vuid));
 
 	next_vuid++;
 	num_validated_vuids++;
 
-	DLIST_ADD(validated_users, vuser);
-
 	if (!session_claim(vuser)) {
-		DEBUG(1, ("Failed to claim session for vuid=%d\n",
-			  vuser->vuid));
-		invalidate_vuid(vuser->vuid);
-		return UID_FIELD_INVALID;
+		DEBUG(1, ("register_existing_vuid: Failed to claim session "
+			"for vuid=%d\n",
+			vuser->vuid));
+		goto fail;
 	}
 
-	/* Register a home dir service for this user iff
-	
-	   (a) This is not a guest connection,
-	   (b) we have a home directory defined 
-	   (c) there s not an existing static share by that name
-	   
-	   If a share exists by this name (autoloaded or not) reuse it . */
+	/* Register a home dir service for this user if
+	(a) This is not a guest connection,
+	(b) we have a home directory defined
+	(c) there s not an existing static share by that name
+	If a share exists by this name (autoloaded or not) reuse it . */
 
 	vuser->homes_snum = -1;
-
-	if ( (!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)) 
-	{
+	if ( (!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)) {
 		int servicenumber = lp_servicenumber(vuser->user.unix_name);
-
 		if ( servicenumber == -1 ) {
 			DEBUG(3, ("Adding homes service for user '%s' using "
-				  "home directory: '%s'\n", 
+				"home directory: '%s'\n",
 				vuser->user.unix_name, vuser->unix_homedir));
 			vuser->homes_snum =
-				add_home_service(vuser->user.unix_name, 
-						 vuser->user.unix_name,
-						 vuser->unix_homedir);
+				add_home_service(vuser->user.unix_name,
+						vuser->user.unix_name,
+						vuser->unix_homedir);
 		} else {
 			DEBUG(3, ("Using static (or previously created) "
-				  "service for user '%s'; path = '%s'\n", 
-				  vuser->user.unix_name,
-				  lp_pathname(servicenumber) ));
+				"service for user '%s'; path = '%s'\n",
+				vuser->user.unix_name,
+				lp_pathname(servicenumber) ));
 			vuser->homes_snum = servicenumber;
 		}
-	} 
-	
+	}
+
 	if (srv_is_signing_negotiated() && !vuser->guest &&
-	    !srv_signing_started()) {
+			!srv_signing_started()) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
 		srv_set_signing(vuser->session_key, response_blob);
 	}
-	
+
 	/* fill in the current_user_info struct */
 	set_current_user_info( &vuser->user );
-
-
 	return vuser->vuid;
+
+  fail:
+
+	if (vuser) {
+		invalidate_vuid(vuid);
+	}
+	return UID_FIELD_INVALID;
 }
 
 /****************************************************************************
@@ -428,7 +463,8 @@ BOOL user_in_netgroup(const char *user, const char *ngname)
 		yp_get_default_domain(&mydomain);
 
 	if(mydomain == NULL) {
-		DEBUG(5,("Unable to get default yp domain, let's try without specifying it\n"));
+		DEBUG(5,("Unable to get default yp domain, "
+			"let's try without specifying it\n"));
 	}
 
 	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
@@ -446,7 +482,7 @@ BOOL user_in_netgroup(const char *user, const char *ngname)
 
 		fstrcpy(lowercase_user, user);
 		strlower_m(lowercase_user);
-	
+
 		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
 			lowercase_user, mydomain?mydomain:"(ANY)", ngname));
 
@@ -535,7 +571,7 @@ BOOL user_in_list(const char *user,const char **list)
 					return True;
 			}
 		}
-    
+
 		list++;
 	}
 	return(False);
@@ -621,7 +657,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 		endnetgrent();
 	}
 #endif
-  
+
 #ifdef HAVE_GETGRENT
 	{
 		struct group *gptr;
@@ -694,26 +730,26 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
  Note this is *NOT* used when logging on using sessionsetup_and_X.
 ****************************************************************************/
 
-BOOL authorise_login(int snum, fstring user, DATA_BLOB password, 
+BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 		     BOOL *guest)
 {
 	BOOL ok = False;
-	
+
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("authorise_login: checking authorisation on "
 		   "user=%s pass=%s\n", user,password.data));
 #endif
 
 	*guest = False;
-  
+
 	/* there are several possibilities:
 		1) login as the given user with given password
-		2) login as a previously registered username with the given 
+		2) login as a previously registered username with the given
 		   password
 		3) login as a session list username with the given password
 		4) login as a previously validated user/password pair
 		5) login as the "user =" user with given password
-		6) login as the "user =" user with no password 
+		6) login as the "user =" user with no password
 		   (guest connection)
 		7) login as guest user with no password
 
@@ -732,14 +768,14 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 
 		if (!user_list)
 			return(False);
-		
+
 		for (auser=strtok(user_list,LIST_SEP); !ok && auser;
 		     auser = strtok(NULL,LIST_SEP)) {
 			fstring user2;
 			fstrcpy(user2,auser);
 			if (!user_ok(user2,snum))
 				continue;
-			
+
 			if (password_ok(user2,password)) {
 				ok = True;
 				fstrcpy(user,user2);
@@ -751,15 +787,15 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 
 		SAFE_FREE(user_list);
 	}
-	
+
 	/* check the user= fields and the given password */
 	if (!ok && lp_username(snum)) {
 		char *auser;
 		pstring user_list;
 		pstrcpy(user_list,lp_username(snum));
-		
+
 		pstring_sub(user_list,"%S",lp_servicename(snum));
-		
+
 		for (auser=strtok(user_list,LIST_SEP); auser && !ok;
 		     auser = strtok(NULL,LIST_SEP)) {
 			if (*auser == '@') {

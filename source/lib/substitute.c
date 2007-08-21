@@ -154,7 +154,7 @@ void set_current_user_info(const userdom_struct *pcui)
 {
 	current_user_info = *pcui;
 	/* The following is safe as current_user_info.smb_name
-	 * has already been sanitised in register_vuid. */
+	 * has already been sanitised in register_existing_vuid. */
 	fstrcpy(smb_user_name, current_user_info.smb_name);
 }
 
