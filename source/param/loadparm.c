@@ -3092,23 +3092,39 @@ void show_parameter_list(void)
 static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 {
 	BOOL bRetval;
+	BOOL value;
 
 	bRetval = True;
 	if (strwicmp(pszParmValue, "yes") == 0 ||
 	    strwicmp(pszParmValue, "true") == 0 ||
 	    strwicmp(pszParmValue, "1") == 0)
-		*pb = True;
+		value = True;
 	else if (strwicmp(pszParmValue, "no") == 0 ||
 		    strwicmp(pszParmValue, "False") == 0 ||
 		    strwicmp(pszParmValue, "0") == 0)
-		*pb = False;
+		value = False;
 	else {
 		DEBUG(0,
 		      ("ERROR: Badly formed boolean in configuration file: \"%s\".\n",
 		       pszParmValue));
 		bRetval = False;
 	}
+
+	if (pb != NULL) {
+		*pb = value;
+	}
+
 	return (bRetval);
+}
+
+
+/***************************************************************************
+ Check if a given string correctly represents a boolean value.
+***************************************************************************/
+
+BOOL lp_string_is_valid_boolean(const char *parm_value)
+{
+	return set_boolean(NULL, parm_value);
 }
 
 /***************************************************************************
