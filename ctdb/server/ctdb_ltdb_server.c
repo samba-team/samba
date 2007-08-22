@@ -194,7 +194,18 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 {
 	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *ctdb_db, *tmp_db;
+	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
 	int ret;
+
+	/* If the node is inactive it is not part of the cluster
+	   and we should not allow clients to attach to any
+	   databases
+	*/
+	if (node->flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(0,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
+		return -1;
+	}
+
 
 	/* see if we already have this name */
 	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
