@@ -57,6 +57,8 @@ static void set_logfile(poptContext con, const char * arg)
 	lp_set_logfile(logfile);
 }
 
+static BOOL PrintSambaVersionString;
+
 static void popt_common_callback(poptContext con,
 			   enum poptCallbackReason reason,
 			   const struct poptOption *opt,
@@ -65,6 +67,14 @@ static void popt_common_callback(poptContext con,
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		set_logfile(con, dyn_LOGFILEBASE);
+		return;
+	}
+
+	if (reason == POPT_CALLBACK_REASON_POST) {
+		if (!PrintSambaVersionString) return;
+
+		printf( "Version %s\n", SAMBA_VERSION_STRING);
+		exit(0);
 		return;
 	}
 
@@ -77,8 +87,7 @@ static void popt_common_callback(poptContext con,
 		break;
 
 	case 'V':
-		printf( "Version %s\n", SAMBA_VERSION_STRING);
-		exit(0);
+		PrintSambaVersionString = True;
 		break;
 
 	case 'O':
@@ -133,7 +142,7 @@ struct poptOption popt_common_connection[] = {
 };
 
 struct poptOption popt_common_samba[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, (void *)popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_callback },
 	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
 	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternate configuration file", "CONFIGFILE" },
 	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Base name for log files", "LOGFILEBASE" },
