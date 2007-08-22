@@ -115,6 +115,16 @@ struct talloc_chunk {
 #define TC_HDR_SIZE ((sizeof(struct talloc_chunk)+15)&~15)
 #define TC_PTR_FROM_CHUNK(tc) ((void *)(TC_HDR_SIZE + (char*)tc))
 
+static void talloc_abort_double_free(void)
+{
+	TALLOC_ABORT("Bad talloc magic value - double free"); 
+}
+
+static void talloc_abort_unknown_value(void)
+{
+	TALLOC_ABORT("Bad talloc magic value - unknown value"); 
+}
+
 /* panic if we get a bad magic value */
 static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 {
@@ -122,9 +132,9 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~0xF)) != TALLOC_MAGIC)) { 
 		if (tc->flags & TALLOC_FLAG_FREE) {
-			TALLOC_ABORT("Bad talloc magic value - double free"); 
+			talloc_abort_double_free();
 		} else {
-			TALLOC_ABORT("Bad talloc magic value - unknown value"); 
+			talloc_abort_unknown_value();
 		}
 	}
 	return tc;
