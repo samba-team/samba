@@ -225,6 +225,18 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	case CTDB_REPLY_CALL:
 	case CTDB_REQ_DMASTER:
 	case CTDB_REPLY_DMASTER:
+		/* we dont allow these calls when banned */
+		if (ctdb->nodes[ctdb->vnn]->flags & NODE_FLAGS_BANNED) {
+			DEBUG(0,(__location__ " ctdb operation %u"
+				" request %u"
+				" length %u from node %u to %u while node"
+				" is banned\n",
+				 hdr->operation, hdr->reqid,
+				 hdr->length, 
+				 hdr->srcnode, hdr->destnode));
+			goto done;
+		}
+
 		/* for ctdb_call inter-node operations verify that the
 		   remote node that sent us the call is running in the
 		   same generation instance as this node
