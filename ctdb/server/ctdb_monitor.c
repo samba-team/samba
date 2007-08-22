@@ -221,6 +221,13 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {
 		/* make sure we are frozen */
 		DEBUG(0,("This node has been banned - forcing freeze and recovery\n"));
+		/* Reset the generation id to 1 to make us ignore any
+		   REQ/REPLY CALL/DMASTER someone sends to us.
+		   We are now banned so we shouldnt service database calls
+		   anymore.
+		*/
+		ctdb->vnn_map->generation = 1;
+
 		ctdb_start_freeze(ctdb);
 		ctdb_release_all_ips(ctdb);
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
