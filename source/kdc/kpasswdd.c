@@ -197,7 +197,6 @@ static BOOL kpasswdd_change_password(struct kdc_server *kdc,
 					session_info->security_token->user_sid,
 					password, NULL, NULL, 
 					True, /* this is a user password change */
-					True, /* run restriction tests */
 					&reject_reason,
 					&dominfo);
 	return kpasswd_make_pwchange_reply(kdc, mem_ctx, 
@@ -362,7 +361,6 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 						    set_password_on_dn, NULL,
 						    msg, password, NULL, NULL, 
 						    False, /* this is not a user password change */
-						    True, /* run restriction tests */
 						    &reject_reason, &dominfo);
 		}
 
