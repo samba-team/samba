@@ -932,6 +932,7 @@ static void process_loop(void)
 int main(int argc, char **argv, char **envp)
 {
 	pstring logfile;
+	static BOOL is_daemon = False;
 	static BOOL Fork = True;
 	static BOOL log_stdout = False;
 	static BOOL no_process_group = False;
@@ -940,6 +941,7 @@ int main(int argc, char **argv, char **envp)
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
+		{ "daemon", 'D', POPT_ARG_NONE, NULL, 'D', "Become a daemon (default)" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
@@ -980,6 +982,9 @@ int main(int argc, char **argv, char **envp)
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 			/* Don't become a daemon */
+		case 'D':
+			is_daemon = True;
+			break;
 		case 'i':
 			interactive = True;
 			log_stdout = True;
@@ -993,8 +998,16 @@ int main(int argc, char **argv, char **envp)
 		}
 	}
 
+	if (is_daemon && interactive) {
+		d_fprintf(stderr,"\nERROR: "
+			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
+		poptPrintUsage(pc, stderr, 0);
+		exit(1);
+	}
+
 	if (log_stdout && Fork) {
-		printf("Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n");
+		d_fprintf(stderr, "\nERROR: "
+			  "Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
