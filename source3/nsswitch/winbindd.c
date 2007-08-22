@@ -977,6 +977,7 @@ int main(int argc, char **argv, char **envp)
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &server_mode, SERVER_MODE_FOREGROUND, "Daemon in foreground mode" },
 		{ "no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
+		{ "daemon", 'D', POPT_ARG_VAL, &server_mode, SERVER_MODE_DAEMON, "Become a daemon (default)" },
 		{ "interactive", 'i', POPT_ARG_VAL, &server_mode, SERVER_MODE_INTERACTIVE, "Interactive mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
