@@ -1017,8 +1017,9 @@ int main(int argc, char **argv, char **envp)
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		default:
-			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				  poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
 			exit(1);
 		}
 	}
@@ -1035,6 +1036,8 @@ int main(int argc, char **argv, char **envp)
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
+
+	poptFreeContext(pc);
 
 	if (!override_logfile) {
 		pstr_sprintf(logfile, "%s/log.winbindd", dyn_LOGFILEBASE);
@@ -1166,8 +1169,6 @@ int main(int argc, char **argv, char **envp)
 
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DUMP_EVENT_LIST, winbind_msg_dump_event_list);
-
-	poptFreeContext(pc);
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
