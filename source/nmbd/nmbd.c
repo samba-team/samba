@@ -681,8 +681,9 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		default:
-			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				  poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
 			exit(1);
 		}
 	};

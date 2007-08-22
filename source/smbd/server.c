@@ -861,6 +861,7 @@ extern void build_options(BOOL screen);
 	static char *profile_level = NULL;
 	int opt;
 	poptContext pc;
+	BOOL print_build_options = False;
 
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
@@ -886,20 +887,24 @@ extern void build_options(BOOL screen);
 #endif
 
 	pc = poptGetContext("smbd", argc, argv, long_options, 0);
-	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt)  {
 		case 'b':
-			build_options(True); /* Display output to screen as well as debug */ 
-			exit(0);
+			print_build_options = True;
+			break;
 		default:
-			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				  poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
 			exit(1);
 		}
 	}
-
 	poptFreeContext(pc);
+
+	if (print_build_options) {
+		build_options(True); /* Display output to screen as well as debug */
+		exit(0);
+	}
 
 #ifdef HAVE_SETLUID
 	/* needed for SecureWare on SCO */
