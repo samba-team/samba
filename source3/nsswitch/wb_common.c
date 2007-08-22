@@ -420,7 +420,7 @@ int write_sock(void *buffer, int count, int recursing, int need_priv)
 
 static int read_sock(void *buffer, int count)
 {
-	int result = 0, nread = 0;
+	int nread = 0;
 	int total_time = 0, selret;
 
 	if (winbindd_fd == -1) {
@@ -461,7 +461,7 @@ static int read_sock(void *buffer, int count)
 			
 			/* Do the Read */
 			
-			result = read(winbindd_fd, (char *)buffer + nread, 
+			int result = read(winbindd_fd, (char *)buffer + nread, 
 			      count - nread);
 			
 			if ((result == -1) || (result == 0)) {
@@ -479,7 +479,7 @@ static int read_sock(void *buffer, int count)
 		}
 	}
 	
-	return result;
+	return nread;
 }
 
 /* Read reply */
