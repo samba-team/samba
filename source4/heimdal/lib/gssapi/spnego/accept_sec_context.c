@@ -33,7 +33,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: accept_sec_context.c 21243 2007-06-20 15:16:22Z lha $");
+RCSID("$Id: accept_sec_context.c 21461 2007-07-10 14:01:13Z lha $");
 
 static OM_uint32
 send_reject (OM_uint32 *minor_status,
@@ -555,23 +555,16 @@ acceptor_start
     int get_mic = 0;
     int first_ok = 0;
 
-    if (src_name)
-	*src_name = GSS_C_NO_NAME;
-
     mech_output_token.value = NULL;
     mech_output_token.length = 0;
     mech_buf.value = NULL;
 
-    if (*context_handle == GSS_C_NO_CONTEXT) {
-	ret = _gss_spnego_alloc_sec_context(minor_status,
-					    context_handle);
-	if (ret != GSS_S_COMPLETE)
-	    return ret;
-
-	if (input_token_buffer->length == 0) {
-	    return send_supported_mechs (minor_status, output_token);
-	}
-    }
+    if (input_token_buffer->length == 0)
+	return send_supported_mechs (minor_status, output_token);
+	
+    ret = _gss_spnego_alloc_sec_context(minor_status, context_handle);
+    if (ret != GSS_S_COMPLETE)
+	return ret;
 
     ctx = (gssspnego_ctx)*context_handle;
 

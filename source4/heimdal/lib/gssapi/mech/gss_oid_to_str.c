@@ -32,7 +32,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_oid_to_str.c 19963 2007-01-17 16:01:22Z lha $");
+RCSID("$Id: gss_oid_to_str.c 21409 2007-07-04 14:19:11Z lha $");
 
 OM_uint32
 gss_oid_to_str(OM_uint32 *minor_status, gss_OID oid, gss_buffer_t oid_str)
@@ -43,6 +43,9 @@ gss_oid_to_str(OM_uint32 *minor_status, gss_OID oid, gss_buffer_t oid_str)
     char *p;
 
     _mg_buffer_zero(oid_str);
+
+    if (oid == GSS_C_NULL_OID)
+	return GSS_S_FAILURE;
 
     ret = der_get_oid (oid->elements, oid->length, &o, &size);
     if (ret) {

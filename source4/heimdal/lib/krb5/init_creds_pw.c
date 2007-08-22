@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c 21061 2007-06-12 17:56:30Z lha $");
+RCSID("$Id: init_creds_pw.c 21428 2007-07-10 12:31:58Z lha $");
 
 typedef struct krb5_get_init_creds_ctx {
     KDCOptions flags;

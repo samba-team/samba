@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h 20261 2007-02-18 00:32:22Z lha $ */
+/* $Id: krb5_locl.h 21552 2007-07-15 09:04:00Z lha $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -148,12 +148,6 @@ struct krb5_dh_moduli;
 /* v4 glue */
 struct _krb5_krb_auth_data;
 
-struct krb5_plugin;
-enum plugin_type {
-    PLUGIN_TYPE_DATA = 1,
-    PLUGIN_TYPE_FUNC
-};
-
 #include <der.h>
 
 #include <krb5.h>
@@ -236,7 +230,7 @@ typedef struct krb5_context_data {
     char error_buf[256];
     krb5_addresses *ignore_addresses;
     char *default_cc_name;
-    int pkinit_flags;
+    char *default_cc_name_env;
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
     int dns_canonicalize_hostname;

@@ -27,14 +27,17 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_names.c 19928 2007-01-16 10:37:54Z lha $");
+RCSID("$Id: gss_names.c 21473 2007-07-10 16:29:53Z lha $");
 
-struct _gss_mechanism_name *
-_gss_find_mn(struct _gss_name *name, gss_OID mech)
+OM_uint32
+_gss_find_mn(OM_uint32 *minor_status, struct _gss_name *name, gss_OID mech, 
+	     struct _gss_mechanism_name **output_mn)
 {
-	OM_uint32 major_status, minor_status;
+	OM_uint32 major_status;
 	gssapi_mech_interface m;
 	struct _gss_mechanism_name *mn;
+
+	*output_mn = NULL;
 
 	SLIST_FOREACH(mn, &name->gn_mn, gmn_link) {
 		if (gss_oid_equal(mech, mn->gmn_mech_oid))
@@ -47,33 +50,35 @@ _gss_find_mn(struct _gss_name *name, gss_OID mech)
 		 * MN but it is from a different mech), give up now.
 		 */
 		if (!name->gn_value.value)
-			return (0);
+			return GSS_S_BAD_NAME;
 
 		m = __gss_get_mechanism(mech);
 		if (!m)
-			return (0);
+			return (GSS_S_BAD_MECH);
 
 		mn = malloc(sizeof(struct _gss_mechanism_name));
 		if (!mn)
-			return (0);
+			return GSS_S_FAILURE;
 		
-		major_status = m->gm_import_name(&minor_status,
+		major_status = m->gm_import_name(minor_status,
 		    &name->gn_value,
 		    (name->gn_type.elements
 			? &name->gn_type : GSS_C_NO_OID),
 		    &mn->gmn_name);
 		if (major_status != GSS_S_COMPLETE) {
-			_gss_mg_error(m, major_status, minor_status);
+			_gss_mg_error(m, major_status, *minor_status);
 			free(mn);
-			return (0);
+			return major_status;
 		}
 
 		mn->gmn_mech = m;
 		mn->gmn_mech_oid = &m->gm_mech_oid;
 		SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
 	}
-	return (mn);
+	*output_mn = mn;
+	return 0;
 }
+
 
 /*
  * Make a name from an MN.

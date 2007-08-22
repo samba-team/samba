@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c 21040 2007-06-10 06:20:59Z lha $");
+RCSID("$Id: kerberos5.c 21529 2007-07-13 12:37:14Z lha $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -85,6 +85,22 @@ _kdc_find_padata(const KDC_REQ *req, int *start, int type)
 }
 
 /*
+ * Detect if `key' is the using the the precomputed `default_salt'.
+ */
+
+static krb5_boolean
+is_default_salt_p(const krb5_salt *default_salt, const Key *key)
+{
+    if (key->salt == NULL)
+	return TRUE;
+    if (default_salt->salttype != key->salt->type)
+	return FALSE;
+    if (krb5_data_cmp(&default_salt->saltvalue, &key->salt->salt))
+	return FALSE;
+    return TRUE;
+}
+
+/*
  * return the first appropriate key of `princ' in `ret_key'.  Look for
  * all the etypes in (`etypes', `len'), stopping as soon as we find
  * one, but preferring one that has default salt
@@ -97,6 +113,9 @@ _kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
 {
     int i;
     krb5_error_code ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+    krb5_salt def_salt;
+
+    krb5_get_pw_salt (context, princ->entry.principal, &def_salt);
 
     for(i = 0; ret != 0 && i < len ; i++) {
 	Key *key = NULL;
@@ -112,10 +131,13 @@ _kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
 	    *ret_key   = key;
 	    *ret_etype = etypes[i];
 	    ret = 0;
-	    if (key->salt == NULL)
+	    if (is_default_salt_p(&def_salt, key)) {
+		krb5_free_salt (context, def_salt);
 		return ret;
+	    }
 	}
     }
+    krb5_free_salt (context, def_salt);
     return ret;
 }
 
@@ -325,6 +347,43 @@ _kdc_encode_reply(krb5_context context,
     return 0;
 }
 
+/*
+ * Return 1 if the client have only older enctypes, this is for
+ * determining if the server should send ETYPE_INFO2 or not.
+ */
+
+static int
+older_enctype(krb5_enctype enctype)
+{
+    switch (enctype) {
+    case ETYPE_DES_CBC_CRC:
+    case ETYPE_DES_CBC_MD4:
+    case ETYPE_DES_CBC_MD5:
+    case ETYPE_DES3_CBC_SHA1:
+    case ETYPE_ARCFOUR_HMAC_MD5:
+    case ETYPE_ARCFOUR_HMAC_MD5_56:
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+static int
+only_older_enctype_p(const KDC_REQ *req)
+{
+    int i;
+
+    for(i = 0; i < req->req_body.etype.len; i++) {
+	if (!older_enctype(req->req_body.etype.val[i]))
+	    return 0;
+    }
+    return 1;
+}
+
+/*
+ *
+ */
+
 static krb5_error_code
 make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 {
@@ -395,14 +454,18 @@ get_pa_etype_info(krb5_context context,
 	return ENOMEM;
     memset(pa.val, 0, pa.len * sizeof(*pa.val));
 
-    for(j = 0; j < etypes_len; j++) {
-	for (i = 0; i < n; i++)
-	    if (pa.val[i].etype == etypes[j])
+    for(i = 0; i < client->keys.len; i++) {
+	for (j = 0; j < n; j++)
+	    if (pa.val[j].etype == client->keys.val[i].key.keytype)
 		goto skip1;
-	for(i = 0; i < client->keys.len; i++) {
+	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
  		if (krb5_enctype_valid(context, etypes[j]) != 0)
  		    continue;
+		if (!older_enctype(etypes[j]))
+ 		    continue;
+		if (n >= pa.len)
+		    krb5_abortx(context, "internal error: n >= p.len");
 		if((ret = make_etype_info_entry(context, 
 						&pa.val[n++], 
 						&client->keys.val[i])) != 0) {
@@ -420,6 +483,10 @@ get_pa_etype_info(krb5_context context,
 	}
 	if (krb5_enctype_valid(context, client->keys.val[i].key.keytype) != 0)
 	    continue;
+	if (!older_enctype(etypes[j]))
+	    continue;
+	if (n >= pa.len)
+	    krb5_abortx(context, "internal error: n >= p.len");
 	if((ret = make_etype_info_entry(context, 
 					&pa.val[n++], 
 					&client->keys.val[i])) != 0) {
@@ -429,16 +496,8 @@ get_pa_etype_info(krb5_context context,
     skip2:;
     }
     
-    if(n != pa.len) {
-	char *name;
-	ret = krb5_unparse_name(context, client->principal, &name);
-	if (ret)
-	    name = rk_UNCONST("<unparse_name failed>");
-	kdc_log(context, config, 0, 
-		"internal error in get_pa_etype_info(%s): %d != %d", 
-		name, n, pa.len);
-	if (ret == 0)
-	    free(name);
+    if(n < pa.len) {
+	/* stripped out newer enctypes */
  	pa.len = n;
     }
 
@@ -528,33 +587,9 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 }
 
 /*
- * Return 1 if the client have only older enctypes, this is for
- * determining if the server should send ETYPE_INFO2 or not.
- */
-
-static int
-only_older_enctype_p(const KDC_REQ *req)
-{
-    int i;
-
-    for(i = 0; i < req->req_body.etype.len; i++) {
-	switch (req->req_body.etype.val[i]) {
-	case ETYPE_DES_CBC_CRC:
-	case ETYPE_DES_CBC_MD4:
-	case ETYPE_DES_CBC_MD5:
-	case ETYPE_DES3_CBC_SHA1:
-	case ETYPE_ARCFOUR_HMAC_MD5:
-	case ETYPE_ARCFOUR_HMAC_MD5_56:
-	    break;
-	default:
-	    return 0;
-	}
-    }
-    return 1;
-}
-
-/*
- *
+ * Return an ETYPE-INFO2. Enctypes are storted the same way as in the
+ * database (client supported enctypes first, then the unsupported
+ * enctypes).
  */
 
 static krb5_error_code
@@ -578,11 +613,11 @@ get_pa_etype_info2(krb5_context context,
 	return ENOMEM;
     memset(pa.val, 0, pa.len * sizeof(*pa.val));
 
-    for(j = 0; j < etypes_len; j++) {
-	for (i = 0; i < n; i++)
-	    if (pa.val[i].etype == etypes[j])
+    for(i = 0; i < client->keys.len; i++) {
+	for (j = 0; j < n; j++)
+	    if (pa.val[j].etype == client->keys.val[i].key.keytype)
 		goto skip1;
-	for(i = 0; i < client->keys.len; i++) {
+	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
 		if (krb5_enctype_valid(context, etypes[j]) != 0)
 		    continue;
@@ -595,6 +630,7 @@ get_pa_etype_info2(krb5_context context,
 	}
     skip1:;
     }
+    /* send enctypes that the cliene doesn't know about too */
     for(i = 0; i < client->keys.len; i++) {
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
@@ -959,7 +995,9 @@ _kdc_as_rep(krb5_context context,
 	if (b->cname->name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 	    if (b->cname->name_string.len != 1) {
 		kdc_log(context, config, 0,
-			"AS-REQ malformed canon request from %s", from);
+			"AS-REQ malformed canon request from %s, "
+			"enterprise name with %d name components", 
+			from, b->cname->name_string.len);
 		ret = KRB5_PARSE_MALFORMED;
 		goto out;
 	    }
@@ -1395,6 +1433,12 @@ _kdc_as_rep(krb5_context context,
     copy_Realm(&server->entry.principal->realm, &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname, 
 				  server->entry.principal);
+    /* java 1.6 expects the name to be the same type, lets allow that
+     * uncomplicated name-types. */
+#define CNT(sp,t) (((sp)->sname->name_type) == KRB5_NT_##t)
+    if (CNT(b, UNKNOWN) || CNT(b, PRINCIPAL) || CNT(b, SRV_INST) || CNT(b, SRV_HST) || CNT(b, SRV_XHST))
+	rep.ticket.sname.name_type = b->sname->name_type;
+#undef CNT
 
     et.flags.initial = 1;
     if(client->entry.flags.forwardable && server->entry.flags.forwardable)

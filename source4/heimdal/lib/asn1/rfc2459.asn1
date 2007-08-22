@@ -169,7 +169,7 @@ Extension  ::=  SEQUENCE  {
      extnValue   OCTET STRING
 }
 
-Extensions  ::=  SEQUENCE OF Extension --  SIZE (1..MAX) 
+Extensions  ::=  SEQUENCE SIZE (1..MAX) OF Extension
 
 TBSCertificate  ::=  SEQUENCE  {
      version         [0]  Version OPTIONAL, -- EXPLICIT nnn DEFAULT 1,
@@ -232,7 +232,7 @@ GeneralName ::= CHOICE {
 	registeredID			[8]     IMPLICIT OBJECT IDENTIFIER
 }
 
-GeneralNames ::= SEQUENCE -- SIZE (1..MAX) -- OF GeneralName
+GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
 
 id-x509-ce-keyUsage OBJECT IDENTIFIER ::=  { id-x509-ce 15 }
 
@@ -320,7 +320,7 @@ DistributionPointReasonFlags ::= BIT STRING {
 }
 
 DistributionPointName ::= CHOICE {
-	fullName                [0]     IMPLICIT -- GeneralNames --  SEQUENCE -- SIZE (1..MAX) -- OF GeneralName,
+	fullName                [0]     IMPLICIT -- GeneralNames --  SEQUENCE SIZE (1..MAX) OF GeneralName,
 	nameRelativeToCRLIssuer [1]     RelativeDistinguishedName
 }
 
@@ -330,7 +330,7 @@ DistributionPoint ::= SEQUENCE {
 	cRLIssuer               [2]     IMPLICIT heim_any -- GeneralNames -- OPTIONAL
 }
 
-CRLDistributionPoints ::= SEQUENCE -- SIZE (1..MAX) -- OF DistributionPoint
+CRLDistributionPoints ::= SEQUENCE SIZE (1..MAX) OF DistributionPoint
 
 
 -- rfc3279
@@ -449,11 +449,20 @@ id-pkix-kp-emailProtection OBJECT IDENTIFIER ::= { id-pkix-kp 4 }
 id-pkix-kp-timeStamping OBJECT IDENTIFIER ::= { id-pkix-kp 8 }
 id-pkix-kp-OCSPSigning OBJECT IDENTIFIER ::= { id-pkix-kp 9 }
 
--- RFC 3820 Proxy Certificate Profile
-
 id-pkix-pe OBJECT IDENTIFIER ::= { id-pkix 1 }
 
-id-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
+id-pkix-pe-authorityInfoAccess OBJECT IDENTIFIER ::= { id-pkix-pe 1 }
+
+AccessDescription  ::=  SEQUENCE {
+	accessMethod          OBJECT IDENTIFIER,
+	accessLocation        GeneralName
+}
+
+AuthorityInfoAccessSyntax ::= SEQUENCE SIZE (1..MAX) OF AccessDescription
+
+-- RFC 3820 Proxy Certificate Profile
+
+id-pkix-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
 
 id-pkix-ppl  OBJECT IDENTIFIER ::= { id-pkix 21 }
 

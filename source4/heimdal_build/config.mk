@@ -259,7 +259,8 @@ OBJ_FILES = \
 	../heimdal/lib/krb5/warn.o \
 	../heimdal/lib/krb5/krb5_err.o \
 	../heimdal/lib/krb5/heim_err.o \
-	../heimdal/lib/krb5/k524_err.o
+	../heimdal/lib/krb5/k524_err.o \
+	../heimdal/lib/krb5/krb_err.o
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
 
@@ -568,10 +569,15 @@ include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/CMS.asn1 cms_asn1 hei
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/ocsp.asn1 ocsp_asn1 heimdal/lib/hx509 --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/kx509.asn1 kx509_asn1 heimdal/lib/asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/pkcs10.asn1 pkcs10_asn1 heimdal/lib/hx509 --preserve-binary=CertificationRequestInfo|
+
+#
+# Ensure to update ../static_deps.mk when you add a new entry here!
+#
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et heimdal/lib/asn1|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et heimdal/lib/hdb|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et heimdal/lib/krb5|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et heimdal/lib/krb5|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb_err.et heimdal/lib/krb5|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib/krb5|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|

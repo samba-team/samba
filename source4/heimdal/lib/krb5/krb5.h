@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h 21252 2007-06-21 04:18:28Z lha $ */
+/* $Id: krb5.h 21551 2007-07-15 09:03:39Z lha $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -436,11 +436,6 @@ typedef struct krb5_config_binding krb5_config_binding;
 
 typedef krb5_config_binding krb5_config_section;
 
-enum {
-    KRB5_PKINIT_WIN2K		= 1,	/* wire compatible with Windows 2k */
-    KRB5_PKINIT_PACKET_CABLE	= 2	/* use packet cable standard */
-};
-
 typedef struct krb5_ticket {
     EncTicketPart ticket;
     krb5_principal client;
@@ -765,6 +760,12 @@ typedef struct krb5_sendto_ctx *krb5_sendto_ctx;
 #define KRB5_SENDTO_CONTINUE	2
 
 typedef krb5_error_code (*krb5_sendto_ctx_func)(krb5_context, krb5_sendto_ctx, void *, const krb5_data *, int *);
+
+struct krb5_plugin;
+enum krb5_plugin_type {
+    PLUGIN_TYPE_DATA = 1,
+    PLUGIN_TYPE_FUNC
+};
 
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: peer.c 20938 2007-06-06 20:51:34Z lha $");
+RCSID("$Id: peer.c 21481 2007-07-10 16:33:23Z lha $");
 
 int
 hx509_peer_info_alloc(hx509_context context, hx509_peer_info *peer)
@@ -143,7 +143,7 @@ hx509_peer_info_parse(hx509_peer_info peer,
 
 int
 hx509_peer_info_unparse(hx509_peer_info peer,
-		     heim_octet_string *data)
+			heim_octet_string *data)
 {
     return 0;
 }

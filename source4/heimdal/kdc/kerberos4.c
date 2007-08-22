@@ -35,7 +35,7 @@
 
 #include <krb5-v4compat.h>
 
-RCSID("$Id: kerberos4.c 18349 2006-10-08 13:43:52Z lha $");
+RCSID("$Id: kerberos4.c 21577 2007-07-16 08:14:06Z lha $");
 
 #ifndef swap32
 static uint32_t
@@ -151,7 +151,8 @@ _kdc_do_version4(krb5_context context,
     if(!config->enable_v4) {
 	kdc_log(context, config, 0,
 		"Rejected version 4 request from %s", from);
-	make_err_reply(context, reply, KDC_GEN_ERR, "function not enabled");
+	make_err_reply(context, reply, KRB4ET_KDC_GEN_ERR,
+		       "Function not enabled");
 	return 0;
     }
 
@@ -160,7 +161,7 @@ _kdc_do_version4(krb5_context context,
     if(pvno != 4){
 	kdc_log(context, config, 0,
 		"Protocol version mismatch (krb4) (%d)", pvno);
-	make_err_reply(context, reply, KDC_PKT_VER, "protocol mismatch");
+	make_err_reply(context, reply, KRB4ET_KDC_PKT_VER, "protocol mismatch");
 	goto out;
     }
     RCHECK(krb5_ret_int8(sp, &msg_type), out);
@@ -196,7 +197,7 @@ _kdc_do_version4(krb5_context context,
 	if(ret) {
 	    kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		    client_name, krb5_get_err_text(context, ret));
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN,
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN,
 			   "principal unknown");
 	    goto out1;
 	}
@@ -205,7 +206,7 @@ _kdc_do_version4(krb5_context context,
 	if(ret){
 	    kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		    server_name, krb5_get_err_text(context, ret));
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN,
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN,
 			   "principal unknown");
 	    goto out1;
 	}
@@ -216,7 +217,7 @@ _kdc_do_version4(krb5_context context,
 				TRUE);
 	if (ret) {
 	    /* good error code? */
-	    make_err_reply(context, reply, KERB_ERR_NAME_EXP,
+	    make_err_reply(context, reply, KRB4ET_KDC_NAME_EXP,
 			   "operation not allowed");
 	    goto out1;
 	}
@@ -227,7 +228,7 @@ _kdc_do_version4(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "Per principal Kerberos 4 flag not turned on for %s",
 		    client_name);
-	    make_err_reply(context, reply, KERB_ERR_NULL_KEY,
+	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY,
 			   "allow kerberos4 flag required");
 	    goto out1;
 	}
@@ -244,7 +245,7 @@ _kdc_do_version4(krb5_context context,
 		    "Pre-authentication required for v4-request: "
 		    "%s for %s",
 		    client_name, server_name);
-	    make_err_reply(context, reply, KERB_ERR_NULL_KEY,
+	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY,
 			   "preauth required");
 	    goto out1;
 	}
@@ -252,7 +253,7 @@ _kdc_do_version4(krb5_context context,
 	ret = _kdc_get_des_key(context, client, FALSE, FALSE, &ckey);
 	if(ret){
 	    kdc_log(context, config, 0, "no suitable DES key for client");
-	    make_err_reply(context, reply, KDC_NULL_KEY, 
+	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "no suitable DES key for client");
 	    goto out1;
 	}
@@ -265,7 +266,7 @@ _kdc_do_version4(krb5_context context,
 	if(ret){
 	    kdc_log(context, config, 0, "No version-4 salted key in database -- %s.%s@%s", 
 		    name, inst, realm);
-	    make_err_reply(context, reply, KDC_NULL_KEY, 
+	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "No version-4 salted key in database");
 	    goto out1;
 	}
@@ -274,8 +275,7 @@ _kdc_do_version4(krb5_context context,
 	ret = _kdc_get_des_key(context, server, TRUE, FALSE, &skey);
 	if(ret){
 	    kdc_log(context, config, 0, "no suitable DES key for server");
-	    /* XXX */
-	    make_err_reply(context, reply, KDC_NULL_KEY, 
+	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "no suitable DES key for server");
 	    goto out1;
 	}
@@ -400,7 +400,7 @@ _kdc_do_version4(krb5_context context,
 		    "tgs-req (krb4) with old kvno %d (current %d) for "
 		    "krbtgt.%s@%s", kvno, tgt->entry.kvno % 256, 
 		    realm, config->v4_realm);
-	    make_err_reply(context, reply, KDC_AUTH_EXP,
+	    make_err_reply(context, reply, KRB4ET_KDC_AUTH_EXP,
 			   "old krbtgt kvno used");
 	    goto out2;
 	}
@@ -409,8 +409,7 @@ _kdc_do_version4(krb5_context context,
 	if(ret){
 	    kdc_log(context, config, 0, 
 		    "no suitable DES key for krbtgt (krb4)");
-	    /* XXX */
-	    make_err_reply(context, reply, KDC_NULL_KEY, 
+	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "no suitable DES key for krbtgt");
 	    goto out2;
 	}
@@ -456,7 +455,7 @@ _kdc_do_version4(krb5_context context,
 	if(strcmp(ad.prealm, realm)){
 	    kdc_log(context, config, 0, 
 		    "Can't hop realms (krb4) %s -> %s", realm, ad.prealm);
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN, 
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN, 
 			   "Can't hop realms");
 	    goto out2;
 	}
@@ -465,7 +464,7 @@ _kdc_do_version4(krb5_context context,
 	    kdc_log(context, config, 0, 
 		    "krb4 Cross-realm %s -> %s disabled",
 		    realm, config->v4_realm);
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN, 
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN,
 			   "Can't hop realms");
 	    goto out2;
 	}
@@ -473,7 +472,7 @@ _kdc_do_version4(krb5_context context,
 	if(strcmp(sname, "changepw") == 0){
 	    kdc_log(context, config, 0, 
 		    "Bad request for changepw ticket (krb4)");
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN, 
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN, 
 			   "Can't authorize password change based on TGT");
 	    goto out2;
 	}
@@ -485,7 +484,7 @@ _kdc_do_version4(krb5_context context,
 	    s = kdc_log_msg(context, config, 0,
 			    "Client not found in database: (krb4) %s: %s",
 			    client_name, krb5_get_err_text(context, ret));
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN, s);
 	    free(s);
 	    goto out2;
 	}
@@ -494,7 +493,7 @@ _kdc_do_version4(krb5_context context,
 	    s = kdc_log_msg(context, config, 0,
 			    "Local client not found in database: (krb4) "
 			    "%s", client_name);
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN, s);
 	    free(s);
 	    goto out2;
 	}
@@ -506,7 +505,7 @@ _kdc_do_version4(krb5_context context,
 	    s = kdc_log_msg(context, config, 0,
 			    "Server not found in database (krb4): %s: %s",
 			    server_name, krb5_get_err_text(context, ret));
-	    make_err_reply(context, reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
+	    make_err_reply(context, reply, KRB4ET_KDC_PR_UNKNOWN, s);
 	    free(s);
 	    goto out2;
 	}
@@ -516,8 +515,7 @@ _kdc_do_version4(krb5_context context,
 				server, server_name,
 				FALSE);
 	if (ret) {
-	    /* good error code? */
-	    make_err_reply(context, reply, KERB_ERR_NAME_EXP,
+	    make_err_reply(context, reply, KRB4ET_KDC_NAME_EXP,
 			   "operation not allowed");
 	    goto out2;
 	}
@@ -526,8 +524,7 @@ _kdc_do_version4(krb5_context context,
 	if(ret){
 	    kdc_log(context, config, 0, 
 		    "no suitable DES key for server (krb4)");
-	    /* XXX */
-	    make_err_reply(context, reply, KDC_NULL_KEY, 
+	    make_err_reply(context, reply, KRB4ET_KDC_NULL_KEY, 
 			   "no suitable DES key for server");
 	    goto out2;
 	}
@@ -787,7 +784,7 @@ _kdc_get_des_key(krb5_context context,
 	else if(is_server && server_key)
 	    *ret_key = server_key;
 	else
-	    return KERB_ERR_NULL_KEY;
+	    return KRB4ET_KDC_NULL_KEY;
     } else {
 	if(v4_key)
 	    *ret_key = v4_key;
@@ -798,11 +795,11 @@ _kdc_get_des_key(krb5_context context,
 	else if(is_server && server_key)
 	    *ret_key = server_key;
 	else
-	    return KERB_ERR_NULL_KEY;
+	    return KRB4ET_KDC_NULL_KEY;
     }
 
     if((*ret_key)->key.keyvalue.length == 0)
-	return KERB_ERR_NULL_KEY;
+	return KRB4ET_KDC_NULL_KEY;
     return 0;
 }
 

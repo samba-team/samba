@@ -36,7 +36,7 @@
 #include <getarg.h>
 #include <parse_bytes.h>
 
-RCSID("$Id: default_config.c 21296 2007-06-25 14:49:11Z lha $");
+RCSID("$Id: default_config.c 21405 2007-07-04 10:35:45Z lha $");
 
 krb5_error_code
 krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)

@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c 20670 2007-05-11 00:39:41Z lha $");
+RCSID("$Id: gen.c 21364 2007-06-27 08:51:06Z lha $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -253,6 +253,7 @@ generate_header_of_codefile(const char *name)
 	     "#include <time.h>\n"
 	     "#include <string.h>\n"
 	     "#include <errno.h>\n"
+	     "#include <limits.h>\n"
 	     "#include <krb5-types.h>\n",
 	     orig_filename);
 

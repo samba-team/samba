@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/name.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
- *	$Id: name.h 18246 2006-10-05 18:36:07Z lha $
+ *	$Id: name.h 21477 2007-07-10 16:31:44Z lha $
  */
 
 struct _gss_mechanism_name {
@@ -41,7 +41,8 @@ struct _gss_name {
 	struct _gss_mechanism_name_list gn_mn;	/* list of MNs */
 };
 
-struct _gss_mechanism_name *
-	_gss_find_mn(struct _gss_name *name, gss_OID mech);
+OM_uint32
+	_gss_find_mn(OM_uint32 *, struct _gss_name *, gss_OID, 
+	      struct _gss_mechanism_name **);
 struct _gss_name *
 	_gss_make_name(gssapi_mech_interface m, gss_name_t new_mn);

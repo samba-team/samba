@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_add_cred.c 20626 2007-05-08 13:56:49Z lha $");
+RCSID("$Id: gss_add_cred.c 21474 2007-07-10 16:30:23Z lha $");
 
 static struct _gss_mechanism_cred *
 _gss_copy_cred(struct _gss_mechanism_cred *mc)
@@ -136,11 +136,13 @@ gss_add_cred(OM_uint32 *minor_status,
 	 * Figure out a suitable mn, if any.
 	 */
 	if (desired_name) {
-		mn = _gss_find_mn((struct _gss_name *) desired_name,
-			desired_mech);
-		if (!mn) {
+		major_status = _gss_find_mn(minor_status,
+					    (struct _gss_name *) desired_name,
+					    desired_mech,
+					    &mn);
+		if (major_status != GSS_S_COMPLETE) {
 			free(new_cred);
-			return (GSS_S_BAD_NAME);
+			return major_status;
 		}
 	} else {
 		mn = 0;

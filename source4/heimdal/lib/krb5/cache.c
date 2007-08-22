@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c 20503 2007-04-21 22:03:56Z lha $");
+RCSID("$Id: cache.c 21498 2007-07-11 09:41:43Z lha $");
 
 /*
  * Add a new ccache type with operations `ops', overwriting any
@@ -339,6 +339,35 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 }
 
 /*
+ * Return non-zero if envirnoment that will determine default krb5cc
+ * name has changed.
+ */
+
+static int
+environment_changed(krb5_context context)
+{
+    const char *e;
+
+    if(issuid())
+	return 0;
+
+    e = getenv("KRB5CCNAME");
+    if (e == NULL) {
+	if (context->default_cc_name_env) {
+	    free(context->default_cc_name_env);
+	    context->default_cc_name_env = NULL;
+	    return 1;
+	}
+    } else {
+	if (context->default_cc_name_env == NULL)
+	    return 1;
+	if (strcmp(e, context->default_cc_name_env) != 0)
+	    return 1;
+    }
+    return 0;
+}
+
+/*
  * Set the default cc name for `context' to `name'.
  */
 
@@ -353,8 +382,12 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 
 	if(!issuid()) {
 	    e = getenv("KRB5CCNAME");
-	    if (e)
+	    if (e) {
 		p = strdup(e);
+		if (context->default_cc_name_env)
+		    free(context->default_cc_name_env);
+		context->default_cc_name_env = strdup(e);
+	    }
 	}
 	if (e == NULL) {
 	    e = krb5_config_get_string(context, NULL, "libdefaults",
@@ -389,7 +422,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 const char* KRB5_LIB_FUNCTION
 krb5_cc_default_name(krb5_context context)
 {
-    if (context->default_cc_name == NULL)
+    if (context->default_cc_name == NULL || environment_changed(context))
 	krb5_cc_set_default_name(context, NULL);
 
     return context->default_cc_name;

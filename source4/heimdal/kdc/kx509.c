@@ -36,7 +36,7 @@
 #include <rfc2459_asn1.h>
 #include <hx509.h>
 
-RCSID("$Id: kx509.c 19992 2007-01-20 09:06:18Z lha $");
+RCSID("$Id: kx509.c 21607 2007-07-17 07:04:52Z lha $");
 
 /*
  *
@@ -56,7 +56,7 @@ _kdc_try_kx509_request(void *ptr, size_t len, Kx509Request *req, size_t *size)
  *
  */
 
-static const char version_2_0[4] = {0 , 0, 2, 0};
+static const unsigned char version_2_0[4] = {0 , 0, 2, 0};
 
 static krb5_error_code
 verify_req_hash(krb5_context context, 
@@ -122,7 +122,7 @@ calculate_reply_hash(krb5_context context,
     if (rep->certificate)
 	HMAC_Update(&ctx, rep->certificate->data, rep->certificate->length);
     if (rep->e_text)
-	HMAC_Update(&ctx, *rep->e_text, strlen(*rep->e_text));
+	HMAC_Update(&ctx, (unsigned char *)*rep->e_text, strlen(*rep->e_text));
 
     HMAC_Final(&ctx, rep->hash->data, 0);
     HMAC_CTX_cleanup(&ctx);
