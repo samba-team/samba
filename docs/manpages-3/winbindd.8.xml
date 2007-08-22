@@ -17,6 +17,7 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>winbindd</command>
+		<arg choice="opt">-D</arg>
 		<arg choice="opt">-F</arg>
 		<arg choice="opt">-S</arg>
 		<arg choice="opt">-i</arg>
@@ -75,6 +76,16 @@
 	the winbindd service: </para>
 
 	<variablelist>
+		<varlistentry>
+		<term>-D</term>
+		<listitem><para>If specified, this parameter causes
+		the server to operate as a daemon. That is, it detaches
+		itself and runs in the background on the appropriate port. 
+		This switch is assumed if <command>winbindd</command> is 
+		executed on the command line of a shell.
+		</para></listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>hosts</term>
 		<listitem><para>This feature is only available on IRIX.
