@@ -62,12 +62,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALL
 		   present */
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
-	if (!r->in.cross1_present || !r->in.nt_cross) {
-		return NT_STATUS_NT_CROSS_ENCRYPTION_REQUIRED;
-	}
-	if (!r->in.cross2_present || !r->in.lm_cross) {
-		return NT_STATUS_LM_CROSS_ENCRYPTION_REQUIRED;
-	}
 
 	/* To change a password we need to open as system */
 	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
@@ -112,18 +106,24 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 	
-	/* check the nt cross hash */
-	D_P16(lm_pwd->hash, r->in.nt_cross->hash, checkHash.hash);
-	if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_WRONG_PASSWORD;
+	/* The NT Cross is not required by Win2k3 R2, but if present
+	   check the nt cross hash */
+	if (r->in.cross1_present && r->in.nt_cross) {
+		D_P16(lm_pwd->hash, r->in.nt_cross->hash, checkHash.hash);
+		if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
+			ldb_transaction_cancel(sam_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 	}
 
-	/* check the lm cross hash */
-	D_P16(nt_pwd->hash, r->in.lm_cross->hash, checkHash.hash);
-	if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_WRONG_PASSWORD;
+	/* The LM Cross is not required by Win2k3 R2, but if present
+	   check the lm cross hash */
+	if (r->in.cross2_present && r->in.lm_cross) {
+		D_P16(nt_pwd->hash, r->in.lm_cross->hash, checkHash.hash);
+		if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
+			ldb_transaction_cancel(sam_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 	}
 
 	msg = ldb_msg_new(mem_ctx);
@@ -144,7 +144,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALL
 				    a_state->account_dn, a_state->domain_state->domain_dn,
 				    msg, NULL, &new_lmPwdHash, &new_ntPwdHash, 
 				    True, /* this is a user password change */
-				    True, /* run restriction tests */
 				    NULL,
 				    NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -196,7 +195,11 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	struct samr_Password lm_verifier;
 
 	if (pwbuf == NULL) {
-		return NT_STATUS_WRONG_PASSWORD;
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.hash == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* To change a password we need to open as system */
@@ -245,7 +248,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	}
 
 	/* check LM verifier */
-	if (lm_pwd == NULL || r->in.hash == NULL) {
+	if (lm_pwd == NULL) {
 		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -276,7 +279,6 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 				    mod, new_pass, 
 				    NULL, NULL,
 				    True, /* this is a user password change */
-				    True, /* run restriction tests */
 				    NULL, 
 				    NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -430,7 +432,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 				    mod, new_pass, 
 				    NULL, NULL,
 				    True, /* this is a user password change */
-				    True, /* run restriction tests */
 				    &reason, 
 				    &dominfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -539,7 +540,6 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 				  msg, new_pass, 
 				  NULL, NULL,
 				  False, /* This is a password set, not change */
-				  True, /* run restriction tests */
 				  NULL, NULL);
 }
 
@@ -593,7 +593,6 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 				  msg, new_pass, 
 				  NULL, NULL,
 				  False, /* This is a password set, not change */
-				  True, /* run restriction tests */
 				  NULL, NULL);
 }
 

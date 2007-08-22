@@ -1515,7 +1515,6 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 			    struct samr_Password *lmNewHash, 
 			    struct samr_Password *ntNewHash,
 			    BOOL user_change,
-			    BOOL restrictions,
 			    enum samr_RejectReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
@@ -1536,6 +1535,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 	int sambaLMPwdHistory_len, sambaNTPwdHistory_len;
 	struct dom_sid *domain_sid;
 	struct ldb_message **res;
+	BOOL restrictions;
 	int count;
 	time_t now = time(NULL);
 	NTTIME now_nt;
@@ -1557,6 +1557,13 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 	lmPwdHash =          samdb_result_hash(mem_ctx, res[0],   "dBCSPwd");
 	ntPwdHash =          samdb_result_hash(mem_ctx, res[0],   "unicodePwd");
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
+
+	/* Only non-trust accounts have restrictions (possibly this
+	 * test is the wrong way around, but I like to be restrictive
+	 * if possible */
+	restrictions = !(userAccountControl & (UF_INTERDOMAIN_TRUST_ACCOUNT
+					       |UF_WORKSTATION_TRUST_ACCOUNT
+					       |UF_SERVER_TRUST_ACCOUNT)); 
 
 	if (domain_dn) {
 		/* pull the domain parameters */
@@ -1605,7 +1612,8 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		*_dominfo = dominfo;
 	}
 
-	if (new_pass) {
+	if (restrictions && new_pass) {
+
 		/* check the various password restrictions */
 		if (restrictions && minPwdLength > strlen_m(new_pass)) {
 			if (reject_reason) {
@@ -1637,7 +1645,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		ntNewHash = &local_ntNewHash;
 	}
 
-	if (restrictions && user_change) {
+	if (user_change) {
 		/* are all password changes disallowed? */
 		if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
 			if (reject_reason) {
@@ -1745,7 +1753,6 @@ _PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *me
 				struct samr_Password *lmNewHash, 
 				struct samr_Password *ntNewHash,
 				BOOL user_change,
-				BOOL restrictions,
 				enum samr_RejectReason *reject_reason,
 				struct samr_DomInfo1 **_dominfo) 
 {
@@ -1787,7 +1794,6 @@ _PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *me
 				       msg, new_pass, 
 				       lmNewHash, ntNewHash,
 				       user_change, /* This is a password set, not change */
-				       restrictions, /* run restriction tests */
 				       reject_reason, _dominfo);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ldb_transaction_cancel(ctx);
