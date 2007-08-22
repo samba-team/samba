@@ -661,12 +661,14 @@ int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 }
 
 
+enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR};
+
 struct ctdb_client_control_state {
 	struct ctdb_context *ctdb;
 	uint32_t reqid;
 	int32_t status;
 	TDB_DATA outdata;
-	enum call_state state;
+	enum control_state state;
 	char *errormsg;
 };
 
@@ -705,7 +707,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 
 	talloc_steal(state, c);
 
-	state->state = CTDB_CALL_DONE;
+	state->state = CTDB_CONTROL_DONE;
 }
 
 
@@ -758,7 +760,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 
 	state->ctdb  = ctdb;
 	state->reqid = ctdb_reqid_new(ctdb, state);
-	state->state = CTDB_CALL_WAIT;
+	state->state = CTDB_CONTROL_WAIT;
 	state->errormsg = NULL;
 
 	talloc_set_destructor(state, ctdb_control_destructor);
@@ -796,7 +798,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	if (timeout && !timeval_is_zero(timeout)) {
 		event_add_timed(ctdb->ev, state, *timeout, timeout_func, &timed_out);
 	}
-	while ((state->state == CTDB_CALL_WAIT)
+	while ((state->state == CTDB_CONTROL_WAIT)
 	&&	(timed_out == 0) ){
 		event_loop_once(ctdb->ev);
 	}
