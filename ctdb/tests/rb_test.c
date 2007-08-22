@@ -134,7 +134,7 @@ int main(int argc, const char *argv[])
 
 	printf("testing trbt_insert32_callback for %d records\n", num_records);
 	memctx   = talloc_new(NULL);
-	u32array = talloc_array(memctx, uint32_t, num_records);
+	u32array = talloc_array(memctx, uint32_t *, num_records);
 	tree = trbt_create(memctx, 0);
 	for (i=0; i<num_records; i++) {
 		u32array[i]  = talloc(u32array, uint32_t);
@@ -175,7 +175,7 @@ int main(int argc, const char *argv[])
 	printf("testing trbt_insertarray32_callback\n");
 	memctx   = talloc_new(NULL);
 	tree = trbt_create(memctx, 0);
-	u32array = talloc_array(memctx, uint32_t, 4);
+	u32array = talloc_array(memctx, uint32_t *, 4);
 	for (i=0;i<4;i++) {
 		u32array[i]  = talloc(u32array, uint32_t);
 		*u32array[i] = 0;

@@ -135,6 +135,7 @@ doc: doc/ctdb.1 doc/ctdb.1.html \
 
 clean:
 	rm -f *.o */*.o */*/*.o */*~
+	rm -f utils/smnotify/gen_xdr.c
 	rm -f $(BINS) $(SBINS) $(TEST_BINS)
 
 distclean: clean
