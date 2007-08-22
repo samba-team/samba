@@ -39,6 +39,8 @@ enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL,OPT_DEBUG_STDERR};
 
 struct cli_credentials *cmdline_credentials = NULL;
 
+static bool PrintSambaVersionString;
+
 static void popt_common_callback(poptContext con, 
 			   enum poptCallbackReason reason,
 			   const struct poptOption *opt,
@@ -47,6 +49,11 @@ static void popt_common_callback(poptContext con,
 	const char *pname;
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
+		if (PrintSambaVersionString) {
+			printf( "Version %s\n", SAMBA_VERSION_STRING );
+			exit(0);
+		}
+
 		lp_load();
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
@@ -85,8 +92,7 @@ static void popt_common_callback(poptContext con,
 		break;
 
 	case 'V':
-		printf( "Version %s\n", SAMBA_VERSION_STRING );
-		exit(0);
+		PrintSambaVersionString = true;
 		break;
 
 	case 'O':
@@ -176,7 +182,7 @@ struct poptOption popt_common_samba[] = {
 };
 
 struct poptOption popt_common_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_POST, (void *)popt_common_callback },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
 	{ NULL }
 };
