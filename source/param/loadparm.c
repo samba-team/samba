@@ -3095,6 +3095,7 @@ static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 	BOOL value;
 
 	bRetval = True;
+	value = False;
 	if (strwicmp(pszParmValue, "yes") == 0 ||
 	    strwicmp(pszParmValue, "true") == 0 ||
 	    strwicmp(pszParmValue, "1") == 0)
@@ -3110,7 +3111,7 @@ static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 		bRetval = False;
 	}
 
-	if (pb != NULL) {
+	if ((pb != NULL) && (bRetval != False)) {
 		*pb = value;
 	}
 
