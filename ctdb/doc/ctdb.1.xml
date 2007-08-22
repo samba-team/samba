@@ -59,7 +59,7 @@
       <varlistentry><term>-Y</term>
         <listitem>
           <para>
-            Produce output in machinereadable form for easier parsing by scripts. Not all commands support this option.
+            Produce output in machine readable form for easier parsing by scripts. Not all commands support this option.
           </para>
         </listitem>
       </varlistentry>
@@ -132,7 +132,7 @@
           OK - This node is fully functional.
         </para>
         <para>
-          DISCONNECTED - This node could not be connected through the network and is currently not parcipitating in the cluster. If there is a public IP address associated with this node it should have been taken over by a different node. No services are running on this node.
+          DISCONNECTED - This node could not be connected through the network and is currently not participating in the cluster. If there is a public IP address associated with this node it should have been taken over by a different node. No services are running on this node.
         </para>
         <para>
           DISABLED - This node has been administratively disabled. This node is still functional and participates in the CTDB cluster but its IP addresses have been taken over by a different node and no services are currently being hosted.
@@ -156,7 +156,7 @@
       <refsect3><title>VNNMAP</title>
         <para>
           The list of Virtual Node Numbers. This is a list of all nodes that actively participates in the cluster and that share the workload of hosting the Clustered TDB database records.
-          Only nodes that are parcipitating in the vnnmap can become lmaster or dmaster for a database record.
+          Only nodes that are participating in the vnnmap can become lmaster or dmaster for a database record.
         </para>
       </refsect3>
 

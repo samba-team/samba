@@ -161,8 +161,10 @@ static uint16_t tcp_checksum(uint16_t *data, size_t n, struct iphdr *ip)
 {
 	uint32_t sum = uint16_checksum(data, n);
 	uint16_t sum2;
-	sum += uint16_checksum((uint16_t *)&ip->saddr, sizeof(ip->saddr));
-	sum += uint16_checksum((uint16_t *)&ip->daddr, sizeof(ip->daddr));
+	sum += uint16_checksum((uint16_t *)(void *)&ip->saddr,
+			       sizeof(ip->saddr));
+	sum += uint16_checksum((uint16_t *)(void *)&ip->daddr,
+			       sizeof(ip->daddr));
 	sum += ip->protocol + n;
 	sum = (sum & 0xFFFF) + (sum >> 16);
 	sum = (sum & 0xFFFF) + (sum >> 16);

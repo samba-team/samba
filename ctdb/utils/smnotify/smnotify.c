@@ -28,7 +28,7 @@
 
 static char *client       = NULL;
 static const char *ip     = NULL;
-static const char *server = NULL;
+static char *server = NULL;
 static int stateval       = 0;
 static int clientport     = 0;
 static int sendport       = 0;
