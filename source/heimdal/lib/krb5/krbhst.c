@@ -35,7 +35,7 @@
 #include <resolve.h>
 #include "locate_plugin.h"
 
-RCSID("$Id: krbhst.c 21131 2007-06-18 20:48:09Z lha $");
+RCSID("$Id: krbhst.c 21457 2007-07-10 12:53:25Z lha $");
 
 static int
 string_to_proto(const char *string)
@@ -919,8 +919,10 @@ gethostlist(krb5_context context, const char *realm,
 
     while(krb5_krbhst_next(context, handle, &hostinfo) == 0)
 	nhost++;
-    if(nhost == 0)
+    if(nhost == 0) {
+	krb5_set_error_string(context, "No KDC found for realm %s", realm);
 	return KRB5_KDC_UNREACH;
+    }
     *hostlist = calloc(nhost + 1, sizeof(**hostlist));
     if(*hostlist == NULL) {
 	krb5_krbhst_free(context, handle);

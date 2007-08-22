@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds.c 20541 2007-04-23 12:19:14Z lha $");
+RCSID("$Id: init_creds.c 21712 2007-07-27 14:23:41Z lha $");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
@@ -225,9 +225,8 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 	krb5_get_init_creds_opt_set_renew_life(opt, t);
 
     krb5_appdefault_boolean(context, appname, realm, "no-addresses", 
-			    FALSE, &b);
-    if (b)
-	krb5_get_init_creds_opt_set_addressless (context, opt, TRUE);
+			    KRB5_ADDRESSLESS_DEFAULT, &b);
+    krb5_get_init_creds_opt_set_addressless (context, opt, b);
 
 #if 0
     krb5_appdefault_boolean(context, appname, realm, "anonymous", FALSE, &b);

@@ -383,7 +383,7 @@ _krb5_pk_verify_sign (
 krb5_error_code
 _krb5_plugin_find (
 	krb5_context /*context*/,
-	enum plugin_type /*type*/,
+	enum krb5_plugin_type /*type*/,
 	const char */*name*/,
 	struct krb5_plugin **/*list*/);
 
@@ -399,7 +399,7 @@ _krb5_plugin_get_symbol (struct krb5_plugin */*p*/);
 krb5_error_code
 _krb5_plugin_register (
 	krb5_context /*context*/,
-	enum plugin_type /*type*/,
+	enum krb5_plugin_type /*type*/,
 	const char */*name*/,
 	void */*symbol*/);
 

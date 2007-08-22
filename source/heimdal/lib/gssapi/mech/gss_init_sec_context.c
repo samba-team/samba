@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_init_sec_context.c 19957 2007-01-17 13:48:11Z lha $");
+RCSID("$Id: gss_init_sec_context.c 21479 2007-07-10 16:32:19Z lha $");
 
 static gss_cred_id_t
 _gss_mech_cred_find(gss_cred_id_t cred_handle, gss_OID mech_type)
@@ -109,11 +109,11 @@ gss_init_sec_context(OM_uint32 * minor_status,
 	/*
 	 * Find the MN for this mechanism.
 	 */
-	mn = _gss_find_mn(name, mech_type);
-	if (mn == NULL) {
+	major_status = _gss_find_mn(minor_status, name, mech_type, &mn);
+	if (major_status != GSS_S_COMPLETE) {
 		if (allocated_ctx)
 			free(ctx);
-		return GSS_S_BAD_NAME;
+		return major_status;
 	}
 
 	/*

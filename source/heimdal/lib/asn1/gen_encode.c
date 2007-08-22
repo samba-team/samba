@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_encode.c 19572 2006-12-29 17:30:32Z lha $");
+RCSID("$Id: gen_encode.c 21503 2007-07-12 11:57:19Z lha $");
 
 static void
 encode_primitive (const char *typename, const char *name)
@@ -121,12 +121,12 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	break;
     case TInteger:
 	if(t->members) {
-	    char *s;
-	    asprintf(&s, "(const int*)%s", name);
-	    if(s == NULL)
-		errx(1, "out of memory");
-	    encode_primitive ("integer", s);
-	    free(s);
+	    fprintf(codefile,
+		    "{\n"
+		    "int enumint = (int)*%s;\n",
+		    name);
+	    encode_primitive ("integer", "&enumint");
+	    fprintf(codefile, "}\n;");
 	} else if (t->range == NULL) {
 	    encode_primitive ("heim_integer", name);
 	} else if (t->range->min == INT_MIN && t->range->max == INT_MAX) {
@@ -291,6 +291,11 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		"struct heim_octet_string *val;\n"
 		"size_t elen, totallen = 0;\n"
 		"int eret;\n");
+
+	fprintf(codefile,
+		"if ((%s)->len > UINT_MAX/sizeof(val[0]))\n"
+		"return ERANGE;\n",
+		name);
 
 	fprintf(codefile,
 		"val = malloc(sizeof(val[0]) * (%s)->len);\n"

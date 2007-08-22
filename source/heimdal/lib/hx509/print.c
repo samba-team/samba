@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: print.c 20908 2007-06-05 02:59:33Z lha $");
+RCSID("$Id: print.c 21381 2007-06-28 08:29:22Z lha $");
 
 
 struct hx509_validate_ctx_data {
@@ -591,10 +591,49 @@ check_proxyCertInfo(hx509_validate_ctx ctx,
 		    enum critical_flag cf, 
 		    const Extension *e)
 {
+    check_Null(ctx, status, cf, e);
     status->isproxy = 1;
+    return 0;
+}
+
+static int
+check_authorityInfoAccess(hx509_validate_ctx ctx, 
+			  struct cert_status *status,
+			  enum critical_flag cf, 
+			  const Extension *e)
+{
+    AuthorityInfoAccessSyntax aia;
+    size_t size;
+    int ret, i;
+
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_AuthorityInfoAccessSyntax(e->extnValue.data, 
+					   e->extnValue.length,
+					   &aia, &size);
+    if (ret) {
+	printf("\tret = %d while decoding AuthorityInfoAccessSyntax\n", ret);
+	return 0;
+    }
+
+    for (i = 0; i < aia.len; i++) {
+	char *str;
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+		       "\ttype: ");
+	hx509_oid_print(&aia.val[i].accessMethod, validate_vprint, ctx);
+	hx509_general_name_unparse(&aia.val[i].accessLocation, &str);
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+		       "\n\tdirname: %s\n", str);
+	free(str);
+    }
+    free_AuthorityInfoAccessSyntax(&aia);
 
     return 0;
 }
+
+/*
+ *
+ */
 
 struct {
     const char *name;
@@ -628,8 +667,11 @@ struct {
     { ext(extKeyUsage, Null), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
-    { "proxyCertInfo", oid_id_pe_proxyCertInfo, 
-      check_proxyCertInfo, M_C },
+#undef ext
+#define ext(name, checkname) #name, &oid_id_pkix_pe_##name, check_##checkname 
+    { ext(proxyCertInfo, proxyCertInfo), M_C },
+    { ext(authorityInfoAccess, authorityInfoAccess), M_C },
+#undef ext
     { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim, 
       check_Null, D_C },
     { "Netscape cert comment", oid_id_netscape_cert_comment, 

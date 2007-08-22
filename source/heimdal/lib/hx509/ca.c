@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 #include <pkinit_asn1.h>
-RCSID("$Id: ca.c 20904 2007-06-05 01:58:45Z lha $");
+RCSID("$Id: ca.c 21379 2007-06-28 07:38:17Z lha $");
 
 struct hx509_ca_tbs {
     hx509_name subject;
@@ -1002,7 +1002,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_pe_proxyCertInfo(),
+			    oid_id_pkix_pe_proxyCertInfo(),
 			    &data);
 	free(data.data);
 	if (ret)

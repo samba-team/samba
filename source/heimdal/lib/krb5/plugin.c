@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: plugin.c 21134 2007-06-18 21:02:23Z lha $");
+RCSID("$Id: plugin.c 21702 2007-07-26 19:13:53Z lha $");
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -45,7 +45,7 @@ struct krb5_plugin {
 };
 
 struct plugin {
-    enum plugin_type type;
+    enum krb5_plugin_type type;
     void *name;
     void *symbol;
     struct plugin *next;
@@ -76,9 +76,11 @@ _krb5_plugin_get_next(struct krb5_plugin *p)
  *
  */
 
+#ifdef HAVE_DLOPEN
+
 static krb5_error_code
 loadlib(krb5_context context,
-	enum plugin_type type,
+	enum krb5_plugin_type type,
 	const char *name,
 	const char *lib,
 	struct krb5_plugin **e)
@@ -113,10 +115,11 @@ loadlib(krb5_context context,
 
     return 0;
 }
+#endif /* HAVE_DLOPEN */
 
 krb5_error_code
 _krb5_plugin_register(krb5_context context,
-		      enum plugin_type type,
+		      enum krb5_plugin_type type,
 		      const char *name, 
 		      void *symbol)
 {
@@ -146,7 +149,7 @@ _krb5_plugin_register(krb5_context context,
 
 krb5_error_code
 _krb5_plugin_find(krb5_context context,
-		  enum plugin_type type,
+		  enum krb5_plugin_type type,
 		  const char *name, 
 		  struct krb5_plugin **list)
 {
@@ -181,6 +184,8 @@ _krb5_plugin_find(krb5_context context,
     }
     HEIMDAL_MUTEX_unlock(&plugin_mutex);
 
+#ifdef HAVE_DLOPEN
+
     dirs = krb5_config_get_strings(context, NULL, "libdefaults", 
 				   "plugin_dir", NULL);
     if (dirs == NULL) {
@@ -213,6 +218,7 @@ _krb5_plugin_find(krb5_context context,
     }
     if (dirs != sysdirs)
 	krb5_config_free_strings(dirs);
+#endif /* HAVE_DLOPEN */
 
     if (*list == NULL) {
 	krb5_set_error_string(context, "Did not find a plugin for %s", name);

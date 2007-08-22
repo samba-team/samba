@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: timegm.c 18607 2006-10-19 16:19:32Z lha $");
+RCSID("$Id: timegm.c 21366 2007-06-27 10:06:22Z lha $");
 
 static int
 is_leap(unsigned y)
@@ -43,8 +43,8 @@ is_leap(unsigned y)
 }
 
 /* 
- * This is a simplifed version of _der_timegm that doesn't accept out
- * of bound values that timegm(3) normally accepts but those are not
+ * This is a simplifed version of timegm(3) that doesn't accept out of
+ * bound values that timegm(3) normally accepts but those are not
  * valid in asn1 encodings.
  */
 

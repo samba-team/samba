@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_get.c 20570 2007-04-27 14:06:27Z lha $");
+RCSID("$Id: der_get.c 21369 2007-06-27 10:14:39Z lha $");
 
 #include <version.h>
 
@@ -336,32 +336,25 @@ generalizedtime2time (const char *s, time_t *t)
     *t = _der_timegm (&tm);
     return 0;
 }
-#undef timegm
 
 static int
 der_get_time (const unsigned char *p, size_t len, 
 	      time_t *data, size_t *size)
 {
-    heim_octet_string k;
     char *times;
-    size_t ret = 0;
-    size_t l;
     int e;
 
-    e = der_get_octet_string (p, len, &k, &l);
-    if (e) return e;
-    p += l;
-    len -= l;
-    ret += l;
-    times = realloc(k.data, k.length + 1);
-    if (times == NULL){
-	free(k.data);
+    if (len > len + 1 || len == 0)
+	return ASN1_BAD_LENGTH;
+
+    times = malloc(len + 1);
+    if (times == NULL)
 	return ENOMEM;
-    }
-    times[k.length] = 0;
+    memcpy(times, p, len);
+    times[len] = '\0';
     e = generalizedtime2time(times, data);
     free (times);
-    if(size) *size = ret;
+    if(size) *size = len;
     return e;
 }
 

@@ -314,14 +314,6 @@ _hx509_pbe_decrypt (
 	const heim_octet_string */*econtent*/,
 	heim_octet_string */*content*/);
 
-int
-_hx509_pbe_encrypt (
-	hx509_context /*context*/,
-	hx509_lock /*lock*/,
-	const AlgorithmIdentifier */*ai*/,
-	const heim_octet_string */*content*/,
-	heim_octet_string */*econtent*/);
-
 void
 _hx509_pi_printf (
 	int (*/*func*/)(void *, const char *),
@@ -423,33 +415,9 @@ void
 _hx509_request_free (hx509_request */*req*/);
 
 int
-_hx509_request_get_SubjectPublicKeyInfo (
-	hx509_context /*context*/,
-	hx509_request /*req*/,
-	SubjectPublicKeyInfo */*key*/);
-
-int
-_hx509_request_get_name (
-	hx509_context /*context*/,
-	hx509_request /*req*/,
-	hx509_name */*name*/);
-
-int
 _hx509_request_init (
 	hx509_context /*context*/,
 	hx509_request */*req*/);
-
-int
-_hx509_request_parse (
-	hx509_context /*context*/,
-	const char */*path*/,
-	hx509_request */*req*/);
-
-int
-_hx509_request_print (
-	hx509_context /*context*/,
-	hx509_request /*req*/,
-	FILE */*f*/);
 
 int
 _hx509_request_set_SubjectPublicKeyInfo (

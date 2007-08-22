@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_canonicalize_name.c 19928 2007-01-16 10:37:54Z lha $");
+RCSID("$Id: gss_canonicalize_name.c 21476 2007-07-10 16:31:27Z lha $");
 
 OM_uint32
 gss_canonicalize_name(OM_uint32 *minor_status,
@@ -44,10 +44,9 @@ gss_canonicalize_name(OM_uint32 *minor_status,
 	*minor_status = 0;
 	*output_name = 0;
 
-	mn = _gss_find_mn(name, mech_type);
-	if (!mn) {
-		return (GSS_S_BAD_MECH);
-	}
+	major_status = _gss_find_mn(minor_status, name, mech_type, &mn);
+	if (major_status)
+		return major_status;
 
 	m = mn->gmn_mech;
 	major_status = m->gm_canonicalize_name(minor_status,

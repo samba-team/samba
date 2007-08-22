@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 #include <heim_threads.h>
-RCSID("$Id: gss_mech_switch.c 20625 2007-05-08 13:55:03Z lha $");
+RCSID("$Id: gss_mech_switch.c 21700 2007-07-26 19:08:34Z lha $");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"
@@ -223,9 +223,9 @@ _gss_load_mech(void)
 	add_builtin(__gss_spnego_initialize());
 	add_builtin(__gss_ntlm_initialize());
 
+#ifdef HAVE_DLOPEN
 	fp = fopen(_PATH_GSS_MECH, "r");
 	if (!fp) {
-/*		perror(_PATH_GSS_MECH); */
 		HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 		return;
 	}
@@ -316,6 +316,7 @@ _gss_load_mech(void)
 		continue;
 	}
 	fclose(fp);
+#endif
 	HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 }
 

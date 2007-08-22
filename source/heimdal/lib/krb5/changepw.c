@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: changepw.c 17442 2006-05-05 09:31:15Z lha $");
+RCSID("$Id: changepw.c 21505 2007-07-12 12:28:38Z lha $");
 
 static void
 str2data (krb5_data *d,
@@ -46,10 +46,12 @@ str2data (krb5_data *d,
 	  ...)
 {
     va_list args;
+    char *str;
 
     va_start(args, fmt);
-    d->length = vasprintf ((char **)&d->data, fmt, args);
+    d->length = vasprintf (&str, fmt, args);
     va_end(args);
+    d->data = str;
 }
 
 /*

@@ -34,7 +34,7 @@
 #include "gen_locl.h"
 #include "lex.h"
 
-RCSID("$Id: gen_decode.c 19572 2006-12-29 17:30:32Z lha $");
+RCSID("$Id: gen_decode.c 21503 2007-07-12 11:57:19Z lha $");
 
 static void
 decode_primitive (const char *typename, const char *name, const char *forwstr)
@@ -202,6 +202,32 @@ find_tag (const Type *t,
     }
 }
 
+static void
+range_check(const char *name,
+	    const char *length,
+	    const char *forwstr, 
+	    struct range *r)
+{
+    if (r->min == r->max + 2 || r->min < r->max)
+	fprintf (codefile,
+		 "if ((%s)->%s > %d) {\n"
+		 "e = ASN1_MAX_CONSTRAINT; %s;\n"
+		 "}\n",
+		 name, length, r->max, forwstr);
+    if (r->min - 1 == r->max || r->min < r->max)
+	fprintf (codefile,
+		 "if ((%s)->%s < %d) {\n"
+		 "e = ASN1_MIN_CONSTRAINT; %s;\n"
+		 "}\n",
+		 name, length, r->min, forwstr);
+    if (r->max == r->min)
+	fprintf (codefile,
+		 "if ((%s)->%s != %d) {\n"
+		 "e = ASN1_EXACT_CONSTRAINT; %s;\n"
+		 "}\n",
+		 name, length, r->min, forwstr);
+}
+
 static int
 decode_type (const char *name, const Type *t, int optional, 
 	     const char *forwstr, const char *tmpstr)
@@ -236,12 +262,14 @@ decode_type (const char *name, const Type *t, int optional,
     }
     case TInteger:
 	if(t->members) {
-	    char *s;
-	    asprintf(&s, "(int*)%s", name);
-	    if (s == NULL)
-		errx (1, "out of memory");
-	    decode_primitive ("integer", s, forwstr);
-	    free(s);
+	    fprintf(codefile,
+		    "{\n"
+		    "int enumint;\n");
+	    decode_primitive ("integer", "&enumint", forwstr);
+	    fprintf(codefile,
+		    "*%s = enumint;\n"
+		    "}\n",
+		    name);
 	} else if (t->range == NULL) {
 	    decode_primitive ("heim_integer", name, forwstr);
 	} else if (t->range->min == INT_MIN && t->range->max == INT_MAX) {
@@ -262,6 +290,8 @@ decode_type (const char *name, const Type *t, int optional,
 	break;
     case TOctetString:
 	decode_primitive ("octet_string", name, forwstr);
+	if (t->range)
+	    range_check(name, "length", forwstr, t->range);
 	break;
     case TBitString: {
 	Member *m;
@@ -394,19 +424,31 @@ decode_type (const char *name, const Type *t, int optional,
 		 "{\n"
 		 "size_t %s_origlen = len;\n"
 		 "size_t %s_oldret = ret;\n"
+		 "size_t %s_olen = 0;\n"
 		 "void *%s_tmp;\n"
 		 "ret = 0;\n"
 		 "(%s)->len = 0;\n"
-		 "(%s)->val = NULL;\n"
+		 "(%s)->val = NULL;\n",
+		 tmpstr,
+		 tmpstr,
+		 tmpstr,
+		 tmpstr,
+		 name,
+		 name);
+
+	fprintf (codefile,
 		 "while(ret < %s_origlen) {\n"
-		 "%s_tmp = realloc((%s)->val, "
-		 "    sizeof(*((%s)->val)) * ((%s)->len + 1));\n"
-		 "if (%s_tmp == NULL) { %s; }\n"
+		 "size_t %s_nlen = %s_olen + sizeof(*((%s)->val));\n"
+		 "if (%s_olen > %s_nlen) { e = ASN1_OVERFLOW; %s; }\n"
+		 "%s_olen = %s_nlen;\n"
+		 "%s_tmp = realloc((%s)->val, %s_olen);\n"
+		 "if (%s_tmp == NULL) { e = ENOMEM; %s; }\n"
 		 "(%s)->val = %s_tmp;\n",
-		 tmpstr, tmpstr, tmpstr,
-		 name, name,
+		 tmpstr,
+		 tmpstr, tmpstr, name,
+		 tmpstr, tmpstr, forwstr,
 		 tmpstr, tmpstr,
-		 name, name, name,
+		 tmpstr, name, tmpstr,
 		 tmpstr, forwstr, 
 		 name, tmpstr);
 
@@ -425,6 +467,8 @@ decode_type (const char *name, const Type *t, int optional,
 		 "}\n",
 		 name,
 		 tmpstr, tmpstr);
+	if (t->range)
+	    range_check(name, "len", forwstr, t->range);
 	free (n);
 	free (sname);
 	break;

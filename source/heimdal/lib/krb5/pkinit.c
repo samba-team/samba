@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c 21321 2007-06-26 05:21:56Z lha $");
+RCSID("$Id: pkinit.c 21684 2007-07-23 23:09:10Z lha $");
 
 struct krb5_dh_moduli {
     char *name;
@@ -645,8 +645,6 @@ _krb5_pk_mk_padata(krb5_context context,
 						req_body->realm,
 						"pkinit_win2k",
 						NULL);
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
-	win2k_compat = 1;
 
     if (win2k_compat) {
 	ctx->require_binding = 
@@ -1721,7 +1719,7 @@ _krb5_free_moduli(struct krb5_dh_moduli **moduli)
     free(moduli);
 }
 
-static const char *default_moduli =
+static const char *default_moduli_RFC2412_MODP_group2 =
     /* name */
     "RFC2412-MODP-group2 "
     /* bits */
@@ -1743,6 +1741,37 @@ static const char *default_moduli =
     "F71C35FD" "AD44CFD2" "D74F9208" "BE258FF3" "24943328" "F67329C0"
     "FFFFFFFF" "FFFFFFFF";
 
+static const char *default_moduli_rfc3526_MODP_group14 =
+    /* name */
+    "rfc3526-MODP-group14 "
+    /* bits */
+    "1760 "
+    /* p */
+    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
+    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
+    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
+    "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
+    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE45B3D"
+    "C2007CB8" "A163BF05" "98DA4836" "1C55D39A" "69163FA8" "FD24CF5F"
+    "83655D23" "DCA3AD96" "1C62F356" "208552BB" "9ED52907" "7096966D"
+    "670C354E" "4ABC9804" "F1746C08" "CA18217C" "32905E46" "2E36CE3B"
+    "E39E772C" "180E8603" "9B2783A2" "EC07A28F" "B5C55DF0" "6F4C52C9"
+    "DE2BCBF6" "95581718" "3995497C" "EA956AE5" "15D22618" "98FA0510"
+    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF "
+    /* g */
+    "02 "
+    /* q */
+    "7FFFFFFF" "FFFFFFFF" "E487ED51" "10B4611A" "62633145" "C06E0E68"
+    "94812704" "4533E63A" "0105DF53" "1D89CD91" "28A5043C" "C71A026E"
+    "F7CA8CD9" "E69D218D" "98158536" "F92F8A1B" "A7F09AB6" "B6A8E122"
+    "F242DABB" "312F3F63" "7A262174" "D31BF6B5" "85FFAE5B" "7A035BF6"
+    "F71C35FD" "AD44CFD2" "D74F9208" "BE258FF3" "24943328" "F6722D9E"
+    "E1003E5C" "50B1DF82" "CC6D241B" "0E2AE9CD" "348B1FD4" "7E9267AF"
+    "C1B2AE91" "EE51D6CB" "0E3179AB" "1042A95D" "CF6A9483" "B84B4B36"
+    "B3861AA7" "255E4C02" "78BA3604" "650C10BE" "19482F23" "171B671D"
+    "F1CF3B96" "0C074301" "CD93C1D1" "7603D147" "DAE2AEF8" "37A62964"
+    "EF15E5FB" "4AAC0B8C" "1CCAA4BE" "754AB572" "8AE9130C" "4C7D0288"
+    "0AB9472D" "45565534" "7FFFFFFF" "FFFFFFFF";
 
 krb5_error_code
 _krb5_parse_moduli(krb5_context context, const char *file,
@@ -1757,19 +1786,28 @@ _krb5_parse_moduli(krb5_context context, const char *file,
 
     *moduli = NULL;
 
-    m = calloc(1, sizeof(m[0]) * 2);
+    m = calloc(1, sizeof(m[0]) * 3);
     if (m == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
 
-    strlcpy(buf, default_moduli, sizeof(buf));
+    strlcpy(buf, default_moduli_rfc3526_MODP_group14, sizeof(buf));
     ret = _krb5_parse_moduli_line(context, "builtin", 1, buf,  &m[0]);
     if (ret) {
 	_krb5_free_moduli(m);
 	return ret;
     }
-    n = 1;
+    n++;
+
+    strlcpy(buf, default_moduli_RFC2412_MODP_group2, sizeof(buf));
+    ret = _krb5_parse_moduli_line(context, "builtin", 1, buf,  &m[1]);
+    if (ret) {
+	_krb5_free_moduli(m);
+	return ret;
+    }
+    n++;
+
 
     if (file == NULL)
 	file = MODULI_FILE;

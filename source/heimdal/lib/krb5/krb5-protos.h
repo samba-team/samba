@@ -2244,14 +2244,6 @@ krb5_get_pw_salt (
 	krb5_salt */*salt*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_get_renewed_creds (
-	krb5_context /*context*/,
-	krb5_creds */*creds*/,
-	krb5_const_principal /*client*/,
-	krb5_ccache /*ccache*/,
-	const char */*in_tkt_service*/);
-
-krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_server_rcache (
 	krb5_context /*context*/,
 	const krb5_data */*piece*/,

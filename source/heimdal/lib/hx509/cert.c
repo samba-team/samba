@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: cert.c 21294 2007-06-25 14:37:15Z lha $");
+RCSID("$Id: cert.c 21380 2007-06-28 07:38:38Z lha $");
 #include "crypto-headers.h"
 #include <rtbl.h>
 
@@ -898,7 +898,7 @@ is_proxy_cert(hx509_context context,
     if (rinfo)
 	memset(rinfo, 0, sizeof(*rinfo));
 
-    e = find_extension(cert, oid_id_pe_proxyCertInfo(), &i);
+    e = find_extension(cert, oid_id_pkix_pe_proxyCertInfo(), &i);
     if (e == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_EXTENSION_NOT_FOUND;

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_compare_name.c 17700 2006-06-28 09:00:26Z lha $");
+RCSID("$Id: gss_compare_name.c 21475 2007-07-10 16:31:03Z lha $");
 
 OM_uint32
 gss_compare_name(OM_uint32 *minor_status,
@@ -57,8 +57,11 @@ gss_compare_name(OM_uint32 *minor_status,
 		struct _gss_mechanism_name *mn2;
 
 		SLIST_FOREACH(mn1, &name1->gn_mn, gmn_link) {
-			mn2 = _gss_find_mn(name2, mn1->gmn_mech_oid);
-			if (mn2) {
+			OM_uint32 major_status;
+
+			major_status = _gss_find_mn(minor_status, name2,
+						    mn1->gmn_mech_oid, &mn2);
+			if (major_status == GSS_S_COMPLETE) {
 				return (mn1->gmn_mech->gm_compare_name(
 						minor_status,
 						mn1->gmn_name,

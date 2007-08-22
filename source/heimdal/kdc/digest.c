@@ -34,7 +34,7 @@
 #include "kdc_locl.h"
 #include <hex.h>
 
-RCSID("$Id: digest.c 21241 2007-06-20 11:30:19Z lha $");
+RCSID("$Id: digest.c 21606 2007-07-17 07:03:25Z lha $");
 
 #define MS_CHAP_V2	0x20
 #define CHAP_MD5	0x10
@@ -975,7 +975,7 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	kdc_log(context, config, 0, "Digest %s request successful %s",
-		ireq.u.digestRequest.type, from);
+		ireq.u.digestRequest.type, ireq.u.digestRequest.username);
 
 	break;
     }
@@ -1227,7 +1227,7 @@ _kdc_do_digest(krb5_context context,
 	    version = 1;
 
 	    if (flags & NTLM_NEG_NTLM2_SESSION) {
-		char sessionhash[MD5_DIGEST_LENGTH];
+		unsigned char sessionhash[MD5_DIGEST_LENGTH];
 		MD5_CTX md5ctx;
 		
 		if ((config->digests_allowed & NTLM_V1_SESSION) == 0) {
@@ -1331,10 +1331,24 @@ _kdc_do_digest(krb5_context context,
 		version, ireq.u.ntlmRequest.username);
 	break;
     }
-    default:
+    default: {
+	char *s;
+	krb5_set_error_string(context, "unknown operation to digest");
+	ret = EINVAL;
+
     failed:
+
+	s = krb5_get_error_message(context, ret);
+	if (s == NULL) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+	
+	kdc_log(context, config, 0, "Digest failed with: %s", s);
+
 	r.element = choice_DigestRepInner_error;
-	r.u.error.reason = strdup("unknown/failed operation");
+	r.u.error.reason = strdup("unknown error");
+	krb5_free_error_string(context, s);
 	if (r.u.error.reason == NULL) {
 	    krb5_set_error_string(context, "out of memory");
 	    ret = ENOMEM;
@@ -1342,6 +1356,7 @@ _kdc_do_digest(krb5_context context,
 	}
 	r.u.error.code = EINVAL;
 	break;
+    }
     }
 
     ASN1_MALLOC_ENCODE(DigestRepInner, buf.data, buf.length, &r, &size, ret);

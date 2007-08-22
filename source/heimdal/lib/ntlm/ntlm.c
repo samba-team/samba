@@ -33,7 +33,7 @@
 
 #include <config.h>
 
-RCSID("$Id: ntlm.c 21317 2007-06-25 19:22:02Z lha $");
+RCSID("$Id: ntlm.c 21604 2007-07-17 06:48:55Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1105,7 +1105,7 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     HMAC_CTX_init(&c);
     HMAC_Init_ex(&c, ntlmv2, 16, EVP_md5(), NULL);
     HMAC_Update(&c, serverchallange, 8);
-    HMAC_Update(&c, ((char *)answer->data) + 16, answer->length - 16);
+    HMAC_Update(&c, ((unsigned char *)answer->data) + 16, answer->length - 16);
     HMAC_Final(&c, serveranswer, &hmaclen);
     HMAC_CTX_cleanup(&c);
 

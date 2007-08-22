@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kaserver.c 17904 2006-08-23 11:45:16Z lha $");
+RCSID("$Id: kaserver.c 21661 2007-07-22 01:57:17Z lha $");
 
 #include <krb5-v4compat.h>
 #include <rx.h>
@@ -191,19 +191,28 @@ init_reply_header (struct rx_header *hdr,
     reply_hdr->serviceid = hdr->serviceid;
 }
 
+/*
+ * Create an error `reply´ using for the packet `hdr' with the error
+ * `error´ code.
+ */
 static void
 make_error_reply (struct rx_header *hdr,
-		  uint32_t ret,
+		  uint32_t error,
 		  krb5_data *reply)
 
 {
-    krb5_storage *sp;
     struct rx_header reply_hdr;
+    krb5_error_code ret;
+    krb5_storage *sp;
 
     init_reply_header (hdr, &reply_hdr, HT_ABORT, HF_LAST);
     sp = krb5_storage_emem();
+    if (sp == NULL)
+	return;
     ret = encode_rx_header (&reply_hdr, sp);
-    krb5_store_int32(sp, ret);
+    if (ret)
+	return;
+    krb5_store_int32(sp, error);
     krb5_storage_to_data (sp, reply);
     krb5_storage_free (sp);
 }

@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_length.c 19539 2006-12-28 17:15:05Z lha $");
+RCSID("$Id: gen_length.c 21503 2007-07-12 11:57:19Z lha $");
 
 static void
 length_primitive (const char *typename,
@@ -72,12 +72,11 @@ length_type (const char *name, const Type *t,
 	break;
     case TInteger:
 	if(t->members) {
-	    char *s;
-	    asprintf(&s, "(const int*)%s", name);
-	    if(s == NULL)
-		errx (1, "out of memory");
-	    length_primitive ("integer", s, variable);
-	    free(s);
+	    fprintf(codefile,
+		    "{\n"
+		    "int enumint = *%s;\n", name);
+	    length_primitive ("integer", "&enumint", variable);
+	    fprintf(codefile, "}\n");
 	} else if (t->range == NULL) {
 	    length_primitive ("heim_integer", name, variable);
 	} else if (t->range->min == INT_MIN && t->range->max == INT_MAX) {

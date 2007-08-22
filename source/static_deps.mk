@@ -35,6 +35,7 @@ heimdal_basics: \
        heimdal/lib/hdb/hdb_err.h \
        heimdal/lib/krb5/heim_err.h \
        heimdal/lib/krb5/k524_err.h \
+       heimdal/lib/krb5/krb_err.h \
        heimdal/lib/krb5/krb5_err.h \
        heimdal/lib/gssapi/gkrb5_err.h \
        heimdal/lib/hx509/hx509_err.h
