@@ -181,7 +181,8 @@ static void max_runtime_handler(struct event_context *ev, struct timed_event *te
 */
 static int binary_smbd_main(const char *binary_name, int argc, const char *argv[])
 {
-	BOOL interactive = False;
+	bool opt_daemon = false;
+	bool opt_interactive = false;
 	int opt;
 	poptContext pc;
 	init_module_fn static_init[] = STATIC_service_MODULES;
@@ -191,11 +192,14 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	const char *model = "standard";
 	int max_runtime = 0;
 	enum {
-		OPT_INTERACTIVE		= 1000,
+		OPT_DAEMON = 1000,
+		OPT_INTERACTIVE,
 		OPT_PROCESS_MODEL
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
+		{"daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON,
+		 "Become a daemon (default)", NULL },
 		{"interactive",	'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE,
 		 "Run interactive (not a daemon)", NULL},
 		{"model", 'M', POPT_ARG_STRING,	NULL, OPT_PROCESS_MODEL, 
@@ -208,20 +212,38 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	};
 
 	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
-	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
+		case OPT_DAEMON:
+			opt_daemon = true;
+			break;
 		case OPT_INTERACTIVE:
-			interactive = True;
+			opt_interactive = true;
 			break;
 		case OPT_PROCESS_MODEL:
 			model = poptGetOptArg(pc);
 			break;
+		default:
+			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				  poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
 		}
 	}
+
+	if (opt_daemon && opt_interactive) {
+		d_fprintf(stderr,"\nERROR: "
+			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
+		poptPrintUsage(pc, stderr, 0);
+		exit(1);
+	} else if (!opt_interactive) {
+		/* default is --daemon */
+		opt_daemon = true;
+	}
+
 	poptFreeContext(pc);
 
-	setup_logging(binary_name, interactive?DEBUG_STDOUT:DEBUG_FILE);
+	setup_logging(binary_name, opt_interactive?DEBUG_STDOUT:DEBUG_FILE);
 	setup_signals();
 
 	/* we want total control over the permissions on created files,
@@ -238,7 +260,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		exit(1);
 	}
 
-	if (!interactive) {
+	if (opt_daemon) {
 		DEBUG(3,("Becoming a daemon.\n"));
 		become_daemon(True);
 	}
@@ -289,7 +311,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	/* initialise clustering if needed */
 	cluster_ctdb_init(event_ctx, model);
 
-	if (interactive) {
+	if (opt_interactive) {
 		/* catch EOF on stdin */
 #ifdef SIGTTIN
 		signal(SIGTTIN, SIG_IGN);
