@@ -226,7 +226,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		   We are now banned so we shouldnt service database calls
 		   anymore.
 		*/
-		ctdb->vnn_map->generation = 1;
+		ctdb->vnn_map->generation = INVALID_GENERATION;
 
 		ctdb_start_freeze(ctdb);
 		ctdb_release_all_ips(ctdb);

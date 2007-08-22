@@ -611,6 +611,24 @@ static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
 	}
 }
 
+/* Create a new random generation ip. 
+   The generation id can not be the INVALID_GENERATION id
+*/
+static uint32_t new_generation(void)
+{
+	uint32_t generation;
+
+	while (1) {
+		generation = random();
+
+		if (generation != INVALID_GENERATION) {
+			break;
+		}
+	}
+
+	return generation;
+}
+		
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
@@ -655,7 +673,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(0, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
 
 	/* pick a new generation number */
-	generation = random();
+	generation = new_generation();
 
 	/* change the vnnmap on this node to use the new generation 
 	   number but not on any other nodes.
@@ -729,7 +747,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
-	generation = random();
+	generation = new_generation();
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
