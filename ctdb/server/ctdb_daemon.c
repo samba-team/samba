@@ -51,7 +51,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	/* don't get the disconnected flag from the other node */
 	ctdb->nodes[c->vnn]->flags = 
 		(ctdb->nodes[c->vnn]->flags&NODE_FLAGS_DISCONNECTED) 
-		| (c->flags & ~NODE_FLAGS_DISCONNECTED);	
+		| (c->new_flags & ~NODE_FLAGS_DISCONNECTED);	
 	DEBUG(2,("Node flags for node %u are now 0x%x\n", c->vnn, ctdb->nodes[c->vnn]->flags));
 
 	/* make sure we don't hold any IPs when we shouldn't */
@@ -218,7 +218,7 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 	if ((srvid & 0xFFFFFFFF) == srvid &&
 	    kill(srvid, 0) == 0) {
 		client->pid = srvid;
-		DEBUG(0,(__location__ " Registered PID %u for client %u\n",
+		DEBUG(3,(__location__ " Registered PID %u for client %u\n",
 			 (unsigned)client->pid, client_id));
 	}
 	return res;
@@ -616,6 +616,10 @@ static int unlink_destructor(const char *name)
 	return 0;
 }
 
+static void print_exit_message(void)
+{
+	DEBUG(0,("CTDB daemon shutting down\n"));
+}
 
 /*
   start the protocol going as a daemon
@@ -639,6 +643,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	if (do_fork && fork()) {
 		return 0;
 	}
+
+	/* Make sure we log something when the daemon terminates */
+	atexit(print_exit_message);
 
 	tdb_reopen_all(False);
 

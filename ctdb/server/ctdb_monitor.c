@@ -103,6 +103,9 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			ctdb_check_health, ctdb);
 
+	c.vnn = ctdb->vnn;
+	c.old_flags = node->flags;
+
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(0,("monitor event failed - disabling node\n"));
 		node->flags |= NODE_FLAGS_UNHEALTHY;
@@ -114,8 +117,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		return;
 	}
 
-	c.vnn = ctdb->vnn;
-	c.flags = node->flags;
+	c.new_flags = node->flags;
 
 	data.dptr = (uint8_t *)&c;
 	data.dsize = sizeof(c);
@@ -206,7 +208,8 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	/* if we have been banned, go into recovery mode */
 	c.vnn = ctdb->vnn;
-	c.flags = node->flags;
+	c.old_flags = old_flags;
+	c.new_flags = node->flags;
 
 	data.dptr = (uint8_t *)&c;
 	data.dsize = sizeof(c);
@@ -218,6 +221,13 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {
 		/* make sure we are frozen */
 		DEBUG(0,("This node has been banned - forcing freeze and recovery\n"));
+		/* Reset the generation id to 1 to make us ignore any
+		   REQ/REPLY CALL/DMASTER someone sends to us.
+		   We are now banned so we shouldnt service database calls
+		   anymore.
+		*/
+		ctdb->vnn_map->generation = INVALID_GENERATION;
+
 		ctdb_start_freeze(ctdb);
 		ctdb_release_all_ips(ctdb);
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;

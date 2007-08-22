@@ -147,6 +147,14 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_init(ev);
 
+	ret = ctdb_set_logfile(ctdb, options.logfile);
+	if (ret == -1) {
+		printf("ctdb_set_logfile to %s failed - %s\n", options.logfile, ctdb_errstr(ctdb));
+		exit(1);
+	}
+
+	DEBUG(0,("Starting CTDB daemon\n"));
+
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
@@ -158,13 +166,13 @@ int main(int argc, const char *argv[])
 
 	ret = ctdb_set_recovery_lock_file(ctdb, options.recovery_lock_file);
 	if (ret == -1) {
-		printf("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb));
+		DEBUG(0,("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
 	ret = ctdb_set_transport(ctdb, options.transport);
 	if (ret == -1) {
-		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
+		DEBUG(0,("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
@@ -172,7 +180,7 @@ int main(int argc, const char *argv[])
 	if (options.myaddress) {
 		ret = ctdb_set_address(ctdb, options.myaddress);
 		if (ret == -1) {
-			printf("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb));
+			DEBUG(0,("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
 	}
@@ -180,22 +188,16 @@ int main(int argc, const char *argv[])
 	/* tell ctdb what nodes are available */
 	ret = ctdb_set_nlist(ctdb, options.nlist);
 	if (ret == -1) {
-		printf("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb));
+		DEBUG(0,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
 	if (options.db_dir) {
 		ret = ctdb_set_tdb_dir(ctdb, options.db_dir);
 		if (ret == -1) {
-			printf("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb));
+			DEBUG(0,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
-	}
-
-	ret = ctdb_set_logfile(ctdb, options.logfile);
-	if (ret == -1) {
-		printf("ctdb_set_logfile to %s failed - %s\n", options.logfile, ctdb_errstr(ctdb));
-		exit(1);
 	}
 
 	if (options.public_interface) {
@@ -206,7 +208,7 @@ int main(int argc, const char *argv[])
 	if (options.public_address_list) {
 		ret = ctdb_set_public_addresses(ctdb, options.public_address_list);
 		if (ret == -1) {
-			printf("Unable to setup public address list\n");
+			DEBUG(0,("Unable to setup public address list\n"));
 			exit(1);
 		}
 		ctdb->takeover.enabled = true;
@@ -214,7 +216,7 @@ int main(int argc, const char *argv[])
 
 	ret = ctdb_set_event_script_dir(ctdb, options.event_script_dir);
 	if (ret == -1) {
-		printf("Unable to setup event script directory\n");
+		DEBUG(0,("Unable to setup event script directory\n"));
 		exit(1);
 	}
 

@@ -265,6 +265,8 @@ struct ctdb_statistics {
 	double max_lockwait_latency;
 };
 
+
+#define INVALID_GENERATION 1
 /* table that contains the mapping between a hash value and lmaster
  */
 struct ctdb_vnn_map {
@@ -506,7 +508,8 @@ struct ctdb_control_tcp_vnn {
  */
 struct ctdb_node_flag_change {
 	uint32_t vnn;
-	uint32_t flags;
+	uint32_t new_flags;
+	uint32_t old_flags;
 };
 
 /*

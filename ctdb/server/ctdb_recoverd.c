@@ -386,7 +386,8 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 		TDB_DATA data;
 
 		c.vnn = nodemap->nodes[i].vnn;
-		c.flags = nodemap->nodes[i].flags;
+		c.old_flags = nodemap->nodes[i].flags;
+		c.new_flags = nodemap->nodes[i].flags;
 
 		data.dptr = (uint8_t *)&c;
 		data.dsize = sizeof(c);
@@ -610,6 +611,24 @@ static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
 	}
 }
 
+/* Create a new random generation ip. 
+   The generation id can not be the INVALID_GENERATION id
+*/
+static uint32_t new_generation(void)
+{
+	uint32_t generation;
+
+	while (1) {
+		generation = random();
+
+		if (generation != INVALID_GENERATION) {
+			break;
+		}
+	}
+
+	return generation;
+}
+		
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
@@ -654,7 +673,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(0, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
 
 	/* pick a new generation number */
-	generation = random();
+	generation = new_generation();
 
 	/* change the vnnmap on this node to use the new generation 
 	   number but not on any other nodes.
@@ -728,7 +747,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
-	generation = random();
+	generation = new_generation();
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
@@ -815,7 +834,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* send a message to all clients telling them that the cluster 
 	   has been reconfigured */
-	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, CTDB_SRVID_RECONFIGURE, tdb_null);
+	ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
 
 	DEBUG(0, (__location__ " Recovery complete\n"));
 
@@ -1045,6 +1064,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 	struct ctdb_node_map *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx;
+	uint32_t changed_flags;
 	int i;
 
 	if (data.dsize != sizeof(*c)) {
@@ -1067,20 +1087,22 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
+	changed_flags = c->old_flags ^ c->new_flags;
+
 	/* Dont let messages from remote nodes change the DISCONNECTED flag. 
 	   This flag is handled locally based on whether the local node
 	   can communicate with the node or not.
 	*/
-	c->flags &= ~NODE_FLAGS_DISCONNECTED;
+	c->new_flags &= ~NODE_FLAGS_DISCONNECTED;
 	if (nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED) {
-		c->flags |= NODE_FLAGS_DISCONNECTED;
+		c->new_flags |= NODE_FLAGS_DISCONNECTED;
 	}
 
-	if (nodemap->nodes[i].flags != c->flags) {
-		DEBUG(0,("Node %u has changed flags - now 0x%x\n", c->vnn, c->flags));
+	if (nodemap->nodes[i].flags != c->new_flags) {
+		DEBUG(0,("Node %u has changed flags - now 0x%x  was 0x%x\n", c->vnn, c->new_flags, c->old_flags));
 	}
 
-	nodemap->nodes[i].flags = c->flags;
+	nodemap->nodes[i].flags = c->new_flags;
 
 	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), 
 				     CTDB_CURRENT_NODE, &ctdb->recovery_master);
@@ -1094,9 +1116,21 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	    ctdb->recovery_master == ctdb->vnn &&
 	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL &&
 	    ctdb->takeover.enabled) {
-		ret = ctdb_takeover_run(ctdb, nodemap);
-		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+		/* Only do the takeover run if the perm disabled or unhealthy
+		   flags changed since these will cause an ip failover but not
+		   a recovery.
+		   If the node became disconnected or banned this will also
+		   lead to an ip address failover but that is handled 
+		   during recovery
+		*/
+		if (changed_flags & NODE_FLAGS_DISABLED) {
+			ret = ctdb_takeover_run(ctdb, nodemap);
+			if (ret != 0) {
+				DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+			}
+			/* send a message to all clients telling them that the 
+			   cluster has been reconfigured */
+			ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
 		}
 	}
 

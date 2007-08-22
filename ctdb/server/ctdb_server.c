@@ -151,17 +151,10 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	}
 
 	/* initialize the vnn mapping table now that we have num_nodes setup */
-/*
-XXX we currently initialize it to the maximum number of nodes to 
-XXX make it behave the same way as previously.  
-XXX Once we have recovery working we should initialize this always to 
-XXX generation==0 (==invalid) and let the recovery tool populate this 
-XXX table for the daemons. 
-*/
 	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map);
 
-	ctdb->vnn_map->generation = 1;
+	ctdb->vnn_map->generation = INVALID_GENERATION;
 	ctdb->vnn_map->size = ctdb->num_nodes;
 	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
 	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map->map);
@@ -232,6 +225,18 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	case CTDB_REPLY_CALL:
 	case CTDB_REQ_DMASTER:
 	case CTDB_REPLY_DMASTER:
+		/* we dont allow these calls when banned */
+		if (ctdb->nodes[ctdb->vnn]->flags & NODE_FLAGS_BANNED) {
+			DEBUG(0,(__location__ " ctdb operation %u"
+				" request %u"
+				" length %u from node %u to %u while node"
+				" is banned\n",
+				 hdr->operation, hdr->reqid,
+				 hdr->length, 
+				 hdr->srcnode, hdr->destnode));
+			goto done;
+		}
+
 		/* for ctdb_call inter-node operations verify that the
 		   remote node that sent us the call is running in the
 		   same generation instance as this node

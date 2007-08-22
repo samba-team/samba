@@ -524,6 +524,19 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
 			ctdb->nodes[i]->takeover_vnn = nodemap->nodes[i].vnn;
 		} else {
+			uint32_t takeover_vnn;
+
+			/* If this public address has already been taken over
+			   by a node and that node is still healthy, then
+			   leave the public address at that node.
+			*/
+			takeover_vnn = ctdb->nodes[i]->takeover_vnn;
+			if ( ctdb_validate_vnn(ctdb, takeover_vnn)
+			  && (!(nodemap->nodes[takeover_vnn].flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) ) {
+				continue;
+			}
+
+
 			ctdb->nodes[i]->takeover_vnn = (uint32_t)-1;	
 
 			ctdb_takeover_find_node(ctdb, nodemap, i, NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED);

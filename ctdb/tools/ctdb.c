@@ -282,7 +282,11 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		DEBUG(0, ("Unable to get vnnmap from node %u\n", options.vnn));
 		return ret;
 	}
-	printf("Generation:%d\n",vnnmap->generation);
+	if (vnnmap->generation == INVALID_GENERATION) {
+		printf("Generation:INVALID\n");
+	} else {
+		printf("Generation:%d\n",vnnmap->generation);
+	}
 	printf("Size:%d\n",vnnmap->size);
 	for(i=0;i<vnnmap->size;i++){
 		printf("hash:%d lmaster:%d\n", i, vnnmap->map[i]);
