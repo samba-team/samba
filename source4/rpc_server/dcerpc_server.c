@@ -528,6 +528,10 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t context_id;
 	const struct dcesrv_interface *iface;
 
+	if (call->pkt.u.bind.assoc_group_id != 0) {
+		return dcesrv_bind_nak(call, 0);	
+	}
+
 	if (call->pkt.u.bind.num_contexts < 1 ||
 	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {
 		return dcesrv_bind_nak(call, 0);
