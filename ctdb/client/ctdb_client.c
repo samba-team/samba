@@ -674,6 +674,7 @@ struct ctdb_client_control_state {
 	TDB_DATA outdata;
 	enum control_state state;
 	char *errormsg;
+	struct ctdb_req_control *c;
 };
 
 /*
@@ -731,6 +732,8 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 {
 	struct ctdb_client_control_state *state = talloc_get_type(private_data, struct ctdb_client_control_state);
 
+	DEBUG(0,("control timed out. reqid:%d opcode:%d dstnode:%d\n", state->reqid, state->c->opcode, state->c->hdr.destnode));
+
 	state->state = CTDB_CONTROL_TIMEOUT;
 }
 
@@ -738,14 +741,14 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb, 
 		uint32_t destnode, uint64_t srvid, 
 		uint32_t opcode, uint32_t flags, TDB_DATA data, 
-		TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
+		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 		struct timeval *timeout,
 		char **errormsg)
 
 {
 	struct ctdb_client_control_state *state;
-	struct ctdb_req_control *c;
 	size_t len;
+	struct ctdb_req_control *c;
 	int ret;
 
 	if (errormsg) {
@@ -770,8 +773,8 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
 			       len, struct ctdb_req_control);
+	state->c            = c;	
 	CTDB_NO_MEMORY_NULL(ctdb, c);
-	
 	c->hdr.reqid        = state->reqid;
 	c->hdr.destnode     = destnode;
 	c->hdr.reqid        = state->reqid;
@@ -866,7 +869,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	struct ctdb_client_control_state *state;
 
 	state = ctdb_control_send(ctdb, destnode, srvid, opcode, 
-			flags, data, mem_ctx, outdata, status,
+			flags, data, mem_ctx, outdata,
 			timeout, errormsg);
 	return ctdb_control_recv(ctdb, state, mem_ctx, outdata, status, 
 			errormsg);
@@ -984,26 +987,46 @@ int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 	return 0;
 }
 
-/*
-  get the recovery mode of a remote node
- */
-int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmode)
+
+struct ctdb_client_control_state *
+ctdb_ctrl_getrecmode_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECMODE, 0, tdb_null, 
+			   mem_ctx, NULL, &timeout, NULL);
+}
+
+int ctdb_ctrl_getrecmode_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmode)
 {
 	int ret;
 	int32_t res;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_RECMODE, 0, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		DEBUG(0,(__location__ " ctdb_ctrl_getrecmode_recv failed\n"));
 		return -1;
 	}
 
-	*recmode = res;
+	if (recmode) {
+		*recmode = (uint32_t)res;
+	}
 
 	return 0;
 }
+
+/*
+  get the recovery mode of a remote node
+ */
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmode)
+{
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_ctrl_getrecmode_send(ctdb, mem_ctx, timeout, destnode);
+	return ctdb_ctrl_getrecmode_recv(ctdb, mem_ctx, state, recmode);
+}
+
+
+
 
 /*
   set the recovery mode of a remote node

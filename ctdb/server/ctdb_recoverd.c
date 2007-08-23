@@ -1108,7 +1108,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 				     CTDB_CURRENT_NODE, &ctdb->recovery_master);
 
 	if (ret == 0) {
-		ret = ctdb_ctrl_getrecmode(ctdb, CONTROL_TIMEOUT(), 
+		ret = ctdb_ctrl_getrecmode(ctdb, tmp_ctx, CONTROL_TIMEOUT(), 
 					   CTDB_CURRENT_NODE, &ctdb->recovery_mode);
 	}
 	
@@ -1307,7 +1307,7 @@ again:
 			continue;
 		}
 
-		ret = ctdb_ctrl_getrecmode(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, &recmode);
+		ret = ctdb_ctrl_getrecmode(ctdb, mem_ctx, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, &recmode);
 		if (ret != 0) {
 			DEBUG(0, ("Unable to get recmode from node %u\n", vnn));
 			goto again;

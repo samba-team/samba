@@ -292,7 +292,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		printf("hash:%d lmaster:%d\n", i, vnnmap->map[i]);
 	}
 
-	ret = ctdb_ctrl_getrecmode(ctdb, TIMELIMIT(), options.vnn, &recmode);
+	ret = ctdb_ctrl_getrecmode(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmode);
 	if (ret != 0) {
 		DEBUG(0, ("Unable to get recmode from node %u\n", options.vnn));
 		return ret;

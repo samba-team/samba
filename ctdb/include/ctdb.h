@@ -302,7 +302,13 @@ int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_
 /*
   get the recovery mode of a remote node
  */
-int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmode);
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmode);
+
+struct ctdb_client_control_state *ctdb_ctrl_getrecmode_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_getrecmode_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmode);
+
+
 /*
   set the recovery mode of a remote node
  */
