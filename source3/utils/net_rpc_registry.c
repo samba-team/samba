@@ -354,7 +354,8 @@ static NTSTATUS rpc_registry_setvalue_internal(const DOM_SID *domain_sid,
 	NTSTATUS status;
 	struct registry_value value;
 
-	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_WRITE,
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], 
+				  SEC_RIGHTS_MAXIMUM_ALLOWED,
 				  &hive_hnd, &key_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "registry_openkey failed: %s\n",
@@ -423,7 +424,8 @@ static NTSTATUS rpc_registry_deletevalue_internal(const DOM_SID *domain_sid,
 
 	ZERO_STRUCT(valuename);
 
-	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_WRITE,
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0],
+				  SEC_RIGHTS_MAXIMUM_ALLOWED,
 				  &hive_hnd, &key_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "registry_openkey failed: %s\n",
@@ -481,7 +483,7 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 	}
 
 	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
-				       REG_KEY_READ|REG_KEY_WRITE,
+				       SEC_RIGHTS_MAXIMUM_ALLOWED,
 				       &hive_hnd);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
@@ -548,7 +550,8 @@ static NTSTATUS rpc_registry_deletekey_internal(const DOM_SID *domain_sid,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, REG_KEY_WRITE,
+	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
+				       SEC_RIGHTS_MAXIMUM_ALLOWED,
 				       &hive_hnd);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
