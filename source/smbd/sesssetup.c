@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    handle SMBsessionsetup
    Copyright (C) Andrew Tridgell 1998-2001
@@ -679,8 +679,6 @@ static void reply_spnego_ntlmssp(connection_struct *conn,
 		if (server_info->guest) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
-
-		SSVAL(req->outbuf,smb_uid,vuid);
 
 		sessionsetup_start_signing_engine(server_info, req->inbuf);
 	}
