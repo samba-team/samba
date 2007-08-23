@@ -1138,13 +1138,65 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 }
 
 
+enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_FAILED};
+
+
+/* verify that all nodes are in recovery mode normal */
+static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, TALLOC_CTX *mem_ctx)
+{
+	struct ctdb_client_control_state **ctrl_states;
+	uint32_t recmode;
+	int j, ret;
+	
+	ctrl_states = talloc_array(mem_ctx, struct ctdb_client_control_state *,
+				 nodemap->num);
+	if (!ctrl_states) {
+		DEBUG(0,(__location__ " Failed to allocate temporary ctrl state array\n"));
+		exit(-1);
+	}
+
+
+	/* loop over all active nodes and send an async getrecmode call to 
+	   them*/
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			ctrl_states[j] = NULL;
+			continue;
+		}
+		ctrl_states[j] = ctdb_ctrl_getrecmode_send(ctdb, mem_ctx, 
+					CONTROL_TIMEOUT(), 
+					nodemap->nodes[j].vnn);
+	}
+
+	/* wait for the responses to come back and check that all is ok */
+	for (j=0; j<nodemap->num; j++) {
+		if (ctrl_states[j] == NULL) {
+			continue;
+		}
+		ret = ctdb_ctrl_getrecmode_recv(ctdb, mem_ctx, ctrl_states[j], &recmode);
+		if (ret != 0) {
+			DEBUG(0, ("Unable to get recmode from node %u\n", nodemap->nodes[j].vnn));
+			talloc_free(ctrl_states);
+			return MONITOR_FAILED;
+		}
+		if (recmode != CTDB_RECOVERY_NORMAL) {
+			DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", nodemap->nodes[j].vnn));
+			talloc_free(ctrl_states);
+			return MONITOR_RECOVERY_NEEDED;
+		}
+	}
+
+	talloc_free(ctrl_states);
+	return MONITOR_OK;
+}
+
 
 /*
   the main monitoring loop
  */
 static void monitor_cluster(struct ctdb_context *ctdb)
 {
-	uint32_t vnn, num_active, recmode, recmaster;
+	uint32_t vnn, num_active, recmaster;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_node_map *remote_nodemap=NULL;
@@ -1302,23 +1354,17 @@ again:
 	/* verify that all active nodes are in normal mode 
 	   and not in recovery mode 
 	 */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getrecmode(ctdb, mem_ctx, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, &recmode);
-		if (ret != 0) {
-			DEBUG(0, ("Unable to get recmode from node %u\n", vnn));
-			goto again;
-		}
-		if (recmode != CTDB_RECOVERY_NORMAL) {
-			DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", 
-				  nodemap->nodes[j].vnn));
-			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
-			goto again;
-		}
+	/* send a getrecmode call out to every node */
+	switch (verify_recmode(ctdb, nodemap, mem_ctx)) {
+	case MONITOR_RECOVERY_NEEDED:
+		do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+		goto again;
+	case MONITOR_FAILED:
+		goto again;
+	case MONITOR_OK:
+		break;
 	}
+
 
 
 	/* get the nodemap for all active remote nodes and verify
