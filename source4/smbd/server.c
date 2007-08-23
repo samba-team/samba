@@ -256,7 +256,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4 || sizeof(uint64_t) < 8) {
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
 		DEBUGADD(0,("sizeof(uint16_t) = %u, sizeof(uint32_t) %u, sizeof(uint64_t) = %u\n",
-			sizeof(uint16_t), sizeof(uint32_t), sizeof(uint64_t)));
+			    (unsigned int)sizeof(uint16_t), (unsigned int)sizeof(uint32_t), (unsigned int)sizeof(uint64_t)));
 		exit(1);
 	}
 

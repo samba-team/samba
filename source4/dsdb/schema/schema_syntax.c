@@ -261,7 +261,7 @@ static WERROR dsdb_syntax_INT64_drsuapi_to_ldb(const struct dsdb_schema *schema,
 
 		v = BVALS(in->value_ctr.values[i].blob->data, 0);
 
-		str = talloc_asprintf(out->values, "%lld", v);
+		str = talloc_asprintf(out->values, "%lld", (long long int)v);
 		W_ERROR_HAVE_NO_MEMORY(str);
 
 		out->values[i] = data_blob_string_const(str);
@@ -948,7 +948,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 		W_ERROR_HAVE_NO_MEMORY(binary);
 
 		str = talloc_asprintf(out->values, "B:%u:%s:%s",
-				      id3b.binary.length * 2, /* because of 2 hex chars per byte */
+				      (unsigned int)(id3b.binary.length * 2), /* because of 2 hex chars per byte */
 				      binary,
 				      id3b.dn);
 		W_ERROR_HAVE_NO_MEMORY(str);

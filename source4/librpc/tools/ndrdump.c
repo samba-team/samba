@@ -402,11 +402,13 @@ const struct ndr_interface_table *load_iface_from_plugin(const char *plugin, con
 		f->ndr_print(ndr_v_print, function, flags, v_st);
 
 		if (blob.length != v_blob.length) {
-			printf("WARNING! orig bytes:%u validated pushed bytes:%u\n", blob.length, v_blob.length);
+			printf("WARNING! orig bytes:%llu validated pushed bytes:%llu\n", 
+			       (unsigned long long)blob.length, (unsigned long long)v_blob.length);
 		}
 
 		if (ndr_pull->offset != ndr_v_pull->offset) {
-			printf("WARNING! orig pulled bytes:%u validated pulled bytes:%u\n", ndr_pull->offset, ndr_v_pull->offset);
+			printf("WARNING! orig pulled bytes:%llu validated pulled bytes:%llu\n", 
+			       (unsigned long long)ndr_pull->offset, (unsigned long long)ndr_v_pull->offset);
 		}
 
 		differ = false;

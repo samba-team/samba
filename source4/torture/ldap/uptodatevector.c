@@ -132,9 +132,9 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 		}
 
 		torture_comment(torture, "[%u]: uSNChanged[%llu] description[%s] replUpToDateVector[%s]\n", i,
-					samdb_result_uint64(r->msgs[0], "uSNChanged", 0),
-					samdb_result_string(r->msgs[0], "description", NULL),
-					(no_match ? "changed!: not ok" : "not changed: ok"));
+				(unsigned long long)samdb_result_uint64(r->msgs[0], "uSNChanged", 0),
+				samdb_result_string(r->msgs[0], "description", NULL),
+				(no_match ? "changed!: not ok" : "not changed: ok"));
 
 		if (no_match) {
 			NDR_PRINT_DEBUG(replUpToDateVectorBlob, &utdv1);

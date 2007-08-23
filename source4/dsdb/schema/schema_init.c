@@ -674,7 +674,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 	if (strict && _a->value_ctr.num_values != 1) { \
 		d_printf("%s: %s num_values == %u\n", __location__, attr, \
-			_a->value_ctr.num_values); \
+			 (unsigned int)_a->value_ctr.num_values);	\
 		return WERR_INVALID_PARAM; \
 	} \
 	if (strict && !_a->value_ctr.values[0].blob) { \
@@ -683,7 +683,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 	if (strict && _a->value_ctr.values[0].blob->length != 4) { \
 		d_printf("%s: %s length == %u\n", __location__, attr, \
-			_a->value_ctr.values[0].blob->length); \
+			 (unsigned int)_a->value_ctr.values[0].blob->length); \
 		return WERR_INVALID_PARAM; \
 	} \
 	if (_a && _a->value_ctr.num_values >= 1 \

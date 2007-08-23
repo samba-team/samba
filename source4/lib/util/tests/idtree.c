@@ -61,10 +61,11 @@ static bool torture_local_idtree_simple(struct torture_context *tctx)
 			}
 		} else {
 			if (p != NULL) {
-				torture_fail(tctx, talloc_asprintf(tctx,
-					"non-present at %d gave %p (would be %d)", 
-				       ii, p, 
-				       (int)(((char *)p) - (char *)(&ids[0])) / sizeof(int)));
+				torture_fail(tctx, 
+					     talloc_asprintf(tctx,
+							     "non-present at %d gave %p (would be %d)", 
+							     ii, p, 
+							     (int)((((char *)p) - (char *)(&ids[0])) / sizeof(int))));
 			}
 			if (random() % 5) {
 				ids[ii] = idr_get_new(idr, &ids[ii], n);
