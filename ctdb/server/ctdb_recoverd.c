@@ -1238,12 +1238,6 @@ static int verify_recmaster_callback(struct ctdb_control_cb_data *cb_data, void 
 	return 0;
 }
 
-static void verify_recmaster_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
-{
-	uint32_t *timedout = (uint32_t *)p;
-
-	*timedout = 1;
-}
 
 /* verify that all nodes agree that we are the recmaster */
 static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn)
@@ -1252,7 +1246,6 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	struct ctdb_client_control_state *state;
 	enum monitor_result status;
-	uint32_t timedout;	
 	int j;
 	
 	rmdata = talloc(mem_ctx, struct verify_recmaster_data);
@@ -1268,7 +1261,7 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 			continue;
 		}
 		state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, 
-					timeval_zero(),
+					CONTROL_TIMEOUT(),
 					nodemap->nodes[j].vnn,
 					verify_recmaster_callback, rmdata);
 		if (state == NULL) {
@@ -1288,19 +1281,9 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 	/* now wait for up to the maximum number of seconds allowed
 	   or until all nodes we expect a response from has replied
 	*/
-	timedout = 0;
-	event_add_timed(ctdb->ev, rmdata, CONTROL_TIMEOUT(),
-			verify_recmaster_timeout, &timedout);
-
-	while ( (rmdata->count > 0)
-	&&	(timedout == 0) ) {
+	while (rmdata->count > 0) {
 		event_loop_once(ctdb->ev);
 	}
-	if (timedout) {
-		DEBUG(0,("Timedout while waiting for getrecmaster replies.\n"));
-		rmdata->status = MONITOR_FAILED;
-	}
-
 
 	status = rmdata->status;
 	talloc_free(mem_ctx);
