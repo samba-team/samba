@@ -185,8 +185,8 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 
 	printf("\tmapping_flags=0x%08x mapping_mask=0x%08x\n",
 			whoami->mapping_flags, whoami->mapping_mask);
-	printf("\tserver UID=%lld GID=%lld\n",
-			whoami->server_uid, whoami->server_gid);
+	printf("\tserver UID=%llu GID=%llu\n",
+	       (unsigned long long)whoami->server_uid, (unsigned long long)whoami->server_gid);
 	printf("\t%u GIDs, %u SIDs, %u SID bytes\n",
 			whoami->num_gids, whoami->num_sids,
 			whoami->num_sid_bytes);

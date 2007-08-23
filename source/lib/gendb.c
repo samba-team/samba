@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "lib/db_wrap.h"
 
 /*
   search the sam for the specified attributes - va_list variant
