@@ -121,7 +121,7 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 			len = value->v.sz.len;
 			DEBUG(10, ("theval->size: %d, value->v.sz.len: %d, "
 				   "value->v.sz.str: '%s'\n",
-				   theval->size, value->v.sz.len,
+				   theval->size, (int)value->v.sz.len,
 				   value->v.sz.str));
 			if (valstr[len - 1] != '\0') {
 				DEBUG(10, ("string is not '\\0'-terminated. "
@@ -162,7 +162,7 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 
 			DEBUG(10, ("NEW: value->type: %d, value->v.sz.len: %d, "
 				   "value->v.sz.str: '%s'\n", value->type,
-				   value->v.sz.len, value->v.sz.str));
+				   (int)value->v.sz.len, value->v.sz.str));
 
 			err = registry_push_value(mem_ctx, value, &value_data);
 			if (!W_ERROR_IS_OK(err)) {
