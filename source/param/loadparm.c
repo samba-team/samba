@@ -3105,7 +3105,7 @@ static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 		    strwicmp(pszParmValue, "0") == 0)
 		value = False;
 	else {
-		DEBUG(0,
+		DEBUG(2,
 		      ("ERROR: Badly formed boolean in configuration file: \"%s\".\n",
 		       pszParmValue));
 		bRetval = False;
