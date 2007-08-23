@@ -1,49 +1,24 @@
-'Samba4 TP5' presents you with a snapshot into Samba4's ongoing
-development, as we move towards our first alpha releases.  This Technology
-Preview (TP) is snapshot of Samba4's development, as at June 2007.
+The Samba Team is proud to present our first alpha release of Samba4.
 
-In the time since TP4 was released in January 2007, Samba has
+Samba4 aims to be a compatible replacement for 
+
+In the time since TP5 was released in June 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
 
-  Work has continued on SWAT, the the libnet API behind it.  These we
-  hope will grow into a full web-based management solution for both
-  local and remote Samba and windows servers.
+  Group Policy Support:  Basic group policies may be defined, and are
+  enforced by Windows clients
 
-  The DRSUAPI research effort has largely concluded, and an initial
-  implementation of AD replication is present, included in torture
-  test-cases.  This includes the decryption of the AD passwords, which
-  were specially and separately encrypted.  This should be recognised
-  as vital milestone.
+  MMC Support:  The Active Directory Users and Computers console now
+  works, supporting most operations.  
 
-  Likewise, the LDAP Backend project has moved from a research
-  implementation into something that can be easily deployed outside
-  the test infrastructure.  
+  Winbind:  Kai Blin has been working hard on his Google Summer of
+  Code project, creating a winbind implementation for Samba4.
 
-  Testing has been an area of great work, with renewed vigour to
-  increase our test coverage over the past few months.  In doing so,
-  we now demonstrate PKINIT and many other aspects of kerberos, as
-  well as command-line authentication handling in our testsuite.
+  Heimdal update:  A Heimdal 1.0 snapshot is now included as the
+  internal Kerberos library in Samba4.
 
-  The testsuite infrastructure has been rewritten in perl and
-  extended, to setup multiple environments: allowing testing of the
-  domain member, as well as the domain controller, roles.  Samba4's
-  initial implementation of winbind has been revived, to fill in these
-  tests.
-
-  In clustering, work on CTDB (an implementation of a clustered Samba)
-  has moved ahead very well, but the current code has not
-  been merged into Samba4 in time for this release.
-
-  To support better management, we have investigated group policy
-  support, and include the infrastructure required.  Unfortunately
-  without MMC write support, you will need to place the polices into
-  the directory by hand.  
-
-As we move forward, we have many of the features we feel are required
-for a Samba4 Alpha.  Similarly, we know enough about the data
-formats (particularly those that are encrypted) to be confident that
-we won't need to change the LDB format.  Our plan is to publish a
-Samba4 alpha in the next few months. 
+  In the past few weeks, many small but significant bugs have been
+  fixed, particularly thanks to Matthias Dieter Wallnöfer <mwallnoefer@yahoo.de>
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our SVN history.
