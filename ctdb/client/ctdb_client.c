@@ -301,6 +301,10 @@ struct ctdb_record_handle {
 */
 int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 {
+	if (state == NULL) {
+		return -1;
+	}
+
 	while (state->state < CTDB_CALL_DONE) {
 		event_loop_once(state->ctdb_db->ctdb->ev);
 	}
@@ -661,7 +665,7 @@ int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 }
 
 
-enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR};
+enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
 
 struct ctdb_client_control_state {
 	struct ctdb_context *ctdb;
@@ -711,15 +715,6 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 }
 
 
-/* time out handler for ctdb_control */
-static void timeout_func(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private_data)
-{
-	uint32_t *timed_out = (uint32_t *)private_data;
-
-	*timed_out = 1;
-}
-
 /*
   destroy a ctdb_control in client
 */
@@ -729,22 +724,29 @@ static int ctdb_control_destructor(struct ctdb_client_control_state *state)
 	return 0;
 }
 
-/*
-  send a ctdb control message
-  timeout specifies how long we should wait for a reply.
-  if timeout is NULL we wait indefinitely
- */
-int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
-		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
-		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
-		 struct timeval *timeout,
-		 char **errormsg)
+
+/* time out handler for ctdb_control */
+static void control_timeout_func(struct event_context *ev, struct timed_event *te, 
+	struct timeval t, void *private_data)
+{
+	struct ctdb_client_control_state *state = talloc_get_type(private_data, struct ctdb_client_control_state);
+
+	state->state = CTDB_CONTROL_TIMEOUT;
+}
+
+/* async version of send control request */
+struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb, 
+		uint32_t destnode, uint64_t srvid, 
+		uint32_t opcode, uint32_t flags, TDB_DATA data, 
+		TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
+		struct timeval *timeout,
+		char **errormsg)
+
 {
 	struct ctdb_client_control_state *state;
 	struct ctdb_req_control *c;
 	size_t len;
 	int ret;
-	uint32_t timed_out;
 
 	if (errormsg) {
 		*errormsg = NULL;
@@ -756,19 +758,19 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	}
 
 	state = talloc_zero(ctdb, struct ctdb_client_control_state);
-	CTDB_NO_MEMORY(ctdb, state);
+	CTDB_NO_MEMORY_NULL(ctdb, state);
 
-	state->ctdb  = ctdb;
-	state->reqid = ctdb_reqid_new(ctdb, state);
-	state->state = CTDB_CONTROL_WAIT;
-	state->errormsg = NULL;
+	state->ctdb    = ctdb;
+	state->reqid   = ctdb_reqid_new(ctdb, state);
+	state->state   = CTDB_CONTROL_WAIT;
+	state->errormsg= NULL;
 
 	talloc_set_destructor(state, ctdb_control_destructor);
 
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
 			       len, struct ctdb_req_control);
-	CTDB_NO_MEMORY(ctdb, c);
+	CTDB_NO_MEMORY_NULL(ctdb, c);
 	
 	c->hdr.reqid        = state->reqid;
 	c->hdr.destnode     = destnode;
@@ -785,52 +787,91 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	ret = ctdb_client_queue_pkt(ctdb, &(c->hdr));
 	if (ret != 0) {
 		talloc_free(state);
-		return -1;
+		return NULL;
 	}
 
 	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
 		talloc_free(state);
-		return 0;
+		return NULL;
 	}
 
-	/* semi-async operation */
-	timed_out = 0;
+	/* timeout */
 	if (timeout && !timeval_is_zero(timeout)) {
-		event_add_timed(ctdb->ev, state, *timeout, timeout_func, &timed_out);
+		event_add_timed(ctdb->ev, state, *timeout, control_timeout_func, state);
 	}
-	while ((state->state == CTDB_CONTROL_WAIT)
-	&&	(timed_out == 0) ){
-		event_loop_once(ctdb->ev);
-	}
-	if (timed_out) {
-		talloc_free(state);
-		if (errormsg) {
-			(*errormsg) = talloc_strdup(mem_ctx, "control timed out");
-		} else {
-			DEBUG(0,("ctdb_control timed out\n"));
-		}
+
+	return state;
+}
+
+
+/* async version of receive control reply */
+int ctdb_control_recv(struct ctdb_context *ctdb, 
+		struct ctdb_client_control_state *state, 
+		TALLOC_CTX *mem_ctx,
+		TDB_DATA *outdata, int32_t *status, char **errormsg)
+{
+	if (state == NULL) {
 		return -1;
 	}
+
+	/* loop one event at a time until we either timeout or the control
+	   completes.
+	*/
+	while (state->state == CTDB_CONTROL_WAIT) {
+		event_loop_once(ctdb->ev);
+	}
+	if (state->state != CTDB_CONTROL_DONE) {
+		DEBUG(0,(__location__ " ctdb_control_recv failed\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	if (state->errormsg) {
+		DEBUG(0,("ctdb_control error: '%s'\n", state->errormsg));
+		if (errormsg) {
+			(*errormsg) = talloc_move(mem_ctx, &state->errormsg);
+		}
+		talloc_free(state);
+		return -1;
+	}
+
 
 	if (outdata) {
 		*outdata = state->outdata;
 		outdata->dptr = talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
 	}
 
-	*status = state->status;
-
-	if (!errormsg && state->errormsg) {
-		DEBUG(0,("ctdb_control error: '%s'\n", state->errormsg));
+	if (status) {
+		*status = state->status;
 	}
 
-	if (errormsg && state->errormsg) {
-		(*errormsg) = talloc_move(mem_ctx, &state->errormsg);
-	}
 
 	talloc_free(state);
-
-	return 0;	
+	return 0;
 }
+
+
+
+/*
+  send a ctdb control message
+  timeout specifies how long we should wait for a reply.
+  if timeout is NULL we wait indefinitely
+ */
+int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
+		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
+		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
+		 struct timeval *timeout,
+		 char **errormsg)
+{
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_control_send(ctdb, destnode, srvid, opcode, 
+			flags, data, mem_ctx, outdata, status,
+			timeout, errormsg);
+	return ctdb_control_recv(ctdb, state, mem_ctx, outdata, status, 
+			errormsg);
+}
+
 
 
 
