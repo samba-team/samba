@@ -96,6 +96,19 @@ struct ctdb_call_info {
 #define CTDB_BROADCAST_CONNECTED 0xF0000004
 
 
+enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
+
+struct ctdb_control_cb_data {
+	enum control_state state;
+	uint32_t vnn;
+	int32_t status;
+	TDB_DATA outdata;
+	char *errormsg;
+};
+
+typedef int (*control_callback)(struct ctdb_control_cb_data *cb_data, void *cb_private);
+
+
 struct event_context;
 
 /*
@@ -325,7 +338,14 @@ int ctdb_ctrl_setmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 /*
   get the recovery master of a remote node
  */
-int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmaster);
+int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmaster);
+
+struct ctdb_client_control_state *ctdb_ctrl_getrecmaster_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, control_callback callback, void *cb_private);
+
+int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmaster);
+
+
+
 /*
   set the recovery master of a remote node
  */

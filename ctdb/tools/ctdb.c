@@ -299,7 +299,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 	printf("Recovery mode:%s (%d)\n",recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"RECOVERY",recmode);
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmaster);
 	if (ret != 0) {
 		DEBUG(0, ("Unable to get recmaster from node %u\n", options.vnn));
 		return ret;
@@ -544,7 +544,7 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	ban_time = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmaster);
 	if (ret != 0) {
 		DEBUG(0,("Failed to find the recmaster\n"));
 		return -1;
@@ -575,7 +575,7 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 	uint32_t recmaster;
 	TDB_DATA data;
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmaster);
 	if (ret != 0) {
 		DEBUG(0,("Failed to find the recmaster\n"));
 		return -1;

@@ -850,6 +850,19 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
 		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
 		 struct timeval *timeout, char **errormsg);
+int ctdb_control_recv(struct ctdb_context *ctdb, 
+		struct ctdb_client_control_state *state, 
+		TALLOC_CTX *mem_ctx,
+		TDB_DATA *outdata, int32_t *status, char **errormsg);
+
+struct ctdb_client_control_state *
+ctdb_control_send(struct ctdb_context *ctdb, 
+		uint32_t destnode, uint64_t srvid, 
+		uint32_t opcode, uint32_t flags, TDB_DATA data, 
+		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+		struct timeval *timeout,
+		char **errormsg,
+		control_callback callback, void *cb_private);
 
 
 
