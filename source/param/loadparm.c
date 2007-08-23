@@ -473,6 +473,7 @@ typedef struct {
 	int iAioReadSize;
 	int iAioWriteSize;
 	int iMap_readonly;
+	int iDirectoryNameCacheSize;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -614,7 +615,11 @@ static service sDefault = {
 	0,			/* iAioReadSize */
 	0,			/* iAioWriteSize */
 	MAP_READONLY_YES,	/* iMap_readonly */
-	
+#ifdef BROKEN_DIRECTORY_HANDLING
+	0,			/* iDirectoryNameCacheSize */
+#else
+	100,			/* iDirectoryNameCacheSize */
+#endif
 	NULL,			/* Parametric options */
 
 	""			/* dummy */
@@ -1036,6 +1041,7 @@ static struct parm_struct parm_table[] = {
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
 	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, FLAG_ADVANCED}, 
 	{"change notify", P_BOOL, P_LOCAL, &sDefault.bChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
+	{"directory name cache size", P_INTEGER, P_LOCAL, &sDefault.iDirectoryNameCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 	{"kernel change notify", P_BOOL, P_LOCAL, &sDefault.bKernelChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 
 	{"lpq cache time", P_INTEGER, P_GLOBAL, &Globals.lpqcachetime, NULL, NULL, FLAG_ADVANCED}, 
@@ -2183,6 +2189,7 @@ FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
+FN_LOCAL_INTEGER(lp_directory_name_cache_size, iDirectoryNameCacheSize)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
