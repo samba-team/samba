@@ -3,17 +3,22 @@
 				 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This parameter controls what UNIX permission bits 
-    can be set when a Windows NT client is manipulating the UNIX 
-    permission on a directory using the native NT security dialog 
+    <para>This parameter controls what UNIX permission bits
+    will be set when a Windows NT client is manipulating the UNIX
+    permission on a directory using the native NT security dialog
     box.</para>
 
     <para>
-	This parameter is applied as a mask (AND'ed with) to the incoming permission bits, thus preventing any bits not
-	in this mask from being set.  Make sure not to mix up this parameter with <smbconfoption name="force
+	This parameter is applied as a mask (AND'ed with) to the incoming permission bits, thus resetting
+        any bits not in this mask.  Make sure not to mix up this parameter with <smbconfoption name="force
 	directory security mode"/>, which works similar like this one but uses logical OR instead of AND.
 	Essentially, zero bits in this mask are a set of bits that will always be set to zero.
 	</para>
+
+    <para>
+	Essentially, all bits set to zero in this mask will result in setting to zero the corresponding bits on the
+	file permissions regardless of the previous status of this bits on the file.
+    </para>
 
     <para>If not set explicitly this parameter is set to 0777
     meaning a user is allowed to set all the user/group/world
