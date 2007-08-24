@@ -893,7 +893,7 @@ static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom, struct id_m
 	uidNumber = get_attr_key2string(idpool_attr_list, LDAP_ATTR_UIDNUMBER);
 	gidNumber = get_attr_key2string(idpool_attr_list, LDAP_ATTR_GIDNUMBER);
 
-	attr_list = get_attr_list(ctx, sidmap_attr_list);
+	attr_list = get_attr_list(memctx, sidmap_attr_list);
 
 	if ( ! ids[1]) {
 		/* if we are requested just one mapping use the simple filter */
@@ -1110,7 +1110,7 @@ static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom, struct id_m
 	uidNumber = get_attr_key2string(idpool_attr_list, LDAP_ATTR_UIDNUMBER);
 	gidNumber = get_attr_key2string(idpool_attr_list, LDAP_ATTR_GIDNUMBER);
 
-	attr_list = get_attr_list(ctx, sidmap_attr_list);
+	attr_list = get_attr_list(memctx, sidmap_attr_list);
 
 	if ( ! ids[1]) {
 		/* if we are requested just one mapping use the simple filter */
