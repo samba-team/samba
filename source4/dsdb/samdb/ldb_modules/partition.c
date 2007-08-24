@@ -722,11 +722,10 @@ static const char *relative_path(struct ldb_module *module,
 	}
 	if ( (p = strrchr(path, '/')) != NULL) {
 		p[0] = '\0';
+		full_name = talloc_asprintf(mem_ctx, "%s/%s", path, name);
 	} else {
-		talloc_free(path);
-		return NULL;
+		full_name = talloc_asprintf(mem_ctx, "./%s", name);
 	}
-	full_name = talloc_asprintf(mem_ctx, "%s/%s", path, name);
 	talloc_free(path);
 	return full_name;
 }
