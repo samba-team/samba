@@ -674,19 +674,16 @@ static void invoke_control_callback(struct event_context *ev, struct timed_event
 	struct timeval t, void *private_data)
 {
 	struct ctdb_client_control_state *state;
-	struct ctdb_context *ctdb;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	int ret;
 
 	state = talloc_get_type(private_data, struct ctdb_client_control_state);
 	talloc_steal(tmp_ctx, state);
 
-	ctdb       = state->ctdb;
-
-	ret = ctdb_control_recv(ctdb, state, state,
-			&state->outdata, 
-			&state->status, 
-			&state->errormsg);
+	ret = ctdb_control_recv(state->ctdb, state, state,
+			NULL, 
+			NULL, 
+			NULL);
 
 	talloc_free(tmp_ctx);
 }
