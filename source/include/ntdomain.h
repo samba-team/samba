@@ -264,7 +264,7 @@ typedef struct pipes_struct {
 	 */
 
 	BOOL bad_handle_fault_state;
-	
+
 	/*
 	 * Set to true when the backend does not support a call.
 	 */

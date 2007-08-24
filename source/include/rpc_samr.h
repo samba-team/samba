@@ -288,7 +288,6 @@ typedef struct sam_user_info_25
 	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 	LOGON_HRS logon_hrs;
-
 } SAM_USER_INFO_25;
 
 /* SAM_USER_INFO_26 */

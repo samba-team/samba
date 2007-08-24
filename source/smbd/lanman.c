@@ -4363,8 +4363,8 @@ static const struct {
 
 
 /****************************************************************************
- Handle remote api calls
- ****************************************************************************/
+ Handle remote api calls.
+****************************************************************************/
 
 int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)

@@ -1644,10 +1644,10 @@ static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *
 	}
 
 	DEBUG(5,("Bind Abstract Syntax: "));	
-	dump_data(5, (uint8*)&pipe_names[pipe_idx].abstr_syntax, 
+	dump_data(5, (uint8 *)&pipe_names[pipe_idx].abstr_syntax, 
 	          sizeof(pipe_names[pipe_idx].abstr_syntax));
 	DEBUG(5,("Bind Transfer Syntax: "));
-	dump_data(5, (uint8*)&pipe_names[pipe_idx].trans_syntax,
+	dump_data(5, (uint8 *)&pipe_names[pipe_idx].trans_syntax,
 	          sizeof(pipe_names[pipe_idx].trans_syntax));
 
 	/* copy the required syntaxes out so we can do the right bind */

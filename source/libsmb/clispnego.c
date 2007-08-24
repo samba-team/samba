@@ -541,7 +541,7 @@ BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 	asn1_check_enumerated(&data, negResult);
 	asn1_end_tag(&data);
 
-	*auth = data_blob(NULL,0);
+	*auth = data_blob_null;
 
 	if (asn1_tag_remaining(&data)) {
 		asn1_start_tag(&data,ASN1_CONTEXT(1));

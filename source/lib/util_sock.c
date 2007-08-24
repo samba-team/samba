@@ -744,12 +744,13 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 	/* Check the incoming SMB signature. */
 	if (!srv_check_sign_mac(buffer, True)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
-		if (smb_read_error == 0)
+		if (smb_read_error == 0) {
 			smb_read_error = READ_BAD_SIG;
+		}
 		return False;
-	};
+	}
 
-	return(True);
+	return True;
 }
 
 /****************************************************************************

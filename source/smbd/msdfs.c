@@ -987,7 +987,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
       
 	if (DEBUGLVL(10)) {
 		DEBUGADD(0,("DFS Referral pdata:\n"));
-		dump_data(0,(uint8*)*ppdata,reply_size);
+		dump_data(0,(uint8 *)*ppdata,reply_size);
 	}
 
 	talloc_destroy(ctx);

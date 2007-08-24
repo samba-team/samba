@@ -815,8 +815,9 @@ BOOL srv_oplock_set_signing(BOOL onoff)
 BOOL srv_check_sign_mac(const char *inbuf, BOOL must_be_ok)
 {
 	/* Check if it's a session keepalive. */
-	if(CVAL(inbuf,0) == SMBkeepalive)
+	if(CVAL(inbuf,0) == SMBkeepalive) {
 		return True;
+	}
 
 	return srv_sign_info.check_incoming_message(inbuf, &srv_sign_info, must_be_ok);
 }
@@ -828,9 +829,9 @@ BOOL srv_check_sign_mac(const char *inbuf, BOOL must_be_ok)
 void srv_calculate_sign_mac(char *outbuf)
 {
 	/* Check if it's a session keepalive. */
-	/* JRA Paranioa test - do we ever generate these in the server ? */
-	if(CVAL(outbuf,0) == SMBkeepalive)
+	if(CVAL(outbuf,0) == SMBkeepalive) {
 		return;
+	}
 
 	srv_sign_info.sign_outgoing_message(outbuf, &srv_sign_info);
 }

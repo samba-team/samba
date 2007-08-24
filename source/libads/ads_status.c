@@ -140,7 +140,5 @@ const char *ads_errstr(ADS_STATUS status)
 	default:
 		return "Unknown ADS error type!? (not compiled in?)";
 	}
-
 }
-
 

@@ -34,8 +34,7 @@
  * These definitions depend on smb.h
  */
 
-struct print_job_info
-{
+struct print_job_info {
 	uint16 id;
 	uint16 priority;
 	size_t size;
