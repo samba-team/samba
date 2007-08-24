@@ -19,7 +19,7 @@
 */
 
 /* UserFlags for userAccountControl */
-#define UF_SCRIPT	 			0x00000001
+#define UF_SCRIPT	 			0x00000001  /* NT or Lan Manager Login script must be executed */
 #define UF_ACCOUNTDISABLE			0x00000002
 #define UF_00000004	 			0x00000004
 #define UF_HOMEDIR_REQUIRED			0x00000008
@@ -29,7 +29,7 @@
 #define UF_PASSWD_CANT_CHANGE 			0x00000040
 #define UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED	0x00000080
 
-#define UF_TEMP_DUPLICATE_ACCOUNT       	0x00000100
+#define UF_TEMP_DUPLICATE_ACCOUNT       	0x00000100 /* Local user account in usrmgr */
 #define UF_NORMAL_ACCOUNT               	0x00000200
 #define UF_00000400	 			0x00000400
 #define UF_INTERDOMAIN_TRUST_ACCOUNT    	0x00000800
