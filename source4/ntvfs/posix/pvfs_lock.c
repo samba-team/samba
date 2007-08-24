@@ -155,6 +155,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 		if (timed_out) {
 			/* no more chances */
 			pvfs_lock_async_failed(pvfs, req, f, locks, pending->pending_lock, status);
+			talloc_free(pending);
 		} else {
 			/* we can try again */
 			DLIST_ADD(f->pending_list, pending);
@@ -192,6 +193,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 									 pending);
 				if (pending->wait_handle == NULL) {
 					pvfs_lock_async_failed(pvfs, req, f, locks, i, NT_STATUS_NO_MEMORY);
+					talloc_free(pending);
 				} else {
 					talloc_steal(pending, pending->wait_handle);
 					DLIST_ADD(f->pending_list, pending);
@@ -199,6 +201,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 				return;
 			}
 			pvfs_lock_async_failed(pvfs, req, f, locks, i, status);
+			talloc_free(pending);
 			return;
 		}
 
@@ -208,6 +211,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	/* we've managed to get all the locks. Tell the client */
 	req->async_states->status = NT_STATUS_OK;
 	req->async_states->send_fn(req);
+	talloc_free(pending);
 }
 
 
@@ -323,17 +327,20 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (lck->lockx.in.mode & LOCKING_ANDX_CANCEL_LOCK) {
+		talloc_free(pending);
 		return pvfs_lock_cancel(pvfs, req, lck, f);
 	}
 
 	if (lck->lockx.in.mode & LOCKING_ANDX_CHANGE_LOCKTYPE) {
 		/* this seems to not be supported by any windows server,
 		   or used by any clients */
+		talloc_free(pending);
 		return NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks);
 	}
 
 	if (lck->lockx.in.mode & LOCKING_ANDX_OPLOCK_RELEASE) {
 		DEBUG(0,("received unexpected oplock break\n"));
+		talloc_free(pending);
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -348,6 +355,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 				    locks[i].offset,
 				    locks[i].count);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(pending);
 			return status;
 		}
 		f->lock_count--;
@@ -375,6 +383,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 									 pvfs_pending_lock_continue,
 									 pending);
 				if (pending->wait_handle == NULL) {
+					talloc_free(pending);
 					return NT_STATUS_NO_MEMORY;
 				}
 				talloc_steal(pending, pending->wait_handle);
@@ -394,10 +403,12 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 					   locks[i].count);
 				f->lock_count--;
 			}
+			talloc_free(pending);
 			return status;
 		}
 		f->lock_count++;
 	}
 
+	talloc_free(pending);
 	return NT_STATUS_OK;
 }
