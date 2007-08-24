@@ -135,9 +135,12 @@ static BOOL brl_tdb_same_context(struct lock_context *ctx1, struct lock_context 
 
 /*
   see if lck1 and lck2 overlap
+
+  lck1 is the existing lock. lck2 is the new lock we are 
+  looking at adding
 */
 static BOOL brl_tdb_overlap(struct lock_struct *lck1, 
-			struct lock_struct *lck2)
+			    struct lock_struct *lck2)
 {
 	/* this extra check is not redundent - it copes with locks
 	   that go beyond the end of 64 bit file space */
@@ -151,6 +154,15 @@ static BOOL brl_tdb_overlap(struct lock_struct *lck1,
 	    lck2->start >= (lck1->start+lck1->size)) {
 		return False;
 	}
+
+	/* we have a conflict. Now check to see if lck1 really still
+	 * exists, which involves checking if the process still
+	 * exists. We leave this test to last as its the most
+	 * expensive test, especially when we are clustered */
+	/* TODO: need to do this via a server_id_exists() call, which
+	 * hasn't been written yet. When clustered this will need to
+	 * call into ctdb */
+
 	return True;
 } 
 
@@ -283,14 +295,6 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 	NTSTATUS status;
 	struct db_record *rec = NULL;
 
-	kbuf.dptr = brlh->key.data;
-	kbuf.dsize = brlh->key.length;
-
-	rec = brl->db->fetch_locked(brl->db, brl, kbuf);
-	if (rec == NULL) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	/* if this is a pending lock, then with the chainlock held we
 	   try to get the real lock. If we succeed then we don't need
 	   to make it pending. This prevents a possible race condition
@@ -305,10 +309,18 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 		brlh->last_lock = lock;
 
 		if (NT_STATUS_IS_OK(status)) {
-			talloc_free(rec);
 			return NT_STATUS_OK;
 		}
 	}
+
+	kbuf.dptr = brlh->key.data;
+	kbuf.dsize = brlh->key.length;
+
+	rec = brl->db->fetch_locked(brl->db, brl, kbuf);
+	if (rec == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 
 	dbuf = rec->value;
 
