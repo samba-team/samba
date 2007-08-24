@@ -29,5 +29,10 @@
  */
 struct db_context *db_tmp_open(TALLOC_CTX *mem_ctx, const char *name, int tdb_flags)
 {
+	if (lp_parm_bool(-1, "ctdb", "enable", False) &&
+	    lp_parm_bool(-1, "ctdb", name, True)) {
+		    return db_tmp_open_ctdb(mem_ctx, name, tdb_flags);
+	}
+
 	return db_tmp_open_tdb(mem_ctx, name, tdb_flags);
 }
