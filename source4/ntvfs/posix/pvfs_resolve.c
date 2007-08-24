@@ -480,8 +480,40 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	/* if it has a wildcard then no point doing a stat() */
+	/* if it has a wildcard then no point doing a stat() of the
+	   full name. Instead We need check if the directory exists 
+	 */
 	if ((*name)->has_wildcard) {
+		const char *p;
+		char *dir_name, *saved_name;
+		p = strrchr((*name)->full_name, '/');
+		if (p == NULL) {
+			/* root directory wildcard is OK */
+			return NT_STATUS_OK;
+		}
+		dir_name = talloc_strndup(*name, (*name)->full_name, (p-(*name)->full_name));
+		if (stat(dir_name, &(*name)->st) == 0) {
+			talloc_free(dir_name);
+			return NT_STATUS_OK;
+		}
+		/* we need to search for a matching name */
+		saved_name = (*name)->full_name;
+		(*name)->full_name = dir_name;
+		status = pvfs_case_search(pvfs, *name);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* the directory doesn't exist */
+			(*name)->full_name = saved_name;
+			return status;
+		}
+		/* it does exist, but might need a case change */
+		if (dir_name != (*name)->full_name) {
+			(*name)->full_name = talloc_asprintf(*name, "%s%s",
+							     (*name)->full_name, p);
+			NT_STATUS_HAVE_NO_MEMORY((*name)->full_name);
+		} else {
+			(*name)->full_name = saved_name;
+			talloc_free(dir_name);
+		}
 		return NT_STATUS_OK;
 	}
 
