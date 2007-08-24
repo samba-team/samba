@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    kerberos locator plugin
    Copyright (C) Guenther Deschner 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -92,7 +92,7 @@ static const char *family_name(int family)
 /**
  * Check input parameters, return KRB5_PLUGIN_NO_HANDLE for unsupported ones
  *
- * @param svc 
+ * @param svc
  * @param realm string
  * @param socktype integer
  * @param family integer
@@ -163,7 +163,7 @@ static int smb_krb5_locator_lookup_sanity_check(enum locate_service_type svc,
  * @return krb5_error_code.
  */
 
-static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name, 
+static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 						    const char *service,
 						    struct addrinfo *in,
 						    int (*cbfunc)(void *, int, struct sockaddr *),
@@ -185,7 +185,7 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 			continue;
 		}
 
-		DEBUG(10,("smb_krb5_locator_lookup: got ret: %s (%d)\n", 
+		DEBUG(10,("smb_krb5_locator_lookup: got ret: %s (%d)\n",
 			gai_strerror(ret), ret));
 #ifdef KRB5_PLUGIN_NO_HANDLE
 		return KRB5_PLUGIN_NO_HANDLE;
@@ -196,7 +196,8 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 
 	ret = cbfunc(cbdata, out->ai_socktype, out->ai_addr);
 	if (ret) {
-		DEBUG(10,("smb_krb5_locator_lookup: failed to call callback: %s (%d)\n", 
+		DEBUG(10,("smb_krb5_locator_lookup: "
+			"failed to call callback: %s (%d)\n",
 			error_message(ret), ret));
 	}
 
@@ -214,7 +215,7 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
  * @return krb5_error_code.
  */
 
-krb5_error_code smb_krb5_locator_init(krb5_context context, 
+krb5_error_code smb_krb5_locator_init(krb5_context context,
 				      void **private_data)
 {
 	setup_logging("smb_krb5_locator", True);
@@ -270,18 +271,20 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 	int count = 0;
 	struct addrinfo aihints;
 	char *saf_name = NULL;
+	const char *service = get_service_from_locate_service_type(svc);
 	int i;
 
 	DEBUG(10,("smb_krb5_locator_lookup: called for\n"));
-	DEBUGADD(10,("\tsvc: %s (%d), realm: %s\n", 
+	DEBUGADD(10,("\tsvc: %s (%d), realm: %s\n",
 		locate_service_type_name(svc), svc, realm));
-	DEBUGADD(10,("\tsocktype: %s (%d), family: %s (%d)\n", 
+	DEBUGADD(10,("\tsocktype: %s (%d), family: %s (%d)\n",
 		socktype_name(socktype), socktype,
 	        family_name(family), family));
 
-	ret = smb_krb5_locator_lookup_sanity_check(svc, realm, socktype, family);
+	ret = smb_krb5_locator_lookup_sanity_check(svc, realm, socktype,
+						   family);
 	if (ret) {
-		DEBUG(10,("smb_krb5_locator_lookup: returning ret: %s (%d)\n", 
+		DEBUG(10,("smb_krb5_locator_lookup: returning ret: %s (%d)\n",
 			error_message(ret), ret));
 		return ret;
 	}
@@ -290,22 +293,23 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 
 	saf_name = saf_fetch(realm);
 	if (!saf_name || strlen(saf_name) == 0) {
-		DEBUG(10,("smb_krb5_locator_lookup: no SAF name stored for %s\n", 
+		DEBUG(10,("smb_krb5_locator_lookup: "
+			"no SAF name stored for %s\n",
 			realm));
 		goto find_kdc;
 	}
 
-	DEBUG(10,("smb_krb5_locator_lookup: got %s for %s from SAF cache\n", 
+	DEBUG(10,("smb_krb5_locator_lookup: got %s for %s from SAF cache\n",
 		saf_name, realm));
 
 	ZERO_STRUCT(aihints);
-	
+
 	aihints.ai_family = family;
 	aihints.ai_socktype = socktype;
 
-	ret = smb_krb5_locator_call_cbfunc(saf_name, 
-					  get_service_from_locate_service_type(svc), 
-					  &aihints, 
+	ret = smb_krb5_locator_call_cbfunc(saf_name,
+					  service,
+					  &aihints,
 					  cbfunc, cbdata);
 	if (ret) {
 		return ret;
@@ -332,7 +336,7 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("smb_krb5_locator_lookup: got %s (%s)\n",
-			nt_errstr(status), 
+			nt_errstr(status),
 			error_message(nt_status_to_krb5(status))));
 #ifdef KRB5_PLUGIN_NO_HANDLE
 		return KRB5_PLUGIN_NO_HANDLE;
@@ -356,7 +360,7 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 
 		ret = smb_krb5_locator_call_cbfunc(host,
 						  port,
-						  &aihints, 
+						  &aihints,
 						  cbfunc, cbdata);
 		if (ret) {
 			/* got error */
