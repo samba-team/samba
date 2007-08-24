@@ -34,8 +34,8 @@ static struct tdb_context *tdbs = NULL;
 /* This is based on the hash algorithm from gdbm */
 static unsigned int default_tdb_hash(TDB_DATA *key)
 {
-	u32 value;	/* Used to compute the hash value.  */
-	u32   i;	/* Used to cycle through random values. */
+	uint32_t value;	/* Used to compute the hash value.  */
+	uint32_t i;	/* Used to cycle through random values. */
 
 	/* Set the initial value from the key size. */
 	for (value = 0x238F13AF * key->dsize, i=0; i < key->dsize; i++)
@@ -151,7 +151,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	struct stat st;
 	int rev = 0, locked = 0;
 	unsigned char *vp;
-	u32 vertest;
+	uint32_t vertest;
 
 	if (!(tdb = (struct tdb_context *)calloc(1, sizeof *tdb))) {
 		/* Can't log this */
@@ -249,8 +249,8 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		rev = (tdb->flags & TDB_CONVERT);
 	}
 	vp = (unsigned char *)&tdb->header.version;
-	vertest = (((u32)vp[0]) << 24) | (((u32)vp[1]) << 16) |
-		  (((u32)vp[2]) << 8) | (u32)vp[3];
+	vertest = (((uint32_t)vp[0]) << 24) | (((uint32_t)vp[1]) << 16) |
+		  (((uint32_t)vp[2]) << 8) | (uint32_t)vp[3];
 	tdb->flags |= (vertest==TDB_VERSION) ? TDB_BIGENDIAN : 0;
 	if (!rev)
 		tdb->flags &= ~TDB_CONVERT;
