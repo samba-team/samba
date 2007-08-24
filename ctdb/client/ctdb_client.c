@@ -665,22 +665,6 @@ int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 }
 
 
-struct ctdb_client_control_state {
-	struct ctdb_context *ctdb;
-	uint32_t reqid;
-	int32_t status;
-	TDB_DATA outdata;
-	enum control_state state;
-	char *errormsg;
-	struct ctdb_req_control *c;
-
-	/* if we have a callback registered for the completion (or failure) of
-	   this control
-	   if a callback is used, it MUST talloc_free the cb_data passed to it
-	*/
-	control_callback callback;
-	void *cb_private;
-};
 
 /*
    called when a control completes or timesout to invoke the callback
@@ -690,10 +674,7 @@ static void invoke_control_callback(struct event_context *ev, struct timed_event
 	struct timeval t, void *private_data)
 {
 	struct ctdb_client_control_state *state;
-	struct ctdb_control_cb_data *cb_data;
 	struct ctdb_context *ctdb;
-	control_callback callback;
-	void *cb_private;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	int ret;
 
@@ -701,29 +682,12 @@ static void invoke_control_callback(struct event_context *ev, struct timed_event
 	talloc_steal(tmp_ctx, state);
 
 	ctdb       = state->ctdb;
-	callback   = state->callback;
-	cb_private = state->cb_private;
 
-	cb_data = talloc_zero(tmp_ctx, struct ctdb_control_cb_data);
-	if (cb_data == NULL) {
-		talloc_free(tmp_ctx);
-		CTDB_NO_MEMORY_VOID(ctdb, cb_data);
-	}
+	ret = ctdb_control_recv(ctdb, state, state,
+			&state->outdata, 
+			&state->status, 
+			&state->errormsg);
 
-	cb_data->state = state->state;
-	cb_data->vnn   = state->c->hdr.destnode;
-
-	ret = ctdb_control_recv(ctdb, state, cb_data,
-			&cb_data->outdata, 
-			&cb_data->status, 
-			&cb_data->errormsg);
-	/* we dont check ret since we expect that ctdb_control_recv can fail
-	   for example if the control timedout
-
-	   state is always talloc_free()'d inside ctdb_control_recv
-	*/
-
-	callback(cb_data, cb_private);
 	talloc_free(tmp_ctx);
 }
 
@@ -770,7 +734,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 	/* if we had a callback registered for this control, pull the response
 	   and call the callback.
 	*/
-	if (state->callback) {
+	if (state->async.fn) {
 		event_add_timed(ctdb->ev, state, timeval_zero(), invoke_control_callback, state);
 	}
 }
@@ -799,7 +763,7 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 	/* if we had a callback registered for this control, pull the response
 	   and call the callback.
 	*/
-	if (state->callback) {
+	if (state->async.fn) {
 		event_add_timed(state->ctdb->ev, state, timeval_zero(), invoke_control_callback, state);
 	}
 }
@@ -810,8 +774,7 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 		uint32_t opcode, uint32_t flags, TDB_DATA data, 
 		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 		struct timeval *timeout,
-		char **errormsg,
-		control_callback callback, void *cb_private)
+		char **errormsg)
 {
 	struct ctdb_client_control_state *state;
 	size_t len;
@@ -834,8 +797,6 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 	state->reqid      = ctdb_reqid_new(ctdb, state);
 	state->state      = CTDB_CONTROL_WAIT;
 	state->errormsg   = NULL;
-	state->callback   = callback;
-	state->cb_private = cb_private;
 
 	talloc_set_destructor(state, ctdb_control_destructor);
 
@@ -892,8 +853,12 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 	while (state->state == CTDB_CONTROL_WAIT) {
 		event_loop_once(ctdb->ev);
 	}
+
 	if (state->state != CTDB_CONTROL_DONE) {
 		DEBUG(0,(__location__ " ctdb_control_recv failed\n"));
+		if (state->async.fn) {
+			state->async.fn(state);
+		}
 		talloc_free(state);
 		return -1;
 	}
@@ -903,10 +868,12 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 		if (errormsg) {
 			(*errormsg) = talloc_move(mem_ctx, &state->errormsg);
 		}
+		if (state->async.fn) {
+			state->async.fn(state);
+		}
 		talloc_free(state);
 		return -1;
 	}
-
 
 	if (outdata) {
 		*outdata = state->outdata;
@@ -918,6 +885,10 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 	}
 
 
+
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
 	talloc_free(state);
 	return 0;
 }
@@ -939,8 +910,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 
 	state = ctdb_control_send(ctdb, destnode, srvid, opcode, 
 			flags, data, mem_ctx, outdata,
-			timeout, errormsg,
-			NULL, NULL);
+			timeout, errormsg);
 	return ctdb_control_recv(ctdb, state, mem_ctx, outdata, status, 
 			errormsg);
 }
@@ -1066,8 +1036,7 @@ ctdb_ctrl_getrecmode_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct
 {
 	return ctdb_control_send(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_RECMODE, 0, tdb_null, 
-			   mem_ctx, NULL, &timeout, NULL,
-			   NULL, NULL);
+			   mem_ctx, NULL, &timeout, NULL);
 }
 
 int ctdb_ctrl_getrecmode_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmode)
@@ -1129,13 +1098,11 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
  */
 struct ctdb_client_control_state *
 ctdb_ctrl_getrecmaster_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
-			struct timeval timeout, uint32_t destnode,
-			control_callback callback, void *cb_private)
+			struct timeval timeout, uint32_t destnode)
 {
 	return ctdb_control_send(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_RECMASTER, 0, tdb_null, 
-			   mem_ctx, NULL, &timeout, NULL,
-			   callback, cb_private);
+			   mem_ctx, NULL, &timeout, NULL);
 }
 
 int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmaster)
@@ -1160,7 +1127,7 @@ int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struc
 {
 	struct ctdb_client_control_state *state;
 
-	state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, timeout, destnode, NULL, NULL);
+	state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, timeout, destnode);
 	return ctdb_ctrl_getrecmaster_recv(ctdb, mem_ctx, state, recmaster);
 }
 

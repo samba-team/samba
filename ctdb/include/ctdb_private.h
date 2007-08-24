@@ -861,8 +861,7 @@ ctdb_control_send(struct ctdb_context *ctdb,
 		uint32_t opcode, uint32_t flags, TDB_DATA data, 
 		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 		struct timeval *timeout,
-		char **errormsg,
-		control_callback callback, void *cb_private);
+		char **errormsg);
 
 
 

@@ -1209,9 +1209,9 @@ struct verify_recmaster_data {
 	enum monitor_result status;
 };
 
-static int verify_recmaster_callback(struct ctdb_control_cb_data *cb_data, void *cb_private)
+static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 {
-	struct verify_recmaster_data *rmdata = talloc_get_type(cb_private, struct verify_recmaster_data);
+	struct verify_recmaster_data *rmdata = talloc_get_type(state->async.private, struct verify_recmaster_data);
 
 
 	/* one more node has responded with recmaster data*/
@@ -1220,22 +1220,22 @@ static int verify_recmaster_callback(struct ctdb_control_cb_data *cb_data, void 
 	/* if we failed to get the recmaster, then return an error and let
 	   the main loop try again.
 	*/
-	if (cb_data->state != CTDB_CONTROL_DONE) {
+	if (state->state != CTDB_CONTROL_DONE) {
 		if (rmdata->status == MONITOR_OK) {
 			rmdata->status = MONITOR_FAILED;
 		}
-		return 0;
+		return;
 	}
 
 	/* if we got a response, then the recmaster will be stored in the
 	   status field
 	*/
-	if (cb_data->status != rmdata->vnn) {
-		DEBUG(0,("Node %d does not agree we are the recmaster. Need a new recmaster election\n",cb_data->vnn));
+	if (state->status != rmdata->vnn) {
+		DEBUG(0,("Node %d does not agree we are the recmaster. Need a new recmaster election\n", state->c->hdr.destnode));
 		rmdata->status = MONITOR_ELECTION_NEEDED;
 	}
 
-	return 0;
+	return;
 }
 
 
@@ -1262,8 +1262,7 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 		}
 		state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, 
 					CONTROL_TIMEOUT(),
-					nodemap->nodes[j].vnn,
-					verify_recmaster_callback, rmdata);
+					nodemap->nodes[j].vnn);
 		if (state == NULL) {
 			/* we failed to send the control, treat this as 
 			   an error and try again next iteration
@@ -1272,6 +1271,10 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 			talloc_free(mem_ctx);
 			return MONITOR_FAILED;
 		}
+
+		/* set up the callback functions */
+		state->async.fn = verify_recmaster_callback;
+		state->async.private = rmdata;
 
 		/* one more control to wait for to complete */
 		rmdata->count++;

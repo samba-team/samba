@@ -98,15 +98,24 @@ struct ctdb_call_info {
 
 enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
 
-struct ctdb_control_cb_data {
-	enum control_state state;
-	uint32_t vnn;
+struct ctdb_client_control_state {
+	struct ctdb_context *ctdb;
+	uint32_t reqid;
 	int32_t status;
 	TDB_DATA outdata;
+	enum control_state state;
 	char *errormsg;
-};
+	struct ctdb_req_control *c;
 
-typedef int (*control_callback)(struct ctdb_control_cb_data *cb_data, void *cb_private);
+	/* if we have a callback registered for the completion (or failure) of
+	   this control
+	   if a callback is used, it MUST talloc_free the cb_data passed to it
+	*/
+	struct {
+		void (*fn)(struct ctdb_client_control_state *);
+		void *private;
+	} async;	
+};
 
 
 struct event_context;
@@ -340,7 +349,7 @@ int ctdb_ctrl_setmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
  */
 int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmaster);
 
-struct ctdb_client_control_state *ctdb_ctrl_getrecmaster_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, control_callback callback, void *cb_private);
+struct ctdb_client_control_state *ctdb_ctrl_getrecmaster_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmaster);
 
