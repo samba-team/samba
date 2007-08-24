@@ -637,6 +637,30 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 	return ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
 }
 
+/*
+  non-locking fetch of a record
+ */
+int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+	       TDB_DATA key, TDB_DATA *data)
+{
+	struct ctdb_call call;
+	int ret;
+
+	call.call_id = CTDB_FETCH_FUNC;
+	call.call_data.dptr = NULL;
+	call.call_data.dsize = 0;
+
+	ret = ctdb_call(ctdb_db, &call);
+
+	if (ret == 0) {
+		*data = call.reply_data;
+		talloc_steal(mem_ctx, data->dptr);
+	}
+
+	return ret;
+}
+
+
 struct ctdb_client_control_state {
 	struct ctdb_context *ctdb;
 	uint32_t reqid;
