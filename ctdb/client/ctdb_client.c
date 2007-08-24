@@ -2300,6 +2300,93 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 }
 
 /*
+  register a server id
+ */
+int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      struct ctdb_server_id *id)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_server_id);
+	data.dptr  = (unsigned char *)id;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
+			CTDB_CONTROL_REGISTER_SERVER_ID, 
+			0, data, NULL,
+			NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for register server id failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  unregister a server id
+ */
+int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      struct ctdb_server_id *id)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_server_id);
+	data.dptr  = (unsigned char *)id;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
+			CTDB_CONTROL_UNREGISTER_SERVER_ID, 
+			0, data, NULL,
+			NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for unregister server id failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*
+  check if a server id exists
+ */
+int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_server_id *id,
+		      uint32_t *status)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_server_id);
+	data.dptr  = (unsigned char *)id;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_CHECK_SERVER_ID, 
+			0, data, NULL,
+			NULL, &res, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for check server id failed\n"));
+		return -1;
+	}
+
+	if (res) {
+		*status = 1;
+	} else {
+		*status = 0;
+	}
+
+	return 0;
+}
+
+
+/*
   initialise the ctdb daemon for client applications
 
   NOTE: In current code the daemon does not fork. This is for testing purposes only

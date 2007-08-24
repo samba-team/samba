@@ -405,6 +405,23 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 		       uint32_t destnode, 
 		       uint32_t set, uint32_t clear);
 
+enum ctdb_server_id_type { SERVER_TYPE_SAMBA=1 };
+
+struct ctdb_server_id {
+	enum ctdb_server_id_type type;
+	uint32_t vnn;
+	uint32_t server_id;
+};
+int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
+		struct timeval timeout,
+		struct ctdb_server_id *id);
+int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb, 
+		struct timeval timeout, 
+		struct ctdb_server_id *id);
+int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
+		struct timeval timeout, uint32_t destnode, 
+		struct ctdb_server_id *id, uint32_t *status);
+
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 
 #endif

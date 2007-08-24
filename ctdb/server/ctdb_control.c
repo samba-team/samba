@@ -26,6 +26,7 @@
 #include "lib/util/dlinklist.h"
 #include "db_wrap.h"
 
+
 struct ctdb_control_state {
 	struct ctdb_context *ctdb;
 	uint32_t reqid;
@@ -33,6 +34,7 @@ struct ctdb_control_state {
 	void *private_data;
 	unsigned flags;
 };
+
 
 /*
   process a control request
@@ -293,6 +295,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
 		/* data size is verified in the called function */
 		return ctdb_control_set_tcp_tickle_list(ctdb, indata);
+
+	case CTDB_CONTROL_REGISTER_SERVER_ID: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_server_id));
+		return ctdb_control_register_server_id(ctdb, client_id, indata);
+
+	case CTDB_CONTROL_UNREGISTER_SERVER_ID: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_server_id));
+		return ctdb_control_unregister_server_id(ctdb, indata);
+
+	case CTDB_CONTROL_CHECK_SERVER_ID: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_server_id));
+		return ctdb_control_check_server_id(ctdb, indata);
 
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));

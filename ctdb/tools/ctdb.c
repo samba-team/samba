@@ -373,6 +373,86 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	return -1;
 }
 
+
+/*
+  register a server id
+ */
+static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct ctdb_server_id server_id;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.type      = strtoul(argv[1], NULL, 0);
+	server_id.server_id = strtoul(argv[2], NULL, 0);
+
+	ret = ctdb_ctrl_register_server_id(ctdb, TIMELIMIT(), &server_id);
+	if (ret != 0) {
+		DEBUG(0, ("Unable to register server_id from node %u\n", options.vnn));
+		return ret;
+	}
+	return -1;
+}
+
+/*
+  unregister a server id
+ */
+static int unregsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct ctdb_server_id server_id;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.type      = strtoul(argv[1], NULL, 0);
+	server_id.server_id = strtoul(argv[2], NULL, 0);
+
+	ret = ctdb_ctrl_unregister_server_id(ctdb, TIMELIMIT(), &server_id);
+	if (ret != 0) {
+		DEBUG(0, ("Unable to unregister server_id from node %u\n", options.vnn));
+		return ret;
+	}
+	return -1;
+}
+
+/*
+  check if a server id exists
+ */
+static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t status;
+	int ret;
+	struct ctdb_server_id server_id;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.type      = strtoul(argv[1], NULL, 0);
+	server_id.server_id = strtoul(argv[2], NULL, 0);
+
+	ret = ctdb_ctrl_check_server_id(ctdb, TIMELIMIT(), options.vnn, &server_id, &status);
+	if (ret != 0) {
+		DEBUG(0, ("Unable to check server_id from node %u\n", options.vnn));
+		return ret;
+	}
+
+	if (status) {
+		printf("Server id %d:%d:%d EXISTS\n", server_id.vnn, server_id.type, server_id.server_id);
+	} else {
+		printf("Server id %d:%d:%d does NOT exist\n", server_id.vnn, server_id.type, server_id.server_id);
+	}
+	return 0;
+}
+
 /*
   send a tcp tickle ack
  */
@@ -964,6 +1044,10 @@ static const struct {
 	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this vnn", "<vnn>" },
+
+	{ "regsrvid",        regsrvid,			false, "register a server id", "<vnn> <type> <id>" },
+	{ "unregsrvid",      unregsrvid,		false, "unregister a server id", "<vnn> <type> <id>" },
+	{ "chksrvid",        chksrvid,			false, "check if a server id exists", "<vnn> <type> <id>" },
 };
 
 /*

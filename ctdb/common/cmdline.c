@@ -23,6 +23,7 @@
 #include "popt.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
 
 /* Handle common command line options for ctdb test progs
  */
@@ -86,6 +87,9 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
+
+	/* set up the tree to store server ids */
+	ctdb->server_ids = trbt_create(ctdb, 0);
 
 	return ctdb;
 }
