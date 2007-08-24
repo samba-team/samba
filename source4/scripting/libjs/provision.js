@@ -386,6 +386,7 @@ function provision_default_paths(subobj)
 	paths.secrets = lp.get("secrets database");
 	paths.keytab = "secrets.keytab";
 	paths.dns = lp.get("private dir") + "/" + dnsdomain + ".zone";
+	paths.named_conf = lp.get("private dir") + "/named.conf";
 	paths.winsdb = "wins.ldb";
 	paths.ldapdir = lp.get("private dir") + "/ldap";
 	paths.ldap_basedn_ldif = paths.ldapdir + "/" + dnsdomain + ".ldif";
@@ -833,7 +834,11 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 		   message, paths.dns, 
 		   subobj);
 
-	message("Please install the zone located in " + paths.dns + " into your DNS server\n");
+	setup_file("named.conf", 
+		   message, paths.named_conf, 
+		   subobj);
+
+	message("Please install the zone located in " + paths.dns + " into your DNS server.  A sample BIND configuration snippit is at " + paths.named_conf + "\n");
 }
 
 /* Write out a DNS zone file, from the info in the current database */
