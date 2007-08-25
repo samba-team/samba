@@ -24,7 +24,7 @@
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
-	char request_buf[smb_size];
+	uint8 request_buf[smb_size];
 	uint32 filter;
 	uint32 max_param;
 	struct notify_mid_map *mid_map;
@@ -128,13 +128,13 @@ static BOOL notify_marshall_changes(int num_changes,
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-static void change_notify_reply_packet(const char *request_buf,
+static void change_notify_reply_packet(const uint8 *request_buf,
 				       NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
-	construct_reply_common(request_buf, outbuf);
+	construct_reply_common((char *)request_buf, outbuf);
 
 	ERROR_NT(error_code);
 
@@ -150,12 +150,12 @@ static void change_notify_reply_packet(const char *request_buf,
 				    "failed.");
 }
 
-void change_notify_reply(const char *request_buf, uint32 max_param,
+void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 			 struct notify_change_buf *notify_buf)
 {
-	char *outbuf = NULL;
 	prs_struct ps;
-	size_t buflen;
+	struct smb_request *req = NULL;
+	uint8 tmp_request[smb_size];
 
 	if (notify_buf->num_changes == -1) {
 		change_notify_reply_packet(request_buf, NT_STATUS_OK);
@@ -175,22 +175,27 @@ void change_notify_reply(const char *request_buf, uint32 max_param,
 		goto done;
 	}
 
-	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
-
-	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
+	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
-	construct_reply_common(request_buf, outbuf);
+	memcpy(tmp_request, request_buf, smb_size);
 
-	if (send_nt_replies(outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
-			    prs_offset(&ps), NULL, 0) == -1) {
-		exit_server("change_notify_reply_packet: send_smb failed.");
-	}
+	/*
+	 * We're only interested in the header fields here
+	 */
+
+	smb_setlen((char *)tmp_request, smb_size);
+	SCVAL(tmp_request, smb_wct, 0);
+
+	init_smb_request(req, tmp_request);
+
+	send_nt_replies(req, NT_STATUS_OK, prs_data_p(&ps),
+			prs_offset(&ps), NULL, 0);
 
  done:
-	SAFE_FREE(outbuf);
+	TALLOC_FREE(req);
 	prs_mem_free(&ps);
 
 	TALLOC_FREE(notify_buf->changes);
@@ -237,7 +242,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	return status;
 }
 
-NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param,
+NTSTATUS change_notify_add_request(const uint8 *inbuf, uint32 max_param,
 				   uint32 filter, BOOL recursive,
 				   struct files_struct *fsp)
 {

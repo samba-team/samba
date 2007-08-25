@@ -1248,10 +1248,8 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
  Find an rpc pipe given a pipe handle in a buffer and an offset.
 ****************************************************************************/
 
-smb_np_struct *get_rpc_pipe_p(const char *buf, int where)
+smb_np_struct *get_rpc_pipe_p(uint16 pnum)
 {
-	int pnum = SVAL(buf,where);
-
 	if (chain_p) {
 		return chain_p;
 	}

@@ -614,9 +614,11 @@ BOOL cli_send_keepalive(struct cli_state *cli)
  Send/receive a SMBecho command: ping the server
 ****************************************************************************/
 
-BOOL cli_echo(struct cli_state *cli, unsigned char *data, size_t length)
+BOOL cli_echo(struct cli_state *cli, uint16 num_echos,
+	      unsigned char *data, size_t length)
 {
 	char *p;
+	int i;
 
 	SMB_ASSERT(length < 1024);
 
@@ -624,7 +626,7 @@ BOOL cli_echo(struct cli_state *cli, unsigned char *data, size_t length)
 	set_message(cli->outbuf,1,length,True);
 	SCVAL(cli->outbuf,smb_com,SMBecho);
 	SSVAL(cli->outbuf,smb_tid,65535);
-	SSVAL(cli->outbuf,smb_vwv0,1);
+	SSVAL(cli->outbuf,smb_vwv0,num_echos);
 	cli_setup_packet(cli);
 	p = smb_buf(cli->outbuf);
 	memcpy(p, data, length);
@@ -633,12 +635,16 @@ BOOL cli_echo(struct cli_state *cli, unsigned char *data, size_t length)
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
+
+	for (i=0; i<num_echos; i++) {
+		if (!cli_receive_smb(cli)) {
+			return False;
+		}
+
+		if (cli_is_error(cli)) {
+			return False;
+		}
 	}
 
-	if (cli_is_error(cli)) {
-		return False;
-	}
 	return True;
 }

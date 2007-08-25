@@ -2866,7 +2866,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 	p = *rdata;
 	p2 = p + struct_len;
 	if (uLevel != 20) {
-		srvstr_push(NULL, p,global_myname(),16, 
+		srvstr_push(NULL, 0, p,global_myname(),16,
 			STR_ASCII|STR_UPPER|STR_TERMINATE);
   	}
 	p += 16;
@@ -4366,8 +4366,11 @@ static const struct {
  Handle remote api calls.
 ****************************************************************************/
 
-int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
-		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
+void api_reply(connection_struct *conn, uint16 vuid,
+	       struct smb_request *req,
+	       char *data, char *params,
+	       int tdscnt, int tpscnt,
+	       int mdrcnt, int mprcnt)
 {
 	int api_command;
 	char *rdata = NULL;
@@ -4381,11 +4384,13 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
 	if (!params) {
 		DEBUG(0,("ERROR: NULL params in api_reply()\n"));
-		return 0;
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	if (tpscnt < 2) {
-		return 0;
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 	api_command = SVAL(params,0);
 	/* Is there a string at position params+2 ? */
@@ -4418,7 +4423,8 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 		user_struct *user = get_valid_user_struct(vuid);
 
 		if (!user || user->guest) {
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
 		}
 	}
 
@@ -4436,7 +4442,8 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 		DEBUG(0,("api_reply: malloc fail !\n"));
 		SAFE_FREE(rdata);
 		SAFE_FREE(rparam);
-		return -1;
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	reply = api_commands[i].fn(conn,
@@ -4460,10 +4467,11 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
 	/* If api_Unsupported returns false we can't return anything. */
 	if (reply) {
-		send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
+		send_trans_reply(req, rparam, rparam_len,
+				 rdata, rdata_len, False);
 	}
 
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);
-	return -1;
+	return;
 }

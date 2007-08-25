@@ -75,6 +75,7 @@ static int count_fn(struct db_record *rec,
 		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
 			 procid_str_static(&crec->pid), crec->cnum,
 			 crec->servicename));
+
 		status = rec->delete_rec(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("count_fn: tdb_delete failed with error %s\n",
@@ -112,7 +113,7 @@ int count_current_connections( const char *sharename, BOOL clear  )
 			 "connections.tdb failed\n"));
 		return False;
 	}
-	
+
 	return cs.curr_connections;
 }
 

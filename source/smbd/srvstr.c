@@ -24,7 +24,7 @@ extern int max_send;
 /* Make sure we can't write a string past the end of the buffer */
 
 size_t srvstr_push_fn(const char *function, unsigned int line, 
-		      const char *base_ptr, void *dest, 
+		      const char *base_ptr, uint16 smb_flags2, void *dest,
 		      const char *src, int dest_len, int flags)
 {
 	size_t buf_used = PTR_DIFF(dest, base_ptr);
@@ -33,11 +33,55 @@ size_t srvstr_push_fn(const char *function, unsigned int line,
 #if 0
 			DEBUG(0, ("Pushing string of 'unlimited' length into non-SMB buffer!\n"));
 #endif
-			return push_string_fn(function, line, base_ptr, dest, src, -1, flags);
+			return push_string_fn(function, line, base_ptr,
+					      smb_flags2, dest, src, -1,
+					      flags);
 		}
-		return push_string_fn(function, line, base_ptr, dest, src, max_send - buf_used, flags);
+		return push_string_fn(function, line, base_ptr, smb_flags2,
+				      dest, src, max_send - buf_used, flags);
 	}
 	
 	/* 'normal' push into size-specified buffer */
-	return push_string_fn(function, line, base_ptr, dest, src, dest_len, flags);
+	return push_string_fn(function, line, base_ptr, smb_flags2, dest, src,
+			      dest_len, flags);
+}
+
+/*******************************************************************
+ Add a string to the end of a smb_buf, adjusting bcc and smb_len.
+ Return the bytes added
+********************************************************************/
+
+ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
+{
+	size_t buf_size = smb_len(*outbuf) + 4;
+	size_t grow_size;
+	size_t result;
+	uint8 *tmp;
+
+	/*
+	 * We need to over-allocate, now knowing what srvstr_push will
+	 * actually use. This is very generous by incorporating potential
+	 * padding, the terminating 0 and at most 4 chars per UTF-16 code
+	 * point.
+	 */
+	grow_size = (strlen(str) + 2) * 4;
+
+	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, *outbuf, uint8,
+					 buf_size + grow_size))) {
+		DEBUG(0, ("talloc failed\n"));
+		return -1;
+	}
+
+	result = srvstr_push((char *)tmp, SVAL(tmp, smb_flg2),
+			     tmp + buf_size, str, grow_size, flags);
+
+	if (result == (size_t)-1) {
+		DEBUG(0, ("srvstr_push failed\n"));
+		return -1;
+	}
+	set_message_bcc((char *)tmp, smb_buflen(tmp) + result);
+
+	*outbuf = tmp;
+
+	return result;
 }

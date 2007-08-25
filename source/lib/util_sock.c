@@ -730,6 +730,85 @@ ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxle
 	return len;
 }
 
+static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
+				      char **buffer, unsigned int timeout)
+{
+	char lenbuf[4];
+	ssize_t len,ret;
+
+	smb_read_error = 0;
+
+	len = read_smb_length_return_keepalive(fd, lenbuf, timeout);
+	if (len < 0) {
+		DEBUG(10,("receive_smb_raw: length < 0!\n"));
+
+		/*
+		 * Correct fix. smb_read_error may have already been
+		 * set. Only set it here if not already set. Global
+		 * variables still suck :-). JRA.
+		 */
+
+		if (smb_read_error == 0)
+			smb_read_error = READ_ERROR;
+		return -1;
+	}
+
+	/*
+	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
+	 * of header. Don't print the error if this fits.... JRA.
+	 */
+
+	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
+		DEBUG(0,("Invalid packet length! (%lu bytes).\n",(unsigned long)len));
+		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
+
+			/*
+			 * Correct fix. smb_read_error may have already been
+			 * set. Only set it here if not already set. Global
+			 * variables still suck :-). JRA.
+			 */
+
+			if (smb_read_error == 0)
+				smb_read_error = READ_ERROR;
+			return -1;
+		}
+	}
+
+	/*
+	 * The +4 here can't wrap, we've checked the length above already.
+	 */
+
+	*buffer = TALLOC_ARRAY(mem_ctx, char, len+4);
+
+	if (*buffer == NULL) {
+		DEBUG(0, ("Could not allocate inbuf of length %d\n",
+			  (int)len+4));
+		if (smb_read_error == 0)
+			smb_read_error = READ_ERROR;
+		return -1;
+	}
+
+	memcpy(*buffer, lenbuf, sizeof(lenbuf));
+
+	if(len > 0) {
+		if (timeout > 0) {
+			ret = read_socket_with_timeout(fd,(*buffer)+4, len,
+						       len, timeout);
+		} else {
+			ret = read_data(fd, (*buffer)+4, len);
+		}
+
+		if (ret != len) {
+			if (smb_read_error == 0) {
+				smb_read_error = READ_ERROR;
+			}
+			return -1;
+		}
+	}
+
+	return len + 4;
+}
+
 /****************************************************************************
  Wrapper for receive_smb_raw().
  Checks the MAC on signed packets.
@@ -751,6 +830,30 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 	}
 
 	return True;
+}
+
+ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
+			   unsigned int timeout)
+{
+	ssize_t len;
+
+	len = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout);
+
+	if (len < 0) {
+		return -1;
+	}
+
+	/* Check the incoming SMB signature. */
+	if (!srv_check_sign_mac(*buffer, True)) {
+		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
+			  "incoming packet!\n"));
+		if (smb_read_error == 0) {
+			smb_read_error = READ_BAD_SIG;
+		}
+		return -1;
+	}
+
+	return len;
 }
 
 /****************************************************************************

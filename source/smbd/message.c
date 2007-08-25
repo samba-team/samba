@@ -114,11 +114,10 @@ static void msg_deliver(void)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_sends(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_sends(connection_struct *conn, struct smb_request *req)
 {
 	int len;
 	char *msg;
-	int outsize = 0;
 	char *p;
 
 	START_PROFILE(SMBsends);
@@ -126,16 +125,15 @@ int reply_sends(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	msgpos = 0;
 
 	if (! (*lp_msg_command())) {
+		reply_doserror(req, ERRSRV, ERRmsgoff);
 		END_PROFILE(SMBsends);
-		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+		return;
 	}
 
-	outsize = set_message(outbuf,0,0,True);
-
-	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgfrom, p,
+	p = smb_buf(req->inbuf)+1;
+	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgfrom, p,
 			     sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgto, p,
+	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgto, p,
 			     sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
 	msg = p;
@@ -150,8 +148,10 @@ int reply_sends(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	msg_deliver();
 
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBsends);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
@@ -159,33 +159,33 @@ int reply_sends(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_sendstrt(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_sendstrt(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	char *p;
 
 	START_PROFILE(SMBsendstrt);
 
 	if (! (*lp_msg_command())) {
+		reply_doserror(req, ERRSRV, ERRmsgoff);
 		END_PROFILE(SMBsendstrt);
-		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+		return;
 	}
-
-	outsize = set_message(outbuf,1,0,True);
 
 	memset(msgbuf,'\0',sizeof(msgbuf));
 	msgpos = 0;
 
-	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgfrom, p,
+	p = smb_buf(req->inbuf)+1;
+	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgfrom, p,
 			     sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgto, p,
+	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgto, p,
 			     sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
 	DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBsendstrt);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
@@ -193,21 +193,19 @@ int reply_sendstrt(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_sendtxt(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_sendtxt(connection_struct *conn, struct smb_request *req)
 {
 	int len;
-	int outsize = 0;
 	char *msg;
 	START_PROFILE(SMBsendtxt);
 
 	if (! (*lp_msg_command())) {
+		reply_doserror(req, ERRSRV, ERRmsgoff);
 		END_PROFILE(SMBsendtxt);
-		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+		return;
 	}
 
-	outsize = set_message(outbuf,0,0,True);
-
-	msg = smb_buf(inbuf) + 1;
+	msg = smb_buf(req->inbuf) + 1;
 
 	len = SVAL(msg,0);
 	len = MIN(len,sizeof(msgbuf)-msgpos);
@@ -217,8 +215,10 @@ int reply_sendtxt(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 
 	DEBUG( 3, ( "SMBsendtxt\n" ) );
 
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBsendtxt);
-	return(outsize);
+	return;
 }
 
 /****************************************************************************
@@ -226,22 +226,22 @@ int reply_sendtxt(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-int reply_sendend(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+void reply_sendend(connection_struct *conn, struct smb_request *req)
 {
-	int outsize = 0;
 	START_PROFILE(SMBsendend);
 
 	if (! (*lp_msg_command())) {
+		reply_doserror(req, ERRSRV, ERRmsgoff);
 		END_PROFILE(SMBsendend);
-		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+		return;
 	}
-
-	outsize = set_message(outbuf,0,0,True);
 
 	DEBUG(3,("SMBsendend\n"));
 
 	msg_deliver();
 
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBsendend);
-	return(outsize);
+	return;
 }

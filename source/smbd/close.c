@@ -102,7 +102,6 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 	}
 
 	conn->num_files_open--;
-	SAFE_FREE(fsp->wbmpx_ptr);
 	return status;
 }    
 

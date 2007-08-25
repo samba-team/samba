@@ -193,8 +193,7 @@ void initialize_async_io_handler(void)
 *****************************************************************************/
 
 BOOL schedule_aio_read_and_X(connection_struct *conn,
-			     char *inbuf, char *outbuf,
-			     int length, int len_outbuf,
+			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
 {
@@ -214,7 +213,7 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(inbuf,smb_vwv0) != 0xFF)
+        if (chain_size !=0 || (CVAL(req->inbuf,smb_vwv0) != 0xFF)
 	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
 		return False;
 	}
@@ -226,18 +225,18 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 		return False;
 	}
 
-	/* The following is safe from integer wrap as we've already
-	   checked smb_maxcnt is 128k or less. */
-	bufsize = PTR_DIFF(smb_buf(outbuf),outbuf) + smb_maxcnt;
+	/* The following is safe from integer wrap as we've already checked
+	   smb_maxcnt is 128k or less. Wct is 12 for read replies */
 
-	if ((aio_ex = create_aio_ex_read(fsp, bufsize,
-					 SVAL(inbuf,smb_mid))) == NULL) {
+	bufsize = smb_size + 12 * 2 + smb_maxcnt;
+
+	if ((aio_ex = create_aio_ex_read(fsp, bufsize, req->mid)) == NULL) {
 		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
 		return False;
 	}
 
-	/* Copy the SMB header already setup in outbuf. */
-	memcpy(aio_ex->outbuf, outbuf, smb_buf(outbuf) - outbuf);
+	construct_reply_common((char *)req->inbuf, aio_ex->outbuf);
+	set_message(aio_ex->outbuf, 12, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	a = &aio_ex->acb;
@@ -274,16 +273,15 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 *****************************************************************************/
 
 BOOL schedule_aio_write_and_X(connection_struct *conn,
-				char *inbuf, char *outbuf,
-				int length, int len_outbuf,
-				files_struct *fsp, char *data,
-				SMB_OFF_T startpos,
-				size_t numtowrite)
+			      struct smb_request *req,
+			      files_struct *fsp, char *data,
+			      SMB_OFF_T startpos,
+			      size_t numtowrite)
 {
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t inbufsize, outbufsize;
-	BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
+	BOOL write_through = BITSETW(req->inbuf+smb_vwv7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
 	if (!min_aio_write_size || (numtowrite < min_aio_write_size)) {
@@ -297,7 +295,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(inbuf,smb_vwv0) != 0xFF)
+        if (chain_size !=0 || (CVAL(req->inbuf,smb_vwv0) != 0xFF)
 	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
 		return False;
 	}
@@ -311,23 +309,25 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 			  "(mid = %u)\n",
 			  fsp->fsp_name, (double)startpos,
 			  (unsigned int)numtowrite,
-			  (unsigned int)SVAL(inbuf,smb_mid) ));
+			  (unsigned int)req->mid ));
 		return False;
 	}
 
-	inbufsize =  smb_len(inbuf) + 4;
-	outbufsize = smb_len(outbuf) + 4;
+	inbufsize =  smb_len(req->inbuf) + 4;
+	reply_outbuf(req, 6, 0);
+	outbufsize = smb_len(req->outbuf) + 4;
 	if (!(aio_ex = create_aio_ex_write(fsp, inbufsize, outbufsize,
-					   SVAL(inbuf,smb_mid)))) {
+					   req->mid))) {
 		DEBUG(0,("schedule_aio_write_and_X: malloc fail.\n"));
 		return False;
 	}
 
 	/* Copy the SMB header already setup in outbuf. */
-	memcpy(aio_ex->inbuf, inbuf, inbufsize);
+	memcpy(aio_ex->inbuf, req->inbuf, inbufsize);
 
 	/* Copy the SMB header already setup in outbuf. */
-	memcpy(aio_ex->outbuf, outbuf, outbufsize);
+	memcpy(aio_ex->outbuf, req->outbuf, outbufsize);
+	TALLOC_FREE(req->outbuf);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	a = &aio_ex->acb;
@@ -335,7 +335,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	/* Now set up the aio record for the write call. */
 	
 	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = aio_ex->inbuf + (PTR_DIFF(data, inbuf));
+	a->aio_buf = aio_ex->inbuf + (PTR_DIFF(data, req->inbuf));
 	a->aio_nbytes = numtowrite;
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
@@ -762,8 +762,7 @@ int process_aio_queue(void)
 }
 
 BOOL schedule_aio_read_and_X(connection_struct *conn,
-			     char *inbuf, char *outbuf,
-			     int length, int len_outbuf,
+			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
 {
@@ -771,11 +770,10 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 }
 
 BOOL schedule_aio_write_and_X(connection_struct *conn,
-                                char *inbuf, char *outbuf,
-                                int length, int len_outbuf,
-                                files_struct *fsp, char *data,
-                                SMB_OFF_T startpos,
-                                size_t numtowrite)
+			      struct smb_request *req,
+			      files_struct *fsp, char *data,
+			      SMB_OFF_T startpos,
+			      size_t numtowrite)
 {
 	return False;
 }

@@ -25,22 +25,6 @@ extern struct unix_error_map unix_dos_nt_errmap[];
 extern uint32 global_client_caps;
 
 /****************************************************************************
- Create an error packet from a cached error.
-****************************************************************************/
- 
-int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file)
-{
-	write_bmpx_struct *wbmpx = fsp->wbmpx_ptr;
-	int32 eclass = wbmpx->wr_errclass;
-	int32 err = wbmpx->wr_error;
-	NTSTATUS ntstatus = wbmpx->wr_status;
- 
-	/* We can now delete the auxiliary struct */
-	SAFE_FREE(fsp->wbmpx_ptr);
-	return error_packet(outbuf,eclass,err,ntstatus,line,file);
-}
-
-/****************************************************************************
  Create an error packet from errno.
 ****************************************************************************/
 
@@ -132,11 +116,71 @@ int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, in
 	return outsize;
 }
 
-/*******************************************************************************
- Special error map processing needed for returning DOS errors on open calls.
-*******************************************************************************/
+void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
+		    int line, const char *file)
+{
+	TALLOC_FREE(req->outbuf);
+	reply_outbuf(req, 0, 0);
+	error_packet_set((char *)req->outbuf, 0, 0, ntstatus, line, file);
+}
 
-int error_open(char *outbuf, NTSTATUS status, int line, const char *file)
+void reply_force_nt_error(struct smb_request *req, NTSTATUS ntstatus,
+			  int line, const char *file)
+{
+	TALLOC_FREE(req->outbuf);
+	reply_outbuf(req, 0, 0);
+	error_packet_set((char *)req->outbuf, -1, -1, ntstatus, line, file);
+}
+
+void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
+		    int line, const char *file)
+{
+	TALLOC_FREE(req->outbuf);
+	reply_outbuf(req, 0, 0);
+	error_packet_set((char *)req->outbuf, eclass, ecode, NT_STATUS_OK, line,
+			 file);
+}
+
+void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
+		      NTSTATUS status, int line, const char *file)
+{
+	TALLOC_FREE(req->outbuf);
+	reply_outbuf(req, 0, 0);
+	error_packet_set((char *)req->outbuf, eclass, ecode, status,
+			 line, file);
+}
+
+void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
+		      NTSTATUS defstatus, int line, const char *file)
+{
+	int eclass=defclass;
+	int ecode=defcode;
+	NTSTATUS ntstatus = defstatus;
+	int i=0;
+
+	TALLOC_FREE(req->outbuf);
+	reply_outbuf(req, 0, 0);
+
+	if (errno != 0) {
+		DEBUG(3,("unix_error_packet: error string = %s\n",
+			 strerror(errno)));
+
+		while (unix_dos_nt_errmap[i].dos_class != 0) {
+			if (unix_dos_nt_errmap[i].unix_error == errno) {
+				eclass = unix_dos_nt_errmap[i].dos_class;
+				ecode = unix_dos_nt_errmap[i].dos_code;
+				ntstatus = unix_dos_nt_errmap[i].nt_error;
+				break;
+			}
+			i++;
+		}
+	}
+
+	error_packet_set((char *)req->outbuf, eclass, ecode, ntstatus,
+			 line, file);
+}
+
+void reply_openerror(struct smb_request *req, NTSTATUS status)
 {
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 		/*
@@ -145,8 +189,10 @@ int error_open(char *outbuf, NTSTATUS status, int line, const char *file)
 		 * ERRDOS/183, we need to return ERRDOS/80, see bug
 		 * 4852.
 		 */
-		return error_packet(outbuf, ERRDOS, ERRfilexists,
-				NT_STATUS_OBJECT_NAME_COLLISION, line, file);
+		reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
+			ERRDOS, ERRfilexists);
+	} else {
+		reply_nterror(req, status);
 	}
-	return error_packet(outbuf,0,0,status,line,file);
 }
+

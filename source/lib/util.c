@@ -566,6 +566,27 @@ int set_message_end(void *outbuf,void *end_ptr)
 }
 
 /*******************************************************************
+ Add a data blob to the end of a smb_buf, adjusting bcc and smb_len.
+ Return the bytes added
+********************************************************************/
+
+ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob)
+{
+	size_t newlen = smb_len(*outbuf) + 4 + blob.length;
+	uint8 *tmp;
+
+	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, *outbuf, uint8, newlen))) {
+		DEBUG(0, ("talloc failed\n"));
+		return -1;
+	}
+	*outbuf = tmp;
+
+	memcpy(tmp + smb_len(tmp) + 4, blob.data, blob.length);
+	set_message_bcc((char *)tmp, smb_buflen(tmp) + blob.length);
+	return blob.length;
+}
+
+/*******************************************************************
  Reduce a file name, removing .. elements.
 ********************************************************************/
 

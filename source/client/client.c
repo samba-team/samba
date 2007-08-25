@@ -777,14 +777,16 @@ static int cmd_du(void)
 
 static int cmd_echo(void)
 {
+	fstring num;
 	pstring data;
 
-	if (!next_token_nr(NULL, data, NULL, sizeof(data))) {
-		d_printf("echo <data>\n");
+	if (!next_token_nr(NULL, num, NULL, sizeof(num))
+	    || !next_token_nr(NULL, data, NULL, sizeof(data))) {
+		d_printf("echo <num> <data>\n");
 		return 1;
 	}
 
-	if (!cli_echo(cli, (uint8 *)data, strlen(data))) {
+	if (!cli_echo(cli, atoi(num), (uint8 *)data, strlen(data))) {
 		d_printf("echo failed: %s\n",
 			 nt_errstr(cli_get_nt_error(cli)));
 		return 1;
@@ -3681,7 +3683,7 @@ static void readline_callback(void)
 	{
 		unsigned char garbage[16];
 		memset(garbage, 0xf0, sizeof(garbage));
-		cli_echo(cli, garbage, sizeof(garbage));
+		cli_echo(cli, 1, garbage, sizeof(garbage));
 	}
 }
 

@@ -158,17 +158,17 @@
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
-/* Macro to test if an error has been cached for this fnum */
-#define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
-                (fsp)->wbmpx_ptr->wr_discard)
-/* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
-
 #define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
 #define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
 #define ERROR_OPEN(status) error_open(outbuf,status,__LINE__,__FILE__)
 #define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
+
+#define reply_nterror(req,status) reply_nt_error(req,status,__LINE__,__FILE__)
+#define reply_force_nterror(req,status) reply_force_nt_error(req,status,__LINE__,__FILE__)
+#define reply_doserror(req,eclass,ecode) reply_dos_error(req,eclass,ecode,__LINE__,__FILE__)
+#define reply_botherror(req,status,eclass,ecode) reply_both_error(req,eclass,ecode,status,__LINE__,__FILE__)
+#define reply_unixerror(req,defclass,deferror) reply_unix_error(req,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
