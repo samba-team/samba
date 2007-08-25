@@ -27,13 +27,13 @@
 /**
  create a temporary directory.
 */
-_PUBLIC_ NTSTATUS torture_temp_dir(TALLOC_CTX *mem_ctx, const char *prefix, 
+_PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx, 
+								   const char *prefix, 
 								   char **tempdir)
 {
-	const char *basedir = lp_parm_string(-1, "torture", "basedir");
-	if (basedir == NULL) basedir = ".";
-	*tempdir = talloc_asprintf(mem_ctx, "%s/%s.XXXXXX", 
-							   basedir, prefix);
+	const char *basedir = torture_setting_string(tctx, "basedir", ".");
+
+	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", basedir, prefix);
 
 	if (mkdtemp(*tempdir) == NULL)
 		return NT_STATUS_UNSUCCESSFUL;
