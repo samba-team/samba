@@ -859,19 +859,19 @@ void reply_ntcreate_and_X(connection_struct *conn,
 						create_options,
 						file_attributes,
 						&info, &fsp);
-
 		}
 	}
 
 	TALLOC_FREE(case_state);
 
-        if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBntcreateX);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
+			END_PROFILE(SMBntcreateX);
 			return;
 		}
 		reply_openerror(req, status);
+		END_PROFILE(SMBntcreateX);
 		return;
 	}
 

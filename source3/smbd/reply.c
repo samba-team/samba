@@ -486,7 +486,7 @@ void reply_tcon(connection_struct *conn, struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv1,conn->cnum);
 	SSVAL(req->outbuf,smb_tid,conn->cnum);
 
-	DEBUG(3,("tcon service=%s cnum=%d\n", 
+	DEBUG(3,("tcon service=%s cnum=%d\n",
 		 service, conn->cnum));
 
 	END_PROFILE(SMBtcon);
@@ -1550,12 +1550,13 @@ void reply_open(connection_struct *conn, struct smb_request *req)
 			&info, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBopen);
 		if (open_was_deferred(req->mid)) {
+			END_PROFILE(SMBopen);
 			/* We have re-scheduled this call. */
 			return;
 		}
 		reply_openerror(req, status);
+		END_PROFILE(SMBopen);
 		return;
 	}
 
@@ -1876,7 +1877,7 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
 
 	srvstr_get_path((char *)req->inbuf, req->flags2, fname,
                         smb_buf(req->inbuf) + 1, sizeof(fname), 0,
-		       	STR_TERMINATE, &status);
+			STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcreate);
@@ -1947,7 +1948,6 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
 	file_ntimes(conn, fname, ts);
 
 	reply_outbuf(req, 1, 0);
-
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -2059,12 +2059,13 @@ void reply_ctemp(connection_struct *conn, struct smb_request *req)
 	close(tmpfd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBctemp);
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
+			END_PROFILE(SMBctemp);
 			return;
 		}
 		reply_openerror(req, status);
+		END_PROFILE(SMBctemp);
 		return;
 	}
 
@@ -2668,7 +2669,7 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	/* 
+	/*
 	 * We have to do a check_fsp by hand here, as
 	 * we must always return 4 zero bytes on error,
 	 * not a NTSTATUS.
@@ -2760,7 +2761,7 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
 	if (startpos >= size) {
 		nread = 0;
 	} else {
-		nread = MIN(maxcount,(size - startpos));	  
+		nread = MIN(maxcount,(size - startpos));
 	}
 
 #if 0 /* mincount appears to be ignored in a W2K server. JRA. */
@@ -3088,7 +3089,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		TALLOC_FREE(req->outbuf);
 		return;
 	}
-
 #endif
 
 normal_read:

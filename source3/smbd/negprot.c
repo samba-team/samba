@@ -229,10 +229,9 @@ static DATA_BLOB negprot_spnego(void)
 		char *host_princ_s = NULL;
 		name_to_fqdn(myname, global_myname());
 		strlower_m(myname);
-		asprintf(&host_princ_s, "cifs/%s@%s", myname, lp_realm());
-		if (host_princ_s == NULL) {
-			blob = data_blob_null;
-			return blob;
+		if (asprintf(&host_princ_s, "cifs/%s@%s", myname, lp_realm())
+		    == -1) {
+			return data_blob_null;
 		}
 		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, host_princ_s);
 		SAFE_FREE(host_princ_s);
@@ -540,7 +539,7 @@ void reply_negprot(connection_struct *conn, struct smb_request *req)
 	num_cliprotos = 0;
 	cliprotos = NULL;
 
-	while (p < (smb_buf(req->inbuf) + bcc)) { 
+	while (p < (smb_buf(req->inbuf) + bcc)) {
 
 		char **tmp;
 
