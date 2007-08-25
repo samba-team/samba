@@ -96,6 +96,7 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 	extern int smb_read_error;
 	oplock_stat_t os;
 	char dummy;
+	struct file_id fileid;
 	files_struct *fsp;
 
 	/* Ensure we only get one call per select fd set. */
@@ -137,11 +138,14 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 	/*
 	 * We only have device and inode info here - we have to guess that this
 	 * is the first fsp open with this dev,ino pair.
+	 *
+	 * NOTE: this doesn't work if any VFS modules overloads
+	 *       the file_id_create() hook!
 	 */
 
-	if ((fsp = file_find_di_first(
-		     file_id_create((SMB_DEV_T)os.os_dev,
-				    (SMB_INO_T)os.os_ino))) == NULL) {
+	fileid = file_id_create_dev((SMB_DEV_T)os.os_dev,
+				    (SMB_INO_T)os.os_ino);
+	if ((fsp = file_find_di_first(fileid)) == NULL) {
 		DEBUG(0,("irix_oplock_receive_message: unable to find open "
 			 "file with dev = %x, inode = %.0f\n",
 			 (unsigned int)os.os_dev, (double)os.os_ino ));
