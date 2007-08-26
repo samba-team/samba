@@ -599,6 +599,8 @@ static BOOL rw_torture2(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, smbcli_unlink(c1->tree, lockfname),
 		talloc_asprintf(tctx, "unlink failed (%s)", smbcli_errstr(c1->tree)));
 
+	torture_comment(tctx, "\n");
+
 	return correct;
 }
 

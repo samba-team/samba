@@ -743,7 +743,7 @@ static int test_strtoull(void)
 	TEST_STRTOULL("-02000000000000000000000",8,	18446744073709551615LLU,	24, ERANGE);
 	TEST_STRTOULL("-2000000000000000000000",8,	18446744073709551615LLU,	23, ERANGE);
 
-	printf("success: strtuoll\n");
+	printf("success: strtoull\n");
 	return true;
 }
 
