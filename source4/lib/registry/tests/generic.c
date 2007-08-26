@@ -101,6 +101,8 @@ static bool test_reg_val_description_nullname(struct torture_context *ctx)
 	return true;
 }
 
+
+
 struct torture_suite *torture_registry(TALLOC_CTX *mem_ctx) 
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
