@@ -14,22 +14,25 @@ sub new($$$$) {
 		statistics => $statistics,
 		active_test => undef,
 		local_statistics => {},
-		msg => ""
+		msg => "",
+		error_summary => { 
+			skip => [],
+			expected_success => [],
+			unexpected_success => [],
+			expected_failure => [],
+			unexpected_failure => [],
+			error => []
+		}
 	};
 
 	link("selftest/output/testresults.css", "$dirname/testresults.css");
 
 	open(INDEX, ">$dirname/index.html");
 
-	print INDEX "<html lang=\"en\">\n";
-	print INDEX "<head>\n";
-	print INDEX "  <title>Samba Testsuite Run</title>\n";
-	print INDEX "  <link rel=\"stylesheet\" type=\"text/css\" href=\"testresults.css\"/>\n";
-	print INDEX "</head>\n";
-	print INDEX "<body>\n";
-	print INDEX "<table width=\"100%\" border=\"0\" cellspacing=\"0\">\n";
-	print INDEX "  <tr><td class=\"title\">Samba Testsuite Run</td></tr>\n";
-	print INDEX "  <tr><td>\n";
+	bless($self, $class);
+
+	$self->print_html_header("Samba Testsuite Run", *INDEX);
+
 	print INDEX "  <center>";
 	print INDEX "  <table>\n";
 	print INDEX "  <tr>\n";
@@ -38,7 +41,32 @@ sub new($$$$) {
 	print INDEX "    <td class=\"tableHead\">Result</td>\n";
 	print INDEX "  </tr>\n";
 
-	bless($self, $class);
+	return $self;
+}
+
+sub print_html_header($$$)
+{
+	my ($self, $title, $fh) = @_;
+
+	print $fh "<html lang=\"en\">\n";
+	print $fh "<head>\n";
+	print $fh "  <title>$title</title>\n";
+	print $fh "  <link rel=\"stylesheet\" type=\"text/css\" href=\"testresults.css\"/>\n";
+	print $fh "</head>\n";
+	print $fh "<body>\n";
+	print $fh "<table width=\"100%\" border=\"0\" cellspacing=\"0\">\n";
+	print $fh "  <tr><td class=\"title\">$title</td></tr>\n";
+	print $fh "  <tr><td>\n";
+}
+
+sub print_html_footer($$)
+{
+	my ($self, $fh) = @_;
+
+	print $fh "</td></tr>\n";
+	print $fh "</table>\n";
+	print $fh "</body>\n";
+	print $fh "</html>\n";
 }
 
 sub output_msg($$$);
@@ -59,17 +87,8 @@ sub start_testsuite($$)
 
 	open(TEST, ">$self->{dirname}/$state->{HTMLFILE}") or die("Unable to open $state->{HTMLFILE} for writing");
 
-	my $title = "Test Results for $state->{NAME}";
-
-	print TEST "<html lang=\"en\">\n";
-	print TEST "<head>\n";
-	print TEST "  <title>$title</title>\n";
-	print TEST "  <link rel=\"stylesheet\" type=\"text/css\" href=\"testresults.css\"/>\n";
-	print TEST "</head>\n";
-	print TEST "<body>\n";
-	print TEST "<table width=\"100%\" border=\"0\" cellspacing=\"0\">\n";
-	print TEST "  <tr><td class=\"title\">$title</td></tr>\n";
-	print TEST "  <tr><td>\n";
+	$self->print_html_header("Test Results for $state->{NAME}",
+		                     *TEST);
 	print TEST "  <table>\n";
 }
 
@@ -98,8 +117,8 @@ sub end_testsuite($$$$$)
 	print TEST "</table>\n";
 
 	print TEST "<div class=\"duration\">Duration: " . (time() - $state->{START_TIME}) . "s</div>\n";
-	print TEST "</body>\n";
-	print TEST "</html>\n";
+
+	$self->print_html_footer(*TEST);
 
 	close(TEST);
 
@@ -164,15 +183,28 @@ sub end_test($$$$$$)
 
 	$self->{local_statistics}->{$result}++;
 
+	my $track_class;
+
 	if ($result eq "skip") {
 		print TEST "<td class=\"outputSkipped\">\n";
+		$track_class = "skip";
 	} elsif ($unexpected) {
 		print TEST "<td class=\"outputFailure\">\n";
+		if ($result eq "error") {
+			$track_class = "error";
+		} else {
+			$track_class = "unexpected_$result";
+		}
 	} else {
 		print TEST "<td class=\"outputOk\">\n";
+		$track_class = "expected_$result";
 	}
 
-	print TEST "<h3>$testname</h3>\n";
+	push(@{$self->{error_summary}->{$track_class}}, ,
+		 [$state->{HTMLFILE}, $testname, $state->{NAME}, 
+		  $reason]);
+
+	print TEST "<a name=\"$testname\"><h3>$testname</h3></a>\n";
 
 	print TEST $self->{msg};
 
@@ -199,7 +231,7 @@ sub summary($)
 	} else {
 		print INDEX "  <td class=\"resultFailure\">";
 	}
-	print INDEX ($st->{TESTS_EXPECTED_OK} + $st->{TESTS_UNEXPECTED_OK}) + " ok";
+	print INDEX ($st->{TESTS_EXPECTED_OK} + $st->{TESTS_UNEXPECTED_OK}) . " ok";
 	if ($st->{TESTS_UNEXPECTED_OK} > 0) {
 		print INDEX " ($st->{TESTS_UNEXPECTED_OK} unexpected)";
 	}
@@ -220,11 +252,40 @@ sub summary($)
 
 	print INDEX "</table>\n";
 	print INDEX "</center>\n";
-	print INDEX "</td></tr>\n";
-	print INDEX "</table>\n";
-	print INDEX "</body>\n";
-	print INDEX "</html>\n";
+	$self->print_html_footer(*INDEX);
 	close(INDEX);
+
+	my $summ = $self->{error_summary};
+	open(SUMMARY, ">$self->{dirname}/summary.html");
+	$self->print_html_header("Summary", *SUMMARY);
+	sub print_table($$) {
+		my ($title, $list) = @_;
+		return if ($#$list == -1);
+		print SUMMARY "<h3>$title</h3>\n";
+		print SUMMARY "<table>\n";
+		print SUMMARY "<tr>\n";
+		print SUMMARY "  <td class=\"tableHead\">Testsuite</td>\n";
+		print SUMMARY "  <td class=\"tableHead\">Test</td>\n";
+		print SUMMARY "  <td class=\"tableHead\">Reason</td>\n";
+		print SUMMARY "</tr>\n";
+
+		foreach (@$list) {
+			print SUMMARY "<tr>\n";
+			print SUMMARY "  <td><a href=\"" . $$_[0] . "\">$$_[2]</a></td>\n";
+			print SUMMARY "  <td><a href=\"" . $$_[0] . "#$$_[1]\">$$_[1]</a></td>\n";
+			print SUMMARY "  <td>$$_[3]</td>\n";
+			print SUMMARY "</tr>\n";
+		}
+
+		print SUMMARY "</table>";
+	}
+	print_table("Errors", $summ->{error});
+	print_table("Unexpected successes", $summ->{unexpected_success});
+	print_table("Unexpected failures", $summ->{unexpected_failure});
+	print_table("Skipped tests", $summ->{skip});
+	print_table("Expected failures", $summ->{expected_failure});
+	$self->print_html_footer(*SUMMARY);
+	close(SUMMARY);
 }
 
 sub missing_env($$$)
