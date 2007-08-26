@@ -28,6 +28,27 @@
 #include "torture/util.h"
 
 #if HAVE_NATIVE_ICONV
+
+static bool iconv_untestable(struct torture_context *tctx)
+{
+	iconv_t cd;
+
+	if (!lp_parm_bool(-1, "iconv", "native", true))
+		torture_skip(tctx, "system iconv disabled - skipping test");
+
+	cd = iconv_open("UTF-16LE", "UCS-4LE");
+	if (cd == (iconv_t)-1)
+		torture_skip(tctx, "unable to test - system iconv library does not support UTF-16LE -> UCS-4LE");
+	iconv_close(cd);
+
+	cd = iconv_open("UTF-16LE", "CP850");
+	if (cd == (iconv_t)-1)
+		torture_skip(tctx, "unable to test - system iconv library does not support UTF-16LE -> CP850\n");
+	iconv_close(cd);
+
+	return false;
+}
+
 /*
   generate a UTF-16LE buffer for a given unicode codepoint
 */
@@ -292,6 +313,9 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 
 static bool test_next_codepoint(struct torture_context *tctx)
 {
+	if (iconv_untestable(tctx))
+		return true;
+
 	unsigned int codepoint;
 	for (codepoint=0;codepoint<(1<<20);codepoint++) {
 		if (!test_codepoint(tctx, codepoint))
@@ -305,6 +329,9 @@ static bool test_first_1m(struct torture_context *tctx)
 	unsigned int codepoint;
 	size_t size;
 	unsigned char inbuf[1000];
+
+	if (iconv_untestable(tctx))
+		return true;
 
 	for (codepoint=0;codepoint<(1<<20);codepoint++) {
 		if (gen_codepoint_utf16(codepoint, (char *)inbuf, &size) != 0) {
@@ -328,6 +355,10 @@ static bool test_random_5m(struct torture_context *tctx)
 {
 	unsigned char inbuf[1000];
 	unsigned int i;
+
+	if (iconv_untestable(tctx))
+		return true;
+
 	for (i=0;i<500000;i++) {
 		size_t size;
 		unsigned int c;
@@ -368,29 +399,7 @@ static bool test_random_5m(struct torture_context *tctx)
 
 struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 {
-	static iconv_t cd;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "ICONV");
-
-	if (!lp_parm_bool(-1, "iconv", "native", True)) {
-		printf("system iconv disabled - skipping test\n");
-		return NULL;
-	}
-
-	cd = iconv_open("UTF-16LE", "UCS-4LE");
-	if (cd == (iconv_t)-1) {
-		printf("unable to test - system iconv library does not support UTF-16LE -> UCS-4LE\n");
-		return NULL;
-	}
-	iconv_close(cd);
-
-	cd = iconv_open("UTF-16LE", "CP850");
-	if (cd == (iconv_t)-1) {
-		printf("unable to test - system iconv library does not support UTF-16LE -> CP850\n");
-		return NULL;
-	}
-	iconv_close(cd);
-
-	srandom(time(NULL));
 
 	torture_suite_add_simple_test(suite, "next_codepoint()",
 								   test_next_codepoint);
