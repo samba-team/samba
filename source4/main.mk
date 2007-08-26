@@ -307,6 +307,9 @@ test-noswrap: everything
 quicktest: all
 	$(SELFTEST) --quick --socket-wrapper --immediate $(TESTS)
 
+htmlquicktest: all
+	$(SELFTEST) --quick --socket-wrapper --format=html --immediate $(TESTS)
+
 quicktestone: all
 	$(SELFTEST) --quick --socket-wrapper --one $(TESTS)
 

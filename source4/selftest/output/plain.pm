@@ -88,7 +88,13 @@ sub summary($)
 		}
 	}
 
-	print "FAILED ($self->{statistics}->{TESTS_UNEXPECTED_FAIL} failures and $self->{statistics}->{TESTS_ERROR} errors in $self->{statistics}->{SUITES_FAIL} testsuites)\n";
+	if ($self->{statistics}->{SUITES_FAIL} == 0) {
+		my $ok = $self->{statistics}->{TESTS_EXPECTED_OK} + 
+				 $self->{statistics}->{TESTS_EXPECTED_FAIL};
+		print "ALL OK ($ok tests in $self->{statistics}->{SUITES_OK} testsuites)\n";
+	} else {
+		print "FAILED ($self->{statistics}->{TESTS_UNEXPECTED_FAIL} failures and $self->{statistics}->{TESTS_ERROR} errors in $self->{statistics}->{SUITES_FAIL} testsuites)\n";
+	}
 }
 
 sub missing_env($$$)

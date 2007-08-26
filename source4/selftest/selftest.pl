@@ -777,14 +777,7 @@ $target->stop();
 
 $statistics->{END_TIME} = time();
 my $duration = ($statistics->{END_TIME}-$statistics->{START_TIME});
-my $numfailed = $statistics->{SUITES_FAIL};
-if ($numfailed == 0) {
-	my $ok = $statistics->{TESTS_EXPECTED_OK} + 
-	         $statistics->{TESTS_EXPECTED_FAIL};
-	print "ALL OK ($ok tests in $statistics->{SUITES_OK} testsuites)\n";
-} else {
-	$msg_ops->summary();
-}
+$msg_ops->summary();
 print "DURATION: $duration seconds\n";
 
 my $failed = 0;
@@ -801,7 +794,7 @@ foreach (<$prefix/valgrind.log*>) {
 }
 
 if ($opt_format eq "buildfarm") {
-	print "TEST STATUS: $numfailed\n";
+	print "TEST STATUS: $statistics->{SUITES_FAIL}\n";
 }
 
-exit $numfailed;
+exit $statistics->{SUITES_FAIL};
