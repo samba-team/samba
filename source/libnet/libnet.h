@@ -65,6 +65,7 @@ struct libnet_context {
 #include "libnet/libnet_unbecome_dc.h"
 #include "libnet/libnet_vampire.h"
 #include "libnet/libnet_user.h"
+#include "libnet/libnet_group.h"
 #include "libnet/libnet_share.h"
 #include "libnet/libnet_lookup.h"
 #include "libnet/libnet_domain.h"

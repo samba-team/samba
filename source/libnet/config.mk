@@ -21,6 +21,7 @@ OBJ_FILES = \
 		libnet_samdump_keytab.o \
 		libnet_samsync_ldb.o \
 		libnet_user.o \
+		libnet_group.o \
 		libnet_share.o \
 		libnet_lookup.o \
 		libnet_domain.o \
