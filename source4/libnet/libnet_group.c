@@ -39,7 +39,7 @@ struct group_info_state {
 
 static void continue_domain_open_info(struct composite_context *ctx);
 static void continue_name_found(struct composite_context *ctx);
-static void composite_group_info(struct composite_context *ctx);
+static void continue_group_info(struct composite_context *ctx);
 
 
 struct composite_context* libnet_GroupInfo_send(struct libnet_context *ctx,
@@ -76,7 +76,7 @@ struct composite_context* libnet_GroupInfo_send(struct libnet_context *ctx,
 	s->lookup.in.domain_name = s->domain_name;
 
 	lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
-	if (!composite_nomem(s, c)) return c;
+	if (composite_nomem(lookup_req, c)) return c;
 
 	composite_continue(c, lookup_req, continue_name_found, c);
 	return c;
@@ -99,7 +99,7 @@ static void continue_domain_open_info(struct composite_context *ctx)
 	s->lookup.in.domain_name = s->domain_name;
 	
 	lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
-	if (!composite_nomem(s, c)) return;
+	if (composite_nomem(lookup_req, c)) return;
 	
 	composite_continue(c, lookup_req, continue_name_found, c);
 }
@@ -117,7 +117,7 @@ static void continue_name_found(struct composite_context *ctx)
 	c->status = libnet_LookupName_recv(ctx, c, &s->lookup);
 	if (!composite_is_ok(c)) return;
 
-	if (s->lookup.out.sid_type != SID_NAME_DOM_GRP ||
+	if (s->lookup.out.sid_type != SID_NAME_DOM_GRP &&
 	    s->lookup.out.sid_type != SID_NAME_ALIAS) {
 		composite_error(c, NT_STATUS_NO_SUCH_GROUP);
 	}
@@ -130,11 +130,11 @@ static void continue_name_found(struct composite_context *ctx)
 	info_req = libnet_rpc_groupinfo_send(s->ctx->samr.pipe, &s->info, s->monitor_fn);
 	if (composite_nomem(info_req, c)) return;
 
-	composite_continue(c, info_req, composite_group_info, c);
+	composite_continue(c, info_req, continue_group_info, c);
 }
 
 
-static void composite_group_info(struct composite_context *ctx)
+static void continue_group_info(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct group_info_state *s;
