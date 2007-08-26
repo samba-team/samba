@@ -717,7 +717,7 @@ if ($opt_format eq "buildfarm") {
 	$msg_ops = new output::plain($opt_verbose, $opt_immediate, $statistics);
 } elsif ($opt_format eq "html") {
 	require output::html;
-	mkdir "test-results";
+	mkdir("test-results", 0777);
 	$msg_ops = new output::html("test-results", $statistics);
 } else {
 	die("Invalid output format '$opt_format'");
