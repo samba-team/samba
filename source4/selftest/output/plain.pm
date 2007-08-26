@@ -49,6 +49,13 @@ sub output_msg($$$)
 	}
 }
 
+sub control_msg($$$)
+{
+	my ($self, $state, $output) = @_;
+
+	$self->output_msg($state, $output);
+}
+
 sub end_testsuite($$$$$)
 {
 	my ($self, $state, $expected_ret, $ret, $envlog) = @_;
@@ -70,9 +77,9 @@ sub start_test($$)
 	my ($state, $testname) = @_;
 }
 
-sub end_test($$$$)
+sub end_test($$$$$)
 {
-	my ($state, $testname, $result, $unexpected) = @_;
+	my ($state, $testname, $result, $unexpected, $reason) = @_;
 }
 
 sub summary($)

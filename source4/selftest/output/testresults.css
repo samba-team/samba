@@ -59,7 +59,7 @@ td.resultFailure
 /* Skipped */
 td.resultSkipped
 {
-	text-align:       right;
+	text-align:       center;
 	padding-left:     10px;
 	padding-right:    10px;
 	background-color: #FFEA20;
@@ -89,4 +89,21 @@ td.outputOk
 td.outputFailure
 {
 	background-color: #FF0000;
+}
+
+div.reason
+{
+	text-align: center;
+	font-weight: bold;
+}
+
+span.control
+{
+	display: none;
+}
+
+div.duration
+{
+	text-align: right;
+	font-weight: bold;
 }
