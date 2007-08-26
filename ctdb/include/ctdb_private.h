@@ -1133,5 +1133,7 @@ int32_t ctdb_control_check_server_id(struct ctdb_context *ctdb,
 		      TDB_DATA indata);
 int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb, 
 		      TDB_DATA indata);
+int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb, 
+		      TDB_DATA *outdata);
 
 #endif

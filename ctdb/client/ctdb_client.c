@@ -2385,6 +2385,30 @@ int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/*
+   get the list of server ids that are registered on a node
+*/
+int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
+		TALLOC_CTX *mem_ctx,
+		struct timeval timeout, uint32_t destnode, 
+		struct ctdb_server_id_list **svid_list)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_SERVER_ID_LIST, 0, tdb_null, 
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for get_server_id_list failed\n"));
+		return -1;
+	}
+
+	*svid_list = (struct ctdb_server_id_list *)talloc_steal(mem_ctx, outdata.dptr);
+		    
+	return 0;
+}
 
 /*
   initialise the ctdb daemon for client applications

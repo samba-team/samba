@@ -454,6 +454,30 @@ static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 /*
+  get a list of all server ids that are registered on a node
+ */
+static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_server_id_list *server_ids;
+
+	ret = ctdb_ctrl_get_server_id_list(ctdb, ctdb, TIMELIMIT(), options.vnn, &server_ids);
+	if (ret != 0) {
+		DEBUG(0, ("Unable to get server_id list from node %u\n", options.vnn));
+		return ret;
+	}
+
+	for (i=0; i<server_ids->num; i++) {
+		printf("Server id %d:%d:%d\n", 
+			server_ids->server_ids[i].vnn, 
+			server_ids->server_ids[i].type, 
+			server_ids->server_ids[i].server_id); 
+	}
+
+	return -1;
+}
+
+/*
   send a tcp tickle ack
  */
 static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1048,6 +1072,7 @@ static const struct {
 	{ "regsrvid",        regsrvid,			false, "register a server id", "<vnn> <type> <id>" },
 	{ "unregsrvid",      unregsrvid,		false, "unregister a server id", "<vnn> <type> <id>" },
 	{ "chksrvid",        chksrvid,			false, "check if a server id exists", "<vnn> <type> <id>" },
+	{ "getsrvids",       getsrvids,			false, "get a list of all server ids"},
 };
 
 /*

@@ -412,6 +412,13 @@ struct ctdb_server_id {
 	uint32_t vnn;
 	uint32_t server_id;
 };
+
+struct ctdb_server_id_list {
+	uint32_t num;
+	struct ctdb_server_id server_ids[1];
+};
+
+
 int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
 		struct timeval timeout,
 		struct ctdb_server_id *id);
@@ -421,6 +428,10 @@ int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb,
 int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
 		struct timeval timeout, uint32_t destnode, 
 		struct ctdb_server_id *id, uint32_t *status);
+int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
+		TALLOC_CTX *mem_ctx,
+		struct timeval timeout, uint32_t destnode, 
+		struct ctdb_server_id_list **svid_list);
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 

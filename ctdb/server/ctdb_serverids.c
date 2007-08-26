@@ -72,8 +72,9 @@ int32_t ctdb_control_register_server_id(struct ctdb_context *ctdb,
 	   when the structure is free'd it will be automatically
 	   removed from the tree
 	*/
-	server_id = talloc_memdup(client, indata.dptr, indata.dsize);
+	server_id = talloc_zero(client, struct ctdb_server_id);
 	CTDB_NO_MEMORY(ctdb, server_id);
+	memcpy(server_id, indata.dptr, sizeof(struct ctdb_server_id));
 
 	trbt_insertarray32_callback(ctdb->server_ids, SERVER_ID_KEY_SIZE,
 		get_server_id_key(server_id), 
@@ -111,3 +112,78 @@ int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb,
 }
 
 
+
+
+struct count_server_ids {
+	int count;
+	struct ctdb_server_id_list *list;
+};
+
+static void server_id_count(void *param, void *data)
+{
+	struct count_server_ids *svid = talloc_get_type(param, 
+						struct count_server_ids);
+
+	if (svid == NULL) {
+		DEBUG(0, (__location__ " Got null pointer for svid\n"));
+		return;
+	}
+
+	svid->count++;
+}
+
+static void server_id_store(void *param, void *data)
+{
+	struct count_server_ids *svid = talloc_get_type(param, 
+						struct count_server_ids);
+	struct ctdb_server_id *server_id = talloc_get_type(data, 
+						struct ctdb_server_id);
+
+	if (svid == NULL) {
+		DEBUG(0, (__location__ " Got null pointer for svid\n"));
+		return;
+	}
+
+	if (svid->count >= svid->list->num) {
+		DEBUG(0, (__location__ " size of server id tree changed during traverse\n"));
+		return;
+	}
+
+	memcpy(&svid->list->server_ids[svid->count], server_id, sizeof(struct ctdb_server_id));
+	svid->count++;
+}
+
+/* 
+   returns a list of all registered server ids for a node
+*/
+int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb, TDB_DATA *outdata)
+{
+	struct count_server_ids *svid;
+
+
+	svid = talloc_zero(outdata, struct count_server_ids);
+	CTDB_NO_MEMORY(ctdb, svid);
+
+
+	/* first we must count how many entries we have */
+	trbt_traversearray32(ctdb->server_ids, SERVER_ID_KEY_SIZE,
+			server_id_count, svid);
+
+
+	outdata->dsize = offsetof(struct ctdb_server_id_list, 
+				server_ids)
+			+ sizeof(struct ctdb_server_id) * svid->count;
+	outdata->dptr  = talloc_size(outdata, outdata->dsize);
+	CTDB_NO_MEMORY(ctdb, outdata->dptr);
+
+
+	/* now fill the structure in */
+	svid->list = (struct ctdb_server_id_list *)(outdata->dptr);
+	svid->list->num = svid->count;
+	svid->count=0;
+	trbt_traversearray32(ctdb->server_ids, SERVER_ID_KEY_SIZE,
+			server_id_store, svid);
+
+
+	return 0;
+}

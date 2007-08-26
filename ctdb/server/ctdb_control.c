@@ -308,6 +308,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_server_id));
 		return ctdb_control_check_server_id(ctdb, indata);
 
+	case CTDB_CONTROL_GET_SERVER_ID_LIST:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_get_server_id_list(ctdb, outdata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
