@@ -295,11 +295,11 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &res);
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Error opening key '%s': %s\n", 
+		DEBUG(3, ("Error opening key '%s': %s\n", 
 				  ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	} else if (res->count == 0) {
-		DEBUG(0, ("Key '%s' not found\n", ldb_dn_get_linearized(ldap_path)));
+		DEBUG(3, ("Key '%s' not found\n", ldb_dn_get_linearized(ldap_path)));
 		talloc_free(res);
 		return WERR_NOT_FOUND;
 	}

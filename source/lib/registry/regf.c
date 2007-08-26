@@ -1303,7 +1303,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 			}
 		}
 		if (!found_offset) {
-			DEBUG(0, ("Subkey not found\n"));
+			DEBUG(2, ("Subkey not found\n"));
 			return WERR_NOT_FOUND;
 		}
 		li.key_count--;
@@ -1345,7 +1345,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 			}
 		}
 		if (!found_offset) {
-			DEBUG(0, ("Subkey not found\n"));
+			DEBUG(2, ("Subkey not found\n"));
 			return WERR_NOT_FOUND;
 		}
 		lf.key_count--;
@@ -1487,7 +1487,7 @@ static WERROR regf_del_key(const struct hive_key *parent, const char *name)
 	/* Find the key */
 	if (!W_ERROR_IS_OK(regf_get_subkey_by_name(parent_nk, parent, name, 
 									   (struct hive_key **)&key))) {
-		DEBUG(0, ("Key '%s' not found\n", name));
+		DEBUG(2, ("Key '%s' not found\n", name));
 		return WERR_NOT_FOUND;
 	}
 	
