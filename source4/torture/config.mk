@@ -280,6 +280,7 @@ OBJ_FILES = \
 		libnet/domain.o \
 		libnet/libnet_lookup.o \
 		libnet/libnet_user.o \
+		libnet/libnet_group.o \
 		libnet/libnet_share.o \
 		libnet/libnet_rpc.o \
 		libnet/libnet_domain.o \
