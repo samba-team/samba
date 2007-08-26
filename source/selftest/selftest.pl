@@ -156,7 +156,8 @@ my $statistics = {
 	TESTS_EXPECTED_OK => 0,
 	TESTS_UNEXPECTED_FAIL => 0,
 	TESTS_EXPECTED_FAIL => 0,
-	TESTS_ERROR => 0
+	TESTS_ERROR => 0,
+	TESTS_SKIP => 0,
 };
 
 sub expecting_failure($)
@@ -218,45 +219,58 @@ sub parse_subunit_results($$$$)
 	my $open_tests = {};
 
 	while(<$fh>) {
-		$msg_ops->output_msg($msg_state, $_);
 		if (/^test: (.+)\n/) {
+			$msg_ops->control_msg($msg_state, $_);
 			$open_tests->{$1} = 1;
 			$msg_ops->start_test($msg_state, $1);
-		} elsif (/^(success|failure|skip|error): (.*?)( \[)?\n/) {
+		} elsif (/^(success|failure|skip|error): (.*?)( \[)?([ \t]*)\n/) {
+			$msg_ops->control_msg($msg_state, $_);
+			my $reason = undef;
+			if ($3) {
+				$reason = "";
+				# reason may be specified in next lines
+				while(<$fh>) {
+					$msg_ops->control_msg($msg_state, $_);
+					if ($_ eq "]\n") { last; } else { $reason .= $_; }
+				}
+			}
 			my $result = $1;
 			if ($1 eq "success") {
 				delete $open_tests->{$2};
 				if (expecting_failure("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_UNEXPECTED_OK}++;
-					$msg_ops->end_test($msg_state, $2, $1, 1);
+					$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
 				} else {
 					$statistics->{TESTS_EXPECTED_OK}++;
-					$msg_ops->end_test($msg_state, $2, $1, 0);
+					$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
 				}
 			} elsif ($1 eq "failure") {
 				delete $open_tests->{$2};
 				if (expecting_failure("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_EXPECTED_FAIL}++;
-					$msg_ops->end_test($msg_state, $2, $1, 0);
+					$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
 					$expected_ret = 0;
 				} else {
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
-					$msg_ops->end_test($msg_state, $2, $1, 1);
+					$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
 				}
 			} elsif ($1 eq "skip") {
+				$statistics->{TESTS_SKIP}++;
 				delete $open_tests->{$2};
-				$msg_ops->end_test($msg_state, $2, $1, 0);
+				$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
 			} elsif ($1 eq "error") {
 				$statistics->{TESTS_ERROR}++;
 				delete $open_tests->{$2};
-				$msg_ops->end_test($msg_state, $2, $1, 1);
+				$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
 			}
+		} else {
+			$msg_ops->output_msg($msg_state, $_);
 		}
 	}
 
 	foreach (keys %$open_tests) {
-		$msg_ops->end_test($msg_state, $_, "error", 1);
-		$msg_ops->output_msg($msg_state, "$_ was started but never finished!");
+		$msg_ops->end_test($msg_state, $_, "error", 1, 
+						   "was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
 	}
 

@@ -13,6 +13,7 @@ sub new($$$$) {
 		dirname => $dirname,
 		statistics => $statistics,
 		active_test => undef,
+		local_statistics => {},
 		msg => ""
 	};
 
@@ -35,7 +36,6 @@ sub new($$$$) {
 	print INDEX "    <td class=\"tableHead\">Test</td>\n";
 	print INDEX "    <td class=\"tableHead\">Environment</td>\n";
 	print INDEX "    <td class=\"tableHead\">Result</td>\n";
-	print INDEX "    <td class=\"tableHead\">Duration</td>\n";
 	print INDEX "  </tr>\n";
 
 	bless($self, $class);
@@ -46,6 +46,13 @@ sub output_msg($$$);
 sub start_testsuite($$)
 {
 	my ($self, $state) = @_;
+
+	$self->{local_statistics} = {
+		success => 0,
+		skip => 0,
+		error => 0,
+		failure => 0
+	};
 
 	$state->{HTMLFILE} = "$state->{NAME}.html";
 	$state->{HTMLFILE} =~ s/[:\t\n \/]/_/g;
@@ -66,6 +73,13 @@ sub start_testsuite($$)
 	print TEST "  <table>\n";
 }
 
+sub control_msg($$$)
+{
+	my ($self, $state, $output) = @_;
+
+	$self->{msg} .=  "<span class=\"control\">$output<br/></span>\n";
+}
+
 sub output_msg($$$)
 {
 	my ($self, $state, $output) = @_;
@@ -82,21 +96,55 @@ sub end_testsuite($$$$$)
 	my ($self, $state, $expected_ret, $ret, $envlog) = @_;
 
 	print TEST "</table>\n";
+
+	print TEST "<div class=\"duration\">Duration: " . (time() - $state->{START_TIME}) . "s</div>\n";
 	print TEST "</body>\n";
 	print TEST "</html>\n";
 
 	close(TEST);
 
-	print INDEX "<tr><td class=\"testSuite\"><a href=\"$state->{HTMLFILE}\">$state->{NAME}</a></td><td class=\"environment\">$state->{ENVNAME}</td>";
+	print INDEX "<tr>\n";
+	print INDEX "  <td class=\"testSuite\"><a href=\"$state->{HTMLFILE}\">$state->{NAME}</a></td>\n";
+	print INDEX "  <td class=\"environment\">$state->{ENVNAME}</td>\n";
+	my $st = $self->{local_statistics};
 
 	if ($ret == $expected_ret) {
-		print INDEX "<td class=\"resultOk\">OK</td>";
+		print INDEX "  <td class=\"resultOk\">";
 	} else {
-		print INDEX "<td class=\"resultFailure\">FAIL</td>";
+		print INDEX "  <td class=\"resultFailure\">";
 	}
 
-	print INDEX "<td class=\"duration\">" . (time() - $state->{START_TIME}) . "</td>\n";
+	my $l = 0;
+	if ($st->{success} > 0) {
+		print INDEX "$st->{success} ok";
+		$l++;
+	}
+	if ($st->{skip} > 0) {
+		print INDEX ", " if ($l);
+		print INDEX "$st->{skip} skipped";
+		$l++;
+	}
+	if ($st->{failure} > 0) {
+		print INDEX ", " if ($l);
+		print INDEX "$st->{failure} failures";
+		$l++;
+	}
+	if ($st->{error} > 0) {
+		print INDEX ", " if ($l);
+		print INDEX "$st->{error} errors";
+		$l++;
+	}
 
+	if ($l == 0) {
+		if ($ret == $expected_ret) {
+			print INDEX "OK";
+		} else {
+			print INDEX "FAIL";
+		}
+	}
+
+	print INDEX "</td>";
+		
 	print INDEX "</tr>\n";
 }
 
@@ -108,11 +156,13 @@ sub start_test($$$)
 	$self->{msg} = "";
 }
 
-sub end_test($$$$$)
+sub end_test($$$$$$)
 {
-	my ($self, $state, $testname, $result, $unexpected) = @_;
+	my ($self, $state, $testname, $result, $unexpected, $reason) = @_;
 
 	print TEST "<tr>";
+
+	$self->{local_statistics}->{$result}++;
 
 	if ($result eq "skip") {
 		print TEST "<td class=\"outputSkipped\">\n";
@@ -126,6 +176,10 @@ sub end_test($$$$$)
 
 	print TEST $self->{msg};
 
+	if (defined($reason)) {
+		print TEST "<div class=\"reason\">$reason</div>\n";
+	}
+
 	print TEST "</td></tr>\n";
 
 	$self->{active_test} = undef;
@@ -134,6 +188,36 @@ sub end_test($$$$$)
 sub summary($)
 {
 	my ($self) = @_;
+
+	my $st = $self->{statistics};
+	print INDEX "<tr>\n";
+	print INDEX "  <td class=\"testSuiteTotal\">Total</td>\n";
+	print INDEX "  <td></td>\n";
+
+	if ($st->{SUITES_FAIL} == 0) {
+		print INDEX "  <td class=\"resultOk\">";
+	} else {
+		print INDEX "  <td class=\"resultFailure\">";
+	}
+	print INDEX "$st->{TESTS_EXPECTED_OK} ok";
+	if ($st->{TESTS_UNEXPECTED_OK} > 0) {
+		print INDEX " ($st->{TESTS_UNEXPECTED_OK})";
+	}
+	print INDEX "</td>";
+	if ($st->{TESTS_SKIP} > 0) {
+		print INDEX ", $st->{TESTS_SKIP} skipped";
+	}
+	print INDEX ", $st->{TESTS_EXPECTED_FAIL} failures";
+	if ($st->{TESTS_UNEXPECTED_OK} > 0) {
+		print INDEX " ($st->{TESTS_UNEXPECTED_FAIL})";
+	}
+	if ($st->{TESTS_ERROR} > 0) {
+		print INDEX ", $st->{TESTS_ERROR} errors";
+	}
+
+	print INDEX "</td>";
+
+	print INDEX "</tr>\n";
 
 	print INDEX "</table>\n";
 	print INDEX "</center>\n";
@@ -155,7 +239,10 @@ sub skip_testsuite($$)
 {
 	my ($self, $name) = @_;
 
-	print INDEX "<tr><td class=\"testSuite\">$name</td><td class=\"environmentSkipped\">N/A</td><td class=\"resultSkipped\">SKIPPED</td><td class=\"durationSkipped\">N/A</td></tr>\n";
+	print INDEX "<tr>\n";
+	print INDEX "  <td class=\"testSuite\">$name</td>\n";
+	print INDEX "  <td class=\"resultSkipped\" colspan=\"2\">SKIPPED</td>\n";
+	print INDEX "</tr>\n";
 }
 
 1;
