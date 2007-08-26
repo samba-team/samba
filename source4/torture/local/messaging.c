@@ -86,7 +86,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 
 	tv = timeval_current();
 
-	torture_comment(tctx, "Sending pings for %d seconds", timelimit);
+	torture_comment(tctx, "Sending pings for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		DATA_BLOB data;
 		NTSTATUS status1, status2;
@@ -108,18 +108,18 @@ static bool test_ping_speed(struct torture_context *tctx)
 		}
 	}
 
-	torture_comment(tctx, "waiting for %d remaining replies (done %d)", 
+	torture_comment(tctx, "waiting for %d remaining replies (done %d)\n", 
 	       ping_count - pong_count, pong_count);
 	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
 		event_loop_once(ev);
 	}
 
-	torture_comment(tctx, "sending exit");
+	torture_comment(tctx, "sending exit\n");
 	messaging_send(msg_client_ctx, cluster_id(1), msg_exit, NULL);
 
 	torture_assert_int_equal(tctx, ping_count, pong_count, "ping test failed");
 
-	torture_comment(tctx, "ping rate of %.0f messages/sec", 
+	torture_comment(tctx, "ping rate of %.0f messages/sec\n", 
 	       (ping_count+pong_count)/timeval_elapsed(&tv));
 
 	talloc_free(msg_client_ctx);
