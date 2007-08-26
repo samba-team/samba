@@ -604,7 +604,7 @@ double torture_create_procs(struct torture_context *tctx,
 	volatile bool *child_status_out;
 	int synccount;
 	int tries = 8;
-	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
+	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
 	double start_time_limit = 10 + (torture_nprocs * 1.5);
 	struct timeval tv;
 

@@ -660,7 +660,7 @@ static NTSTATUS benchrw_mkdir(struct torture_context *tctx,
 	
 	/* open/create the files */
 	torture_comment(tctx, "Open File %d/%d\n",state->nr+1,
-			lp_parm_int(-1, "torture", "nprocs", 4));
+			torture_setting_int(tctx, "nprocs", 4));
 	open_parms=talloc_zero(tctx, union smb_open);
 	NT_STATUS_HAVE_NO_MEMORY(open_parms);
 	open_parms->openx.level = RAW_OPEN_OPENX;
@@ -837,7 +837,7 @@ BOOL run_benchrw(struct torture_context *tctx)
 	union smb_mkdir parms;
 	int finished = 0;
 	BOOL success=True;
-	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
+	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
 	
 	torture_comment(tctx, "Start BENCH-READWRITE num_ops=%d "
 			"num_nprocs=%d\n",

@@ -9651,10 +9651,9 @@ static bool torture_nbt_winsreplication_owned(struct torture_context *tctx)
 	bool ret = true;
 	struct test_wrepl_conflict_conn *ctx;
 
-	if (lp_parm_bool(-1, "torture", "quick", False)) {
-		printf("skip NBT-WINSREPLICATION-OWNED test in quick test mode\n");
-		return true;
-	}
+	if (torture_setting_bool(tctx, "quick", false))
+		torture_skip(tctx, 
+			"skip NBT-WINSREPLICATION-OWNED test in quick test mode\n");
 
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
