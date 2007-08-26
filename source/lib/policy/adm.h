@@ -36,11 +36,10 @@ struct adm_category {
 
 struct adm_policy {
 	struct adm_part *parts;
-
 };
 
 struct adm_part {
-	
+	int dummy;	
 };
 
 struct adm_file *adm_read_file(const char *);
