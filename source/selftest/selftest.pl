@@ -277,7 +277,7 @@ sub parse_subunit_results($$$$)
 	return $expected_ret;
 }
 
-sub run_test($$$$$$)
+sub run_testsuite($$$$$$)
 {
 	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
 	my $msg_state = {
@@ -773,7 +773,7 @@ $envvarstr
 			next;
 		}
 
-		run_test($envname, $name, $cmd, $i, $suitestotal, $msg_ops);
+		run_testsuite($envname, $name, $cmd, $i, $suitestotal, $msg_ops);
 
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");
