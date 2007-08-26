@@ -199,17 +199,16 @@ sub summary($)
 	} else {
 		print INDEX "  <td class=\"resultFailure\">";
 	}
-	print INDEX "$st->{TESTS_EXPECTED_OK} ok";
+	print INDEX ($st->{TESTS_EXPECTED_OK} + $st->{TESTS_UNEXPECTED_OK}) + " ok";
 	if ($st->{TESTS_UNEXPECTED_OK} > 0) {
-		print INDEX " ($st->{TESTS_UNEXPECTED_OK})";
+		print INDEX " ($st->{TESTS_UNEXPECTED_OK} unexpected)";
 	}
-	print INDEX "</td>";
 	if ($st->{TESTS_SKIP} > 0) {
 		print INDEX ", $st->{TESTS_SKIP} skipped";
 	}
-	print INDEX ", $st->{TESTS_EXPECTED_FAIL} failures";
+	print INDEX ", " . ($st->{TESTS_UNEXPECTED_FAIL} + $st->{TESTS_EXPECTED_FAIL}) . " failures";
 	if ($st->{TESTS_UNEXPECTED_OK} > 0) {
-		print INDEX " ($st->{TESTS_UNEXPECTED_FAIL})";
+		print INDEX " ($st->{TESTS_EXPECTED_FAIL} expected)";
 	}
 	if ($st->{TESTS_ERROR} > 0) {
 		print INDEX ", $st->{TESTS_ERROR} errors";
@@ -232,7 +231,10 @@ sub missing_env($$$)
 {
 	my ($self, $name, $envname) = @_;
 
-	print "FAIL: $name (ENV[$envname] not available!)\n";
+	print INDEX "<tr>\n";
+	print INDEX "  <td class=\"testSuite\">$name</td>\n";
+	print INDEX "  <td class=\"resultSkipped\" colspan=\"2\">SKIPPED - environment `$envname` not available!</td>\n";
+	print INDEX "</tr>\n";
 }
 
 sub skip_testsuite($$)
