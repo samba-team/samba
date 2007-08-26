@@ -259,7 +259,7 @@ static void reply_spnego_kerberos(connection_struct *conn,
 	fstring netbios_domain_name;
 	struct passwd *pw;
 	fstring user;
-	int sess_vuid = SVAL(req->inbuf, smb_uid);
+	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
 	PAC_DATA *pac_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
@@ -680,7 +680,8 @@ static void reply_spnego_ntlmssp(connection_struct *conn,
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
 
-		sessionsetup_start_signing_engine(server_info, req->inbuf);
+		sessionsetup_start_signing_engine(server_info,
+						  (uint8 *)req->inbuf);
 	}
 
   out:
@@ -1720,9 +1721,10 @@ void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
 			data_blob_free(&nt_resp);
 			data_blob_free(&lm_resp);
 			data_blob_free(&session_key);
-			END_PROFILE(SMBsesssetupX);
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
+			END_PROFILE(SMBsesssetupX);
+			return;
 		}
 		/* register_existing_vuid keeps the server info */
 		sess_vuid = register_existing_vuid(sess_vuid,
