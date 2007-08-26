@@ -262,7 +262,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	if (opt_daemon) {
 		DEBUG(3,("Becoming a daemon.\n"));
-		become_daemon(True);
+		become_daemon(true);
 	}
 
 	cleanup_tmp_files();
@@ -285,9 +285,6 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	share_init();
 
 	gensec_init(); /* FIXME: */
-
-	registry_init(); /* FIXME: maybe run this in the initialization function 
-						of the winreg RPC server instead? */
 
 	ntptr_init();	/* FIXME: maybe run this in the initialization function 
 						of the spoolss RPC server instead? */

@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Registry interface
-   Copyright (C) Jelmer Vernooij					  2004.
+   Copyright (C) Jelmer Vernooij					  2007.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@ static WERROR wine_open_reg (struct registry_hive *h, struct registry_key **key)
 {
 	/* FIXME: Open h->location and mmap it */
 }
-
-
 
 static REG_OPS reg_backend_wine = {
 	.name = "wine",

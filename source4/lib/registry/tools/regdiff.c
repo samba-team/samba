@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
    simple registry frontend
    
-   Copyright (C) Jelmer Vernooij 2004-2005
+   Copyright (C) Jelmer Vernooij 2004-2007
+   Copyright (C) Wilco Baan Hofman 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,63 +23,115 @@
 #include "lib/registry/registry.h"
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/registry/tools/common.h"
 
-int main(int argc, char **argv)
+enum reg_backend { REG_UNKNOWN, REG_LOCAL, REG_REMOTE, REG_NULL };
+
+static struct registry_context *open_backend(poptContext pc, enum reg_backend backend, const char *remote_host)
+{
+	WERROR error;
+	struct registry_context *ctx;
+	
+	switch (backend) {
+	case REG_UNKNOWN:
+		poptPrintUsage(pc, stderr, 0);
+		return NULL;
+	case REG_LOCAL:
+		error = reg_open_samba(NULL, &ctx, NULL, cmdline_credentials);
+		break;
+	case REG_REMOTE:
+		error = reg_open_remote(&ctx, NULL, cmdline_credentials, remote_host, NULL);
+		break;
+	case REG_NULL:
+		error = reg_open_local(NULL, &ctx, NULL, cmdline_credentials);
+		break;
+	}
+
+	if (!W_ERROR_IS_OK(error)) {
+		fprintf(stderr, "Error: %s\n", win_errstr(error));
+		return NULL;
+	}
+
+	return ctx;
+}
+
+int main(int argc, const char **argv)
 {
 	int opt;
 	poptContext pc;
 	char *outputfile = NULL;
+	enum reg_backend backend1 = REG_UNKNOWN, backend2 = REG_UNKNOWN;
+	const char *remote1 = NULL, *remote2 = NULL;
 	struct registry_context *h1 = NULL, *h2 = NULL;
-	int from_null = 0;
 	WERROR error;
-	struct reg_diff *diff;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"output", 'o', POPT_ARG_STRING, &outputfile, 'o', "output file to use", NULL },
-		{"null", 'n', POPT_ARG_NONE, &from_null, 'n', "Diff from NULL", NULL },
-		{"remote", 'R', POPT_ARG_STRING, NULL, 0, "Connect to remote server" , NULL },
-		{"local", 'L', POPT_ARG_NONE, NULL, 0, "Open local registry", NULL },
+		{"output", 'o', POPT_ARG_STRING, &outputfile, 0, "output file to use", NULL },
+		{"null", 'n', POPT_ARG_NONE, NULL, 'n', "Diff from NULL", NULL },
+		{"remote", 'R', POPT_ARG_STRING, NULL, 'R', "Connect to remote server" , NULL },
+		{"local", 'L', POPT_ARG_NONE, NULL, 'L', "Open local registry", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
+	TALLOC_CTX *ctx;
+	void *callback_data;
+	struct reg_diff_callbacks *callbacks;
 
-	registry_init();
+	ctx = talloc_init("regdiff");
 
-	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
+	pc = poptGetContext(argv[0], argc, argv, long_options,0);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		error = WERR_OK;
 		switch(opt)	{
 		case 'L':
-			if (!h1 && !from_null) error = reg_open_local(NULL, &h1, NULL, cmdline_credentials);
-			else if (!h2) error = reg_open_local(NULL, &h2, NULL, cmdline_credentials);
+			if (backend1 == REG_UNKNOWN)
+				backend1 = REG_LOCAL;
+			else if (backend2 == REG_UNKNOWN)
+				backend2 = REG_LOCAL;
+			break;
+		case 'n':
+			if (backend1 == REG_UNKNOWN)
+				backend1 = REG_NULL;
+			else if (backend2 == REG_UNKNOWN)
+				backend2 = REG_NULL;
 			break;
 		case 'R':
-			if (!h1 && !from_null) 
-				error = reg_open_remote(&h1, NULL, cmdline_credentials, 
-							poptGetOptArg(pc), NULL);
-			else if (!h2) error = reg_open_remote(&h2, NULL, cmdline_credentials, 
-							      poptGetOptArg(pc), NULL);
+			if (backend1 == REG_UNKNOWN) {
+				backend1 = REG_REMOTE;
+				remote1 = poptGetOptArg(pc);
+			} else if (backend2 == REG_UNKNOWN) {
+				backend2 = REG_REMOTE;
+				remote2 = poptGetOptArg(pc);
+			}
 			break;
 		}
 
-		if (!W_ERROR_IS_OK(error)) {
-			fprintf(stderr, "Error: %s\n", win_errstr(error));
-			return 1;
-		}
 	}
+
+	h1 = open_backend(pc, backend1, remote1);
+	if (h1 == NULL)
+		return 1;
+
+	h2 = open_backend(pc, backend2, remote2);
+	if (h2 == NULL)
+		return 1;
 
 	poptFreeContext(pc);
 
-	diff = reg_generate_diff(NULL, h1, h2);
-	if (!diff) {
-		fprintf(stderr, "Unable to generate diff between keys\n");
+	error = reg_dotreg_diff_save(ctx, outputfile, &callbacks, &callback_data);
+	if (!W_ERROR_IS_OK(error)) {
+		fprintf(stderr, "Problem saving registry diff to '%s': %s\n", outputfile, win_errstr(error));
 		return -1;
 	}
 
-	reg_diff_save(diff, outputfile);
+	error = reg_generate_diff(h1, h2, callbacks, callback_data);
+	if (!W_ERROR_IS_OK(error)) {
+		fprintf(stderr, "Unable to generate diff between keys: %s\n", win_errstr(error));
+		return -1;
+	}
 
 	return 0;
 }

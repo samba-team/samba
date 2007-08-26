@@ -5,6 +5,7 @@ include charset/config.mk
 include ldb/config.mk
 include tls/config.mk
 include registry/config.mk
+include policy/config.mk
 include messaging/config.mk
 include events/config.mk
 include cmdline/config.mk

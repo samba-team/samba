@@ -143,9 +143,19 @@ source/smbd/pidfile.h
 source/torture/rap/proto.h
 *_asn1.h
 *_asn1_files
-*_err.c
+*_proto.h
+source/heimdal/lib/hx509/asn1_*.c
 *_err.h
+*_err.c
+source/smbd/pidfile.h
+source/ntvfs/cifs_posix_cli/proto.h
+source/lib/util/util_tdb.h
+source/lib/cmdline/popt_credentials.h
+source/lib/policy/lex.c
+source/lib/policy/parse_adm.c
+source/lib/policy/parse_adm.h
 source/heimdal/lib/roken/err.h
+source/kdc/pac_glue.h
 source/scripting/ejs/ejsnet/proto.h
 source/heimdal/lib/hx509/asn1_*.c
 *.gcno
@@ -160,6 +170,7 @@ source/coverage
 source/st
 source/samba.info
 source/pidl/cover_db
+source/lib/registry/apidocs
 source/dsdb/repl/drepl_service_proto.h
 webapps/qooxdoo-0.6.5-sdk/frontend/framework/.cache
 webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/class/qx/locale/data
@@ -169,6 +180,7 @@ webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/class/qx/locale/translation
 webapps/qooxdoo-0.6.5-sdk/frontend/framework/source/translation/messages.pot
 source/torture/ndr/proto.h
 source/bin/modules/*
+source/lib/registry/API
 source/tests
 source/torture/unix/proto.h
 source/lib/tdb/bin/tdbtool
@@ -182,3 +194,5 @@ source/lib/ldb/examples/ldbreader
 source/lib/ldb/examples/ldifreader
 source/lib/tdb/bin/tdbbackup
 source/lib/tdb/bin/tdbdump
+source/lib/registry/tools/common.h
+source/librpc/ndr/ndr_table.h

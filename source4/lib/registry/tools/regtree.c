@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple registry frontend
    
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Jelmer Vernooij 2004-2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,52 +20,66 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
+#include "lib/registry/tools/common.h"
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
 
-static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
+/**
+ * Print a registry key recursively 
+ * 
+ * @param level Level at which to print
+ * @param p Key to print
+ * @param fullpath Whether the full pat hshould be printed or just the last bit
+ * @param novals Whether values should not be printed
+ */
+static void print_tree(int level, struct registry_key *p, 
+					   const char *name,
+					   bool fullpath, bool novals)
 {
 	struct registry_key *subkey;
-	struct registry_value *value;
+	const char *valuename;
+	const char *keyname;
+	uint32_t value_type;
+	DATA_BLOB value_data;
 	struct security_descriptor *sec_desc;
 	WERROR error;
 	int i;
 	TALLOC_CTX *mem_ctx;
 
-	for(i = 0; i < l; i++) putchar(' ');
-	
-	/* Hive name */
-	if(p->hive->root == p) {
-		if(p->hive->root->name) printf("%s\n", p->hive->root->name); else printf("<No Name>\n");
-	} else {
-		if(!p->name) printf("<No Name>\n");
-		if(fullpath) printf("%s\n", p->path);
-		else printf("%s\n", p->name?p->name:"(NULL)");
-	}
+	for(i = 0; i < level; i++) putchar(' '); puts(name);
 
 	mem_ctx = talloc_init("print_tree");
-	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, p, i, &subkey)); i++) {
-		print_tree(l+1, subkey, fullpath, novals);
+	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, p, i, &keyname, NULL, NULL)); i++) {
+		SMB_ASSERT(strlen(keyname) > 0);
+		if (!W_ERROR_IS_OK(reg_open_key(mem_ctx, p, keyname, &subkey))) 
+			continue;
+		print_tree(level+1, subkey, (fullpath && strlen(name))?
+						talloc_asprintf(mem_ctx, "%s\\%s", name, keyname):
+						keyname, fullpath, novals);
 	}
 	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", p->path, win_errstr(error)));
+		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", 
+				  name, win_errstr(error)));
 	}
 
-	if(!novals) {
+	if (!novals) {
 		mem_ctx = talloc_init("print_tree");
-		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx, p, i, &value)); i++) {
+		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx, 
+						p, i, &valuename, &value_type, &value_data)); i++) {
 			int j;
 			char *desc;
-			for(j = 0; j < l+1; j++) putchar(' ');
-			desc = reg_val_description(mem_ctx, value);
+			for(j = 0; j < level+1; j++) putchar(' ');
+			desc = reg_val_description(mem_ctx, valuename, value_type, 
+									   value_data);
 			printf("%s\n", desc);
 		}
 		talloc_free(mem_ctx);
 
 		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", p->path, win_errstr(error)));
+			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", 
+					  name, win_errstr(error)));
 		}
 	}
 
@@ -79,21 +93,22 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 int main(int argc, char **argv)
 {
 	int opt, i;
-	const char *backend = NULL;
+	const char *file = NULL;
 	const char *remote = NULL;
 	poptContext pc;
 	struct registry_context *h = NULL;
-	struct registry_key *root = NULL;
+	struct registry_key *start_key = NULL;
 	WERROR error;
-	int fullpath = 0, no_values = 0;
+	bool fullpath = false, no_values = false;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
-		{"fullpath", 'f', POPT_ARG_NONE, &fullpath, 0, "show full paths", NULL},
+		{"file", 'F', POPT_ARG_STRING, &file, 0, "file path", NULL },
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL },
+		{"fullpath", 'f', POPT_ARG_NONE, &fullpath, 0, "show full paths", NULL},
 		{"no-values", 'V', POPT_ARG_NONE, &no_values, 0, "don't show values", NULL},
 		POPT_COMMON_SAMBA	
 		POPT_COMMON_CREDENTIALS	
+		POPT_COMMON_VERSION
 		{ NULL }
 	};
 
@@ -102,48 +117,35 @@ int main(int argc, char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	registry_init();
-
-	if (remote) {
-		error = reg_open_remote(&h, NULL, cmdline_credentials, remote, NULL);
-
-		if(!W_ERROR_IS_OK(error)) {
-			fprintf(stderr, "Unable to open remote registry at %s:%s \n", remote, win_errstr(error));
-			return 1;
-		}
-
-	} else if (backend) {
-	    error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, cmdline_credentials, &root);
-	
-		if(!W_ERROR_IS_OK(error)) {
-			fprintf(stderr, "Unable to open '%s' with backend '%s':%s \n", poptGetArg(pc), backend, win_errstr(error));
-			return 1;
-		}
+	if (remote != NULL) {
+		h = reg_common_open_remote(remote, cmdline_credentials);
+	} else if (file != NULL) {
+		start_key = reg_common_open_file(file, cmdline_credentials);
 	} else {
-		error = reg_open_local (NULL, &h, NULL, cmdline_credentials);
-
-		if(!W_ERROR_IS_OK(error)) {
-			fprintf(stderr, "Unable to open local registry:%s \n", win_errstr(error));
-			return 1;
-		}
-
+		h = reg_common_open_local(cmdline_credentials);
 	}
+
+	if (h == NULL && start_key == NULL)
+		return 1;
 
 	poptFreeContext(pc);
 
 	error = WERR_OK;
 	
-	if (root != NULL) {
-		print_tree(0, root, fullpath, no_values);
+	if (start_key != NULL) {
+		print_tree(0, start_key, "", fullpath, no_values);
 	} else {
 		for(i = 0; reg_predefined_keys[i].handle; i++) {
-			error = reg_get_predefined_key(h, reg_predefined_keys[i].handle, &root);
+			error = reg_get_predefined_key(h, reg_predefined_keys[i].handle, 
+										   &start_key);
 			if (!W_ERROR_IS_OK(error)) {
-				fprintf(stderr, "Skipping %s\n", reg_predefined_keys[i].name);
+				fprintf(stderr, "Skipping %s: %s\n", reg_predefined_keys[i].name, 
+						win_errstr(error));
 				continue;
 			}
-			SMB_ASSERT(root);
-			print_tree(0, root, fullpath, no_values);
+			SMB_ASSERT(start_key != NULL);
+			print_tree(0, start_key, reg_predefined_keys[i].name, fullpath, 
+					   no_values);
 		}
 	}
 

@@ -28,7 +28,7 @@
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
-static void close_low_fds(BOOL stderr_too)
+static void close_low_fds(bool stderr_too)
 {
 #ifndef VALGRIND
 	int fd;
@@ -65,7 +65,7 @@ static void close_low_fds(BOOL stderr_too)
  Become a daemon, discarding the controlling terminal.
 **/
 
-_PUBLIC_ void become_daemon(BOOL Fork)
+_PUBLIC_ void become_daemon(bool Fork)
 {
 	if (Fork) {
 		if (fork()) {
@@ -87,7 +87,7 @@ _PUBLIC_ void become_daemon(BOOL Fork)
 #endif /* HAVE_SETSID */
 
 	/* Close fd's 0,1,2. Needed if started by rsh */
-	close_low_fds(False);  /* Don't close stderr, let the debug system
+	close_low_fds(false);  /* Don't close stderr, let the debug system
 				  attach it to the logfile */
 }
 

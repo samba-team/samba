@@ -433,3 +433,37 @@ struct torture_suite *torture_find_suite(struct torture_suite *parent,
 
 	return NULL;
 }
+
+static bool wrap_test_with_simple_test(struct torture_context *torture_ctx,
+									struct torture_tcase *tcase,
+									struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, const void *tcase_data);
+
+	fn = test->fn;
+
+	return fn(torture_ctx, tcase->data);
+}
+
+struct torture_test *torture_tcase_add_simple_test(
+		struct torture_tcase *tcase,
+		const char *name,
+		bool (*run) (struct torture_context *test, const void *tcase_data))
+{
+	struct torture_test *test; 
+	
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_test_with_simple_test;
+	test->fn = run;
+	test->data = NULL;
+	test->dangerous = False;
+
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+
+	return test;
+}
+
+

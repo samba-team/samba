@@ -1,30 +1,31 @@
 This is the registry library. The registry is basically a bunch of
-hives that can be loaded from different places.
+hives, each of which is loaded from a file. When using a local registry, 
+it is possible to specify where hives should be loaded from, etc. 
 
-The various registry backends provide support for loading/saving
-specific types of hives:
+There are separate APIs for accessing the data in a hive and the 
+data in the registry itself. Each supports different backends. 
+
+The following "full registry" backends are currently provided:
+
+ * Remote (over DCE/RPC)
+ * Local (allows "mounting" hives)
+ * Wine (uses the wine plain-text file)
+
+The following hive backends are supported:
 
  - ldb 
- - w95 (USER.DAT-style files)
- - nt4 (NTUSER.DAT-style files)
- - gconf (GNOME configuration)
+ - regf (NTUSER.DAT-style files)
  - rpc (Remote individual hives)
+ - directory
 
-Instead of opening individual hives, one can also open a 'complete'
-registry by using one of these three functions:
- 
- - reg_open_local() - load local registry, see below
- - reg_open_remote() - connect to remote registry over RPC
- - reg_open_wine() (not working yet)
-
-reg_open_local() loads a set of hives based on smb.conf settings.
+reg_open_samba() loads a set of hives based on smb.conf settings.
 Lines in smb.conf should have the following syntax:
 
 registry:<hivename> = <backend>:<location>
 
 So an example usage could be:
 
-registry:HKEY_CURRENT_USER = nt4:NTUSER.DAT
+registry:HKEY_CURRENT_USER = regf:NTUSER.DAT
 registry:HKEY_LOCAL_MACHINE = ldb:tdb://registry.tdb
 
 WERR_NOT_SUPPORTED will be returned for all hives that haven't been set.

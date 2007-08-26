@@ -1,0 +1,17 @@
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\ProductOptions]
+ProductType="LanmanNT"
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Print]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Netlogon\Parameters]
+RefusePasswordChange=REG_DWORD:0
+
+[HKEY_USERS]
+
+[HKEY_CLASSES_ROOT]

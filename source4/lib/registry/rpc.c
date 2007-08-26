@@ -1,7 +1,7 @@
 /*
    Samba Unix/Linux SMB implementation
    RPC backend for the registry library
-   Copyright (C) 2003-2004 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2003-2007 Jelmer Vernooij, jelmer@samba.org
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,23 @@
 #include "registry.h"
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 
-static struct hive_operations reg_backend_rpc;
+struct rpc_key {
+	struct registry_key key;
+	struct policy_handle pol;
+	struct dcerpc_pipe *pipe;
+
+	uint32_t num_values;
+	uint32_t num_subkeys;
+	uint32_t max_valnamelen;
+	uint32_t max_valdatalen;
+};
+
+struct rpc_registry_context {
+	struct registry_context context;
+	struct dcerpc_pipe *pipe;
+};
+
+static struct registry_operations reg_backend_rpc;
 
 /**
  * This is the RPC backend for the registry library.
@@ -58,57 +74,46 @@ openhive(HKCR)
 openhive(HKDD)
 openhive(HKCC)
 
-struct rpc_key_data {
-	struct policy_handle pol;
-	int num_subkeys;
-	int num_values;
-	int max_valnamelen;
-	int max_valdatalen;
-};
-
 static struct {
 	uint32_t hkey;
 	WERROR (*open) (struct dcerpc_pipe *p, TALLOC_CTX *, struct policy_handle *h);
 } known_hives[] = {
-{ HKEY_LOCAL_MACHINE, open_HKLM },
-{ HKEY_CURRENT_USER, open_HKCU },
-{ HKEY_CLASSES_ROOT, open_HKCR },
-{ HKEY_PERFORMANCE_DATA, open_HKPD },
-{ HKEY_USERS, open_HKU },
-{ HKEY_DYN_DATA, open_HKDD },
-{ HKEY_CURRENT_CONFIG, open_HKCC },
-{ 0, NULL }
+	{ HKEY_LOCAL_MACHINE, open_HKLM },
+	{ HKEY_CURRENT_USER, open_HKCU },
+	{ HKEY_CLASSES_ROOT, open_HKCR },
+	{ HKEY_PERFORMANCE_DATA, open_HKPD },
+	{ HKEY_USERS, open_HKU },
+	{ HKEY_DYN_DATA, open_HKDD },
+	{ HKEY_CURRENT_CONFIG, open_HKCC },
+	{ 0, NULL }
 };
 
 static WERROR rpc_query_key(const struct registry_key *k);
 
-static WERROR rpc_get_predefined_key (struct registry_context *ctx, uint32_t hkey_type, struct registry_key **k)
+static WERROR rpc_get_predefined_key(struct registry_context *ctx, 
+									 uint32_t hkey_type, 
+									 struct registry_key **k)
 {
 	int n;
-	struct registry_hive *h;
-	struct rpc_key_data *mykeydata;
+	struct rpc_registry_context *rctx = talloc_get_type(ctx, 
+												struct rpc_registry_context);
+	struct rpc_key *mykeydata;
 
-	for(n = 0; known_hives[n].hkey; n++) 
-	{
-		if(known_hives[n].hkey == hkey_type) break;
+	for(n = 0; known_hives[n].hkey; n++) {
+		if(known_hives[n].hkey == hkey_type) 
+			break;
 	}
 	
-	if(!known_hives[n].open)  {
+	if (known_hives[n].open == NULL)  {
 		DEBUG(1, ("No such hive %d\n", hkey_type));
 		return WERR_NO_MORE_ITEMS;
 	}
 
-	h = talloc(ctx, struct registry_hive);
-	h->functions = &reg_backend_rpc;
-	h->location = NULL;
-	h->backend_data = ctx->backend_data;
-	
-	(*k) = h->root = talloc(h, struct registry_key);
-	(*k)->hive = h;
-	(*k)->backend_data = mykeydata = talloc(*k, struct rpc_key_data);
+	mykeydata = talloc(ctx, struct rpc_key);
+	mykeydata->pipe = rctx->pipe;
 	mykeydata->num_values = -1;
 	mykeydata->num_subkeys = -1;
-	return known_hives[n].open((struct dcerpc_pipe *)ctx->backend_data, *k, &(mykeydata->pol));
+	return known_hives[n].open(mykeydata->pipe, *k, &(mykeydata->pol));
 }
 
 #if 0
@@ -136,44 +141,44 @@ static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 }
 #endif
 
-static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *h, const char *name, struct registry_key **key)
+static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, 
+						   const char *name, struct registry_key **key)
 {
-	struct rpc_key_data *mykeydata;
+	struct rpc_key *mykeydata = talloc_get_type(h, struct rpc_key),
+				   *newkeydata;
     struct winreg_OpenKey r;
 
-	*key = talloc(mem_ctx, struct registry_key);
-	(*key)->name = talloc_strdup(mem_ctx, name);
-
-	(*key)->backend_data = mykeydata = talloc(mem_ctx, struct rpc_key_data);
-	mykeydata->num_values = -1;
-	mykeydata->num_subkeys = -1;
+	mykeydata = talloc(mem_ctx, struct rpc_key);
 
 	/* Then, open the handle using the hive */
-
 	memset(&r, 0, sizeof(struct winreg_OpenKey));
-    r.in.parent_handle = &(((struct rpc_key_data *)h->backend_data)->pol);
+    r.in.parent_handle = &mykeydata->pol;
     init_winreg_String(&r.in.keyname, name);
     r.in.unknown = 0x00000000;
     r.in.access_mask = 0x02000000;
-    r.out.handle = &mykeydata->pol;
+    r.out.handle = &newkeydata->pol;
 
-    dcerpc_winreg_OpenKey((struct dcerpc_pipe *)(h->hive->backend_data), mem_ctx, &r);
+    dcerpc_winreg_OpenKey(mykeydata->pipe, mem_ctx, &r);
 
 	return r.out.result;
 }
 
-static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *parent, int n, struct registry_value **value)  
+static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, 
+									 const struct registry_key *parent, 
+									 uint32_t n, 
+									 const char **value_name,
+									 uint32_t *type,
+									 DATA_BLOB *data)
 {
-	struct rpc_key_data *mykeydata = parent->backend_data;
+	struct rpc_key *mykeydata = talloc_get_type(parent, struct rpc_key);
 	WERROR error;
 	struct winreg_EnumValue r;
 	uint32_t len1, zero = 0;
-	enum winreg_Type type;
 	NTSTATUS status;
 	struct winreg_StringBuf name;
 	uint8_t u8;
 	
-	if(mykeydata->num_values == -1) {
+	if (mykeydata->num_values == -1) {
 		error = rpc_query_key(parent);
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
@@ -187,13 +192,13 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_
 	r.in.handle = &mykeydata->pol;
 	r.in.enum_index = n;
 	r.in.name = &name;
-	r.in.type = &type;
+	r.in.type = type;
 	r.in.value = &u8;
 	r.in.length = &zero;
 	r.in.size = &len1;
 	r.out.name = &name;
 	
-	status = dcerpc_winreg_EnumValue((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
+	status = dcerpc_winreg_EnumValue(mykeydata->pipe, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("Error in EnumValue: %s\n", nt_errstr(status)));
 		return WERR_GENERAL_FAILURE;
@@ -201,20 +206,23 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_
 	
 	if(NT_STATUS_IS_OK(status) && 
 	   W_ERROR_IS_OK(r.out.result) && r.out.length) {
-		*value = talloc(mem_ctx, struct registry_value);
-		(*value)->name = talloc_strdup(mem_ctx, r.out.name->name);
-		(*value)->data_type = type;
-		(*value)->data = data_blob_talloc(mem_ctx, r.out.value, *r.out.length);
+		*value_name = talloc_strdup(mem_ctx, r.out.name->name);
+		*data = data_blob_talloc(mem_ctx, r.out.value, *r.out.length);
 		return WERR_OK;
 	}
 	
 	return r.out.result;
 }
 
-static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *parent, int n, struct registry_key **subkey) 
+static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, 
+									  const struct registry_key *parent, 
+									  uint32_t n, 
+									  const char **name,
+									  const char **keyclass,
+									  NTTIME *last_changed_time)
 {
 	struct winreg_EnumKey r;
-	struct rpc_key_data *mykeydata = parent->backend_data;
+	struct rpc_key *mykeydata = talloc_get_type(parent, struct rpc_key);
 	NTSTATUS status;
 	struct winreg_StringBuf namebuf, classbuf;
 	NTTIME change_time = 0;
@@ -233,40 +241,47 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, const struct registry
 	r.in.last_changed_time = &change_time;
 	r.out.name = &namebuf;
 
-	status = dcerpc_winreg_EnumKey((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
+	status = dcerpc_winreg_EnumKey(mykeydata->pipe, mem_ctx, &r);
 	if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
-		char *name = talloc_strdup(mem_ctx, r.out.name->name);
-		return rpc_open_key(mem_ctx, parent, name, subkey);
+		*name = talloc_strdup(mem_ctx, r.out.name->name);
+		*keyclass = talloc_strdup(mem_ctx, r.out.keyclass->name);
+		*last_changed_time = *r.out.last_changed_time;
 	}
 
 	return r.out.result;
 }
 
-static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec, struct registry_key **key)
+static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, 
+						  struct registry_key *parent, const char *name, 
+						  const char *key_class,
+						  struct security_descriptor *sec, 
+						  struct registry_key **key)
 {
 	NTSTATUS status;
 	struct winreg_CreateKey r;
+	struct rpc_key *parentkd = talloc_get_type(parent, struct rpc_key);
+	struct rpc_key *rpck = talloc(mem_ctx, struct rpc_key);
 
 	init_winreg_String(&r.in.name, name);
 	init_winreg_String(&r.in.keyclass, NULL);
 
-	r.in.handle = parent->backend_data;
-	r.out.new_handle = talloc(mem_ctx, struct policy_handle);	
+	r.in.handle = &parentkd->pol;
+	r.out.new_handle = &rpck->pol;
 	r.in.options = 0;
-	r.in.access_mask = access_mask;
+	r.in.access_mask = SEC_STD_ALL;
 	r.in.secdesc = NULL;
 
-	status = dcerpc_winreg_CreateKey((struct dcerpc_pipe *)(parent->hive->backend_data), mem_ctx, &r);
+	status = dcerpc_winreg_CreateKey(parentkd->pipe, mem_ctx, &r);
 
     if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(rpck);
         DEBUG(1, ("CreateKey failed - %s\n", nt_errstr(status)));
         return ntstatus_to_werror(status);
     }
 
 	if (W_ERROR_IS_OK(r.out.result)) {
-		*key = talloc(mem_ctx, struct registry_key);
-		(*key)->name = talloc_strdup(*key, name);
-		(*key)->backend_data = r.out.new_handle;
+		rpck->pipe = talloc_reference(rpck, parentkd->pipe);
+		*key = (struct registry_key *)rpck;
 	}
 
 	return r.out.result;
@@ -276,14 +291,14 @@ static WERROR rpc_query_key(const struct registry_key *k)
 {
     NTSTATUS status;
     struct winreg_QueryInfoKey r;
-    struct rpc_key_data *mykeydata = k->backend_data;
+    struct rpc_key *mykeydata = talloc_get_type(k, struct rpc_key);
 	TALLOC_CTX *mem_ctx = talloc_init("query_key");
 
 	r.in.classname = talloc(mem_ctx, struct winreg_String);
     init_winreg_String(r.in.classname, NULL);
     r.in.handle = &mykeydata->pol;
 	
-    status = dcerpc_winreg_QueryInfoKey((struct dcerpc_pipe *)(k->hive->backend_data), mem_ctx, &r);
+    status = dcerpc_winreg_QueryInfoKey(mykeydata->pipe, mem_ctx, &r);
 	talloc_free(mem_ctx);
 
     if (!NT_STATUS_IS_OK(status)) {
@@ -301,26 +316,29 @@ static WERROR rpc_query_key(const struct registry_key *k)
 	return r.out.result;
 }
 
-static WERROR rpc_del_key(const struct registry_key *parent, const char *name)
+static WERROR rpc_del_key(struct registry_key *parent, const char *name)
 {
 	NTSTATUS status;
-	struct rpc_key_data *mykeydata = parent->backend_data;
+	struct rpc_key *mykeydata = talloc_get_type(parent, struct rpc_key);
 	struct winreg_DeleteKey r;
 	TALLOC_CTX *mem_ctx = talloc_init("del_key");
 	
     r.in.handle = &mykeydata->pol;
     init_winreg_String(&r.in.key, name);
  
-    status = dcerpc_winreg_DeleteKey((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
+    status = dcerpc_winreg_DeleteKey(mykeydata->pipe, mem_ctx, &r);
 
 	talloc_free(mem_ctx);
 
 	return r.out.result;
 }
 
-static WERROR rpc_num_values(const struct registry_key *key, uint32_t *count) 
+static WERROR rpc_get_info(TALLOC_CTX *mem_ctx, const struct registry_key *key,
+						   const char **classname, 
+						   uint32_t *numsubkeys,
+						   uint32_t *numvalue)
 {
-	struct rpc_key_data *mykeydata = key->backend_data;
+	struct rpc_key *mykeydata = talloc_get_type(key, struct rpc_key);
 	WERROR error;
 		
 	if(mykeydata->num_values == -1) {
@@ -328,42 +346,34 @@ static WERROR rpc_num_values(const struct registry_key *key, uint32_t *count)
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 			
-	*count = mykeydata->num_values;
+	/* FIXME: *classname = talloc_strdup(mem_ctx, mykeydata->classname); */
+	*numvalue = mykeydata->num_values;
+	*numsubkeys = mykeydata->num_subkeys;
 	return WERR_OK;
 }
 
-static WERROR rpc_num_subkeys(const struct registry_key *key, uint32_t *count) 
-{
-	struct rpc_key_data *mykeydata = key->backend_data;
-	WERROR error;
-
-	if(mykeydata->num_subkeys == -1) {
-		error = rpc_query_key(key);
-		if(!W_ERROR_IS_OK(error)) return error;
-	}
-			
-	*count = mykeydata->num_subkeys;
-	return WERR_OK;
-}
-
-static struct hive_operations reg_backend_rpc = {
+static struct registry_operations reg_backend_rpc = {
 	.name = "rpc",
 	.open_key = rpc_open_key,
-	.get_subkey_by_index = rpc_get_subkey_by_index,
-	.get_value_by_index = rpc_get_value_by_index,
-	.add_key = rpc_add_key,
-	.del_key = rpc_del_key,
-	.num_subkeys = rpc_num_subkeys,
-	.num_values = rpc_num_values,
+	.enum_key = rpc_get_subkey_by_index,
+	.enum_value = rpc_get_value_by_index,
+	.create_key = rpc_add_key,
+	.delete_key = rpc_del_key,
+	.get_key_info = rpc_get_info,
 };
 
-_PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, struct auth_session_info *session_info, struct cli_credentials *credentials, 
-		       const char *location, struct event_context *ev)
+_PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, 
+								struct auth_session_info *session_info, 
+								struct cli_credentials *credentials, 
+								const char *location, struct event_context *ev)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
+	struct rpc_registry_context *rctx;
 
-	*ctx = talloc(NULL, struct registry_context);
+	dcerpc_init();
+
+	rctx = talloc(NULL, struct rpc_registry_context);
 
 	/* Default to local smbd if no connection is specified */
 	if (!location) {
@@ -374,7 +384,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, struct auth_sessi
 				     &p, location, 
 					 &ndr_table_winreg,
 				     credentials, ev);
-	(*ctx)->backend_data = p;
+	rctx->pipe = p;
 
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Unable to open '%s': %s\n", location, nt_errstr(status)));
@@ -383,13 +393,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, struct auth_sessi
 		return ntstatus_to_werror(status);
 	}
 
-	(*ctx)->get_predefined_key = rpc_get_predefined_key;
+	*ctx = (struct registry_context *)rctx;
 
 	return WERR_OK;
-}
-
-NTSTATUS registry_rpc_init(void)
-{
-	dcerpc_init();
-	return registry_register(&reg_backend_rpc);
 }
