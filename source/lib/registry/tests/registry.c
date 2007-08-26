@@ -57,6 +57,37 @@ static bool test_get_predefined_unknown(struct torture_context *tctx,
 	WERROR error;
 
 	error = reg_get_predefined_key(rctx, 1337, &root);
+	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+						   "getting predefined key failed");
+	return true;
+}
+
+static bool test_predef_key_by_name(struct torture_context *tctx,
+								const void *_data)
+{
+	const struct registry_context *rctx = _data;
+	struct registry_key *root;
+	WERROR error;
+
+	error = reg_get_predefined_key_by_name(rctx, "HKEY_CLASSES_ROOT", &root);
+	torture_assert_werr_ok(tctx, error, 
+						   "getting predefined key failed");
+
+	error = reg_get_predefined_key_by_name(rctx, "HKEY_classes_ROOT", &root);
+	torture_assert_werr_ok(tctx, error, 
+						   "getting predefined key case insensitively failed");
+
+	return true;
+}
+
+static bool test_predef_key_by_name_invalid(struct torture_context *tctx,
+								const void *_data)
+{
+	const struct registry_context *rctx = _data;
+	struct registry_key *root;
+	WERROR error;
+
+	error = reg_get_predefined_key_by_name(tctx, "BLA", &root);
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 						   "getting predefined key failed");
 	return true;
@@ -491,6 +522,10 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "flush_key", test_flush_key);
 	torture_tcase_add_simple_test(tcase, "query_key", test_query_key);
 	torture_tcase_add_simple_test(tcase, "query_key_nums", test_query_key_nums);
+	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name", 
+								  test_predef_key_by_name);
+	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name_invalid", 
+								  test_predef_key_by_name_invalid);
 }
 
 struct torture_suite *torture_registry_registry(TALLOC_CTX *mem_ctx) 
