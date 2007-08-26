@@ -1151,57 +1151,94 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEEDED, MONITOR_FAILED};
 
 
-/* verify that all nodes are in recovery mode normal */
-static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+struct verify_recmode_normal_data {
+	uint32_t count;
+	enum monitor_result status;
+};
+
+static void verify_recmode_normal_callback(struct ctdb_client_control_state *state)
 {
-	struct ctdb_client_control_state **ctrl_states;
-	uint32_t recmode;
-	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
-	int j, ret;
-	
-	ctrl_states = talloc_array(mem_ctx, struct ctdb_client_control_state *,
-				 nodemap->num);
-	if (!ctrl_states) {
-		DEBUG(0,(__location__ " Failed to allocate temporary ctrl state array\n"));
-		talloc_free(mem_ctx);
-		exit(-1);
+	struct verify_recmode_normal_data *rmdata = talloc_get_type(state->async.private, struct verify_recmode_normal_data);
+
+
+	/* one more node has responded with recmode data*/
+	rmdata->count--;
+
+	/* if we failed to get the recmode, then return an error and let
+	   the main loop try again.
+	*/
+	if (state->state != CTDB_CONTROL_DONE) {
+		if (rmdata->status == MONITOR_OK) {
+			rmdata->status = MONITOR_FAILED;
+		}
+		return;
 	}
 
+	/* if we got a response, then the recmode will be stored in the
+	   status field
+	*/
+	if (state->status != CTDB_RECOVERY_NORMAL) {
+		DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", state->c->hdr.destnode));
+		rmdata->status = MONITOR_RECOVERY_NEEDED;
+	}
+
+	return;
+}
+
+
+/* verify that all nodes are in normal recovery mode */
+static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	struct verify_recmode_normal_data *rmdata;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+	struct ctdb_client_control_state *state;
+	enum monitor_result status;
+	int j;
+	
+	rmdata = talloc(mem_ctx, struct verify_recmode_normal_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
+	rmdata->count  = 0;
+	rmdata->status = MONITOR_OK;
 
 	/* loop over all active nodes and send an async getrecmode call to 
 	   them*/
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			ctrl_states[j] = NULL;
 			continue;
 		}
-		ctrl_states[j] = ctdb_ctrl_getrecmode_send(ctdb, mem_ctx, 
+		state = ctdb_ctrl_getrecmode_send(ctdb, mem_ctx, 
 					CONTROL_TIMEOUT(), 
 					nodemap->nodes[j].vnn);
-	}
-
-	/* wait for the responses to come back and check that all is ok */
-	for (j=0; j<nodemap->num; j++) {
-		if (ctrl_states[j] == NULL) {
-			continue;
-		}
-		ret = ctdb_ctrl_getrecmode_recv(ctdb, mem_ctx, ctrl_states[j], &recmode);
-		if (ret != 0) {
-			DEBUG(0, ("Unable to get recmode from node %u\n", nodemap->nodes[j].vnn));
+		if (state == NULL) {
+			/* we failed to send the control, treat this as 
+			   an error and try again next iteration
+			*/			
+			DEBUG(0,("Failed to call ctdb_ctrl_getrecmode_send during monitoring\n"));
 			talloc_free(mem_ctx);
 			return MONITOR_FAILED;
 		}
 
-		if (recmode != CTDB_RECOVERY_NORMAL) {
-			DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", nodemap->nodes[j].vnn));
-			talloc_free(mem_ctx);
-			return MONITOR_RECOVERY_NEEDED;
-		}
+		/* set up the callback functions */
+		state->async.fn = verify_recmode_normal_callback;
+		state->async.private = rmdata;
+
+		/* one more control to wait for to complete */
+		rmdata->count++;
 	}
 
+
+	/* now wait for up to the maximum number of seconds allowed
+	   or until all nodes we expect a response from has replied
+	*/
+	while (rmdata->count > 0) {
+		event_loop_once(ctdb->ev);
+	}
+
+	status = rmdata->status;
 	talloc_free(mem_ctx);
-	return MONITOR_OK;
+	return status;
 }
+
 
 struct verify_recmaster_data {
 	uint32_t count;
