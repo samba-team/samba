@@ -49,8 +49,8 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-		r.in.buf_size = r.out.bytes_needed;
-		r.out.service = talloc_size(mem_ctx, r.out.bytes_needed);
+		r.in.buf_size = *r.out.bytes_needed;
+		r.out.service = talloc_size(mem_ctx, *r.out.bytes_needed);
 		
 		status = dcerpc_svcctl_EnumServicesStatusW(p, mem_ctx, &r);
 
@@ -66,7 +66,7 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		service = (struct ENUM_SERVICE_STATUS *)r.out.service;
 	}
 
-	for(i = 0; i < r.out.services_returned; i++) {
+	for(i = 0; i < *r.out.services_returned; i++) {
 		printf("Type: %d, State: %d\n", service[i].status.type, service[i].status.state);
 	}
 		
