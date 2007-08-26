@@ -3,6 +3,8 @@
 LEX="$1"
 SRC="$2"
 DEST="$3"
+shift 3
+ARGS="$*"
 
 dir=`dirname $SRC`
 file=`basename $SRC`
@@ -29,12 +31,15 @@ if [ -r $DEST ]; then
 	fi
 fi
 TOP=`pwd`
-if cd $dir && $LEX $file; then
+if cd $dir && $LEX $ARGS $file; then
 	if [ -r $base.yy.c ];then
 	        # we must guarantee that config.h comes first
 	        echo "#include \"config.h\"" > $base.c
 		sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c >> $base.c
 		rm -f $base.yy.c
+	elif [ ! -r base.c ]; then
+		echo "$base.c nor $base.yy.c generated."
+		exit 1
 	fi
 fi
 cd $TOP

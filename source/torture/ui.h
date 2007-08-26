@@ -165,6 +165,13 @@ struct torture_tcase *torture_suite_add_simple_tcase(
 		bool (*run) (struct torture_context *test, const void *test_data),
 		const void *data);
 
+/* Convenience function that adds a test which only 
+ * gets the test case data */
+struct torture_test *torture_tcase_add_simple_test(
+		struct torture_tcase *tcase,
+		const char *name,
+		bool (*run) (struct torture_context *test, const void *tcase_data));
+
 /* Convenience wrapper that adds a test that doesn't need any 
  * testcase data */
 struct torture_tcase *torture_suite_add_simple_test(
@@ -252,6 +259,20 @@ void torture_result(struct torture_context *test,
 		torture_result(torture_ctx, TORTURE_FAIL, \
 			__location__": %s contained:\n%sExpected: %s%s\n", \
 			filename, __got, __expected, cmt); \
+		talloc_free(__got); \
+		return false; \
+	} \
+	talloc_free(__got); \
+	} while(0)
+
+#define torture_assert_file_contains(torture_ctx,filename,expected,cmt)\
+	do { const char *__got, *__expected = (expected); \
+	size_t __size; \
+	__got = file_load(filename, *size, torture_ctx); \
+	if (strcmp_safe(__got, __expected) != 0) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+					   __location__": %s contained:\n%sExpected: %s%s\n", \
+					   __got, __expected, cmt); \
 		talloc_free(__got); \
 		return false; \
 	} \

@@ -575,8 +575,6 @@ static int ejs_ldb_attach_dsdb_schema_from_ldif(MprVarHandle eid, int argc, char
 {
 	struct ldb_context *ldb;
 	WERROR status;
-	char *pf_name;
-	char *df_name;
 	const char *pf;
 	const char *df;
 

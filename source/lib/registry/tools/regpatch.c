@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple registry frontend
    
-   Copyright (C) 2004-2005 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2004-2007 Jelmer Vernooij, jelmer@samba.org
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #include "lib/events/events.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/registry/tools/common.h"
+#include "lib/registry/patchfile.h"
 
 int main(int argc, char **argv)
 {
@@ -29,12 +31,12 @@ int main(int argc, char **argv)
 	poptContext pc;
 	const char *patch;
 	struct registry_context *h;
+	const char *file = NULL;
 	const char *remote = NULL;
-	struct reg_diff *diff;
-	WERROR error;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
+		{"file", 'F', POPT_ARG_STRING, &file, 0, "file path", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		{ NULL }
@@ -45,29 +47,24 @@ int main(int argc, char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	registry_init();
-
 	if (remote) {
-		error = reg_open_remote (&h, NULL, cmdline_credentials, remote, NULL);
+		h = reg_common_open_remote (remote, cmdline_credentials);
 	} else {
-		error = reg_open_local (NULL, &h, NULL, cmdline_credentials);
+		h = reg_common_open_local (cmdline_credentials);
 	}
-
-	if (W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Error: %s\n", win_errstr(error));
+	
+	if (h == NULL)
 		return 1;
-	}
 		
 	patch = poptGetArg(pc);
-	poptFreeContext(pc);
-
-	diff = reg_diff_load(NULL, patch);
-	if (!diff) {
-		fprintf(stderr, "Unable to load registry patch from `%s'\n", patch);
+	if (patch == NULL) {
+		poptPrintUsage(pc, stderr, 0);
 		return 1;
 	}
 
-	reg_diff_apply(diff, h);
+	poptFreeContext(pc);
+
+	reg_diff_apply(patch, h);
 
 	return 0;
 }

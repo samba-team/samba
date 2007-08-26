@@ -457,7 +457,8 @@ static const uint8_t getkeysecurity_in_data[] = {
   0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static bool getkeysecurity_in_check(struct torture_context *tctx, struct winreg_GetKeySecurity *r)
+static bool getkeysecurity_in_check(struct torture_context *tctx, 
+									struct winreg_GetKeySecurity *r)
 {
 	/* FIXME: Handle */
 	torture_assert_int_equal(tctx, r->in.sec_info, 2, "sec info");
@@ -474,7 +475,8 @@ static const uint8_t getkeysecurity_out_data[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static bool getkeysecurity_out_check(struct torture_context *tctx, struct winreg_GetKeySecurity *r)
+static bool getkeysecurity_out_check(struct torture_context *tctx, 
+									 struct winreg_GetKeySecurity *r)
 {
 	torture_assert_int_equal(tctx, r->in.sd->size, 20, "sd size");
 	torture_assert_int_equal(tctx, r->in.sd->len, 20, "sd len");

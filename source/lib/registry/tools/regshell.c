@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple registry frontend
    
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Jelmer Vernooij 2004-2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,8 +25,15 @@
 #include "system/time.h"
 #include "lib/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/registry/tools/common.h"
 
-/* 
+struct regshell_context {
+	struct registry_context *registry;
+	const char *path;
+	struct registry_key *current;
+};
+
+/* *
  * ck/cd - change key
  * ls - list values/keys
  * rmval/rm - remove value
@@ -40,29 +47,40 @@
  * exit
  */
 
-static struct registry_key *cmd_info(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 {
 	struct security_descriptor *sec_desc = NULL;
 	time_t last_mod;
 	WERROR error;
+	const char *classname;
+	NTTIME last_change;
+
+	error = reg_key_get_info(ctx, ctx->current, &classname, NULL, NULL, &last_change);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("Error getting key info: %s\n", win_errstr(error));
+		return error;
+	}
+
 	
-	printf("Name: %s\n", cur->name);
-	printf("Full path: %s\n", cur->path);
-	printf("Key Class: %s\n", cur->class_name);
-	last_mod = nt_time_to_unix(cur->last_mod);
+	printf("Name: %s\n", strchr(ctx->path, '\\')?strrchr(ctx->path, '\\')+1: 
+		   ctx->path);
+	printf("Full path: %s\n", ctx->path);
+	printf("Key Class: %s\n", classname);
+	last_mod = nt_time_to_unix(last_change);
 	printf("Time Last Modified: %s\n", ctime(&last_mod));
 
-	error = reg_get_sec_desc(mem_ctx, cur, &sec_desc);
+	error = reg_get_sec_desc(ctx, ctx->current, &sec_desc);
 	if (!W_ERROR_IS_OK(error)) {
 		printf("Error getting security descriptor\n");
-	} else {
-		ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "Security", sec_desc);
-	}
+		return error;
+	} 
+	ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "Security", sec_desc);
 	talloc_free(sec_desc);
-	return cur;
+
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_predef(TALLOC_CTX *mem_ctx, struct registry_context *ctx, struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
 {
 	struct registry_key *ret = NULL;
 	if (argc < 2) {
@@ -70,165 +88,195 @@ static struct registry_key *cmd_predef(TALLOC_CTX *mem_ctx, struct registry_cont
 	} else if (!ctx) {
 		fprintf(stderr, "No full registry loaded, no predefined keys defined\n");
 	} else {
-		WERROR error = reg_get_predefined_key_by_name(ctx, argv[1], &ret);
+		WERROR error = reg_get_predefined_key_by_name(ctx->registry, argv[1], &ret);
 
 		if (!W_ERROR_IS_OK(error)) {
 			fprintf(stderr, "Error opening predefined key %s: %s\n", argv[1], win_errstr(error));
-			ret = NULL;
+			return error;
 		}
 	}
-	return ret;
+
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_pwd(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_pwd(struct regshell_context *ctx,
+									int argc, char **argv)
 {
-	printf("%s\n", cur->path);
-	return cur;
+	printf("%s\n", ctx->path);
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_set(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
 {
 	struct registry_value val;
 	WERROR error;
 
 	if (argc < 4) {
 		fprintf(stderr, "Usage: set value-name type value\n");
-		return cur;
+		return WERR_INVALID_PARAM;
 	} 
 
-	if (!reg_string_to_val(mem_ctx, argv[2], argv[3], &val.data_type, &val.data)) {
+	if (!reg_string_to_val(ctx, argv[2], argv[3], &val.data_type, 
+						   &val.data)) {
 		fprintf(stderr, "Unable to interpret data\n");
-		return cur;
+		return WERR_INVALID_PARAM;
 	}
 
-	error = reg_val_set(cur, argv[1], val.data_type, val.data);
+	error = reg_val_set(ctx->current, argv[1], val.data_type, val.data);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Error setting value: %s\n", win_errstr(error));
-		return NULL;
+		return error;
 	}
-	return cur;
+
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_ck(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 { 
 	struct registry_key *new = NULL;
 	WERROR error;
+
 	if(argc < 2) {
-		new = cur;
+		new = ctx->current;
 	} else {
-		error = reg_open_key(mem_ctx, cur, argv[1], &new);
+		error = reg_open_key(ctx->registry, ctx->current, argv[1], &new);
 		if(!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error opening specified key: %s\n", win_errstr(error)));
-			return NULL;
+			return error;
 		}
 	} 
 
-	printf("Current path is: %s\n", new->path);
+	ctx->path = talloc_asprintf(ctx, "%s\\%s", ctx->path, argv[1]);
+	printf("Current path is: %s\n", ctx->path);
+	ctx->current = new;
 	
-	return new;
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_print(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_print(struct regshell_context *ctx, int argc, char **argv)
 {
-	struct registry_value *value;
+	uint32_t value_type;
+	DATA_BLOB value_data;
 	WERROR error;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: print <valuename>");
-		return NULL;
+		return WERR_INVALID_PARAM;
 	}
 	
-	error = reg_key_get_value_by_name(mem_ctx, cur, argv[1], &value);
+	error = reg_key_get_value_by_name(ctx, ctx->current, argv[1], 
+									  &value_type, &value_data);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "No such value '%s'\n", argv[1]);
-		return NULL;
+		return error;
 	}
 
-	printf("%s\n%s\n", str_regtype(value->data_type), reg_val_data_string(mem_ctx, value->data_type, &value->data));
-	return NULL;
+	printf("%s\n%s\n", str_regtype(value_type), 
+		   reg_val_data_string(ctx, value_type, value_data));
+
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_ls(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 {
 	int i;
 	WERROR error;
 	struct registry_value *value;
-	struct registry_key *sub;
-	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, cur, i, &sub)); i++) {
-		printf("K %s\n", sub->name);
+	uint32_t data_type;
+	DATA_BLOB data;
+	const char *name;
+
+	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(ctx, ctx->current, i, &name, NULL, NULL)); i++) {
+		printf("K %s\n", name);
 	}
 
-	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
+	if (!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while browsing thru keys: %s\n", win_errstr(error)));
 	}
 
-	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx, cur, i, &value)); i++) {
-		printf("V \"%s\" %s %s\n", value->name, str_regtype(value->data_type), reg_val_data_string(mem_ctx, value->data_type, &value->data));
+	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx, ctx->current, i, &name, &data_type, &data)); i++) {
+		printf("V \"%s\" %s %s\n", value->name, str_regtype(data_type), 
+			   reg_val_data_string(ctx, data_type, data));
 	}
 	
-	return NULL; 
+	return WERR_OK; 
 }
-static struct registry_key *cmd_mkkey(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, char **argv)
 { 
 	struct registry_key *tmp;
+	WERROR error;
+
 	if(argc < 2) {
 		fprintf(stderr, "Usage: mkkey <keyname>\n");
-		return NULL;
-	}
-	
-	if(!W_ERROR_IS_OK(reg_key_add_name(mem_ctx, cur, argv[1], 0, NULL, &tmp))) {
-		fprintf(stderr, "Error adding new subkey '%s'\n", argv[1]);
-		return NULL;
+		return WERR_INVALID_PARAM;
 	}
 
-	return NULL; 
+	error = reg_key_add_name(ctx, ctx->current, argv[1], 0, NULL, &tmp);
+	
+	if (!W_ERROR_IS_OK(error)) {
+		fprintf(stderr, "Error adding new subkey '%s'\n", argv[1]);
+		return error;
+	}
+
+	return WERR_OK; 
 }
 
-static struct registry_key *cmd_rmkey(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_rmkey(struct regshell_context *ctx,
+									  int argc, char **argv)
 { 
+	WERROR error;
+
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmkey <name>\n");
-		return NULL;
+		return WERR_INVALID_PARAM;
 	}
 
-	if(!W_ERROR_IS_OK(reg_key_del(cur, argv[1]))) {
+	error = reg_key_del(ctx->current, argv[1]);
+	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Error deleting '%s'\n", argv[1]);
+		return error;
 	} else {
 		fprintf(stderr, "Successfully deleted '%s'\n", argv[1]);
 	}
 	
-	return NULL; 
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_rmval(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_rmval(struct regshell_context *ctx, int argc, char **argv)
 { 
+	WERROR error;
+
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmval <valuename>\n");
-		return NULL;
+		return WERR_INVALID_PARAM;
 	}
 
-	if(!W_ERROR_IS_OK(reg_del_value(cur, argv[1]))) {
+	error = reg_del_value(ctx->current, argv[1]);
+	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Error deleting value '%s'\n", argv[1]);
+		return error;
 	} else {
 		fprintf(stderr, "Successfully deleted value '%s'\n", argv[1]);
 	}
 
-	return NULL; 
+	return WERR_OK; 
 }
 
-static struct registry_key *cmd_exit(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_exit(struct regshell_context *ctx,
+									 int argc, char **argv)
 {
 	exit(0);
-	return NULL; 
+	return WERR_OK;
 }
 
-static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *, int, char **);
+static WERROR cmd_help(struct regshell_context *ctx, int, char **);
 
 static struct {
 	const char *name;
 	const char *alias;
 	const char *help;
-	struct registry_key *(*handle)(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *, int argc, char **argv);
+	WERROR (*handle)(struct regshell_context *ctx,
+								   int argc, char **argv);
 } regshell_cmds[] = {
 	{"ck", "cd", "Change current key", cmd_ck },
 	{"info", "i", "Show detailed information of a key", cmd_info },
@@ -245,17 +293,19 @@ static struct {
 	{NULL }
 };
 
-static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_context *ctx, struct registry_key *cur, int argc, char **argv)
+static WERROR cmd_help(struct regshell_context *ctx,
+									 int argc, char **argv)
 {
 	int i;
 	printf("Available commands:\n");
 	for(i = 0; regshell_cmds[i].name; i++) {
 		printf("%s - %s\n", regshell_cmds[i].name, regshell_cmds[i].help);
 	}
-	return NULL;
+	return WERR_OK;
 } 
 
-static struct registry_key *process_cmd(TALLOC_CTX *mem_ctx, struct registry_context *ctx, struct registry_key *k, char *line)
+static WERROR process_cmd(struct regshell_context *ctx,
+										char *line)
 {
 	int argc;
 	char **argv = NULL;
@@ -263,19 +313,19 @@ static struct registry_key *process_cmd(TALLOC_CTX *mem_ctx, struct registry_con
 
 	if ((ret = poptParseArgvString(line, &argc, (const char ***) &argv)) != 0) {
 		fprintf(stderr, "regshell: %s\n", poptStrerror(ret));
-		return k;
+		return WERR_INVALID_PARAM;
 	}
 
 	for(i = 0; regshell_cmds[i].name; i++) {
 		if(!strcmp(regshell_cmds[i].name, argv[0]) || 
 		   (regshell_cmds[i].alias && !strcmp(regshell_cmds[i].alias, argv[0]))) {
-			return regshell_cmds[i].handle(mem_ctx, ctx, k, argc, argv);
+			return regshell_cmds[i].handle(ctx, argc, argv);
 		}
 	}
 
 	fprintf(stderr, "No such command '%s'\n", argv[0]);
 	
-	return k;
+	return WERR_INVALID_PARAM;
 }
 
 #define MAX_COMPLETIONS 100
@@ -333,7 +383,7 @@ cleanup:
 static char **reg_complete_key(const char *text, int start, int end)
 {
 	struct registry_key *base;
-	struct registry_key *subkey;
+	const char *subkeyname;
 	int i, j = 1;
 	int samelen = 0;
 	int len;
@@ -351,10 +401,11 @@ static char **reg_complete_key(const char *text, int start, int end)
 
 	len = strlen(text);
 	for(i = 0; j < MAX_COMPLETIONS-1; i++) {
-		status = reg_key_get_subkey_by_index(mem_ctx, base, i, &subkey);
+		status = reg_key_get_subkey_by_index(mem_ctx, base, i, &subkeyname, 
+											 NULL, NULL);
 		if(W_ERROR_IS_OK(status)) {
-			if(!strncmp(text, subkey->name, len)) {
-				matches[j] = strdup(subkey->name);
+			if(!strncmp(text, subkeyname, len)) {
+				matches[j] = strdup(subkeyname);
 				j++;
 
 				if (j == 1)
@@ -381,7 +432,8 @@ static char **reg_complete_key(const char *text, int start, int end)
 	if (j == 2) { /* Exact match */
 		asprintf(&matches[0], "%s%s", base_n, matches[1]);
 	} else {
-		asprintf(&matches[0], "%s%s", base_n, talloc_strndup(mem_ctx, matches[1], samelen));
+		asprintf(&matches[0], "%s%s", base_n, 
+				talloc_strndup(mem_ctx, matches[1], samelen));
 	}		
 	talloc_free(mem_ctx);
 
@@ -400,19 +452,17 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 }
 
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int opt;
-	const char *backend = NULL;
-	struct registry_key *curkey = NULL;
+	const char *file = NULL;
 	poptContext pc;
-	WERROR error;
-	TALLOC_CTX *mem_ctx = talloc_init("cmd");
 	const char *remote = NULL;
-	struct registry_context *h = NULL;
+	struct regshell_context *ctx;
+	bool ret = true;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
+		{"file", 'F', POPT_ARG_STRING, &file, 0, "open hive file", NULL },
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
@@ -425,64 +475,62 @@ static char **reg_completion(const char *text, int start, int end)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	registry_init();
+	ctx = talloc_zero(NULL, struct regshell_context);
 
-	if (remote) {
-		error = reg_open_remote (&h, NULL, cmdline_credentials, remote, NULL); 
-	} else if (backend) {
-		error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, cmdline_credentials, &curkey);
+	if (remote != NULL) {
+		ctx->registry = reg_common_open_remote(remote, cmdline_credentials);
+	} else if (file != NULL) {
+		ctx->current = reg_common_open_file(file, cmdline_credentials);
+		ctx->registry = ctx->current->context;
+		ctx->path = talloc_strdup(ctx, "");
 	} else {
-		error = reg_open_local(NULL, &h, NULL, cmdline_credentials);
+		ctx->registry = reg_common_open_local(cmdline_credentials);
 	}
 
-	if(!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Unable to open registry\n");
+	if (ctx->registry == NULL)
 		return 1;
-	}
 
-	if (h) {
+	if (ctx->current == NULL) {
 		int i;
 
 		for (i = 0; reg_predefined_keys[i].handle; i++) {
 			WERROR err;
-			err = reg_get_predefined_key(h, reg_predefined_keys[i].handle, &curkey);
+			err = reg_get_predefined_key(ctx->registry, 
+										 reg_predefined_keys[i].handle, 
+										 &ctx->current);
 			if (W_ERROR_IS_OK(err)) {
+				ctx->path = talloc_strdup(ctx, reg_predefined_keys[i].name);
 				break;
 			} else {
-				curkey = NULL;
+				ctx->current = NULL;
 			}
 		}
 	}
 
-	if (!curkey) {
+	if (ctx->current == NULL) {
 		fprintf(stderr, "Unable to access any of the predefined keys\n");
 		return -1;
 	}
 	
 	poptFreeContext(pc);
 	
-	while(True) {
+	while (true) {
 		char *line, *prompt;
 		
-		if(curkey->hive->root->name) {
-			asprintf(&prompt, "%s:%s> ", curkey->hive->root->name, curkey->path);
-		} else {
-			asprintf(&prompt, "%s> ", curkey->path);
-		}
+		asprintf(&prompt, "%s> ", ctx->path);
 		
-		current_key = curkey; 		/* No way to pass a void * pointer 
-									   via readline :-( */
+		current_key = ctx->current; 		/* No way to pass a void * pointer 
+									   		   via readline :-( */
 		line = smb_readline(prompt, NULL, reg_completion);
 
-		if(!line)
+		if (line == NULL)
 			break;
 
-		if(line[0] != '\n') {
-			struct registry_key *new = process_cmd(mem_ctx, h, curkey, line);
-			if(new)curkey = new;
+		if (line[0] != '\n') {
+			ret = W_ERROR_IS_OK(process_cmd(ctx, line));
 		}
 	}
-	talloc_free(mem_ctx);
+	talloc_free(ctx);
 
-	return 0;
+	return (ret?0:1);
 }

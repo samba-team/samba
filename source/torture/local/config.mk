@@ -23,6 +23,9 @@ OBJ_FILES = \
 		../../lib/socket_wrapper/testsuite.o \
 		irpc.o \
 		../../lib/registry/tests/generic.o \
+		../../lib/registry/tests/hive.o \
+		../../lib/registry/tests/diff.o \
+		../../lib/registry/tests/registry.o \
 		resolve.o \
 		../../lib/util/tests/strlist.o \
 		../../lib/util/tests/file.o \

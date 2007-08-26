@@ -49,7 +49,7 @@
 		<varlistentry>
 			<term>--backend BACKEND</term>
 			<listitem><para>Name of backend to load. Possible values are: 
-					w95, nt4, gconf, dir and rpc. The default is <emphasis>dir</emphasis>.
+					creg, regf, dir and rpc. The default is <emphasis>dir</emphasis>.
 		</para></listitem>
 		</varlistentry>
 		

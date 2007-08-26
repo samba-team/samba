@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Transparent registry backend handling
-   Copyright (C) Jelmer Vernooij			2003-2004.
+   Copyright (C) Jelmer Vernooij			2003-2007.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,27 +50,30 @@ _PUBLIC_ const char *str_regtype(int type)
 	return "Unknown";
 }
 
-_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, DATA_BLOB *data)
+_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, 
+								   const DATA_BLOB data)
 { 
   char *ret = NULL;
 
-  if(data->length == 0) return talloc_strdup(mem_ctx, "");
+  if (data.length == 0) 
+	  return talloc_strdup(mem_ctx, "");
 
   switch (type) {
   case REG_EXPAND_SZ:
   case REG_SZ:
-      convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, data->data, data->length, (void **)&ret);
+      convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, data.data, data.length, 
+							(void **)&ret);
 	  return ret;
 
   case REG_BINARY:
-	  ret = data_blob_hex_string(mem_ctx, data);
+	  ret = data_blob_hex_string(mem_ctx, &data);
 	  return ret;
 
   case REG_DWORD:
-	  if (*(int *)data->data == 0)
+	  if (*(int *)data.data == 0)
 		  return talloc_strdup(mem_ctx, "0");
 
-	  return talloc_asprintf(mem_ctx, "0x%x", *(int *)data->data);
+	  return talloc_asprintf(mem_ctx, "0x%x", *(int *)data.data);
 
   case REG_MULTI_SZ:
 	/* FIXME */
@@ -84,9 +87,13 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, DATA_BLOB
 }
 
 /** Generate a string that describes a registry value */
-_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, struct registry_value *val) 
+_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name, 
+								   uint32_t data_type,
+								   const DATA_BLOB data)
 {
-	return talloc_asprintf(mem_ctx, "%s = %s : %s", val->name?val->name:"<No Name>", str_regtype(val->data_type), reg_val_data_string(mem_ctx, val->data_type, &val->data));
+	return talloc_asprintf(mem_ctx, "%s = %s : %s", name?name:"<No Name>", 
+						   str_regtype(data_type), 
+					reg_val_data_string(mem_ctx, data_type, data));
 }
 
 _PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data)
@@ -136,29 +143,6 @@ _PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const
 	return True;
 }
 
-/**
- * Replace all \'s with /'s
- */
-char *reg_path_win2unix(char *path) 
-{
-	int i;
-	for(i = 0; path[i]; i++) {
-		if(path[i] == '\\') path[i] = '/';
-	}
-	return path;
-}
-/**
- * Replace all /'s with \'s
- */
-char *reg_path_unix2win(char *path) 
-{
-	int i;
-	for(i = 0; path[i]; i++) {
-		if(path[i] == '/') path[i] = '\\';
-	}
-	return path;
-}
-
 /** Open a key by name (including the predefined key name!) */
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, const char *name, struct registry_key **result)
 {
@@ -167,14 +151,16 @@ WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, co
 	int predeflength;
 	char *predefname;
 
-	if(strchr(name, '\\')) predeflength = strchr(name, '\\')-name;
-	else predeflength = strlen(name);
+	if (strchr(name, '\\') != NULL) 
+		predeflength = strchr(name, '\\')-name;
+	else 
+		predeflength = strlen(name);
 
 	predefname = talloc_strndup(mem_ctx, name, predeflength);
 	error = reg_get_predefined_key_by_name(handle, predefname, &predef);
 	talloc_free(predefname);
 
-	if(!W_ERROR_IS_OK(error)) {
+	if (!W_ERROR_IS_OK(error)) {
 		return error;
 	}
 
@@ -186,7 +172,9 @@ WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, co
 	}
 }
 
-static WERROR get_abs_parent(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, struct registry_key **parent, const char **name)
+static WERROR get_abs_parent(TALLOC_CTX *mem_ctx, struct registry_context *ctx, 
+							 const char *path, struct registry_key **parent, 
+							 const char **name)
 {
 	char *parent_name;
 	WERROR error;
@@ -195,14 +183,14 @@ static WERROR get_abs_parent(TALLOC_CTX *mem_ctx, struct registry_context *ctx, 
 		return WERR_FOOBAR;
 	}
 	
-	parent_name = talloc_strndup(mem_ctx, path, strrchr(path, '\\')-1-path);
+	parent_name = talloc_strndup(mem_ctx, path, strrchr(path, '\\')-path);
 
 	error = reg_open_key_abs(mem_ctx, ctx, parent_name, parent);
 	if (!W_ERROR_IS_OK(error)) {
 		return error;
 	}
 	
-	*name = talloc_strdup(mem_ctx, strchr(path, '\\')+1);
+	*name = talloc_strdup(mem_ctx, strrchr(path, '\\')+1);
 
 	return WERR_OK;
 }
@@ -228,20 +216,27 @@ WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 	return error;
 }
 
-WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **result)
+WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, 
+					   const char *path, uint32_t access_mask, 
+					   struct security_descriptor *sec_desc, 
+					   struct registry_key **result)
 {
 	struct registry_key *parent;
 	const char *n;
 	WERROR error;
 	
 	if (!strchr(path, '\\')) {
-		return WERR_FOOBAR;
+		return WERR_ALREADY_EXISTS;
 	}
 	
 	error = get_abs_parent(mem_ctx, ctx, path, &parent, &n);
-	if (W_ERROR_IS_OK(error)) {
-		error = reg_key_add_name(mem_ctx, parent, n, access_mask, sec_desc, result);
+	if (!W_ERROR_IS_OK(error)) {
+		DEBUG(2, ("Opening parent of %s failed with %s\n", path, 
+				  win_errstr(error)));
+		return error;
 	}
+
+	error = reg_key_add_name(mem_ctx, parent, n, NULL, sec_desc, result);
 
 	return error;
 }

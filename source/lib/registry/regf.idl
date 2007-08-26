@@ -45,8 +45,8 @@ interface regf
 		uint32 data_offset;       
 		uint32 last_block;
 		[value(1)] uint32 uk7;        		/* 1 */
-		[charset(UTF16)] uint16 description[0x40];
-		uint32 padding[83]; 					/* Padding */
+		[charset(UTF16)] uint16 description[0x20];
+		uint32 padding[99]; 					/* Padding */
 		/* Checksum of first 0x200 bytes XOR-ed */
 		uint32 chksum;  
 	};
@@ -66,7 +66,7 @@ interface regf
 		uint8 data[offset_to_next-0x20]; 
 		/* data is filled with:
 		 	uint32 length; 			
-				Negative if in used, positive otherwise
+				Negative if in use, positive otherwise
 				Always a multiple of 8
 			uint8_t data[length];  
 				Free space marker if 0xffffffff

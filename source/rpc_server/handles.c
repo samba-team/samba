@@ -59,11 +59,12 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 	return h;
 }
 
-/*
+/**
   find an internal handle given a wire handle. If the wire handle is NULL then
   allocate a new handle
 */
-_PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection_context *context, 
+_PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
+					  struct dcesrv_connection_context *context, 
 					  struct policy_handle *p,
 					  uint8_t handle_type)
 {

@@ -1,23 +1,10 @@
-# Registry backends
-
-################################################
-# Start MODULE registry_nt4
-[MODULE::registry_nt4]
-INIT_FUNCTION = registry_nt4_init
-SUBSYSTEM = registry
-OBJ_FILES = \
-		reg_backend_nt4.o
-PRIVATE_DEPENDENCIES = TDR_REGF
-# End MODULE registry_nt4
-################################################
-
 [SUBSYSTEM::TDR_REGF]
 PUBLIC_DEPENDENCIES = TDR 
 OBJ_FILES = tdr_regf.o
 
 # Special support for external builddirs
-lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
-$(srcdir)/lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
+lib/registry/regf.c: lib/registry/tdr_regf.c
+$(srcdir)/lib/registry/regf.c: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.h: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
 	@CPP="$(CPP)" srcdir="$(srcdir)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
@@ -28,66 +15,35 @@ clean::
 	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
 
 ################################################
-# Start MODULE registry_w95
-[MODULE::registry_w95]
-INIT_FUNCTION = registry_w95_init
-SUBSYSTEM = registry
-OBJ_FILES = \
-		reg_backend_w95.o
-# End MODULE registry_w95
-################################################
-
-################################################
-# Start MODULE registry_dir
-[MODULE::registry_dir]
-INIT_FUNCTION = registry_dir_init
-SUBSYSTEM = registry
-OBJ_FILES = \
-		reg_backend_dir.o
-PRIVATE_DEPENDENCIES = LIBTALLOC
-# End MODULE registry_dir
-################################################
-
-################################################
-# Start MODULE registry_rpc
-[MODULE::registry_rpc]
-INIT_FUNCTION = registry_rpc_init
-OUTPUT_TYPE = INTEGRATED
-SUBSYSTEM = registry
-OBJ_FILES = \
-		reg_backend_rpc.o
-PRIVATE_DEPENDENCIES = RPC_NDR_WINREG
-# End MODULE registry_rpc
-################################################
-
-################################################
-# Start MODULE registry_ldb
-[MODULE::registry_ldb]
-INIT_FUNCTION = registry_ldb_init
-SUBSYSTEM = registry
-OBJ_FILES = \
-		reg_backend_ldb.o
-PRIVATE_DEPENDENCIES = \
-		LIBLDB	
-# End MODULE registry_ldb
-################################################
-
-################################################
 # Start SUBSYSTEM registry
 [LIBRARY::registry]
 VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = Windows-style registry library
 OBJ_FILES = \
-		common/reg_interface.o \
-		common/reg_util.o \
-		reg_samba.o \
-		patchfile.o
-PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-UTIL CHARSET
+		interface.o \
+		util.o \
+		samba.o \
+		patchfile_dotreg.o \
+		patchfile_preg.o \
+		patchfile.o \
+		regf.o \
+		hive.o \
+		local.o \
+		ldb.o \
+		dir.o \
+		rpc.o
+PUBLIC_DEPENDENCIES = \
+		LIBSAMBA-UTIL CHARSET TDR_REGF LIBLDB \
+		RPC_NDR_WINREG
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
 ################################################
+
+[SUBSYSTEM::registry_common]
+PUBLIC_DEPENDENCIES = registry
+OBJ_FILES = tools/common.o
+PUBLIC_PROTO_HEADER = tools/common.h
 
 ################################################
 # Start BINARY regdiff
@@ -106,7 +62,8 @@ MANPAGE = man/regdiff.1
 INSTALLDIR = BINDIR
 OBJ_FILES = tools/regpatch.o
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS \
+		registry_common
 MANPAGE = man/regpatch.1
 # End BINARY regpatch
 ################################################
@@ -118,7 +75,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES = tools/regshell.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
-		SMBREADLINE
+		SMBREADLINE registry_common
 MANPAGE = man/regshell.1
 # End BINARY regshell
 ################################################
@@ -129,7 +86,8 @@ MANPAGE = man/regshell.1
 INSTALLDIR = BINDIR
 OBJ_FILES = tools/regtree.o
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
+		registry_common
 MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################

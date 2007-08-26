@@ -134,6 +134,17 @@ static bool torture_rpc_wrap_test(struct torture_context *tctx,
 	return fn(tctx, (struct dcerpc_pipe *)tcase->data);
 }
 
+static bool torture_rpc_wrap_test_ex(struct torture_context *tctx, 
+								  struct torture_tcase *tcase,
+								  struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, struct dcerpc_pipe *, const void *);
+
+	fn = test->fn;
+
+	return fn(tctx, (struct dcerpc_pipe *)tcase->data, test->data);
+}
+
 _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
 					struct torture_tcase *tcase, 
 					const char *name, 
@@ -148,6 +159,29 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
 	test->run = torture_rpc_wrap_test;
 	test->dangerous = false;
 	test->data = NULL;
+	test->fn = fn;
+
+	DLIST_ADD(tcase->tests, test);
+
+	return test;
+}
+
+_PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
+					struct torture_tcase *tcase, 
+					const char *name, 
+					bool (*fn) (struct torture_context *, struct dcerpc_pipe *,
+								void *),
+					void *userdata)
+{
+	struct torture_test *test;
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = torture_rpc_wrap_test_ex;
+	test->dangerous = false;
+	test->data = userdata;
 	test->fn = fn;
 
 	DLIST_ADD(tcase->tests, test);
@@ -173,7 +207,8 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_eventlog());
 	torture_suite_add_suite(suite, torture_rpc_atsvc());
 	torture_suite_add_suite(suite, torture_rpc_wkssvc());
-	torture_suite_add_suite(suite, torture_rpc_handles());
+	torture_suite_add_suite(suite, torture_rpc_handles(suite));
+	torture_suite_add_suite(suite, torture_rpc_winreg(suite));
 	torture_suite_add_simple_test(suite, "SPOOLSS", torture_rpc_spoolss);
 	torture_suite_add_simple_test(suite, "SAMR", torture_rpc_samr);
 	torture_suite_add_simple_test(suite, "SAMR-USERS", torture_rpc_samr_users);
@@ -186,7 +221,6 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SRVSVC", torture_rpc_srvsvc);
 	torture_suite_add_simple_test(suite, "SVCCTL", torture_rpc_svcctl);
 	torture_suite_add_simple_test(suite, "EPMAPPER", torture_rpc_epmapper);
-	torture_suite_add_simple_test(suite, "WINREG", torture_rpc_winreg);
 	torture_suite_add_simple_test(suite, "INITSHUTDOWN", torture_rpc_initshutdown);
 	torture_suite_add_simple_test(suite, "OXIDRESOLVE", torture_rpc_oxidresolve);
 	torture_suite_add_simple_test(suite, "REMACT", torture_rpc_remact);

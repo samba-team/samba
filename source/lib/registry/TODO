@@ -4,10 +4,10 @@
 reg_backend_dir:
  - value support
 
-reg_backend_w95.c:
+reg_backend_creg.c:
  - write support
  
-reg_backend_nt4:
+reg_backend_regf:
  - write support
 
 reg_backend_rpc:
