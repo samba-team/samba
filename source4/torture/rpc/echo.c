@@ -287,6 +287,7 @@ static bool test_sleep(struct torture_context *tctx,
 			}
 		}
 	}
+	printf("\n");
 	return true;
 }
 

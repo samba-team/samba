@@ -393,9 +393,10 @@ BOOL torture_bench_lock(struct torture_context *torture)
 
 	smbcli_deltree(state[0].tree, BASEDIR);
 	talloc_free(mem_ctx);
+	printf("\n");
 	return ret;
 
 failed:
 	talloc_free(mem_ctx);
-	return False;
+	return false;
 }

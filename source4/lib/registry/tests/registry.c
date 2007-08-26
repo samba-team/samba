@@ -47,6 +47,22 @@ static bool test_get_predefined(struct torture_context *tctx,
 }
 
 /**
+ * Test obtaining a predefined key.
+ */
+static bool test_get_predefined_unknown(struct torture_context *tctx,
+								const void *_data)
+{
+	const struct registry_context *rctx = _data;
+	struct registry_key *root;
+	WERROR error;
+
+	error = reg_get_predefined_key(rctx, 1337, &root);
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+						   "getting predefined key failed");
+	return true;
+}
+
+/**
  * Test creating a new subkey
  */
 static bool test_create_subkey(struct torture_context *tctx,
@@ -199,6 +215,9 @@ static bool test_flush_key(struct torture_context *tctx, const void *_data)
 
 	error = reg_key_flush(subkey);
 	torture_assert_werr_ok(tctx, error, "flush key");
+
+	torture_assert_werr_equal(tctx, reg_key_flush(NULL), 
+							  WERR_INVALID_PARAM, "flush key");
 
 	return true;
 }
@@ -457,6 +476,8 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "list_subkeys", test_list_subkeys);
 	torture_tcase_add_simple_test(tcase, "get_predefined_key",
 									test_get_predefined);
+	torture_tcase_add_simple_test(tcase, "get_predefined_key",
+									test_get_predefined_unknown);
 	torture_tcase_add_simple_test(tcase, "create_key", test_create_subkey);
 	torture_tcase_add_simple_test(tcase, "create_key", 
 								  test_create_nested_subkey);
