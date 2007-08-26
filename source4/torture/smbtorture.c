@@ -337,7 +337,6 @@ static void subunit_init(struct torture_context *ctx)
 static void subunit_suite_start(struct torture_context *ctx,
 							   struct torture_suite *suite)
 {
-	printf("testsuite: %s\n", suite->name);
 }
 
 static void subunit_test_start (struct torture_context *ctx, 

@@ -39,7 +39,7 @@ static int read_only;
 /* run a test that simulates an approximate netbench client load */
 static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli, int client)
 {
-	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
+	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
 	int i;
 	pstring line;
 	char *cname;
@@ -199,11 +199,11 @@ done:
 BOOL torture_nbench(struct torture_context *torture)
 {
 	BOOL correct = True;
-	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
+	int torture_nprocs = torture_setting_int(torture, "nprocs", 4);
 	struct smbcli_state *cli;
 	const char *p;
 
-	read_only = lp_parm_bool(-1, "torture", "readonly", False);
+	read_only = torture_setting_bool(torture, "readonly", False);
 
 	p = torture_setting_string(torture, "timelimit", NULL);
 	if (p && *p) {
