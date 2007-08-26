@@ -43,7 +43,7 @@ PUBLIC_HEADERS = registry.h
 [SUBSYSTEM::registry_common]
 PUBLIC_DEPENDENCIES = registry
 OBJ_FILES = tools/common.o
-PUBLIC_PROTO_HEADER = tools/common.h
+PRIVATE_PROTO_HEADER = tools/common.h
 
 ################################################
 # Start BINARY regdiff
