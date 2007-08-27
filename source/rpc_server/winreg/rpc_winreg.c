@@ -367,7 +367,7 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct registry_key *k;
 	WERROR ret;
-	const char *classname;
+	const char *classname = NULL;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
