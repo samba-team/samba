@@ -90,4 +90,13 @@ if [ $nentries -lt 1 ]; then
 echo "Attribute Scope Query test returned 0 items"
 failed=`expr $failed + 1`
 fi
+
+echo "Test Search Options Control"
+nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=search_options:1:2 '(objectclass=crossRef)' | grep crossRef | wc -l`
+if [ $nentries -lt 1 ]; then
+echo "Search Options Control Query test returned 0 items"
+failed=`expr $failed + 1`
+fi
+
+
 exit $failed
