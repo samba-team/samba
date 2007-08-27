@@ -26,13 +26,6 @@ extern int smb_echo_count;
 
 const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
 
-static char *InBuffer = NULL;
-static char *OutBuffer = NULL;
-static const char *current_inbuf = NULL;
-
-static char *NewInBuffer(char **old_inbuf);
-static char *NewOutBuffer(char **old_outbuf);
-
 /* 
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
@@ -91,61 +84,6 @@ void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 	req->outbuf = NULL;
 }
 
-/*
- * From within a converted call you might have to call non-converted
- * subroutines that still take the old inbuf/outbuf/lenght/bufsize
- * parameters. This takes a struct smb_request and prepares the legacy
- * parameters.
- */
-
-BOOL reply_prep_legacy(struct smb_request *req,
-		       char **pinbuf, char **poutbuf,
-		       int *psize, int *pbufsize)
-{
-	const int bufsize = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE
-			     + SAFETY_MARGIN);
-	char *inbuf, *outbuf;
-
-	DEBUG(1, ("reply_prep_legacy called\n"));
-
-	if (!(inbuf = TALLOC_ARRAY(req, char, bufsize))) {
-		DEBUG(0, ("Could not allocate legacy inbuf\n"));
-		return False;
-	}
-	memcpy(inbuf, req->inbuf, MIN(smb_len(req->inbuf)+4, bufsize));
-	req->inbuf = (uint8 *)inbuf;
-
-	if (!(outbuf = TALLOC_ARRAY(req, char, bufsize))) {
-		DEBUG(0, ("Could not allocate legacy outbuf\n"));
-		return False;
-	}
-	req->outbuf = (uint8 *)outbuf;
-
-	construct_reply_common(inbuf, outbuf);
-
-	*pinbuf   = inbuf;
-	*poutbuf  = outbuf;
-	*psize    = smb_len(inbuf)+4;
-	*pbufsize = bufsize;
-
-	return True;
-}
-
-/*
- * Post-process the output of the legacy routine so that the result fits into
- * the new reply_xxx API
- */
-
-void reply_post_legacy(struct smb_request *req, int outsize)
-{
-	if (outsize > 0) {
-		smb_setlen((char *)req->outbuf, outsize);
-	}
-	else {
-		TALLOC_FREE(req->outbuf);
-	}
-}
-
 /****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.
@@ -158,11 +96,12 @@ static struct pending_message_list *deferred_open_queue;
  for processing.
 ****************************************************************************/
 
-static BOOL push_queued_message(const char *buf, int msg_len,
+static BOOL push_queued_message(struct smb_request *req,
 				struct timeval request_time,
 				struct timeval end_time,
 				char *private_data, size_t private_len)
 {
+	int msg_len = smb_len(req->inbuf) + 4;
 	struct pending_message_list *msg;
 
 	msg = TALLOC_ZERO_P(NULL, struct pending_message_list);
@@ -172,7 +111,7 @@ static BOOL push_queued_message(const char *buf, int msg_len,
 		return False;
 	}
 
-	msg->buf = data_blob_talloc(msg, buf, msg_len);
+	msg->buf = data_blob_talloc(msg, req->inbuf, msg_len);
 	if(msg->buf.data == NULL) {
 		DEBUG(0,("push_message: malloc fail (2)\n"));
 		TALLOC_FREE(msg);
@@ -286,7 +225,7 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
  messages ready for processing.
 ****************************************************************************/
 
-BOOL push_deferred_smb_message(uint16 mid,
+BOOL push_deferred_smb_message(struct smb_request *req,
 			       struct timeval request_time,
 			       struct timeval timeout,
 			       char *private_data, size_t priv_len)
@@ -297,12 +236,11 @@ BOOL push_deferred_smb_message(uint16 mid,
 
 	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u "
 		  "timeout time [%u.%06u]\n",
-		  (unsigned int) smb_len(current_inbuf)+4, (unsigned int)mid,
+		  (unsigned int) smb_len(req->inbuf)+4, (unsigned int)req->mid,
 		  (unsigned int)end_time.tv_sec,
 		  (unsigned int)end_time.tv_usec));
 
-	return push_queued_message(current_inbuf, smb_len(current_inbuf)+4,
-				   request_time, end_time,
+	return push_queued_message(req, request_time, end_time,
 				   private_data, priv_len);
 }
 
@@ -699,267 +637,266 @@ force write permissions on print services.
 */
 static const struct smb_message_struct {
 	const char *name;
-	int (*fn)(connection_struct *conn, char *, char *, int, int);
 	void (*fn_new)(connection_struct *conn, struct smb_request *req);
 	int flags;
 } smb_messages[256] = {
 
-/* 0x00 */ { "SMBmkdir",NULL,reply_mkdir,AS_USER | NEED_WRITE},
-/* 0x01 */ { "SMBrmdir",NULL,reply_rmdir,AS_USER | NEED_WRITE},
-/* 0x02 */ { "SMBopen",NULL,reply_open,AS_USER },
-/* 0x03 */ { "SMBcreate",NULL,reply_mknew,AS_USER},
-/* 0x04 */ { "SMBclose",NULL,reply_close,AS_USER | CAN_IPC },
-/* 0x05 */ { "SMBflush",NULL,reply_flush,AS_USER},
-/* 0x06 */ { "SMBunlink",NULL,reply_unlink,AS_USER | NEED_WRITE },
-/* 0x07 */ { "SMBmv",NULL,reply_mv,AS_USER | NEED_WRITE },
-/* 0x08 */ { "SMBgetatr",NULL,reply_getatr,AS_USER},
-/* 0x09 */ { "SMBsetatr",NULL,reply_setatr,AS_USER | NEED_WRITE},
-/* 0x0a */ { "SMBread",NULL,reply_read,AS_USER},
-/* 0x0b */ { "SMBwrite",NULL,reply_write,AS_USER | CAN_IPC },
-/* 0x0c */ { "SMBlock",NULL,reply_lock,AS_USER},
-/* 0x0d */ { "SMBunlock",NULL,reply_unlock,AS_USER},
-/* 0x0e */ { "SMBctemp",NULL,reply_ctemp,AS_USER },
-/* 0x0f */ { "SMBmknew",NULL,reply_mknew,AS_USER},
-/* 0x10 */ { "SMBcheckpath",NULL,reply_checkpath,AS_USER},
-/* 0x11 */ { "SMBexit",NULL,reply_exit,DO_CHDIR},
-/* 0x12 */ { "SMBlseek",NULL,reply_lseek,AS_USER},
-/* 0x13 */ { "SMBlockread",NULL,reply_lockread,AS_USER},
-/* 0x14 */ { "SMBwriteunlock",NULL,reply_writeunlock,AS_USER},
-/* 0x15 */ { NULL, NULL, NULL, 0 },
-/* 0x16 */ { NULL, NULL, NULL, 0 },
-/* 0x17 */ { NULL, NULL, NULL, 0 },
-/* 0x18 */ { NULL, NULL, NULL, 0 },
-/* 0x19 */ { NULL, NULL, NULL, 0 },
-/* 0x1a */ { "SMBreadbraw",NULL,reply_readbraw,AS_USER},
-/* 0x1b */ { "SMBreadBmpx",NULL,reply_readbmpx,AS_USER},
-/* 0x1c */ { "SMBreadBs",NULL,reply_readbs,AS_USER },
-/* 0x1d */ { "SMBwritebraw",NULL,reply_writebraw,AS_USER},
-/* 0x1e */ { "SMBwriteBmpx",NULL,reply_writebmpx,AS_USER},
-/* 0x1f */ { "SMBwriteBs",NULL,reply_writebs,AS_USER},
-/* 0x20 */ { "SMBwritec",NULL, NULL,0},
-/* 0x21 */ { NULL, NULL, NULL, 0 },
-/* 0x22 */ { "SMBsetattrE",NULL,reply_setattrE,AS_USER | NEED_WRITE },
-/* 0x23 */ { "SMBgetattrE",NULL,reply_getattrE,AS_USER },
-/* 0x24 */ { "SMBlockingX",NULL,reply_lockingX,AS_USER },
-/* 0x25 */ { "SMBtrans",NULL,reply_trans,AS_USER | CAN_IPC },
-/* 0x26 */ { "SMBtranss",NULL,reply_transs,AS_USER | CAN_IPC},
-/* 0x27 */ { "SMBioctl",NULL,reply_ioctl,0},
-/* 0x28 */ { "SMBioctls",NULL, NULL,AS_USER},
-/* 0x29 */ { "SMBcopy",NULL,reply_copy,AS_USER | NEED_WRITE },
-/* 0x2a */ { "SMBmove",NULL, NULL,AS_USER | NEED_WRITE },
-/* 0x2b */ { "SMBecho",NULL,reply_echo,0},
-/* 0x2c */ { "SMBwriteclose",NULL,reply_writeclose,AS_USER},
-/* 0x2d */ { "SMBopenX",NULL,reply_open_and_X,AS_USER | CAN_IPC },
-/* 0x2e */ { "SMBreadX",NULL,reply_read_and_X,AS_USER | CAN_IPC },
-/* 0x2f */ { "SMBwriteX",NULL,reply_write_and_X,AS_USER | CAN_IPC },
-/* 0x30 */ { NULL, NULL, NULL, 0 },
-/* 0x31 */ { NULL, NULL, NULL, 0 },
-/* 0x32 */ { "SMBtrans2", NULL,reply_trans2, AS_USER | CAN_IPC },
-/* 0x33 */ { "SMBtranss2", NULL,reply_transs2, AS_USER},
-/* 0x34 */ { "SMBfindclose", NULL,reply_findclose,AS_USER},
-/* 0x35 */ { "SMBfindnclose", NULL,reply_findnclose,AS_USER},
-/* 0x36 */ { NULL, NULL, NULL, 0 },
-/* 0x37 */ { NULL, NULL, NULL, 0 },
-/* 0x38 */ { NULL, NULL, NULL, 0 },
-/* 0x39 */ { NULL, NULL, NULL, 0 },
-/* 0x3a */ { NULL, NULL, NULL, 0 },
-/* 0x3b */ { NULL, NULL, NULL, 0 },
-/* 0x3c */ { NULL, NULL, NULL, 0 },
-/* 0x3d */ { NULL, NULL, NULL, 0 },
-/* 0x3e */ { NULL, NULL, NULL, 0 },
-/* 0x3f */ { NULL, NULL, NULL, 0 },
-/* 0x40 */ { NULL, NULL, NULL, 0 },
-/* 0x41 */ { NULL, NULL, NULL, 0 },
-/* 0x42 */ { NULL, NULL, NULL, 0 },
-/* 0x43 */ { NULL, NULL, NULL, 0 },
-/* 0x44 */ { NULL, NULL, NULL, 0 },
-/* 0x45 */ { NULL, NULL, NULL, 0 },
-/* 0x46 */ { NULL, NULL, NULL, 0 },
-/* 0x47 */ { NULL, NULL, NULL, 0 },
-/* 0x48 */ { NULL, NULL, NULL, 0 },
-/* 0x49 */ { NULL, NULL, NULL, 0 },
-/* 0x4a */ { NULL, NULL, NULL, 0 },
-/* 0x4b */ { NULL, NULL, NULL, 0 },
-/* 0x4c */ { NULL, NULL, NULL, 0 },
-/* 0x4d */ { NULL, NULL, NULL, 0 },
-/* 0x4e */ { NULL, NULL, NULL, 0 },
-/* 0x4f */ { NULL, NULL, NULL, 0 },
-/* 0x50 */ { NULL, NULL, NULL, 0 },
-/* 0x51 */ { NULL, NULL, NULL, 0 },
-/* 0x52 */ { NULL, NULL, NULL, 0 },
-/* 0x53 */ { NULL, NULL, NULL, 0 },
-/* 0x54 */ { NULL, NULL, NULL, 0 },
-/* 0x55 */ { NULL, NULL, NULL, 0 },
-/* 0x56 */ { NULL, NULL, NULL, 0 },
-/* 0x57 */ { NULL, NULL, NULL, 0 },
-/* 0x58 */ { NULL, NULL, NULL, 0 },
-/* 0x59 */ { NULL, NULL, NULL, 0 },
-/* 0x5a */ { NULL, NULL, NULL, 0 },
-/* 0x5b */ { NULL, NULL, NULL, 0 },
-/* 0x5c */ { NULL, NULL, NULL, 0 },
-/* 0x5d */ { NULL, NULL, NULL, 0 },
-/* 0x5e */ { NULL, NULL, NULL, 0 },
-/* 0x5f */ { NULL, NULL, NULL, 0 },
-/* 0x60 */ { NULL, NULL, NULL, 0 },
-/* 0x61 */ { NULL, NULL, NULL, 0 },
-/* 0x62 */ { NULL, NULL, NULL, 0 },
-/* 0x63 */ { NULL, NULL, NULL, 0 },
-/* 0x64 */ { NULL, NULL, NULL, 0 },
-/* 0x65 */ { NULL, NULL, NULL, 0 },
-/* 0x66 */ { NULL, NULL, NULL, 0 },
-/* 0x67 */ { NULL, NULL, NULL, 0 },
-/* 0x68 */ { NULL, NULL, NULL, 0 },
-/* 0x69 */ { NULL, NULL, NULL, 0 },
-/* 0x6a */ { NULL, NULL, NULL, 0 },
-/* 0x6b */ { NULL, NULL, NULL, 0 },
-/* 0x6c */ { NULL, NULL, NULL, 0 },
-/* 0x6d */ { NULL, NULL, NULL, 0 },
-/* 0x6e */ { NULL, NULL, NULL, 0 },
-/* 0x6f */ { NULL, NULL, NULL, 0 },
-/* 0x70 */ { "SMBtcon",NULL,reply_tcon,0},
-/* 0x71 */ { "SMBtdis",NULL,reply_tdis,DO_CHDIR},
-/* 0x72 */ { "SMBnegprot",NULL,reply_negprot,0},
-/* 0x73 */ { "SMBsesssetupX",NULL,reply_sesssetup_and_X,0},
-/* 0x74 */ { "SMBulogoffX", NULL,reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
-/* 0x75 */ { "SMBtconX",NULL,reply_tcon_and_X,0},
-/* 0x76 */ { NULL, NULL, NULL, 0 },
-/* 0x77 */ { NULL, NULL, NULL, 0 },
-/* 0x78 */ { NULL, NULL, NULL, 0 },
-/* 0x79 */ { NULL, NULL, NULL, 0 },
-/* 0x7a */ { NULL, NULL, NULL, 0 },
-/* 0x7b */ { NULL, NULL, NULL, 0 },
-/* 0x7c */ { NULL, NULL, NULL, 0 },
-/* 0x7d */ { NULL, NULL, NULL, 0 },
-/* 0x7e */ { NULL, NULL, NULL, 0 },
-/* 0x7f */ { NULL, NULL, NULL, 0 },
-/* 0x80 */ { "SMBdskattr",NULL,reply_dskattr,AS_USER},
-/* 0x81 */ { "SMBsearch",NULL,reply_search,AS_USER},
-/* 0x82 */ { "SMBffirst",NULL,reply_search,AS_USER},
-/* 0x83 */ { "SMBfunique",NULL,reply_search,AS_USER},
-/* 0x84 */ { "SMBfclose",NULL,reply_fclose,AS_USER},
-/* 0x85 */ { NULL, NULL, NULL, 0 },
-/* 0x86 */ { NULL, NULL, NULL, 0 },
-/* 0x87 */ { NULL, NULL, NULL, 0 },
-/* 0x88 */ { NULL, NULL, NULL, 0 },
-/* 0x89 */ { NULL, NULL, NULL, 0 },
-/* 0x8a */ { NULL, NULL, NULL, 0 },
-/* 0x8b */ { NULL, NULL, NULL, 0 },
-/* 0x8c */ { NULL, NULL, NULL, 0 },
-/* 0x8d */ { NULL, NULL, NULL, 0 },
-/* 0x8e */ { NULL, NULL, NULL, 0 },
-/* 0x8f */ { NULL, NULL, NULL, 0 },
-/* 0x90 */ { NULL, NULL, NULL, 0 },
-/* 0x91 */ { NULL, NULL, NULL, 0 },
-/* 0x92 */ { NULL, NULL, NULL, 0 },
-/* 0x93 */ { NULL, NULL, NULL, 0 },
-/* 0x94 */ { NULL, NULL, NULL, 0 },
-/* 0x95 */ { NULL, NULL, NULL, 0 },
-/* 0x96 */ { NULL, NULL, NULL, 0 },
-/* 0x97 */ { NULL, NULL, NULL, 0 },
-/* 0x98 */ { NULL, NULL, NULL, 0 },
-/* 0x99 */ { NULL, NULL, NULL, 0 },
-/* 0x9a */ { NULL, NULL, NULL, 0 },
-/* 0x9b */ { NULL, NULL, NULL, 0 },
-/* 0x9c */ { NULL, NULL, NULL, 0 },
-/* 0x9d */ { NULL, NULL, NULL, 0 },
-/* 0x9e */ { NULL, NULL, NULL, 0 },
-/* 0x9f */ { NULL, NULL, NULL, 0 },
-/* 0xa0 */ { "SMBnttrans", NULL,reply_nttrans, AS_USER | CAN_IPC },
-/* 0xa1 */ { "SMBnttranss", NULL,reply_nttranss, AS_USER | CAN_IPC },
-/* 0xa2 */ { "SMBntcreateX", NULL,reply_ntcreate_and_X, AS_USER | CAN_IPC },
-/* 0xa3 */ { NULL, NULL, NULL, 0 },
-/* 0xa4 */ { "SMBntcancel", NULL,reply_ntcancel, 0 },
-/* 0xa5 */ { "SMBntrename", NULL,reply_ntrename, AS_USER | NEED_WRITE },
-/* 0xa6 */ { NULL, NULL, NULL, 0 },
-/* 0xa7 */ { NULL, NULL, NULL, 0 },
-/* 0xa8 */ { NULL, NULL, NULL, 0 },
-/* 0xa9 */ { NULL, NULL, NULL, 0 },
-/* 0xaa */ { NULL, NULL, NULL, 0 },
-/* 0xab */ { NULL, NULL, NULL, 0 },
-/* 0xac */ { NULL, NULL, NULL, 0 },
-/* 0xad */ { NULL, NULL, NULL, 0 },
-/* 0xae */ { NULL, NULL, NULL, 0 },
-/* 0xaf */ { NULL, NULL, NULL, 0 },
-/* 0xb0 */ { NULL, NULL, NULL, 0 },
-/* 0xb1 */ { NULL, NULL, NULL, 0 },
-/* 0xb2 */ { NULL, NULL, NULL, 0 },
-/* 0xb3 */ { NULL, NULL, NULL, 0 },
-/* 0xb4 */ { NULL, NULL, NULL, 0 },
-/* 0xb5 */ { NULL, NULL, NULL, 0 },
-/* 0xb6 */ { NULL, NULL, NULL, 0 },
-/* 0xb7 */ { NULL, NULL, NULL, 0 },
-/* 0xb8 */ { NULL, NULL, NULL, 0 },
-/* 0xb9 */ { NULL, NULL, NULL, 0 },
-/* 0xba */ { NULL, NULL, NULL, 0 },
-/* 0xbb */ { NULL, NULL, NULL, 0 },
-/* 0xbc */ { NULL, NULL, NULL, 0 },
-/* 0xbd */ { NULL, NULL, NULL, 0 },
-/* 0xbe */ { NULL, NULL, NULL, 0 },
-/* 0xbf */ { NULL, NULL, NULL, 0 },
-/* 0xc0 */ { "SMBsplopen",NULL,reply_printopen,AS_USER},
-/* 0xc1 */ { "SMBsplwr",NULL,reply_printwrite,AS_USER},
-/* 0xc2 */ { "SMBsplclose",NULL,reply_printclose,AS_USER},
-/* 0xc3 */ { "SMBsplretq",NULL,reply_printqueue,AS_USER},
-/* 0xc4 */ { NULL, NULL, NULL, 0 },
-/* 0xc5 */ { NULL, NULL, NULL, 0 },
-/* 0xc6 */ { NULL, NULL, NULL, 0 },
-/* 0xc7 */ { NULL, NULL, NULL, 0 },
-/* 0xc8 */ { NULL, NULL, NULL, 0 },
-/* 0xc9 */ { NULL, NULL, NULL, 0 },
-/* 0xca */ { NULL, NULL, NULL, 0 },
-/* 0xcb */ { NULL, NULL, NULL, 0 },
-/* 0xcc */ { NULL, NULL, NULL, 0 },
-/* 0xcd */ { NULL, NULL, NULL, 0 },
-/* 0xce */ { NULL, NULL, NULL, 0 },
-/* 0xcf */ { NULL, NULL, NULL, 0 },
-/* 0xd0 */ { "SMBsends",NULL,reply_sends,AS_GUEST},
-/* 0xd1 */ { "SMBsendb",NULL, NULL,AS_GUEST},
-/* 0xd2 */ { "SMBfwdname",NULL, NULL,AS_GUEST},
-/* 0xd3 */ { "SMBcancelf",NULL, NULL,AS_GUEST},
-/* 0xd4 */ { "SMBgetmac",NULL, NULL,AS_GUEST},
-/* 0xd5 */ { "SMBsendstrt",NULL,reply_sendstrt,AS_GUEST},
-/* 0xd6 */ { "SMBsendend",NULL,reply_sendend,AS_GUEST},
-/* 0xd7 */ { "SMBsendtxt",NULL,reply_sendtxt,AS_GUEST},
-/* 0xd8 */ { NULL, NULL, NULL, 0 },
-/* 0xd9 */ { NULL, NULL, NULL, 0 },
-/* 0xda */ { NULL, NULL, NULL, 0 },
-/* 0xdb */ { NULL, NULL, NULL, 0 },
-/* 0xdc */ { NULL, NULL, NULL, 0 },
-/* 0xdd */ { NULL, NULL, NULL, 0 },
-/* 0xde */ { NULL, NULL, NULL, 0 },
-/* 0xdf */ { NULL, NULL, NULL, 0 },
-/* 0xe0 */ { NULL, NULL, NULL, 0 },
-/* 0xe1 */ { NULL, NULL, NULL, 0 },
-/* 0xe2 */ { NULL, NULL, NULL, 0 },
-/* 0xe3 */ { NULL, NULL, NULL, 0 },
-/* 0xe4 */ { NULL, NULL, NULL, 0 },
-/* 0xe5 */ { NULL, NULL, NULL, 0 },
-/* 0xe6 */ { NULL, NULL, NULL, 0 },
-/* 0xe7 */ { NULL, NULL, NULL, 0 },
-/* 0xe8 */ { NULL, NULL, NULL, 0 },
-/* 0xe9 */ { NULL, NULL, NULL, 0 },
-/* 0xea */ { NULL, NULL, NULL, 0 },
-/* 0xeb */ { NULL, NULL, NULL, 0 },
-/* 0xec */ { NULL, NULL, NULL, 0 },
-/* 0xed */ { NULL, NULL, NULL, 0 },
-/* 0xee */ { NULL, NULL, NULL, 0 },
-/* 0xef */ { NULL, NULL, NULL, 0 },
-/* 0xf0 */ { NULL, NULL, NULL, 0 },
-/* 0xf1 */ { NULL, NULL, NULL, 0 },
-/* 0xf2 */ { NULL, NULL, NULL, 0 },
-/* 0xf3 */ { NULL, NULL, NULL, 0 },
-/* 0xf4 */ { NULL, NULL, NULL, 0 },
-/* 0xf5 */ { NULL, NULL, NULL, 0 },
-/* 0xf6 */ { NULL, NULL, NULL, 0 },
-/* 0xf7 */ { NULL, NULL, NULL, 0 },
-/* 0xf8 */ { NULL, NULL, NULL, 0 },
-/* 0xf9 */ { NULL, NULL, NULL, 0 },
-/* 0xfa */ { NULL, NULL, NULL, 0 },
-/* 0xfb */ { NULL, NULL, NULL, 0 },
-/* 0xfc */ { NULL, NULL, NULL, 0 },
-/* 0xfd */ { NULL, NULL, NULL, 0 },
-/* 0xfe */ { NULL, NULL, NULL, 0 },
-/* 0xff */ { NULL, NULL, NULL, 0 }
+/* 0x00 */ { "SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
+/* 0x01 */ { "SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
+/* 0x02 */ { "SMBopen",reply_open,AS_USER },
+/* 0x03 */ { "SMBcreate",reply_mknew,AS_USER},
+/* 0x04 */ { "SMBclose",reply_close,AS_USER | CAN_IPC },
+/* 0x05 */ { "SMBflush",reply_flush,AS_USER},
+/* 0x06 */ { "SMBunlink",reply_unlink,AS_USER | NEED_WRITE },
+/* 0x07 */ { "SMBmv",reply_mv,AS_USER | NEED_WRITE },
+/* 0x08 */ { "SMBgetatr",reply_getatr,AS_USER},
+/* 0x09 */ { "SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
+/* 0x0a */ { "SMBread",reply_read,AS_USER},
+/* 0x0b */ { "SMBwrite",reply_write,AS_USER | CAN_IPC },
+/* 0x0c */ { "SMBlock",reply_lock,AS_USER},
+/* 0x0d */ { "SMBunlock",reply_unlock,AS_USER},
+/* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER },
+/* 0x0f */ { "SMBmknew",reply_mknew,AS_USER},
+/* 0x10 */ { "SMBcheckpath",reply_checkpath,AS_USER},
+/* 0x11 */ { "SMBexit",reply_exit,DO_CHDIR},
+/* 0x12 */ { "SMBlseek",reply_lseek,AS_USER},
+/* 0x13 */ { "SMBlockread",reply_lockread,AS_USER},
+/* 0x14 */ { "SMBwriteunlock",reply_writeunlock,AS_USER},
+/* 0x15 */ { NULL, NULL, 0 },
+/* 0x16 */ { NULL, NULL, 0 },
+/* 0x17 */ { NULL, NULL, 0 },
+/* 0x18 */ { NULL, NULL, 0 },
+/* 0x19 */ { NULL, NULL, 0 },
+/* 0x1a */ { "SMBreadbraw",reply_readbraw,AS_USER},
+/* 0x1b */ { "SMBreadBmpx",reply_readbmpx,AS_USER},
+/* 0x1c */ { "SMBreadBs",reply_readbs,AS_USER },
+/* 0x1d */ { "SMBwritebraw",reply_writebraw,AS_USER},
+/* 0x1e */ { "SMBwriteBmpx",reply_writebmpx,AS_USER},
+/* 0x1f */ { "SMBwriteBs",reply_writebs,AS_USER},
+/* 0x20 */ { "SMBwritec", NULL,0},
+/* 0x21 */ { NULL, NULL, 0 },
+/* 0x22 */ { "SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE },
+/* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER },
+/* 0x24 */ { "SMBlockingX",reply_lockingX,AS_USER },
+/* 0x25 */ { "SMBtrans",reply_trans,AS_USER | CAN_IPC },
+/* 0x26 */ { "SMBtranss",reply_transs,AS_USER | CAN_IPC},
+/* 0x27 */ { "SMBioctl",reply_ioctl,0},
+/* 0x28 */ { "SMBioctls", NULL,AS_USER},
+/* 0x29 */ { "SMBcopy",reply_copy,AS_USER | NEED_WRITE },
+/* 0x2a */ { "SMBmove", NULL,AS_USER | NEED_WRITE },
+/* 0x2b */ { "SMBecho",reply_echo,0},
+/* 0x2c */ { "SMBwriteclose",reply_writeclose,AS_USER},
+/* 0x2d */ { "SMBopenX",reply_open_and_X,AS_USER | CAN_IPC },
+/* 0x2e */ { "SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
+/* 0x2f */ { "SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC },
+/* 0x30 */ { NULL, NULL, 0 },
+/* 0x31 */ { NULL, NULL, 0 },
+/* 0x32 */ { "SMBtrans2",reply_trans2, AS_USER | CAN_IPC },
+/* 0x33 */ { "SMBtranss2",reply_transs2, AS_USER},
+/* 0x34 */ { "SMBfindclose",reply_findclose,AS_USER},
+/* 0x35 */ { "SMBfindnclose",reply_findnclose,AS_USER},
+/* 0x36 */ { NULL, NULL, 0 },
+/* 0x37 */ { NULL, NULL, 0 },
+/* 0x38 */ { NULL, NULL, 0 },
+/* 0x39 */ { NULL, NULL, 0 },
+/* 0x3a */ { NULL, NULL, 0 },
+/* 0x3b */ { NULL, NULL, 0 },
+/* 0x3c */ { NULL, NULL, 0 },
+/* 0x3d */ { NULL, NULL, 0 },
+/* 0x3e */ { NULL, NULL, 0 },
+/* 0x3f */ { NULL, NULL, 0 },
+/* 0x40 */ { NULL, NULL, 0 },
+/* 0x41 */ { NULL, NULL, 0 },
+/* 0x42 */ { NULL, NULL, 0 },
+/* 0x43 */ { NULL, NULL, 0 },
+/* 0x44 */ { NULL, NULL, 0 },
+/* 0x45 */ { NULL, NULL, 0 },
+/* 0x46 */ { NULL, NULL, 0 },
+/* 0x47 */ { NULL, NULL, 0 },
+/* 0x48 */ { NULL, NULL, 0 },
+/* 0x49 */ { NULL, NULL, 0 },
+/* 0x4a */ { NULL, NULL, 0 },
+/* 0x4b */ { NULL, NULL, 0 },
+/* 0x4c */ { NULL, NULL, 0 },
+/* 0x4d */ { NULL, NULL, 0 },
+/* 0x4e */ { NULL, NULL, 0 },
+/* 0x4f */ { NULL, NULL, 0 },
+/* 0x50 */ { NULL, NULL, 0 },
+/* 0x51 */ { NULL, NULL, 0 },
+/* 0x52 */ { NULL, NULL, 0 },
+/* 0x53 */ { NULL, NULL, 0 },
+/* 0x54 */ { NULL, NULL, 0 },
+/* 0x55 */ { NULL, NULL, 0 },
+/* 0x56 */ { NULL, NULL, 0 },
+/* 0x57 */ { NULL, NULL, 0 },
+/* 0x58 */ { NULL, NULL, 0 },
+/* 0x59 */ { NULL, NULL, 0 },
+/* 0x5a */ { NULL, NULL, 0 },
+/* 0x5b */ { NULL, NULL, 0 },
+/* 0x5c */ { NULL, NULL, 0 },
+/* 0x5d */ { NULL, NULL, 0 },
+/* 0x5e */ { NULL, NULL, 0 },
+/* 0x5f */ { NULL, NULL, 0 },
+/* 0x60 */ { NULL, NULL, 0 },
+/* 0x61 */ { NULL, NULL, 0 },
+/* 0x62 */ { NULL, NULL, 0 },
+/* 0x63 */ { NULL, NULL, 0 },
+/* 0x64 */ { NULL, NULL, 0 },
+/* 0x65 */ { NULL, NULL, 0 },
+/* 0x66 */ { NULL, NULL, 0 },
+/* 0x67 */ { NULL, NULL, 0 },
+/* 0x68 */ { NULL, NULL, 0 },
+/* 0x69 */ { NULL, NULL, 0 },
+/* 0x6a */ { NULL, NULL, 0 },
+/* 0x6b */ { NULL, NULL, 0 },
+/* 0x6c */ { NULL, NULL, 0 },
+/* 0x6d */ { NULL, NULL, 0 },
+/* 0x6e */ { NULL, NULL, 0 },
+/* 0x6f */ { NULL, NULL, 0 },
+/* 0x70 */ { "SMBtcon",reply_tcon,0},
+/* 0x71 */ { "SMBtdis",reply_tdis,DO_CHDIR},
+/* 0x72 */ { "SMBnegprot",reply_negprot,0},
+/* 0x73 */ { "SMBsesssetupX",reply_sesssetup_and_X,0},
+/* 0x74 */ { "SMBulogoffX",reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
+/* 0x75 */ { "SMBtconX",reply_tcon_and_X,0},
+/* 0x76 */ { NULL, NULL, 0 },
+/* 0x77 */ { NULL, NULL, 0 },
+/* 0x78 */ { NULL, NULL, 0 },
+/* 0x79 */ { NULL, NULL, 0 },
+/* 0x7a */ { NULL, NULL, 0 },
+/* 0x7b */ { NULL, NULL, 0 },
+/* 0x7c */ { NULL, NULL, 0 },
+/* 0x7d */ { NULL, NULL, 0 },
+/* 0x7e */ { NULL, NULL, 0 },
+/* 0x7f */ { NULL, NULL, 0 },
+/* 0x80 */ { "SMBdskattr",reply_dskattr,AS_USER},
+/* 0x81 */ { "SMBsearch",reply_search,AS_USER},
+/* 0x82 */ { "SMBffirst",reply_search,AS_USER},
+/* 0x83 */ { "SMBfunique",reply_search,AS_USER},
+/* 0x84 */ { "SMBfclose",reply_fclose,AS_USER},
+/* 0x85 */ { NULL, NULL, 0 },
+/* 0x86 */ { NULL, NULL, 0 },
+/* 0x87 */ { NULL, NULL, 0 },
+/* 0x88 */ { NULL, NULL, 0 },
+/* 0x89 */ { NULL, NULL, 0 },
+/* 0x8a */ { NULL, NULL, 0 },
+/* 0x8b */ { NULL, NULL, 0 },
+/* 0x8c */ { NULL, NULL, 0 },
+/* 0x8d */ { NULL, NULL, 0 },
+/* 0x8e */ { NULL, NULL, 0 },
+/* 0x8f */ { NULL, NULL, 0 },
+/* 0x90 */ { NULL, NULL, 0 },
+/* 0x91 */ { NULL, NULL, 0 },
+/* 0x92 */ { NULL, NULL, 0 },
+/* 0x93 */ { NULL, NULL, 0 },
+/* 0x94 */ { NULL, NULL, 0 },
+/* 0x95 */ { NULL, NULL, 0 },
+/* 0x96 */ { NULL, NULL, 0 },
+/* 0x97 */ { NULL, NULL, 0 },
+/* 0x98 */ { NULL, NULL, 0 },
+/* 0x99 */ { NULL, NULL, 0 },
+/* 0x9a */ { NULL, NULL, 0 },
+/* 0x9b */ { NULL, NULL, 0 },
+/* 0x9c */ { NULL, NULL, 0 },
+/* 0x9d */ { NULL, NULL, 0 },
+/* 0x9e */ { NULL, NULL, 0 },
+/* 0x9f */ { NULL, NULL, 0 },
+/* 0xa0 */ { "SMBnttrans",reply_nttrans, AS_USER | CAN_IPC },
+/* 0xa1 */ { "SMBnttranss",reply_nttranss, AS_USER | CAN_IPC },
+/* 0xa2 */ { "SMBntcreateX",reply_ntcreate_and_X, AS_USER | CAN_IPC },
+/* 0xa3 */ { NULL, NULL, 0 },
+/* 0xa4 */ { "SMBntcancel",reply_ntcancel, 0 },
+/* 0xa5 */ { "SMBntrename",reply_ntrename, AS_USER | NEED_WRITE },
+/* 0xa6 */ { NULL, NULL, 0 },
+/* 0xa7 */ { NULL, NULL, 0 },
+/* 0xa8 */ { NULL, NULL, 0 },
+/* 0xa9 */ { NULL, NULL, 0 },
+/* 0xaa */ { NULL, NULL, 0 },
+/* 0xab */ { NULL, NULL, 0 },
+/* 0xac */ { NULL, NULL, 0 },
+/* 0xad */ { NULL, NULL, 0 },
+/* 0xae */ { NULL, NULL, 0 },
+/* 0xaf */ { NULL, NULL, 0 },
+/* 0xb0 */ { NULL, NULL, 0 },
+/* 0xb1 */ { NULL, NULL, 0 },
+/* 0xb2 */ { NULL, NULL, 0 },
+/* 0xb3 */ { NULL, NULL, 0 },
+/* 0xb4 */ { NULL, NULL, 0 },
+/* 0xb5 */ { NULL, NULL, 0 },
+/* 0xb6 */ { NULL, NULL, 0 },
+/* 0xb7 */ { NULL, NULL, 0 },
+/* 0xb8 */ { NULL, NULL, 0 },
+/* 0xb9 */ { NULL, NULL, 0 },
+/* 0xba */ { NULL, NULL, 0 },
+/* 0xbb */ { NULL, NULL, 0 },
+/* 0xbc */ { NULL, NULL, 0 },
+/* 0xbd */ { NULL, NULL, 0 },
+/* 0xbe */ { NULL, NULL, 0 },
+/* 0xbf */ { NULL, NULL, 0 },
+/* 0xc0 */ { "SMBsplopen",reply_printopen,AS_USER},
+/* 0xc1 */ { "SMBsplwr",reply_printwrite,AS_USER},
+/* 0xc2 */ { "SMBsplclose",reply_printclose,AS_USER},
+/* 0xc3 */ { "SMBsplretq",reply_printqueue,AS_USER},
+/* 0xc4 */ { NULL, NULL, 0 },
+/* 0xc5 */ { NULL, NULL, 0 },
+/* 0xc6 */ { NULL, NULL, 0 },
+/* 0xc7 */ { NULL, NULL, 0 },
+/* 0xc8 */ { NULL, NULL, 0 },
+/* 0xc9 */ { NULL, NULL, 0 },
+/* 0xca */ { NULL, NULL, 0 },
+/* 0xcb */ { NULL, NULL, 0 },
+/* 0xcc */ { NULL, NULL, 0 },
+/* 0xcd */ { NULL, NULL, 0 },
+/* 0xce */ { NULL, NULL, 0 },
+/* 0xcf */ { NULL, NULL, 0 },
+/* 0xd0 */ { "SMBsends",reply_sends,AS_GUEST},
+/* 0xd1 */ { "SMBsendb", NULL,AS_GUEST},
+/* 0xd2 */ { "SMBfwdname", NULL,AS_GUEST},
+/* 0xd3 */ { "SMBcancelf", NULL,AS_GUEST},
+/* 0xd4 */ { "SMBgetmac", NULL,AS_GUEST},
+/* 0xd5 */ { "SMBsendstrt",reply_sendstrt,AS_GUEST},
+/* 0xd6 */ { "SMBsendend",reply_sendend,AS_GUEST},
+/* 0xd7 */ { "SMBsendtxt",reply_sendtxt,AS_GUEST},
+/* 0xd8 */ { NULL, NULL, 0 },
+/* 0xd9 */ { NULL, NULL, 0 },
+/* 0xda */ { NULL, NULL, 0 },
+/* 0xdb */ { NULL, NULL, 0 },
+/* 0xdc */ { NULL, NULL, 0 },
+/* 0xdd */ { NULL, NULL, 0 },
+/* 0xde */ { NULL, NULL, 0 },
+/* 0xdf */ { NULL, NULL, 0 },
+/* 0xe0 */ { NULL, NULL, 0 },
+/* 0xe1 */ { NULL, NULL, 0 },
+/* 0xe2 */ { NULL, NULL, 0 },
+/* 0xe3 */ { NULL, NULL, 0 },
+/* 0xe4 */ { NULL, NULL, 0 },
+/* 0xe5 */ { NULL, NULL, 0 },
+/* 0xe6 */ { NULL, NULL, 0 },
+/* 0xe7 */ { NULL, NULL, 0 },
+/* 0xe8 */ { NULL, NULL, 0 },
+/* 0xe9 */ { NULL, NULL, 0 },
+/* 0xea */ { NULL, NULL, 0 },
+/* 0xeb */ { NULL, NULL, 0 },
+/* 0xec */ { NULL, NULL, 0 },
+/* 0xed */ { NULL, NULL, 0 },
+/* 0xee */ { NULL, NULL, 0 },
+/* 0xef */ { NULL, NULL, 0 },
+/* 0xf0 */ { NULL, NULL, 0 },
+/* 0xf1 */ { NULL, NULL, 0 },
+/* 0xf2 */ { NULL, NULL, 0 },
+/* 0xf3 */ { NULL, NULL, 0 },
+/* 0xf4 */ { NULL, NULL, 0 },
+/* 0xf5 */ { NULL, NULL, 0 },
+/* 0xf6 */ { NULL, NULL, 0 },
+/* 0xf7 */ { NULL, NULL, 0 },
+/* 0xf8 */ { NULL, NULL, 0 },
+/* 0xf9 */ { NULL, NULL, 0 },
+/* 0xfa */ { NULL, NULL, 0 },
+/* 0xfb */ { NULL, NULL, 0 },
+/* 0xfc */ { NULL, NULL, 0 },
+/* 0xfd */ { NULL, NULL, 0 },
+/* 0xfe */ { NULL, NULL, 0 },
+/* 0xff */ { NULL, NULL, 0 }
 
 };
 
@@ -1039,8 +976,7 @@ static void smb_dump(const char *name, int type, const char *data, ssize_t len)
  find.
 ****************************************************************************/
 
-static BOOL switch_message_new(uint8 type, struct smb_request *req, int size,
-			       connection_struct **pconn)
+static void switch_message(uint8 type, struct smb_request *req, int size)
 {
 	int flags;
 	uint16 session_tag;
@@ -1059,15 +995,13 @@ static BOOL switch_message_new(uint8 type, struct smb_request *req, int size,
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
 			 smb_len(req->inbuf)));
 		exit_server_cleanly("Non-SMB packet");
-		return True;
 	}
 
-	if ((smb_messages[type].fn == NULL)
-	    && (smb_messages[type].fn_new == NULL)) {
+	if (smb_messages[type].fn_new == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
 		smb_dump("Unknown", 1, (char *)req->inbuf, size);
 		reply_unknown_new(req, type);
-		goto done;
+		return;
 	}
 
 	flags = smb_messages[type].flags;
@@ -1120,12 +1054,12 @@ static BOOL switch_message_new(uint8 type, struct smb_request *req, int size,
 			} else {
 				reply_doserror(req, ERRSRV, ERRinvnid);
 			}
-			goto done;
+			return;
 		}
 
 		if (!change_to_user(conn,session_tag)) {
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
-			goto done;
+			return;
 		}
 
 		/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
@@ -1133,13 +1067,13 @@ static BOOL switch_message_new(uint8 type, struct smb_request *req, int size,
 		/* Does it need write permission? */
 		if ((flags & NEED_WRITE) && !CAN_WRITE(conn)) {
 			reply_nterror(req, NT_STATUS_MEDIA_WRITE_PROTECTED);
-			goto done;
+			return;
 		}
 
 		/* IPC services are limited */
 		if (IS_IPC(conn) && !(flags & CAN_IPC)) {
 			reply_doserror(req, ERRSRV,ERRaccess);
-			goto done;
+			return;
 		}
 	} else {
 		/* This call needs to be run as root */
@@ -1152,7 +1086,7 @@ static BOOL switch_message_new(uint8 type, struct smb_request *req, int size,
 					 (flags & (AS_USER|DO_CHDIR)
 					  ?True:False))) {
 			reply_doserror(req, ERRSRV, ERRaccess);
-			goto done;
+			return;
 		}
 		conn->num_smb_operations++;
 	}
@@ -1163,73 +1097,10 @@ static BOOL switch_message_new(uint8 type, struct smb_request *req, int size,
 		!check_access(smbd_server_fd(), lp_hostsallow(-1),
 			      lp_hostsdeny(-1)))) {
 		reply_doserror(req, ERRSRV, ERRaccess);
-		goto done;
+		return;
 	}
 
-	current_inbuf = (char *)req->inbuf; /* In case we need to defer this
-					     * message in open... */
-
-	if (smb_messages[type].fn_new != NULL) {
-		smb_messages[type].fn_new(conn, req);
-		goto done;
-	}
-
-	/*
-	 * Indicate the upper layer that there's still work.
-	 */
-	*pconn = conn;
-	return False;
-
- done:
-	return True;
-}
-
-
-/****************************************************************************
- Do a switch on the message type, and return the response size
-****************************************************************************/
-
-static int switch_message(uint8 type, struct smb_request *req, char **outbuf,
-			  int size, int bufsize)
-{
-	int outsize = 0;
-	connection_struct *conn = NULL;
-
-	if (switch_message_new(type, req, size, &conn)) {
-		if (req->outbuf != NULL) {
-			*outbuf = (char *)req->outbuf;
-			return smb_len(req->outbuf)+4;
-		}
-		return -1;
-	}
-
-	if (InBuffer == NULL) {
-		DEBUG(1, ("have to alloc InBuffer for %s\n",
-			  smb_fn_name(type)));
-		if (NewInBuffer(NULL) == NULL) {
-			smb_panic("Could not allocate InBuffer");
-		}
-	}
-
-	if ((OutBuffer == NULL) && (NewOutBuffer(NULL) == NULL)) {
-		smb_panic("Could not allocate OutBuffer");
-	}
-
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer,
-		       total_buffer_size);
-
-	memcpy(InBuffer, req->inbuf, MIN(size, total_buffer_size));
-
-	construct_reply_common(InBuffer, OutBuffer);
-
-	outsize = smb_messages[type].fn(conn, InBuffer, OutBuffer, size,
-					bufsize);
-
-	smb_dump(smb_fn_name(type), 0, OutBuffer, outsize);
-
-	*outbuf = OutBuffer;
-
-	return(outsize);
+	smb_messages[type].fn_new(conn, req);
 }
 
 /****************************************************************************
@@ -1239,9 +1110,7 @@ static int switch_message(uint8 type, struct smb_request *req, char **outbuf,
 static void construct_reply(char *inbuf, int size)
 {
 	uint8 type = CVAL(inbuf,smb_com);
-	int outsize = 0;
 	struct smb_request *req;
-	char *outbuf;
 
 	chain_size = 0;
 	file_chain_reset();
@@ -1252,23 +1121,18 @@ static void construct_reply(char *inbuf, int size)
 	}
 	init_smb_request(req, (uint8 *)inbuf);
 
-	outsize = switch_message(type, req, &outbuf, size, max_send);
+	switch_message(type, req, size);
 
-	if (outsize > 4) {
-		smb_setlen(outbuf,outsize - 4);
+	if (req->outbuf == NULL) {
+		return;
 	}
 
-	if (outsize > 0) {
-		if (CVAL(outbuf,0) == 0)
-			show_msg(outbuf);
+	if (CVAL(req->outbuf,0) == 0) {
+		show_msg((char *)req->outbuf);
+	}
 
-		if (outsize != smb_len(outbuf) + 4) {
-			DEBUG(0,("ERROR: Invalid message response size! "
-				 "%d %d\n", outsize, smb_len(outbuf)));
-		} else if (!send_smb(smbd_server_fd(),outbuf)) {
-			exit_server_cleanly("construct_reply: send_smb "
-					    "failed.");
-		}
+	if (!send_smb(smbd_server_fd(), (char *)req->outbuf)) {
+		exit_server_cleanly("construct_reply: send_smb failed.");
 	}
 
 	TALLOC_FREE(req);
@@ -1373,29 +1237,37 @@ void construct_reply_common(const char *inbuf, char *outbuf)
  Construct a chained reply and add it to the already made reply
 ****************************************************************************/
 
-int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
+void chain_reply(struct smb_request *req)
 {
 	static char *orig_inbuf;
+
+	/*
+	 * Dirty little const_discard: We mess with req->inbuf, which is
+	 * declared as const. If maybe at some point this routine gets
+	 * rewritten, this const_discard could go away.
+	 */
+	char *inbuf = CONST_DISCARD(char *, req->inbuf);
+	int size = smb_len(req->inbuf)+4;
+
 	int smb_com1, smb_com2 = CVAL(inbuf,smb_vwv0);
 	unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
 	char *inbuf2;
-	char *outbuf2 = NULL;
 	int outsize2;
 	int new_size;
 	char inbuf_saved[smb_wct];
-	char *outbuf = *poutbuf;
+	char *outbuf = (char *)req->outbuf;
 	size_t outsize = smb_len(outbuf) + 4;
 	size_t outsize_padded;
 	size_t ofs, to_move;
 
-	struct smb_request *req;
+	struct smb_request *req2;
 	size_t caller_outputlen;
 	char *caller_output;
 
 	/* Maybe its not chained, or it's an error packet. */
 	if (smb_com2 == 0xFF || SVAL(outbuf,smb_rcls) != 0) {
 		SCVAL(outbuf,smb_vwv0,0xFF);
-		return outsize;
+		return;
 	}
 
 	if (chain_size == 0) {
@@ -1456,7 +1328,7 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 			 "(orig size = %d, offset = %d)\n",
 			 size, (int)(inbuf2 - inbuf) ));
 		exit_server_cleanly("Bad chained packet");
-		return(-1);
+		return;
 	}
 
 	/* And set it in the header. */
@@ -1465,19 +1337,19 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 	DEBUG(3,("Chained message\n"));
 	show_msg(inbuf2);
 
-	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+	if (!(req2 = talloc(tmp_talloc_ctx(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
-	init_smb_request(req, (uint8 *)inbuf2);
+	init_smb_request(req2, (uint8 *)inbuf2);
 
 	/* process the request */
-	outsize2 = switch_message(smb_com2, req, &outbuf2, new_size,
-				  bufsize-chain_size);
+	switch_message(smb_com2, req2, new_size);
 
 	/*
 	 * We don't accept deferred operations in chained requests.
 	 */
-	SMB_ASSERT(outsize2 >= smb_wct);
+	SMB_ASSERT(req2->outbuf != NULL);
+	outsize2 = smb_len(req2->outbuf)+4;
 
 	/*
 	 * Move away the new command output so that caller_output fits in,
@@ -1510,24 +1382,22 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 	 * which is always large enough.
 	 */
 
-	if (outbuf != OutBuffer) {
-		outbuf = TALLOC_REALLOC_ARRAY(NULL, outbuf, char,
-					      to_move + ofs + smb_wct);
-		if (outbuf == NULL) {
-			smb_panic("could not realloc outbuf");
-		}
+	outbuf = TALLOC_REALLOC_ARRAY(NULL, outbuf, char,
+				      to_move + ofs + smb_wct);
+	if (outbuf == NULL) {
+		smb_panic("could not realloc outbuf");
 	}
 
-	*poutbuf = outbuf;
+	req->outbuf = (uint8 *)outbuf;
 
-	memmove(outbuf + smb_wct + ofs, outbuf2 + smb_wct, to_move);
+	memmove(outbuf + smb_wct + ofs, req2->outbuf + smb_wct, to_move);
 	memcpy(outbuf + smb_wct, caller_output, caller_outputlen);
 
 	/*
 	 * copy the new reply header over the old one but preserve the smb_com
 	 * field
 	 */
-	memmove(outbuf,outbuf2,smb_wct);
+	memmove(outbuf, req2->outbuf, smb_wct);
 	SCVAL(outbuf, smb_com, smb_com1);
 
 	/*
@@ -1558,17 +1428,9 @@ int chain_reply(char *inbuf,char **poutbuf,int size,int bufsize)
 	memcpy(inbuf2,inbuf_saved,smb_wct);
 
 	SAFE_FREE(caller_output);
-	TALLOC_FREE(req);
+	TALLOC_FREE(req2);
 
-	return outsize2 + chain_size;
-}
-
-void chain_reply_new(struct smb_request *req)
-{
-	chain_reply(CONST_DISCARD(char *, req->inbuf),
-		    (char **)(void *)&req->outbuf,
-		    smb_len(req->inbuf)+4,
-		    smb_len(req->outbuf)+4);
+	return;
 }
 
 /****************************************************************************
@@ -1797,55 +1659,6 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 	*select_timeout = setup_select_timeout();
 
 	return True;
-}
-
-/****************************************************************************
- Accessor functions for InBuffer, OutBuffer.
-****************************************************************************/
-
-char *get_InBuffer(void)
-{
-	return InBuffer;
-}
-
-/****************************************************************************
- Allocate a new InBuffer. Returns the new and old ones.
-****************************************************************************/
-
-static char *NewInBuffer(char **old_inbuf)
-{
-	char *new_inbuf = (char *)SMB_MALLOC(total_buffer_size);
-	if (!new_inbuf) {
-		return NULL;
-	}
-	if (old_inbuf) {
-		*old_inbuf = InBuffer;
-	}
-	InBuffer = new_inbuf;
-#if defined(DEVELOPER)
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
-#endif
-	return InBuffer;
-}
-
-/****************************************************************************
- Allocate a new OutBuffer. Returns the new and old ones.
-****************************************************************************/
-
-static char *NewOutBuffer(char **old_outbuf)
-{
-	char *new_outbuf = (char *)SMB_MALLOC(total_buffer_size);
-	if (!new_outbuf) {
-		return NULL;
-	}
-	if (old_outbuf) {
-		*old_outbuf = OutBuffer;
-	}
-	OutBuffer = new_outbuf;
-#if defined(DEVELOPER)
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
-#endif
-	return OutBuffer;
 }
 
 /****************************************************************************

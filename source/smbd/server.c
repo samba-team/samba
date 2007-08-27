@@ -770,7 +770,6 @@ static void exit_server_common(enum server_exit_reason how,
 
 	if (how != SERVER_EXIT_NORMAL) {
 		int oldlevel = DEBUGLEVEL;
-		char *last_inbuf = get_InBuffer();
 
 		DEBUGLEVEL = 10;
 
@@ -780,10 +779,6 @@ static void exit_server_common(enum server_exit_reason how,
 		DEBUGSEP(0);
 
 		log_stack_trace();
-		if (last_inbuf) {
-			DEBUG(0,("Last message was %s\n", LAST_MESSAGE()));
-			show_msg(last_inbuf);
-		}
 
 		DEBUGLEVEL = oldlevel;
 		dump_core();

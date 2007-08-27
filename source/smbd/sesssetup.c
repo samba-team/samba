@@ -1759,6 +1759,6 @@ void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
 	done_sesssetup = True;
 
 	END_PROFILE(SMBsesssetupX);
-	chain_reply_new(req);
+	chain_reply(req);
 	return;
 }

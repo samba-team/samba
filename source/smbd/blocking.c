@@ -21,8 +21,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
-extern int max_send;
-
 /****************************************************************************
  This is the structure to queue to implement blocking locks.
  notify. It consists of the requesting SMB and the expiry time.
@@ -201,7 +199,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 	 * that here and must set up the chain info manually.
 	 */
 
-	chain_reply_new(req);
+	chain_reply(req);
 
 	if (!send_smb(smbd_server_fd(),(char *)req->outbuf)) {
 		exit_server_cleanly("send_blocking_reply: send_smb failed.");

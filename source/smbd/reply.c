@@ -687,7 +687,7 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 	TALLOC_FREE(ctx);
 	END_PROFILE(SMBtconX);
 
-	chain_reply_new(req);
+	chain_reply(req);
 	return;
 }
 
@@ -1802,7 +1802,7 @@ void reply_open_and_X(connection_struct *conn, struct smb_request *req)
 	}
 
 	END_PROFILE(SMBopenX);
-	chain_reply_new(req);
+	chain_reply(req);
 	return;
 }
 
@@ -1837,7 +1837,7 @@ void reply_ulogoffX(connection_struct *conn, struct smb_request *req)
 	DEBUG( 3, ( "ulogoffX vuid=%d\n", req->vuid ) );
 
 	END_PROFILE(SMBulogoffX);
-	chain_reply_new(req);
+	chain_reply(req);
 }
 
 /****************************************************************************
@@ -3127,7 +3127,7 @@ normal_read:
 		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 
-		chain_reply_new(req);
+		chain_reply(req);
 
 		return;
 	}
@@ -3239,7 +3239,6 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 	if (!big_readX
 	    && schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
 		END_PROFILE(SMBreadX);
-		reply_post_legacy(req, -1);
 		return;
 	}
 
@@ -3840,7 +3839,7 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	}
 
 	END_PROFILE(SMBwriteX);
-	chain_reply_new(req);
+	chain_reply(req);
 	return;
 }
 
@@ -6250,7 +6249,6 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 			 * send a reply */
 			if (num_locks == 0 && num_ulocks == 0) {
 				END_PROFILE(SMBlockingX);
-				reply_post_legacy(req, -1);
 				return;
 			} else {
 				END_PROFILE(SMBlockingX);
@@ -6457,7 +6455,6 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 							block_smbpid)) {
 					TALLOC_FREE(br_lck);
 					END_PROFILE(SMBlockingX);
-					reply_post_legacy(req, -1);
 					return;
 				}
 			}
@@ -6517,7 +6514,7 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
 	
 	END_PROFILE(SMBlockingX);
-	chain_reply_new(req);
+	chain_reply(req);
 }
 
 #undef DBGC_CLASS
