@@ -116,7 +116,7 @@ _PUBLIC_ void unix_to_nt_time(NTTIME *nt, time_t t)
 /**
 check if it's a null unix time
 **/
-_PUBLIC_ BOOL null_time(time_t t)
+_PUBLIC_ bool null_time(time_t t)
 {
 	return t == 0 || 
 		t == (time_t)0xFFFFFFFF || 
@@ -127,7 +127,7 @@ _PUBLIC_ BOOL null_time(time_t t)
 /**
 check if it's a null NTTIME
 **/
-_PUBLIC_ BOOL null_nttime(NTTIME t)
+_PUBLIC_ bool null_nttime(NTTIME t)
 {
 	return t == 0 || t == (NTTIME)-1;
 }
@@ -403,9 +403,9 @@ _PUBLIC_ struct timeval timeval_zero(void)
 }
 
 /**
-  return True if a timeval is zero
+  return true if a timeval is zero
 */
-_PUBLIC_ BOOL timeval_is_zero(const struct timeval *tv)
+_PUBLIC_ bool timeval_is_zero(const struct timeval *tv)
 {
 	return tv->tv_sec == 0 && tv->tv_usec == 0;
 }
@@ -481,13 +481,13 @@ _PUBLIC_ int timeval_compare(const struct timeval *tv1, const struct timeval *tv
 }
 
 /**
-  return True if a timer is in the past
+  return true if a timer is in the past
 */
-_PUBLIC_ BOOL timeval_expired(const struct timeval *tv)
+_PUBLIC_ bool timeval_expired(const struct timeval *tv)
 {
 	struct timeval tv2 = timeval_current();
-	if (tv2.tv_sec > tv->tv_sec) return True;
-	if (tv2.tv_sec < tv->tv_sec) return False;
+	if (tv2.tv_sec > tv->tv_sec) return true;
+	if (tv2.tv_sec < tv->tv_sec) return false;
 	return (tv2.tv_usec >= tv->tv_usec);
 }
 

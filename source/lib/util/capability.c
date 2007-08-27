@@ -37,7 +37,7 @@
 /**************************************************************************
  Try and abstract process capabilities (for systems that have them).
 ****************************************************************************/
-static BOOL set_process_capability( uint32_t cap_flag, BOOL enable )
+static bool set_process_capability( uint32_t cap_flag, bool enable )
 {
 	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
 		cap_t cap = cap_get_proc();
@@ -45,7 +45,7 @@ static BOOL set_process_capability( uint32_t cap_flag, BOOL enable )
 		if (cap == NULL) {
 			DEBUG(0,("set_process_capability: cap_get_proc failed. Error was %s\n",
 				strerror(errno)));
-			return False;
+			return false;
 		}
 
 		if(enable)
@@ -57,21 +57,21 @@ static BOOL set_process_capability( uint32_t cap_flag, BOOL enable )
 			DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
 				strerror(errno)));
 			cap_free(cap);
-			return False;
+			return false;
 		}
 
 		cap_free(cap);
 
 		DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
 	}
-	return True;
+	return true;
 }
 
 /**************************************************************************
  Try and abstract inherited process capabilities (for systems that have them).
 ****************************************************************************/
 
-static BOOL set_inherited_process_capability( uint32_t cap_flag, BOOL enable )
+static bool set_inherited_process_capability( uint32_t cap_flag, bool enable )
 {
 	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
 		cap_t cap = cap_get_proc();
@@ -79,7 +79,7 @@ static BOOL set_inherited_process_capability( uint32_t cap_flag, BOOL enable )
 		if (cap == NULL) {
 			DEBUG(0,("set_inherited_process_capability: cap_get_proc failed. Error was %s\n",
 				strerror(errno)));
-			return False;
+			return false;
 		}
 
 		if(enable)
@@ -91,13 +91,13 @@ static BOOL set_inherited_process_capability( uint32_t cap_flag, BOOL enable )
 			DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
 				strerror(errno)));
 			cap_free(cap);
-			return False;
+			return false;
 		}
 
 		cap_free(cap);
 
 		DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
 	}
-	return True;
+	return true;
 }
 #endif
