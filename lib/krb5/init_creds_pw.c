@@ -1547,9 +1547,15 @@ krb5_get_init_creds_password(krb5_context context,
     char buf[BUFSIZ];
     krb5_error_code ret;
 
-    if (in_options == NULL)
+    if (in_options == NULL) {
+	const char *realm = krb5_principal_get_realm(context, client);
 	ret = krb5_get_init_creds_opt_alloc(context, &options);
-    else
+	if (ret == 0)
+	    krb5_get_init_creds_opt_set_default_flags(context, 
+						      NULL, 
+						      realm, 
+						      options);
+    } else
 	ret = _krb5_get_init_creds_opt_copy(context, in_options, &options);
     if (ret)
 	return ret;
