@@ -972,13 +972,12 @@ int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ct
  */
 int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
 {
-	int ret;
-	int32_t res;
+	struct ctdb_client_control_state *state;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_SHUTDOWN, CTDB_CTRL_FLAG_NOREPLY, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0) {
+	state = ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SHUTDOWN, 0, tdb_null, 
+			   NULL, NULL, &timeout, NULL);
+	if (state == NULL) {
 		DEBUG(0,(__location__ " ctdb_control for shutdown failed\n"));
 		return -1;
 	}
