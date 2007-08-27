@@ -768,7 +768,7 @@ static BOOL request_timed_out(struct timeval request_time,
 static void defer_open(struct share_mode_lock *lck,
 		       struct timeval request_time,
 		       struct timeval timeout,
-		       uint16 mid,
+		       struct smb_request *req,
 		       struct deferred_open_record *state)
 {
 	int i;
@@ -782,9 +782,9 @@ static void defer_open(struct share_mode_lock *lck,
 			continue;
 		}
 
-		if (procid_is_me(&e->pid) && (e->op_mid == mid)) {
+		if (procid_is_me(&e->pid) && (e->op_mid == req->mid)) {
 			DEBUG(0, ("Trying to defer an already deferred "
-				  "request: mid=%d, exiting\n", mid));
+				  "request: mid=%d, exiting\n", req->mid));
 			exit_server("attempt to defer a deferred request");
 		}
 	}
@@ -795,13 +795,13 @@ static void defer_open(struct share_mode_lock *lck,
 		  "open entry for mid %u\n",
 		  (unsigned int)request_time.tv_sec,
 		  (unsigned int)request_time.tv_usec,
-		  (unsigned int)mid));
+		  (unsigned int)req->mid));
 
-	if (!push_deferred_smb_message(mid, request_time, timeout,
+	if (!push_deferred_smb_message(req, request_time, timeout,
 				       (char *)state, sizeof(*state))) {
 		exit_server("push_deferred_smb_message failed");
 	}
-	add_deferred_open(lck, mid, request_time, state->id);
+	add_deferred_open(lck, req->mid, request_time, state->id);
 
 	/*
 	 * Push the MID of this packet on the signing queue.
@@ -810,7 +810,7 @@ static void defer_open(struct share_mode_lock *lck,
 	 * of incrementing the response sequence number.
 	 */
 
-	srv_defer_sign_response(mid);
+	srv_defer_sign_response(req->mid);
 }
 
 
@@ -1067,7 +1067,7 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 
 static void schedule_defer_open(struct share_mode_lock *lck,
 				struct timeval request_time,
-				uint16 mid)
+				struct smb_request *req)
 {
 	struct deferred_open_record state;
 
@@ -1098,7 +1098,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 	state.id = lck->id;
 
 	if (!request_timed_out(request_time, timeout)) {
-		defer_open(lck, request_time, timeout, mid, &state);
+		defer_open(lck, request_time, timeout, req, &state);
 	}
 }
 
@@ -1448,7 +1448,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if ((req != NULL)
 		    && delay_for_oplocks(lck, fsp, req->mid, 1,
 					 oplock_request)) {
-			schedule_defer_open(lck, request_time, req->mid);
+			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
@@ -1468,8 +1468,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if ((req != NULL)
 			     && delay_for_oplocks(lck, fsp, req->mid, 2,
 						  oplock_request)) {
-				schedule_defer_open(lck, request_time,
-						    req->mid);
+				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
 				file_free(fsp);
 				return NT_STATUS_SHARING_VIOLATION;
@@ -1587,7 +1586,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				    && !request_timed_out(request_time,
 							  timeout)) {
 					defer_open(lck, request_time, timeout,
-						   req->mid, &state);
+						   req, &state);
 				}
 			}
 
@@ -1678,7 +1677,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if ((req != NULL)
 		    && delay_for_oplocks(lck, fsp, req->mid, 1,
 					 oplock_request)) {
-			schedule_defer_open(lck, request_time, req->mid);
+			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			fd_close(conn, fsp);
 			file_free(fsp);
@@ -1697,8 +1696,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if ((req != NULL)
 			    && delay_for_oplocks(lck, fsp, req->mid, 2,
 						 oplock_request)) {
-				schedule_defer_open(lck, request_time,
-						    req->mid);
+				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
 				fd_close(conn, fsp);
 				file_free(fsp);
@@ -1724,7 +1722,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			if (req != NULL) {
 				defer_open(lck, request_time, timeval_zero(),
-					   req->mid, &state);
+					   req, &state);
 			}
 			TALLOC_FREE(lck);
 			return status;

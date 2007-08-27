@@ -444,7 +444,7 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 
 	DEBUG(5,("do_ntcreate_pipe_open: open pipe = %s\n", fname));
 
-	chain_reply_new(req);
+	chain_reply(req);
 }
 
 /****************************************************************************
@@ -479,7 +479,7 @@ static void reply_ntcreate_and_X_quota(connection_struct *conn,
 
 	DEBUG(5,("reply_ntcreate_and_X_quota: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
-	chain_reply_new(req);
+	chain_reply(req);
 }
 
 /****************************************************************************
@@ -1008,7 +1008,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
-	chain_reply_new(req);
+	chain_reply(req);
 	END_PROFILE(SMBntcreateX);
 	return;
 }

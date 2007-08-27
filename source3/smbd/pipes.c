@@ -130,7 +130,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv8,rmode);
 	SSVAL(req->outbuf,smb_vwv11,0x0001);
 
-	chain_reply_new(req);
+	chain_reply(req);
 	return;
 }
 
@@ -244,7 +244,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
   
 	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n", p->pnum, nwritten));
 
-	chain_reply_new(req);
+	chain_reply(req);
 }
 
 /****************************************************************************
@@ -294,7 +294,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
 		 p->pnum, smb_mincnt, smb_maxcnt, nread));
 
-	chain_reply_new(req);
+	chain_reply(req);
 }
 
 /****************************************************************************
