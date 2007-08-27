@@ -35,7 +35,7 @@
 RCSID("$Id$");
 #include "digest_asn1.h"
 
-struct krb5_digest {
+struct krb5_digest_data {
     char *cbtype;
     char *cbbinding;
 
@@ -812,7 +812,7 @@ krb5_digest_get_session_key(krb5_context context,
     return ret;
 }
 
-struct krb5_ntlm {
+struct krb5_ntlm_data {
     NTLMInit init;
     NTLMInitReply initReply;
     NTLMRequest request;
