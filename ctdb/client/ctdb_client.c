@@ -1807,22 +1807,47 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 
 
 /*
-  freeze a node
+  async freeze send control
  */
-int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+struct ctdb_client_control_state *
+ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_FREEZE, 0, tdb_null, 
+			   mem_ctx, NULL, &timeout, NULL);
+}
+
+/* 
+   async freeze recv control
+*/
+int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state)
 {
 	int ret;
 	int32_t res;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_FREEZE, 0, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control freeze failed\n"));
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
+	if ( (ret != 0) || (res != 0) ){
+		DEBUG(0,(__location__ " ctdb_ctrl_freeze_recv failed\n"));
 		return -1;
 	}
 
 	return 0;
+}
+
+/*
+  freeze a node
+ */
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_client_control_state *state;
+	int ret;
+
+	state = ctdb_ctrl_freeze_send(ctdb, tmp_ctx, timeout, destnode);
+	ret = ctdb_ctrl_freeze_recv(ctdb, tmp_ctx, state);
+	talloc_free(tmp_ctx);
+
+	return ret;
 }
 
 /*

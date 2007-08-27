@@ -116,6 +116,87 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_
 	}
 }
 
+enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEEDED, MONITOR_FAILED};
+
+
+struct freeze_node_data {
+	uint32_t count;
+	enum monitor_result status;
+};
+
+
+static void freeze_node_callback(struct ctdb_client_control_state *state)
+{
+	struct freeze_node_data *fndata = talloc_get_type(state->async.private, struct freeze_node_data);
+
+
+	/* one more node has responded to our freeze node*/
+	fndata->count--;
+
+	/* if we failed to freeze the node, we must trigger another recovery */
+	if ( (state->state != CTDB_CONTROL_DONE) || (state->status != 0) ) {
+		DEBUG(0, (__location__ " Failed to freeze node:%u. recovery failed\n", state->c->hdr.destnode));
+		fndata->status = MONITOR_RECOVERY_NEEDED;
+	}
+
+	return;
+}
+
+
+
+/* freeze all nodes */
+static enum monitor_result freeze_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	struct freeze_node_data *fndata;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+	struct ctdb_client_control_state *state;
+	enum monitor_result status;
+	int j;
+	
+	fndata = talloc(mem_ctx, struct freeze_node_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, fndata);
+	fndata->count  = 0;
+	fndata->status = MONITOR_OK;
+
+	/* loop over all active nodes and send an async freeze call to 
+	   them*/
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		state = ctdb_ctrl_freeze_send(ctdb, mem_ctx, 
+					CONTROL_TIMEOUT(), 
+					nodemap->nodes[j].vnn);
+		if (state == NULL) {
+			/* we failed to send the control, treat this as 
+			   an error and try again next iteration
+			*/			
+			DEBUG(0,("Failed to call ctdb_ctrl_freeze_send during recovery\n"));
+			talloc_free(mem_ctx);
+			return MONITOR_RECOVERY_NEEDED;
+		}
+
+		/* set up the callback functions */
+		state->async.fn = freeze_node_callback;
+		state->async.private = fndata;
+
+		/* one more control to wait for to complete */
+		fndata->count++;
+	}
+
+
+	/* now wait for up to the maximum number of seconds allowed
+	   or until all nodes we expect a response from has replied
+	*/
+	while (fndata->count > 0) {
+		event_loop_once(ctdb->ev);
+	}
+
+	status = fndata->status;
+	talloc_free(mem_ctx);
+	return status;
+}
+
 
 /*
   change recovery mode on all nodes
@@ -124,24 +205,21 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 {
 	int j, ret;
 
-	/* start the freeze process immediately on all nodes */
-	ctdb_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
-		     CTDB_CONTROL_FREEZE, CTDB_CTRL_FLAG_NOREPLY, tdb_null, 
-		     NULL, NULL, NULL, NULL, NULL);
+	/* freeze all nodes */
+	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
+		ret = freeze_all_nodes(ctdb, nodemap);
+		if (ret != MONITOR_OK) {
+			DEBUG(0, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
+			return -1;
+		}
+	}
+
 
 	/* set recovery mode to active on all nodes */
 	for (j=0; j<nodemap->num; j++) {
 		/* dont change it for nodes that are unavailable */
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
-		}
-
-		if (rec_mode == CTDB_RECOVERY_ACTIVE) {
-			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to freeze node %u\n", nodemap->nodes[j].vnn));
-				return -1;
-			}
 		}
 
 		ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, rec_mode);
@@ -1147,8 +1225,6 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_free(tmp_ctx);
 }
 
-
-enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEEDED, MONITOR_FAILED};
 
 
 struct verify_recmode_normal_data {

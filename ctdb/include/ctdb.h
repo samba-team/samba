@@ -379,7 +379,16 @@ int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
  */
 int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid);
 
-int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, 
+			uint32_t destnode);
+
+struct ctdb_client_control_state *
+ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
+			struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
+			struct ctdb_client_control_state *state);
+
 int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
