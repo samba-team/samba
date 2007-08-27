@@ -821,6 +821,11 @@ static int partition_init(struct ldb_module *module)
 		data->partitions[i]->backend = relative_path(module, 
 							     data->partitions[i], 
 							     p);
+		if (!data->partitions[i]->backend) {
+			ldb_asprintf_errstring(module->ldb, 
+						"partition_init: unable to determine an relative path for partition: %s", base);
+			talloc_free(mem_ctx);			
+		}
 		ret = ldb_connect_backend(module->ldb, data->partitions[i]->backend, NULL, &data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
