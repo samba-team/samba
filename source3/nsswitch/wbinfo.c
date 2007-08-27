@@ -105,6 +105,13 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain,
 	char *p = strchr(domuser,winbind_separator());
 
 	if (!p) {
+		/* Maybe it was a UPN? */
+		if ((p = strchr(domuser, '@')) != NULL) {
+			fstrcpy(domain, "");
+			fstrcpy(user, domuser);
+			return True;
+		}
+		
 		fstrcpy(user, domuser);
 		fstrcpy(domain, get_winbind_domain());
 		return True;

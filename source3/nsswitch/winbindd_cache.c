@@ -1411,7 +1411,8 @@ do_query:
 		wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
+	/* Only save the reverse mapping if this was not a UPN */
+	if (NT_STATUS_IS_OK(status) && !strchr(name, '@')) {
 		strupper_m(CONST_DISCARD(char *,domain_name));
 		strlower_m(CONST_DISCARD(char *,name));
 		wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
