@@ -3385,7 +3385,7 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 
 	switch (info_level) {
 		case SMB_FILE_STANDARD_INFORMATION:
-			memset(pdata,24,0);
+			memset(pdata,0,24);
 			SOFF_T(pdata,0,4096LL);
 			SIVAL(pdata,16,1);
 			SIVAL(pdata,20,1);
