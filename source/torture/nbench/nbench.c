@@ -36,6 +36,25 @@ static int read_only;
 
 #define ival(s) strtoll(s, NULL, 0)
 
+static unsigned long nb_max_retries;
+
+#define NB_RETRY(op) \
+	for (n=0;n<=nb_max_retries && !op;n++) do_reconnect(&cli, client)
+
+static void do_reconnect(struct smbcli_state **cli, int client)
+{
+	int n;
+	printf("[%d] Reconnecting client %d\n", nbench_line_count, client);
+	for (n=0;n<nb_max_retries;n++) {
+		if (nb_reconnect(cli, client)) {
+			printf("[%d] Reconnected client %d\n", nbench_line_count, client);
+			return;
+		}
+	}
+	printf("[%d] Failed to reconnect client %d\n", nbench_line_count, client);
+	nb_exit(1);
+}
+
 /* run a test that simulates an approximate netbench client load */
 static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli, int client)
 {
@@ -46,18 +65,19 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	FILE *f;
 	BOOL correct = True;
 	double target_rate = lp_parm_double(-1, "torture", "targetrate", 0);	
+	int n;
 
 	if (target_rate != 0 && client == 0) {
 		printf("Targetting %.4f MByte/sec\n", target_rate);
 	}
 
+	nb_setup(cli, client);
+
 	if (torture_nprocs == 1) {
-		if (!read_only && !torture_setup_dir(cli, "\\clients")) {
-			return False;
+		if (!read_only) {
+			NB_RETRY(torture_setup_dir(cli, "\\clients"));
 		}
 	}
-
-	nb_setup(cli, client);
 
 	asprintf(&cname, "client%d", client+1);
 
@@ -67,7 +87,6 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 		perror(loadfile);
 		return False;
 	}
-
 
 again:
 	nbio_time_reset();
@@ -102,7 +121,7 @@ again:
 
 		if (!strncmp(params[0],"SMB", 3)) {
 			printf("ERROR: You are using a dbench 1 load file\n");
-			exit(1);
+			nb_exit(1);
 		}
 
 		if (strncmp(params[i-1], "NT_STATUS_", 10) != 0 &&
@@ -122,55 +141,60 @@ again:
 		DEBUG(9,("run_netbench(%d): %s %s\n", client, params[0], params[1]));
 
 		if (!strcmp(params[0],"NTCreateX")) {
-			nb_createx(params[1], ival(params[2]), ival(params[3]), 
-				   ival(params[4]), status);
+			NB_RETRY(nb_createx(params[1], ival(params[2]), ival(params[3]), 
+					    ival(params[4]), status));
 		} else if (!strcmp(params[0],"Close")) {
-			nb_close(ival(params[1]), status);
+			NB_RETRY(nb_close(ival(params[1]), status));
 		} else if (!read_only && !strcmp(params[0],"Rename")) {
-			nb_rename(params[1], params[2], status);
+			NB_RETRY(nb_rename(params[1], params[2], status, n>0));
 		} else if (!read_only && !strcmp(params[0],"Unlink")) {
-			nb_unlink(params[1], ival(params[2]), status);
+			NB_RETRY(nb_unlink(params[1], ival(params[2]), status, n>0));
 		} else if (!read_only && !strcmp(params[0],"Deltree")) {
-			nb_deltree(params[1]);
+			NB_RETRY(nb_deltree(params[1], n>0));
 		} else if (!read_only && !strcmp(params[0],"Rmdir")) {
-			nb_rmdir(params[1], status);
+			NB_RETRY(nb_rmdir(params[1], status, n>0));
 		} else if (!read_only && !strcmp(params[0],"Mkdir")) {
-			nb_mkdir(params[1], status);
+			NB_RETRY(nb_mkdir(params[1], status, n>0));
 		} else if (!strcmp(params[0],"QUERY_PATH_INFORMATION")) {
-			nb_qpathinfo(params[1], ival(params[2]), status);
+			NB_RETRY(nb_qpathinfo(params[1], ival(params[2]), status));
 		} else if (!strcmp(params[0],"QUERY_FILE_INFORMATION")) {
-			nb_qfileinfo(ival(params[1]), ival(params[2]), status);
+			NB_RETRY(nb_qfileinfo(ival(params[1]), ival(params[2]), status));
 		} else if (!strcmp(params[0],"QUERY_FS_INFORMATION")) {
-			nb_qfsinfo(ival(params[1]), status);
+			NB_RETRY(nb_qfsinfo(ival(params[1]), status));
 		} else if (!read_only && !strcmp(params[0],"SET_FILE_INFORMATION")) {
-			nb_sfileinfo(ival(params[1]), ival(params[2]), status);
+			NB_RETRY(nb_sfileinfo(ival(params[1]), ival(params[2]), status));
 		} else if (!strcmp(params[0],"FIND_FIRST")) {
-			nb_findfirst(params[1], ival(params[2]), 
-				     ival(params[3]), ival(params[4]), status);
+			NB_RETRY(nb_findfirst(params[1], ival(params[2]), 
+					      ival(params[3]), ival(params[4]), status));
 		} else if (!read_only && !strcmp(params[0],"WriteX")) {
-			nb_writex(ival(params[1]), 
-				  ival(params[2]), ival(params[3]), ival(params[4]),
-				  status);
+			NB_RETRY(nb_writex(ival(params[1]), 
+					   ival(params[2]), ival(params[3]), ival(params[4]),
+					   status));
 		} else if (!read_only && !strcmp(params[0],"Write")) {
-			nb_write(ival(params[1]), 
-				 ival(params[2]), ival(params[3]), ival(params[4]),
-				 status);
+			NB_RETRY(nb_write(ival(params[1]), 
+					  ival(params[2]), ival(params[3]), ival(params[4]),
+					  status));
 		} else if (!strcmp(params[0],"LockX")) {
-			nb_lockx(ival(params[1]), 
-				 ival(params[2]), ival(params[3]), status);
+			NB_RETRY(nb_lockx(ival(params[1]), 
+					  ival(params[2]), ival(params[3]), status));
 		} else if (!strcmp(params[0],"UnlockX")) {
-			nb_unlockx(ival(params[1]), 
-				 ival(params[2]), ival(params[3]), status);
+			NB_RETRY(nb_unlockx(ival(params[1]), 
+					    ival(params[2]), ival(params[3]), status));
 		} else if (!strcmp(params[0],"ReadX")) {
-			nb_readx(ival(params[1]), 
-				 ival(params[2]), ival(params[3]), ival(params[4]),
-				 status);
+			NB_RETRY(nb_readx(ival(params[1]), 
+					  ival(params[2]), ival(params[3]), ival(params[4]),
+					  status));
 		} else if (!strcmp(params[0],"Flush")) {
-			nb_flush(ival(params[1]), status);
+			NB_RETRY(nb_flush(ival(params[1]), status));
 		} else if (!strcmp(params[0],"Sleep")) {
 			nb_sleep(ival(params[1]), status);
 		} else {
 			printf("[%d] Unknown operation %s\n", nbench_line_count, params[0]);
+		}
+
+		if (n > nb_max_retries) {
+			printf("Maximum reconnect retries reached for op '%s'\n", params[0]);
+			nb_exit(1);
 		}
 
 		talloc_free(params0);
@@ -204,6 +228,8 @@ BOOL torture_nbench(struct torture_context *torture)
 	const char *p;
 
 	read_only = torture_setting_bool(torture, "readonly", False);
+
+	nb_max_retries = lp_parm_int(-1, "torture", "nretries", 1);
 
 	p = torture_setting_string(torture, "timelimit", NULL);
 	if (p && *p) {
@@ -255,14 +281,14 @@ BOOL torture_nbench(struct torture_context *torture)
 
 NTSTATUS torture_nbench_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(
-										talloc_autofree_context(),
-										"BENCH");
+	struct torture_suite *suite = 
+		torture_suite_create(
+			talloc_autofree_context(),
+			"BENCH");
 
 	torture_suite_add_simple_test(suite, "NBENCH", torture_nbench);
 
-	suite->description = talloc_strdup(suite, 
-								"Benchmarks");
+	suite->description = talloc_strdup(suite, "Benchmarks");
 
 	torture_register_suite(suite);
 	return NT_STATUS_OK;
