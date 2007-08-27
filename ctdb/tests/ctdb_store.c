@@ -145,7 +145,7 @@ int main(int argc, const char *argv[])
 	printf("Waiting for cluster\n");
 	while (1) {
 		uint32_t recmode=1;
-		ctdb_ctrl_getrecmode(ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
+		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
 		event_loop_once(ev);
 	}

@@ -116,6 +116,87 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_
 	}
 }
 
+enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEEDED, MONITOR_FAILED};
+
+
+struct freeze_node_data {
+	uint32_t count;
+	enum monitor_result status;
+};
+
+
+static void freeze_node_callback(struct ctdb_client_control_state *state)
+{
+	struct freeze_node_data *fndata = talloc_get_type(state->async.private, struct freeze_node_data);
+
+
+	/* one more node has responded to our freeze node*/
+	fndata->count--;
+
+	/* if we failed to freeze the node, we must trigger another recovery */
+	if ( (state->state != CTDB_CONTROL_DONE) || (state->status != 0) ) {
+		DEBUG(0, (__location__ " Failed to freeze node:%u. recovery failed\n", state->c->hdr.destnode));
+		fndata->status = MONITOR_RECOVERY_NEEDED;
+	}
+
+	return;
+}
+
+
+
+/* freeze all nodes */
+static enum monitor_result freeze_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	struct freeze_node_data *fndata;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+	struct ctdb_client_control_state *state;
+	enum monitor_result status;
+	int j;
+	
+	fndata = talloc(mem_ctx, struct freeze_node_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, fndata);
+	fndata->count  = 0;
+	fndata->status = MONITOR_OK;
+
+	/* loop over all active nodes and send an async freeze call to 
+	   them*/
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		state = ctdb_ctrl_freeze_send(ctdb, mem_ctx, 
+					CONTROL_TIMEOUT(), 
+					nodemap->nodes[j].vnn);
+		if (state == NULL) {
+			/* we failed to send the control, treat this as 
+			   an error and try again next iteration
+			*/			
+			DEBUG(0,("Failed to call ctdb_ctrl_freeze_send during recovery\n"));
+			talloc_free(mem_ctx);
+			return MONITOR_RECOVERY_NEEDED;
+		}
+
+		/* set up the callback functions */
+		state->async.fn = freeze_node_callback;
+		state->async.private = fndata;
+
+		/* one more control to wait for to complete */
+		fndata->count++;
+	}
+
+
+	/* now wait for up to the maximum number of seconds allowed
+	   or until all nodes we expect a response from has replied
+	*/
+	while (fndata->count > 0) {
+		event_loop_once(ctdb->ev);
+	}
+
+	status = fndata->status;
+	talloc_free(mem_ctx);
+	return status;
+}
+
 
 /*
   change recovery mode on all nodes
@@ -124,24 +205,21 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 {
 	int j, ret;
 
-	/* start the freeze process immediately on all nodes */
-	ctdb_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
-		     CTDB_CONTROL_FREEZE, CTDB_CTRL_FLAG_NOREPLY, tdb_null, 
-		     NULL, NULL, NULL, NULL, NULL);
+	/* freeze all nodes */
+	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
+		ret = freeze_all_nodes(ctdb, nodemap);
+		if (ret != MONITOR_OK) {
+			DEBUG(0, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
+			return -1;
+		}
+	}
+
 
 	/* set recovery mode to active on all nodes */
 	for (j=0; j<nodemap->num; j++) {
 		/* dont change it for nodes that are unavailable */
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
-		}
-
-		if (rec_mode == CTDB_RECOVERY_ACTIVE) {
-			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to freeze node %u\n", nodemap->nodes[j].vnn));
-				return -1;
-			}
 		}
 
 		ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, rec_mode);
@@ -531,28 +609,33 @@ static void ban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 {
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 	struct ctdb_ban_info *b = (struct ctdb_ban_info *)data.dptr;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	uint32_t recmaster;
 	int ret;
 
 	if (data.dsize != sizeof(*b)) {
 		DEBUG(0,("Bad data in ban_handler\n"));
+		talloc_free(mem_ctx);
 		return;
 	}
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to find the recmaster\n"));
+		talloc_free(mem_ctx);
 		return;
 	}
 
 	if (recmaster != ctdb->vnn) {
 		DEBUG(0,("We are not the recmaster - ignoring ban request\n"));
+		talloc_free(mem_ctx);
 		return;
 	}
 
 	DEBUG(0,("Node %u has been banned for %u seconds by the administrator\n", 
 		 b->vnn, b->ban_time));
 	ctdb_ban_node(rec, b->vnn, b->ban_time);
+	talloc_free(mem_ctx);
 }
 
 /*
@@ -562,29 +645,34 @@ static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			  TDB_DATA data, void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	uint32_t vnn;
 	int ret;
 	uint32_t recmaster;
 
 	if (data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,("Bad data in unban_handler\n"));
+		talloc_free(mem_ctx);
 		return;
 	}
 	vnn = *(uint32_t *)data.dptr;
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to find the recmaster\n"));
+		talloc_free(mem_ctx);
 		return;
 	}
 
 	if (recmaster != ctdb->vnn) {
 		DEBUG(0,("We are not the recmaster - ignoring unban request\n"));
+		talloc_free(mem_ctx);
 		return;
 	}
 
 	DEBUG(0,("Node %u has been unbanned by the administrator\n", vnn));
 	ctdb_unban_node(rec, vnn);
+	talloc_free(mem_ctx);
 }
 
 
@@ -1104,11 +1192,11 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	nodemap->nodes[i].flags = c->new_flags;
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), 
+	ret = ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, CONTROL_TIMEOUT(), 
 				     CTDB_CURRENT_NODE, &ctdb->recovery_master);
 
 	if (ret == 0) {
-		ret = ctdb_ctrl_getrecmode(ctdb, CONTROL_TIMEOUT(), 
+		ret = ctdb_ctrl_getrecmode(ctdb, tmp_ctx, CONTROL_TIMEOUT(), 
 					   CTDB_CURRENT_NODE, &ctdb->recovery_mode);
 	}
 	
@@ -1139,12 +1227,192 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 
 
+struct verify_recmode_normal_data {
+	uint32_t count;
+	enum monitor_result status;
+};
+
+static void verify_recmode_normal_callback(struct ctdb_client_control_state *state)
+{
+	struct verify_recmode_normal_data *rmdata = talloc_get_type(state->async.private, struct verify_recmode_normal_data);
+
+
+	/* one more node has responded with recmode data*/
+	rmdata->count--;
+
+	/* if we failed to get the recmode, then return an error and let
+	   the main loop try again.
+	*/
+	if (state->state != CTDB_CONTROL_DONE) {
+		if (rmdata->status == MONITOR_OK) {
+			rmdata->status = MONITOR_FAILED;
+		}
+		return;
+	}
+
+	/* if we got a response, then the recmode will be stored in the
+	   status field
+	*/
+	if (state->status != CTDB_RECOVERY_NORMAL) {
+		DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", state->c->hdr.destnode));
+		rmdata->status = MONITOR_RECOVERY_NEEDED;
+	}
+
+	return;
+}
+
+
+/* verify that all nodes are in normal recovery mode */
+static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	struct verify_recmode_normal_data *rmdata;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+	struct ctdb_client_control_state *state;
+	enum monitor_result status;
+	int j;
+	
+	rmdata = talloc(mem_ctx, struct verify_recmode_normal_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
+	rmdata->count  = 0;
+	rmdata->status = MONITOR_OK;
+
+	/* loop over all active nodes and send an async getrecmode call to 
+	   them*/
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		state = ctdb_ctrl_getrecmode_send(ctdb, mem_ctx, 
+					CONTROL_TIMEOUT(), 
+					nodemap->nodes[j].vnn);
+		if (state == NULL) {
+			/* we failed to send the control, treat this as 
+			   an error and try again next iteration
+			*/			
+			DEBUG(0,("Failed to call ctdb_ctrl_getrecmode_send during monitoring\n"));
+			talloc_free(mem_ctx);
+			return MONITOR_FAILED;
+		}
+
+		/* set up the callback functions */
+		state->async.fn = verify_recmode_normal_callback;
+		state->async.private = rmdata;
+
+		/* one more control to wait for to complete */
+		rmdata->count++;
+	}
+
+
+	/* now wait for up to the maximum number of seconds allowed
+	   or until all nodes we expect a response from has replied
+	*/
+	while (rmdata->count > 0) {
+		event_loop_once(ctdb->ev);
+	}
+
+	status = rmdata->status;
+	talloc_free(mem_ctx);
+	return status;
+}
+
+
+struct verify_recmaster_data {
+	uint32_t count;
+	uint32_t vnn;
+	enum monitor_result status;
+};
+
+static void verify_recmaster_callback(struct ctdb_client_control_state *state)
+{
+	struct verify_recmaster_data *rmdata = talloc_get_type(state->async.private, struct verify_recmaster_data);
+
+
+	/* one more node has responded with recmaster data*/
+	rmdata->count--;
+
+	/* if we failed to get the recmaster, then return an error and let
+	   the main loop try again.
+	*/
+	if (state->state != CTDB_CONTROL_DONE) {
+		if (rmdata->status == MONITOR_OK) {
+			rmdata->status = MONITOR_FAILED;
+		}
+		return;
+	}
+
+	/* if we got a response, then the recmaster will be stored in the
+	   status field
+	*/
+	if (state->status != rmdata->vnn) {
+		DEBUG(0,("Node %d does not agree we are the recmaster. Need a new recmaster election\n", state->c->hdr.destnode));
+		rmdata->status = MONITOR_ELECTION_NEEDED;
+	}
+
+	return;
+}
+
+
+/* verify that all nodes agree that we are the recmaster */
+static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t vnn)
+{
+	struct verify_recmaster_data *rmdata;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+	struct ctdb_client_control_state *state;
+	enum monitor_result status;
+	int j;
+	
+	rmdata = talloc(mem_ctx, struct verify_recmaster_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
+	rmdata->count  = 0;
+	rmdata->vnn    = vnn;
+	rmdata->status = MONITOR_OK;
+
+	/* loop over all active nodes and send an async getrecmaster call to 
+	   them*/
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, 
+					CONTROL_TIMEOUT(),
+					nodemap->nodes[j].vnn);
+		if (state == NULL) {
+			/* we failed to send the control, treat this as 
+			   an error and try again next iteration
+			*/			
+			DEBUG(0,("Failed to call ctdb_ctrl_getrecmaster_send during monitoring\n"));
+			talloc_free(mem_ctx);
+			return MONITOR_FAILED;
+		}
+
+		/* set up the callback functions */
+		state->async.fn = verify_recmaster_callback;
+		state->async.private = rmdata;
+
+		/* one more control to wait for to complete */
+		rmdata->count++;
+	}
+
+
+	/* now wait for up to the maximum number of seconds allowed
+	   or until all nodes we expect a response from has replied
+	*/
+	while (rmdata->count > 0) {
+		event_loop_once(ctdb->ev);
+	}
+
+	status = rmdata->status;
+	talloc_free(mem_ctx);
+	return status;
+}
+
+
 /*
   the main monitoring loop
  */
 static void monitor_cluster(struct ctdb_context *ctdb)
 {
-	uint32_t vnn, num_active, recmode, recmaster;
+	uint32_t vnn, num_active, recmaster;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_node_map *remote_nodemap=NULL;
@@ -1235,7 +1503,7 @@ again:
 
 
 	/* check which node is the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), vnn, &recmaster);
 	if (ret != 0) {
 		DEBUG(0, (__location__ " Unable to get recmaster from node %u\n", vnn));
 		goto again;
@@ -1276,49 +1544,35 @@ again:
 
 
 	/* verify that all active nodes agree that we are the recmaster */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (nodemap->nodes[j].vnn == vnn) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getrecmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, &recmaster);
-		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to get recmaster from node %u\n", vnn));
-			goto again;
-		}
-
-		if (recmaster!=vnn) {
-			DEBUG(0, ("Node %u does not agree we are the recmaster. Force reelection\n", 
-				  nodemap->nodes[j].vnn));
-			force_election(rec, mem_ctx, vnn, nodemap);
-			goto again;
-		}
+	switch (verify_recmaster(ctdb, nodemap, vnn)) {
+	case MONITOR_RECOVERY_NEEDED:
+		/* can not happen */
+		goto again;
+	case MONITOR_ELECTION_NEEDED:
+		force_election(rec, mem_ctx, vnn, nodemap);
+		goto again;
+	case MONITOR_OK:
+		break;
+	case MONITOR_FAILED:
+		goto again;
 	}
 
 
 	/* verify that all active nodes are in normal mode 
 	   and not in recovery mode 
 	 */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getrecmode(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, &recmode);
-		if (ret != 0) {
-			DEBUG(0, ("Unable to get recmode from node %u\n", vnn));
-			goto again;
-		}
-		if (recmode != CTDB_RECOVERY_NORMAL) {
-			DEBUG(0, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", 
-				  nodemap->nodes[j].vnn));
-			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
-			goto again;
-		}
+	switch (verify_recmode(ctdb, nodemap)) {
+	case MONITOR_RECOVERY_NEEDED:
+		do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+		goto again;
+	case MONITOR_FAILED:
+		goto again;
+	case MONITOR_ELECTION_NEEDED:
+		/* can not happen */
+	case MONITOR_OK:
+		break;
 	}
+
 
 
 	/* get the nodemap for all active remote nodes and verify

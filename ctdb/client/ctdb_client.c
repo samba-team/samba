@@ -301,6 +301,10 @@ struct ctdb_record_handle {
 */
 int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 {
+	if (state == NULL) {
+		return -1;
+	}
+
 	while (state->state < CTDB_CALL_DONE) {
 		event_loop_once(state->ctdb_db->ctdb->ev);
 	}
@@ -661,14 +665,28 @@ int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 }
 
 
-struct ctdb_client_control_state {
-	struct ctdb_context *ctdb;
-	uint32_t reqid;
-	int32_t status;
-	TDB_DATA outdata;
-	enum call_state state;
-	char *errormsg;
-};
+
+/*
+   called when a control completes or timesout to invoke the callback
+   function the user provided
+*/
+static void invoke_control_callback(struct event_context *ev, struct timed_event *te, 
+	struct timeval t, void *private_data)
+{
+	struct ctdb_client_control_state *state;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	int ret;
+
+	state = talloc_get_type(private_data, struct ctdb_client_control_state);
+	talloc_steal(tmp_ctx, state);
+
+	ret = ctdb_control_recv(state->ctdb, state, state,
+			NULL, 
+			NULL, 
+			NULL);
+
+	talloc_free(tmp_ctx);
+}
 
 /*
   called when a CTDB_REPLY_CONTROL packet comes in in the client
@@ -703,20 +721,21 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 						 c->errorlen);
 	}
 
+	/* state->outdata now uses resources from c so we dont want c
+	   to just dissappear from under us while state is still alive
+	*/
 	talloc_steal(state, c);
 
-	state->state = CTDB_CALL_DONE;
+	state->state = CTDB_CONTROL_DONE;
+
+	/* if we had a callback registered for this control, pull the response
+	   and call the callback.
+	*/
+	if (state->async.fn) {
+		event_add_timed(ctdb->ev, state, timeval_zero(), invoke_control_callback, state);
+	}
 }
 
-
-/* time out handler for ctdb_control */
-static void timeout_func(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private_data)
-{
-	uint32_t *timed_out = (uint32_t *)private_data;
-
-	*timed_out = 1;
-}
 
 /*
   destroy a ctdb_control in client
@@ -726,6 +745,152 @@ static int ctdb_control_destructor(struct ctdb_client_control_state *state)
 	ctdb_reqid_remove(state->ctdb, state->reqid);
 	return 0;
 }
+
+
+/* time out handler for ctdb_control */
+static void control_timeout_func(struct event_context *ev, struct timed_event *te, 
+	struct timeval t, void *private_data)
+{
+	struct ctdb_client_control_state *state = talloc_get_type(private_data, struct ctdb_client_control_state);
+
+	DEBUG(0,("control timed out. reqid:%d opcode:%d dstnode:%d\n", state->reqid, state->c->opcode, state->c->hdr.destnode));
+
+	state->state = CTDB_CONTROL_TIMEOUT;
+
+	/* if we had a callback registered for this control, pull the response
+	   and call the callback.
+	*/
+	if (state->async.fn) {
+		event_add_timed(state->ctdb->ev, state, timeval_zero(), invoke_control_callback, state);
+	}
+}
+
+/* async version of send control request */
+struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb, 
+		uint32_t destnode, uint64_t srvid, 
+		uint32_t opcode, uint32_t flags, TDB_DATA data, 
+		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+		struct timeval *timeout,
+		char **errormsg)
+{
+	struct ctdb_client_control_state *state;
+	size_t len;
+	struct ctdb_req_control *c;
+	int ret;
+
+	if (errormsg) {
+		*errormsg = NULL;
+	}
+
+	/* if the domain socket is not yet open, open it */
+	if (ctdb->daemon.sd==-1) {
+		ctdb_socket_connect(ctdb);
+	}
+
+	state = talloc_zero(mem_ctx, struct ctdb_client_control_state);
+	CTDB_NO_MEMORY_NULL(ctdb, state);
+
+	state->ctdb       = ctdb;
+	state->reqid      = ctdb_reqid_new(ctdb, state);
+	state->state      = CTDB_CONTROL_WAIT;
+	state->errormsg   = NULL;
+
+	talloc_set_destructor(state, ctdb_control_destructor);
+
+	len = offsetof(struct ctdb_req_control, data) + data.dsize;
+	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
+			       len, struct ctdb_req_control);
+	state->c            = c;	
+	CTDB_NO_MEMORY_NULL(ctdb, c);
+	c->hdr.reqid        = state->reqid;
+	c->hdr.destnode     = destnode;
+	c->hdr.reqid        = state->reqid;
+	c->opcode           = opcode;
+	c->client_id        = 0;
+	c->flags            = flags;
+	c->srvid            = srvid;
+	c->datalen          = data.dsize;
+	if (data.dsize) {
+		memcpy(&c->data[0], data.dptr, data.dsize);
+	}
+
+	/* timeout */
+	if (timeout && !timeval_is_zero(timeout)) {
+		event_add_timed(ctdb->ev, state, *timeout, control_timeout_func, state);
+	}
+
+	ret = ctdb_client_queue_pkt(ctdb, &(c->hdr));
+	if (ret != 0) {
+		talloc_free(state);
+		return NULL;
+	}
+
+	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
+		talloc_free(state);
+		return NULL;
+	}
+
+	return state;
+}
+
+
+/* async version of receive control reply */
+int ctdb_control_recv(struct ctdb_context *ctdb, 
+		struct ctdb_client_control_state *state, 
+		TALLOC_CTX *mem_ctx,
+		TDB_DATA *outdata, int32_t *status, char **errormsg)
+{
+	if (state == NULL) {
+		return -1;
+	}
+
+	/* loop one event at a time until we either timeout or the control
+	   completes.
+	*/
+	while (state->state == CTDB_CONTROL_WAIT) {
+		event_loop_once(ctdb->ev);
+	}
+
+	if (state->state != CTDB_CONTROL_DONE) {
+		DEBUG(0,(__location__ " ctdb_control_recv failed\n"));
+		if (state->async.fn) {
+			state->async.fn(state);
+		}
+		talloc_free(state);
+		return -1;
+	}
+
+	if (state->errormsg) {
+		DEBUG(0,("ctdb_control error: '%s'\n", state->errormsg));
+		if (errormsg) {
+			(*errormsg) = talloc_move(mem_ctx, &state->errormsg);
+		}
+		if (state->async.fn) {
+			state->async.fn(state);
+		}
+		talloc_free(state);
+		return -1;
+	}
+
+	if (outdata) {
+		*outdata = state->outdata;
+		outdata->dptr = talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
+	}
+
+	if (status) {
+		*status = state->status;
+	}
+
+
+
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
+	talloc_free(state);
+	return 0;
+}
+
+
 
 /*
   send a ctdb control message
@@ -739,96 +904,14 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 		 char **errormsg)
 {
 	struct ctdb_client_control_state *state;
-	struct ctdb_req_control *c;
-	size_t len;
-	int ret;
-	uint32_t timed_out;
 
-	if (errormsg) {
-		*errormsg = NULL;
-	}
-
-	/* if the domain socket is not yet open, open it */
-	if (ctdb->daemon.sd==-1) {
-		ctdb_socket_connect(ctdb);
-	}
-
-	state = talloc_zero(ctdb, struct ctdb_client_control_state);
-	CTDB_NO_MEMORY(ctdb, state);
-
-	state->ctdb  = ctdb;
-	state->reqid = ctdb_reqid_new(ctdb, state);
-	state->state = CTDB_CALL_WAIT;
-	state->errormsg = NULL;
-
-	talloc_set_destructor(state, ctdb_control_destructor);
-
-	len = offsetof(struct ctdb_req_control, data) + data.dsize;
-	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
-			       len, struct ctdb_req_control);
-	CTDB_NO_MEMORY(ctdb, c);
-	
-	c->hdr.reqid        = state->reqid;
-	c->hdr.destnode     = destnode;
-	c->hdr.reqid        = state->reqid;
-	c->opcode           = opcode;
-	c->client_id        = 0;
-	c->flags            = flags;
-	c->srvid            = srvid;
-	c->datalen          = data.dsize;
-	if (data.dsize) {
-		memcpy(&c->data[0], data.dptr, data.dsize);
-	}
-
-	ret = ctdb_client_queue_pkt(ctdb, &(c->hdr));
-	if (ret != 0) {
-		talloc_free(state);
-		return -1;
-	}
-
-	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
-		talloc_free(state);
-		return 0;
-	}
-
-	/* semi-async operation */
-	timed_out = 0;
-	if (timeout && !timeval_is_zero(timeout)) {
-		event_add_timed(ctdb->ev, state, *timeout, timeout_func, &timed_out);
-	}
-	while ((state->state == CTDB_CALL_WAIT)
-	&&	(timed_out == 0) ){
-		event_loop_once(ctdb->ev);
-	}
-	if (timed_out) {
-		talloc_free(state);
-		if (errormsg) {
-			(*errormsg) = talloc_strdup(mem_ctx, "control timed out");
-		} else {
-			DEBUG(0,("ctdb_control timed out\n"));
-		}
-		return -1;
-	}
-
-	if (outdata) {
-		*outdata = state->outdata;
-		outdata->dptr = talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
-	}
-
-	*status = state->status;
-
-	if (!errormsg && state->errormsg) {
-		DEBUG(0,("ctdb_control error: '%s'\n", state->errormsg));
-	}
-
-	if (errormsg && state->errormsg) {
-		(*errormsg) = talloc_move(mem_ctx, &state->errormsg);
-	}
-
-	talloc_free(state);
-
-	return 0;	
+	state = ctdb_control_send(ctdb, destnode, srvid, opcode, 
+			flags, data, mem_ctx, outdata,
+			timeout, errormsg);
+	return ctdb_control_recv(ctdb, state, mem_ctx, outdata, status, 
+			errormsg);
 }
+
 
 
 
@@ -889,13 +972,12 @@ int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ct
  */
 int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
 {
-	int ret;
-	int32_t res;
+	struct ctdb_client_control_state *state;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_SHUTDOWN, CTDB_CTRL_FLAG_NOREPLY, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0) {
+	state = ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SHUTDOWN, 0, tdb_null, 
+			   NULL, NULL, &timeout, NULL);
+	if (state == NULL) {
 		DEBUG(0,(__location__ " ctdb_control for shutdown failed\n"));
 		return -1;
 	}
@@ -941,26 +1023,46 @@ int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 	return 0;
 }
 
+
 /*
   get the recovery mode of a remote node
  */
-int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmode)
+struct ctdb_client_control_state *
+ctdb_ctrl_getrecmode_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECMODE, 0, tdb_null, 
+			   mem_ctx, NULL, &timeout, NULL);
+}
+
+int ctdb_ctrl_getrecmode_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmode)
 {
 	int ret;
 	int32_t res;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_RECMODE, 0, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		DEBUG(0,(__location__ " ctdb_ctrl_getrecmode_recv failed\n"));
 		return -1;
 	}
 
-	*recmode = res;
+	if (recmode) {
+		*recmode = (uint32_t)res;
+	}
 
 	return 0;
 }
+
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmode)
+{
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_ctrl_getrecmode_send(ctdb, mem_ctx, timeout, destnode);
+	return ctdb_ctrl_getrecmode_recv(ctdb, mem_ctx, state, recmode);
+}
+
+
+
 
 /*
   set the recovery mode of a remote node
@@ -985,26 +1087,46 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 	return 0;
 }
 
+
+
 /*
   get the recovery master of a remote node
  */
-int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmaster)
+struct ctdb_client_control_state *
+ctdb_ctrl_getrecmaster_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
+			struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECMASTER, 0, tdb_null, 
+			   mem_ctx, NULL, &timeout, NULL);
+}
+
+int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmaster)
 {
 	int ret;
 	int32_t res;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_RECMASTER, 0, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getrecmaster failed\n"));
+		DEBUG(0,(__location__ " ctdb_ctrl_getrecmaster_recv failed\n"));
 		return -1;
 	}
 
-	*recmaster = res;
+	if (recmaster) {
+		*recmaster = (uint32_t)res;
+	}
 
 	return 0;
 }
+
+int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmaster)
+{
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, timeout, destnode);
+	return ctdb_ctrl_getrecmaster_recv(ctdb, mem_ctx, state, recmaster);
+}
+
 
 /*
   set the recovery master of a remote node
@@ -1684,22 +1806,47 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 
 
 /*
-  freeze a node
+  async freeze send control
  */
-int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+struct ctdb_client_control_state *
+ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_FREEZE, 0, tdb_null, 
+			   mem_ctx, NULL, &timeout, NULL);
+}
+
+/* 
+   async freeze recv control
+*/
+int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state)
 {
 	int ret;
 	int32_t res;
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_FREEZE, 0, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control freeze failed\n"));
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
+	if ( (ret != 0) || (res != 0) ){
+		DEBUG(0,(__location__ " ctdb_ctrl_freeze_recv failed\n"));
 		return -1;
 	}
 
 	return 0;
+}
+
+/*
+  freeze a node
+ */
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_client_control_state *state;
+	int ret;
+
+	state = ctdb_ctrl_freeze_send(ctdb, tmp_ctx, timeout, destnode);
+	ret = ctdb_ctrl_freeze_recv(ctdb, tmp_ctx, state);
+	talloc_free(tmp_ctx);
+
+	return ret;
 }
 
 /*
@@ -2174,6 +2321,117 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 	*list = (struct ctdb_control_tcp_tickle_list *)outdata.dptr;
 
 	return status;
+}
+
+/*
+  register a server id
+ */
+int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      struct ctdb_server_id *id)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_server_id);
+	data.dptr  = (unsigned char *)id;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
+			CTDB_CONTROL_REGISTER_SERVER_ID, 
+			0, data, NULL,
+			NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for register server id failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  unregister a server id
+ */
+int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      struct ctdb_server_id *id)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_server_id);
+	data.dptr  = (unsigned char *)id;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
+			CTDB_CONTROL_UNREGISTER_SERVER_ID, 
+			0, data, NULL,
+			NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for unregister server id failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*
+  check if a server id exists
+ */
+int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_server_id *id,
+		      uint32_t *status)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = sizeof(struct ctdb_server_id);
+	data.dptr  = (unsigned char *)id;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_CHECK_SERVER_ID, 
+			0, data, NULL,
+			NULL, &res, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " ctdb_control for check server id failed\n"));
+		return -1;
+	}
+
+	if (res) {
+		*status = 1;
+	} else {
+		*status = 0;
+	}
+
+	return 0;
+}
+
+/*
+   get the list of server ids that are registered on a node
+*/
+int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
+		TALLOC_CTX *mem_ctx,
+		struct timeval timeout, uint32_t destnode, 
+		struct ctdb_server_id_list **svid_list)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_SERVER_ID_LIST, 0, tdb_null, 
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_control for get_server_id_list failed\n"));
+		return -1;
+	}
+
+	*svid_list = (struct ctdb_server_id_list *)talloc_steal(mem_ctx, outdata.dptr);
+		    
+	return 0;
 }
 
 /*

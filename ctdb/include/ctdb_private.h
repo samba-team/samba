@@ -349,6 +349,7 @@ struct ctdb_context {
 	bool do_setsched;
 	void *saved_scheduler_param;
 	struct ctdb_kill_tcp *killtcp;
+	struct _trbt_tree_t *server_ids;	
 };
 
 struct ctdb_db_context {
@@ -451,7 +452,11 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_KILL_TCP                = 54,
 		    CTDB_CONTROL_GET_TCP_TICKLE_LIST     = 55,
 		    CTDB_CONTROL_SET_TCP_TICKLE_LIST     = 56,
-};
+		    CTDB_CONTROL_REGISTER_SERVER_ID	 = 57,
+		    CTDB_CONTROL_UNREGISTER_SERVER_ID	 = 58,
+		    CTDB_CONTROL_CHECK_SERVER_ID	 = 59,
+		    CTDB_CONTROL_GET_SERVER_ID_LIST	 = 60,
+};	
 
 /*
   structure passed in ctdb_control_set_rsn_nonempty
@@ -850,6 +855,18 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
 		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
 		 struct timeval *timeout, char **errormsg);
+int ctdb_control_recv(struct ctdb_context *ctdb, 
+		struct ctdb_client_control_state *state, 
+		TALLOC_CTX *mem_ctx,
+		TDB_DATA *outdata, int32_t *status, char **errormsg);
+
+struct ctdb_client_control_state *
+ctdb_control_send(struct ctdb_context *ctdb, 
+		uint32_t destnode, uint64_t srvid, 
+		uint32_t opcode, uint32_t flags, TDB_DATA data, 
+		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+		struct timeval *timeout,
+		char **errormsg);
 
 
 
@@ -1107,5 +1124,16 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 		      TALLOC_CTX *mem_ctx,
 		      uint32_t vnn,
 		      struct ctdb_control_tcp_tickle_list **list);
+
+
+int32_t ctdb_control_register_server_id(struct ctdb_context *ctdb, 
+		      uint32_t client_id,
+		      TDB_DATA indata);
+int32_t ctdb_control_check_server_id(struct ctdb_context *ctdb, 
+		      TDB_DATA indata);
+int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb, 
+		      TDB_DATA indata);
+int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb, 
+		      TDB_DATA *outdata);
 
 #endif

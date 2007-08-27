@@ -96,6 +96,28 @@ struct ctdb_call_info {
 #define CTDB_BROADCAST_CONNECTED 0xF0000004
 
 
+enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
+
+struct ctdb_client_control_state {
+	struct ctdb_context *ctdb;
+	uint32_t reqid;
+	int32_t status;
+	TDB_DATA outdata;
+	enum control_state state;
+	char *errormsg;
+	struct ctdb_req_control *c;
+
+	/* if we have a callback registered for the completion (or failure) of
+	   this control
+	   if a callback is used, it MUST talloc_free the cb_data passed to it
+	*/
+	struct {
+		void (*fn)(struct ctdb_client_control_state *);
+		void *private;
+	} async;	
+};
+
+
 struct event_context;
 
 /*
@@ -302,7 +324,13 @@ int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_
 /*
   get the recovery mode of a remote node
  */
-int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmode);
+int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmode);
+
+struct ctdb_client_control_state *ctdb_ctrl_getrecmode_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_getrecmode_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmode);
+
+
 /*
   set the recovery mode of a remote node
  */
@@ -319,7 +347,14 @@ int ctdb_ctrl_setmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 /*
   get the recovery master of a remote node
  */
-int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *recmaster);
+int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t *recmaster);
+
+struct ctdb_client_control_state *ctdb_ctrl_getrecmaster_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmaster);
+
+
+
 /*
   set the recovery master of a remote node
  */
@@ -344,7 +379,16 @@ int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
  */
 int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid);
 
-int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, 
+			uint32_t destnode);
+
+struct ctdb_client_control_state *
+ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
+			struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
+			struct ctdb_client_control_state *state);
+
 int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
@@ -369,6 +413,34 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 		       struct timeval timeout, 
 		       uint32_t destnode, 
 		       uint32_t set, uint32_t clear);
+
+enum ctdb_server_id_type { SERVER_TYPE_SAMBA=1 };
+
+struct ctdb_server_id {
+	enum ctdb_server_id_type type;
+	uint32_t vnn;
+	uint32_t server_id;
+};
+
+struct ctdb_server_id_list {
+	uint32_t num;
+	struct ctdb_server_id server_ids[1];
+};
+
+
+int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
+		struct timeval timeout,
+		struct ctdb_server_id *id);
+int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb, 
+		struct timeval timeout, 
+		struct ctdb_server_id *id);
+int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
+		struct timeval timeout, uint32_t destnode, 
+		struct ctdb_server_id *id, uint32_t *status);
+int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
+		TALLOC_CTX *mem_ctx,
+		struct timeval timeout, uint32_t destnode, 
+		struct ctdb_server_id_list **svid_list);
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 

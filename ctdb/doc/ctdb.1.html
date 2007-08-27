@@ -8,7 +8,7 @@
 	    The virtual node number is an integer that describes the node in the
 	    cluster. The first node has virtual node number 0.
           </p></dd><dt><span class="term">-Y</span></dt><dd><p>
-            Produce output in machinereadable form for easier parsing by scripts. Not all commands support this option.
+            Produce output in machine readable form for easier parsing by scripts. Not all commands support this option.
           </p></dd><dt><span class="term">-t &lt;timeout&gt;</span></dt><dd><p>
             How long should ctdb wait for a command to complete before timing out. Default is 3 seconds.
           </p></dd><dt><span class="term">-? --help</span></dt><dd><p>
@@ -24,36 +24,36 @@
             You only need to specify this parameter if you run multiple ctdb 
             daemons on the same physical host and thus can not use the default
             name for the domain socket.
-          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2481133"></a><h2>Administrative Commands</h2><p>
+          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2481134"></a><h2>Administrative Commands</h2><p>
       These are commands used to monitor and administrate a CTDB cluster.
-    </p><div class="refsect2" lang="en"><a name="id2481142"></a><h3>status</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2481143"></a><h3>status</h3><p>
         This command shows the current status of the ctdb node.
-      </p><div class="refsect3" lang="en"><a name="id2481151"></a><h4>node status</h4><p>
+      </p><div class="refsect3" lang="en"><a name="id2481152"></a><h4>node status</h4><p>
           Node status reflects the current status of the node. There are four possible states:
         </p><p>
           OK - This node is fully functional.
         </p><p>
-          DISCONNECTED - This node could not be connected through the network and is currently not parcipitating in the cluster. If there is a public IP address associated with this node it should have been taken over by a different node. No services are running on this node.
+          DISCONNECTED - This node could not be connected through the network and is currently not participating in the cluster. If there is a public IP address associated with this node it should have been taken over by a different node. No services are running on this node.
         </p><p>
           DISABLED - This node has been administratively disabled. This node is still functional and participates in the CTDB cluster but its IP addresses have been taken over by a different node and no services are currently being hosted.
         </p><p>
           UNHEALTHY - A service provided by this node is malfunctioning and should be investigated. The CTDB daemon itself is operational and participates in the cluster. Its public IP address has been taken over by a different node and no services are currnetly being hosted. All unhealthy nodes should be investigated and require an administrative action to rectify.
         </p><p>
           BANNED - This node failed too many recovery attempts and has been banned from participating in the cluster for a period of RecoveryBanPeriod seconds. Any public IP address has been taken over by other nodes. This node does not provide any services. All banned nodes should be investigated and require an administrative action to rectify. This node does not perticipate in the CTDB cluster but can still be communicated with. I.e. ctdb commands can be sent to it.
-        </p></div><div class="refsect3" lang="en"><a name="id2481202"></a><h4>generation</h4><p>
+        </p></div><div class="refsect3" lang="en"><a name="id2481204"></a><h4>generation</h4><p>
           The generation id is a number that indicates the current generation 
           of a cluster instance. Each time a cluster goes through a 
           reconfiguration or a recovery its generation id will be changed.
-        </p></div><div class="refsect3" lang="en"><a name="id2481215"></a><h4>VNNMAP</h4><p>
+        </p></div><div class="refsect3" lang="en"><a name="id2481216"></a><h4>VNNMAP</h4><p>
           The list of Virtual Node Numbers. This is a list of all nodes that actively participates in the cluster and that share the workload of hosting the Clustered TDB database records.
-          Only nodes that are parcipitating in the vnnmap can become lmaster or dmaster for a database record.
-        </p></div><div class="refsect3" lang="en"><a name="id2481229"></a><h4>Recovery mode</h4><p>
+          Only nodes that are participating in the vnnmap can become lmaster or dmaster for a database record.
+        </p></div><div class="refsect3" lang="en"><a name="id2481230"></a><h4>Recovery mode</h4><p>
           This is the current recovery mode of the cluster. There are two possible modes:
         </p><p>
           NORMAL - The cluster is fully operational.
         </p><p>
           RECOVERY - The cluster databases have all been frozen, pausing all services while the cluster awaits a recovery process to complete. A recovery process should finish within seconds. If a cluster is stuck in the RECOVERY state this would indicate a cluster malfunction which needs to be investigated.
-        </p></div><div class="refsect3" lang="en"><a name="id2481253"></a><h4>Recovery master</h4><p>
+        </p></div><div class="refsect3" lang="en"><a name="id2481254"></a><h4>Recovery master</h4><p>
           This is the cluster node that is currently designated as the recovery master. This node is responsible of monitoring the consistency of the cluster and to perform the actual recovery process when reqired.
         </p></div><p>
 	Example: ctdb status
@@ -94,7 +94,7 @@ Number of nodes:4
 12.1.1.2         1
 12.1.1.3         2
 12.1.1.4         3
-      </pre></div><div class="refsect2" lang="en"><a name="id2481335"></a><h3>getvar &lt;name&gt;</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2481336"></a><h3>getvar &lt;name&gt;</h3><p>
         Get the runtime value of a tuneable variable.
       </p><p>
 	Example: ctdb getvar MaxRedirectCount
@@ -170,7 +170,7 @@ CTDB version 1
  max_hop_count                      0
  max_call_latency                   4.948321 sec
  max_lockwait_latency               0.000000 sec
-      </pre></div><div class="refsect2" lang="en"><a name="id2528503"></a><h3>statisticsreset</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528504"></a><h3>statisticsreset</h3><p>
         This command is used to clear all statistics counters in a node.
       </p><p>
 	Example: ctdb statisticsreset
@@ -178,14 +178,14 @@ CTDB version 1
         Get the current debug level for the node. the debug level controls what information is written to the log file.
       </p></div><div class="refsect2" lang="en"><a name="id2528529"></a><h3>setdebug &lt;debuglevel&gt;</h3><p>
         Set the debug level of a node. This is a number between 0 and 9 and controls what information will be written to the logfile.
-      </p></div><div class="refsect2" lang="en"><a name="id2528540"></a><h3>getpid</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528541"></a><h3>getpid</h3><p>
         This command will return the process id of the ctdb daemon.
       </p></div><div class="refsect2" lang="en"><a name="id2528551"></a><h3>disable</h3><p>
         This command is used to administratively disable a node in the cluster.
         A disabled node will still participate in the cluster and host
         clustered TDB records but its public ip address has been taken over by
         a different node and it no longer hosts any services.
-      </p></div><div class="refsect2" lang="en"><a name="id2528564"></a><h3>enable</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528565"></a><h3>enable</h3><p>
         Re-enable a node that has been administratively disabled.
       </p></div><div class="refsect2" lang="en"><a name="id2528575"></a><h3>ban &lt;bantime|0&gt;</h3><p>
         Administratively ban a node for bantime seconds. A bantime of 0 means that the node should be permanently banned. 
@@ -221,7 +221,7 @@ CTDB version 1
       </p></div></div><div class="refsect1" lang="en"><a name="id2528668"></a><h2>Debugging Commands</h2><p>
       These commands are primarily used for CTDB development and testing and
       should not be used for normal administration.
-    </p><div class="refsect2" lang="en"><a name="id2528678"></a><h3>process-exists &lt;pid&gt;</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2528679"></a><h3>process-exists &lt;pid&gt;</h3><p>
         This command checks if a specific process exists on the CTDB host. This is mainly used by Samba to check if remote instances of samba are still running or not.
       </p></div><div class="refsect2" lang="en"><a name="id2528691"></a><h3>getdbmap</h3><p>
         This command lists all clustered TDB databases that the CTDB daemon has attahced to.
