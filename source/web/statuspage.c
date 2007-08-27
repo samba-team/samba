@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 
+#define _(x) lang_msg_rotate(x)
+
 #define PIDMAP		struct PidMap
 
 /* how long to wait for start/stops to take effect */

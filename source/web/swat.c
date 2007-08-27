@@ -51,6 +51,7 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
+#define _(x) lang_msg_rotate(x)
 
 /****************************************************************************
 ****************************************************************************/
@@ -1328,6 +1329,30 @@ static void printers_page(void)
 	printf("</FORM>\n");
 }
 
+/*
+  when the _() translation macro is used there is no obvious place to free
+  the resulting string and there is no easy way to give a static pointer.
+  All we can do is rotate between some static buffers and hope a single d_printf()
+  doesn't have more calls to _() than the number of buffers
+*/
+
+const char *lang_msg_rotate(const char *msgid)
+{
+#define NUM_LANG_BUFS 16
+	char *msgstr;
+	static pstring bufs[NUM_LANG_BUFS];
+	static int next;
+
+	msgstr = (char *)lang_msg(msgid);
+	if (!msgstr) return msgid;
+
+	pstrcpy(bufs[next], msgstr);
+	msgstr = bufs[next];
+
+	next = (next+1) % NUM_LANG_BUFS;
+
+	return msgstr;
+}
 
 /**
  * main function for SWAT.
