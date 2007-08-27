@@ -3,7 +3,6 @@ objectClass: top
 objectClass: container
 objectClass: groupPolicyContainer
 displayName: Default Domain Policy
-objectCategory: CN=Group-Policy-Container,${SCHEMADN}
 gPCFunctionalityVersion: 2
 gPCFileSysPath: \\${DNSDOMAIN}\sysvol\${DNSDOMAIN}\Policies\{${POLICYGUID}}
 versionNumber: 1
@@ -20,9 +19,7 @@ nTSecurityDescriptor: O:${DOMAINSID}-512G:${DOMAINSID}-512D:PAI(A;CI;RPWPCCDCLCL
 dn: CN=User,CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
-objectCategory: CN=Container,${SCHEMADN}
 
 dn: CN=Machine,CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
-objectCategory: CN=Container,${SCHEMADN}
