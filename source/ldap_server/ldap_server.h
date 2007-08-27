@@ -36,7 +36,7 @@ struct ldapsrv_connection {
 		struct socket_context *sasl;
 	} sockets;
 
-	BOOL global_catalog;
+	bool global_catalog;
 
 	struct packet_context *packet;
 

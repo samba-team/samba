@@ -128,7 +128,7 @@ sub handle_loadparm($$)
 		my $name = $3;
 
 		my %tmap = (
-			    "BOOL" => "BOOL ",
+			    "BOOL" => "bool ",
 				"bool" => "bool ",
 			    "CONST_STRING" => "const char *",
 			    "STRING" => "const char *",
@@ -205,6 +205,7 @@ sub process_file($$$)
 
 		$target->("\n$comment") if (defined($comment)); $comment = undef;
 
+		$line =~ s/BOOL /bool /g;
 		if ( $line =~ /\(.*\)\s*$/o ) {
 			chomp $line;
 			$target->("$line;\n");
@@ -214,6 +215,7 @@ sub process_file($$$)
 		$target->($line);
 
 		while ($line = <FH>) {
+			$line =~ s/BOOL /bool /g;
 			if ($line =~ /\)\s*$/o) {
 				chomp $line;
 				$target->("$line;\n");

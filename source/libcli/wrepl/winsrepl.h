@@ -45,15 +45,15 @@ struct wrepl_socket {
 	uint32_t timeout_count;
 
 	/* remember is the socket is dead */
-	BOOL dead;
+	bool dead;
 
 	/* remember if we need to free the wrepl_socket at the end of wrepl_socket_dead() */
-	BOOL free_skipped;
+	bool free_skipped;
 };
 
 struct wrepl_send_ctrl {
-	BOOL send_only;
-	BOOL disconnect_after_send;
+	bool send_only;
+	bool disconnect_after_send;
 };
 
 enum wrepl_request_state {
@@ -71,7 +71,7 @@ struct wrepl_request {
 	struct wrepl_socket *wrepl_socket;
 
 	enum wrepl_request_state state;
-	BOOL trigger;
+	bool trigger;
 	NTSTATUS status;
 
 	struct timed_event *te;
@@ -141,7 +141,7 @@ struct wrepl_pull_names {
 			enum wrepl_name_type type;
 			enum wrepl_name_state state;
 			enum wrepl_name_node node;
-			BOOL is_static;
+			bool is_static;
 			uint32_t raw_flags;
 			uint64_t version_id;
 			const char *owner;

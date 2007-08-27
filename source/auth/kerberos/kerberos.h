@@ -80,14 +80,14 @@ int create_kerberos_key_from_string_direct(krb5_context context, krb5_principal 
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
-BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
+bool get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, bool remote);
 krb5_error_code ads_krb5_mk_req(krb5_context context, 
 				krb5_auth_context *auth_context, 
 				const krb5_flags ap_req_options,
 				const char *principal,
 				krb5_ccache ccache, 
 				krb5_data *outbuf);
-BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
+bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
  NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
 			    struct smb_krb5_context *smb_krb5_context,
 			    krb5_auth_context *auth_context,
@@ -107,7 +107,7 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 							krb5_principal host_princ,
 							int enctype);
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
-BOOL kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
+bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);

@@ -164,10 +164,10 @@ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx,
 						    struct sockaddr *sockaddr, 
 						    size_t addrlen);
 const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type);
-BOOL allow_access(TALLOC_CTX *mem_ctx,
+bool allow_access(TALLOC_CTX *mem_ctx,
 		  const char **deny_list, const char **allow_list,
 		  const char *cname, const char *caddr);
-BOOL socket_check_access(struct socket_context *sock, 
+bool socket_check_access(struct socket_context *sock, 
 			 const char *service_name,
 			 const char **allow_list, const char **deny_list);
 

@@ -36,7 +36,7 @@ struct winsdb_record {
 	enum wrepl_name_type type;
 	enum wrepl_name_state state;
 	enum wrepl_name_node node;
-	BOOL is_static;
+	bool is_static;
 	time_t expire_time;
 	uint64_t version;
 	const char *wins_owner;

@@ -257,7 +257,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 								   const DATA_BLOB data);
 _PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name,
 								   uint32_t type, const DATA_BLOB data);
-_PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data);
+_PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data);
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, const char *name, struct registry_key **result);
 WERROR reg_key_del_abs(struct registry_context *ctx, const char *path);
 WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **result);

@@ -25,12 +25,7 @@
 
 #include "libcli/util/nt_status.h"
 
-#include <stdbool.h>
 #include <stdlib.h>
-typedef bool BOOL;
-
-#define False false
-#define True true
 
 /* used to hold an arbitrary blob of data */
 typedef struct datablob {

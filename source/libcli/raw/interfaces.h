@@ -608,8 +608,8 @@ union smb_fileinfo {
 			uint64_t alloc_size;
 			uint64_t size;
 			uint32_t nlink;
-			BOOL delete_pending;
-			BOOL directory;
+			bool delete_pending;
+			bool directory;
 		} out;
 	} standard_info;
 	
@@ -976,7 +976,7 @@ union smb_setfileinfo {
 		enum smb_setfileinfo_level level;
 		struct {
 			union smb_handle_or_path file;
-			BOOL delete_on_close;
+			bool delete_on_close;
 		} in;
 	} disposition_info;
 
@@ -1633,7 +1633,7 @@ union smb_read {
 			uint16_t mincnt;
 			uint32_t maxcnt;
 			uint16_t remaining;
-			BOOL read_for_execute;
+			bool read_for_execute;
 		} in;
 		struct {
 			uint8_t *data;
@@ -2035,7 +2035,7 @@ union smb_ioctl {
 		struct {
 			union smb_handle file;
 			uint32_t function;
-			BOOL fsctl;
+			bool fsctl;
 			uint8_t filter;
 			uint32_t max_data;
 			DATA_BLOB blob;
@@ -2193,7 +2193,7 @@ union smb_notify {
 			union smb_handle file;
 			uint32_t buffer_size;
 			uint32_t completion_filter;
-			BOOL recursive;
+			bool recursive;
 		} in;
 
 		struct {
@@ -2581,7 +2581,7 @@ union smb_search_data {
 };
 
 /* Callback function passed to the raw search interface. */
-typedef BOOL (*smbcli_search_callback)(void *private, const union smb_search_data *file);
+typedef bool (*smbcli_search_callback)(void *private, const union smb_search_data *file);
 
 enum smb_search_close_level {RAW_FINDCLOSE_GENERIC, RAW_FINDCLOSE_FCLOSE, RAW_FINDCLOSE_FINDCLOSE};
 

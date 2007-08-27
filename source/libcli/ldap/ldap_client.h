@@ -53,7 +53,7 @@ struct ldap_connection {
 	struct socket_context *sock;
 	char *host;
 	uint16_t port;
-	BOOL ldaps;
+	bool ldaps;
 
 	const char *auth_dn;
 	const char *simple_pw;

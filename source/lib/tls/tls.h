@@ -52,13 +52,13 @@ struct socket_context *tls_init_client(struct socket_context *sock,
 /*
   return True if a connection used tls
 */
-BOOL tls_enabled(struct socket_context *tls);
+bool tls_enabled(struct socket_context *tls);
 
 
 /*
   true if tls support is compiled in
 */
-BOOL tls_support(struct tls_params *parms);
+bool tls_support(struct tls_params *parms);
 
 const struct socket_ops *socket_tls_ops(enum socket_type type);
 

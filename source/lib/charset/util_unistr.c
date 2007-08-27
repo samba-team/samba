@@ -160,10 +160,10 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
  * Based on a routine by GJC@VILLAGE.COM. 
  * Extensively modified by Andrew.Tridgell@anu.edu.au
  **/
-_PUBLIC_ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
+_PUBLIC_ bool next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	const char *s;
-	BOOL quoted;
+	bool quoted;
 	size_t len=1;
 
 	if (!ptr)
@@ -248,7 +248,7 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
  *
  * @note The comparison is case-insensitive.
  **/
-_PUBLIC_ BOOL strequal_w(const char *s1, const char *s2)
+_PUBLIC_ bool strequal_w(const char *s1, const char *s2)
 {
 	return strcasecmp_m(s1,s2) == 0;
 }
@@ -256,7 +256,7 @@ _PUBLIC_ BOOL strequal_w(const char *s1, const char *s2)
 /**
  Compare 2 strings (case sensitive).
 **/
-_PUBLIC_ BOOL strcsequal_w(const char *s1,const char *s2)
+_PUBLIC_ bool strcsequal_w(const char *s1,const char *s2)
 {
 	if (s1 == s2)
 		return(True);
@@ -429,7 +429,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 /**
   return True if any (multi-byte) character is lower case
 */
-_PUBLIC_ BOOL strhaslower(const char *string)
+_PUBLIC_ bool strhaslower(const char *string)
 {
 	while (*string) {
 		size_t c_size;
@@ -452,7 +452,7 @@ _PUBLIC_ BOOL strhaslower(const char *string)
 /**
   return True if any (multi-byte) character is upper case
 */
-_PUBLIC_ BOOL strhasupper(const char *string)
+_PUBLIC_ bool strhasupper(const char *string)
 {
 	while (*string) {
 		size_t c_size;

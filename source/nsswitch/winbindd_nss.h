@@ -301,7 +301,7 @@ struct winbindd_request {
 			fstring groupname;
 		} acct_mgt;
 		struct {
-			BOOL is_primary;
+			bool is_primary;
 			fstring dcname;
 		} init_conn;
 		struct {
@@ -313,7 +313,7 @@ struct winbindd_request {
 			uint32 type;
 			uint32 id;
 		} dual_idmapset;
-		BOOL list_all_domains;
+		bool list_all_domains;
 
 		struct {
 			uid_t uid;
@@ -450,9 +450,9 @@ struct winbindd_response {
 			fstring name;
 			fstring alt_name;
 			fstring sid;
-			BOOL native_mode;
-			BOOL active_directory;
-			BOOL primary;
+			bool native_mode;
+			bool active_directory;
+			bool primary;
 			uint32 sequence_number;
 		} domain_info;
 		struct {

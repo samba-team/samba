@@ -46,7 +46,7 @@ struct parm_struct {
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)(const char *, char **);
+	bool (*special)(const char *, char **);
 	const struct enum_list *enum_list;
 	unsigned int flags;
 	union {

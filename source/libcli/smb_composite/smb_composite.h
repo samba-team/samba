@@ -89,12 +89,12 @@ struct smb_composite_connect {
 		const char *service;
 		const char *service_type;
 		struct cli_credentials *credentials;
-		BOOL fallback_to_anonymous;
+		bool fallback_to_anonymous;
 		const char *workgroup;
 	} in;
 	struct {
 		struct smbcli_tree *tree;
-		BOOL anonymous_fallback_done;
+		bool anonymous_fallback_done;
 	} out;
 };
 

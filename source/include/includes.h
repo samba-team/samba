@@ -111,10 +111,16 @@
 /* Lists, trees, caching, database... */
 #include "talloc/talloc.h"
 #include "core.h"
+#include <stdbool.h>
 #include "charset/charset.h"
 #include "util/util.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/misc.h"
+
+typedef bool BOOL;
+
+#define False false
+#define True true
 
 struct smbcli_tree;
 #include "libcli/util/error.h"

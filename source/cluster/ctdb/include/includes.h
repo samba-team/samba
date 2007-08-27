@@ -36,5 +36,5 @@ double timeval_elapsed(struct timeval *tv);
 char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx);
 char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 _PUBLIC_ const char **str_list_add(const char **list, const char *s);
-_PUBLIC_ int set_blocking(int fd, BOOL set);
+_PUBLIC_ int set_blocking(int fd, bool set);
 

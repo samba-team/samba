@@ -96,7 +96,7 @@ _PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name,
 					reg_val_data_string(mem_ctx, data_type, data));
 }
 
-_PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data)
+_PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data)
 {
 	int i;
 	*type = -1;
@@ -110,7 +110,7 @@ _PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const
 	}
 
 	if (*type == -1) 
-		return False;
+		return false;
 
 	/* Convert data appropriately */
 
@@ -138,9 +138,9 @@ _PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const
 			
 		default:
 			/* FIXME */
-			return False;
+			return false;
 	}
-	return True;
+	return true;
 }
 
 /** Open a key by name (including the predefined key name!) */

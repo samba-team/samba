@@ -79,7 +79,7 @@ struct wbsrv_domain {
 struct wbsrv_listen_socket {
 	const char *socket_path;
 	struct wbsrv_service *service;
-	BOOL privileged;
+	bool privileged;
 };
 
 /*

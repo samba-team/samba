@@ -59,7 +59,7 @@ struct dsdb_attribute {
 
 	uint32_t searchFlags;
 	uint32_t systemFlags;
-	BOOL isMemberOfPartialAttributeSet;
+	bool isMemberOfPartialAttributeSet;
 	uint32_t linkID;
 
 	const char *attributeSyntax_oid;
@@ -67,21 +67,21 @@ struct dsdb_attribute {
 	uint32_t oMSyntax;
 	struct ldb_val oMObjectClass;
 
-	BOOL isSingleValued;
+	bool isSingleValued;
 	uint32_t rangeLower;
 	uint32_t rangeUpper;
-	BOOL extendedCharsAllowed;
+	bool extendedCharsAllowed;
 
 	uint32_t schemaFlagsEx;
 	struct ldb_val msDs_Schema_Extensions;
 
-	BOOL showInAdvancedViewOnly;
+	bool showInAdvancedViewOnly;
 	const char *adminDisplayName;
 	const char *adminDescription;
 	const char *classDisplayName;
-	BOOL isEphemeral;
-	BOOL isDefunct;
-	BOOL systemOnly;
+	bool isEphemeral;
+	bool isDefunct;
+	bool systemOnly;
 
 	/* internal stuff */
 	const struct dsdb_syntax *syntax;
@@ -118,13 +118,13 @@ struct dsdb_class {
 	uint32_t schemaFlagsEx;
 	struct ldb_val msDs_Schema_Extensions;
 
-	BOOL showInAdvancedViewOnly;
+	bool showInAdvancedViewOnly;
 	const char *adminDisplayName;
 	const char *adminDescription;
 	const char *classDisplayName;
-	BOOL defaultHidingValue;
-	BOOL isDefunct;
-	BOOL systemOnly;
+	bool defaultHidingValue;
+	bool isDefunct;
+	bool systemOnly;
 };
 
 struct dsdb_schema_oid_prefix {
