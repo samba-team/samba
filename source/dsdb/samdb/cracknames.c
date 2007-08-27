@@ -45,7 +45,7 @@ static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 					struct ldb_dn *name_dn, const char *name, 
 					struct drsuapi_DsNameInfo1 *info1);
 
-static WERROR dns_domain_from_principal(struct smb_krb5_context *smb_krb5_context, 
+static WERROR dns_domain_from_principal(TALLOC_CTX *mem_ctx, struct smb_krb5_context *smb_krb5_context, 
 					const char *name, 
 					struct drsuapi_DsNameInfo1 *info1) 
 {
@@ -63,7 +63,7 @@ static WERROR dns_domain_from_principal(struct smb_krb5_context *smb_krb5_contex
 	/* This isn't an allocation assignemnt, so it is free'ed with the krb5_free_principal */
 	realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
 	
-	info1->dns_domain_name	= talloc_strdup(info1, *realm);
+	info1->dns_domain_name	= talloc_strdup(mem_ctx, *realm);
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 	
 	W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
@@ -298,7 +298,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case 1:
 		break;
 	case 0:
-		return dns_domain_from_principal(smb_krb5_context, 
+		return dns_domain_from_principal(mem_ctx, smb_krb5_context, 
 						 name, info1);
 	case -1:
 		DEBUG(2, ("DsCrackNameUPN domain ref search failed: %s", ldb_errstring(sam_ctx)));
@@ -560,7 +560,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		if (ret) {
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
 
-			return dns_domain_from_principal(smb_krb5_context,
+			return dns_domain_from_principal(mem_ctx, smb_krb5_context,
 							 name, info1);
 		}
 
