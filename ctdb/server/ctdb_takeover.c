@@ -185,7 +185,7 @@ static int32_t find_public_ip_vnn(struct ctdb_context *ctdb, char *ip)
 	int i;
 
 	for (i=0;i<ctdb->num_nodes;i++) {
-		if (!strcmp(ip, ctdb->nodes[i]->public_address)) {
+		if (ctdb->nodes[i]->public_address && !strcmp(ip, ctdb->nodes[i]->public_address)) {
 			vnn = i;
 			break;
 		}
@@ -641,6 +641,14 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	char *addr;
 	int32_t takeover_vnn;
 
+	addr = inet_ntoa(p->dest.sin_addr);
+
+	takeover_vnn = find_public_ip_vnn(ctdb, addr);
+	if (takeover_vnn == -1) {
+		DEBUG(3,("Could not add client IP %s. This is not a public address.\n", addr)); 
+		return 0;
+	}
+
 	ip = talloc(client, struct ctdb_client_ip);
 	CTDB_NO_MEMORY(ctdb, ip);
 
@@ -652,16 +660,6 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	tcp = talloc(client, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);
-
-	addr = inet_ntoa(p->dest.sin_addr);
-
-	takeover_vnn = find_public_ip_vnn(ctdb, addr);
-	if (takeover_vnn == -1) {
-		DEBUG(3,("Could not add client IP %s. This is not a public address.\n", addr)); 
-		return -1;
-	}
-
-	addr = inet_ntoa(p->src.sin_addr);
 
 	tcp->connection.saddr = p->src;
 	tcp->connection.daddr = p->dest;
@@ -677,7 +675,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	DEBUG(2,("registered tcp client for %u->%s:%u\n",
 		 (unsigned)ntohs(p->dest.sin_port), 
-		 addr,
+		 inet_ntoa(p->src.sin_addr),
 		 (unsigned)ntohs(p->src.sin_port)));
 
 	/* tell all nodes about this tcp connection */
