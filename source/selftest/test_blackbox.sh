@@ -16,6 +16,10 @@ ADDARGS="$*"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-plantest "blackbox.smbclient" dc $incdir/../../testprogs/blackbox/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" "$ADDARGS"
-plantest "blackbox.kinit" dc $incdir/../../testprogs/blackbox/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" "$ADDARGS"
-plantest "blackbox.cifsdd" dc $incdir/../../testprogs/blackbox/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$ADDARGS"
+bbdir=$incdir/../../testprogs/blackbox
+
+plantest "blackbox.smbclient" dc $bbdir/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" "$ADDARGS"
+plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" "$ADDARGS"
+plantest "blackbox.cifsdd" dc $bbdir/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$ADDARGS"
+plantest "blackbox.nmblookup:dc" dc $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" $ADDARGS
+plantest "blackbox.nmblookup:member" member $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" $ADDARGS
