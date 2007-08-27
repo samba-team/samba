@@ -80,7 +80,7 @@ testit "Comparing files" diff tmpfile-old tmpfile || failed=`expr $failed + 1`
 # cd to directory
 # cd to top level directory
 # remove directory
-runcmd "Creating directory, Changing directory, Going back, " 'mkdir bla; cd bla; cd ..; rmdir bla' || failed=`expr $failed + 1`
+runcmd "Creating directory, Changing directory, Going back" 'mkdir bla; cd bla; cd ..; rmdir bla' || failed=`expr $failed + 1`
 # enable recurse, create nested directory
 runcmd "Creating nested directory" 'mkdir bla/bloe' || failed=`expr $failed + 1`
 # remove parent directory
