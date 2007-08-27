@@ -56,6 +56,16 @@ td.resultFailure
 	font-weight:      bold;
 }
 
+/* Expected failure */
+td.resultExpectedFailure
+{
+	text-align:       right;
+	padding-left:     10px;
+	padding-right:    10px;
+	background-color: #FFA500;
+	font-weight:      bold;
+}
+
 /* Skipped */
 td.resultSkipped
 {
@@ -89,6 +99,11 @@ td.outputOk
 td.outputFailure
 {
 	background-color: #FF0000;
+}
+
+td.outputExpectedFailure
+{
+	background-color: #FFA500;
 }
 
 div.reason
