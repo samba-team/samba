@@ -39,6 +39,8 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 
 	fd = open(location, O_RDWR);
 	if (fd == -1) {
+		if (errno == ENOENT)
+			return WERR_NOT_FOUND;
 		return WERR_BADFILE;
 	}
 

@@ -17,6 +17,12 @@ SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_ldb
 PRIVATE_DEPENDENCIES = LIBLDB SAMDB LIBNDR
 
+[MODULE::smbcalls_reg]
+OBJ_FILES = smbcalls_reg.o
+SUBSYSTEM = smbcalls
+INIT_FUNCTION = smb_setup_ejs_reg
+PRIVATE_DEPENDENCIES = registry SAMDB LIBNDR
+
 [MODULE::smbcalls_nbt]
 OBJ_FILES = smbcalls_nbt.o
 SUBSYSTEM = smbcalls

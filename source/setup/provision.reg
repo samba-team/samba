@@ -2,6 +2,12 @@ REGEDIT4
 
 [HKEY_LOCAL_MACHINE]
 
+[HKEY_LOCAL_MACHINE\System]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control]
+
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\ProductOptions]
 ProductType="LanmanNT"
 
