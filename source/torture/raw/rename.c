@@ -125,14 +125,6 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf("(%s) Incorrect filename [%s] after case-changing "
 		       "rename, should be [%s]\n", __location__,
 		       finfo.all_info.out.fname.s, Fname1);
-		/*
-		 * Samba4 apparently does not do this. Leave the error
-		 * message, but don't fail make test over this.
-		 */
-		if (!lp_parm_bool(-1, "torture", "samba4", False)) {
-			ret = False;
-			goto done;
-		}
 	}
 
 	io.rename.in.pattern1 = fname1;
