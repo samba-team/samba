@@ -70,7 +70,7 @@ struct dcerpc_connection {
 		const char *(*target_hostname)(struct dcerpc_connection *);
 
 		/* send a request to the server */
-		NTSTATUS (*send_request)(struct dcerpc_connection *, DATA_BLOB *, BOOL trigger_read);
+		NTSTATUS (*send_request)(struct dcerpc_connection *, DATA_BLOB *, bool trigger_read);
 
 		/* send a read request to the server */
 		NTSTATUS (*send_read)(struct dcerpc_connection *);
@@ -207,8 +207,8 @@ struct rpc_request {
 	const struct GUID *object;
 	uint16_t opnum;
 	DATA_BLOB request_data;
-	BOOL async_call;
-	BOOL ignore_timeout;
+	bool async_call;
+	bool ignore_timeout;
 
 	/* use by the ndr level async recv call */
 	struct {

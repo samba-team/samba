@@ -29,7 +29,7 @@ struct irpc_message {
 	void *private;
 	struct irpc_header header;
 	struct ndr_pull *ndr;
-	BOOL defer_reply;
+	bool defer_reply;
 	struct messaging_context *msg_ctx;
 	struct irpc_list *irpc;
 	void *data;
@@ -67,8 +67,8 @@ struct irpc_request {
 	int callid;
 	void *r;
 	NTSTATUS status;
-	BOOL done;
-	BOOL reject_free;
+	bool done;
+	bool reject_free;
 	TALLOC_CTX *mem_ctx;
 	struct {
 		void (*fn)(struct irpc_request *);

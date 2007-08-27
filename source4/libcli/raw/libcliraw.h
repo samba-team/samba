@@ -142,7 +142,7 @@ struct smbcli_transport {
 
 	struct {
 		/* a oplock break request handler */
-		BOOL (*handler)(struct smbcli_transport *transport, 
+		bool (*handler)(struct smbcli_transport *transport, 
 				uint16_t tid, uint16_t fnum, uint8_t level, void *private);
 		/* private data passed to the oplock handler */
 		void *private;

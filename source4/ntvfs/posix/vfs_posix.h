@@ -118,9 +118,9 @@ struct pvfs_filename {
 	char *full_name;
 	const char *stream_name; /* does not include :$DATA suffix */
 	uint32_t stream_id;      /* this uses a hash, so is probabilistic */
-	BOOL has_wildcard;
-	BOOL exists;          /* true if the base filename exists */
-	BOOL stream_exists;   /* true if the stream exists */
+	bool has_wildcard;
+	bool exists;          /* true if the base filename exists */
+	bool stream_exists;   /* true if the stream exists */
 	struct stat st;
 	struct pvfs_dos_fileinfo dos;
 };
@@ -150,16 +150,16 @@ struct pvfs_file_handle {
 	uint64_t seek_offset;
 	uint64_t position;
 
-	BOOL have_opendb_entry;
+	bool have_opendb_entry;
 
 	/* we need this hook back to our parent for lock destruction */
 	struct pvfs_state *pvfs;
 
 	/* have we set a sticky write time that we should remove on close */
-	BOOL sticky_write_time;
+	bool sticky_write_time;
 
 	/* the open went through to completion */
-	BOOL open_completed;
+	bool open_completed;
 };
 
 /* open file state */

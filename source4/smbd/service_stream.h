@@ -47,7 +47,7 @@ struct stream_connection {
 	struct socket_context *socket;
 	struct messaging_context *msg_ctx;
 
-	BOOL processing;
+	bool processing;
 	const char *terminate;
 };
 

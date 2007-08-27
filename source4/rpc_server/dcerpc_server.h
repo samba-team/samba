@@ -208,7 +208,7 @@ struct dcesrv_connection {
 	/* the transport level session key */
 	DATA_BLOB transport_session_key;
 
-	BOOL processing;
+	bool processing;
 
 	/* this is the default state_flags for dcesrv_call_state structs */
 	uint32_t state_flags;
@@ -235,13 +235,13 @@ struct dcesrv_endpoint_server {
 	 * ask for a dcesrv_interface implementation
 	 * - iface must be reference to an already existing struct !
 	 */
-	BOOL (*interface_by_uuid)(struct dcesrv_interface *iface, const struct GUID *, uint32_t);
+	bool (*interface_by_uuid)(struct dcesrv_interface *iface, const struct GUID *, uint32_t);
 
 	/* this function can be used by other endpoint servers to
 	 * ask for a dcesrv_interface implementation
 	 * - iface must be reference to an already existeng struct !
 	 */
-	BOOL (*interface_by_name)(struct dcesrv_interface *iface, const char *);
+	bool (*interface_by_name)(struct dcesrv_interface *iface, const char *);
 };
 
 

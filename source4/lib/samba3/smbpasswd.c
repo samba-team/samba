@@ -118,7 +118,7 @@ char *smbpasswd_sethexpwd(TALLOC_CTX *mem_ctx, struct samr_Password *pwd, uint16
 uint16_t smbpasswd_decode_acb_info(const char *p)
 {
 	uint16_t acb_info = 0;
-	BOOL finished = False;
+	bool finished = false;
 
 	/*
 	 * Check if the account type bits have been encoded after the
@@ -170,7 +170,7 @@ uint16_t smbpasswd_decode_acb_info(const char *p)
 		case '\n':
 		case ']':
 		default:  
-			finished = True;
+			finished = true;
 			break;
 		}
 	}

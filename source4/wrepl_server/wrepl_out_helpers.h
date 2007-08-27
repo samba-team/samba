@@ -31,7 +31,7 @@ struct wreplsrv_pull_cycle_io {
 struct wreplsrv_push_notify_io {
 	struct {
 		struct wreplsrv_partner *partner;
-		BOOL inform;
-		BOOL propagate;
+		bool inform;
+		bool propagate;
 	} in;
 };

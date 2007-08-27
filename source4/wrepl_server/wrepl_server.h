@@ -34,7 +34,7 @@ struct wreplsrv_in_call {
 	struct wreplsrv_in_connection *wreplconn;
 	struct wrepl_packet req_packet;
 	struct wrepl_packet rep_packet;
-	BOOL terminate_after_send;
+	bool terminate_after_send;
 };
 
 /*
@@ -57,7 +57,7 @@ struct wreplsrv_in_connection {
 
 	/* keep track of the assoc_ctx's */
 	struct {
-		BOOL stopped;
+		bool stopped;
 		uint32_t our_ctx;
 		uint32_t peer_ctx;
 	} assoc_ctx;
@@ -166,7 +166,7 @@ struct wreplsrv_partner {
 		uint64_t maxVersionID;
 
 		/* we should use WREPL_REPL_INFORM* messages to this partner */
-		BOOL use_inform;
+		bool use_inform;
 
 		/* the error count till the last success */
 		uint32_t error_count;
@@ -303,7 +303,7 @@ struct wreplsrv_service {
 		/*
 		 * are we currently inside a scavenging run
 		 */
-		BOOL processing;	
+		bool processing;	
 	} scavenging;
 };
 

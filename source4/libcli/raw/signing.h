@@ -34,10 +34,10 @@ struct smb_signing_context {
 	enum smb_signing_engine_state signing_state;
 	DATA_BLOB mac_key;
 	uint32_t next_seq_num;
-	BOOL allow_smb_signing;
-	BOOL doing_signing;
-	BOOL mandatory_signing;
-	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
+	bool allow_smb_signing;
+	bool doing_signing;
+	bool mandatory_signing;
+	bool seen_valid; /* Have I ever seen a validly signed packet? */
 };
 
 #endif

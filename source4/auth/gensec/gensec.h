@@ -134,10 +134,10 @@ struct gensec_security_ops {
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, 
 				 struct auth_session_info **session_info); 
-	BOOL (*have_feature)(struct gensec_security *gensec_security,
+	bool (*have_feature)(struct gensec_security *gensec_security,
 				    uint32_t feature); 
-	BOOL enabled;
-	BOOL kerberos;
+	bool enabled;
+	bool kerberos;
 	enum gensec_priority priority;
 };
 	
@@ -154,7 +154,7 @@ struct gensec_security {
 	struct cli_credentials *credentials;
 	struct gensec_target target;
 	enum gensec_role gensec_role;
-	BOOL subcontext;
+	bool subcontext;
 	uint32_t want_features;
 	struct event_context *event_ctx;
 	struct messaging_context *msg_ctx; /* only valid as server */

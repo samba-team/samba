@@ -36,7 +36,7 @@ struct argdef
 
 	union
 	{
-		BOOL		bval;
+		bool		bval;
 		uint64_t	nval;
 		const char *	pval;
 	} arg_val;
@@ -45,14 +45,14 @@ struct argdef
 int set_arg_argv(const char * argv);
 void set_arg_val(const char * name, ...);
 
-BOOL check_arg_bool(const char * name);
+bool check_arg_bool(const char * name);
 uint64_t check_arg_numeric(const char * name);
 const char * check_arg_pathname(const char * name);
 
-typedef BOOL (*dd_seek_func)(void * handle, uint64_t offset);
-typedef BOOL (*dd_read_func)(void * handle, uint8_t * buf,
+typedef bool (*dd_seek_func)(void * handle, uint64_t offset);
+typedef bool (*dd_read_func)(void * handle, uint8_t * buf,
 				uint64_t wanted, uint64_t * actual);
-typedef BOOL (*dd_write_func)(void * handle, uint8_t * buf,
+typedef bool (*dd_write_func)(void * handle, uint8_t * buf,
 				uint64_t wanted, uint64_t * actual);
 
 struct dd_stats_record
@@ -90,9 +90,9 @@ struct dd_iohandle
 
 struct dd_iohandle * dd_open_path(const char * path,
 				uint64_t io_size, int options);
-BOOL dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
+bool dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
 		uint64_t * buf_size, uint64_t need_size, uint64_t block_size);
-BOOL dd_flush_block(struct dd_iohandle * h, uint8_t * buf,
+bool dd_flush_block(struct dd_iohandle * h, uint8_t * buf,
 		uint64_t * buf_size, uint64_t block_size);
 
 /* vim: set sw=8 sts=8 ts=8 tw=79 : */

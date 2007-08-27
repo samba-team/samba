@@ -26,14 +26,14 @@ struct websrv_context {
 	struct task_server *task;
 	struct stream_connection *conn;
 	struct {
-		BOOL tls_detect;
-		BOOL tls_first_char;
+		bool tls_detect;
+		bool tls_first_char;
 		uint8_t first_byte;
 		DATA_BLOB partial;
-		BOOL end_of_headers;
+		bool end_of_headers;
 		char *url;
 		unsigned content_length;
-		BOOL post_request;
+		bool post_request;
 		const char *content_type;
 		const char *query_string;
 		const char *user_agent;
@@ -46,7 +46,7 @@ struct websrv_context {
 		const char *session_key;
 	} input;
 	struct {
-		BOOL output_pending;
+		bool output_pending;
 		DATA_BLOB content;
 		int fd;
 		unsigned nsent;

@@ -52,7 +52,7 @@ struct share_ops {
 	NTSTATUS (*init)(TALLOC_CTX *, const struct share_ops*, struct share_context **);
 	const char *(*string_option)(struct share_config *, const char *, const char *);
 	int (*int_option)(struct share_config *, const char *, int);
-	BOOL (*bool_option)(struct share_config *, const char *, BOOL);
+	bool (*bool_option)(struct share_config *, const char *, bool);
 	const char **(*string_list_option)(TALLOC_CTX *, struct share_config *, const char *);
 	NTSTATUS (*list_all)(TALLOC_CTX *, struct share_context *, int *, const char ***);
 	NTSTATUS (*get_config)(TALLOC_CTX *, struct share_context *, const char *, struct share_config **);

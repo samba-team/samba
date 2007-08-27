@@ -31,7 +31,7 @@ struct asn1_data {
 	size_t length;
 	off_t ofs;
 	struct nesting *nesting;
-	BOOL has_error;
+	bool has_error;
 };
 
 #define ASN1_APPLICATION(x) ((x)+0x60)

@@ -83,13 +83,13 @@ struct gensec_ntlmssp_state
 	enum samr_Role server_role;
 	uint32_t expected_state;
 
-	BOOL unicode;
-	BOOL use_ntlmv2;
-	BOOL use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
-	BOOL allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
+	bool unicode;
+	bool use_ntlmv2;
+	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
+	bool allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
 				  very secure anyway */
 
-	BOOL server_multiple_authentications;  /* Set to 'True' to allow squid 2.5 
+	bool server_multiple_authentications;  /* Set to 'True' to allow squid 2.5 
 						  style 'challenge caching' */
 
 	char *user;
@@ -128,7 +128,7 @@ struct gensec_ntlmssp_state
 	 * @return Can the challenge be set to arbitary values?
 	 *
 	 */
-	BOOL (*may_set_challenge)(const struct gensec_ntlmssp_state *);
+	bool (*may_set_challenge)(const struct gensec_ntlmssp_state *);
 
 	/**
 	 * Callback to set the 'challenge' used for NTLM authentication.  
@@ -158,7 +158,7 @@ struct gensec_ntlmssp_state
 	const char *server_name;
 	const char *(*get_domain)(void);
 
-	BOOL doing_ntlm2; 
+	bool doing_ntlm2; 
 
 	union {
 		/* NTLM */

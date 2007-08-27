@@ -56,7 +56,7 @@ struct nbt_name_request {
 	int num_retries;
 
 	/* whether we have received a WACK */
-	BOOL received_wack;
+	bool received_wack;
 
 	/* the timeout event */
 	struct timed_event *te;
@@ -65,13 +65,13 @@ struct nbt_name_request {
 	uint16_t name_trn_id;
 
 	/* is it a reply? */
-	BOOL is_reply;
+	bool is_reply;
 	
 	/* the encoded request */
 	DATA_BLOB encoded;
 
 	/* shall we allow multiple replies? */
-	BOOL allow_multiple_replies;
+	bool allow_multiple_replies;
 
 	unsigned int num_replies;
 	struct nbt_name_reply {
@@ -128,8 +128,8 @@ struct nbt_name_query {
 	struct {
 		struct nbt_name name;
 		const char *dest_addr;
-		BOOL broadcast;
-		BOOL wins_lookup;
+		bool broadcast;
+		bool wins_lookup;
 		int timeout; /* in seconds */
 		int retries;
 	} in;
@@ -163,9 +163,9 @@ struct nbt_name_register {
 		const char *dest_addr;
 		const char *address;
 		uint16_t nb_flags;
-		BOOL register_demand;
-		BOOL broadcast;
-		BOOL multi_homed;
+		bool register_demand;
+		bool broadcast;
+		bool multi_homed;
 		uint32_t ttl;
 		int timeout; /* in seconds */
 		int retries;
@@ -215,7 +215,7 @@ struct nbt_name_refresh {
 		const char *dest_addr;
 		const char *address;
 		uint16_t nb_flags;
-		BOOL broadcast;
+		bool broadcast;
 		uint32_t ttl;
 		int timeout; /* in seconds */
 		int retries;
@@ -252,7 +252,7 @@ struct nbt_name_release {
 		const char *dest_addr;
 		const char *address;
 		uint16_t nb_flags;
-		BOOL broadcast;
+		bool broadcast;
 		int timeout; /* in seconds */
 		int retries;
 	} in;

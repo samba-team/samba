@@ -143,7 +143,7 @@ struct ldap_SearchRequest {
 	enum ldap_deref deref;
 	uint32_t timelimit;
 	uint32_t sizelimit;
-	BOOL attributesonly;
+	bool attributesonly;
 	struct ldb_parse_tree *tree;
 	int num_attributes;
 	const char **attributes;
@@ -190,7 +190,7 @@ struct ldap_DelRequest {
 struct ldap_ModifyDNRequest {
 	const char *dn;
 	const char *newrdn;
-	BOOL deleteolddn;
+	bool deleteolddn;
 	const char *newsuperior;/* optional */
 };
 

@@ -56,7 +56,7 @@ struct auth_usersupplied_info
 
 	uint32_t logon_parameters;
 
-	BOOL mapped_state;
+	bool mapped_state;
 	/* the values the client gives us */
 	struct {
 		const char *account_name;
@@ -113,7 +113,7 @@ struct auth_serversupplied_info
 
 	uint32_t acct_flags;
 
-	BOOL authenticated;
+	bool authenticated;
 };
 
 struct auth_session_info {
@@ -161,7 +161,7 @@ struct auth_context {
 		/* Who set this up in the first place? */ 
 		const char *set_by;
 
-		BOOL may_be_modified;
+		bool may_be_modified;
 
 		DATA_BLOB data; 
 	} challenge;

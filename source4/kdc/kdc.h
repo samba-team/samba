@@ -31,7 +31,7 @@ struct socket_address;
 
 extern TALLOC_CTX *kdc_mem_ctx;
 
-BOOL kpasswdd_process(struct kdc_server *kdc,
+bool kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx, 
 		      DATA_BLOB *input, 
 		      DATA_BLOB *reply,

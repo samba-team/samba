@@ -267,14 +267,14 @@ struct smbsrv_connection {
 	/* context that has been negotiated between the client and server */
 	struct {
 		/* have we already done the NBT session establishment? */
-		BOOL done_nbt_session;
+		bool done_nbt_session;
 	
 		/* only one negprot per connection is allowed */
-		BOOL done_negprot;
+		bool done_negprot;
 	
 		/* multiple session setups are allowed, but some parameters are
 		   ignored in any but the first */
-		BOOL done_sesssetup;
+		bool done_sesssetup;
 		
 		/* 
 		 * Size of data we can send to client. Set
@@ -299,7 +299,7 @@ struct smbsrv_connection {
 		struct cli_credentials *server_credentials;
 	
 		/* did we tell the client we support encrypted passwords? */
-		BOOL encrypted_passwords;
+		bool encrypted_passwords;
 	
 		/* Did we choose SPNEGO, or perhaps raw NTLMSSP, or even no extended security at all? */
 		const char *oid;
@@ -362,7 +362,7 @@ struct smbsrv_connection {
 	/* configuration parameters */
 	struct {
 		enum security_types security;
-		BOOL nt_status_support;
+		bool nt_status_support;
 	} config;
 
 	/* some statictics for the management tools */

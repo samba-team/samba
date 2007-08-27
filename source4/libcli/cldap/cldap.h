@@ -47,7 +47,7 @@ struct cldap_request {
 	int timeout;
 	int num_retries;
 
-	BOOL is_reply;
+	bool is_reply;
 
 	/* the ldap message_id */
 	int message_id;

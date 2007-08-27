@@ -30,7 +30,7 @@
 #define TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
 #define TDBSAM_VERSION_STRING      "INFO/version"
 
-static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
+static bool init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
 {
 	uint32_t	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
@@ -43,7 +43,7 @@ static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	
 	if(sampass == NULL || buf.dptr == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v0: NULL parameters found!\n"));
-		return False;
+		return false;
 	}
 
 	/* unpack the buffer into variables */
@@ -80,13 +80,13 @@ static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		&sampass->unknown_6);					/* d */
 		
 	if (len == (uint32_t) -1)  {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
+static bool init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
 {
 	uint32_t	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
@@ -99,7 +99,7 @@ static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	
 	if(sampass == NULL || buf.dptr == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v1: NULL parameters found!\n"));
-		return False;
+		return false;
 	}
 
 	/* unpack the buffer into variables */
@@ -138,13 +138,13 @@ static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		&sampass->unknown_6);					/* d */
 		
 	if (len == (uint32_t) -1)  {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
+static bool init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
 {
 	uint32_t	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
@@ -156,7 +156,7 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	
 	if(sampass == NULL || buf.dptr == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
-		return False;
+		return false;
 	}
 
 	/* unpack the buffer into variables */
@@ -196,10 +196,10 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		&sampass->unknown_6);					/* d */
 		
 	if (len == (uint32_t) -1)  {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3_samaccount **accounts, uint32_t *count)
@@ -233,7 +233,7 @@ NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3
 
 	for (key = tdb_firstkey(tdb); key.dptr; key = tdb_nextkey(tdb, key))
 	{
-		BOOL ret;
+		bool ret;
 		if (strncmp((const char *)key.dptr, "USER_", 5) != 0) 
 			continue;
 
@@ -246,7 +246,7 @@ NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3
 			case 0: ret = init_sam_from_buffer_v0(tdb, &(*accounts)[*count], val); break;
 			case 1: ret = init_sam_from_buffer_v1(tdb, &(*accounts)[*count], val); break;
 			case 2: ret = init_sam_from_buffer_v2(tdb, &(*accounts)[*count], val); break;
-			default: ret = False; break;
+			default: ret = false; break;
 
 		}
 

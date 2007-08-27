@@ -104,10 +104,10 @@ struct cli_credentials {
 	/* We are flagged to get machine account details from the
 	 * secrets.ldb when we are asked for a username or password */
 
-	BOOL machine_account_pending;
+	bool machine_account_pending;
 	
 	/* Is this a machine account? */
-	BOOL machine_account;
+	bool machine_account;
 
 	/* Should we be trying to use kerberos? */
 	enum credentials_use_kerberos use_kerberos;
@@ -119,7 +119,7 @@ struct cli_credentials {
 	int tries;
 
 	/* Whether any callback is currently running */
-	BOOL callback_running;
+	bool callback_running;
 
 	/* an event context for anyone wanting to use the credentials */
 	struct event_context *ev;

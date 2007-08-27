@@ -42,7 +42,7 @@ struct libnet_JoinDomain {
 		const char *binding;
 		enum libnet_JoinDomain_level level;
 		uint32_t  acct_type;
-		BOOL recreate_account;
+		bool recreate_account;
 	} in;
 
 	struct {
