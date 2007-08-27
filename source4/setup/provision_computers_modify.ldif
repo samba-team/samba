@@ -12,8 +12,5 @@ showInAdvancedViewOnly: FALSE
 replace: systemFlags
 systemFlags: 2348810240
 -
-replace: objectCategory
-objectCategory: CN=Container,${SCHEMADN}
--
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE
