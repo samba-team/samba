@@ -34,16 +34,16 @@ struct reg_diff_callbacks {
 	WERROR (*done) (void *callback_data);
 };
 
-_PUBLIC_ WERROR reg_diff_apply (const char *filename, 
+WERROR reg_diff_apply (const char *filename, 
 								struct registry_context *ctx);
 
-_PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1, 
+WERROR reg_generate_diff(struct registry_context *ctx1, 
 				  struct registry_context *ctx2, 
 				  const struct reg_diff_callbacks *callbacks,
 				  void *callback_data);
-_PUBLIC_ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename, 
+WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename, 
 				struct reg_diff_callbacks **callbacks, void **callback_data);
-_PUBLIC_ WERROR reg_generate_diff_key(struct registry_key *oldkey, 
+WERROR reg_generate_diff_key(struct registry_key *oldkey, 
 				    struct registry_key *newkey,
 				    const char *path,
 				    const struct reg_diff_callbacks *callbacks,
