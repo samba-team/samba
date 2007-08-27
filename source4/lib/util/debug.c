@@ -46,22 +46,23 @@ static struct {
 	const char *prog_name;
 } state;
 
-static BOOL reopen_logs_scheduled;
-static BOOL check_reopen_logs(void)
+static bool reopen_logs_scheduled;
+static bool check_reopen_logs(void)
 {
 	if (state.fd == 0 || reopen_logs_scheduled) {
-		reopen_logs_scheduled = False;
+		reopen_logs_scheduled = false;
 		reopen_logs();
 	}
 
-	if (state.fd <= 0) return False;
+	if (state.fd <= 0) 
+		return false;
 
-	return True;
+	return true;
 }
 
 _PUBLIC_ void debug_schedule_reopen_logs(void)
 {
-	reopen_logs_scheduled = True;
+	reopen_logs_scheduled = true;
 }
 
 static void log_timestring(int level, const char *location, const char *func)

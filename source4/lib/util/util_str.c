@@ -263,16 +263,16 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 /**
  Set a string value, allocing the space for the string
 **/
-static BOOL string_init(char **dest,const char *src)
+static bool string_init(char **dest,const char *src)
 {
 	if (!src) src = "";
 
 	(*dest) = strdup(src);
 	if ((*dest) == NULL) {
 		DEBUG(0,("Out of memory in string_init\n"));
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 /**
@@ -287,7 +287,7 @@ _PUBLIC_ void string_free(char **s)
  Set a string value, deallocating any existing space, and allocing the space
  for the string
 **/
-_PUBLIC_ BOOL string_set(char **dest, const char *src)
+_PUBLIC_ bool string_set(char **dest, const char *src)
 {
 	string_free(dest);
 	return string_init(dest,src);
@@ -485,7 +485,7 @@ _PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
  * num should be a pointer to an integer that holds the current 
  * number of elements in strings. It will be updated by this function.
  */
-_PUBLIC_ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
+_PUBLIC_ bool add_string_to_array(TALLOC_CTX *mem_ctx,
 			 const char *str, const char ***strings, int *num)
 {
 	char *dup_str = talloc_strdup(mem_ctx, str);
@@ -495,12 +495,12 @@ _PUBLIC_ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 				    const char *, ((*num)+1));
 
 	if ((*strings == NULL) || (dup_str == NULL))
-		return False;
+		return false;
 
 	(*strings)[*num] = dup_str;
 	*num += 1;
 
-	return True;
+	return true;
 }
 
 
@@ -584,26 +584,26 @@ _PUBLIC_ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 
 /**
  Set a boolean variable from the text value stored in the passed string.
- Returns True in success, False if the passed string does not correctly 
+ Returns true in success, false if the passed string does not correctly 
  represent a boolean.
 **/
 
-_PUBLIC_ BOOL set_boolean(const char *boolean_string, BOOL *boolean)
+_PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean)
 {
 	if (strwicmp(boolean_string, "yes") == 0 ||
 	    strwicmp(boolean_string, "true") == 0 ||
 	    strwicmp(boolean_string, "on") == 0 ||
 	    strwicmp(boolean_string, "1") == 0) {
-		*boolean = True;
-		return True;
+		*boolean = true;
+		return true;
 	} else if (strwicmp(boolean_string, "no") == 0 ||
 		   strwicmp(boolean_string, "false") == 0 ||
 		   strwicmp(boolean_string, "off") == 0 ||
 		   strwicmp(boolean_string, "0") == 0) {
-		*boolean = False;
-		return True;
+		*boolean = false;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /**
@@ -611,15 +611,15 @@ _PUBLIC_ BOOL set_boolean(const char *boolean_string, BOOL *boolean)
  *
  * val will be set to the read value.
  *
- * @retval True if a boolean value was parsed, False otherwise.
+ * @retval true if a boolean value was parsed, false otherwise.
  */
-_PUBLIC_ BOOL conv_str_bool(const char * str, BOOL * val)
+_PUBLIC_ bool conv_str_bool(const char * str, bool * val)
 {
 	char *	end = NULL;
 	long	lval;
 
 	if (str == NULL || *str == '\0') {
-		return False;
+		return false;
 	}
 
 	lval = strtol(str, &end, 10 /* base */);
@@ -627,25 +627,25 @@ _PUBLIC_ BOOL conv_str_bool(const char * str, BOOL * val)
 		return set_boolean(str, val);
 	}
 
-	*val = (lval) ? True : False;
-	return True;
+	*val = (lval) ? true : false;
+	return true;
 }
 
 /**
  * Convert a size specification like 16K into an integral number of bytes. 
  **/
-_PUBLIC_ BOOL conv_str_size(const char * str, uint64_t * val)
+_PUBLIC_ bool conv_str_size(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;
 
 	if (str == NULL || *str == '\0') {
-		return False;
+		return false;
 	}
 
 	lval = strtoull(str, &end, 10 /* base */);
 	if (end == NULL || end == str) {
-		return False;
+		return false;
 	}
 
 	if (*end) {
@@ -660,12 +660,12 @@ _PUBLIC_ BOOL conv_str_size(const char * str, uint64_t * val)
 		} else if (strwicmp(end, "P") == 0) {
 			lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL);
 		} else {
-			return False;
+			return false;
 		}
 	}
 
 	*val = (uint64_t)lval;
-	return True;
+	return true;
 }
 
 /**
@@ -673,24 +673,24 @@ _PUBLIC_ BOOL conv_str_size(const char * str, uint64_t * val)
  *
  * val will be set to the value read.
  *
- * @retval True if parsing was successful, False otherwise
+ * @retval true if parsing was successful, false otherwise
  */
-_PUBLIC_ BOOL conv_str_u64(const char * str, uint64_t * val)
+_PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;
 
 	if (str == NULL || *str == '\0') {
-		return False;
+		return false;
 	}
 
 	lval = strtoull(str, &end, 10 /* base */);
 	if (end == NULL || *end != '\0' || end == str) {
-		return False;
+		return false;
 	}
 
 	*val = (uint64_t)lval;
-	return True;
+	return true;
 }
 
 /**
@@ -777,12 +777,12 @@ _PUBLIC_ void string_replace(char *s, char oldc, char newc)
  *
  * @note The comparison is case-insensitive.
  **/
-_PUBLIC_ BOOL strequal(const char *s1, const char *s2)
+_PUBLIC_ bool strequal(const char *s1, const char *s2)
 {
 	if (s1 == s2)
-		return(True);
+		return true;
 	if (!s1 || !s2)
-		return(False);
+		return false;
   
 	return strcasecmp(s1,s2) == 0;
 }

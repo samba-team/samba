@@ -32,7 +32,7 @@
 static unsigned char hash[258];
 static uint32_t counter;
 
-static BOOL done_reseed = False;
+static bool done_reseed = false;
 static void (*reseed_callback)(int *newseed);
 
 /**
@@ -50,7 +50,7 @@ _PUBLIC_ void set_rand_reseed_callback(void (*fn)(int *))
  */
 _PUBLIC_ void set_need_random_reseed(void)
 {
-	done_reseed = False;
+	done_reseed = false;
 }
 
 static void get_rand_reseed_data(int *reseed_data)
@@ -156,7 +156,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
  above...
 **************************************************************/
 
-static int do_reseed(BOOL use_fd, int fd)
+static int do_reseed(bool use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
 	uint32_t v1, v2; struct timeval tval; pid_t mypid;
@@ -214,8 +214,8 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 	unsigned char *p;
 
 	if(!done_reseed) {
-		urand_fd = do_reseed(True, urand_fd);
-		done_reseed = True;
+		urand_fd = do_reseed(true, urand_fd);
+		done_reseed = true;
 	}
 
 	if (urand_fd != -1 && len > 0) {
@@ -226,8 +226,8 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 		/* Read of urand error, drop back to non urand method. */
 		close(urand_fd);
 		urand_fd = -1;
-		do_reseed(False, -1);
-		done_reseed = True;
+		do_reseed(false, -1);
+		done_reseed = true;
 	}
 
 	/*
@@ -263,7 +263,7 @@ _PUBLIC_ uint32_t generate_random(void)
 /**
   very basic password quality checker
 **/
-_PUBLIC_ BOOL check_password_quality(const char *s)
+_PUBLIC_ bool check_password_quality(const char *s)
 {
 	int has_digit=0, has_capital=0, has_lower=0, has_special=0, has_high=0;
 	while (*s) {

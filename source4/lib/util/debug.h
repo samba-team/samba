@@ -53,11 +53,11 @@ extern int DEBUGLEVEL;
 /** 
  * Write to the debug log.
  */
-#define DEBUG(level, body) _DEBUG(level, body, True)
+#define DEBUG(level, body) _DEBUG(level, body, true)
 /**
  * Add data to an existing debug log entry.
  */
-#define DEBUGADD(level, body) _DEBUG(level, body, False)
+#define DEBUGADD(level, body) _DEBUG(level, body, false)
 
 /**
  * Obtain indentation string for the debug log. 

@@ -217,7 +217,7 @@ _PUBLIC_ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 /**
    Return true if all the elements of the list match exactly.
  */
-_PUBLIC_ BOOL str_list_equal(const char **list1, const char **list2)
+_PUBLIC_ bool str_list_equal(const char **list1, const char **list2)
 {
 	int i;
 	
@@ -227,13 +227,13 @@ _PUBLIC_ BOOL str_list_equal(const char **list1, const char **list2)
 	
 	for (i=0;list1[i] && list2[i];i++) {
 		if (strcmp(list1[i], list2[i]) != 0) {
-			return False;
+			return false;
 		}
 	}
 	if (list1[i] || list2[i]) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 
@@ -275,50 +275,50 @@ _PUBLIC_ void str_list_remove(const char **list, const char *s)
 
 
 /**
-  return True if a string is in a list
+  return true if a string is in a list
 */
-_PUBLIC_ BOOL str_list_check(const char **list, const char *s)
+_PUBLIC_ bool str_list_check(const char **list, const char *s)
 {
 	int i;
 
 	for (i=0;list[i];i++) {
-		if (strcmp(list[i], s) == 0) return True;
+		if (strcmp(list[i], s) == 0) return true;
 	}
-	return False;
+	return false;
 }
 
 /**
-  return True if a string is in a list, case insensitively
+  return true if a string is in a list, case insensitively
 */
-_PUBLIC_ BOOL str_list_check_ci(const char **list, const char *s)
+_PUBLIC_ bool str_list_check_ci(const char **list, const char *s)
 {
 	int i;
 
 	for (i=0;list[i];i++) {
-		if (strcasecmp(list[i], s) == 0) return True;
+		if (strcasecmp(list[i], s) == 0) return true;
 	}
-	return False;
+	return false;
 }
 
 /**
  Check if a string is part of a list.
 **/
-_PUBLIC_ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
+_PUBLIC_ bool in_list(const char *s, const char *list, bool casesensitive)
 {
 	pstring tok;
 	const char *p=list;
 
 	if (!list)
-		return(False);
+		return false;
 
 	while (next_token(&p,tok,LIST_SEP,sizeof(tok))) {
 		if (casesensitive) {
 			if (strcmp(tok,s) == 0)
-				return(True);
+				return true;
 		} else {
 			if (strcasecmp_m(tok,s) == 0)
-				return(True);
+				return true;
 		}
 	}
-	return(False);
+	return false;
 }

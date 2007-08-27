@@ -95,17 +95,17 @@ _PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 /**
  * Run the specified init functions.
  *
- * @return True if all functions ran successfully, False otherwise
+ * @return true if all functions ran successfully, false otherwise
  */
-_PUBLIC_ BOOL run_init_functions(NTSTATUS (**fns) (void))
+_PUBLIC_ bool run_init_functions(NTSTATUS (**fns) (void))
 {
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 	
 	if (fns == NULL)
-		return True;
+		return true;
 	
-	for (i = 0; fns[i]; i++) { ret &= (BOOL)NT_STATUS_IS_OK(fns[i]()); }
+	for (i = 0; fns[i]; i++) { ret &= (bool)NT_STATUS_IS_OK(fns[i]()); }
 
 	return ret;
 }

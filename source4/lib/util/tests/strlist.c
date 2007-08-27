@@ -37,7 +37,7 @@ static bool test_lists_shell(struct torture_context *tctx,
 {
 	const char *data = test_data;
 	const char **ret1, **ret2, *tmp;
-	BOOL match = True;
+	bool match = true;
 	TALLOC_CTX *mem_ctx = tctx;
 
 	ret1 = str_list_make_shell(mem_ctx, data, " ");
@@ -45,18 +45,18 @@ static bool test_lists_shell(struct torture_context *tctx,
 	ret2 = str_list_make_shell(mem_ctx, tmp, " ");
 
 	if ((ret1 == NULL || ret2 == NULL) && ret2 != ret1) {
-		match = False;
+		match = false;
 	} else {
 		int j;
 		for (j = 0; ret1[j] && ret2[j]; j++) {
 			if (strcmp(ret1[j], ret2[j]) != 0) {
-				match = False;
+				match = false;
 				break;
 			}
 		}
 
 		if (ret1[j] || ret2[j])
-			match = False;
+			match = false;
 	}
 
 	torture_assert(tctx, match, talloc_asprintf(tctx, 

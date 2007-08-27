@@ -38,7 +38,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
   char *s=s2;
   int len = 0;
   int c;
-  BOOL start_of_line = True;
+  bool start_of_line = true;
 
   if (x_feof(f))
     return(NULL);
@@ -70,7 +70,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	  if (len > 0 && s[len-1] == '\\')
 	    {
 	      s[--len] = 0;
-	      start_of_line = True;
+	      start_of_line = true;
 	      break;
 	    }
 	  return(s);
@@ -83,7 +83,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	    break;
 	  /* fall through */
 	default:
-	  start_of_line = False;
+	  start_of_line = false;
 	  s[len++] = c;
 	  s[len] = 0;
 	}
@@ -342,18 +342,18 @@ _PUBLIC_ void file_lines_slashcont(char **lines)
 /**
   save a lump of data into a file. Mostly used for debugging 
 */
-_PUBLIC_ BOOL file_save(const char *fname, const void *packet, size_t length)
+_PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length)
 {
 	int fd;
 	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	if (fd == -1) {
-		return False;
+		return false;
 	}
 	if (write(fd, packet, length) != (size_t)length) {
-		return False;
+		return false;
 	}
 	close(fd);
-	return True;
+	return true;
 }
 
 _PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)

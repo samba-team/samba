@@ -47,12 +47,12 @@ _PUBLIC_ const char *tmpdir(void)
 /**
  Check if a file exists - call vfs_file_exist for samba files.
 **/
-_PUBLIC_ BOOL file_exist(const char *fname)
+_PUBLIC_ bool file_exist(const char *fname)
 {
 	struct stat st;
 
 	if (stat(fname, &st) != 0) {
-		return False;
+		return false;
 	}
 
 	return ((S_ISREG(st.st_mode)) || (S_ISFIFO(st.st_mode)));
@@ -76,13 +76,13 @@ _PUBLIC_ time_t file_modtime(const char *fname)
  Check if a directory exists.
 **/
 
-_PUBLIC_ BOOL directory_exist(const char *dname)
+_PUBLIC_ bool directory_exist(const char *dname)
 {
 	struct stat st;
-	BOOL ret;
+	bool ret;
 
 	if (stat(dname,&st) != 0) {
-		return False;
+		return false;
 	}
 
 	ret = S_ISDIR(st.st_mode);
@@ -94,10 +94,10 @@ _PUBLIC_ BOOL directory_exist(const char *dname)
 /**
  * Try to create the specified directory if it didn't exist.
  *
- * @retval True if the directory already existed and has the right permissions 
+ * @retval true if the directory already existed and has the right permissions 
  * or was successfully created.
  */
-_PUBLIC_ BOOL directory_create_or_exist(const char *dname, uid_t uid, 
+_PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid, 
 			       mode_t dir_perms)
 {
 	mode_t old_umask;
@@ -112,13 +112,13 @@ _PUBLIC_ BOOL directory_create_or_exist(const char *dname, uid_t uid,
 					  "%s: %s\n", dname, 
 					  strerror(errno)));
 				umask(old_umask);
-				return False;
+				return false;
 			}
 		} else {
 			DEBUG(0, ("lstat failed on directory %s: %s\n",
 				  dname, strerror(errno)));
 			umask(old_umask);
-			return False;
+			return false;
 		}
 	} else {
 		/* Check ownership and permission on existing directory */
@@ -126,17 +126,17 @@ _PUBLIC_ BOOL directory_create_or_exist(const char *dname, uid_t uid,
 			DEBUG(0, ("directory %s isn't a directory\n",
 				dname));
 			umask(old_umask);
-			return False;
+			return false;
 		}
 		if ((st.st_uid != uid) || 
 		    ((st.st_mode & 0777) != dir_perms)) {
 			DEBUG(0, ("invalid permissions on directory "
 				  "%s\n", dname));
 			umask(old_umask);
-			return False;
+			return false;
 		}
 	}
-	return True;
+	return true;
 }       
 
 
@@ -147,7 +147,7 @@ _PUBLIC_ BOOL directory_create_or_exist(const char *dname, uid_t uid,
   if BSD use FNDELAY
 **/
 
-_PUBLIC_ int set_blocking(int fd, BOOL set)
+_PUBLIC_ int set_blocking(int fd, bool set)
 {
 	int val;
 #ifdef O_NONBLOCK
@@ -221,16 +221,16 @@ _PUBLIC_ char* get_myname(void)
  Return true if a string could be a pure IP address.
 **/
 
-_PUBLIC_ BOOL is_ipaddress(const char *str)
+_PUBLIC_ bool is_ipaddress(const char *str)
 {
-	BOOL pure_address = True;
+	bool pure_address = true;
 	int i;
 
-	if (str == NULL) return False;
+	if (str == NULL) return false;
 
 	for (i=0; pure_address && str[i]; i++)
 		if (!(isdigit((int)str[i]) || str[i] == '.'))
-			pure_address = False;
+			pure_address = false;
 
 	/* Check that a pure number is not misinterpreted as an IP */
 	pure_address = pure_address && (strchr(str, '.') != NULL);
@@ -298,7 +298,7 @@ _PUBLIC_ struct ipv4_addr interpret_addr2(const char *str)
  Check if an IP is the 0.0.0.0.
 **/
 
-_PUBLIC_ BOOL is_zero_ip(struct ipv4_addr ip)
+_PUBLIC_ bool is_zero_ip(struct ipv4_addr ip)
 {
 	return ip.addr == 0;
 }
@@ -307,7 +307,7 @@ _PUBLIC_ BOOL is_zero_ip(struct ipv4_addr ip)
  Are two IPs on the same subnet?
 **/
 
-_PUBLIC_ BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
+_PUBLIC_ bool same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
 {
 	uint32_t net1,net2,nmask;
 
@@ -323,7 +323,7 @@ _PUBLIC_ BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_add
  Check if a process exists. Does this work on all unixes?
 **/
 
-_PUBLIC_ BOOL process_exists(pid_t pid)
+_PUBLIC_ bool process_exists(pid_t pid)
 {
 	/* Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want. */
@@ -336,7 +336,7 @@ _PUBLIC_ BOOL process_exists(pid_t pid)
  is dealt with in posix.c
 **/
 
-_PUBLIC_ BOOL fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
+_PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 {
 	struct flock lock;
 	int ret;
@@ -361,24 +361,24 @@ _PUBLIC_ BOOL fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 				(lock.l_pid != 0) && 
 				(lock.l_pid != getpid())) {
 			DEBUG(3,("fcntl_lock: fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
-			return(True);
+			return true;
 		}
 
 		/* it must be not locked or locked by me */
-		return(False);
+		return false;
 	}
 
 	/* a lock set or unset */
 	if (ret == -1) {
 		DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
 			(double)offset,(double)count,op,type,strerror(errno)));
-		return(False);
+		return false;
 	}
 
 	/* everything went OK */
 	DEBUG(8,("fcntl_lock: Lock call successful\n"));
 
-	return(True);
+	return true;
 }
 
 
@@ -503,14 +503,14 @@ _PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
  * see if a range of memory is all zero. A NULL pointer is considered
  * to be all zero 
  */
-_PUBLIC_ BOOL all_zero(const uint8_t *ptr, size_t size)
+_PUBLIC_ bool all_zero(const uint8_t *ptr, size_t size)
 {
 	int i;
-	if (!ptr) return True;
+	if (!ptr) return true;
 	for (i=0;i<size;i++) {
-		if (ptr[i]) return False;
+		if (ptr[i]) return false;
 	}
-	return True;
+	return true;
 }
 
 /**

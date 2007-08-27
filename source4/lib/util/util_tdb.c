@@ -148,7 +148,7 @@ int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v)
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32_byblob(struct tdb_context *tdb, const char *keyval, size_t len, uint32_t *value)
+bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, const char *keyval, size_t len, uint32_t *value)
 {
 	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
@@ -156,12 +156,12 @@ BOOL tdb_fetch_uint32_byblob(struct tdb_context *tdb, const char *keyval, size_t
 	data = tdb_fetch(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(uint32_t)) {
 		SAFE_FREE(data.dptr);
-		return False;
+		return false;
 	}
 
 	*value = IVAL(data.dptr,0);
 	SAFE_FREE(data.dptr);
-	return True;
+	return true;
 }
 
 /****************************************************************************
@@ -169,7 +169,7 @@ BOOL tdb_fetch_uint32_byblob(struct tdb_context *tdb, const char *keyval, size_t
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value)
+bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value)
 {
 	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
@@ -179,19 +179,19 @@ BOOL tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *val
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32_byblob(struct tdb_context *tdb, const char *keystr, size_t len, uint32_t value)
+bool tdb_store_uint32_byblob(struct tdb_context *tdb, const char *keystr, size_t len, uint32_t value)
 {
 	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
 	uint32_t v_store;
-	BOOL ret = True;
+	bool ret = true;
 
 	SIVAL(&v_store, 0, value);
 	data.dptr = (void *)&v_store;
 	data.dsize = sizeof(uint32_t);
 
 	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
-		ret = False;
+		ret = false;
 
 	return ret;
 }
@@ -201,7 +201,7 @@ BOOL tdb_store_uint32_byblob(struct tdb_context *tdb, const char *keystr, size_t
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value)
+bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value)
 {
 	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
@@ -285,13 +285,13 @@ int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int
  Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-BOOL tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint32_t *oldval, uint32_t change_val)
+bool tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint32_t *oldval, uint32_t change_val)
 {
 	uint32_t val;
-	BOOL ret = False;
+	bool ret = false;
 
 	if (tdb_lock_bystring(tdb, keystr) == -1)
-		return False;
+		return false;
 
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
 		/* It failed */
@@ -315,7 +315,7 @@ BOOL tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint3
 	if (!tdb_store_uint32(tdb, keystr, val))
 		goto err_out;
 
-	ret = True;
+	ret = true;
 
   err_out:
 
