@@ -232,20 +232,20 @@ static bool $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const s
 	if (dcesrv_$name\_interface.syntax_id.if_version == if_version &&
 		GUID_equal(\&dcesrv\_$name\_interface.syntax_id.uuid, uuid)) {
 		memcpy(iface,&dcesrv\_$name\_interface, sizeof(*iface));
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 static bool $name\__op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
 	if (strcmp(dcesrv_$name\_interface.name, name)==0) {
 		memcpy(iface, &dcesrv_$name\_interface, sizeof(*iface));
-		return True;
+		return true;
 	}
 
-	return False;	
+	return false;	
 }
 	
 NTSTATUS dcerpc_server_$name\_init(void)
