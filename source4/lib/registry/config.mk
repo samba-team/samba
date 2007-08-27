@@ -36,7 +36,7 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL CHARSET TDR_REGF LIBLDB \
 		RPC_NDR_WINREG
-PUBLIC_HEADERS = registry.h
+PUBLIC_HEADERS = registry.h hive.h patchfile.h
 # End MODULE registry_ldb
 ################################################
 

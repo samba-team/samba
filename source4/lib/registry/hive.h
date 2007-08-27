@@ -150,8 +150,8 @@ WERROR hive_key_get_info(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 WERROR hive_key_add_name(TALLOC_CTX *ctx, const struct hive_key *parent_key,
 						 const char *name, const char *classname, struct security_descriptor *desc,
 						 struct hive_key **key);
-_PUBLIC_ WERROR hive_key_del(const struct hive_key *key, const char *name);
-_PUBLIC_ WERROR hive_get_key_by_name(TALLOC_CTX *mem_ctx,
+WERROR hive_key_del(const struct hive_key *key, const char *name);
+WERROR hive_get_key_by_name(TALLOC_CTX *mem_ctx,
 							   const struct hive_key *key, const char *name, 
 							   struct hive_key **subkey);
 WERROR hive_enum_key(TALLOC_CTX *mem_ctx,

@@ -165,19 +165,15 @@ struct registry_context {
 struct auth_session_info;
 struct event_context;
 
-#ifndef _PUBLIC_
-#define _PUBLIC_
-#endif
-
 /**
  * Open the locally defined registry.
  */
-_PUBLIC_ WERROR reg_open_local (TALLOC_CTX *mem_ctx, 
+WERROR reg_open_local (TALLOC_CTX *mem_ctx, 
 				struct registry_context **ctx, 
 				struct auth_session_info *session_info, 
 				struct cli_credentials *credentials);
 
-_PUBLIC_ WERROR reg_open_samba (TALLOC_CTX *mem_ctx,
+WERROR reg_open_samba (TALLOC_CTX *mem_ctx,
 								struct registry_context **ctx,
 								struct auth_session_info *session_info,
 								struct cli_credentials *credentials);
@@ -185,36 +181,36 @@ _PUBLIC_ WERROR reg_open_samba (TALLOC_CTX *mem_ctx,
 /**
  * Open the registry on a remote machine.
  */
-_PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, 
+WERROR reg_open_remote(struct registry_context **ctx, 
 								struct auth_session_info *session_info, 
 								struct cli_credentials *credentials, 
 								const char *location, struct event_context *ev);
 
-_PUBLIC_ WERROR reg_open_wine(struct registry_context **ctx, const char *path);
+WERROR reg_open_wine(struct registry_context **ctx, const char *path);
 
-_PUBLIC_ const char *reg_get_predef_name(uint32_t hkey);
-_PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, 
+const char *reg_get_predef_name(uint32_t hkey);
+WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, 
 											   const char *name, 
 											   struct registry_key **key);
-_PUBLIC_ WERROR reg_get_predefined_key(const struct registry_context *ctx, 
+WERROR reg_get_predefined_key(const struct registry_context *ctx, 
 									   uint32_t hkey, 
 									   struct registry_key **key);
 
-_PUBLIC_ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, 
+WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, 
 							 const char *name, struct registry_key **result);
 
-_PUBLIC_ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, 
+WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, 
 				   const struct registry_key *key, uint32_t idx, 
 				   const char **name,
 				   uint32_t *type,
 				   DATA_BLOB *data);
-_PUBLIC_ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
+WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
 								 const struct registry_key *key, 
 								 	const char **class_name,
 									uint32_t *num_subkeys,
 									uint32_t *num_values,
 									NTTIME *last_change_time);
-_PUBLIC_ WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, 
+WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, 
 											const struct registry_key *key, 
 											int idx, 
 											const char **name,
@@ -224,22 +220,22 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx,
 								  const struct registry_key *key, 
 								  const char *name, 
 								  struct registry_key **subkey);
-_PUBLIC_ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, 
+WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, 
 										  const struct registry_key *key, 
 										  const char *name, 
 										  uint32_t *type,
 										  DATA_BLOB *data);
-_PUBLIC_ WERROR reg_key_del(struct registry_key *parent, const char *name);
-_PUBLIC_ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, 
+WERROR reg_key_del(struct registry_key *parent, const char *name);
+WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, 
 								 struct registry_key *parent, const char *name, 
 								 const char *classname, 
 								 struct security_descriptor *desc, 
 								 struct registry_key **newkey);
-_PUBLIC_ WERROR reg_val_set(struct registry_key *key, const char *value, 
+WERROR reg_val_set(struct registry_key *key, const char *value, 
 							uint32_t type, DATA_BLOB data);
-_PUBLIC_ WERROR reg_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key, struct security_descriptor **secdesc);
-_PUBLIC_ WERROR reg_del_value(struct registry_key *key, const char *valname);
-_PUBLIC_ WERROR reg_key_flush(struct registry_key *key);
+WERROR reg_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key, struct security_descriptor **secdesc);
+WERROR reg_del_value(struct registry_key *key, const char *valname);
+WERROR reg_key_flush(struct registry_key *key);
 WERROR reg_create_key (TALLOC_CTX *mem_ctx, 
 						struct registry_key *parent,
 
@@ -252,12 +248,12 @@ WERROR reg_create_key (TALLOC_CTX *mem_ctx,
 
 
 /* Utility functions */
-_PUBLIC_ const char *str_regtype(int type);
-_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, 
+const char *str_regtype(int type);
+char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, 
 								   const DATA_BLOB data);
-_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name,
+char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name,
 								   uint32_t type, const DATA_BLOB data);
-_PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data);
+bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data);
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, const char *name, struct registry_key **result);
 WERROR reg_key_del_abs(struct registry_context *ctx, const char *path);
 WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **result);

@@ -32,7 +32,9 @@ auth/gensec/gensec.h: gensec.h
 gtk/common/gtk-smb.h: gtk-smb.h
 gtk/common/select.h: gtk/select.h
 librpc/ndr/libndr.h: ndr.h
-lib/registry/registry.h: registry.h
+lib/registry/registry.h: registry/registry.h
+lib/registry/hive.h: registry/hive.h
+lib/registry/patchfile.h: registry/patchfile.h
 libcli/util/nterr.h: core/nterr.h
 libcli/util/doserr.h: core/doserr.h
 libcli/util/nt_status.h: core/ntstatus.h
