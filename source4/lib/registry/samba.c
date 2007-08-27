@@ -36,7 +36,12 @@ WERROR mount_samba_hive(struct registry_context *ctx,
 
 	location = talloc_asprintf(ctx, "%s/%s.ldb", lp_private_dir(), name);
 
+
 	error = reg_open_hive(ctx, location, auth_info, creds, &hive);
+
+	if (W_ERROR_EQUAL(error, WERR_NOT_FOUND))
+		error = reg_open_ldb_file(ctx, location, auth_info, creds, &hive);
+
 	if (!W_ERROR_IS_OK(error))
 		return error;
 

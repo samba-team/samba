@@ -252,7 +252,9 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 /**
  * Load diff file
  */
-_PUBLIC_ WERROR reg_diff_load(const char *filename, const struct reg_diff_callbacks *callbacks, void *callback_data)
+_PUBLIC_ WERROR reg_diff_load(const char *filename, 
+							  const struct reg_diff_callbacks *callbacks, 
+							  void *callback_data)
 {
 	int fd;
 	char hdr[4];

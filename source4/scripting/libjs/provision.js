@@ -376,12 +376,6 @@ function provision_default_paths(subobj)
 	var paths = new Object();
 	paths.smbconf = lp.get("config file");
 	paths.shareconf = lp.get("private dir") + "/" + "share.ldb";
-	paths.hklm = "hklm.ldb";
-	paths.hkcu = "hkcu.ldb";
-	paths.hkcr = "hkcr.ldb";
-	paths.hku = "hku.ldb";
-	paths.hkpd = "hkpd.ldb";
-	paths.hkpt = "hkpt.ldb";
 	paths.samdb = lp.get("sam database");
 	paths.secrets = lp.get("secrets database");
 	paths.keytab = "secrets.keytab";
@@ -582,8 +576,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	setup_ldb("secrets_init.ldif", info, paths.secrets);
 	setup_ldb("secrets.ldif", info, paths.secrets, false);
 
-	message("Setting up hklm.ldb\n");
-	setup_ldb("hklm.ldif", info, paths.hklm);
+	message("Setting up the registry\n");
+	var reg = reg_open();
+	reg.apply_patchfile(lp.get("setup directory") + "/provision.reg")
 
 	message("Setting up sam.ldb partitions\n");
 	/* Also wipes the database */
