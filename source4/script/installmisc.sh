@@ -18,6 +18,7 @@ cp setup/schema-map-* $SETUPDIR || exit 1
 cp setup/DB_CONFIG $SETUPDIR || exit 1
 cp setup/*.inf $SETUPDIR || exit 1
 cp setup/*.ldif $SETUPDIR || exit 1
+cp setup/*.reg $SETUPDIR || exit 1
 cp setup/*.zone $SETUPDIR || exit 1
 cp setup/*.conf $SETUPDIR || exit 1
 
