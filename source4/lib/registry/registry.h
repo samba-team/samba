@@ -269,6 +269,12 @@ struct registry_key *reg_import_hive_key(struct registry_context *ctx,
 									     struct hive_key *hive, 
 									     uint32_t predef_key,
 										 const char **elements);
+WERROR reg_get_security(TALLOC_CTX *mem_ctx, 
+								 const struct registry_key *key, 
+								 struct security_descriptor **security);
+
+WERROR reg_set_security(struct registry_key *key, 
+								 struct security_descriptor *security);
 
 
 #endif /* _REGISTRY_H */

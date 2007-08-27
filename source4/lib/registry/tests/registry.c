@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "libcli/security/security.h"
 #include "system/filesys.h"
 
 NTSTATUS torture_temp_dir(struct torture_context *tctx, const char *prefix, 
@@ -366,6 +367,40 @@ static bool test_set_value(struct torture_context *tctx, const void *_data)
 }
 
 /**
+ * Test getting/setting security descriptors
+ */
+static bool test_security(struct torture_context *tctx, const void *_data)
+{
+	const struct registry_context *rctx = _data;
+	struct registry_key *subkey = NULL, *root;
+	WERROR error;
+	uint32_t data = 42;
+	struct security_descriptor *osd, *nsd;
+
+	if (!create_test_key(tctx, rctx, "Düsseldorf", &root, &subkey))
+		return false;
+
+	osd = security_descriptor_create(tctx,
+					NULL, NULL,
+					SID_NT_AUTHENTICATED_USERS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_GENERIC_ALL,
+					SEC_ACE_FLAG_OBJECT_INHERIT,
+					NULL);
+
+	error = reg_set_security(subkey, osd);
+	torture_assert_werr_ok(tctx, error, "setting security");
+
+	error = reg_get_security(tctx, subkey, &nsd);
+	torture_assert_werr_ok (tctx, error, "setting security");
+
+	torture_assert(tctx, security_descriptor_equal(osd, nsd), 
+				   "security descriptor changed!");
+
+	return true;
+}
+
+/**
  * Test getting a value
  */
 static bool test_get_value(struct torture_context *tctx, const void *_data)
@@ -524,6 +559,8 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "query_key_nums", test_query_key_nums);
 	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name", 
 								  test_predef_key_by_name);
+	torture_tcase_add_simple_test(tcase, "security", 
+								  test_security);
 	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name_invalid", 
 								  test_predef_key_by_name_invalid);
 }

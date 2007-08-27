@@ -490,11 +490,7 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 	data.length = r->in.size;
 	result = reg_val_set(key, r->in.name.name, r->in.type, data);
 
-	if (!W_ERROR_IS_OK(result)) { 
-		return result;
-	}
-
-	return WERR_OK;
+	return result;
 }
 
 

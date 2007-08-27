@@ -275,3 +275,28 @@ _PUBLIC_ WERROR reg_key_flush(struct registry_key *key)
 
 	return key->context->ops->flush_key(key);
 }
+
+_PUBLIC_ WERROR reg_get_security(TALLOC_CTX *mem_ctx, 
+								 const struct registry_key *key, 
+								 struct security_descriptor **security)
+{
+	if (key == NULL)
+		return WERR_INVALID_PARAM;
+	
+	if (key->context->ops->get_security == NULL)
+		return WERR_NOT_SUPPORTED;
+
+	return key->context->ops->get_security(mem_ctx, key, security);
+}
+
+_PUBLIC_ WERROR reg_set_security(struct registry_key *key, 
+								 struct security_descriptor *security)
+{
+	if (key == NULL)
+		return WERR_INVALID_PARAM;
+	
+	if (key->context->ops->set_security == NULL)
+		return WERR_NOT_SUPPORTED;
+
+	return key->context->ops->set_security(key, security);
+}
