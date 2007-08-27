@@ -128,7 +128,11 @@ sub end_testsuite($$$$$)
 	my $st = $self->{local_statistics};
 
 	if ($ret == $expected_ret) {
-		print INDEX "  <td class=\"resultOk\">";
+		if ($ret == 0) {
+			print INDEX "  <td class=\"resultExpectedFailure\">";
+		} else {
+			print INDEX "  <td class=\"resultOk\">";
+		}
 	} else {
 		print INDEX "  <td class=\"resultFailure\">";
 	}
@@ -196,7 +200,11 @@ sub end_test($$$$$$)
 			$track_class = "unexpected_$result";
 		}
 	} else {
-		print TEST "<td class=\"outputOk\">\n";
+		if ($result eq "failure") {
+			print TEST "<td class=\"outputExpectedFailure\">\n";
+		} else {
+			print TEST "<td class=\"outputOk\">\n";
+		}
 		$track_class = "expected_$result";
 	}
 
@@ -238,9 +246,11 @@ sub summary($)
 	if ($st->{TESTS_SKIP} > 0) {
 		print INDEX ", $st->{TESTS_SKIP} skipped";
 	}
-	print INDEX ", " . ($st->{TESTS_UNEXPECTED_FAIL} + $st->{TESTS_EXPECTED_FAIL}) . " failures";
-	if ($st->{TESTS_UNEXPECTED_OK} > 0) {
-		print INDEX " ($st->{TESTS_EXPECTED_FAIL} expected)";
+	if (($st->{TESTS_UNEXPECTED_FAIL} + $st->{TESTS_EXPECTED_FAIL}) > 0) {
+		print INDEX ", " . ($st->{TESTS_UNEXPECTED_FAIL} + $st->{TESTS_EXPECTED_FAIL}) . " failures";
+		if ($st->{TESTS_UNEXPECTED_FAIL} > 0) {
+			print INDEX " ($st->{TESTS_EXPECTED_FAIL} expected)";
+		}
 	}
 	if ($st->{TESTS_ERROR} > 0) {
 		print INDEX ", $st->{TESTS_ERROR} errors";
