@@ -1,5 +1,0 @@
-The following things still need to be fixed before this branch 
-can be merged:
-- RPC-WINREG
-- tests for diff functionality
-- test for classname and last_mod_time being kept

@@ -24,7 +24,7 @@
 
 int main(int argc, char **argv) 
 {
-	BOOL ret = True;
+	bool ret = true;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP

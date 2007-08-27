@@ -167,7 +167,7 @@ _PUBLIC_ bool next_token(const char **ptr,char *buff, const char *sep, size_t bu
 	size_t len=1;
 
 	if (!ptr)
-		return(False);
+		return false;
 
 	s = *ptr;
 
@@ -180,11 +180,11 @@ _PUBLIC_ bool next_token(const char **ptr,char *buff, const char *sep, size_t bu
 		s++;
 	
 	/* nothing left? */
-	if (! *s)
-		return(False);
+	if (!*s)
+		return false;
 	
 	/* copy over the token */
-	for (quoted = False; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
+	for (quoted = false; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
@@ -196,7 +196,7 @@ _PUBLIC_ bool next_token(const char **ptr,char *buff, const char *sep, size_t bu
 	*ptr = (*s) ? s+1 : s;  
 	*buff = 0;
 	
-	return(True);
+	return true;
 }
 
 /**
@@ -259,9 +259,9 @@ _PUBLIC_ bool strequal_w(const char *s1, const char *s2)
 _PUBLIC_ bool strcsequal_w(const char *s1,const char *s2)
 {
 	if (s1 == s2)
-		return(True);
+		return true;
 	if (!s1 || !s2)
-		return(False);
+		return false;
 	
 	return strcmp(s1,s2) == 0;
 }
@@ -442,11 +442,11 @@ _PUBLIC_ bool strhaslower(const char *string)
 		t = toupper_w(s);
 
 		if (s != t) {
-			return True; /* that means it has lower case chars */
+			return true; /* that means it has lower case chars */
 		}
 	}
 
-	return False;
+	return false;
 } 
 
 /**
@@ -465,11 +465,11 @@ _PUBLIC_ bool strhasupper(const char *string)
 		t = tolower_w(s);
 
 		if (s != t) {
-			return True; /* that means it has upper case chars */
+			return true; /* that means it has upper case chars */
 		}
 	}
 
-	return False;
+	return false;
 } 
 
 /**
