@@ -234,6 +234,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
  */
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
+	DEBUG(0,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 	kill(state->child, SIGTERM);
 	waitpid(state->child, NULL, 0);
 	return 0;
