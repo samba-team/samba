@@ -2922,9 +2922,10 @@ static char **completion_fn(const char *text, int start, int end)
 		return matches;
 
 cleanup:
-		while (i >= 0) {
-			free(matches[i]);
-			i--;
+		count--;
+		while (count >= 0) {
+			free(matches[count]);
+			count--;
 		}
 		free(matches);
 		return NULL;
