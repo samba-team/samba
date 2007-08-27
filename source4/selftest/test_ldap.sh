@@ -15,7 +15,7 @@ if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
 	plantest "TESTING PROTOCOL $p with options $options" dc ../testprogs/blackbox/test_ldb.sh $p \$SERVER_IP $options
     done
 fi
-for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATENESS
+for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
 do
 	plantest "$t" dc bin/smbtorture $TORTURE_OPTIONS "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_ $t
 done
