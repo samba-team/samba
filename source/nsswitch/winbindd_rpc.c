@@ -61,7 +61,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	loop_count = 0;
 
 	do {
-		TALLOC_CTX *ctx2;
 		uint32 num_dom_users, j;
 		uint32 max_entries, max_size;
 		SAM_DISPINFO_CTR ctr;
@@ -70,9 +69,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		ZERO_STRUCT( ctr );
 		ZERO_STRUCT( info1 );
 		ctr.sam.info1 = &info1;
-	
-		if (!(ctx2 = talloc_init("winbindd enum_users")))
-			return NT_STATUS_NO_MEMORY;
 
 		/* this next bit is copied from net_user_list_internal() */
 
@@ -93,7 +89,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 					     *num_entries);
 
 		if (!(*info)) {
-			talloc_destroy(ctx2);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -121,8 +116,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			sid_compose(&(*info)[i].group_sid, &domain->sid, 
 				    DOMAIN_GROUP_RID_USERS);
 		}
-
-		talloc_destroy(ctx2);
 
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
