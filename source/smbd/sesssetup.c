@@ -574,7 +574,7 @@ static void reply_spnego_kerberos(connection_struct *conn,
 	SAFE_FREE(client);
 
 	reply_outbuf(req, 4, 0);
-	SSVAL(req->outbuf,smb_uid,vuid);
+	SSVAL(req->outbuf,smb_uid,sess_vuid);
 
 	if (sess_vuid == UID_FIELD_INVALID ) {
 		ret = NT_STATUS_LOGON_FAILURE;
@@ -1735,6 +1735,7 @@ void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
 		if (sess_vuid == UID_FIELD_INVALID) {
 			data_blob_free(&nt_resp);
 			data_blob_free(&lm_resp);
+			data_blob_free(&session_key);
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
 			END_PROFILE(SMBsesssetupX);
