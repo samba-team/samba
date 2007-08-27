@@ -211,7 +211,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd, const struct reg_diff_callbacks *ca
 		}
 
 		/* Delete value */
-		if (strcmp(p, "-")) {
+		if (strcmp(p, "-") == 0) {
 			error = callbacks->del_value(callback_data, curkey, line);
 			if (!W_ERROR_IS_OK(error)) {
 				DEBUG(0, ("Error deleting value %s in key %s\n", line, curkey));
