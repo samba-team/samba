@@ -283,7 +283,11 @@ sub summary($)
 			print SUMMARY "<tr>\n";
 			print SUMMARY "  <td><a href=\"" . $$_[0] . "\">$$_[2]</a></td>\n";
 			print SUMMARY "  <td><a href=\"" . $$_[0] . "#$$_[1]\">$$_[1]</a></td>\n";
-			print SUMMARY "  <td>$$_[3]</td>\n";
+			if (defined($$_[3])) {
+				print SUMMARY "  <td>$$_[3]</td>\n";
+			} else {
+				print SUMMARY "  <td></td>\n";
+			}
 			print SUMMARY "</tr>\n";
 		}
 
