@@ -588,7 +588,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	/* it needs to be non blocking for sends */
-	set_blocking(socket_get_fd(msg->sock), False);
+	set_blocking(socket_get_fd(msg->sock), false);
 
 	msg->event.ev   = talloc_reference(msg, ev);
 	msg->event.fde	= event_add_fd(ev, msg, socket_get_fd(msg->sock), 
@@ -676,7 +676,7 @@ static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_me
 	} else {
 		talloc_steal(irpc, m);
 	}
-	irpc->done = True;
+	irpc->done = true;
 	if (irpc->async.fn) {
 		irpc->async.fn(irpc);
 	}
@@ -752,7 +752,7 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 
 	/* make the call */
 	m->private     = i->private;
-	m->defer_reply = False;
+	m->defer_reply = false;
 	m->msg_ctx     = msg_ctx;
 	m->irpc        = i;
 	m->data        = r;
@@ -831,7 +831,7 @@ static void irpc_timeout(struct event_context *ev, struct timed_event *te,
 {
 	struct irpc_request *irpc = talloc_get_type(private, struct irpc_request);
 	irpc->status = NT_STATUS_IO_TIMEOUT;
-	irpc->done = True;
+	irpc->done = true;
 	if (irpc->async.fn) {
 		irpc->async.fn(irpc);
 	}
@@ -861,10 +861,10 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	irpc->callid   = idr_get_new(msg_ctx->idr, irpc, UINT16_MAX);
 	if (irpc->callid == -1) goto failed;
 	irpc->r        = r;
-	irpc->done     = False;
+	irpc->done     = false;
 	irpc->async.fn = NULL;
 	irpc->mem_ctx  = ctx;
-	irpc->reject_free = False;
+	irpc->reject_free = false;
 
 	talloc_set_destructor(irpc, irpc_destructor);
 

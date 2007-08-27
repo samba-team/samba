@@ -227,7 +227,7 @@ static NTSTATUS $name\__op_init_server(struct dcesrv_context *dce_ctx, const str
 	return NT_STATUS_OK;
 }
 
-static BOOL $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const struct GUID *uuid, uint32_t if_version)
+static bool $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const struct GUID *uuid, uint32_t if_version)
 {
 	if (dcesrv_$name\_interface.syntax_id.if_version == if_version &&
 		GUID_equal(\&dcesrv\_$name\_interface.syntax_id.uuid, uuid)) {
@@ -238,7 +238,7 @@ static BOOL $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const s
 	return False;
 }
 
-static BOOL $name\__op_interface_by_name(struct dcesrv_interface *iface, const char *name)
+static bool $name\__op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
 	if (strcmp(dcesrv_$name\_interface.name, name)==0) {
 		memcpy(iface, &dcesrv_$name\_interface, sizeof(*iface));
