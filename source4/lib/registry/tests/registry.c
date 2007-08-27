@@ -87,7 +87,7 @@ static bool test_predef_key_by_name_invalid(struct torture_context *tctx,
 	struct registry_key *root;
 	WERROR error;
 
-	error = reg_get_predefined_key_by_name(tctx, "BLA", &root);
+	error = reg_get_predefined_key_by_name(rctx, "BLA", &root);
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 						   "getting predefined key failed");
 	return true;

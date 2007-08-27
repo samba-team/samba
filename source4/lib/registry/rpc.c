@@ -90,7 +90,7 @@ static struct {
 
 static WERROR rpc_query_key(const struct registry_key *k);
 
-static WERROR rpc_get_predefined_key(struct registry_context *ctx, 
+static WERROR rpc_get_predefined_key(const struct registry_context *ctx, 
 									 uint32_t hkey_type, 
 									 struct registry_key **k)
 {
@@ -336,7 +336,8 @@ static WERROR rpc_del_key(struct registry_key *parent, const char *name)
 static WERROR rpc_get_info(TALLOC_CTX *mem_ctx, const struct registry_key *key,
 						   const char **classname, 
 						   uint32_t *numsubkeys,
-						   uint32_t *numvalue)
+						   uint32_t *numvalue,
+						   NTTIME *last_changed_time)
 {
 	struct rpc_key *mykeydata = talloc_get_type(key, struct rpc_key);
 	WERROR error;
@@ -347,8 +348,14 @@ static WERROR rpc_get_info(TALLOC_CTX *mem_ctx, const struct registry_key *key,
 	}
 			
 	/* FIXME: *classname = talloc_strdup(mem_ctx, mykeydata->classname); */
-	*numvalue = mykeydata->num_values;
-	*numsubkeys = mykeydata->num_subkeys;
+	/* FIXME: *last_changed_time = mykeydata->last_changed_time */
+
+	if (numvalue != NULL)
+		*numvalue = mykeydata->num_values;
+
+	if (numsubkeys != NULL)
+		*numsubkeys = mykeydata->num_subkeys;
+
 	return WERR_OK;
 }
 
@@ -360,6 +367,7 @@ static struct registry_operations reg_backend_rpc = {
 	.create_key = rpc_add_key,
 	.delete_key = rpc_del_key,
 	.get_key_info = rpc_get_info,
+	.get_predefined_key = rpc_get_predefined_key,
 };
 
 _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, 
@@ -394,6 +402,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 	}
 
 	*ctx = (struct registry_context *)rctx;
+	(*ctx)->ops = &reg_backend_rpc;
 
 	return WERR_OK;
 }

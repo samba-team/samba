@@ -45,9 +45,7 @@ static bool test_diff_load(struct torture_context *test)
 
 static bool test_diff_apply(struct torture_context *test)
 {
-	/*
-_PUBLIC_ WERROR reg_diff_apply (const char *filename, struct registry_context *ctx)
-	*/
+	/* _PUBLIC_ WERROR reg_diff_apply (const char *filename, struct registry_context *ctx) */
 
 	return true;
 }
