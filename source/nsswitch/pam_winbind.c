@@ -1614,6 +1614,89 @@ int get_warn_pwd_expire_from_config(const pam_handle_t *pamh,
 	return ret;
 }
 
+/**
+ * Retrieve the winbind separator.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ *
+ * @return string separator character. NULL on failure.
+ */
+
+static char winbind_get_separator(pam_handle_t *pamh, int ctrl)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (pam_winbind_request_log(pamh, ctrl, WINBINDD_INFO, &request, &response, NULL)) {
+		return '\0';
+	}
+
+	return response.data.info.winbind_separator;
+}
+
+/**
+ * Convert a upn to a name.
+ *
+ * @param pamh PAM handle
+ * @param ctrl PAM winbind options.
+ * @param upn  USer UPN to be trabslated.
+ *
+ * @return converted name. NULL pointer on failure. Caller needs to free.
+ */
+
+static char* winbind_upn_to_username(pam_handle_t *pamh, int ctrl, const char *upn)
+{
+	struct winbindd_request req;
+	struct winbindd_response resp;
+	int retval;	
+	char *account_name;	
+	int account_name_len;
+	char sep;	
+
+	/* This cannot work when the winbind separator = @ */
+
+	sep = winbind_get_separator(pamh, ctrl);
+	if (!sep || sep == '@') {
+		return NULL;
+	}
+	
+	/* Convert the UPN to a SID */
+
+	ZERO_STRUCT(req);
+	ZERO_STRUCT(resp);
+
+	strncpy(req.data.name.dom_name, "",
+		sizeof(req.data.name.dom_name) - 1);
+	strncpy(req.data.name.name, upn,
+		sizeof(req.data.name.name) - 1);
+	retval = pam_winbind_request_log(pamh, ctrl, WINBINDD_LOOKUPNAME, 
+					 &req, &resp, upn);
+	if ( retval != PAM_SUCCESS ) {		
+		return NULL;
+	}
+	
+	/* Convert the the SID back to the sAMAccountName */
+	
+	ZERO_STRUCT(req);
+	strncpy(req.data.sid, resp.data.sid.sid, sizeof(req.data.sid)-1);
+	ZERO_STRUCT(resp);
+	retval =  pam_winbind_request_log(pamh, ctrl, WINBINDD_LOOKUPSID, 
+					  &req, &resp, upn);
+	if ( retval != PAM_SUCCESS ) {		
+		return NULL;
+	}
+	
+	account_name_len = asprintf(&account_name, "%s\\%s", 
+				    resp.data.name.dom_name,
+				    resp.data.name.name);
+
+	return account_name;
+}
+
 PAM_EXTERN
 int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 			int argc, const char **argv)
@@ -1646,6 +1729,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		goto out;
 	}
 
+
 #if defined(AIX)
 	/* Decode the user name since AIX does not support logn user
 	   names by default.  The name is encoded as _#uid.  */
@@ -1669,6 +1753,19 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 			goto out;
 		}
 	}	
+
+	/* Maybe this was a UPN */
+
+	if (strchr(real_username, '@') != NULL) {
+		char *samaccountname = NULL;
+		
+		samaccountname = winbind_upn_to_username(pamh, ctrl, 
+							 real_username);
+		if (samaccountname) {
+			free(real_username);
+			real_username = samaccountname;
+		}
+	}
 
 	retval = _winbind_read_password(pamh, ctrl, NULL, 
 					"Password: ", NULL,
@@ -1697,8 +1794,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 							  ctrl, d);
 
 	/* Now use the username to look up password */
-	retval = winbind_auth_request(pamh, ctrl, username, password, member,
-				      cctype, warn_pwd_expire, NULL, NULL,
+	retval = winbind_auth_request(pamh, ctrl, real_username, password, member,
+				      cctype, warn_pwd_expire, NULL, NULL, 
 				      &username_ret);
 
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
