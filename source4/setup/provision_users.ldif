@@ -347,3 +347,240 @@ groupType: 2147483653
 isCriticalSystemObject: TRUE
 privilege: SeInteractiveLogonRight
 
+dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Pre-Windows 2000 Compatible Access
+description: A backward compatibility group which allows read access on all users and groups in the domain
+objectSid: S-1-5-32-554
+sAMAccountName: Pre-Windows 2000 Compatible Access
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
+isCriticalSystemObject: TRUE
+privilege: SeRemoteInteractiveLogonRight
+privilege: SeChangeNotifyPrivilege
+
+dn: CN=Incoming Forest Trust Builders,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Incoming Forest Trust Builders
+description: Members of this group can create incoming, one-way trusts to this forest
+objectSid: S-1-5-32-557
+sAMAccountName: Incoming Forest Trust Builders
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
+isCriticalSystemObject: TRUE
+
+dn: CN=Windows Authorization Access Group,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Windows Authorization Access Group
+description: Members of this group have access to the computed tokenGroupsGlobalAndUniversal attribute on User objects
+objectSid: S-1-5-32-560
+sAMAccountName: Windows Authorization Access Group
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
+isCriticalSystemObject: TRUE
+
+dn: CN=Terminal Server License Servers,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Terminal Server License Servers
+description: Terminal Server License Servers
+objectSid: S-1-5-32-561
+sAMAccountName: Terminal Server License Servers
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
+isCriticalSystemObject: TRUE
+
+dn: CN=Distributed COM Users,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+cn: Distributed COM Users
+description: Members are allowed to launch, activate and use Distributed COM objects on this machine.
+objectSid: S-1-5-32-562
+sAMAccountName: Distributed COM Users
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
+isCriticalSystemObject: TRUE
+
+dn: CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: container
+cn: WellKnown Security Principals
+systemFlags: 2147483648
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Anonymous Logon,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Anonymous Logon
+objectSid: S-1-5-7
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Authenticated Users,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Authenticated Users
+objectSid: S-1-5-11
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Batch,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Batch
+objectSid: S-1-5-3
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Creator Group,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Creator Group
+objectSid: S-1-3-1
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Creator Owner,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Creator Owner
+objectSid: S-1-3-0
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Dialup,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Dialup
+objectSid: S-1-5-1
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Digest Authentication,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Digest Authentication
+objectSid: S-1-5-64-21
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Enterprise Domain Controllers,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Enterprise Domain Controllers
+objectSid: S-1-5-9
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Everyone,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Everyone
+objectSid: S-1-1-0
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Interactive,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Interactive
+objectSid: S-1-5-4
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Local Service,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Local Service
+objectSid: S-1-5-19
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Network,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Network
+objectSid: S-1-5-2
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Network Service,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Network Service
+objectSid: S-1-5-20
+showInAdvancedViewOnly: TRUE
+
+dn: CN=NTLM Authentication,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: NTLM Authentication
+objectSid: S-1-5-64-10
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Other Organization,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Other Organization
+objectSid: S-1-5-1000
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Proxy,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Proxy
+objectSid: S-1-5-8
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Remote Interactive Logon,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Remote Interactive Logon
+objectSid: S-1-5-14
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Restricted,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Restricted
+objectSid: S-1-5-12
+showInAdvancedViewOnly: TRUE
+
+dn: CN=SChannel Authentication,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: SChannel Authentication
+objectSid: S-1-5-64-14
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Self,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Self
+objectSid: S-1-5-10
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Service,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Service
+objectSid: S-1-5-6
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Terminal Server User,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Terminal Server User
+objectSid: S-1-5-13
+showInAdvancedViewOnly: TRUE
+
+dn: CN=This Organization,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: This Organization
+objectSid: S-1-5-15
+showInAdvancedViewOnly: TRUE
+
+dn: CN=Well-Known-Security-Id-System,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: Well-Known-Security-Id-System
+objectSid: S-1-5-18
+showInAdvancedViewOnly: TRUE
+

@@ -576,7 +576,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	/* build the new msg */
 	msg2 = ldb_msg_copy(mem_ctx, msg);
 	if (!msg2) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincpal_object: ldb_msg_copy failed!\n");
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: ldb_msg_copy failed!\n");
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -601,47 +601,50 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	/* Slightly different for the foreign sids.  We don't want
-	 * domain SIDs ending up there, it would cause all sorts of
-	 * pain */
-
-	sid = dom_sid_parse_talloc(msg2, (const char *)ldb_dn_get_rdn_val(msg2->dn)->data);
+	sid = samdb_result_dom_sid(msg2, msg, "objectSid");
 	if (!sid) {
-		ldb_set_errstring(module->ldb, "No valid found SID in ForeignSecurityPrincipal CN!");
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
+		/* Slightly different for the foreign sids.  We don't want
+		 * domain SIDs ending up there, it would cause all sorts of
+		 * pain */
 
-	if ( ! samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
-		talloc_free(sid);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+		sid = dom_sid_parse_talloc(msg2, (const char *)ldb_dn_get_rdn_val(msg2->dn)->data);
+		if (!sid) {
+			ldb_set_errstring(module->ldb, "No valid found SID in ForeignSecurityPrincipal CN!");
+			talloc_free(mem_ctx);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 
-	dom_sid = dom_sid_dup(mem_ctx, sid);
-	if (!dom_sid) {
-		talloc_free(mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	/* get the domain component part of the provided SID */
-	dom_sid->num_auths--;
+		if ( ! samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
+			talloc_free(sid);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
-	/* find the domain DN */
+		dom_sid = dom_sid_dup(mem_ctx, sid);
+		if (!dom_sid) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		/* get the domain component part of the provided SID */
+		dom_sid->num_auths--;
 
-	ret = gendb_search(module->ldb,
-			   mem_ctx, NULL, &dom_msgs, dom_attrs,
-			   "(&(objectSid=%s)(objectclass=domain))",
-			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
-	if (ret >= 1) {
-		/* We don't really like the idea of foreign sids that are not foreign, but it happens */
-		const char *name = samdb_result_string(dom_msgs[0], "name", NULL);
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "NOTE (strange but valid): Adding foreign SID record with SID %s, but this domian (%s) is already in the database", 
-			  dom_sid_string(mem_ctx, sid), name); 
-	} else if (ret == -1) {
-		ldb_asprintf_errstring(module->ldb,
-					"samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", 
-					dom_sid_string(mem_ctx, dom_sid));
-		talloc_free(dom_msgs);
-		return LDB_ERR_OPERATIONS_ERROR;
+		/* find the domain DN */
+
+		ret = gendb_search(module->ldb,
+				   mem_ctx, NULL, &dom_msgs, dom_attrs,
+				   "(&(objectSid=%s)(objectclass=domain))",
+				   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
+		if (ret >= 1) {
+			/* We don't really like the idea of foreign sids that are not foreign, but it happens */
+			const char *name = samdb_result_string(dom_msgs[0], "name", NULL);
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "NOTE (strange but valid): Adding foreign SID record with SID %s, but this domian (%s) is already in the database", 
+				  dom_sid_string(mem_ctx, sid), name); 
+		} else if (ret == -1) {
+			ldb_asprintf_errstring(module->ldb,
+						"samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", 
+						dom_sid_string(mem_ctx, dom_sid));
+			talloc_free(dom_msgs);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	/* This isn't an operation on a domain we know about, so just
