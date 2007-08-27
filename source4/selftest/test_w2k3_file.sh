@@ -40,10 +40,5 @@ fail="RAW-SEARCH RAW-ACLS RAW-QFSINFO"
 echo "Skipping tests expected to fail: $fail"
 
 for t in $tests; do
-    if [ ! -z "$start" -a "$start" != $t ]; then
-	continue;
-    fi
-    start=""
-    name="$t"
-    testit "$name" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+    testit "$t" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
 done

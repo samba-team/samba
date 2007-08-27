@@ -14,9 +14,5 @@ base=`bin/smbtorture --list | grep "^BASE-" | xargs`
 tests="$base $raw $smb2"
 
 for t in $tests; do
-    if [ ! -z "$start" -a "$start" != $t ]; then
-	continue;
-    fi
-    start=""
     plantest "$t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
 done

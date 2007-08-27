@@ -10,12 +10,8 @@ incdir=`dirname $0`
 
 raw=`bin/smbtorture --list | grep "^RAW-" | xargs`
 base=`bin/smbtorture --list | grep "^BASE-" | xargs`
-tests="$base $raw $smb2"
+tests="$base $raw"
 
 for t in $tests; do
-    if [ ! -z "$start" -a "$start" != $t ]; then
-	continue;
-    fi
-    start=""
     plantest "ntvfs/cifs $t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done

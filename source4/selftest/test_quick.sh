@@ -14,8 +14,7 @@ tests="$tests RAW-UNLINK RAW-READ RAW-CLOSE RAW-IOCTL RAW-RENAME"
 tests="$tests RAW-EAS RAW-STREAMS"
 
 for t in $tests; do
-    name="$t"
-    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "$t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 name=BASE-OPEN
