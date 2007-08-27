@@ -9,11 +9,19 @@ REGEDIT4
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control]
 
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\ProductOptions]
-ProductType="LanmanNT"
+ProductType=LanmanNT
 
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Print]
 
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server]
+
+[HKEY_LOCAL_MACHINE\System]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services]
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Netlogon]
 
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Netlogon\Parameters]
 RefusePasswordChange=REG_DWORD:0
