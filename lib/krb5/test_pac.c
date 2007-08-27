@@ -102,7 +102,7 @@ main(int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_context context;
-    struct krb5_pac *pac;
+    krb5_pac pac;
     krb5_data data;
     krb5_principal p;
 
@@ -144,7 +144,7 @@ main(int argc, char **argv)
     {
 	uint32_t *list;
 	size_t len, i;
-	struct krb5_pac *pac2;
+	krb5_pac pac2;
 
 	ret = krb5_pac_init(context, &pac2);
 	if (ret)

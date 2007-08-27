@@ -512,13 +512,13 @@ krb5_verify_ap_req2(krb5_context context,
  *
  */
 
-struct krb5_rd_req_in_ctx {
+struct krb5_rd_req_in_ctx_data {
     krb5_keytab keytab;
     krb5_keyblock *keyblock;
     krb5_boolean no_pac_check;
 };
 
-struct krb5_rd_req_out_ctx {
+struct krb5_rd_req_out_ctx_data {
     krb5_keyblock *keyblock;
     krb5_flags ap_req_options;
     krb5_ticket *ticket;
@@ -826,14 +826,15 @@ krb5_rd_req_ctx(krb5_context context,
 	    goto out;
     }
 
-    ret = krb5_verify_ap_req(context,
-			     auth_context,
-			     &ap_req,
-			     server,
-			     o->keyblock,
-			     0,
-			     &o->ap_req_options,
-			     &o->ticket);
+    ret = krb5_verify_ap_req2(context,
+			      auth_context,
+			      &ap_req,
+			      server,
+			      o->keyblock,
+			      0,
+			      &o->ap_req_options,
+			      &o->ticket,
+			      KRB5_KU_AP_REQ_AUTH);
 
     if (ret)
 	goto out;

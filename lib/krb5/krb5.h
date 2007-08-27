@@ -80,10 +80,11 @@ typedef struct krb5_digest_data *krb5_digest;
 struct krb5_ntlm_data;
 typedef struct krb5_ntlm_data *krb5_ntlm;
 
-typedef struct krb5_pac *krb5_pac;
+struct krb5_pac_data;
+typedef struct krb5_pac_data *krb5_pac;
 
-typedef struct krb5_rd_req_in_ctx *krb5_rd_req_in_ctx;
-typedef struct krb5_rd_req_out_ctx *krb5_rd_req_out_ctx;
+typedef struct krb5_rd_req_in_ctx_data *krb5_rd_req_in_ctx;
+typedef struct krb5_rd_req_out_ctx_data *krb5_rd_req_out_ctx;
 
 typedef CKSUMTYPE krb5_cksumtype;
 
@@ -753,7 +754,7 @@ enum {
     KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4
 };
 
-typedef struct krb5_sendto_ctx *krb5_sendto_ctx;
+typedef struct krb5_sendto_ctx_data *krb5_sendto_ctx;
 
 #define KRB5_SENDTO_DONE	0
 #define KRB5_SENDTO_RESTART	1

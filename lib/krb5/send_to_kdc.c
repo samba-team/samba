@@ -448,7 +448,7 @@ krb5_set_send_to_kdc_func(krb5_context context,
     return 0;
 }
 
-struct krb5_sendto_ctx {
+struct krb5_sendto_ctx_data {
     int flags;
     int type;
     krb5_sendto_ctx_func func;

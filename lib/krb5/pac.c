@@ -48,7 +48,7 @@ struct PACTYPE {
     struct PAC_INFO_BUFFER buffers[1];
 };
 
-struct krb5_pac {
+struct krb5_pac_data {
     struct PACTYPE *pac;
     krb5_data data;
     struct PAC_INFO_BUFFER *server_checksum;
@@ -82,10 +82,10 @@ static const char zeros[PAC_ALIGNMENT] = { 0 };
 
 krb5_error_code
 krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
-	       struct krb5_pac **pac)
+	       krb5_pac *pac)
 {
     krb5_error_code ret;
-    struct krb5_pac *p;
+    krb5_pac p;
     krb5_storage *sp = NULL;
     uint32_t i, tmp, tmp2, header_end;
 
@@ -216,10 +216,10 @@ out:
 }
 
 krb5_error_code
-krb5_pac_init(krb5_context context, struct krb5_pac **pac)
+krb5_pac_init(krb5_context context, krb5_pac *pac)
 {
     krb5_error_code ret;
-    struct krb5_pac *p;
+    krb5_pac p;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
@@ -248,7 +248,7 @@ krb5_pac_init(krb5_context context, struct krb5_pac **pac)
 }
 
 krb5_error_code
-krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
+krb5_pac_add_buffer(krb5_context context, krb5_pac p,
 		    uint32_t type, const krb5_data *data)
 {
     krb5_error_code ret;
@@ -316,7 +316,7 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 }
 
 krb5_error_code
-krb5_pac_get_buffer(krb5_context context, struct krb5_pac *p,
+krb5_pac_get_buffer(krb5_context context, krb5_pac p,
 		    uint32_t type, krb5_data *data)
 {
     krb5_error_code ret;
@@ -361,7 +361,7 @@ krb5_pac_get_buffer(krb5_context context, struct krb5_pac *p,
 
 krb5_error_code
 krb5_pac_get_types(krb5_context context,
-		   struct krb5_pac *p,
+		   krb5_pac p,
 		   size_t *len,
 		   uint32_t **types)
 {
@@ -385,7 +385,7 @@ krb5_pac_get_types(krb5_context context,
  */
 
 void
-krb5_pac_free(krb5_context context, struct krb5_pac *pac)
+krb5_pac_free(krb5_context context, krb5_pac pac)
 {
     krb5_data_free(&pac->data);
     free(pac->pac);
@@ -703,7 +703,7 @@ out:
 
 krb5_error_code
 krb5_pac_verify(krb5_context context, 
-		const struct krb5_pac *pac,
+		const krb5_pac pac,
 		time_t authtime,
 		krb5_const_principal principal,
 		const krb5_keyblock *server,
@@ -840,7 +840,7 @@ pac_checksum(krb5_context context,
 
 krb5_error_code
 _krb5_pac_sign(krb5_context context,
-	       struct krb5_pac *p,
+	       krb5_pac p,
 	       time_t authtime,
 	       krb5_principal principal,
 	       const krb5_keyblock *server_key,
