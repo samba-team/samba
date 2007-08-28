@@ -72,7 +72,6 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 BOOL torture_domainopen(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct libnet_context *net_ctx;
 	struct event_context *evt_ctx;
 	TALLOC_CTX *mem_ctx;
@@ -81,7 +80,6 @@ BOOL torture_domainopen(struct torture_context *torture)
 	struct lsa_String name;
 
 	mem_ctx = talloc_init("test_domain_open");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	evt_ctx = event_context_find(torture);
 	net_ctx = libnet_context_init(evt_ctx);

@@ -233,14 +233,12 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 BOOL torture_createuser(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_CreateUser req;
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_createuser");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
@@ -277,7 +275,6 @@ done:
 BOOL torture_deleteuser(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *prep_mem_ctx, *mem_ctx;
 	struct policy_handle h;
@@ -288,7 +285,6 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	BOOL ret = True;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
@@ -464,7 +460,6 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 BOOL torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct dcerpc_binding *bind;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *prep_mem_ctx, *mem_ctx;
@@ -478,7 +473,6 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	BOOL ret = True;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
@@ -506,7 +500,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_modifyuser");
 
-	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
+	status = torture_rpc_binding(mem_ctx, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
 		goto done;
@@ -608,7 +602,6 @@ done:
 BOOL torture_userinfo_api(struct torture_context *torture)
 {
 	const char *name = TEST_USERNAME;
-	const char *binding;
 	BOOL ret = True;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL, *prep_mem_ctx;
@@ -619,7 +612,6 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	struct libnet_UserInfo req;
 
 	prep_mem_ctx = talloc_init("prepare torture user info");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
@@ -678,7 +670,6 @@ done:
 
 BOOL torture_userlist(struct torture_context *torture)
 {
-	const char *binding;
 	BOOL ret = True;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -686,8 +677,6 @@ BOOL torture_userlist(struct torture_context *torture)
 	struct lsa_String domain_name;
 	struct libnet_UserList req;
 	int i;
-
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;

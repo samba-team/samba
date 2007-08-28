@@ -45,16 +45,14 @@ BOOL torture_multi_bind(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding *binding;
-	const char *binding_string = torture_setting_string(torture, "binding", NULL);
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	BOOL ret;
 
 	mem_ctx = talloc_init("torture_multi_bind");
 
-	status = dcerpc_parse_binding(mem_ctx, binding_string, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to parse dcerpc binding '%s'\n", binding_string);
 		talloc_free(mem_ctx);
 		return False;
 	}

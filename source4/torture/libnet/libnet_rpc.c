@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/rpc/dcerpc.h"
+#include "torture/rpc/rpc.h"
 #include "torture/torture.h"
 
 
@@ -136,12 +137,9 @@ BOOL torture_rpc_connect_srv(struct torture_context *torture)
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_SERVER;
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
-	const char *bindstr;;
 
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -154,13 +152,10 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_PDC;
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
-	const char *bindstr;
 	const char *domain_name;
 	
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -177,13 +172,10 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_DC;
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
-	const char *bindstr;
 	const char *domain_name;
 	
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -200,13 +192,10 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_DC_INFO;
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
-	const char *bindstr;
 	const char *domain_name;
 	
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -225,12 +214,12 @@ BOOL torture_rpc_connect_binding(struct torture_context *torture)
 	struct dcerpc_binding *binding;
 	const char *bindstr;
 	
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
 		return False;
 	}
+
+	bindstr = dcerpc_binding_string(torture, binding);
 
 	return torture_rpc_connect(torture, level, bindstr, NULL);
 }

@@ -100,21 +100,13 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
 	const struct ndr_interface_list *l;
-	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct dcerpc_binding *b;
 
 	mem_ctx = talloc_init("torture_rpc_scanner");
 
-	if (!binding) {
-		talloc_free(mem_ctx);
-		printf("You must supply a ncacn binding string\n");
-		return False;
-	}
-	
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		printf("Failed to parse binding '%s'\n", binding);
 		return False;
 	}
 

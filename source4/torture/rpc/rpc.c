@@ -33,25 +33,45 @@ struct torture_rpc_tcase {
 	struct dcerpc_pipe *pipe;
 };
 
+NTSTATUS torture_rpc_binding(struct torture_context *tctx,
+							 struct dcerpc_binding **binding)
+{
+	NTSTATUS status;
+	const char *binding_string = torture_setting_string(tctx, "binding", NULL);
+
+	if (binding_string == NULL) {
+		torture_comment(tctx, "You must specify a ncacn binding string\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcerpc_parse_binding(tctx, binding_string, binding);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding_string));
+		return status;
+	}
+
+	return NT_STATUS_OK;	
+}
+
 /* open a rpc connection to the chosen binding string */
 _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 				struct dcerpc_pipe **p, 
 				const struct ndr_interface_table *table)
 {
 	NTSTATUS status;
-	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct dcerpc_binding *binding;
 
-	if (!binding) {
-		printf("You must specify a ncacn binding string\n");
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	status = torture_rpc_binding(tctx, &binding);
+	if (NT_STATUS_IS_ERR(status))
+		return status;
 
-	status = dcerpc_pipe_connect(tctx, 
+	status = dcerpc_pipe_connect_b(tctx, 
 				     p, binding, table,
 				     cmdline_credentials, NULL);
  
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect to remote server: %s %s\n", binding, nt_errstr(status));
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("Failed to connect to remote server: %s %s\n", 
+			   dcerpc_binding_string(tctx, binding), nt_errstr(status));
 	}
 
 	return status;
@@ -64,28 +84,18 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
 					  enum dcerpc_transport_t transport,
 					  uint32_t assoc_group_id)
 {
-        NTSTATUS status;
-	const char *binding = torture_setting_string(tctx, "binding", NULL);
-	struct dcerpc_binding *b;
+    NTSTATUS status;
+	struct dcerpc_binding *binding;
 	TALLOC_CTX *mem_ctx = talloc_named(tctx, 0, "torture_rpc_connection_smb");
 
-	if (!binding) {
-		printf("You must specify a ncacn binding string\n");
-		talloc_free(mem_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
-		talloc_free(mem_ctx);
+	status = torture_rpc_binding(tctx, &binding);
+	if (NT_STATUS_IS_ERR(status))
 		return status;
-	}
 
-	b->transport = transport;
-	b->assoc_group_id = assoc_group_id;
+	binding->transport = transport;
+	binding->assoc_group_id = assoc_group_id;
 
-	status = dcerpc_pipe_connect_b(mem_ctx, p, b, table,
+	status = dcerpc_pipe_connect_b(mem_ctx, p, binding, table,
 				       cmdline_credentials, NULL);
 					   
 	if (NT_STATUS_IS_OK(status)) {
@@ -102,13 +112,17 @@ static bool torture_rpc_setup_anonymous(struct torture_context *tctx,
 {
 	struct cli_credentials *anon_credentials;
 	NTSTATUS status;
-	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct dcerpc_binding *binding;
 	struct torture_rpc_tcase *tcase = talloc_get_type(
 						tctx->active_tcase, struct torture_rpc_tcase);
 
+	status = torture_rpc_binding(tctx, &binding);
+	if (NT_STATUS_IS_ERR(status))
+		return false;
+
 	anon_credentials = cli_credentials_init_anon(tctx);
 
-	status = dcerpc_pipe_connect(tctx, 
+	status = dcerpc_pipe_connect_b(tctx, 
 				(struct dcerpc_pipe **)data, 
 				binding,
 				tcase->table,
@@ -254,7 +268,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_unixinfo());
 	torture_suite_add_suite(suite, torture_rpc_eventlog());
 	torture_suite_add_suite(suite, torture_rpc_atsvc());
-	torture_suite_add_suite(suite, torture_rpc_wkssvc());
+	torture_suite_add_suite(suite, torture_rpc_wkssvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_handles(suite));
 	torture_suite_add_suite(suite, torture_rpc_winreg(suite));
 	torture_suite_add_simple_test(suite, "SPOOLSS", torture_rpc_spoolss);

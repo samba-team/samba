@@ -1409,7 +1409,6 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	struct test_join *user_ctx;
 	const char *machine_password;
 	const char *wksta_machine_password;
-	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct dcerpc_binding *b;
 	struct dcerpc_binding *b_netlogon_wksta;
 	struct samr_Connect c;
@@ -1536,9 +1535,8 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 		goto failed;
 	}
 
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad binding string %s\n", binding);
 		ret = False;
 		goto failed;
 	}
@@ -1574,9 +1572,8 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 
 
 
-	status = dcerpc_parse_binding(mem_ctx, binding, &b_netlogon_wksta);
+	status = torture_rpc_binding(torture, &b_netlogon_wksta);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad binding string %s\n", binding);
 		ret = False;
 		goto failed;
 	}

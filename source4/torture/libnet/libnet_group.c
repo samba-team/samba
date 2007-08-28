@@ -204,7 +204,6 @@ static BOOL test_samr_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 BOOL torture_groupinfo_api(struct torture_context *torture)
 {
 	const char *name = TEST_GROUPNAME;
-	const char *binding;
 	BOOL ret = True;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL, *prep_mem_ctx;
@@ -215,7 +214,6 @@ BOOL torture_groupinfo_api(struct torture_context *torture)
 	struct libnet_GroupInfo req;
 
 	prep_mem_ctx = talloc_init("prepare torture group info");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;

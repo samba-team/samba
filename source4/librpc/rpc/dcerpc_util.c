@@ -301,7 +301,7 @@ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out)
 {
 	struct dcerpc_binding *b;
-	char *options, *type;
+	char *options;
 	char *p;
 	int i, j, comma_count;
 
@@ -334,7 +334,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	if (p == NULL) {
 		b->transport = NCA_UNKNOWN;
 	} else {
-		type = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+		char *type = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
 		if (!type) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -350,6 +350,8 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 			DEBUG(0,("Unknown dcerpc transport '%s'\n", type));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+
+		talloc_free(type);
 	
 		s = p+1;
 	}

@@ -1484,7 +1484,6 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	char *user_password, *user_password_wrong_wks, *user_password_wrong_time;
 	const char *old_user_password;
 	char *test_machine_account;
-	const char *binding = torture_setting_string(torture, "binding", NULL);
 	const char *userdomain;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
@@ -1582,9 +1581,8 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 		goto failed;
 	}
 
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Bad binding string %s\n", binding);
 		ret = False;
 		goto failed;
 	}
