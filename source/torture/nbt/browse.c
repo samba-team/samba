@@ -27,7 +27,7 @@
 /*
   test nbt dgram operations
 */
-BOOL torture_nbt_browse(struct torture_context *torture)
+bool torture_nbt_browse(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

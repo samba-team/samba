@@ -320,6 +320,12 @@ int torture_setting_int(struct torture_context *test, const char *name,
 	return lp_parm_int(-1, "torture", name, default_value);
 }
 
+double torture_setting_double(struct torture_context *test, const char *name, 
+							double default_value)
+{
+	return lp_parm_double(-1, "torture", name, default_value);
+}
+
 bool torture_setting_bool(struct torture_context *test, const char *name, 
 							bool default_value)
 {

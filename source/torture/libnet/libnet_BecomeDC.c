@@ -763,7 +763,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	b.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
 	b.in.domain_netbios_name	= torture_join_dom_netbios_name(s->tj);
 	b.in.domain_sid			= torture_join_sid(s->tj);
-	b.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
+	b.in.source_dsa_address		= torture_setting_string(torture, "host", NULL);
 	b.in.dest_dsa_netbios_name	= s->netbios_name;
 
 	b.in.callbacks.private_data	= s;
@@ -843,7 +843,7 @@ cleanup:
 	ZERO_STRUCT(u);
 	u.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
 	u.in.domain_netbios_name	= torture_join_dom_netbios_name(s->tj);
-	u.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
+	u.in.source_dsa_address		= torture_setting_string(torture, "host", NULL);
 	u.in.dest_dsa_netbios_name	= s->netbios_name;
 
 	status = libnet_UnbecomeDC(s->ctx, s, &u);

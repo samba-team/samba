@@ -14,7 +14,7 @@ BOOL torture_rpc_join(struct torture_context *torture)
 	struct test_join *tj;
 	struct cli_credentials *machine_account;
 	struct smbcli_state *cli;
-	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *host = torture_setting_string(torture, "host", NULL);
 
 	/* Join domain as a member server. */
 	tj = torture_join_domain(TORTURE_NETBIOS_NAME,

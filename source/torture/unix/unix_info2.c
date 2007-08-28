@@ -46,15 +46,15 @@ struct unix_info2 {
 	uint32_t flags_mask;
 };
 
-static struct smbcli_state *connect_to_server(void *mem_ctx)
+static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 {
 	NTSTATUS status;
 	struct smbcli_state *cli;
 
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *share = lp_parm_string(-1, "torture", "share");
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
 
-	status = smbcli_full_connection(mem_ctx, &cli,
+	status = smbcli_full_connection(tctx, &cli,
 					host, share, NULL,
 					cmdline_credentials, NULL);
 
@@ -399,7 +399,7 @@ BOOL unix_torture_unix_info2(struct torture_context *torture)
 	mem_ctx = talloc_init("smb_query_unix_info2");
 	torture_assert(torture, mem_ctx != NULL, "out of memory");
 
-	if (!(cli = connect_to_server(mem_ctx))) {
+	if (!(cli = connect_to_server(torture))) {
 		talloc_free(mem_ctx);
 		return False;
 	}

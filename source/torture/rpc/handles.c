@@ -116,7 +116,7 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 
 	torture_comment(torture, "RPC-HANDLE-LSARPC-SHARED\n");
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+	if (torture_setting_bool(torture, "samba4", false)) {
 		torture_comment(torture, "LSA shared-policy-handle test against Samba4 - skipping\n");
 		return true;
 	}
@@ -399,7 +399,7 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 
 	torture_comment(torture, "RPC-HANDLE-MIXED-SHARED\n");
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+	if (torture_setting_bool(torture, "samba4", false)) {
 		torture_comment(torture, "Mixed shared-policy-handle test against Samba4 - skipping\n");
 		return true;
 	}
