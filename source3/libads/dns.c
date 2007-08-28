@@ -740,21 +740,23 @@ BOOL stored_sitename_changed(const char *realm, const char *sitename)
  Query with optional sitename.
 ********************************************************************/
 
-NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
-				const char *servicename,
-				const char *realm,
-				const char *sitename,
-				struct dns_rr_srv **dclist,
-				int *numdcs )
+static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
+				       const char *servicename,
+				       const char *dc_pdc_gc_domains,
+				       const char *realm,
+				       const char *sitename,
+				       struct dns_rr_srv **dclist,
+				       int *numdcs )
 {
 	char *name;
 	if (sitename) {
-		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.dc._msdcs.%s",
-				servicename, sitename, realm );
-	} else {
-		name = talloc_asprintf(ctx, "%s._tcp.dc._msdcs.%s",
-				servicename, realm );
-	}
+		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.%s._msdcs.%s",
+				       servicename, sitename,
+				       dc_pdc_gc_domains, realm);
+  	} else {
+		name = talloc_asprintf(ctx, "%s._tcp.%s._msdcs.%s",
+				servicename, dc_pdc_gc_domains, realm);
+  	}
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -766,14 +768,14 @@ NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
-			const char *realm,
-			const char *sitename,
-			struct dns_rr_srv **dclist,
-			int *numdcs )
+			   const char *realm,
+			   const char *sitename,
+			   struct dns_rr_srv **dclist,
+			   int *numdcs )
 {
 	NTSTATUS status;
 
-	status = ads_dns_query_internal(ctx, "_ldap", realm, sitename,
+	status = ads_dns_query_internal(ctx, "_ldap", "dc", realm, sitename,
 					dclist, numdcs);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
@@ -781,10 +783,42 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	if (sitename && !NT_STATUS_IS_OK(status)) {
+	if (sitename &&
+	    ((!NT_STATUS_IS_OK(status)) ||
+	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
 		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx, "_ldap", realm, NULL,
-						dclist, numdcs);
+		status = ads_dns_query_internal(ctx, "_ldap", "dc", realm,
+						NULL, dclist, numdcs);
+	}
+	return status;
+}
+
+/********************************************************************
+ Query for AD GC's.
+********************************************************************/
+
+NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
+			   const char *realm,
+			   const char *sitename,
+			   struct dns_rr_srv **dclist,
+			   int *numdcs )
+{
+	NTSTATUS status;
+
+	status = ads_dns_query_internal(ctx, "_ldap", "gc", realm, sitename,
+					dclist, numdcs);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
+		return status;
+	}
+
+	if (sitename &&
+	    ((!NT_STATUS_IS_OK(status)) ||
+	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
+		/* Sitename DNS query may have failed. Try without. */
+		status = ads_dns_query_internal(ctx, "_ldap", "gc", realm,
+						NULL, dclist, numdcs);
 	}
 	return status;
 }
@@ -796,25 +830,72 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
-			const char *realm,
-			const char *sitename,
-			struct dns_rr_srv **dclist,
-			int *numdcs )
+			    const char *dns_forest_name,
+			    const char *sitename,
+			    struct dns_rr_srv **dclist,
+			    int *numdcs )
 {
 	NTSTATUS status;
 
-	status = ads_dns_query_internal(ctx, "_kerberos", realm, sitename,
-					dclist, numdcs);
+	status = ads_dns_query_internal(ctx, "_kerberos", "dc",
+					dns_forest_name, sitename, dclist,
+					numdcs);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
 		return status;
 	}
 
-	if (sitename && !NT_STATUS_IS_OK(status)) {
+	if (sitename &&
+	    ((!NT_STATUS_IS_OK(status)) ||
+	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
 		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx, "_kerberos", realm, NULL,
+		status = ads_dns_query_internal(ctx, "_kerberos", "dc",
+						dns_forest_name, NULL,
 						dclist, numdcs);
 	}
 	return status;
+}
+
+/********************************************************************
+ Query for AD PDC. Sitename is obsolete here.
+********************************************************************/
+
+NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
+			   const char *dns_domain_name,
+			   struct dns_rr_srv **dclist,
+			   int *numdcs )
+{
+	return ads_dns_query_internal(ctx, "_ldap", "pdc", dns_domain_name,
+				      NULL, dclist, numdcs);
+}
+
+/********************************************************************
+ Query for AD DC by guid. Sitename is obsolete here.
+********************************************************************/
+
+NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
+				const char *dns_forest_name,
+				const struct GUID *domain_guid,
+				struct dns_rr_srv **dclist,
+				int *numdcs )
+{
+	/*_ldap._tcp.DomainGuid.domains._msdcs.DnsForestName */
+
+	const char *domains;
+	const char *guid_string;
+
+	guid_string = GUID_string(ctx, domain_guid);
+	if (!guid_string) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* little hack */
+	domains = talloc_asprintf(ctx, "%s.domains", guid_string);
+	if (!domains) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return ads_dns_query_internal(ctx, "_ldap", domains, dns_forest_name,
+				      NULL, dclist, numdcs);
 }
