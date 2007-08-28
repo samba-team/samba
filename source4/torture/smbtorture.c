@@ -382,41 +382,6 @@ const static struct torture_ui_ops subunit_ui_ops = {
 	.suite_start = subunit_suite_start
 };
 
-static void harness_test_start (struct torture_context *ctx, 
-							    struct torture_tcase *tcase,
-								struct torture_test *test)
-{
-}
-
-static void harness_test_result (struct torture_context *context, 
-								 enum torture_result res, const char *reason)
-{
-	switch (res) {
-	case TORTURE_OK:
-		printf("ok %s - %s\n", context->active_test->name, reason);
-		break;
-	case TORTURE_FAIL:
-	case TORTURE_ERROR:
-		printf("not ok %s - %s\n", context->active_test->name, reason);
-		break;
-	case TORTURE_SKIP:
-		printf("skip %s - %s\n", context->active_test->name, reason);
-		break;
-	}
-}
-
-static void harness_comment (struct torture_context *test, 
-							 const char *comment)
-{
-	printf("# %s\n", comment);
-}
-
-const static struct torture_ui_ops harness_ui_ops = {
-	.comment = harness_comment,
-	.test_start = harness_test_start,
-	.test_result = harness_test_result
-};
-
 static void quiet_suite_start(struct torture_context *ctx,
 				       		  struct torture_suite *suite)
 {
@@ -520,7 +485,7 @@ int main(int argc,char *argv[])
 	
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"format", 0, POPT_ARG_STRING, &ui_ops_name, 0, "Output format (one of: simple, subunit, harness)", NULL },
+		{"format", 0, POPT_ARG_STRING, &ui_ops_name, 0, "Output format (one of: simple, subunit)", NULL },
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL,     OPT_SMB_PORTS,	"SMB ports", 	NULL},
 		{"basedir",	  0, POPT_ARG_STRING, NULL, OPT_BASEDIR, "base directory", "BSAEDIR" },
 		{"seed",	  0, POPT_ARG_INT,  &torture_seed, 	0,	"seed", 	NULL},
@@ -662,8 +627,6 @@ int main(int argc,char *argv[])
 		ui_ops = &std_ui_ops;
 	} else if (!strcmp(ui_ops_name, "subunit")) {
 		ui_ops = &subunit_ui_ops;
-	} else if (!strcmp(ui_ops_name, "harness")) {
-		ui_ops = &harness_ui_ops;
 	} else if (!strcmp(ui_ops_name, "quiet")) {
 		ui_ops = &quiet_ui_ops;
 	} else {

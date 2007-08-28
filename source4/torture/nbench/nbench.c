@@ -64,7 +64,7 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	char *cname;
 	FILE *f;
 	BOOL correct = True;
-	double target_rate = lp_parm_double(-1, "torture", "targetrate", 0);	
+	double target_rate = torture_setting_double(tctx, "targetrate", 0);	
 	int n;
 
 	if (target_rate != 0 && client == 0) {
@@ -229,7 +229,7 @@ BOOL torture_nbench(struct torture_context *torture)
 
 	read_only = torture_setting_bool(torture, "readonly", False);
 
-	nb_max_retries = lp_parm_int(-1, "torture", "nretries", 1);
+	nb_max_retries = torture_setting_int(torture, "nretries", 1);
 
 	p = torture_setting_string(torture, "timelimit", NULL);
 	if (p && *p) {

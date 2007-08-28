@@ -538,13 +538,13 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 
 	status = raw_smbcli_t2open(cli_nt->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)
-	    || !lp_parm_bool(-1, "torture", "samba3", False)) {
+	    || !torture_setting_bool(torture, "samba3", false)) {
 		/* Against samba3, treat EAS_NOT_SUPPORTED as acceptable */
 		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 	}
 	status = raw_smbcli_t2open(cli_dos->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS,ERReasnotsupported))
-	    || !lp_parm_bool(-1, "torture", "samba3", False)) {
+	    || !torture_setting_bool(torture, "samba3", false)) {
 		/* Against samba3, treat EAS_NOT_SUPPORTED as acceptable */
 		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
 	}

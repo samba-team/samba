@@ -48,17 +48,17 @@ static void request_handler(struct cldap_request *req)
 /*
   benchmark cldap calls
 */
-static BOOL bench_cldap(TALLOC_CTX *mem_ctx, const char *address)
+static bool bench_cldap(struct torture_context *tctx, const char *address)
 {
-	struct cldap_socket *cldap = cldap_socket_init(mem_ctx, NULL);
+	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL);
 	int num_sent=0;
 	struct timeval tv = timeval_current();
 	BOOL ret = True;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct cldap_netlogon search;
 	struct bench_state *state;
 
-	state = talloc_zero(mem_ctx, struct bench_state);
+	state = talloc_zero(tctx, struct bench_state);
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = address;
@@ -75,7 +75,7 @@ static BOOL bench_cldap(TALLOC_CTX *mem_ctx, const char *address)
 			req->async.fn = request_handler;
 			num_sent++;
 			if (num_sent % 50 == 0) {
-				if (lp_parm_bool(-1, "torture", "progress", true)) {
+				if (torture_setting_bool(tctx, "progress", true)) {
 					printf("%.1f queries per second (%d failures)  \r", 
 					       state->pass_count / timeval_elapsed(&tv),
 					       state->fail_count);
@@ -104,28 +104,24 @@ static BOOL bench_cldap(TALLOC_CTX *mem_ctx, const char *address)
   benchmark how fast a CLDAP server can respond to a series of parallel
   requests 
 */
-BOOL torture_bench_cldap(struct torture_context *torture)
+bool torture_bench_cldap(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, mem_ctx, &address, event_context_find(mem_ctx));
+	status = resolve_name(&name, torture, &address, event_context_find(torture));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));
-		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
-	ret &= bench_cldap(mem_ctx, address);
-
-	talloc_free(mem_ctx);
+	ret &= bench_cldap(torture, address);
 
 	return ret;
 }

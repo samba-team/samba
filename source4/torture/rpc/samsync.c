@@ -1409,7 +1409,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	struct test_join *user_ctx;
 	const char *machine_password;
 	const char *wksta_machine_password;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct dcerpc_binding *b;
 	struct dcerpc_binding *b_netlogon_wksta;
 	struct samr_Connect c;

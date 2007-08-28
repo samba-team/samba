@@ -351,7 +351,7 @@ BOOL torture_bench_open(struct torture_context *torture)
 
 	progress = torture_setting_bool(torture, "progress", true);
 	
-	nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
+	nprocs = torture_setting_int(torture, "nprocs", 4);
 
 	state = talloc_zero_array(mem_ctx, struct benchopen_state, nprocs);
 

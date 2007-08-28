@@ -120,8 +120,7 @@ static BOOL test_opendomain_lsa(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-
-BOOL torture_domain_open_lsa(struct torture_context *torture)
+bool torture_domain_open_lsa(struct torture_context *torture)
 {
 	NTSTATUS status;
 	BOOL ret = True;

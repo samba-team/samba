@@ -556,7 +556,7 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 	union smb_write	wr;
 	
 	/* randomize between writes and reads*/
-	if ( random() % state->lp_params->writeratio == 0) {
+	if (random() % state->lp_params->writeratio == 0) {
 		torture_comment(tctx, "Callback WRITE file:%d (%d/%d)\n",
 				state->nr,state->completed,torture_numops);
 		wr.generic.level = RAW_WRITE_WRITEX  ;

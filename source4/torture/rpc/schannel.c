@@ -497,7 +497,7 @@ BOOL torture_rpc_schannel2(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	struct test_join *join_ctx;
 	NTSTATUS status;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p1 = NULL, *p2 = NULL;
 	struct cli_credentials *credentials1, *credentials2;
