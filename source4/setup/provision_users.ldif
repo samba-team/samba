@@ -205,6 +205,22 @@ servicePrincipalName: kadmin/changepw
 isCriticalSystemObject: TRUE
 sambaPassword: ${KRBTGTPASS}
 
+dn: CN=dns,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: dns
+description: DNS Service Account
+showInAdvancedViewOnly: TRUE
+userAccountControl: 514
+accountExpires: 9223372036854775807
+sAMAccountName: dns
+sAMAccountType: 805306368
+servicePrincipalName: DNS/${DNSDOMAIN}
+isCriticalSystemObject: TRUE
+sambaPassword: ${DNSPASS}
+
 dn: CN=Domain Computers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
