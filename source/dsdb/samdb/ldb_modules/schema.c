@@ -523,11 +523,6 @@ static int schema_add_check_parent(struct ldb_context *ldb, void *context, struc
 {
 	struct schema_context *sctx;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	sctx = talloc_get_type(context, struct schema_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
@@ -883,7 +878,6 @@ static int schema_add_build_down_req(struct schema_context *sctx)
 {
 	struct schema_class_dlist *temp;
 	struct ldb_message *msg;
-	char *oc;
 	int ret;
 
 	sctx->down_req = talloc(sctx, struct ldb_request);

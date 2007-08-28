@@ -226,11 +226,6 @@ static int rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_r
 {
 	struct rootdse_context *ac;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
-	}
-
 	ac = talloc_get_type(context, struct rootdse_context);
 
 	if (ares->type == LDB_REPLY_ENTRY) {

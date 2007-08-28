@@ -45,7 +45,6 @@ struct partition_private_data {
 
 struct partition_context {
 	struct ldb_module *module;
-	struct ldb_handle *handle;
 	struct ldb_request *orig_req;
 
 	struct ldb_request **down_req;
@@ -76,7 +75,6 @@ static struct partition_context *partition_init_handle(struct ldb_request *req, 
 	h->private_data	= ac;
 
 	ac->module = module;
-	ac->handle = h;
 	ac->orig_req = req;
 
 	req->handle = h;
@@ -126,11 +124,6 @@ static int partition_search_callback(struct ldb_context *ldb, void *context, str
 {
 	struct partition_context *ac;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "partition_search_callback: NULL Context or Result in 'search' callback");
-		goto error;
-	}
-
 	ac = talloc_get_type(context, struct partition_context);
 
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -144,9 +137,6 @@ static int partition_search_callback(struct ldb_context *ldb, void *context, str
 			return LDB_SUCCESS;
 		}
 	}
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 /*
@@ -155,11 +145,6 @@ error:
 static int partition_other_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct partition_context *ac;
-
-	if (!context) {
-		ldb_set_errstring(ldb, "partition_other_callback: NULL Context in 'other' callback");
-		goto error;
-	}
 
 	ac = talloc_get_type(context, struct partition_context);
 
@@ -179,7 +164,6 @@ static int partition_other_callback(struct ldb_context *ldb, void *context, stru
 		return LDB_SUCCESS;
 	}
 	ldb_set_errstring(ldb, "partition_other_callback: Unknown reply type, only supports START_TLS");
-error:
 	talloc_free(ares);
 	return LDB_ERR_OPERATIONS_ERROR;
 }

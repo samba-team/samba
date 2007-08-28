@@ -1168,11 +1168,6 @@ static int get_domain_data_callback(struct ldb_context *ldb, void *context, stru
 {
 	struct ph_context *ac;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	ac = talloc_get_type(context, struct ph_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
@@ -1628,11 +1623,6 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct ph_context *ac;
-
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	ac = talloc_get_type(context, struct ph_context);
 
