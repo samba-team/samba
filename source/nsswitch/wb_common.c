@@ -320,7 +320,7 @@ static int winbind_open_pipe_sock(int recursing, int need_priv)
 
 	/* version-check the socket */
 
-	request.flags = WBFLAG_RECURSE;
+	request.wb_flags = WBFLAG_RECURSE;
 	if ((winbindd_request_response(WINBINDD_INTERFACE_VERSION, &request, &response) != NSS_STATUS_SUCCESS) || (response.data.interface_version != WINBIND_INTERFACE_VERSION)) {
 		close_sock();
 		return -1;
@@ -328,7 +328,7 @@ static int winbind_open_pipe_sock(int recursing, int need_priv)
 
 	/* try and get priv pipe */
 
-	request.flags = WBFLAG_RECURSE;
+	request.wb_flags = WBFLAG_RECURSE;
 	if (winbindd_request_response(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
 		if ((fd = winbind_named_pipe_sock((char *)response.extra_data.data)) != -1) {
@@ -567,13 +567,13 @@ NSS_STATUS winbindd_send_request(int req_type, int need_priv,
 	init_request(request, req_type);
 	
 	if (write_sock(request, sizeof(*request),
-		       request->flags & WBFLAG_RECURSE, need_priv) == -1) {
+		       request->wb_flags & WBFLAG_RECURSE, need_priv) == -1) {
 		return NSS_STATUS_UNAVAIL;
 	}
 
 	if ((request->extra_len != 0) &&
 	    (write_sock(request->extra_data.data, request->extra_len,
-			request->flags & WBFLAG_RECURSE, need_priv) == -1)) {
+			request->wb_flags & WBFLAG_RECURSE, need_priv) == -1)) {
 		return NSS_STATUS_UNAVAIL;
 	}
 	

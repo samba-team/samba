@@ -35,7 +35,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 18
+#define WINBIND_INTERFACE_VERSION 19
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -187,26 +187,27 @@ typedef struct winbindd_gr {
 	uint32 gr_mem_ofs;   /* offset to group membership */
 } WINBINDD_GR;
 
-
+/* PAM specific request flags */
 #define WBFLAG_PAM_INFO3_NDR		0x00000001
 #define WBFLAG_PAM_INFO3_TEXT		0x00000002
 #define WBFLAG_PAM_USER_SESSION_KEY	0x00000004
 #define WBFLAG_PAM_LMKEY		0x00000008
 #define WBFLAG_PAM_CONTACT_TRUSTDOM	0x00000010
-#define WBFLAG_QUERY_ONLY		0x00000020
 #define WBFLAG_PAM_UNIX_NAME		0x00000080
 #define WBFLAG_PAM_AFS_TOKEN		0x00000100
 #define WBFLAG_PAM_NT_STATUS_SQUASH	0x00000200
-
-/* This is a flag that can only be sent from parent to child */
-#define WBFLAG_IS_PRIVILEGED		0x00000400
-/* Flag to say this is a winbindd internal send - don't recurse. */
-#define WBFLAG_RECURSE			0x00000800
-
 #define WBFLAG_PAM_KRB5			0x00001000
 #define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x00002000
 #define WBFLAG_PAM_CACHED_LOGIN		0x00004000
 #define WBFLAG_PAM_GET_PWD_POLICY	0x00008000	/* not used */
+
+/* generic request flags */
+#define WBFLAG_QUERY_ONLY		0x00000020	/* not used */
+/* This is a flag that can only be sent from parent to child */
+#define WBFLAG_IS_PRIVILEGED		0x00000400	/* not used */
+/* Flag to say this is a winbindd internal send - don't recurse. */
+#define WBFLAG_RECURSE			0x00000800
+
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
@@ -226,7 +227,8 @@ struct winbindd_request {
 	enum winbindd_cmd original_cmd;   /* Original Winbindd command
 					     issued to parent process */
 	pid_t pid;               /* pid of calling process */
-	uint32 flags;            /* flags relavant to a given request */
+	uint32 wb_flags;         /* generic flags */
+	uint32 flags;            /* flags relevant *only* to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
 
 	union {
