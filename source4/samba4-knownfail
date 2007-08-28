@@ -10,3 +10,6 @@ RPC-WKSSVC.*NetWkstaGetInfo
 RPC-WKSSVC.*NetWkstaTransportEnum
 RPC-HANDLES.*/lsarpc-shared
 RPC-HANDLES.*/mixed-shared
+RPC-EPMAPPER.*/Insert
+RPC-EPMAPPER.*/InqObject
+RPC-DFS.*

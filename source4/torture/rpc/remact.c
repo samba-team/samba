@@ -28,7 +28,8 @@
 #define DCERPC_IUNKNOWN_UUID "00000000-0000-0000-c000-000000000046"
 #define DCERPC_ICLASSFACTORY_UUID "00000001-0000-0000-c000-000000000046"
 
-static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_RemoteActivation(struct torture_context *tctx, 
+								 struct dcerpc_pipe *p)
 {
 	struct RemoteActivation r;
 	NTSTATUS status;
@@ -47,77 +48,42 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iids[0]);
 	r.in.pIIDs = iids;
 
-	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		printf("RemoteActivation: %s\n", nt_errstr(status));
-		return 0;
-	}
+	status = dcerpc_RemoteActivation(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "RemoteActivation");
 
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		printf("RemoteActivation: %s\n", win_errstr(r.out.result));
-		return 0;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "RemoteActivation");
 
-	if(!W_ERROR_IS_OK(*r.out.hr)) {
-		printf("RemoteActivation: %s\n", win_errstr(*r.out.hr));
-		return 0;
-	}
+	torture_assert_werr_ok(tctx, *r.out.hr, "RemoteActivation");
 
-	if(!W_ERROR_IS_OK(r.out.results[0])) {
-		printf("RemoteActivation: %s\n", win_errstr(r.out.results[0]));
-		return 0;
-	}
+	torture_assert_werr_ok(tctx, r.out.results[0], "RemoteActivation");
 
 	GUID_from_string(DCERPC_ICLASSFACTORY_UUID, &iids[0]);
 	r.in.Interfaces = 1;
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
 
-	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		printf("RemoteActivation(GetClassObject): %s\n", nt_errstr(status));
-		return 0;
-	}
+	status = dcerpc_RemoteActivation(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, 
+							   "RemoteActivation(GetClassObject)");
 
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		printf("RemoteActivation(GetClassObject): %s\n", win_errstr(r.out.result));
-		return 0;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, 
+						   "RemoteActivation(GetClassObject)");
 
-	if(!W_ERROR_IS_OK(*r.out.hr)) {
-		printf("RemoteActivation(GetClassObject): %s\n", win_errstr(*r.out.hr));
-		return 0;
-	}
+	torture_assert_werr_ok(tctx, *r.out.hr, "RemoteActivation(GetClassObject)");
 
-	if(!W_ERROR_IS_OK(r.out.results[0])) {
-		printf("RemoteActivation(GetClassObject): %s\n", win_errstr(r.out.results[0]));
-		return 0;
-	}
+	torture_assert_werr_ok(tctx, r.out.results[0], 
+						   "RemoteActivation(GetClassObject)");
 
-	return 1;
+	return true;
 }
 
-BOOL torture_rpc_remact(struct torture_context *torture)
+struct torture_suite *torture_rpc_remact(TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
-	struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "REMACT");
+	struct torture_rpc_tcase *tcase;
 
-	mem_ctx = talloc_init("torture_rpc_remact");
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "remact", &ndr_table_IRemoteActivation);
 
-	status = torture_rpc_connection(torture,
-					&p, 
-					&ndr_table_IRemoteActivation);
+	torture_rpc_tcase_add_test(tcase, "RemoteActivation", test_RemoteActivation);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	if(!test_RemoteActivation(p, mem_ctx))
-		ret = False;
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

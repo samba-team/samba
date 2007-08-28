@@ -31,12 +31,21 @@ const struct GUID IUnknown_uuid = {
 	0x00000000,0x0000,0x0000,{0xc0,0x00},{0x00,0x00,0x00,0x00,0x00,0x46}
 };
 
-static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t *oxid, struct GUID *oid)
+static bool test_RemoteActivation(struct torture_context *tctx, 
+				 uint64_t *oxid, struct GUID *oid)
 {
 	struct RemoteActivation r;
 	NTSTATUS status;
 	struct GUID iids[2];
 	uint16_t protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
+	struct dcerpc_pipe *p;
+
+	status = torture_rpc_connection(tctx, &p, 
+					&ndr_table_IRemoteActivation);
+			
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 
 	ZERO_STRUCT(r.in);
 	r.in.this.version.MajorVersion = 5;
@@ -52,66 +61,67 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uin
 	r.out.pOxid = oxid;
 	r.out.ipidRemUnknown = oid;
 
-	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
+	status = dcerpc_RemoteActivation(p, tctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		fprintf(stderr, "RemoteActivation: %s\n", nt_errstr(status));
-		return 0;
+		return false;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.result)) {
 		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.result));
-		return 0;
+		return false;
 	}
 
 	if(!W_ERROR_IS_OK(*r.out.hr)) {
 		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(*r.out.hr));
-		return 0;
+		return false;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.results[0])) {
 		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.results[0]));
-		return 0;
+		return false;
 	}
 
-
-	return 1;
+	return true;
 }
 
-static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t setid)
+static bool test_SimplePing(struct torture_context *tctx, 
+			   struct dcerpc_pipe *p)
 {
 	struct SimplePing r;
 	NTSTATUS status;
+	uint64_t setid;
 
 	r.in.SetId = &setid;
 
-	status = dcerpc_SimplePing(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "SimplePing: %s\n", nt_errstr(status));
-		return 0;
-	}
+	status = dcerpc_SimplePing(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "SimplePing");
+	torture_assert_werr_ok(tctx, r.out.result, "SimplePing");
 
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "SimplePing: %s\n", win_errstr(r.out.result));
-		return 0;
-	}
-
-	return 1;
+	return true;
 }
 
-static int test_ComplexPing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t *setid, struct GUID oid)
+static bool test_ComplexPing(struct torture_context *tctx, 
+			     struct dcerpc_pipe *p)
 {
 	struct ComplexPing r;
 	NTSTATUS status;
+	uint64_t setid;
+	struct GUID oid;
+	uint64_t oxid;
 
-	*setid = 0;
+	if (!test_RemoteActivation(tctx, &oxid, &oid))
+		return false;
+
+	setid = 0;
 	ZERO_STRUCT(r.in);
 
 	r.in.SequenceNum = 0;
-	r.in.SetId = setid;
+	r.in.SetId = &setid;
 	r.in.cAddToSet = 1;
 	r.in.AddToSet = &oid;
 
-	status = dcerpc_ComplexPing(p, mem_ctx, &r);
+	status = dcerpc_ComplexPing(p, tctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		fprintf(stderr, "ComplexPing: %s\n", nt_errstr(status));
 		return 0;
@@ -127,148 +137,101 @@ static int test_ComplexPing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t
 	return 1;
 }
 
-static int test_ServerAlive(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_ServerAlive(struct torture_context *tctx, 
+			    struct dcerpc_pipe *p)
 {
 	struct ServerAlive r;
 	NTSTATUS status;
 
-	status = dcerpc_ServerAlive(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "ServerAlive: %s\n", nt_errstr(status));
-		return 0;
-	}
+	status = dcerpc_ServerAlive(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerAlive");
+	torture_assert_werr_ok(tctx, r.out.result, "ServerAlive");
 
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "ServerAlive: %s\n", win_errstr(r.out.result));
-		return 0;
-	}
-
-	return 1;
+	return true;
 }
 
-static int test_ResolveOxid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t oxid)
+static bool test_ResolveOxid(struct torture_context *tctx, 
+			     struct dcerpc_pipe *p)
 {
 	struct ResolveOxid r;
 	NTSTATUS status;
 	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint64_t oxid;
+	struct GUID oid;
+
+	if (!test_RemoteActivation(tctx, &oxid, &oid))
+		return false;
 
 	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
 	r.in.arRequestedProtseqs = protseq;
 
-	status = dcerpc_ResolveOxid(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "ResolveOxid: %s\n", nt_errstr(status));
-		return 0;
-	}
+	status = dcerpc_ResolveOxid(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ResolveOxid");
+	torture_assert_werr_ok(tctx, r.out.result, "ResolveOxid");
 
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "ResolveOxid: %s\n", win_errstr(r.out.result));
-		return 0;
-	}
-
-	return 1;
+	return true;
 }
 
-static int test_ResolveOxid2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t oxid)
+static bool test_ResolveOxid2(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p)
 {
 	struct ResolveOxid2 r;
 	NTSTATUS status;
 	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint64_t oxid;
+	struct GUID oid;
+
+	if (!test_RemoteActivation(tctx, &oxid, &oid))
+		return false;
 
 	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
 	r.in.arRequestedProtseqs = protseq;
 
-	status = dcerpc_ResolveOxid2(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "ResolveOxid2: %s\n", nt_errstr(status));
-		return 0;
-	}
+	status = dcerpc_ResolveOxid2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ResolveOxid2");
 
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "ResolveOxid2: %s\n", win_errstr(r.out.result));
-		return 0;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "ResolveOxid2");
 	
-	printf("Remote server versions: %d, %d\n", r.out.ComVersion->MajorVersion, r.out.ComVersion->MinorVersion);
+	torture_comment(tctx, "Remote server versions: %d, %d\n", r.out.ComVersion->MajorVersion, r.out.ComVersion->MinorVersion);
 
-	return 1;
+	return true;
 }
 
-
-
-static int test_ServerAlive2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_ServerAlive2(struct torture_context *tctx, 
+			     struct dcerpc_pipe *p)
 {
 	struct ServerAlive2 r;
 	NTSTATUS status;
 
-	status = dcerpc_ServerAlive2(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "ServerAlive2: %s\n", nt_errstr(status));
-		return 0;
-	}
+	status = dcerpc_ServerAlive2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerAlive2");
+	torture_assert_werr_ok(tctx, r.out.result, "ServerAlive2");
 
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "ServerAlive2: %s\n", win_errstr(r.out.result));
-		return 0;
-	}
-
-	return 1;
+	return true;
 }
 
-BOOL torture_rpc_oxidresolve(struct torture_context *torture)
+struct torture_suite *torture_rpc_oxidresolve(TALLOC_CTX *mem_ctx)
 {
-        NTSTATUS status;
-       struct dcerpc_pipe *p, *premact;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
-	uint64_t setid;
-	uint64_t oxid;
-	struct GUID oid;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
+							   "OXIDRESOLVE");
+	struct torture_rpc_tcase *tcase;
 
-	mem_ctx = talloc_init("torture_rpc_oxidresolve");
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "oxidresolver", 
+					  &ndr_table_IOXIDResolver);
 
-	status = torture_rpc_connection(torture, 
-					&premact, 
-					&ndr_table_IRemoteActivation);
-			
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_rpc_tcase_add_test(tcase, "ServerAlive", test_ServerAlive);
 
-	status = torture_rpc_connection(torture, 
-					&p, 
-					&ndr_table_IOXIDResolver);
+	torture_rpc_tcase_add_test(tcase, "ServerAlive2", test_ServerAlive2);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_rpc_tcase_add_test(tcase, "ComplexPing", test_ComplexPing);
 
-	if(!test_ServerAlive(p, mem_ctx))
-		ret = False;
+	torture_rpc_tcase_add_test(tcase, "SimplePing", test_SimplePing);
+	
+	torture_rpc_tcase_add_test(tcase, "ResolveOxid", test_ResolveOxid);
 
-	if(!test_ServerAlive2(p, mem_ctx))
-		ret = False;
+	torture_rpc_tcase_add_test(tcase, "ResolveOxid2", test_ResolveOxid2);
 
-	if(!test_RemoteActivation(premact, mem_ctx, &oxid, &oid))
-		return False;
-
-	if(!test_ComplexPing(p, mem_ctx, &setid, oid))
-		ret = False;
-
-	if(!test_SimplePing(p, mem_ctx, setid))
-		ret = False;
-
-	if(!test_ResolveOxid(p, mem_ctx, oxid))
-		ret = False;
-
-	if(!test_ResolveOxid2(p, mem_ctx, oxid))
-		ret = False;
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

@@ -30,66 +30,9 @@ static void init_initshutdown_String(TALLOC_CTX *mem_ctx, struct initshutdown_St
 	name->name->name = s;
 }
 
-static BOOL test_Init(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			const char *msg, uint32_t timeout)
-{
-	struct initshutdown_Init r;
-	NTSTATUS status;
-	uint16_t hostname = 0x0;
-	
-	r.in.hostname = &hostname;
-	r.in.message = talloc(mem_ctx, struct initshutdown_String);
-	init_initshutdown_String(mem_ctx, r.in.message, msg);
-	r.in.force_apps = 1;
-	r.in.timeout = timeout;
-	r.in.reboot = 1;
 
-	status = dcerpc_initshutdown_Init(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("initshutdown_Init failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("initshutdown_Init failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
-
-	return True;
-}
-
-static BOOL test_InitEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			const char *msg, uint32_t timeout)
-{
-	struct initshutdown_InitEx r;
-	NTSTATUS status;
-	uint16_t hostname = 0x0;
-	
-	r.in.hostname = &hostname;
-	r.in.message = talloc(mem_ctx, struct initshutdown_String);
-	init_initshutdown_String(mem_ctx, r.in.message, msg);
-	r.in.force_apps = 1;
-	r.in.timeout = timeout;
-	r.in.reboot = 1;
-	r.in.reason = 0;
-
-	status = dcerpc_initshutdown_InitEx(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("initshutdown_InitEx failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("initshutdown_InitEx failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
-
-	return True;
-}
-
-static BOOL test_Abort(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_Abort(struct torture_context *tctx, 
+					   struct dcerpc_pipe *p)
 {
 	struct initshutdown_Abort r;
 	NTSTATUS status;
@@ -97,48 +40,81 @@ static BOOL test_Abort(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.server = &server;
 	
-	status = dcerpc_initshutdown_Abort(p, mem_ctx, &r);
+	status = dcerpc_initshutdown_Abort(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("initshutdown_Abort failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, 
+							   "initshutdown_Abort failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("initshutdown_Abort failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "initshutdown_Abort failed");
 
-	return True;
+	return true;
 }
 
-BOOL torture_rpc_initshutdown(struct torture_context *torture)
+static bool test_Init(struct torture_context *tctx, 
+					  struct dcerpc_pipe *p)
 {
-    NTSTATUS status;
-    struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct initshutdown_Init r;
+	NTSTATUS status;
+	uint16_t hostname = 0x0;
 
-	mem_ctx = talloc_init("torture_rpc_initshutdown");
+	if (!torture_setting_bool(tctx, "dangerous", false))
+		torture_skip(tctx, 
+			"initshutdown tests disabled - enable dangerous tests to use");
+	
+	r.in.hostname = &hostname;
+	r.in.message = talloc(tctx, struct initshutdown_String);
+	init_initshutdown_String(tctx, r.in.message, "spottyfood");
+	r.in.force_apps = 1;
+	r.in.timeout = 30;
+	r.in.reboot = 1;
 
-	status = torture_rpc_connection(torture, &p, &ndr_table_initshutdown);
+	status = dcerpc_initshutdown_Init(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "initshutdown_Init failed");
+	torture_assert_werr_ok(tctx, r.out.result, "initshutdown_Init failed");
 
-	if (!torture_setting_bool(torture, "dangerous", False)) {
-		torture_comment(torture, 
-						"initshutdown tests disabled - enable dangerous tests to use\n");
-	} else {
-		ret &= test_Init(p, mem_ctx, "spottyfood", 30);
-		ret &= test_Abort(p, mem_ctx);
-		ret &= test_InitEx(p, mem_ctx, "spottyfood", 30);
-		ret &= test_Abort(p, mem_ctx);
-	}
+	return test_Abort(tctx, p);
+}
 
-	talloc_free(mem_ctx);
+static bool test_InitEx(struct torture_context *tctx, 
+						struct dcerpc_pipe *p)
+{
+	struct initshutdown_InitEx r;
+	NTSTATUS status;
+	uint16_t hostname = 0x0;
 
-	return ret;
+	if (!torture_setting_bool(tctx, "dangerous", false))
+		torture_skip(tctx, 
+			"initshutdown tests disabled - enable dangerous tests to use");
+	
+	r.in.hostname = &hostname;
+	r.in.message = talloc(tctx, struct initshutdown_String);
+	init_initshutdown_String(tctx, r.in.message, "spottyfood");
+	r.in.force_apps = 1;
+	r.in.timeout = 30;
+	r.in.reboot = 1;
+	r.in.reason = 0;
+
+	status = dcerpc_initshutdown_InitEx(p, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, status, "initshutdown_InitEx failed");
+
+	torture_assert_werr_ok(tctx, r.out.result, "initshutdown_InitEx failed");
+
+	return test_Abort(tctx, p);
+}
+
+
+struct torture_suite *torture_rpc_initshutdown(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "INITSHUTDOWN");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "initshutdown", 
+											  &ndr_table_initshutdown);
+
+	torture_rpc_tcase_add_test(tcase, "Init", test_Init);
+	torture_rpc_tcase_add_test(tcase, "InitEx", test_InitEx);
+
+	return suite;
 }

@@ -134,7 +134,8 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_Lookup(struct torture_context *tctx, 
+						struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct epm_Lookup r;
@@ -160,19 +161,19 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		ZERO_STRUCT(uuid);
 		ZERO_STRUCT(iface);
 
-		status = dcerpc_epm_Lookup(p, mem_ctx, &r);
+		status = dcerpc_epm_Lookup(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status) || r.out.result != 0) {
 			break;
 		}
 
 		printf("epm_Lookup returned %d events GUID %s\n", 
-		       *r.out.num_ents, GUID_string(mem_ctx, &handle.uuid));
+		       *r.out.num_ents, GUID_string(tctx, &handle.uuid));
 
 		for (i=0;i<*r.out.num_ents;i++) {
 			printf("\nFound '%s'\n", r.out.entries[i].annotation);
-			display_tower(mem_ctx, &r.out.entries[i].tower->tower);
+			display_tower(tctx, &r.out.entries[i].tower->tower);
 			if (r.out.entries[i].tower->tower.num_floors == 5) {
-				test_Map(p, mem_ctx, r.out.entries[i].tower);
+				test_Map(p, tctx, r.out.entries[i].tower);
 			}
 		}
 	} while (NT_STATUS_IS_OK(status) && 
@@ -180,13 +181,9 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		 *r.out.num_ents == r.in.max_ents &&
 		 !policy_handle_empty(&handle));
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Lookup failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Lookup failed");
 
-
-	return True;
+	return true;
 }
 
 static BOOL test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_entry_t *entries)
@@ -211,7 +208,8 @@ static BOOL test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_e
 	return True;
 }
 
-static BOOL test_Insert(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_Insert(struct torture_context *tctx, 
+						struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct epm_Insert r;
@@ -219,89 +217,60 @@ static BOOL test_Insert(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.num_ents = 1;
 
-	r.in.entries = talloc_array(mem_ctx, struct epm_entry_t, 1);
+	r.in.entries = talloc_array(tctx, struct epm_entry_t, 1);
 	ZERO_STRUCT(r.in.entries[0].object);
 	r.in.entries[0].annotation = "smbtorture endpoint";
-	status = dcerpc_parse_binding(mem_ctx, "ncalrpc:[SMBTORTURE]", &bd);
-	if (NT_STATUS_IS_ERR(status)) {
-		printf("Unable to generate dcerpc_binding struct\n");
-		return False;
-	}
+	status = dcerpc_parse_binding(tctx, "ncalrpc:[SMBTORTURE]", &bd);
+	torture_assert_ntstatus_ok(tctx, status, 
+							   "Unable to generate dcerpc_binding struct");
 
-	r.in.entries[0].tower = talloc(mem_ctx, struct epm_twr_t);
+	r.in.entries[0].tower = talloc(tctx, struct epm_twr_t);
 
-	status = dcerpc_binding_build_tower(mem_ctx, bd, &r.in.entries[0].tower->tower);
-	if (NT_STATUS_IS_ERR(status)) {
-		printf("Unable to build tower from binding struct\n");
-		return False;
-	}
+	status = dcerpc_binding_build_tower(tctx, bd, &r.in.entries[0].tower->tower);
+	torture_assert_ntstatus_ok(tctx, status, 
+							   "Unable to build tower from binding struct");
 	
 	r.in.replace = 0;
 
-	status = dcerpc_epm_Insert(p, mem_ctx, &r);
-	if (NT_STATUS_IS_ERR(status)) {
-		printf("Insert failed - %s\n", nt_errstr(status));
-		return False;
+	status = dcerpc_epm_Insert(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "Insert failed");
+
+	torture_assert(tctx, r.out.result == 0, "Insert failed");
+
+	if (!test_Delete(p, tctx, r.in.entries)) {
+		return false; 
 	}
 
-	if (r.out.result != 0) {
-		printf("Insert failed - %d\n", r.out.result);
-		printf("NOT CONSIDERING AS A FAILURE\n");
-		return True;
-	}
-
-	if (!test_Delete(p, mem_ctx, r.in.entries)) {
-		return False; 
-	}
-
-	return True;
+	return true;
 }
 
-static BOOL test_InqObject(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_InqObject(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct epm_InqObject r;
 
-	r.in.epm_object = talloc(mem_ctx, struct GUID);
+	r.in.epm_object = talloc(tctx, struct GUID);
 	*r.in.epm_object = ndr_table_epmapper.syntax_id.uuid;
 
-	status = dcerpc_epm_InqObject(p, mem_ctx, &r);
-	if (NT_STATUS_IS_ERR(status)) {
-		printf("InqObject failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_epm_InqObject(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "InqObject failed");
 
-	return True;
+	return true;
 }
 
-BOOL torture_rpc_epmapper(struct torture_context *torture)
+struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "EPMAPPER");
+	struct torture_rpc_tcase *tcase;
+	
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "epmapper", 
+											  &ndr_table_epmapper);
 
-	mem_ctx = talloc_init("torture_rpc_epmapper");
+	torture_rpc_tcase_add_test(tcase, "Lookup", test_Lookup);
 
-	status = torture_rpc_connection(torture, &p, &ndr_table_epmapper);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_rpc_tcase_add_test(tcase, "Insert", test_Insert);
 
-	if (!test_Lookup(p, mem_ctx)) {
-		ret = False;
-	}
+	torture_rpc_tcase_add_test(tcase, "InqObject", test_InqObject);
 
-	if (!test_Insert(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_InqObject(p, mem_ctx)) {
-		ret = False;
-	}
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

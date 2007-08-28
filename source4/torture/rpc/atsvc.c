@@ -123,7 +123,7 @@ struct torture_suite *torture_rpc_atsvc(void)
 	struct torture_suite *suite = torture_suite_create(
 										talloc_autofree_context(),
 										"ATSVC");
-	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *tcase;
 	
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "atsvc", 
 											  &ndr_table_atsvc);

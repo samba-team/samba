@@ -236,7 +236,7 @@ static bool test_OpenEventLog(struct torture_context *tctx,
 struct torture_suite *torture_rpc_eventlog(void)
 {
 	struct torture_suite *suite;
-	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *tcase;
 
 	suite = torture_suite_create(talloc_autofree_context(), "EVENTLOG");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "eventlog", 

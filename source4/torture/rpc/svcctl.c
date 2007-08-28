@@ -117,7 +117,7 @@ static bool test_SCManager(struct torture_context *tctx,
 struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SVCCTL");
-	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "svcctl", 
 											  &ndr_table_svcctl);
