@@ -538,10 +538,9 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 	int i;
 	BOOL ret = True;
 
-	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
-		d_printf("NetShareAddSetDel disabled - enable dangerous tests to use\n");
-		return True;
-	}
+	if (!torture_setting_bool(tctx, "dangerous", false))
+		torture_skip(tctx,
+			"NetShareAddSetDel disabled - enable dangerous tests to use\n");
 
 	a.in.server_unc = r.in.server_unc = q.in.server_unc = d.in.server_unc =
 		talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));

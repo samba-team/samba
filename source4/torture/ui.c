@@ -120,11 +120,11 @@ struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase,
 	return test;
 }
 
-struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite, 
-							 const char *name)
-{
-	struct torture_tcase *tcase = talloc(suite, struct torture_tcase);
 
+bool torture_suite_init_tcase(struct torture_suite *suite,
+									 struct torture_tcase *tcase,
+									 const char *name)
+{
 	tcase->name = talloc_strdup(tcase, name);
 	tcase->description = NULL;
 	tcase->setup = NULL;
@@ -133,6 +133,18 @@ struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite,
 	tcase->tests = NULL;
 
 	DLIST_ADD_END(suite->testcases, tcase, struct torture_tcase *);
+
+	return true;
+}
+
+
+struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite, 
+							 const char *name)
+{
+	struct torture_tcase *tcase = talloc(suite, struct torture_tcase);
+
+	if (!torture_suite_init_tcase(suite, tcase, name))
+		return NULL;
 
 	return tcase;
 }
@@ -372,7 +384,7 @@ struct torture_tcase *torture_suite_add_simple_tcase(
 	test->run = wrap_test_with_simple_tcase;
 	test->fn = run;
 	test->data = data;
-	test->dangerous = False;
+	test->dangerous = false;
 
 	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
 
@@ -465,7 +477,7 @@ struct torture_test *torture_tcase_add_simple_test(
 	test->run = wrap_test_with_simple_test;
 	test->fn = run;
 	test->data = NULL;
-	test->dangerous = False;
+	test->dangerous = false;
 
 	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
 

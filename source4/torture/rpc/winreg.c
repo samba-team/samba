@@ -533,7 +533,6 @@ static bool test_InitiateSystemShutdown(struct torture_context *tctx,
 		torture_skip(tctx, 
 		   "winreg_InitiateShutdown disabled - enable dangerous tests to use");
 
-
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct initshutdown_String);
 	init_initshutdown_String(tctx, r.in.message, "spottyfood");
