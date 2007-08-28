@@ -25,10 +25,12 @@ int net_lookup_usage(int argc, const char **argv)
 "  net lookup [host] HOSTNAME[#<type>]\n\tgives IP for a hostname\n\n"
 "  net lookup ldap [domain]\n\tgives IP of domain's ldap server\n\n"
 "  net lookup kdc [realm]\n\tgives IP of realm's kerberos KDC\n\n"
+"  net lookup pdc [domain|realm]\n\tgives IP of realm's kerberos KDC\n\n"
 "  net lookup dc [domain]\n\tgives IP of domains Domain Controllers\n\n"
 "  net lookup master [domain|wg]\n\tgive IP of master browser\n\n"
 "  net lookup name [name]\n\tLookup name's sid and type\n\n"
 "  net lookup sid [sid]\n\tGive sid's name and type\n\n"
+"  net lookup dsgetdcname [name] [flags] [sitename]\n\n"
 );
 	return -1;
 }
@@ -95,7 +97,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	sitename = sitename_fetch(domain);
 
 	if ( (ctx = talloc_init("net_lookup_ldap")) == NULL ) {
-		d_fprintf(stderr, "net_lookup_ldap: talloc_inti() failed!\n");
+		d_fprintf(stderr, "net_lookup_ldap: talloc_init() failed!\n");
 		SAFE_FREE(sitename);
 		return -1;
 	}
@@ -110,7 +112,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 		return 0;
 	}
 
-     	DEBUG(9, ("Looking up DC for domain %s\n", domain));
+     	DEBUG(9, ("Looking up PDC for domain %s\n", domain));
 	if (!get_pdc_ip(domain, &addr)) {
 		TALLOC_FREE( ctx );
 		SAFE_FREE(sitename);
@@ -125,7 +127,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 		return -1;
 	}
 
-	DEBUG(9, ("Found DC with DNS name %s\n", hostent->h_name));
+	DEBUG(9, ("Found PDC with DNS name %s\n", hostent->h_name));
 	domain = strchr(hostent->h_name, '.');
 	if (!domain) {
 		TALLOC_FREE( ctx );
@@ -158,9 +160,16 @@ static int net_lookup_dc(int argc, const char **argv)
 	struct ip_service *ip_list;
 	struct in_addr addr;
 	char *pdc_str = NULL;
-	const char *domain=opt_target_workgroup;
+	const char *domain = NULL;
 	char *sitename = NULL;
 	int count, i;
+	BOOL sec_ads = (lp_security() == SEC_ADS);
+
+	if (sec_ads) {
+		domain = lp_realm();
+	} else {
+		domain = opt_target_workgroup;
+	}
 
 	if (argc > 0)
 		domain=argv[0];
@@ -173,7 +182,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	d_printf("%s\n", pdc_str);
 
 	sitename = sitename_fetch(domain);
-	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename, &ip_list, &count, False))) {
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename, &ip_list, &count, sec_ads))) {
 		SAFE_FREE(pdc_str);
 		SAFE_FREE(sitename);
 		return 0;
@@ -187,6 +196,32 @@ static int net_lookup_dc(int argc, const char **argv)
 	SAFE_FREE(pdc_str);
 	return 0;
 }
+
+static int net_lookup_pdc(int argc, const char **argv)
+{
+	struct in_addr addr;
+	char *pdc_str = NULL;
+	const char *domain;
+	
+	if (lp_security() == SEC_ADS) {
+		domain = lp_realm();
+	} else {
+		domain = opt_target_workgroup;
+	}
+
+	if (argc > 0)
+		domain=argv[0];
+
+	/* first get PDC */
+	if (!get_pdc_ip(domain, &addr))
+		return -1;
+
+	asprintf(&pdc_str, "%s", inet_ntoa(addr));
+	d_printf("%s\n", pdc_str);
+	SAFE_FREE(pdc_str);
+	return 0;
+}
+
 
 static int net_lookup_master(int argc, const char **argv)
 {
@@ -302,6 +337,64 @@ static int net_lookup_sid(int argc, const char **argv)
 	return 0;
 }
 
+static int net_lookup_dsgetdcname(int argc, const char **argv)
+{
+	NTSTATUS status;
+	const char *domain_name = NULL;
+	char *site_name = NULL;
+	uint32_t flags = 0;
+	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	TALLOC_CTX *mem_ctx;
+
+	if (argc < 1 || argc > 3) {
+		d_printf("usage: net lookup dsgetdcname "
+			 "<name> <flags> <sitename>\n");
+		return -1;
+	}
+
+	mem_ctx = talloc_init("net_lookup_dsgetdcname");
+	if (!mem_ctx) {
+		return -1;
+	}
+
+	domain_name = argv[0];
+
+	if (argc >= 2)
+		sscanf(argv[1], "%x", &flags);
+
+	if (!flags) {
+		flags |= DS_DIRECTORY_SERVICE_REQUIRED;
+	}
+
+	if (argc == 3) {
+		site_name = SMB_STRDUP(argv[2]);
+		if (!site_name) {
+			TALLOC_FREE(mem_ctx);
+			return -1;
+		}
+	}
+
+	if (!site_name) {
+		site_name = sitename_fetch(domain_name);
+	}
+
+	status = DsGetDcName(mem_ctx, NULL, domain_name, NULL, site_name,
+			     flags, &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed with: %s\n", nt_errstr(status));
+		SAFE_FREE(site_name);
+		TALLOC_FREE(mem_ctx);
+		return -1;
+	}
+
+	display_ds_domain_controller_info(mem_ctx, info);
+
+	SAFE_FREE(site_name);
+	TALLOC_FREE(mem_ctx);
+	return 0;
+}
+
+
 /* lookup hosts or IP addresses using internal samba lookup fns */
 int net_lookup(int argc, const char **argv)
 {
@@ -311,10 +404,12 @@ int net_lookup(int argc, const char **argv)
 		{"HOST", net_lookup_host},
 		{"LDAP", net_lookup_ldap},
 		{"DC", net_lookup_dc},
+		{"PDC", net_lookup_pdc},
 		{"MASTER", net_lookup_master},
 		{"KDC", net_lookup_kdc},
 		{"NAME", net_lookup_name},
 		{"SID", net_lookup_sid},
+		{"DSGETDCNAME", net_lookup_dsgetdcname},
 		{NULL, NULL}
 	};
 

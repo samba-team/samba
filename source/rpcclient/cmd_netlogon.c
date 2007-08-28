@@ -106,47 +106,6 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static void display_ds_domain_controller_info(TALLOC_CTX *mem_ctx, const struct DS_DOMAIN_CONTROLLER_INFO *info)
-{
-	d_printf("domain_controller_name: %s\n", info->domain_controller_name);
-	d_printf("domain_controller_address: %s\n", info->domain_controller_address);
-	d_printf("domain_controller_address_type: %d\n", info->domain_controller_address_type);
-	d_printf("domain_guid: %s\n", GUID_string(mem_ctx, info->domain_guid));
-	d_printf("domain_name: %s\n", info->domain_name);
-	d_printf("dns_forest_name: %s\n", info->dns_forest_name);
-	d_printf("flags: 0x%08x\n"
-		 "\tIs a PDC:                                   %s\n"
-		 "\tIs a GC of the forest:                      %s\n"
-		 "\tIs an LDAP server:                          %s\n"
-		 "\tSupports DS:                                %s\n"
-		 "\tIs running a KDC:                           %s\n"
-		 "\tIs running time services:                   %s\n"
-		 "\tIs the closest DC:                          %s\n"
-		 "\tIs writable:                                %s\n"
-		 "\tHas a hardware clock:                       %s\n"
-		 "\tIs a non-domain NC serviced by LDAP server: %s\n"
-		 "\tDomainControllerName is a DNS name:         %s\n"
-		 "\tDomainName is a DNS name:                   %s\n"
-		 "\tDnsForestName is a DNS name:                %s\n",
-		 info->flags,
-		 (info->flags & ADS_PDC) ? "yes" : "no",
-		 (info->flags & ADS_GC) ? "yes" : "no",
-		 (info->flags & ADS_LDAP) ? "yes" : "no",
-		 (info->flags & ADS_DS) ? "yes" : "no",
-		 (info->flags & ADS_KDC) ? "yes" : "no",
-		 (info->flags & ADS_TIMESERV) ? "yes" : "no",
-		 (info->flags & ADS_CLOSEST) ? "yes" : "no",
-		 (info->flags & ADS_WRITABLE) ? "yes" : "no",
-		 (info->flags & ADS_GOOD_TIMESERV) ? "yes" : "no",
-		 (info->flags & ADS_NDNC) ? "yes" : "no",
-		 (info->flags & ADS_DNS_CONTROLLER) ? "yes":"no",
-		 (info->flags & ADS_DNS_DOMAIN) ? "yes":"no",
-		 (info->flags & ADS_DNS_FOREST) ? "yes":"no");
-
-	d_printf("dc_site_name: %s\n", info->dc_site_name);
-	d_printf("client_site_name: %s\n", info->client_site_name);
-}
-
 static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx, int argc,
 					 const char **argv)
@@ -160,7 +119,8 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
 
 	if (argc < 2) {
-		fprintf(stderr, "Usage: %s [domainname] [domain_name] [domain_guid] [site_guid] [flags]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [domain_name] [domain_guid] "
+				"[site_guid] [flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
@@ -181,7 +141,9 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 
 	if (argc >= 5)
 		sscanf(argv[4], "%x", &flags);
-	
+
+	debug_dsdcinfo_flags(1,flags);
+
 	result = rpccli_netlogon_dsr_getdcname(cli, mem_ctx, server_name, domain_name, 
 					       &domain_guid, &site_guid, flags,
 					       &info);
@@ -211,7 +173,8 @@ static WERROR cmd_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
 	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
 
 	if (argc < 2) {
-		fprintf(stderr, "Usage: %s [domainname] [domain_name] [domain_guid] [site_name] [flags]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [domain_name] [domain_guid] "
+				"[site_name] [flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
@@ -229,6 +192,8 @@ static WERROR cmd_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
 
 	if (argc >= 5)
 		sscanf(argv[4], "%x", &flags);
+
+	debug_dsdcinfo_flags(1,flags);
 
 	result = rpccli_netlogon_dsr_getdcnameex(cli, mem_ctx, server_name, domain_name, 
 						 &domain_guid, site_name, flags,
@@ -261,7 +226,9 @@ static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
 	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
 
 	if (argc < 2) {
-		fprintf(stderr, "Usage: %s [domainname] [client_account] [acb_mask] [domain_name] [domain_guid] [site_name] [flags]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [client_account] [acb_mask] "
+				"[domain_name] [domain_guid] [site_name] "
+				"[flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
@@ -270,7 +237,7 @@ static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
 
 	if (argc >= 3)
 		mask = atoi(argv[2]);
-	
+
 	if (argc >= 4)
 		domain_name = argv[3];
 
@@ -285,6 +252,8 @@ static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
 
 	if (argc >= 7)
 		sscanf(argv[6], "%x", &flags);
+
+	debug_dsdcinfo_flags(1,flags);
 
 	result = rpccli_netlogon_dsr_getdcnameex2(cli, mem_ctx, server_name, 
 						  client_account, mask,
