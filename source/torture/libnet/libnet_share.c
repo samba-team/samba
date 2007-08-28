@@ -121,15 +121,12 @@ BOOL torture_listshares(struct torture_context *torture)
 	int i;
 	BOOL ret = True;
 	struct libnet_context* libnetctx;
-	const char *binding;
 	struct dcerpc_binding *bind;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("test_listshares");
-	binding = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
+	status = torture_rpc_binding(torture, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Error while parsing the binding string\n");
 		ret = False;
 		goto done;
 	}
@@ -203,7 +200,7 @@ BOOL torture_delshare(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding *bind;
 	struct libnet_context* libnetctx;
-	const char *host, *binding;
+	const char *host;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS  status;
 	BOOL ret = True;
@@ -211,10 +208,8 @@ BOOL torture_delshare(struct torture_context *torture)
 	
 	mem_ctx = talloc_init("test_listshares");
 	host = torture_setting_string(torture, "host", NULL);
-	binding = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
+	status = torture_rpc_binding(torture, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Error while parsing the binding string\n");
 		ret = False;
 		goto done;
 	}

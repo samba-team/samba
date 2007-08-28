@@ -223,7 +223,6 @@ static BOOL test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 BOOL torture_groupinfo(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
@@ -233,7 +232,6 @@ BOOL torture_groupinfo(struct torture_context *torture)
 	uint32_t rid;
 
 	mem_ctx = talloc_init("test_userinfo");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(torture, 
 					&p,

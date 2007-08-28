@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/libcli.h"
+#include "torture/rpc/rpc.h"
 #include "torture/torture.h"
 
 
@@ -35,7 +36,6 @@ BOOL torture_lookup(struct torture_context *torture)
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
 	struct dcerpc_binding *bind;
-	const char *bindstr;
 
 	mem_ctx = talloc_init("test_lookup");
 
@@ -44,8 +44,7 @@ BOOL torture_lookup(struct torture_context *torture)
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
-		bindstr = torture_setting_string(torture, "binding", NULL);
-		status = dcerpc_parse_binding(mem_ctx, bindstr, &bind);
+		status = torture_rpc_binding(torture, &bind);
 		if (NT_STATUS_IS_OK(status)) {
 			lookup.in.hostname = bind->host;
 		}
@@ -81,7 +80,6 @@ BOOL torture_lookup_host(struct torture_context *torture)
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
 	struct dcerpc_binding *bind;
-	const char *bindstr;
 
 	mem_ctx = talloc_init("test_lookup_host");
 
@@ -90,8 +88,7 @@ BOOL torture_lookup_host(struct torture_context *torture)
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
-		bindstr = torture_setting_string(torture, "binding", NULL);
-		status = dcerpc_parse_binding(mem_ctx, bindstr, &bind);
+		status = torture_rpc_binding(torture, &bind);
 		if (NT_STATUS_IS_OK(status)) {
 			lookup.in.hostname = bind->host;
 		}

@@ -179,17 +179,14 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 	struct libnet_context *ctx;
 	struct lsa_String domain_name;
 	struct dcerpc_binding *binding;
-	const char *bindstr;
 	uint32_t access_mask;
 	struct policy_handle h;
 	struct dcerpc_pipe *p;
 	struct libnet_DomainClose r;
 
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
-		return False;
+		return false;
 	}
 
 	ctx = libnet_context_init(NULL);
@@ -202,11 +199,10 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 	ctx->cred = cmdline_credentials;
 
 	mem_ctx = talloc_init("torture_domain_close_lsa");
-	status = dcerpc_pipe_connect(mem_ctx, &p, bindstr, &ndr_table_lsarpc,
+	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_lsarpc,
 				     cmdline_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to connect to server %s: %s\n", bindstr,
-			 nt_errstr(status));
+		d_printf("failed to connect to server: %s\n", nt_errstr(status));
 		ret = False;
 		goto done;
 	}
@@ -247,7 +243,6 @@ done:
 BOOL torture_domain_open_samr(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct libnet_context *ctx;
 	struct event_context *evt_ctx=NULL;
 	TALLOC_CTX *mem_ctx;
@@ -258,7 +253,6 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_domainopen_lsa");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(evt_ctx);
 	ctx->cred = cmdline_credentials;
@@ -314,18 +308,15 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 	struct libnet_context *ctx;
 	struct lsa_String domain_name;
 	struct dcerpc_binding *binding;
-	const char *bindstr;
 	uint32_t access_mask;
 	struct policy_handle h;
 	struct dcerpc_pipe *p;
 	struct libnet_DomainClose r;
 	struct dom_sid *sid;
 
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
-		return False;
+		return false;
 	}
 
 	ctx = libnet_context_init(NULL);
@@ -338,11 +329,10 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 	ctx->cred = cmdline_credentials;
 
 	mem_ctx = talloc_init("torture_domain_close_samr");
-	status = dcerpc_pipe_connect(mem_ctx, &p, bindstr, &ndr_table_samr,
+	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_samr,
 				     ctx->cred, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to connect to server %s: %s\n", bindstr,
-			 nt_errstr(status));
+		d_printf("failed to connect to server: %s\n", nt_errstr(status));
 		ret = False;
 		goto done;
 	}
@@ -387,17 +377,14 @@ BOOL torture_domain_list(struct torture_context *torture)
 	BOOL ret = True;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL;
-	const char *bindstr;
 	struct dcerpc_binding *binding;
 	struct libnet_context *ctx;
 	struct libnet_DomainList r;
 	int i;
 
-	bindstr = torture_setting_string(torture, "binding", NULL);
-	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to parse binding string\n");
-		return False;
+		return false;
 	}
 
 	ctx = libnet_context_init(NULL);

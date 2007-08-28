@@ -2080,19 +2080,15 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 {
     NTSTATUS status;
     struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct test_spoolss_context *ctx;
 
-	mem_ctx = talloc_init("torture_rpc_spoolss");
-
 	status = torture_rpc_connection(torture, &p, &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
 		return False;
 	}
 
-	ctx = talloc_zero(mem_ctx, struct test_spoolss_context);
+	ctx = talloc_zero(torture, struct test_spoolss_context);
 	ctx->p	= p;
 
 	ret &= test_OpenPrinter_server(ctx);
@@ -2110,34 +2106,19 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "OSVersion");
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "OSVersionEx");
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DNSMachineName");
-
 	ret &= test_EnumForms(ctx->p, ctx, &ctx->server_handle, True);
-
 	ret &= test_AddForm(ctx->p, ctx, &ctx->server_handle, True);
-
 	ret &= test_EnumPorts(ctx);
-
 	ret &= test_GetPrinterDriverDirectory(ctx);
-
 	ret &= test_EnumPrinterDrivers(ctx);
-
 	ret &= test_EnumMonitors(ctx);
-
 	ret &= test_EnumPrintProcessors(ctx);
-
 	ret &= test_EnumPrinters(ctx);
-
-	ret &= test_OpenPrinter_badnames(p, mem_ctx);
-
-	ret &= test_AddPort(p, mem_ctx);
-
-	ret &= test_EnumPorts_old(p, mem_ctx);
-
-	ret &= test_EnumPrinters_old(p, mem_ctx);
-
-	ret &= test_EnumPrinterDrivers_old(p, mem_ctx);
-
-	talloc_free(mem_ctx);
+	ret &= test_OpenPrinter_badnames(p, torture);
+	ret &= test_AddPort(p, torture);
+	ret &= test_EnumPorts_old(p, torture);
+	ret &= test_EnumPrinters_old(p, torture);
+	ret &= test_EnumPrinterDrivers_old(p, torture);
 
 	return ret;
 }

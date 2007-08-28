@@ -478,7 +478,6 @@ static BOOL test_compare(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 BOOL torture_useradd(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
@@ -487,7 +486,6 @@ BOOL torture_useradd(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_useradd");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(torture, 
 					&p,
@@ -537,7 +535,6 @@ done:
 BOOL torture_userdel(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
@@ -546,7 +543,6 @@ BOOL torture_userdel(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_userdel");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(torture, 
 					&p,
@@ -581,7 +577,6 @@ done:
 BOOL torture_usermod(struct torture_context *torture)
 {
 	NTSTATUS status;
-	const char *binding;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
@@ -591,7 +586,6 @@ BOOL torture_usermod(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_userdel");
-	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(torture, 
 					&p,

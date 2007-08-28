@@ -196,21 +196,14 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
-	const char *binding = torture_setting_string(torture, "binding", NULL);
 	const struct ndr_interface_list *l;
 	struct dcerpc_binding *b;
 
 	mem_ctx = talloc_init("torture_rpc_mgmt");
 
-	if (!binding) {
-		printf("You must supply a ncacn binding string\n");
-		return False;
-	}
-	
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		printf("Failed to parse binding '%s'\n", binding);
 		return False;
 	}
 
