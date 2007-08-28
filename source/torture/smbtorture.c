@@ -479,15 +479,16 @@ int main(int argc,char *argv[])
 	NTSTATUS status;
 	int shell = False;
 	static const char *ui_ops_name = "simple";
+	const char *basedir = NULL;
 	static int list_tests = 0;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
-	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS, OPT_BASEDIR};
+	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS};
 	
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"format", 0, POPT_ARG_STRING, &ui_ops_name, 0, "Output format (one of: simple, subunit)", NULL },
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL,     OPT_SMB_PORTS,	"SMB ports", 	NULL},
-		{"basedir",	  0, POPT_ARG_STRING, NULL, OPT_BASEDIR, "base directory", "BSAEDIR" },
+		{"basedir",	  0, POPT_ARG_STRING, &basedir, 0, "base directory", "BASEDIR" },
 		{"seed",	  0, POPT_ARG_INT,  &torture_seed, 	0,	"seed", 	NULL},
 		{"num-progs",	  0, POPT_ARG_INT,  NULL, 	OPT_NUMPROGS,	"num progs",	NULL},
 		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
@@ -538,9 +539,6 @@ int main(int argc,char *argv[])
 			break;
 		case OPT_NUMPROGS:
 			lp_set_cmdline("torture:nprocs", poptGetOptArg(pc));
-			break;
-		case OPT_BASEDIR:
-			lp_set_cmdline("torture:basedir", poptGetOptArg(pc));
 			break;
 		case OPT_DNS:
 			parse_dns(poptGetOptArg(pc));
@@ -635,6 +633,7 @@ int main(int argc,char *argv[])
 	}
 
 	torture = torture_context_init(talloc_autofree_context(), ui_ops);
+	torture->outputdir = basedir;
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");

@@ -237,9 +237,9 @@ static bool test_writex(struct torture_context *tctx,
 	union smb_fileinfo finfo;
 	int max_bits=63;
 
-	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+	if (!torture_setting_bool(tctx, "dangerous", false)) {
 		max_bits=33;
-		printf("dangerous not set - limiting range of test to 2^%d\n", max_bits);
+		torture_comment(tctx, "dangerous not set - limiting range of test to 2^%d\n", max_bits);
 	}
 
 	buf = talloc_zero_size(tctx, maxsize);

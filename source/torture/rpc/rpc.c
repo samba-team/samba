@@ -27,6 +27,12 @@
 #include "librpc/ndr/ndr_table.h"
 #include "lib/util/dlinklist.h"
 
+struct torture_rpc_tcase {
+	struct torture_tcase tcase;
+	const struct ndr_interface_table *table;
+	struct dcerpc_pipe *pipe;
+};
+
 /* open a rpc connection to the chosen binding string */
 _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 				struct dcerpc_pipe **p, 
@@ -97,13 +103,15 @@ static bool torture_rpc_setup_anonymous(struct torture_context *tctx,
 	struct cli_credentials *anon_credentials;
 	NTSTATUS status;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct torture_rpc_tcase *tcase = talloc_get_type(
+						tctx->active_tcase, struct torture_rpc_tcase);
 
 	anon_credentials = cli_credentials_init_anon(tctx);
 
 	status = dcerpc_pipe_connect(tctx, 
 				(struct dcerpc_pipe **)data, 
 				binding,
-				(const struct ndr_interface_table *)tctx->active_tcase->data,
+				tcase->table,
 				anon_credentials, NULL);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
@@ -114,10 +122,12 @@ static bool torture_rpc_setup_anonymous(struct torture_context *tctx,
 static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 {
 	NTSTATUS status;
+	struct torture_rpc_tcase *tcase = talloc_get_type(
+						tctx->active_tcase, struct torture_rpc_tcase);
 	
 	status = torture_rpc_connection(tctx, 
 				(struct dcerpc_pipe **)data, 
-				(const struct ndr_interface_table *)tctx->active_tcase->data);
+				(const struct ndr_interface_table *)tcase->table);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
@@ -130,29 +140,33 @@ static bool torture_rpc_teardown (struct torture_context *tcase, void *data)
 	return true;
 }
 
-_PUBLIC_ struct torture_tcase *torture_suite_add_anon_rpc_iface_tcase(struct torture_suite *suite, 
+_PUBLIC_ struct torture_rpc_tcase *torture_suite_add_anon_rpc_iface_tcase(struct torture_suite *suite, 
 								const char *name,
 								const struct ndr_interface_table *table)
 {
-	struct torture_tcase *tcase = torture_suite_add_tcase(suite, name);
+	struct torture_rpc_tcase *tcase = talloc(suite, struct torture_rpc_tcase);
 
-	tcase->setup = torture_rpc_setup_anonymous;
-	tcase->teardown = torture_rpc_teardown;
-	tcase->data = discard_const(table);
+	torture_suite_init_tcase(suite, (struct torture_tcase *)tcase, name);
+
+	tcase->tcase.setup = torture_rpc_setup_anonymous;
+	tcase->tcase.teardown = torture_rpc_teardown;
+	tcase->table = table;
 
 	return tcase;
 }
 
 
-_PUBLIC_ struct torture_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
+_PUBLIC_ struct torture_rpc_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
 								const char *name,
 								const struct ndr_interface_table *table)
 {
-	struct torture_tcase *tcase = torture_suite_add_tcase(suite, name);
+	struct torture_rpc_tcase *tcase = talloc(suite, struct torture_rpc_tcase);
 
-	tcase->setup = torture_rpc_setup;
-	tcase->teardown = torture_rpc_teardown;
-	tcase->data = discard_const(table);
+	torture_suite_init_tcase(suite, (struct torture_tcase *)tcase, name);
+
+	tcase->tcase.setup = torture_rpc_setup;
+	tcase->tcase.teardown = torture_rpc_teardown;
+	tcase->table = table;
 
 	return tcase;
 }
@@ -180,7 +194,7 @@ static bool torture_rpc_wrap_test_ex(struct torture_context *tctx,
 }
 
 _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
-					struct torture_tcase *tcase, 
+					struct torture_rpc_tcase *tcase, 
 					const char *name, 
 					bool (*fn) (struct torture_context *, struct dcerpc_pipe *))
 {
@@ -195,13 +209,13 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
 	test->data = NULL;
 	test->fn = fn;
 
-	DLIST_ADD(tcase->tests, test);
+	DLIST_ADD(tcase->tcase.tests, test);
 
 	return test;
 }
 
 _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
-					struct torture_tcase *tcase, 
+					struct torture_rpc_tcase *tcase, 
 					const char *name, 
 					bool (*fn) (struct torture_context *, struct dcerpc_pipe *,
 								void *),
@@ -218,7 +232,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
 	test->data = userdata;
 	test->fn = fn;
 
-	DLIST_ADD(tcase->tests, test);
+	DLIST_ADD(tcase->tcase.tests, test);
 
 	return test;
 }

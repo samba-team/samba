@@ -31,9 +31,7 @@ _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 								   const char *prefix, 
 								   char **tempdir)
 {
-	const char *basedir = torture_setting_string(tctx, "basedir", ".");
-
-	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", basedir, prefix);
+	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", tctx->outputdir, prefix);
 
 	if (mkdtemp(*tempdir) == NULL)
 		return NT_STATUS_UNSUCCESSFUL;

@@ -129,7 +129,8 @@ BOOL torture_rpc_initshutdown(struct torture_context *torture)
 	}
 
 	if (!torture_setting_bool(torture, "dangerous", False)) {
-		printf("initshutdown tests disabled - enable dangerous tests to use\n");
+		torture_comment(torture, 
+						"initshutdown tests disabled - enable dangerous tests to use\n");
 	} else {
 		ret &= test_Init(p, mem_ctx, "spottyfood", 30);
 		ret &= test_Abort(p, mem_ctx);

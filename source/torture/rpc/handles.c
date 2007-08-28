@@ -116,11 +116,6 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 
 	torture_comment(torture, "RPC-HANDLE-LSARPC-SHARED\n");
 
-	if (torture_setting_bool(torture, "samba4", false)) {
-		torture_comment(torture, "LSA shared-policy-handle test against Samba4 - skipping\n");
-		return true;
-	}
-
 	torture_comment(torture, "connect lsa pipe1\n");
 	status = torture_rpc_connection(torture, &p1, &ndr_table_lsarpc);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe1");
@@ -398,11 +393,6 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	uint32_t assoc_group_id;
 
 	torture_comment(torture, "RPC-HANDLE-MIXED-SHARED\n");
-
-	if (torture_setting_bool(torture, "samba4", false)) {
-		torture_comment(torture, "Mixed shared-policy-handle test against Samba4 - skipping\n");
-		return true;
-	}
 
 	torture_comment(torture, "connect samr pipe1\n");
 	status = torture_rpc_connection(torture, &p1, &ndr_table_samr);
