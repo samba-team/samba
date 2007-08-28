@@ -95,6 +95,27 @@ static const char *test_strings[] = {
 	"ncacn_unix_stream:[/tmp/epmapper,sign]",
 };
 
+static bool test_no_transport(struct torture_context *tctx)
+{
+	const char *binding = "somehost";
+	struct dcerpc_binding *b;
+	const char *s;
+
+	/* Parse */
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, binding, &b),
+		"Error parsing binding string");
+
+	torture_assert(tctx, b->transport == NCA_UNKNOWN, "invalid transport");
+
+	s = dcerpc_binding_string(tctx, b);
+	torture_assert(tctx, s != NULL, "Error converting binding back to string");
+
+	torture_assert_casestr_equal(tctx, binding, s, 
+		"Mismatch while comparing original and regenerated binding strings");
+
+	return true;
+}
+
 struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 {
 	int i;
@@ -105,6 +126,8 @@ struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 		torture_suite_add_simple_tcase(suite, test_strings[i],
 						test_BindingString, test_strings[i]);
 	}
+
+	torture_suite_add_simple_test(suite, "no transport", test_no_transport);
 
 	return suite;
 }

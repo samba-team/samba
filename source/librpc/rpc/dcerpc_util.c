@@ -235,15 +235,17 @@ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 {
 	char *s = talloc_strdup(mem_ctx, "");
 	int i;
-	const char *t_name=NULL;
+	const char *t_name = NULL;
 
-	for (i=0;i<ARRAY_SIZE(transports);i++) {
-		if (transports[i].transport == b->transport) {
-			t_name = transports[i].name;
+	if (b->transport != NCA_UNKNOWN) {
+		for (i=0;i<ARRAY_SIZE(transports);i++) {
+			if (transports[i].transport == b->transport) {
+				t_name = transports[i].name;
+			}
 		}
-	}
-	if (!t_name) {
-		return NULL;
+		if (!t_name) {
+			return NULL;
+		}
 	}
 
 	if (!GUID_all_zero(&b->object.uuid)) { 
@@ -251,8 +253,13 @@ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 				    GUID_string(mem_ctx, &b->object.uuid));
 	}
 
-	s = talloc_asprintf_append(s, "%s:", t_name);
-	if (!s) return NULL;
+	if (t_name != NULL) {
+		s = talloc_asprintf_append(s, "%s:", t_name);
+		if (s == NULL) 
+			return NULL;
+	} else {
+		s = NULL;
+	}
 
 	if (b->host) {
 		s = talloc_asprintf_append(s, "%s", b->host);
@@ -323,27 +330,29 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	b->object.if_version = 0;
 
 	p = strchr(s, ':');
-	if (!p) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
-	type = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
-	if (!type) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0;i<ARRAY_SIZE(transports);i++) {
-		if (strcasecmp(type, transports[i].name) == 0) {
-			b->transport = transports[i].transport;
-			break;
+	if (p == NULL) {
+		b->transport = NCA_UNKNOWN;
+	} else {
+		type = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+		if (!type) {
+			return NT_STATUS_NO_MEMORY;
 		}
-	}
-	if (i==ARRAY_SIZE(transports)) {
-		DEBUG(0,("Unknown dcerpc transport '%s'\n", type));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+
+		for (i=0;i<ARRAY_SIZE(transports);i++) {
+			if (strcasecmp(type, transports[i].name) == 0) {
+				b->transport = transports[i].transport;
+				break;
+			}
+		}
+
+		if (i==ARRAY_SIZE(transports)) {
+			DEBUG(0,("Unknown dcerpc transport '%s'\n", type));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	
-	s = p+1;
+		s = p+1;
+	}
 
 	p = strchr(s, '[');
 	if (p) {
