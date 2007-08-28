@@ -1652,7 +1652,7 @@ BOOL torture_rpc_netlogon(struct torture_context *torture)
 
 	machine_password = cli_credentials_get_password(machine_credentials);
 
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_netlogon);
+	status = torture_rpc_connection(torture, &p, &ndr_table_netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

@@ -40,7 +40,7 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_alter_context");
 
 	printf("opening LSA connection\n");
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
+	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

@@ -222,7 +222,7 @@ BOOL torture_delshare(struct torture_context *torture)
 	libnetctx = libnet_context_init(NULL);
 	libnetctx->cred = cmdline_credentials;
 
-	status = torture_rpc_connection(mem_ctx,
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_srvsvc);
 

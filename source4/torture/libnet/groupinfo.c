@@ -235,7 +235,7 @@ BOOL torture_groupinfo(struct torture_context *torture)
 	mem_ctx = talloc_init("test_userinfo");
 	binding = torture_setting_string(torture, "binding", NULL);
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&p,
 					&ndr_table_samr);
 	

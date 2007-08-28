@@ -1514,7 +1514,8 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 
 	userdomain = torture_setting_string(torture, "userdomain", lp_workgroup());
 
-	user_ctx = torture_create_testuser(TEST_USER_NAME,
+	user_ctx = torture_create_testuser(torture,
+					   TEST_USER_NAME,
 					   userdomain,
 					   ACB_NORMAL, 
 					   (const char **)&user_password);
@@ -1529,7 +1530,8 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 				 TEST_USER_NAME, 16 /* > 14 */, &user_password, 
 				 NULL, 0, False);
 
-	user_ctx_wrong_wks = torture_create_testuser(TEST_USER_NAME_WRONG_WKS,
+	user_ctx_wrong_wks = torture_create_testuser(torture,
+						     TEST_USER_NAME_WRONG_WKS,
 					   userdomain,
 					   ACB_NORMAL, 
 					   (const char **)&user_password_wrong_wks);
@@ -1554,7 +1556,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	}
 
 	user_ctx_wrong_time
-		= torture_create_testuser(TEST_USER_NAME_WRONG_TIME,
+		= torture_create_testuser(torture, TEST_USER_NAME_WRONG_TIME,
 					   userdomain,
 					   ACB_NORMAL, 
 					   (const char **)&user_password_wrong_time);

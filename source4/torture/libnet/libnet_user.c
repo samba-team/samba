@@ -296,7 +296,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup();
 
-	status = torture_rpc_connection(prep_mem_ctx,
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -483,7 +483,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	status = torture_rpc_connection(prep_mem_ctx,
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -624,7 +624,7 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	status = torture_rpc_connection(prep_mem_ctx,
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {

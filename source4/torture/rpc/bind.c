@@ -59,7 +59,7 @@ BOOL torture_multi_bind(struct torture_context *torture)
 		return False;
 	}
 
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
+	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

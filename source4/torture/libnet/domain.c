@@ -86,7 +86,7 @@ BOOL torture_domainopen(struct torture_context *torture)
 	evt_ctx = event_context_find(torture);
 	net_ctx = libnet_context_init(evt_ctx);
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&net_ctx->samr.pipe,
 					&ndr_table_samr);
 	

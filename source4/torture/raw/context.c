@@ -865,45 +865,36 @@ done:
 /* 
    basic testing of session/tree context calls
 */
-static BOOL torture_raw_context_int(void)
+static bool torture_raw_context_int(struct torture_context *tctx, 
+									struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_context");
-
-	ret &= test_session(cli, mem_ctx);
-	ret &= test_tree(cli, mem_ctx);
-	ret &= test_tree_ulogoff(cli, mem_ctx);
-	ret &= test_pid_exit_only_sees_open(cli, mem_ctx);
-	ret &= test_pid_2sess(cli, mem_ctx);
-	ret &= test_pid_2tcon(cli, mem_ctx);
+	ret &= test_session(cli, tctx);
+	ret &= test_tree(cli, tctx);
+	ret &= test_tree_ulogoff(cli, tctx);
+	ret &= test_pid_exit_only_sees_open(cli, tctx);
+	ret &= test_pid_2sess(cli, tctx);
+	ret &= test_pid_2tcon(cli, tctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 
 	return ret;
 }
 /* 
    basic testing of session/tree context calls
 */
-BOOL torture_raw_context(struct torture_context *torture)
+bool torture_raw_context(struct torture_context *torture, 
+						 struct smbcli_state *cli)
 {
-	BOOL ret = True;
+	bool ret = true;
 	if (lp_use_spnego()) {
-		ret &= torture_raw_context_int();
+		ret &= torture_raw_context_int(torture, cli);
 		lp_set_cmdline("use spnego", "False");
 	}
 
-	ret &= torture_raw_context_int();
+	ret &= torture_raw_context_int(torture, cli);
 
 	return ret;
 }

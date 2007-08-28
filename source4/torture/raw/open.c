@@ -1459,39 +1459,29 @@ static BOOL test_raw_open_multi(void)
 
 /* basic testing of all RAW_OPEN_* calls 
 */
-BOOL torture_raw_open(struct torture_context *torture)
+bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_open");
+	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
-	ret &= test_ntcreatex_brlocked(cli, mem_ctx);
-	ret &= test_open(cli, mem_ctx);
+	ret &= test_ntcreatex_brlocked(cli, torture);
+	ret &= test_open(cli, torture);
 	ret &= test_raw_open_multi();
-	ret &= test_openx(cli, mem_ctx);
-	ret &= test_ntcreatex(cli, mem_ctx);
-	ret &= test_nttrans_create(cli, mem_ctx);
-	ret &= test_t2open(cli, mem_ctx);
-	ret &= test_mknew(cli, mem_ctx);
-	ret &= test_create(cli, mem_ctx);
-	ret &= test_ctemp(cli, mem_ctx);
-	ret &= test_chained(cli, mem_ctx);
-	ret &= test_no_leading_slash(cli, mem_ctx);
+	ret &= test_openx(cli, torture);
+	ret &= test_ntcreatex(cli, torture);
+	ret &= test_nttrans_create(cli, torture);
+	ret &= test_t2open(cli, torture);
+	ret &= test_mknew(cli, torture);
+	ret &= test_create(cli, torture);
+	ret &= test_ctemp(cli, torture);
+	ret &= test_chained(cli, torture);
+	ret &= test_no_leading_slash(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

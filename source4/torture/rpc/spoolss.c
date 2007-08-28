@@ -2076,17 +2076,17 @@ static BOOL test_EnumPrinterDrivers_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	return ret;
 }
 
-BOOL torture_rpc_spoolss(struct torture_context *torture)
+bool torture_rpc_spoolss(struct torture_context *torture)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
+    NTSTATUS status;
+    struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct test_spoolss_context *ctx;
 
 	mem_ctx = talloc_init("torture_rpc_spoolss");
 
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_spoolss);
+	status = torture_rpc_connection(torture, &p, &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

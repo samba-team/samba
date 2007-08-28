@@ -220,7 +220,7 @@ BOOL torture_groupinfo_api(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	status = torture_rpc_connection(prep_mem_ctx,
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {

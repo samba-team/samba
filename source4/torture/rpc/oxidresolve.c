@@ -229,7 +229,7 @@ BOOL torture_rpc_oxidresolve(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_oxidresolve");
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&premact, 
 					&ndr_table_IRemoteActivation);
 			
@@ -238,7 +238,7 @@ BOOL torture_rpc_oxidresolve(struct torture_context *torture)
 		return False;
 	}
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&p, 
 					&ndr_table_IOXIDResolver);
 

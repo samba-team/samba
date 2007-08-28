@@ -29,8 +29,10 @@
 /*
   ask the server what interface IDs are available on this endpoint
 */
-BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		     BOOL (*per_id_test)(const struct ndr_interface_table *iface,
+BOOL test_inq_if_ids(struct torture_context *tctx, 
+		     struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		     BOOL (*per_id_test)(struct torture_context *,
+					 const struct ndr_interface_table *iface,
 					 TALLOC_CTX *mem_ctx,
 					 struct ndr_syntax_id *id),
 		     const void *priv)
@@ -69,7 +71,7 @@ BOOL test_inq_if_ids(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       ndr_interface_name(&id->uuid, id->if_version));
 
 		if (per_id_test) {
-			per_id_test(priv, mem_ctx, id);
+			per_id_test(tctx, priv, mem_ctx, id);
 		}
 	}
 
@@ -234,7 +236,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(loop_ctx, b));
 
-		status = torture_rpc_connection(loop_ctx, &p, &ndr_table_mgmt);
+		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			printf("Interface not available - skipping\n");
 			talloc_free(loop_ctx);
@@ -263,7 +265,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 			ret = False;
 		}
 
-		if (!test_inq_if_ids(p, loop_ctx, NULL, NULL)) {
+		if (!test_inq_if_ids(torture, p, loop_ctx, NULL, NULL)) {
 			ret = False;
 		}
 

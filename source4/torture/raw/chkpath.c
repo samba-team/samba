@@ -214,18 +214,11 @@ done:
 /* 
    basic testing of chkpath calls 
 */
-BOOL torture_raw_chkpath(struct torture_context *torture)
+bool torture_raw_chkpath(struct torture_context *torture, 
+						 struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
-	TALLOC_CTX *mem_ctx;
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_chkpath");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -246,23 +239,19 @@ BOOL torture_raw_chkpath(struct torture_context *torture)
 		return False;
 	}
 
-	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\nt\\V S\\VB98\\vb6.exe");
+	fnum = create_complex_file(cli, torture, BASEDIR "\\nt\\V S\\VB98\\vb6.exe");
 	if (fnum == -1) {
 		printf("failed to open \\nt\\V S\\VB98\\vb6.exe - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
 
-	if (!test_chkpath(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_chkpath(cli, torture);
 
  done:
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

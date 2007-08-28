@@ -43,7 +43,7 @@ static BOOL single_search_callback(void *private, const union smb_search_data *f
   do a single file (non-wildcard) search 
 */
 _PUBLIC_ NTSTATUS torture_single_search(struct smbcli_state *cli, 
-			       TALLOC_CTX *mem_ctx,
+			       TALLOC_CTX *tctx,
 			       const char *pattern,
 			       enum smb_search_level level,
 			       enum smb_search_data_level data_level,
@@ -79,7 +79,7 @@ _PUBLIC_ NTSTATUS torture_single_search(struct smbcli_state *cli,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	status = smb_raw_search_first(cli->tree, mem_ctx,
+	status = smb_raw_search_first(cli->tree, tctx,
 				      &io, (void *)data, single_search_callback);
 
 	if (NT_STATUS_IS_OK(status) && level == RAW_SEARCH_FFIRST) {
@@ -231,7 +231,8 @@ static union smb_search_data *find(const char *name)
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
-static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_one_file(struct torture_context *tctx, 
+						  struct smbcli_state *cli)
 {
 	BOOL ret = True;
 	int fnum;
@@ -244,7 +245,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing one file searches\n");
 
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 		ret = False;
@@ -258,7 +259,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		printf("testing %s\n", levels[i].name);
 
-		levels[i].status = torture_single_search(cli, mem_ctx, fname, 
+		levels[i].status = torture_single_search(cli, tctx, fname, 
 							 levels[i].level,
 							 levels[i].data_level,
 							 0,
@@ -279,7 +280,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		status = torture_single_search(cli, mem_ctx, fname2, 
+		status = torture_single_search(cli, tctx, fname2, 
 					       levels[i].level,
 					       levels[i].data_level,
 					       0,
@@ -303,7 +304,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* get the all_info file into to check against */
 	all_info.generic.level = RAW_FILEINFO_ALL_INFO;
 	all_info.generic.in.file.path = fname;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &all_info);
+	status = smb_raw_pathinfo(cli->tree, tctx, &all_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_ALL_INFO failed - %s\n", nt_errstr(status));
 		ret = False;
@@ -312,7 +313,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	alt_info.generic.level = RAW_FILEINFO_ALT_NAME_INFO;
 	alt_info.generic.in.file.path = fname;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &alt_info);
+	status = smb_raw_pathinfo(cli->tree, tctx, &alt_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_ALT_NAME_INFO failed - %s\n", nt_errstr(status));
 		ret = False;
@@ -321,7 +322,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	internal_info.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
 	internal_info.generic.in.file.path = fname;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &internal_info);
+	status = smb_raw_pathinfo(cli->tree, tctx, &internal_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_INTERNAL_INFORMATION failed - %s\n", nt_errstr(status));
 		ret = False;
@@ -330,7 +331,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	name_info.generic.level = RAW_FILEINFO_NAME_INFO;
 	name_info.generic.in.file.path = fname;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &name_info);
+	status = smb_raw_pathinfo(cli->tree, tctx, &name_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_NAME_INFO failed - %s\n", nt_errstr(status));
 		ret = False;
@@ -355,8 +356,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (s->sname1.field1 != (~1 & nt_time_to_unix(v.sname2.out.field2))) { \
 			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
 			       __location__, \
-				#sname1, #field1, timestring(mem_ctx, s->sname1.field1), \
-				#sname2, #field2, nt_time_string(mem_ctx, v.sname2.out.field2)); \
+				#sname1, #field1, timestring(tctx, s->sname1.field1), \
+				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = False; \
 		} \
 	}} while (0)
@@ -367,8 +368,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (s->sname1.field1 != v.sname2.out.field2) { \
 			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
 			       __location__, \
-				#sname1, #field1, nt_time_string(mem_ctx, s->sname1.field1), \
-				#sname2, #field2, nt_time_string(mem_ctx, v.sname2.out.field2)); \
+				#sname1, #field1, nt_time_string(tctx, s->sname1.field1), \
+				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = False; \
 		} \
 	}} while (0)
@@ -518,7 +519,7 @@ done:
 
 
 struct multiple_result {
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *tctx;
 	int count;
 	union smb_search_data *list;
 };
@@ -532,7 +533,7 @@ static BOOL multiple_search_callback(void *private, const union smb_search_data 
 
 
 	data->count++;
-	data->list = talloc_realloc(data->mem_ctx,
+	data->list = talloc_realloc(data->tctx,
 				      data->list, 
 				      union smb_search_data,
 				      data->count);
@@ -548,7 +549,7 @@ enum continue_type {CONT_FLAGS, CONT_NAME, CONT_RESUME_KEY};
   do a single file (non-wildcard) search 
 */
 static NTSTATUS multiple_search(struct smbcli_state *cli, 
-				TALLOC_CTX *mem_ctx,
+				TALLOC_CTX *tctx,
 				const char *pattern,
 				enum smb_search_data_level data_level,
 				enum continue_type cont_type,
@@ -580,7 +581,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 		}
 	}
 
-	status = smb_raw_search_first(cli->tree, mem_ctx,
+	status = smb_raw_search_first(cli->tree, tctx,
 				      &io, data, multiple_search_callback);
 	
 
@@ -621,7 +622,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 			}
 		}
 
-		status = smb_raw_search_next(cli->tree, mem_ctx,
+		status = smb_raw_search_next(cli->tree, tctx,
 					     &io2, data, multiple_search_callback);
 		if (!NT_STATUS_IS_OK(status)) {
 			break;
@@ -686,7 +687,8 @@ static int search_compare(union smb_search_data *d1, union smb_search_data *d2)
 /* 
    basic testing of search calls using many files
 */
-static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_many_files(struct torture_context *tctx, 
+							struct smbcli_state *cli)
 {
 	const int num_files = 700;
 	int i, fnum, t;
@@ -745,11 +747,11 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	for (t=0;t<ARRAY_SIZE(search_types);t++) {
 		ZERO_STRUCT(result);
-		result.mem_ctx = talloc_new(mem_ctx);
+		result.tctx = talloc_new(tctx);
 	
 		printf("Continue %s via %s\n", search_types[t].name, search_types[t].cont_name);
 
-		status = multiple_search(cli, mem_ctx, BASEDIR "\\*.*", 
+		status = multiple_search(cli, tctx, BASEDIR "\\*.*", 
 					 search_types[t].data_level,
 					 search_types[t].cont_type,
 					 &result);
@@ -785,7 +787,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			}
 			talloc_free(fname);
 		}
-		talloc_free(result.mem_ctx);
+		talloc_free(result.tctx);
 	}
 
 done:
@@ -831,7 +833,8 @@ static BOOL check_result(struct multiple_result *result, const char *name, BOOL 
 /* 
    test what happens when the directory is modified during a search
 */
-static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_modify_search(struct torture_context *tctx, 
+							   struct smbcli_state *cli)
 {
 	const int num_files = 20;
 	int i, fnum;
@@ -863,7 +866,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("pulling the first file\n");
 	ZERO_STRUCT(result);
-	result.mem_ctx = talloc_new(mem_ctx);
+	result.tctx = talloc_new(tctx);
 
 	io.t2ffirst.level = RAW_SEARCH_TRANS2;
 	io.t2ffirst.data_level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
@@ -873,7 +876,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2ffirst.in.storage_type = 0;
 	io.t2ffirst.in.pattern = BASEDIR "\\*.*";
 
-	status = smb_raw_search_first(cli->tree, mem_ctx,
+	status = smb_raw_search_first(cli->tree, tctx,
 				      &io, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 1);
@@ -887,7 +890,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io2.t2fnext.in.flags = 0;
 	io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
 
-	status = smb_raw_search_next(cli->tree, mem_ctx,
+	status = smb_raw_search_next(cli->tree, tctx,
 				     &io2, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 2);
@@ -897,7 +900,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Changing attributes and deleting\n");
 	smbcli_open(cli->tree, BASEDIR "\\T003-03.txt.2", O_CREAT|O_RDWR, DENY_NONE);
 	smbcli_open(cli->tree, BASEDIR "\\T013-13.txt.2", O_CREAT|O_RDWR, DENY_NONE);
-	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\T013-13.txt.3");
+	fnum = create_complex_file(cli, tctx, BASEDIR "\\T013-13.txt.3");
 	smbcli_unlink(cli->tree, BASEDIR "\\T014-14.txt");
 	torture_set_file_attribute(cli->tree, BASEDIR "\\T015-15.txt", FILE_ATTRIBUTE_HIDDEN);
 	torture_set_file_attribute(cli->tree, BASEDIR "\\T016-16.txt", FILE_ATTRIBUTE_NORMAL);
@@ -917,7 +920,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io2.t2fnext.in.flags = 0;
 	io2.t2fnext.in.last_name = ".";
 
-	status = smb_raw_search_next(cli->tree, mem_ctx,
+	status = smb_raw_search_next(cli->tree, tctx,
 				     &io2, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 20);
@@ -937,7 +940,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		for (i=0;i<result.count;i++) {
 			printf("%s %s (0x%x)\n", 
 			       result.list[i].both_directory_info.name.s, 
-			       attrib_string(mem_ctx, result.list[i].both_directory_info.attrib),
+			       attrib_string(tctx, result.list[i].both_directory_info.attrib),
 			       result.list[i].both_directory_info.attrib);
 		}
 	}
@@ -953,7 +956,7 @@ done:
 /* 
    testing if directories always come back sorted
 */
-static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_sorted(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	const int num_files = 700;
 	int i, fnum;
@@ -969,7 +972,7 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Creating %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
-		fname = talloc_asprintf(cli, BASEDIR "\\%s.txt", generate_random_str_list(mem_ctx, 10, "abcdefgh"));
+		fname = talloc_asprintf(cli, BASEDIR "\\%s.txt", generate_random_str_list(tctx, 10, "abcdefgh"));
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -982,9 +985,9 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 	ZERO_STRUCT(result);
-	result.mem_ctx = mem_ctx;
+	result.tctx = tctx;
 	
-	status = multiple_search(cli, mem_ctx, BASEDIR "\\*.*", 
+	status = multiple_search(cli, tctx, BASEDIR "\\*.*", 
 				 RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
 				 CONT_NAME, &result);	
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1016,7 +1019,8 @@ done:
 /* 
    basic testing of many old style search calls using separate dirs
 */
-static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_many_dirs(struct torture_context *tctx, 
+						   struct smbcli_state *cli)
 {
 	const int num_dirs = 20;
 	int i, fnum, n;
@@ -1057,9 +1061,9 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		talloc_free(dname);
 	}
 
-	file  = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
-	file2 = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
-	file3 = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
+	file  = talloc_zero_array(tctx, union smb_search_data, num_dirs);
+	file2 = talloc_zero_array(tctx, union smb_search_data, num_dirs);
+	file3 = talloc_zero_array(tctx, union smb_search_data, num_dirs);
 
 	printf("Search first on %d dirs\n", num_dirs);
 
@@ -1069,12 +1073,12 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.search_first.data_level = RAW_SEARCH_DATA_SEARCH;
 		io.search_first.in.max_count = 1;
 		io.search_first.in.search_attrib = 0;
-		io.search_first.in.pattern = talloc_asprintf(mem_ctx, BASEDIR "\\d%d\\*.txt", i);
-		fname = talloc_asprintf(mem_ctx, "f%d-", i);
+		io.search_first.in.pattern = talloc_asprintf(tctx, BASEDIR "\\d%d\\*.txt", i);
+		fname = talloc_asprintf(tctx, "f%d-", i);
 
 		io.search_first.out.count = 0;
 
-		status = smb_raw_search_first(cli->tree, mem_ctx,
+		status = smb_raw_search_first(cli->tree, tctx,
 					      &io, (void *)&file[i], single_search_callback);
 		if (io.search_first.out.count != 1) {
 			printf("(%s) search first gave %d entries for dir %d - %s\n",
@@ -1103,11 +1107,11 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io2.search_next.in.max_count = 1;
 		io2.search_next.in.search_attrib = 0;
 		io2.search_next.in.id = file[i].search.id;
-		fname = talloc_asprintf(mem_ctx, "f%d-", i);
+		fname = talloc_asprintf(tctx, "f%d-", i);
 
 		io2.search_next.out.count = 0;
 
-		status = smb_raw_search_next(cli->tree, mem_ctx,
+		status = smb_raw_search_next(cli->tree, tctx,
 					     &io2, (void *)&file2[i], single_search_callback);
 		if (io2.search_next.out.count != 1) {
 			printf("(%s) search next gave %d entries for dir %d - %s\n",
@@ -1137,10 +1141,10 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io2.search_next.in.max_count = 1;
 		io2.search_next.in.search_attrib = 0;
 		io2.search_next.in.id = file[i].search.id;
-		fname = talloc_asprintf(mem_ctx, "f%d-", i);
+		fname = talloc_asprintf(tctx, "f%d-", i);
 		io2.search_next.out.count = 0;
 
-		status = smb_raw_search_next(cli->tree, mem_ctx,
+		status = smb_raw_search_next(cli->tree, tctx,
 					     &io2, (void *)&file3[i], single_search_callback);
 		if (io2.search_next.out.count != 1) {
 			printf("(%s) search next gave %d entries for dir %d - %s\n",
@@ -1179,7 +1183,8 @@ done:
 /* 
    testing of OS/2 style delete
 */
-static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_os2_delete(struct torture_context *tctx, 
+							struct smbcli_state *cli)
 {
 	const int num_files = 700;
 	const int delete_count = 4;
@@ -1212,7 +1217,7 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 	ZERO_STRUCT(result);
-	result.mem_ctx = mem_ctx;
+	result.tctx = tctx;
 
 	io.t2ffirst.level = RAW_SEARCH_TRANS2;
 	io.t2ffirst.data_level = RAW_SEARCH_DATA_EA_SIZE;
@@ -1222,7 +1227,7 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2ffirst.in.storage_type = 0;
 	io.t2ffirst.in.pattern = BASEDIR "\\*";
 
-	status = smb_raw_search_first(cli->tree, mem_ctx,
+	status = smb_raw_search_first(cli->tree, tctx,
 				      &io, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -1244,9 +1249,9 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	do {
 		ZERO_STRUCT(result);
-		result.mem_ctx = mem_ctx;
+		result.tctx = tctx;
 
-		status = smb_raw_search_next(cli->tree, mem_ctx,
+		status = smb_raw_search_next(cli->tree, tctx,
 					     &io2, &result, multiple_search_callback);
 		if (!NT_STATUS_IS_OK(status)) {
 			break;
@@ -1290,7 +1295,8 @@ static int ealist_cmp(union smb_search_data *r1, union smb_search_data *r2)
 /* 
    testing of the rather strange ea_list level
 */
-static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ea_list(struct torture_context *tctx, 
+						 struct smbcli_state *cli)
 {
 	int  fnum;
 	BOOL ret = True;
@@ -1318,7 +1324,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.in.file.path = BASEDIR "\\file2.txt";
 	setfile.ea_set.in.num_eas = 2;
-	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas = talloc_array(tctx, struct ea_struct, 2);
 	setfile.ea_set.in.eas[0].flags = 0;
 	setfile.ea_set.in.eas[0].name.s = "EA ONE";
 	setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE 1");
@@ -1334,7 +1340,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
 	ZERO_STRUCT(result);
-	result.mem_ctx = mem_ctx;
+	result.tctx = tctx;
 
 	io.t2ffirst.level = RAW_SEARCH_TRANS2;
 	io.t2ffirst.data_level = RAW_SEARCH_DATA_EA_LIST;
@@ -1344,11 +1350,11 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2ffirst.in.storage_type = 0;
 	io.t2ffirst.in.pattern = BASEDIR "\\*";
 	io.t2ffirst.in.num_names = 2;
-	io.t2ffirst.in.ea_names = talloc_array(mem_ctx, struct ea_name, 2);
+	io.t2ffirst.in.ea_names = talloc_array(tctx, struct ea_name, 2);
 	io.t2ffirst.in.ea_names[0].name.s = "SECOND EA";
 	io.t2ffirst.in.ea_names[1].name.s = "THIRD EA";
 
-	status = smb_raw_search_first(cli->tree, mem_ctx,
+	status = smb_raw_search_first(cli->tree, tctx,
 				      &io, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 2);
@@ -1361,11 +1367,11 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nxt.t2fnext.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME | FLAG_TRANS2_FIND_CONTINUE;
 	nxt.t2fnext.in.last_name = result.list[1].ea_list.name.s;
 	nxt.t2fnext.in.num_names = 2;
-	nxt.t2fnext.in.ea_names = talloc_array(mem_ctx, struct ea_name, 2);
+	nxt.t2fnext.in.ea_names = talloc_array(tctx, struct ea_name, 2);
 	nxt.t2fnext.in.ea_names[0].name.s = "SECOND EA";
 	nxt.t2fnext.in.ea_names[1].name.s = "THIRD EA";
 
-	status = smb_raw_search_next(cli->tree, mem_ctx,
+	status = smb_raw_search_next(cli->tree, tctx,
 				     &nxt, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -1408,28 +1414,17 @@ done:
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
-BOOL torture_raw_search(struct torture_context *torture)
+struct torture_suite *torture_raw_search(TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SEARCH");
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
+	torture_suite_add_1smb_test(suite, "one file", test_one_file);
+	torture_suite_add_1smb_test(suite, "many files", test_many_files);
+	torture_suite_add_1smb_test(suite, "sorted", test_sorted);
+	torture_suite_add_1smb_test(suite, "modify search", test_modify_search);
+	torture_suite_add_1smb_test(suite, "many dirs", test_many_dirs);
+	torture_suite_add_1smb_test(suite, "os2 delete", test_os2_delete);
+	torture_suite_add_1smb_test(suite, "ea list", test_ea_list);
 
-	mem_ctx = talloc_init("torture_search");
-
-	ret &= test_one_file(cli, mem_ctx);
-	ret &= test_many_files(cli, mem_ctx);
-	ret &= test_sorted(cli, mem_ctx);
-	ret &= test_modify_search(cli, mem_ctx);
-	ret &= test_many_dirs(cli, mem_ctx);
-	ret &= test_os2_delete(cli, mem_ctx);
-	ret &= test_ea_list(cli, mem_ctx);
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
-	
-	return ret;
+	return suite;
 }

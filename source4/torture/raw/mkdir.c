@@ -160,23 +160,14 @@ done:
 /* 
    basic testing of all RAW_MKDIR_* calls 
 */
-BOOL torture_raw_mkdir(struct torture_context *torture)
+BOOL torture_raw_mkdir(struct torture_context *torture, 
+					   struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	bool ret = true;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
+	if (!test_mkdir(cli, torture)) {
+		ret = false;
 	}
 
-	mem_ctx = talloc_init("torture_raw_mkdir");
-
-	if (!test_mkdir(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

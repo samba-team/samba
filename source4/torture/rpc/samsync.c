@@ -1431,7 +1431,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 	
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
-	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), ACB_SVRTRUST, 
+	join_ctx = torture_create_testuser(torture, test_machine_account, lp_workgroup(), ACB_SVRTRUST, 
 					   &machine_password);
 	if (!join_ctx) {
 		talloc_free(mem_ctx);
@@ -1440,7 +1440,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	}
 	
 	test_wksta_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_WKSTA_MACHINE_NAME);
-	join_ctx2 = torture_create_testuser(test_wksta_machine_account, lp_workgroup(), ACB_WSTRUST, 
+	join_ctx2 = torture_create_testuser(torture, test_wksta_machine_account, lp_workgroup(), ACB_WSTRUST, 
 					    &wksta_machine_password);
 	if (!join_ctx2) {
 		talloc_free(mem_ctx);
@@ -1448,7 +1448,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 		return False;
 	}
 	
-	user_ctx = torture_create_testuser(TEST_USER_NAME,
+	user_ctx = torture_create_testuser(torture, TEST_USER_NAME,
 					   lp_workgroup(),
 					   ACB_NORMAL, NULL);
 	if (!user_ctx) {
@@ -1503,7 +1503,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	}
 	
 
-	status = torture_rpc_connection(samsync_state,
+	status = torture_rpc_connection(torture,
 					&samsync_state->p_lsa, 
 					&ndr_table_lsarpc);
 
