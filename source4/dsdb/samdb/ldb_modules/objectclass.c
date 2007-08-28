@@ -480,11 +480,6 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 {
 	struct oc_context *ac;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	ac = talloc_get_type(context, struct oc_context);
 
 	/* we are interested only in the single reply (base search) we receive here */

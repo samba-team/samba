@@ -52,11 +52,6 @@ static int show_deleted_search_callback(struct ldb_context *ldb, void *context, 
 {
 	struct show_deleted_search_request *ar;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
-	}
-
 	ar = talloc_get_type(context, struct show_deleted_search_request);
 
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -78,9 +73,6 @@ static int show_deleted_search_callback(struct ldb_context *ldb, void *context, 
 skip_deleted:
 	talloc_free(ares);
 	return LDB_SUCCESS;
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 static int show_deleted_search(struct ldb_module *module, struct ldb_request *req)

@@ -236,11 +236,6 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	struct kludge_private_data *data;
 	int i, ret;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
-	}
-
 	ac = talloc_get_type(context, struct kludge_acl_context);
 	data = talloc_get_type(ac->module->private_data, struct kludge_private_data);
 
@@ -296,10 +291,6 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	}
 
 	return ac->up_callback(ldb, ac->up_context, ares);
-
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)

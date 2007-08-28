@@ -355,11 +355,6 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 {
 	struct lpdb_context *ac;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	ac = talloc_get_type(context, struct lpdb_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
@@ -461,11 +456,6 @@ static int lpdb_local_search_callback(struct ldb_context *ldb, void *context, st
 {
 	struct lpdb_local_search_context *local_context;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	local_context = talloc_get_type(context, struct lpdb_local_search_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
@@ -528,11 +518,6 @@ static int lpdb_local_search_callback(struct ldb_context *ldb, void *context, st
 static int lpdb_remote_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct lpdb_context *ac;
-
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
-	}
 
 	ac = talloc_get_type(context, struct lpdb_context);
 
@@ -610,9 +595,6 @@ static int lpdb_remote_search_callback(struct ldb_context *ldb, void *context, s
 	} else {
 		return ac->orig_req->callback(ldb, ac->orig_req->context, ares);
 	}
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 /* Search for passwords and other attributes.  The passwords are
