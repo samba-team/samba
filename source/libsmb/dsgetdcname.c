@@ -508,7 +508,7 @@ static BOOL check_allowed_required_flags(uint32_t flags)
 	/* FIXME: check for DSGETDC_VALID_FLAGS and check for excluse bits
 	 * (DS_PDC_REQUIRED, DS_KDC_REQUIRED, DS_GC_SERVER_REQUIRED) */
 
-	debug_dsdcinfo_flags(0, flags);
+	debug_dsdcinfo_flags(10, flags);
 
 	if (return_type == (DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME)) {
 		return False;
