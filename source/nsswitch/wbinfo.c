@@ -493,6 +493,35 @@ static BOOL wbinfo_getdcname(const char *domain_name)
 	return True;
 }
 
+/* Find a DC */
+static BOOL wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.domain_name, domain_name);
+	request.flags = flags;
+
+	request.flags |= DS_DIRECTORY_SERVICE_REQUIRED;
+
+	/* Send request */
+
+	if (winbindd_request_response(WINBINDD_DSGETDCNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_fprintf(stderr, "Could not find dc for %s\n", domain_name);
+		return False;
+	}
+
+	/* Display response */
+
+	d_printf("%s\n", response.data.dc_name);
+
+	return True;
+}
+
 /* Check trust account password */
 
 static BOOL wbinfo_check_secret(void)
@@ -1218,6 +1247,7 @@ enum {
 	OPT_DOMAIN_NAME,
 	OPT_SEQUENCE,
 	OPT_GETDCNAME,
+	OPT_DSGETDCNAME,
 	OPT_USERDOMGROUPS,
 	OPT_USERSIDS,
 	OPT_ALLOCATE_UID,
@@ -1277,6 +1307,7 @@ int main(int argc, char **argv, char **envp)
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "getdcname", 0, POPT_ARG_STRING, &string_arg, OPT_GETDCNAME,
 		  "Get a DC name for a foreign domain", "domainname" },
+		{ "dsgetdcname", 0, POPT_ARG_STRING, &string_arg, OPT_DSGETDCNAME, "Find a DC for a domain", "domainname" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
@@ -1530,6 +1561,11 @@ int main(int argc, char **argv, char **envp)
 			break;
 		case OPT_GETDCNAME:
 			if (!wbinfo_getdcname(string_arg)) {
+				goto done;
+			}
+			break;
+		case OPT_DSGETDCNAME:
+			if (!wbinfo_dsgetdcname(string_arg, 0)) {
 				goto done;
 			}
 			break;

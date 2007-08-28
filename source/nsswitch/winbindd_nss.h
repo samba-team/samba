@@ -116,6 +116,7 @@ enum winbindd_cmd {
 	WINBINDD_DOMAIN_INFO,	/* Most of what we know from
 				   struct winbindd_domain */
 	WINBINDD_GETDCNAME,	/* Issue a GetDCName Request */
+	WINBINDD_DSGETDCNAME,	/* Issue a DsGetDCName Request */
 
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
