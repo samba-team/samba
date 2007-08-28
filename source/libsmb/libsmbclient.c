@@ -2675,7 +2675,9 @@ smbc_opendir_ctx(SMBCCTX *context,
                  */
 
                 ip_list = NULL;
-                if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+                if (!NT_STATUS_IS_OK(name_resolve_bcast(MSBROWSE, 1, &ip_list,
+				     &count)))
+		{
 
                         SAFE_FREE(ip_list);
 
