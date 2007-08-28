@@ -103,7 +103,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	*count = 0;
 
 	/* always try with wins first */
-	if (resolve_wins(name,0x00,&address,count)) {
+	if (NT_STATUS_IS_OK(resolve_wins(name,0x00,&address,count))) {
 		if ( (ret = SMB_MALLOC_P(struct in_addr)) == NULL ) {
 			free( address );
 			return NULL;
