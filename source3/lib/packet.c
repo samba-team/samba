@@ -83,6 +83,8 @@ NTSTATUS packet_fd_read(struct packet_context *ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ctx->in.data = in;
+
 	res = recv(ctx->fd, in + ctx->in.length, available, 0);
 
 	if (res < 0) {
@@ -94,8 +96,7 @@ NTSTATUS packet_fd_read(struct packet_context *ctx)
 		return NT_STATUS_END_OF_FILE;
 	}
 
-	ctx->in.data = in;
-	ctx->in.length += available;
+	ctx->in.length += res;
 
 	return NT_STATUS_OK;
 }
