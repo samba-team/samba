@@ -1077,6 +1077,8 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 
 		if ( assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
+		} else if ((p = strchr(domuser, '@')) != NULL) {
+			fstrcpy(domain, "");			
 		} else {
 			return False;
 		}
@@ -1309,6 +1311,23 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+
+	/* Add any Universal groups in the other_sids list */
+
+	for (i=0; i<info3->num_other_sids; i++) {
+		/* Skip Domain local groups outside our domain.
+		   We'll get these from the getsidaliases() RPC call. */
+		if (info3->other_sids_attrib[i] & SE_GROUP_RESOURCE)
+			continue;
+
+		if (!add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+				      user_sids, &num_groups))
+		{
+			TALLOC_FREE(info3);
+			return NT_STATUS_NO_MEMORY;			
+		}
+	}
+	
 
 	TALLOC_FREE(info3);
 	*p_num_groups = num_groups;
