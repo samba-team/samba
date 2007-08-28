@@ -1848,7 +1848,8 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
 
         /* Go looking for workgroups by broadcasting on the local network */ 
 
-        if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+        if (!NT_STATUS_IS_OK(name_resolve_bcast(MSBROWSE, 1, &ip_list,
+						&count))) {
                 DEBUG(99, ("No master browsers responded\n"));
                 return False;
         }
