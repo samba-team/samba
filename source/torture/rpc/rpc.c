@@ -91,6 +91,26 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
         return status;
 }
 
+static bool torture_rpc_setup_anonymous(struct torture_context *tctx, 
+										void **data)
+{
+	struct cli_credentials *anon_credentials;
+	NTSTATUS status;
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
+
+	anon_credentials = cli_credentials_init_anon(tctx);
+
+	status = dcerpc_pipe_connect(tctx, 
+				(struct dcerpc_pipe **)data, 
+				binding,
+				(const struct ndr_interface_table *)tctx->active_tcase->data,
+				anon_credentials, NULL);
+
+	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
+
+	return true;
+}
+
 static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 {
 	NTSTATUS status;
@@ -109,6 +129,20 @@ static bool torture_rpc_teardown (struct torture_context *tcase, void *data)
 	talloc_free(data);
 	return true;
 }
+
+_PUBLIC_ struct torture_tcase *torture_suite_add_anon_rpc_iface_tcase(struct torture_suite *suite, 
+								const char *name,
+								const struct ndr_interface_table *table)
+{
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, name);
+
+	tcase->setup = torture_rpc_setup_anonymous;
+	tcase->teardown = torture_rpc_teardown;
+	tcase->data = discard_const(table);
+
+	return tcase;
+}
+
 
 _PUBLIC_ struct torture_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
 								const char *name,
@@ -218,7 +252,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SAMSYNC", torture_rpc_samsync);
 	torture_suite_add_simple_test(suite, "SCHANNEL", torture_rpc_schannel);
 	torture_suite_add_simple_test(suite, "SCHANNEL2", torture_rpc_schannel2);
-	torture_suite_add_simple_test(suite, "SRVSVC", torture_rpc_srvsvc);
+	torture_suite_add_suite(suite, torture_rpc_srvsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
 	torture_suite_add_simple_test(suite, "EPMAPPER", torture_rpc_epmapper);
 	torture_suite_add_simple_test(suite, "INITSHUTDOWN", torture_rpc_initshutdown);
