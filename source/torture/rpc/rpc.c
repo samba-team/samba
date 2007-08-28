@@ -250,7 +250,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "LSA-GETUSER", torture_rpc_lsa_get_user);
 	torture_suite_add_simple_test(suite, "SECRETS", torture_rpc_lsa_secrets);
 	torture_suite_add_suite(suite, torture_rpc_echo());
-	torture_suite_add_suite(suite, torture_rpc_dfs());
+	torture_suite_add_simple_test(suite, "DFS", torture_rpc_dfs);
 	torture_suite_add_suite(suite, torture_rpc_unixinfo());
 	torture_suite_add_suite(suite, torture_rpc_eventlog());
 	torture_suite_add_suite(suite, torture_rpc_atsvc());
@@ -268,10 +268,10 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SCHANNEL2", torture_rpc_schannel2);
 	torture_suite_add_suite(suite, torture_rpc_srvsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
-	torture_suite_add_simple_test(suite, "EPMAPPER", torture_rpc_epmapper);
-	torture_suite_add_simple_test(suite, "INITSHUTDOWN", torture_rpc_initshutdown);
-	torture_suite_add_simple_test(suite, "OXIDRESOLVE", torture_rpc_oxidresolve);
-	torture_suite_add_simple_test(suite, "REMACT", torture_rpc_remact);
+	torture_suite_add_suite(suite, torture_rpc_epmapper(suite));
+	torture_suite_add_suite(suite, torture_rpc_initshutdown(suite));
+	torture_suite_add_suite(suite, torture_rpc_oxidresolve(suite));
+	torture_suite_add_suite(suite, torture_rpc_remact(suite));
 	torture_suite_add_simple_test(suite, "MGMT", torture_rpc_mgmt);
 	torture_suite_add_simple_test(suite, "SCANNER", torture_rpc_scanner);
 	torture_suite_add_simple_test(suite, "AUTOIDL", torture_rpc_autoidl);
@@ -292,7 +292,6 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "RPC-SAMBA3-WINREG", torture_samba3_rpc_winreg);
 	torture_suite_add_simple_test(suite, "DRSUAPI", torture_rpc_drsuapi);
 	torture_suite_add_simple_test(suite, "CRACKNAMES", torture_rpc_drsuapi_cracknames);
-	torture_suite_add_simple_test(suite, "ROT", torture_rpc_rot);
 	torture_suite_add_simple_test(suite, "DSSETUP", torture_rpc_dssetup);
 	torture_suite_add_simple_test(suite, "ALTERCONTEXT", torture_rpc_alter_context);
 	torture_suite_add_simple_test(suite, "JOIN", torture_rpc_join);

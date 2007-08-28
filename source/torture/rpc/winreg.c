@@ -747,7 +747,7 @@ struct torture_suite *torture_rpc_winreg(TALLOC_CTX *mem_ctx)
 			{"OpenHKCR", (winreg_open_fn)dcerpc_winreg_OpenHKCR },
 			{"OpenHKCU", (winreg_open_fn)dcerpc_winreg_OpenHKCU }};
 	int i;
-	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "WINREG");
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "winreg", 

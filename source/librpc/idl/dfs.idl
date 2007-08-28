@@ -5,7 +5,8 @@
 [ uuid("4fc742e0-4a10-11cf-8273-00aa004ae673"),
   version(3.0),
   pointer_default(unique),
-  helpstring("Settings for Microsoft Distributed File System")
+  helpstring("Settings for Microsoft Distributed File System"),
+  endpoint("ncacn_np:[\\pipe\\dfs]", "ncacn_ip_tcp:", "ncalrpc:")
 ] interface netdfs
 {
 	/******************/

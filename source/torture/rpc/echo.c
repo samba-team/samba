@@ -431,7 +431,7 @@ struct torture_suite *torture_rpc_echo(void)
 {
 	struct torture_suite *suite = torture_suite_create(
 		talloc_autofree_context(), "ECHO");
-	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "echo", 
 						  &ndr_table_rpcecho);

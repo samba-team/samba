@@ -128,7 +128,7 @@ static bool test_gidtosid(struct torture_context *tctx, struct dcerpc_pipe *p)
 struct torture_suite *torture_rpc_unixinfo(void)
 {
 	struct torture_suite *suite;
-	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *tcase;
 
 	suite = torture_suite_create(talloc_autofree_context(), "UNIXINFO");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "unixinfo", 

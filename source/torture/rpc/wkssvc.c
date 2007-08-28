@@ -80,7 +80,7 @@ static bool test_NetWkstaTransportEnum(struct torture_context *tctx,
 struct torture_suite *torture_rpc_wkssvc(void)
 {
 	struct torture_suite *suite;
-	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *tcase;
 
 	suite = torture_suite_create(talloc_autofree_context(), "WKSSVC");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "wkssvc",

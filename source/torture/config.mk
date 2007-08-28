@@ -148,7 +148,6 @@ OBJ_FILES = \
 		rpc/netlogon.o \
 		rpc/samlogon.o \
 		rpc/samsync.o \
-		rpc/rot.o \
 		rpc/bind.o \
 		rpc/dssetup.o \
 		rpc/alter_context.o \
