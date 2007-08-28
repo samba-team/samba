@@ -673,3 +673,23 @@ BOOL winbind_on( void )
 	return putenv(s) != -1;
 }
 
+/*************************************************************************
+ ************************************************************************/
+
+const char *nss_err_str(NSS_STATUS ret)
+{
+	switch (ret) {
+		case NSS_STATUS_TRYAGAIN:
+			return "NSS_STATUS_TRYAGAIN";
+		case NSS_STATUS_SUCCESS:
+			return "NSS_STATUS_SUCCESS";
+		case NSS_STATUS_NOTFOUND:
+			return "NSS_STATUS_NOTFOUND";
+		case NSS_STATUS_UNAVAIL:
+			return "NSS_STATUS_UNAVAIL";
+		case NSS_STATUS_RETURN:
+			return "NSS_STATUS_RETURN";
+		default:
+			return "UNKNOWN RETURN CODE!!!!!!!";
+	}
+}

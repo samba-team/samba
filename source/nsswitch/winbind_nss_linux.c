@@ -67,25 +67,6 @@ NSS_STATUS _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 
 extern int winbindd_fd;
 
-#ifdef DEBUG_NSS
-static const char *nss_err_str(NSS_STATUS ret) {
-	switch (ret) {
-		case NSS_STATUS_TRYAGAIN:
-			return "NSS_STATUS_TRYAGAIN";
-		case NSS_STATUS_SUCCESS:
-			return "NSS_STATUS_SUCCESS";
-		case NSS_STATUS_NOTFOUND:
-			return "NSS_STATUS_NOTFOUND";
-		case NSS_STATUS_UNAVAIL:
-			return "NSS_STATUS_UNAVAIL";
-		case NSS_STATUS_RETURN:
-			return "NSS_STATUS_RETURN";
-		default:
-			return "UNKNOWN RETURN CODE!!!!!!!";
-	}
-}
-#endif
-
 /* Allocate some space from the nss static buffer.  The buffer and buflen
    are the pointers passed in by the C library to the _nss_ntdom_*
    functions. */

@@ -15,4 +15,5 @@ int write_sock(void *buffer, int count, int recursing, int need_priv);
 int read_reply(struct winbindd_response *response);
 void close_sock(void);
 void free_response(struct winbindd_response *response);
+const char *nss_err_str(NSS_STATUS ret);
 
