@@ -188,6 +188,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		"saltPrincipal",
 		"privateKeytab",
 		"krb5Keytab",
+		"servicePrincipalName",
 		NULL
 	};
 	
@@ -246,12 +247,16 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	machine_account = ldb_msg_find_attr_as_string(msgs[0], "samAccountName", NULL);
 
 	if (!machine_account) {
-		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s: filter: '%s' base: '%s'\n",
-			  cli_credentials_get_domain(cred), filter, base));
-		/* set anonymous as the fallback, if the machine account won't work */
-		cli_credentials_set_anonymous(cred);
-		talloc_free(mem_ctx);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		machine_account = ldb_msg_find_attr_as_string(msgs[0], "servicePrincipalName", NULL);
+		
+		if (!machine_account) {
+			DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s: filter: '%s' base: '%s'\n",
+				  cli_credentials_get_domain(cred), filter, base));
+			/* set anonymous as the fallback, if the machine account won't work */
+			cli_credentials_set_anonymous(cred);
+			talloc_free(mem_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
 	}
 
 	salt_principal = ldb_msg_find_attr_as_string(msgs[0], "saltPrincipal", NULL);
