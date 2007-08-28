@@ -88,12 +88,31 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 
 	if (tdb->map_ptr) {
 		memcpy(off + (char *)tdb->map_ptr, buf, len);
-	} else if (pwrite(tdb->fd, buf, len, off) != (ssize_t)len) {
-		/* Ensure ecode is set for log fn. */
-		tdb->ecode = TDB_ERR_IO;
-		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_write failed at %d len=%d (%s)\n",
-			   off, len, strerror(errno)));
-		return TDB_ERRCODE(TDB_ERR_IO, -1);
+	} else {
+		ssize_t written = pwrite(tdb->fd, buf, len, off);
+		if ((written != (ssize_t)len) && (written != -1)) {
+			/* try once more */
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_write: wrote only "
+				 "%d of %d bytes at %d, trying once more\n",
+				 written, len, off));
+			errno = ENOSPC;
+			written = pwrite(tdb->fd, (void *)((char *)buf+written),
+					 len-written,
+					 off+written);
+		}
+		if (written == -1) {
+			/* Ensure ecode is set for log fn. */
+			tdb->ecode = TDB_ERR_IO;
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_write failed at %d "
+				 "len=%d (%s)\n", off, len, strerror(errno)));
+			return TDB_ERRCODE(TDB_ERR_IO, -1);
+		} else if (written != (ssize_t)len) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_write: failed to "
+				 "write %d bytes at %d in two attempts\n",
+				 len, off));
+			errno = ENOSPC;
+			return TDB_ERRCODE(TDB_ERR_IO, -1);
+		}
 	}
 	return 0;
 }
