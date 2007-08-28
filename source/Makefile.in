@@ -907,8 +907,7 @@ LDBDEL_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbdel.o
 LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 
 SMB_KRB5_LOCATOR_OBJ1 = libads/smb_krb5_locator.o
-SMB_KRB5_LOCATOR_OBJ = $(SMB_KRB5_LOCATOR_OBJ1) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		       $(LIBNMB_OBJ) $(RPC_PARSE_OBJ1) $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(DOSERR_OBJ)
+SMB_KRB5_LOCATOR_OBJ = $(SMB_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o

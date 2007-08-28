@@ -17,9 +17,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "nsswitch/winbind_client.h"
+
+#ifndef DEBUG_KRB5
+#undef DEBUG_KRB5
+#endif
 
 #if defined(HAVE_KRB5) && defined(HAVE_KRB5_LOCATE_PLUGIN_H)
+BOOL winbind_env_set( void );
 
 #include <krb5/locate_plugin.h>
 
@@ -42,6 +47,7 @@ static const char *get_service_from_locate_service_type(enum locate_service_type
 
 }
 
+#ifdef DEBUG_KRB5
 static const char *locate_service_type_name(enum locate_service_type svc)
 {
 	switch (svc) {
@@ -88,6 +94,7 @@ static const char *family_name(int family)
 	}
 	return "unknown";
 }
+#endif
 
 /**
  * Check input parameters, return KRB5_PLUGIN_NO_HANDLE for unsupported ones
@@ -185,8 +192,12 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 			continue;
 		}
 
-		DEBUG(10,("smb_krb5_locator_lookup: got ret: %s (%d)\n",
-			gai_strerror(ret), ret));
+#ifdef DEBUG_KRB5
+		fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
+			"getaddrinfo failed: %s (%d)\n",
+			(unsigned int)getpid(), gai_strerror(ret), ret);
+#endif
+
 #ifdef KRB5_PLUGIN_NO_HANDLE
 		return KRB5_PLUGIN_NO_HANDLE;
 #else
@@ -195,11 +206,13 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 	}
 
 	ret = cbfunc(cbdata, out->ai_socktype, out->ai_addr);
+#ifdef DEBUG_KRB5
 	if (ret) {
-		DEBUG(10,("smb_krb5_locator_lookup: "
+		fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
 			"failed to call callback: %s (%d)\n",
-			error_message(ret), ret));
+			(unsigned int)getpid(), error_message(ret), ret);
 	}
+#endif
 
 	freeaddrinfo(out);
 
@@ -218,12 +231,6 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 krb5_error_code smb_krb5_locator_init(krb5_context context,
 				      void **private_data)
 {
-	setup_logging("smb_krb5_locator", True);
-	load_case_tables();
-	lp_load(dyn_CONFIGFILE,True,False,False,True);
-
-	DEBUG(10,("smb_krb5_locator_init: called\n"));
-
 	return 0;
 }
 
@@ -237,9 +244,44 @@ krb5_error_code smb_krb5_locator_init(krb5_context context,
 
 void smb_krb5_locator_close(void *private_data)
 {
-	DEBUG(10,("smb_krb5_locator_close: called\n"));
+	return;
+}
 
-	/* gfree_all(); */
+
+static int ask_winbind(const char *realm, char **dcname)
+{
+	NSS_STATUS status;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.flags = 0x40020600;
+			/* DS_KDC_REQUIRED |
+			DS_IS_DNS_NAME |
+			DS_RETURN_DNS_NAME |
+			DS_IP_REQUIRED */
+
+	strncpy(request.domain_name, realm,
+		sizeof(request.domain_name)-1);
+
+	status = winbindd_request_response(WINBINDD_DSGETDCNAME,
+					   &request, &response);
+	if (status != NSS_STATUS_SUCCESS) {
+#ifdef DEBUG_KRB5
+		fprintf(stderr,"[%5u]: smb_krb5_locator_lookup: failed with: %s\n",
+			(unsigned int)getpid(), nss_err_str(status));
+#endif
+		return False;
+	}
+
+	*dcname = strdup(response.data.dc_name);
+	if (!*dcname) {
+		return False;
+	}
+
+	return True;
 }
 
 /**
@@ -264,111 +306,65 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 					int (*cbfunc)(void *, int, struct sockaddr *),
 					void *cbdata)
 {
-	NTSTATUS status;
 	krb5_error_code ret;
-	char *sitename = NULL;
-	struct ip_service *ip_list;
-	int count = 0;
 	struct addrinfo aihints;
-	char *saf_name = NULL;
+	char *kdc_name = NULL;
 	const char *service = get_service_from_locate_service_type(svc);
-	int i;
 
-	DEBUG(10,("smb_krb5_locator_lookup: called for\n"));
-	DEBUGADD(10,("\tsvc: %s (%d), realm: %s\n",
-		locate_service_type_name(svc), svc, realm));
-	DEBUGADD(10,("\tsocktype: %s (%d), family: %s (%d)\n",
-		socktype_name(socktype), socktype,
-	        family_name(family), family));
+	ZERO_STRUCT(aihints);
 
+#ifdef DEBUG_KRB5
+	fprintf(stderr,"[%5u]: smb_krb5_locator_lookup: called for '%s' "
+			"svc: '%s' (%d) "
+			"socktype: '%s' (%d), family: '%s' (%d)\n",
+			(unsigned int)getpid(), realm,
+			locate_service_type_name(svc), svc,
+			socktype_name(socktype), socktype,
+		        family_name(family), family);
+#endif
 	ret = smb_krb5_locator_lookup_sanity_check(svc, realm, socktype,
 						   family);
 	if (ret) {
-		DEBUG(10,("smb_krb5_locator_lookup: returning ret: %s (%d)\n",
-			error_message(ret), ret));
+#ifdef DEBUG_KRB5
+		fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
+			"returning ret: %s (%d)\n",
+			(unsigned int)getpid(), error_message(ret), ret);
+#endif
 		return ret;
 	}
 
-	/* first try to fetch from SAF cache */
+	if (!winbind_env_set()) {
+		if (!ask_winbind(realm, &kdc_name)) {
+#ifdef DEBUG_KRB5
+			fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
+				"failed to query winbindd\n",
+				(unsigned int)getpid());
+#endif
 
-	saf_name = saf_fetch(realm);
-	if (!saf_name || strlen(saf_name) == 0) {
-		DEBUG(10,("smb_krb5_locator_lookup: "
-			"no SAF name stored for %s\n",
-			realm));
-		goto find_kdc;
+#ifdef KRB5_PLUGIN_NO_HANDLE
+			return KRB5_PLUGIN_NO_HANDLE;
+#else
+			return KRB5_KDC_UNREACH; /* Heimdal */
+#endif
+		}
+	} else {
+		/* FIXME: here comes code for locator being called from within
+		 * winbind */
 	}
-
-	DEBUG(10,("smb_krb5_locator_lookup: got %s for %s from SAF cache\n",
-		saf_name, realm));
-
-	ZERO_STRUCT(aihints);
+#ifdef DEBUG_KRB5
+	fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
+		"got '%s' for '%s' from winbindd\n", (unsigned int)getpid(),
+		kdc_name, realm);
+#endif
 
 	aihints.ai_family = family;
 	aihints.ai_socktype = socktype;
 
-	ret = smb_krb5_locator_call_cbfunc(saf_name,
-					  service,
-					  &aihints,
-					  cbfunc, cbdata);
-	if (ret) {
-		return ret;
-	}
-
-	return 0;
-
- find_kdc:
-
-	/* now try to find via site-aware DNS SRV query */
-
-	sitename = sitename_fetch(realm);
-	status = get_kdc_list(realm, sitename, &ip_list, &count);
-
-	/* if we didn't found any KDCs on our site go to the main list */
-
-	if (NT_STATUS_IS_OK(status) && sitename && (count == 0)) {
-		SAFE_FREE(ip_list);
-		SAFE_FREE(sitename);
-		status = get_kdc_list(realm, NULL, &ip_list, &count);
-	}
-
-	SAFE_FREE(sitename);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("smb_krb5_locator_lookup: got %s (%s)\n",
-			nt_errstr(status),
-			error_message(nt_status_to_krb5(status))));
-#ifdef KRB5_PLUGIN_NO_HANDLE
-		return KRB5_PLUGIN_NO_HANDLE;
-#else
-		return KRB5_KDC_UNREACH; /* Heimdal */
-#endif
-	}
-
-	for (i=0; i<count; i++) {
-
-		const char *host = NULL;
-		const char *port = NULL;
-
-		ZERO_STRUCT(aihints);
-
-		aihints.ai_family = family;
-		aihints.ai_socktype = socktype;
-
-		host = inet_ntoa(ip_list[i].ip);
-		port = get_service_from_locate_service_type(svc);
-
-		ret = smb_krb5_locator_call_cbfunc(host,
-						  port,
-						  &aihints,
-						  cbfunc, cbdata);
-		if (ret) {
-			/* got error */
-			break;
-		}
-	}
-
-	SAFE_FREE(ip_list);
+	ret = smb_krb5_locator_call_cbfunc(kdc_name,
+					   service,
+					   &aihints,
+					   cbfunc, cbdata);
+	SAFE_FREE(kdc_name);
 
 	return ret;
 }
