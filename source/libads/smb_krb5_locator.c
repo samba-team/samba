@@ -340,16 +340,12 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 				"failed to query winbindd\n",
 				(unsigned int)getpid());
 #endif
-
-#ifdef KRB5_PLUGIN_NO_HANDLE
-			return KRB5_PLUGIN_NO_HANDLE;
-#else
-			return KRB5_KDC_UNREACH; /* Heimdal */
-#endif
+			goto failed;
 		}
 	} else {
 		/* FIXME: here comes code for locator being called from within
 		 * winbind */
+		 goto failed;
 	}
 #ifdef DEBUG_KRB5
 	fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
@@ -367,6 +363,13 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 	SAFE_FREE(kdc_name);
 
 	return ret;
+
+ failed:
+#ifdef KRB5_PLUGIN_NO_HANDLE
+	return KRB5_PLUGIN_NO_HANDLE;
+#else
+	return KRB5_KDC_UNREACH; /* Heimdal */
+#endif
 }
 
 #ifdef HEIMDAL_KRB5_LOCATE_PLUGIN_H
