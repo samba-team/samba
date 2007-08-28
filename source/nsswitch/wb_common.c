@@ -687,8 +687,10 @@ const char *nss_err_str(NSS_STATUS ret)
 			return "NSS_STATUS_NOTFOUND";
 		case NSS_STATUS_UNAVAIL:
 			return "NSS_STATUS_UNAVAIL";
+#ifdef NSS_STATUS_RETURN
 		case NSS_STATUS_RETURN:
 			return "NSS_STATUS_RETURN";
+#endif
 		default:
 			return "UNKNOWN RETURN CODE!!!!!!!";
 	}
