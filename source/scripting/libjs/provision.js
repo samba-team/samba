@@ -379,6 +379,7 @@ function provision_default_paths(subobj)
 	paths.samdb = lp.get("sam database");
 	paths.secrets = lp.get("secrets database");
 	paths.keytab = "secrets.keytab";
+	paths.dns_keytab = "dns.keytab";
 	paths.dns = lp.get("private dir") + "/" + dnsdomain + ".zone";
 	paths.named_conf = lp.get("private dir") + "/named.conf";
 	paths.winsdb = "wins.ldb";
@@ -469,6 +470,7 @@ function provision_fix_subobj(subobj, paths)
 
 	subobj.SAM_LDB		= "tdb://" + paths.samdb;
 	subobj.SECRETS_KEYTAB	= paths.keytab;
+	subobj.DNS_KEYTAB	= paths.dns_keytab;
 
 	subobj.LDAPDIR = paths.ldapdir;
 	var ldap_path_list = split("/", paths.ldapdir);
@@ -891,6 +893,7 @@ function provision_guess()
 	subobj.POLICYGUID   = randguid();
 	subobj.KRBTGTPASS   = randpass(12);
 	subobj.MACHINEPASS  = randpass(12);
+	subobj.DNSPASS  = randpass(12);
 	subobj.ADMINPASS    = randpass(12);
 	subobj.LDAPMANAGERPASS     = randpass(12);
 	subobj.DEFAULTSITE  = "Default-First-Site-Name";
