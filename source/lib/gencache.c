@@ -28,6 +28,8 @@
 #define TIMEOUT_LEN 12
 #define CACHE_DATA_FMT	"%12u/%s"
 #define READ_CACHE_DATA_FMT_TEMPLATE "%%12u/%%%us"
+#define BLOB_TYPE "DATA_BLOB"
+#define BLOB_TYPE_LEN 9
 
 static TDB_CONTEXT *cache;
 static BOOL cache_readonly;
@@ -243,6 +245,161 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	return True;
 } 
 
+/**
+ * Get existing entry from the cache file.
+ *
+ * @param keystr string that represents a key of this entry
+ * @param blob DATA_BLOB that is filled with entry's blob
+ * @param expired pointer to a BOOL that indicates whether the entry is expired
+ *
+ * @retval true when entry is successfuly fetched
+ * @retval False for failure
+ **/
+
+BOOL gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, BOOL *expired)
+{
+	TDB_DATA databuf;
+	time_t t;
+	char *blob_type;
+	unsigned char *buf = NULL;
+	BOOL ret = False;
+	fstring valstr;
+	int buflen = 0, len = 0, blob_len = 0;
+	unsigned char *blob_buf = NULL;
+
+	/* fail completely if get null pointers passed */
+	SMB_ASSERT(keystr);
+
+	if (!gencache_init()) {
+		return False;
+	}
+
+	databuf = tdb_fetch_bystring(cache, keystr);
+	if (!databuf.dptr) {
+		DEBUG(10,("Cache entry with key = %s couldn't be found\n",
+			  keystr));
+		return False;
+	}
+
+	buf = (unsigned char *)databuf.dptr;
+	buflen = databuf.dsize;
+
+	len += tdb_unpack(buf+len, buflen-len, "fB",
+			  &valstr,
+			  &blob_len, &blob_buf);
+	if (len == -1) {
+		goto out;
+	}
+
+	t = strtol(valstr, &blob_type, 10);
+
+	if (strcmp(blob_type+1, BLOB_TYPE) != 0) {
+		goto out;
+	}
+
+	DEBUG(10,("Returning %s cache entry: key = %s, "
+		  "timeout = %s", t > time(NULL) ? "valid" :
+		  "expired", keystr, ctime(&t)));
+
+	if (t <= time(NULL)) {
+		/* We're expired */
+		if (expired) {
+			*expired = True;
+		}
+	}
+
+	if (blob) {
+		*blob = data_blob(blob_buf, blob_len);
+		if (!blob->data) {
+			goto out;
+		}
+	}
+
+	ret = True;
+ out:
+	SAFE_FREE(blob_buf);
+	SAFE_FREE(databuf.dptr);
+
+	return ret;
+}
+
+/**
+ * Set an entry in the cache file. If there's no such
+ * one, then add it.
+ *
+ * @param keystr string that represents a key of this entry
+ * @param blob DATA_BLOB value being cached
+ * @param timeout time when the value is expired
+ *
+ * @retval true when entry is successfuly stored
+ * @retval false on failure
+ **/
+
+BOOL gencache_set_data_blob(const char *keystr, DATA_BLOB *blob, time_t timeout)
+{
+	BOOL ret = False;
+	int tdb_ret;
+	TDB_DATA databuf;
+	char *valstr = NULL;
+	unsigned char *buf = NULL;
+	int len = 0, buflen = 0;
+
+	/* fail completely if get null pointers passed */
+	SMB_ASSERT(keystr && blob);
+
+	if (!gencache_init()) {
+		return False;
+	}
+
+	if (cache_readonly) {
+		return False;
+	}
+
+	asprintf(&valstr, "%12u/%s", (int)timeout, BLOB_TYPE);
+	if (!valstr) {
+		return False;
+	}
+
+ again:
+	len = 0;
+
+	len += tdb_pack(buf+len, buflen-len, "fB",
+			valstr,
+			blob->length, blob->data);
+
+	if (len == -1) {
+		goto out;
+	}
+
+	if (buflen < len) {
+		SAFE_FREE(buf);
+		buf = SMB_MALLOC_ARRAY(unsigned char, len);
+		if (!buf) {
+			goto out;
+		}
+		buflen = len;
+		goto again;
+	}
+
+	databuf = make_tdb_data(buf, len);
+
+	DEBUG(10,("Adding cache entry with key = %s; "
+		  "blob size = %d and timeout = %s"
+		  "(%d seconds %s)\n", keystr, (int)databuf.dsize,
+		  ctime(&timeout), (int)(timeout - time(NULL)),
+		  timeout > time(NULL) ? "ahead" : "in the past"));
+
+	tdb_ret = tdb_store_bystring(cache, keystr, databuf, 0);
+	if (tdb_ret == 0) {
+		ret = True;
+	}
+
+ out:
+	SAFE_FREE(valstr);
+	SAFE_FREE(buf);
+
+	return ret;
+}
 
 /**
  * Iterate through all entries which key matches to specified pattern

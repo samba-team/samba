@@ -4820,6 +4820,7 @@ static BOOL run_local_gencache(int dummy)
 {
 	char *val;
 	time_t tm;
+	DATA_BLOB blob;
 
 	if (!gencache_init()) {
 		d_printf("%s: gencache_init() failed\n", __location__);
@@ -4857,6 +4858,46 @@ static BOOL run_local_gencache(int dummy)
 			
 	if (gencache_get("foo", &val, &tm)) {
 		d_printf("%s: gencache_get() on deleted entry "
+			 "succeeded\n", __location__);
+		return False;
+	}
+
+	blob = data_blob_string_const("bar");
+	tm = time(NULL);
+
+	if (!gencache_set_data_blob("foo", &blob, tm)) {
+		d_printf("%s: gencache_set_data_blob() failed\n", __location__);
+		return False;
+	}
+
+	data_blob_free(&blob);
+
+	if (!gencache_get_data_blob("foo", &blob, NULL)) {
+		d_printf("%s: gencache_get_data_blob() failed\n", __location__);
+		return False;
+	}
+
+	if (strcmp((const char *)blob.data, "bar") != 0) {
+		d_printf("%s: gencache_get_data_blob() returned %s, expected %s\n",
+			 __location__, (const char *)blob.data, "bar");
+		data_blob_free(&blob);
+		return False;
+	}
+
+	data_blob_free(&blob);
+
+	if (!gencache_del("foo")) {
+		d_printf("%s: gencache_del() failed\n", __location__);
+		return False;
+	}
+	if (gencache_del("foo")) {
+		d_printf("%s: second gencache_del() succeeded\n",
+			 __location__);
+		return False;
+	}
+
+	if (gencache_get_data_blob("foo", &blob, NULL)) {
+		d_printf("%s: gencache_get_data_blob() on deleted entry "
 			 "succeeded\n", __location__);
 		return False;
 	}
