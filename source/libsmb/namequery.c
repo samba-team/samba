@@ -777,17 +777,18 @@ static BOOL convert_ip2service( struct ip_service **return_iplist, struct in_add
  Resolve via "bcast" method.
 *********************************************************/
 
-BOOL name_resolve_bcast(const char *name, int name_type,
-			struct ip_service **return_iplist, int *return_count)
+NTSTATUS name_resolve_bcast(const char *name, int name_type,
+			    struct ip_service **return_iplist,
+			    int *return_count)
 {
 	int sock, i;
 	int num_interfaces = iface_count();
 	struct in_addr *ip_list;
-	BOOL ret;
+	NTSTATUS status;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_resolve_bcast(%s#%02x): netbios is disabled\n", name, name_type));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	*return_iplist = NULL;
@@ -802,7 +803,7 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	sock = open_socket_in( SOCK_DGRAM, 0, 3,
 			       interpret_addr(lp_socket_address()), True );
 
-	if (sock == -1) return False;
+	if (sock == -1) return NT_STATUS_UNSUCCESSFUL;
 
 	set_socket_options(sock,"SO_BROADCAST");
 	/*
@@ -823,33 +824,34 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	/* failed - no response */
 	
 	close(sock);
-	return False;
+	return NT_STATUS_UNSUCCESSFUL;
 	
 success:
-	ret = True;
+	status = NT_STATUS_OK;
 	if ( !convert_ip2service(return_iplist, ip_list, *return_count) )
-		ret = False;
+		status = NT_STATUS_INVALID_PARAMETER;
 	
 	SAFE_FREE( ip_list );
 	close(sock);
-	return ret;
+	return status;
 }
 
 /********************************************************
  Resolve via "wins" method.
 *********************************************************/
 
-BOOL resolve_wins(const char *name, int name_type,
-		  struct ip_service **return_iplist, int *return_count)
+NTSTATUS resolve_wins(const char *name, int name_type,
+		      struct ip_service **return_iplist,
+		      int *return_count)
 {
 	int sock, t, i;
 	char **wins_tags;
 	struct in_addr src_ip, *ip_list = NULL;
-	BOOL ret;
+	NTSTATUS status;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("resolve_wins(%s#%02x): netbios is disabled\n", name, name_type));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	*return_iplist = NULL;
@@ -859,7 +861,7 @@ BOOL resolve_wins(const char *name, int name_type,
 
 	if (wins_srv_count() < 1) {
 		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS servers listed.\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* we try a lookup on each of the WINS tags in turn */
@@ -867,7 +869,7 @@ BOOL resolve_wins(const char *name, int name_type,
 
 	if (!wins_tags) {
 		/* huh? no tags?? give up in disgust */
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* the address we will be sending from */
@@ -924,26 +926,27 @@ BOOL resolve_wins(const char *name, int name_type,
 	}
 
 	wins_srv_tags_free(wins_tags);
-	return False;
+	return NT_STATUS_NO_LOGON_SERVERS;
 
 success:
-	ret = True;
+	status = NT_STATUS_OK;
 	if ( !convert_ip2service( return_iplist, ip_list, *return_count ) )
-		ret = False;
+		status = NT_STATUS_INVALID_PARAMETER;
 	
 	SAFE_FREE( ip_list );
 	wins_srv_tags_free(wins_tags);
 	close(sock);
 	
-	return ret;
+	return status;
 }
 
 /********************************************************
  Resolve via "lmhosts" method.
 *********************************************************/
 
-static BOOL resolve_lmhosts(const char *name, int name_type,
-                         struct ip_service **return_iplist, int *return_count)
+static NTSTATUS resolve_lmhosts(const char *name, int name_type,
+				struct ip_service **return_iplist,
+				int *return_count)
 {
 	/*
 	 * "lmhosts" means parse the local lmhosts file.
@@ -953,7 +956,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 	pstring lmhost_name;
 	int name_type2;
 	struct in_addr return_ip;
-	BOOL result = False;
+	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -963,7 +966,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 	fp = startlmhosts(dyn_LMHOSTSFILE);
 
 	if ( fp == NULL )
-		return False;
+		return NT_STATUS_NO_SUCH_FILE;
 
 	while (getlmhostsent(fp, lmhost_name, &name_type2, &return_ip)) 
 	{
@@ -980,7 +983,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 		if ((*return_iplist) == NULL) {
 			endlmhosts(fp);
 			DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		(*return_iplist)[*return_count].ip   = return_ip;
@@ -988,7 +991,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 		*return_count += 1;
 
 		/* we found something */
-		result = True;
+		status = NT_STATUS_OK;
 
 		/* Multiple names only for DC lookup */
 		if (name_type != 0x1c)
@@ -997,7 +1000,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 
 	endlmhosts(fp);
 
-	return result;
+	return status;
 }
 
 
@@ -1005,8 +1008,9 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
  Resolve via "hosts" method.
 *********************************************************/
 
-static BOOL resolve_hosts(const char *name, int name_type,
-                         struct ip_service **return_iplist, int *return_count)
+static NTSTATUS resolve_hosts(const char *name, int name_type,
+			      struct ip_service **return_iplist,
+			      int *return_count)
 {
 	/*
 	 * "host" means do a localhost, or dns lookup.
@@ -1015,7 +1019,7 @@ static BOOL resolve_hosts(const char *name, int name_type,
 	
 	if ( name_type != 0x20 && name_type != 0x0) {
 		DEBUG(5, ("resolve_hosts: not appropriate for name type <0x%x>\n", name_type));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	*return_iplist = NULL;
@@ -1029,23 +1033,24 @@ static BOOL resolve_hosts(const char *name, int name_type,
 		*return_iplist = SMB_MALLOC_P(struct ip_service);
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
 		(*return_iplist)->ip   = return_ip;
 		(*return_iplist)->port = PORT_NONE;
 		*return_count = 1;
-		return True;
+		return NT_STATUS_OK;
 	}
-	return False;
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /********************************************************
  Resolve via "ADS" method.
 *********************************************************/
 
-static BOOL resolve_ads(const char *name, int name_type,
-			const char *sitename,
-                         struct ip_service **return_iplist, int *return_count)
+NTSTATUS resolve_ads(const char *name, int name_type,
+		     const char *sitename,
+		     struct ip_service **return_iplist,
+		     int *return_count)
 {
 	int 			i, j;
 	NTSTATUS  		status;
@@ -1054,25 +1059,36 @@ static BOOL resolve_ads(const char *name, int name_type,
 	int			numdcs = 0;
 	int			numaddrs = 0;
 
-	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE))
-		return False;
-		
-	DEBUG(5,("resolve_ads: Attempting to resolve DC's for %s using DNS\n",
-		name));
-			
-	if ( (ctx = talloc_init("resolve_ads")) == NULL ) {
-		DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
-		return False;
+	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (name_type == KDC_NAME_TYPE) {
-		status = ads_dns_query_kdcs(ctx, name, sitename, &dcs, &numdcs);
-	} else {
-		status = ads_dns_query_dcs(ctx, name, sitename, &dcs, &numdcs);
+	if ( (ctx = talloc_init("resolve_ads")) == NULL ) {
+		DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
+
+	switch (name_type) {
+		case 0x1c:
+			DEBUG(5,("resolve_ads: Attempting to resolve "
+				 "DCs for %s using DNS\n", name));
+			status = ads_dns_query_dcs(ctx, name, sitename, &dcs,
+						   &numdcs);
+			break;
+		case KDC_NAME_TYPE:
+			DEBUG(5,("resolve_ads: Attempting to resolve "
+				 "KDCs for %s using DNS\n", name));
+			status = ads_dns_query_kdcs(ctx, name, sitename, &dcs,
+						    &numdcs);
+			break;
+		default:
+			status = NT_STATUS_INVALID_PARAMETER;
+			break;
+	}
+
 	if ( !NT_STATUS_IS_OK( status ) ) {
 		talloc_destroy(ctx);
-		return False;
+		return status;
 	}
 
 	for (i=0;i<numdcs;i++) {
@@ -1082,7 +1098,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 	if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numaddrs)) == NULL ) {
 		DEBUG(0,("resolve_ads: malloc failed for %d entries\n", numaddrs ));
 		talloc_destroy(ctx);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 	
 	/* now unroll the list of IP addresses */
@@ -1126,7 +1142,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 	}
 		
 	talloc_destroy(ctx);
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1140,10 +1156,10 @@ static BOOL resolve_ads(const char *name, int name_type,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-BOOL internal_resolve_name(const char *name, int name_type,
-			   const char *sitename,
-			   struct ip_service **return_iplist, 
-			   int *return_count, const char *resolve_order)
+NTSTATUS internal_resolve_name(const char *name, int name_type,
+			       const char *sitename,
+			       struct ip_service **return_iplist,
+			       int *return_count, const char *resolve_order)
 {
 	pstring name_resolve_list;
 	fstring tok;
@@ -1151,7 +1167,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 	BOOL allones = (strcmp(name,"255.255.255.255") == 0);
 	BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
 	BOOL is_address = is_ipaddress(name);
-	BOOL result = False;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
 	*return_iplist = NULL;
@@ -1164,7 +1180,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
   
 		if ( (*return_iplist = SMB_MALLOC_P(struct ip_service)) == NULL ) {
 			DEBUG(0,("internal_resolve_name: malloc fail !\n"));
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
 	
 		if(is_address) { 
@@ -1175,27 +1191,31 @@ BOOL internal_resolve_name(const char *name, int name_type,
 			if (((*return_iplist)->ip.s_addr = inet_addr(name)) == 0xFFFFFFFF ){
 				DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
 				SAFE_FREE(*return_iplist);
-				return False;
+				return NT_STATUS_INVALID_PARAMETER;
 			}
 		} else {
 			(*return_iplist)->ip.s_addr = allones ? 0xFFFFFFFF : 0;
 		}
 		*return_count = 1;
-		return True;
+		return NT_STATUS_OK;
 	}
   
 	/* Check name cache */
 
 	if (namecache_fetch(name, name_type, return_iplist, return_count)) {
 		/* This could be a negative response */
-		return (*return_count > 0);
+		if (*return_count > 0) {
+			return NT_STATUS_OK;
+		} else {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	/* set the name resolution order */
 
 	if ( strcmp( resolve_order, "NULL") == 0 ) {
 		DEBUG(8,("internal_resolve_name: all lookups disabled\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
   
 	if ( !resolve_order ) {
@@ -1214,44 +1234,55 @@ BOOL internal_resolve_name(const char *name, int name_type,
   
 	while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-			if (resolve_hosts(name, name_type, return_iplist, return_count)) {
-				result = True;
+			status = resolve_hosts(name, name_type, return_iplist,
+					       return_count);
+			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.  This will result in a
 				SRV record lookup */
-			if (resolve_ads(name, KDC_NAME_TYPE, sitename, return_iplist, return_count)) {
-				result = True;
+			status = resolve_ads(name, KDC_NAME_TYPE, sitename,
+					     return_iplist, return_count);
+			if (NT_STATUS_IS_OK(status)) {
 				/* Ensure we don't namecache this with the KDC port. */
 				name_type = KDC_NAME_TYPE;
 				goto done;
 			}
 		} else if(strequal( tok, "ads")) {
-			/* deal with 0x1c names here.  This will result in a
+			/* deal with 0x1c and 0x1b names here.  This will result in a
 				SRV record lookup */
-			if (resolve_ads(name, name_type, sitename, return_iplist, return_count)) {
-				result = True;
+			status = resolve_ads(name, name_type, sitename,
+					     return_iplist, return_count);
+			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 		} else if(strequal( tok, "lmhosts")) {
-			if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
-				result = True;
+			status = resolve_lmhosts(name, name_type,
+						 return_iplist, return_count);
+			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 		} else if(strequal( tok, "wins")) {
 			/* don't resolve 1D via WINS */
-			if (name_type != 0x1D && resolve_wins(name, name_type, return_iplist, return_count)) {
-				result = True;
-				goto done;
+			if (name_type != 0x1D) {
+				status = resolve_wins(name, name_type,
+						      return_iplist,
+						      return_count);
+				if (NT_STATUS_IS_OK(status)) {
+					goto done;
+				}
 			}
 		} else if(strequal( tok, "bcast")) {
-			if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
-				result = True;
+			status = name_resolve_bcast(name, name_type,
+						    return_iplist,
+						    return_count);
+			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 		} else {
-			DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
+			DEBUG(0,("resolve_name: unknown name switch type %s\n",
+				tok));
 		}
 	}
 
@@ -1260,7 +1291,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 	SAFE_FREE(*return_iplist);
 	*return_count = 0;
 
-	return False;
+	return NT_STATUS_UNSUCCESSFUL;
 
   done:
 
@@ -1293,7 +1324,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 		DEBUG(10, ("\n"));
 	}
   
-	return result;
+	return status;
 }
 
 /********************************************************
@@ -1315,7 +1346,9 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 		return True;
 	}
 
-	if (internal_resolve_name(name, name_type, sitename, &ip_list, &count, lp_name_resolve_order())) {
+	if (NT_STATUS_IS_OK(internal_resolve_name(name, name_type, sitename,
+						  &ip_list, &count,
+						  lp_name_resolve_order()))) {
 		int i;
 		
 		/* only return valid addresses for TCP connections */
@@ -1346,18 +1379,24 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 {
 	struct ip_service *ip_list = NULL;
 	int count = 0;
+	NTSTATUS status;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("find_master_ip(%s): netbios is disabled\n", group));
 		return False;
 	}
 
-	if (internal_resolve_name(group, 0x1D, NULL, &ip_list, &count, lp_name_resolve_order())) {
+	status = internal_resolve_name(group, 0x1D, NULL, &ip_list, &count,
+				       lp_name_resolve_order());
+	if (NT_STATUS_IS_OK(status)) {
 		*master_ip = ip_list[0].ip;
 		SAFE_FREE(ip_list);
 		return True;
 	}
-	if(internal_resolve_name(group, 0x1B, NULL, &ip_list, &count, lp_name_resolve_order())) {
+
+	status = internal_resolve_name(group, 0x1B, NULL, &ip_list, &count,
+				       lp_name_resolve_order());
+	if (NT_STATUS_IS_OK(status)) {
 		*master_ip = ip_list[0].ip;
 		SAFE_FREE(ip_list);
 		return True;
@@ -1376,10 +1415,14 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 {
 	struct ip_service *ip_list = NULL;
 	int count = 0;
+	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
 	/* Look up #1B name */
 
-	if (!internal_resolve_name(domain, 0x1b, NULL, &ip_list, &count, lp_name_resolve_order())) {
+	status = internal_resolve_name(domain, 0x1b, NULL, &ip_list,
+				       &count,
+				       lp_name_resolve_order());
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
@@ -1423,6 +1466,7 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 	struct ip_service *auto_ip_list = NULL;
 	BOOL done_auto_lookup = False;
 	int auto_count = 0;
+	NTSTATUS status;
 
 	*ordered = False;
 
@@ -1471,14 +1515,8 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 
 	if ( !*pserver ) {
 		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
-		/* TODO: change return type of internal_resolve_name to
-		 * NTSTATUS */
-		if (internal_resolve_name(domain, 0x1C, sitename, ip_list, count,
-					  resolve_order)) {
-			return NT_STATUS_OK;
-		} else {
-			return NT_STATUS_NO_LOGON_SERVERS;
-		}
+		return internal_resolve_name(domain, 0x1C, sitename, ip_list,
+					     count, resolve_order);
 	}
 
 	DEBUG(3,("get_dc_list: preferred server list: \"%s\"\n", pserver ));
@@ -1493,9 +1531,13 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 	p = pserver;
 	while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 		if (strequal(name, "*")) {
-			if (internal_resolve_name(domain, 0x1C, sitename, &auto_ip_list,
-						  &auto_count, resolve_order))
+			status = internal_resolve_name(domain, 0x1C, sitename,
+						       &auto_ip_list,
+						       &auto_count,
+						       resolve_order);
+			if (NT_STATUS_IS_OK(status)) {
 				num_addresses += auto_count;
+			}
 			done_auto_lookup = True;
 			DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
 		} else  {
@@ -1512,12 +1554,8 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 			SAFE_FREE(auto_ip_list);
 			return NT_STATUS_NO_LOGON_SERVERS;
 		}
-		if (internal_resolve_name(domain, 0x1C, sitename, ip_list, count,
-					  resolve_order)) {
-			return NT_STATUS_OK;
-		} else {
-			return NT_STATUS_NO_LOGON_SERVERS;
-		}
+		return internal_resolve_name(domain, 0x1C, sitename, ip_list,
+					     count, resolve_order);
 	}
 
 	if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
