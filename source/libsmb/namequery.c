@@ -1059,7 +1059,8 @@ NTSTATUS resolve_ads(const char *name, int name_type,
 	int			numdcs = 0;
 	int			numaddrs = 0;
 
-	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE)) {
+	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE) &&
+	    (name_type != 0x1b)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1069,6 +1070,12 @@ NTSTATUS resolve_ads(const char *name, int name_type,
 	}
 
 	switch (name_type) {
+		case 0x1b:
+			DEBUG(5,("resolve_ads: Attempting to resolve "
+				 "PDC for %s using DNS\n", name));
+			status = ads_dns_query_pdc(ctx, name, &dcs, &numdcs);
+			break;
+
 		case 0x1c:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
 				 "DCs for %s using DNS\n", name));
@@ -1419,11 +1426,18 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 
 	/* Look up #1B name */
 
-	status = internal_resolve_name(domain, 0x1b, NULL, &ip_list,
-				       &count,
-				       lp_name_resolve_order());
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+	if (lp_security() == SEC_ADS) {
+		status = internal_resolve_name(domain, 0x1b, NULL, &ip_list,
+					       &count, "ads");
+	}
+
+	if (!NT_STATUS_IS_OK(status) || count == 0) {
+		status = internal_resolve_name(domain, 0x1b, NULL, &ip_list,
+					       &count,
+					       lp_name_resolve_order());
+		if (!NT_STATUS_IS_OK(status)) {
+			return False;
+		}
 	}
 
 	/* if we get more than 1 IP back we have to assume it is a
