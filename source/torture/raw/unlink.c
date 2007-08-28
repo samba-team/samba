@@ -37,7 +37,7 @@
 /*
   test unlink ops
 */
-static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_unlink io;
 	NTSTATUS status;
@@ -199,7 +199,8 @@ done:
 /*
   test delete on close 
 */
-static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_delete_on_close(struct torture_context *tctx, 
+								 struct smbcli_state *cli)
 {
 	union smb_open op;
 	union smb_unlink io;
@@ -224,7 +225,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	printf("Testing with delete_on_close 0\n");
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, tctx, fname);
 
 	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFO;
 	sfinfo.disposition_info.in.file.fnum = fnum;
@@ -238,7 +239,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Testing with delete_on_close 1\n");
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, tctx, fname);
 	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
@@ -290,7 +291,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = create_directory_handle(cli->tree, dname, &fnum);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		fnum2 = create_complex_file(cli, mem_ctx, inside);
+		fnum2 = create_complex_file(cli, tctx, inside);
 
 		sfinfo.disposition_info.in.file.fnum = fnum;
 		sfinfo.disposition_info.in.delete_on_close = 1;
@@ -321,7 +322,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
 	smbcli_close(cli->tree, fnum);
-	fnum2 = create_complex_file(cli, mem_ctx, inside);
+	fnum2 = create_complex_file(cli, tctx, inside);
 	smbcli_close(cli->tree, fnum2);
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
@@ -337,7 +338,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	op.ntcreatex.in.security_flags = 0;
 	op.ntcreatex.in.fname = dname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = op.ntcreatex.out.file.fnum;
 
@@ -353,7 +354,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, fnum);
 	
-	fnum2 = create_complex_file(cli, mem_ctx, inside);
+	fnum2 = create_complex_file(cli, tctx, inside);
 	smbcli_close(cli->tree, fnum2);
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
@@ -369,7 +370,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	op.ntcreatex.in.security_flags = 0;
 	op.ntcreatex.in.fname = dname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = op.ntcreatex.out.file.fnum;
 
@@ -386,7 +387,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	smbcli_close(cli->tree, fnum);
 
-	fnum = create_complex_file(cli, mem_ctx, inside);
+	fnum = create_complex_file(cli, tctx, inside);
 	smbcli_close(cli->tree, fnum);
 
 	/* we have a dir with a file in it, no handles open */
@@ -404,13 +405,13 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	op.ntcreatex.in.security_flags = 0;
 	op.ntcreatex.in.fname = dname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = op.ntcreatex.out.file.fnum;
 
 	/* open without delete on close */
 	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = op.ntcreatex.out.file.fnum;
 
@@ -436,22 +437,13 @@ done:
 /* 
    basic testing of unlink calls
 */
-BOOL torture_raw_unlink(struct torture_context *torture)
+struct torture_suite *torture_raw_unlink(TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
+													   "UNLINK");
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
+	torture_suite_add_1smb_test(suite, "unlink", test_unlink);
+	torture_suite_add_1smb_test(suite, "delete_on_close", test_delete_on_close);
 
-	mem_ctx = talloc_init("torture_raw_unlink");
-
-	ret &= test_unlink(cli, mem_ctx);
-	ret &= test_delete_on_close(cli, mem_ctx);
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
-	return ret;
+	return suite;
 }

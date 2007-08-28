@@ -81,7 +81,7 @@ static BOOL check_buffer(uint8_t *buf, uint_t seed, int len, int line)
 /*
   test read ops
 */
-static BOOL test_read(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_read io;
 	NTSTATUS status;
@@ -93,7 +93,7 @@ static BOOL test_read(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -207,7 +207,8 @@ done:
 /*
   test lockread ops
 */
-static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_lockread(struct torture_context *tctx, 
+						  struct smbcli_state *cli)
 {
 	union smb_read io;
 	NTSTATUS status;
@@ -219,7 +220,7 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -352,7 +353,7 @@ done:
 /*
   test readx ops
 */
-static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_read io;
 	NTSTATUS status;
@@ -364,7 +365,7 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -590,7 +591,8 @@ done:
 /*
   test readbraw ops
 */
-static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_readbraw(struct torture_context *tctx, 
+						  struct smbcli_state *cli)
 {
 	union smb_read io;
 	NTSTATUS status;
@@ -602,7 +604,7 @@ static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -762,7 +764,8 @@ done:
 /*
   test read for execute
 */
-static BOOL test_read_for_execute(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_read_for_execute(struct torture_context *tctx, 
+								  struct smbcli_state *cli)
 {
 	union smb_open op;
 	union smb_write wr;
@@ -775,7 +778,7 @@ static BOOL test_read_for_execute(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\test.txt";
 	const uint8_t data[] = "TEST DATA";
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -795,7 +798,7 @@ static BOOL test_read_for_execute(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	op.ntcreatex.in.security_flags = 0;
 	op.ntcreatex.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = op.ntcreatex.out.file.fnum;
 
@@ -826,7 +829,7 @@ static BOOL test_read_for_execute(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	op.ntcreatex.in.security_flags = 0;
 	op.ntcreatex.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = op.ntcreatex.out.file.fnum;
 
@@ -873,7 +876,7 @@ static BOOL test_read_for_execute(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	op.ntcreatex.in.security_flags = 0;
 	op.ntcreatex.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = op.ntcreatex.out.file.fnum;
 
@@ -917,25 +920,16 @@ done:
 /* 
    basic testing of read calls
 */
-BOOL torture_raw_read(struct torture_context *torture)
+struct torture_suite *torture_raw_read(TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "READ");
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
+	torture_suite_add_1smb_test(suite, "read", test_read);
+	torture_suite_add_1smb_test(suite, "readx", test_readx);
+	torture_suite_add_1smb_test(suite, "lockread", test_lockread);
+	torture_suite_add_1smb_test(suite, "readbraw", test_readbraw);
+	torture_suite_add_1smb_test(suite, "read for execute", 
+								test_read_for_execute);
 
-	mem_ctx = talloc_init("torture_raw_read");
-
-	ret &= test_read(cli, mem_ctx);
-	ret &= test_readx(cli, mem_ctx);
-	ret &= test_lockread(cli, mem_ctx);
-	ret &= test_readbraw(cli, mem_ctx);
-	ret &= test_read_for_execute(cli, mem_ctx);
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
-	return ret;
+	return suite;
 }

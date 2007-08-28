@@ -120,26 +120,19 @@ static union smb_fsinfo *find(const char *name)
    Some of the consistency tests assume that the target filesystem is
    quiescent, which is sometimes hard to achieve
 */
-BOOL torture_raw_qfsinfo(struct torture_context *torture)
+bool torture_raw_qfsinfo(struct torture_context *torture, 
+						 struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	int i;
 	BOOL ret = True;
 	int count;
 	union smb_fsinfo *s1, *s2;	
-	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_qfsinfo");
-	
 	/* scan all the levels, pulling the results */
 	for (i=0; levels[i].name; i++) {
 		printf("Running level %s\n", levels[i].name);
 		levels[i].fsinfo.generic.level = levels[i].level;
-		levels[i].status = smb_raw_fsinfo(cli->tree, mem_ctx, &levels[i].fsinfo);
+		levels[i].status = smb_raw_fsinfo(cli->tree, torture, &levels[i].fsinfo);
 	}
 
 	/* check for completely broken levels */
@@ -158,11 +151,10 @@ BOOL torture_raw_qfsinfo(struct torture_context *torture)
 	}
 
 	if (count != 0) {
-		ret = False;
 		printf("%d levels failed\n", count);
 		if (count > 13) {
 			printf("too many level failures - giving up\n");
-			goto done;
+			return False;
 		}
 	}
 
@@ -303,8 +295,5 @@ BOOL torture_raw_qfsinfo(struct torture_context *torture)
 	STR_CHECK("ATTRIBUTE_INFO",        attribute_info, fs_type, STR_UNICODE);
 	STR_CHECK("ATTRIBUTE_INFORMATION", attribute_info, fs_type, STR_UNICODE);
 
-done:
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

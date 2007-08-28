@@ -151,34 +151,20 @@ done:
 /* 
    basic testing of some ioctl calls 
 */
-BOOL torture_raw_ioctl(struct torture_context *torture)
+bool torture_raw_ioctl(struct torture_context *torture, 
+					   struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_ioctl");
+	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
-	if (!test_ioctl(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_fsctl(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_ioctl(cli, torture);
+	ret &= test_fsctl(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

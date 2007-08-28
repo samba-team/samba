@@ -24,14 +24,13 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 
-
-/* basic testing of all RAW_CLOSE_* calls 
+/**
+ * basic testing of all RAW_CLOSE_* calls 
 */
-BOOL torture_raw_close(struct torture_context *torture)
+bool torture_raw_close(struct torture_context *torture,
+					   struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	bool ret = true;
 	union smb_close io;
 	union smb_flush io_flush;
 	int fnum;
@@ -40,17 +39,11 @@ BOOL torture_raw_close(struct torture_context *torture)
 	union smb_fileinfo finfo, finfo2;
 	NTSTATUS status;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_close");
-
 #define REOPEN do { \
-	fnum = create_complex_file(cli, mem_ctx, fname); \
+	fnum = create_complex_file(cli, torture, fname); \
 	if (fnum == -1) { \
 		printf("(%d) Failed to create %s\n", __LINE__, fname); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -58,7 +51,7 @@ BOOL torture_raw_close(struct torture_context *torture)
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%d) Incorrect status %s - should be %s\n", \
 		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -78,15 +71,15 @@ BOOL torture_raw_close(struct torture_context *torture)
 	/* the file should have the write time set */
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
 	finfo.generic.in.file.path = fname;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	status = smb_raw_pathinfo(cli->tree, torture, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (basetime != nt_time_to_unix(finfo.all_info.out.write_time)) {
 		printf("Incorrect write time on file - %s - %s\n",
-		       timestring(mem_ctx, basetime), 
-		       nt_time_string(mem_ctx, finfo.all_info.out.write_time));
-		dump_all_info(mem_ctx, &finfo);
-		ret = False;
+		       timestring(torture, basetime), 
+		       nt_time_string(torture, finfo.all_info.out.write_time));
+		dump_all_info(torture, &finfo);
+		ret = false;
 	}
 
 	printf("testing other times\n");
@@ -99,7 +92,7 @@ BOOL torture_raw_close(struct torture_context *torture)
 	    nt_time_equal(&finfo.all_info.out.write_time, 
 			  &finfo.all_info.out.change_time)) {
 		printf("Incorrect times after close - only write time should be set\n");
-		dump_all_info(mem_ctx, &finfo);
+		dump_all_info(torture, &finfo);
 
 		if (!torture_setting_bool(torture, "samba3", false)) {
 			/*
@@ -117,7 +110,7 @@ BOOL torture_raw_close(struct torture_context *torture)
 
 	finfo2.generic.level = RAW_FILEINFO_ALL_INFO;
 	finfo2.generic.in.file.path = fname;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2);
+	status = smb_raw_pathinfo(cli->tree, torture, &finfo2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	io.close.level = RAW_CLOSE_CLOSE;
@@ -129,14 +122,14 @@ BOOL torture_raw_close(struct torture_context *torture)
 	/* the file should have the write time set equal to access time */
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
 	finfo.generic.in.file.path = fname;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	status = smb_raw_pathinfo(cli->tree, torture, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (!nt_time_equal(&finfo.all_info.out.write_time, 
 			   &finfo2.all_info.out.write_time)) {
 		printf("Incorrect write time on file - 0 time should be ignored\n");
-		dump_all_info(mem_ctx, &finfo);
-		ret = False;
+		dump_all_info(torture, &finfo);
+		ret = false;
 	}
 
 	printf("testing splclose\n");
@@ -179,7 +172,5 @@ BOOL torture_raw_close(struct torture_context *torture)
 done:
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

@@ -30,11 +30,10 @@
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-BOOL torture_raw_sfileinfo(struct torture_context *torture)
+bool torture_raw_sfileinfo(struct torture_context *torture, 
+						   struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
 	int fnum_saved, d_fnum, fnum2, fnum = -1;
 	char *fnum_fname;
 	char *fnum_fname_new;
@@ -53,19 +52,13 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
 	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_sfileinfo");
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
 #define RECREATE_FILE(fname) do { \
 	if (fnum != -1) smbcli_close(cli->tree, fnum); \
-	fnum = create_complex_file(cli, mem_ctx, fname); \
+	fnum = create_complex_file(cli, torture, fname); \
 	if (fnum == -1) { \
 		printf("(%s) ERROR: open of %s failed (%s)\n", \
 		       __location__, fname, smbcli_errstr(cli->tree)); \
@@ -94,7 +87,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 	} \
 	finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
 	finfo1.generic.in.file.fnum = fnum; \
-	status2 = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1); \
+	status2 = smb_raw_fileinfo(cli->tree, torture, &finfo1); \
 	if (!NT_STATUS_IS_OK(status2)) { \
 		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status)); \
 		ret = False; \
@@ -117,10 +110,10 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 	} \
 	finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
 	finfo1.generic.in.file.path = path_fname; \
-	status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo1); \
+	status2 = smb_raw_pathinfo(cli->tree, torture, &finfo1); \
 	if (NT_STATUS_EQUAL(status2, NT_STATUS_OBJECT_NAME_NOT_FOUND)) { \
 		finfo1.generic.in.file.path = path_fname_new; \
-		status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo1); \
+		status2 = smb_raw_pathinfo(cli->tree, torture, &finfo1); \
 	} \
 	if (!NT_STATUS_IS_OK(status2)) { \
 		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status2)); \
@@ -132,13 +125,13 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		finfo2.generic.level = RAW_FILEINFO_ ## call; \
 		if (check_fnum) { \
 			finfo2.generic.in.file.fnum = fnum; \
-			status2 = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2); \
+			status2 = smb_raw_fileinfo(cli->tree, torture, &finfo2); \
 		} else { \
 			finfo2.generic.in.file.path = path_fname; \
-			status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2); \
+			status2 = smb_raw_pathinfo(cli->tree, torture, &finfo2); \
 			if (NT_STATUS_EQUAL(status2, NT_STATUS_OBJECT_NAME_NOT_FOUND)) { \
 				finfo2.generic.in.file.path = path_fname_new; \
-				status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2); \
+				status2 = smb_raw_pathinfo(cli->tree, torture, &finfo2); \
 			} \
 		} \
 		if (!NT_STATUS_IS_OK(status2)) { \
@@ -153,7 +146,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		printf("(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
-		dump_all_info(mem_ctx, &finfo1); \
+		dump_all_info(torture, &finfo1); \
 		ret = False; \
 	}} while (0)
 
@@ -164,9 +157,9 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		        call_name, #stype, #field, \
 		        (uint_t)value, \
 			(uint_t)nt_time_to_unix(finfo2.stype.out.field)); \
-		printf("\t%s", timestring(mem_ctx, value)); \
-		printf("\t%s\n", nt_time_string(mem_ctx, finfo2.stype.out.field)); \
-		dump_all_info(mem_ctx, &finfo1); \
+		printf("\t%s", timestring(torture, value)); \
+		printf("\t%s\n", nt_time_string(torture, finfo2.stype.out.field)); \
+		dump_all_info(torture, &finfo1); \
 		ret = False; \
 	}} while (0)
 
@@ -177,7 +170,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		        call_name, #stype, #field, \
 		        value, \
 			finfo2.stype.out.field); \
-		dump_all_info(mem_ctx, &finfo1); \
+		dump_all_info(torture, &finfo1); \
 		ret = False; \
 	}} while (0)
 
@@ -444,19 +437,16 @@ done:
 		printf("Failed to delete %s - %s\n", path_fname, smbcli_errstr(cli->tree));
 	}
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }
 
 /*
  * basic testing of all RAW_SFILEINFO_RENAME call
  */
-BOOL torture_raw_sfileinfo_rename(struct torture_context *torture)
+bool torture_raw_sfileinfo_rename(struct torture_context *torture,
+								  struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
 	int fnum_saved, d_fnum, fnum2, fnum = -1;
 	char *fnum_fname;
 	char *fnum_fname_new;
@@ -474,12 +464,6 @@ BOOL torture_raw_sfileinfo_rename(struct torture_context *torture)
 	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
 	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_sfileinfo");
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
@@ -488,8 +472,8 @@ BOOL torture_raw_sfileinfo_rename(struct torture_context *torture)
 
 	ZERO_STRUCT(sfinfo);
 
-	smbcli_close(cli->tree, create_complex_file(cli, mem_ctx, fnum_fname_new));
-	smbcli_close(cli->tree, create_complex_file(cli, mem_ctx, path_fname_new));
+	smbcli_close(cli->tree, create_complex_file(cli, torture, fnum_fname_new));
+	smbcli_close(cli->tree, create_complex_file(cli, torture, path_fname_new));
 
 	sfinfo.rename_information.in.overwrite = 0;
 	sfinfo.rename_information.in.root_fid  = 0;
@@ -509,7 +493,7 @@ BOOL torture_raw_sfileinfo_rename(struct torture_context *torture)
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname_new);
 
 	printf("Trying rename with dest file open\n");
-	fnum2 = create_complex_file(cli, mem_ctx, fnum_fname);
+	fnum2 = create_complex_file(cli, torture, fnum_fname);
 	sfinfo.rename_information.in.new_name  = fnum_fname+strlen(BASEDIR)+1;
 	sfinfo.rename_information.in.overwrite = 1;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_ACCESS_DENIED);
@@ -536,7 +520,7 @@ BOOL torture_raw_sfileinfo_rename(struct torture_context *torture)
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
 
-	fnum2 = create_complex_file(cli, mem_ctx, fnum_fname);
+	fnum2 = create_complex_file(cli, torture, fnum_fname);
 	sfinfo.rename_information.in.new_name  = fnum_fname_new+strlen(BASEDIR)+1;
 	sfinfo.rename_information.in.overwrite = 0;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
@@ -579,35 +563,25 @@ done:
 		printf("Failed to delete %s - %s\n", path_fname, smbcli_errstr(cli->tree));
 	}
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }
 
 /* 
    look for the w2k3 setpathinfo STANDARD bug
 */
-BOOL torture_raw_sfileinfo_bug(struct torture_context *torture)
+bool torture_raw_sfileinfo_bug(struct torture_context *torture,
+							   struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	TALLOC_CTX *mem_ctx;
 	const char *fname = "\\bug3.txt";
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status;
 	int fnum;
 
-	if (!torture_setting_bool(torture, "dangerous", False)) {
-		printf("torture_raw_sfileinfo_bug disabled - enable dangerous tests to use\n");
-		return True;
-	}
+	if (!torture_setting_bool(torture, "dangerous", false))
+		torture_skip(torture, 
+			"torture_raw_sfileinfo_bug disabled - enable dangerous tests to use\n");
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_sfileinfo");
-
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, torture, fname);
 	smbcli_close(cli->tree, fnum);
 
 	sfinfo.generic.level = RAW_SFILEINFO_STANDARD;

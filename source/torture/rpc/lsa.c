@@ -1459,7 +1459,6 @@ static BOOL test_QueryForestTrustInformation(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_String string;
 	struct lsa_ForestTrustInformation info, *info_ptr;
-	uint16_t unknown = 0;
 
 	printf("\nTesting lsaRQueryForestTrustInformation\n");
 
@@ -1496,8 +1495,7 @@ static BOOL test_query_each_TrustDomEx(struct dcerpc_pipe *p,
 				       struct policy_handle *handle, 
 				       struct lsa_DomainListEx *domains) 
 {
-	NTSTATUS status;
-	int i,j;
+	int i;
 	BOOL ret = True;
 
 	for (i=0; i< domains->count; i++) {
@@ -1999,7 +1997,7 @@ BOOL torture_rpc_lsa(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
 
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
+	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2087,7 +2085,7 @@ BOOL torture_rpc_lsa_get_user(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_lsa_get_user");
 
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_lsarpc);
+	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

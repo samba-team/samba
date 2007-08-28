@@ -170,7 +170,7 @@ BOOL torture_rpc_lsa_secrets(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_lsa_secrets");
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&p, 
 					&ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {

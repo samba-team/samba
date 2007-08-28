@@ -28,7 +28,8 @@
 /*
   work out how many calls there are for an interface
  */
-static BOOL test_num_calls(const struct ndr_interface_table *iface,
+static BOOL test_num_calls(struct torture_context *tctx, 
+			   const struct ndr_interface_table *iface,
 			   TALLOC_CTX *mem_ctx,
 			   struct ndr_syntax_id *id)
 {
@@ -44,7 +45,7 @@ static BOOL test_num_calls(const struct ndr_interface_table *iface,
 	tbl.name = iface->name;
 	tbl.syntax_id = *id;
 
-	status = torture_rpc_connection(mem_ctx, &p, iface);
+	status = torture_rpc_connection(tctx, &p, iface);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *uuid_str = GUID_string(mem_ctx, &id->uuid);
 		printf("Failed to connect to '%s' on '%s' - %s\n", 
@@ -142,14 +143,14 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, b));
 
-		status = torture_rpc_connection(loop_ctx, &p, &ndr_table_mgmt);
+		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(loop_ctx);
 			ret = False;
 			continue;
 		}
 	
-		if (!test_inq_if_ids(p, mem_ctx, test_num_calls, l->table)) {
+		if (!test_inq_if_ids(torture, p, mem_ctx, test_num_calls, l->table)) {
 			ret = False;
 		}
 	}

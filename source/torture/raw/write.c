@@ -51,12 +51,12 @@
 #define CHECK_ALL_INFO(v, field) do { \
 	finfo.all_info.level = RAW_FILEINFO_ALL_INFO; \
 	finfo.all_info.in.file.path = fname; \
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	if ((v) != finfo.all_info.out.field) { \
 		printf("(%s) wrong value for field %s  %.0f - %.0f\n", \
 		       __location__, #field, (double)v, (double)finfo.all_info.out.field); \
-		dump_all_info(mem_ctx, &finfo); \
+		dump_all_info(tctx, &finfo); \
 		ret = False; \
 	}} while (0)
 
@@ -95,7 +95,8 @@ static BOOL check_buffer(uint8_t *buf, uint_t seed, int len, const char *locatio
 /*
   test write ops
 */
-static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_write(struct torture_context *tctx, 
+					   struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -107,7 +108,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -222,7 +223,8 @@ done:
 /*
   test writex ops
 */
-static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_writex(struct torture_context *tctx, 
+						struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -240,7 +242,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf("dangerous not set - limiting range of test to 2^%d\n", max_bits);
 	}
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -409,7 +411,8 @@ done:
 /*
   test write unlock ops
 */
-static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_writeunlock(struct torture_context *tctx, 
+							 struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -421,7 +424,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -551,7 +554,8 @@ done:
 /*
   test write close ops
 */
-static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_writeclose(struct torture_context *tctx, 
+							struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -563,7 +567,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero_size(mem_ctx, maxsize);
+	buf = talloc_zero_size(tctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -706,24 +710,14 @@ done:
 /* 
    basic testing of write calls
 */
-BOOL torture_raw_write(struct torture_context *torture)
+struct torture_suite *torture_raw_write(TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "WRITE");
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
+	torture_suite_add_1smb_test(suite, "write", test_write);
+	torture_suite_add_1smb_test(suite, "write unlock", test_writeunlock);
+	torture_suite_add_1smb_test(suite, "write close", test_writeclose);
+	torture_suite_add_1smb_test(suite, "writex", test_writex);
 
-	mem_ctx = talloc_init("torture_raw_write");
-
-	ret &= test_write(cli, mem_ctx);
-	ret &= test_writeunlock(cli, mem_ctx);
-	ret &= test_writeclose(cli, mem_ctx);
-	ret &= test_writex(cli, mem_ctx);
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
-	return ret;
+	return suite;
 }

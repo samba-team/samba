@@ -1726,35 +1726,25 @@ done:
 /* 
    basic testing of security descriptor calls
 */
-BOOL torture_raw_acls(struct torture_context *torture)
+bool torture_raw_acls(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_acls");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
-	ret &= test_sd(cli, mem_ctx);
-	ret &= test_nttrans_create(cli, mem_ctx);
-	ret &= test_creator_sid(cli, mem_ctx);
-	ret &= test_generic_bits(cli, mem_ctx);
-	ret &= test_owner_bits(cli, mem_ctx);
-	ret &= test_inheritance(cli, mem_ctx);
-	ret &= test_inheritance_dynamic(cli, mem_ctx);
-	ret &= test_sd_get_set(cli, mem_ctx);
+	ret &= test_sd(cli, tctx);
+	ret &= test_nttrans_create(cli, tctx);
+	ret &= test_creator_sid(cli, tctx);
+	ret &= test_generic_bits(cli, tctx);
+	ret &= test_owner_bits(cli, tctx);
+	ret &= test_inheritance(cli, tctx);
+	ret &= test_inheritance_dynamic(cli, tctx);
+	ret &= test_sd_get_set(cli, tctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

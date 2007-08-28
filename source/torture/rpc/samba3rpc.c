@@ -2824,7 +2824,7 @@ BOOL torture_samba3_rpc_winreg(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_winreg);
+	status = torture_rpc_connection(torture, &p, &ndr_table_winreg);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

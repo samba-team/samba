@@ -213,28 +213,19 @@ done:
 /* 
    basic testing of streams calls
 */
-BOOL torture_raw_streams(struct torture_context *torture)
+bool torture_raw_streams(struct torture_context *torture, 
+						 struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_streams");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
-	ret &= test_stream_io(cli, mem_ctx);
+	ret &= test_stream_io(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

@@ -222,9 +222,11 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, TALLOC_CTX *mem_ctx, 	
-					    struct smbcli_tree *tree, int fnum, const char *fname,
-	bool is_ipc)
+static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, 
+					    TALLOC_CTX *mem_ctx, 	
+					    struct smbcli_tree *tree, 
+					    int fnum, const char *fname,
+					    bool is_ipc)
 {
 	int i;
 	BOOL ret = True;
@@ -816,56 +818,38 @@ done:
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-BOOL torture_raw_qfileinfo(struct torture_context *torture)
+bool torture_raw_qfileinfo(struct torture_context *torture, 
+						   struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
 	int fnum;
+	bool ret;
 	const char *fname = "\\torture_qfileinfo.txt";
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_qfileinfo");
-
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, torture, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
-		goto done;
+		return false;
 	}
 
-	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, cli->tree, fnum, fname, False /* is_ipc */);
+	ret = torture_raw_qfileinfo_internals(torture, torture, cli->tree, fnum, fname, False /* is_ipc */);
 	
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 
-done:
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }
 
-BOOL torture_raw_qfileinfo_pipe(struct torture_context *torture)
+bool torture_raw_qfileinfo_pipe(struct torture_context *torture, 
+								struct smbcli_state *cli)
 {
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	const char *fname = "\\lsass";
-	struct smbcli_state *cli;
 	struct dcerpc_pipe *p;
 	struct smbcli_tree *ipc_tree;
 	NTSTATUS status;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_qfileinfo_pipe");
-
-	if (!(p = dcerpc_pipe_init(mem_ctx, 
+	if (!(p = dcerpc_pipe_init(torture, 
 				   cli->tree->session->transport->socket->event.ctx))) {
 		return False;
 	}
@@ -881,7 +865,7 @@ BOOL torture_raw_qfileinfo_pipe(struct torture_context *torture)
 	ipc_tree = dcerpc_smb_tree(p->conn);
 	fnum = dcerpc_smb_fnum(p->conn);
 
-	ret = torture_raw_qfileinfo_internals(torture, mem_ctx, ipc_tree, fnum, fname, True /* is_ipc */);
+	ret = torture_raw_qfileinfo_internals(torture, torture, ipc_tree, fnum, fname, True /* is_ipc */);
 	
 	talloc_free(p);
 	return ret;

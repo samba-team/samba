@@ -342,37 +342,19 @@ done:
 /* 
    basic testing of multiplexing notify
 */
-BOOL torture_raw_mux(struct torture_context *torture)
+bool torture_raw_mux(struct torture_context *torture, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	bool ret = true;
 		
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_mux");
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
-	if (!test_mux_open(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_mux_write(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_mux_lock(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_mux_open(cli, torture);
+	ret &= test_mux_write(cli, torture);
+	ret &= test_mux_lock(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

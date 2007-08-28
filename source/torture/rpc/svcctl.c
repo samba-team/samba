@@ -23,15 +23,48 @@
 #include "librpc/gen_ndr/ndr_svcctl_c.h"
 #include "torture/rpc/rpc.h"
 
-static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *h)
+static bool test_OpenSCManager(struct dcerpc_pipe *p, struct torture_context *tctx, struct policy_handle *h)
+{
+	struct svcctl_OpenSCManagerW r;
+	
+	r.in.MachineName = NULL;
+	r.in.DatabaseName = NULL;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = h;
+	
+	torture_assert_ntstatus_ok(tctx, 
+							   dcerpc_svcctl_OpenSCManagerW(p, tctx, &r), 
+							   "OpenSCManager failed!");
+	
+	return true;
+}
+
+static bool test_CloseServiceHandle(struct dcerpc_pipe *p, struct torture_context *tctx, struct policy_handle *h)
+{
+	struct svcctl_CloseServiceHandle r; 
+
+	r.in.handle = h;
+	r.out.handle = h;
+	torture_assert_ntstatus_ok(tctx, 
+							   dcerpc_svcctl_CloseServiceHandle(p, tctx, &r), 
+							   "CloseServiceHandle failed");
+
+	return true;
+}
+
+static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_EnumServicesStatusW r;
+	struct policy_handle h;
 	int i;
 	NTSTATUS status;
 	uint32_t resume_handle = 0;
 	struct ENUM_SERVICE_STATUS *service = NULL; 
 
-	r.in.handle = h;
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	r.in.handle = &h;
 	r.in.type = SERVICE_TYPE_WIN32;
 	r.in.state = SERVICE_STATE_ALL;
 	r.in.buf_size = 0;
@@ -41,101 +74,58 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 	r.out.services_returned = 0;
 	r.out.bytes_needed = 0;
 
-	status = dcerpc_svcctl_EnumServicesStatusW(p, mem_ctx, &r);
+	status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ËnumServicesStatus failed!\n");
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "EnumServicesStatus failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.buf_size = *r.out.bytes_needed;
-		r.out.service = talloc_size(mem_ctx, *r.out.bytes_needed);
+		r.out.service = talloc_size(tctx, *r.out.bytes_needed);
 		
-		status = dcerpc_svcctl_EnumServicesStatusW(p, mem_ctx, &r);
+		status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("ËnumServicesStatus failed!\n");
-			return False;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "EnumServicesStatus failed!");
+		torture_assert_werr_ok(tctx, r.out.result, "EnumServicesStatus failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumServicesStatus failed\n");
-			return False;
-		}
 		service = (struct ENUM_SERVICE_STATUS *)r.out.service;
 	}
 
 	for(i = 0; i < *r.out.services_returned; i++) {
 		printf("Type: %d, State: %d\n", service[i].status.type, service[i].status.state);
 	}
-		
-	return True;
+	
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
 }
 
-static BOOL test_OpenSCManager(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *h)
+static bool test_SCManager(struct torture_context *tctx, 
+						   struct dcerpc_pipe *p)
 {
-	struct svcctl_OpenSCManagerW r;
-	NTSTATUS status;
-	
-	r.in.MachineName = NULL;
-	r.in.DatabaseName = NULL;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.handle = h;
-	
-	status = dcerpc_svcctl_OpenSCManagerW(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenSCManager failed!\n");
-		return False;
-	}
-	
-	return True;
+	struct policy_handle h;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
 }
 
-static BOOL test_CloseServiceHandle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *h)
+struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 {
-	struct svcctl_CloseServiceHandle r; 
-	NTSTATUS status;
-	r.in.handle = h;
-	r.out.handle = h;
-	status = dcerpc_svcctl_CloseServiceHandle(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CloseServiceHandle failed\n");
-		return False;
-	}
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SVCCTL");
+	struct torture_tcase *tcase;
 
-	return True;
-}
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "svcctl", 
+											  &ndr_table_svcctl);
+	
+	torture_rpc_tcase_add_test(tcase, "SCManager", 
+							   test_SCManager);
+	torture_rpc_tcase_add_test(tcase, "EnumServicesStatus", 
+							   test_EnumServicesStatus);
 
-BOOL torture_rpc_svcctl(struct torture_context *torture)
-{
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-		struct policy_handle h;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
-
-	mem_ctx = talloc_init("torture_rpc_svcctl");
-
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_svcctl);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	if (!test_OpenSCManager(p, mem_ctx, &h)) {
-		ret = False;
-	}
-
-	if (!test_EnumServicesStatus(p, mem_ctx, &h)) {
-		ret = False;
-	}
-
-	if (!test_CloseServiceHandle(p, mem_ctx, &h)) {
-		ret = False;
-	}
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

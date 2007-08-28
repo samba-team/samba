@@ -28,19 +28,19 @@
 #include "lib/util/dlinklist.h"
 
 /* open a rpc connection to the chosen binding string */
-_PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
+_PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 				struct dcerpc_pipe **p, 
 				const struct ndr_interface_table *table)
 {
-        NTSTATUS status;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	NTSTATUS status;
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
 
 	if (!binding) {
 		printf("You must specify a ncacn binding string\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcerpc_pipe_connect(parent_ctx, 
+	status = dcerpc_pipe_connect(tctx, 
 				     p, binding, table,
 				     cmdline_credentials, NULL);
  
@@ -52,16 +52,16 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 }
 
 /* open a rpc connection to a specific transport */
-NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx, 
+NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx, 
 					  struct dcerpc_pipe **p, 
 					  const struct ndr_interface_table *table,
 					  enum dcerpc_transport_t transport,
 					  uint32_t assoc_group_id)
 {
         NTSTATUS status;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
 	struct dcerpc_binding *b;
-	TALLOC_CTX *mem_ctx = talloc_named(parent_ctx, 0, "torture_rpc_connection_smb");
+	TALLOC_CTX *mem_ctx = talloc_named(tctx, 0, "torture_rpc_connection_smb");
 
 	if (!binding) {
 		printf("You must specify a ncacn binding string\n");
@@ -83,7 +83,7 @@ NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx,
 				       cmdline_credentials, NULL);
 					   
 	if (NT_STATUS_IS_OK(status)) {
-		*p = talloc_reference(parent_ctx, *p);
+		*p = talloc_reference(tctx, *p);
 	} else {
 		*p = NULL;
 	}
@@ -219,7 +219,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SCHANNEL", torture_rpc_schannel);
 	torture_suite_add_simple_test(suite, "SCHANNEL2", torture_rpc_schannel2);
 	torture_suite_add_simple_test(suite, "SRVSVC", torture_rpc_srvsvc);
-	torture_suite_add_simple_test(suite, "SVCCTL", torture_rpc_svcctl);
+	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
 	torture_suite_add_simple_test(suite, "EPMAPPER", torture_rpc_epmapper);
 	torture_suite_add_simple_test(suite, "INITSHUTDOWN", torture_rpc_initshutdown);
 	torture_suite_add_simple_test(suite, "OXIDRESOLVE", torture_rpc_oxidresolve);

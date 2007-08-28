@@ -1283,41 +1283,29 @@ done:
 /* 
    basic testing of change notify
 */
-BOOL torture_raw_notify(struct torture_context *torture)
+bool torture_raw_notify(struct torture_context *torture, 
+						struct smbcli_state *cli, 
+						struct smbcli_state *cli2)
 {
-	struct smbcli_state *cli, *cli2;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	bool ret = true;
 		
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-	if (!torture_open_connection(&cli2, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_notify");
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
-	ret &= test_notify_dir(cli, cli2, mem_ctx);
-	ret &= test_notify_mask(cli, mem_ctx);
-	ret &= test_notify_recursive(cli, mem_ctx);
-	ret &= test_notify_mask_change(cli, mem_ctx);
-	ret &= test_notify_file(cli, mem_ctx);
-	ret &= test_notify_tdis(mem_ctx);
-	ret &= test_notify_exit(mem_ctx);
-	ret &= test_notify_ulogoff(mem_ctx);
-	ret &= test_notify_tcp_dis(mem_ctx);
-	ret &= test_notify_double(cli, mem_ctx);
-	ret &= test_notify_tree(cli, mem_ctx);
+	ret &= test_notify_dir(cli, cli2, torture);
+	ret &= test_notify_mask(cli, torture);
+	ret &= test_notify_recursive(cli, torture);
+	ret &= test_notify_mask_change(cli, torture);
+	ret &= test_notify_file(cli, torture);
+	ret &= test_notify_tdis(torture);
+	ret &= test_notify_exit(torture);
+	ret &= test_notify_ulogoff(torture);
+	ret &= test_notify_tcp_dis(torture);
+	ret &= test_notify_double(cli, torture);
+	ret &= test_notify_tree(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
-	torture_close_connection(cli);
-	torture_close_connection(cli2);
-	talloc_free(mem_ctx);
 	return ret;
 }

@@ -101,7 +101,8 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
   when finished
 */
 
-struct test_join *torture_create_testuser(const char *username, 
+struct test_join *torture_create_testuser(struct torture_context *torture,
+					  const char *username, 
 					  const char *domain,
 					  uint16_t acct_type,
 					  const char **random_password)
@@ -143,7 +144,7 @@ struct test_join *torture_create_testuser(const char *username,
 					     cmdline_credentials, NULL);
 					     
 	} else {
-		status = torture_rpc_connection(join, 
+		status = torture_rpc_connection(torture, 
 						&join->p, 
 						&ndr_table_samr);
 	}

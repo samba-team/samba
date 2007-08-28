@@ -42,7 +42,7 @@
 /*
   test SMBlock and SMBunlock ops
 */
-static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_lock(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_lock io;
 	NTSTATUS status;
@@ -177,7 +177,7 @@ done:
 /*
   test locking&X ops
 */
-static BOOL test_lockx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_lock io;
 	struct smb_lock_entry lock[1];
@@ -356,7 +356,8 @@ done:
 /*
   test high pid
 */
-static BOOL test_pidhigh(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_pidhigh(struct torture_context *tctx, 
+						 struct smbcli_state *cli)
 {
 	union smb_lock io;
 	struct smb_lock_entry lock[1];
@@ -437,7 +438,8 @@ done:
 /*
   test locking&X async operation
 */
-static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_async(struct torture_context *tctx, 
+					   struct smbcli_state *cli)
 {
 	struct smbcli_session *session;
 	struct smb_composite_sesssetup setup;
@@ -586,7 +588,7 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("create a new sessions\n");
-	session = smbcli_session_init(cli->transport, mem_ctx, False);
+	session = smbcli_session_init(cli->transport, tctx, False);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup();
@@ -598,13 +600,13 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("create new tree context\n");
 	share = lp_parm_string(-1, "torture", "share");
 	host  = lp_parm_string(-1, "torture", "host");
-	tree = smbcli_tree_init(session, mem_ctx, False);
+	tree = smbcli_tree_init(session, tctx, False);
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
+	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";
-	status = smb_raw_tcon(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	tree->tid = tcon.tconx.out.tid;
 
@@ -769,7 +771,8 @@ done:
 /*
   test NT_STATUS_LOCK_NOT_GRANTED vs. NT_STATUS_FILE_LOCK_CONFLICT
 */
-static BOOL test_errorcode(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_errorcode(struct torture_context *tctx, 
+						   struct smbcli_state *cli)
 {
 	union smb_lock io;
 	union smb_open op;
@@ -812,11 +815,11 @@ next_run:
 	op.openx.in.size = 0;
 	op.openx.in.timeout = 0;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = op.openx.out.file.fnum;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	status = smb_raw_open(cli->tree, tctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = op.openx.out.file.fnum;
 
@@ -1250,7 +1253,8 @@ done:
 /*
   test LOCKING_ANDX_CHANGE_LOCKTYPE
 */
-static BOOL test_changetype(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_changetype(struct torture_context *tctx, 
+							struct smbcli_state *cli)
 {
 	union smb_lock io;
 	struct smb_lock_entry lock[2];
@@ -1315,26 +1319,16 @@ done:
 /* 
    basic testing of lock calls
 */
-BOOL torture_raw_lock(struct torture_context *torture)
+struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCK");
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
+	torture_suite_add_1smb_test(suite, "lockx", test_lockx);
+	torture_suite_add_1smb_test(suite, "lock", test_lock);
+	torture_suite_add_1smb_test(suite, "pidhigh", test_pidhigh);
+	torture_suite_add_1smb_test(suite, "async", test_async);
+	torture_suite_add_1smb_test(suite, "errorcode", test_errorcode);
+	torture_suite_add_1smb_test(suite, "changetype", test_changetype);
 
-	mem_ctx = talloc_init("torture_raw_lock");
-
-	ret &= test_lockx(cli, mem_ctx);
-	ret &= test_lock(cli, mem_ctx);
-	ret &= test_pidhigh(cli, mem_ctx);
-	ret &= test_async(cli, mem_ctx);
-	ret &= test_errorcode(cli, mem_ctx);
-	ret &= test_changetype(cli, mem_ctx);
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
-	return ret;
+	return suite;
 }

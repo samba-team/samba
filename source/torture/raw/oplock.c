@@ -1282,9 +1282,9 @@ done:
 /* 
    basic testing of oplocks
 */
-struct torture_suite *torture_raw_oplock(void)
+struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "OPLOCK");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "OPLOCK");
 
 	torture_suite_add_2smb_test(suite, "NORMAL", test_raw_oplock_normal);
 	torture_suite_add_2smb_test(suite, "BATCH1", test_raw_oplock_batch1);

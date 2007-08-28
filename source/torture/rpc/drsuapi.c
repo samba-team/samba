@@ -749,7 +749,7 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 		return False;
 	}
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&p, 
 					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -809,7 +809,7 @@ BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 		return False;
 	}
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&p, 
 					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {

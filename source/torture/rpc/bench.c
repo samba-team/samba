@@ -103,7 +103,7 @@ BOOL torture_bench_rpc(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_srvsvc");
 
-	status = torture_rpc_connection(mem_ctx, 
+	status = torture_rpc_connection(torture, 
 					&p,
 					&ndr_table_srvsvc);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -399,31 +399,22 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 /* 
    basic testing of libcli composite calls
 */
-BOOL torture_raw_composite(struct torture_context *torture)
+bool torture_raw_composite(struct torture_context *tctx, 
+						   struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_composite");
+	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
-	ret &= test_fetchfile(cli, mem_ctx);
-	ret &= test_loadfile(cli, mem_ctx);
- 	ret &= test_appendacl(cli, mem_ctx);
-	ret &= test_fsinfo(cli, mem_ctx);
+	ret &= test_fetchfile(cli, tctx);
+	ret &= test_loadfile(cli, tctx);
+ 	ret &= test_appendacl(cli, tctx);
+	ret &= test_fsinfo(cli, tctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

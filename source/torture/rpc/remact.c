@@ -105,7 +105,7 @@ BOOL torture_rpc_remact(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_remact");
 
-	status = torture_rpc_connection(mem_ctx,
+	status = torture_rpc_connection(torture,
 					&p, 
 					&ndr_table_IRemoteActivation);
 
