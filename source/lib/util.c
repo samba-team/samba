@@ -3294,6 +3294,11 @@ int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, i
 	return IVAL(ptr,off);
 }
 
+#if 0
+
+Disable these now we've checked all code paths and ensured
+NULL returns on zero request. JRA.
+
 /****************************************************************
  talloc wrapper functions that guarentee a null pointer return
  if size == 0.
@@ -3392,3 +3397,4 @@ void *talloc_zeronull(const void *context, size_t size, const char *name)
 	}
 	return talloc_named_const(context, size, name);
 }
+#endif
