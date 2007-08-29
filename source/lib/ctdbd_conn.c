@@ -61,6 +61,20 @@ static void cluster_fatal(const char *why)
 }
 
 /*
+ *
+ */
+static void ctdb_packet_dump(struct ctdb_req_header *hdr)
+{
+	if (DEBUGLEVEL < 10) {
+		return;
+	}
+	DEBUGADD(10, ("len=%d, magic=%x, vers=%d, gen=%d, op=%d, reqid=%d\n",
+		      (int)hdr->length, (int)hdr->ctdb_magic,
+		      (int)hdr->ctdb_version, (int)hdr->generation,
+		      (int)hdr->operation, (int)hdr->reqid));
+}
+
+/*
  * Register a srvid with ctdbd
  */
 static NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn,
@@ -249,6 +263,11 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 		&blob, result, result,
 		(ndr_pull_flags_fn_t)ndr_pull_messaging_rec);
 
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10, ("ctdb_pull_messaging_rec:\n"));
+		NDR_PRINT_DEBUG(messaging_rec, result);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ndr_pull_struct_blob failed: %s\n",
 			  nt_errstr(status)));
@@ -288,6 +307,8 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 		cluster_fatal("ctdbd died\n");
 	}
 
+ next_pkt:
+
 	ZERO_STRUCT(state);
 	state.mem_ctx = mem_ctx;
 
@@ -296,6 +317,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 		/*
 		 * Not enough data
 		 */
+		DEBUG(10, ("not enough data from ctdb socket, retrying\n"));
 		goto again;
 	}
 
@@ -306,6 +328,9 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 
 	hdr = (struct ctdb_req_header *)state.req.data;
 
+	DEBUG(10, ("Received ctdb packet\n"));
+	ctdb_packet_dump(hdr);
+
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
 		struct timed_event *evt;
 		struct deferred_msg_state *msg_state;
@@ -315,7 +340,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			DEBUG(1, ("Got a message without having a msg ctx, "
 				  "dropping msg %llu\n",
 				  (long long unsigned)msg->srvid));
-			goto again;
+			goto next_pkt;
 		}
 		
 		if ((conn->release_ip_handler != NULL)
@@ -325,13 +350,13 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			conn->release_ip_handler((const char *)msg->data,
 						 conn->release_ip_priv);
 			TALLOC_FREE(hdr);
-			goto again;
+			goto next_pkt;
 		}
 
 		if (!(msg_state = TALLOC_P(NULL, struct deferred_msg_state))) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(hdr);
-			goto again;
+			goto next_pkt;
 		}
 
 		if (!(msg_state->rec = ctdb_pull_messaging_rec(
@@ -339,7 +364,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			DEBUG(0, ("ctdbd_pull_messaging_rec failed\n"));
 			TALLOC_FREE(msg_state);
 			TALLOC_FREE(hdr);
-			goto again;
+			goto next_pkt;
 		}
 
 		TALLOC_FREE(hdr);
@@ -360,10 +385,10 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			DEBUG(0, ("event_add_timed failed\n"));
 			TALLOC_FREE(msg_state);
 			TALLOC_FREE(hdr);
-			goto again;
+			goto next_pkt;
 		}
 		
-		goto again;
+		goto next_pkt;
 	}
 
 	if (hdr->reqid != reqid) {
@@ -622,6 +647,9 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	r.srvid          = dst_srvid;
 	r.datalen        = blob.length;
 
+	DEBUG(10, ("ctdbd_messaging_send: Sending ctdb packet\n"));
+	ctdb_packet_dump(&r.hdr);
+
 	status = packet_send(
 		conn->pkt, 2,
 		data_blob_const(&r, offsetof(struct ctdb_req_message, data)),
@@ -681,6 +709,9 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	req.opcode           = opcode;
 	req.srvid            = srvid;
 	req.datalen          = data.dsize;
+
+	DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
+	ctdb_packet_dump(&req.hdr);
 
 	status = packet_send(
 		conn->pkt, 2,
@@ -849,6 +880,9 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
 	req.callid           = CTDB_NULL_FUNC;
 	req.db_id            = db_id;
 	req.keylen           = key.dsize;
+
+	DEBUG(10, ("ctdbd_migrate: Sending ctdb packet\n"));
+	ctdb_packet_dump(&req.hdr);
 
 	status = packet_send(
 		conn->pkt, 2,

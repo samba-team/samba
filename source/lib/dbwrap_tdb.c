@@ -31,7 +31,8 @@ static int db_tdb_record_destr(struct db_record* data)
 	struct db_tdb_ctx *ctx =
 		talloc_get_type_abort(data->private_data, struct db_tdb_ctx);
 
-	DEBUG(10, ("Unlocking key %s\n",
+	DEBUG(10, (DEBUGLEVEL > 10
+		   ? "Unlocking key %s\n" : "Unlocking key %20s\n",
 		   hex_encode(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
@@ -70,9 +71,11 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	result->store = db_tdb_store;
 	result->delete_rec = db_tdb_delete;
 
-	{
+	if (DEBUGLEVEL > 10) {
 		char *keystr = hex_encode(NULL, key.dptr, key.dsize);
-		DEBUG(10, ("Locking key %s\n", keystr));
+		DEBUG(10, (DEBUGLEVEL > 10
+			   ? "Locking key %s\n" : "Locking key %20s\n",
+			   keystr));
 		TALLOC_FREE(keystr);
 	}
 

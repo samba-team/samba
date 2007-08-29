@@ -85,7 +85,9 @@ static int db_ctdb_record_destr(struct db_record* data)
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		data->private_data, struct db_ctdb_rec);
 
-	DEBUG(10, ("Unlocking key %s\n",
+	DEBUG(10, (DEBUGLEVEL > 10
+		   ? "Unlocking db %u key %s\n" : "Unlocking db %u key %20s\n",
+		   (int)crec->ctdb_ctx->db_id,
 		   hex_encode(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
@@ -135,9 +137,14 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 	 */
 again:
 
-	DEBUG(10, ("Locking key %s\n",
-		   hex_encode(result, (unsigned char *)key.dptr,
-			      key.dsize)));
+	if (DEBUGLEVEL >= 10) {
+		char *keystr = hex_encode(result, key.dptr, key.dsize);
+		DEBUG(10, (DEBUGLEVEL > 10
+			   ? "Locking db %u key %s\n"
+			   : "Locking db %u key %20s\n",
+			   (int)crec->ctdb_ctx->db_id, keystr));
+		TALLOC_FREE(keystr);
+	}
 	
 	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
