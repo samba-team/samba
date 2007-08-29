@@ -14,13 +14,13 @@
 
 #define _PAM_LOG_FUNCTION_ENTER(function, pamh, ctrl, flags) \
 	do { \
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: 0x%08x] ENTER: " function " (flags: 0x%04x)", (uint32) pamh, flags); \
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: %p] ENTER: " function " (flags: 0x%04x)", pamh, flags); \
 		_pam_log_state(pamh, ctrl); \
 	} while (0)
 
 #define _PAM_LOG_FUNCTION_LEAVE(function, pamh, ctrl, retval) \
 	do { \
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: 0x%08x] LEAVE: " function " returning %d", (uint32) pamh, retval); \
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: %p] LEAVE: " function " returning %d", pamh, retval); \
 		_pam_log_state(pamh, ctrl); \
 	} while (0)
 
@@ -143,9 +143,9 @@ static void _pam_log_state_datum(const pam_handle_t *pamh, int ctrl, int item_ty
 	if (data != NULL) {
 		const char *type = (item_type != 0) ? "ITEM" : "DATA";
 		if (is_string != 0) {
-			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: 0x%08x] STATE: %s(%s) = \"%s\" (0x%08x)", (uint32) pamh, type, key, (const char *) data, (uint32) data);
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: %p] STATE: %s(%s) = \"%s\" (%p)", pamh, type, key, (const char *) data, data);
 		} else {
-			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: 0x%08x] STATE: %s(%s) = 0x%08x", (uint32) pamh, type, key, (uint32) data);
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: %p] STATE: %s(%s) = %p", pamh, type, key, data);
 		}
 	}
 }
@@ -319,7 +319,7 @@ static void _pam_winbind_cleanup_func(pam_handle_t *pamh, void *data, int error_
 {
 	int ctrl = _pam_parse(pamh, 0, 0, NULL, NULL);
 	if (_pam_log_is_debug_state_enabled(ctrl)) {
-		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: 0x%08x] CLEAN: cleaning up PAM data 0x%08x (error_status = %d)", (uint32) pamh, (uint32) data, error_status);
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "[pamh: %p] CLEAN: cleaning up PAM data %p (error_status = %d)", pamh, data, error_status);
 	}
 	SAFE_FREE(data);
 }
