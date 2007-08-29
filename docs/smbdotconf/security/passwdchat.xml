@@ -1,6 +1,6 @@
 <samba:parameter name="passwd chat"
                  context="G"
-				 type="string"
+		 type="string"
                  advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
@@ -27,13 +27,17 @@
     be executed on the NIS master.
     </para>
 
-
-    <para>The string can contain the macro <parameter moreinfo="none">%n</parameter> which is substituted 
-    for the new password.  The chat sequence can also contain the standard 
-    macros \n, \r, \t and \s to 
-    give line-feed, carriage-return, tab and space.  The chat sequence string can also contain 
-    a '*' which matches any sequence of characters. Double quotes can be used to collect strings with spaces 
-    in them into a single string.</para>
+    <para>The string can contain the macro <parameter
+    moreinfo="none">%n</parameter> which is substituted 
+    for the new password.  The old passsword (<parameter 
+    moreinfo="none">%o</parameter>) is only available when
+    <smbconfoption name="encrypt passwords"/> has been disabled.
+    The chat sequence can also contain the standard macros 
+    \n, \r, \t and \s to give line-feed, carriage-return, tab 
+    and space.  The chat sequence string can also contain 
+    a '*' which matches any sequence of characters. Double quotes can 
+    be used to collect strings with spaces in them into a single 
+    string.</para>
 
     <para>If the send string in any part of the chat sequence  is a full
     stop &quot;.&quot;,  then no string is sent. Similarly,  if the
@@ -52,5 +56,5 @@
 <related>pam password change</related>
 
 <value type="default">*new*password* %n\n*new*password* %n\n *changed*</value>
-<value type="example">&quot;*Enter OLD password*&quot; %o\n &quot;*Enter NEW password*&quot; %n\n &quot;*Reenter NEW password*&quot; %n\n &quot;*Password changed*&quot;</value>
+<value type="example">&quot;*Enter NEW password*&quot; %n\n &quot;*Reenter NEW password*&quot; %n\n &quot;*Password changed*&quot;</value>
 </samba:parameter>
