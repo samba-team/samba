@@ -50,6 +50,14 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_ACCESS_OPEN_DOMAIN         = 0x00000020
 	} samr_ConnectAccessMask;
 
+	typedef [bitmap32bit] bitmap {
+		ALIAS_ACCESS_ADD_MEMBER      = 0x00000001,
+		ALIAS_ACCESS_REMOVE_MEMBER   = 0x00000002,
+		ALIAS_ACCESS_GET_MEMBERS     = 0x00000004,
+		ALIAS_ACCESS_LOOKUP_INFO     = 0x00000008,
+		ALIAS_ACCESS_SET_INFO        = 0x00000010
+	} samr_AliasAccessMask;
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS samr_Connect (
@@ -314,7 +322,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_CreateDomAlias(
 		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      lsa_String   *alias_name,
-		[in]          uint32         access_mask,
+		[in]          samr_AliasAccessMask access_mask,
 		[out,ref]     policy_handle *alias_handle,
 		[out,ref]     uint32        *rid
 		);
@@ -489,7 +497,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x1b     */
 	NTSTATUS samr_OpenAlias (
 		[in,ref]      policy_handle *domain_handle,
-		[in]          uint32 access_mask,
+		[in]          samr_AliasAccessMask access_mask,
 		[in]          uint32 rid,
 		[out,ref]     policy_handle *alias_handle
 		);
