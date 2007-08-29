@@ -1153,6 +1153,7 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	init_idmap_child();
+	init_locator_child();
 
 	smb_nscd_flush_user_cache();
 	smb_nscd_flush_group_cache();
