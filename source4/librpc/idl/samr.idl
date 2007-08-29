@@ -51,6 +51,20 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_ConnectAccessMask;
 
 	typedef [bitmap32bit] bitmap {
+		USER_ACCESS_GET_NAME_ETC             = 0x00000001,
+		USER_ACCESS_GET_LOCALE               = 0x00000002,
+		USER_ACCESS_SET_LOC_COM              = 0x00000004,
+		USER_ACCESS_GET_LOGONINFO            = 0x00000008,
+		USER_ACCESS_GET_ATTRIBUTES           = 0x00000010,
+		USER_ACCESS_SET_ATTRIBUTES           = 0x00000020,
+		USER_ACCESS_CHANGE_PASSWORD          = 0x00000040,
+		USER_ACCESS_SET_PASSWORD             = 0x00000080,
+		USER_ACCESS_GET_GROUPS               = 0x00000100,
+		USER_ACCESS_GET_GROUP_MEMBERSHIP     = 0x00000200,
+		USER_ACCESS_CHANGE_GROUP_MEMBERSHIP  = 0x00000400
+	} samr_UserAccessMask;
+
+	typedef [bitmap32bit] bitmap {
 		DOMAIN_ACCESS_LOOKUP_INFO_1  = 0x00000001,
 		DOMAIN_ACCESS_SET_INFO_1     = 0x00000002,
 		DOMAIN_ACCESS_LOOKUP_INFO_2  = 0x00000004,
@@ -316,7 +330,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_CreateUser(
 		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      lsa_String *account_name,
-		[in]          uint32 access_mask,
+		[in]          samr_UserAccessMask access_mask,
 		[out,ref]     policy_handle *user_handle,
 		[out,ref]     uint32 *rid
 		);
@@ -591,7 +605,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x22     */
 	[public] NTSTATUS samr_OpenUser(
 		[in,ref]      policy_handle *domain_handle,
-		[in]          uint32 access_mask,
+		[in]          samr_UserAccessMask access_mask,
 		[in]          uint32 rid,
 		[out,ref]     policy_handle *user_handle
 		);
@@ -1099,7 +1113,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      lsa_String *account_name,
 		[in]          samr_AcctFlags acct_flags,
-		[in]          uint32 access_mask,
+		[in]          samr_UserAccessMask access_mask,
 		[out,ref]     policy_handle *user_handle,
 		[out,ref]     uint32 *access_granted,
 		[out,ref]     uint32 *rid
