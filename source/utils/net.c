@@ -341,10 +341,10 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 }
 
 /****************************************************************************
- Use the local machine's password for this session.
+ Use the local machine account (upn) and password for this session.
 ****************************************************************************/
 
-int net_use_machine_password(void) 
+int net_use_upn_machine_account(void) 
 {
 	char *user_name = NULL;
 
@@ -353,9 +353,29 @@ int net_use_machine_password(void)
 		exit(1);
 	}
 
-	user_name = NULL;
 	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
 	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
+		return -1;
+	}
+	opt_user_name = user_name;
+	return 0;
+}
+
+/****************************************************************************
+ Use the machine account name and password for this session.
+****************************************************************************/
+
+int net_use_machine_account(void)
+{
+	char *user_name = NULL;
+		
+	if (!secrets_init()) {
+		d_fprintf(stderr, "ERROR: Unable to open secrets database\n");
+		exit(1);
+	}
+
+	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+	if (asprintf(&user_name, "%s$", global_myname()) == -1) {
 		return -1;
 	}
 	opt_user_name = user_name;
@@ -1044,7 +1064,7 @@ static struct functable net_func[] = {
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
-		net_use_machine_password();
+		net_use_upn_machine_account();
 	}
 
 	if (!opt_password) {
