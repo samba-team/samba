@@ -5860,6 +5860,25 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	}
 }
 
+
+/*************************************************************************
+ init_samr_user_info25P
+ fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET | ACCT_FLAGS
+*************************************************************************/
+
+void init_sam_user_info25P(SAM_USER_INFO_25 * usr,
+			   uint32 fields_present, uint32 acb_info,
+			   char newpass[532])
+{
+	usr->fields_present = fields_present;
+	ZERO_STRUCT(usr->padding1);
+	ZERO_STRUCT(usr->padding2);
+
+	usr->acb_info = acb_info;
+	memcpy(usr->pass, newpass, sizeof(usr->pass));
+}
+
+
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
