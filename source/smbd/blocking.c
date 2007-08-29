@@ -702,34 +702,6 @@ static void process_blocking_lock_queue(void)
 		DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
 			fsp->fnum, fsp->fsp_name ));
 
-		if (!timeval_is_zero(&blr->expire_time) && timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
-
-			/*
-			 * Lock expired - throw away all previously
-			 * obtained locks and return lock error.
-			 */
-
-			if (br_lck) {
-				DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
-					fsp->fnum, fsp->fsp_name ));
-
-				brl_lock_cancel(br_lck,
-					blr->lock_pid,
-					procid_self(),
-					blr->offset,
-					blr->count,
-					blr->lock_flav);
-				TALLOC_FREE(br_lck);
-			}
-
-			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
-			DLIST_REMOVE(blocking_lock_queue, blr);
-			free_blocking_lock_record(blr);
-			recalc_timeout = True;
-			continue;
-		}
-
 		if(!change_to_user(conn,vuid)) {
 			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
@@ -804,8 +776,43 @@ static void process_blocking_lock_queue(void)
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
 			recalc_timeout = True;
+			change_to_root_user();
+			continue;
 		}
+
 		change_to_root_user();
+
+		/*
+		 * We couldn't get the locks for this record on the list.
+		 * If the time has expired, return a lock error.
+		 */
+
+		if (!timeval_is_zero(&blr->expire_time) && timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+
+			/*
+			 * Lock expired - throw away all previously
+			 * obtained locks and return lock error.
+			 */
+
+			if (br_lck) {
+				DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
+					fsp->fnum, fsp->fsp_name ));
+
+				brl_lock_cancel(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					blr->lock_flav);
+				TALLOC_FREE(br_lck);
+			}
+
+			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
+			DLIST_REMOVE(blocking_lock_queue, blr);
+			free_blocking_lock_record(blr);
+			recalc_timeout = True;
+		}
 	}
 
 	if (recalc_timeout) {
