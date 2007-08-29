@@ -449,6 +449,8 @@ function setup_name_mappings(info, ldb)
 
 function provision_fix_subobj(subobj, paths)
 {
+	var ldb = ldb_init();
+	
 	subobj.REALM       = strupper(subobj.REALM);
 	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
 	subobj.DOMAIN      = strupper(subobj.DOMAIN);
@@ -464,6 +466,11 @@ function provision_fix_subobj(subobj, paths)
 	subobj.ROOTDN       = subobj.DOMAINDN;
 	subobj.CONFIGDN     = "CN=Configuration," + subobj.ROOTDN;
 	subobj.SCHEMADN     = "CN=Schema," + subobj.CONFIGDN;
+
+	subobj.MACHINEPASS_B64 = ldb.encode(subobj.MACHINEPASS);
+	subobj.KRBTGTPASS_B64  = ldb.encode(subobj.KRBTGTPASS);
+	subobj.ADMINPASS_B64   = ldb.encode(subobj.ADMINPASS);
+	subobj.DNSPASS_B64     = ldb.encode(subobj.DNSPASS);
 
 	var rdns = split(",", subobj.DOMAINDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));

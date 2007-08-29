@@ -13,7 +13,7 @@ adminCount: 1
 accountExpires: -1
 sAMAccountName: Administrator
 isCriticalSystemObject: TRUE
-sambaPassword: ${ADMINPASS}
+sambaPassword:: ${ADMINPASS_B64}
 
 dn: CN=Guest,CN=Users,${DOMAINDN}
 objectClass: user
@@ -203,7 +203,7 @@ sAMAccountName: krbtgt
 sAMAccountType: 805306368
 servicePrincipalName: kadmin/changepw
 isCriticalSystemObject: TRUE
-sambaPassword: ${KRBTGTPASS}
+sambaPassword:: ${KRBTGTPASS_B64}
 
 dn: CN=dns,CN=Users,${DOMAINDN}
 objectClass: top
@@ -219,7 +219,7 @@ sAMAccountName: dns
 sAMAccountType: 805306368
 servicePrincipalName: DNS/${DNSDOMAIN}
 isCriticalSystemObject: TRUE
-sambaPassword: ${DNSPASS}
+sambaPassword:: ${DNSPASS_B64}
 
 dn: CN=Domain Computers,CN=Users,${DOMAINDN}
 objectClass: top
