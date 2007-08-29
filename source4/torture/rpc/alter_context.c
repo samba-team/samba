@@ -26,7 +26,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 
-BOOL torture_rpc_alter_context(struct torture_context *torture)
+bool torture_rpc_alter_context(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p, *p2;
@@ -39,7 +39,7 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_alter_context");
 
-	printf("opening LSA connection\n");
+	torture_comment(torture, "opening LSA connection\n");
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
@@ -50,25 +50,25 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 		ret = False;
 	}
 
-	printf("Opening secondary DSSETUP context\n");
+	torture_comment(torture, "Opening secondary DSSETUP context\n");
 	status = dcerpc_secondary_context(p, &p2, &ndr_table_dssetup);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
+		torture_comment(torture, "dcerpc_alter_context failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	tmptbl = ndr_table_dssetup;
 	tmptbl.syntax_id.if_version += 100;
-	printf("Opening bad secondary connection\n");
+	torture_comment(torture, "Opening bad secondary connection\n");
 	status = dcerpc_secondary_context(p, &p2, &tmptbl);
 	if (NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		printf("dcerpc_alter_context with wrong version should fail\n");
+		torture_comment(torture, "dcerpc_alter_context with wrong version should fail\n");
 		return False;
 	}
 
-	printf("testing DSSETUP pipe operations\n");
+	torture_comment(torture, "testing DSSETUP pipe operations\n");
 	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
 
 	if (handle) {
@@ -80,15 +80,15 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 	syntax = p->syntax;
 	transfer_syntax = p->transfer_syntax;
 
-	printf("Testing change of primary context\n");
+	torture_comment(torture, "Testing change of primary context\n");
 	status = dcerpc_alter_context(p, mem_ctx, &p2->syntax, &p2->transfer_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
+		torture_comment(torture, "dcerpc_alter_context failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	printf("testing DSSETUP pipe operations - should fault\n");
+	torture_comment(torture, "testing DSSETUP pipe operations - should fault\n");
 	if (test_DsRoleGetPrimaryDomainInformation(p, mem_ctx)) {
 		ret = False;
 	}
@@ -103,7 +103,8 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 		}
 	}
 
-	printf("testing DSSETUP pipe operations\n");
+	torture_comment(torture, "testing DSSETUP pipe operations\n");
+
 	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
 
 	talloc_free(mem_ctx);
