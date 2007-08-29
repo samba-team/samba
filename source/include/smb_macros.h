@@ -300,7 +300,7 @@ NULL returns on zero request. JRA.
 #define TALLOC_ZERO(ctx, size) _talloc_zero(ctx, size, __location__)
 #define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
 #define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
-#define TALLOC_SIZE(ctx, size) talloc(ctx, size, __location__)
+#define TALLOC_SIZE(ctx, size) talloc_named_const(ctx, size, __location__)
 #define TALLOC_ZERO_SIZE(ctx, size) _talloc_zero(ctx, size, __location__)
 
 #endif
