@@ -1388,3 +1388,112 @@ done:
 	talloc_free(mem_ctx);
 	return ret;
 }
+
+
+static struct hold_oplock_info {
+	const char *fname;
+	bool close_on_break;
+	uint32_t share_access;
+	uint16_t fnum;
+} hold_info[] = {
+	{ BASEDIR "\\notshared_close", True,  
+	  NTCREATEX_SHARE_ACCESS_NONE, },
+	{ BASEDIR "\\notshared_noclose", False, 
+	  NTCREATEX_SHARE_ACCESS_NONE, },
+	{ BASEDIR "\\shared_close", True,  
+	  NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, },
+	{ BASEDIR "\\shared_noclose", False,  
+	  NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, },
+};
+
+static BOOL oplock_handler_hold(struct smbcli_transport *transport, uint16_t tid, 
+				uint16_t fnum, uint8_t level, void *private)
+{
+	struct smbcli_tree *tree = private;
+	struct hold_oplock_info *info;
+	int i;
+
+	for (i=0;i<ARRAY_SIZE(hold_info);i++) {
+		if (hold_info[i].fnum == fnum) break;
+	}
+
+	if (i == ARRAY_SIZE(hold_info)) {
+		printf("oplock break for unknown fnum %u\n", fnum);
+		return False;
+	}
+
+	info = &hold_info[i];
+
+	if (info->close_on_break) {
+		printf("oplock break on %s - closing\n",
+		       info->fname);
+		oplock_handler_close(transport, tid, fnum, level, private);
+		return True;
+	}
+
+	printf("oplock break on %s - acking break\n", info->fname);
+
+	return smbcli_oplock_ack(tree, fnum, OPLOCK_BREAK_TO_NONE);
+}
+
+
+/* 
+   used for manual testing of oplocks - especially interaction with
+   other filesystems (such as NFS and local access)
+*/
+BOOL torture_hold_oplock(struct torture_context *torture, 
+			 struct smbcli_state *cli)
+{
+	struct event_context *ev = cli->transport->socket->event.ctx;
+	int i;
+
+	printf("Setting up open files with oplocks in %s\n", BASEDIR);
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	smbcli_oplock_handler(cli->transport, oplock_handler_hold, cli->tree);
+
+	/* setup the files */
+	for (i=0;i<ARRAY_SIZE(hold_info);i++) {
+		union smb_open io;
+		NTSTATUS status;
+
+		io.generic.level = RAW_OPEN_NTCREATEX;
+		io.ntcreatex.in.root_fid = 0;
+		io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+		io.ntcreatex.in.alloc_size = 0;
+		io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+		io.ntcreatex.in.share_access = hold_info[i].share_access;
+		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+		io.ntcreatex.in.create_options = 0;
+		io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+		io.ntcreatex.in.security_flags = 0;
+		io.ntcreatex.in.fname = hold_info[i].fname;
+		io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+			NTCREATEX_FLAGS_REQUEST_OPLOCK |
+			NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+		printf("opening %s\n", hold_info[i].fname);
+
+		status = smb_raw_open(cli->tree, cli, &io);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to open %s - %s\n", 
+			       hold_info[i].fname, nt_errstr(status));
+			return False;
+		}
+
+		if (io.ntcreatex.out.oplock_level != BATCH_OPLOCK_RETURN) {
+			printf("Oplock not granted for %s - expected %d but got %d\n", 
+			       hold_info[i].fname, BATCH_OPLOCK_RETURN, 
+				io.ntcreatex.out.oplock_level);
+			return False;
+		}
+		hold_info[i].fnum = io.ntcreatex.out.file.fnum;
+	}
+
+	printf("Waiting for oplock events\n");
+	event_loop_wait(ev);
+
+	return True;
+}
