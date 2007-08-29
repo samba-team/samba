@@ -71,14 +71,6 @@ void debug_dsdcinfo_flags(int lvl, uint32_t flags)
 		DEBUGADD(lvl,("DS_AVOID_SELF "));
 	if (flags & DS_ONLY_LDAP_NEEDED)
 		DEBUGADD(lvl,("DS_ONLY_LDAP_NEEDED "));
-	if (flags & 0x00010000)
-		DEBUGADD(lvl,("0x00010000 "));
-	if (flags & 0x00020000)
-		DEBUGADD(lvl,("0x00020000 "));
-	if (flags & 0x00040000)
-		DEBUGADD(lvl,("0x00040000 "));
-	if (flags & 0x00080000)
-		DEBUGADD(lvl,("0x00080000 "));
 	if (flags & DS_IS_FLAT_NAME)
 		DEBUGADD(lvl,("DS_IS_FLAT_NAME "));
 	if (flags & DS_IS_DNS_NAME)
