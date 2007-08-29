@@ -44,13 +44,28 @@
 int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
 {
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	enum security_types sec;
+	unsigned int conn_flags = NET_FLAGS_PDC;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS ntret = NT_STATUS_UNSUCCESSFUL;
 
+	sec = (enum security_types)lp_security();
+
+	if (sec == SEC_ADS) {
+		/* Connect to IPC$ using machine account's credentials. We don't use anonymous
+		   connection here, as it may be denied by server's local policy. */
+		net_use_machine_account();
+
+	} else {
+		/* some servers (e.g. WinNT) don't accept machine-authenticated
+		   smb connections */
+		conn_flags |= NET_FLAGS_ANONYMOUS;
+	}
+
 	/* Connect to remote machine */
-	if (!(cli = net_make_ipc_connection_ex(domain, server, ip, (NET_FLAGS_ANONYMOUS|NET_FLAGS_PDC)))) {
+	if (!(cli = net_make_ipc_connection_ex(domain, server, ip, conn_flags))) {
 		return -1;
 	}
 
