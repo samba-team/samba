@@ -34,11 +34,10 @@ NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			      uint32_t tag,
 			      DATA_BLOB add, BOOL last)
 {
-	NTSTATUS status;
 	uint32_t ofs = blob->length;
 	uint8_t pad = smb2_padding_size(add.length, 8);
-	status = data_blob_realloc(mem_ctx, blob, blob->length + 0x18 + add.length + pad);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!data_blob_realloc(mem_ctx, blob, blob->length + 0x18 + add.length + pad))
+		return NT_STATUS_NO_MEMORY;
 	
 	if (last) {
 		SIVAL(blob->data, ofs+0x00, 0);

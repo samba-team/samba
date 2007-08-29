@@ -86,13 +86,11 @@ _PUBLIC_ NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security,
 		}
 		RSIVAL(out->data, 0, wrapped.length);
 		
-		nt_status = data_blob_append(mem_ctx, out, wrapped.data, wrapped.length);
-		
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+		if (!data_blob_append(mem_ctx, out, wrapped.data, wrapped.length)) {
+			return NT_STATUS_NO_MEMORY;
 		}
 		*len_processed = unwrapped.length;
-		return nt_status;
+		return NT_STATUS_OK;
 	}
 	return gensec_security->ops->wrap_packets(gensec_security, mem_ctx, in, out,
 						  len_processed);
@@ -311,6 +309,7 @@ static NTSTATUS gensec_socket_unwrap(void *private, DATA_BLOB blob)
 
 	if (packet_size != blob.length) {
 		DEBUG(0, ("gensec_socket_unwrap: Did not consume entire packet!\n"));
+		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -318,10 +317,14 @@ static NTSTATUS gensec_socket_unwrap(void *private, DATA_BLOB blob)
 	 * gensec_socket_recv() and gensec_socket_pending() walk the
 	 * linked list */
 
-	nt_status = data_blob_append(gensec_socket, &gensec_socket->read_buffer, 
-				     unwrapped.data, unwrapped.length);	
+	if (!data_blob_append(gensec_socket, &gensec_socket->read_buffer, 
+				     unwrapped.data, unwrapped.length)) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	talloc_free(mem_ctx);
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /* when the data is sent, we know we have not been interrupted */

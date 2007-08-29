@@ -37,6 +37,10 @@
  * @sa lib/iconv.c
  */
 
+char *unix_charset = NULL;
+char *dos_charset = NULL;
+char *display_charset = NULL;
+
 /**
  * Return the name of a charset to give to iconv().
  **/
@@ -44,9 +48,9 @@ static const char *charset_name(charset_t ch)
 {
 	switch (ch) {
 	case CH_UTF16: return "UTF-16LE";
-	case CH_UNIX: return lp_unix_charset();
-	case CH_DOS: return lp_dos_charset();
-	case CH_DISPLAY: return lp_display_charset();
+	case CH_UNIX: return unix_charset;
+	case CH_DOS: return dos_charset;
+	case CH_DISPLAY: return display_charset;
 	case CH_UTF8: return "UTF8";
 	case CH_UTF16BE: return "UTF-16BE";
 	default:

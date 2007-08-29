@@ -4,7 +4,6 @@ lib/talloc/talloc.h: talloc.h
 lib/util/util.h: util.h
 lib/util/debug.h: util/debug.h
 lib/util/mutex.h: util/mutex.h
-lib/util/util_proto.h: util/proto.h
 nt_status.h: core/nt_status.h
 lib/util/byteorder.h: util/byteorder.h
 lib/util/safe_string.h: util/safe_string.h
@@ -91,6 +90,8 @@ librpc/gen_ndr/ndr_svcctl.h: dcerpc/ndr_svcctl.h
 librpc/gen_ndr/ndr_svcctl_c.h: dcerpc/ndr_svcctl_c.h
 lib/cmdline/popt_common.h: samba/popt.h
 lib/util/dlinklist.h: dlinklist.h
+lib/util/data_blob.h: data_blob.h
+lib/util/time.h: time.h
 version.h: samba/version.h
 param/proto.h: param/proto.h
 param/param.h: param.h

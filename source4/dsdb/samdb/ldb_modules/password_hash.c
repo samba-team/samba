@@ -924,8 +924,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	 * This is ugly, but we want to generate the same blob as
 	 * w2k and w2k3...we should handle this in the idl
 	 */
-	status = data_blob_append(io->ac, &pkb_blob, zero16, sizeof(zero16));
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!data_blob_append(io->ac, &pkb_blob, zero16, sizeof(zero16))) {
 		ldb_oom(io->ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

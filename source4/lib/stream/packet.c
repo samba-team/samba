@@ -281,9 +281,8 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 
 	/* possibly expand the partial packet buffer */
 	if (npending + pc->num_read > pc->partial.length) {
-		status = data_blob_realloc(pc, &pc->partial, npending+pc->num_read);
-		if (!NT_STATUS_IS_OK(status)) {
-			packet_error(pc, status);
+		if (!data_blob_realloc(pc, &pc->partial, npending+pc->num_read)) {
+			packet_error(pc, NT_STATUS_NO_MEMORY);
 			return;
 		}
 	}
@@ -322,9 +321,8 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 
 next_partial:
 	if (pc->partial.length != pc->num_read) {
-		status = data_blob_realloc(pc, &pc->partial, pc->num_read);
-		if (!NT_STATUS_IS_OK(status)) {
-			packet_error(pc, status);
+		if (!data_blob_realloc(pc, &pc->partial, pc->num_read)) {
+			packet_error(pc, NT_STATUS_NO_MEMORY);
 			return;
 		}
 	}
@@ -361,9 +359,8 @@ next_partial:
 			return;
 		}
 		/* Trunate the blob sent to the caller to only the packet length */
-		status = data_blob_realloc(pc, &blob, pc->packet_size);
-		if (!NT_STATUS_IS_OK(status)) {
-			packet_error(pc, status);
+		if (!data_blob_realloc(pc, &blob, pc->packet_size)) {
+			packet_error(pc, NT_STATUS_NO_MEMORY);
 			return;
 		}
 	} else {

@@ -92,10 +92,9 @@ static void smb2_read_callback(struct smb2_request *req)
 		return;
 	}
 
-	status = data_blob_append(state, &state->data, 
-				  io.out.data.data, io.out.data.length);
-	if (NT_STATUS_IS_ERR(status)) {
-		pipe_dead(state->c, status);
+	if (!data_blob_append(state, &state->data, 
+				  io.out.data.data, io.out.data.length)) {
+		pipe_dead(state->c, NT_STATUS_NO_MEMORY);
 		talloc_free(state);
 		return;
 	}

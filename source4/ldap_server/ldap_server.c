@@ -98,6 +98,7 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 	/* build all the replies into a single blob */
 	while (call->replies) {
 		DATA_BLOB b;
+		bool ret;
 
 		msg = call->replies->msg;
 		if (!ldap_encode(msg, &b, call)) {
@@ -106,12 +107,12 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 			return;
 		}
 
-		status = data_blob_append(call, &blob, b.data, b.length);
+		ret = data_blob_append(call, &blob, b.data, b.length);
 		data_blob_free(&b);
 
 		talloc_set_name_const(blob.data, "Outgoing, encoded LDAP packet");
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!ret) {
 			talloc_free(call);
 			return;
 		}
