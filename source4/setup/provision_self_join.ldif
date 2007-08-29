@@ -13,7 +13,7 @@ operatingSystem: Samba
 operatingSystemVersion: 4.0
 dNSHostName: ${DNSNAME}
 isCriticalSystemObject: TRUE
-sambaPassword: ${MACHINEPASS}
+sambaPassword:: ${MACHINEPASS_B64}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
 servicePrincipalName: HOST/${DNSNAME}/${REALM}
