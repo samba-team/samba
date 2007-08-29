@@ -30,6 +30,7 @@ NTSTATUS torture_raw_init(void)
 		"RAW");
 	/* RAW smb tests */
 	torture_suite_add_simple_test(suite, "BENCH-OPLOCK", torture_bench_oplock);
+	torture_suite_add_simple_test(suite, "PING-PONG", torture_ping_pong);
 	torture_suite_add_simple_test(suite, "BENCH-LOCK", torture_bench_lock);
 	torture_suite_add_simple_test(suite, "BENCH-OPEN", torture_bench_open);
 	torture_suite_add_1smb_test(suite, "QFSINFO", torture_raw_qfsinfo);

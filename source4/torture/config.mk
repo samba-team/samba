@@ -77,6 +77,7 @@ OBJ_FILES = \
 		raw/context.o \
 		raw/write.o \
 		raw/lock.o \
+		raw/pingpong.o \
 		raw/lockbench.o \
 		raw/openbench.o \
 		raw/rename.o \
