@@ -333,7 +333,6 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 	static int io_bufsize = 64512;
 	int read_size = io_bufsize;
 	char *data = NULL;
-	off_t start = 0;
 	off_t nread = 0;
 
 
@@ -401,14 +400,14 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 
 		/* copying file */
 		int n, ret;
-		n = cli_read(cli_share_src, fnum_src, data, nread + start, 
+		n = cli_read(cli_share_src, fnum_src, data, nread, 
 				read_size);
 
 		if (n <= 0)
 			break;
 
 		ret = cli_write(cli_share_dst, fnum_dst, 0, data, 
-			nread + start, n);
+			nread, n);
 
 		if (n != ret) {
 			d_fprintf(stderr, "Error writing file: %s\n", 

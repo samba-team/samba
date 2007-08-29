@@ -44,7 +44,6 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 	char *data = NULL;
 	static int io_bufsize = 64512;
 	int read_size = io_bufsize;
-	off_t start = 0;
 	off_t nread = 0;
 
 	if ((fnum = cli_open(cli, nt_path, O_RDONLY, DENY_NONE)) == -1) {
@@ -64,7 +63,7 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 
 	while (1) {
 
-		int n = cli_read(cli, fnum, data, nread + start, read_size);
+		int n = cli_read(cli, fnum, data, nread, read_size);
 
 		if (n <= 0)
 			break;
