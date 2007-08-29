@@ -882,7 +882,7 @@ static NTSTATUS net_ads_join_ok(void)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	net_use_machine_password();
+	net_use_upn_machine_account();
 
 	status = ads_startup(True, &ads);
 	if (!ADS_ERR_OK(status)) {
@@ -2187,7 +2187,7 @@ int net_ads_changetrustpw(int argc, const char **argv)
 		return -1;
 	}
 
-	net_use_machine_password();
+	net_use_upn_machine_account();
 
 	use_in_memory_ccache();
 
