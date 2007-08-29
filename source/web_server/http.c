@@ -196,9 +196,8 @@ static int http_mapToStorage(EspHandle handle, char *path, int len, const char *
 static int http_writeBlock(EspHandle handle, const char *buf, int size)
 {
 	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
-	NTSTATUS status;
-	status = data_blob_append(web, &web->output.content, buf, size);
-	if (!NT_STATUS_IS_OK(status)) return -1;
+	if (!data_blob_append(web, &web->output.content, buf, size))
+		return -1;
 	return size;
 }
 

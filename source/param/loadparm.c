@@ -76,7 +76,6 @@ static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...);
 
 static BOOL defaults_saved = False;
 
-
 struct param_opt {
 	struct param_opt *prev, *next;
 	char *key;
@@ -92,10 +91,7 @@ typedef struct
 	int server_role;
 
 	char **smb_ports;
-	char *dos_charset;
-	char *unix_charset;
 	char *ncalrpc_dir;
-	char *display_charset;
 	char *szLockDir;
 	char *szModulesDir;
 	char *szPidDir;
@@ -178,8 +174,8 @@ typedef struct
 	int bLanmanAuth;
 	int bNTLMAuth;
 	int bUseSpnego;
-	int  server_signing;
-	int  client_signing;
+	int server_signing;
+	int client_signing;
 	int bClientPlaintextAuth;
 	int bClientLanManAuth;
 	int bClientNTLMv2Auth;
@@ -383,10 +379,10 @@ static struct parm_struct parm_table[] = {
 
 	{"server role", P_ENUM, P_GLOBAL, &Globals.server_role, NULL, enum_server_role, FLAG_BASIC},
 
-	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"dos charset", P_STRING, P_GLOBAL, &dos_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"unix charset", P_STRING, P_GLOBAL, &unix_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ncalrpc dir", P_STRING, P_GLOBAL, &Globals.ncalrpc_dir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"display charset", P_STRING, P_GLOBAL, &display_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE},
@@ -841,7 +837,7 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_cldap_port, &Globals.cldap_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, &Globals.krb5_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, &Globals.kpasswd_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, &Globals.web_port)
-_PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
+_PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, &dos_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_webapps_directory, &Globals.webapps_directory)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, &Globals.tls_enabled)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, &Globals.tls_keyfile)
@@ -849,8 +845,8 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, &Globals.tls_certfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, &Globals.tls_cafile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, &Globals.tls_crlfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, &Globals.tls_dhpfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
+_PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, &unix_charset)
+_PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, &Globals.szShareBackend)
 _PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)

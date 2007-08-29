@@ -196,38 +196,37 @@ _PUBLIC_ DATA_BLOB data_blob_const(const void *p, size_t length)
 /**
   realloc a data_blob
 **/
-_PUBLIC_ NTSTATUS data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t length)
+_PUBLIC_ bool data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t length)
 {
 	blob->data = talloc_realloc_size(mem_ctx, blob->data, length);
-	NT_STATUS_HAVE_NO_MEMORY(blob->data);	
+	if (blob->data == NULL)
+		return false;
 	blob->length = length;
-	return NT_STATUS_OK;
+	return true;
 }
 
 
 /**
   append some data to a data blob
 **/
-_PUBLIC_ NTSTATUS data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
+_PUBLIC_ bool data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 				   const void *p, size_t length)
 {
-	NTSTATUS status;
 	size_t old_len = blob->length;
 	size_t new_len = old_len + length;
 	if (new_len < length || new_len < old_len) {
-		return NT_STATUS_NO_MEMORY;
+		return false;
 	}
 
 	if ((const uint8_t *)p + length < (const uint8_t *)p) {
-		return NT_STATUS_NO_MEMORY;
+		return false;
 	}
 	
-	status = data_blob_realloc(mem_ctx, blob, new_len);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (!data_blob_realloc(mem_ctx, blob, new_len)) {
+		return false;
 	}
 
 	memcpy(blob->data + old_len, p, length);
-	return NT_STATUS_OK;
+	return true;
 }
 

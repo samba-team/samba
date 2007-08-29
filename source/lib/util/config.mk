@@ -2,12 +2,13 @@
 #VERSION = 0.0.1
 #SO_VERSION = 0
 #DESCRIPTION = Generic utility functions
-PUBLIC_PROTO_HEADER = util_proto.h
 PUBLIC_HEADERS = util.h \
 				 byteorder.h \
+				 data_blob.h \
 				 debug.h \
 				 mutex.h \
 				 safe_string.h \
+				 time.h \
 				 xfile.h
 OBJ_FILES = xfile.o \
 		debug.o \

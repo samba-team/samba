@@ -27,23 +27,9 @@
 
 #include <stdlib.h>
 
-/* used to hold an arbitrary blob of data */
-typedef struct datablob {
-	uint8_t *data;
-	size_t length;
-} DATA_BLOB;
-
-struct data_blob_list_item {
-	struct data_blob_list_item *prev,*next;
-	DATA_BLOB blob;
-};
-
 /* by making struct ldb_val and DATA_BLOB the same, we can simplify
    a fair bit of code */
 #define ldb_val datablob
-
-/* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
-typedef uint64_t NTTIME;
 
 /*
   we use struct ipv4_addr to avoid having to include all the
@@ -103,6 +89,5 @@ enum announce_as {/* Types of machine we can announce as. */
 	ANNOUNCE_AS_WFW=3,
 	ANNOUNCE_AS_NT_WORKSTATION=4
 };
-
 
 #endif /* _SAMBA_CORE_H */

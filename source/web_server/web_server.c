@@ -78,8 +78,8 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 	if (NT_STATUS_IS_ERR(status)) goto failed;
 	if (!NT_STATUS_IS_OK(status)) return;
 
-	status = data_blob_append(web, &web->input.partial, buf, nread);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	if (!data_blob_append(web, &web->input.partial, buf, nread))
+		goto failed;
 
 	/* parse any lines that are available */
 	b = web->input.partial;

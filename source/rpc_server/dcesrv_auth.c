@@ -471,7 +471,10 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 		if (NT_STATUS_IS_OK(status)) {
 			blob->length -= dce_conn->auth_state.auth_info->credentials.length;
-			status = data_blob_append(call, blob, creds2.data, creds2.length);
+			if (!data_blob_append(call, blob, creds2.data, creds2.length))
+				status = NT_STATUS_NO_MEMORY;
+			else
+				status = NT_STATUS_OK;
 		}
 
 		/* If we did AEAD signing of the packet headers, then we hope
@@ -491,7 +494,10 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 					    &creds2);
 		if (NT_STATUS_IS_OK(status)) {
 			blob->length -= dce_conn->auth_state.auth_info->credentials.length;
-			status = data_blob_append(call, blob, creds2.data, creds2.length);
+			if (!data_blob_append(call, blob, creds2.data, creds2.length))
+				status = NT_STATUS_NO_MEMORY;
+			else
+				status = NT_STATUS_OK;
 		}
 
 		/* If we did AEAD signing of the packet headers, then we hope
