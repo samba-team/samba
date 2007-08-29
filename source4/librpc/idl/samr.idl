@@ -51,6 +51,20 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_ConnectAccessMask;
 
 	typedef [bitmap32bit] bitmap {
+		DOMAIN_ACCESS_LOOKUP_INFO_1  = 0x00000001,
+		DOMAIN_ACCESS_SET_INFO_1     = 0x00000002,
+		DOMAIN_ACCESS_LOOKUP_INFO_2  = 0x00000004,
+		DOMAIN_ACCESS_SET_INFO_2     = 0x00000008,
+		DOMAIN_ACCESS_CREATE_USER    = 0x00000010,
+		DOMAIN_ACCESS_CREATE_GROUP   = 0x00000020,
+		DOMAIN_ACCESS_CREATE_ALIAS   = 0x00000040,
+		DOMAIN_ACCESS_LOOKUP_ALIAS   = 0x00000080,
+		DOMAIN_ACCESS_ENUM_ACCOUNTS  = 0x00000100,
+		DOMAIN_ACCESS_OPEN_ACCOUNT   = 0x00000200,
+		DOMAIN_ACCESS_SET_INFO_3     = 0x00000400
+	} samr_DomainAccessMask;
+
+	typedef [bitmap32bit] bitmap {
 		GROUP_ACCESS_LOOKUP_INFO     = 0x00000001,
 		GROUP_ACCESS_SET_INFO        = 0x00000002,
 		GROUP_ACCESS_ADD_MEMBER      = 0x00000004,
@@ -145,7 +159,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x07     */
 	[public] NTSTATUS samr_OpenDomain(
 		[in,ref]      policy_handle *connect_handle,
-		[in]          uint32 access_mask,
+		[in]          samr_DomainAccessMask access_mask,
 		[in,ref]      dom_sid2 *sid,
 		[out,ref]     policy_handle *domain_handle
 		);
