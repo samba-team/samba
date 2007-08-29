@@ -161,7 +161,7 @@ char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
 
 	if (size && count) {
 		/* We can't call the type-safe version here. */
-		ret = (char *)_talloc_zero_array_zeronull(ps->mem_ctx, size, count,
+		ret = (char *)_talloc_zero_array(ps->mem_ctx, size, count,
 						 "parse_prs");
 	}
 	return ret;
