@@ -235,7 +235,8 @@ static NTSTATUS unpack_dsdcinfo(TALLOC_CTX *mem_ctx,
 		memcpy(&guid_flat.info, guid_buf, guid_len);
 		smb_uuid_unpack(guid_flat, &guid);
 
-		info->domain_guid = talloc_memdup(mem_ctx, &guid, sizeof(guid));
+		info->domain_guid = (struct GUID *)talloc_memdup(
+			mem_ctx, &guid, sizeof(guid));
 		if (!info->domain_guid) {
 			goto failed;
 		}
@@ -694,8 +695,8 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 	info->domain_controller_address_type = domain_controller_address_type;
 
 	if (domain_guid) {
-		info->domain_guid = talloc_memdup(mem_ctx, domain_guid,
-						  sizeof(*domain_guid));
+		info->domain_guid = (struct GUID *)talloc_memdup(
+			mem_ctx, domain_guid, sizeof(*domain_guid));
 		NT_STATUS_HAVE_NO_MEMORY(info->domain_guid);
 	}
 
