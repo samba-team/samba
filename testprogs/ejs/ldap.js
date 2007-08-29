@@ -196,8 +196,73 @@ cn: LDAPtestUSER3
 	}
 	assert(ok.error == 71 || ok.error == 64);
 
-	ok = ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
+	ok = ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestuser5,cn=users," + base_dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
 
+	ok = ldb.del("cn=ldaptestuser5,cn=users," + base_dn);
+
+	ok = ldb.add("
+dn: cn=ldaptestcontainer," + base_dn + "
+objectClass: container
+");
+	
+	ok = ldb.add("
+dn: cn=ldaptestuser4,cn=ldaptestcontainer," + base_dn + "
+objectClass: person
+objectClass: user
+cn: LDAPtestUSER4
+");
+	if (ok.error != 0) {
+		ok = ldb.del("cn=ldaptestuser4,cn=ldaptestcontainer," + base_dn);
+		if (ok.error != 0) {
+			println(ok.errstr);
+			assert(ok.error == 0);
+		}
+		ok = ldb.add("
+dn: cn=ldaptestuser4,cn=ldaptestcontainer," + base_dn + "
+objectClass: person
+objectClass: user
+cn: LDAPtestUSER4
+");
+		if (ok.error != 0) {
+			println(ok.errstr);
+			assert(ok.error == 0);
+		}
+	}
+
+	println("Testing ldb.rename of cn=ldaptestcontainer," + base_dn + "to cn=ldaptestcontainer2," + base_dn);
+	ok = ldb.rename("cn=ldaptestcontainer," + base_dn, "cn=ldaptestcontainer2," + base_dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	println("Testing ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in renamed container");
+	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestuser4)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == "cn=ldaptestuser4,cn=ldaptestcontainer2," + base_dn);
+
+	println("Testing delete of subtree renamed "+res.msgs[0].dn);
+	ok = ldb.del(res.msgs[0].dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	println("Testing delete of renamed cn=ldaptestcontainer2," + base_dn);
+	ok = ldb.del("cn=ldaptestcontainer2," + base_dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
 	ok = ldb.add("
 dn: cn=ldaptestutf8user èùéìòà ,cn=users," + base_dn + "
 objectClass: user

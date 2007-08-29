@@ -232,3 +232,15 @@ OBJ_FILES = \
 # End MODULE ldb_objectclass
 ################################################
 
+################################################
+# Start MODULE ldb_subtree_rename
+[MODULE::ldb_subtree_rename]
+INIT_FUNCTION = ldb_subtree_rename_init
+CFLAGS = -Ilib/ldb/include
+PRIVATE_DEPENDENCIES = LIBTALLOC
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		subtree_rename.o
+# End MODULE ldb_subtree_rename
+################################################
+

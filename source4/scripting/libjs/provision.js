@@ -935,6 +935,7 @@ function provision_guess()
 					"objectclass",
 					"rdn_name",
 					"show_deleted",
+					"subtree_rename",
 					"partition");
 	subobj.MODULES_LIST = join(",", modules_list);
 	subobj.DOMAINDN_LDB = "users.ldb";
