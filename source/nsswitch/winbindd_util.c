@@ -1353,3 +1353,15 @@ BOOL winbindd_can_contact_domain( struct winbindd_domain *domain )
 	
 	return True;	
 }
+
+/*********************************************************************
+ ********************************************************************/
+
+BOOL winbindd_internal_child(struct winbindd_child *child)
+{
+	if (child == idmap_child() || child == locator_child()) {
+		return True;
+	}
+
+	return False;
+}
