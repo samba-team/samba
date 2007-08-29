@@ -481,6 +481,7 @@ int main(int argc,char *argv[])
 	static const char *ui_ops_name = "simple";
 	const char *basedir = NULL;
 	static int list_tests = 0;
+	char *host = NULL, *share = NULL;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS};
 	
@@ -601,24 +602,19 @@ int main(int argc,char *argv[])
 	}
 
 	/* see if its a RPC transport specifier */
-	status = dcerpc_parse_binding(talloc_autofree_context(), argv_new[1], &binding_struct);
-	if (NT_STATUS_IS_OK(status)) {
+	if (!smbcli_parse_unc(argv_new[1], NULL, &host, &share)) {
+		status = dcerpc_parse_binding(talloc_autofree_context(), argv_new[1], &binding_struct);
+		if (NT_STATUS_IS_ERR(status)) {
+			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", argv_new[1]);
+			usage(pc);
+			return false;
+		}
 		lp_set_cmdline("torture:host", binding_struct->host);
 		lp_set_cmdline("torture:share", "IPC$");
 		lp_set_cmdline("torture:binding", argv_new[1]);
 	} else {
-		char *binding = NULL;
-		char *host = NULL, *share = NULL;
-
-		if (!smbcli_parse_unc(argv_new[1], NULL, &host, &share)) {
-			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", argv_new[1]);
-			usage(pc);
-		}
-
 		lp_set_cmdline("torture:host", host);
 		lp_set_cmdline("torture:share", share);
-		asprintf(&binding, "ncacn_np:%s", host);
-		lp_set_cmdline("torture:binding", binding);
 	}
 
 	if (!strcmp(ui_ops_name, "simple")) {
