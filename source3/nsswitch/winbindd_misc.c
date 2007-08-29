@@ -270,6 +270,18 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
+static struct winbindd_child static_locator_child;
+
+void init_locator_child(void)
+{
+	setup_domain_child(NULL, &static_locator_child, "locator");
+}
+
+struct winbindd_child *locator_child(void)
+{
+	return &static_locator_child;
+}
+
 void winbindd_dsgetdcname(struct winbindd_cli_state *state)
 {
 	state->request.domain_name
@@ -278,7 +290,7 @@ void winbindd_dsgetdcname(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: DsGetDcName for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	sendto_domain(state, find_our_domain());
+	sendto_child(state, locator_child());
 }
 
 enum winbindd_result winbindd_dual_dsgetdcname(struct winbindd_domain *domain,
@@ -603,3 +615,4 @@ void winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 
 	request_ok(state);
 }
+
