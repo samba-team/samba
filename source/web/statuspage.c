@@ -56,7 +56,7 @@ static void initPid2Machine (void)
 }
 
 /* add new PID <-> Machine name mapping */
-static void addPid2Machine (struct server_id pid, char *machine)
+static void addPid2Machine (struct server_id pid, const char *machine)
 {
 	/* show machine name rather PID on table "Open Files"? */
 	if (PID_or_Machine) {
