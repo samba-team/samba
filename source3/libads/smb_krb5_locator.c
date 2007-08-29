@@ -24,9 +24,13 @@
 #endif
 
 #if defined(HAVE_KRB5) && defined(HAVE_KRB5_LOCATE_PLUGIN_H)
-BOOL winbind_env_set( void );
+BOOL winbind_env_set(void);
 
 #include <krb5/locate_plugin.h>
+
+#ifndef KRB5_PLUGIN_NO_HANDLE
+#define KRB5_PLUGIN_NO_HANDLE KRB5_KDC_UNREACH /* Heimdal */
+#endif
 
 static const char *get_service_from_locate_service_type(enum locate_service_type svc)
 {
@@ -123,11 +127,7 @@ static int smb_krb5_locator_lookup_sanity_check(enum locate_service_type svc,
 			break;
 		case locate_service_kadmin:
 		case locate_service_krb524:
-#ifdef KRB5_PLUGIN_NO_HANDLE
 			return KRB5_PLUGIN_NO_HANDLE;
-#else
-			return KRB5_KDC_UNREACH; /* Heimdal */
-#endif
 		default:
 			return EINVAL;
 	}
@@ -137,11 +137,7 @@ static int smb_krb5_locator_lookup_sanity_check(enum locate_service_type svc,
 		case AF_INET:
 			break;
 		case AF_INET6: /* not yet */
-#ifdef KRB5_PLUGIN_NO_HANDLE
 			return KRB5_PLUGIN_NO_HANDLE;
-#else
-			return KRB5_KDC_UNREACH; /* Heimdal */
-#endif
 		default:
 			return EINVAL;
 	}
@@ -198,11 +194,7 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 			(unsigned int)getpid(), gai_strerror(ret), ret);
 #endif
 
-#ifdef KRB5_PLUGIN_NO_HANDLE
 		return KRB5_PLUGIN_NO_HANDLE;
-#else
-		return KRB5_KDC_UNREACH; /* Heimdal */
-#endif
 	}
 
 	ret = cbfunc(cbdata, out->ai_socktype, out->ai_addr);
@@ -365,11 +357,7 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 	return ret;
 
  failed:
-#ifdef KRB5_PLUGIN_NO_HANDLE
 	return KRB5_PLUGIN_NO_HANDLE;
-#else
-	return KRB5_KDC_UNREACH; /* Heimdal */
-#endif
 }
 
 #ifdef HEIMDAL_KRB5_LOCATE_PLUGIN_H
