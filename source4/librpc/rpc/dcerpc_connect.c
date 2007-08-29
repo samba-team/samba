@@ -733,6 +733,14 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 			dcerpc_connect_timeout_handler, c);
 	
 	switch (s->binding->transport) {
+	case NCA_UNKNOWN: {
+		struct composite_context *binding_req;
+		binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
+							  s->pipe->conn->event_ctx);
+		composite_continue(c, binding_req, continue_map_binding, c);
+		return c;
+		}
+
 	case NCACN_NP:
 	case NCACN_IP_TCP:
 	case NCALRPC:

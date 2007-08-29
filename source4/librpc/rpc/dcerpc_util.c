@@ -531,7 +531,9 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm
 	return NULL;
 }
 
-static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor,  const char *data)
+static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, 
+					  struct epm_floor *epm_floor,  
+					  const char *data)
 {
 	switch (epm_floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
@@ -648,7 +650,9 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 	return (unsigned int)-1;
 }
 
-NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding **b_out)
+NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
+				   struct epm_tower *tower, 
+				   struct dcerpc_binding **b_out)
 {
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
@@ -932,7 +936,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	/*
 	  First, check if there is a default endpoint specified in the IDL
 	*/
-	if (table) {
+	if (table != NULL) {
 		struct dcerpc_binding *default_binding;
 
 		/* Find one of the default pipes for this interface */
@@ -940,7 +944,10 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
 
 			if (NT_STATUS_IS_OK(status)) {
-				if (default_binding->transport == binding->transport && default_binding->endpoint) {
+				if (binding->transport == NCA_UNKNOWN) 
+					binding->transport = default_binding->transport;
+				if (default_binding->transport == binding->transport && 
+					default_binding->endpoint) {
 					binding->endpoint = talloc_reference(binding, default_binding->endpoint);
 					talloc_free(default_binding);
 
@@ -967,7 +974,8 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	epmapper_binding->endpoint		= NULL;
 
 	/* initiate rpc pipe connection */
-	pipe_connect_req = dcerpc_pipe_connect_b_send(c, epmapper_binding, &ndr_table_epmapper,
+	pipe_connect_req = dcerpc_pipe_connect_b_send(c, epmapper_binding, 
+						      &ndr_table_epmapper,
 						      anon_creds, c->event_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 	
