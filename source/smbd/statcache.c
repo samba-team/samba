@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    stat cache code
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1999-2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    Copyright (C) Volker Lendecke 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,14 +33,15 @@ static TDB_CONTEXT *tdb_stat_cache;
  *
  * @param full_orig_name       The original name as specified by the client
  * @param orig_translated_path The name on our filesystem.
- * 
- * @note Only the first strlen(orig_translated_path) characters are stored 
+ *
+ * @note Only the first strlen(orig_translated_path) characters are stored
  *       into the cache.  This means that full_orig_name will be internally
  *       truncated.
  *
  */
 
-void stat_cache_add( const char *full_orig_name, const char *translated_path, BOOL case_sensitive)
+void stat_cache_add( const char *full_orig_name, const char *translated_path,
+		BOOL case_sensitive)
 {
 	size_t translated_path_length;
 	TDB_DATA data_val;
@@ -111,8 +112,12 @@ void stat_cache_add( const char *full_orig_name, const char *translated_path, BO
 
 	if (original_path_length != translated_path_length) {
 		if (original_path_length < translated_path_length) {
-			DEBUG(0, ("OOPS - tried to store stat cache entry for weird length paths [%s] %lu and [%s] %lu)!\n",
-				  original_path, (unsigned long)original_path_length, translated_path, (unsigned long)translated_path_length));
+			DEBUG(0, ("OOPS - tried to store stat cache entry "
+			"for weird length paths [%s] %lu and [%s] %lu)!\n",
+				  original_path,
+				  (unsigned long)original_path_length,
+				  translated_path,
+				  (unsigned long)translated_path_length));
 			SAFE_FREE(original_path);
 			return;
 		}
@@ -127,15 +132,20 @@ void stat_cache_add( const char *full_orig_name, const char *translated_path, BO
 	/*
 	 * New entry or replace old entry.
 	 */
-  
+
 	data_val.dsize = translated_path_length + 1;
 	data_val.dptr = (uint8 *)translated_path;
 
-	if (tdb_store_bystring(tdb_stat_cache, original_path, data_val, TDB_REPLACE) != 0) {
-		DEBUG(0,("stat_cache_add: Error storing entry %s -> %s\n", original_path, translated_path));
+	if (tdb_store_bystring(tdb_stat_cache, original_path, data_val,
+				TDB_REPLACE) != 0) {
+		DEBUG(0,("stat_cache_add: Error storing entry %s -> %s\n",
+					original_path, translated_path));
 	} else {
 		DEBUG(5,("stat_cache_add: Added entry (%lx:size%x) %s -> %s\n",
-			(unsigned long)data_val.dptr, (unsigned int)data_val.dsize, original_path, translated_path));
+			(unsigned long)data_val.dptr,
+			(unsigned int)data_val.dsize,
+			original_path,
+			translated_path));
 	}
 
 	SAFE_FREE(original_path);
@@ -149,10 +159,12 @@ void stat_cache_add( const char *full_orig_name, const char *translated_path, BO
  *                to be correct as far as the cache can tell us. We assume that
  *		  it is a malloc'ed string, we free it if necessary.
  * @param dirpath The path as far as the stat cache told us.
- * @param start   A pointer into name, for where to 'start' in fixing the rest of the name up.
+ * @param start   A pointer into name, for where to 'start' in fixing the rest
+ * 		  of the name up.
  * @param psd     A stat buffer, NOT from the cache, but just a side-effect.
  *
- * @return True if we translated (and did a scuccessful stat on) the entire name.
+ * @return True if we translated (and did a scuccessful stat on) the entire
+ * 		  name.
  *
  */
 
@@ -170,7 +182,7 @@ BOOL stat_cache_lookup(connection_struct *conn, char **pname, char **dirpath,
 
 	if (!lp_stat_cache())
 		return False;
- 
+
 	name = *pname;
 	namelen = strlen(name);
 
@@ -217,7 +229,8 @@ BOOL stat_cache_lookup(connection_struct *conn, char **pname, char **dirpath,
 			break;
 		}
 
-		DEBUG(10,("stat_cache_lookup: lookup failed for name [%s]\n", chk_name ));
+		DEBUG(10,("stat_cache_lookup: lookup failed for name [%s]\n",
+				chk_name ));
 		/*
 		 * Didn't find it - remove last component for next try.
 		 */
@@ -348,7 +361,7 @@ void stat_cache_delete(const char *name)
  The function returns the bucket index number for the hashed key.
  JRA. Use a djb-algorithm hash for speed.
 ***************************************************************/
-                                                                                                     
+
 unsigned int fast_string_hash(TDB_DATA *key)
 {
         unsigned int n = 0;
@@ -374,7 +387,7 @@ BOOL reset_stat_cache( void )
 
 	/* Create the in-memory tdb using our custom hash function. */
 	tdb_stat_cache = tdb_open_ex("statcache", 1031, TDB_INTERNAL,
-                                    (O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
+				(O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
 
 	if (!tdb_stat_cache)
 		return False;
