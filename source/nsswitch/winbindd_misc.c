@@ -298,6 +298,7 @@ enum winbindd_result winbindd_dual_dsgetdcname(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	const char *dc = NULL;
 
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
@@ -312,7 +313,22 @@ enum winbindd_result winbindd_dual_dsgetdcname(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	fstrcpy(state->response.data.dc_name, info->domain_controller_name);
+	if (info->domain_controller_address) {
+		dc = info->domain_controller_address;
+		if ((dc[0] == '\\') && (dc[1] == '\\')) {
+			dc += 2;
+		}
+	}
+
+	if ((!dc || !is_ipaddress(dc)) && info->domain_controller_name) {
+		dc = info->domain_controller_name;
+	}
+
+	if (!dc || !*dc) {
+		return WINBINDD_ERROR;
+	}
+
+	fstrcpy(state->response.data.dc_name, dc);
 
 	return WINBINDD_OK;
 }
