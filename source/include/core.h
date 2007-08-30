@@ -27,10 +27,6 @@
 
 #include <stdlib.h>
 
-/* by making struct ldb_val and DATA_BLOB the same, we can simplify
-   a fair bit of code */
-#define ldb_val datablob
-
 /*
   we use struct ipv4_addr to avoid having to include all the
   system networking headers everywhere

@@ -39,7 +39,6 @@ libcli/util/doserr.h: core/doserr.h
 libcli/util/nt_status.h: core/ntstatus.h
 libcli/cldap/cldap.h: cldap.h
 lib/samba3/samba3.h: samba3.h
-include/core.h: core.h
 librpc/gen_ndr/dcerpc.h: gen_ndr/dcerpc.h
 librpc/gen_ndr/netlogon.h: gen_ndr/netlogon.h
 librpc/gen_ndr/ndr_misc.h: gen_ndr/ndr_misc.h
@@ -90,7 +89,7 @@ librpc/gen_ndr/ndr_svcctl.h: dcerpc/ndr_svcctl.h
 librpc/gen_ndr/ndr_svcctl_c.h: dcerpc/ndr_svcctl_c.h
 lib/cmdline/popt_common.h: samba/popt.h
 lib/util/dlinklist.h: dlinklist.h
-lib/util/data_blob.h: data_blob.h
+lib/util/data_blob.h: util/data_blob.h
 lib/util/time.h: util/time.h
 version.h: samba/version.h
 param/proto.h: param/proto.h
