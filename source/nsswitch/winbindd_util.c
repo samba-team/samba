@@ -1413,3 +1413,36 @@ BOOL winbindd_internal_child(struct winbindd_child *child)
 
 	return False;
 }
+
+/*********************************************************************
+ ********************************************************************/
+
+void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
+{
+	char *var = NULL;
+	const char *kdc = NULL;
+
+	if (!domain) {
+		return;
+	}
+
+	kdc = inet_ntoa(domain->dcaddr.sin_addr);
+	if (!kdc) {
+		kdc = domain->dcname;
+	}
+
+	if (!kdc || !*kdc) {
+		return;
+	}
+
+	if (asprintf(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
+		     strupper_static(domain->alt_name)) == -1) {
+		return;
+	}
+
+	DEBUG(10,("winbindd_set_locator_kdc_env: setting var: %s to: %s\n",
+		var, kdc));
+
+	setenv(var, kdc, 1);
+	free(var);
+}
