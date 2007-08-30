@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "lib/events/events.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -663,5 +664,155 @@ BOOL torture_samba3_caseinsensitive(struct torture_context *torture)
 
  done:
 	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
+ * Check that Samba3 correctly deals with conflicting posix byte range locks
+ * on an underlying file
+ */
+
+BOOL torture_samba3_posixtimedlock(struct torture_context *tctx)
+{
+	struct smbcli_state *cli;
+	NTSTATUS status;
+	BOOL ret = True;
+	const char *dirname = "posixlock";
+	const char *fname = "locked";
+	const char *fpath;
+	const char *localdir;
+	const char *localname;
+	int fnum = -1;
+
+	int fd = -1;
+	struct flock posix_lock;
+
+	union smb_lock io;
+	struct smb_lock_entry lock_entry;
+	struct smbcli_request *req;
+
+	if (!torture_open_connection(&cli, 0)) {
+		ret = False;
+		goto done;
+	}
+
+	smbcli_deltree(cli->tree, dirname);
+
+	status = smbcli_mkdir(cli->tree, dirname);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_warning(tctx, "smbcli_mkdir failed: %s\n",
+				nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	if (!(fpath = talloc_asprintf(tctx, "%s\\%s", dirname, fname))) {
+		torture_warning(tctx, "talloc failed\n");
+		ret = False;
+		goto done;
+	}
+	fnum = smbcli_open(cli->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		torture_warning(tctx, "Could not create file %s: %s\n", fpath,
+				smbcli_errstr(cli->tree));
+		ret = False;
+		goto done;
+	}
+
+	if (!(localdir = torture_setting_string(tctx, "localdir", NULL))) {
+		torture_warning(tctx, "Need 'localdir' setting\n");
+		ret = False;
+		goto done;
+	}
+
+	if (!(localname = talloc_asprintf(tctx, "%s/%s/%s", localdir, dirname,
+					  fname))) {
+		torture_warning(tctx, "talloc failed\n");
+		ret = False;
+		goto done;
+	}
+
+	/*
+	 * Lock a byte range from posix
+	 */
+
+	fd = open(localname, O_RDWR);
+	if (fd == -1) {
+		torture_warning(tctx, "open(%s) failed: %s\n",
+				localname, strerror(errno));
+		goto done;
+	}
+
+	posix_lock.l_type = F_WRLCK;
+	posix_lock.l_whence = SEEK_SET;
+	posix_lock.l_start = 0;
+	posix_lock.l_len = 1;
+
+	if (fcntl(fd, F_SETLK, &posix_lock) == -1) {
+		torture_warning(tctx, "fcntl failed: %s\n", strerror(errno));
+		ret = False;
+		goto done;
+	}
+
+	/*
+	 * Try a cifs brlock without timeout to see if posix locking = yes
+	 */
+
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+
+	lock_entry.count = 1;
+	lock_entry.offset = 0;
+	lock_entry.pid = cli->tree->session->pid;
+
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.locks = &lock_entry;
+	io.lockx.in.file.fnum = fnum;
+
+	status = smb_raw_lock(cli->tree, &io);
+
+	ret = True;
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	if (!ret) {
+		goto done;
+	}
+
+	/*
+	 * Now fire off a timed brlock, unlock the posix lock and see if the
+	 * timed lock gets through.
+	 */
+
+	io.lockx.in.timeout = 5000;
+
+	req = smb_raw_lock_send(cli->tree, &io);
+	if (req == NULL) {
+		torture_warning(tctx, "smb_raw_lock_send failed\n");
+		ret = False;
+		goto done;
+	}
+
+	/*
+	 * Ship the async timed request to the server
+	 */
+	event_loop_once(req->transport->socket->event.ctx);
+	msleep(500);
+
+	close(fd);
+
+	status = smbcli_request_simple_recv(req);
+
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+	if (fnum != -1) {
+		smbcli_close(cli->tree, fnum);
+	}
+	if (fd != -1) {
+		close(fd);
+	}
+	smbcli_deltree(cli->tree, dirname);
 	return ret;
 }
