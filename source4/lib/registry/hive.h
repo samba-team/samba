@@ -21,8 +21,7 @@
 #ifndef __REGISTRY_HIVE_H__
 #define __REGISTRY_HIVE_H__
 
-#include "core.h"
-#include "talloc.h"
+#include <talloc.h>
 #include "librpc/gen_ndr/security.h"
 
 /**

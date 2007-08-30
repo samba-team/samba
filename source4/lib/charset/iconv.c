@@ -72,23 +72,22 @@ static const struct charset_functions builtin_functions[] = {
 
 static struct charset_functions *charsets = NULL;
 
-NTSTATUS charset_register_backend(const void *_funcs) 
+bool charset_register_backend(const void *_funcs) 
 {
 	struct charset_functions *funcs = memdup(_funcs,sizeof(struct charset_functions));
-	struct charset_functions *c = charsets;
+	struct charset_functions *c;
 
 	/* Check whether we already have this charset... */
-	while(c) {
-		if(!strcasecmp(c->name, funcs->name)){ 
+	for (c = charsets; c != NULL; c = c->next) {
+		if(!strcasecmp(c->name, funcs->name)) { 
 			DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
-			return NT_STATUS_OBJECT_NAME_COLLISION;
+			return false;
 		}
-		c = c->next;
 	}
 
 	funcs->next = funcs->prev = NULL;
 	DLIST_ADD(charsets, funcs);
-	return NT_STATUS_OK;
+	return true;
 }
 
 #ifdef HAVE_NATIVE_ICONV

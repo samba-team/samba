@@ -6,6 +6,7 @@
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James J Myers 2003
+   Copyright (C) Jelmer Vernooij 2005-2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +26,7 @@
 #include "dynconfig.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "system/dir.h"
 
 /**
  * @file
@@ -186,6 +188,91 @@ _PUBLIC_ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 	talloc_free(dname);
 
 	return fname;
+}
+
+/**
+ * Obtain the init function from a shared library file
+ */
+_PUBLIC_ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
+{
+	void *handle;
+	void *init_fn;
+
+	handle = dlopen(path, RTLD_NOW);
+	if (handle == NULL) {
+		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
+		return NULL;
+	}
+
+	init_fn = dlsym(handle, "init_module");
+
+	if (init_fn == NULL) {
+		DEBUG(0, ("Unable to find init_module() in %s: %s\n", path, dlerror()));
+		DEBUG(1, ("Loading module '%s' failed\n", path));
+		dlclose(handle);
+		return NULL;
+	}
+
+	return (init_module_fn)init_fn;
+}
+
+/**
+ * Obtain list of init functions from the modules in the specified
+ * directory
+ */
+_PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+{
+	DIR *dir;
+	struct dirent *entry;
+	char *filename;
+	int success = 0;
+	init_module_fn *ret = talloc_array(mem_ctx, init_module_fn, 2);
+
+	ret[0] = NULL;
+	
+	dir = opendir(path);
+	if (dir == NULL) {
+		talloc_free(ret);
+		return NULL;
+	}
+
+	while((entry = readdir(dir))) {
+		if (ISDOT(entry->d_name) || ISDOTDOT(entry->d_name))
+			continue;
+
+		filename = talloc_asprintf(mem_ctx, "%s/%s", path, entry->d_name);
+
+		ret[success] = load_module(mem_ctx, filename);
+		if (ret[success]) {
+			ret = talloc_realloc(mem_ctx, ret, init_module_fn, success+2);
+			success++;
+			ret[success] = NULL;
+		}
+
+		talloc_free(filename);
+	}
+
+	closedir(dir);
+
+	return ret;
+}
+
+/**
+ * Run the specified init functions.
+ *
+ * @return true if all functions ran successfully, false otherwise
+ */
+_PUBLIC_ bool run_init_functions(init_module_fn *fns)
+{
+	int i;
+	bool ret = true;
+	
+	if (fns == NULL)
+		return true;
+	
+	for (i = 0; fns[i]; i++) { ret &= (bool)NT_STATUS_IS_OK(fns[i]()); }
+
+	return ret;
 }
 
 static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)

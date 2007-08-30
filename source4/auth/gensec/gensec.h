@@ -23,8 +23,6 @@
 #ifndef __GENSEC_H__
 #define __GENSEC_H__
 
-#include "core.h"
-
 #define GENSEC_OID_NTLMSSP "1.3.6.1.4.1.311.2.2.10"
 #define GENSEC_OID_SPNEGO "1.3.6.1.5.5.2"
 #define GENSEC_OID_KERBEROS5 "1.2.840.113554.1.2.2"

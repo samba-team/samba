@@ -27,16 +27,6 @@
 
 #include <stdlib.h>
 
-/*
-  we use struct ipv4_addr to avoid having to include all the
-  system networking headers everywhere
-*/
-struct ipv4_addr {
-	uint32_t addr;
-};
-
-typedef NTSTATUS (*init_module_fn) (void);
-
 /* 
    use the same structure for dom_sid2 as dom_sid. A dom_sid2 is really
    just a dom sid, but with the sub_auths represented as a conformant
@@ -53,17 +43,7 @@ typedef NTSTATUS (*init_module_fn) (void);
 /* same struct as dom_sid but inside a 28 bytes fixed buffer in NDR */
 #define dom_sid28 dom_sid
 
-/* protocol types. It assumes that higher protocols include lower protocols
-   as subsets. FIXME: Move to one of the smb-specific headers */
-enum protocol_types {
-	PROTOCOL_NONE,
-	PROTOCOL_CORE,
-	PROTOCOL_COREPLUS,
-	PROTOCOL_LANMAN1,
-	PROTOCOL_LANMAN2,
-	PROTOCOL_NT1,
-	PROTOCOL_SMB2
-};
+
 
 /* passed to br lock code. FIXME: Move to one of the smb-specific headers */
 enum brl_type {

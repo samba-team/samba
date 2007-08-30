@@ -23,8 +23,7 @@
 
 struct registry_context;
 
-#include "core.h"
-#include "talloc/talloc.h"
+#include <talloc.h>
 #include "librpc/gen_ndr/security.h"
 #include "lib/registry/hive.h"
 
