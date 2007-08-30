@@ -314,9 +314,9 @@ LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
 	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
-	     libads/cldap.o libads/ldap_schema.o
+	     libads/cldap.o libads/ldap_schema.o libads/util.o
 
-LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o libads/authdata.o
+LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o
 
