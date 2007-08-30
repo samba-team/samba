@@ -10,7 +10,6 @@ lib/charset/charset.h: lib/charset/charset_proto.h
 
 include/includes.h: \
 		include/config.h \
-		lib/util/util_proto.h \
 		lib/charset/charset.h \
 		param/proto.h \
 		libcli/util/proto.h \
