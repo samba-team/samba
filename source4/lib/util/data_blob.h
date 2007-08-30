@@ -19,6 +19,12 @@
 #ifndef _SAMBA_DATABLOB_H_
 #define _SAMBA_DATABLOB_H_
 
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
+
+#include <talloc.h>
+
 /* used to hold an arbitrary blob of data */
 typedef struct datablob {
 	uint8_t *data;
@@ -29,6 +35,10 @@ struct data_blob_list_item {
 	struct data_blob_list_item *prev,*next;
 	DATA_BLOB blob;
 };
+
+/* by making struct ldb_val and DATA_BLOB the same, we can simplify
+   a fair bit of code */
+#define ldb_val datablob
 
 #define data_blob(ptr, size) data_blob_named(ptr, size, "DATA_BLOB: "__location__)
 #define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, "DATA_BLOB: "__location__)

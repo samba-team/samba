@@ -32,8 +32,7 @@ include scripting/ejs/config.mk
 include scripting/swig/config.mk
 include kdc/config.mk
 
-DEFAULT_HEADERS = $(srcdir)/include/core.h \
-		  $(srcdir)/lib/util/dlinklist.h \
+DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
 binaries: $(BINARIES)
