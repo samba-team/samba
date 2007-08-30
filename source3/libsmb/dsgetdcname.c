@@ -445,7 +445,7 @@ static NTSTATUS DsGetDcName_cache_fetch(TALLOC_CTX *mem_ctx,
 	}
 
 	if ((flags & DS_IP_REQUIRED) &&
-	    !((*info)->domain_controller_address_type != ADS_INET_ADDRESS)) {
+	    ((*info)->domain_controller_address_type != ADS_INET_ADDRESS)) {
 	    	return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
