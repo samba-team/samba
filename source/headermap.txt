@@ -91,7 +91,7 @@ librpc/gen_ndr/ndr_svcctl_c.h: dcerpc/ndr_svcctl_c.h
 lib/cmdline/popt_common.h: samba/popt.h
 lib/util/dlinklist.h: dlinklist.h
 lib/util/data_blob.h: data_blob.h
-lib/util/time.h: time.h
+lib/util/time.h: util/time.h
 version.h: samba/version.h
 param/proto.h: param/proto.h
 param/param.h: param.h
