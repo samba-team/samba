@@ -543,7 +543,7 @@ void reply_negprot(connection_struct *conn, struct smb_request *req)
 
 		char **tmp;
 
-		tmp = TALLOC_REALLOC_ARRAY(tmp_talloc_ctx(), cliprotos, char *,
+		tmp = TALLOC_REALLOC_ARRAY(talloc_tos(), cliprotos, char *,
 					   num_cliprotos+1);
 		if (tmp == NULL) {
 			DEBUG(0, ("talloc failed\n"));

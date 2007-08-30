@@ -905,7 +905,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 {
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 
-	q_u->printername = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	q_u->printername = TALLOC_P( talloc_tos(), UNISTR2 );
 	if (!q_u->printername) {
 		return False;
 	}
@@ -921,7 +921,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	q_u->user_switch = 1;
 	
 	q_u->user_ctr.level                 = 1;
-	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
+	q_u->user_ctr.user.user1            = TALLOC_P( talloc_tos(), SPOOL_USER_1 );
 	if (!q_u->user_ctr.user.user1) {
 		return False;
 	}
@@ -931,11 +931,11 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	q_u->user_ctr.user.user1->minor     = 0;
 	q_u->user_ctr.user.user1->processor = 0;
 
-	q_u->user_ctr.user.user1->client_name = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	q_u->user_ctr.user.user1->client_name = TALLOC_P( talloc_tos(), UNISTR2 );
 	if (!q_u->user_ctr.user.user1->client_name) {
 		return False;
 	}
-	q_u->user_ctr.user.user1->user_name   = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	q_u->user_ctr.user.user1->user_name   = TALLOC_P( talloc_tos(), UNISTR2 );
 	if (!q_u->user_ctr.user.user1->user_name) {
 		return False;
 	}
@@ -986,7 +986,7 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 	q_u->user_switch=1;
 
 	q_u->user_ctr.level		    = 1;
-	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
+	q_u->user_ctr.user.user1            = TALLOC_P( talloc_tos(), SPOOL_USER_1 );
 	if (!q_u->user_ctr.user.user1) {
 		return False;
 	}

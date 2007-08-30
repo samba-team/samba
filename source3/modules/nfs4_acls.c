@@ -82,7 +82,7 @@ static SMB_ACE4_INT_T *get_validated_aceint(SMB4ACE_T *ace)
 
 SMB4ACL_T *smb_create_smb4acl(void)
 {
-	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
+	TALLOC_CTX *mem_ctx = talloc_tos();
 	SMB_ACL4_INT_T	*acl = (SMB_ACL4_INT_T *)TALLOC_ZERO_SIZE(mem_ctx, sizeof(SMB_ACL4_INT_T));
 	if (acl==NULL)
 	{
@@ -98,7 +98,7 @@ SMB4ACL_T *smb_create_smb4acl(void)
 SMB4ACE_T *smb_add_ace4(SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 {
 	SMB_ACL4_INT_T *aclint = get_validated_aclint(acl);
-	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
+	TALLOC_CTX *mem_ctx = talloc_tos();
 	SMB_ACE4_INT_T *ace;
 
 	ace = (SMB_ACE4_INT_T *)TALLOC_ZERO_SIZE(mem_ctx, sizeof(SMB_ACE4_INT_T));
@@ -267,7 +267,7 @@ size_t smb_get_nt_acl_nfs4(files_struct *fsp,
 	size_t sd_size = 0;
 	SEC_ACE *nt_ace_list = NULL;
 	SEC_ACL *psa = NULL;
-	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
+	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n", fsp->fsp_name));
 
@@ -529,7 +529,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 {
 	SMB4ACL_T *acl;
 	uint32	i;
-	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
+	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	DEBUG(10, ("smbacl4_win2nfs4 invoked\n"));
 
