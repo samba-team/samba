@@ -799,6 +799,10 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 	char *kstr;
 	TDB_DATA key, data;
 
+	if (opt_nocache) {
+		return;
+	}
+
 	va_start(ap, format);
 	smb_xvasprintf(&kstr, format, ap);
 	va_end(ap);
