@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 8
+Release: 9
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
