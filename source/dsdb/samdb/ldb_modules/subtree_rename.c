@@ -44,16 +44,6 @@ struct subtree_rename_context {
 	int finished_requests;
 };
 
-struct subtree_rename_search_context {
-	struct ldb_module *module;
-	struct ldb_request *orig_req;
-	struct ldb_handle *handle;
-
-	struct ldb_request **down_req;
-	int num_requests;
-	int finished_requests;
-};
-
 static struct subtree_rename_context *subtree_rename_init_handle(struct ldb_request *req, 
 								 struct ldb_module *module)
 {
@@ -127,7 +117,9 @@ static int subtree_rename_search_callback(struct ldb_context *ldb, void *context
 
 		talloc_steal(req, newdn);
 
-		req->handle = ac->handle;
+		talloc_steal(req, ares->message->dn);
+
+		talloc_free(ares);
 
 		ac->down_req = talloc_realloc(ac, ac->down_req, 
 					      struct ldb_request *, ac->num_requests + 1);
@@ -136,6 +128,7 @@ static int subtree_rename_search_callback(struct ldb_context *ldb, void *context
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		ac->down_req[ac->num_requests] = req;
+		ac->num_requests++;
 		
 		return ldb_next_request(ac->module, req);
 
@@ -176,7 +169,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_build_search_req(&new_req, module->ldb, req,
 				   req->op.rename.olddn, 
 				   LDB_SCOPE_SUBTREE,
-				   "objectClass=*",
+				   "(objectClass=*)",
 				   attrs,
 				   req->controls,
 				   ac, 
@@ -197,8 +190,6 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	new_req->handle = req->handle;
-
 	ac->down_req = talloc_realloc(ac, ac->down_req, 
 					struct ldb_request *, ac->num_requests + 1);
 	if (!ac->down_req) {
@@ -210,8 +201,8 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 		ldb_oom(ac->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
-	return ldb_next_request(module, req);
+	ac->num_requests++;
+	return ldb_next_request(module, new_req);
 }
 
 static int subtree_rename_wait_none(struct ldb_handle *handle) {
