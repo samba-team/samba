@@ -657,52 +657,23 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 
 	ZERO_STRUCTP(p);
 
-	/* I've seen a child Windows 2000 domain not send 
-	   the principal name back in the first round of 
+	/* I've seen a child Windows 2000 domain not send
+	   the principal name back in the first round of
 	   the SASL bind reply.  So we guess based on server
 	   name and realm.  --jerry  */
-	if (given_principal) {
+	/* Also try best guess when we get the w2k8 ignore
+	   principal back - gd */
+
+	if (!given_principal ||
+	    strequal(given_principal, ADS_IGNORE_PRINCIPAL)) {
+
+		status = ads_guess_service_principal(ads, given_principal,
+						     &p->string);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	} else {
 		p->string = SMB_STRDUP(given_principal);
-		if (!p->string) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-	} else if (ads->server.realm && ads->server.ldap_server) {
-		char *server, *server_realm;
-
-		server = SMB_STRDUP(ads->server.ldap_server);
-		server_realm = SMB_STRDUP(ads->server.realm);
-
-		if (!server || !server_realm) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-
-		strlower_m(server);
-		strupper_m(server_realm);
-		asprintf(&p->string, "ldap/%s@%s", server, server_realm);
-
-		SAFE_FREE(server);
-		SAFE_FREE(server_realm);
-
-		if (!p->string) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-	} else if (ads->config.realm && ads->config.ldap_server_name) {
-		char *server, *server_realm;
-
-		server = SMB_STRDUP(ads->config.ldap_server_name);
-		server_realm = SMB_STRDUP(ads->config.realm);
-
-		if (!server || !server_realm) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-
-		strlower_m(server);
-		strupper_m(server_realm);
-		asprintf(&p->string, "ldap/%s@%s", server, server_realm);
-
-		SAFE_FREE(server);
-		SAFE_FREE(server_realm);
-
 		if (!p->string) {
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}

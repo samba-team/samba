@@ -394,4 +394,6 @@ typedef struct {
 
 #define ADS_EXTENDED_RIGHT_APPLY_GROUP_POLICY "edacfd8f-ffb3-11d1-b41d-00a0c968f939"
 
+#define ADS_IGNORE_PRINCIPAL "not_defined_in_RFC4178@please_ignore"
+
 #endif	/* _INCLUDE_ADS_H_ */
