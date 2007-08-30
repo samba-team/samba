@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    filename handling routines
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1999-2004
    Copyright (C) Ying Chen 2000
    Copyright (C) Volker Lendecke 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,11 +33,12 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
 
-static BOOL mangled_equal(const char *name1, const char *name2,
-			  const struct share_params *p)
+static BOOL mangled_equal(const char *name1,
+			const char *name2,
+			const struct share_params *p)
 {
 	pstring tmpname;
-	
+
 	pstrcpy(tmpname, name2);
 	mangle_map(tmpname, True, False, p);
 	return strequal(name1, tmpname);
@@ -47,7 +48,8 @@ static BOOL mangled_equal(const char *name1, const char *name2,
  Cope with the differing wildcard and non-wildcard error cases.
 ****************************************************************************/
 
-static NTSTATUS determine_path_error(const char *name, BOOL allow_wcard_last_component)
+static NTSTATUS determine_path_error(const char *name,
+			BOOL allow_wcard_last_component)
 {
 	const char *p;
 
@@ -74,7 +76,7 @@ static NTSTATUS determine_path_error(const char *name, BOOL allow_wcard_last_com
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 }
-	
+
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format
@@ -83,8 +85,8 @@ changes etc.
 We assume that we have already done a chdir() to the right "root" directory
 for this service.
 
-The function will return an NTSTATUS error if some part of the name except for the last
-part cannot be resolved, else NT_STATUS_OK.
+The function will return an NTSTATUS error if some part of the name except for
+the last part cannot be resolved, else NT_STATUS_OK.
 
 Note NT_STATUS_OK doesn't mean the name exists or is valid, just that we didn't
 get any fatal errors that should immediately terminate the calling
@@ -133,7 +135,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 	DEBUG(5, ("unix_convert called on file \"%s\"\n", orig_path));
 
 	/*
-	 * Conversion to basic unix format is already done in check_path_syntax().
+	 * Conversion to basic unix format is already done in
+	 * check_path_syntax().
 	 */
 
 	/*
@@ -164,7 +167,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 		goto done;
 	}
 
-	if (orig_path[0] == '.' && (orig_path[1] == '/' || orig_path[1] == '\0')) {
+	if (orig_path[0] == '.' && (orig_path[1] == '/' ||
+				orig_path[1] == '\0')) {
 		/* Start of pathname can't be "." only. */
 		if (orig_path[1] == '\0' || orig_path[2] == '\0') {
 			result = NT_STATUS_OBJECT_NAME_INVALID;
@@ -202,7 +206,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 	 * the man page. Thanks to jht@samba.org for finding this. JRA.
 	 */
 
-	if (conn->case_sensitive && !conn->case_preserve && !conn->short_case_preserve) {
+	if (conn->case_sensitive && !conn->case_preserve &&
+			!conn->short_case_preserve) {
 		strnorm(name, lp_defaultcase(SNUM(conn)));
 	}
 
@@ -250,7 +255,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 		goto done;
 	}
 
-	DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n", name, dirpath, start));
+	DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n",
+				name, dirpath, start));
 
 	/*
 	 * A special case - if we don't have any mangling chars and are case
@@ -286,7 +292,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 		/*
 		 * Pinpoint the end of this section of the filename.
 		 */
-		end = strchr(start, '/'); /* mb safe. '/' can't be in any encoded char. */
+		/* mb safe. '/' can't be in any encoded char. */
+		end = strchr(start, '/');
 
 		/*
 		 * Chop the name at this point.
@@ -335,20 +342,22 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 		if (SMB_VFS_STAT(conn,name, &st) == 0) {
 			/*
-			 * It exists. it must either be a directory or this must be
-			 * the last part of the path for it to be OK.
+			 * It exists. it must either be a directory or this must
+			 * be the last part of the path for it to be OK.
 			 */
 			if (end && !(st.st_mode & S_IFDIR)) {
 				/*
-				 * An intermediate part of the name isn't a directory.
+				 * An intermediate part of the name isn't
+				 * a directory.
 				 */
 				DEBUG(5,("Not a dir %s\n",start));
 				*end = '/';
 				/*
-				 * We need to return the fact that the intermediate
-				 * name resolution failed. This is used to return an
-				 * error of ERRbadpath rather than ERRbadfile. Some
-				 * Windows applications depend on the difference between
+				 * We need to return the fact that the
+				 * intermediate name resolution failed. This
+				 * is used to return an error of ERRbadpath
+				 * rather than ERRbadfile. Some Windows
+				 * applications depend on the difference between
 				 * these two errors.
 				 */
 				result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
@@ -357,9 +366,9 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 			if (!end) {
 				/*
-				 * We just scanned for, and found the end of the path.
-				 * We must return the valid stat struct.
-				 * JRA.
+				 * We just scanned for, and found the end of
+				 * the path. We must return the valid stat
+				 * struct. JRA.
 				 */
 
 				*pst = st;
@@ -371,30 +380,38 @@ NTSTATUS unix_convert(connection_struct *conn,
 			/* Stat failed - ensure we don't use it. */
 			SET_STAT_INVALID(st);
 
-			/* Reset errno so we can detect directory open errors. */
+			/*
+			 * Reset errno so we can detect
+			 * directory open errors.
+			 */
 			errno = 0;
 
 			/*
 			 * Try to find this part of the path in the directory.
 			 */
 
-			if (name_has_wildcard || 
-			    !scan_directory(conn, dirpath, start, &found_name)) {
+			if (name_has_wildcard ||
+			    !scan_directory(conn, dirpath,
+				    start, &found_name)) {
 				char *unmangled;
 
 				if (end) {
 					/*
-					 * An intermediate part of the name can't be found.
+					 * An intermediate part of the name
+					 * can't be found.
 					 */
-					DEBUG(5,("Intermediate not found %s\n",start));
+					DEBUG(5,("Intermediate not found %s\n",
+							start));
 					*end = '/';
 
 					/*
-					 * We need to return the fact that the intermediate
-					 * name resolution failed. This is used to return an
-					 * error of ERRbadpath rather than ERRbadfile. Some
-					 * Windows applications depend on the difference between
-					 * these two errors.
+					 * We need to return the fact that the
+					 * intermediate name resolution failed.
+					 * This is used to return an error of
+					 * ERRbadpath rather than ERRbadfile.
+					 * Some Windows applications depend on
+					 * the difference between these two
+					 * errors.
 					 */
 
 					/*
@@ -406,10 +423,12 @@ NTSTATUS unix_convert(connection_struct *conn,
 					if (errno == ENOENT ||
 							errno == ENOTDIR ||
 							errno == ELOOP) {
-						result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+						result =
+						NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 					else {
-						result = map_nt_error_from_unix(errno);
+						result =
+						map_nt_error_from_unix(errno);
 					}
 					goto fail;
 				}
@@ -423,10 +442,12 @@ NTSTATUS unix_convert(connection_struct *conn,
 					 */
 					if (errno == ENOTDIR ||
 							errno == ELOOP) {
-						result = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+						result =
+						NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 					else {
-						result = map_nt_error_from_unix(errno);
+						result =
+						map_nt_error_from_unix(errno);
 					}
 					goto fail;
 				}
@@ -434,22 +455,26 @@ NTSTATUS unix_convert(connection_struct *conn,
 				/*
 				 * Just the last part of the name doesn't exist.
 				 * We need to strupper() or strlower() it as
-				 * this conversion may be used for file creation 
-				 * purposes. Fix inspired by Thomas Neumann <t.neumann@iku-ag.de>.
+				 * this conversion may be used for file creation
+				 * purposes. Fix inspired by
+				 * Thomas Neumann <t.neumann@iku-ag.de>.
 				 */
 				if (!conn->case_preserve ||
-				    (mangle_is_8_3(start, False, conn->params) &&
+				    (mangle_is_8_3(start, False,
+						   conn->params) &&
 						 !conn->short_case_preserve)) {
-					strnorm(start, lp_defaultcase(SNUM(conn)));
+					strnorm(start,
+						lp_defaultcase(SNUM(conn)));
 				}
 
 				/*
-				 * check on the mangled stack to see if we can recover the 
-				 * base of the filename.
+				 * check on the mangled stack to see if we can
+				 * recover the base of the filename.
 				 */
 
 				if (mangle_is_mangled(start, conn->params)
-				    && mangle_check_cache_alloc(start, &unmangled,
+				    && mangle_check_cache_alloc(start,
+								&unmangled,
 								conn->params)) {
 					char *tmp;
 					size_t start_ofs = start - name;
@@ -478,8 +503,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 
 			/*
-			 * Restore the rest of the string. If the string was mangled the size
-			 * may have changed.
+			 * Restore the rest of the string. If the string was
+			 * mangled the size may have changed.
 			 */
 			if (end) {
 				char *tmp;
@@ -523,9 +548,9 @@ NTSTATUS unix_convert(connection_struct *conn,
 				start = name + start_ofs;
 
 				/*
-				 * We just scanned for, and found the end of the path.
-				 * We must return a valid stat struct if it exists.
-				 * JRA.
+				 * We just scanned for, and found the end of
+				 * the path. We must return a valid stat struct
+				 * if it exists. JRA.
 				 */
 
 				if (SMB_VFS_STAT(conn,name, &st) == 0) {
@@ -540,13 +565,14 @@ NTSTATUS unix_convert(connection_struct *conn,
 
 #ifdef DEVELOPER
 		if (VALID_STAT(st) &&
-		    get_delete_on_close_flag(vfs_file_id_from_sbuf(conn, &st))) {
+		    get_delete_on_close_flag(vfs_file_id_from_sbuf(conn,
+				    &st))) {
 			result = NT_STATUS_DELETE_PENDING;
 			goto fail;
 		}
 #endif
 
-		/* 
+		/*
 		 * Add to the dirpath that we have resolved so far.
 		 */
 
@@ -574,7 +600,8 @@ NTSTATUS unix_convert(connection_struct *conn,
 		 */
 
 		if(!component_was_mangled && !name_has_wildcard) {
-			stat_cache_add(orig_path, dirpath, conn->case_sensitive);
+			stat_cache_add(orig_path, dirpath,
+					conn->case_sensitive);
 		}
 
 		/*
@@ -626,8 +653,10 @@ NTSTATUS check_name(connection_struct *conn, const pstring name)
 {
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
-		if (!((name[0] == '.') && (!name[1] || (name[1] == '.' && !name[2])))) {
-			DEBUG(5,("check_name: file path name %s vetoed\n",name));
+		if (!((name[0] == '.') && (!name[1] ||
+					(name[1] == '.' && !name[2])))) {
+			DEBUG(5,("check_name: file path name %s vetoed\n",
+						name));
 			return map_nt_error_from_unix(ENOENT);
 		}
 	}
@@ -635,7 +664,8 @@ NTSTATUS check_name(connection_struct *conn, const pstring name)
 	if (!lp_widelinks(SNUM(conn)) || !lp_symlinks(SNUM(conn))) {
 		NTSTATUS status = check_reduced_name(conn,name);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(5,("check_name: name %s failed with %s\n",name, nt_errstr(status)));
+			DEBUG(5,("check_name: name %s failed with %s\n",name,
+						nt_errstr(status)));
 			return status;
 		}
 	}
@@ -648,7 +678,8 @@ NTSTATUS check_name(connection_struct *conn, const pstring name)
  This needs to be careful about whether we are case sensitive.
 ****************************************************************************/
 
-static BOOL fname_equal(const char *name1, const char *name2, BOOL case_sensitive)
+static BOOL fname_equal(const char *name1, const char *name2,
+		BOOL case_sensitive)
 {
 	/* Normal filename handling */
 	if (case_sensitive)
@@ -710,14 +741,15 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
 	while ((dname = ReadDirName(cur_dir, &curpos))) {
 
 		/* Is it dot or dot dot. */
-		if ((dname[0] == '.') && (!dname[1] || (dname[1] == '.' && !dname[2]))) {
+		if ((dname[0] == '.') && (!dname[1] ||
+					(dname[1] == '.' && !dname[2]))) {
 			continue;
 		}
 
 		/*
 		 * At this point dname is the unmangled name.
-		 * name is either mangled or not, depending on the state of the "mangled"
-		 * variable. JRA.
+		 * name is either mangled or not, depending on the state
+		 * of the "mangled" variable. JRA.
 		 */
 
 		/*
@@ -725,7 +757,8 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
 		 * against unmangled name.
 		 */
 
-		if ((mangled && mangled_equal(name,dname,conn->params)) || fname_equal(name, dname, conn->case_sensitive)) {
+		if ((mangled && mangled_equal(name,dname,conn->params)) ||
+			fname_equal(name, dname, conn->case_sensitive)) {
 			/* we've found the file, change it's name and return */
 			*found_name = SMB_STRDUP(dname);
 			SAFE_FREE(unmangled_name);
