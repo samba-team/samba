@@ -1708,33 +1708,6 @@ static void init_globals(BOOL first_time_only)
 	Globals.bRegistryShares = False;
 }
 
-static TALLOC_CTX *lp_talloc;
-
-/******************************************************************* a
- Free up temporary memory - called from the main loop.
-********************************************************************/
-
-void lp_TALLOC_FREE(void)
-{
-	if (!lp_talloc)
-		return;
-	TALLOC_FREE(lp_talloc);
-	lp_talloc = NULL;
-}
-
-TALLOC_CTX *tmp_talloc_ctx(void)
-{
-	if (lp_talloc == NULL) {
-		lp_talloc = talloc_init("tmp_talloc_ctx");
-	}
-
-	if (lp_talloc == NULL) {
-		smb_panic("Could not create temporary talloc context");
-	}
-
-	return lp_talloc;
-}
-
 /*******************************************************************
  Convenience routine to grab string parameters into temporary memory
  and run standard_sub_basic on them. The buffers can be written to by
@@ -1754,9 +1727,6 @@ static char *lp_string(const char *s)
 	DEBUG(10, ("lp_string(%s)\n", s));
 #endif
 
-	if (!lp_talloc)
-		lp_talloc = talloc_init("lp_talloc");
-
 	tmpstr = alloc_sub_basic(get_current_username(),
 				 current_user_info.domain, s);
 	if (trim_char(tmpstr, '\"', '\"')) {
@@ -1766,7 +1736,7 @@ static char *lp_string(const char *s)
 						 current_user_info.domain, s);
 		}
 	}
-	ret = talloc_strdup(lp_talloc, tmpstr);
+	ret = talloc_strdup(talloc_tos(), tmpstr);
 	SAFE_FREE(tmpstr);
 			
 	return (ret);
@@ -2352,7 +2322,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
-/* the returned value is talloced in lp_talloc */
+/* the returned value is talloced on the talloc_tos() */
 char *lp_parm_talloc_string(int snum, const char *type, const char *option, const char *def)
 {
 	param_opt_struct *data = get_parametrics(snum, type, option);
@@ -3917,10 +3887,8 @@ static const char *append_ldap_suffix( const char *str )
 	const char *suffix_string;
 
 
-	if (!lp_talloc)
-		lp_talloc = talloc_init("lp_talloc");
-
-	suffix_string = talloc_asprintf( lp_talloc, "%s,%s", str, Globals.szLdapSuffix );
+	suffix_string = talloc_asprintf(talloc_tos(), "%s,%s", str,
+					Globals.szLdapSuffix );
 	if ( !suffix_string ) {
 		DEBUG(0,("append_ldap_suffix: talloc_asprintf() failed!\n"));
 		return "";
@@ -5567,8 +5535,6 @@ void gfree_loadparm(void)
 	struct file_lists *next;
 	int i;
 
-	lp_TALLOC_FREE();
-
 	/* Free the file lists */
 
 	f = file_lists;
@@ -5912,7 +5878,7 @@ const char *volume_label(int snum)
 	}
 		
 	/* This returns a 33 byte guarenteed null terminated string. */
-	ret = talloc_strndup(main_loop_talloc_get(), label, 32);
+	ret = talloc_strndup(talloc_tos(), label, 32);
 	if (!ret) {
 		return "";
 	}		

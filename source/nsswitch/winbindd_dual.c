@@ -1048,10 +1048,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		struct timeval t;
 		struct timeval *tp;
 		struct timeval now;
-
-		/* free up any talloc memory */
-		lp_TALLOC_FREE();
-		main_loop_TALLOC_FREE();
+		TALLOC_CTX *frame = talloc_stackframe();
 
 		run_events(winbind_event_context(), 0, NULL, NULL);
 
@@ -1082,16 +1079,19 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		if (ret == 0) {
 			DEBUG(11,("nothing is ready yet, continue\n"));
+			TALLOC_FREE(frame);
 			continue;
 		}
 
 		if (ret == -1 && errno == EINTR) {
 			/* We got a signal - continue. */
+			TALLOC_FREE(frame);
 			continue;
 		}
 
 		if (ret == -1 && errno != EINTR) {
 			DEBUG(0,("select error occured\n"));
+			TALLOC_FREE(frame);
 			perror("select");
 			return False;
 		}
@@ -1127,5 +1127,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			DEBUG(0, ("Could not write result\n"));
 			exit(1);
 		}
+		TALLOC_FREE(frame);
 	}
 }

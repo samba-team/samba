@@ -389,7 +389,7 @@ static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number,
 			DEBUG(4,("short name:%s\n", Printer->sharename));			
 			*number = print_queue_snum(Printer->sharename);
 			if ((*number != -1) && (params != NULL)) {
-				*params = get_share_params(tmp_talloc_ctx(),
+				*params = get_share_params(talloc_tos(),
 							   Printer->sharename);
 				if (*params == NULL) {
 					return False;
@@ -4257,7 +4257,7 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd,
 		/* don't use talloc_steal() here unless you do a deep steal of all 
 		   the SEC_DESC members */
 
-		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+		printer->secdesc = dup_sec_desc( talloc_tos(),
 			ntprinter->info_2->secdesc_buf->sd );
 	}
 
@@ -4297,7 +4297,7 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd,
 		/* don't use talloc_steal() here unless you do a deep steal of all 
 		   the SEC_DESC members */
 
-		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+		printer->secdesc = dup_sec_desc( talloc_tos(),
 			ntprinter->info_2->secdesc_buf->sd );
 	}
 

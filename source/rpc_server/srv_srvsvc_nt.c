@@ -1049,7 +1049,6 @@ static WERROR init_srv_conn_info_ctr(pipes_struct *p, union srvsvc_NetConnCtr *c
 
 static WERROR net_file_enum_3(pipes_struct *p, union srvsvc_NetFileCtr *ctr, uint32 *resume_hnd, uint32 *num_entries )
 {
-	TALLOC_CTX *ctx = get_talloc_ctx();
 	WERROR status;
 
 	/* TODO -- Windows enumerates 
@@ -1058,11 +1057,11 @@ static WERROR net_file_enum_3(pipes_struct *p, union srvsvc_NetFileCtr *ctr, uin
 
 	ctr->ctr3 = TALLOC_ZERO_P(p->mem_ctx, struct srvsvc_NetFileCtr3);
 	
-	status = net_enum_files( ctx, &ctr->ctr3->array, num_entries, resume_hnd );
+	status = net_enum_files(p->mem_ctx, &ctr->ctr3->array, num_entries, resume_hnd );
 	if ( !W_ERROR_IS_OK(status))
 		return status;
 		
-	status = net_enum_pipes( ctx, &ctr->ctr3->array, num_entries, resume_hnd );
+	status = net_enum_pipes(p->mem_ctx, &ctr->ctr3->array, num_entries, resume_hnd );
 	if ( !W_ERROR_IS_OK(status))
 		return status;
 

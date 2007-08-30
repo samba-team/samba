@@ -755,11 +755,6 @@ static int process_loop(int listen_sock, int listen_priv_sock)
 
 	rescan_trusted_domains();
 
-	/* Free up temporary memory */
-
-	lp_TALLOC_FREE();
-	main_loop_TALLOC_FREE();
-
 	/* Initialise fd lists for select() */
 
 	maxfd = MAX(listen_sock, listen_priv_sock);
@@ -938,12 +933,14 @@ static void winbindd_process_loop(enum smb_server_mode server_mode)
 	}
 
 	for (;;) {
+		TALLOC_CTX *frame = talloc_stackframe();
 		int clients = process_loop(listen_public, listen_priv);
 
 		/* Don't bother figuring out the idle time if we won't be
 		 * timing out anyway.
 		 */
 		if (idle_timeout_sec < 0) {
+			TALLOC_FREE(frame);
 			continue;
 		}
 
@@ -960,6 +957,7 @@ static void winbindd_process_loop(enum smb_server_mode server_mode)
 		} else {
 			starttime = timeval_current();
 		}
+		TALLOC_FREE(frame);
 	}
 }
 

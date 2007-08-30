@@ -299,7 +299,7 @@ static int net_lookup_name(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ALL,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ALL,
 			 &dom, &name, &sid, &type)) {
 		d_printf("Could not lookup name %s\n", argv[0]);
 		return -1;
@@ -326,7 +326,7 @@ static int net_lookup_sid(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_sid(tmp_talloc_ctx(), &sid,
+	if (!lookup_sid(talloc_tos(), &sid,
 			&dom, &name, &type)) {
 		d_printf("Could not lookup name %s\n", argv[0]);
 		return -1;

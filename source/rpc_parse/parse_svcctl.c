@@ -783,7 +783,7 @@ BOOL svcctl_io_service_fa( const char *desc, SERVICE_FAILURE_ACTIONS *fa, RPC_BU
 
 	if ( UNMARSHALLING(ps)) {
 		if (fa->num_actions) {
-			if ( !(fa->actions = TALLOC_ARRAY( get_talloc_ctx(), SC_ACTION, fa->num_actions )) ) {
+			if ( !(fa->actions = TALLOC_ARRAY( talloc_tos(), SC_ACTION, fa->num_actions )) ) {
 				DEBUG(0,("svcctl_io_service_fa: talloc() failure!\n"));
 				return False;
 			}
