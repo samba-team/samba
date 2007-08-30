@@ -769,11 +769,6 @@ static void process_loop(void)
 
 	rescan_trusted_domains();
 
-	/* Free up temporary memory */
-
-	lp_TALLOC_FREE();
-	main_loop_TALLOC_FREE();
-
 	/* Initialise fd lists for select() */
 
 	maxfd = MAX(listen_sock, listen_priv_sock);
@@ -1160,8 +1155,11 @@ int main(int argc, char **argv, char **envp)
 
 	/* Loop waiting for requests */
 
-	while (1)
+	while (1) {
+		TALLOC_CTX *frame = talloc_stackframe();
 		process_loop();
+		TALLOC_FREE(frame);
+	}
 
 	return 0;
 }

@@ -3178,13 +3178,13 @@ NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *out, PRIVILEGE_SET *pr
 	for ( i=0; i<privileges->count; i++ ) {
 		privname = luid_to_privilege_name( &privileges->set[i].luid );
 		if ( privname ) {
-			if ( !add_string_to_array( get_talloc_ctx(), privname, &privname_array, &num_priv ) ) 
+			if ( !add_string_to_array( talloc_tos(), privname, &privname_array, &num_priv ) )
 				return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	if ( num_priv ) {
-		out->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+		out->rights = TALLOC_P( talloc_tos(), UNISTR4_ARRAY );
 		if (!out->rights) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -3255,7 +3255,7 @@ void init_q_add_acct_rights( LSA_Q_ADD_ACCT_RIGHTS *in, POLICY_HND *hnd,
 	in->pol = *hnd;
 	init_dom_sid2(&in->sid, sid);
 	
-	in->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	in->rights = TALLOC_P( talloc_tos(), UNISTR4_ARRAY );
 	if (!in->rights) {
 		smb_panic("init_q_add_acct_rights: talloc fail\n");
 		return;
@@ -3323,7 +3323,7 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *in,
 	in->removeall = removeall;
 	in->count = count;
 
-	in->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	in->rights = TALLOC_P( talloc_tos(), UNISTR4_ARRAY );
 	if (!in->rights) {
 		smb_panic("init_q_remove_acct_rights: talloc fail\n");
 		return;

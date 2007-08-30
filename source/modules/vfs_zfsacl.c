@@ -53,7 +53,7 @@ static size_t zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 		return 0;
 	}
 	/* allocate the field of ZFS aces */
-	mem_ctx = main_loop_talloc_get();
+	mem_ctx = talloc_tos();
 	acebuf = (ace_t *) talloc_size(mem_ctx, sizeof(ace_t)*naces);
 	if(acebuf == NULL) {
 		errno = ENOMEM;
@@ -102,7 +102,7 @@ static BOOL zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	TALLOC_CTX	*mem_ctx;
 
 	/* allocate the field of ZFS aces */
-	mem_ctx = main_loop_talloc_get();
+	mem_ctx = talloc_tos();
 	acebuf = (ace_t *) talloc_size(mem_ctx, sizeof(ace_t)*naces);
 	if(acebuf == NULL) {
 		errno = ENOMEM;

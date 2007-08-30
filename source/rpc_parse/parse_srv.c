@@ -1593,7 +1593,7 @@ void init_srv_sess_info0( SESS_INFO_0 *ss0, const char *name )
 	ZERO_STRUCTP( ss0 );
 
 	if ( name ) {
-		if ( (ss0->sharename = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL ) {
+		if ( (ss0->sharename = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL ) {
 			DEBUG(0,("init_srv_sess_info0: talloc failed!\n"));
 			return;
 		}
@@ -1666,7 +1666,7 @@ void init_srv_sess_info1( SESS_INFO_1 *ss1, const char *name, const char *user,
 	ZERO_STRUCTP( ss1 );
 
 	if ( name ) {
-		if ( (ss1->sharename = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL ) {
+		if ( (ss1->sharename = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL ) {
 			DEBUG(0,("init_srv_sess_info0: talloc failed!\n"));
 			return;
 		}
@@ -1674,7 +1674,7 @@ void init_srv_sess_info1( SESS_INFO_1 *ss1, const char *name, const char *user,
 	}
 
 	if ( user ) {
-		if ( (ss1->username = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL ) {
+		if ( (ss1->username = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL ) {
 			DEBUG(0,("init_srv_sess_info0: talloc failed!\n"));
 			return;
 		}
@@ -2368,13 +2368,13 @@ void init_srv_file_info3( FILE_INFO_3 *fl3, uint32 id, uint32 perms, uint32 num_
 	fl3->num_locks = num_locks;
 
         if ( path_name ) {
-                if ( (fl3->path = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL )
+                if ( (fl3->path = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL )
                         return;
                 init_unistr2(fl3->path, path_name, UNI_STR_TERMINATE);
         }
 
         if ( user_name ) {
-                if ( (fl3->user = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL )
+                if ( (fl3->user = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL )
                         return;
                 init_unistr2(fl3->user, user_name, UNI_STR_TERMINATE);
         }
@@ -2507,19 +2507,19 @@ void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
 	uint32 ptr;
 
 	if ( srv_name ) {
-		if ( (q_n->servername = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL )
+		if ( (q_n->servername = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL )
 			return;
 		init_buf_unistr2(q_n->servername, &ptr, srv_name);
 	}
 
 	if ( qual_name ) {
-		if ( (q_n->qualifier = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL )
+		if ( (q_n->qualifier = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL )
 			return;
 		init_buf_unistr2(q_n->qualifier,  &ptr, qual_name);
 	}
 
 	if ( user_name ) {
-		if ( (q_n->username = TALLOC_P( get_talloc_ctx(), UNISTR2 )) == NULL )
+		if ( (q_n->username = TALLOC_P( talloc_tos(), UNISTR2 )) == NULL )
 			return;
 		init_buf_unistr2(q_n->username,   &ptr, user_name);
 	}

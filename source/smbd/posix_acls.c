@@ -2971,14 +2971,14 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		}
 
 		if (num_aces) {
-			if((psa = make_sec_acl( main_loop_talloc_get(), NT4_ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
+			if((psa = make_sec_acl( talloc_tos(), NT4_ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
 				DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
 				goto done;
 			}
 		}
 	} /* security_info & DACL_SECURITY_INFORMATION */
 
-	psd = make_standard_sec_desc( main_loop_talloc_get(),
+	psd = make_standard_sec_desc( talloc_tos(),
 			(security_info & OWNER_SECURITY_INFORMATION) ? &owner_sid : NULL,
 			(security_info & GROUP_SECURITY_INFORMATION) ? &group_sid : NULL,
 			psa,

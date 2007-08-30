@@ -470,9 +470,6 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		fd_set r_fds, w_fds;
 		int num;
 		
-		/* Free up temporary memory from the main smbd. */
-		lp_TALLOC_FREE();
-
 		/* Ensure we respond to PING and DEBUG messages from the main smbd. */
 		message_dispatch(smbd_messaging_context());
 

@@ -101,7 +101,7 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 	struct gpfs_acl *acl;
 	size_t len = 200;
 	int ret;
-	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
+	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	acl = (struct gpfs_acl *)TALLOC_SIZE(mem_ctx, len);
 	if (acl == NULL) {
@@ -267,7 +267,7 @@ static BOOL gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	gpfs_aclLen_t gacl_len;
 	SMB4ACE_T	*smbace;
 	struct gpfs_acl *gacl;
-	TALLOC_CTX *mem_ctx  = main_loop_talloc_get();
+	TALLOC_CTX *mem_ctx  = talloc_tos();
 
 	gacl_len = sizeof(struct gpfs_acl) +
 		(smb_get_naces(smbacl)-1)*sizeof(gpfs_ace_v4_t);

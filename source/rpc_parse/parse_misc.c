@@ -25,68 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
 
-/****************************************************************************
- A temporary TALLOC context for things like unistrs, that is valid for
- the life of a complete RPC call.
-****************************************************************************/
-
-static TALLOC_CTX *current_rpc_talloc = NULL;
-
-static TALLOC_CTX *get_current_rpc_talloc(void)
-{
-    return current_rpc_talloc;
-}
-
-void set_current_rpc_talloc( TALLOC_CTX *ctx)
-{
-	current_rpc_talloc = ctx;
-}
-
-static TALLOC_CTX *main_loop_talloc = NULL;
-
-/*******************************************************************
-free up temporary memory - called from the main loop
-********************************************************************/
-
-void main_loop_TALLOC_FREE(void)
-{
-    if (!main_loop_talloc)
-        return;
-    talloc_destroy(main_loop_talloc);
-    main_loop_talloc = NULL;
-}
-
-/*******************************************************************
- Get a talloc context that is freed in the main loop...
-********************************************************************/
-
-TALLOC_CTX *main_loop_talloc_get(void)
-{
-    if (!main_loop_talloc) {
-        main_loop_talloc = talloc_init("main loop talloc (mainly parse_misc)");
-        if (!main_loop_talloc)
-            smb_panic("main_loop_talloc: malloc fail");
-    }
-
-    return main_loop_talloc;
-}
-
-/*******************************************************************
- Try and get a talloc context. Get the rpc one if possible, else
- get the main loop one. The main loop one is more dangerous as it
- goes away between packets, the rpc one will stay around for as long
- as a current RPC lasts.
-********************************************************************/ 
-
-TALLOC_CTX *get_talloc_ctx(void)
-{
-	TALLOC_CTX *tc = get_current_rpc_talloc();
-
-	if (tc)
-		return tc;
-	return main_loop_talloc_get();
-}
-
 /*******************************************************************
  Reads or writes a UTIME type.
 ********************************************************************/
@@ -496,7 +434,7 @@ void init_unistr(UNISTR *str, const char *buf)
 	len = strlen(buf) + 1;
 
 	if (len) {
-		str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
+		str->buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, len);
 		if (str->buffer == NULL)
 			smb_panic("init_unistr: malloc fail");
 
@@ -532,7 +470,7 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 static void create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
 	if (len) {
-		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(), len);
+		str->buffer = (uint8 *)TALLOC_ZERO(talloc_tos(), len);
 		if (str->buffer == NULL)
 			smb_panic("create_rpc_blob: talloc fail");
 		str->buf_len = len;
@@ -638,7 +576,7 @@ void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
 
 	if (buf != NULL) {
 		SMB_ASSERT(str->buf_max_len >= str->buf_len);
-		str->buffer = (uint16 *)TALLOC_ZERO(get_talloc_ctx(),
+		str->buffer = (uint16 *)TALLOC_ZERO(talloc_tos(),
 						    str->buf_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_regval_buffer: talloc fail");
@@ -715,7 +653,7 @@ void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 	   reallocation of memory. */
 	if (str->buffer == NULL) {
 		if (str->uni_max_len) {
-	   		str->buffer = (uint16 *)TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_max_len);
+			str->buffer = (uint16 *)TALLOC_ZERO_ARRAY(talloc_tos(), uint16, str->uni_max_len);
 			if ((str->buffer == NULL)) {
 				smb_panic("copy_unistr2: talloc fail");
 				return;
@@ -748,7 +686,7 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 
 	/* store the string */
 	if(str_len != 0) {
-		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(),
+		str->buffer = (uint8 *)TALLOC_ZERO(talloc_tos(),
 						   str->str_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail");
@@ -825,7 +763,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 	}
 	
 
-	str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
+	str->buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, len);
 	if (str->buffer == NULL) {
 		smb_panic("init_unistr2: malloc fail");
 		return;
@@ -861,7 +799,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 
 void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 {
-	uni4->string = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	uni4->string = TALLOC_P( talloc_tos(), UNISTR2 );
 	if (!uni4->string) {
 		smb_panic("init_unistr4: talloc fail");
 		return;
@@ -960,7 +898,7 @@ void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 
 	/* allocate the space and copy the string buffer */
 	if (i) {
-		to->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, i);
+		to->buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, i);
 		if (to->buffer == NULL)
 			smb_panic("init_unistr2_from_unistr: malloc fail");
 		memcpy(to->buffer, from->buffer, i*sizeof(uint16));
@@ -1164,7 +1102,7 @@ BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRA
 
 	if (UNMARSHALLING(ps)) {
 		if (array->count) {
-			if ( !(array->strings = TALLOC_ZERO_ARRAY( get_talloc_ctx(), UNISTR4, array->count)) )
+			if ( !(array->strings = TALLOC_ZERO_ARRAY( talloc_tos(), UNISTR4, array->count)) )
 				return False;
 		} else {
 			array->strings = NULL;
@@ -1199,7 +1137,7 @@ BOOL init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **string
 	/* allocate memory for the array of UNISTR4 objects */
 
 	if (array->count) {
-		if ( !(array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR4, count )) )
+		if ( !(array->strings = TALLOC_ZERO_ARRAY(talloc_tos(), UNISTR4, count )) )
 			return False;
 	} else {
 		array->strings = NULL;
@@ -1754,7 +1692,7 @@ void init_unistr3(UNISTR3 *str, const char *buf)
 	str->uni_str_len = strlen(buf) + 1;
 
 	if (str->uni_str_len) {
-		str->str.buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, str->uni_str_len);
+		str->str.buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, str->uni_str_len);
 		if (str->str.buffer == NULL)
 			smb_panic("init_unistr3: malloc fail");
 

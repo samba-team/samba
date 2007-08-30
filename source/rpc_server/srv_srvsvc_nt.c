@@ -1115,7 +1115,7 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 
 static WERROR net_file_enum_3( SRV_R_NET_FILE_ENUM *r, uint32 resume_hnd )
 {
-	TALLOC_CTX *ctx = get_talloc_ctx();
+	TALLOC_CTX *ctx = talloc_tos();
 	SRV_FILE_INFO_CTR *ctr = &r->ctr;
 
 	/* TODO -- Windows enumerates 

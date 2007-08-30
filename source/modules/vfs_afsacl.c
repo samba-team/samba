@@ -141,7 +141,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 		if (string_to_sid(&sid, name)) {
 			const char *user, *domain;
 			/* We have to find the type, look up the SID */
-			lookup_sid(tmp_talloc_ctx(), &sid,
+			lookup_sid(talloc_tos(), &sid,
 				   &domain, &user, &type);
 		}
 
@@ -155,7 +155,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 			*p = '\\';
 		}
 
-		if (!lookup_name(tmp_talloc_ctx(), name, LOOKUP_NAME_ALL,
+		if (!lookup_name(talloc_tos(), name, LOOKUP_NAME_ALL,
 				 &domain, &uname, &sid, &type)) {
 			DEBUG(10, ("Could not find AFS user %s\n", name));
 
@@ -597,7 +597,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	SEC_ACL *psa = NULL;
 	int good_aces;
 	size_t sd_size;
-	TALLOC_CTX *mem_ctx = main_loop_talloc_get();
+	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	struct afs_ace *afs_ace;
 
@@ -753,7 +753,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 
 		} else {
 
-			if (!lookup_sid(tmp_talloc_ctx(), &ace->trustee,
+			if (!lookup_sid(talloc_tos(), &ace->trustee,
 					&dom_name, &name, &name_type)) {
 				DEBUG(1, ("AFSACL: Could not lookup SID %s on file %s\n",
 					  sid_string_static(&ace->trustee), filename));
@@ -764,7 +764,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 			     (name_type == SID_NAME_DOM_GRP) ||
 			     (name_type == SID_NAME_ALIAS) ) {
 				char *tmp;
-				tmp = talloc_asprintf(tmp_talloc_ctx(), "%s%s%s",
+				tmp = talloc_asprintf(talloc_tos(), "%s%s%s",
 						       dom_name, lp_winbind_separator(),
 						       name);
 				if (tmp == NULL) {
@@ -777,7 +777,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 			if (sidpts) {
 				/* Expect all users/groups in pts as SIDs */
 				name = talloc_strdup(
-					tmp_talloc_ctx(),
+					talloc_tos(),
 					sid_string_static(&ace->trustee));
 				if (name == NULL) {
 					return False;

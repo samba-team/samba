@@ -2233,9 +2233,9 @@ BOOL api_pipe_request(pipes_struct *p)
 	pipe_fns = find_pipe_fns_by_context(p->contexts, p->hdr_req.context_id);
 	
 	if ( pipe_fns ) {
-		set_current_rpc_talloc(p->mem_ctx);
+		TALLOC_CTX *frame = talloc_stackframe();
 		ret = api_rpcTNP(p, p->name, pipe_fns->cmds, pipe_fns->n_cmds);
-		set_current_rpc_talloc(NULL);	
+		TALLOC_FREE(frame);
 	}
 	else {
 		DEBUG(0,("api_pipe_request: No rpc function table associated with context [%d] on pipe [%s]\n",

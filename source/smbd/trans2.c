@@ -888,7 +888,7 @@ static void call_trans2open(connection_struct *conn,
 			return;
 		}
 
-		ea_list = read_ea_list(tmp_talloc_ctx(), pdata + 4,
+		ea_list = read_ea_list(talloc_tos(), pdata + 4,
 				       total_data - 4);
 		if (!ea_list) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -6556,7 +6556,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 			return;
 		}
 
-		ea_list = read_ea_list(tmp_talloc_ctx(), pdata + 4,
+		ea_list = read_ea_list(talloc_tos(), pdata + 4,
 				       total_data - 4);
 		if (!ea_list) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

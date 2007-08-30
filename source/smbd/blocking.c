@@ -184,7 +184,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 {
 	struct smb_request *req;
 
-	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("Could not allocate smb_request");
 	}
 
@@ -455,7 +455,7 @@ static BOOL process_trans2(blocking_lock_record *blr)
 
 	/* We finally got the lock, return success. */
 
-	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		blocking_lock_reply_error(blr, NT_STATUS_NO_MEMORY);
 		return True;
 	}

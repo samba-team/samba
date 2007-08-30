@@ -175,7 +175,7 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 		goto done;
 	}
 
-	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
 		goto done;
 	}

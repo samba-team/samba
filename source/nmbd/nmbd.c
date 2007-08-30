@@ -381,6 +381,7 @@ static void process(void)
 
 	while( True ) {
 		time_t t = time(NULL);
+		TALLOC_CTX *frame = talloc_stackframe();
 
 		/* Check for internal messages */
 
@@ -399,8 +400,10 @@ static void process(void)
 		 * (nmbd_packets.c)
 		 */
 
-		if(listen_for_packets(run_election))
+		if(listen_for_packets(run_election)) {
+			TALLOC_FREE(frame);
 			return;
+		}
 
 		/*
 		 * Handle termination inband.
@@ -592,18 +595,22 @@ static void process(void)
 						 NULL, MSG_SMB_CONF_UPDATED,
 						 procid_self(), &blob);
 
-			if(no_subnets)
+			if(no_subnets) {
+				TALLOC_FREE(frame);
 				return;
+			}
 			reload_after_sighup = 0;
 		}
 
 		/* check for new network interfaces */
 
-		if(reload_interfaces(t))
+		if(reload_interfaces(t)) {
+			TALLOC_FREE(frame);
 			return;
+		}
 
 		/* free up temp memory */
-			lp_TALLOC_FREE();
+		TALLOC_FREE(frame);
 	}
 }
 

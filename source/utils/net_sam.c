@@ -41,7 +41,7 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -138,7 +138,7 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -222,7 +222,7 @@ static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -283,7 +283,7 @@ static int net_sam_set_comment(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -520,18 +520,18 @@ static NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
 	map.gid = grp->gr_gid;
 	grpname = grp->gr_name;
 
-	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+	if (lookup_name(talloc_tos(), grpname, LOOKUP_NAME_ISOLATED,
 			&dom, &name, NULL, NULL)) {
 
 		const char *tmp = talloc_asprintf(
-			tmp_talloc_ctx(), "Unix Group %s", grp->gr_name);
+			talloc_tos(), "Unix Group %s", grp->gr_name);
 
 		DEBUG(5, ("%s exists as %s\\%s, retrying as \"%s\"\n",
 			  grpname, dom, name, tmp));
 		grpname = tmp;
 	}
 
-	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+	if (lookup_name(talloc_tos(), grpname, LOOKUP_NAME_ISOLATED,
 			NULL, NULL, NULL, NULL)) {
 		DEBUG(3, ("\"%s\" exists, can't map it\n", grp->gr_name));
 		return NT_STATUS_GROUP_EXISTS;
@@ -551,7 +551,7 @@ static NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
 
 	sid_compose(&map.sid, get_global_sam_sid(), rid);
 	map.sid_name_use = SID_NAME_DOM_GRP;
-	fstrcpy(map.comment, talloc_asprintf(tmp_talloc_ctx(), "Unix Group %s",
+	fstrcpy(map.comment, talloc_asprintf(talloc_tos(), "Unix Group %s",
 					     grp->gr_name));
 
 	status = pdb_add_group_mapping_entry(&map);
@@ -606,7 +606,7 @@ static NTSTATUS unmap_unix_group(const struct group *grp, GROUP_MAP *pmap)
         map.gid = grp->gr_gid;
         grpname = grp->gr_name;
 
-        if (!lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+        if (!lookup_name(talloc_tos(), grpname, LOOKUP_NAME_ISOLATED,
                         NULL, NULL, NULL, NULL)) {
                 DEBUG(3, ("\"%s\" does not exist, can't unmap it\n", grp->gr_name));
                 return NT_STATUS_NO_SUCH_GROUP;
@@ -702,7 +702,7 @@ static int net_sam_deletelocalgroup(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find %s.\n", argv[0]);
 		return -1;
@@ -755,7 +755,7 @@ static int net_sam_createbuiltingroup(int argc, const char **argv)
 	fstrcpy( groupname, "BUILTIN\\" );
 	fstrcat( groupname, argv[0] );
 	
-	if ( !lookup_name(tmp_talloc_ctx(), groupname, LOOKUP_NAME_ALL, NULL,
+	if ( !lookup_name(talloc_tos(), groupname, LOOKUP_NAME_ALL, NULL,
 			  NULL, &sid, &type)) {
 		d_fprintf(stderr, "%s is not a BUILTIN group\n", argv[0]);
 		return -1;
@@ -795,7 +795,7 @@ static int net_sam_addmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &groupdomain, &groupname, &group, &grouptype)) {
 		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
@@ -803,7 +803,7 @@ static int net_sam_addmem(int argc, const char **argv)
 
 	/* check to see if the member to be added is a name or a SID */
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[1], LOOKUP_NAME_ISOLATED,
 			 &memberdomain, &membername, &member, &membertype))
 	{
 		/* try it as a SID */
@@ -813,7 +813,7 @@ static int net_sam_addmem(int argc, const char **argv)
 			return -1;
 		}
 
-		if ( !lookup_sid(tmp_talloc_ctx(), &member, &memberdomain, 
+		if ( !lookup_sid(talloc_tos(), &member, &memberdomain,
 			&membername, &membertype) ) 
 		{
 			d_fprintf(stderr, "Could not resolve SID %s\n", argv[1]);
@@ -868,13 +868,13 @@ static int net_sam_delmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &groupdomain, &groupname, &group, &grouptype)) {
 		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[1], LOOKUP_NAME_ISOLATED,
 			 &memberdomain, &membername, &member, NULL)) {
 		if (!string_to_sid(&member, argv[1])) {
 			d_fprintf(stderr, "Could not find member %s\n",
@@ -926,7 +926,7 @@ static int net_sam_listmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &groupdomain, &groupname, &group, &grouptype)) {
 		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
@@ -949,7 +949,7 @@ static int net_sam_listmem(int argc, const char **argv)
 			 (unsigned int)num_members);
 		for (i=0; i<num_members; i++) {
 			const char *dom, *name;
-			if (lookup_sid(tmp_talloc_ctx(), &members[i],
+			if (lookup_sid(talloc_tos(), &members[i],
 				       &dom, &name, NULL)) {
 				d_printf(" %s\\%s\n", dom, name);
 			} else {
@@ -1076,7 +1076,7 @@ static int net_sam_show(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;

@@ -4240,7 +4240,7 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 		/* don't use talloc_steal() here unless you do a deep steal of all 
 		   the SEC_DESC members */
 
-		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+		printer->secdesc = dup_sec_desc( talloc_tos(),
 			ntprinter->info_2->secdesc_buf->sd );
 	}
 
@@ -4277,7 +4277,7 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **
 		/* don't use talloc_steal() here unless you do a deep steal of all 
 		   the SEC_DESC members */
 
-		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+		printer->secdesc = dup_sec_desc( talloc_tos(),
 			ntprinter->info_2->secdesc_buf->sd );
 	}
 

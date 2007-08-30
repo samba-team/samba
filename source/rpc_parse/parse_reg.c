@@ -52,7 +52,7 @@ uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val )
 void init_reg_q_open_hive( REG_Q_OPEN_HIVE *q_o, uint32 access_desired )
 {
 	
-	q_o->server = TALLOC_P( get_talloc_ctx(), uint16);
+	q_o->server = TALLOC_P( talloc_tos(), uint16);
 	if (!q_o->server) {
 		smb_panic("init_reg_q_open_hive: talloc fail.\n");
 		return;
@@ -224,7 +224,7 @@ void init_reg_q_create_key_ex(REG_Q_CREATE_KEY_EX *q_c, POLICY_HND *hnd,
 
 	q_c->access = access_desired;
 
-	q_c->sec_info = TALLOC_P( get_talloc_ctx(), uint32 );
+	q_c->sec_info = TALLOC_P( talloc_tos(), uint32 );
 	if (!q_c->sec_info) {
 		smb_panic("init_reg_q_create_key_ex: talloc fail\n");
 		return;
@@ -235,7 +235,7 @@ void init_reg_q_create_key_ex(REG_Q_CREATE_KEY_EX *q_c, POLICY_HND *hnd,
 	q_c->ptr2 = 1;
 	init_buf_hdr(&q_c->hdr_sec, sec_buf->sd_size, sec_buf->sd_size);
 	q_c->ptr3 = 1;
-	q_c->disposition = TALLOC_P( get_talloc_ctx(), uint32 );
+	q_c->disposition = TALLOC_P( talloc_tos(), uint32 );
 	if (!q_c->disposition) {
 		smb_panic("init_reg_q_create_key_ex: talloc fail\n");
 		return;
@@ -950,7 +950,7 @@ BOOL init_reg_r_query_value(uint32 include_keyval, REG_R_QUERY_VALUE *r_u,
 	if( !r_u || !val )
 		return False;
 	
-	r_u->type = TALLOC_P( get_talloc_ctx(), uint32 );
+	r_u->type = TALLOC_P( talloc_tos(), uint32 );
 	if (!r_u->type) {
 		return False;
 	}
@@ -958,13 +958,13 @@ BOOL init_reg_r_query_value(uint32 include_keyval, REG_R_QUERY_VALUE *r_u,
 
 	buf_len = reg_init_regval_buffer( &buf2, val );
 	
-	r_u->buf_max_len = TALLOC_P( get_talloc_ctx(), uint32 );
+	r_u->buf_max_len = TALLOC_P( talloc_tos(), uint32 );
 	if (!r_u->buf_max_len) {
 		return False;
 	}
 	*r_u->buf_max_len = buf_len;
 
-	r_u->buf_len = TALLOC_P( get_talloc_ctx(), uint32 );
+	r_u->buf_len = TALLOC_P( talloc_tos(), uint32 );
 	if (!r_u->buf_len) {
 		return False;
 	}
@@ -974,7 +974,7 @@ BOOL init_reg_r_query_value(uint32 include_keyval, REG_R_QUERY_VALUE *r_u,
 	   the buflen data. probably used by NT5 to allocate buffer space - SK */
 
 	if ( include_keyval ) {
-		r_u->value = TALLOC_P( get_talloc_ctx(), REGVAL_BUFFER );
+		r_u->value = TALLOC_P( talloc_tos(), REGVAL_BUFFER );
 		if (!r_u->value) {
 			return False;
 		}
@@ -1040,21 +1040,21 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_u, POLICY_HND *pol,
 	q_u->val_index = val_idx;
 
 	q_u->name.size = max_name_len*2;
-	q_u->name.string = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR2 );
+	q_u->name.string = TALLOC_ZERO_P( talloc_tos(), UNISTR2 );
 	if (!q_u->name.string) {
 		smb_panic("init_reg_q_enum_val: talloc fail\n");
 		return;
 	}
 	q_u->name.string->uni_max_len = max_name_len;
 	
-	q_u->type = TALLOC_P( get_talloc_ctx(), uint32 );
+	q_u->type = TALLOC_P( talloc_tos(), uint32 );
 	if (!q_u->type) {
 		smb_panic("init_reg_q_enum_val: talloc fail\n");
 		return;
 	}
 	*q_u->type = 0x0;
 
-	q_u->value = TALLOC_ZERO_P( get_talloc_ctx(), REGVAL_BUFFER );
+	q_u->value = TALLOC_ZERO_P( talloc_tos(), REGVAL_BUFFER );
 	if (!q_u->value) {
 		smb_panic("init_reg_q_enum_val: talloc fail\n");
 		return;
@@ -1062,14 +1062,14 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_u, POLICY_HND *pol,
 		
 	q_u->value->buf_max_len = max_buf_len;
 
-	q_u->buffer_len = TALLOC_P( get_talloc_ctx(), uint32 );
+	q_u->buffer_len = TALLOC_P( talloc_tos(), uint32 );
 	if (!q_u->buffer_len) {
 		smb_panic("init_reg_q_enum_val: talloc fail\n");
 		return;
 	}
 	*q_u->buffer_len = max_buf_len;
 
-	q_u->name_len = TALLOC_P( get_talloc_ctx(), uint32 );
+	q_u->name_len = TALLOC_P( talloc_tos(), uint32 );
 	if (!q_u->name_len) {
 		smb_panic("init_reg_q_enum_val: talloc fail\n");
 		return;
@@ -1095,7 +1095,7 @@ void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 		
 	/* type */
 	
-	r_u->type = TALLOC_P( get_talloc_ctx(), uint32 );
+	r_u->type = TALLOC_P( talloc_tos(), uint32 );
 	if (!r_u->type) {
 		smb_panic("init_reg_r_enum_val: talloc fail\n");
 		return;
@@ -1104,7 +1104,7 @@ void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 
 	/* REG_SZ & REG_MULTI_SZ must be converted to UNICODE */
 	
-	r_u->value = TALLOC_P( get_talloc_ctx(), REGVAL_BUFFER );
+	r_u->value = TALLOC_P( talloc_tos(), REGVAL_BUFFER );
 	if (!r_u->value) {
 		smb_panic("init_reg_r_enum_val: talloc fail\n");
 		return;
@@ -1113,13 +1113,13 @@ void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 	
 	/* lengths */
 
-	r_u->buffer_len1 = TALLOC_P( get_talloc_ctx(), uint32 );
+	r_u->buffer_len1 = TALLOC_P( talloc_tos(), uint32 );
 	if (!r_u->buffer_len1) {
 		smb_panic("init_reg_r_enum_val: talloc fail\n");
 		return;
 	}
 	*r_u->buffer_len1 = real_size;
-	r_u->buffer_len2 = TALLOC_P( get_talloc_ctx(), uint32 );
+	r_u->buffer_len2 = TALLOC_P( talloc_tos(), uint32 );
 	if (!r_u->buffer_len2) {
 		smb_panic("init_reg_r_enum_val: talloc fail\n");
 		return;
@@ -1328,12 +1328,12 @@ void init_reg_r_enum_key(REG_R_ENUM_KEY *r_u, char *subkey )
 		return;
 		
 	init_unistr4( &r_u->keyname, subkey, UNI_STR_TERMINATE );
-	r_u->classname = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
+	r_u->classname = TALLOC_ZERO_P( talloc_tos(), UNISTR4 );
 	if (!r_u->classname) {
 		smb_panic("init_reg_r_enum_key: talloc fail\n");
 		return;
 	}
-	r_u->time = TALLOC_ZERO_P( get_talloc_ctx(), NTTIME );
+	r_u->time = TALLOC_ZERO_P( talloc_tos(), NTTIME );
 	if (!r_u->time) {
 		smb_panic("init_reg_r_enum_key: talloc fail\n");
 		return;
@@ -1508,14 +1508,14 @@ Inits a structure.
 void init_reg_q_shutdown(REG_Q_SHUTDOWN *q_u, const char *msg,
 			uint32 timeout, BOOL do_reboot, BOOL force)
 {
-	q_u->server = TALLOC_P( get_talloc_ctx(), uint16 );
+	q_u->server = TALLOC_P( talloc_tos(), uint16 );
 	if (!q_u->server) {
 		smb_panic("init_reg_q_shutdown: talloc fail\n");
 		return;
 	}
 	*q_u->server = 0x1;
 
-	q_u->message = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
+	q_u->message = TALLOC_ZERO_P( talloc_tos(), UNISTR4 );
 	if (!q_u->message) {
 		smb_panic("init_reg_q_shutdown: talloc fail\n");
 		return;
@@ -1697,7 +1697,7 @@ Inits a structure.
 
 void init_reg_q_abort_shutdown(REG_Q_ABORT_SHUTDOWN *q_u)
 {
-	q_u->server = TALLOC_P( get_talloc_ctx(), uint16 );
+	q_u->server = TALLOC_P( talloc_tos(), uint16 );
 	if (!q_u->server) {
 		smb_panic("init_reg_q_abort_shutdown: talloc fail\n");
 		return;

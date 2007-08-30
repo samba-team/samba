@@ -1116,7 +1116,7 @@ static void construct_reply(char *inbuf, int size)
 	file_chain_reset();
 	reset_chain_p();
 
-	if (!(req = talloc(tmp_talloc_ctx(), struct smb_request))) {
+	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req, (uint8 *)inbuf);
@@ -1337,7 +1337,7 @@ void chain_reply(struct smb_request *req)
 	DEBUG(3,("Chained message\n"));
 	show_msg(inbuf2);
 
-	if (!(req2 = talloc(tmp_talloc_ctx(), struct smb_request))) {
+	if (!(req2 = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req2, (uint8 *)inbuf2);
@@ -1678,16 +1678,13 @@ void smbd_process(void)
 		int num_echos;
 		char *inbuf;
 		size_t inbuf_len;
+		TALLOC_CTX *frame = talloc_stackframe();
 
 		if (deadtime <= 0)
 			deadtime = DEFAULT_SMBD_TIMEOUT;
 
 		errno = 0;      
 		
-		/* free up temporary memory */
-		lp_TALLOC_FREE();
-		main_loop_TALLOC_FREE();
-
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
@@ -1757,5 +1754,6 @@ void smbd_process(void)
 			change_to_root_user();
 			check_log_size();
 		}
+		TALLOC_FREE(frame);
 	}
 }

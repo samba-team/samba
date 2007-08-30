@@ -66,7 +66,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 	uint64_t ctl_flag=0;
 	TALLOC_CTX	*mem_ctx;
 
-	mem_ctx = main_loop_talloc_get();
+	mem_ctx = talloc_tos();
 	acl = (AIXJFS2_ACL_T *)TALLOC_SIZE(mem_ctx, len);
 	if (acl == NULL) {
 		errno = ENOMEM;
@@ -303,7 +303,7 @@ static BOOL aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	DEBUG(10, ("jfs2_process_smbacl invoked on %s\n", fsp->fsp_name));
 
 	/* no need to be freed which is alloced with mem_ctx */
-	mem_ctx = main_loop_talloc_get();
+	mem_ctx = talloc_tos();
 
 	entryLen = sizeof(nfs4_ace_int_t);
 	if (entryLen & 0x03)

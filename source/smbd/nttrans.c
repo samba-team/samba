@@ -1484,7 +1484,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		pdata = data + sd_len;
 
 		/* We have already checked that ea_len <= data_count here. */
-		ea_list = read_nttrans_ea_list(tmp_talloc_ctx(), pdata,
+		ea_list = read_nttrans_ea_list(talloc_tos(), pdata,
 					       ea_len);
 		if (!ea_list ) {
 			TALLOC_FREE(case_state);

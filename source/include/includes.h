@@ -710,6 +710,7 @@ typedef int BOOL;
 #include "dbwrap.h"
 #include "packet.h"
 #include "ctdbd_conn.h"
+#include "talloc_stack.h"
 
 /*
  * Type for wide character dirent structure.
