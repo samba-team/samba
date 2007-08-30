@@ -27,7 +27,6 @@ OBJ_FILES = xfile.o \
 		ms_fnmatch.o \
 		mutex.o \
 		idtree.o \
-		module.o \
 		become_daemon.o
 PUBLIC_DEPENDENCIES = \
 		LIBTALLOC LIBCRYPTO \

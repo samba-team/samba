@@ -109,7 +109,7 @@
 #endif
 
 /* Lists, trees, caching, database... */
-#include "talloc/talloc.h"
+#include <talloc.h>
 #include "core.h"
 #include <stdbool.h>
 #include "charset/charset.h"

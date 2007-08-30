@@ -42,6 +42,8 @@ struct smbsrv_connection;
 
 #define Auto (2)
 
+typedef NTSTATUS (*init_module_fn) (void);
+
 #include "param/proto.h"
 
 #endif /* _PARAM_H */

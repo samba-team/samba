@@ -21,7 +21,7 @@
 #ifndef __CHARSET_H__
 #define __CHARSET_H__
 
-#include "lib/talloc/talloc.h"
+#include <talloc.h>
 
 /* this defines the charset types used in samba */
 typedef enum {CH_UTF16=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4, CH_UTF16BE=5} charset_t;

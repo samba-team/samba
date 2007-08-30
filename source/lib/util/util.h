@@ -254,6 +254,14 @@ void CatchChildLeaveStatus(void);
 /* The following definitions come from lib/util/system.c  */
 
 
+/*
+  we use struct ipv4_addr to avoid having to include all the
+  system networking headers everywhere
+*/
+struct ipv4_addr {
+	uint32_t addr;
+};
+
 /**************************************************************************
 A wrapper for gethostbyname() that tries avoids looking up hostnames 
 in the root domain, which can cause dial-on-demand links to come up for no
@@ -769,6 +777,21 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
  * @file
  * @brief MS-style Filename matching
  */
+
+/* protocol types. It assumes that higher protocols include lower protocols
+   as subsets. FIXME: Move to one of the smb-specific headers */
+enum protocol_types {
+	PROTOCOL_NONE,
+	PROTOCOL_CORE,
+	PROTOCOL_COREPLUS,
+	PROTOCOL_LANMAN1,
+	PROTOCOL_LANMAN2,
+	PROTOCOL_NT1,
+	PROTOCOL_SMB2
+};
+
+
+
 int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol);
 
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
@@ -820,29 +843,7 @@ _PUBLIC_ void *idr_find(struct idr_context *idp, int id);
 */
 _PUBLIC_ int idr_remove(struct idr_context *idp, int id);
 
-/* The following definitions come from lib/util/module.c  */
-
-
-/**
- * Obtain the init function from a shared library file
- */
-_PUBLIC_ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path);
-
-/**
- * Obtain list of init functions from the modules in the specified
- * directory
- */
-_PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path);
-
-/**
- * Run the specified init functions.
- *
- * @return true if all functions ran successfully, false otherwise
- */
-_PUBLIC_ bool run_init_functions(NTSTATUS (**fns) (void));
-
 /* The following definitions come from lib/util/become_daemon.c  */
-
 
 /**
  Become a daemon, discarding the controlling terminal.

@@ -181,7 +181,7 @@ SHELL=$self->{config}->{SHELL}
 PERL=$self->{config}->{PERL}
 
 CPP=$self->{config}->{CPP}
-CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $self->{config}->{CPPFLAGS}
+CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/lib/talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $self->{config}->{CPPFLAGS}
 
 CC=$self->{config}->{CC}
 CFLAGS=$self->{config}->{CFLAGS} \$(CPPFLAGS)
