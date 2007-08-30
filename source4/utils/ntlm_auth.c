@@ -38,7 +38,7 @@
 #include "lib/messaging/irpc.h"
 #include "auth/ntlmssp/ntlmssp.h"
 
-#define SQUID_BUFFER_SIZE 2010
+#define INITIAL_BUFFER_SIZE 200
 
 enum stdio_helper_mode {
 	SQUID_2_4_BASIC,
@@ -868,51 +868,57 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 static void manage_squid_request(enum stdio_helper_mode helper_mode, 
 				 stdio_helper_function fn, void **private2) 
 {
-	char buf[SQUID_BUFFER_SIZE+1];
+	char *buf;
+	char tmp[INITIAL_BUFFER_SIZE+1];
 	unsigned int mux_id = 0;
 	int length;
 	char *c;
-	static BOOL err;
 	struct mux_private {
 		unsigned int max_mux;
 		void **private_pointers;
 	};
-	
+
 	static struct mux_private *mux_private;
 	static void *normal_private;
 	void **private;
 
-	/* this is not a typo - x_fgets doesn't work too well under squid */
-	if (fgets(buf, sizeof(buf)-1, stdin) == NULL) {
-		if (ferror(stdin)) {
-			DEBUG(1, ("fgets() failed! dying..... errno=%d (%s)\n", ferror(stdin),
-				  strerror(ferror(stdin))));
-			
-			exit(1);    /* BIIG buffer */
-		}
-		exit(0);
-	}
-    
-	c=memchr(buf,'\n',sizeof(buf)-1);
-	if (c) {
-		*c = '\0';
-		length = c-buf;
-	} else {
-		err = 1;
-		return;
-	}
-	if (err) {
-		DEBUG(0, ("Oversized message\n"));
+	buf = talloc(NULL, char);
+	buf[0] = '\0';
+
+	if (buf == NULL) {
+		DEBUG(0, ("Failed to allocate memory for reading the input "
+			  "buffer.\n"));
 		x_fprintf(x_stdout, "ERR\n");
-		err = 0;
 		return;
 	}
+
+	do {
+		/* this is not a typo - x_fgets doesn't work too well under
+		 * squid */
+		if (fgets(tmp, INITIAL_BUFFER_SIZE, stdin) == NULL) {
+			if (ferror(stdin)) {
+				DEBUG(1, ("fgets() failed! dying..... errno=%d "
+					  "(%s)\n", ferror(stdin),
+					  strerror(ferror(stdin))));
+
+				exit(1);    /* BIIG buffer */
+			}
+			exit(0);
+		}
+
+		buf = talloc_append_string(buf, buf, tmp);
+		c = strchr(buf, '\n');
+	} while (c == NULL);
+
+	*c = '\0';
+	length = c-buf;
 
 	DEBUG(10, ("Got '%s' from squid (length: %d).\n",buf,length));
 
 	if (buf[0] == '\0') {
 		DEBUG(0, ("Invalid Request (empty)\n"));
 		x_fprintf(x_stdout, "ERR\n");
+		talloc_free(buf);
 		return;
 	}
 
@@ -920,6 +926,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 		if (sscanf(buf, "%u ", &mux_id) != 1) {
 			DEBUG(0, ("Invalid Request - no multiplex id\n"));
 			x_fprintf(x_stdout, "ERR\n");
+			talloc_free(buf);
 			return;
 		}
 		if (!mux_private) {
@@ -932,6 +939,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 		if (!c) {
 			DEBUG(0, ("Invalid Request - no data after multiplex id\n"));
 			x_fprintf(x_stdout, "ERR\n");
+			talloc_free(buf);
 			return;
 		}
 		c++;
@@ -951,8 +959,9 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 		c = buf;
 		private = &normal_private;
 	}
-	
+
 	fn(helper_mode, c, length, private, mux_id, private2);
+	talloc_free(buf);
 }
 
 static void squid_stream(enum stdio_helper_mode stdio_mode, 
