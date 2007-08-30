@@ -88,7 +88,7 @@
 
 #if 0
 
-Disable these now we've checked all code paths and ensured
+Disable these now we have checked all code paths and ensured
 NULL returns on zero request. JRA.
 
 void *_talloc_zero_zeronull(const void *ctx, size_t size, const char *name);
