@@ -67,6 +67,8 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_simple_test(suite, "SAMBA3BADPATH", torture_samba3_badpath);
 	torture_suite_add_simple_test(suite, "SAMBA3CASEINSENSITIVE",
 				      torture_samba3_caseinsensitive);
+	torture_suite_add_simple_test(suite, "SAMBA3POSIXTIMEDLOCK",
+				      torture_samba3_posixtimedlock);
 	torture_suite_add_simple_test(suite, "SCAN-EAMAX", torture_max_eas);
 
 	suite->description = talloc_strdup(suite, 
