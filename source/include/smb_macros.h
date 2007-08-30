@@ -278,7 +278,7 @@ copy an IP address from one buffer to another
 
 #if 0
 
-Disable these now we've checked all code paths and ensured
+Disable these now we have checked all code paths and ensured
 NULL returns on zero request. JRA.
 
 #define TALLOC(ctx, size) talloc_zeronull(ctx, size, __location__)
