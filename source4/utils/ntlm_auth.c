@@ -38,7 +38,8 @@
 #include "lib/messaging/irpc.h"
 #include "auth/ntlmssp/ntlmssp.h"
 
-#define INITIAL_BUFFER_SIZE 200
+#define INITIAL_BUFFER_SIZE 300
+#define MAX_BUFFER_SIZE 63000
 
 enum stdio_helper_mode {
 	SQUID_2_4_BASIC,
@@ -871,7 +872,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 	char *buf;
 	char tmp[INITIAL_BUFFER_SIZE+1];
 	unsigned int mux_id = 0;
-	int length;
+	int length, buf_size = 0;
 	char *c;
 	struct mux_private {
 		unsigned int max_mux;
@@ -907,6 +908,15 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 		}
 
 		buf = talloc_append_string(buf, buf, tmp);
+		buf_size += INITIAL_BUFFER_SIZE;
+
+		if (buf_size > MAX_BUFFER_SIZE) {
+			DEBUG(0, ("Invalid Request (too large)\n"));
+			x_fprintf(x_stdout, "ERR\n");
+			talloc_free(buf);
+			return;
+		}
+
 		c = strchr(buf, '\n');
 	} while (c == NULL);
 
