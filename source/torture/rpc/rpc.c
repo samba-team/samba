@@ -30,30 +30,58 @@
 struct torture_rpc_tcase {
 	struct torture_tcase tcase;
 	const struct ndr_interface_table *table;
-	struct dcerpc_pipe *pipe;
+	const char *machine_name;
 };
 
+struct torture_rpc_tcase_data {
+	struct test_join *join_ctx;
+	struct dcerpc_pipe *pipe;
+	struct cli_credentials *credentials;
+};
+
+static bool torture_rpc_teardown (struct torture_context *tcase, 
+					  void *data)
+{
+	struct torture_rpc_tcase_data *tcase_data = 
+		(struct torture_rpc_tcase_data *)data;
+	if (tcase_data->join_ctx != NULL)
+	    torture_leave_domain(tcase_data->join_ctx);
+	talloc_free(tcase_data);
+	return true;
+}
+
+/**
+ * Obtain the DCE/RPC binding context associated with a torture context.
+ *
+ * @param tctx Torture context
+ * @param binding Pointer to store DCE/RPC binding
+ */
 NTSTATUS torture_rpc_binding(struct torture_context *tctx,
-							 struct dcerpc_binding **binding)
+			     struct dcerpc_binding **binding)
 {
 	NTSTATUS status;
-	const char *binding_string = torture_setting_string(tctx, "binding", NULL);
+	const char *binding_string = torture_setting_string(tctx, "binding", 
+							    NULL);
 
 	if (binding_string == NULL) {
-		torture_comment(tctx, "You must specify a ncacn binding string\n");
+		torture_comment(tctx, 
+				"You must specify a DCE/RPC binding string\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = dcerpc_parse_binding(tctx, binding_string, binding);
 	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding_string));
+		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", 
+			 binding_string));
 		return status;
 	}
 
 	return NT_STATUS_OK;	
 }
 
-/* open a rpc connection to the chosen binding string */
+/**
+ * open a rpc connection to the chosen binding string
+ */
 _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 				struct dcerpc_pipe **p, 
 				const struct ndr_interface_table *table)
@@ -77,14 +105,16 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 	return status;
 }
 
-/* open a rpc connection to a specific transport */
+/**
+ * open a rpc connection to a specific transport
+ */
 NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx, 
 					  struct dcerpc_pipe **p, 
 					  const struct ndr_interface_table *table,
 					  enum dcerpc_transport_t transport,
 					  uint32_t assoc_group_id)
 {
-    NTSTATUS status;
+	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	TALLOC_CTX *mem_ctx = talloc_named(tctx, 0, "torture_rpc_connection_smb");
 
@@ -107,26 +137,78 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
         return status;
 }
 
-static bool torture_rpc_setup_anonymous(struct torture_context *tctx, 
-										void **data)
+static bool torture_rpc_setup_machine(struct torture_context *tctx,
+				      void **data)
 {
-	struct cli_credentials *anon_credentials;
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
-	struct torture_rpc_tcase *tcase = talloc_get_type(
-						tctx->active_tcase, struct torture_rpc_tcase);
+	struct torture_rpc_tcase *tcase = talloc_get_type(tctx->active_tcase, 
+						struct torture_rpc_tcase);
+	struct torture_rpc_tcase_data *tcase_data;
 
 	status = torture_rpc_binding(tctx, &binding);
 	if (NT_STATUS_IS_ERR(status))
 		return false;
 
-	anon_credentials = cli_credentials_init_anon(tctx);
+	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
+	tcase_data->credentials = cmdline_credentials;
+	tcase_data->join_ctx = torture_join_domain(tcase->machine_name,
+						   ACB_SVRTRUST, 
+						   &tcase_data->credentials);
+	if (tcase_data->join_ctx == NULL)
+	    torture_fail(tctx, "Failed to join as BDC");
 
 	status = dcerpc_pipe_connect_b(tctx, 
-				(struct dcerpc_pipe **)data, 
+				&(tcase_data->pipe),
 				binding,
 				tcase->table,
-				anon_credentials, NULL);
+				tcase_data->credentials, NULL);
+
+	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
+
+	return true;
+}
+
+_PUBLIC_ struct torture_rpc_tcase *torture_suite_add_machine_rpc_iface_tcase(
+				struct torture_suite *suite, 
+				const char *name,
+				const struct ndr_interface_table *table,
+				const char *machine_name)
+{
+	struct torture_rpc_tcase *tcase = talloc(suite, 
+						 struct torture_rpc_tcase);
+
+	torture_suite_init_tcase(suite, (struct torture_tcase *)tcase, name);
+
+	tcase->machine_name = talloc_strdup(tcase, machine_name);
+	tcase->tcase.setup = torture_rpc_setup_machine;
+	tcase->tcase.teardown = torture_rpc_teardown;
+	tcase->table = table;
+
+	return tcase;
+}
+
+static bool torture_rpc_setup_anonymous(struct torture_context *tctx, 
+					void **data)
+{
+	NTSTATUS status;
+	struct dcerpc_binding *binding;
+	struct torture_rpc_tcase_data *tcase_data;
+	struct torture_rpc_tcase *tcase = talloc_get_type(tctx->active_tcase, 
+							  struct torture_rpc_tcase);
+
+	status = torture_rpc_binding(tctx, &binding);
+	if (NT_STATUS_IS_ERR(status))
+		return false;
+
+	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
+	tcase_data->credentials = cli_credentials_init_anon(tctx);
+
+	status = dcerpc_pipe_connect_b(tctx, 
+				&(tcase_data->pipe),
+				binding,
+				tcase->table,
+				tcase_data->credentials, NULL);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
@@ -138,9 +220,13 @@ static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 	NTSTATUS status;
 	struct torture_rpc_tcase *tcase = talloc_get_type(
 						tctx->active_tcase, struct torture_rpc_tcase);
+	struct torture_rpc_tcase_data *tcase_data;
+
+	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
+	tcase_data->credentials = cmdline_credentials;
 	
 	status = torture_rpc_connection(tctx, 
-				(struct dcerpc_pipe **)data, 
+				&(tcase_data->pipe),
 				(const struct ndr_interface_table *)tcase->table);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
@@ -148,11 +234,7 @@ static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 	return true;
 }
 
-static bool torture_rpc_teardown (struct torture_context *tcase, void *data)
-{
-	talloc_free(data);
-	return true;
-}
+
 
 _PUBLIC_ struct torture_rpc_tcase *torture_suite_add_anon_rpc_iface_tcase(struct torture_suite *suite, 
 								const char *name,
@@ -190,10 +272,12 @@ static bool torture_rpc_wrap_test(struct torture_context *tctx,
 								  struct torture_test *test)
 {
 	bool (*fn) (struct torture_context *, struct dcerpc_pipe *);
+	struct torture_rpc_tcase_data *tcase_data = 
+		(struct torture_rpc_tcase_data *)tcase->data;
 
 	fn = test->fn;
 
-	return fn(tctx, (struct dcerpc_pipe *)tcase->data);
+	return fn(tctx, tcase_data->pipe);
 }
 
 static bool torture_rpc_wrap_test_ex(struct torture_context *tctx, 
@@ -201,10 +285,26 @@ static bool torture_rpc_wrap_test_ex(struct torture_context *tctx,
 								  struct torture_test *test)
 {
 	bool (*fn) (struct torture_context *, struct dcerpc_pipe *, const void *);
+	struct torture_rpc_tcase_data *tcase_data = 
+		(struct torture_rpc_tcase_data *)tcase->data;
 
 	fn = test->fn;
 
-	return fn(tctx, (struct dcerpc_pipe *)tcase->data, test->data);
+	return fn(tctx, tcase_data->pipe, test->data);
+}
+
+
+static bool torture_rpc_wrap_test_creds(struct torture_context *tctx, 
+								  struct torture_tcase *tcase,
+								  struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, struct dcerpc_pipe *, struct cli_credentials *);
+	struct torture_rpc_tcase_data *tcase_data = 
+		(struct torture_rpc_tcase_data *)tcase->data;
+
+	fn = test->fn;
+
+	return fn(tctx, tcase_data->pipe, tcase_data->credentials);
 }
 
 _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
@@ -219,6 +319,27 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
 	test->name = talloc_strdup(test, name);
 	test->description = NULL;
 	test->run = torture_rpc_wrap_test;
+	test->dangerous = false;
+	test->data = NULL;
+	test->fn = fn;
+
+	DLIST_ADD(tcase->tcase.tests, test);
+
+	return test;
+}
+
+_PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_creds(
+					struct torture_rpc_tcase *tcase, 
+					const char *name, 
+					bool (*fn) (struct torture_context *, struct dcerpc_pipe *, struct cli_credentials *))
+{
+	struct torture_test *test;
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = torture_rpc_wrap_test_creds;
 	test->dangerous = false;
 	test->data = NULL;
 	test->fn = fn;
