@@ -697,7 +697,7 @@ $envvarstr
 		my $envname = $$_[1];
 		
 		if (skip($name)) {
-			$msg_ops->skip_testsuite($name);
+			$msg_ops->skip_testsuite($envname, $name);
 			$statistics->{SUITES_SKIPPED}++;
 			next;
 		}
