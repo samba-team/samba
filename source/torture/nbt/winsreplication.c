@@ -97,10 +97,6 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	struct nbt_name name;
 	const char *address;
 
-	if (!torture_setting_bool(tctx, "dangerous", false)) {
-		torture_skip(tctx, "winsrepl: cross connection assoc_ctx usage disabled - enable dangerous tests to use");
-	}
-
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 
@@ -9675,8 +9671,11 @@ struct torture_suite *torture_nbt_winsreplication(void)
 	struct torture_suite *suite = torture_suite_create(
 		talloc_autofree_context(),
 		"WINSREPLICATION");
-	torture_suite_add_simple_test(suite, "assoc_ctx1", 
-				      test_assoc_ctx1);
+	struct torture_tcase *tcase;
+
+	tcase = torture_suite_add_simple_test(suite, "assoc_ctx1", 
+					     test_assoc_ctx1);
+	tcase->tests->dangerous = true;
 
 	torture_suite_add_simple_test(suite, "assoc_ctx2", 
 				      test_assoc_ctx2);

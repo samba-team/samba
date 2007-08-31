@@ -51,16 +51,12 @@ static bool test_Abort(struct torture_context *tctx,
 }
 
 static bool test_Init(struct torture_context *tctx, 
-					  struct dcerpc_pipe *p)
+		      struct dcerpc_pipe *p)
 {
 	struct initshutdown_Init r;
 	NTSTATUS status;
 	uint16_t hostname = 0x0;
 
-	if (!torture_setting_bool(tctx, "dangerous", false))
-		torture_skip(tctx, 
-			"initshutdown tests disabled - enable dangerous tests to use");
-	
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct initshutdown_String);
 	init_initshutdown_String(tctx, r.in.message, "spottyfood");
@@ -83,10 +79,6 @@ static bool test_InitEx(struct torture_context *tctx,
 	NTSTATUS status;
 	uint16_t hostname = 0x0;
 
-	if (!torture_setting_bool(tctx, "dangerous", false))
-		torture_skip(tctx, 
-			"initshutdown tests disabled - enable dangerous tests to use");
-	
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct initshutdown_String);
 	init_initshutdown_String(tctx, r.in.message, "spottyfood");
@@ -109,12 +101,15 @@ struct torture_suite *torture_rpc_initshutdown(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "INITSHUTDOWN");
 	struct torture_rpc_tcase *tcase;
+	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "initshutdown", 
-											  &ndr_table_initshutdown);
+						  &ndr_table_initshutdown);
 
-	torture_rpc_tcase_add_test(tcase, "Init", test_Init);
-	torture_rpc_tcase_add_test(tcase, "InitEx", test_InitEx);
+	test = torture_rpc_tcase_add_test(tcase, "Init", test_Init);
+	test->dangerous = true;
+	test = torture_rpc_tcase_add_test(tcase, "InitEx", test_InitEx);
+	test->dangerous = true;
 
 	return suite;
 }
