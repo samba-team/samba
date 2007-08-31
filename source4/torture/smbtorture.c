@@ -238,6 +238,11 @@ static void usage(poptContext pc)
 
 	printf("Tests are:");
 
+	if (torture_root == NULL) {
+	    printf("NO TESTS LOADED\n");
+	    exit(1);
+	}
+
 	for (o = torture_root->children; o; o = o->next) {
 		printf("\n%s (%s):\n  ", o->description, o->name);
 
@@ -480,6 +485,7 @@ int main(int argc,char *argv[])
 	int shell = False;
 	static const char *ui_ops_name = "simple";
 	const char *basedir = NULL;
+	const char *extra_module = NULL;
 	static int list_tests = 0;
 	char *host = NULL, *share = NULL;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
@@ -502,6 +508,7 @@ int main(int argc,char *argv[])
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
 		 "run dangerous tests (eg. wiping out password database)", NULL},
+		{"load-module",  0,  POPT_ARG_STRING, &extra_module,     0, "load tests from DSO file",    "SOFILE"},
 		{"shell", 		0, POPT_ARG_NONE, &shell, True, "Run shell", NULL},
 		{"target", 		'T', POPT_ARG_STRING, &target, 0, "samba3|samba4|other", NULL},
 		{"async",       'a', POPT_ARG_NONE,     NULL,   OPT_ASYNC,
@@ -572,8 +579,23 @@ int main(int argc,char *argv[])
 		alarm(max_runtime);
 	}
 
-	torture_init();
 	ldb_global_init();
+
+	if (extra_module != NULL) {
+	    init_module_fn fn = load_module(talloc_autofree_context(), poptGetOptArg(pc));
+
+	    if (fn == NULL) 
+		d_printf("Unable to load module from %s\n", poptGetOptArg(pc));
+	    else {
+		status = fn();
+		if (NT_STATUS_IS_ERR(status)) {
+		    d_printf("Error initializing module %s: %s\n", 
+			     poptGetOptArg(pc), nt_errstr(status));
+		}
+	    }
+	} else { 
+		torture_init();
+	}
 
 	if (list_tests) {
 		print_test_list();
