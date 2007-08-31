@@ -715,6 +715,7 @@ sub Parse($)
 	my @ndr = ();
 
 	foreach (@{$idl}) {
+		($_->{TYPE} eq "CPP_QUOTE") && push(@ndr, $_);
 		($_->{TYPE} eq "INTERFACE") && push(@ndr, ParseInterface($_));
 		($_->{TYPE} eq "IMPORT") && push(@ndr, $_);
 	}
