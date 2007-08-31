@@ -3317,6 +3317,31 @@ done:
 	return ret;
 }
 
+/***********************************************************************
+ Try and validate every entry in the winbindd cache.
+***********************************************************************/
+
+int winbindd_validate_cache_nobackup(void)
+{
+	int ret = -1;
+	const char *tdb_path = lock_path("winbindd_cache.tdb");
+
+	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
+	smb_panic_fn = validate_panic;
+
+	ret = tdb_validate(tdb_path, cache_traverse_validate_fn);
+
+	if (ret != 0) {
+		DEBUG(10, ("winbindd_validate_cache_nobackup: validation not "
+			   "successful.\n"));
+	}
+
+	DEBUG(10, ("winbindd_validate_cache_nobackup: restoring panic "
+		   "function\n"));
+	smb_panic_fn = smb_panic;
+	return ret;
+}
+
 /*********************************************************************
  ********************************************************************/
 
