@@ -973,6 +973,8 @@ static struct functable net_func[] = {
 		{ 0, 0, 0, 0}
 	};
 
+	TALLOC_CTX *frame = talloc_stackframe();
+
 	zero_ip(&opt_dest_ip);
 
 	load_case_tables();
@@ -1074,5 +1076,6 @@ static struct functable net_func[] = {
 	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);
 	
 	DEBUG(2,("return code = %d\n", rc));
+	TALLOC_FREE(frame);
 	return rc;
 }
