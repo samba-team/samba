@@ -17,3 +17,13 @@ RPC-DRSUAPI.*
 RPC-LSALOOKUP
 RPC-CRACKNAMES
 blackbox.smbclient.*USER and PASSWD
+RPC-NETLOGON.*/LogonUasLogon
+RPC-NETLOGON.*/LogonUasLogoff
+RPC-NETLOGON.*/DatabaseSync
+RPC-NETLOGON.*/DatabaseSync2
+RPC-NETLOGON.*/GetDcName
+RPC-NETLOGON.*/LogonControl
+RPC-NETLOGON.*/LogonControl2
+RPC-NETLOGON.*/GetAnyDCName
+RPC-NETLOGON.*/DsrEnumerateDomainTrusts
+RPC-NETLOGON.*/DsrGetDcSiteCoverageW
