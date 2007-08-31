@@ -1,6 +1,66 @@
-The Samba Team is proud to present our first alpha release of Samba4.
+What's new in Samba 4 alpha1
+============================
 
-Samba4 aims to be a compatible replacement for 
+Samba 4 is the ambitious next version of the Samba suite that is being
+developed in parallel to the stable 3.0 series. The main emphasis in
+this branch is support for the Active Directory logon protocols used
+by Windows 2000 and above.
+
+Samba 4 is currently not yet in a state where it is usable in
+production environments. Note the WARNINGS below, and the STATUS file,
+which aims to document what should and should not work.
+
+Samba4 alpha1 is the culmination of 4.5 years of development under our
+belt since Tridge first proposed a new Virtual File System (VFS) layer
+for Samba3 (a project which eventually lead to our Active Directory
+efforts), and 1.5 years since we first released a Technology Preview,
+we wish to allow users, managers and developers to see how we have
+progressed, and to invite feedback and support.
+
+WARNINGS
+========
+
+Samba4 alpha1 is not a final Samba release.  We recommend against
+upgrading any production servers from Samba 3 to Samba 4 at this
+stage.  If you are upgrading an experimental server, you should backup
+all configuration and data.
+
+NEW FEATURES
+============
+
+Samba4 supports the server-side of the Active Directory logon environment
+used by Windows 2000 and later, so we can do full domain join
+and domain logon operations with these clients.
+
+Our Domain Controller (DC) implementation includes our own built-in
+LDAP server and Kerberos Key Distribution Center (KDC) as well as the
+Samba3-like logon services provided over CIFS.  We correctly generate
+the infamous Kerberos PAC, and include it with the Kerberos tickets we
+issue.
+
+SWAT is now integrated into Samba 4 as the user-friendly interface to
+Samba server management. SWAT provides easy provides access to our
+setup and migration tools.  Using SWAT, you can migrate windows
+domains in Samba 4, allowing easy setup of initial user databases.
+
+The new VFS features in Samba 4 adapts the filesystem on the server to
+match the Windows client semantics, allowing Samba 4 to better match
+windows behaviour and application expectations.  This includes file
+annotation information (in streams) and NT ACLs in particular.  The
+VFS is backed with an extensive automated test suite.
+
+A new scripting interface has been added to Samba 4, allowing
+JavaScript programs to interface to Samba's internals.
+
+The Samba 4 architecture is based around an LDAP-like database that
+can use a range of modular backends.  One of the backends supports
+standards compliant LDAP servers (including OpenLDAP), and we are
+working on modules to map between AD-like behaviours and this backend.
+We are aiming for Samba 4 to be powerful frontend to large
+directories.
+
+CHANGES SINCE TP5
+=================
 
 In the time since TP5 was released in June 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
@@ -24,4 +84,42 @@ These are just some of the highlights of the work done in the past few
 months.  More details can be found in our SVN history.
 
 
+CHANGES
+=======
+
+Those familiar with Samba 3 can find a list of user-visible changes
+since that release series in the NEWS file.
+
+KNOWN ISSUES
+============
+
+- Domain member support is in it's infancy, and is not comprable to
+  the support found in Samba3.
+
+- There is no printing support in the current release.
+
+- Support for managing groups is currently poor (as the
+  memberOf/member linked attributes are not kept in sync). 
+
+- Renaming and deleting subtrees (containers) in the the LDB tree will
+  have unexpected results.
+
+- The Samba4 port of the CTDB clustering support is not yet complete
+
+RUNNING Samba4
+==============
+
+A short guide to setting up Samba 4 can be found in the howto.txt file
+in root of the tarball.
+
+DEVELOPMENT and FEEDBACK
+========================
+Bugs can be filed at https://bugzilla.samba.org/. Please
+look at the STATUS file before filing a bug to see if a particular
+is supposed to work yet.
+
+Development and general discussion about Samba 4 happens mainly on
+the #samba-technical IRC channel (on irc.freenode.net) and
+the samba-technical mailing list (see http://lists.samba.org/ for
+details).
 
