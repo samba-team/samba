@@ -3329,7 +3329,12 @@ int winbindd_validate_cache_nobackup(void)
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;
 
-	ret = tdb_validate(tdb_path, cache_traverse_validate_fn);
+
+	if (wcache == NULL || wcache->tdb == NULL) {
+		ret = tdb_validate_open(tdb_path, cache_traverse_validate_fn);
+	} else {
+		ret = tdb_validate(wcache->tdb, cache_traverse_validate_fn);
+	}
 
 	if (ret != 0) {
 		DEBUG(10, ("winbindd_validate_cache_nobackup: validation not "
