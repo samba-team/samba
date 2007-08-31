@@ -523,15 +523,11 @@ static bool test_AbortSystemShutdown(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_InitiateSystemShutdown(struct torture_context *tctx,
-										struct dcerpc_pipe *p)
+static bool test_InitiateSystemShutdown(struct torture_context *tctx, 
+					struct dcerpc_pipe *p)
 {
 	struct winreg_InitiateSystemShutdown r;
 	uint16_t hostname = 0x0;
-
-	if (!torture_setting_bool(tctx, "dangerous", false))
-		torture_skip(tctx, 
-		   "winreg_InitiateShutdown disabled - enable dangerous tests to use");
 
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct initshutdown_String);
@@ -556,10 +552,6 @@ static bool test_InitiateSystemShutdownEx(struct torture_context *tctx,
 	struct winreg_InitiateSystemShutdownEx r;
 	uint16_t hostname = 0x0;
 
-	if (!torture_setting_bool(tctx, "dangerous", false))
-		torture_skip(tctx, 
-		   "winreg_InitiateShutdownEx disabled - enable dangerous tests to use");
-	
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct initshutdown_String);
 	init_initshutdown_String(tctx, r.in.message, "spottyfood");
@@ -749,15 +741,18 @@ struct torture_suite *torture_rpc_winreg(TALLOC_CTX *mem_ctx)
 	int i;
 	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "WINREG");
+	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "winreg", 
-											  &ndr_table_winreg);
+						  &ndr_table_winreg);
 
-	torture_rpc_tcase_add_test(tcase, "InitiateSystemShutdown", 
-							   test_InitiateSystemShutdown);
+	test = torture_rpc_tcase_add_test(tcase, "InitiateSystemShutdown", 
+					  test_InitiateSystemShutdown);
+	test->dangerous = true;
 
-	torture_rpc_tcase_add_test(tcase, "InitiateSystemShutdownEx", 
-							   test_InitiateSystemShutdownEx);
+	test = torture_rpc_tcase_add_test(tcase, "InitiateSystemShutdownEx", 
+					  test_InitiateSystemShutdownEx);
+	test->dangerous = true;
 
 	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
 		torture_rpc_tcase_add_test_ex(tcase, open_fns[i].name, test_Open, 

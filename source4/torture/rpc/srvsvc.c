@@ -538,10 +538,6 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 	int i;
 	BOOL ret = True;
 
-	if (!torture_setting_bool(tctx, "dangerous", false))
-		torture_skip(tctx,
-			"NetShareAddSetDel disabled - enable dangerous tests to use\n");
-
 	a.in.server_unc = r.in.server_unc = q.in.server_unc = d.in.server_unc =
 		talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.share_name = talloc_strdup(tctx, "testshare");
@@ -1132,6 +1128,7 @@ struct torture_suite *torture_rpc_srvsvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SRVSVC");
 	struct torture_rpc_tcase *tcase;
+	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "srvsvc (admin access)", &ndr_table_srvsvc);
 
@@ -1147,8 +1144,9 @@ struct torture_suite *torture_rpc_srvsvc(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "NetRemoteTOD", test_NetRemoteTOD);
 	torture_rpc_tcase_add_test(tcase, "NetShareEnum", test_NetShareEnumFull);
 	torture_rpc_tcase_add_test(tcase, "NetShareGetInfo", test_NetShareGetInfoAdminFull);
-	torture_rpc_tcase_add_test(tcase, "NetShareAddSetDel", 
-							   test_NetShareAddSetDel);
+	test = torture_rpc_tcase_add_test(tcase, "NetShareAddSetDel", 
+					   test_NetShareAddSetDel);
+	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "NetNameValidate", test_NetNameValidate);
 	
 	tcase = torture_suite_add_anon_rpc_iface_tcase(suite, 

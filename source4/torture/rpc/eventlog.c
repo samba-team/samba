@@ -192,10 +192,6 @@ static bool test_ClearEventLog(struct torture_context *tctx,
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
 
-	if (!torture_setting_bool(tctx, "dangerous", false)) {
-		torture_skip(tctx, "ClearEventLog test disabled - enable dangerous tests to use");
-	}
-
 	if (!get_policy_handle(tctx, p, &handle))
 		return false;
 
@@ -237,13 +233,16 @@ struct torture_suite *torture_rpc_eventlog(void)
 {
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
+	struct torture_test *test;
 
 	suite = torture_suite_create(talloc_autofree_context(), "EVENTLOG");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "eventlog", 
 						  &ndr_table_eventlog);
 
 	torture_rpc_tcase_add_test(tcase, "OpenEventLog", test_OpenEventLog);
-	torture_rpc_tcase_add_test(tcase, "ClearEventLog", test_ClearEventLog);
+	test = torture_rpc_tcase_add_test(tcase, "ClearEventLog", 
+					  test_ClearEventLog);
+	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "GetNumRecords", test_GetNumRecords);
 	torture_rpc_tcase_add_test(tcase, "ReadEventLog", test_ReadEventLog);
 	torture_rpc_tcase_add_test(tcase, "FlushEventLog", test_FlushEventLog);

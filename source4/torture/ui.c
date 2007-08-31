@@ -112,7 +112,7 @@ struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase,
 	test->description = NULL;
 	test->run = wrap_test_with_testcase;
 	test->fn = run;
-	test->dangerous = False;
+	test->dangerous = false;
 	test->data = data;
 
 	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
@@ -227,38 +227,41 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	BOOL ret;
 	char *old_testname;
 
-	if (test->dangerous && !torture_setting_bool(context, "dangerous", False)) {
-		torture_result(context, TORTURE_SKIP,
-				"disabled %s - enable dangerous tests to use", test->name);
-		return True;
-	}
-
 	if (!already_setup && tcase->setup && 
 		!tcase->setup(context, &(tcase->data)))
-		return False;
+		return false;
 
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
 		old_testname = context->active_testname;
 		context->active_testname = talloc_asprintf(context, "%s-%s", 
 											   old_testname, test->name);
 	}
+
 	context->active_tcase = tcase;
 	context->active_test = test;
 
 	torture_ui_test_start(context, tcase, test);
 
-
 	context->last_reason = NULL;
 	context->last_result = TORTURE_OK;
 
-	ret = test->run(context, tcase, test);
-	if (!ret && context->last_result == TORTURE_OK) {
-		if (context->last_reason == NULL)
-			context->last_reason = talloc_strdup(context, "Unknown error/failure");
-		context->last_result = TORTURE_ERROR;
+	if (test->dangerous && 
+	    !torture_setting_bool(context, "dangerous", false)) {
+	    context->last_result = TORTURE_SKIP;
+	    context->last_reason = talloc_asprintf(context, 
+	    	"disabled %s - enable dangerous tests to use", test->name);
+	} else {
+	    ret = test->run(context, tcase, test);
+
+	    if (!ret && context->last_result == TORTURE_OK) {
+		    if (context->last_reason == NULL)
+			    context->last_reason = talloc_strdup(context, "Unknown error/failure");
+		    context->last_result = TORTURE_ERROR;
+	    }
 	}
 
-	torture_ui_test_result(context, context->last_result, context->last_reason);
+	torture_ui_test_result(context, context->last_result, 
+			       context->last_reason);
 	
 	talloc_free(context->last_reason);
 
