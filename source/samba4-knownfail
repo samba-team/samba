@@ -27,3 +27,4 @@ RPC-NETLOGON.*/LogonControl2
 RPC-NETLOGON.*/GetAnyDCName
 RPC-NETLOGON.*/DsrEnumerateDomainTrusts
 RPC-NETLOGON.*/DsrGetDcSiteCoverageW
+RPC-DRSUAPI.*/DsReplicaUpdateRefs

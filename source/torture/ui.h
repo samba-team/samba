@@ -87,7 +87,7 @@ struct torture_context
 
 	bool returncode;
 
-	char *outputdir;
+	const char *outputdir;
 	int level;
 	struct event_context *ev;
 };
