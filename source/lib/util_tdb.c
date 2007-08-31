@@ -1010,12 +1010,11 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 /* 
  * internal validation function, executed by the child.  
  */
-static int tdb_validate_child(const char *tdb_path,
+static int tdb_validate_child(struct tdb_context *tdb,
 			      tdb_validate_data_func validate_fn)
 {
 	int ret = 1;
 	int num_entries = 0;
-	TDB_CONTEXT *tdb = NULL;
 	struct tdb_validation_status v_status;
 
 	v_status.tdb_error = False;
@@ -1024,7 +1023,6 @@ static int tdb_validate_child(const char *tdb_path,
 	v_status.unknown_key = False;
 	v_status.success = True;
 
-	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
 		v_status.tdb_error = True;
 		v_status.success = False;
@@ -1039,7 +1037,7 @@ static int tdb_validate_child(const char *tdb_path,
 	}
 
 	DEBUG(10,("tdb_validate_child: tdb %s freelist has %d entries\n",
-		  tdb_path, num_entries));
+		  tdb_name(tdb), num_entries));
 
 	/* Now traverse the tdb to validate it. */
 	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
@@ -1052,14 +1050,10 @@ static int tdb_validate_child(const char *tdb_path,
 	}
 
 	DEBUG(10,("tdb_validate_child: tdb %s is good with %d entries\n",
-		  tdb_path, num_entries));
+		  tdb_name(tdb), num_entries));
 	ret = 0; /* Cache is good. */
 
 out:
-	if (tdb) {
-		tdb_close(tdb);
-	}
-
 	DEBUG(10,   ("tdb_validate_child: summary of validation status:\n"));
 	DEBUGADD(10,(" * tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
 	DEBUGADD(10,(" * bad freelist: %s\n",v_status.bad_freelist?"yes":"no"));
@@ -1071,16 +1065,23 @@ out:
 }
 
 /*
- * tdb validation function returns 0 if tdb is ok, != 0 if it isn't.
+ * tdb validation function.
+ * returns 0 if tdb is ok, != 0 if it isn't.
+ * this function expects an opened tdb.
  */
-int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
+int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 {
 	pid_t child_pid = -1;
 	int child_status = 0;
 	int wait_pid = 0;
 	int ret = 1;
 
-	DEBUG(5, ("tdb_validate called for tdb '%s'\n", tdb_path));
+	if (tdb == NULL) {
+		DEBUG(1, ("Error: tdb_validate called with tdb == NULL\n"));
+		return ret;
+	}
+
+	DEBUG(5, ("tdb_validate called for tdb '%s'\n", tdb_name(tdb)));
 
 	/* fork and let the child do the validation.
 	 * benefit: no need to twist signal handlers and panic functions.
@@ -1093,7 +1094,7 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 		DEBUG(10, ("tdb_validate (validation child): created\n"));
 		DEBUG(10, ("tdb_validate (validation child): "
 			   "calling tdb_validate_child\n"));
-		exit(tdb_validate_child(tdb_path, validate_fn));
+		exit(tdb_validate_child(tdb, validate_fn));
 	}
 	else if (child_pid < 0) {
 		smb_panic("tdb_validate: fork for validation failed.");
@@ -1144,8 +1145,32 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 	}
 
 	DEBUG(5, ("tdb_validate returning code '%d' for tdb '%s'\n", ret,
-		  tdb_path));
+		  tdb_name(tdb)));
 
+	return ret;
+}
+
+/*
+ * tdb validation function.
+ * returns 0 if tdb is ok, != 0 if it isn't.
+ * this is a wrapper around the actual validation function that opens and closes
+ * the tdb.
+ */
+int tdb_validate_open(const char *tdb_path, tdb_validate_data_func validate_fn)
+{
+	TDB_CONTEXT *tdb = NULL;
+	int ret = 1;
+
+	DEBUG(5, ("tdb_validate_open called for tdb '%s'\n", tdb_path));
+
+	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDONLY, 0);
+	if (!tdb) {
+		DEBUG(1, ("Error opening tdb %s\n", tdb_path));
+		return ret;
+	}
+
+	ret = tdb_validate(tdb, validate_fn);
+	tdb_close(tdb);
 	return ret;
 }
 
@@ -1397,7 +1422,7 @@ int tdb_validate_and_backup(const char *tdb_path,
 
 	tdb_path_backup = talloc_asprintf(ctx, "%s%s", tdb_path, backup_suffix);
 
-	ret = tdb_validate(tdb_path, validate_fn);
+	ret = tdb_validate_open(tdb_path, validate_fn);
 
 	if (ret == 0) {
 		DEBUG(1, ("tdb '%s' is valid\n", tdb_path));
@@ -1422,7 +1447,7 @@ int tdb_validate_and_backup(const char *tdb_path,
 			DEBUG(1, ("No backup found.\n"));
 		} else {
 			DEBUG(1, ("backup '%s' found.\n", tdb_path_backup));
-			ret = tdb_validate(tdb_path_backup, validate_fn);
+			ret = tdb_validate_open(tdb_path_backup, validate_fn);
 			if (ret != 0) {
 				DEBUG(1, ("Backup '%s' is invalid.\n",
 					  tdb_path_backup));
