@@ -666,7 +666,7 @@ if ($opt_no_lazy_setup) {
 
 if ($opt_testenv) {
 	my $testenv_name = $ENV{SELFTEST_TESTENV};
-	$testenv_name = "dc" unless defined($testenv_name);
+	$testenv_name = "member" unless defined($testenv_name);
 
 	my $testenv_vars = setup_env($testenv_name);
 
