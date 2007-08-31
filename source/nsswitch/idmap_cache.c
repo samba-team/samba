@@ -344,7 +344,8 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 
 	if (databuf.dptr == NULL) {
 		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", sidkey));
-		return NT_STATUS_NONE_MAPPED;
+		ret = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
 
 	t = strtol((const char *)databuf.dptr, &endptr, 10);
@@ -452,7 +453,8 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 
 	if (databuf.dptr == NULL) {
 		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", idkey));
-		return NT_STATUS_NONE_MAPPED;
+		ret = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
 
 	t = strtol((const char *)databuf.dptr, &endptr, 10);
