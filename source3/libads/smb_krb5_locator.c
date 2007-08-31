@@ -335,9 +335,28 @@ krb5_error_code smb_krb5_locator_lookup(void *private_data,
 			goto failed;
 		}
 	} else {
-		/* FIXME: here comes code for locator being called from within
-		 * winbind */
-		 goto failed;
+		const char *env = NULL;
+		char *var = NULL;
+		if (asprintf(&var, "%s_%s",
+			     WINBINDD_LOCATOR_KDC_ADDRESS, realm) == -1) {
+			goto failed;
+		}
+		env = getenv(var);
+		if (!env) {
+#ifdef DEBUG_KRB5
+			fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
+				"failed to get kdc from env %s\n",
+				(unsigned int)getpid(), var);
+#endif
+			free(var);
+			goto failed;
+		}
+		free(var);
+
+		kdc_name = strdup(env);
+		if (!kdc_name) {
+			goto failed;
+		}
 	}
 #ifdef DEBUG_KRB5
 	fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
