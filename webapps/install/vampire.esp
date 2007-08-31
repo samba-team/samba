@@ -51,7 +51,11 @@ if (session.authinfo.user_class == "ADMINISTRATOR"
 	}
 	
 	if (form['submit'] == "Migrate") {
+	       	/* overcome an initially blank smb.conf */
 		lp.set("realm", subobj.REALM);
+		lp.set("workgroup", subobj.DOMAIN);
+		lp.reload();
+
 		if (subobj.ADMINPASS == "") {
 			write("<h3>We need the administrator password for the " + subobj.DOMAIN + " domain to proceed.  Please try again.</h3>");
 			f.display();
