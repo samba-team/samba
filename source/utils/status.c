@@ -294,6 +294,8 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret = 0;
 
 	sec_init();
 	load_case_tables();
@@ -304,7 +306,8 @@ static int traverse_sessionid(struct db_record *db, void *state)
 	
 	if (getuid() != geteuid()) {
 		d_printf("smbstatus should not be run setuid\n");
-		return(1);
+		ret = 1;
+		goto done;
 	}
 
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
@@ -336,7 +339,8 @@ static int traverse_sessionid(struct db_record *db, void *state)
 
 	if (!lp_load(dyn_CONFIGFILE,False,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-		return (-1);
+		ret = -1;
+		goto done;
 	}
 
 	/*
@@ -372,8 +376,9 @@ static int traverse_sessionid(struct db_record *db, void *state)
 			TALLOC_FREE(db);
 		}
 
-		if (processes_only) 
-			exit(0);	
+		if (processes_only) {
+			goto done;
+		}
 	}
   
 	if ( show_shares ) {
@@ -381,8 +386,9 @@ static int traverse_sessionid(struct db_record *db, void *state)
 			d_printf("Opened %s\n", lock_path("connections.tdb"));
 		}
 
-		if (brief) 
-			exit(0);
+		if (brief) {
+			goto done;
+		}
 		
 		d_printf("\nService      pid     machine       Connected at\n");
 		d_printf("-------------------------------------------------------\n");
@@ -391,23 +397,25 @@ static int traverse_sessionid(struct db_record *db, void *state)
 
 		d_printf("\n");
 
-		if ( shares_only )
-			exit(0);
+		if ( shares_only ) {
+			goto done;
+		}
 	}
 
 	if ( show_locks ) {
-		int ret;
+		int result;
 
 		if (!locking_init(1)) {
 			d_printf("Can't initialise locking module - exiting\n");
-			exit(1);
+			ret = 1;
+			goto done;
 		}
 		
-		ret = share_mode_forall(print_share_mode, NULL);
+		result = share_mode_forall(print_share_mode, NULL);
 
-		if (ret == 0) {
+		if (result == 0) {
 			d_printf("No locked files\n");
-		} else if (ret == -1) {
+		} else if (result == -1) {
 			d_printf("locked file list truncated\n");
 		}
 		
@@ -420,5 +428,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		locking_end();
 	}
 
-	return (0);
+done:
+	TALLOC_FREE(frame);
+	return ret;
 }
