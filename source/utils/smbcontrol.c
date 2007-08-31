@@ -1335,11 +1335,13 @@ int main(int argc, const char **argv)
 
 	argv = (const char **)poptGetArgs(pc);
 	argc = 0;
-	while (argv[argc] != NULL) {
-		argc++;
+	if (argv != NULL) {
+		while (argv[argc] != NULL) {
+			argc++;
+		}
 	}
 
-	if (argc == 1)
+	if (argc <= 1)
 		usage(pc);
 
 	lp_load(dyn_CONFIGFILE,False,False,False,True);
