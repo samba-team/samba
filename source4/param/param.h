@@ -44,6 +44,21 @@ struct smbsrv_connection;
 
 typedef NTSTATUS (*init_module_fn) (void);
 
+enum server_role {
+	ROLE_STANDALONE=0,
+	ROLE_DOMAIN_MEMBER=1,
+	ROLE_DOMAIN_CONTROLLER=2,
+};
+
+enum announce_as {/* Types of machine we can announce as. */
+	ANNOUNCE_AS_NT_SERVER=1,
+	ANNOUNCE_AS_WIN95=2,
+	ANNOUNCE_AS_WFW=3,
+	ANNOUNCE_AS_NT_WORKSTATION=4
+};
+
+
+
 #include "param/proto.h"
 
 #endif /* _PARAM_H */

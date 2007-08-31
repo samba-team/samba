@@ -6,6 +6,22 @@
 
 import "misc.idl";
 
+/* 
+   use the same structure for dom_sid2 as dom_sid. A dom_sid2 is really
+   just a dom sid, but with the sub_auths represented as a conformant
+   array. As with all in-structure conformant arrays, the array length
+   is placed before the start of the structure. That's what gives rise
+   to the extra num_auths elemenent. We don't want the Samba code to
+   have to bother with such esoteric NDR details, so its easier to just
+   define it as a dom_sid and use pidl magic to make it all work. It
+   just means you need to mark a sid as a "dom_sid2" in the IDL when you
+   know it is of the conformant array variety
+*/
+cpp_quote("#define dom_sid2 dom_sid")
+
+/* same struct as dom_sid but inside a 28 bytes fixed buffer in NDR */
+cpp_quote("#define dom_sid28 dom_sid")
+
 [
 	pointer_default(unique)
 ]

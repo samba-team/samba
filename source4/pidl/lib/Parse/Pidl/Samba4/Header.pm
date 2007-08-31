@@ -9,7 +9,7 @@ package Parse::Pidl::Samba4::Header;
 use strict;
 use Parse::Pidl qw(fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
-use Parse::Pidl::Util qw(has_property is_constant);
+use Parse::Pidl::Util qw(has_property is_constant unmake_str);
 use Parse::Pidl::Samba4 qw(is_intree ElementStars ArrayBrackets);
 
 use vars qw($VERSION);
@@ -375,7 +375,7 @@ sub HeaderQuote($)
 {
 	my($quote) = shift;
 
-	pidl $quote->{DATA};
+	pidl unmake_str($quote->{DATA}) . "\n";
 }
 
 #####################################################################
