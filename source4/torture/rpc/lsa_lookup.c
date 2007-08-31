@@ -122,6 +122,7 @@ static const char *sid_type_lookup(enum lsa_SidType r)
 		case SID_NAME_DELETED: return "SID_NAME_DELETED"; break;
 		case SID_NAME_INVALID: return "SID_NAME_INVALID"; break;
 		case SID_NAME_UNKNOWN: return "SID_NAME_UNKNOWN"; break;
+		case SID_NAME_COMPUTER: return "SID_NAME_COMPUTER"; break;
 	}
 	return "Invalid sid type\n";
 }
@@ -164,7 +165,7 @@ static BOOL test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	return ret;
 }
 
-static BOOL get_downleveltrust(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
+static BOOL get_downleveltrust(struct torture_context *tctx, struct dcerpc_pipe *p,
 			       struct policy_handle *handle,
 			       struct dom_sid **sid)
 {
@@ -180,16 +181,13 @@ static BOOL get_downleveltrust(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	r.out.domains = &domains;
 	r.out.resume_handle = &resume_handle;
 
-	status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
+	status = dcerpc_lsa_EnumTrustDom(p, tctx, &r);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		printf("no trusts\n");
-		return False;
-	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))
+		torture_fail(tctx, "no trusts");
 
 	if (domains.count == 0) {
-		printf("no trusts\n");
-		return False;
+		torture_fail(tctx, "no trusts");
 	}
 
 	for (i=0; i<domains.count; i++) {
@@ -201,7 +199,7 @@ static BOOL get_downleveltrust(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 		q.in.handle = handle;
 		q.in.dom_sid = domains.domains[i].sid;
 		q.in.level = 6;
-		status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
+		status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, tctx, &q);
 		if (!NT_STATUS_IS_OK(status)) continue;
 
 		if ((q.out.info->info_ex.trust_direction & 2) &&
@@ -211,52 +209,48 @@ static BOOL get_downleveltrust(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 		}
 	}
 
-	printf("I need a AD DC with an outgoing trust to NT4\n");
-	return False;
+	torture_fail(tctx, "I need a AD DC with an outgoing trust to NT4");
 }
 
 #define NUM_SIDS 8
 
-BOOL torture_rpc_lsa_lookup(struct torture_context *torture)
+bool torture_rpc_lsa_lookup(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle *handle;
 	struct dom_sid *dom_sid;
 	struct dom_sid *trusted_sid;
 	struct dom_sid *sids[NUM_SIDS];
 
-	mem_ctx = talloc_init("torture_rpc_lsa");
-
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
-		goto done;
+		torture_fail(torture, "unable to connect to table");
 	}
 
-	ret &= open_policy(mem_ctx, p, &handle);
-	if (!ret) goto done;
+	ret &= open_policy(torture, p, &handle);
+	if (!ret) return false;
 
-	ret &= get_domainsid(mem_ctx, p, handle, &dom_sid);
-	if (!ret) goto done;
+	ret &= get_domainsid(torture, p, handle, &dom_sid);
+	if (!ret) return false;
 
-	ret &= get_downleveltrust(mem_ctx, p, handle, &trusted_sid);
-	if (!ret) goto done;
+	ret &= get_downleveltrust(torture, p, handle, &trusted_sid);
+	if (!ret) return false;
 
-	printf("domain sid: %s\n", dom_sid_string(mem_ctx, dom_sid));
+	torture_comment(torture, "domain sid: %s\n", 
+					dom_sid_string(torture, dom_sid));
 
-	sids[0] = dom_sid_parse_talloc(mem_ctx, "S-1-1-0");
-	sids[1] = dom_sid_parse_talloc(mem_ctx, "S-1-5-4");
-	sids[2] = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
-	sids[3] = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-545");
-	sids[4] = dom_sid_dup(mem_ctx, dom_sid);
-	sids[5] = dom_sid_add_rid(mem_ctx, dom_sid, 512);
-	sids[6] = dom_sid_dup(mem_ctx, trusted_sid);
-	sids[7] = dom_sid_add_rid(mem_ctx, trusted_sid, 512);
+	sids[0] = dom_sid_parse_talloc(torture, "S-1-1-0");
+	sids[1] = dom_sid_parse_talloc(torture, "S-1-5-4");
+	sids[2] = dom_sid_parse_talloc(torture, "S-1-5-32");
+	sids[3] = dom_sid_parse_talloc(torture, "S-1-5-32-545");
+	sids[4] = dom_sid_dup(torture, dom_sid);
+	sids[5] = dom_sid_add_rid(torture, dom_sid, 512);
+	sids[6] = dom_sid_dup(torture, trusted_sid);
+	sids[7] = dom_sid_add_rid(torture, trusted_sid, 512);
 
-	ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 0,
+	ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 0,
 			       NT_STATUS_INVALID_PARAMETER, NULL);
 
 	{
@@ -265,7 +259,7 @@ BOOL torture_rpc_lsa_lookup(struct torture_context *torture)
 			  SID_NAME_ALIAS, SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
 			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
 
-		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 1,
+		ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 1,
 				       NT_STATUS_OK, types);
 	}
 
@@ -275,7 +269,7 @@ BOOL torture_rpc_lsa_lookup(struct torture_context *torture)
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
 			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
-		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 2,
+		ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 2,
 				       STATUS_SOME_UNMAPPED, types);
 	}
 
@@ -285,7 +279,7 @@ BOOL torture_rpc_lsa_lookup(struct torture_context *torture)
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN };
-		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 3,
+		ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 3,
 				       STATUS_SOME_UNMAPPED, types);
 	}
 
@@ -295,11 +289,11 @@ BOOL torture_rpc_lsa_lookup(struct torture_context *torture)
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN };
-		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 4,
+		ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 4,
 				       STATUS_SOME_UNMAPPED, types);
 	}
 
-	ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 5,
+	ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 5,
 			       NT_STATUS_NONE_MAPPED, NULL);
 
 	{
@@ -308,21 +302,18 @@ BOOL torture_rpc_lsa_lookup(struct torture_context *torture)
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN };
-		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 6,
+		ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 6,
 				       STATUS_SOME_UNMAPPED, types);
 	}
 
-	ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 7,
+	ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 7,
 			       NT_STATUS_INVALID_PARAMETER, NULL);
-	ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 8,
+	ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 8,
 			       NT_STATUS_INVALID_PARAMETER, NULL);
-	ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 9,
+	ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 9,
 			       NT_STATUS_INVALID_PARAMETER, NULL);
-	ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 10,
+	ret &= test_lookupsids(torture, p, handle, sids, NUM_SIDS, 10,
 			       NT_STATUS_INVALID_PARAMETER, NULL);
-
- done:
-	talloc_free(mem_ctx);
 
 	return ret;
 }
