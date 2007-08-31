@@ -220,6 +220,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		POPT_TABLEEND
 	};
 
+	TALLOC_CTX *frame = talloc_stackframe();
+
 	load_case_tables();
 
 	pc = poptGetContext(NULL, argc, argv, long_options, 
@@ -395,6 +397,7 @@ print command parameter is ignored when using CUPS libraries.\n",
 			}
 		}
 	}
+	TALLOC_FREE(frame);
 	return(ret);
 }
 
