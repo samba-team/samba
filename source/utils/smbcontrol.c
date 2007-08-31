@@ -1012,6 +1012,48 @@ static BOOL do_dump_event_list(struct messaging_context *msg_ctx,
 	return send_message(msg_ctx, pid, MSG_DUMP_EVENT_LIST, NULL, 0);
 }
 
+static void winbind_validate_cache_cb(struct messaging_context *msg,
+				      void *private_data,
+				      uint32_t msg_type,
+				      struct server_id pid,
+				      DATA_BLOB *data)
+{
+	char *src_string = procid_str(NULL, &pid);
+	printf("Winbindd cache is %svalid. (answer from pid %s)\n",
+	       (*(data->data) == 0 ? "" : "NOT "), src_string);
+	TALLOC_FREE(src_string);
+	num_replies++;
+}
+
+static BOOL do_winbind_validate_cache(struct messaging_context *msg_ctx,
+				      const struct server_id pid,
+				      const int argc, const char **argv)
+{
+	struct server_id myid = pid_to_procid(sys_getpid());
+
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol winbindd validate-cache\n");
+		return False;
+	}
+
+	messaging_register(msg_ctx, NULL, MSG_WINBIND_VALIDATE_CACHE,
+			   winbind_validate_cache_cb);
+
+	if (!send_message(msg_ctx, pid, MSG_WINBIND_VALIDATE_CACHE, &myid,
+			  sizeof(myid))) {
+		return False;
+	}
+
+	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+
+	if (num_replies == 0) {
+		printf("No replies received\n");
+	}
+
+	messaging_deregister(msg_ctx, MSG_WINBIND_VALIDATE_CACHE, NULL);
+
+	return num_replies;
+}
 
 static BOOL do_reload_config(struct messaging_context *msg_ctx,
 			     const struct server_id pid,
@@ -1110,6 +1152,8 @@ static const struct {
 	{ "offline", do_winbind_offline, "Ask winbind to go into offline state"},
 	{ "onlinestatus", do_winbind_onlinestatus, "Request winbind online status"},
 	{ "dump-event-list", do_dump_event_list, "Dump event list"},
+	{ "validate-cache" , do_winbind_validate_cache,
+	  "Validate winbind's credential cache" },
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };

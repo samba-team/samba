@@ -207,6 +207,28 @@ static void msg_shutdown(struct messaging_context *msg,
 	do_sigterm = True;
 }
 
+
+static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
+				       void *private_data,
+				       uint32_t msg_type,
+				       struct server_id server_id,
+				       DATA_BLOB *data)
+{
+	uint8 ret;
+
+	DEBUG(10, ("winbindd_msg_validate_cache: got validate-cache "
+		   "message.\n"));
+
+#if 0
+	ret = (uint8)winbindd_validate_cache_nobackup();
+	DEBUG(10, ("winbindd_msg_validata_cache: got return value %d\n", ret));
+#else
+	ret = 0;
+#endif
+	messaging_send_buf(msg_ctx, server_id, MSG_WINBIND_VALIDATE_CACHE, &ret,
+			   (size_t)1);
+}
+
 static struct winbindd_dispatch_table {
 	enum winbindd_cmd cmd;
 	void (*fn)(struct winbindd_cli_state *state);
@@ -1135,6 +1157,10 @@ int main(int argc, char **argv, char **envp)
 
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DUMP_EVENT_LIST, winbind_msg_dump_event_list);
+
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_VALIDATE_CACHE,
+			   winbind_msg_validate_cache);
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
