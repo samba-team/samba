@@ -371,6 +371,13 @@ sub HeaderInterface($)
 	pidl "#endif /* _HEADER_$interface->{NAME} */\n";
 }
 
+sub HeaderQuote($)
+{
+	my($quote) = shift;
+
+	pidl $quote->{DATA};
+}
+
 #####################################################################
 # parse a parsed IDL into a C header
 sub Parse($)
@@ -388,6 +395,7 @@ sub Parse($)
 	pidl "\n";
 
 	foreach (@{$ndr}) {
+		($_->{TYPE} eq "CPP_QUOTE") && HeaderQuote($_);
 		($_->{TYPE} eq "INTERFACE") && HeaderInterface($_);
 		($_->{TYPE} eq "IMPORT") && HeaderImport(@{$_->{PATHS}});
 		($_->{TYPE} eq "INCLUDE") && HeaderInclude(@{$_->{PATHS}});
