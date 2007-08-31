@@ -3756,6 +3756,10 @@ if test x"$with_ads_support" != x"no"; then
     LDFLAGS=$ac_save_LDFLAGS
   fi
   AC_CHECK_HEADERS(krb5/locate_plugin.h)
+  if test x"$ac_cv_header_krb5_locate_plugin_h" = x"yes"; then
+	SMB_KRB5_LOCATOR="bin/smb_krb5_locator.$SHLIBEXT"
+	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $SMB_KRB5_LOCATOR"
+  fi
 fi
 
 # Now we have determined whether we really want ADS support
@@ -5986,8 +5990,6 @@ WINBIND_NSS="nsswitch/libnss_winbind.$SHLIBEXT"
 WINBIND_WINS_NSS="nsswitch/libnss_wins.$SHLIBEXT"
 WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
 NSSSONAMEVERSIONSUFFIX=""
-
-SMB_KRB5_LOCATOR="bin/smb_krb5_locator.$SHLIBEXT"
 
 case "$host_os" in
 	linux*-gnu* | gnu* | k*bsd*-gnu)
