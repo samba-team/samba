@@ -312,13 +312,14 @@ sub missing_env($$$)
 	print INDEX "</tr>\n";
 }
 
-sub skip_testsuite($$)
+sub skip_testsuite($$$)
 {
-	my ($self, $name) = @_;
+	my ($self, $envname, $name) = @_;
 
 	print INDEX "<tr>\n";
 	print INDEX "  <td class=\"testSuite\">$name</td>\n";
-	print INDEX "  <td class=\"resultSkipped\" colspan=\"2\">SKIPPED</td>\n";
+	print INDEX "  <td class=\"environment\">$envname</td>\n";
+	print INDEX "  <td class=\"resultSkipped\">SKIPPED</td>\n";
 	print INDEX "</tr>\n";
 }
 
