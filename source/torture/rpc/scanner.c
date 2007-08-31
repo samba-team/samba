@@ -28,7 +28,7 @@
 /*
   work out how many calls there are for an interface
  */
-static BOOL test_num_calls(struct torture_context *tctx, 
+static bool test_num_calls(struct torture_context *tctx, 
 			   const struct ndr_interface_table *iface,
 			   TALLOC_CTX *mem_ctx,
 			   struct ndr_syntax_id *id)
@@ -88,12 +88,12 @@ static BOOL test_num_calls(struct torture_context *tctx,
 
 done:
 	talloc_free(p);
-	return True;
+	return true;
 }
 
 
 
-BOOL torture_rpc_scanner(struct torture_context *torture)
+bool torture_rpc_scanner(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

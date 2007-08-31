@@ -28,12 +28,11 @@
 
 #define TEST_MACHINE_NAME "torturetest"
 
-BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+bool test_DsBind(struct dcerpc_pipe *p, struct torture_context *tctx,
 		 struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsBind r;
-	BOOL ret = True;
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &priv->bind_guid);
 
@@ -41,30 +40,27 @@ BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.bind_info = NULL;
 	r.out.bind_handle = &priv->bind_handle;
 
-	printf("testing DsBind\n");
+	torture_comment(tctx, "testing DsBind\n");
 
-	status = dcerpc_drsuapi_DsBind(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsBind(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			errstr = dcerpc_errstr(tctx, p->last_fault_code);
 		}
-		printf("dcerpc_drsuapi_DsBind failed - %s\n", errstr);
-		ret = False;
+		torture_fail(tctx, "dcerpc_drsuapi_DsBind failed");
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsBind failed - %s\n", win_errstr(r.out.result));
-		ret = False;
+		torture_fail(tctx, "DsBind failed");
 	}
 
-	return ret;
+	return true;
 }
 
-static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture_context *torture, 
 		      struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsGetDomainControllerInfo r;
-	BOOL ret = True;
 	BOOL found = False;
 	int i, j, k;
 	
@@ -101,39 +97,26 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 			r.in.req.req1.domain_name = names[j].name;
 			r.in.req.req1.level = level;
 			
-			printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			torture_comment(torture,
+				   "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
 			       r.in.req.req1.level, r.in.req.req1.domain_name);
 		
-			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				const char *errstr = nt_errstr(status);
-				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-					errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-				}
-				printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
-				       "    with dns domain failed - %s\n",
-				       r.in.req.req1.level, errstr);
-				ret = False;
-			} else if (!W_ERROR_EQUAL(r.out.result, names[j].expected)) {
-				printf("DsGetDomainControllerInfo level %d\n"
-				       "    with dns domain failed - %s, expected %s\n",
-				       r.in.req.req1.level, win_errstr(r.out.result),
-				       win_errstr(names[j].expected));
-				ret = False;
-			}
+			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
+			torture_assert_ntstatus_ok(torture, status,
+				   "dcerpc_drsuapi_DsGetDomainControllerInfo with dns domain failed");
+			torture_assert_werr_equal(torture, 
+									  r.out.result, names[j].expected, 
+					   "DsGetDomainControllerInfo level with dns domain failed");
 		
 			if (!W_ERROR_IS_OK(r.out.result)) {
 				/* If this was an error, we can't read the result structure */
 				continue;
 			}
 
-			if (r.in.req.req1.level != r.out.level_out) {
-				printf("dcerpc_drsuapi_DsGetDomainControllerInfo level in (%d) != out (%d)\n",
-				       r.in.req.req1.level, r.out.level_out);
-				ret = False;
-				/* We can't safely read the result structure */
-				continue;
-			}
+			torture_assert_int_equal(torture, 
+									 r.in.req.req1.level, r.out.level_out, 
+									 "dcerpc_drsuapi_DsGetDomainControllerInfo level"); 
+
 			switch (level) {
 			case 1:
 				for (k=0; k < r.out.ctr.ctr1.count; k++) {
@@ -155,18 +138,9 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 				}
 				break;
 			}
- 			if (!found) {
-				printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d: Failed to find the domain controller (%s) we just created during the join\n",
-				       r.in.req.req1.level,
-				       torture_join_netbios_name(priv->join));
-				ret = False;
-			}
+			torture_assert(torture, found,
+				 "dcerpc_drsuapi_DsGetDomainControllerInfo: Failed to find the domain controller we just created during the join");
 		}
-	}
-
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DsGetDomainControllerInfo level -1 test against Samba4\n");
-		return ret;
 	}
 
 	r.in.bind_handle = &priv->bind_handle;
@@ -178,25 +152,15 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
 	       r.in.req.req1.level, r.in.req.req1.domain_name);
 	
-	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
-		       "    with dns domain failed - %s\n",
-				       r.in.req.req1.level, errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsGetDomainControllerInfo level %d\n"
-		       "    with dns domain failed - %s\n",
-		       r.in.req.req1.level, win_errstr(r.out.result));
-		ret = False;
-	}
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
+
+	torture_assert_ntstatus_ok(torture, status, 
+			"dcerpc_drsuapi_DsGetDomainControllerInfo with dns domain failed");
+	torture_assert_werr_ok(torture, r.out.result, 
+			   "DsGetDomainControllerInfo with dns domain failed");
 	
 	{
-		const char *dc_account = talloc_asprintf(mem_ctx, "%s\\%s$",
+		const char *dc_account = talloc_asprintf(torture, "%s\\%s$",
 							 torture_join_dom_netbios_name(priv->join), 
 							 priv->dcinfo.netbios_name);
 		for (k=0; k < r.out.ctr.ctr01.count; k++) {
@@ -206,16 +170,12 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 				break;
 			}
 		}
-		if (!found) {
-			printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d: Failed to find the domain controller (%s) in last logon records\n",
-			       r.in.req.req1.level,
-			       dc_account);
-			ret = False;
-		}
+		torture_assert(torture, found,
+			"dcerpc_drsuapi_DsGetDomainControllerInfo level: Failed to find the domain controller in last logon records");
 	}
 
 
-	return ret;
+	return true;
 }
 
 static BOOL test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -728,25 +688,20 @@ BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-BOOL torture_rpc_drsuapi(struct torture_context *torture)
+bool torture_rpc_drsuapi(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	struct DsPrivate priv;
 	struct cli_credentials *machine_credentials;
-
-	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
 	ZERO_STRUCT(priv);
 
 	priv.join = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
 				       &machine_credentials);
 	if (!priv.join) {
-		talloc_free(mem_ctx);
-		printf("Failed to join as BDC\n");
-		return False;
+		torture_fail(torture, "Failed to join as BDC");
 	}
 
 	status = torture_rpc_connection(torture, 
@@ -754,31 +709,28 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_leave_domain(priv.join);
-		talloc_free(mem_ctx);
-		return False;
+		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
 	}
 
-	ret &= test_DsBind(p, mem_ctx, &priv);
+	ret &= test_DsBind(p, torture, &priv);
 #if 0
-	ret &= test_QuerySitesByCost(p, mem_ctx, &priv);
+	ret &= test_QuerySitesByCost(p, torture, &priv);
 #endif
-	ret &= test_DsGetDomainControllerInfo(p, mem_ctx, &priv);
+	ret &= test_DsGetDomainControllerInfo(p, torture, &priv);
 
-	ret &= test_DsCrackNames(p, mem_ctx, &priv);
+	ret &= test_DsCrackNames(p, torture, &priv);
 
-	ret &= test_DsWriteAccountSpn(p, mem_ctx, &priv);
+	ret &= test_DsWriteAccountSpn(p, torture, &priv);
 
-	ret &= test_DsReplicaGetInfo(p, mem_ctx, &priv);
+	ret &= test_DsReplicaGetInfo(p, torture, &priv);
 
-	ret &= test_DsReplicaSync(p, mem_ctx, &priv);
+	ret &= test_DsReplicaSync(p, torture, &priv);
 
-	ret &= test_DsReplicaUpdateRefs(p, mem_ctx, &priv);
+	ret &= test_DsReplicaUpdateRefs(p, torture, &priv);
 
-	ret &= test_DsGetNCChanges(p, mem_ctx, &priv);
+	ret &= test_DsGetNCChanges(p, torture, &priv);
 
-	ret &= test_DsUnbind(p, mem_ctx, &priv);
-
-	talloc_free(mem_ctx);
+	ret &= test_DsUnbind(p, torture, &priv);
 
 	torture_leave_domain(priv.join);
 
@@ -786,27 +738,22 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 }
 
 
-BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
+bool torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	struct DsPrivate priv;
 	struct cli_credentials *machine_credentials;
 
-	mem_ctx = talloc_init("torture_rpc_drsuapi");
-
-	printf("Connected to DRAUAPI pipe\n");
+	torture_comment(torture, "Connected to DRSUAPI pipe\n");
 
 	ZERO_STRUCT(priv);
 
 	priv.join = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
 				       &machine_credentials);
 	if (!priv.join) {
-		talloc_free(mem_ctx);
-		printf("Failed to join as BDC\n");
-		return False;
+		torture_fail(torture, "Failed to join as BDC\n");
 	}
 
 	status = torture_rpc_connection(torture, 
@@ -814,21 +761,19 @@ BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_leave_domain(priv.join);
-		talloc_free(mem_ctx);
-		return False;
+		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
 	}
 
-	ret &= test_DsBind(p, mem_ctx, &priv);
+	ret &= test_DsBind(p, torture, &priv);
 
 	if (ret) {
 		/* We don't care if this fails, we just need some info from it */
-		test_DsGetDomainControllerInfo(p, mem_ctx, &priv);
+		test_DsGetDomainControllerInfo(p, torture, &priv);
 		
-		ret &= test_DsCrackNames(p, mem_ctx, &priv);
+		ret &= test_DsCrackNames(p, torture, &priv);
 		
-		ret &= test_DsUnbind(p, mem_ctx, &priv);
+		ret &= test_DsUnbind(p, torture, &priv);
 	}
-	talloc_free(mem_ctx);
 
 	torture_leave_domain(priv.join);
 
