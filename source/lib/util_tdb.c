@@ -1013,7 +1013,7 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 static int tdb_validate_child(const char *tdb_path,
 			      tdb_validate_data_func validate_fn)
 {
-	int ret = -1;
+	int ret = 1;
 	int num_entries = 0;
 	TDB_CONTEXT *tdb = NULL;
 	struct tdb_validation_status v_status;
@@ -1078,7 +1078,7 @@ int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
 	pid_t child_pid = -1;
 	int child_status = 0;
 	int wait_pid = 0;
-	int ret = -1;
+	int ret = 1;
 
 	DEBUG(5, ("tdb_validate called for tdb '%s'\n", tdb_path));
 
