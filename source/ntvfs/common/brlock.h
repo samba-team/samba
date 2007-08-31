@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "libcli/libcli.h"
+
 struct brlock_ops {
 	struct brl_context *(*brl_init)(TALLOC_CTX *, struct server_id , 
 					struct messaging_context *);

@@ -191,7 +191,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum
 
 
 
-static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
+static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		     int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {

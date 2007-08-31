@@ -109,9 +109,10 @@
 #endif
 
 /* Lists, trees, caching, database... */
-#include <talloc.h>
-#include "core.h"
+#include <stdlib.h>
 #include <stdbool.h>
+#include <talloc.h>
+#include "libcli/util/nt_status.h"
 #include "charset/charset.h"
 #include "util/util.h"
 #include "param/param.h"

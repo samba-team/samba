@@ -50,6 +50,17 @@ struct nbt_dc_name {
 
 struct cli_credentials;
 struct event_context;
+
+/* passed to br lock code. */
+enum brl_type {
+	READ_LOCK,
+	WRITE_LOCK,
+	PENDING_READ_LOCK,
+	PENDING_WRITE_LOCK
+};
+
+
+
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli_proto.h"
 
