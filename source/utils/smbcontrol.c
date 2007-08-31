@@ -1256,6 +1256,8 @@ int main(int argc, const char **argv)
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret = 0;
 
 	load_case_tables();
 
@@ -1305,8 +1307,11 @@ int main(int argc, const char **argv)
 	if (!(evt_ctx = event_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, server_id_self(), evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
+		TALLOC_FREE(frame);
 		exit(1);
 	}
 	
-	return !do_command(msg_ctx, argc, argv);
+	ret = !do_command(msg_ctx, argc, argv);
+	TALLOC_FREE(frame);
+	return ret;
 }
