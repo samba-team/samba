@@ -229,13 +229,13 @@ static bool test_OpenEventLog(struct torture_context *tctx,
 	return true;
 }
 
-struct torture_suite *torture_rpc_eventlog(void)
+struct torture_suite *torture_rpc_eventlog(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
 	struct torture_test *test;
 
-	suite = torture_suite_create(talloc_autofree_context(), "EVENTLOG");
+	suite = torture_suite_create(mem_ctx, "EVENTLOG");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "eventlog", 
 						  &ndr_table_eventlog);
 

@@ -30,4 +30,18 @@
 #include "torture/rpc/proto.h"
 #include "torture/ui.h"
 
+struct torture_rpc_tcase {
+	struct torture_tcase tcase;
+	const struct ndr_interface_table *table;
+	const char *machine_name;
+};
+
+struct torture_rpc_tcase_data {
+	struct test_join *join_ctx;
+	struct dcerpc_pipe *pipe;
+	struct cli_credentials *credentials;
+};
+
+
+
 #endif /* __TORTURE_RPC_H__ */
