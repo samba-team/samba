@@ -174,6 +174,10 @@ if test -n "${SAMBA_VERSION_VENDOR_SUFFIX}";then
     fi
 fi
 
+echo "/* Version for mkrelease.sh: " >> $OUTPUT_FILE
+echo "SAMBA_VERSION_STRING=$SAMBA_VERSION_STRING" >> $OUTPUT_FILE
+echo "*/" >> $OUTPUT_FILE
+
 ##
 ## Add a release nickname
 ##
