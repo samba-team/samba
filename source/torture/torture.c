@@ -32,7 +32,7 @@ _PUBLIC_ int torture_failures=1;
 _PUBLIC_ int torture_seed=0;
 _PUBLIC_ int torture_numasync=100;
 
-struct torture_suite *torture_root;
+struct torture_suite *torture_root = NULL;
 
 bool torture_register_suite(struct torture_suite *suite)
 {
