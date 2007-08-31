@@ -31,65 +31,42 @@
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 
-static const char *machine_password;
-
 #define TEST_MACHINE_NAME "torturetest"
 
-static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_LogonUasLogon(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_LogonUasLogon r;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping LogonUasLogon test against Samba4\n");
-		return True;
-	}
-
 	r.in.server_name = NULL;
 	r.in.account_name = cli_credentials_get_username(cmdline_credentials);
 	r.in.workstation = TEST_MACHINE_NAME;
 
-	printf("Testing LogonUasLogon\n");
+	status = dcerpc_netr_LogonUasLogon(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonUasLogon");
 
-	status = dcerpc_netr_LogonUasLogon(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LogonUasLogon - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	return True;
-	
+	return true;
 }
 
-static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_LogonUasLogoff(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_LogonUasLogoff r;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping LogonUasLogoff test against Samba4\n");
-		return True;
-	}
-
 	r.in.server_name = NULL;
 	r.in.account_name = cli_credentials_get_username(cmdline_credentials);
 	r.in.workstation = TEST_MACHINE_NAME;
 
-	printf("Testing LogonUasLogoff\n");
+	status = dcerpc_netr_LogonUasLogoff(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonUasLogoff");
 
-	status = dcerpc_netr_LogonUasLogoff(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LogonUasLogoff - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	return True;
-	
+	return true;
 }
 
-static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			   const char *machine_name,
-			   const char *plain_pass,
+static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
+			   struct cli_credentials *credentials,
 			   struct creds_CredentialState **creds_out)
 {
 	NTSTATUS status;
@@ -98,13 +75,16 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_Credential credentials1, credentials2, credentials3;
 	struct creds_CredentialState *creds;
 	struct samr_Password mach_password;
+        const char *plain_pass;
+	const char *machine_name;
 
-	printf("Testing ServerReqChallenge\n");
+	plain_pass = cli_credentials_get_password(credentials);
+	machine_name = cli_credentials_get_workstation(credentials);
 
-	creds = talloc(mem_ctx, struct creds_CredentialState);
-	if (!creds) {
-		return False;
-	}
+	torture_comment(tctx, "Testing ServerReqChallenge\n");
+
+	creds = talloc(tctx, struct creds_CredentialState);
+	torture_assert(tctx, creds != NULL, "memory allocation");
 
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
@@ -113,16 +93,13 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
-	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerReqChallenge - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerReqChallenge(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
 
 	E_md4hash(plain_pass, mach_password.hash);
 
 	a.in.server_name = NULL;
-	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", machine_name);
+	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = machine_name;
 	a.in.credentials = &credentials3;
@@ -132,27 +109,21 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  &mach_password, &credentials3, 
 			  0);
 
-	printf("Testing ServerAuthenticate\n");
+	torture_comment(tctx, "Testing ServerAuthenticate\n");
 
-	status = dcerpc_netr_ServerAuthenticate(p, mem_ctx, &a);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerAuthenticate - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerAuthenticate(p, tctx, &a);
+	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate");
 
-	if (!creds_client_check(creds, &credentials3)) {
-		printf("Credential chaining failed\n");
-		return False;
-	}
+	torture_assert(tctx, creds_client_check(creds, &credentials3), 
+		       "Credential chaining failed");
 
 	*creds_out = creds;
-	return True;
+	return true;
 }
 
-static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 			    uint32_t negotiate_flags,
-			    const char *machine_name,
-			    const char *plain_pass,
+			    struct cli_credentials *machine_credentials,
 			    int sec_chan_type,
 			    struct creds_CredentialState **creds_out)
 {
@@ -162,13 +133,16 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_Credential credentials1, credentials2, credentials3;
 	struct creds_CredentialState *creds;
 	struct samr_Password mach_password;
+	const char *machine_name;
+	const char *plain_pass;
 
-	printf("Testing ServerReqChallenge\n");
+	machine_name = cli_credentials_get_workstation(machine_credentials);
+	plain_pass = cli_credentials_get_password(machine_credentials);
 
-	creds = talloc(mem_ctx, struct creds_CredentialState);
-	if (!creds) {
-		return False;
-	}
+	torture_comment(tctx, "Testing ServerReqChallenge\n");
+
+	creds = talloc(tctx, struct creds_CredentialState);
+	torture_assert(tctx, creds != NULL, "memory allocation");
 
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
@@ -177,16 +151,13 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
-	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerReqChallenge - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerReqChallenge(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
 
 	E_md4hash(plain_pass, mach_password.hash);
 
 	a.in.server_name = NULL;
-	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", machine_name);
+	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
 	a.in.secure_channel_type = sec_chan_type;
 	a.in.computer_name = machine_name;
 	a.in.negotiate_flags = &negotiate_flags;
@@ -198,30 +169,24 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  &mach_password, &credentials3, 
 			  negotiate_flags);
 
-	printf("Testing ServerAuthenticate2\n");
+	torture_comment(tctx, "Testing ServerAuthenticate2\n");
 
-	status = dcerpc_netr_ServerAuthenticate2(p, mem_ctx, &a);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerAuthenticate2 - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerAuthenticate2(p, tctx, &a);
+	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate2");
 
-	if (!creds_client_check(creds, &credentials3)) {
-		printf("Credential chaining failed\n");
-		return False;
-	}
+	torture_assert(tctx, creds_client_check(creds, &credentials3), 
+		"Credential chaining failed");
 
-	printf("negotiate_flags=0x%08x\n", negotiate_flags);
+	torture_comment(tctx, "negotiate_flags=0x%08x\n", negotiate_flags);
 
 	*creds_out = creds;
-	return True;
+	return true;
 }
 
 
-static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 			    uint32_t negotiate_flags,
-			    const char *machine_name,
-			    const char *plain_pass,
+			    struct cli_credentials *machine_credentials,
 			    struct creds_CredentialState **creds_out)
 {
 	NTSTATUS status;
@@ -231,13 +196,16 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct creds_CredentialState *creds;
 	struct samr_Password mach_password;
 	uint32_t rid;
+	const char *machine_name;
+	const char *plain_pass;
 
-	printf("Testing ServerReqChallenge\n");
+	machine_name = cli_credentials_get_workstation(machine_credentials);
+	plain_pass = cli_credentials_get_password(machine_credentials);
 
-	creds = talloc(mem_ctx, struct creds_CredentialState);
-	if (!creds) {
-		return False;
-	}
+	torture_comment(tctx, "Testing ServerReqChallenge\n");
+
+	creds = talloc(tctx, struct creds_CredentialState);
+	torture_assert(tctx, creds != NULL, "memory allocation");
 
 	r.in.server_name = NULL;
 	r.in.computer_name = machine_name;
@@ -246,16 +214,13 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
-	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerReqChallenge - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerReqChallenge(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
 
 	E_md4hash(plain_pass, mach_password.hash);
 
 	a.in.server_name = NULL;
-	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", machine_name);
+	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = machine_name;
 	a.in.negotiate_flags = &negotiate_flags;
@@ -268,98 +233,90 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  &mach_password, &credentials3,
 			  negotiate_flags);
 
-	printf("Testing ServerAuthenticate3\n");
+	torture_comment(tctx, "Testing ServerAuthenticate3\n");
 
-	status = dcerpc_netr_ServerAuthenticate3(p, mem_ctx, &a);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerAuthenticate3 - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerAuthenticate3(p, tctx, &a);
+	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate3");
+	torture_assert(tctx, creds_client_check(creds, &credentials3), "Credential chaining failed");
 
-	if (!creds_client_check(creds, &credentials3)) {
-		printf("Credential chaining failed\n");
-		return False;
-	}
-
-	printf("negotiate_flags=0x%08x\n", negotiate_flags);
+	torture_comment(tctx, "negotiate_flags=0x%08x\n", negotiate_flags);
 
 	*creds_out = creds;
-	return True;
+	return true;
 }
 
 /*
   try a change password for our machine account
 */
-static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_SetPassword(struct torture_context *tctx, 
+			     struct dcerpc_pipe *p,
+			     struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_ServerPasswordSet r;
 	const char *password;
 	struct creds_CredentialState *creds;
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, 
-				   machine_password, &creds)) {
-		return False;
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
 	}
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.account_name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
 
-	password = generate_random_str(mem_ctx, 8);
+	password = generate_random_str(tctx, 8);
 	E_md4hash(password, r.in.new_password.hash);
 
 	creds_des_encrypt(creds, &r.in.new_password);
 
-	printf("Testing ServerPasswordSet on machine account\n");
-	d_printf("Changing machine account password to '%s'\n", password);
+	torture_comment(tctx, "Testing ServerPasswordSet on machine account\n");
+	torture_comment(tctx, "Changing machine account password to '%s'\n", 
+			password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
-	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerPasswordSet(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet");
 
 	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-		printf("Credential chaining failed\n");
+		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
 	/* by changing the machine password twice we test the
 	   credentials chaining fully, and we verify that the server
 	   allows the password to be set to the same value twice in a
 	   row (match win2k3) */
-	printf("Testing a second ServerPasswordSet on machine account\n");
-	d_printf("Changing machine account password to '%s' (same as previous run)\n", password);
+	torture_comment(tctx, 
+		"Testing a second ServerPasswordSet on machine account\n");
+	torture_comment(tctx, 
+		"Changing machine account password to '%s' (same as previous run)\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
-	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet (2) - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerPasswordSet(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet (2)");
 
 	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-		printf("Credential chaining failed\n");
+		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
-	machine_password = password;
+	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		printf("ServerPasswordSet failed to actually change the password\n");
-		return False;
-	}
+	torture_assert(tctx, 
+		test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+		"ServerPasswordSet failed to actually change the password");
 
-	return True;
+	return true;
 }
 
 /*
   try a change password for our machine account
 */
-static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_SetPassword2(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p, 
+			      struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_ServerPasswordSet2 r;
@@ -367,42 +324,39 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct creds_CredentialState *creds;
 	struct samr_CryptPassword password_buf;
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME,
-				   machine_password, &creds)) {
-		return False;
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
 	}
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.account_name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
 
-	password = generate_random_str(mem_ctx, 8);
+	password = generate_random_str(tctx, 8);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
 	memcpy(r.in.new_password.data, password_buf.data, 512);
 	r.in.new_password.length = IVAL(password_buf.data, 512);
 
-	printf("Testing ServerPasswordSet2 on machine account\n");
-	d_printf("Changing machine account password to '%s'\n", password);
+	torture_comment(tctx, "Testing ServerPasswordSet2 on machine account\n");
+	torture_comment(tctx, "Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
-	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet2 - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet2");
 
 	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-		printf("Credential chaining failed\n");
+		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
-	machine_password = password;
+	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 
-	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
-		printf("Not testing ability to set password to '', enable dangerous tests to perform this test\n");
+	if (!torture_setting_bool(tctx, "dangerous", false)) {
+		torture_comment(tctx, 
+			"Not testing ability to set password to '', enable dangerous tests to perform this test\n");
 	} else {
 		/* by changing the machine password to ""
 		 * we check if the server uses password restrictions
@@ -416,85 +370,77 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		memcpy(r.in.new_password.data, password_buf.data, 512);
 		r.in.new_password.length = IVAL(password_buf.data, 512);
 		
-		printf("Testing ServerPasswordSet2 on machine account\n");
-		d_printf("Changing machine account password to '%s'\n", password);
+		torture_comment(tctx, 
+			"Testing ServerPasswordSet2 on machine account\n");
+		torture_comment(tctx, 
+			"Changing machine account password to '%s'\n", password);
 		
 		creds_client_authenticator(creds, &r.in.credential);
 		
-		status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("ServerPasswordSet2 - %s\n", nt_errstr(status));
-			return False;
-		}
+		status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet2");
 		
 		if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-			printf("Credential chaining failed\n");
+			torture_comment(tctx, "Credential chaining failed\n");
 		}
 		
-		machine_password = password;
+		cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 	}
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		printf("ServerPasswordSet failed to actually change the password\n");
-		return False;
-	}
+	torture_assert(tctx, test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+		"ServerPasswordSet failed to actually change the password");
 
 	/* now try a random password */
-	password = generate_random_str(mem_ctx, 8);
+	password = generate_random_str(tctx, 8);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 	creds_arcfour_crypt(creds, password_buf.data, 516);
 
 	memcpy(r.in.new_password.data, password_buf.data, 512);
 	r.in.new_password.length = IVAL(password_buf.data, 512);
 
-	printf("Testing second ServerPasswordSet2 on machine account\n");
-	d_printf("Changing machine account password to '%s'\n", password);
+	torture_comment(tctx, "Testing second ServerPasswordSet2 on machine account\n");
+	torture_comment(tctx, "Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
-	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet2 (2) - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet2 (2)");
 
 	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-		printf("Credential chaining failed\n");
+		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
 	/* by changing the machine password twice we test the
 	   credentials chaining fully, and we verify that the server
 	   allows the password to be set to the same value twice in a
 	   row (match win2k3) */
-	printf("Testing a second ServerPasswordSet2 on machine account\n");
-	d_printf("Changing machine account password to '%s' (same as previous run)\n", password);
+	torture_comment(tctx, 
+		"Testing a second ServerPasswordSet2 on machine account\n");
+	torture_comment(tctx, 
+		"Changing machine account password to '%s' (same as previous run)\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
-	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet (3) - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_ServerPasswordSet2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet (3)");
 
 	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-		printf("Credential chaining failed\n");
+		torture_comment(tctx, "Credential chaining failed\n");
 	}
 
-	machine_password = password;
+	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		printf("ServerPasswordSet failed to actually change the password\n");
-		return False;
-	}
+	torture_assert (tctx, 
+		test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+		"ServerPasswordSet failed to actually change the password");
 
-	return True;
+	return true;
 }
 
 /*
   try a netlogon SamLogon
 */
-BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 			      struct cli_credentials *credentials, 
 			      struct creds_CredentialState *creds)
 {
@@ -504,7 +450,6 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_NetworkInfo ninfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
-	BOOL ret = True;
 	int flags = CLI_CRED_NTLM_AUTH;
 	if (lp_client_lanman_auth()) {
 		flags |= CLI_CRED_LANMAN_AUTH;
@@ -514,7 +459,7 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	cli_credentials_get_ntlm_username_domain(cmdline_credentials, mem_ctx, 
+	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx, 
 						 &ninfo.identity_info.account_name.string,
 						 &ninfo.identity_info.domain_name.string);
 	
@@ -523,20 +468,16 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	chal = data_blob_const(ninfo.challenge, 
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(mem_ctx, cli_credentials_get_workstation(credentials), 
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials), 
 						cli_credentials_get_domain(credentials));
 
-	status = cli_credentials_get_ntlm_response(cmdline_credentials, mem_ctx, 
+	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx, 
 						   &flags, 
 						   chal,
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_credentials_get_ntlm_response failed: %s\n", 
-		       nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "cli_credentials_get_ntlm_response failed");
 
 	ninfo.lm.data = lm_resp.data;
 	ninfo.lm.length = lm_resp.length;
@@ -549,7 +490,7 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ninfo.identity_info.logon_id_high = 0;
 	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
@@ -564,17 +505,11 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		
 		r.in.validation_level = i;
 		
-		status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonSamLogon failed: %s\n", 
-			       nt_errstr(status));
-			return False;
-		}
+		status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
 		
-		if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
-			printf("Credential chaining failed\n");
-			ret = False;
-		}
+		torture_assert(tctx, creds_client_check(creds, &r.out.return_authenticator->cred), 
+			"Credential chaining failed");
 	}
 
 	r.in.credential = NULL;
@@ -583,33 +518,31 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.validation_level = i;
 
-		printf("Testing SamLogon with validation level %d and a NULL credential\n", i);
+		torture_comment(tctx, "Testing SamLogon with validation level %d and a NULL credential\n", i);
 
-		status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-			printf("LogonSamLogon expected INVALID_PARAMETER, got: %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_PARAMETER, 
+			"LogonSamLogon expected INVALID_PARAMETER");
 
 	}
 
-	return ret;
+	return true;
 }
 
 /*
   try a netlogon SamLogon
 */
-static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_SamLogon(struct torture_context *tctx, 
+			  struct dcerpc_pipe *p,
 			  struct cli_credentials *credentials)
 {
 	struct creds_CredentialState *creds;
 
-	if (!test_SetupCredentials(p, mem_ctx, cli_credentials_get_workstation(credentials), 
-				   cli_credentials_get_password(credentials), &creds)) {
-		return False;
+	if (!test_SetupCredentials(p, tctx, credentials, &creds)) {
+		return false;
 	}
 
-	return test_netlogon_ops(p, mem_ctx, credentials, creds);
+	return test_netlogon_ops(p, tctx, credentials, creds);
 }
 
 /* we remember the sequence numbers so we can easily do a DatabaseDelta */
@@ -618,25 +551,21 @@ static uint64_t sequence_nums[3];
 /*
   try a netlogon DatabaseSync
 */
-static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_DatabaseSync(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p,
+			      struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_DatabaseSync r;
 	struct creds_CredentialState *creds;
 	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
-	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DatabaseSync test against Samba4\n");
-		return True;
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
 	}
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		return False;
-	}
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
@@ -645,21 +574,19 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.sync_context = 0;
 		r.in.database_id = database_ids[i];
 
-		printf("Testing DatabaseSync of id %d\n", r.in.database_id);
+		torture_comment(tctx, "Testing DatabaseSync of id %d\n", r.in.database_id);
 
 		do {
 			creds_client_authenticator(creds, &r.in.credential);
 
-			status = dcerpc_netr_DatabaseSync(p, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				printf("DatabaseSync - %s\n", nt_errstr(status));
-				ret = False;
-				break;
-			}
+			status = dcerpc_netr_DatabaseSync(p, tctx, &r);
+			if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
+			    break;
+
+			torture_assert_ntstatus_ok(tctx, status, "DatabaseSync");
 
 			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-				printf("Credential chaining failed\n");
+				torture_comment(tctx, "Credential chaining failed\n");
 			}
 
 			r.in.sync_context = r.out.sync_context;
@@ -670,39 +597,35 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			    r.out.delta_enum_array->delta_enum[0].delta_union.domain) {
 				sequence_nums[r.in.database_id] = 
 					r.out.delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
-				printf("\tsequence_nums[%d]=%llu\n",
+				torture_comment(tctx, "\tsequence_nums[%d]=%llu\n",
 				       r.in.database_id, 
 				       (unsigned long long)sequence_nums[r.in.database_id]);
 			}
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
 
-	return ret;
+	return true;
 }
 
 
 /*
   try a netlogon DatabaseDeltas
 */
-static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_DatabaseDeltas(struct torture_context *tctx, 
+				struct dcerpc_pipe *p,
+				struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_DatabaseDeltas r;
 	struct creds_CredentialState *creds;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
-	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DatabaseDeltas test against Samba4\n");
-		return True;
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
 	}
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		return False;
-	}
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
@@ -715,54 +638,52 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 		r.in.sequence_num -= 1;
 
-
-		printf("Testing DatabaseDeltas of id %d at %llu\n", 
+		torture_comment(tctx, "Testing DatabaseDeltas of id %d at %llu\n", 
 		       r.in.database_id, (unsigned long long)r.in.sequence_num);
 
 		do {
 			creds_client_authenticator(creds, &r.in.credential);
 
-			status = dcerpc_netr_DatabaseDeltas(p, mem_ctx, &r);
+			status = dcerpc_netr_DatabaseDeltas(p, tctx, &r);
 			if (NT_STATUS_EQUAL(status, 
 					     NT_STATUS_SYNCHRONIZATION_REQUIRED)) {
-				printf("no considering %s to be an error\n",
+				torture_comment(tctx, "not considering %s to be an error\n",
 				       nt_errstr(status));
-				return True;
+				return true;
 			}
-			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				printf("DatabaseDeltas - %s\n", nt_errstr(status));
-				ret = False;
-				break;
-			}
+			if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) 
+			    break;
+
+			torture_assert_ntstatus_ok(tctx, status, "DatabaseDeltas");
 
 			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-				printf("Credential chaining failed\n");
+				torture_comment(tctx, "Credential chaining failed\n");
 			}
 
 			r.in.sequence_num++;
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
 
-	return ret;
+	return true;
 }
 
 
 /*
   try a netlogon AccountDeltas
 */
-static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_AccountDeltas(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p,
+			       struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_AccountDeltas r;
 	struct creds_CredentialState *creds;
-	BOOL ret = True;
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		return False;
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
 	}
 
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	ZERO_STRUCT(r.in.return_authenticator);
 	creds_client_authenticator(creds, &r.in.credential);
@@ -771,33 +692,28 @@ static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.level=0;
 	r.in.buffersize=100;
 
-	printf("Testing AccountDeltas\n");
-
 	/* w2k3 returns "NOT IMPLEMENTED" for this call */
-	status = dcerpc_netr_AccountDeltas(p, mem_ctx, &r);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-		printf("AccountDeltas - %s\n", nt_errstr(status));
-		ret = False;
-	}
+	status = dcerpc_netr_AccountDeltas(p, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_IMPLEMENTED, "AccountDeltas");
 
-	return ret;
+	return true;
 }
 
 /*
   try a netlogon AccountSync
 */
-static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_AccountSync(struct torture_context *tctx, struct dcerpc_pipe *p, 
+			     struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_AccountSync r;
 	struct creds_CredentialState *creds;
-	BOOL ret = True;
 
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		return False;
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
 	}
 
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	ZERO_STRUCT(r.in.return_authenticator);
 	creds_client_authenticator(creds, &r.in.credential);
@@ -806,130 +722,94 @@ static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.level=0;
 	r.in.buffersize=100;
 
-	printf("Testing AccountSync\n");
-
 	/* w2k3 returns "NOT IMPLEMENTED" for this call */
-	status = dcerpc_netr_AccountSync(p, mem_ctx, &r);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-		printf("AccountSync - %s\n", nt_errstr(status));
-		ret = False;
-	}
+	status = dcerpc_netr_AccountSync(p, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_IMPLEMENTED, "AccountSync");
 
-	return ret;
+	return true;
 }
 
 /*
   try a netlogon GetDcName
 */
-static BOOL test_GetDcName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_GetDcName(struct torture_context *tctx, 
+			   struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_GetDcName r;
 
-
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping GetDCName test against Samba4\n");
-		return True;
-	}	
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domainname = lp_workgroup();
 
-	printf("Testing GetDcName\n");
+	status = dcerpc_netr_GetDcName(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetDcName");
+	torture_assert_werr_ok(tctx, r.out.result, "GetDcName");
 
-	status = dcerpc_netr_GetDcName(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("GetDcName - %s/%s\n", nt_errstr(status), win_errstr(r.out.result));
-		return False;
-	}
+	torture_comment(tctx, "\tDC is at '%s'\n", r.out.dcname);
 
-	d_printf("\tDC is at '%s'\n", r.out.dcname);
-
-	return True;
+	return true;
 }
 
 /*
   try a netlogon LogonControl 
 */
-static BOOL test_LogonControl(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_LogonControl(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_LogonControl r;
-	BOOL ret = True;
 	int i;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping LogonControl test against Samba4\n");
-		return True;
-	}
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.function_code = 1;
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl level %d\n", i);
+		torture_comment(tctx, "Testing LogonControl level %d\n", i);
 
-		status = dcerpc_netr_LogonControl(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
-	return ret;
+	return true;
 }
 
 
 /*
   try a netlogon GetAnyDCName
 */
-static BOOL test_GetAnyDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_GetAnyDCName(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_GetAnyDCName r;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping GetAnyDCName test against Samba4\n");
-		return True;
-	}
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domainname = lp_workgroup();
 
-	printf("Testing GetAnyDCName\n");
-
-	status = dcerpc_netr_GetAnyDCName(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetAnyDCName - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_GetAnyDCName(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
 
 	if (r.out.dcname) {
-		printf("\tDC is at '%s'\n", r.out.dcname);
+	    torture_comment(tctx, "\tDC is at '%s'\n", r.out.dcname);
 	}
 
-	return True;
+	return true;
 }
 
 
 /*
   try a netlogon LogonControl2
 */
-static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_LogonControl2(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_LogonControl2 r;
-	BOOL ret = True;
 	int i;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping LogonControl2 test against Samba4\n");
-		return True;
-	}
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
 	r.in.data.domain = lp_workgroup();
@@ -937,14 +817,11 @@ static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2 level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
@@ -953,14 +830,11 @@ static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2 level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
@@ -969,14 +843,11 @@ static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2 level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
@@ -985,43 +856,36 @@ static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2 level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
-	return ret;
+	return true;
 }
 
 /*
   try a netlogon DatabaseSync2
 */
-static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_DatabaseSync2(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p,
+			       struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_DatabaseSync2 r;
 	struct creds_CredentialState *creds;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
-	BOOL ret = True;
 
-	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS, 
-				    TEST_MACHINE_NAME, machine_password, 
+	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_FLAGS, 
+				    machine_credentials,
 				    SEC_CHAN_BDC, &creds)) {
-		return False;
+		return false;
 	}
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DatabaseSync2 test against Samba4\n");
-		return True;
-	}
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
 	r.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
@@ -1031,47 +895,40 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.database_id = database_ids[i];
 		r.in.restart_state = 0;
 
-		printf("Testing DatabaseSync2 of id %d\n", r.in.database_id);
+		torture_comment(tctx, "Testing DatabaseSync2 of id %d\n", r.in.database_id);
 
 		do {
 			creds_client_authenticator(creds, &r.in.credential);
 
-			status = dcerpc_netr_DatabaseSync2(p, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				printf("DatabaseSync2 - %s\n", nt_errstr(status));
-				ret = False;
-				break;
-			}
+			status = dcerpc_netr_DatabaseSync2(p, tctx, &r);
+			if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
+			    break;
+
+			torture_assert_ntstatus_ok(tctx, status, "DatabaseSync2");
 
 			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-				printf("Credential chaining failed\n");
+				torture_comment(tctx, "Credential chaining failed\n");
 			}
 
 			r.in.sync_context = r.out.sync_context;
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
 
-	return ret;
+	return true;
 }
 
 
 /*
   try a netlogon LogonControl2Ex
 */
-static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_LogonControl2Ex(struct torture_context *tctx, 
+				 struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_LogonControl2Ex r;
-	BOOL ret = True;
 	int i;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DatabaseSync2 test against Samba4\n");
-		return True;
-	}
-
-	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
 	r.in.data.domain = lp_workgroup();
@@ -1079,14 +936,11 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2Ex(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
@@ -1095,14 +949,11 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2Ex(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
@@ -1111,14 +962,11 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2Ex(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
@@ -1127,77 +975,63 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		printf("Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
 		       i, r.in.function_code);
 
-		status = dcerpc_netr_LogonControl2Ex(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonControl - %s\n", nt_errstr(status));
-			ret = False;
-		}
+		status = dcerpc_netr_LogonControl2Ex(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
-	return ret;
+	return true;
 }
 
-static BOOL test_netr_DsRGetForestTrustInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *trusted_domain_name) 
+static bool test_netr_DsRGetForestTrustInformation(struct torture_context *tctx, 
+						   struct dcerpc_pipe *p, const char *trusted_domain_name) 
 {
 	NTSTATUS status;
 	struct netr_DsRGetForestTrustInformation r;
-	BOOL ret = True;
 	struct lsa_ForestTrustInformation info, *info_ptr;
-
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DsRGetForestTrustInformation test against Samba4\n");
-		return True;
-	}
 
 	info_ptr = &info;
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.trusted_domain_name = trusted_domain_name;
 	r.in.flags = 0;
 	r.out.forest_trust_info = &info_ptr;
 
-	printf("Testing netr_DsRGetForestTrustInformation\n");
+	torture_comment(tctx ,"Testing netr_DsRGetForestTrustInformation\n");
 
-	status = dcerpc_netr_DsRGetForestTrustInformation(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsRGetForestTrustInformation - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		ret = False;
-	}
-	return ret;
+	status = dcerpc_netr_DsRGetForestTrustInformation(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "DsRGetForestTrustInformation");
+	torture_assert_werr_ok(tctx, r.out.result, "DsRGetForestTrustInformation");
+
+	return true;
 }
 
 /*
   try a netlogon netr_DsrEnumerateDomainTrusts
 */
-static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx, 
+					  struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_DsrEnumerateDomainTrusts r;
 	int i;
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.trust_flags = 0x3f;
 
-	printf("Testing netr_DsrEnumerateDomainTrusts\n");
-
-	status = dcerpc_netr_DsrEnumerateDomainTrusts(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsrEnumerateDomainTrusts - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		return False;
-	}
+	status = dcerpc_netr_DsrEnumerateDomainTrusts(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "DsrEnumerateDomaintrusts");
+	torture_assert_werr_ok(tctx, r.out.result, "DsrEnumerateDomaintrusts");
 
 	/* when trusted_domain_name is NULL, netr_DsRGetForestTrustInformation
 	 * will show non-forest trusts and all UPN suffixes of the own forest
 	 * as LSA_FOREST_TRUST_TOP_LEVEL_NAME types */
 
 	if (r.out.count) {
-		if (!test_netr_DsRGetForestTrustInformation(p, mem_ctx, NULL)) {
-			return False;
+		if (!test_netr_DsRGetForestTrustInformation(tctx, p, NULL)) {
+			return false;
 		}
 	}
 
@@ -1206,194 +1040,145 @@ static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem
 		/* get info for transitive forest trusts */
 
 		if (r.out.trusts[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
-			if (!test_netr_DsRGetForestTrustInformation(p, mem_ctx, 
+			if (!test_netr_DsRGetForestTrustInformation(tctx, p, 
 								    r.out.trusts[i].dns_name)) {
-				return False;
+				return false;
 			}
 		}
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_netr_DsRGetSiteName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_netr_DsRGetSiteName(struct dcerpc_pipe *p, struct torture_context *tctx,
 				     const char *computer_name, 
 				     const char *expected_site) 
 {
 	NTSTATUS status;
 	struct netr_DsRGetSiteName r;
-	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DsRGetSiteName test against Samba4\n");
-		return True;
-	}
+	if (torture_setting_bool(tctx, "samba4", false))
+		torture_skip(tctx, "skipping DsRGetSiteName test against Samba4");
 
 	r.in.computer_name		= computer_name;
-	printf("Testing netr_DsRGetSiteName\n");
+	torture_comment(tctx, "Testing netr_DsRGetSiteName\n");
 
-	status = dcerpc_netr_DsRGetSiteName(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsRGetSiteName - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		ret = False;
-	} else {
-		if (strcmp(expected_site, r.out.site) != 0) {
-			d_printf("netr_DsRGetSiteName - unexpected result: %s, expected %s\n", 
-			       r.out.site, expected_site);
-					
-			ret = False;
-		}
-	}
-	r.in.computer_name		= talloc_asprintf(mem_ctx, "\\\\%s", computer_name);
-	d_printf("Testing netr_DsRGetSiteName with broken computer name: %s\n", r.in.computer_name);
+	status = dcerpc_netr_DsRGetSiteName(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "DsRGetSiteName");
+	torture_assert_werr_ok(tctx, r.out.result, "DsRGetSiteName");
+	torture_assert_str_equal(tctx, expected_site, r.out.site, "netr_DsRGetSiteName");
 
-	status = dcerpc_netr_DsRGetSiteName(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("netr_DsRGetSiteName - %s\n", 
-		       nt_errstr(status));
-		ret = False;
-	} else if (!W_ERROR_EQUAL(r.out.result, WERR_INVALID_COMPUTERNAME)) {
-		printf("netr_DsRGetSiteName - incorrect error return %s, expected %s\n", 
-		       win_errstr(r.out.result), win_errstr(WERR_INVALID_COMPUTERNAME));
-		ret = False;
-	}
-	return ret;
+	r.in.computer_name		= talloc_asprintf(tctx, "\\\\%s", computer_name);
+	torture_comment(tctx, 
+			"Testing netr_DsRGetSiteName with broken computer name: %s\n", r.in.computer_name);
+
+	status = dcerpc_netr_DsRGetSiteName(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "DsRGetSiteName");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_COMPUTERNAME, "netr_DsRGetSiteName");
+
+	return true;
 }
 
 /*
   try a netlogon netr_DsRGetDCName
 */
-static BOOL test_netr_DsRGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_netr_DsRGetDCName(struct torture_context *tctx, 
+				   struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_DsRGetDCName r;
-	BOOL ret = True;
 
-	r.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(mem_ctx, "%s", lp_realm());
+	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm());
 	r.in.domain_guid	= NULL;
 	r.in.site_guid	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
 
-	printf("Testing netr_DsRGetDCName\n");
-
-	status = dcerpc_netr_DsRGetDCName(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsRGetDCName - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		ret = False;
-	} else {
-		ret = test_netr_DsRGetSiteName(p, mem_ctx, 
-					       r.out.info->dc_unc, 
-					       r.out.info->dc_site_name);
-	}
-
-	return ret;
+	status = dcerpc_netr_DsRGetDCName(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
+	torture_assert_werr_ok(tctx, r.out.result, "DsRGetDCName");
+	return test_netr_DsRGetSiteName(p, tctx, 
+				       r.out.info->dc_unc, 
+				       r.out.info->dc_site_name);
 }
 
 /*
   try a netlogon netr_DsRGetDCNameEx
 */
-static BOOL test_netr_DsRGetDCNameEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx, 
+				     struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_DsRGetDCNameEx r;
-	BOOL ret = True;
 
-	r.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(mem_ctx, "%s", lp_realm());
+	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm());
 	r.in.domain_guid	= NULL;
 	r.in.site_name	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
 
-	printf("Testing netr_DsRGetDCNameEx\n");
+	status = dcerpc_netr_DsRGetDCNameEx(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
+	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx");
 
-	status = dcerpc_netr_DsRGetDCNameEx(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsRGetDCNameEx - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		ret = False;
-	} else {
-		ret = test_netr_DsRGetSiteName(p, mem_ctx, 
-					       r.out.info->dc_unc, 
-					       r.out.info->dc_site_name);
-	}
-
-	return ret;
+	return test_netr_DsRGetSiteName(p, tctx, r.out.info->dc_unc, 
+				       r.out.info->dc_site_name);
 }
 
 /*
   try a netlogon netr_DsRGetDCNameEx2
 */
-static BOOL test_netr_DsRGetDCNameEx2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx, 
+				      struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_DsRGetDCNameEx2 r;
-	BOOL ret = True;
 
-	r.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
 	r.in.mask		= 0x00000000;
-	r.in.domain_name	= talloc_asprintf(mem_ctx, "%s", lp_realm());
+	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm());
 	r.in.domain_guid	= NULL;
 	r.in.site_name		= NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
 
-	printf("Testing netr_DsRGetDCNameEx2 without client account\n");
+	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 without client account\n");
 
-	status = dcerpc_netr_DsRGetDCNameEx2(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsRGetDCNameEx2 - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		ret = False;
-	}
+	status = dcerpc_netr_DsRGetDCNameEx2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
+	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
 
-	printf("Testing netr_DsRGetDCNameEx2 with client acount\n");
+	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 with client acount\n");
 	r.in.client_account	= TEST_MACHINE_NAME"$";
 	r.in.mask		= ACB_SVRTRUST;
 	r.in.flags		= DS_RETURN_FLAT_NAME;
 
-	status = dcerpc_netr_DsRGetDCNameEx2(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsRGetDCNameEx2 - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		ret = False;
-	} else {
-		ret = test_netr_DsRGetSiteName(p, mem_ctx, 
-					       r.out.info->dc_unc, 
-					       r.out.info->dc_site_name);
-	}
-
-	return ret;
+	status = dcerpc_netr_DsRGetDCNameEx2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
+	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
+	return test_netr_DsRGetSiteName(p, tctx, r.out.info->dc_unc, 
+					r.out.info->dc_site_name);
 }
 
-static BOOL test_netr_DsrGetDcSiteCoverageW(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx) 
+static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx, 
+					    struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct netr_DsrGetDcSiteCoverageW r;
-	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DsrGetDcSiteCoverageW test against Samba4\n");
-		return True;
-	}
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	status = dcerpc_netr_DsrGetDcSiteCoverageW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert_werr_ok(tctx, r.out.result, "failed");
 
-	printf("Testing netr_DsrGetDcSiteCoverageW\n");
-
-	status = dcerpc_netr_DsrGetDcSiteCoverageW(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
-		printf("netr_DsrGetDcSiteCoverageW - %s/%s\n", 
-		       nt_errstr(status), win_errstr(r.out.result));
-		ret = False;
-	}
-	return ret;
+	return true;
 }
 
 
-static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_GetDomainInfo(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p,
+			       struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_LogonGetDomainInfo r;
@@ -1401,16 +1186,16 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_Authenticator a;
 	struct creds_CredentialState *creds;
 
-	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
-				    TEST_MACHINE_NAME, machine_password, &creds)) {
-		return False;
+	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
+				    machine_credentials, &creds)) {
+		return false;
 	}
 
 	ZERO_STRUCT(r);
 
 	creds_client_authenticator(creds, &a);
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.level = 1;
 	r.in.credential = &a;
@@ -1428,20 +1213,13 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	q1.blob2.data = NULL;
 	q1.product.string = "product string";
 
-	printf("Testing netr_LogonGetDomainInfo\n");
+	torture_comment(tctx, "Testing netr_uogonGetDomainInfo\n");
 
-	status = dcerpc_netr_LogonGetDomainInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("netr_LogonGetDomainInfo - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_netr_LogonGetDomainInfo(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo");
+	torture_assert(tctx, creds_client_check(creds, &a.cred), "Credential chaining failed");
 
-	if (!creds_client_check(creds, &a.cred)) {
-		printf("Credential chaining failed\n");
-		return False;
-	}
-
-	return True;
+	return true;
 }
 
 
@@ -1453,7 +1231,9 @@ static void async_callback(struct rpc_request *req)
 	}
 }
 
-static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_GetDomainInfo_async(struct torture_context *tctx, 
+				     struct dcerpc_pipe *p,
+				     struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct netr_LogonGetDomainInfo r;
@@ -1464,20 +1244,15 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct creds_CredentialState *creds_async[ASYNC_COUNT];
 	struct rpc_request *req[ASYNC_COUNT];
 	int i;
-	int *async_counter = talloc(mem_ctx, int);
+	int *async_counter = talloc(tctx, int);
 
-	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
-		printf("test_GetDomainInfo_async disabled - enable dangerous tests to use\n");
-		return True;
-	}
-
-	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
-				    TEST_MACHINE_NAME, machine_password, &creds)) {
-		return False;
+	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
+				    machine_credentials, &creds)) {
+		return false;
 	}
 
 	ZERO_STRUCT(r);
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.level = 1;
 	r.in.credential = &a;
@@ -1495,7 +1270,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	q1.blob2.data = NULL;
 	q1.product.string = "product string";
 
-	printf("Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);
 
 	*async_counter = 0;
 
@@ -1503,38 +1278,37 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		creds_client_authenticator(creds, &a);
 
 		creds_async[i] = talloc_memdup(creds, creds, sizeof(*creds));
-		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, mem_ctx, &r);
+		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, tctx, &r);
 
 		req[i]->async.callback = async_callback;
 		req[i]->async.private_data = async_counter;
 
 		/* even with this flush per request a w2k3 server seems to 
 		   clag with multiple outstanding requests. bleergh. */
-		if (event_loop_once(dcerpc_event_context(p)) != 0) {
-			return False;
-		}
+		torture_assert_int_equal(tctx, event_loop_once(dcerpc_event_context(p)), 0, 
+					 "event_loop_once failed");
 	}
 
 	for (i=0;i<ASYNC_COUNT;i++) {
 		status = dcerpc_ndr_request_recv(req[i]);
-		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(r.out.result)) {
-			printf("netr_LogonGetDomainInfo_async(%d) - %s/%s\n", 
-			       i, nt_errstr(status), nt_errstr(r.out.result));
-			break;
-		}
 
-		if (!creds_client_check(creds_async[i], &a.cred)) {
-			printf("Credential chaining failed at async %d\n", i);
-			break;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo_async");
+		torture_assert_ntstatus_ok(tctx, r.out.result, "netr_LogonGetDomainInfo_async"); 
+
+		torture_assert(tctx, creds_client_check(creds_async[i], &a.cred), 
+			"Credential chaining failed at async");
 	}
 
-	printf("Testing netr_LogonGetDomainInfo - async count %d OK\n", *async_counter);
+	torture_comment(tctx, 
+			"Testing netr_LogonGetDomainInfo - async count %d OK\n", *async_counter);
 
-	return (*async_counter) == ASYNC_COUNT;
+	torture_assert_int_equal(tctx, (*async_counter), ASYNC_COUNT, "int");
+
+	return true;
 }
 
-static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_ManyGetDCName(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
@@ -1549,25 +1323,18 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_GetAnyDCName d;
 
 	int i;
-	BOOL ret = True;
 
 	if (p->conn->transport.transport != NCACN_NP) {
-		return True;
+		return true;
 	}
 
-	printf("Torturing GetDCName\n");
+	torture_comment(tctx, "Torturing GetDCName\n");
 
 	status = dcerpc_secondary_connection(p, &p2, p->binding);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create secondary connection\n");
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
 	status = dcerpc_bind_auth_none(p2, &ndr_table_lsarpc);
-	if (!NT_STATUS_IS_OK(status)) {
-   		printf("Failed to create bind on secondary connection\n");
-		return False;
-        }
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create bind on secondary connection");
 
 	qos.len = 0;
 	qos.impersonation_level = 2;
@@ -1586,11 +1353,8 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.out.handle = &lsa_handle;
 
-	status = dcerpc_lsa_OpenPolicy2(p2, mem_ctx, &o);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_lsa_OpenPolicy2(p2, tctx, &o);
+	torture_assert_ntstatus_ok(tctx, status, "OpenPolicy2 failed");
 
 	t.in.handle = &lsa_handle;
 	t.in.resume_handle = &resume_handle;
@@ -1598,17 +1362,15 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	t.out.domains = &domains;
 	t.out.resume_handle = &resume_handle;
 
-	status = dcerpc_lsa_EnumTrustDom(p2, mem_ctx, &t);
+	status = dcerpc_lsa_EnumTrustDom(p2, tctx, &t);
 
 	if ((!NT_STATUS_IS_OK(status) &&
-	     (!NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)))) {
-		printf("Could not list domains\n");
-		return False;
-	}
+	     (!NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))))
+		torture_fail(tctx, "Could not list domains");
 
 	talloc_free(p2);
 
-	d.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s",
+	d.in.logon_server = talloc_asprintf(tctx, "\\\\%s",
 					    dcerpc_server_name(p));
 
 	for (i=0; i<domains.count * 4; i++) {
@@ -1617,74 +1379,49 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 		d.in.domainname = info->name.string;
 
-		status = dcerpc_netr_GetAnyDCName(p, mem_ctx, &d);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetAnyDCName - %s\n", nt_errstr(status));
-			continue;
-		}
+		status = dcerpc_netr_GetAnyDCName(p, tctx, &d);
+		torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
 
-		printf("\tDC for domain %s is %s\n", info->name.string,
+		torture_comment(tctx, "\tDC for domain %s is %s\n", info->name.string,
 		       d.out.dcname ? d.out.dcname : "unknown");
 	}
 
-	return ret;
+	return true;
 }
 
-
-BOOL torture_rpc_netlogon(struct torture_context *torture)
+struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
-	struct test_join *join_ctx;
-	struct cli_credentials *machine_credentials;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "NETLOGON");
+	struct torture_rpc_tcase *tcase;
+	struct torture_test *test;
 
-	mem_ctx = talloc_init("torture_rpc_netlogon");
+	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "netlogon", 
+						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 
-	join_ctx = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
-				       &machine_credentials);
-	if (!join_ctx) {
-		talloc_free(mem_ctx);
-		printf("Failed to join as BDC\n");
-		return False;
-	}
+	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);
+	torture_rpc_tcase_add_test(tcase, "LogonUasLogoff", test_LogonUasLogoff);
+	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
+	torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo", test_GetDomainInfo);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync", test_DatabaseSync);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseDeltas", test_DatabaseDeltas);
+	torture_rpc_tcase_add_test_creds(tcase, "AccountDeltas", test_AccountDeltas);
+	torture_rpc_tcase_add_test_creds(tcase, "AccountSync", test_AccountSync);
+	torture_rpc_tcase_add_test(tcase, "GetDcName", test_GetDcName);
+	torture_rpc_tcase_add_test(tcase, "ManyGetDCName", test_ManyGetDCName);
+	torture_rpc_tcase_add_test(tcase, "LogonControl", test_LogonControl);
+	torture_rpc_tcase_add_test(tcase, "GetAnyDCName", test_GetAnyDCName);
+	torture_rpc_tcase_add_test(tcase, "LogonControl2", test_LogonControl2);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync2", test_DatabaseSync2);
+	torture_rpc_tcase_add_test(tcase, "LogonControl2Ex", test_LogonControl2Ex);
+	torture_rpc_tcase_add_test(tcase, "DsrEnumerateDomainTrusts", test_DsrEnumerateDomainTrusts);
+	test = torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo_async", test_GetDomainInfo_async);
+	test->dangerous = true;
+	torture_rpc_tcase_add_test(tcase, "DsRGetDCName", test_netr_DsRGetDCName);
+	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx", test_netr_DsRGetDCNameEx);
+	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx2", test_netr_DsRGetDCNameEx2);
+	torture_rpc_tcase_add_test(tcase, "DsrGetDcSiteCoverageW", test_netr_DsrGetDcSiteCoverageW);
 
-	machine_password = cli_credentials_get_password(machine_credentials);
-
-	status = torture_rpc_connection(torture, &p, &ndr_table_netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	ret &= test_LogonUasLogon(p, mem_ctx);
-	ret &= test_LogonUasLogoff(p, mem_ctx);
-	ret &= test_SamLogon(p, mem_ctx, machine_credentials);
-	ret &= test_SetPassword(p, mem_ctx);
-	ret &= test_SetPassword2(p, mem_ctx);
-	ret &= test_GetDomainInfo(p, mem_ctx);
-	ret &= test_DatabaseSync(p, mem_ctx);
-	ret &= test_DatabaseDeltas(p, mem_ctx);
-	ret &= test_AccountDeltas(p, mem_ctx);
-	ret &= test_AccountSync(p, mem_ctx);
-	ret &= test_GetDcName(p, mem_ctx);
-	ret &= test_ManyGetDCName(p, mem_ctx);
-	ret &= test_LogonControl(p, mem_ctx);
-	ret &= test_GetAnyDCName(p, mem_ctx);
-	ret &= test_LogonControl2(p, mem_ctx);
-	ret &= test_DatabaseSync2(p, mem_ctx);
-	ret &= test_LogonControl2Ex(p, mem_ctx);
-	ret &= test_DsrEnumerateDomainTrusts(p, mem_ctx);
-	ret &= test_GetDomainInfo_async(p, mem_ctx);
-	ret &= test_netr_DsRGetDCName(p, mem_ctx);
-	ret &= test_netr_DsRGetDCNameEx(p, mem_ctx);
-	ret &= test_netr_DsRGetDCNameEx2(p, mem_ctx);
-	ret &= test_netr_DsrGetDcSiteCoverageW(p, mem_ctx);
-
-	talloc_free(mem_ctx);
-
-	torture_leave_domain(join_ctx);
-
-	return ret;
+	return suite;
 }
