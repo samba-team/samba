@@ -341,10 +341,10 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 }
 
 /****************************************************************************
- Use the local machine account (upn) and password for this session.
+ Use the local machine account (krb) and password for this session.
 ****************************************************************************/
 
-int net_use_upn_machine_account(void) 
+int net_use_krb_machine_account(void) 
 {
 	char *user_name = NULL;
 
@@ -1066,7 +1066,7 @@ static struct functable net_func[] = {
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
-		net_use_upn_machine_account();
+		net_use_krb_machine_account();
 	}
 
 	if (!opt_password) {
