@@ -906,7 +906,7 @@ LDBADD_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbadd.o
 LDBDEL_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbdel.o
 LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 
-SMB_KRB5_LOCATOR_OBJ1 = libads/smb_krb5_locator.o
+SMB_KRB5_LOCATOR_OBJ1 = nsswitch/smb_krb5_locator.o
 SMB_KRB5_LOCATOR_OBJ = $(SMB_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
