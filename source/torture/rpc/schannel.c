@@ -36,7 +36,7 @@
 /*
   try a netlogon SamLogon
 */
-BOOL test_netlogon_ex_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx, 
 			  struct cli_credentials *credentials, 
 			  struct creds_CredentialState *creds)
 {
@@ -45,7 +45,6 @@ BOOL test_netlogon_ex_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_NetworkInfo ninfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
-	BOOL ret = True;
 	int flags = CLI_CRED_NTLM_AUTH;
 	if (lp_client_lanman_auth()) {
 		flags |= CLI_CRED_LANMAN_AUTH;
@@ -55,7 +54,7 @@ BOOL test_netlogon_ex_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	cli_credentials_get_ntlm_username_domain(cmdline_credentials, mem_ctx, 
+	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx, 
 						 &ninfo.identity_info.account_name.string,
 						 &ninfo.identity_info.domain_name.string);
 	
@@ -64,20 +63,17 @@ BOOL test_netlogon_ex_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	chal = data_blob_const(ninfo.challenge, 
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(mem_ctx, cli_credentials_get_workstation(credentials), 
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials), 
 						cli_credentials_get_domain(credentials));
 
-	status = cli_credentials_get_ntlm_response(cmdline_credentials, mem_ctx, 
+	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx, 
 						   &flags, 
 						   chal,
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_credentials_get_ntlm_response failed: %s\n", 
-		       nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, 
+				   "cli_credentials_get_ntlm_response failed");
 
 	ninfo.lm.data = lm_resp.data;
 	ninfo.lm.length = lm_resp.length;
@@ -90,32 +86,31 @@ BOOL test_netlogon_ex_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ninfo.identity_info.logon_id_high = 0;
 	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.logon_level = 2;
 	r.in.logon.network = &ninfo;
 	r.in.flags = 0;
 
-	printf("Testing LogonSamLogonEx with name %s\n", ninfo.identity_info.account_name.string);
+	torture_comment(tctx, 
+			"Testing LogonSamLogonEx with name %s\n", 
+			ninfo.identity_info.account_name.string);
 	
 	for (i=2;i<3;i++) {
 		r.in.validation_level = i;
 		
-		status = dcerpc_netr_LogonSamLogonEx(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("LogonSamLogon failed: %s\n", 
-			       nt_errstr(status));
-			return False;
-		}
+		status = dcerpc_netr_LogonSamLogonEx(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
 	}
 
-	return ret;
+	return true;
 }
 
 /*
   do some samr ops using the schannel connection
  */
-static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_samr_ops(struct torture_context *tctx,
+			  struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
@@ -135,25 +130,25 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 	printf("Testing Connect and OpenDomain on BUILTIN\n");
 
-	status = dcerpc_samr_Connect(p, mem_ctx, &connect);
+	status = dcerpc_samr_Connect(p, tctx, &connect);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			printf("Connect failed (expected, schannel mapped to anonymous): %s\n",
 			       nt_errstr(status));
 		} else {
 			printf("Connect failed - %s\n", nt_errstr(status));
-			return False;
+			return false;
 		}
 	} else {
 		opendom.in.connect_handle = &handle;
 		opendom.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		opendom.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
+		opendom.in.sid = dom_sid_parse_talloc(tctx, "S-1-5-32");
 		opendom.out.domain_handle = &domain_handle;
 		
-		status = dcerpc_samr_OpenDomain(p, mem_ctx, &opendom);
+		status = dcerpc_samr_OpenDomain(p, tctx, &opendom);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("OpenDomain failed - %s\n", nt_errstr(status));
-			return False;
+			return false;
 		}
 	}
 
@@ -161,7 +156,7 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 	/* do several ops to test credential chaining */
 	for (i=0;i<5;i++) {
-		status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
+		status = dcerpc_samr_GetDomPwInfo(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 				printf("GetDomPwInfo op %d failed - %s\n", i, nt_errstr(status));
@@ -177,7 +172,7 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 /*
   do some lsa ops using the schannel connection
  */
-static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct lsa_GetUserName r;
 	NTSTATUS status;
@@ -192,7 +187,7 @@ static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	authority_name_p.string = NULL;
 
 	/* do several ops to test credential chaining and various operations */
-	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
+	status = dcerpc_lsa_GetUserName(p, tctx, &r);
 	
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
 		printf("not considering %s to be an error\n", nt_errstr(status));
@@ -219,7 +214,7 @@ static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			return False;
 		}
 	}
-	if (!test_many_LookupSids(p, mem_ctx, NULL)) {
+	if (!test_many_LookupSids(p, tctx, NULL)) {
 		printf("LsaLookupSids3 failed!\n");
 		return False;
 	}
@@ -231,12 +226,10 @@ static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 /*
   test a schannel connection with the given flags
  */
-static BOOL test_schannel(TALLOC_CTX *mem_ctx, 
+static bool test_schannel(struct torture_context *tctx,
 			  uint16_t acct_flags, uint32_t dcerpc_flags,
 			  int i)
 {
-	BOOL ret = True;
-
 	struct test_join *join_ctx;
 	NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -250,105 +243,71 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	struct creds_CredentialState *creds;
 	struct cli_credentials *credentials;
 
-	TALLOC_CTX *test_ctx = talloc_named(mem_ctx, 0, "test_schannel context");
-
-	join_ctx = torture_join_domain(talloc_asprintf(mem_ctx, "%s%d", TEST_MACHINE_NAME, i), 
+	join_ctx = torture_join_domain(talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i), 
 				       acct_flags, &credentials);
-	if (!join_ctx) {
-		printf("Failed to join domain with acct_flags=0x%x\n", acct_flags);
-		talloc_free(test_ctx);
-		return False;
-	}
+	torture_assert(tctx, join_ctx != NULL, "Failed to join domain");
 
-	status = dcerpc_parse_binding(test_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad binding string %s\n", binding);
-		goto failed;
-	}
+	status = dcerpc_parse_binding(tctx, binding, &b);
+	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
-	status = dcerpc_pipe_connect_b(test_ctx, &p, b, &ndr_table_samr,
+	status = dcerpc_pipe_connect_b(tctx, &p, b, &ndr_table_samr,
 				       credentials, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, 
+		"Failed to connect with schannel");
 
-	if (!test_samr_ops(p, test_ctx)) {
-		printf("Failed to process schannel secured SAMR ops\n");
-		ret = False;
-	}
+	torture_assert(tctx, test_samr_ops(tctx, p), 
+		       "Failed to process schannel secured SAMR ops");
 
 	/* Also test that when we connect to the netlogon pipe, that
 	 * the credentials we setup on the first pipe are valid for
 	 * the second */
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(test_ctx, b, &ndr_table_netlogon, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, NULL);
+	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
 	status = dcerpc_secondary_connection(p, &p_netlogon, 
 					     b);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
 	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "bind auth");
 
-	status = dcerpc_schannel_creds(p_netlogon->conn->security_state.generic_state, test_ctx, &creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	status = dcerpc_schannel_creds(p_netlogon->conn->security_state.generic_state, tctx, &creds);
+	torture_assert_ntstatus_ok(tctx, status, "schannel creds");
 
 	/* do a couple of logins */
-	if (!test_netlogon_ops(p_netlogon, test_ctx, credentials, creds)) {
-		printf("Failed to process schannel secured NETLOGON ops\n");
-		ret = False;
-	}
+	torture_assert(tctx, test_netlogon_ops(p_netlogon, tctx, credentials, creds),
+		"Failed to process schannel secured NETLOGON ops");
 
-	if (!test_netlogon_ex_ops(p_netlogon, test_ctx, credentials, creds)) {
-		printf("Failed to process schannel secured NETLOGON EX ops\n");
-		ret = False;
-	}
+	torture_assert(tctx, test_netlogon_ex_ops(p_netlogon, tctx, credentials, creds),
+		"Failed to process schannel secured NETLOGON EX ops");
 
 	/* Swap the binding details from SAMR to LSARPC */
-	status = dcerpc_epm_map_binding(test_ctx, b, &ndr_table_lsarpc, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, NULL);
+	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
 	status = dcerpc_secondary_connection(p, &p_lsa, 
 					     b);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
 	status = dcerpc_bind_auth(p_lsa, &ndr_table_lsarpc,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "bind auth");
 
-	if (!test_lsa_ops(p_lsa, test_ctx)) {
-		printf("Failed to process schannel secured LSA ops\n");
-		ret = False;
-	}
+	torture_assert(tctx, test_lsa_ops(tctx, p_lsa), 
+		"Failed to process schannel secured LSA ops");
 
 	/* Drop the socket, we want to start from scratch */
 	talloc_free(p);
@@ -356,39 +315,28 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	/* Now see what we are still allowed to do */
 	
-	status = dcerpc_parse_binding(test_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad binding string %s\n", binding);
-		goto failed;
-	}
+	status = dcerpc_parse_binding(tctx, binding, &b);
+	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
-	status = dcerpc_pipe_connect_b(test_ctx, &p_samr2, b, &ndr_table_samr,
+	status = dcerpc_pipe_connect_b(tctx, &p_samr2, b, &ndr_table_samr,
 				       credentials, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, 
+		"Failed to connect with schannel");
 
 	/* do a some SAMR operations.  We have *not* done a new serverauthenticate */
-	if (!test_samr_ops(p_samr2, test_ctx)) {
-		printf("Failed to process schannel secured SAMR ops (on fresh connection)\n");
-		goto failed;
-	}
+	torture_assert (tctx, test_samr_ops(tctx, p_samr2), 
+			"Failed to process schannel secured SAMR ops (on fresh connection)");
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(test_ctx, b, &ndr_table_netlogon, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, NULL);
+	torture_assert_ntstatus_ok(tctx, status, "epm");
 
 	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2, 
 					     b);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
 	/* and now setup an SCHANNEL bind on netlogon */
 	status = dcerpc_bind_auth(p_netlogon2, &ndr_table_netlogon,
@@ -396,22 +344,17 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 				  dcerpc_auth_level(p_samr2->conn),
 				  NULL);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "auth failed");
 	
 	/* Try the schannel-only SamLogonEx operation */
-	if (!test_netlogon_ex_ops(p_netlogon2, test_ctx, credentials, creds)) {
-		printf("Failed to process schannel secured NETLOGON EX ops (on fresh connection)\n");
-		ret = False;
-	}
+	torture_assert(tctx, test_netlogon_ex_ops(p_netlogon2, tctx, credentials, creds), 
+		       "Failed to process schannel secured NETLOGON EX ops (on fresh connection)");
+		
 
 	/* And the more traditional style, proving that the
 	 * credentials chaining state is fully present */
-	if (!test_netlogon_ops(p_netlogon2, test_ctx, credentials, creds)) {
-		printf("Failed to process schannel secured NETLOGON ops (on fresh connection)\n");
-		ret = False;
-	}
+	torture_assert(tctx, test_netlogon_ops(p_netlogon2, tctx, credentials, creds),
+			     "Failed to process schannel secured NETLOGON ops (on fresh connection)");
 
 	/* Drop the socket, we want to start from scratch (again) */
 	talloc_free(p_samr2);
@@ -419,31 +362,22 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	/* We don't want schannel for this test */
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 
-	status = dcerpc_pipe_connect_b(test_ctx, &p_netlogon3, b, &ndr_table_netlogon,
+	status = dcerpc_pipe_connect_b(tctx, &p_netlogon3, b, &ndr_table_netlogon,
 				       credentials, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect without schannel: %s\n", nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Failed to connect without schannel");
 
-	if (test_netlogon_ex_ops(p_netlogon3, test_ctx, credentials, creds)) {
-		printf("Processed NOT schannel secured NETLOGON EX ops without SCHANNEL (unsafe)\n");
-		ret = False;
-	}
+	torture_assert(tctx, !test_netlogon_ex_ops(p_netlogon3, tctx, credentials, creds),
+			"Processed NOT schannel secured NETLOGON EX ops without SCHANNEL (unsafe)");
 
-	if (!test_netlogon_ops(p_netlogon3, test_ctx, credentials, creds)) {
-		printf("Failed to processed NOT schannel secured NETLOGON ops without new ServerAuth\n");
-		ret = False;
-	}
+	/* Required because the previous call will mark the current context as having failed */
+	tctx->last_result = TORTURE_OK;
+	tctx->last_reason = NULL;
+
+	torture_assert(tctx, test_netlogon_ops(p_netlogon3, tctx, credentials, creds),
+			"Failed to processed NOT schannel secured NETLOGON ops without new ServerAuth");
 
 	torture_leave_domain(join_ctx);
-	talloc_free(test_ctx);
-	return ret;
-
-failed:
-	torture_leave_domain(join_ctx);
-	talloc_free(test_ctx);
-	return False;	
+	return true;
 }
 
 
@@ -451,9 +385,8 @@ failed:
 /*
   a schannel test suite
  */
-BOOL torture_rpc_schannel(struct torture_context *torture)
+bool torture_rpc_schannel(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct {
 		uint16_t acct_flags;
@@ -470,20 +403,15 @@ BOOL torture_rpc_schannel(struct torture_context *torture)
 	};
 	int i;
 
-	mem_ctx = talloc_init("torture_rpc_schannel");
-
 	for (i=0;i<ARRAY_SIZE(tests);i++) {
-		if (!test_schannel(mem_ctx, 
+		if (!test_schannel(torture, 
 				   tests[i].acct_flags, tests[i].dcerpc_flags,
 				   i)) {
-			printf("Failed with acct_flags=0x%x dcerpc_flags=0x%x \n",
+			torture_comment(torture, "Failed with acct_flags=0x%x dcerpc_flags=0x%x \n",
 			       tests[i].acct_flags, tests[i].dcerpc_flags);
-			ret = False;
-			break;
+			ret = false;
 		}
 	}
-
-	talloc_free(mem_ctx);
 
 	return ret;
 }
@@ -491,91 +419,61 @@ BOOL torture_rpc_schannel(struct torture_context *torture)
 /*
   test two schannel connections
  */
-BOOL torture_rpc_schannel2(struct torture_context *torture)
+bool torture_rpc_schannel2(struct torture_context *torture)
 {
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	struct test_join *join_ctx;
 	NTSTATUS status;
 	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p1 = NULL, *p2 = NULL;
 	struct cli_credentials *credentials1, *credentials2;
-	uint16_t acct_flags = ACB_WSTRUST;
 	uint32_t dcerpc_flags = DCERPC_SCHANNEL | DCERPC_SIGN;
-	TALLOC_CTX *test_ctx = talloc_named(mem_ctx, 0, "test_schannel2 context");
 
-	join_ctx = torture_join_domain(talloc_asprintf(mem_ctx, "%s2", TEST_MACHINE_NAME), 
-				       acct_flags, &credentials1);
-	if (!join_ctx) {
-		printf("Failed to join domain with acct_flags=0x%x\n", acct_flags);
-		talloc_free(test_ctx);
-		return False;
-	}
+	join_ctx = torture_join_domain(talloc_asprintf(torture, "%s2", TEST_MACHINE_NAME), 
+				       ACB_WSTRUST, &credentials1);
+	torture_assert(torture, join_ctx != NULL, 
+		       "Failed to join domain with acct_flags=ACB_WSTRUST");
 
-	credentials2 = talloc_memdup(mem_ctx, credentials1, sizeof(*credentials1));
+	credentials2 = talloc_memdup(torture, credentials1, sizeof(*credentials1));
 	credentials1->netlogon_creds = NULL;
 	credentials2->netlogon_creds = NULL;
 
-	status = dcerpc_parse_binding(test_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad binding string %s\n", binding);
-		goto failed;
-	}
+	status = dcerpc_parse_binding(torture, binding, &b);
+	torture_assert_ntstatus_ok(torture, status, "Bad binding string");
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
 	printf("Opening first connection\n");
-	status = dcerpc_pipe_connect_b(test_ctx, &p1, b, &ndr_table_netlogon,
+	status = dcerpc_pipe_connect_b(torture, &p1, b, &ndr_table_netlogon,
 				       credentials1, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
 
-	printf("Opening second connection\n");
-	status = dcerpc_pipe_connect_b(test_ctx, &p2, b, &ndr_table_netlogon,
+	torture_comment(torture, "Opening second connection\n");
+	status = dcerpc_pipe_connect_b(torture, &p2, b, &ndr_table_netlogon,
 				       credentials2, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
 
 	credentials1->netlogon_creds = NULL;
 	credentials2->netlogon_creds = NULL;
 
-	printf("Testing logon on pipe1\n");
-	if (!test_netlogon_ex_ops(p1, test_ctx, credentials1, NULL)) {
-		printf("Failed to process schannel secured NETLOGON ops\n");
-		ret = False;
-	}
+	torture_comment(torture, "Testing logon on pipe1\n");
+	if (!test_netlogon_ex_ops(p1, torture, credentials1, NULL))
+		return false;
 
-	printf("Testing logon on pipe2\n");
-	if (!test_netlogon_ex_ops(p2, test_ctx, credentials2, NULL)) {
-		printf("Failed to process schannel secured NETLOGON ops\n");
-		ret = False;
-	}
+	torture_comment(torture, "Testing logon on pipe2\n");
+	if (!test_netlogon_ex_ops(p2, torture, credentials2, NULL))
+		return false;
 
-	printf("Again on pipe1\n");
-	if (!test_netlogon_ex_ops(p1, test_ctx, credentials1, NULL)) {
-		printf("Failed to process schannel secured NETLOGON ops\n");
-		ret = False;
-	}
+	torture_comment(torture, "Again on pipe1\n");
+	if (!test_netlogon_ex_ops(p1, torture, credentials1, NULL))
+		return false;
 
-	printf("Again on pipe2\n");
-	if (!test_netlogon_ex_ops(p2, test_ctx, credentials2, NULL)) {
-		printf("Failed to process schannel secured NETLOGON ops\n");
-		ret = False;
-	}
+	torture_comment(torture, "Again on pipe2\n");
+	if (!test_netlogon_ex_ops(p2, torture, credentials2, NULL))
+		return false;
 
 	torture_leave_domain(join_ctx);
-	talloc_free(test_ctx);
-	return ret;
-
-failed:
-	torture_leave_domain(join_ctx);
-	talloc_free(test_ctx);
-	return False;	
+	return true;
 }
 

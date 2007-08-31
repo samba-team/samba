@@ -427,10 +427,10 @@ failed:
 }
 
 
-struct torture_suite *torture_rpc_echo(void)
+struct torture_suite *torture_rpc_echo(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "ECHO");
+		mem_ctx, "ECHO");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "echo", 

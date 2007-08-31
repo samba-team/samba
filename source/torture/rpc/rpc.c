@@ -27,18 +27,6 @@
 #include "librpc/ndr/ndr_table.h"
 #include "lib/util/dlinklist.h"
 
-struct torture_rpc_tcase {
-	struct torture_tcase tcase;
-	const struct ndr_interface_table *table;
-	const char *machine_name;
-};
-
-struct torture_rpc_tcase_data {
-	struct test_join *join_ctx;
-	struct dcerpc_pipe *pipe;
-	struct cli_credentials *credentials;
-};
-
 static bool torture_rpc_teardown (struct torture_context *tcase, 
 					  void *data)
 {
@@ -116,7 +104,6 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
-	TALLOC_CTX *mem_ctx = talloc_named(tctx, 0, "torture_rpc_connection_smb");
 
 	status = torture_rpc_binding(tctx, &binding);
 	if (NT_STATUS_IS_ERR(status))
@@ -125,15 +112,13 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
 	binding->transport = transport;
 	binding->assoc_group_id = assoc_group_id;
 
-	status = dcerpc_pipe_connect_b(mem_ctx, p, binding, table,
+	status = dcerpc_pipe_connect_b(tctx, p, binding, table,
 				       cmdline_credentials, NULL);
 					   
-	if (NT_STATUS_IS_OK(status)) {
-		*p = talloc_reference(tctx, *p);
-	} else {
+	if (NT_STATUS_IS_ERR(status)) {
 		*p = NULL;
 	}
-	talloc_free(mem_ctx);
+
         return status;
 }
 
@@ -178,14 +163,26 @@ _PUBLIC_ struct torture_rpc_tcase *torture_suite_add_machine_rpc_iface_tcase(
 	struct torture_rpc_tcase *tcase = talloc(suite, 
 						 struct torture_rpc_tcase);
 
-	torture_suite_init_tcase(suite, (struct torture_tcase *)tcase, name);
+	torture_suite_init_rpc_tcase(suite, tcase, name, table);
 
 	tcase->machine_name = talloc_strdup(tcase, machine_name);
 	tcase->tcase.setup = torture_rpc_setup_machine;
 	tcase->tcase.teardown = torture_rpc_teardown;
-	tcase->table = table;
 
 	return tcase;
+}
+
+_PUBLIC_ bool torture_suite_init_rpc_tcase(struct torture_suite *suite, 
+					   struct torture_rpc_tcase *tcase, 
+					   const char *name,
+					   const struct ndr_interface_table *table)
+{
+	if (!torture_suite_init_tcase(suite, (struct torture_tcase *)tcase, name))
+		return false;
+
+	tcase->table = table;
+
+	return true;
 }
 
 static bool torture_rpc_setup_anonymous(struct torture_context *tctx, 
@@ -227,7 +224,7 @@ static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 	
 	status = torture_rpc_connection(tctx, 
 				&(tcase_data->pipe),
-				(const struct ndr_interface_table *)tcase->table);
+				tcase->table);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
@@ -242,11 +239,10 @@ _PUBLIC_ struct torture_rpc_tcase *torture_suite_add_anon_rpc_iface_tcase(struct
 {
 	struct torture_rpc_tcase *tcase = talloc(suite, struct torture_rpc_tcase);
 
-	torture_suite_init_tcase(suite, (struct torture_tcase *)tcase, name);
+	torture_suite_init_rpc_tcase(suite, tcase, name, table);
 
 	tcase->tcase.setup = torture_rpc_setup_anonymous;
 	tcase->tcase.teardown = torture_rpc_teardown;
-	tcase->table = table;
 
 	return tcase;
 }
@@ -258,11 +254,10 @@ _PUBLIC_ struct torture_rpc_tcase *torture_suite_add_rpc_iface_tcase(struct tort
 {
 	struct torture_rpc_tcase *tcase = talloc(suite, struct torture_rpc_tcase);
 
-	torture_suite_init_tcase(suite, (struct torture_tcase *)tcase, name);
+	torture_suite_init_rpc_tcase(suite, tcase, name, table);
 
 	tcase->tcase.setup = torture_rpc_setup;
 	tcase->tcase.teardown = torture_rpc_teardown;
-	tcase->table = table;
 
 	return tcase;
 }
@@ -384,11 +379,11 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "LSALOOKUP", torture_rpc_lsa_lookup);
 	torture_suite_add_simple_test(suite, "LSA-GETUSER", torture_rpc_lsa_get_user);
 	torture_suite_add_simple_test(suite, "SECRETS", torture_rpc_lsa_secrets);
-	torture_suite_add_suite(suite, torture_rpc_echo());
+	torture_suite_add_suite(suite, torture_rpc_echo(suite));
 	torture_suite_add_simple_test(suite, "DFS", torture_rpc_dfs);
-	torture_suite_add_suite(suite, torture_rpc_unixinfo());
-	torture_suite_add_suite(suite, torture_rpc_eventlog());
-	torture_suite_add_suite(suite, torture_rpc_atsvc());
+	torture_suite_add_suite(suite, torture_rpc_unixinfo(suite));
+	torture_suite_add_suite(suite, torture_rpc_eventlog(suite));
+	torture_suite_add_suite(suite, torture_rpc_atsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_wkssvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_handles(suite));
 	torture_suite_add_suite(suite, torture_rpc_winreg(suite));
@@ -425,8 +420,8 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SAMBA3-SPOOLSS", torture_samba3_rpc_spoolss);
 	torture_suite_add_simple_test(suite, "SAMBA3-WKSSVC", torture_samba3_rpc_wkssvc);
 	torture_suite_add_simple_test(suite, "SAMBA3-WINREG", torture_samba3_rpc_winreg);
-	torture_suite_add_simple_test(suite, "DRSUAPI", torture_rpc_drsuapi);
-	torture_suite_add_simple_test(suite, "CRACKNAMES", torture_rpc_drsuapi_cracknames);
+	torture_suite_add_suite(suite, torture_rpc_drsuapi(suite));
+	torture_suite_add_suite(suite, torture_rpc_drsuapi_cracknames(suite));
 	torture_suite_add_simple_test(suite, "DSSETUP", torture_rpc_dssetup);
 	torture_suite_add_simple_test(suite, "ALTERCONTEXT", torture_rpc_alter_context);
 	torture_suite_add_simple_test(suite, "JOIN", torture_rpc_join);

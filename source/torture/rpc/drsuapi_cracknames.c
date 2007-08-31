@@ -28,14 +28,13 @@
 #include "ldb/include/ldb.h"
 #include "libcli/security/security.h"
 
-static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsCrackNamesMatrix(struct dcerpc_pipe *p, struct torture_context *tctx,
 				    struct DsPrivate *priv, const char *dn,
 				    const char *user_principal_name, const char *service_principal_name)
 {
 	
 
 	NTSTATUS status;
-	BOOL ret = True;
 	struct drsuapi_DsCrackNames r;
 	enum drsuapi_DsNameFormat formats[] = {
 		DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
@@ -70,59 +69,34 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 		r.in.req.req1.format_desired	= formats[i];
 		names[0].str = dn;
-		status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			const char *errstr = nt_errstr(status);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-			}
-			printf("testing DsCrackNames (matrix prep) with name '%s' from format: %d desired format:%d ",
+		status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+
+		torture_comment(tctx, "testing DsCrackNames (matrix prep) with name '%s' from format: %d desired format:%d ",
 			       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired);
-		
-			printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-			ret = False;
-		} else if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("testing DsCrackNames (matrix prep) with name '%s' from format: %d desired format:%d ",
-			       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired);
-		
-			printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-			ret = False;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_drsuapi_DsCrackNames failed");
+		torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
 			
-		if (!ret) {
-			return ret;
-		}
 		switch (formats[i]) {
 		case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL:	
-			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE) {
-				printf(__location__ ": Unexpected error (%d): This name lookup should fail\n", 
-				       r.out.ctr.ctr1->array[0].status);
-				return False;
-			}
-			printf ("(expected) error\n");
+			torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE,
+				"Unexpected error: This name lookup should fail");
+			torture_comment(tctx, "(expected) error\n");
 			break;
 		case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL:
-			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_NO_MAPPING) {
-				printf(__location__ ": Unexpected error (%d): This name lookup should fail\n", 
-				       r.out.ctr.ctr1->array[0].status);
-				return False;
-			}
-			printf ("(expected) error\n");
+			torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_NO_MAPPING,
+				"Unexpected error: This name lookup should fail");
+			torture_comment(tctx, "(expected) error\n");
 			break;
 		case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	
 		case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY:	
-			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR) {
-				printf(__location__ ": Unexpected error (%d): This name lookup should fail\n", 
-				       r.out.ctr.ctr1->array[0].status);
-				return False;
-			}
-			printf ("(expected) error\n");
+			torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status,
+						 DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR,
+						 "Unexpected error: This name lookup should fail");
+			torture_comment(tctx, "(expected) error\n");
 			break;
 		default:
-			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-				printf("Error: %d\n", r.out.ctr.ctr1->array[0].status);
-				return False;
-			}
+			torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_OK,
+						 "Error");
 		}
 
 		switch (formats[i]) {
@@ -138,7 +112,7 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break;
 		default:
 			n_from[i] = r.out.ctr.ctr1->array[0].result_name;
-			printf("%s\n", n_from[i]);
+			torture_comment(tctx, "%s\n", n_from[i]);
 		}
 	}
 
@@ -151,25 +125,12 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				continue;
 			}
 			names[0].str = n_from[i];
-			status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				const char *errstr = nt_errstr(status);
-				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-					errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-				}
-				printf("testing DsCrackNames (matrix) with name '%s' from format: %d desired format:%d failed - %s",
-				       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired, errstr);
-				ret = False;
-			} else if (!W_ERROR_IS_OK(r.out.result)) {
-				printf("testing DsCrackNames (matrix) with name '%s' from format: %d desired format:%d failed - %s",
-				       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired, 
-				       win_errstr(r.out.result));
-				ret = False;
-			}
-			
-			if (!ret) {
-				return ret;
-			}
+			status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+			torture_comment(tctx, "testing DsCrackNames (matrix) with name '%s' from format: %d desired format:%d",
+				       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired);
+			torture_assert_ntstatus_ok(tctx, status, "DsCrackNames failed");
+			torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+
 			if (r.out.ctr.ctr1->array[0].status == DRSUAPI_DS_NAME_STATUS_OK) {
 				n_matrix[i][j] = r.out.ctr.ctr1->array[0].result_name;
 			} else {
@@ -188,28 +149,22 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			/* we can't map to these two */
 			} else if (n_matrix[i][j] == NULL && formats[j] == DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL) {
 			} else if (n_matrix[i][j] == NULL && formats[j] == DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL) {
-			} else if (n_matrix[i][j] == NULL && n_from[j] != NULL) {
-				printf("dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s\n", formats[i], formats[j], n_matrix[i][j], n_from[j]);
-				ret = False;
-			} else if (n_matrix[i][j] != NULL && n_from[j] == NULL) {
-				printf("dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s\n", formats[i], formats[j], n_matrix[i][j], n_from[j]);
-				ret = False;
-			} else if (strcmp(n_matrix[i][j], n_from[j]) != 0) {
-				printf("dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s\n", formats[i], formats[j], n_matrix[i][j], n_from[j]);
-				ret = False;
+			} else {
+				torture_assert_str_equal(tctx, n_matrix[i][j], n_from[j], 
+							 "dcerpc_drsuapi_DsCrackNames mismatch");
 			}
 		}
 	}
-	return ret;
+	return true;
 }
 
-BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct DsPrivate *priv)
+bool test_DsCrackNames(struct torture_context *tctx, 
+		       struct dcerpc_pipe *p, 
+		       struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
 	struct drsuapi_DsNameString names[1];
-	BOOL ret = True;
 	const char *dns_domain;
 	const char *nt4_domain;
 	const char *FQDN_1779_name;
@@ -239,32 +194,18 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 
-	dom_sid = dom_sid_string(mem_ctx, torture_join_sid(priv->join));
+	dom_sid = dom_sid_string(tctx, torture_join_sid(priv->join));
 	
 	names[0].str = dom_sid;
 
 	printf("testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
-
-	if (!ret) {
-		return ret;
-	}
+	status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "DsCrackNames");
+	torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+	torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_OK, 
+		"DsCrackNames failed on name");
 
 	dns_domain = r.out.ctr.ctr1->array[0].dns_domain_name;
 	nt4_domain = r.out.ctr.ctr1->array[0].result_name;
@@ -274,25 +215,11 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
-
-	if (!ret) {
-		return ret;
-	}
+	status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_drsuapi_DsCrackNames failed");
+	torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+	torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_OK,
+		"DsCrackNames failed on name");
 
 	priv->domain_dns_name = r.out.ctr.ctr1->array[0].dns_domain_name;
 	priv->domain_guid_str = r.out.ctr.ctr1->array[0].result_name;
@@ -300,108 +227,56 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 
-	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
+	status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_drsuapi_DsCrackNames failed");
+	torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+	torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_OK, 
+		"DsCrackNames failed on name");
 
-	if (!ret) {
-		return ret;
-	}
-
-	ldb = ldb_init(mem_ctx);
+	ldb = ldb_init(tctx);
 	
 	realm_dn_str = r.out.ctr.ctr1->array[0].result_name;
-	realm_dn =  ldb_dn_new(mem_ctx, ldb, realm_dn_str);
-	realm_canonical = ldb_dn_canonical_string(mem_ctx, realm_dn);
+	realm_dn =  ldb_dn_new(tctx, ldb, realm_dn_str);
+	realm_canonical = ldb_dn_canonical_string(tctx, realm_dn);
 
-	if (strcmp(realm_canonical, 
-		   talloc_asprintf(mem_ctx, "%s/", dns_domain))!= 0) {
-		printf("local Round trip on canonical name failed: %s != %s!\n",
-		       realm_canonical, 
-		       talloc_asprintf(mem_ctx, "%s/", dns_domain));
-		    return False;
-	};
+	torture_assert_str_equal(tctx, realm_canonical, 
+		   talloc_asprintf(tctx, "%s/", dns_domain), "local Round trip on canonical name failed");
 
-	realm_canonical_ex = ldb_dn_canonical_ex_string(mem_ctx, realm_dn);
+	realm_canonical_ex = ldb_dn_canonical_ex_string(tctx, realm_dn);
 
-	if (strcmp(realm_canonical_ex, 
-		   talloc_asprintf(mem_ctx, "%s\n", dns_domain))!= 0) {
-		printf("local Round trip on canonical ex name failed: %s != %s!\n",
-		       realm_canonical, 
-		       talloc_asprintf(mem_ctx, "%s\n", dns_domain));
-		    return False;
-	};
+	torture_assert_str_equal(tctx, realm_canonical_ex, talloc_asprintf(tctx, "%s\n", dns_domain), 
+		"local Round trip on canonical ex name failed");
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = nt4_domain;
 
-	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
-
-	if (!ret) {
-		return ret;
-	}
+	status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_drsuapi_DsCrackNames failed");
+	torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+	torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_OK,
+		"DsCrackNames failed on name");
 
 	priv->domain_obj_dn = r.out.ctr.ctr1->array[0].result_name;
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, test_dc);
+	names[0].str = talloc_asprintf(tctx, "%s%s$", nt4_domain, test_dc);
 
-	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 	       names[0].str, r.in.req.req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
-
-	if (!ret) {
-		return ret;
-	}
+	status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_drsuapi_DsCrackNames failed");
+	torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+	torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_OK,
+		"DsCrackNames failed on name");
 
 	FQDN_1779_name = r.out.ctr.ctr1->array[0].result_name;
 
@@ -409,47 +284,31 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = priv->domain_guid_str;
 
-	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 	       names[0].str, r.in.req.req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
+	status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_drsuapi_DsCrackNames failed");
+	torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+	torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status, DRSUAPI_DS_NAME_STATUS_OK,
+		"DsCrackNames failed on name");
 
-	if (!ret) {
-		return ret;
-	}
+	torture_assert_str_equal(tctx, priv->domain_dns_name, r.out.ctr.ctr1->array[0].dns_domain_name, 
+		"DsCrackNames failed to return same DNS name");
 
-	if (strcmp(priv->domain_dns_name, r.out.ctr.ctr1->array[0].dns_domain_name) != 0) {
-		printf("DsCrackNames failed to return same DNS name - expected %s got %s\n", priv->domain_dns_name, r.out.ctr.ctr1->array[0].dns_domain_name);
-		return False;
-	}
+	FQDN_1779_dn = ldb_dn_new(tctx, ldb, FQDN_1779_name);
 
-	FQDN_1779_dn = ldb_dn_new(mem_ctx, ldb, FQDN_1779_name);
+	canonical_name = ldb_dn_canonical_string(tctx, FQDN_1779_dn);
+	canonical_ex_name = ldb_dn_canonical_ex_string(tctx, FQDN_1779_dn);
 
-	canonical_name = ldb_dn_canonical_string(mem_ctx, FQDN_1779_dn);
-	canonical_ex_name = ldb_dn_canonical_ex_string(mem_ctx, FQDN_1779_dn);
-
-	user_principal_name = talloc_asprintf(mem_ctx, "%s$@%s", test_dc, dns_domain);
+	user_principal_name = talloc_asprintf(tctx, "%s$@%s", test_dc, dns_domain);
 
 	/* form up a user@DOMAIN */
-	user_principal_name_short = talloc_asprintf(mem_ctx, "%s$@%s", test_dc, nt4_domain);
+	user_principal_name_short = talloc_asprintf(tctx, "%s$@%s", test_dc, nt4_domain);
 	/* variable nt4_domain includs a trailing \ */
 	user_principal_name_short[strlen(user_principal_name_short) - 1] = '\0';
 	
-	service_principal_name = talloc_asprintf(mem_ctx, "HOST/%s", test_dc);
+	service_principal_name = talloc_asprintf(tctx, "HOST/%s", test_dc);
 	{
 		
 		struct {
@@ -462,7 +321,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			enum drsuapi_DsNameStatus status;
 			enum drsuapi_DsNameStatus alternate_status;
 			enum drsuapi_DsNameFlags flags;
-			BOOL skip;
+			bool skip;
 		} crack[] = {
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
@@ -494,7 +353,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s", test_dc, dns_domain),
+				.str = talloc_asprintf(tctx, "cifs/%s.%s", test_dc, dns_domain),
 				.comment = "ServicePrincipal Name",
 				.expected_str = FQDN_1779_name,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
@@ -570,7 +429,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL,
 				.str = priv->domain_guid_str,
 				.comment = "Domain GUID to Canonical",
-				.expected_str = talloc_asprintf(mem_ctx, "%s/", dns_domain),
+				.expected_str = talloc_asprintf(tctx, "%s/", dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
@@ -578,7 +437,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX,
 				.str = priv->domain_guid_str,
 				.comment = "Domain GUID to Canonical EX",
-				.expected_str = talloc_asprintf(mem_ctx, "%s\n", dns_domain),
+				.expected_str = talloc_asprintf(tctx, "%s\n", dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
@@ -593,7 +452,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = GUID_string2(mem_ctx, torture_join_user_guid(priv->join)),
+				.str = GUID_string2(tctx, torture_join_user_guid(priv->join)),
 				.comment = "Account GUID -> DN",
 				.expected_str = FQDN_1779_name,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
@@ -601,15 +460,15 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
-				.str = GUID_string2(mem_ctx, torture_join_user_guid(priv->join)),
+				.str = GUID_string2(tctx, torture_join_user_guid(priv->join)),
 				.comment = "Account GUID -> NT4 Account",
-				.expected_str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, test_dc),
+				.expected_str = talloc_asprintf(tctx, "%s%s$", nt4_domain, test_dc),
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{		
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = GUID_string2(mem_ctx, &priv->dcinfo.site_guid),
+				.str = GUID_string2(tctx, &priv->dcinfo.site_guid),
 				.comment = "Site GUID",
 				.expected_str = priv->dcinfo.site_dn,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
@@ -617,7 +476,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = GUID_string2(mem_ctx, &priv->dcinfo.computer_guid),
+				.str = GUID_string2(tctx, &priv->dcinfo.computer_guid),
 				.comment = "Computer GUID",
 				.expected_str = priv->dcinfo.computer_dn,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
@@ -625,14 +484,14 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
-				.str = GUID_string2(mem_ctx, &priv->dcinfo.computer_guid),
+				.str = GUID_string2(tctx, &priv->dcinfo.computer_guid),
 				.comment = "Computer GUID -> NT4 Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = GUID_string2(mem_ctx, &priv->dcinfo.server_guid),
+				.str = GUID_string2(tctx, &priv->dcinfo.server_guid),
 				.comment = "Server GUID",
 				.expected_str = priv->dcinfo.server_dn,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
@@ -640,7 +499,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = GUID_string2(mem_ctx, &priv->dcinfo.ntds_guid),
+				.str = GUID_string2(tctx, &priv->dcinfo.ntds_guid),
 				.comment = "NTDS GUID",
 				.expected_str = priv->dcinfo.ntds_dn,
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
@@ -656,7 +515,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "krbtgt/%s", dns_domain),
+				.str = talloc_asprintf(tctx, "krbtgt/%s", dns_domain),
 				.comment = "Looking for KRBTGT as a serivce principal",
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
 				.expected_dns = dns_domain
@@ -664,7 +523,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "bogus/%s", dns_domain),
+				.str = talloc_asprintf(tctx, "bogus/%s", dns_domain),
 				.comment = "Looking for bogus serivce principal",
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
 				.expected_dns = dns_domain
@@ -672,30 +531,30 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "bogus/%s.%s", test_dc, dns_domain),
+				.str = talloc_asprintf(tctx, "bogus/%s.%s", test_dc, dns_domain),
 				.comment = "Looking for bogus serivce on test DC",
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
-				.expected_dns = talloc_asprintf(mem_ctx, "%s.%s", test_dc, dns_domain)
+				.expected_dns = talloc_asprintf(tctx, "%s.%s", test_dc, dns_domain)
 			},
 			{ 
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "krbtgt"),
+				.str = talloc_asprintf(tctx, "krbtgt"),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{ 
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "Looking for the kadmin/changepw service as a serivce principal",
-				.str = talloc_asprintf(mem_ctx, "kadmin/changepw"),
+				.str = talloc_asprintf(tctx, "kadmin/changepw"),
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
-				.expected_str = talloc_asprintf(mem_ctx, "CN=krbtgt,CN=Users,%s", realm_dn_str),
+				.expected_str = talloc_asprintf(tctx, "CN=krbtgt,CN=Users,%s", realm_dn_str),
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s@%s", 
+				.str = talloc_asprintf(tctx, "cifs/%s.%s@%s", 
 						       test_dc, dns_domain,
 						       dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
@@ -703,7 +562,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s@%s", 
+				.str = talloc_asprintf(tctx, "cifs/%s.%s@%s", 
 						       test_dc, dns_domain,
 						       "BOGUS"),
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
@@ -712,7 +571,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s@%s", 
+				.str = talloc_asprintf(tctx, "cifs/%s.%s@%s", 
 						       test_dc, "REALLY",
 						       "BOGUS"),
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY,
@@ -721,14 +580,14 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s", 
+				.str = talloc_asprintf(tctx, "cifs/%s.%s", 
 						       test_dc, dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = talloc_asprintf(mem_ctx, "cifs/%s", 
+				.str = talloc_asprintf(tctx, "cifs/%s", 
 						       test_dc),
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
@@ -775,21 +634,21 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "BIND GUID (ie, not in the directory)",
-				.str = GUID_string2(mem_ctx, &priv->bind_guid),
+				.str = GUID_string2(tctx, &priv->bind_guid),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "Unqualified Machine account as user principal",
-				.str = talloc_asprintf(mem_ctx, "%s$", test_dc),
+				.str = talloc_asprintf(tctx, "%s$", test_dc),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "Machine account as service principal",
-				.str = talloc_asprintf(mem_ctx, "%s$", test_dc),
+				.str = talloc_asprintf(tctx, "%s$", test_dc),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
@@ -803,7 +662,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "Realm as an NT4 domain lookup",
-				.str = talloc_asprintf(mem_ctx, "%s\\", dns_domain),
+				.str = talloc_asprintf(tctx, "%s\\", dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			}, 
 			{
@@ -827,7 +686,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.str = SID_BUILTIN,
 				.comment = "Builtin Domain SID -> DN",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
-				.expected_str = talloc_asprintf(mem_ctx, "CN=Builtin,%s", realm_dn_str),
+				.expected_str = talloc_asprintf(tctx, "CN=Builtin,%s", realm_dn_str),
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			},
 			{
@@ -874,7 +733,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "invalid user principal name in valid domain",
-				.str = talloc_asprintf(mem_ctx, "invalidusername@%s", dns_domain),
+				.str = talloc_asprintf(tctx, "invalidusername@%s", dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			}
 		};
@@ -888,73 +747,53 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			names[0].str = crack[i].str;
 			
 			if (crack[i].comment) {
-				comment = talloc_asprintf(mem_ctx, "'%s' with name '%s' desired format:%d\n",
+				comment = talloc_asprintf(tctx, "'%s' with name '%s' desired format:%d\n",
 							  crack[i].comment, names[0].str, r.in.req.req1.format_desired);
 			} else {
-				comment = talloc_asprintf(mem_ctx, "'%s' desired format:%d\n",
+				comment = talloc_asprintf(tctx, "'%s' desired format:%d\n",
 				       names[0].str, r.in.req.req1.format_desired);
 			}
+			torture_comment(tctx, "Running DsCrackNames on %s", comment);
 			if (crack[i].skip) {
 				printf("skipping: %s", comment);
 				continue;
 			}
-			status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				const char *errstr = nt_errstr(status);
-				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-					errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-				}
-				printf("dcerpc_drsuapi_DsCrackNames failed on %s - %s\n", comment, errstr);
-				ret = False;
-			} else if (!W_ERROR_IS_OK(r.out.result)) {
-				printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-				ret = False;
-			} else if (r.out.ctr.ctr1->array[0].status != crack[i].status) {
+			status = dcerpc_drsuapi_DsCrackNames(p, tctx, &r);
+			torture_assert_ntstatus_ok(tctx, status, "dcerpc_drsuapi_DsCrackNames failed");
+			torture_assert_werr_ok(tctx, r.out.result, "DsCrackNames failed");
+			if (r.out.ctr.ctr1->array[0].status != crack[i].status) {
 				if (crack[i].alternate_status) {
-					if (r.out.ctr.ctr1->array[0].status != crack[i].alternate_status) {
-						printf("DsCrackNames unexpected status %d, wanted %d or %d on: %s\n", 
-						       r.out.ctr.ctr1->array[0].status,
-						       crack[i].status,
-						       crack[i].alternate_status,
-						       comment);
-						ret = False;
-					}
+					torture_assert_int_equal(tctx, r.out.ctr.ctr1->array[0].status,
+								 crack[i].alternate_status, 
+								 "DsCrackNames unexpected status");
 				} else {
-					printf("DsCrackNames unexpected status %d, wanted %d on: %s\n", 
-					       r.out.ctr.ctr1->array[0].status,
-					       crack[i].status,
-					       comment);
-					ret = False;
+					torture_fail(tctx, "DsCrackNames unexpected status");
 				}
 			} else if (crack[i].expected_str
 				   && (strcmp(r.out.ctr.ctr1->array[0].result_name, 
 					      crack[i].expected_str) != 0)) {
 				if (strcasecmp(r.out.ctr.ctr1->array[0].result_name, 
 					       crack[i].expected_str) != 0) {
-					printf("DsCrackNames failed - got %s, expected %s on %s\n", 
+					torture_comment(tctx, "DsCrackNames failed - got %s, expected %s on %s\n", 
 					       r.out.ctr.ctr1->array[0].result_name, 
 					       crack[i].expected_str, comment);
-					ret = False;
+					return False;
 				} else {
-					printf("(warning) DsCrackNames returned different case - got %s, expected %s on %s\n", 
+					torture_comment(tctx, 
+						"(warning) DsCrackNames returned different case - got %s, expected %s on %s\n", 
 					       r.out.ctr.ctr1->array[0].result_name, 
 					       crack[i].expected_str, comment);
 				}
-			} else if (crack[i].expected_dns
-				   && (strcmp(r.out.ctr.ctr1->array[0].dns_domain_name, 
-					      crack[i].expected_dns) != 0)) {
-				printf("DsCrackNames failed - got DNS name %s, expected %s on %s\n", 
-				       r.out.ctr.ctr1->array[0].result_name, 
-				       crack[i].expected_str, comment);
-				ret = False;
-			}
+			} else if (crack[i].expected_dns)
+				torture_assert_str_equal(tctx, r.out.ctr.ctr1->array[0].dns_domain_name, 
+					      crack[i].expected_dns, "DsCrackNames failed");
 		}
 	}
 
-	if (!test_DsCrackNamesMatrix(p, mem_ctx, priv, FQDN_1779_name, 
+	if (!test_DsCrackNamesMatrix(p, tctx, priv, FQDN_1779_name, 
 				     user_principal_name, service_principal_name)) {
-		ret = False;
+		return false;
 	}
 
-	return ret;
+	return true;
 }
