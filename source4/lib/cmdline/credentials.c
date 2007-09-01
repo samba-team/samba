@@ -38,7 +38,12 @@ static const char *cmdline_get_userpassword(struct cli_credentials *credentials)
 	return ret;
 }
 
-void cli_credentials_set_cmdline_callbacks(struct cli_credentials *cred)
+bool cli_credentials_set_cmdline_callbacks(struct cli_credentials *cred)
 {
-	cli_credentials_set_password_callback(cred, cmdline_get_userpassword);
+	if (isatty(fileno(stdout))) {
+		cli_credentials_set_password_callback(cred, cmdline_get_userpassword);
+		return true;
+	}
+
+	return false;
 }
