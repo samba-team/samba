@@ -122,3 +122,8 @@ div.duration
 	text-align: right;
 	font-weight: bold;
 }
+
+div.command
+{
+	background-color: gray;
+}
