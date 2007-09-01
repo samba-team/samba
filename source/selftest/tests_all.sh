@@ -5,7 +5,6 @@ $SRCDIR/selftest/test_nbt.sh "dc"
 $SRCDIR/selftest/test_rpc.sh
 $SRCDIR/selftest/test_net.sh
 $SRCDIR/selftest/test_session_key.sh
-$SRCDIR/selftest/test_binding_string.sh
 $SRCDIR/selftest/test_echo.sh
 $SRCDIR/selftest/test_posix.sh
 $SRCDIR/selftest/test_cifs.sh

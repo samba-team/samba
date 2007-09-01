@@ -95,6 +95,41 @@ static const char *test_strings[] = {
 	"ncacn_unix_stream:[/tmp/epmapper,sign]",
 };
 
+static bool test_parse_check_results(struct torture_context *tctx)
+{
+	struct dcerpc_binding *b;
+	struct GUID uuid;
+
+	torture_assert_ntstatus_ok(tctx, 
+				   GUID_from_string("308FB580-1EB2-11CA-923B-08002B1075A7", &uuid),
+				   "parsing uuid");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER", &b), "parse");
+	torture_assert(tctx, b->transport == NCACN_NP, "ncacn_np expected");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_ip_tcp:$SERVER", &b), "parse");
+	torture_assert(tctx, b->transport == NCACN_IP_TCP, "ncacn_ip_tcp expected");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[rpcecho]", &b), "parse");
+	torture_assert_str_equal(tctx, b->endpoint, "rpcecho", "endpoint");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[/pipe/rpcecho]", &b), "parse");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[/pipe/rpcecho,sign,seal]", &b), "parse");
+	torture_assert(tctx, b->flags == DCERPC_SIGN+DCERPC_SEAL, "sign+seal flags");
+	torture_assert_str_equal(tctx, b->endpoint, "/pipe/rpcecho", "endpoint");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_np:$SERVER[,sign]", &b), "parse");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_ip_tcp:$SERVER[,sign]", &b), "parse");
+	torture_assert(tctx, b->endpoint == NULL, "endpoint");
+	torture_assert(tctx, b->flags == DCERPC_SIGN, "sign flag");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncalrpc:", &b), "parse");
+	torture_assert(tctx, b->transport == NCALRPC, "ncalrpc expected");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, 
+		"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:$SERVER", &b), "parse");
+	torture_assert(tctx, GUID_equal(&b->object.uuid, &uuid), "object uuid");
+	torture_assert_int_equal(tctx, b->object.if_version, 0, "object version");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, 
+		"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$SERVER", &b), "parse");
+
+	return true;
+}
+
 static bool test_no_transport(struct torture_context *tctx)
 {
 	const char *binding = "somehost";
@@ -128,6 +163,8 @@ struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 	}
 
 	torture_suite_add_simple_test(suite, "no transport", test_no_transport);
+
+	torture_suite_add_simple_test(suite, "parsing results", test_parse_check_results);
 
 	return suite;
 }
