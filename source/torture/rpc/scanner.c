@@ -97,21 +97,18 @@ bool torture_rpc_scanner(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx, *loop_ctx;
+	TALLOC_CTX *loop_ctx;
 	BOOL ret = True;
 	const struct ndr_interface_list *l;
 	struct dcerpc_binding *b;
 
-	mem_ctx = talloc_init("torture_rpc_scanner");
-
 	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	for (l=ndr_table_list();l;l=l->next) {		
-		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_scanner loop context");
+		loop_ctx = talloc_named(torture, 0, "torture_rpc_scanner loop context");
 		/* some interfaces are not mappable */
 		if (l->table->num_calls == 0 ||
 		    strcmp(l->table->name, "mgmt") == 0) {
@@ -122,7 +119,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
 		if (b->transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map_binding(mem_ctx, b, l->table, NULL);
+			status = dcerpc_epm_map_binding(torture, b, l->table, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to map port for uuid %s\n", 
 					   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
@@ -133,7 +130,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
 			b->endpoint = talloc_strdup(b, l->table->name);
 		}
 
-		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, b));
+		lp_set_cmdline("torture:binding", dcerpc_binding_string(torture, b));
 
 		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -142,7 +139,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
 			continue;
 		}
 	
-		if (!test_inq_if_ids(torture, p, mem_ctx, test_num_calls, l->table)) {
+		if (!test_inq_if_ids(torture, p, torture, test_num_calls, l->table)) {
 			ret = False;
 		}
 	}
