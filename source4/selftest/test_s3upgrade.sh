@@ -7,14 +7,14 @@ then
 	exit 1
 fi
 
-SCRIPTDIR=../testprogs/ejs
-DATADIR=../testdata
-
 mkdir -p $PREFIX
 rm -f $PREFIX/*
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-plantest "parse samba3" none bin/smbscript ../testdata/samba3/verify $CONFIGURATION ../testdata/samba3
+SCRIPTDIR=$samba4srcdir/../testprogs/ejs
+DATADIR=$samba4srcdir/../testdata
+
+plantest "parse samba3" none $samba4bindir/smbscript $DATADIR/samba3/verify $CONFIGURATION $DATADIR/samba3
 #plantest "upgrade" none bin/smbscript setup/upgrade $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf

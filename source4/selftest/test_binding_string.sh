@@ -14,5 +14,5 @@ for I in "ncacn_np:\$SERVER" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:\$SERVER" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:\$SERVER" 
 do
-	plantest "$I" dc bin/smbtorture $TORTURE_OPTIONS "$I" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" --option=torture:quick=yes RPC-ECHO "$*"
+	plantest "$I" dc $samba4bindir/smbtorture $TORTURE_OPTIONS "$I" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" --option=torture:quick=yes RPC-ECHO "$*"
 done

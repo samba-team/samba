@@ -387,7 +387,8 @@ if (defined($ENV{PKG_CONFIG_PATH})) {
 } else { 
 	$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig";
 }
-$ENV{PATH} = "$old_pwd/bin:$ENV{PATH}";
+# Required for smbscript:
+$ENV{PATH} = "$old_pwd/bin:$old_pwd:$ENV{PATH}";
 
 
 if ($opt_socket_wrapper_pcap) {

@@ -1,7 +1,5 @@
 #!/bin/sh
 
-
-
 # add tests to this list as they start passing, so we test
 # that they stay passing
 ncacn_np_tests="RPC-SPOOLSS RPC-SRVSVC RPC-UNIXINFO RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-ECHO RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-MGMT RPC-HANDLES RPC-WINREG RPC-WKSSVC RPC-SVCCTL RPC-EPMAPPER RPC-INITSHUTDOWN RPC-EVENTLOG RPC-ATSVC RPC-SAMSYNC RPC-DFS RPC-OXIDRESOLVE RPC-REMACT RPC-SAMBA3SESSIONKEY RPC-SAMBA3-SRVSVC RPC-SAMBA3-SHARESEC RPC-SAMBA3-GETUSERNAME RPC-SAMBA3-LSA RPC-SAMBA3-SPOOLSS RPC-SAMBA3-WKSSVC RPC-BINDSAMBA3 RPC-NETLOGSAMBA3 RPC-SAMBA3-WINREG RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-BENCH-RPC RPC-SCANNER RPC-AUTOIDL RPC-AUTHCONTEXT"
@@ -17,7 +15,7 @@ incdir=`dirname $0`
 all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_tests $slow_ncacn_np_tests $slow_ncacn_ip_tcp_tests RPC-SECRETS"
 
 # Make sure all tests get run
-for t in `bin/smbtorture --list | grep "^RPC-"`
+for t in `$samba4bindir/smbtorture --list | grep "^RPC-"`
 do
 	if ! echo $all_tests | grep $t  > /dev/null
 	then
@@ -34,7 +32,7 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "$name" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done
@@ -48,7 +46,7 @@ for bindoptions in connect $VALIDATE ; do
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    plantest "$name" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "$name" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done

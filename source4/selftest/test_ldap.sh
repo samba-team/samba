@@ -6,28 +6,28 @@ incdir=`dirname $0`
 
 p=ldap
 for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD"; do
-    plantest "TESTING PROTOCOL $p with options $options" dc ../testprogs/blackbox/test_ldb.sh $p \$SERVER_IP $options
+    plantest "TESTING PROTOCOL $p with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh $p \$SERVER_IP $options
 done
 # see if we support ldaps
 if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
     p=ldaps
     for options in "" "-U\$USERNAME%\$PASSWORD"; do
-	plantest "TESTING PROTOCOL $p with options $options" dc ../testprogs/blackbox/test_ldb.sh $p \$SERVER_IP $options
+	plantest "TESTING PROTOCOL $p with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh $p \$SERVER_IP $options
     done
 fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
 do
-	plantest "$t" dc bin/smbtorture $TORTURE_OPTIONS "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_ $t
+	plantest "$t" dc $samba4bindir/smbtorture $TORTURE_OPTIONS "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_ $t
 done
 
 # only do the ldb tests when not in quick mode - they are quite slow, and ldb
 # is now pretty well tested by the rest of the quick tests anyway
 test "$TORTURE_QUICK" = "yes" || {
-   LDBDIR=lib/ldb
+   LDBDIR=$samba4srcdir/lib/ldb
    export LDBDIR
    plantest "ldb" none $LDBDIR/tests/test-tdb.sh
 }
 
-SCRIPTDIR=../testprogs/ejs
+SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 
 plantest "ejs ldap" dc $SCRIPTDIR/ldap.js $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD

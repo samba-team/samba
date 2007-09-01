@@ -10,8 +10,8 @@ incdir=`dirname $0`
 if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
    echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
 elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
-  for f in $incdir/../pidl/tests/*.pl; do
-     plantest "`basename $f`" none $PERL $f "|" ./script/harness2subunit.pl
+  for f in $samba4srcdir/pidl/tests/*.pl; do
+     plantest "`basename $f`" none $PERL $f "|" $samba4srcdir/script/harness2subunit.pl
   done
 else 
    echo "Skipping pidl tests - Test::More not installed"
