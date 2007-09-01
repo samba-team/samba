@@ -9,9 +9,6 @@ incdir=`dirname $0`
 SCRIPTDIR=../testprogs/ejs
 DATADIR=../testdata
 
-PATH=bin:$PATH
-export PATH
-
 plantest "base.js" dc "$SCRIPTDIR/base.js" $CONFIGURATION
 plantest "samr.js" dc "$SCRIPTDIR/samr.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD
 plantest "echo.js" dc "$SCRIPTDIR/echo.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD

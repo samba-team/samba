@@ -4,9 +4,6 @@
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-PATH=bin:$PATH
-export PATH
-
 TEST_NBT_ENVNAME=$1
 if test x"$TEST_NBT_ENVNAME" = x"";then
 	TEST_NBT_ENVNAME="dc"

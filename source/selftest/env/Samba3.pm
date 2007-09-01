@@ -62,7 +62,7 @@ sub setup_env($$$)
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
 	} else {
-		die("Samba4 can't provide environment '$envname'");
+		die("Samba3 can't provide environment '$envname'");
 	}
 }
 

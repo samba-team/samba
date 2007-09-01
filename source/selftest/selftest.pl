@@ -406,9 +406,9 @@ if ($opt_socket_wrapper) {
 my $target;
 
 if ($opt_target eq "samba4") {
-	$target = new Samba4("$srcdir/bin", $ldap, "$srcdir/setup");
+	$target = new Samba4($opt_bindir or "$srcdir/bin", $ldap, "$srcdir/setup");
 } elsif ($opt_target eq "samba3") {
-	if ($opt_socket_wrapper and `smbd -b | grep SOCKET_WRAPPER` eq "") {
+	if ($opt_socket_wrapper and `$opt_bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
 

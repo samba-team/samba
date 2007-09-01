@@ -7,6 +7,8 @@ use Exporter;
 use strict;
 use warnings;
 
+use FindBin qw($RealBin);
+
 sub new($$$$) {
 	my ($class, $dirname, $statistics) = @_;
 	my $self = { 
@@ -25,7 +27,7 @@ sub new($$$$) {
 		}
 	};
 
-	link("selftest/output/testresults.css", "$dirname/testresults.css");
+	link("$RealBin/output/testresults.css", "$dirname/testresults.css");
 
 	open(INDEX, ">$dirname/index.html");
 
