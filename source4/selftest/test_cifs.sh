@@ -8,8 +8,8 @@ ADDARGS="$*"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-raw=`bin/smbtorture --list | grep "^RAW-" | xargs`
-base=`bin/smbtorture --list | grep "^BASE-" | xargs`
+raw=`$samba4bindir/smbtorture --list | grep "^RAW-" | xargs`
+base=`$samba4bindir/smbtorture --list | grep "^BASE-" | xargs`
 tests="$base $raw"
 
 for t in $tests; do
