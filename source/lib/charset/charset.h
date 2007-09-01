@@ -49,7 +49,7 @@ typedef uint32_t codepoint_t;
 
 
 /* generic iconv conversion structure */
-typedef struct {
+typedef struct smb_iconv_s {
 	size_t (*direct)(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft);
 	size_t (*pull)(void *cd, const char **inbuf, size_t *inbytesleft,
