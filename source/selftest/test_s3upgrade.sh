@@ -17,4 +17,4 @@ SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 DATADIR=$samba4srcdir/../testdata
 
 plantest "parse samba3" none $samba4bindir/smbscript $DATADIR/samba3/verify $CONFIGURATION $DATADIR/samba3
-#plantest "upgrade" none bin/smbscript setup/upgrade $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
+#plantest "upgrade" none $samba4bindir/smbscript setup/upgrade $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf

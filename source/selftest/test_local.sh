@@ -3,7 +3,7 @@
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-for t in `bin/smbtorture --list | grep "^LOCAL-" | xargs`; do
+for t in `$samba4bindir/smbtorture --list | grep "^LOCAL-" | xargs`; do
 	plantest "$t" none $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
 done
 

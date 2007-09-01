@@ -10,7 +10,7 @@ for transport in $transports; do
   for ntlmoptions in \
         "--option=socket:testnonblock=True --option=torture:quick=yes"; do
    name="RPC-ECHO on $transport with $bindoptions and $ntlmoptions"
-   plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+   plantest "$name" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
   done
  done
 done
@@ -29,10 +29,10 @@ for transport in $transports; do
         "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=no  --option=torture:quick=yes" \
     ; do
    name="RPC-ECHO on $transport with $bindoptions and $ntlmoptions"
-   plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+   plantest "$name" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
   done
  done
 done
 
 name="RPC-ECHO on ncacn_np over smb2"
-plantest "$name" dc bin/smbtorture $TORTURE_OPTIONS ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+plantest "$name" dc $samba4bindir/smbtorture $TORTURE_OPTIONS ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
