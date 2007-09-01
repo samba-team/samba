@@ -13,5 +13,5 @@ base=`bin/smbtorture --list | grep "^BASE-" | xargs`
 tests="$base $raw"
 
 for t in $tests; do
-    plantest "ntvfs/cifs $t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs/cifs $t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $ADDARGS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done

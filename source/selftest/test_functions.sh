@@ -10,3 +10,6 @@ plantest() {
 	echo $env
 	echo $cmdline
 }
+
+samba4srcdir=$incdir/..
+samba4bindir=$samba4srcdir/bin

@@ -9,5 +9,5 @@ incdir=`dirname $0`
 tests="BASE-RW1"
 
 for t in $tests; do
-    plantest "$t" dc $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "$t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
 done
