@@ -240,7 +240,7 @@ static bool test_sleep(struct torture_context *tctx,
 	if (torture_setting_bool(tctx, "quick", false)) {
 		torture_skip(tctx, "TestSleep disabled - use \"torture:quick=no\" to enable\n");
 	}
-	torture_comment(tctx, "Testing TestSleep - use \"torture:quick=no\" to disable\n");
+	torture_comment(tctx, "Testing TestSleep - use \"torture:quick=yes\" to disable\n");
 
 	for (i=0;i<ASYNC_COUNT;i++) {
 		done[i]		= False;
@@ -264,7 +264,7 @@ static bool test_sleep(struct torture_context *tctx,
 				diff[i]	= timeval_until(&snd[i], &rcv[i]);
 				rounded_tdiff = (int)(0.5 + diff[i].tv_sec + (1.0e-6*diff[i].tv_usec));
 				status	= dcerpc_ndr_request_recv(req[i]);
-				printf("rounded_tdiff=%d\n", rounded_tdiff);
+				torture_comment(tctx, "rounded_tdiff=%d\n", rounded_tdiff);
 				torture_assert_ntstatus_ok(tctx, status, 
 							talloc_asprintf(tctx, "TestSleep(%d) failed", i));
 				torture_assert(tctx, r[i].out.result == r[i].in.seconds,
@@ -287,7 +287,7 @@ static bool test_sleep(struct torture_context *tctx,
 			}
 		}
 	}
-	printf("\n");
+	torture_comment(tctx, "\n");
 	return true;
 }
 

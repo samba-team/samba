@@ -27,70 +27,52 @@
 /**************************/
 /* srvsvc_NetCharDev      */
 /**************************/
-static BOOL test_NetCharDevGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_NetCharDevGetInfo(struct dcerpc_pipe *p, struct torture_context *tctx,
 				const char *devname)
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevGetInfo r;
 	uint32_t levels[] = {0, 1};
 	int i;
-	BOOL ret = True;
 
-	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.device_name = devname;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		d_printf("testing NetCharDevGetInfo level %u on device '%s'\n",
+		torture_comment(tctx, "testing NetCharDevGetInfo level %u on device '%s'\n",
 			r.in.level, r.in.device_name);
-		status = dcerpc_srvsvc_NetCharDevGetInfo(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
-				r.in.level, r.in.device_name, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
-				r.in.level, r.in.device_name, win_errstr(r.out.result));
-			continue;
-		}
+		status = dcerpc_srvsvc_NetCharDevGetInfo(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "NetCharDevGetInfo failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetCharDevGetInfo failed");
 	}
 
-	return ret;
+	return true;
 }
 
-static BOOL test_NetCharDevControl(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_NetCharDevControl(struct dcerpc_pipe *p, struct torture_context *tctx,
 				const char *devname)
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevControl r;
 	uint32_t opcodes[] = {0, 1};
 	int i;
-	BOOL ret = True;
 
-	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.device_name = devname;
 
 	for (i=0;i<ARRAY_SIZE(opcodes);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.opcode = opcodes[i];
-		d_printf("testing NetCharDevControl opcode %u on device '%s'\n", 
+		torture_comment(tctx, "testing NetCharDevControl opcode %u on device '%s'\n", 
 			r.in.opcode, r.in.device_name);
-		status = dcerpc_srvsvc_NetCharDevControl(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, win_errstr(r.out.result));
-			continue;
-		}
+		status = dcerpc_srvsvc_NetCharDevControl(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "NetCharDevControl failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetCharDevControl failed");
 	}
 
-	return ret;
+	return true;
 }
 
 static bool test_NetCharDevEnum(struct torture_context *tctx, 
@@ -101,7 +83,6 @@ static bool test_NetCharDevEnum(struct torture_context *tctx,
 	struct srvsvc_NetCharDevCtr0 c0;
 	uint32_t levels[] = {0, 1};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.ctr.ctr0 = &c0;
@@ -113,20 +94,12 @@ static bool test_NetCharDevEnum(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int j;
 
-
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetCharDevEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetCharDevEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetCharDevEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetCharDevEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetCharDevEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetCharDevEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetCharDevEnum failed");
 
 		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
 		if (r.in.level == 1) {
@@ -134,58 +107,48 @@ static bool test_NetCharDevEnum(struct torture_context *tctx,
 				const char *device;
 				device = r.out.ctr.ctr1->array[j].device;
 				if (!test_NetCharDevGetInfo(p, tctx, device)) {
-					ret = False;
+					return false;
 				}
 				if (!test_NetCharDevControl(p, tctx, device)) {
-					ret = False;
+					return false;
 				}
 			}
 		}
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
 /* srvsvc_NetCharDevQ     */
 /**************************/
-static BOOL test_NetCharDevQGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_NetCharDevQGetInfo(struct dcerpc_pipe *p, struct torture_context *tctx,
 				const char *devicequeue)
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevQGetInfo r;
 	uint32_t levels[] = {0, 1};
 	int i;
-	BOOL ret = True;
 
-	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.queue_name = devicequeue;
-	r.in.user = talloc_asprintf(mem_ctx,"Administrator");
+	r.in.user = talloc_asprintf(tctx,"Administrator");
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		d_printf("testing NetCharDevQGetInfo level %u on devicequeue '%s'\n",
+		torture_comment(tctx, "testing NetCharDevQGetInfo level %u on devicequeue '%s'\n",
 			r.in.level, r.in.queue_name);
-		status = dcerpc_srvsvc_NetCharDevQGetInfo(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetCharDevQGetInfo level %u on devicequeue '%s' failed - %s\n",
-				r.in.level, r.in.queue_name, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetCharDevQGetInfo level %u on devicequeue '%s' failed - %s\n",
-				r.in.level, r.in.queue_name, win_errstr(r.out.result));
-			continue;
-		}
+		status = dcerpc_srvsvc_NetCharDevQGetInfo(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "NetCharDevQGetInfo failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetCharDevQGetInfo failed");
 	}
 
-	return ret;
+	return true;
 }
 
 #if 0
-static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				const char *devicequeue)
 {
 	NTSTATUS status;
@@ -193,7 +156,7 @@ static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32_t parm_error;
 	uint32_t levels[] = {0, 1};
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.queue_name = devicequeue;
@@ -225,7 +188,7 @@ static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("NetCharDevQSetInfo level %u on devicequeue '%s' failed - %s\n",
 				r.in.level, r.in.queue_name, nt_errstr(status));
-			ret = False;
+			ret = false;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -239,15 +202,14 @@ static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 #endif
 
-static BOOL test_NetCharDevQEnum(struct torture_context *tctx, 
-								 struct dcerpc_pipe *p)
+static bool test_NetCharDevQEnum(struct torture_context *tctx, 
+				 struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct srvsvc_NetCharDevQEnum r;
 	struct srvsvc_NetCharDevQCtr0 c0;
 	uint32_t levels[] = {0, 1};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.user = talloc_asprintf(tctx,"%s","Administrator");
@@ -262,17 +224,10 @@ static BOOL test_NetCharDevQEnum(struct torture_context *tctx,
 
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetCharDevQEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetCharDevQEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetCharDevQEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetCharDevQEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetCharDevQEnum failed");
 
 		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
 		if (r.in.level == 1) {
@@ -280,27 +235,26 @@ static BOOL test_NetCharDevQEnum(struct torture_context *tctx,
 				const char *device;
 				device = r.out.ctr.ctr1->array[j].device;
 				if (!test_NetCharDevQGetInfo(p, tctx, device)) {
-					ret = False;
+					return false;
 				}
 			}
 		}
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
 /* srvsvc_NetConn         */
 /**************************/
-static BOOL test_NetConnEnum(struct torture_context *tctx,
-							 struct dcerpc_pipe *p)
+static bool test_NetConnEnum(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct srvsvc_NetConnEnum r;
 	struct srvsvc_NetConnCtr0 c0;
 	uint32_t levels[] = {0, 1};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.path = talloc_asprintf(tctx,"%s","ADMIN$");
@@ -313,34 +267,26 @@ static BOOL test_NetConnEnum(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		d_printf("testing NetConnEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetConnEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetConnEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetConnEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetConnEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetConnEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetConnEnum failed");
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
 /* srvsvc_NetFile         */
 /**************************/
-static BOOL test_NetFileEnum(struct torture_context *tctx,
-							 struct dcerpc_pipe *p)
+static bool test_NetFileEnum(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct srvsvc_NetFileEnum r;
 	struct srvsvc_NetFileCtr3 c3;
 	uint32_t levels[] = {2, 3};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.path = NULL;
@@ -354,34 +300,26 @@ static BOOL test_NetFileEnum(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		d_printf("testing NetFileEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetFileEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetFileEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetFileEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetFileEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetFileEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetFileEnum failed");
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
 /* srvsvc_NetSess         */
 /**************************/
-static BOOL test_NetSessEnum(struct torture_context *tctx,
-							 struct dcerpc_pipe *p)
+static bool test_NetSessEnum(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct srvsvc_NetSessEnum r;
 	struct srvsvc_NetSessCtr0 c0;
 	uint32_t levels[] = {0, 1, 2, 10, 502};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.client = NULL;
@@ -395,49 +333,35 @@ static BOOL test_NetSessEnum(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		d_printf("testing NetSessEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetSessEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetSessEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetSessEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetSessEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetSessEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetSessEnum failed");
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
 /* srvsvc_NetShare        */
 /**************************/
-static BOOL test_NetShareCheck(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_NetShareCheck(struct dcerpc_pipe *p, struct torture_context *tctx,
 			       const char *device_name)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareCheck r;
-	BOOL ret = True;
 
-	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_unc = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.device_name = device_name;
 
-	d_printf("testing NetShareCheck on device '%s'\n", r.in.device_name);
+	torture_comment(tctx, 
+			"testing NetShareCheck on device '%s'\n", r.in.device_name);
 
-	status = dcerpc_srvsvc_NetShareCheck(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("dcerpc_srvsvc_NetShareCheck on device '%s' failed - %s\n",
-			r.in.device_name, nt_errstr(status));
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		d_printf("NetShareCheck on device '%s' failed - %s\n",
-			r.in.device_name, win_errstr(r.out.result));
-		ret = False;
-	}
+	status = dcerpc_srvsvc_NetShareCheck(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_srvsvc_NetShareCheck failed");
+	torture_assert_werr_ok(tctx, r.out.result, "NetShareCheck failed");
 
-	return ret;
+	return true;
 }
 
 static bool test_NetShareGetInfo(struct torture_context *tctx, 
@@ -459,7 +383,6 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 		 { 1005,	WERR_OK,		WERR_OK },
 	};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.share_name = sharename;
@@ -472,32 +395,21 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 		if (admin) expected = levels[i].admin_status;
 		ZERO_STRUCT(r.out);
 
-		d_printf("testing NetShareGetInfo level %u on share '%s'\n", 
+		torture_comment(tctx, "testing NetShareGetInfo level %u on share '%s'\n", 
 		       r.in.level, r.in.share_name);
 
 		status = dcerpc_srvsvc_NetShareGetInfo(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
-				r.in.level, r.in.share_name, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_EQUAL(r.out.result, expected)) {
-			d_printf("NetShareGetInfo level %u on share '%s' failed - %s (expected %s)\n",
-				r.in.level, r.in.share_name, win_errstr(r.out.result),
-				win_errstr(expected));
-			ret = False;
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
+		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareGetInfo failed");
 
 		if (r.in.level != 2) continue;
 		if (!r.out.info.info2 || !r.out.info.info2->path) continue;
 		if (!test_NetShareCheck(p, tctx, r.out.info.info2->path)) {
-			ret = False;
+			return false;
 		}
 	}
 
-	return ret;
+	return true;
 }
 
 static bool test_NetShareGetInfoAdminFull(struct torture_context *tctx, 
@@ -536,7 +448,6 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 		 { 1501,	WERR_OK },
 	};
 	int i;
-	BOOL ret = True;
 
 	a.in.server_unc = r.in.server_unc = q.in.server_unc = d.in.server_unc =
 		talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
@@ -556,15 +467,8 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 	a.in.parm_error = NULL;
 
 	status = dcerpc_srvsvc_NetShareAdd(p, tctx, &a);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("NetShareAdd level 2 on share 'testshare' failed - %s\n",
-			 nt_errstr(status));
-		return False;
-	} else if (!W_ERROR_EQUAL(a.out.result, WERR_OK)) {
-		d_printf("NetShareAdd level 2 on share 'testshare' failed - %s\n",
-			 win_errstr(a.out.result));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "NetShareAdd level 2 on share 'testshare' failed");
+	torture_assert_werr_ok(tctx, a.out.result, "NetShareAdd level 2 on share 'testshare' failed");
 
 	r.in.parm_error = NULL;
 
@@ -575,7 +479,7 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 		r.in.level = levels[i].level;
 		ZERO_STRUCT(r.out);
 
-		d_printf("testing NetShareSetInfo level %u on share '%s'\n", 
+		torture_comment(tctx, "testing NetShareSetInfo level %u on share '%s'\n", 
 		       r.in.level, r.in.share_name);
 
 		switch (levels[i].level) {
@@ -644,73 +548,45 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 		}
 		
 		status = dcerpc_srvsvc_NetShareSetInfo(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
-				r.in.level, r.in.share_name, nt_errstr(status));
-			ret = False;
-			continue;
-		} else if (!W_ERROR_EQUAL(r.out.result, levels[i].expected)) {
-			d_printf("NetShareSetInfo level %u on share '%s' failed - %s (expected %s)\n",
-				r.in.level, r.in.share_name, win_errstr(r.out.result),
-				win_errstr(levels[i].expected));
-			ret = False;
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
+		torture_assert_werr_equal(tctx, r.out.result, levels[i].expected, "NetShareSetInfo failed");
 		
 		q.in.share_name = r.in.share_name;
 
 		status = dcerpc_srvsvc_NetShareGetInfo(p, tctx, &q);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
-				q.in.level, q.in.share_name, nt_errstr(status));
-			ret = False;
-			continue;
-		} else if (!W_ERROR_EQUAL(q.out.result, WERR_OK)) {
-			d_printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
-				q.in.level, q.in.share_name, win_errstr(q.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
+		torture_assert_werr_ok(tctx, q.out.result, "NetShareGetInfo failed");
 
-		if (strcmp(q.out.info.info502->name, r.in.share_name) != 0) {
-			ret = False;
-		}
+		torture_assert_str_equal(tctx, q.out.info.info502->name, r.in.share_name, 
+					 "share name invalid");
+
 		switch (levels[i].level) {
 		case 0:
 			break;
 		case 1:
-			if (strcmp(q.out.info.info502->comment, "test comment 1") != 0)
-				ret = False;
+			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 1", "comment");
 			break;
 		case 2:
-			if (strcmp(q.out.info.info502->comment, "test comment 2") != 0)
-				ret = False;
-			if (q.out.info.info2->max_users != 2)
-				ret = False;
-			if (strcmp(q.out.info.info2->path, "C:\\") != 0)
-				ret = False;
+			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 2", "comment");
+			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 2, "max users");
+			torture_assert_str_equal(tctx, q.out.info.info2->path, "C:\\", "path");
 			break;
 		case 501:
-			if (strcmp(q.out.info.info501->comment, "test comment 501") != 0)
-				ret = False;
+			torture_assert_str_equal(tctx, q.out.info.info501->comment, "test comment 501", "comment");
 			break;
 		case 502:
-			if (strcmp(q.out.info.info502->comment, "test comment 502") != 0)
-				ret = False;
-			if (q.out.info.info2->max_users != 502)
-				ret = False;
-			if (strcmp(q.out.info.info2->path, "C:\\") != 0)
-				ret = False;
+			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 502", "comment");
+			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 502, "max users");
+			torture_assert_str_equal(tctx, q.out.info.info2->path, "C:\\", "path");
 			break;
 		case 1004:
-			if (strcmp(q.out.info.info502->comment, "test comment 1004") != 0)
-				ret = False;
+			torture_assert_str_equal(tctx, q.out.info.info502->comment, "test comment 1004", 
+						 "comment");
 			break;
 		case 1005:
 			break;
 		case 1006:
-			if (q.out.info.info2->max_users != 1006)
-				ret = False;
+			torture_assert_int_equal(tctx, q.out.info.info2->max_users, 1006, "Max users");
 			break;
 /*		case 1007:
 			break;
@@ -724,17 +600,10 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 	d.in.reserved = 0;
 
 	status = dcerpc_srvsvc_NetShareDel(p, tctx, &d);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("NetShareDel on share 'testshare502' failed - %s\n",
-			 nt_errstr(status));
-		ret = False;
-	} else if (!W_ERROR_EQUAL(a.out.result, WERR_OK)) {
-		d_printf("NetShareDel on share 'testshare502' failed - %s\n",
-			 win_errstr(d.out.result));
-		ret = False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "NetShareDel on share 'testshare502' failed");
+	torture_assert_werr_ok(tctx, a.out.result, "NetShareDel on share 'testshare502' failed");
 
-	return ret;
+	return true;
 }
 
 /**************************/
@@ -759,7 +628,6 @@ static bool test_NetShareEnumAll(struct torture_context *tctx,
 		 { 502,	WERR_ACCESS_DENIED,	WERR_OK },
 	};
 	int i;
-	BOOL ret = True;
 	uint32_t resume_handle;
 
 	ZERO_STRUCT(c0);
@@ -781,19 +649,10 @@ static bool test_NetShareEnumAll(struct torture_context *tctx,
 		ZERO_STRUCT(r.out);
 		resume_handle = 0;
 
-		d_printf("testing NetShareEnumAll level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetShareEnumAll level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnumAll(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetShareEnumAll level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_EQUAL(r.out.result, expected)) {
-			d_printf("NetShareEnumAll level %u failed - %s (expected %s)\n",
-				r.in.level, win_errstr(r.out.result),
-				win_errstr(expected));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetShareEnumAll failed");
+		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareEnumAll failed");
 
 		/* call srvsvc_NetShareGetInfo for each returned share */
 		if (r.in.level == 2 && r.out.ctr.ctr2) {
@@ -801,13 +660,13 @@ static bool test_NetShareEnumAll(struct torture_context *tctx,
 				const char *name;
 				name = r.out.ctr.ctr2->array[j].name;
 				if (!test_NetShareGetInfo(tctx, p, name, admin)) {
-					ret = False;
+					return false;
 				}
 			}
 		}
 	}
 
-	return ret;
+	return true;
 }
 
 static bool test_NetShareEnumAllFull(struct torture_context *tctx,
@@ -840,7 +699,6 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 		 { 502,	WERR_ACCESS_DENIED,	WERR_OK },
 	};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.ctr.ctr0 = &c0;
@@ -858,22 +716,13 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 
 		ZERO_STRUCT(r.out);
 
-		d_printf("testing NetShareEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetShareEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetShareEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_EQUAL(r.out.result, expected)) {
-			d_printf("NetShareEnum level %u failed - %s (expected %s)\n",
-				r.in.level, win_errstr(r.out.result),
-				win_errstr(expected));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetShareEnum failed");
+		torture_assert_werr_equal(tctx, r.out.result, expected, "NetShareEnum failed");
 	}
 
-	return ret;
+	return true;
 }
 
 static bool test_NetShareEnumFull(struct torture_context *tctx,
@@ -899,7 +748,6 @@ static bool test_NetSrvGetInfo(struct torture_context *tctx,
 	struct srvsvc_NetSrvInfo503 i503;
 	uint32_t levels[] = {100, 101, 102, 502, 503};
 	int i;
-	BOOL ret = True;
 	uint32_t resume_handle;
 
 	ZERO_STRUCT(i503);
@@ -910,33 +758,25 @@ static bool test_NetSrvGetInfo(struct torture_context *tctx,
 		ZERO_STRUCT(r.out);
 		resume_handle = 0;
 		r.in.level = levels[i];
-		d_printf("testing NetSrvGetInfo level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetSrvGetInfo level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetSrvGetInfo(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetSrvGetInfo failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetSrvGetInfo failed");
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
 /* srvsvc_NetDisk         */
 /**************************/
-static BOOL test_NetDiskEnum(struct torture_context *tctx, 
-							 struct dcerpc_pipe *p)
+static bool test_NetDiskEnum(struct torture_context *tctx, 
+			     struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct srvsvc_NetDiskEnum r;
 	uint32_t levels[] = {0};
 	int i;
-	BOOL ret = True;
 	uint32_t resume_handle=0;
 
 	ZERO_STRUCT(r.in);
@@ -946,21 +786,13 @@ static BOOL test_NetDiskEnum(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		d_printf("testing NetDiskEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetDiskEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetDiskEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			NDR_PRINT_OUT_DEBUG(srvsvc_NetDiskEnum, &r);
-			d_printf("NetDiskEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetDiskEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetDiskEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetDiskEnum failed");
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
@@ -974,7 +806,6 @@ static bool test_NetTransportEnum(struct torture_context *tctx,
 	struct srvsvc_NetTransportCtr0 c0;
 	uint32_t levels[] = {0, 1};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.transports.ctr0 = &c0;
@@ -986,46 +817,33 @@ static bool test_NetTransportEnum(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		d_printf("testing NetTransportEnum level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetTransportEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetTransportEnum(p, tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("NetTransportEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("NetTransportEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "NetTransportEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result, "NetTransportEnum failed");
 	}
 
-	return ret;
+	return true;
 }
 
 /**************************/
 /* srvsvc_NetRemoteTOD    */
 /**************************/
-static BOOL test_NetRemoteTOD(struct torture_context *tctx, 
-							  struct dcerpc_pipe *p)
+static bool test_NetRemoteTOD(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct srvsvc_NetRemoteTOD r;
-	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(tctx,"\\\\%s",dcerpc_server_name(p));
 
 	ZERO_STRUCT(r.out);
-	d_printf("testing NetRemoteTOD\n");
+	torture_comment(tctx, "testing NetRemoteTOD\n");
 	status = dcerpc_srvsvc_NetRemoteTOD(p, tctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("NetRemoteTOD failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		d_printf("NetRemoteTOD failed - %s\n", win_errstr(r.out.result));
-	}
+	torture_assert_ntstatus_ok(tctx, status, "NetRemoteTOD failed");
+	torture_assert_werr_ok(tctx, r.out.result, "NetRemoteTOD failed");
 
-	return ret;
+	return true;
 }
 
 /**************************/
@@ -1121,7 +939,7 @@ again:
 		r.in.flags = 0x0;
 	}
 
-	return True;
+	return true;
 }
 
 struct torture_suite *torture_rpc_srvsvc(TALLOC_CTX *mem_ctx)
