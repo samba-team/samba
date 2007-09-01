@@ -502,30 +502,8 @@ smbc_check_server(SMBCCTX * context,
         socklen_t size;
         struct sockaddr addr;
 
-        /*
-         * Although the use of port 139 is not a guarantee that we're using
-         * netbios, we assume so.  We don't want to send a keepalive packet if
-         * not netbios because it's not valid, and Vista, at least,
-         * disconnects the client on such a request.
-         */
-        if (server->cli->port == 139) {
-                /* Assuming netbios.  Send a keepalive packet */
-                if ( send_keepalive(server->cli->fd) == False ) {
-                        return 1;
-                }
-        } else {
-                /*
-                 * Assuming not netbios.  Try a different method to detect if
-                 * the connection is still alive.
-                 */
-                size = sizeof(addr);
-                if (getpeername(server->cli->fd, &addr, &size) == -1) {
-                        return 1;
-                }
-        }
-
-	/* connection is ok */
-	return 0;
+        size = sizeof(addr);
+        return (getpeername(server->cli->fd, &addr, &size) == -1);
 }
 
 /* 
