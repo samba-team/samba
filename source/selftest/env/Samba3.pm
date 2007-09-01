@@ -8,6 +8,7 @@ package Samba3;
 use strict;
 use Cwd qw(abs_path);
 use FindBin qw($RealBin);
+use POSIX;
 
 sub binpath($$)
 {
@@ -39,12 +40,32 @@ sub teardown_env($$)
 	return 0;
 }
 
+sub getlog_env_app($$$)
+{
+	my ($self, $envvars, $name) = @_;
+
+	my $title = "$name LOG of: $envvars->{NETBIOSNAME}\n";
+	my $out = $title;
+
+	open(LOG, "<".$envvars->{$name."_TEST_LOG"});
+
+	seek(LOG, $envvars->{$name."_TEST_LOG_POS"}, SEEK_SET);
+	while (<LOG>) {
+		$out .= $_;
+	}
+	$envvars->{$name."_TEST_LOG_POS"} = tell(LOG);
+	close(LOG);
+
+	return "" if $out eq $title;
+ 
+	return $out;
+}
+
 sub getlog_env($$)
 {
 	my ($self, $envvars) = @_;
 
-	# TODO...
-	return "";
+	return $self->getlog_env_app($envvars, "SMBD") .  $self->getlog_env_app($envvars, "NMBD");
 }
 
 sub check_env($$)
@@ -62,7 +83,7 @@ sub setup_env($$$)
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
 	} else {
-		die("Samba3 can't provide environment '$envname'");
+		return undef;
 	}
 }
 
