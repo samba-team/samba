@@ -4,15 +4,13 @@
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-p=ldap
 for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD"; do
-    plantest "TESTING PROTOCOL $p with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh $p \$SERVER_IP $options
+    plantest "TESTING PROTOCOL ldap with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldap \$SERVER_IP $options
 done
 # see if we support ldaps
 if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
-    p=ldaps
     for options in "" "-U\$USERNAME%\$PASSWORD"; do
-	plantest "TESTING PROTOCOL $p with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh $p \$SERVER_IP $options
+	plantest "TESTING PROTOCOL ldaps with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldaps \$SERVER_IP $options
     done
 fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
