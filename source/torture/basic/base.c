@@ -1712,8 +1712,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *tctx)
 
 NTSTATUS torture_base_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(
-									talloc_autofree_context(), "BASE");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "BASE");
 
 	torture_suite_add_2smb_test(suite, "FDPASS", run_fdpasstest);
 	torture_suite_add_suite(suite, torture_base_locktest());
@@ -1747,8 +1746,7 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_1smb_test(suite, "SECLEAK",  torture_sec_leak);
 	torture_suite_add_simple_test(suite, "DISCONNECT",  torture_disconnect);
 	torture_suite_add_suite(suite, torture_delay_write());
-	torture_suite_add_simple_test(suite, "SAMBA3ERROR", 
-								  torture_samba3_errorpaths);
+	torture_suite_add_simple_test(suite, "SAMBA3ERROR", torture_samba3_errorpaths);
 	torture_suite_add_1smb_test(suite, "CASETABLE", torture_casetable);
 	torture_suite_add_1smb_test(suite, "UTABLE", torture_utable);
 	torture_suite_add_simple_test(suite, "SMB", torture_smb_scan);

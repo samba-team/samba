@@ -473,8 +473,8 @@ static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level,
 }
 
 
-BOOL torture_nttrans_scan(struct torture_context *torture, 
-						  struct smbcli_state *cli)
+bool torture_nttrans_scan(struct torture_context *torture, 
+			  struct smbcli_state *cli)
 {
 	int op, level;
 	const char *fname = "\\scanner.dat";
@@ -498,8 +498,6 @@ BOOL torture_nttrans_scan(struct torture_context *torture,
 			scan_nttrans(cli, op, level, fnum, dnum, fname);
 		}
 	}
-
-	torture_close_connection(cli);
 
 	printf("nttrans scan finished\n");
 	return True;
