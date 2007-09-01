@@ -185,6 +185,7 @@ sub provision($$)
 	my $server = "localhost2";
 	my $server_ip = "127.0.0.2";
 	my $username = `PATH=/usr/ucb:$ENV{PATH} whoami`;
+	chomp $username;
 	my $password = "test";
 
 	my $srcdir="$RealBin/..";
