@@ -64,7 +64,7 @@ BOOL torture_lookup(struct torture_context *torture)
 
 	ret = True;
 
-	printf("Name [%s] found at adrress: %s.\n", lookup.in.hostname, *lookup.out.address);
+	printf("Name [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
 
 done:
 	talloc_free(mem_ctx);
@@ -107,7 +107,7 @@ BOOL torture_lookup_host(struct torture_context *torture)
 
 	ret = True;
 
-	printf("Host [%s] found at adrress: %s.\n", lookup.in.hostname, *lookup.out.address);
+	printf("Host [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
 
 done:
 	talloc_free(mem_ctx);
