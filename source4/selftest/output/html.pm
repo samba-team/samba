@@ -118,6 +118,7 @@ sub end_testsuite($$$$$)
 
 	print TEST "</table>\n";
 
+	print TEST "<div class=\"command\">$state->{CMD}</div>\n";
 	print TEST "<div class=\"duration\">Duration: " . (time() - $state->{START_TIME}) . "s</div>\n";
 
 	$self->print_html_footer(*TEST);
