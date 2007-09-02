@@ -25,6 +25,7 @@
 
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
+#include "lib/cmdline/popt_common.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
@@ -114,18 +115,16 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	torture_comment(tctx, "Testing QuerySecret\n");
 	status = dcerpc_lsa_QuerySecret(p, tctx, &r4);
 	torture_assert_ntstatus_ok(tctx, status, "QuerySecret failed");
-	if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL) {
+	if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL)
 		torture_fail(tctx, "No secret buffer returned");
-	} else {
-		blob1.data = r4.out.new_val->buf->data;
-		blob1.length = r4.out.new_val->buf->size;
-		
-		blob2 = data_blob_talloc(tctx, NULL, blob1.length);
-		
-		secret2 = sess_decrypt_string(tctx, &blob1, &session_key);
-		
-		torture_assert_str_equal(tctx, secret1, secret2, "Returned secret invalid");
-	}
+	blob1.data = r4.out.new_val->buf->data;
+	blob1.length = r4.out.new_val->buf->size;
+	
+	blob2 = data_blob_talloc(tctx, NULL, blob1.length);
+	
+	secret2 = sess_decrypt_string(tctx, &blob1, &session_key);
+	
+	torture_assert_str_equal(tctx, secret1, secret2, "Returned secret invalid");
 
 	d.in.handle = &sec_handle;
 	status = dcerpc_lsa_Delete(p, tctx, &d);
@@ -133,31 +132,60 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	return true;
 }
 
+struct secret_settings {
+	uint32_t bindoptions;
+};
 
-/* TEST session key correctness by pushing and pulling secrets */
-
-bool torture_rpc_lsa_secrets(struct torture_context *torture) 
+static bool test_secrets(struct torture_context *torture, const void *_data)
 {
-        NTSTATUS status;
         struct dcerpc_pipe *p;
 	struct policy_handle *handle;
+	struct dcerpc_binding *binding;
+	const struct secret_settings *settings = _data;
 
-	status = torture_rpc_connection(torture, 
-					&p, 
-					&ndr_table_lsarpc);
-	torture_assert_ntstatus_ok(torture, status, "Creating connection");
+	torture_assert_ntstatus_ok(torture, torture_rpc_binding(torture, &binding), 
+				   "Getting bindoptions");
+
+	binding->flags |= settings->bindoptions;
+
+	torture_assert_ntstatus_ok(torture, 
+				   dcerpc_pipe_connect_b(torture, &p, binding, &ndr_table_lsarpc, cmdline_credentials, NULL),
+				   "connect");
 
 	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
 		return false;
 	}
 
-	if (!handle) {
-		torture_fail(torture, "OpenPolicy2 failed.  This test cannot run against this server");
-	} 
+	torture_assert(torture, handle, "OpenPolicy2 failed.  This test cannot run against this server");
 	
 	if (!test_CreateSecret_basic(p, torture, handle)) {
 		return false;
 	}
 
 	return true;
+}
+
+/* TEST session key correctness by pushing and pulling secrets */
+
+struct torture_suite *torture_rpc_lsa_secrets(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SECRETS");
+	struct secret_settings *settings;
+
+	settings = talloc_zero(suite, struct secret_settings);
+	settings->bindoptions = DCERPC_PUSH_BIGENDIAN;
+
+	torture_suite_add_simple_tcase(suite, "bigendian", test_secrets, settings);
+
+	settings = talloc_zero(suite, struct secret_settings);
+	settings->bindoptions = DCERPC_SEAL;
+
+	torture_suite_add_simple_tcase(suite, "seal", test_secrets, settings);
+
+	settings = talloc_zero(suite, struct secret_settings);
+	settings->bindoptions = 0;
+
+	torture_suite_add_simple_tcase(suite, "none", test_secrets, settings);
+
+	return suite;
 }
