@@ -138,6 +138,7 @@ my $opt_resetup_env = undef;
 my $opt_bindir = undef;
 my $opt_no_lazy_setup = undef;
 my $opt_format = "plain";
+my @opt_testlists = ();
 
 my $srcdir = ".";
 my $builddir = ".";
@@ -270,6 +271,7 @@ Usage: $Script [OPTIONS] PREFIX
 Generic options:
  --help                     this help page
  --target=samba4|samba3|win Samba version to target
+ --testlist=FILE			file to read available tests from
 
 Paths:
  --prefix=DIR               prefix to run tests in [st]
@@ -321,6 +323,7 @@ my $result = GetOptions (
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 		'format=s' => \$opt_format,
+		'testlist=s' => \@opt_testlists
 	    );
 
 exit(1) if (not $result);
@@ -533,28 +536,42 @@ $ENV{CONFIGURATION} = "--configfile=$conffile";
 
 my %required_envs = ();
 
-if ($opt_quick) {
-	open(IN, "$testsdir/tests_quick.sh|");
-} else {
-	open(IN, "$testsdir/tests_all.sh|");
-}
-while (<IN>) {
-	if ($_ eq "-- TEST --\n") {
-		my $name = <IN>;
-		$name =~ s/\n//g;
-		my $env = <IN>;
-		$env =~ s/\n//g;
-		my $cmdline = <IN>;
-		$cmdline =~ s/\n//g;
-		if (not defined($tests) or $name =~ /$tests/) {
-			$required_envs{$env} = 1;
-			push (@todo, [$name, $env, $cmdline]);
+sub read_testlist($)
+{
+	my ($filename) = @_;
+
+	my @ret = ();
+	open(IN, $filename) or die("Unable to open $filename: $!");
+
+	while (<IN>) {
+		if ($_ eq "-- TEST --\n") {
+			my $name = <IN>;
+			$name =~ s/\n//g;
+			my $env = <IN>;
+			$env =~ s/\n//g;
+			my $cmdline = <IN>;
+			$cmdline =~ s/\n//g;
+			if (not defined($tests) or $name =~ /$tests/) {
+				$required_envs{$env} = 1;
+				push (@ret, [$name, $env, $cmdline]);
+			}
+		} else {
+			print;
 		}
-	} else {
-		print;
 	}
+	close(IN) or die("Error creating recipe");
+	return @ret;
 }
-close(IN) or die("Error creating recipe");
+
+if ($opt_quick) {
+	@todo = read_testlist("$testsdir/tests_quick.sh|");
+} else {
+	@todo = read_testlist("$testsdir/tests_all.sh|");
+}
+
+foreach (@opt_testlists) {
+	push(@todo, read_testlist($_));
+}
 
 my $suitestotal = $#todo + 1;
 my $i = 0;
