@@ -3296,7 +3296,7 @@ int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, i
 
 #if 0
 
-Disable these now we've checked all code paths and ensured
+Disable these now we have checked all code paths and ensured
 NULL returns on zero request. JRA.
 
 /****************************************************************
