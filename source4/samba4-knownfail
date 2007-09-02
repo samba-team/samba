@@ -32,3 +32,4 @@ RPC-DRSUAPI.*/DsCrackNames
 RPC-DRSUAPI.*/DsGetDomainControllerInfo
 RPC-DRSUAPI.*/QuerySitesByCost
 RPC-DRSUAPI.*/DsGetNCChange
+BASE-CHARSET.*/Testing partial surrogate
