@@ -222,7 +222,7 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture, 
+static bool torture_raw_qfileinfo_internals(struct torture_context *torture, 
 					    TALLOC_CTX *mem_ctx, 	
 					    struct smbcli_tree *tree, 
 					    int fnum, const char *fname,
@@ -295,8 +295,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 		ret = False;
 		printf("%d levels failed\n", count);
 		if (count > 35) {
-			printf("too many level failures - giving up\n");
-			goto done;
+			torture_fail(torture, "too many level failures - giving up");
 		}
 	}
 
@@ -448,7 +447,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 	/* now check that all the times that are supposed to be equal are correct */
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.create_time;
-	printf("create_time: %s\n", nt_time_string(mem_ctx, correct_time));
+	torture_comment(torture, "create_time: %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, create_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, create_time);
@@ -460,7 +459,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.access_time;
-	printf("access_time: %s\n", nt_time_string(mem_ctx, correct_time));
+	torture_comment(torture, "access_time: %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, access_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, access_time);
@@ -472,7 +471,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.write_time;
-	printf("write_time : %s\n", nt_time_string(mem_ctx, correct_time));
+	torture_comment(torture, "write_time : %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, write_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, write_time);
@@ -485,7 +484,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_time = s1->basic_info.out.change_time;
-	printf("change_time: %s\n", nt_time_string(mem_ctx, correct_time));
+	torture_comment(torture, "change_time: %s\n", nt_time_string(mem_ctx, correct_time));
 
 	TIME_CHECK_NT ("BASIC_INFO",               basic_info, change_time);
 	TIME_CHECK_NT ("BASIC_INFORMATION",        basic_info, change_time);
@@ -511,7 +510,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.size;
-	printf("size: %u\n", (uint_t)correct_size);
+	torture_comment(torture, "size: %u\n", (uint_t)correct_size);
 	
 	SIZE_CHECK("GETATTR",                  getattr,                  size);
 	SIZE_CHECK("GETATTRE",                 getattre,                 size);
@@ -532,7 +531,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.alloc_size;
-	printf("alloc_size: %u\n", (uint_t)correct_size);
+	torture_comment(torture, "alloc_size: %u\n", (uint_t)correct_size);
 	
 	SIZE_CHECK("GETATTRE",                 getattre,                 alloc_size);
 	SIZE_CHECK("STANDARD",                 standard,                 alloc_size);
@@ -565,7 +564,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_attrib = s1->basic_info.out.attrib;
-	printf("attrib: 0x%x\n", (uint_t)correct_attrib);
+	torture_comment(torture, "attrib: 0x%x\n", (uint_t)correct_attrib);
 	
 	ATTRIB_CHECK("GETATTR",                   getattr,                   attrib);
 	if (!is_ipc) {
@@ -581,7 +580,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 	ATTRIB_CHECK("ATTRIBUTE_TAG_INFORMATION", attribute_tag_information, attrib);
 
 	correct_name = fname;
-	printf("name: %s\n", correct_name);
+	torture_comment(torture, "name: %s\n", correct_name);
 
 #define NAME_CHECK(sname, stype, tfield, flags) do { \
 	s1 = fnum_find(sname); \
@@ -605,8 +604,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 	/* the ALL_INFO file name is the full path on the filesystem */
 	s1 = fnum_find("ALL_INFO");
 	if (s1 && !s1->all_info.out.fname.s) {
-		printf("ALL_INFO didn't give a filename\n");
-		ret = False;
+		torture_fail(torture, "ALL_INFO didn't give a filename");
 	}
 	if (s1 && s1->all_info.out.fname.s) {
 		char *p = strrchr(s1->all_info.out.fname.s, '\\');
@@ -630,7 +628,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find("ALT_NAME_INFO");
 	if (s1) {
 		correct_name = s1->alt_name_info.out.fname.s;
-		printf("alt_name: %s\n", correct_name);
+		torture_comment(torture, "alt_name: %s\n", correct_name);
 		
 		NAME_CHECK("ALT_NAME_INFO",        alt_name_info, fname, STR_UNICODE);
 		NAME_CHECK("ALT_NAME_INFORMATION", alt_name_info, fname, STR_UNICODE);
@@ -652,7 +650,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 		
 		if (!skip_streams) {
 			correct_name = "::$DATA";
-			printf("stream_name: %s\n", correct_name);
+			torture_comment(torture, "stream_name: %s\n", correct_name);
 			
 			NAME_CHECK("STREAM_INFO",        stream_info, streams[0].stream_name, STR_UNICODE);
 			NAME_CHECK("STREAM_INFORMATION", stream_info, streams[0].stream_name, STR_UNICODE);
@@ -768,7 +766,7 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("INTERNAL_INFORMATION");
 	if (s1) {
-		printf("file_id=%.0f\n", (double)s1->internal_information.out.file_id);
+		torture_comment(torture, "file_id=%.0f\n", (double)s1->internal_information.out.file_id);
 	}
 
 	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, file_id);
@@ -808,9 +806,6 @@ static BOOL torture_raw_qfileinfo_internals(struct torture_context *torture,
 	/* when we set the delete disposition then the link count should drop
 	   to 0 and delete_pending should be 1 */
 	
-
-done:
-
 	return ret;
 }
 
@@ -840,7 +835,7 @@ bool torture_raw_qfileinfo(struct torture_context *torture,
 }
 
 bool torture_raw_qfileinfo_pipe(struct torture_context *torture, 
-								struct smbcli_state *cli)
+				struct smbcli_state *cli)
 {
 	bool ret = true;
 	int fnum;
@@ -849,23 +844,17 @@ bool torture_raw_qfileinfo_pipe(struct torture_context *torture,
 	struct smbcli_tree *ipc_tree;
 	NTSTATUS status;
 
-	if (!(p = dcerpc_pipe_init(torture, 
-				   cli->tree->session->transport->socket->event.ctx))) {
+	if (!(p = dcerpc_pipe_init(torture, cli->tree->session->transport->socket->event.ctx))) {
 		return False;
 	}
 
 	status = dcerpc_pipe_open_smb(p, cli->tree, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("dcerpc_pipe_open_smb failed: %s\n",
-			 nt_errstr(status));
-		talloc_free(p);
-		return False;
-	}
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_pipe_open_smb failed");
 
 	ipc_tree = dcerpc_smb_tree(p->conn);
 	fnum = dcerpc_smb_fnum(p->conn);
 
-	ret = torture_raw_qfileinfo_internals(torture, torture, ipc_tree, fnum, fname, True /* is_ipc */);
+	ret = torture_raw_qfileinfo_internals(torture, torture, ipc_tree, fnum, fname, true /* is_ipc */);
 	
 	talloc_free(p);
 	return ret;
