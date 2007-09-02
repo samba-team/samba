@@ -255,10 +255,9 @@ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 
 	if (t_name != NULL) {
 		s = talloc_asprintf_append(s, "%s:", t_name);
-		if (s == NULL) 
+		if (s == NULL) {
 			return NULL;
-	} else {
-		s = NULL;
+		}
 	}
 
 	if (b->host) {
