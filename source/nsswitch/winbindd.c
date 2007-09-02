@@ -215,18 +215,52 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 				       DATA_BLOB *data)
 {
 	uint8 ret;
+	pid_t child_pid;
+	struct sigaction act;
+	struct sigaction oldact;
 
 	DEBUG(10, ("winbindd_msg_validate_cache: got validate-cache "
 		   "message.\n"));
 
-#if 0
+	/*
+	 * call the validation code from a child:
+	 * so we don't block the main winbindd and the validation
+	 * code can safely use fork/waitpid...
+	 */
+	CatchChild();
+	child_pid = sys_fork();
+
+	if (child_pid == -1) {
+		DEBUG(1, ("winbind_msg_validate_cache: Could not fork: %s\n",
+			  strerror(errno)));
+		return;
+	}
+
+	if (child_pid != 0) {
+		/* parent */
+		DEBUG(5, ("winbind_msg_validate_cache: child created with "
+			  "pid %d.\n", child_pid));
+		return;
+	}
+
+	/* child */
+
+	/* install default SIGCHLD handler: validation code uses fork/waitpid */
+	ZERO_STRUCT(act);
+	act.sa_handler = SIG_DFL;
+#ifdef SA_RESTART
+	/* We *want* SIGALRM to interrupt a system call. */
+	act.sa_flags = SA_RESTART;
+#endif
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask,SIGCHLD);
+	sigaction(SIGCHLD,&act,&oldact);
+
 	ret = (uint8)winbindd_validate_cache_nobackup();
 	DEBUG(10, ("winbindd_msg_validata_cache: got return value %d\n", ret));
-#else
-	ret = 0;
-#endif
 	messaging_send_buf(msg_ctx, server_id, MSG_WINBIND_VALIDATE_CACHE, &ret,
 			   (size_t)1);
+	_exit(0);
 }
 
 static struct winbindd_dispatch_table {
