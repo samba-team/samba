@@ -665,7 +665,7 @@ int main(int argc,char *argv[])
 		}
 	}
 
-	if (torture->returncode) {
+	if (torture->returncode && correct) {
 		return(0);
 	} else {
 		return(1);
