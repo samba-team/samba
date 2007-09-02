@@ -134,6 +134,9 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 
 struct secret_settings {
 	uint32_t bindoptions;
+	bool keyexchange;
+	bool ntlm2;
+	bool lm_key;
 };
 
 static bool test_secrets(struct torture_context *torture, const void *_data)
@@ -142,6 +145,10 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 	struct policy_handle *handle;
 	struct dcerpc_binding *binding;
 	const struct secret_settings *settings = _data;
+
+	lp_set_cmdline("ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
+	lp_set_cmdline("ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");
+	lp_set_cmdline("ntlmssp_client:lm_key", settings->lm_key?"True":"False");
 
 	torture_assert_ntstatus_ok(torture, torture_rpc_binding(torture, &binding), 
 				   "Getting bindoptions");
@@ -165,27 +172,54 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 	return true;
 }
 
-/* TEST session key correctness by pushing and pulling secrets */
-
-struct torture_suite *torture_rpc_lsa_secrets(TALLOC_CTX *mem_ctx)
+static struct torture_tcase *add_test(struct torture_suite *suite, uint32_t bindoptions, 
+				     bool keyexchange, bool ntlm2, bool lm_key)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SECRETS");
+	char *name = NULL;
 	struct secret_settings *settings;
 
 	settings = talloc_zero(suite, struct secret_settings);
-	settings->bindoptions = DCERPC_PUSH_BIGENDIAN;
+	settings->bindoptions = bindoptions;
 
-	torture_suite_add_simple_tcase(suite, "bigendian", test_secrets, settings);
+	if (bindoptions == DCERPC_PUSH_BIGENDIAN)
+		name = talloc_strdup(suite, "bigendian");
+	else if (bindoptions == DCERPC_SEAL)
+		name = talloc_strdup(suite, "seal");
+	else if (bindoptions == 0) 
+		name = talloc_strdup(suite, "none");
+	else
+		name = talloc_strdup(suite, "unknown");
 
-	settings = talloc_zero(suite, struct secret_settings);
-	settings->bindoptions = DCERPC_SEAL;
+	name = talloc_asprintf_append(name, " keyexchange:%s", keyexchange?"yes":"no");
+	settings->keyexchange = keyexchange;
 
-	torture_suite_add_simple_tcase(suite, "seal", test_secrets, settings);
+	name = talloc_asprintf_append(name, " ntlm2:%s", ntlm2?"yes":"no");
+	settings->ntlm2 = ntlm2;
 
-	settings = talloc_zero(suite, struct secret_settings);
-	settings->bindoptions = 0;
+	name = talloc_asprintf_append(name, " lm_key:%s", lm_key?"yes":"no");
+	settings->lm_key = lm_key;
 
-	torture_suite_add_simple_tcase(suite, "none", test_secrets, settings);
+	return torture_suite_add_simple_tcase(suite, name, test_secrets, settings);
+}
+
+static const bool bool_vals[] = { true, false };
+
+/* TEST session key correctness by pushing and pulling secrets */
+struct torture_suite *torture_rpc_lsa_secrets(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SECRETS");
+	int keyexchange, ntlm2, lm_key;
+
+	for (keyexchange = 0; keyexchange < ARRAY_SIZE(bool_vals); keyexchange++) {
+		for (ntlm2 = 0; ntlm2 < ARRAY_SIZE(bool_vals); ntlm2++) {
+			for (lm_key = 0; lm_key < ARRAY_SIZE(bool_vals); lm_key++) {
+				add_test(suite, DCERPC_PUSH_BIGENDIAN, bool_vals[keyexchange], bool_vals[ntlm2], 
+					 bool_vals[lm_key]);
+				add_test(suite, DCERPC_SEAL, bool_vals[keyexchange], bool_vals[ntlm2], bool_vals[lm_key]);
+				add_test(suite, 0, bool_vals[keyexchange], bool_vals[ntlm2], bool_vals[lm_key]);
+			}
+		}
+	}
 
 	return suite;
 }
