@@ -38,7 +38,7 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
 done
 
 for bindoptions in "" $VALIDATE bigendian; do
- for t in $tests; do
+ for t in $auto_rpc_tests; do
   plantest "$t with $bindoptions" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
  done
 done
