@@ -637,6 +637,7 @@ int main(int argc,char *argv[])
 	} else {
 		lp_set_cmdline("torture:host", host);
 		lp_set_cmdline("torture:share", share);
+		lp_set_cmdline("torture:binding", host);
 	}
 
 	if (!strcmp(ui_ops_name, "simple")) {
