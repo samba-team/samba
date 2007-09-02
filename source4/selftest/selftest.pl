@@ -615,6 +615,12 @@ my @exported_envvars = (
 	"WINBINDD_SOCKET_DIR"
 );
 
+$SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub { 
+	my $signame = shift;
+	teardown_env($_) foreach(keys %running_envs);
+	die("Received signal $signame");
+};
+
 sub setup_env($)
 {
 	my ($envname) = @_;
@@ -633,6 +639,8 @@ sub setup_env($)
 
 	return undef unless defined($testenv_vars);
 
+	$running_envs{$envname} = $testenv_vars;
+
 	SocketWrapper::set_default_iface(6);
 	write_clientconf($conffile, $testenv_vars);
 
@@ -644,7 +652,6 @@ sub setup_env($)
 		}
 	}
 
-	$running_envs{$envname} = $testenv_vars;
 	return $testenv_vars;
 }
 
