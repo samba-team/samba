@@ -14,7 +14,8 @@ USERNAME=$2
 PASSWORD=$3
 DOMAIN=$4
 
-DD=bin/cifsdd
+samba4bindir=`dirname $0`/../../source/bin
+DD=$samba4bindir/cifsdd
 
 SHARE=tmp
 DEBUGLEVEL=1

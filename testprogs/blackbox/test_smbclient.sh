@@ -18,6 +18,9 @@ PREFIX=$5
 shift 5
 failed=0
 
+samba4bindir=`dirname $0`/../../source/bin
+smbclient=$samba4bindir/smbclient
+
 testit() {
 	name="$1"
 	shift
@@ -39,7 +42,7 @@ runcmd() {
 	shift
 	shift
 	echo "test: $name"
-	$VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
+	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "success: $name"
@@ -49,9 +52,9 @@ runcmd() {
 	return $status
 }
 
-testit "share and server list" $VALGRIND bin/smbclient -L $SERVER $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
+testit "share and server list" $VALGRIND $smbclient -L $SERVER $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
-testit "share and server list anonymously" $VALGRIND bin/smbclient -N -L $SERVER $CONFIGURATION $@ || failed=`expr $failed + 1`
+testit "share and server list anonymously" $VALGRIND $smbclient -N -L $SERVER $CONFIGURATION $@ || failed=`expr $failed + 1`
 
 testit "domain join" $VALGRIND bin/net join $DOMAIN $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
@@ -114,9 +117,9 @@ runcmd "List directory with LANMAN2" 'ls' -m LANMAN2 || failed=`expr $failed + 1
 
 runcmd "Print current working directory" 'pwd'|| failed=`expr $failed + 1`
 
-testit "Test login with --machine-pass without kerberos" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k no || failed=`expr $failed + 1`
+testit "Test login with --machine-pass without kerberos" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k no || failed=`expr $failed + 1`
 
-testit "Test login with --machine-pass and kerberos" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k yes || failed=`expr $failed + 1`
+testit "Test login with --machine-pass and kerberos" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k yes || failed=`expr $failed + 1`
 
 (
     echo "password=$PASSWORD"
@@ -124,24 +127,24 @@ testit "Test login with --machine-pass and kerberos" $VALGRIND bin/smbclient -c 
     echo "domain=$DOMAIN"
 ) > tmpauthfile
 
-testit "Test login with --authentication-file" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --authentication-file=tmpauthfile  || failed=`expr $failed + 1`
+testit "Test login with --authentication-file" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --authentication-file=tmpauthfile  || failed=`expr $failed + 1`
 
 PASSWD_FILE="tmppassfile" 
 echo "$PASSWORD" > $PASSWD_FILE
 export PASSWD_FILE
-testit "Test login with PASSWD_FILE" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME" || failed=`expr $failed + 1`
+testit "Test login with PASSWD_FILE" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME" || failed=`expr $failed + 1`
 PASSWD_FILE=""
 export PASSWD_FILE
 unset PASSWD_FILE
 
 PASSWD="$PASSWORD" 
 export PASSWD
-testit "Test login with PASSWD" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME" || failed=`expr $failed + 1`
+testit "Test login with PASSWD" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME" || failed=`expr $failed + 1`
 
 oldUSER=$USER
 USER="$USERNAME" 
 export USER
-testit "Test login with USER and PASSWD" $VALGRIND bin/smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" || failed=`expr $failed + 1`
+testit "Test login with USER and PASSWD" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" || failed=`expr $failed + 1`
 PASSWD=
 export PASSWD
 unset PASSWD
