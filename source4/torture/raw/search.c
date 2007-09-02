@@ -36,7 +36,7 @@ static BOOL single_search_callback(void *private, const union smb_search_data *f
 
 	*data = *file;
 
-	return True;
+	return true;
 }
 
 /*
@@ -231,8 +231,8 @@ static union smb_search_data *find(const char *name)
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
-static BOOL test_one_file(struct torture_context *tctx, 
-						  struct smbcli_state *cli)
+static bool test_one_file(struct torture_context *tctx, 
+			  struct smbcli_state *cli)
 {
 	BOOL ret = True;
 	int fnum;
@@ -242,8 +242,6 @@ static BOOL test_one_file(struct torture_context *tctx,
 	int i;
 	union smb_fileinfo all_info, alt_info, name_info, internal_info;
 	union smb_search_data *s;
-
-	printf("Testing one file searches\n");
 
 	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
@@ -257,7 +255,7 @@ static BOOL test_one_file(struct torture_context *tctx,
 		NTSTATUS expected_status;
 		uint32_t cap = cli->transport->negotiate.capabilities;
 
-		printf("testing %s\n", levels[i].name);
+		torture_comment(tctx, "testing %s\n", levels[i].name);
 
 		levels[i].status = torture_single_search(cli, tctx, fname, 
 							 levels[i].level,
@@ -305,38 +303,22 @@ static BOOL test_one_file(struct torture_context *tctx,
 	all_info.generic.level = RAW_FILEINFO_ALL_INFO;
 	all_info.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, tctx, &all_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("RAW_FILEINFO_ALL_INFO failed - %s\n", nt_errstr(status));
-		ret = False;
-		goto done;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "RAW_FILEINFO_ALL_INFO failed");
 
 	alt_info.generic.level = RAW_FILEINFO_ALT_NAME_INFO;
 	alt_info.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, tctx, &alt_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("RAW_FILEINFO_ALT_NAME_INFO failed - %s\n", nt_errstr(status));
-		ret = False;
-		goto done;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "RAW_FILEINFO_ALT_NAME_INFO failed");
 
 	internal_info.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
 	internal_info.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, tctx, &internal_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("RAW_FILEINFO_INTERNAL_INFORMATION failed - %s\n", nt_errstr(status));
-		ret = False;
-		goto done;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "RAW_FILEINFO_INTERNAL_INFORMATION failed");
 
 	name_info.generic.level = RAW_FILEINFO_NAME_INFO;
 	name_info.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, tctx, &name_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("RAW_FILEINFO_NAME_INFO failed - %s\n", nt_errstr(status));
-		ret = False;
-		goto done;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "RAW_FILEINFO_NAME_INFO failed");
 
 #define CHECK_VAL(name, sname1, field1, v, sname2, field2) do { \
 	s = find(name); \
@@ -540,7 +522,7 @@ static BOOL multiple_search_callback(void *private, const union smb_search_data 
 
 	data->list[data->count-1] = *file;
 
-	return True;
+	return true;
 }
 
 enum continue_type {CONT_FLAGS, CONT_NAME, CONT_RESUME_KEY};
@@ -640,28 +622,11 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	return status;
 }
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
-		goto done; \
-	}} while (0)
+#define CHECK_STATUS(status, correct) torture_assert_ntstatus_equal(tctx, status, correct, "incorrect status")
 
-#define CHECK_VALUE(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%ld - should be %ld\n", \
-		       __location__, #v, (long)v, (long)correct); \
-		ret = False; \
-		goto done; \
-	}} while (0)
+#define CHECK_VALUE(v, correct) torture_assert_int_equal(tctx, (v), (correct), "incorrect value");
 
-#define CHECK_STRING(v, correct) do { \
-	if (strcasecmp_m(v, correct) != 0) { \
-		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
-		       __location__, #v, v, correct); \
-		ret = False; \
-	}} while (0)
+#define CHECK_STRING(v, correct) torture_assert_casestr_equal(tctx, v, correct, "incorrect value");
 
 
 static enum smb_search_data_level compare_data_level;
@@ -688,7 +653,7 @@ static int search_compare(union smb_search_data *d1, union smb_search_data *d2)
    basic testing of search calls using many files
 */
 static bool test_many_files(struct torture_context *tctx, 
-							struct smbcli_state *cli)
+			    struct smbcli_state *cli)
 {
 	const int num_files = 700;
 	int i, fnum, t;
@@ -727,19 +692,15 @@ static bool test_many_files(struct torture_context *tctx,
 	};
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
-	printf("Testing with %d files\n", num_files);
+	torture_comment(tctx, "Testing with %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
 		fname = talloc_asprintf(cli, BASEDIR "\\t%03d-%d.txt", i, i);
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
-		if (fnum == -1) {
-			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-			ret = False;
-			goto done;
-		}
+		torture_assert(tctx, fnum != -1, "Failed to create");
 		talloc_free(fname);
 		smbcli_close(cli->tree, fnum);
 	}
@@ -749,20 +710,15 @@ static bool test_many_files(struct torture_context *tctx,
 		ZERO_STRUCT(result);
 		result.tctx = talloc_new(tctx);
 	
-		printf("Continue %s via %s\n", search_types[t].name, search_types[t].cont_name);
+		torture_comment(tctx,
+				"Continue %s via %s\n", search_types[t].name, search_types[t].cont_name);
 
 		status = multiple_search(cli, tctx, BASEDIR "\\*.*", 
 					 search_types[t].data_level,
 					 search_types[t].cont_type,
 					 &result);
 	
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("search type %s failed - %s\n", 
-			       search_types[t].name,
-			       nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "search failed");
 		CHECK_VALUE(result.count, num_files);
 
 		compare_data_level = search_types[t].data_level;
@@ -780,17 +736,12 @@ static bool test_many_files(struct torture_context *tctx,
 			}
 			s = extract_name(&result.list[i], level, compare_data_level);
 			fname = talloc_asprintf(cli, "t%03d-%d.txt", i, i);
-			if (strcmp(fname, s)) {
-				printf("Incorrect name %s at entry %d\n", s, i);
-				ret = False;
-				break;
-			}
+			torture_assert_str_equal(tctx, fname, s, "Incorrect name");
 			talloc_free(fname);
 		}
 		talloc_free(result.tctx);
 	}
 
-done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
@@ -800,7 +751,7 @@ done:
 /*
   check a individual file result
 */
-static BOOL check_result(struct multiple_result *result, const char *name, BOOL exist, uint32_t attrib)
+static bool check_result(struct multiple_result *result, const char *name, BOOL exist, uint32_t attrib)
 {
 	int i;
 	for (i=0;i<result->count;i++) {
@@ -812,7 +763,7 @@ static BOOL check_result(struct multiple_result *result, const char *name, BOOL 
 			       name, attrib_string(result->list, attrib));
 			return False;
 		}
-		return True;
+		return true;
 	}
 
 	if (!exist) {
@@ -827,7 +778,7 @@ static BOOL check_result(struct multiple_result *result, const char *name, BOOL 
 		       attrib, result->list[i].both_directory_info.attrib);
 		return False;
 	}
-	return True;
+	return true;
 }
 
 /* 
@@ -1402,7 +1353,6 @@ static bool test_ea_list(struct torture_context *tctx,
 	CHECK_STRING(result.list[2].ea_list.eas.eas[1].name.s, "THIRD EA");
 	CHECK_VALUE(result.list[2].ea_list.eas.eas[1].value.length, 0);
 
-done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
@@ -1418,7 +1368,7 @@ struct torture_suite *torture_raw_search(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SEARCH");
 
-	torture_suite_add_1smb_test(suite, "one file", test_one_file);
+	torture_suite_add_1smb_test(suite, "one file search", test_one_file);
 	torture_suite_add_1smb_test(suite, "many files", test_many_files);
 	torture_suite_add_1smb_test(suite, "sorted", test_sorted);
 	torture_suite_add_1smb_test(suite, "modify search", test_modify_search);
