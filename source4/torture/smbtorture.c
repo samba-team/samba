@@ -651,7 +651,20 @@ int main(int argc,char *argv[])
 	}
 
 	torture = torture_context_init(talloc_autofree_context(), ui_ops);
-	torture->outputdir = basedir;
+	if (basedir != NULL) {
+		if (basedir[0] != '/') {
+			fprintf(stderr, "Please specify an absolute path to --basedir\n");
+			return 1;
+		}
+		torture->outputdir = basedir;
+	} else {
+		char *pwd = talloc_size(torture, PATH_MAX);
+		if (!getcwd(pwd, PATH_MAX)) {
+			fprintf(stderr, "Unable to determine current working directory\n");
+			return 1;
+		}
+		torture->outputdir = pwd;
+	}
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
