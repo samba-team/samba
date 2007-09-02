@@ -34,8 +34,13 @@ sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
 
-	$self->samba3_stop_sig_term($envvars->{PIDDIR});
-	$self->samba3_stop_sig_kill($envvars->{PIDDIR});
+	my $smbdpid = read_pid($envvars, "smbd");
+	my $nmbdpid = read_pid($envvars, "nmbd");
+
+	$self->stop_sig_term($smbdpid);
+	$self->stop_sig_term($nmbdpid);
+	$self->stop_sig_kill($smbdpid);
+	$self->stop_sig_kill($nmbdpid);
 
 	return 0;
 }
@@ -105,23 +110,33 @@ sub stop($)
 	my ($self) = @_;
 }
 
-sub samba3_stop_sig_term($$) {
-	my ($self, $piddir) = @_;
-	my $ret = 0;
-	kill("USR1", `cat $piddir/timelimit.nmbd.pid`) or \
-		kill("ALRM", `cat $piddir/timelimit.nmbd.pid`) or $ret++;
-
-	kill("USR1", `cat $piddir/timelimit.smbd.pid`) or \
-		kill("ALRM", `cat $piddir/timelimit.smbd.pid`) or $ret++;
-
-	return $ret;
+sub stop_sig_term($$) {
+	my ($self, $pid) = @_;
+	kill("USR1", $pid) or kill("ALRM", $pid) or warn("Unable to kill $pid: $!");
 }
 
-sub samba3_stop_sig_kill($$) {
-	my ($self, $piddir) = @_;
-	kill("ALRM", `cat $piddir/timelimit.nmbd.pid`); 
-	kill("ALRM", `cat $piddir/timelimit.smbd.pid`);
-	return 0;
+sub stop_sig_kill($$) {
+	my ($self, $pid) = @_;
+	kill("ALRM", $pid) or warn("Unable to kill $pid: $!");
+}
+
+sub write_pid($$$)
+{
+	my ($env_vars, $app, $pid) = @_;
+
+	open(PID, ">$env_vars->{PIDDIR}/timelimit.$app.pid");
+	print PID $pid;
+	close(PID);
+}
+
+sub read_pid($$)
+{
+	my ($env_vars, $app) = @_;
+
+	open(PID, "<$env_vars->{PIDDIR}/timelimit.$app.pid");
+	my $pid = <PID>;
+	close(PID);
+	return $pid;
 }
 
 sub check_or_start($$$$) {
@@ -135,11 +150,9 @@ sub check_or_start($$$$) {
 		open STDERR, '>&STDOUT';
 	
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("nmbd");
-		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("nmbd"), "-F", "-S", "--no-process-group", "-d0" ,"-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start nmbd: $!");
+		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("nmbd"), "-F", "-S", "-d0", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start nmbd: $!");
 	}
-	open(PID, ">$env_vars->{PIDDIR}/timelimit.nmbd.pid");
-	print PID $pid;
-	close(PID);
+	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
 
 	unlink($env_vars->{SMBD_TEST_LOG});
@@ -150,11 +163,9 @@ sub check_or_start($$$$) {
 		open STDERR, '>&STDOUT';
 	
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("smbd");
-		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("smbd"), "-F", "-S", "--no-process-group", "-d0" ,"-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start smbd: $!");
+		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("smbd"), "-F", "-S", "-d0" , "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start smbd: $!");
 	}
-	open(PID, ">$env_vars->{PIDDIR}/timelimit.smbd.pid");
-	print PID $pid;
-	close(PID);
+	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
 
 	return 0;
