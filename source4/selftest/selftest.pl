@@ -161,26 +161,30 @@ my $statistics = {
 	TESTS_SKIP => 0,
 };
 
-sub expecting_failure($)
+sub find_in_list($$)
 {
-	my $fullname = shift;
+	my ($list, $fullname) = @_;
 
-	foreach (@expected_failures) {
-		return 1 if ($fullname =~ /$_/);
+	foreach (@$list) {
+		if ($fullname =~ /$$_[0]/) {
+			 return ($$_[1]) if ($$_[1]);
+			 return "NO REASON SPECIFIED";
+		}
 	}
 
-	return 0;
+	return undef;
+}
+
+sub expecting_failure($)
+{
+	my ($name) = @_;
+	return find_in_list(\@expected_failures, $name);
 }
 
 sub skip($)
 {
-	my $fullname = shift;
-
-	foreach (@skips) {
-		return 1 if ($fullname =~ /$_/);
-	}
-
-	return 0;
+	my ($name) = @_;
+	return find_in_list(\@skips, $name);
 }
 
 sub getlog_env($);
@@ -420,22 +424,30 @@ if ($opt_target eq "samba4") {
 	$target = new Windows();
 }
 
-if (defined($opt_expected_failures)) {
-	open(KNOWN, "<$opt_expected_failures") or die("unable to read known failures file: $!");
-	while (<KNOWN>) { 
+sub read_test_regexes($)
+{
+	my ($name) = @_;
+	my @ret = ();
+	open(LF, "<$name") or die("unable to read $name: $!");
+	while (<LF>) { 
 		chomp; 
-		s/([ \t]+)\#(.*)$//;
-		push (@expected_failures, $_); }
-	close(KNOWN);
+		if (/^(.*?)([ \t]+)\#(.*)$/) {
+			push (@ret, [$1, $3]);
+		} else {
+			s/^(.*?)([ \t]+)\#(.*)$//;
+			push (@ret, [$_, undef]); 
+		}
+	}
+	close(LF);
+	return @ret;
+}
+
+if (defined($opt_expected_failures)) {
+	@expected_failures = read_test_regexes($opt_expected_failures);
 }
 
 if (defined($opt_skip)) {
-	open(SKIP, "<$opt_skip") or die("unable to read skip file: $!");
-	while (<SKIP>) { 
-		chomp; 
-		s/([ \t]+)\#(.*)$//;
-		push (@skips, $_); }
-	close(SKIP);
+	@skips = read_test_regexes($opt_skip);
 }
 
 my $interfaces = join(',', ("127.0.0.6/8", 
@@ -697,16 +709,16 @@ $envvarstr
 		my $name = $$_[0];
 		my $envname = $$_[1];
 		
-		if (skip($name)) {
-			$msg_ops->skip_testsuite($envname, $name);
+		my $skipreason = skip($name);
+		if ($skipreason) {
+			$msg_ops->skip_testsuite($envname, $name, $skipreason);
 			$statistics->{SUITES_SKIPPED}++;
 			next;
 		}
 
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
-			$statistics->{SUITES_FAIL}++;
-			$statistics->{TESTS_ERROR}++;
+			$statistics->{SUITES_SKIPPED}++;
 			$msg_ops->missing_env($name, $envname);
 			next;
 		}
