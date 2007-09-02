@@ -31,8 +31,8 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 	name->string = s;
 }
 
-static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p, 
-				    TALLOC_CTX *mem_ctx, 
+static bool test_CreateSecret_basic(struct dcerpc_pipe *p, 
+				    struct torture_context *tctx,
 				    struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -44,7 +44,6 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 	struct lsa_DATA_BUF buf1;
 	struct lsa_DATA_BUF_PTR bufp1;
 	DATA_BLOB enc_key;
-	BOOL ret = True;
 	DATA_BLOB session_key;
 	NTTIME old_mtime, new_mtime;
 	DATA_BLOB blob1, blob2;
@@ -52,9 +51,9 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 	char *secret2;
 	char *secname;
 
-	secname = talloc_asprintf(mem_ctx, "torturesecret-%u", (uint_t)random());
+	secname = talloc_asprintf(tctx, "torturesecret-%u", (uint_t)random());
 
-	printf("Testing CreateSecret of %s\n", secname);
+	torture_comment(tctx, "Testing CreateSecret of %s\n", secname);
 		
 	init_lsa_String(&r.in.name, secname);
 	
@@ -62,17 +61,11 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.sec_handle = &sec_handle;
 	
-	status = dcerpc_lsa_CreateSecret(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateSecret failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_lsa_CreateSecret(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "CreateSecret failed");
 	
 	status = dcerpc_fetch_session_key(p, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_fetch_session_key failed");
 	
 	enc_key = sess_encrypt_string(secret1, &session_key);
 	
@@ -83,13 +76,10 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 	r3.in.new_val->length = enc_key.length;
 	r3.in.new_val->size = enc_key.length;
 	
-	printf("Testing SetSecret\n");
+	torture_comment(tctx, "Testing SetSecret\n");
 	
-	status = dcerpc_lsa_SetSecret(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetSecret failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
+	status = dcerpc_lsa_SetSecret(p, tctx, &r3);
+	torture_assert_ntstatus_ok(tctx, status, "SetSecret failed");
 		
 	r3.in.sec_handle = &sec_handle;
 	r3.in.new_val = &buf1;
@@ -101,13 +91,11 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 	/* break the encrypted data */
 	enc_key.data[0]++;
 	
-	printf("Testing SetSecret with broken key\n");
+	torture_comment(tctx, "Testing SetSecret with broken key\n");
 	
-	status = dcerpc_lsa_SetSecret(p, mem_ctx, &r3);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_UNKNOWN_REVISION)) {
-		printf("SetSecret should have failed UNKNOWN_REVISION - %s\n", nt_errstr(status));
-		ret = False;
-	}
+	status = dcerpc_lsa_SetSecret(p, tctx, &r3);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_UNKNOWN_REVISION, 
+		"SetSecret should have failed UNKNOWN_REVISION");
 	
 	data_blob_free(&enc_key);
 	
@@ -123,73 +111,53 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 	
 	bufp1.buf = NULL;
 	
-	printf("Testing QuerySecret\n");
-	status = dcerpc_lsa_QuerySecret(p, mem_ctx, &r4);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QuerySecret failed - %s\n", nt_errstr(status));
-		ret = False;
+	torture_comment(tctx, "Testing QuerySecret\n");
+	status = dcerpc_lsa_QuerySecret(p, tctx, &r4);
+	torture_assert_ntstatus_ok(tctx, status, "QuerySecret failed");
+	if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL) {
+		torture_fail(tctx, "No secret buffer returned");
 	} else {
-		if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL) {
-			printf("No secret buffer returned\n");
-			ret = False;
-		} else {
-			blob1.data = r4.out.new_val->buf->data;
-			blob1.length = r4.out.new_val->buf->size;
-			
-			blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
-			
-			secret2 = sess_decrypt_string(mem_ctx, &blob1, &session_key);
-			
-			if (strcmp(secret1, secret2) != 0) {
-				printf("Returned secret '%s' doesn't match '%s'\n", 
-				       secret2, secret1);
-				ret = False;
-			}
-		}
+		blob1.data = r4.out.new_val->buf->data;
+		blob1.length = r4.out.new_val->buf->size;
+		
+		blob2 = data_blob_talloc(tctx, NULL, blob1.length);
+		
+		secret2 = sess_decrypt_string(tctx, &blob1, &session_key);
+		
+		torture_assert_str_equal(tctx, secret1, secret2, "Returned secret invalid");
 	}
 
 	d.in.handle = &sec_handle;
-	status = dcerpc_lsa_Delete(p, mem_ctx, &d);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("delete should have returned OKINVALID_HANDLE - %s\n", nt_errstr(status));
-		ret = False;
-	}
-	return ret;
+	status = dcerpc_lsa_Delete(p, tctx, &d);
+	torture_assert_ntstatus_ok(tctx, status, "delete should have returned OKINVALID_HANDLE");
+	return true;
 }
 
 
 /* TEST session key correctness by pushing and pulling secrets */
 
-BOOL torture_rpc_lsa_secrets(struct torture_context *torture) 
+bool torture_rpc_lsa_secrets(struct torture_context *torture) 
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
 	struct policy_handle *handle;
-
-	mem_ctx = talloc_init("torture_rpc_lsa_secrets");
 
 	status = torture_rpc_connection(torture, 
 					&p, 
 					&ndr_table_lsarpc);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
+	torture_assert_ntstatus_ok(torture, status, "Creating connection");
+
+	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
+		return false;
 	}
 
-	if (test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
-		if (!handle) {
-			printf("OpenPolicy2 failed.  This test cannot run against this server\n");
-			ret = False;
-		} else if (!test_CreateSecret_basic(p, mem_ctx, handle)) {
-			ret = False;
-		}
-	} else {
-		return False;
+	if (!handle) {
+		torture_fail(torture, "OpenPolicy2 failed.  This test cannot run against this server");
+	} 
+	
+	if (!test_CreateSecret_basic(p, torture, handle)) {
+		return false;
 	}
 
-	talloc_free(mem_ctx);
-
-	return ret;
+	return true;
 }
