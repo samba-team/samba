@@ -52,7 +52,8 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	tmptbl.syntax_id.if_version += 100;
 	torture_comment(torture, "Opening bad secondary connection\n");
 	status = dcerpc_secondary_context(p, &p2, &tmptbl);
-	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context with wrong version should fail");
+	torture_assert_ntstatus_equal(torture, status, NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX,
+				      "dcerpc_alter_context with wrong version should fail");
 
 	torture_comment(torture, "testing DSSETUP pipe operations\n");
 	ret &= test_DsRoleGetPrimaryDomainInformation(torture, p2);
