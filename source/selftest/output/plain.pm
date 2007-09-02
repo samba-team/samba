@@ -113,9 +113,13 @@ sub missing_env($$$)
 
 sub skip_testsuite($$$)
 {
-	my ($self, $envname, $name) = @_;
+	my ($self, $envname, $name, $reason) = @_;
 
-	print "SKIPPED: $name\n";
+	if ($reason) {
+		print "SKIPPED: $name [$reason]\n";
+	} else {
+		print "SKIPPED: $name\n";
+	}
 }
 
 1;
