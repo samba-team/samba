@@ -422,7 +422,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SAMBA3-WINREG", torture_samba3_rpc_winreg);
 	torture_suite_add_suite(suite, torture_rpc_drsuapi(suite));
 	torture_suite_add_suite(suite, torture_rpc_drsuapi_cracknames(suite));
-	torture_suite_add_simple_test(suite, "DSSETUP", torture_rpc_dssetup);
+	torture_suite_add_suite(suite, torture_rpc_dssetup(suite));
 	torture_suite_add_simple_test(suite, "ALTERCONTEXT", torture_rpc_alter_context);
 	torture_suite_add_simple_test(suite, "JOIN", torture_rpc_join);
 	torture_suite_add_simple_test(suite, "DSSYNC", torture_rpc_dssync);

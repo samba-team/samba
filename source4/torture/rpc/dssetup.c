@@ -25,56 +25,31 @@
 #include "torture/rpc/rpc.h"
 
 
-BOOL test_DsRoleGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+bool test_DsRoleGetPrimaryDomainInformation(struct torture_context *tctx, 
+					    struct dcerpc_pipe *p)
 {
 	struct dssetup_DsRoleGetPrimaryDomainInformation r;
 	NTSTATUS status;
-	BOOL ret = True;
 	int i;
-
-	printf("\ntesting DsRoleGetPrimaryDomainInformation\n");
 
 	for (i=DS_ROLE_BASIC_INFORMATION; i <= DS_ROLE_OP_STATUS; i++) {
 		r.in.level = i;
+		torture_comment(tctx, "dcerpc_dssetup_DsRoleGetPrimaryDomainInformation level %d\n", i);
 
-		status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			const char *errstr = nt_errstr(status);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-			}
-			printf("dcerpc_dssetup_DsRoleGetPrimaryDomainInformation level %d failed - %s\n",
-				i, errstr);
-			ret = False;
-		} else if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("DsRoleGetPrimaryDomainInformation level %d failed - %s\n",
-				i, win_errstr(r.out.result));
-			ret = False;
-		}
+		status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "DsRoleGetPrimaryDomainInformation failed");
+		torture_assert_werr_ok(tctx, r.out.result, "DsRoleGetPrimaryDomainInformation failed");
 	}
 
-	return ret;
+	return true;
 }
 
-BOOL torture_rpc_dssetup(struct torture_context *torture)
+struct torture_suite *torture_rpc_dssetup(TALLOC_CTX *mem_ctx)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "DSSETUP");
+	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, "dssetup", &ndr_table_dssetup);
 
-	mem_ctx = talloc_init("torture_rpc_dssetup");
+	torture_rpc_tcase_add_test(tcase, "DsRoleGetPrimaryDomainInformation", test_DsRoleGetPrimaryDomainInformation);
 
-	status = torture_rpc_connection(torture, &p, &ndr_table_dssetup);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-
-		return False;
-	}
-
-	ret &= test_DsRoleGetPrimaryDomainInformation(p, mem_ctx);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }
