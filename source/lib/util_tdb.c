@@ -1097,7 +1097,8 @@ int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 		exit(tdb_validate_child(tdb, validate_fn));
 	}
 	else if (child_pid < 0) {
-		smb_panic("tdb_validate: fork for validation failed.");
+		DEBUG(1, ("tdb_validate: fork for validation failed.\n"));
+		goto done;
 	}
 
 	/* parent */
@@ -1112,14 +1113,14 @@ int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 			errno = 0;
 			continue;
 		}
-		DEBUG(0, ("tdb_validate: waitpid failed with errno %s\n",
+		DEBUG(1, ("tdb_validate: waitpid failed with error '%s'.\n",
 			  strerror(errno)));
-		smb_panic("tdb_validate: waitpid failed.");
+		goto done;
 	}
 	if (wait_pid != child_pid) {
-		DEBUG(0, ("tdb_validate: waitpid returned pid %d, "
+		DEBUG(1, ("tdb_validate: waitpid returned pid %d, "
 			  "but %d was expected\n", wait_pid, child_pid));
-		smb_panic("tdb_validate: waitpid returned unexpected PID.");
+		goto done;
 	}
 
 	DEBUG(10, ("tdb_validate: validating child returned.\n"));
@@ -1144,6 +1145,7 @@ int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 		ret = WSTOPSIG(child_status);
 	}
 
+done:
 	DEBUG(5, ("tdb_validate returning code '%d' for tdb '%s'\n", ret,
 		  tdb_name(tdb)));
 
