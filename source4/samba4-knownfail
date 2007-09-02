@@ -33,3 +33,4 @@ RPC-DRSUAPI.*/DsGetDomainControllerInfo
 RPC-DRSUAPI.*/QuerySitesByCost
 RPC-DRSUAPI.*/DsGetNCChange
 BASE-CHARSET.*/Testing partial surrogate
+.*NET-API-DELSHARE.*				# DelShare isn't implemented yet
