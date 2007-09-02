@@ -30,50 +30,36 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p, *p2;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
 	struct policy_handle *handle;
 	struct ndr_interface_table tmptbl;
 	struct ndr_syntax_id syntax;
 	struct ndr_syntax_id transfer_syntax;
-
-	mem_ctx = talloc_init("torture_rpc_alter_context");
+	bool ret = true;
 
 	torture_comment(torture, "opening LSA connection\n");
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_assert_ntstatus_ok(torture, status, "connecting");
 
-	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
+		ret = false;
 	}
 
 	torture_comment(torture, "Opening secondary DSSETUP context\n");
 	status = dcerpc_secondary_context(p, &p2, &ndr_table_dssetup);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		torture_comment(torture, "dcerpc_alter_context failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	tmptbl = ndr_table_dssetup;
 	tmptbl.syntax_id.if_version += 100;
 	torture_comment(torture, "Opening bad secondary connection\n");
 	status = dcerpc_secondary_context(p, &p2, &tmptbl);
-	if (NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		torture_comment(torture, "dcerpc_alter_context with wrong version should fail\n");
-		return False;
-	}
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context with wrong version should fail");
 
 	torture_comment(torture, "testing DSSETUP pipe operations\n");
-	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
+	ret &= test_DsRoleGetPrimaryDomainInformation(torture, p2);
 
 	if (handle) {
-		if (!test_lsa_Close(p, mem_ctx, handle)) {
-			ret = False;
+		if (!test_lsa_Close(p, torture, handle)) {
+			ret = false;
 		}
 	}
 
@@ -81,33 +67,27 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	transfer_syntax = p->transfer_syntax;
 
 	torture_comment(torture, "Testing change of primary context\n");
-	status = dcerpc_alter_context(p, mem_ctx, &p2->syntax, &p2->transfer_syntax);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		torture_comment(torture, "dcerpc_alter_context failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_alter_context(p, torture, &p2->syntax, &p2->transfer_syntax);
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	torture_comment(torture, "testing DSSETUP pipe operations - should fault\n");
-	if (test_DsRoleGetPrimaryDomainInformation(p, mem_ctx)) {
-		ret = False;
+	if (test_DsRoleGetPrimaryDomainInformation(torture, p)) {
+		ret = false;
 	}
 
-	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
+		ret = false;
 	}
 
 	if (handle) {
-		if (!test_lsa_Close(p, mem_ctx, handle)) {
-			ret = False;
+		if (!test_lsa_Close(p, torture, handle)) {
+			ret = false;
 		}
 	}
 
 	torture_comment(torture, "testing DSSETUP pipe operations\n");
 
-	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
-
-	talloc_free(mem_ctx);
+	ret &= test_DsRoleGetPrimaryDomainInformation(torture, p2);
 
 	return ret;
 }

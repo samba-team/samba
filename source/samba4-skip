@@ -3,7 +3,6 @@ BASE-DELAYWRITE
 RAW-COMPOSITE
 RAW-OPLOCK
 BASE-IOMETER
-BASE-SAMBA3ERROR
 BASE-CASETABLE
 BASE-NTTRANS
 .*BASE-BENCH-HOLDCON.*				# Very slow
@@ -35,6 +34,12 @@ ntvfs/cifs RAW-CONTEXT
 ntvfs/cifs RAW-QFILEINFO-IPC
 RPC-DSSYNC
 RPC-SAMSYNC
-LDAP-UPTODATEVECTOR
+LDAP-UPTODATEVECTOR					# Segfaults
 RPC-SCANNER							# Very slow
+RPC-REMACT							# Not provided by Samba 4
+RPC-OXIDRESOLVE						# Not provided by Samba 4
+RPC-EVENTLOG						# Not provided by Samba 4
+RPC-INITSHUTDOWN					# Not provided by Samba 4
+RPC-SVCCTL							# Not provided by Samba 4
+RPC-ATSVC							# Not provided by Samba 4
 .*SAMBA3.*							# Samba3-specific test
