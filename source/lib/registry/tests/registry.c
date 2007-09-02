@@ -132,7 +132,7 @@ static bool test_create_nested_subkey(struct torture_context *tctx,
 	error = reg_key_add_name(rctx, root, "Hamburg", NULL, NULL, 
 							 &newkey1);
 	torture_assert_werr_ok(tctx, error, "Creating key return code");
-	torture_assert(tctx, newkey2 != NULL, "Creating new key");
+	torture_assert(tctx, newkey1 != NULL, "Creating new key");
 
 	error = reg_key_add_name(rctx, root, "Hamburg\\Hamburg", NULL, NULL, 
 							 &newkey2);
@@ -374,7 +374,6 @@ static bool test_security(struct torture_context *tctx, const void *_data)
 	const struct registry_context *rctx = _data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
-	uint32_t data = 42;
 	struct security_descriptor *osd, *nsd;
 
 	if (!create_test_key(tctx, rctx, "Düsseldorf", &root, &subkey))
@@ -511,26 +510,20 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 	const char *tempdir;
 	NTSTATUS status;
 	struct hive_key *hive_key;
+	const char *filename;
 
 	error = reg_open_local(tctx, &rctx, NULL, NULL);
-	if (!W_ERROR_IS_OK(error))
-		return false;
+	torture_assert_werr_ok(tctx, error, "Opening local registry failed");
 
 	status = torture_temp_dir(tctx, "registry-local", &tempdir);
-	if (!NT_STATUS_IS_OK(status))
-		return false;
+	torture_assert_ntstatus_ok(tctx, status, "Creating temp dir failed");
 
-	error = reg_open_ldb_file(tctx, 
-					  talloc_asprintf(tctx, "%s/classes_root.ldb", tempdir),
-					  NULL,
-					  NULL,
-					  &hive_key);
-	if (!W_ERROR_IS_OK(error))
-		return false;
+	filename = talloc_asprintf(tctx, "%s/classes_root.ldb", tempdir);
+	error = reg_open_ldb_file(tctx, filename, NULL, NULL, &hive_key);
+	torture_assert_werr_ok(tctx, error, "Opening classes_root file failed");
 
 	error = reg_mount_hive(rctx, hive_key, HKEY_CLASSES_ROOT, NULL);
-	if (!W_ERROR_IS_OK(error))
-		return false;
+	torture_assert_werr_ok(tctx, error, "Mounting hive failed");
 
 	*data = rctx;
 
@@ -540,13 +533,10 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 static void tcase_add_tests(struct torture_tcase *tcase)
 {
 	torture_tcase_add_simple_test(tcase, "list_subkeys", test_list_subkeys);
-	torture_tcase_add_simple_test(tcase, "get_predefined_key",
-									test_get_predefined);
-	torture_tcase_add_simple_test(tcase, "get_predefined_key",
-									test_get_predefined_unknown);
+	torture_tcase_add_simple_test(tcase, "get_predefined_key", test_get_predefined);
+	torture_tcase_add_simple_test(tcase, "get_predefined_key", test_get_predefined_unknown);
 	torture_tcase_add_simple_test(tcase, "create_key", test_create_subkey);
-	torture_tcase_add_simple_test(tcase, "create_key", 
-								  test_create_nested_subkey);
+	torture_tcase_add_simple_test(tcase, "create_key", test_create_nested_subkey);
 	torture_tcase_add_simple_test(tcase, "key_add_abs", test_key_add_abs);
 	torture_tcase_add_simple_test(tcase, "key_add_abs_top", test_key_add_abs_top);
 	torture_tcase_add_simple_test(tcase, "set_value", test_set_value);
@@ -558,18 +548,16 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "query_key", test_query_key);
 	torture_tcase_add_simple_test(tcase, "query_key_nums", test_query_key_nums);
 	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name", 
-								  test_predef_key_by_name);
-	torture_tcase_add_simple_test(tcase, "security", 
-								  test_security);
+				      test_predef_key_by_name);
+	torture_tcase_add_simple_test(tcase, "security", test_security);
 	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name_invalid", 
-								  test_predef_key_by_name_invalid);
+				      test_predef_key_by_name_invalid);
 }
 
 struct torture_suite *torture_registry_registry(TALLOC_CTX *mem_ctx) 
 {
 	struct torture_tcase *tcase;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "REGISTRY");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "REGISTRY");
 	
 	tcase = torture_suite_add_tcase(suite, "local");
 	torture_tcase_set_fixture(tcase, setup_local_registry, NULL);

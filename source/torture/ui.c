@@ -164,7 +164,7 @@ BOOL torture_run_suite(struct torture_context *context,
 	old_testname = context->active_testname;
 	if (old_testname != NULL)
 		context->active_testname = talloc_asprintf(context, "%s-%s", 
-											   old_testname, suite->name);
+							   old_testname, suite->name);
 	else
 		context->active_testname = talloc_strdup(context, suite->name);
 
@@ -219,22 +219,17 @@ void torture_ui_test_result(struct torture_context *context,
 		context->returncode = false;
 }
 
-static BOOL internal_torture_run_test(struct torture_context *context, 
+static bool internal_torture_run_test(struct torture_context *context, 
 					  struct torture_tcase *tcase,
 					  struct torture_test *test,
-					  BOOL already_setup)
+					  bool already_setup)
 {
-	BOOL ret;
+	bool success;
 	char *old_testname;
-
-	if (!already_setup && tcase->setup && 
-		!tcase->setup(context, &(tcase->data)))
-		return false;
 
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
 		old_testname = context->active_testname;
-		context->active_testname = talloc_asprintf(context, "%s-%s", 
-											   old_testname, test->name);
+		context->active_testname = talloc_asprintf(context, "%s-%s", old_testname, test->name);
 	}
 
 	context->active_tcase = tcase;
@@ -245,19 +240,32 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->last_reason = NULL;
 	context->last_result = TORTURE_OK;
 
-	if (test->dangerous && 
+	if (!already_setup && tcase->setup && 
+		!tcase->setup(context, &(tcase->data))) {
+	    	if (context->last_reason == NULL)
+			context->last_reason = talloc_strdup(context, "Setup failure");
+		context->last_result = TORTURE_ERROR;
+		success = false;
+	} else if (test->dangerous && 
 	    !torture_setting_bool(context, "dangerous", false)) {
 	    context->last_result = TORTURE_SKIP;
 	    context->last_reason = talloc_asprintf(context, 
 	    	"disabled %s - enable dangerous tests to use", test->name);
 	} else {
-	    ret = test->run(context, tcase, test);
+	    success = test->run(context, tcase, test);
 
-	    if (!ret && context->last_result == TORTURE_OK) {
+	    if (!success && context->last_result == TORTURE_OK) {
 		    if (context->last_reason == NULL)
 			    context->last_reason = talloc_strdup(context, "Unknown error/failure");
 		    context->last_result = TORTURE_ERROR;
 	    }
+	}
+
+	if (!already_setup && tcase->teardown && !tcase->teardown(context, tcase->data)) {
+    		if (context->last_reason == NULL)
+		    context->last_reason = talloc_strdup(context, "Setup failure");
+	    	context->last_result = TORTURE_ERROR;
+		success = false;
 	}
 
 	torture_ui_test_result(context, context->last_result, 
@@ -272,10 +280,7 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->active_test = NULL;
 	context->active_tcase = NULL;
 
-	if (!already_setup && tcase->teardown && !tcase->teardown(context, tcase->data))
-		return False;
-
-	return ret;
+	return success;
 }
 
 BOOL torture_run_tcase(struct torture_context *context, 
@@ -288,18 +293,22 @@ BOOL torture_run_tcase(struct torture_context *context,
 	context->level++;
 
 	context->active_tcase = tcase;
-	if (context->ui_ops->tcase_start)
+	if (context->ui_ops->tcase_start) 
 		context->ui_ops->tcase_start(context, tcase);
 
 	if (tcase->fixture_persistent && tcase->setup 
 		&& !tcase->setup(context, &tcase->data)) {
-		ret = False;
+		/* FIXME: Use torture ui ops for reporting this error */
+		fprintf(stderr, "Setup failed: ");
+		if (context->last_reason != NULL)
+			fprintf(stderr, "%s", context->last_reason);
+		fprintf(stderr, "\n");
+		ret = false;
 		goto done;
 	}
 
 	old_testname = context->active_testname;
-	context->active_testname = talloc_asprintf(context, "%s-%s", 
-											   old_testname, tcase->name);
+	context->active_testname = talloc_asprintf(context, "%s-%s", old_testname, tcase->name);
 	for (test = tcase->tests; test; test = test->next) {
 		ret &= internal_torture_run_test(context, tcase, test, 
 				tcase->fixture_persistent);
@@ -309,7 +318,7 @@ BOOL torture_run_tcase(struct torture_context *context,
 
 	if (tcase->fixture_persistent && tcase->teardown &&
 		!tcase->teardown(context, tcase->data))
-		ret = False;
+		ret = false;
 
 done:
 	context->active_tcase = NULL;
@@ -326,7 +335,7 @@ BOOL torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test)
 {
-	return internal_torture_run_test(context, tcase, test, False);
+	return internal_torture_run_test(context, tcase, test, false);
 }
 
 int torture_setting_int(struct torture_context *test, const char *name, 
