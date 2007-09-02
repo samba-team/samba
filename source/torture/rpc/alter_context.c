@@ -28,8 +28,8 @@
 
 bool torture_rpc_alter_context(struct torture_context *torture)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p, *p2;
+	NTSTATUS status;
+	struct dcerpc_pipe *p, *p2, *p3;
 	struct policy_handle *handle;
 	struct ndr_interface_table tmptbl;
 	struct ndr_syntax_id syntax;
@@ -51,7 +51,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	tmptbl = ndr_table_dssetup;
 	tmptbl.syntax_id.if_version += 100;
 	torture_comment(torture, "Opening bad secondary connection\n");
-	status = dcerpc_secondary_context(p, &p2, &tmptbl);
+	status = dcerpc_secondary_context(p, &p3, &tmptbl);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX,
 				      "dcerpc_alter_context with wrong version should fail");
 
@@ -59,9 +59,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	ret &= test_DsRoleGetPrimaryDomainInformation(torture, p2);
 
 	if (handle) {
-		if (!test_lsa_Close(p, torture, handle)) {
-			ret = false;
-		}
+		ret &= test_lsa_Close(p, torture, handle);
 	}
 
 	syntax = p->syntax;
@@ -72,18 +70,12 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	torture_comment(torture, "testing DSSETUP pipe operations - should fault\n");
-	if (test_DsRoleGetPrimaryDomainInformation(torture, p)) {
-		ret = false;
-	}
+	ret &= test_DsRoleGetPrimaryDomainInformation_ext(torture, p, NT_STATUS_NET_WRITE_FAULT);
 
-	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
-		ret = false;
-	}
+	ret &= test_lsa_OpenPolicy2(p, torture, &handle);
 
 	if (handle) {
-		if (!test_lsa_Close(p, torture, handle)) {
-			ret = false;
-		}
+		ret &= test_lsa_Close(p, torture, handle);
 	}
 
 	torture_comment(torture, "testing DSSETUP pipe operations\n");

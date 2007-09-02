@@ -25,8 +25,9 @@
 #include "torture/rpc/rpc.h"
 
 
-bool test_DsRoleGetPrimaryDomainInformation(struct torture_context *tctx, 
-					    struct dcerpc_pipe *p)
+bool test_DsRoleGetPrimaryDomainInformation_ext(struct torture_context *tctx, 
+						struct dcerpc_pipe *p,
+						NTSTATUS ext_status)
 {
 	struct dssetup_DsRoleGetPrimaryDomainInformation r;
 	NTSTATUS status;
@@ -37,11 +38,19 @@ bool test_DsRoleGetPrimaryDomainInformation(struct torture_context *tctx,
 		torture_comment(tctx, "dcerpc_dssetup_DsRoleGetPrimaryDomainInformation level %d\n", i);
 
 		status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(p, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "DsRoleGetPrimaryDomainInformation failed");
-		torture_assert_werr_ok(tctx, r.out.result, "DsRoleGetPrimaryDomainInformation failed");
+		torture_assert_ntstatus_equal(tctx, ext_status, status, "DsRoleGetPrimaryDomainInformation failed");
+		if (NT_STATUS_IS_OK(ext_status)) {
+			torture_assert_werr_ok(tctx, r.out.result, "DsRoleGetPrimaryDomainInformation failed");
+		}
 	}
 
 	return true;
+}
+
+bool test_DsRoleGetPrimaryDomainInformation(struct torture_context *tctx, 
+					    struct dcerpc_pipe *p)
+{
+	return test_DsRoleGetPrimaryDomainInformation_ext(tctx, p, NT_STATUS_OK);
 }
 
 struct torture_suite *torture_rpc_dssetup(TALLOC_CTX *mem_ctx)
