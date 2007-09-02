@@ -380,6 +380,7 @@ function provision_default_paths(subobj)
 	paths.secrets = lp.get("secrets database");
 	paths.keytab = "secrets.keytab";
 	paths.dns_keytab = "dns.keytab";
+	paths.dns_keytab_abs = lp.get("private dir") + "/" + paths.dns_keytab;
 	paths.dns = lp.get("private dir") + "/" + dnsdomain + ".zone";
 	paths.named_conf = lp.get("private dir") + "/named.conf";
 	paths.winsdb = "wins.ldb";
@@ -478,6 +479,7 @@ function provision_fix_subobj(subobj, paths)
 	subobj.SAM_LDB		= "tdb://" + paths.samdb;
 	subobj.SECRETS_KEYTAB	= paths.keytab;
 	subobj.DNS_KEYTAB	= paths.dns_keytab;
+	subobj.DNS_KEYTAB_ABS	= paths.dns_keytab_abs;
 
 	subobj.LDAPDIR = paths.ldapdir;
 	var ldap_path_list = split("/", paths.ldapdir);
