@@ -309,10 +309,7 @@ sub missing_env($$$)
 {
 	my ($self, $name, $envname) = @_;
 
-	print INDEX "<tr>\n";
-	print INDEX "  <td class=\"testSuite\">$name</td>\n";
-	print INDEX "  <td class=\"resultSkipped\" colspan=\"2\">SKIPPED - environment `$envname` not available!</td>\n";
-	print INDEX "</tr>\n";
+	$self->skip_testsuite($envname, $name, "environment `$envname` not available!");
 }
 
 sub skip_testsuite($$$$)

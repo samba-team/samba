@@ -33,7 +33,7 @@
    the prefix BASEDIR is added before the name
 */
 static NTSTATUS unicode_open(struct torture_context *tctx,
-							 struct smbcli_tree *tree,
+			     struct smbcli_tree *tree,
 			     TALLOC_CTX *mem_ctx,
 			     uint32_t open_disposition, 
 			     const uint32_t *u_name, 
@@ -82,7 +82,7 @@ static NTSTATUS unicode_open(struct torture_context *tctx,
 	io.ntcreatex.in.fname = fname2;
 	io.ntcreatex.in.open_disposition = open_disposition;
 
-	status = smb_raw_open(tree, mem_ctx, &io);
+	status = smb_raw_open(tree, tctx, &io);
 
 	talloc_free(ucs_name);
 
@@ -93,172 +93,118 @@ static NTSTATUS unicode_open(struct torture_context *tctx,
 /*
   see if the server recognises composed characters
 */
-static BOOL test_composed(struct torture_context *tctx, 
-						  struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_composed(struct torture_context *tctx, 
+			  struct smbcli_state *cli)
 {
 	const uint32_t name1[] = {0x61, 0x308};
 	const uint32_t name2[] = {0xe4};
 	NTSTATUS status1, status2;
 
-	printf("Testing composite character (a umlaut)\n");
-	
-	status1 = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name1, 2);
-	if (!NT_STATUS_IS_OK(status1)) {
-		printf("Failed to create composed name - %s\n",
-		       nt_errstr(status1));
-		return False;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), 
+		       "setting up basedir");
 
-	status2 = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name2, 1);
+	status1 = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name1, 2);
+	torture_assert_ntstatus_ok(tctx, status1, "Failed to create composed name");
 
-	if (!NT_STATUS_IS_OK(status2)) {
-		printf("Failed to create accented character - %s\n",
-		       nt_errstr(status2));
-		return False;
-	}
+	status2 = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name2, 1);
 
-	return True;
+	torture_assert_ntstatus_ok(tctx, status2, "Failed to create accented character");
+
+	return true;
 }
 
 /*
   see if the server recognises a naked diacritical
 */
-static BOOL test_diacritical(struct torture_context *tctx, 
-							 struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_diacritical(struct torture_context *tctx, 
+			     struct smbcli_state *cli)
 {
 	const uint32_t name1[] = {0x308};
 	const uint32_t name2[] = {0x308, 0x308};
 	NTSTATUS status1, status2;
 
-	printf("Testing naked diacritical (umlaut)\n");
-	
-	status1 = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name1, 1);
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), 
+		       "setting up basedir");
 
-	if (!NT_STATUS_IS_OK(status1)) {
-		printf("Failed to create naked diacritical - %s\n",
-		       nt_errstr(status1));
-		return False;
-	}
+	status1 = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name1, 1);
+
+	torture_assert_ntstatus_ok(tctx, status1, "Failed to create naked diacritical");
 
 	/* try a double diacritical */
-	status2 = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name2, 2);
+	status2 = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name2, 2);
 
-	if (!NT_STATUS_IS_OK(status2)) {
-		printf("Failed to create double naked diacritical - %s\n",
-		       nt_errstr(status2));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status2, "Failed to create double naked diacritical");
 
-	return True;
+	return true;
 }
 
 /*
   see if the server recognises a partial surrogate pair
 */
-static BOOL test_surrogate(struct torture_context *tctx, 
-						   struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_surrogate(struct torture_context *tctx, 
+			   struct smbcli_state *cli)
 {
 	const uint32_t name1[] = {0xd800};
 	const uint32_t name2[] = {0xdc00};
 	const uint32_t name3[] = {0xd800, 0xdc00};
 	NTSTATUS status;
 
-	printf("Testing partial surrogate\n");
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), 
+		       "setting up basedir");
 
-	status = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name1, 1);
+	status = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name1, 1);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create partial surrogate 1 - %s\n",
-		       nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create partial surrogate 1");
 
-	status = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name2, 1);
+	status = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name2, 1);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create partial surrogate 2 - %s\n",
-		       nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create partial surrogate 2");
 
-	status = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name3, 2);
+	status = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name3, 2);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create full surrogate - %s\n",
-		       nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create full surrogate");
 
-	return True;
+	return true;
 }
 
 /*
   see if the server recognises wide-a characters
 */
-static BOOL test_widea(struct torture_context *tctx, 
-					   struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_widea(struct torture_context *tctx, 
+		       struct smbcli_state *cli)
 {
 	const uint32_t name1[] = {'a'};
 	const uint32_t name2[] = {0xff41};
 	const uint32_t name3[] = {0xff21};
 	NTSTATUS status;
 
-	printf("Testing wide-a\n");
-	
-	status = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name1, 1);
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), 
+		       "setting up basedir");
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create 'a' - %s\n",
-		       nt_errstr(status));
-		return False;
-	}
+	status = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name1, 1);
 
-	status = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name2, 1);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create 'a'");
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create wide-a - %s\n",
-		       nt_errstr(status));
-		return False;
-	}
+	status = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name2, 1);
 
-	status = unicode_open(tctx, cli->tree, mem_ctx, NTCREATEX_DISP_CREATE, name3, 1);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create wide-a");
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-		printf("Expected %s creating wide-A - %s\n",
-		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION),
-		       nt_errstr(status));
-		return False;
-	}
+	status = unicode_open(tctx, cli->tree, tctx, NTCREATEX_DISP_CREATE, name3, 1);
 
-	return True;
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OBJECT_NAME_COLLISION, 
+		"Failed to create wide-A");
+
+	return true;
 }
 
-BOOL torture_charset(struct torture_context *tctx, struct smbcli_state *cli)
+struct torture_suite *torture_charset(TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "CHARSET");
 
-	mem_ctx = talloc_init("torture_charset");
+	torture_suite_add_1smb_test(suite, "Testing composite character (a umlaut)", test_composed); 
+	torture_suite_add_1smb_test(suite, "Testing naked diacritical (umlaut)", test_diacritical);
+	torture_suite_add_1smb_test(suite, "Testing partial surrogate", test_surrogate);
+	torture_suite_add_1smb_test(suite, "Testing wide-a", test_widea);
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
-	}
-
-	if (!test_composed(tctx, cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_diacritical(tctx, cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_surrogate(tctx, cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_widea(tctx, cli, mem_ctx)) {
-		ret = False;
-	}
-
-	return ret;
+	return suite;
 }

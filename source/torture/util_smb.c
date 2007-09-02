@@ -829,10 +829,9 @@ static bool wrap_simple_1smb_test(struct torture_context *torture_ctx,
 }
 
 _PUBLIC_ struct torture_test *torture_suite_add_1smb_test(
-									struct torture_suite *suite,
-									const char *name,
-									bool (*run) (struct torture_context *,
-												struct smbcli_state *))
+				struct torture_suite *suite,
+				const char *name,
+				bool (*run) (struct torture_context *, struct smbcli_state *))
 {
 	struct torture_test *test; 
 	struct torture_tcase *tcase;

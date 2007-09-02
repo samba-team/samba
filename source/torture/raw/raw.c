@@ -71,8 +71,7 @@ NTSTATUS torture_raw_init(void)
 				      torture_samba3_posixtimedlock);
 	torture_suite_add_simple_test(suite, "SCAN-EAMAX", torture_max_eas);
 
-	suite->description = talloc_strdup(suite, 
-							"Tests for the raw SMB interface");
+	suite->description = talloc_strdup(suite, "Tests for the raw SMB interface");
 
 	torture_register_suite(suite);
 
