@@ -195,24 +195,19 @@ static BOOL test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, con
 }
 
 
-BOOL torture_delshare(struct torture_context *torture)
+bool torture_delshare(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding *bind;
 	struct libnet_context* libnetctx;
 	const char *host;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS  status;
 	BOOL ret = True;
 	struct libnet_DelShare share;
 	
-	mem_ctx = talloc_init("test_listshares");
 	host = torture_setting_string(torture, "host", NULL);
 	status = torture_rpc_binding(torture, &bind);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
-		goto done;
-	}
+	torture_assert_ntstatus_ok(torture, status, "Failed to get binding");
 
 	libnetctx = libnet_context_init(NULL);
 	libnetctx->cred = cmdline_credentials;
@@ -221,22 +216,15 @@ BOOL torture_delshare(struct torture_context *torture)
 					&p,
 					&ndr_table_srvsvc);
 
-	if (!test_addshare(p, mem_ctx, host, TEST_SHARENAME)) {
-		ret = False;
-		goto done;
+	if (!test_addshare(p, torture, host, TEST_SHARENAME)) {
+		return false;
 	}
 
 	share.in.server_name	= bind->host;
 	share.in.share_name	= TEST_SHARENAME;
 
-	status = libnet_DelShare(libnetctx, mem_ctx, &share);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
-		goto done;
-	}
+	status = libnet_DelShare(libnetctx, torture, &share);
+	torture_assert_ntstatus_ok(torture, status, "Failed to delete share");
 
-
-done:
-	talloc_free(mem_ctx);
 	return ret;
 }
