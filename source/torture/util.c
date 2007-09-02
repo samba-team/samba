@@ -28,9 +28,10 @@
  create a temporary directory.
 */
 _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx, 
-								   const char *prefix, 
-								   char **tempdir)
+				   const char *prefix, 
+				   char **tempdir)
 {
+	SMB_ASSERT(tctx->outputdir != NULL);
 	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", tctx->outputdir, prefix);
 
 	if (mkdtemp(*tempdir) == NULL)
