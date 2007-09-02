@@ -100,8 +100,8 @@ TALLOC_CTX *talloc_stackframe(void)
 TALLOC_CTX *talloc_tos(void)
 {
 	if (talloc_stacksize == 0) {
-		DEBUG(0, ("no talloc stackframe around, leaking memory\n"));
 		talloc_stackframe();
+		DEBUG(0, ("no talloc stackframe around, leaking memory\n"));
 	}
 
 	return talloc_stack[talloc_stacksize-1];
