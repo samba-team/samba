@@ -13,7 +13,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win] [--socket-wrapper] [--quick] [--one] [--prefix=prefix] [--immediate] [TESTS]
+selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win] [--socket-wrapper] [--quick] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -69,14 +69,22 @@ The format for the file is, one entry per line:
 
 TESTSUITE-NAME/TEST-NAME
 
+The reason for a test can also be specified, by adding a hash sign (#) and the reason 
+after the test name.
+
 =item I<--skip>
 
 Specify a file containing a list of tests that should be skipped. Possible candidates are
-tests that segfault the server, flip or don't end.
+tests that segfault the server, flip or don't end. The format of this file is the same as 
+for the --expected-failures flag.
 
 =item I<--one>
 
 Abort as soon as one test fails.
+
+=item I<--testlist>
+
+Load a list of tests from the specified location.
 
 =back
 
