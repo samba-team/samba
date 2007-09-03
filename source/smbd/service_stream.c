@@ -224,11 +224,13 @@ static void stream_accept_handler(struct event_context *ev, struct fd_event *fde
 						    stream_new_connection, stream_socket);
 }
 
-
-
 /*
   setup a listen stream socket
   if you pass *port == 0, then a port > 1024 is used
+
+  FIXME: This function is TCP/IP specific - uses an int rather than 
+  	 a string for the port. Should leave allocating a port nr 
+         to the socket implementation - JRV20070903
  */
 NTSTATUS stream_setup_socket(struct event_context *event_context,
 			     const struct model_ops *model_ops,

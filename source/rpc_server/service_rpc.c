@@ -1,12 +1,12 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   server side dcerpc using various kinds of sockets (tcp, unix domain)
+   smbd-specific dcerpc server code
 
-   Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Stefan (metze) Metzmacher 2004-2005  
-   Copyright (C) Jelmer Vernooij 2004
-
+   Copyright (C) Andrew Tridgell 2003-2005
+   Copyright (C) Stefan (metze) Metzmacher 2004-2005
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2004,2007
+   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -22,15 +22,22 @@
 */
 
 #include "includes.h"
-#include "lib/socket/socket.h"
-#include "lib/events/events.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "auth/auth.h"
+#include "auth/gensec/gensec.h"
+#include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
+#include "lib/events/events.h"
+#include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "smbd/service.h"
+#include "system/filesys.h"
+#include "libcli/security/security.h"
+#include "lib/socket/socket.h"
 #include "lib/messaging/irpc.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-#include "auth/auth.h"
+#include "build.h"
 
 struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
@@ -209,7 +216,7 @@ static const struct stream_server_ops dcesrv_stream_ops = {
 
 
 NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-				    struct event_context *event_ctx, const struct model_ops *model_ops)
+			    struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
@@ -234,7 +241,7 @@ NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoi
 }
 
 NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-				       struct event_context *event_ctx, const struct model_ops *model_ops)
+			       struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
@@ -369,3 +376,81 @@ NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoin
 
 	return NT_STATUS_OK;
 }
+
+
+NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+			  struct event_context *event_ctx, const struct model_ops *model_ops)
+{
+	switch (e->ep_description->transport) {
+	case NCACN_UNIX_STREAM:
+		return dcesrv_add_ep_unix(dce_ctx, e, event_ctx, model_ops);
+
+	case NCALRPC:
+		return dcesrv_add_ep_ncalrpc(dce_ctx, e, event_ctx, model_ops);
+
+	case NCACN_IP_TCP:
+		return dcesrv_add_ep_tcp(dce_ctx, e, event_ctx, model_ops);
+
+	case NCACN_NP:
+		return dcesrv_add_ep_np(dce_ctx, e, event_ctx, model_ops);
+
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+}
+
+/*
+  open the dcerpc server sockets
+*/
+static void dcesrv_task_init(struct task_server *task)
+{
+	NTSTATUS status;
+	struct dcesrv_context *dce_ctx;
+	struct dcesrv_endpoint *e;
+
+	task_server_set_title(task, "task[dcesrv]");
+
+	status = dcesrv_init_context(task->event_ctx,
+				     lp_dcerpc_endpoint_servers(),
+				     &dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	/* Make sure the directory for NCALRPC exists */
+	if (!directory_exist(lp_ncalrpc_dir())) {
+		mkdir(lp_ncalrpc_dir(), 0755);
+	}
+
+	for (e=dce_ctx->endpoint_list;e;e=e->next) {
+		status = dcesrv_add_ep(dce_ctx, e, task->event_ctx, task->model_ops);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
+	}
+
+	return;
+failed:
+	task_server_terminate(task, "Failed to startup dcerpc server task");	
+}
+
+/*
+  called on startup of the smb server service It's job is to start
+  listening on all configured sockets
+*/
+static NTSTATUS dcesrv_init(struct event_context *event_context, 
+			    const struct model_ops *model_ops)
+{	
+	return task_server_startup(event_context, model_ops, dcesrv_task_init);
+}
+
+NTSTATUS server_service_rpc_init(void)
+{
+	init_module_fn static_init[] = STATIC_dcerpc_server_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "dcerpc_server");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
+	return register_server_service("rpc", dcesrv_init);
+}
+
+

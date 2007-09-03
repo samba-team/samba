@@ -128,6 +128,7 @@ OBJ_FILES = \
 		rpc/drsuapi_cracknames.o \
 		rpc/dssync.o \
 		rpc/spoolss.o \
+		rpc/spoolss_notify.o \
 		rpc/unixinfo.o \
 		rpc/samr.o \
 		rpc/wkssvc.o \
@@ -164,7 +165,8 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_SPOOLSS \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
 		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER WB_HELPER LIBSAMBA-NET \
-		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP
+		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP \
+		dcerpc_server service process_model
 
 #################################
 # Start SUBSYSTEM TORTURE_RAP
