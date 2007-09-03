@@ -411,7 +411,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 	}
 
 	ret = samdb_copy_template(module->ldb, msg2, 
-				  "(&(CN=TemplateGroup)(objectclass=groupTemplate))",
+				  "group",
 				  &errstr);
 	if (ret != 0) {
 		
@@ -476,7 +476,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	if (samdb_find_attribute(module->ldb, msg, "objectclass", "computer") != NULL) {
 
 		ret = samdb_copy_template(module->ldb, msg2, 
-					  "(&(CN=TemplateComputer)(objectclass=userTemplate))", 
+					  "computer",
 					  &errstr);
 		if (ret) {
 			ldb_asprintf_errstring(module->ldb, 
@@ -486,22 +486,9 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 			talloc_free(mem_ctx);
 			return ret;
 		}
-
-		/* readd user and then computer objectclasses */
-		ret = samdb_find_or_add_value(module->ldb, msg2, "objectclass", "user");
-		if (ret) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		ret = samdb_find_or_add_value(module->ldb, msg2, "objectclass", "computer");
-		if (ret) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		
 	} else {
 		ret = samdb_copy_template(module->ldb, msg2, 
-					  "(&(CN=TemplateUser)(objectclass=userTemplate))", 
+					  "user",
 					  &errstr);
 		if (ret) {
 			ldb_asprintf_errstring(module->ldb, 
@@ -582,7 +569,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	}
 
 	ret = samdb_copy_template(module->ldb, msg2, 
-				  "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))",
+				  "ForeignSecurityPrincipal",
 				  &errstr);
 	if (ret != 0) {
 		ldb_asprintf_errstring(module->ldb, 
