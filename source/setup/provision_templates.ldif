@@ -12,11 +12,6 @@ isCriticalSystemObject: TRUE
 ###
 
 dn: CN=TemplateUser,CN=Templates
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
-objectClass: Template
-objectClass: userTemplate
 userAccountControl: 514
 badPwdCount: 0
 codePage: 0
@@ -31,11 +26,6 @@ logonCount: 0
 sAMAccountType: 805306368
 
 dn: CN=TemplateComputer,CN=Templates
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
-objectClass: Template
-objectClass: userTemplate
 userAccountControl: 4098
 badPwdCount: 0
 codePage: 0
@@ -50,9 +40,6 @@ logonCount: 0
 sAMAccountType: 805306369
 
 dn: CN=TemplateTrustingDomain,CN=Templates
-objectClass: top
-objectClass: Template
-objectClass: userTemplate
 userAccountControl: 2080
 badPwdCount: 0
 codePage: 0
@@ -66,38 +53,21 @@ logonCount: 0
 sAMAccountType: 805306370
 
 dn: CN=TemplateGroup,CN=Templates
-objectClass: top
-objectClass: Template
-objectClass: groupTemplate
 groupType: -2147483646
 sAMAccountType: 268435456
 
 # Currently this isn't used, we don't have a way to detect it different from an incoming alias
 #
 # dn: CN=TemplateAlias,CN=Templates
-# objectClass: top
-# objectClass: Template
-# objectClass: aliasTemplate
 # cn: TemplateAlias
 # instanceType: 4
 # groupType: -2147483644
 # sAMAccountType: 268435456
 
 dn: CN=TemplateForeignSecurityPrincipal,CN=Templates
-objectClass: top
-objectClass: Template
-objectClass: foreignSecurityPrincipalTemplate
 showInAdvancedViewOnly: TRUE
 
 dn: CN=TemplateSecret,CN=Templates
-objectClass: top
-objectClass: leaf
-objectClass: Template
-objectClass: secretTemplate
 
 dn: CN=TemplateTrustedDomain,CN=Templates
-objectClass: top
-objectClass: leaf
-objectClass: Template
-objectClass: trustedDomainTemplate
 

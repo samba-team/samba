@@ -92,6 +92,7 @@ static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_mod
 }
 
 static int objectclass_sort(struct ldb_module *module,
+			    struct ldb_message *msg, /* so that when we create new elements, we put it on the right parent */
 			    TALLOC_CTX *mem_ctx,
 			    struct ldb_message_element *objectclass_element,
 			    struct class_list **sorted_out) 
@@ -100,7 +101,7 @@ static int objectclass_sort(struct ldb_module *module,
 	int layer;
 	const struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
 	struct class_list *sorted = NULL, *parent_class = NULL,
-		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass;
+		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass, *poss_parent, *new_parent;
 	/* DESIGN:
 	 *
 	 * We work on 4 different 'bins' (implemented here as linked lists):
@@ -147,6 +148,34 @@ static int objectclass_sort(struct ldb_module *module,
 		} else {
 			DLIST_ADD_END(unsorted, current, struct class_list *);
 		}
+	}
+
+	if (parent_class == NULL) {
+		current = talloc(mem_ctx, struct class_list);
+		current->objectclass = talloc_strdup(msg, "top");
+		DLIST_ADD_END(parent_class, current, struct class_list *);
+	}
+
+	/* For each object:  find parent chain */
+	for (current = unsorted; schema && current; current = current->next) {
+		const struct dsdb_class *class = dsdb_class_by_lDAPDisplayName(schema, current->objectclass);
+		if (!class) {
+			ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in schema", current->objectclass);
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+		for (poss_parent = unsorted; poss_parent; poss_parent = poss_parent->next) {
+			if (ldb_attr_cmp(poss_parent->objectclass, class->subClassOf) == 0) {
+				break;
+			}
+		}
+		/* If we didn't get to the end of the list, we need to add this parent */
+		if (poss_parent || (ldb_attr_cmp("top", class->subClassOf) == 0)) {
+			continue;
+		}
+
+		new_parent = talloc(mem_ctx, struct class_list);
+		new_parent->objectclass = talloc_strdup(msg, class->subClassOf);
+		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
 	}
 
 	/* DEBUGGING aid:  how many layers are we down now? */
@@ -265,11 +294,6 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = objectclass_sort(module, mem_ctx, objectclass_element, &sorted);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	/* prepare the first operation */
 	down_req = talloc(req, struct ldb_request);
 	if (down_req == NULL) {
@@ -285,6 +309,12 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	if (down_req->op.add.message == NULL) {
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = objectclass_sort(module, msg, mem_ctx, objectclass_element, &sorted);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
 	}
 
 	ldb_msg_remove_attr(msg, "objectClass");
@@ -398,7 +428,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		ret = objectclass_sort(module, mem_ctx, objectclass_element, &sorted);
+		ret = objectclass_sort(module, msg, mem_ctx, objectclass_element, &sorted);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -579,7 +609,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	/* modify dn */
 	msg->dn = ac->orig_req->op.mod.message->dn;
 
-	ret = objectclass_sort(ac->module, mem_ctx, objectclass_element, &sorted);
+	ret = objectclass_sort(ac->module, msg, mem_ctx, objectclass_element, &sorted);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
