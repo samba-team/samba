@@ -691,6 +691,8 @@ int samdb_copy_template(struct ldb_context *ldb,
 	*errstring = NULL;	
 
 	if (!ldb_dn_add_child_fmt(basedn, "CN=Template%s", name)) {
+		*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: Failed to contruct DN for template '%s'", 
+					     name);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
@@ -702,7 +704,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 		return ret;
 	}
 	if (res->count != 1) {
-		*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", 
+		*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: template '%s' matched %d records, expected 1", 
 					     name, 
 					     res->count);
 		talloc_free(res);
@@ -726,7 +728,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 			ret = samdb_find_or_add_attribute(ldb, msg, el->name, 
 							  (char *)el->values[j].data);
 			if (ret) {
-				*errstring = talloc_asprintf(msg, "Adding attribute %s failed.\n", el->name);
+				*errstring = talloc_asprintf(msg, "Adding attribute %s failed.", el->name);
 				talloc_free(res);
 				return ret;
 			}
