@@ -87,7 +87,7 @@ static void single_set_title(struct event_context *ev, const char *title)
 {
 }
 
-static const struct model_ops single_ops = {
+const struct model_ops single_ops = {
 	.name			= "single",
 	.model_init		= single_model_init,
 	.new_task               = single_new_task,

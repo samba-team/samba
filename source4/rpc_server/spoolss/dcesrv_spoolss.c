@@ -27,6 +27,12 @@
 #include "ntptr/ntptr.h"
 #include "lib/socket/socket.h"
 #include "smbd/service_stream.h"
+#include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "auth/credentials/credentials.h"
+
+enum spoolss_handle {
+	SPOOLSS_NOTIFY
+};
 
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
 	((info)?ndr_size_##fn(info, level, 0):0)
@@ -1036,7 +1042,16 @@ static WERROR dcesrv_spoolss_RouterFindFirstPrinterChangeNotificationOld(struct 
 static WERROR dcesrv_spoolss_ReplyOpenPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_ReplyOpenPrinter *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *handle;
+
+	handle = dcesrv_handle_new(dce_call->context, SPOOLSS_NOTIFY);
+	W_ERROR_HAVE_NO_MEMORY(handle);
+
+	/* For now, just return a handle */
+
+	*r->out.handle = handle->wire_handle;
+
+	return WERR_OK;
 }
 
 
@@ -1056,9 +1071,16 @@ static WERROR dcesrv_spoolss_RouterReplyPrinter(struct dcesrv_call_state *dce_ca
 static WERROR dcesrv_spoolss_ReplyClosePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_ReplyClosePrinter *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
+	struct dcesrv_handle *handle;
+	
+	DCESRV_PULL_HANDLE_WERR(handle, r->in.handle, SPOOLSS_NOTIFY);
 
+	talloc_free(handle);
+
+	ZERO_STRUCTP(r->out.handle);
+
+	return WERR_OK;
+}
 
 /* 
   spoolss_AddPortEx 
@@ -1106,11 +1128,56 @@ static WERROR dcesrv_spoolss_ResetPrinterEx(struct dcesrv_call_state *dce_call, 
 static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
+	struct dcerpc_pipe *p;
+	struct dcerpc_binding *binding;
+	NTSTATUS status;
+	struct spoolss_ReplyOpenPrinter rop;
+	struct cli_credentials *creds;
+	struct policy_handle notify_handle;
+
+	DEBUG(2, ("Received RFFPCNex from %s\n", r->in.str));
+
 	/*
-	 * TODO: for now just return ok,
+	 * TODO: for now just open a connection to the client and drop it again
 	 *       to keep the w2k3 PrintServer 
 	 *       happy to allow to open the Add Printer GUI
+	 *       and the torture suite passing
 	 */
+
+	binding = talloc_zero(mem_ctx, struct dcerpc_binding);
+
+	binding->transport = NCACN_NP; 
+	if (strncmp(r->in.str, "\\\\", 2))
+		return WERR_INVALID_COMPUTERNAME;
+	binding->host = r->in.str+2;
+
+	creds = cli_credentials_init_anon(mem_ctx); /* FIXME: Use machine credentials instead ? */
+
+	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_spoolss, 
+				  creds, NULL);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("unable to call back to %s\n", r->in.str));
+		return WERR_SERVER_UNAVAILABLE;
+	}
+
+	ZERO_STRUCT(rop);
+	rop.in.server_name = lp_netbios_name();
+	W_ERROR_HAVE_NO_MEMORY(rop.in.server_name);
+	rop.in.printer_local = 0;
+	rop.in.type = REG_NONE;
+	rop.in.unknown1 = 0;
+	rop.in.unknown2 = 0;
+	rop.out.handle = &notify_handle;
+
+	status = dcerpc_spoolss_ReplyOpenPrinter(p, mem_ctx, &rop);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("unable to open remote printer %s\n", r->in.str));
+		return WERR_SERVER_UNAVAILABLE;
+	}
+
+	talloc_free(p);
+
 	return WERR_OK;
 }
 

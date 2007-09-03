@@ -157,7 +157,8 @@ OBJ_FILES = \
 PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		NDR_SPOOLSS \
-		ntptr
+		ntptr \
+		RPC_NDR_SPOOLSS
 # End MODULE dcerpc_spoolss
 ################################################
 
@@ -182,7 +183,6 @@ PUBLIC_HEADERS = dcerpc_server.h
 PUBLIC_PROTO_HEADER = dcerpc_server_proto.h
 OBJ_FILES = \
 		dcerpc_server.o \
-		dcerpc_sock.o \
 		dcesrv_auth.o \
 		dcesrv_mgmt.o \
 		handles.o
@@ -196,5 +196,6 @@ PRIVATE_DEPENDENCIES = \
 
 [MODULE::DCESRV]
 INIT_FUNCTION = server_service_rpc_init
+OBJ_FILES = service_rpc.o
 SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = dcerpc_server

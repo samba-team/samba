@@ -315,7 +315,7 @@ quicktestone: all
 testenv: everything
 	$(SELFTEST) --socket-wrapper --testenv
 
-valgrindtest: valgrindtest-quick
+valgrindtest: valgrindtest-all
 
 valgrindtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
@@ -332,7 +332,7 @@ valgrindtest-env: everything
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --socket-wrapper --testenv
 
-gdbtest: gdbtest-quick
+gdbtest: gdbtest-all
 
 gdbtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \

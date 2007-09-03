@@ -67,6 +67,8 @@ struct process_model_critical_sizes {
 	int sizeof_model_ops;
 };
 
+extern const struct model_ops single_ops;
+
 #include "smbd/process_model_proto.h"
 
 #endif /* __PROCESS_MODEL_H__ */

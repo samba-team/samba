@@ -196,3 +196,4 @@ source/lib/tdb/bin/tdbbackup
 source/lib/tdb/bin/tdbdump
 source/lib/registry/tools/common.h
 source/librpc/ndr/ndr_table.h
+test-results

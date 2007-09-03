@@ -4,6 +4,7 @@
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Stefan Metzmacher 2005
+   Copyright (C) Jelmer Vernooij 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,8 +26,6 @@
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 
 struct test_spoolss_context {
-	struct dcerpc_pipe *p;
-
 	/* print server handle */
 	struct policy_handle server_handle;
 
@@ -51,109 +50,58 @@ struct test_spoolss_context {
 	union spoolss_PrinterInfo *printers[6];
 };
 
-#define COMPARE_STRING(c,r,e) do {\
-	BOOL _ok = True;\
-	if (c.e && !r.e) _ok = False;\
-	if (!c.e && r.e) _ok = False;\
-	if (c.e && r.e && strcmp_safe(c.e, r.e) != 0) _ok = False;\
-	if (!_ok){\
-		printf("%s: " #c "." #e " [%s] doesn't match " #r "." #e " [%s]\n",\
-			__location__, c.e, r.e);\
-		ret = False;\
-	}\
-} while(0)
+#define COMPARE_STRING(tctx, c,r,e) \
+	torture_assert_str_equal(tctx, c.e, r.e, "invalid value")
 
 /* not every compiler supports __typeof__() */
 #if (__GNUC__ >= 3)
 #define _CHECK_FIELD_SIZE(c,r,e,type) do {\
 	if (sizeof(__typeof__(c.e)) != sizeof(type)) { \
-		printf(__location__ ":" #c "." #e "field is not " #type "\n"); \
-		smb_panic(__location__ ":" #c "." #e "field is not " #type ); \
-		ret = False; \
+		torture_fail(tctx, #c "." #e "field is not " #type "\n"); \
 	}\
 	if (sizeof(__typeof__(r.e)) != sizeof(type)) { \
-		printf(__location__ ":" #r "." #e "field is not " #type "\n"); \
-		smb_panic(__location__ ":" #r "." #e "field is not " #type ); \
-		ret = False; \
+		torture_fail(tctx, #r "." #e "field is not " #type "\n"); \
 	}\
 } while(0)
 #else
 #define _CHECK_FIELD_SIZE(c,r,e,type) do {} while(0)
 #endif
 
-#if 0 /* unused */
-#define COMPARE_UINT16(c,r,e) do {\
-	_CHECK_FIELD_SIZE(c,r,e,uint16_t); \
-	if (c.e != r.e){\
-		printf("%s: " #c "." #e "  0x%04X (%u) doesn't match " #r "." #e " 0x%04X (%u)\n",\
-			__location__, c.e, c.e, r.e, r.e);\
-		ret = False;\
-	}\
-} while(0)
-#endif
-
-#define COMPARE_UINT32(c,r,e) do {\
-	_CHECK_FIELD_SIZE(c,r,e,uint32_t); \
-	if (c.e != r.e){\
-		printf("%s: " #c "." #e "  0x%08X (%u) doesn't match " #r "." #e " 0x%08X (%u)\n",\
-			__location__, c.e, c.e, r.e, r.e);\
-		ret = False;\
-	}\
+#define COMPARE_UINT32(tctx, c, r, e) do {\
+	_CHECK_FIELD_SIZE(c, r, e,uint32_t); \
+	torture_assert_int_equal(tctx, c.e, r.e, "invalid value"); \
 } while(0)
 
-#if 0 /* unused */
-#define COMPARE_UINT64(c,r,e) do {\
-	_CHECK_FIELD_SIZE(c,r,e,uint64_t); \
-	if (c.e != r.e){\
-		printf("%s: " #c "." #e "  0x%016llX (%llu) doesn't match " #r "." #e " 0x%016llX (%llu)\n",\
-			__location__, c.e, c.e, r.e, r.e);\
-		ret = False;\
-	}\
-} while(0)
-#endif
+#define COMPARE_STRING_ARRAY(tctx, c,r,e)
 
-/* TODO: ! */
-#if 0 /* unused */
-#define COMPARE_SEC_DESC(c,r,e)
-#define COMPARE_SPOOLSS_TIME(c,r,e)
-#endif
-#define COMPARE_STRING_ARRAY(c,r,e)
-
-static BOOL test_OpenPrinter_server(struct test_spoolss_context *ctx)
+static bool test_OpenPrinter_server(struct torture_context *tctx, struct dcerpc_pipe *p, struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
 	struct spoolss_OpenPrinter op;
-	BOOL ret = True;
 
-	op.in.printername	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(ctx->p));
+	op.in.printername	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p));
 	op.in.datatype		= NULL;
 	op.in.devmode_ctr.devmode= NULL;
 	op.in.access_mask	= 0;
 	op.out.handle		= &ctx->server_handle;
 
-	printf("\nTesting OpenPrinter(%s)\n", op.in.printername);
+	torture_comment(tctx, "Testing OpenPrinter(%s)\n", op.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinter(ctx->p, ctx, &op);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("dcerpc_spoolss_OpenPrinter failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-	if (!W_ERROR_IS_OK(op.out.result)) {
-		printf("OpenPrinter(%s) failed - %s\n",
-			op.in.printername, win_errstr(op.out.result));
-		ret = False;
-	}
+	status = dcerpc_spoolss_OpenPrinter(p, ctx, &op);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_OpenPrinter failed");
+	torture_assert_werr_ok(tctx, op.out.result, "dcerpc_spoolss_OpenPrinter failed"); 
 
-	return ret;
+	return true;
 }
 
-static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
+static bool test_EnumPorts(struct torture_context *tctx, 
+			   struct dcerpc_pipe *p, 
+			   struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPorts r;
 	uint16_t levels[] = { 1, 2 };
 	int i, j;
-	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -164,43 +112,26 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 
-		printf("Testing EnumPorts level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumPorts level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumPorts(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPorts failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPorts(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPorts failed");
 		if (W_ERROR_IS_OK(r.out.result)) {
 			/* TODO: do some more checks here */
 			continue;
 		}
-		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			printf("EnumPorts unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+			"EnumPorts unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumPorts(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPorts failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPorts(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPorts failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPorts failed - %s\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "EnumPorts failed");
 
 		ctx->port_count[level]	= r.out.count;
 		ctx->ports[level]	= r.out.info;
@@ -209,14 +140,10 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
-		if (ctx->port_count[level] != ctx->port_count[old_level]) {
-			printf("EnumPorts level[%d] returns [%u] ports, but level[%d] returns [%u]\n",
-				level, ctx->port_count[level], old_level, ctx->port_count[old_level]);
-			ret = False;
-		}
+		torture_assert_int_equal(tctx, ctx->port_count[level], ctx->port_count[old_level], 
+			"EnumPorts invalid value");
 	}
 	/* if the array sizes are not the same we would maybe segfault in the following code */
-	if (!ret) return ret;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -225,7 +152,7 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 			union spoolss_PortInfo *ref = &ctx->ports[2][j];
 			switch (level) {
 			case 1:
-				COMPARE_STRING(cur->info1, ref->info2, port_name);
+				COMPARE_STRING(tctx, cur->info1, ref->info2, port_name);
 				break;
 			case 2:
 				/* level 2 is our reference, and it makes no sense to compare it to itself */
@@ -234,10 +161,12 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 		}
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetPrinterDriverDirectory(struct test_spoolss_context *ctx)
+static bool test_GetPrinterDriverDirectory(struct torture_context *tctx, 
+					   struct dcerpc_pipe *p, 
+					   struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDriverDirectory r;
@@ -255,14 +184,13 @@ static BOOL test_GetPrinterDriverDirectory(struct test_spoolss_context *ctx)
 			.server	= ""
 		},{
 			.level	= 1,
-			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(ctx->p))
+			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
 		},{
 			.level	= 1024,
-			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(ctx->p))
+			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
 		}
 	};
 	int i;
-	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i].level;
@@ -274,51 +202,36 @@ static BOOL test_GetPrinterDriverDirectory(struct test_spoolss_context *ctx)
 		r.in.buffer		= NULL;
 		r.in.offered		= 0;
 
-		printf("Testing GetPrinterDriverDirectory level %u\n", r.in.level);
+		torture_comment(tctx, "Testing GetPrinterDriverDirectory level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_GetPrinterDriverDirectory(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_GetPrinterDriverDirectory failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			printf("GetPrinterDriverDirectory unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_GetPrinterDriverDirectory(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, 
+			"dcerpc_spoolss_GetPrinterDriverDirectory failed");
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+			"GetPrinterDriverDirectory unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_GetPrinterDriverDirectory(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_GetPrinterDriverDirectory failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_GetPrinterDriverDirectory(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_GetPrinterDriverDirectory failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("GetPrinterDriverDirectory failed - %s\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "GetPrinterDriverDirectory failed");
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
+static bool test_EnumPrinterDrivers(struct torture_context *tctx, 
+				    struct dcerpc_pipe *p,
+				    struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPrinterDrivers r;
 	uint16_t levels[] = { 1, 2, 3, 4, 5, 6 };
 	int i, j;
-	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -330,43 +243,27 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 		r.in.buffer		= NULL;
 		r.in.offered		= 0;
 
-		printf("Testing EnumPrinterDrivers level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumPrinterDrivers level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumPrinterDrivers(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPrinterDrivers failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPrinterDrivers(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, 
+					   "dcerpc_spoolss_EnumPrinterDrivers failed");
 		if (W_ERROR_IS_OK(r.out.result)) {
 			/* TODO: do some more checks here */
 			continue;
 		}
-		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			printf("EnumPrinterDrivers unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+			"EnumPrinterDrivers failed");
 
 		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumPrinterDrivers(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPrinterDrivers failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPrinterDrivers(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrinterDrivers failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPrinterDrivers failed - %s\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
 
 		ctx->driver_count[level]	= r.out.count;
 		ctx->drivers[level]		= r.out.info;
@@ -375,14 +272,9 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
-		if (ctx->driver_count[level] != ctx->driver_count[old_level]) {
-			printf("EnumPrinterDrivers level[%d] returns [%u] drivers, but level[%d] returns [%u]\n",
-				level, ctx->driver_count[level], old_level, ctx->driver_count[old_level]);
-			ret = False;
-		}
+		torture_assert_int_equal(tctx, ctx->driver_count[level], ctx->driver_count[old_level],
+			"EnumPrinterDrivers invalid value");
 	}
-	/* if the array sizes are not the same we would maybe segfault in the following code */
-	if (!ret) return ret;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -391,51 +283,51 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 			union spoolss_DriverInfo *ref = &ctx->drivers[6][j];
 			switch (level) {
 			case 1:
-				COMPARE_STRING(cur->info1, ref->info6, driver_name);
+				COMPARE_STRING(tctx, cur->info1, ref->info6, driver_name);
 				break;
 			case 2:
-				COMPARE_UINT32(cur->info2, ref->info6, version);
-				COMPARE_STRING(cur->info2, ref->info6, driver_name);
-				COMPARE_STRING(cur->info2, ref->info6, architecture);
-				COMPARE_STRING(cur->info2, ref->info6, driver_path);
-				COMPARE_STRING(cur->info2, ref->info6, data_file);
-				COMPARE_STRING(cur->info2, ref->info6, config_file);
+				COMPARE_UINT32(tctx, cur->info2, ref->info6, version);
+				COMPARE_STRING(tctx, cur->info2, ref->info6, driver_name);
+				COMPARE_STRING(tctx, cur->info2, ref->info6, architecture);
+				COMPARE_STRING(tctx, cur->info2, ref->info6, driver_path);
+				COMPARE_STRING(tctx, cur->info2, ref->info6, data_file);
+				COMPARE_STRING(tctx, cur->info2, ref->info6, config_file);
 				break;
 			case 3:
-				COMPARE_UINT32(cur->info3, ref->info6, version);
-				COMPARE_STRING(cur->info3, ref->info6, driver_name);
-				COMPARE_STRING(cur->info3, ref->info6, architecture);
-				COMPARE_STRING(cur->info3, ref->info6, driver_path);
-				COMPARE_STRING(cur->info3, ref->info6, data_file);
-				COMPARE_STRING(cur->info3, ref->info6, config_file);
-				COMPARE_STRING(cur->info3, ref->info6, help_file);
-				COMPARE_STRING_ARRAY(cur->info3, ref->info6, dependent_files);
-				COMPARE_STRING(cur->info3, ref->info6, monitor_name);
-				COMPARE_STRING(cur->info3, ref->info6, default_datatype);
+				COMPARE_UINT32(tctx, cur->info3, ref->info6, version);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, driver_name);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, architecture);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, driver_path);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, data_file);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, config_file);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, help_file);
+				COMPARE_STRING_ARRAY(tctx, cur->info3, ref->info6, dependent_files);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, monitor_name);
+				COMPARE_STRING(tctx, cur->info3, ref->info6, default_datatype);
 				break;
 			case 4:
-				COMPARE_UINT32(cur->info4, ref->info6, version);
-				COMPARE_STRING(cur->info4, ref->info6, driver_name);
-				COMPARE_STRING(cur->info4, ref->info6, architecture);
-				COMPARE_STRING(cur->info4, ref->info6, driver_path);
-				COMPARE_STRING(cur->info4, ref->info6, data_file);
-				COMPARE_STRING(cur->info4, ref->info6, config_file);
-				COMPARE_STRING(cur->info4, ref->info6, help_file);
-				COMPARE_STRING_ARRAY(cur->info4, ref->info6, dependent_files);
-				COMPARE_STRING(cur->info4, ref->info6, monitor_name);
-				COMPARE_STRING(cur->info4, ref->info6, default_datatype);
-				COMPARE_STRING_ARRAY(cur->info4, ref->info6, previous_names);
+				COMPARE_UINT32(tctx, cur->info4, ref->info6, version);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, driver_name);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, architecture);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, driver_path);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, data_file);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, config_file);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, help_file);
+				COMPARE_STRING_ARRAY(tctx, cur->info4, ref->info6, dependent_files);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, monitor_name);
+				COMPARE_STRING(tctx, cur->info4, ref->info6, default_datatype);
+				COMPARE_STRING_ARRAY(tctx, cur->info4, ref->info6, previous_names);
 				break;
 			case 5:
-				COMPARE_UINT32(cur->info5, ref->info6, version);
-				COMPARE_STRING(cur->info5, ref->info6, driver_name);
-				COMPARE_STRING(cur->info5, ref->info6, architecture);
-				COMPARE_STRING(cur->info5, ref->info6, driver_path);
-				COMPARE_STRING(cur->info5, ref->info6, data_file);
-				COMPARE_STRING(cur->info5, ref->info6, config_file);
-				/*COMPARE_UINT32(cur->info5, ref->info6, driver_attributes);*/
-				/*COMPARE_UINT32(cur->info5, ref->info6, config_version);*/
-				/*TODO: ! COMPARE_UINT32(cur->info5, ref->info6, driver_version); */
+				COMPARE_UINT32(tctx, cur->info5, ref->info6, version);
+				COMPARE_STRING(tctx, cur->info5, ref->info6, driver_name);
+				COMPARE_STRING(tctx, cur->info5, ref->info6, architecture);
+				COMPARE_STRING(tctx, cur->info5, ref->info6, driver_path);
+				COMPARE_STRING(tctx, cur->info5, ref->info6, data_file);
+				COMPARE_STRING(tctx, cur->info5, ref->info6, config_file);
+				/*COMPARE_UINT32(tctx, cur->info5, ref->info6, driver_attributes);*/
+				/*COMPARE_UINT32(tctx, cur->info5, ref->info6, config_version);*/
+				/*TODO: ! COMPARE_UINT32(tctx, cur->info5, ref->info6, driver_version); */
 				break;
 			case 6:
 				/* level 6 is our reference, and it makes no sense to compare it to itself */
@@ -444,16 +336,17 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 		}
 	}
 
-	return ret;
+	return true;
 }
 
-static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
+static bool test_EnumMonitors(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p, 
+			      struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
 	struct spoolss_EnumMonitors r;
 	uint16_t levels[] = { 1, 2 };
 	int i, j;
-	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -464,43 +357,26 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 
-		printf("Testing EnumMonitors level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumMonitors level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumMonitors(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumMonitors failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumMonitors(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumMonitors failed");
 		if (W_ERROR_IS_OK(r.out.result)) {
 			/* TODO: do some more checks here */
 			continue;
 		}
-		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			printf("EnumMonitors unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+			"EnumMonitors failed");
 
 		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumMonitors(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumMonitors failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumMonitors(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumMonitors failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumMonitors failed - %s\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "EnumMonitors failed");
 
 		ctx->monitor_count[level]	= r.out.count;
 		ctx->monitors[level]		= r.out.info;
@@ -509,14 +385,9 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
-		if (ctx->monitor_count[level] != ctx->monitor_count[old_level]) {
-			printf("EnumMonitors level[%d] returns [%u] monitors, but level[%d] returns [%u]\n",
-				level, ctx->monitor_count[level], old_level, ctx->monitor_count[old_level]);
-			ret = False;
-		}
+		torture_assert_int_equal(tctx, ctx->monitor_count[level], ctx->monitor_count[old_level], 
+					 "EnumMonitors invalid value");
 	}
-	/* if the array sizes are not the same we would maybe segfault in the following code */
-	if (!ret) return ret;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -525,7 +396,7 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 			union spoolss_MonitorInfo *ref = &ctx->monitors[2][j];
 			switch (level) {
 			case 1:
-				COMPARE_STRING(cur->info1, ref->info2, monitor_name);
+				COMPARE_STRING(tctx, cur->info1, ref->info2, monitor_name);
 				break;
 			case 2:
 				/* level 2 is our reference, and it makes no sense to compare it to itself */
@@ -534,16 +405,17 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 		}
 	}
 
-	return ret;
+	return true;
 }
 
-static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
+static bool test_EnumPrintProcessors(struct torture_context *tctx, 
+				     struct dcerpc_pipe *p,
+				     struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPrintProcessors r;
 	uint16_t levels[] = { 1 };
 	int i, j;
-	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -555,43 +427,26 @@ static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 
-		printf("Testing EnumPrintProcessors level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumPrintProcessors level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumPrintProcessors(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPrintProcessors failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPrintProcessors(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcessors failed");
 		if (W_ERROR_IS_OK(r.out.result)) {
 			/* TODO: do some more checks here */
 			continue;
 		}
-		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			printf("EnumPrintProcessors unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+			"EnumPrintProcessors unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumPrintProcessors(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPrintProcessors failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPrintProcessors(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcessors failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPrintProcessors failed - %s\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "EnumPrintProcessors failed");
 
 		ctx->print_processor_count[level]	= r.out.count;
 		ctx->print_processors[level]		= r.out.info;
@@ -600,14 +455,9 @@ static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
-		if (ctx->print_processor_count[level] != ctx->print_processor_count[old_level]) {
-			printf("EnumPrintProcessors level[%d] returns [%u] print_processors, but level[%d] returns [%u]\n",
-				level, ctx->print_processor_count[level], old_level, ctx->print_processor_count[old_level]);
-			ret = False;
-		}
+		torture_assert_int_equal(tctx, ctx->print_processor_count[level], ctx->print_processor_count[old_level],
+			"EnumPrintProcessors failed");
 	}
-	/* if the array sizes are not the same we would maybe segfault in the following code */
-	if (!ret) return ret;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -624,16 +474,17 @@ static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
 		}
 	}
 
-	return ret;
+	return true;
 }
 
-static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
+static bool test_EnumPrinters(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p,
+			      struct test_spoolss_context *ctx)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
 	uint16_t levels[] = { 0, 1, 2, 4, 5 };
 	int i, j;
-	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -645,42 +496,26 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 		r.in.buffer	= NULL;
 		r.in.offered	= 0;
 
-		printf("\nTesting EnumPrinters level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumPrinters level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumPrinters(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPrinters failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPrinters(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrinters failed");
 		if (W_ERROR_IS_OK(r.out.result)) {
 			/* TODO: do some more checks here */
 			continue;
 		}
-		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			printf("EnumPrinters unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
-				win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+			"EnumPrinters unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumPrinters(ctx->p, ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EnumPrinters failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPrinters(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrinters failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPrinters failed - %s\n", 
-			       win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinters failed");
 
 		ctx->printer_count[level]	= r.out.count;
 		ctx->printers[level]		= r.out.info;
@@ -689,14 +524,9 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
-		if (ctx->printer_count[level] != ctx->printer_count[old_level]) {
-			printf("EnumPrinters level[%d] returns [%u] printers, but level[%d] returns [%u]\n",
-				level, ctx->printer_count[level], old_level, ctx->printer_count[old_level]);
-			ret = False;
-		}
+		torture_assert_int_equal(tctx, ctx->printer_count[level], ctx->printer_count[old_level],
+					 "EnumPrinters invalid value");
 	}
-	/* if the array sizes are not the same we would maybe segfault in the following code */
-	if (!ret) return ret;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -705,56 +535,56 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 			union spoolss_PrinterInfo *ref = &ctx->printers[2][j];
 			switch (level) {
 			case 0:
-				COMPARE_STRING(cur->info0, ref->info2, printername);
-				COMPARE_STRING(cur->info0, ref->info2, servername);
-				COMPARE_UINT32(cur->info0, ref->info2, cjobs);
-				/*COMPARE_UINT32(cur->info0, ref->info2, total_jobs);
-				COMPARE_UINT32(cur->info0, ref->info2, total_bytes);
+				COMPARE_STRING(tctx, cur->info0, ref->info2, printername);
+				COMPARE_STRING(tctx, cur->info0, ref->info2, servername);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, cjobs);
+				/*COMPARE_UINT32(tctx, cur->info0, ref->info2, total_jobs);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, total_bytes);
 				COMPARE_SPOOLSS_TIME(cur->info0, ref->info2, spoolss_Time time);		
-				COMPARE_UINT32(cur->info0, ref->info2, global_counter);
-				COMPARE_UINT32(cur->info0, ref->info2, total_pages);
-				COMPARE_UINT32(cur->info0, ref->info2, version);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown10);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown11);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown12);
-				COMPARE_UINT32(cur->info0, ref->info2, session_counter);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown14);
-				COMPARE_UINT32(cur->info0, ref->info2, printer_errors);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown16);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown17);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown18);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown19);
-				COMPARE_UINT32(cur->info0, ref->info2, change_id);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown21);*/
-				COMPARE_UINT32(cur->info0, ref->info2, status);
-				/*COMPARE_UINT32(cur->info0, ref->info2, unknown23);
-				COMPARE_UINT32(cur->info0, ref->info2, c_setprinter);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, global_counter);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, total_pages);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, version);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown10);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown11);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown12);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, session_counter);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown14);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, printer_errors);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown16);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown17);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown18);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown19);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, change_id);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown21);*/
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, status);
+				/*COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown23);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, c_setprinter);
 				COMPARE_UINT16(cur->info0, ref->info2, unknown25);
 				COMPARE_UINT16(cur->info0, ref->info2, unknown26);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown27);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown28);
-				COMPARE_UINT32(cur->info0, ref->info2, unknown29);*/
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown27);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown28);
+				COMPARE_UINT32(tctx, cur->info0, ref->info2, unknown29);*/
 				break;
 			case 1:
-				/*COMPARE_UINT32(cur->info1, ref->info2, flags);*/
-				/*COMPARE_STRING(cur->info1, ref->info2, name);*/
-				/*COMPARE_STRING(cur->info1, ref->info2, description);*/
-				COMPARE_STRING(cur->info1, ref->info2, comment);
+				/*COMPARE_UINT32(tctx, cur->info1, ref->info2, flags);*/
+				/*COMPARE_STRING(tctx, cur->info1, ref->info2, name);*/
+				/*COMPARE_STRING(tctx, cur->info1, ref->info2, description);*/
+				COMPARE_STRING(tctx, cur->info1, ref->info2, comment);
 				break;
 			case 2:
 				/* level 2 is our reference, and it makes no sense to compare it to itself */
 				break;
 			case 4:
-				COMPARE_STRING(cur->info4, ref->info2, printername);
-				COMPARE_STRING(cur->info4, ref->info2, servername);
-				COMPARE_UINT32(cur->info4, ref->info2, attributes);
+				COMPARE_STRING(tctx, cur->info4, ref->info2, printername);
+				COMPARE_STRING(tctx, cur->info4, ref->info2, servername);
+				COMPARE_UINT32(tctx, cur->info4, ref->info2, attributes);
 				break;
 			case 5:
-				COMPARE_STRING(cur->info5, ref->info2, printername);
-				COMPARE_STRING(cur->info5, ref->info2, portname);
-				COMPARE_UINT32(cur->info5, ref->info2, attributes);
-				/*COMPARE_UINT32(cur->info5, ref->info2, device_not_selected_timeout);
-				COMPARE_UINT32(cur->info5, ref->info2, transmission_retry_timeout);*/
+				COMPARE_STRING(tctx, cur->info5, ref->info2, printername);
+				COMPARE_STRING(tctx, cur->info5, ref->info2, portname);
+				COMPARE_UINT32(tctx, cur->info5, ref->info2, attributes);
+				/*COMPARE_UINT32(tctx, cur->info5, ref->info2, device_not_selected_timeout);
+				COMPARE_UINT32(tctx, cur->info5, ref->info2, transmission_retry_timeout);*/
 				break;
 			}
 		}
@@ -764,17 +594,17 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 	 * 	- verify that the port of a printer was in the list returned by EnumPorts
 	 */
 
-	return ret;
+	return true;
 }
 
-static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_GetPrinter(struct torture_context *tctx, 
+			    struct dcerpc_pipe *p, 
 		     struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinter r;
 	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 	int i;
-	BOOL ret = True;
 	
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.handle = handle;
@@ -782,43 +612,31 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 
-		printf("Testing GetPrinter level %u\n", r.in.level);
+		torture_comment(tctx, "Testing GetPrinter level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetPrinter failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 		
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
 			r.in.offered = r.out.needed;
-			status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
+			status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
 		}
 		
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetPrinter failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("GetPrinter failed - %s\n", 
-			       win_errstr(r.out.result));
-			ret = False;
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
 	}
 
-	return ret;
+	return true;
 }
 
 
-static BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		       struct policy_handle *handle)
+static bool test_ClosePrinter(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p, 
+			      struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_ClosePrinter r;
@@ -826,18 +644,16 @@ static BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.out.handle = handle;
 
-	printf("Testing ClosePrinter\n");
+	torture_comment(tctx, "Testing ClosePrinter\n");
 
-	status = dcerpc_spoolss_ClosePrinter(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ClosePrinter failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_spoolss_ClosePrinter(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ClosePrinter failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_GetForm(struct torture_context *tctx, 
+			 struct dcerpc_pipe *p, 
 			 struct policy_handle *handle, 
 			 const char *form_name)
 {
@@ -850,109 +666,79 @@ static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 
-	printf("Testing GetForm\n");
+	torture_comment(tctx, "Testing GetForm\n");
 
-	status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetForm failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_spoolss_GetForm(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetForm failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
-		status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetForm failed - %s\n",
-				nt_errstr(status));
-			return False;
-		}
+		status = dcerpc_spoolss_GetForm(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "GetForm failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("GetForm failed - %s\n",
-				win_errstr(r.out.result));
-			return False;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "GetForm failed");
 
-		if (!r.out.info) {
-			printf("No form info returned\n");
-			return False;
-		}
+		torture_assert(tctx, r.out.info, "No form info returned");
 	}
 
+	torture_assert_werr_ok(tctx, r.out.result, "GetForm failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("GetForm failed - %s\n",
-			win_errstr(r.out.result));
-		return False;
-	}
-
-	return True;
+	return true;
 }
 
-static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		    struct policy_handle *handle, BOOL print_server)
+static bool test_EnumForms(struct torture_context *tctx, 
+			   struct dcerpc_pipe *p, 
+			   struct policy_handle *handle, bool print_server)
 {
 	NTSTATUS status;
 	struct spoolss_EnumForms r;
-	BOOL ret = True;
+	bool ret = true;
 
 	r.in.handle = handle;
 	r.in.level = 1;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 
-	printf("Testing EnumForms\n");
+	torture_comment(tctx, "Testing EnumForms\n");
 
-	status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumForms failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_spoolss_EnumForms(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 
-	if (print_server && W_ERROR_EQUAL(r.out.result,WERR_BADFID)) {
-		printf("EnumForms on the PrintServer isn't supported by test server (NT4)\n");
-		return True;
-	}
+	if (print_server && W_ERROR_EQUAL(r.out.result, WERR_BADFID))
+		torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		union spoolss_FormInfo *info;
 		int j;
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
+		status = dcerpc_spoolss_EnumForms(p, tctx, &r);
 
-		if (!r.out.info) {
-			printf("No forms returned\n");
-			return False;
-		}
+		torture_assert(tctx, r.out.info, "No forms returned");
 
 		info = r.out.info;
 
 		for (j = 0; j < r.out.count; j++) {
-			if (!print_server) ret &= test_GetForm(p, mem_ctx, handle, info[j].info1.form_name);
+			if (!print_server) 
+				ret &= test_GetForm(tctx, p, handle, info[j].info1.form_name);
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumForms failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("EnumForms failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "EnumForms failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_DeleteForm(struct torture_context *tctx, 
+			    struct dcerpc_pipe *p, 
 			    struct policy_handle *handle, 
 			    const char *form_name)
 {
@@ -962,29 +748,24 @@ static BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.in.form_name = form_name;
 
-	status = dcerpc_spoolss_DeleteForm(p, mem_ctx, &r);
+	status = dcerpc_spoolss_DeleteForm(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteForm failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "DeleteForm failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DeleteForm failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "DeleteForm failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		  struct policy_handle *handle, BOOL print_server)
+static bool test_AddForm(struct torture_context *tctx, 
+			 struct dcerpc_pipe *p, 
+			 struct policy_handle *handle, bool print_server)
 {
 	struct spoolss_AddForm r;
 	struct spoolss_AddFormInfo1 addform;
 	const char *form_name = "testform3";
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 
 	r.in.handle	= handle;
 	r.in.level	= 1;
@@ -998,19 +779,13 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	addform.area.right	= 45;
 	addform.area.bottom	= 15;
 
-	status = dcerpc_spoolss_AddForm(p, mem_ctx, &r);
+	status = dcerpc_spoolss_AddForm(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("AddForm failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "AddForm failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("AddForm failed - %s\n", win_errstr(r.out.result));
-		goto done;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "AddForm failed");
 
-	if (!print_server) ret &= test_GetForm(p, mem_ctx, handle, form_name);
+	if (!print_server) ret &= test_GetForm(tctx, p, handle, form_name);
 
 	{
 		struct spoolss_SetForm sf;
@@ -1027,92 +802,71 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		setform.size.width	= 1234;
 
-		status = dcerpc_spoolss_SetForm(p, mem_ctx, &sf);
+		status = dcerpc_spoolss_SetForm(p, tctx, &sf);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("SetForm failed - %s\n", nt_errstr(status));
-			ret = False;
-			goto done;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "SetForm failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("SetForm failed - %s\n", 
-			       win_errstr(r.out.result));
-			ret = False;
-			goto done;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "SetForm failed");
 	}
 
-	if (!print_server) ret &= test_GetForm(p, mem_ctx, handle, form_name);
+	if (!print_server) ret &= test_GetForm(tctx, p, handle, form_name);
 
- done:
-	if (!test_DeleteForm(p, mem_ctx, handle, form_name)) {
-		printf("DeleteForm failed\n");
-		ret = False;
+	if (!test_DeleteForm(tctx, p, handle, form_name)) {
+		ret = false;
 	}
 
 	return ret;
 }
 
-static BOOL test_EnumPorts_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_EnumPorts_old(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPorts r;
 
-	r.in.servername = talloc_asprintf(mem_ctx, "\\\\%s", 
+	r.in.servername = talloc_asprintf(tctx, "\\\\%s", 
 					  dcerpc_server_name(p));
 	r.in.level = 2;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 
-	printf("Testing EnumPorts\n");
+	torture_comment(tctx, "Testing EnumPorts\n");
 
-	status = dcerpc_spoolss_EnumPorts(p, mem_ctx, &r);
+	status = dcerpc_spoolss_EnumPorts(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumPorts failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "EnumPorts failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumPorts(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPorts failed - %s\n", nt_errstr(status));
-			return False;
-		}
+		status = dcerpc_spoolss_EnumPorts(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "EnumPorts failed");
 
-		if (!r.out.info) {
-			printf("No ports returned\n");
-			return False;
-		}
+		torture_assert(tctx, r.out.info, "No ports returned");
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_AddPort(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_AddPort(struct torture_context *tctx, 
+			 struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct spoolss_AddPort r;
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", 
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", 
 					   dcerpc_server_name(p));
 	r.in.unknown = 0;
 	r.in.monitor_name = "foo";
 
-	printf ("Testing AddPort\n");
+	torture_comment(tctx, "Testing AddPort\n");
 
-	status = dcerpc_spoolss_AddPort(p, mem_ctx, &r);
+	status = dcerpc_spoolss_AddPort(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("AddPort failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "AddPort failed");
 
 	/* win2k3 returns WERR_NOT_SUPPORTED */
 
@@ -1128,8 +882,9 @@ static BOOL test_AddPort(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		  struct policy_handle *handle, uint32_t job_id)
+static bool test_GetJob(struct torture_context *tctx, 
+			struct dcerpc_pipe *p, 
+			struct policy_handle *handle, uint32_t job_id)
 {
 	NTSTATUS status;
 	struct spoolss_GetJob r;
@@ -1140,33 +895,29 @@ static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 
-	printf("Testing GetJob\n");
+	torture_comment(tctx, "Testing GetJob\n");
 
-	status = dcerpc_spoolss_GetJob(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetJob failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_spoolss_GetJob(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_GetJob(p, mem_ctx, &r);
+		status = dcerpc_spoolss_GetJob(p, tctx, &r);
 
-		if (!r.out.info) {
-			printf("No job info returned\n");
-			return False;
-		}
+		torture_assert(tctx, r.out.info, "No job info returned");
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		 struct policy_handle *handle, uint32_t job_id, enum spoolss_JobControl command)
+static bool test_SetJob(struct torture_context *tctx, 
+			struct dcerpc_pipe *p, 
+			struct policy_handle *handle, uint32_t job_id, 
+			enum spoolss_JobControl command)
 {
 	NTSTATUS status;
 	struct spoolss_SetJob r;
@@ -1176,23 +927,18 @@ static BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.ctr	= NULL;
 	r.in.command	= command;
 
-	printf("Testing SetJob\n");
+	torture_comment(tctx, "Testing SetJob\n");
 
-	status = dcerpc_spoolss_SetJob(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetJob failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("SetJob failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	status = dcerpc_spoolss_SetJob(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "SetJob failed");
+	torture_assert_werr_ok(tctx, r.out.result, "SetJob failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		   struct policy_handle *handle)
+static bool test_EnumJobs(struct torture_context *tctx, 
+			  struct dcerpc_pipe *p, 
+			  struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_EnumJobs r;
@@ -1204,50 +950,44 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 
-	printf("Testing EnumJobs\n");
+	torture_comment(tctx, "Testing EnumJobs\n");
 
-	status = dcerpc_spoolss_EnumJobs(p, mem_ctx, &r);
+	status = dcerpc_spoolss_EnumJobs(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumJobs failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		union spoolss_JobInfo *info;
 		int j;
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_EnumJobs(p, mem_ctx, &r);
+		status = dcerpc_spoolss_EnumJobs(p, tctx, &r);
 
-		if (!r.out.info) {
-			printf("No jobs returned\n");
-			return True;
-		}
+		torture_assert(tctx, r.out.info, "No jobs returned");
 
 		info = r.out.info;
 
 		for (j = 0; j < r.out.count; j++) {
-			test_GetJob(p, mem_ctx, handle, info[j].info1.job_id);
-			test_SetJob(p, mem_ctx, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
-			test_SetJob(p, mem_ctx, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
+			test_GetJob(tctx, p, handle, info[j].info1.job_id);
+			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
+			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
 		}
 
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("EnumJobs failed - %s\n", win_errstr(r.out.result));
-		return False;
+	} else {
+		torture_assert_werr_ok(tctx, r.out.result, "EnumJobs failed");
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_DoPrintTest(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		   struct policy_handle *handle)
+static bool test_DoPrintTest(struct torture_context *tctx, 
+			     struct dcerpc_pipe *p, 
+			     struct policy_handle *handle)
 {
-	BOOL ret = True;
+	bool ret = True;
 	NTSTATUS status;
 	struct spoolss_StartDocPrinter s;
 	struct spoolss_DocumentInfo1 info1;
@@ -1258,7 +998,7 @@ static BOOL test_DoPrintTest(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	int i;
 	uint32_t job_id;
 
-	printf("Testing StartDocPrinter\n");
+	torture_comment(tctx, "Testing StartDocPrinter\n");
 
 	s.in.handle		= handle;
 	s.in.level		= 1;
@@ -1267,86 +1007,58 @@ static BOOL test_DoPrintTest(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	info1.output_file	= NULL;
 	info1.datatype		= "RAW";
 
-	status = dcerpc_spoolss_StartDocPrinter(p, mem_ctx, &s);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("dcerpc_spoolss_StartDocPrinter failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	if (!W_ERROR_IS_OK(s.out.result)) {
-		printf("StartDocPrinter failed - %s\n", win_errstr(s.out.result));
-		return False;
-	}
+	status = dcerpc_spoolss_StartDocPrinter(p, tctx, &s);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_StartDocPrinter failed");
+	torture_assert_werr_ok(tctx, s.out.result, "StartDocPrinter failed");
 
 	job_id = s.out.job_id;
 
 	for (i=1; i < 4; i++) {
-		printf("Testing StartPagePrinter: Page[%d]\n", i);
+		torture_comment(tctx, "Testing StartPagePrinter: Page[%d]\n", i);
 
 		sp.in.handle		= handle;
 
-		status = dcerpc_spoolss_StartPagePrinter(p, mem_ctx, &sp);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_StartPagePrinter failed - %s\n", nt_errstr(status));
-			return False;
-		}
-		if (!W_ERROR_IS_OK(sp.out.result)) {
-			printf("StartPagePrinter failed - %s\n", win_errstr(sp.out.result));
-			return False;
-		}
+		status = dcerpc_spoolss_StartPagePrinter(p, tctx, &sp);
+		torture_assert_ntstatus_ok(tctx, status, 
+					   "dcerpc_spoolss_StartPagePrinter failed");
+		torture_assert_werr_ok(tctx, sp.out.result, "StartPagePrinter failed");
 
-		printf("Testing WritePrinter: Page[%d]\n", i);
+		torture_comment(tctx, "Testing WritePrinter: Page[%d]\n", i);
 
 		w.in.handle		= handle;
-		w.in.data		= data_blob_string_const(talloc_asprintf(mem_ctx,"TortureTestPage: %d\nData\n",i));
+		w.in.data		= data_blob_string_const(talloc_asprintf(tctx,"TortureTestPage: %d\nData\n",i));
 
-		status = dcerpc_spoolss_WritePrinter(p, mem_ctx, &w);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_WritePrinter failed - %s\n", nt_errstr(status));
-			return False;
-		}
-		if (!W_ERROR_IS_OK(w.out.result)) {
-			printf("WritePrinter failed - %s\n", win_errstr(w.out.result));
-			return False;
-		}
+		status = dcerpc_spoolss_WritePrinter(p, tctx, &w);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_WritePrinter failed");
+		torture_assert_werr_ok(tctx, w.out.result, "WritePrinter failed");
 
-		printf("Testing EndPagePrinter: Page[%d]\n", i);
+		torture_comment(tctx, "Testing EndPagePrinter: Page[%d]\n", i);
 
 		ep.in.handle		= handle;
 
-		status = dcerpc_spoolss_EndPagePrinter(p, mem_ctx, &ep);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_spoolss_EndPagePrinter failed - %s\n", nt_errstr(status));
-			return False;
-		}
-		if (!W_ERROR_IS_OK(ep.out.result)) {
-			printf("EndPagePrinter failed - %s\n", win_errstr(ep.out.result));
-			return False;
-		}
+		status = dcerpc_spoolss_EndPagePrinter(p, tctx, &ep);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EndPagePrinter failed");
+		torture_assert_werr_ok(tctx, ep.out.result, "EndPagePrinter failed");
 	}
 
-	printf("Testing EndDocPrinter\n");
+	torture_comment(tctx, "Testing EndDocPrinter\n");
 
 	e.in.handle = handle;
 
-	status = dcerpc_spoolss_EndDocPrinter(p, mem_ctx, &e);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("dcerpc_spoolss_EndDocPrinter failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	if (!W_ERROR_IS_OK(e.out.result)) {
-		printf("EndDocPrinter failed - %s\n", win_errstr(e.out.result));
-		return False;
-	}
+	status = dcerpc_spoolss_EndDocPrinter(p, tctx, &e);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EndDocPrinter failed");
+	torture_assert_werr_ok(tctx, e.out.result, "EndDocPrinter failed");
 
-	ret &= test_EnumJobs(p, mem_ctx, handle);
+	ret &= test_EnumJobs(tctx, p, handle);
 
-	ret &= test_SetJob(p, mem_ctx, handle, job_id, SPOOLSS_JOB_CONTROL_DELETE);
+	ret &= test_SetJob(tctx, p, handle, job_id, SPOOLSS_JOB_CONTROL_DELETE);
 
 	return ret;
 }
 
-static BOOL test_PausePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		   struct policy_handle *handle)
+static bool test_PausePrinter(struct torture_context *tctx, 
+			      struct dcerpc_pipe *p, 
+			      struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinter r;
@@ -1358,25 +1070,20 @@ static BOOL test_PausePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.secdesc_ctr.sd	= NULL;
 	r.in.command		= SPOOLSS_PRINTER_CONTROL_PAUSE;
 
-	printf("Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_PAUSE\n");
+	torture_comment(tctx, "Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_PAUSE\n");
 
-	status = dcerpc_spoolss_SetPrinter(p, mem_ctx, &r);
+	status = dcerpc_spoolss_SetPrinter(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetPrinter failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "SetPrinter failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("SetPrinter failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_ResumePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		   struct policy_handle *handle)
+static bool test_ResumePrinter(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p, 
+			       struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinter r;
@@ -1388,24 +1095,19 @@ static BOOL test_ResumePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.secdesc_ctr.sd	= NULL;
 	r.in.command		= SPOOLSS_PRINTER_CONTROL_RESUME;
 
-	printf("Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_RESUME\n");
+	torture_comment(tctx, "Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_RESUME\n");
 
-	status = dcerpc_spoolss_SetPrinter(p, mem_ctx, &r);
+	status = dcerpc_spoolss_SetPrinter(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetPrinter failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "SetPrinter failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("SetPrinter failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_GetPrinterData(struct torture_context *tctx, 
+				struct dcerpc_pipe *p, 
 				struct policy_handle *handle, 
 				const char *value_name)
 {
@@ -1416,35 +1118,25 @@ static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.value_name = value_name;
 	r.in.offered = 0;
 
-	printf("Testing GetPrinterData\n");
+	torture_comment(tctx, "Testing GetPrinterData\n");
 
-	status = dcerpc_spoolss_GetPrinterData(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetPrinterData failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_spoolss_GetPrinterData(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_GetPrinterData(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetPrinterData failed - %s\n", 
-			       nt_errstr(status));
-			return False;
-		}
+		status = dcerpc_spoolss_GetPrinterData(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("GetPrinterData failed - %s\n", 
-			       win_errstr(r.out.result));
-			return False;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "GetPrinterData failed");
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_GetPrinterDataEx(struct torture_context *tctx, 
+				  struct dcerpc_pipe *p, 
 				  struct policy_handle *handle, 
 				  const char *key_name,
 				  const char *value_name)
@@ -1457,40 +1149,30 @@ static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.value_name = value_name;
 	r.in.offered = 0;
 
-	printf("Testing GetPrinterDataEx\n");
+	torture_comment(tctx, "Testing GetPrinterDataEx\n");
 
-	status = dcerpc_spoolss_GetPrinterDataEx(p, mem_ctx, &r);
+	status = dcerpc_spoolss_GetPrinterDataEx(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_NET_WRITE_FAULT) &&
 		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
-			printf("GetPrinterDataEx not supported by server\n");
-			return True;
+			torture_skip(tctx, "GetPrinterDataEx not supported by server\n");
 		}
-		printf("GetPrinterDataEx failed - %s\n", nt_errstr(status));
-		return False;
+		torture_assert_ntstatus_ok(tctx, status, "GetPrinterDataEx failed");
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.offered = r.out.needed;
 
-		status = dcerpc_spoolss_GetPrinterDataEx(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetPrinterDataEx failed - %s\n", 
-			       nt_errstr(status));
-			return False;
-		}
+		status = dcerpc_spoolss_GetPrinterDataEx(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "GetPrinterDataEx failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("GetPrinterDataEx failed - %s\n", 
-			       win_errstr(r.out.result));
-			return False;
-		}
+		torture_assert_werr_ok(tctx, r.out.result,  "GetPrinterDataEx failed");
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pipe *p, 
 				 struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1507,28 +1189,22 @@ static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.data_size = &data_size;
 		r.out.data_size = &data_size;
 
-		printf("Testing EnumPrinterData\n");
+		torture_comment(tctx, "Testing EnumPrinterData\n");
 
-		status = dcerpc_spoolss_EnumPrinterData(p, mem_ctx, &r);
+		status = dcerpc_spoolss_EnumPrinterData(p, tctx, &r);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrinterData failed - %s\n", nt_errstr(status));
-			return False;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
 
 		r.in.value_offered = r.out.value_needed;
 
-		status = dcerpc_spoolss_EnumPrinterData(p, mem_ctx, &r);
+		status = dcerpc_spoolss_EnumPrinterData(p, tctx, &r);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrinterData failed - %s\n", nt_errstr(status));
-			return False;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
 		
-		test_GetPrinterData(p, mem_ctx, handle, r.out.value_name);
+		test_GetPrinterData(tctx, p, handle, r.out.value_name);
 
-		test_GetPrinterDataEx(
-			p, mem_ctx, handle, "PrinterDriverData", 
+		test_GetPrinterDataEx(tctx, 
+			p, handle, "PrinterDriverData", 
 			r.out.value_name);
 
 		r.in.enum_index++;
@@ -1538,7 +1214,8 @@ static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL test_EnumPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_EnumPrinterDataEx(struct torture_context *tctx, 
+				   struct dcerpc_pipe *p, 
 				   struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1548,28 +1225,23 @@ static BOOL test_EnumPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.key_name = "PrinterDriverData";
 	r.in.offered = 0;
 
-	printf("Testing EnumPrinterDataEx\n");
+	torture_comment(tctx, "Testing EnumPrinterDataEx\n");
 
-	status = dcerpc_spoolss_EnumPrinterDataEx(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumPrinterDataEx failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDataEx failed");
 
 	r.in.offered = r.out.needed;
 
-	status = dcerpc_spoolss_EnumPrinterDataEx(p, mem_ctx, &r);
+	status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumPrinterDataEx failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDataEx failed");
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_DeletePrinterData(struct torture_context *tctx, 
+				   struct dcerpc_pipe *p, 
 				   struct policy_handle *handle, 
 				   const char *value_name)
 {
@@ -1579,20 +1251,18 @@ static BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.in.value_name = value_name;
 
-	printf("Testing DeletePrinterData\n");
+	torture_comment(tctx, "Testing DeletePrinterData\n");
 
-	status = dcerpc_spoolss_DeletePrinterData(p, mem_ctx, &r);
+	status = dcerpc_spoolss_DeletePrinterData(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeletePrinterData failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "DeletePrinterData failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *handle)
+static bool test_SetPrinterData(struct torture_context *tctx, 
+				struct dcerpc_pipe *p, 
+				struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinterData r;
@@ -1603,84 +1273,69 @@ static BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.type = SPOOLSS_PRINTER_DATA_TYPE_STRING;
 	r.in.data.string = "dog";
 
-	printf("Testing SetPrinterData\n");
+	torture_comment(tctx, "Testing SetPrinterData\n");
 
-	status = dcerpc_spoolss_SetPrinterData(p, mem_ctx, &r);
+	status = dcerpc_spoolss_SetPrinterData(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetPrinterData failed - %s\n", nt_errstr(status));
-		return False;
+	torture_assert_ntstatus_ok(tctx, status, "SetPrinterData failed");
+
+	if (!test_GetPrinterData(tctx, p, handle, value_name)) {
+		return false;
 	}
 
-	if (!test_GetPrinterData(p, mem_ctx, handle, value_name)) {
-		return False;
+	if (!test_DeletePrinterData(tctx, p, handle, value_name)) {
+		return false;
 	}
 
-	if (!test_DeletePrinterData(p, mem_ctx, handle, value_name)) {
-		return False;
-	}
-
-	return True;
+	return true;
 }
 
-static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_SecondaryClosePrinter(struct torture_context *tctx, 
+				       struct dcerpc_pipe *p, 
 				       struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p2;
-	BOOL ret = True;
+	bool ret = true;
 
 	/* only makes sense on SMB */
 	if (p->conn->transport.transport != NCACN_NP) {
 		return True;
 	}
 
-	printf("testing close on secondary pipe\n");
+	torture_comment(tctx, "testing close on secondary pipe\n");
 
-	status = dcerpc_parse_binding(mem_ctx, p->conn->binding_string, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to parse dcerpc binding '%s'\n", p->conn->binding_string);
-		return False;
-	}
+	status = dcerpc_parse_binding(tctx, p->conn->binding_string, &b);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to parse dcerpc binding");
 
 	status = dcerpc_secondary_connection(p, &p2, b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create secondary connection\n");
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
 	status = dcerpc_bind_auth_none(p2, &ndr_table_spoolss);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to create bind on secondary connection\n");
-		talloc_free(p2);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create bind on secondary connection");
 
-                return False;
-        }
-
-	if (test_ClosePrinter(p2, mem_ctx, handle)) {
-		printf("ERROR: Allowed close on secondary connection!\n");
-		ret = False;
+	if (test_ClosePrinter(tctx, p2, handle)) {
+		torture_comment(tctx, "ERROR: Allowed close on secondary connection!\n");
+		ret = false;
 	}
 
-	if (p2->last_fault_code != DCERPC_FAULT_CONTEXT_MISMATCH) {
-		printf("Unexpected fault code 0x%x - expected 0x%x\n",
-		       p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH);
-		ret = False;
-	}
+	torture_assert_int_equal(tctx, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
+				 "Unexpected fault code");
 
 	talloc_free(p2);
 
-	return ret;
+	return true;
 }
 
-static BOOL test_OpenPrinter_badname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *name)
+static bool test_OpenPrinter_badname(struct torture_context *tctx, 
+				     struct dcerpc_pipe *p, const char *name)
 {
 	NTSTATUS status;
 	struct spoolss_OpenPrinter op;
 	struct spoolss_OpenPrinterEx opEx;
 	struct policy_handle handle;
-	BOOL ret = True;
+	bool ret = true;
 
 	op.in.printername	= name;
 	op.in.datatype		= NULL;
@@ -1688,20 +1343,17 @@ static BOOL test_OpenPrinter_badname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	op.in.access_mask	= 0;
 	op.out.handle		= &handle;
 
-	printf("\nTesting OpenPrinter(%s) with bad name\n", op.in.printername);
+	torture_comment(tctx, "\nTesting OpenPrinter(%s) with bad name\n", op.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &op);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPrinter failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
+	status = dcerpc_spoolss_OpenPrinter(p, tctx, &op);
+	torture_assert_ntstatus_ok(tctx, status, "OpenPrinter failed");
 	if (!W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME,op.out.result)) {
-		printf("OpenPrinter(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
+		torture_comment(tctx, "OpenPrinter(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
 			name, win_errstr(op.out.result));
 	}
 
 	if (W_ERROR_IS_OK(op.out.result)) {
-		ret &=test_ClosePrinter(p, mem_ctx, &handle);
+		ret &=test_ClosePrinter(tctx, p, &handle);
 	}
 
 	opEx.in.printername		= name;
@@ -1712,48 +1364,24 @@ static BOOL test_OpenPrinter_badname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	opEx.in.userlevel.level1	= NULL;
 	opEx.out.handle			= &handle;
 
-	printf("\nTesting OpenPrinterEx(%s) with bad name\n", opEx.in.printername);
+	torture_comment(tctx, "Testing OpenPrinterEx(%s) with bad name\n", opEx.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &opEx);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPrinter failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
+	status = dcerpc_spoolss_OpenPrinterEx(p, tctx, &opEx);
+	torture_assert_ntstatus_ok(tctx, status, "OpenPrinter failed");
 	if (!W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME,opEx.out.result)) {
-		printf("OpenPrinterEx(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
+		torture_comment(tctx, "OpenPrinterEx(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
 			name, win_errstr(opEx.out.result));
 	}
 
 	if (W_ERROR_IS_OK(opEx.out.result)) {
-		ret &=test_ClosePrinter(p, mem_ctx, &handle);
+		ret &=test_ClosePrinter(tctx, p, &handle);
 	}
 
 	return ret;
 }
 
-static BOOL test_OpenPrinter_badnames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
-{
-	BOOL ret = True;
-	char *name;
-
-	ret &= test_OpenPrinter_badname(p, mem_ctx, "__INVALID_PRINTER__");
-	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\__INVALID_HOST__");
-	ret &= test_OpenPrinter_badname(p, mem_ctx, "");
-	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\\\");
-	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\\\__INVALID_PRINTER__");
-
-	name = talloc_asprintf(mem_ctx, "\\\\%s\\", dcerpc_server_name(p));
-	ret &= test_OpenPrinter_badname(p, mem_ctx, name);
-	talloc_free(name);
-
-	name = talloc_asprintf(mem_ctx, "\\\\%s\\__INVALID_PRINTER__", dcerpc_server_name(p));
-	ret &= test_OpenPrinter_badname(p, mem_ctx, name);
-	talloc_free(name);
-
-	return ret;
-}
-
-static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_OpenPrinter(struct torture_context *tctx, 
+			     struct dcerpc_pipe *p, 
 			     const char *name)
 {
 	NTSTATUS status;
@@ -1761,42 +1389,37 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle handle;
 	BOOL ret = True;
 
-	r.in.printername	= talloc_asprintf(mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
+	r.in.printername	= talloc_asprintf(tctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
 	r.in.datatype		= NULL;
 	r.in.devmode_ctr.devmode= NULL;
 	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle		= &handle;
 
-	printf("\nTesting OpenPrinter(%s)\n", r.in.printername);
+	torture_comment(tctx, "Testing OpenPrinter(%s)\n", r.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &r);
+	status = dcerpc_spoolss_OpenPrinter(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPrinter failed - %s\n", nt_errstr(status));
-		return False;
+	torture_assert_ntstatus_ok(tctx, status, "OpenPrinter failed");
+
+	torture_assert_werr_ok(tctx, r.out.result, "OpenPrinter failed");
+
+	if (!test_GetPrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("OpenPrinter failed - %s\n", win_errstr(r.out.result));
-		return False;
+	if (!test_SecondaryClosePrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_GetPrinter(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_SecondaryClosePrinter(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_ClosePrinter(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_ClosePrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 
 	return ret;
 }
 
-static BOOL call_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool call_OpenPrinterEx(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p, 
 			       const char *name, struct policy_handle *handle)
 {
 	struct spoolss_OpenPrinterEx r;
@@ -1804,10 +1427,10 @@ static BOOL call_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (name && name[0]) {
-		r.in.printername = talloc_asprintf(mem_ctx, "\\\\%s\\%s", 
+		r.in.printername = talloc_asprintf(tctx, "\\\\%s\\%s", 
 						   dcerpc_server_name(p), name);
 	} else {
-		r.in.printername = talloc_asprintf(mem_ctx, "\\\\%s", 
+		r.in.printername = talloc_asprintf(tctx, "\\\\%s", 
 						   dcerpc_server_name(p));
 	}
 
@@ -1826,87 +1449,82 @@ static BOOL call_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	userlevel1.minor = 3;
 	userlevel1.processor = 4;
 
-	printf("Testing OpenPrinterEx(%s)\n", r.in.printername);
+	torture_comment(tctx, "Testing OpenPrinterEx(%s)\n", r.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &r);
+	status = dcerpc_spoolss_OpenPrinterEx(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPrinterEx failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "OpenPrinterEx failed");
 	
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("OpenPrinterEx failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	torture_assert_werr_ok(tctx, r.out.result, "OpenPrinterEx failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_OpenPrinterEx(struct torture_context *tctx, 
+			       struct dcerpc_pipe *p, 
 			       const char *name)
 {
 	struct policy_handle handle;
-	BOOL ret = True;
+	bool ret = true;
 
-	if (!call_OpenPrinterEx(p, mem_ctx, name, &handle)) {
-		return False;
+	if (!call_OpenPrinterEx(tctx, p, name, &handle)) {
+		return false;
 	}
 
-	if (!test_GetPrinter(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_GetPrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_EnumForms(p, mem_ctx, &handle, False)) {
-		ret = False;
+	if (!test_EnumForms(tctx, p, &handle, false)) {
+		ret = false;
 	}
 
-	if (!test_AddForm(p, mem_ctx, &handle, False)) {
-		ret = False;
+	if (!test_AddForm(tctx, p, &handle, false)) {
+		ret = false;
 	}
 
-	if (!test_EnumPrinterData(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_EnumPrinterData(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_EnumPrinterDataEx(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_EnumPrinterDataEx(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_PausePrinter(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_PausePrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_DoPrintTest(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_DoPrintTest(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_ResumePrinter(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_ResumePrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_SetPrinterData(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_SetPrinterData(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_SecondaryClosePrinter(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_SecondaryClosePrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 
-	if (!test_ClosePrinter(p, mem_ctx, &handle)) {
-		ret = False;
+	if (!test_ClosePrinter(tctx, p, &handle)) {
+		ret = false;
 	}
 	
 	return ret;
 }
 
-static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
 	uint16_t levels[] = {1, 2, 4, 5};
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		union spoolss_PrinterInfo *info;
@@ -1918,38 +1536,26 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.buffer	= NULL;
 		r.in.offered	= 0;
 
-		printf("\nTesting EnumPrinters level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumPrinters level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrinters failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		status = dcerpc_spoolss_EnumPrinters(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "EnumPrinters failed");
 
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
 			r.in.offered = r.out.needed;
-			status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
+			status = dcerpc_spoolss_EnumPrinters(p, tctx, &r);
 		}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrinters failed - %s\n", 
-			       nt_errstr(status));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "EnumPrinters failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPrinters failed - %s\n", 
-			       win_errstr(r.out.result));
-			continue;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinters failed");
 
 		if (!r.out.info) {
-			printf("No printers returned\n");
-			continue;
+			torture_comment(tctx, "No printers returned\n");
+			return true;
 		}
 
 		info = r.out.info;
@@ -1957,14 +1563,14 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		for (j=0;j<r.out.count;j++) {
 			if (r.in.level == 1) {
 				/* the names appear to be comma-separated name lists? */
-				char *name = talloc_strdup(mem_ctx, info[j].info1.name);
+				char *name = talloc_strdup(tctx, info[j].info1.name);
 				char *comma = strchr(name, ',');
 				if (comma) *comma = 0;
-				if (!test_OpenPrinter(p, mem_ctx, name)) {
-					ret = False;
+				if (!test_OpenPrinter(tctx, p, name)) {
+					ret = false;
 				}
-				if (!test_OpenPrinterEx(p, mem_ctx, name)) {
-					ret = False;
+				if (!test_OpenPrinterEx(tctx, p, name)) {
+					ret = false;
 				}
 			}
 		}
@@ -1974,7 +1580,7 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 #if 0
-static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, 
 				   struct policy_handle *handle, 
 				   const char *driver_name)
 {
@@ -1991,7 +1597,7 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("Testing GetPrinterDriver2\n");
 
-	status = dcerpc_spoolss_GetPrinterDriver2(p, mem_ctx, &r);
+	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetPrinterDriver2 failed - %s\n", nt_errstr(status));
 		return False;
@@ -1999,7 +1605,7 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		r.in.offered = r.out.needed;
-		status = dcerpc_spoolss_GetPrinterDriver2(p, mem_ctx, &r);
+		status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
 	}
 		
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2018,68 +1624,88 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 #endif
 
-static BOOL test_EnumPrinterDrivers_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_EnumPrinterDrivers_old(struct torture_context *tctx, 
+					struct dcerpc_pipe *p)
 {
 	struct spoolss_EnumPrinterDrivers r;
 	NTSTATUS status;
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6};
 	int i;
-	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 
-		r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 		r.in.environment = "Windows NT x86";
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 
-		printf("\nTesting EnumPrinterDrivers level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumPrinterDrivers level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumPrinterDrivers(p, mem_ctx, &r);
+		status = dcerpc_spoolss_EnumPrinterDrivers(p, tctx, &r);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrinterDrivers failed - %s\n", 
-			       nt_errstr(status));
-			ret = False;
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDrivers failed");
 
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
 			r.in.offered = r.out.needed;
-			status = dcerpc_spoolss_EnumPrinterDrivers(p, mem_ctx, &r);
+			status = dcerpc_spoolss_EnumPrinterDrivers(p, tctx, &r);
 		}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrinterDrivers failed - %s\n", 
-			       nt_errstr(status));
-			ret = False;
-			break;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDrivers failed");
 
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("EnumPrinterDrivers failed - %s\n", 
-			       win_errstr(r.out.result));
-			ret = False;
-			break;
-		}
+		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
 
 		if (!r.out.info) {
-			printf("No printer drivers returned\n");
+			torture_comment(tctx, "No printer drivers returned\n");
 			break;
 		}
 	}
 
-	return ret;
+	return true;
+}
+
+/** Test that makes sure that calling ReplyOpenPrinter()
+ * on Samba 4 will cause an irpc broadcast call.
+ */
+static bool test_ReplyOpenPrinter(struct torture_context *tctx, 
+				  struct dcerpc_pipe *pipe)
+{
+	struct spoolss_ReplyOpenPrinter r;
+	struct spoolss_ReplyClosePrinter s;
+	struct policy_handle h;
+
+	r.in.server_name = "earth";
+	r.in.printer_local = 2;
+	r.in.type = REG_DWORD;
+	r.in.unknown1 = 0;
+	r.in.unknown2 = 0;
+	r.out.handle = &h;
+
+	torture_assert_ntstatus_ok(tctx, 
+			dcerpc_spoolss_ReplyOpenPrinter(pipe, tctx, &r),
+			"spoolss_ReplyOpenPrinter call failed");
+
+	torture_assert_werr_ok(tctx, r.out.result, "error return code");
+
+	s.in.handle = &h;
+	s.out.handle = &h;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_ReplyClosePrinter(pipe, tctx, &s),
+			"spoolss_ReplyClosePrinter call failed");
+
+	torture_assert_werr_ok(tctx, r.out.result, "error return code");
+
+	return true;
 }
 
 bool torture_rpc_spoolss(struct torture_context *torture)
 {
-    NTSTATUS status;
-    struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
 	BOOL ret = True;
 	struct test_spoolss_context *ctx;
 
@@ -2089,36 +1715,45 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	}
 
 	ctx = talloc_zero(torture, struct test_spoolss_context);
-	ctx->p	= p;
 
-	ret &= test_OpenPrinter_server(ctx);
+	ret &= test_OpenPrinter_server(torture, p, ctx);
 
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "W3SvcInstalled");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "BeepEnabled");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "EventLog");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "NetPopup");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "NetPopupToComputer");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "MajorVersion");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "MinorVersion");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "Architecture");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DsPresent");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "OSVersion");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "OSVersionEx");
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DNSMachineName");
-	ret &= test_EnumForms(ctx->p, ctx, &ctx->server_handle, True);
-	ret &= test_AddForm(ctx->p, ctx, &ctx->server_handle, True);
-	ret &= test_EnumPorts(ctx);
-	ret &= test_GetPrinterDriverDirectory(ctx);
-	ret &= test_EnumPrinterDrivers(ctx);
-	ret &= test_EnumMonitors(ctx);
-	ret &= test_EnumPrintProcessors(ctx);
-	ret &= test_EnumPrinters(ctx);
-	ret &= test_OpenPrinter_badnames(p, torture);
-	ret &= test_AddPort(p, torture);
-	ret &= test_EnumPorts_old(p, torture);
-	ret &= test_EnumPrinters_old(p, torture);
-	ret &= test_EnumPrinterDrivers_old(p, torture);
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "W3SvcInstalled");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "BeepEnabled");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "EventLog");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "NetPopup");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "NetPopupToComputer");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "MajorVersion");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "MinorVersion");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "DefaultSpoolDirectory");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "Architecture");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "DsPresent");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "OSVersion");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "OSVersionEx");
+	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "DNSMachineName");
+	ret &= test_EnumForms(torture, p, &ctx->server_handle, true);
+	ret &= test_AddForm(torture, p, &ctx->server_handle, true);
+	ret &= test_EnumPorts(torture, p, ctx);
+	ret &= test_GetPrinterDriverDirectory(torture, p, ctx);
+	ret &= test_EnumPrinterDrivers(torture, p, ctx);
+	ret &= test_EnumMonitors(torture, p, ctx);
+	ret &= test_EnumPrintProcessors(torture, p, ctx);
+	ret &= test_EnumPrinters(torture, p, ctx);
+	ret &= test_OpenPrinter_badname(torture, p, "__INVALID_PRINTER__");
+	ret &= test_OpenPrinter_badname(torture, p, "\\\\__INVALID_HOST__");
+	ret &= test_OpenPrinter_badname(torture, p, "");
+	ret &= test_OpenPrinter_badname(torture, p, "\\\\\\");
+	ret &= test_OpenPrinter_badname(torture, p, "\\\\\\__INVALID_PRINTER__");
+	ret &= test_OpenPrinter_badname(torture, p, talloc_asprintf(torture, "\\\\%s\\", dcerpc_server_name(p)));
+	ret &= test_OpenPrinter_badname(torture, p, 
+					talloc_asprintf(torture, "\\\\%s\\__INVALID_PRINTER__", dcerpc_server_name(p)));
+
+
+	ret &= test_AddPort(torture, p);
+	ret &= test_EnumPorts_old(torture, p);
+	ret &= test_EnumPrinters_old(torture, p);
+	ret &= test_EnumPrinterDrivers_old(torture, p);
+	ret &= test_ReplyOpenPrinter(torture, p);
 
 	return ret;
 }

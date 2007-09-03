@@ -430,7 +430,9 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p,
 	/* if we don't have a binding on this pipe yet, then create one */
 	if (p->binding == NULL) {
 		NTSTATUS status;
-		char *s = talloc_asprintf(p, "ncacn_np:%s", tree->session->transport->socket->hostname);
+		char *s;
+		SMB_ASSERT(tree->session->transport->socket->hostname != NULL);
+		s = talloc_asprintf(p, "ncacn_np:%s", tree->session->transport->socket->hostname);
 		if (s == NULL) return NULL;
 		status = dcerpc_parse_binding(p, s, &p->binding);
 		talloc_free(s);

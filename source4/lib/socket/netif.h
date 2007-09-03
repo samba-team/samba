@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "system/network.h"
+
 struct iface_struct {
 	char name[16];
 	struct in_addr ip;
