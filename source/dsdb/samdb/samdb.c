@@ -680,7 +680,7 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
   copy from a template record to a message
 */
 int samdb_copy_template(struct ldb_context *ldb, 
-			struct ldb_message *msg, const char *filter,
+			struct ldb_message *msg, const char *name,
 			const char **errstring)
 {
 	struct ldb_result *res;
@@ -690,15 +690,20 @@ int samdb_copy_template(struct ldb_context *ldb,
 
 	*errstring = NULL;	
 
+	if (!ldb_dn_add_child_fmt(basedn, "CN=Template%s", name)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
 	/* pull the template record */
-	ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, "cn=*", NULL, &res);
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		*errstring = talloc_steal(msg, ldb_errstring(ldb));
 		return ret;
 	}
 	if (res->count != 1) {
-		*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
+		*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", 
+					     name, 
 					     res->count);
 		talloc_free(res);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -708,40 +713,22 @@ int samdb_copy_template(struct ldb_context *ldb,
 	for (i = 0; i < t->num_elements; i++) {
 		struct ldb_message_element *el = &t->elements[i];
 		/* some elements should not be copied from the template */
-		if (strcasecmp(el->name, "cn") == 0 ||
-		    strcasecmp(el->name, "name") == 0 ||
-		    strcasecmp(el->name, "sAMAccountName") == 0 ||
-		    strcasecmp(el->name, "sAMAccountName") == 0 ||
-		    strcasecmp(el->name, "distinguishedName") == 0 ||
-		    strcasecmp(el->name, "objectGUID") == 0) {
+		if (ldb_attr_cmp(el->name, "cn") == 0 ||
+		    ldb_attr_cmp(el->name, "name") == 0 ||
+		    ldb_attr_cmp(el->name, "objectClass") == 0 ||
+		    ldb_attr_cmp(el->name, "sAMAccountName") == 0 ||
+		    ldb_attr_cmp(el->name, "sAMAccountName") == 0 ||
+		    ldb_attr_cmp(el->name, "distinguishedName") == 0 ||
+		    ldb_attr_cmp(el->name, "objectGUID") == 0) {
 			continue;
 		}
 		for (j = 0; j < el->num_values; j++) {
-			if (strcasecmp(el->name, "objectClass") == 0) {
-				if (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "foreignSecurityPrincipalTemplate") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
-				    strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
-				    strcasecmp((char *)el->values[j].data, "secretTemplate") == 0) {
-					continue;
-				}
-				ret = samdb_find_or_add_value(ldb, msg, el->name, 
-							      (char *)el->values[j].data);
-				if (ret) {
-					*errstring = talloc_asprintf(msg, "Adding objectClass %s failed.\n", el->values[j].data);
-					talloc_free(res);
-					return ret;
-				}
-			} else {
-				ret = samdb_find_or_add_attribute(ldb, msg, el->name, 
-								  (char *)el->values[j].data);
-				if (ret) {
-					*errstring = talloc_asprintf(msg, "Adding attribute %s failed.\n", el->name);
-					talloc_free(res);
-					return ret;
-				}
+			ret = samdb_find_or_add_attribute(ldb, msg, el->name, 
+							  (char *)el->values[j].data);
+			if (ret) {
+				*errstring = talloc_asprintf(msg, "Adding attribute %s failed.\n", el->name);
+				talloc_free(res);
+				return ret;
 			}
 		}
 	}
