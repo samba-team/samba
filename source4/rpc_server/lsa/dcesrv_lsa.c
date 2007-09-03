@@ -2284,7 +2284,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 
 	/* pull in all the template attributes.  Note this is always from the global samdb */
 	ret = samdb_copy_template(secret_state->policy->sam_ldb, msg, 
-				  "(&(cn=TemplateSecret)(objectclass=secretTemplate))", &errstr);
+				  "secret", &errstr);
 	if (ret != 0) {
 		DEBUG(0,("Failed to load TemplateSecret from samdb: %s\n",
 			 errstr));
