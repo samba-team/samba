@@ -228,7 +228,7 @@ response from 3 time=0.000114 sec  (2 clients)
 	Example output:
       </para>
       <screen format="linespecific">
-Number of nodes:4
+Number of addresses:4
 12.1.1.1         0
 12.1.1.2         1
 12.1.1.3         2

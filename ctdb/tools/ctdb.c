@@ -233,7 +233,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	if(options.machinereadable){
 		printf(":Node:IP:Disonnected:Disabled:Permanently Disabled:\n");
 		for(i=0;i<nodemap->num;i++){
-			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].vnn,
+			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
@@ -270,10 +270,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			flags_str = talloc_strdup(ctdb, "OK");
 			CTDB_NO_MEMORY_FATAL(ctdb, flags_str);
 		}
-		printf("vnn:%d %-16s %s%s\n", nodemap->nodes[i].vnn,
+		printf("pnn:%d %-16s %s%s\n", nodemap->nodes[i].pnn,
 		       inet_ntoa(nodemap->nodes[i].sin.sin_addr),
 		       flags_str,
-		       nodemap->nodes[i].vnn == myvnn?" (THIS NODE)":"");
+		       nodemap->nodes[i].pnn == myvnn?" (THIS NODE)":"");
 		talloc_free(flags_str);
 	}
 
@@ -315,22 +315,26 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	struct ctdb_control_tcp_tickle_list *list;
-	uint32_t vnn;
+	struct sockaddr_in ip;
 	int i, ret;
 
 	if (argc < 1) {
 		usage();
 	}
 
-	vnn = strtoul(argv[0], NULL, 0);
+	ip.sin_family = AF_INET;
+	if (inet_aton(argv[0], &ip.sin_addr) == 0) {
+		DEBUG(0,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
 
-	ret = ctdb_ctrl_get_tcp_tickles(ctdb, TIMELIMIT(), options.vnn, ctdb, vnn, &list);
+	ret = ctdb_ctrl_get_tcp_tickles(ctdb, TIMELIMIT(), options.vnn, ctdb, &ip, &list);
 	if (ret == -1) {
 		DEBUG(0, ("Unable to list tickles\n"));
 		return -1;
 	}
 
-	printf("Tickles for vnn:%u\n", list->vnn);
+	printf("Tickles for ip:%s\n", inet_ntoa(list->ip.sin_addr));
 	printf("Num tickles:%u\n", list->tickles.num);
 	for (i=0;i<list->tickles.num;i++) {
 		printf("SRC: %s:%u   ", inet_ntoa(list->tickles.connections[i].saddr.sin_addr), ntohs(list->tickles.connections[i].saddr.sin_port));
@@ -540,17 +544,17 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 		for(i=0;i<ips->num;i++){
 			printf(":%s:%d:\n",
 			inet_ntoa(ips->ips[i].sin.sin_addr),
-			ips->ips[i].takeover_vnn);
+			ips->ips[i].pnn);
 		}
 		return 0;
 	}
 
 
-	printf("Number of nodes:%d\n", ips->num);
+	printf("Number of addresses:%d\n", ips->num);
 	for(i=0;i<ips->num;i++){
 		printf("%-16s %d\n",
 			inet_ntoa(ips->ips[i].sin.sin_addr),
-			ips->ips[i].takeover_vnn);
+			ips->ips[i].pnn);
 	}
 
 	return 0;
@@ -1067,7 +1071,7 @@ static const struct {
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
 	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
-	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this vnn", "<vnn>" },
+	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this ip", "<ip>" },
 
 	{ "regsrvid",        regsrvid,			false, "register a server id", "<vnn> <type> <id>" },
 	{ "unregsrvid",      unregsrvid,		false, "unregister a server id", "<vnn> <type> <id>" },

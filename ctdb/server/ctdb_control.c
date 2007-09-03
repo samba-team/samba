@@ -289,7 +289,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_kill_tcp(ctdb, indata);
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct sockaddr_in));
 		return ctdb_control_get_tcp_tickle_list(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:

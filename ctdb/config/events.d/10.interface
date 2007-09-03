@@ -11,13 +11,14 @@ loadconfig ctdb
 cmd="$1"
 shift
 
-[ -z "$CTDB_PUBLIC_INTERFACE" ] && {
-    [ "$cmd" = "startup" ] && {
-	echo "Event script $0 : CTDB_PUBLIC_INTERFACE not set. Nothing to do."
-    }
-    exit 0
+[ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
+	CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 }
 
+[ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
+	echo "No public addresses file found. Nothing to do for 10.interfaces"
+	exit 0
+}
 
 case $cmd in 
      #############################
@@ -84,13 +85,18 @@ case $cmd in
 
      monitor)
 	[ -x /usr/sbin/ethtool ] && {
-	    /usr/sbin/ethtool $CTDB_PUBLIC_INTERFACE | grep 'Link detected: yes' > /dev/null || {
-		echo "`date` ERROR: No link on the public network interface $CTDB_PUBLIC_INTERFACE"
-		exit 1
-	    }
+		cat $CTDB_PUBLIC_ADDRESSES | sed -e "s/^[^\t ]*[\t ]*//" -e "s/[\t ]*$//" | sort | uniq | while read IFACE; do
+	    		/usr/sbin/ethtool $IFACE | grep 'Link detected: yes' > /dev/null || {
+				echo "`date` ERROR: No link on the public network interface $IFACE"
+				exit 1
+	    		}
+		done
 	}
 	;;
 
 esac
 
 exit 0
+
+
+

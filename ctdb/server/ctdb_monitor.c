@@ -43,7 +43,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	/* send a keepalive to all other nodes, unless */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];
-		if (node->vnn == ctdb->vnn) {
+		if (node->pnn == ctdb->vnn) {
 			continue;
 		}
 		
@@ -65,9 +65,9 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 		node->rx_cnt = 0;
 
 		if (node->dead_count >= ctdb->tunable.keepalive_limit) {
-			DEBUG(0,("dead count reached for node %u\n", node->vnn));
+			DEBUG(0,("dead count reached for node %u\n", node->pnn));
 			ctdb_node_dead(node);
-			ctdb_send_keepalive(ctdb, node->vnn);
+			ctdb_send_keepalive(ctdb, node->pnn);
 			/* maybe tell the transport layer to kill the
 			   sockets as well?
 			*/
@@ -75,8 +75,8 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 		}
 		
 		if (node->tx_cnt == 0) {
-			DEBUG(5,("sending keepalive to %u\n", node->vnn));
-			ctdb_send_keepalive(ctdb, node->vnn);
+			DEBUG(5,("sending keepalive to %u\n", node->pnn));
+			ctdb_send_keepalive(ctdb, node->pnn);
 		}
 
 		node->tx_cnt = 0;

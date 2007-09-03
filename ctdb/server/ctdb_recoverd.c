@@ -166,7 +166,7 @@ static enum monitor_result freeze_all_nodes(struct ctdb_context *ctdb, struct ct
 		}
 		state = ctdb_ctrl_freeze_send(ctdb, mem_ctx, 
 					CONTROL_TIMEOUT(), 
-					nodemap->nodes[j].vnn);
+					nodemap->nodes[j].pnn);
 		if (state == NULL) {
 			/* we failed to send the control, treat this as 
 			   an error and try again next iteration
@@ -222,16 +222,16 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 			continue;
 		}
 
-		ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, rec_mode);
+		ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, rec_mode);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to set recmode on node %u\n", nodemap->nodes[j].vnn));
+			DEBUG(0, (__location__ " Unable to set recmode on node %u\n", nodemap->nodes[j].pnn));
 			return -1;
 		}
 
 		if (rec_mode == CTDB_RECOVERY_NORMAL) {
-			ret = ctdb_ctrl_thaw(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn);
+			ret = ctdb_ctrl_thaw(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn);
 			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to thaw node %u\n", nodemap->nodes[j].vnn));
+				DEBUG(0, (__location__ " Unable to thaw node %u\n", nodemap->nodes[j].pnn));
 				return -1;
 			}
 		}
@@ -254,9 +254,9 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
 			continue;
 		}
 
-		ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, vnn);
+		ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, vnn);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to set recmaster on node %u\n", nodemap->nodes[j].vnn));
+			DEBUG(0, (__location__ " Unable to set recmaster on node %u\n", nodemap->nodes[j].pnn));
 			return -1;
 		}
 	}
@@ -277,7 +277,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 	/* verify that all other nodes have all our databases */
 	for (j=0; j<nodemap->num; j++) {
 		/* we dont need to ourself ourselves */
-		if (nodemap->nodes[j].vnn == vnn) {
+		if (nodemap->nodes[j].pnn == vnn) {
 			continue;
 		}
 		/* dont check nodes that are unavailable */
@@ -285,7 +285,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 			continue;
 		}
 
-		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 					 mem_ctx, &remote_dbmap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get dbids from node %u\n", vnn));
@@ -312,7 +312,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 				DEBUG(0, (__location__ " Unable to get dbname from node %u\n", vnn));
 				return -1;
 			}
-			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, mem_ctx, name);
+			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, mem_ctx, name);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to create remote db:%s\n", name));
 				return -1;
@@ -336,7 +336,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 	/* verify that we have all database any other node has */
 	for (j=0; j<nodemap->num; j++) {
 		/* we dont need to ourself ourselves */
-		if (nodemap->nodes[j].vnn == vnn) {
+		if (nodemap->nodes[j].pnn == vnn) {
 			continue;
 		}
 		/* dont check nodes that are unavailable */
@@ -344,7 +344,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			continue;
 		}
 
-		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 					 mem_ctx, &remote_dbmap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get dbids from node %u\n", vnn));
@@ -367,11 +367,11 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			/* ok so we need to create this database and
 			   rebuild dbmap
 			 */
-			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 					    remote_dbmap->dbids[db], mem_ctx, &name);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to get dbname from node %u\n", 
-					  nodemap->nodes[j].vnn));
+					  nodemap->nodes[j].pnn));
 				return -1;
 			}
 			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), vnn, mem_ctx, name);
@@ -405,18 +405,18 @@ static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node
 	for (i=0;i<dbmap->num;i++) {
 		for (j=0; j<nodemap->num; j++) {
 			/* we dont need to merge with ourselves */
-			if (nodemap->nodes[j].vnn == vnn) {
+			if (nodemap->nodes[j].pnn == vnn) {
 				continue;
 			}
 			/* dont merge from nodes that are unavailable */
 			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 				continue;
 			}
-			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 					       vnn, dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", 
-					  nodemap->nodes[j].vnn, vnn));
+					  nodemap->nodes[j].pnn, vnn));
 				return -1;
 			}
 		}
@@ -441,9 +441,9 @@ static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctd
 			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 				continue;
 			}
-			ret = ctdb_ctrl_setdmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, ctdb, dbmap->dbids[i], vnn);
+			ret = ctdb_ctrl_setdmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, ctdb, dbmap->dbids[i], vnn);
 			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to set dmaster for node %u db:0x%08x\n", nodemap->nodes[j].vnn, dbmap->dbids[i]));
+				DEBUG(0, (__location__ " Unable to set dmaster for node %u db:0x%08x\n", nodemap->nodes[j].pnn, dbmap->dbids[i]));
 				return -1;
 			}
 		}
@@ -463,7 +463,7 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 		struct ctdb_node_flag_change c;
 		TDB_DATA data;
 
-		c.vnn = nodemap->nodes[i].vnn;
+		c.vnn = nodemap->nodes[i].pnn;
 		c.old_flags = nodemap->nodes[i].flags;
 		c.new_flags = nodemap->nodes[i].flags;
 
@@ -496,11 +496,11 @@ static int vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb_node
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		ret = ctdb_ctrl_set_rsn_nonempty(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].vnn,
+		ret = ctdb_ctrl_set_rsn_nonempty(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn,
 						 db_id, max_rsn+1);
 		if (ret != 0) {
 			DEBUG(0,(__location__ " Failed to set rsn on node %u to %llu\n",
-				 nodemap->nodes[i].vnn, (unsigned long long)max_rsn+1));
+				 nodemap->nodes[i].pnn, (unsigned long long)max_rsn+1));
 			return -1;
 		}
 	}
@@ -510,11 +510,11 @@ static int vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb_node
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		ret = ctdb_ctrl_delete_low_rsn(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].vnn,
+		ret = ctdb_ctrl_delete_low_rsn(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn,
 						 db_id, max_rsn+1);
 		if (ret != 0) {
 			DEBUG(0,(__location__ " Failed to delete records on node %u with rsn below %llu\n",
-				 nodemap->nodes[i].vnn, (unsigned long long)max_rsn+1));
+				 nodemap->nodes[i].pnn, (unsigned long long)max_rsn+1));
 			return -1;
 		}
 	}
@@ -554,18 +554,18 @@ static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_
 	for (i=0;i<dbmap->num;i++) {
 		for (j=0; j<nodemap->num; j++) {
 			/* we dont need to push to ourselves */
-			if (nodemap->nodes[j].vnn == vnn) {
+			if (nodemap->nodes[j].pnn == vnn) {
 				continue;
 			}
 			/* dont push to nodes that are unavailable */
 			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 				continue;
 			}
-			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), vnn, nodemap->nodes[j].vnn, 
+			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), vnn, nodemap->nodes[j].pnn, 
 					       dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", 
-					  vnn, nodemap->nodes[j].vnn));
+					  vnn, nodemap->nodes[j].pnn));
 				return -1;
 			}
 		}
@@ -590,7 +590,7 @@ static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_nod
 			continue;
 		}
 
-		ret = ctdb_ctrl_setvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, mem_ctx, vnnmap);
+		ret = ctdb_ctrl_setvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, mem_ctx, vnnmap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to set vnnmap for node %u\n", vnn));
 			return -1;
@@ -843,7 +843,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
 	for (i=j=0;i<nodemap->num;i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-			vnnmap->map[j++] = nodemap->nodes[i].vnn;
+			vnnmap->map[j++] = nodemap->nodes[i].pnn;
 		}
 	}
 
@@ -903,7 +903,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/*
 	  if enabled, tell nodes to takeover their public IPs
 	 */
-	if (ctdb->takeover.enabled) {
+	if (ctdb->vnn_list) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
@@ -1053,7 +1053,7 @@ static void unban_all_nodes(struct ctdb_context *ctdb)
 	for (i=0;i<nodemap->num;i++) {
 		if ( (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED))
 		  && (nodemap->nodes[i].flags & NODE_FLAGS_BANNED) ) {
-			ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].vnn, 0, NODE_FLAGS_BANNED);
+			ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn, 0, NODE_FLAGS_BANNED);
 		}
 	}
 
@@ -1166,7 +1166,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
 
 	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].vnn == c->vnn) break;
+		if (nodemap->nodes[i].pnn == c->vnn) break;
 	}
 
 	if (i == nodemap->num) {
@@ -1203,7 +1203,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	if (ret == 0 &&
 	    ctdb->recovery_master == ctdb->vnn &&
 	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL &&
-	    ctdb->takeover.enabled) {
+	    ctdb->vnn_list) {
 		/* Only do the takeover run if the perm disabled or unhealthy
 		   flags changed since these will cause an ip failover but not
 		   a recovery.
@@ -1284,7 +1284,7 @@ static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb
 		}
 		state = ctdb_ctrl_getrecmode_send(ctdb, mem_ctx, 
 					CONTROL_TIMEOUT(), 
-					nodemap->nodes[j].vnn);
+					nodemap->nodes[j].pnn);
 		if (state == NULL) {
 			/* we failed to send the control, treat this as 
 			   an error and try again next iteration
@@ -1375,7 +1375,7 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 		}
 		state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, 
 					CONTROL_TIMEOUT(),
-					nodemap->nodes[j].vnn);
+					nodemap->nodes[j].pnn);
 		if (state == NULL) {
 			/* we failed to send the control, treat this as 
 			   an error and try again next iteration
@@ -1491,7 +1491,7 @@ again:
 	/* count how many active nodes there are */
 	num_active = 0;
 	for (i=0; i<nodemap->num; i++) {
-		if (rec->banned_nodes[nodemap->nodes[i].vnn] != NULL) {
+		if (rec->banned_nodes[nodemap->nodes[i].pnn] != NULL) {
 			nodemap->nodes[i].flags |= NODE_FLAGS_BANNED;
 		} else {
 			nodemap->nodes[i].flags &= ~NODE_FLAGS_BANNED;
@@ -1517,7 +1517,7 @@ again:
 	
 	/* verify that the recmaster node is still active */
 	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].vnn==recmaster) {
+		if (nodemap->nodes[j].pnn==recmaster) {
 			break;
 		}
 	}
@@ -1529,7 +1529,7 @@ again:
 	}
 
 	if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-		DEBUG(0, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].vnn));
+		DEBUG(0, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
 		force_election(rec, mem_ctx, vnn, nodemap);
 		goto again;
 	}
@@ -1563,7 +1563,7 @@ again:
 	 */
 	switch (verify_recmode(ctdb, nodemap)) {
 	case MONITOR_RECOVERY_NEEDED:
-		do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+		do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
 		goto again;
 	case MONITOR_FAILED:
 		goto again;
@@ -1582,15 +1582,15 @@ again:
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (nodemap->nodes[j].vnn == vnn) {
+		if (nodemap->nodes[j].pnn == vnn) {
 			continue;
 		}
 
-		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 					   mem_ctx, &remote_nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
-				  nodemap->nodes[j].vnn));
+				  nodemap->nodes[j].pnn));
 			goto again;
 		}
 
@@ -1599,8 +1599,8 @@ again:
 		 */
 		if (remote_nodemap->num != nodemap->num) {
 			DEBUG(0, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n",
-				  nodemap->nodes[j].vnn, remote_nodemap->num, nodemap->num));
-			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+				  nodemap->nodes[j].pnn, remote_nodemap->num, nodemap->num));
+			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 
@@ -1608,21 +1608,21 @@ again:
 		   active, then that is also a good reason to do recovery
 		 */
 		for (i=0;i<nodemap->num;i++) {
-			if (remote_nodemap->nodes[i].vnn != nodemap->nodes[i].vnn) {
+			if (remote_nodemap->nodes[i].pnn != nodemap->nodes[i].pnn) {
 				DEBUG(0, (__location__ " Remote node:%u has different nodemap vnn for %d (%u vs %u).\n", 
-					  nodemap->nodes[j].vnn, i, 
-					  remote_nodemap->nodes[i].vnn, nodemap->nodes[i].vnn));
+					  nodemap->nodes[j].pnn, i, 
+					  remote_nodemap->nodes[i].pnn, nodemap->nodes[i].pnn));
 				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
-					    vnnmap, nodemap->nodes[j].vnn);
+					    vnnmap, nodemap->nodes[j].pnn);
 				goto again;
 			}
 			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
 			    (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
 				DEBUG(0, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
-					  nodemap->nodes[j].vnn, i,
+					  nodemap->nodes[j].pnn, i,
 					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
 				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
-					    vnnmap, nodemap->nodes[j].vnn);
+					    vnnmap, nodemap->nodes[j].pnn);
 				goto again;
 			}
 		}
@@ -1656,19 +1656,19 @@ again:
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (nodemap->nodes[j].vnn == vnn) {
+		if (nodemap->nodes[j].pnn == vnn) {
 			continue;
 		}
 
 		for (i=0; i<vnnmap->size; i++) {
-			if (vnnmap->map[i] == nodemap->nodes[j].vnn) {
+			if (vnnmap->map[i] == nodemap->nodes[j].pnn) {
 				break;
 			}
 		}
 		if (i == vnnmap->size) {
 			DEBUG(0, (__location__ " Node %u is active in the nodemap but did not exist in the vnnmap\n", 
-				  nodemap->nodes[j].vnn));
-			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+				  nodemap->nodes[j].pnn));
+			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 	}
@@ -1681,31 +1681,31 @@ again:
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (nodemap->nodes[j].vnn == vnn) {
+		if (nodemap->nodes[j].pnn == vnn) {
 			continue;
 		}
 
-		ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].vnn, 
+		ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 					  mem_ctx, &remote_vnnmap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get vnnmap from remote node %u\n", 
-				  nodemap->nodes[j].vnn));
+				  nodemap->nodes[j].pnn));
 			goto again;
 		}
 
 		/* verify the vnnmap generation is the same */
 		if (vnnmap->generation != remote_vnnmap->generation) {
 			DEBUG(0, (__location__ " Remote node %u has different generation of vnnmap. %u vs %u (ours)\n", 
-				  nodemap->nodes[j].vnn, remote_vnnmap->generation, vnnmap->generation));
-			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+				  nodemap->nodes[j].pnn, remote_vnnmap->generation, vnnmap->generation));
+			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 
 		/* verify the vnnmap size is the same */
 		if (vnnmap->size != remote_vnnmap->size) {
 			DEBUG(0, (__location__ " Remote node %u has different size of vnnmap. %u vs %u (ours)\n", 
-				  nodemap->nodes[j].vnn, remote_vnnmap->size, vnnmap->size));
-			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].vnn);
+				  nodemap->nodes[j].pnn, remote_vnnmap->size, vnnmap->size));
+			do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 
@@ -1713,16 +1713,16 @@ again:
 		for (i=0;i<vnnmap->size;i++) {
 			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
 				DEBUG(0, (__location__ " Remote node %u has different vnnmap.\n", 
-					  nodemap->nodes[j].vnn));
+					  nodemap->nodes[j].pnn));
 				do_recovery(rec, mem_ctx, vnn, num_active, nodemap, 
-					    vnnmap, nodemap->nodes[j].vnn);
+					    vnnmap, nodemap->nodes[j].pnn);
 				goto again;
 			}
 		}
 	}
 
 	/* we might need to change who has what IP assigned */
-	if (need_takeover_run && ctdb->takeover.enabled) {
+	if (need_takeover_run && ctdb->vnn_list) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));

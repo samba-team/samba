@@ -75,9 +75,9 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	/*
 	  the service specific event scripts 
 	*/
-	if (stat(ctdb->takeover.event_script_dir, &st) != 0 && 
+	if (stat(ctdb->event_script_dir, &st) != 0 && 
 	    errno == ENOENT) {
-		DEBUG(0,("No event script directory found at '%s'\n", ctdb->takeover.event_script_dir));
+		DEBUG(0,("No event script directory found at '%s'\n", ctdb->event_script_dir));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -88,9 +88,9 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	/* scan all directory entries and insert all valid scripts into the 
 	   tree
 	*/
-	dir = opendir(ctdb->takeover.event_script_dir);
+	dir = opendir(ctdb->event_script_dir);
 	if (dir == NULL) {
-		DEBUG(0,("Failed to open event script directory '%s'\n", ctdb->takeover.event_script_dir));
+		DEBUG(0,("Failed to open event script directory '%s'\n", ctdb->event_script_dir));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -120,7 +120,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		}
 
 		/* Make sure the event script is executable */
-		str = talloc_asprintf(tree, "%s/%s", ctdb->takeover.event_script_dir, de->d_name);
+		str = talloc_asprintf(tree, "%s/%s", ctdb->event_script_dir, de->d_name);
 		if (stat(str, &st) != 0) {
 			DEBUG(0,("Could not stat event script %s. Ignoring this event script\n", str));
 			continue;
@@ -152,7 +152,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		CTDB_NO_MEMORY(ctdb, options);
 
 		cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
-				ctdb->takeover.event_script_dir,
+				ctdb->event_script_dir,
 				script, options);
 		CTDB_NO_MEMORY(ctdb, cmdstr);
 

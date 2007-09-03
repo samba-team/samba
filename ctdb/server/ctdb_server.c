@@ -105,14 +105,14 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 				     node->address.address, 
 				     node->address.port);
 	/* this assumes that the nodes are kept in sorted order, and no gaps */
-	node->vnn = ctdb->num_nodes;
+	node->pnn = ctdb->num_nodes;
 
 	/* nodes start out disconnected */
 	node->flags |= NODE_FLAGS_DISCONNECTED;
 
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {
-		ctdb->vnn = node->vnn;
+		ctdb->vnn = node->pnn;
 		node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	}
 
@@ -401,7 +401,7 @@ static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb,
 {
 	int i;
 	for (i=0;i<ctdb->num_nodes;i++) {
-		hdr->destnode = ctdb->nodes[i]->vnn;
+		hdr->destnode = ctdb->nodes[i]->pnn;
 		ctdb_queue_packet(ctdb, hdr);
 	}
 }
@@ -428,7 +428,7 @@ static void ctdb_broadcast_packet_connected(struct ctdb_context *ctdb,
 	int i;
 	for (i=0;i<ctdb->num_nodes;i++) {
 		if (!(ctdb->nodes[i]->flags & NODE_FLAGS_DISCONNECTED)) {
-			hdr->destnode = ctdb->nodes[i]->vnn;
+			hdr->destnode = ctdb->nodes[i]->pnn;
 			ctdb_queue_packet(ctdb, hdr);
 		}
 	}

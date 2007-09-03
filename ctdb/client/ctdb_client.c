@@ -1540,7 +1540,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 
 	for (i=0;i<map->num;i++) {
 		if (!(map->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
-			nodes[*num_nodes] = map->nodes[i].vnn;
+			nodes[*num_nodes] = map->nodes[i].pnn;
 			(*num_nodes)++;
 		}
 	}
@@ -2300,15 +2300,16 @@ int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
  */
 int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 
 			      struct timeval timeout, uint32_t destnode, 
-			      TALLOC_CTX *mem_ctx, uint32_t vnn,
+			      TALLOC_CTX *mem_ctx, 
+			      struct sockaddr_in *ip,
 			      struct ctdb_control_tcp_tickle_list **list)
 {
 	int ret;
 	TDB_DATA data, outdata;
 	int32_t status;
 
-	data.dptr = (uint8_t*)&vnn;
-	data.dsize = sizeof(vnn);
+	data.dptr = (uint8_t*)ip;
+	data.dsize = sizeof(struct sockaddr_in);
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_TCP_TICKLE_LIST, 0, data, 

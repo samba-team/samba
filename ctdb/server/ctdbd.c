@@ -42,7 +42,6 @@ static struct {
 	const char *transport;
 	const char *myaddress;
 	const char *public_address_list;
-	const char *public_interface;
 	const char *event_script_dir;
 	const char *logfile;
 	const char *recovery_lock_file;
@@ -101,7 +100,6 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
-		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
@@ -200,18 +198,12 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	if (options.public_interface) {
-		ctdb->takeover.interface = talloc_strdup(ctdb, options.public_interface);
-		CTDB_NO_MEMORY(ctdb, ctdb->takeover.interface);
-	}
-
 	if (options.public_address_list) {
 		ret = ctdb_set_public_addresses(ctdb, options.public_address_list);
 		if (ret == -1) {
 			DEBUG(0,("Unable to setup public address list\n"));
 			exit(1);
 		}
-		ctdb->takeover.enabled = true;
 	}
 
 	ret = ctdb_set_event_script_dir(ctdb, options.event_script_dir);

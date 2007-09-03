@@ -53,7 +53,7 @@ struct ctdb_tcp_wire_array {
 
 /* the list of tcp tickles used by get/set tcp tickle list */
 struct ctdb_control_tcp_tickle_list {
-	uint32_t vnn;
+	struct sockaddr_in ip;
 	struct ctdb_tcp_wire_array tickles;
 };
 
@@ -136,6 +136,35 @@ struct ctdb_client {
 };
 
 
+/* state associated with a public ip address */
+struct ctdb_vnn {
+	struct ctdb_vnn *next;
+
+	struct ctdb_vnn_list *vnn_list;
+
+	const char *public_address;
+	uint8_t public_netmask_bits;
+
+	/* the node number that is serving this public address, if any. 
+	   If no node serves this ip it is set to -1 */
+	int32_t pnn;
+
+	/* List of clients to tickle for this public address */
+	struct ctdb_tcp_array *tcp_array;
+
+	/* whether we need to update the other nodes with changes to our list
+	   of connected clients */
+	bool tcp_update_needed;
+};
+
+struct ctdb_vnn_list {
+	struct ctdb_vnn_list *next;
+	const char *iface;
+	uint32_t num_ips;
+	struct ctdb_vnn *vnn;
+	struct ctdb_kill_tcp *killtcp;
+};
+
 /*
   state associated with one node
 */
@@ -144,7 +173,7 @@ struct ctdb_node {
 	struct ctdb_address address;
 	const char *name; /* for debug messages */
 	void *private_data; /* private to transport */
-	uint32_t vnn;
+	uint32_t pnn;
 #define NODE_FLAGS_DISCONNECTED		0x00000001 /* node isn't connected */
 #define NODE_FLAGS_UNHEALTHY  		0x00000002 /* monitoring says node is unhealthy */
 #define NODE_FLAGS_PERMANENTLY_DISABLED	0x00000004 /* administrator has disabled node */
@@ -161,21 +190,6 @@ struct ctdb_node {
 	/* a list of controls pending to this node, so we can time them out quickly
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
-
-	/* the public address of this node, if known */
-	const char *public_address;
-	uint8_t public_netmask_bits;
-
-	/* the node number that has taken over this nodes public address, if any. 
-	   If not taken over, then set to -1 */
-	int32_t takeover_vnn;
-
-	/* List of clients to tickle for this public address */
-	struct ctdb_tcp_array *tcp_array;
-
-	/* whether we need to update the other nodes with changes to our list
-	   of connected clients */
-	bool tcp_update_needed;
 };
 
 /*
@@ -299,14 +313,6 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
-/* information about IP takeover */
-struct ctdb_takeover {
-	bool enabled;
-	const char *interface;
-	const char *event_script_dir;
-	TALLOC_CTX *last_ctx;
-};
-
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -332,6 +338,7 @@ struct ctdb_context {
 	struct idr_context *idr;
 	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
+	struct ctdb_vnn_list *vnn_list; /* list of public ip addresses and interfaces */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
@@ -344,12 +351,12 @@ struct ctdb_context {
 	uint32_t num_clients;
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
-	struct ctdb_takeover takeover;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_setsched;
 	void *saved_scheduler_param;
-	struct ctdb_kill_tcp *killtcp;
 	struct _trbt_tree_t *server_ids;	
+	const char *event_script_dir;
+	TALLOC_CTX *takeover_ctx;
 };
 
 struct ctdb_db_context {
@@ -503,7 +510,6 @@ struct ctdb_control_killtcp {
   struct for tcp_add and tcp_remove controls
  */
 struct ctdb_control_tcp_vnn {
-	uint32_t vnn;
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
 };
@@ -954,7 +960,7 @@ struct ctdb_control_list_tunable {
    status
  */
 struct ctdb_node_and_flags {
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t flags;
 	struct sockaddr_in sin;
 
@@ -1031,8 +1037,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 				 bool *async_reply);
 
 struct ctdb_public_ip {
-	uint32_t vnn;
-	uint32_t takeover_vnn;
+	uint32_t pnn;
 	struct sockaddr_in sin;
 };
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
@@ -1122,7 +1127,7 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 		      struct timeval timeout, 
 		      uint32_t destnode,
 		      TALLOC_CTX *mem_ctx,
-		      uint32_t vnn,
+		      struct sockaddr_in *ip,
 		      struct ctdb_control_tcp_tickle_list **list);
 
 
