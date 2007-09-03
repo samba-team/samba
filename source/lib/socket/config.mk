@@ -10,25 +10,14 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL EXT_SOCKET EXT_NSL
 ##############################
 
 ################################################
-# Start MODULE socket_ipv4
-[MODULE::socket_ipv4]
+# Start MODULE socket_ip
+[MODULE::socket_ip]
 SUBSYSTEM = samba-socket
 OUTPUT_TYPE = INTEGRATED
 OBJ_FILES = \
-		socket_ipv4.o
+		socket_ip.o
 PRIVATE_DEPENDENCIES = EXT_SOCKET EXT_NSL LIBSAMBA-ERRORS 
-# End MODULE socket_ipv4
-################################################
-
-################################################
-# Start MODULE socket_ipv6
-[MODULE::socket_ipv6]
-SUBSYSTEM = samba-socket
-OUTPUT_TYPE = INTEGRATED
-OBJ_FILES = \
-		socket_ipv6.o
-PRIVATE_DEPENDENCIES = EXT_SOCKET EXT_NSL
-# End MODULE socket_ipv6
+# End MODULE socket_ip
 ################################################
 
 ################################################
