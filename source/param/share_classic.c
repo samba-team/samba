@@ -89,6 +89,10 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 		return lp_fstype(s->snum);
 	}
 
+	if (strcmp(opt_name, SHARE_PASSWORD) == 0) {
+		return defval;
+	}
+
 	DEBUG(0,("request for unknown share string option '%s'\n",
 		 opt_name));
 
