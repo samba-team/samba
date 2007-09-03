@@ -20,10 +20,23 @@ progressed, and to invite feedback and support.
 WARNINGS
 ========
 
-Samba4 alpha1 is not a final Samba release.  We recommend against
-upgrading any production servers from Samba 3 to Samba 4 at this
-stage.  If you are upgrading an experimental server, you should backup
-all configuration and data.
+Samba4 alpha1 is not a final Samba release.  That is more a reference
+to Samba4's lack of the features we expect you will need than a
+statement of code quality, but clearly it hasn't seen a broad
+deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
+Samba4, you would find many things work, but that other key features
+you may have relied on simply are not there yet.
+
+For example, while Samba 3.0 is an excellent member of a Active
+Directory domain, Samba4 is happier as a domain controller: (This is
+where we have done most of the research and development).
+
+While Samba4 is subjected to an awesome battery of tests on an
+automated basis, and we have found Samba4 to be very stable in it's
+behaviour, we have to recommend against upgrading production servers
+from Samba 3 to Samba 4 at this stage.  If you are upgrading an
+experimental server, or looking to develop and test Samba, you should
+backup all configuration and data.
 
 NEW FEATURES
 ============
@@ -37,11 +50,6 @@ LDAP server and Kerberos Key Distribution Center (KDC) as well as the
 Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
-
-SWAT is now integrated into Samba 4 as the user-friendly interface to
-Samba server management. SWAT provides easy provides access to our
-setup and migration tools.  Using SWAT, you can migrate windows
-domains in Samba 4, allowing easy setup of initial user databases.
 
 The new VFS features in Samba 4 adapts the filesystem on the server to
 match the Windows client semantics, allowing Samba 4 to better match
