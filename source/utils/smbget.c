@@ -521,6 +521,7 @@ int main(int argc, const char **argv)
 	int c = 0;
 	const char *file = NULL;
 	char *rcfile = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct poptOption long_options[] = {
 		{"guest", 'a', POPT_ARG_NONE, NULL, 'a', "Work as user guest" },	
 		{"resume", 'r', POPT_ARG_NONE, &_resume, 0, "Automatically resume aborted files" },
@@ -597,6 +598,6 @@ int main(int argc, const char **argv)
 	}
 
 	clean_exit();
-
+	TALLOC_FREE(frame);
 	return 0;
 }

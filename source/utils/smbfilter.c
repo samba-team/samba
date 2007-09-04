@@ -220,6 +220,7 @@ int main(int argc, char *argv[])
 {
 	char *desthost;
 	pstring configfile;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	setup_logging(argv[0],True);
   
@@ -240,5 +241,6 @@ int main(int argc, char *argv[])
 	}
 
 	start_filter(desthost);
+	TALLOC_FREE(frame);
 	return 0;
 }
