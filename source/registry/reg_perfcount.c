@@ -37,7 +37,7 @@ PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind);
 
 static char* counters_directory( const char *dbname )
 {
-	static pstring fname;
+	pstring fname;
 	fstring path;
 	
 	if ( !dbname )
@@ -47,7 +47,7 @@ static char* counters_directory( const char *dbname )
 	
 	pstrcpy( fname, lock_path( path ) );
 	
-	return fname;
+	return talloc_strdup(talloc_tos(), fname);
 }
 
 /*********************************************************************
