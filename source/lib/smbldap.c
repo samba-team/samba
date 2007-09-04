@@ -994,6 +994,11 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	return rc;
 }
 
+static void smbldap_idle_fn(struct event_context *event_ctx,
+			    struct timed_event *te,
+			    const struct timeval *now,
+			    void *private_data);
+
 /**********************************************************************
  Connect to LDAP server (called before every ldap operation)
 *********************************************************************/
@@ -1056,6 +1061,16 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 	ldap_state->last_ping = time(NULL);
 	ldap_state->pid = sys_getpid();
+
+	TALLOC_FREE(ldap_state->idle_event);
+
+	if (ldap_state->event_context != NULL) {
+		ldap_state->idle_event = event_add_timed(
+			ldap_state->event_context, NULL,
+			timeval_current_ofs(SMBLDAP_IDLE_TIME, 0),
+			"smbldap_idle_fn", smbldap_idle_fn, ldap_state);
+	}
+
 	DEBUG(4,("The LDAP server is succesfully connected\n"));
 
 	return LDAP_SUCCESS;
@@ -1540,17 +1555,28 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 			      filter, search_attr, 0, result);
 }
 
-static void smbldap_idle_fn(void **data, time_t *interval, time_t now)
+static void smbldap_idle_fn(struct event_context *event_ctx,
+			    struct timed_event *te,
+			    const struct timeval *now,
+			    void *private_data)
 {
-	struct smbldap_state *state = (struct smbldap_state *)(*data);
+	struct smbldap_state *state = (struct smbldap_state *)private_data;
+
+	TALLOC_FREE(state->idle_event);
 
 	if (state->ldap_struct == NULL) {
 		DEBUG(10,("ldap connection not connected...\n"));
 		return;
 	}
 		
-	if ((state->last_use+SMBLDAP_IDLE_TIME) > now) {
+	if ((state->last_use+SMBLDAP_IDLE_TIME) > now->tv_sec) {
 		DEBUG(10,("ldap connection not idle...\n"));
+
+		state->idle_event = event_add_timed(
+			event_ctx, NULL,
+			timeval_current_ofs(SMBLDAP_IDLE_TIME, 0),
+			"smbldap_idle_fn", smbldap_idle_fn,
+			private_data);
 		return;
 	}
 		
@@ -1573,7 +1599,7 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
 
-	smb_unregister_idle_event((*ldap_state)->event_id);
+	TALLOC_FREE((*ldap_state)->idle_event);
 
 	*ldap_state = NULL;
 
@@ -1585,7 +1611,9 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
  Intitalise the 'general' ldap structures, on which ldap operations may be conducted
  *********************************************************************/
 
-NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_state **smbldap_state) 
+NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
+		      const char *location,
+		      struct smbldap_state **smbldap_state)
 {
 	*smbldap_state = TALLOC_ZERO_P(mem_ctx, struct smbldap_state);
 	if (!*smbldap_state) {
@@ -1599,14 +1627,7 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_
 		(*smbldap_state)->uri = "ldap://localhost";
 	}
 
-	(*smbldap_state)->event_id =
-		smb_register_idle_event(smbldap_idle_fn, (void *)(*smbldap_state),
-					SMBLDAP_IDLE_TIME);
-
-	if ((*smbldap_state)->event_id == SMB_EVENT_ID_INVALID) {
-		DEBUG(0,("Failed to register LDAP idle event!\n"));
-		return NT_STATUS_INVALID_HANDLE;
-	}
+	(*smbldap_state)->event_context = event_ctx;
 
 	return NT_STATUS_OK;
 }

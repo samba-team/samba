@@ -93,6 +93,23 @@ struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 	return NULL;
 }
 
+/*
+ * The event context for the passdb backend. I know this is a bad hack and yet
+ * another static variable, but our pdb API is a global thing per
+ * definition. The first use for this is the LDAP idle function, more might be
+ * added later.
+ *
+ * I don't feel too bad about this static variable, it replaces the
+ * smb_idle_event_list that used to exist in lib/module.c.  -- VL
+ */
+
+static struct event_context *pdb_event_ctx;
+
+struct event_context *pdb_get_event_context(void)
+{
+	return pdb_event_ctx;
+}
+
 /******************************************************************
   Make a pdb_methods from scratch
  *******************************************************************/
@@ -1108,8 +1125,9 @@ BOOL pdb_new_rid(uint32 *rid)
   If uninitialised, context will auto-init on first use.
  ***************************************************************/
 
-BOOL initialize_password_db(BOOL reload)
-{	
+BOOL initialize_password_db(BOOL reload, struct event_context *event_ctx)
+{
+	pdb_event_ctx = event_ctx;
 	return (pdb_get_methods_reload(reload) != NULL);
 }
 

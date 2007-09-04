@@ -1046,7 +1046,7 @@ extern void build_options(BOOL screen);
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
-	if(!initialize_password_db(False))
+	if(!initialize_password_db(False, smbd_event_context()))
 		exit(1);
 
 	if (!secrets_init()) {

@@ -617,7 +617,7 @@ static int net_getlocalsid(int argc, const char **argv)
 		name = global_myname();
 	}
 
-	if(!initialize_password_db(False)) {
+	if(!initialize_password_db(False, NULL)) {
 		DEBUG(0, ("WARNING: Could not open passdb - local sid may not reflect passdb\n"
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}
@@ -687,7 +687,7 @@ static int net_getdomainsid(int argc, const char **argv)
 	DOM_SID domain_sid;
 	fstring sid_str;
 
-	if(!initialize_password_db(False)) {
+	if(!initialize_password_db(False, NULL)) {
 		DEBUG(0, ("WARNING: Could not open passdb - domain sid may not reflect passdb\n"
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}

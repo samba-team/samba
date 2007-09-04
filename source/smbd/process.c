@@ -1541,9 +1541,6 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 	/* become root again if waiting */
 	change_to_root_user();
 
-	/* run all registered idle events */
-	smb_run_idle_events(t);
-
 	/* check if we need to reload services */
 	check_reload(t);
 

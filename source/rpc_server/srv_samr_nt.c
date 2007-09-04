@@ -55,8 +55,8 @@ typedef struct disp_info {
 	uint16 enum_acb_mask;
 	struct pdb_search *enum_users; /* enumusers with a mask */
 
-
-	smb_event_id_t di_cache_timeout_event; /* cache idle timeout handler. */
+	struct timed_event *cache_timeout_event; /* cache idle timeout
+						  * handler. */
 } DISP_INFO;
 
 /* We keep a static list of these by SID as modern clients close down
@@ -344,9 +344,10 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
  Function to free the per SID data.
  ********************************************************************/
 
-static void free_samr_cache(DISP_INFO *disp_info, const char *sid_str)
+static void free_samr_cache(DISP_INFO *disp_info)
 {
-	DEBUG(10,("free_samr_cache: deleting cache for SID %s\n", sid_str));
+	DEBUG(10, ("free_samr_cache: deleting cache for SID %s\n",
+		   sid_string_static(&disp_info->sid)));
 
 	/* We need to become root here because the paged search might have to
 	 * tell the LDAP server we're not interested in the rest anymore. */
@@ -394,10 +395,8 @@ static void free_samr_info(void *ptr)
 	/* Only free the dispinfo cache if no one bothered to set up
 	   a timeout. */
 
-	if (info->disp_info && info->disp_info->di_cache_timeout_event == (smb_event_id_t)0) {
-		fstring sid_str;
-		sid_to_string(sid_str, &info->disp_info->sid);
-		free_samr_cache(info->disp_info, sid_str);
+	if (info->disp_info && info->disp_info->cache_timeout_event == NULL) {
+		free_samr_cache(info->disp_info);
 	}
 
 	talloc_destroy(info->mem_ctx);
@@ -407,23 +406,18 @@ static void free_samr_info(void *ptr)
  Idle event handler. Throw away the disp info cache.
  ********************************************************************/
 
-static void disp_info_cache_idle_timeout_handler(void **private_data,
-					time_t *ev_interval,
-					time_t ev_now)
+static void disp_info_cache_idle_timeout_handler(struct event_context *ev_ctx,
+						 struct timed_event *te,
+						 const struct timeval *now,
+						 void *private_data)
 {
-	fstring sid_str;
-	DISP_INFO *disp_info = (DISP_INFO *)(*private_data);
+	DISP_INFO *disp_info = (DISP_INFO *)private_data;
 
-	sid_to_string(sid_str, &disp_info->sid);
+	TALLOC_FREE(disp_info->cache_timeout_event);
 
-	free_samr_cache(disp_info, sid_str);
-
-	/* Remove the event. */
-	smb_unregister_idle_event(disp_info->di_cache_timeout_event);
-	disp_info->di_cache_timeout_event = (smb_event_id_t)0;
-
-	DEBUG(10,("disp_info_cache_idle_timeout_handler: caching timed out for SID %s at %u\n",
-		sid_str, (unsigned int)ev_now));
+	DEBUG(10, ("disp_info_cache_idle_timeout_handler: caching timed "
+		   "out\n"));
+	free_samr_cache(disp_info);
 }
 
 /*******************************************************************
@@ -432,24 +426,20 @@ static void disp_info_cache_idle_timeout_handler(void **private_data,
 
 static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromnow)
 {
-	fstring sid_str;
-
-	sid_to_string(sid_str, &disp_info->sid);
-
 	/* Remove any pending timeout and update. */
 
-	if (disp_info->di_cache_timeout_event) {
-		smb_unregister_idle_event(disp_info->di_cache_timeout_event);
-		disp_info->di_cache_timeout_event = (smb_event_id_t)0;
-	}
+	TALLOC_FREE(disp_info->cache_timeout_event);
 
-	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for SID %s for %u seconds\n",
-		sid_str, (unsigned int)secs_fromnow ));
+	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for "
+		  "SID %s for %u seconds\n",
+		  sid_string_static(&disp_info->sid),
+		  (unsigned int)secs_fromnow ));
 
-	disp_info->di_cache_timeout_event =
-		smb_register_idle_event(disp_info_cache_idle_timeout_handler,
-					disp_info,
-					secs_fromnow);
+	disp_info->cache_timeout_event = event_add_timed(
+		smbd_event_context(), NULL,
+		timeval_current_ofs(secs_fromnow, 0),
+		"disp_info_cache_idle_timeout_handler",
+		disp_info_cache_idle_timeout_handler, (void *)disp_info);
 }
 
 /*******************************************************************
@@ -459,18 +449,13 @@ static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromno
 
 static void force_flush_samr_cache(DISP_INFO *disp_info)
 {
-	if (disp_info) {
-		fstring sid_str;
-
-		sid_to_string(sid_str, &disp_info->sid);
-		if (disp_info->di_cache_timeout_event) {
-			smb_unregister_idle_event(disp_info->di_cache_timeout_event);
-			disp_info->di_cache_timeout_event = (smb_event_id_t)0;
-			DEBUG(10,("force_flush_samr_cache: clearing idle event for SID %s\n",
-				sid_str));
-		}
-		free_samr_cache(disp_info, sid_str);
+	if ((disp_info == NULL) || (disp_info->cache_timeout_event == NULL)) {
+		return;
 	}
+
+	DEBUG(10,("force_flush_samr_cache: clearing idle event\n"));
+	TALLOC_FREE(disp_info->cache_timeout_event);
+	free_samr_cache(disp_info);
 }
 
 /*******************************************************************

@@ -1148,7 +1148,7 @@ static int net_sam_provision(int argc, const char **argv)
 		goto failed;
 	}
 
-	if (!NT_STATUS_IS_OK(smbldap_init(tc, ldap_uri, &ls))) {
+	if (!NT_STATUS_IS_OK(smbldap_init(tc, NULL, ldap_uri, &ls))) {
 		d_fprintf(stderr, "Unable to connect to the LDAP server.\n");
 		goto failed;
 	}

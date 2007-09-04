@@ -833,7 +833,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	if(!initialize_password_db(False))
+	if(!initialize_password_db(False, NULL))
 		exit(1);
 
 	if (!init_names())

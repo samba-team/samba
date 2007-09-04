@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "winbindd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -306,8 +307,9 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 	idmap_alloc_ldap->suffix = talloc_strdup(idmap_alloc_ldap, tmp);
 	CHECK_ALLOC_DONE( idmap_alloc_ldap->suffix );
 	
-	ret = smbldap_init(idmap_alloc_ldap, idmap_alloc_ldap->url,
-				 &idmap_alloc_ldap->smbldap_state);	
+	ret = smbldap_init(idmap_alloc_ldap, winbind_event_context(),
+			   idmap_alloc_ldap->url,
+			   &idmap_alloc_ldap->smbldap_state);	
 	if (!NT_STATUS_IS_OK(ret)) { 
 		DEBUG(1, ("ERROR: smbldap_init (%s) failed!\n", 
 			  idmap_alloc_ldap->url));
@@ -797,7 +799,8 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 	ctx->suffix = talloc_strdup(ctx, tmp);
 	CHECK_ALLOC_DONE(ctx->suffix);
 
-	ret = smbldap_init(ctx, ctx->url, &ctx->smbldap_state);
+	ret = smbldap_init(ctx, winbind_event_context(), ctx->url,
+			   &ctx->smbldap_state);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("ERROR: smbldap_init (%s) failed!\n", ctx->url));
 		goto done;
