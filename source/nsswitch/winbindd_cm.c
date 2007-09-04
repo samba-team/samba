@@ -395,6 +395,8 @@ static void set_domain_online(struct winbindd_domain *domain)
 		return;
 	}
 
+	winbindd_set_locator_kdc_envs(domain);
+
 	/* If we are waiting to get a krb5 ticket, trigger immediately. */
 	GetTimeOfDay(&now);
 	set_event_dispatch_time(winbind_event_context(),
@@ -520,6 +522,7 @@ void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
 		add_failed_connection_entry(domain->alt_name, server, result);
 		saf_delete(domain->alt_name);
 	}
+	winbindd_unset_locator_kdc_env(domain);
 }
 
 /* Choose between anonymous or authenticated connections.  We need to use
@@ -741,6 +744,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				  "[%s]\n", controller, global_myname(),
 				  machine_krb5_principal));
 
+			winbindd_set_locator_kdc_envs(domain);
+
 			ads_status = cli_session_setup_spnego(*cli,
 							      machine_krb5_principal, 
 							      machine_password, 
@@ -836,6 +841,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	if (domain->alt_name && (*cli)->use_kerberos) {
 		saf_store( domain->alt_name, (*cli)->desthost );
 	}
+
+	winbindd_set_locator_kdc_envs(domain);
 
 	if (!cli_send_tconX(*cli, "IPC$", "IPC", "", 0)) {
 
@@ -1088,6 +1095,8 @@ static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 								domain->name,
 								sitename,
 								ip);
+
+				winbindd_set_locator_kdc_envs(domain);
 
 				SAFE_FREE(sitename);
 				/* Ensure we contact this DC also. */
@@ -1394,6 +1403,9 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
+
+		winbindd_set_locator_kdc_envs(domain);
+
 		if (domain->online == False) {
 			/* We're changing state from offline to online. */
 			set_global_winbindd_state_online();
