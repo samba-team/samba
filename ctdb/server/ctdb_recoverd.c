@@ -95,7 +95,7 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_
 		return;
 	}
 
-	if (vnn == ctdb->vnn) {
+	if (vnn == ctdb->pnn) {
 		DEBUG(0,("self ban - lowering our election priority\n"));
 		/* banning ourselves - lower our election priority */
 		rec->priority_time = timeval_current();
@@ -626,7 +626,7 @@ static void ban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	if (recmaster != ctdb->vnn) {
+	if (recmaster != ctdb->pnn) {
 		DEBUG(0,("We are not the recmaster - ignoring ban request\n"));
 		talloc_free(mem_ctx);
 		return;
@@ -664,7 +664,7 @@ static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	if (recmaster != ctdb->vnn) {
+	if (recmaster != ctdb->pnn) {
 		DEBUG(0,("We are not the recmaster - ignoring unban request\n"));
 		talloc_free(mem_ctx);
 		return;
@@ -959,7 +959,7 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 
 	ZERO_STRUCTP(em);
 
-	em->vnn = rec->ctdb->vnn;
+	em->vnn = rec->ctdb->pnn;
 	em->priority_time = rec->priority_time;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, rec, &nodemap);
@@ -1088,7 +1088,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* release the recmaster lock */
-	if (em->vnn != ctdb->vnn &&
+	if (em->vnn != ctdb->pnn &&
 	    ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
@@ -1201,7 +1201,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 	
 	if (ret == 0 &&
-	    ctdb->recovery_master == ctdb->vnn &&
+	    ctdb->recovery_master == ctdb->pnn &&
 	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL &&
 	    ctdb->vnn_list) {
 		/* Only do the takeover run if the perm disabled or unhealthy
@@ -1645,7 +1645,7 @@ again:
 	if (vnnmap->size != num_active) {
 		DEBUG(0, (__location__ " The vnnmap count is different from the number of active nodes. %u vs %u\n", 
 			  vnnmap->size, num_active));
-		do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, ctdb->vnn);
+		do_recovery(rec, mem_ctx, vnn, num_active, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	}
 

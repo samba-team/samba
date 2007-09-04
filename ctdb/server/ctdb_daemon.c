@@ -55,7 +55,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	DEBUG(2,("Node flags for node %u are now 0x%x\n", c->vnn, ctdb->nodes[c->vnn]->flags));
 
 	/* make sure we don't hold any IPs when we shouldn't */
-	if (c->vnn == ctdb->vnn &&
+	if (c->vnn == ctdb->pnn &&
 	    (ctdb->nodes[c->vnn]->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_BANNED))) {
 		ctdb_release_all_ips(ctdb);
 	}
@@ -407,7 +407,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	call->call_data.dsize = c->calldatalen;
 	call->flags = c->flags;
 
-	if (header.dmaster == ctdb->vnn) {
+	if (header.dmaster == ctdb->pnn) {
 		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
 	} else {
 		state = ctdb_daemon_call_send_remote(ctdb_db, call, &header);
@@ -712,7 +712,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 	hdr->ctdb_magic   = CTDB_MAGIC;
 	hdr->ctdb_version = CTDB_VERSION;
 	hdr->generation   = ctdb->vnn_map->generation;
-	hdr->srcnode      = ctdb->vnn;
+	hdr->srcnode      = ctdb->pnn;
 
 	return hdr;	
 }
@@ -800,7 +800,7 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	TALLOC_CTX *tmp_ctx = talloc_new(client);
 
 	if (c->hdr.destnode == CTDB_CURRENT_NODE) {
-		c->hdr.destnode = client->ctdb->vnn;
+		c->hdr.destnode = client->ctdb->pnn;
 	}
 
 	state = talloc(client, struct daemon_control_state);
@@ -917,7 +917,7 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 	int len;
 
 	/* see if this is a message to ourselves */
-	if (vnn == ctdb->vnn) {
+	if (vnn == ctdb->pnn) {
 		return ctdb_local_message(ctdb, srvid, data);
 	}
 

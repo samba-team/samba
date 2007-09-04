@@ -142,7 +142,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return getpid();
 
 	case CTDB_CONTROL_GET_VNN:
-		return ctdb->vnn;
+		return ctdb->pnn;
 
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -394,7 +394,7 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_control_state);
 	if (state == NULL) {
 		DEBUG(0,("vnn %u Invalid reqid %u in ctdb_reply_control\n",
-			 ctdb->vnn, hdr->reqid));
+			 ctdb->pnn, hdr->reqid));
 		return;
 	}
 

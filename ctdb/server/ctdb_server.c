@@ -112,7 +112,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {
-		ctdb->vnn = node->pnn;
+		ctdb->pnn = node->pnn;
 		node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	}
 
@@ -226,7 +226,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	case CTDB_REQ_DMASTER:
 	case CTDB_REPLY_DMASTER:
 		/* we dont allow these calls when banned */
-		if (ctdb->nodes[ctdb->vnn]->flags & NODE_FLAGS_BANNED) {
+		if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_BANNED) {
 			DEBUG(0,(__location__ " ctdb operation %u"
 				" request %u"
 				" length %u from node %u to %u while node"
@@ -463,7 +463,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	node = ctdb->nodes[hdr->destnode];
 
-	if (hdr->destnode == ctdb->vnn) {
+	if (hdr->destnode == ctdb->pnn) {
 		ctdb_defer_packet(ctdb, hdr);
 	} else {
 		node->tx_cnt++;

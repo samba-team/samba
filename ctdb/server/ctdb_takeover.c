@@ -302,7 +302,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	data.dptr = (uint8_t *)ip;
 	data.dsize = strlen(ip)+1;
 
-	ctdb_daemon_send_message(ctdb, ctdb->vnn, CTDB_SRVID_RELEASE_IP, data);
+	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
 
 	/* kill clients that have registered with this IP */
 	release_kill_clients(ctdb, state->sin->sin_addr);
@@ -1513,7 +1513,7 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 			/* we only send out updates for public addresses that 
 			   we have taken over
 			 */
-			if (ctdb->vnn != vnn->pnn) {
+			if (ctdb->pnn != vnn->pnn) {
 				continue;
 			}
 			/* We only send out the updates if we need to */

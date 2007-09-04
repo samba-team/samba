@@ -330,7 +330,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		/* The check for dmaster gives priority to the dmaster
 		   if the rsn values are equal */
 		if (header.rsn < hdr->rsn ||
-		    (header.dmaster != ctdb->vnn && header.rsn == hdr->rsn)) {
+		    (header.dmaster != ctdb->pnn && header.rsn == hdr->rsn)) {
 			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to store record\n"));

@@ -214,8 +214,8 @@ int main(int argc, const char *argv[])
 
 	/* useful default logfile */
 	if (ctdb->logfile == NULL) {
-		char *name = talloc_asprintf(ctdb, "%s/log.ctdb.vnn%u", 
-					     VARDIR, ctdb->vnn);
+		char *name = talloc_asprintf(ctdb, "%s/log.ctdb.pnn%u", 
+					     VARDIR, ctdb->pnn);
 		ctdb_set_logfile(ctdb, name);
 		talloc_free(name);
 	}

@@ -91,7 +91,7 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 	/* filter out non-authoritative and zero-length records */
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 	if (data.dsize <= sizeof(struct ctdb_ltdb_header) ||
-	    hdr->dmaster != h->ctdb_db->ctdb->vnn) {
+	    hdr->dmaster != h->ctdb_db->ctdb->pnn) {
 		return 0;
 	}
 
@@ -241,7 +241,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 
 	r.db_id = ctdb_db->db_id;
 	r.reqid = state->reqid;
-	r.vnn   = ctdb->vnn;
+	r.vnn   = ctdb->pnn;
 
 	data.dptr = (uint8_t *)&r;
 	data.dsize = sizeof(r);

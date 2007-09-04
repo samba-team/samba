@@ -55,7 +55,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	hdr->operation    = operation;
 	hdr->ctdb_magic   = CTDB_MAGIC;
 	hdr->ctdb_version = CTDB_VERSION;
-	hdr->srcnode      = ctdb->vnn;
+	hdr->srcnode      = ctdb->pnn;
 	if (ctdb->vnn_map) {
 		hdr->generation = ctdb->vnn_map->generation;
 	}
@@ -109,7 +109,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 
 	/* we need to force the record to be written out if this was a remote access,
 	   so that the lacount is updated */
-	if (c->new_data == NULL && header->laccessor != ctdb->vnn) {
+	if (c->new_data == NULL && header->laccessor != ctdb->pnn) {
 		c->new_data = &c->record_data;
 	}
 
@@ -365,7 +365,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 	state->call = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->vnn);
+	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->pnn);
 
 	return state;
 }
@@ -400,7 +400,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 
-	if (ret == 0 && header.dmaster == ctdb->vnn) {
+	if (ret == 0 && header.dmaster == ctdb->pnn) {
 		state = ctdb_client_call_local_send(ctdb_db, call, &header, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call->key);
@@ -618,7 +618,7 @@ again:
 
 	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
 
-	if (ret != 0 || h->header.dmaster != ctdb_db->ctdb->vnn) {
+	if (ret != 0 || h->header.dmaster != ctdb_db->ctdb->pnn) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		ret = ctdb_client_force_migration(ctdb_db, key);
 		if (ret != 0) {
@@ -2478,6 +2478,6 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
 */
 uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
 {
-	return ctdb->vnn;
+	return ctdb->pnn;
 }
 

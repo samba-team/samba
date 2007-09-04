@@ -331,7 +331,7 @@ struct ctdb_context {
 	char *node_list_file;
 	char *recovery_lock_file;
 	int recovery_lock_fd;
-	uint32_t vnn; /* our own vnn */
+	uint32_t pnn; /* our own pnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
 	unsigned flags;
