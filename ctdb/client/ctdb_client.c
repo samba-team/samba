@@ -1869,18 +1869,18 @@ int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t d
 }
 
 /*
-  get vnn of a node, or -1
+  get pnn of a node, or -1
  */
-int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
 {
 	int ret;
 	int32_t res;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_VNN, 0, tdb_null, 
+			   CTDB_CONTROL_GET_PNN, 0, tdb_null, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getvnn failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for getpnn failed\n"));
 		return -1;
 	}
 

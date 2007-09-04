@@ -141,7 +141,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_PID:
 		return getpid();
 
-	case CTDB_CONTROL_GET_VNN:
+	case CTDB_CONTROL_GET_PNN:
 		return ctdb->pnn;
 
 	case CTDB_CONTROL_PING:

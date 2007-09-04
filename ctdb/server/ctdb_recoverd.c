@@ -1466,7 +1466,7 @@ again:
 		goto again;
 	}
 
-	pnn = ctdb_ctrl_getvnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+	pnn = ctdb_ctrl_getpnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 	if (pnn == (uint32_t)-1) {
 		DEBUG(0,("Failed to get local pnn - retrying\n"));
 		goto again;

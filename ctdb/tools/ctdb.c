@@ -219,7 +219,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	uint32_t recmode, recmaster;
 	int mypnn;
 
-	mypnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.pnn);
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
 	if (mypnn == -1) {
 		return -1;
 	}
@@ -528,7 +528,7 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	struct ctdb_all_public_ips *ips;
 	int mypnn;
 
-	mypnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.pnn);
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
 	if (mypnn == -1) {
 		return -1;
 	}
@@ -569,7 +569,7 @@ static int control_publicip(struct ctdb_context *ctdb, int argc, const char **ar
 	struct ctdb_all_public_ips *ips;
 	int mypnn;
 
-	mypnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.pnn);
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
 	if (mypnn == -1) {
 		return -1;
 	}
@@ -1177,7 +1177,7 @@ int main(int argc, const char *argv[])
 
 			if (options.pnn == CTDB_CURRENT_NODE) {
 				int pnn;
-				pnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.pnn);		
+				pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
 				if (pnn == -1) {
 					return -1;
 				}
