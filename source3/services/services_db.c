@@ -148,7 +148,7 @@ static char *get_common_service_dispname( const char *servicename )
 
 static char* cleanup_string( const char *string )
 {
-	static pstring clean;
+	pstring clean;
 	char *begin, *end;
 
 	pstrcpy( clean, string );
@@ -172,7 +172,7 @@ static char* cleanup_string( const char *string )
 		end--;
 	}
 
-	return begin;
+	return talloc_strdup(talloc_tos(), begin);
 }
 
 /********************************************************************

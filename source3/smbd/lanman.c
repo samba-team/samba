@@ -116,18 +116,16 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 
 static char *Expand(connection_struct *conn, int snum, char *s)
 {
-	static pstring buf;
+	pstring buf;
 	if (!s) {
 		return NULL;
 	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      buf, sizeof(buf));
-	return &buf[0];
+	return talloc_sub_advanced(talloc_tos(), lp_servicename(SNUM(conn)),
+				   conn->user, conn->connectpath, conn->gid,
+				   get_current_username(),
+				   current_user_info.domain, buf);
 }
 
 /*******************************************************************

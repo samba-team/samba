@@ -42,7 +42,7 @@ static struct svc_state_msg state_msg_table[] = {
 ********************************************************************/
 const char* svc_status_string( uint32 state )
 {
-	static fstring msg;
+	fstring msg;
 	int i;
 	
 	fstr_sprintf( msg, "Unknown State [%d]", state );
@@ -54,7 +54,7 @@ const char* svc_status_string( uint32 state )
 		}
 	}
 	
-	return msg;
+	return talloc_strdup(talloc_tos(), msg);
 }
 
 /********************************************************************
