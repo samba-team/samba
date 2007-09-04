@@ -1414,24 +1414,40 @@ BOOL winbindd_internal_child(struct winbindd_child *child)
 	return False;
 }
 
+void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain);
+void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain);
+
+#ifdef HAVE_KRB5_LOCATE_PLUGIN_H
+
 /*********************************************************************
  ********************************************************************/
 
-void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
+static void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
 {
 	char *var = NULL;
 	const char *kdc = NULL;
+	int lvl = 11;
 
-	if (!domain) {
+	if (!domain || !domain->alt_name || !*domain->alt_name) {
+		return;
+	}
+
+	if (domain->initialized && !domain->active_directory) {
+		DEBUG(lvl,("winbindd_set_locator_kdc_env: %s not AD\n",
+			domain->alt_name));
 		return;
 	}
 
 	kdc = inet_ntoa(domain->dcaddr.sin_addr);
 	if (!kdc) {
+		DEBUG(lvl,("winbindd_set_locator_kdc_env: %s no DC IP\n",
+			domain->alt_name));
 		kdc = domain->dcname;
 	}
 
 	if (!kdc || !*kdc) {
+		DEBUG(lvl,("winbindd_set_locator_kdc_env: %s no DC at all\n",
+			domain->alt_name));
 		return;
 	}
 
@@ -1440,9 +1456,45 @@ void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
 		return;
 	}
 
-	DEBUG(10,("winbindd_set_locator_kdc_env: setting var: %s to: %s\n",
+	DEBUG(lvl,("winbindd_set_locator_kdc_env: setting var: %s to: %s\n",
 		var, kdc));
 
 	setenv(var, kdc, 1);
 	free(var);
 }
+
+/*********************************************************************
+ ********************************************************************/
+
+void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain)
+{
+	struct winbindd_domain *our_dom = find_our_domain();
+
+	winbindd_set_locator_kdc_env(domain);
+
+	if (domain != our_dom) {
+		winbindd_set_locator_kdc_env(our_dom);
+	}
+}
+
+/*********************************************************************
+ ********************************************************************/
+
+void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
+{
+	char *var = NULL;
+
+	if (!domain || !domain->alt_name || !*domain->alt_name) {
+		return;
+	}
+
+	if (asprintf(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
+		     strupper_static(domain->alt_name)) == -1) {
+		return;
+	}
+
+	unsetenv(var);
+	free(var);
+}
+
+#endif /* HAVE_KRB5_LOCATE_PLUGIN_H */
