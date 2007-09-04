@@ -247,6 +247,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "broadcast", 'b', POPT_ARG_VAL, &use_bcast, True, "Use broadcast instead of using the master browser" },
@@ -287,8 +288,11 @@ static BOOL print_tree(struct user_auth_info *user_info)
 
 	/* Now do our stuff */
 
-        if (!print_tree(&cmdline_auth_info))
+        if (!print_tree(&cmdline_auth_info)) {
+		TALLOC_FREE(frame);
                 return 1;
+	}
 
+	TALLOC_FREE(frame);
 	return 0;
 }

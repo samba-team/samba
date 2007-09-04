@@ -507,7 +507,7 @@ int main(int argc, const char *argv[])
 		{ NULL }
 	};
 
-	if ( !(ctx = talloc_init("main")) ) {
+	if ( !(ctx = talloc_stackframe()) ) {
 		fprintf( stderr, "Failed to initialize talloc context!\n");
 		return -1;
 	}

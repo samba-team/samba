@@ -401,6 +401,7 @@ static struct cli_state *connect_one(const char *share)
 	struct cli_state *cli;
 	BOOL fix_user = False;
 	SMB_NTQUOTA_STRUCT qt;
+	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -543,6 +544,8 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 			result = EXIT_FAILED;
 			break;
 	}
+
+	talloc_free(frame);
 
 	return result;
 }

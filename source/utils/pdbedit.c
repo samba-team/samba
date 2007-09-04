@@ -758,6 +758,7 @@ int main (int argc, char **argv)
 	static BOOL pw_from_stdin = False;
 	struct pdb_methods *bin, *bout, *bdef;
 	char *configfile = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -798,6 +799,7 @@ int main (int argc, char **argv)
 	/* we shouldn't have silly checks like this */
 	if (getuid() != 0) {
 		d_fprintf(stderr, "You must be root to use pdbedit\n");
+		TALLOC_FREE(frame);
 		return -1;
 	}
 	
@@ -1049,5 +1051,6 @@ int main (int argc, char **argv)
 	}
 	poptPrintHelp(pc, stderr, 0);
 
+	TALLOC_FREE(frame);
 	return 1;
 }
