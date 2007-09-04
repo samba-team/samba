@@ -374,14 +374,6 @@ _PUBLIC_ NTTIME pull_nttime(uint8_t *base, uint16_t offset)
 }
 
 /**
-  parse a nttime as a large integer in a string and return a NTTIME
-*/
-_PUBLIC_ NTTIME nttime_from_string(const char *s)
-{
-	return strtoull(s, NULL, 0);
-}
-
-/**
   return (tv1 - tv2) in microseconds
 */
 _PUBLIC_ int64_t usec_time_diff(struct timeval *tv1, struct timeval *tv2)

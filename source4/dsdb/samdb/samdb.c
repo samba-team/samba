@@ -449,9 +449,7 @@ struct dom_sid *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, const struct ldb_me
 */
 NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME default_value)
 {
-	const char *str = ldb_msg_find_attr_as_string(msg, attr, NULL);
-	if (!str) return default_value;
-	return nttime_from_string(str);
+	return ldb_msg_find_attr_as_uint64(msg, attr, default_value);
 }
 
 /*
