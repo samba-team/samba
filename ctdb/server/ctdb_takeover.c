@@ -235,7 +235,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 
 	state->vnn = vnn;
 
-	DEBUG(0,("Takover of IP %s/%u on interface %s\n", 
+	DEBUG(0,("Takeover of IP %s/%u on interface %s\n", 
 		 ip, vnn->public_netmask_bits, 
 		 vnn->vnn_list->iface));
 
