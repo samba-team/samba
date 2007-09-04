@@ -3363,7 +3363,9 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 21:
-#define IFSET(bit) if (bit & r->in.info->info21.fields_present)
+#define IFSET(bit) if (bit & r->in.info->info21.fields_present)	
+		IFSET(SAMR_FIELD_ACCT_EXPIRY)
+			SET_UINT64(msg, info21.acct_expiry,    "accountExpires");	
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
 			SET_STRING(msg, info21.account_name,   "samAccountName");
 		IFSET(SAMR_FIELD_FULL_NAME) 
@@ -3391,15 +3393,14 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_COUNTRY_CODE)
 			SET_UINT  (msg, info21.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
-			SET_UINT  (msg, info21.code_page,      "codePage");
-
-
-		/* Any reason the rest of these can't be set? */
+			SET_UINT  (msg, info21.code_page,      "codePage");	
 #undef IFSET
 		break;
 
 	case 23:
 #define IFSET(bit) if (bit & r->in.info->info23.info.fields_present)
+		IFSET(SAMR_FIELD_ACCT_EXPIRY)
+			SET_UINT64(msg, info23.info.acct_expiry,  "accountExpires");	
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
 			SET_STRING(msg, info23.info.account_name, "samAccountName");
 		IFSET(SAMR_FIELD_FULL_NAME)         
@@ -3454,6 +3455,8 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 
 	case 25:
 #define IFSET(bit) if (bit & r->in.info->info25.info.fields_present)
+		IFSET(SAMR_FIELD_ACCT_EXPIRY)
+			SET_UINT64(msg, info25.info.acct_expiry,  "accountExpires");	
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
 			SET_STRING(msg, info25.info.account_name, "samAccountName");
 		IFSET(SAMR_FIELD_FULL_NAME)         
