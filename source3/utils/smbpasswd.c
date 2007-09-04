@@ -550,7 +550,9 @@ static int process_nonroot(int local_flags)
 **********************************************************/
 int main(int argc, char **argv)
 {	
+	TALLOC_CTX *frame = talloc_stackframe();
 	int local_flags = 0;
+	int ret;
 	
 	AllowDebugChange = False;
 
@@ -587,5 +589,7 @@ int main(int argc, char **argv)
 		return process_root(local_flags);
 	} 
 
-	return process_nonroot(local_flags);
+	ret = process_nonroot(local_flags);
+	TALLOC_FREE(frame);
+	return ret;
 }

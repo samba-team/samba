@@ -193,6 +193,7 @@ int main(int argc,char *argv[])
   static BOOL find_master=False;
   static BOOL lookup_by_ip = False;
   poptContext pc;
+  TALLOC_CTX *frame = talloc_stackframe();
 
   struct poptOption long_options[] = {
 	  POPT_AUTOHELP
@@ -292,6 +293,6 @@ int main(int argc,char *argv[])
   }
 
   poptFreeContext(pc);
-
+  TALLOC_FREE(frame);
   return(0);
 }
