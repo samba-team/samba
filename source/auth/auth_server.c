@@ -140,38 +140,72 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	return cli;
 }
 
-/****************************************************************************
- Clean up our allocated cli.
-****************************************************************************/
-
-static void free_server_private_data(void **private_data_pointer) 
-{
-	struct cli_state **cli = (struct cli_state **)private_data_pointer;
-	if (*cli && (*cli)->initialised) {
-		DEBUG(10, ("Shutting down smbserver connection\n"));
-		cli_shutdown(*cli);
-	}
-	*private_data_pointer = NULL;
-}
+struct server_security_state {
+	struct cli_state *cli;
+};
 
 /****************************************************************************
  Send a 'keepalive' packet down the cli pipe.
 ****************************************************************************/
 
-static void send_server_keepalive(void **private_data_pointer) 
+static BOOL send_server_keepalive(const struct timeval *now,
+				  void *private_data)
 {
-	/* also send a keepalive to the password server if its still
-	   connected */
-	if (private_data_pointer) {
-		struct cli_state *cli = (struct cli_state *)(*private_data_pointer);
-		if (cli && cli->initialised) {
-			if (!send_keepalive(cli->fd)) {
-				DEBUG( 2, ( "send_server_keepalive: password server keepalive failed.\n"));
-				cli_shutdown(cli);
-				*private_data_pointer = NULL;
-			}
+	struct server_security_state *state = talloc_get_type_abort(
+		private_data, struct server_security_state);
+
+	if (!state->cli || !state->cli->initialised) {
+		return False;
+	}
+
+	if (send_keepalive(state->cli->fd)) {
+		return True;
+	}
+
+	DEBUG( 2, ( "send_server_keepalive: password server keepalive "
+		    "failed.\n"));
+	cli_shutdown(state->cli);
+	state->cli = NULL;
+	return False;
+}
+
+static int destroy_server_security(struct server_security_state *state)
+{
+	if (state->cli) {
+		cli_shutdown(state->cli);
+	}
+	return 0;
+}
+
+static struct server_security_state *make_server_security_state(struct cli_state *cli)
+{
+	struct server_security_state *result;
+
+	if (!(result = talloc(NULL, struct server_security_state))) {
+		DEBUG(0, ("talloc failed\n"));
+		cli_shutdown(cli);
+		return NULL;
+	}
+
+	result->cli = cli;
+	talloc_set_destructor(result, destroy_server_security);
+
+	if (lp_keepalive() != 0) {
+		struct timeval interval;
+		interval.tv_sec = lp_keepalive();
+		interval.tv_usec = 0;
+
+		if (event_add_idle(smbd_event_context(), result, interval,
+				   "server_security_keepalive",
+				   send_server_keepalive,
+				   result) == NULL) {
+			DEBUG(0, ("event_add_idle failed\n"));
+			TALLOC_FREE(result);
+			return NULL;
 		}
 	}
+
+	return result;
 }
 
 /****************************************************************************
@@ -194,9 +228,9 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 			
 			/* However, it is still a perfectly fine connection
 			   to pass that unencrypted password over */
-			*my_private_data = (void *)cli;
+			*my_private_data =
+				(void *)make_server_security_state(cli);
 			return data_blob_null;
-			
 		} else if (cli->secblob.length < 8) {
 			/* We can't do much if we don't get a full challenge */
 			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
@@ -204,7 +238,9 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 			return data_blob_null;
 		}
 
-		*my_private_data = (void *)cli;
+		if (!(*my_private_data = (void *)make_server_security_state(cli))) {
+			return data_blob(NULL,0);
+		}
 
 		/* The return must be allocated on the caller's mem_ctx, as our own will be
 		   destoyed just after the call. */
@@ -408,8 +444,6 @@ static NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const cha
 	(*auth_method)->name = "smbserver";
 	(*auth_method)->auth = check_smbserver_security;
 	(*auth_method)->get_chal = auth_get_challenge_server;
-	(*auth_method)->send_keepalive = send_server_keepalive;
-	(*auth_method)->free_private_data = free_server_private_data;
 	return NT_STATUS_OK;
 }
 

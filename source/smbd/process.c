@@ -20,7 +20,6 @@
 
 #include "includes.h"
 
-extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
@@ -247,6 +246,7 @@ BOOL push_deferred_smb_message(struct smb_request *req,
 struct idle_event {
 	struct timed_event *te;
 	struct timeval interval;
+	char *name;
 	BOOL (*handler)(const struct timeval *now, void *private_data);
 	void *private_data;
 };
@@ -267,17 +267,19 @@ static void idle_event_handler(struct event_context *ctx,
 		return;
 	}
 
-	event->te = event_add_timed(smbd_event_context(), event,
+	event->te = event_add_timed(ctx, event,
 				    timeval_sum(now, &event->interval),
-				    "idle_event_handler",
+				    event->name,
 				    idle_event_handler, event);
 
 	/* We can't do much but fail here. */
 	SMB_ASSERT(event->te != NULL);
 }
 
-struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
+struct idle_event *event_add_idle(struct event_context *event_ctx,
+				  TALLOC_CTX *mem_ctx,
 				  struct timeval interval,
+				  const char *name,
 				  BOOL (*handler)(const struct timeval *now,
 						  void *private_data),
 				  void *private_data)
@@ -295,9 +297,15 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 	result->handler = handler;
 	result->private_data = private_data;
 
-	result->te = event_add_timed(smbd_event_context(), result,
+	if (!(result->name = talloc_asprintf(result, "idle_evt(%s)", name))) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	result->te = event_add_timed(event_ctx, result,
 				     timeval_sum(&now, &interval),
-				     "idle_event_handler",
+				     result->name,
 				     idle_event_handler, result);
 	if (result->te == NULL) {
 		DEBUG(0, ("event_add_timed failed\n"));
@@ -1507,12 +1515,10 @@ void check_reload(time_t t)
  Process any timeout housekeeping. Return False if the caller should exit.
 ****************************************************************************/
 
-static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
+static BOOL timeout_processing(int *select_timeout,
+			       time_t *last_timeout_processing_time)
 {
-	static time_t last_keepalive_sent_time = 0;
-	static time_t last_idle_closed_check = 0;
 	time_t t;
-	BOOL allidle = True;
 
 	if (smb_read_error == READ_EOF) {
 		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
@@ -1532,52 +1538,11 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 
 	*last_timeout_processing_time = t = time(NULL);
 
-	if(last_keepalive_sent_time == 0)
-		last_keepalive_sent_time = t;
-
-	if(last_idle_closed_check == 0)
-		last_idle_closed_check = t;
-
 	/* become root again if waiting */
 	change_to_root_user();
 
 	/* check if we need to reload services */
 	check_reload(t);
-
-	/* automatic timeout if all connections are closed */      
-	if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) {
-		DEBUG( 2, ( "Closing idle connection\n" ) );
-		return False;
-	} else {
-		last_idle_closed_check = t;
-	}
-
-	if (keepalive && (t - last_keepalive_sent_time)>keepalive) {
-		if (!send_keepalive(smbd_server_fd())) {
-			DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
-			return False;
-		}
-
-		/* send a keepalive for a password server or the like.
-			This is attached to the auth_info created in the
-		negprot */
-		if (negprot_global_auth_context && negprot_global_auth_context->challenge_set_method 
-				&& negprot_global_auth_context->challenge_set_method->send_keepalive) {
-
-			negprot_global_auth_context->challenge_set_method->send_keepalive
-			(&negprot_global_auth_context->challenge_set_method->private_data);
-		}
-
-		last_keepalive_sent_time = t;
-	}
-
-	/* check for connection timeouts */
-	allidle = conn_idle_all(t, deadtime);
-
-	if (allidle && conn_num_open()>0) {
-		DEBUG(2,("Closing idle connection 2.\n"));
-		return False;
-	}
 
 	if(global_machine_password_needs_changing && 
 			/* for ADS we need to do a regular ADS password change, not a domain
@@ -1664,21 +1629,18 @@ void smbd_process(void)
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
 	while (True) {
-		int deadtime = lp_deadtime()*60;
 		int select_timeout = setup_select_timeout();
 		int num_echos;
 		char *inbuf;
 		size_t inbuf_len;
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		if (deadtime <= 0)
-			deadtime = DEFAULT_SMBD_TIMEOUT;
-
 		errno = 0;      
 		
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
-			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+			if(!timeout_processing(&select_timeout,
+					       &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1687,7 +1649,7 @@ void smbd_process(void)
 
 		while (!receive_message_or_smb(NULL, &inbuf, &inbuf_len,
 					       select_timeout)) {
-			if(!timeout_processing(deadtime, &select_timeout,
+			if(!timeout_processing(&select_timeout,
 					       &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
@@ -1710,7 +1672,7 @@ void smbd_process(void)
 		TALLOC_FREE(inbuf);
 
 		if (smb_echo_count != num_echos) {
-			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+			if(!timeout_processing( &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1727,7 +1689,9 @@ void smbd_process(void)
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
 			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
-				if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+				if(!timeout_processing(
+					   &select_timeout,
+					   &last_timeout_processing_time))
 					return;
 				num_smbs = 0; /* Reset smb counter. */
 				last_timeout_processing_time = new_check_time; /* Reset time. */

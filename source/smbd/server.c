@@ -831,6 +831,35 @@ static BOOL init_structs(void )
 	return True;
 }
 
+/*
+ * Send keepalive packets to our client
+ */
+static BOOL keepalive_fn(const struct timeval *now, void *private_data)
+{
+	if (!send_keepalive(smbd_server_fd())) {
+		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+		return False;
+	}
+	return True;
+}
+
+/*
+ * Do the recurring check if we're idle
+ */
+static BOOL deadtime_fn(const struct timeval *now, void *private_data)
+{
+	if ((conn_num_open() == 0)
+	    || (conn_idle_all(now->tv_sec))) {
+		DEBUG( 2, ( "Closing idle connection\n" ) );
+		messaging_send(smbd_messaging_context(), procid_self(),
+			       MSG_SHUTDOWN, &data_blob_null);
+		return False;
+	}
+
+	return True;
+}
+
+
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -1145,6 +1174,22 @@ extern void build_options(BOOL screen);
 	/* register our message handlers */
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
+
+	if ((lp_keepalive() != 0)
+	    && !(event_add_idle(smbd_event_context(), NULL,
+				timeval_set(lp_keepalive(), 0),
+				"keepalive", keepalive_fn,
+				NULL))) {
+		DEBUG(0, ("Could not add keepalive event\n"));
+		exit(1);
+	}
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
+			     "deadtime", deadtime_fn, NULL))) {
+		DEBUG(0, ("Could not add deadtime event\n"));
+		exit(1);
+	}
 
 	smbd_process();
 

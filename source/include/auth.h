@@ -114,12 +114,6 @@ typedef struct auth_methods
 	
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
-	
-	/* Function to clean up the above arbitary structure */
-	void (*free_private_data)(void **private_data);
-
-	/* Function to send a keepalive message on the above structure */
-	void (*send_keepalive)(void **private_data);
 
 } auth_methods;
 
