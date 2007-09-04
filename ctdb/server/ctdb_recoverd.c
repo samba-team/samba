@@ -54,8 +54,8 @@ static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t vnn)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 
-	if (!ctdb_validate_vnn(ctdb, vnn)) {
-		DEBUG(0,("Bad vnn %u in ctdb_ban_node\n", vnn));
+	if (!ctdb_validate_pnn(ctdb, vnn)) {
+		DEBUG(0,("Bad pnn %u in ctdb_ban_node\n", vnn));
 		return;
 	}
 
@@ -90,8 +90,8 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t vnn, uint32_t ban_
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 
-	if (!ctdb_validate_vnn(ctdb, vnn)) {
-		DEBUG(0,("Bad vnn %u in ctdb_ban_node\n", vnn));
+	if (!ctdb_validate_pnn(ctdb, vnn)) {
+		DEBUG(0,("Bad pnn %u in ctdb_ban_node\n", vnn));
 		return;
 	}
 

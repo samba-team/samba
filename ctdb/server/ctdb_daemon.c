@@ -38,12 +38,12 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 {
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 
-	if (data.dsize != sizeof(*c) || !ctdb_validate_vnn(ctdb, c->vnn)) {
+	if (data.dsize != sizeof(*c) || !ctdb_validate_pnn(ctdb, c->vnn)) {
 		DEBUG(0,(__location__ "Invalid data in ctdb_node_flag_change\n"));
 		return;
 	}
 
-	if (!ctdb_validate_vnn(ctdb, c->vnn)) {
+	if (!ctdb_validate_pnn(ctdb, c->vnn)) {
 		DEBUG(0,("Bad vnn %u in flag_change_handler\n", c->vnn));
 		return;
 	}
@@ -809,7 +809,7 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	state->client = client;
 	state->c = talloc_steal(state, c);
 	state->reqid = c->hdr.reqid;
-	if (ctdb_validate_vnn(client->ctdb, c->hdr.destnode)) {
+	if (ctdb_validate_pnn(client->ctdb, c->hdr.destnode)) {
 		state->node = client->ctdb->nodes[c->hdr.destnode];
 		DLIST_ADD(state->node->pending_controls, state);
 	} else {

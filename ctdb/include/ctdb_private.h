@@ -107,9 +107,9 @@ struct ctdb_address {
 };
 
 /*
-  check a vnn is valid
+  check that a pnn is valid
  */
-#define ctdb_validate_vnn(ctdb, vnn) (((uint32_t)(vnn)) < (ctdb)->num_nodes)
+#define ctdb_validate_pnn(ctdb, pnn) (((uint32_t)(pnn)) < (ctdb)->num_nodes)
 
 
 /* called from the queue code when a packet comes in. Called with data==NULL

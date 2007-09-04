@@ -469,7 +469,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	if (destnode != CTDB_BROADCAST_VNNMAP && 
 	    destnode != CTDB_BROADCAST_ALL && 
 	    destnode != CTDB_BROADCAST_CONNECTED && 
-	    (!ctdb_validate_vnn(ctdb, destnode) || 
+	    (!ctdb_validate_pnn(ctdb, destnode) || 
 	     (ctdb->nodes[destnode]->flags & NODE_FLAGS_DISCONNECTED))) {
 		if (!(flags & CTDB_CTRL_FLAG_NOREPLY)) {
 			callback(ctdb, -1, tdb_null, "ctdb_control to disconnected node", private_data);

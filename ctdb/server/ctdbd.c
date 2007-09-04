@@ -66,7 +66,7 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 	ctdb->statistics.node_packets_recv++;
 
 	/* up the counter for this source node, so we know its alive */
-	if (ctdb_validate_vnn(ctdb, hdr->srcnode)) {
+	if (ctdb_validate_pnn(ctdb, hdr->srcnode)) {
 		/* as a special case, redirected calls don't increment the rx_cnt */
 		if (hdr->operation != CTDB_REQ_CALL ||
 		    ((struct ctdb_req_call *)hdr)->hopcount == 0) {
