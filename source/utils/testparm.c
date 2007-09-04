@@ -187,6 +187,10 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	if (!lp_passdb_backend()) {
 		fprintf(stderr,"ERROR: passdb backend must have a value or be left out\n");
 	}
+	
+	if (lp_os_level() > 255) {
+		fprintf(stderr,"WARNING: Maximum value for 'os level' is 255!\n");	
+	}
 
 	return ret;
 }   
