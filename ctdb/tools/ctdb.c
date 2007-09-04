@@ -658,7 +658,7 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	b.vnn = options.pnn;
+	b.pnn = options.pnn;
 	b.ban_time = ban_time;
 
 	data.dptr = (uint8_t *)&b;

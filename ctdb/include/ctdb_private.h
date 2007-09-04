@@ -518,7 +518,7 @@ struct ctdb_control_tcp_vnn {
   structure used for CTDB_SRVID_NODE_FLAGS_CHANGED
  */
 struct ctdb_node_flag_change {
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t new_flags;
 	uint32_t old_flags;
 };
@@ -535,7 +535,7 @@ struct ctdb_node_modflags {
   struct for admin setting a ban
  */
 struct ctdb_ban_info {
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t ban_time;
 };
 

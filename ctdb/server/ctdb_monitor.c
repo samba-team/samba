@@ -103,7 +103,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			ctdb_check_health, ctdb);
 
-	c.vnn = ctdb->pnn;
+	c.pnn = ctdb->pnn;
 	c.old_flags = node->flags;
 
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
@@ -207,7 +207,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	DEBUG(0, ("Control modflags on node %u - flags now 0x%x\n", ctdb->pnn, node->flags));
 
 	/* if we have been banned, go into recovery mode */
-	c.vnn = ctdb->pnn;
+	c.pnn = ctdb->pnn;
 	c.old_flags = old_flags;
 	c.new_flags = node->flags;
 
