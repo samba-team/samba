@@ -222,7 +222,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, s
 int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call);
 
 /* send a ctdb message */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		      uint64_t srvid, TDB_DATA data);
 
 

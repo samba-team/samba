@@ -509,7 +509,7 @@ int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void 
 /*
   send a message - from client context
  */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		      uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
@@ -520,7 +520,7 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			       len, struct ctdb_req_message);
 	CTDB_NO_MEMORY(ctdb, r);
 
-	r->hdr.destnode  = vnn;
+	r->hdr.destnode  = pnn;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
