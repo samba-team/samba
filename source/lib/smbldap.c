@@ -1574,7 +1574,7 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 
 		state->idle_event = event_add_timed(
 			event_ctx, NULL,
-			timeval_current_ofs(SMBLDAP_IDLE_TIME, 0),
+			timeval_add(now, SMBLDAP_IDLE_TIME, 0),
 			"smbldap_idle_fn", smbldap_idle_fn,
 			private_data);
 		return;

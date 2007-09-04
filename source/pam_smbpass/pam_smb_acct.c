@@ -80,7 +80,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 	/* Getting into places that might use LDAP -- protect the app
 		from a SIGPIPE it's not expecting */
 	oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
-	if (!initialize_password_db(True)) {
+	if (!initialize_password_db(True, NULL)) {
 		_log_err( LOG_ALERT, "Cannot access samba password database" );
 		CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
 		return PAM_AUTHINFO_UNAVAIL;

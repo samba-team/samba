@@ -108,7 +108,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		_log_err( LOG_DEBUG, "username [%s] obtained", name );
 	}
 
-	if (!initialize_password_db(True)) {
+	if (!initialize_password_db(True, NULL)) {
 		_log_err( LOG_ALERT, "Cannot access samba password database" );
 		retval = PAM_AUTHINFO_UNAVAIL;
 		AUTH_RETURN;

@@ -136,7 +136,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
        from a SIGPIPE it's not expecting */
     oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
 
-    if (!initialize_password_db(False)) {
+    if (!initialize_password_db(False, NULL)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_AUTHINFO_UNAVAIL;
