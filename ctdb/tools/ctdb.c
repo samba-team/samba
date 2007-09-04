@@ -390,7 +390,7 @@ static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.pnn       = strtoul(argv[0], NULL, 0);
 	server_id.type      = strtoul(argv[1], NULL, 0);
 	server_id.server_id = strtoul(argv[2], NULL, 0);
 
@@ -414,7 +414,7 @@ static int unregsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.pnn       = strtoul(argv[0], NULL, 0);
 	server_id.type      = strtoul(argv[1], NULL, 0);
 	server_id.server_id = strtoul(argv[2], NULL, 0);
 
@@ -439,7 +439,7 @@ static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.pnn       = strtoul(argv[0], NULL, 0);
 	server_id.type      = strtoul(argv[1], NULL, 0);
 	server_id.server_id = strtoul(argv[2], NULL, 0);
 
@@ -450,9 +450,9 @@ static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (status) {
-		printf("Server id %d:%d:%d EXISTS\n", server_id.vnn, server_id.type, server_id.server_id);
+		printf("Server id %d:%d:%d EXISTS\n", server_id.pnn, server_id.type, server_id.server_id);
 	} else {
-		printf("Server id %d:%d:%d does NOT exist\n", server_id.vnn, server_id.type, server_id.server_id);
+		printf("Server id %d:%d:%d does NOT exist\n", server_id.pnn, server_id.type, server_id.server_id);
 	}
 	return 0;
 }
@@ -473,7 +473,7 @@ static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	for (i=0; i<server_ids->num; i++) {
 		printf("Server id %d:%d:%d\n", 
-			server_ids->server_ids[i].vnn, 
+			server_ids->server_ids[i].pnn, 
 			server_ids->server_ids[i].type, 
 			server_ids->server_ids[i].server_id); 
 	}

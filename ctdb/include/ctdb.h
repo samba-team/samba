@@ -418,7 +418,7 @@ enum ctdb_server_id_type { SERVER_TYPE_SAMBA=1 };
 
 struct ctdb_server_id {
 	enum ctdb_server_id_type type;
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t server_id;
 };
 
