@@ -193,7 +193,7 @@ static int ctdb_traverse_all_destructor(struct ctdb_traverse_all_handle *state)
 struct ctdb_traverse_all {
 	uint32_t db_id;
 	uint32_t reqid;
-	uint32_t vnn;
+	uint32_t pnn;
 };
 
 /* called when a traverse times out */
@@ -241,7 +241,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 
 	r.db_id = ctdb_db->db_id;
 	r.reqid = state->reqid;
-	r.vnn   = ctdb->pnn;
+	r.pnn   = ctdb->pnn;
 
 	data.dptr = (uint8_t *)&r;
 	data.dsize = sizeof(r);
@@ -329,7 +329,7 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
 	}
 
 	state->reqid = c->reqid;
-	state->srcnode = c->vnn;
+	state->srcnode = c->pnn;
 	state->ctdb = ctdb;
 
 	state->h = ctdb_traverse_local(ctdb_db, traverse_all_callback, state);
