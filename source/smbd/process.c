@@ -1441,7 +1441,7 @@ static int setup_select_timeout(void)
 {
 	int select_timeout;
 
-	select_timeout = blocking_locks_timeout_ms(SMBD_SELECT_TIMEOUT*1000);
+	select_timeout = SMBD_SELECT_TIMEOUT*1000;
 
 	if (print_notify_messages_pending()) {
 		select_timeout = MIN(select_timeout, 1000);
@@ -1626,12 +1626,6 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 		global_machine_password_needs_changing = False;
 		secrets_lock_trust_account_password(lp_workgroup(), False);
 	}
-
-	/*
-	 * Check to see if we have any blocking locks
-	 * outstanding on the queue.
-	 */
-	process_blocking_lock_queue();
 
 	/* update printer queue caches if necessary */
   
