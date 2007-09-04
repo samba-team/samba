@@ -903,7 +903,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/*
 	  if enabled, tell nodes to takeover their public IPs
 	 */
-	if (ctdb->vnn_list) {
+	if (ctdb->vnn) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
@@ -1203,7 +1203,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	if (ret == 0 &&
 	    ctdb->recovery_master == ctdb->pnn &&
 	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL &&
-	    ctdb->vnn_list) {
+	    ctdb->vnn) {
 		/* Only do the takeover run if the perm disabled or unhealthy
 		   flags changed since these will cause an ip failover but not
 		   a recovery.
@@ -1722,7 +1722,7 @@ again:
 	}
 
 	/* we might need to change who has what IP assigned */
-	if (need_takeover_run && ctdb->vnn_list) {
+	if (need_takeover_run && ctdb->vnn) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));

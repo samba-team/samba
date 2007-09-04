@@ -138,10 +138,9 @@ struct ctdb_client {
 
 /* state associated with a public ip address */
 struct ctdb_vnn {
-	struct ctdb_vnn *next;
+	struct ctdb_vnn *prev, *next;
 
-	struct ctdb_vnn_list *vnn_list;
-
+	const char *iface;
 	const char *public_address;
 	uint8_t public_netmask_bits;
 
@@ -158,13 +157,7 @@ struct ctdb_vnn {
 
 	/* a context to hang sending gratious arp events off */
 	TALLOC_CTX *takeover_ctx;
-};
 
-struct ctdb_vnn_list {
-	struct ctdb_vnn_list *next;
-	const char *iface;
-	uint32_t num_ips;
-	struct ctdb_vnn *vnn;
 	struct ctdb_kill_tcp *killtcp;
 };
 
@@ -341,7 +334,7 @@ struct ctdb_context {
 	struct idr_context *idr;
 	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
-	struct ctdb_vnn_list *vnn_list; /* list of public ip addresses and interfaces */
+	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
