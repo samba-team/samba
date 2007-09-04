@@ -101,7 +101,7 @@ since that release series in the NEWS file.
 KNOWN ISSUES
 ============
 
-- Domain member support is in it's infancy, and is not comprable to
+- Domain member support is in it's infancy, and is not comparable to
   the support found in Samba3.
 
 - There is no printing support in the current release.
@@ -114,6 +114,10 @@ KNOWN ISSUES
 
 - The Samba4 port of the CTDB clustering support is not yet complete
 
+- Clock Synchronisation is critical.  Many 'wrong password' errors are
+  actually due to Kerberos objecting to a clock skew between client
+  and server.  
+
 RUNNING Samba4
 ==============
 
@@ -122,9 +126,11 @@ in root of the tarball.
 
 DEVELOPMENT and FEEDBACK
 ========================
-Bugs can be filed at https://bugzilla.samba.org/. Please
-look at the STATUS file before filing a bug to see if a particular
-is supposed to work yet.
+Bugs can be filed at https://bugzilla.samba.org/ but please be aware
+that many features are simply not expected to work at this stage.  
+
+The Samba Wiki at http://wiki.samba.org should detail some of these
+development plans.
 
 Development and general discussion about Samba 4 happens mainly on
 the #samba-technical IRC channel (on irc.freenode.net) and
