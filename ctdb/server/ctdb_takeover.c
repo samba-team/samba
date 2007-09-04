@@ -473,30 +473,67 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 }
 
 
+
+
+struct ctdb_public_ip_list {
+	struct ctdb_public_ip_list *next;
+	uint32_t pnn;
+	struct sockaddr_in sin;
+};
+
+
 /* Given a physical node, return the number of
    public addresses that is currently assigned to this node.
 */
 static int node_ip_coverage(struct ctdb_context *ctdb, 
-	int32_t pnn)
+	int32_t pnn,
+	struct ctdb_public_ip_list *ips)
 {
 	int num=0;
-	struct ctdb_vnn *vnn;
 
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (vnn->pnn == pnn) {
+	for (;ips;ips=ips->next) {
+		if (ips->pnn == pnn) {
 			num++;
 		}
 	}
 	return num;
 }
 
-/* search the vnn list for a node to takeover vnn.
-   pick the node that currently are serving the least number of vnns
-   so that the vnns get spread out evenly.
+
+/* Check if this is a public ip known to the node, i.e. can that
+   node takeover this ip ?
+*/
+static int can_node_serve_ip(struct ctdb_context *ctdb, int32_t pnn, 
+		struct ctdb_public_ip_list *ip)
+{
+	struct ctdb_all_public_ips *public_ips;
+	int i;
+
+	public_ips = ctdb->nodes[pnn]->public_ips;
+
+	if (public_ips == NULL) {
+		return -1;
+	}
+
+	for (i=0;i<public_ips->num;i++) {
+		if (ip->sin.sin_addr.s_addr == public_ips->ips[i].sin.sin_addr.s_addr) {
+			/* yes, this node can serve this public ip */
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+
+/* search the node lists list for a node to takeover this ip.
+   pick the node that currently are serving the least number of ips
+   so that the ips get spread out evenly.
 */
 static int find_takeover_node(struct ctdb_context *ctdb, 
 		struct ctdb_node_map *nodemap, uint32_t mask, 
-		struct ctdb_vnn *vnn)
+		struct ctdb_public_ip_list *ip,
+		struct ctdb_public_ip_list *all_ips)
 {
 	int pnn, min, num;
 	int i;
@@ -510,7 +547,13 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 			continue;
 		}
 
-		num = node_ip_coverage(ctdb, i);
+		/* verify that this node can serve this ip */
+		if (can_node_serve_ip(ctdb, i, ip)) {
+			/* no it couldnt   so skip to the next node */
+			continue;
+		}
+
+		num = node_ip_coverage(ctdb, i, all_ips);
 		/* was this the first node we checked ? */
 		if (pnn == -1) {
 			pnn = i;
@@ -523,12 +566,63 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 		}
 	}	
 	if (pnn == -1) {
-		DEBUG(0,(__location__ " Could not find node to take over public address '%s'\n", vnn->public_address));
+		DEBUG(0,(__location__ " Could not find node to take over public address '%s'\n", inet_ntoa(ip->sin.sin_addr)));
 		return -1;
 	}
 
-	vnn->pnn = pnn;
+	ip->pnn = pnn;
 	return 0;
+}
+
+struct ctdb_public_ip_list *
+add_ip_to_merged_list(struct ctdb_context *ctdb,
+			TALLOC_CTX *tmp_ctx, 
+			struct ctdb_public_ip_list *ip_list, 
+			struct ctdb_public_ip *ip)
+{
+	struct ctdb_public_ip_list *tmp_ip; 
+
+	/* do we already have this ip in our merged list ?*/
+	for (tmp_ip=ip_list;tmp_ip;tmp_ip=tmp_ip->next) {
+
+		/* we already  have this public ip in the list */
+		if (tmp_ip->sin.sin_addr.s_addr == ip->sin.sin_addr.s_addr) {
+			return ip_list;
+		}
+	}
+
+	/* this is a new public ip, we must add it to the list */
+	tmp_ip = talloc_zero(tmp_ctx, struct ctdb_public_ip_list);
+	CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
+	tmp_ip->pnn  = ip->pnn;
+	tmp_ip->sin  = ip->sin;
+	tmp_ip->next = ip_list;
+
+	return tmp_ip;
+}
+
+struct ctdb_public_ip_list *
+create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
+{
+	int i, j;
+	struct ctdb_public_ip_list *ip_list = NULL;
+	struct ctdb_all_public_ips *public_ips;
+
+	for (i=0;i<ctdb->num_nodes;i++) {
+		public_ips = ctdb->nodes[i]->public_ips;
+
+		/* there were no public ips for this node */
+		if (public_ips == NULL) {
+			continue;
+		}		
+
+		for (j=0;j<public_ips->num;j++) {
+			ip_list = add_ip_to_merged_list(ctdb, tmp_ctx,
+					ip_list, &public_ips->ips[j]);
+		}
+	}
+
+	return ip_list;
 }
 
 /*
@@ -536,12 +630,14 @@ static int find_takeover_node(struct ctdb_context *ctdb,
  */
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 {
-	int i, num_healthy;
+	int i, num_healthy, retries;
 	int ret;
 	struct ctdb_public_ip ip;
 	uint32_t mask;
-	struct ctdb_vnn *vnn;
+	struct ctdb_public_ip_list *all_ips, *tmp_ip;
 	int maxnode, maxnum, minnode, minnum, num;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
 
 	ZERO_STRUCT(ip);
 
@@ -565,16 +661,24 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 		mask = NODE_FLAGS_INACTIVE;
 	}
 
+	/* since nodes only know about those public addresses that
+	   can be served by that particular node, no single node has
+	   a full list of all public addresses that exist in the cluster.
+	   Walk over all node structures and create a merged list of
+	   all public addresses that exist in the cluster.
+	*/
+	all_ips = create_merged_ip_list(ctdb, tmp_ctx);
+
 
 	/* mark all public addresses with a masked node as being served by
 	   node -1
 	*/
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (vnn->pnn == -1) {
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
 			continue;
 		}
-		if (nodemap->nodes[vnn->pnn].flags & mask) {
-			vnn->pnn = -1;
+		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
+			tmp_ip->pnn = -1;
 		}
 	}
 
@@ -582,72 +686,101 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	/* now we must redistribute all public addresses with takeover node
 	   -1 among the nodes available
 	*/
+	retries = 0;
 try_again:
-	/* loop over all vnn's and find a physical node to cover for 
-	   each unassigned vnn.
+	/* loop over all ip's and find a physical node to cover for 
+	   each unassigned ip.
 	*/
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (vnn->pnn == -1) {
-			if (find_takeover_node(ctdb, nodemap, mask, vnn)) {
-				DEBUG(0,("Failed to find node to cover ip %s\n", vnn->public_address));
-				return -1;
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
+			if (find_takeover_node(ctdb, nodemap, mask, tmp_ip, all_ips)) {
+				DEBUG(0,("Failed to find node to cover ip %s\n", inet_ntoa(tmp_ip->sin.sin_addr)));
 			}
 		}
 	}
 
-	/* Get the highest and lowes number of vnn's a valid node
-	   covers for this interface 
+
+	/* now, try to make sure the ip adresses are evenly distributed
+	   across the node.
+	   for each ip address, loop over all nodes that can serve this
+	   ip and make sure that the difference between the node
+	   serving the most and the node serving the least ip's are not greater
+	   than 1.
 	*/
-	maxnode = -1;
-	minnode = -1;
-	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & mask) {
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
 			continue;
 		}
-		num = node_ip_coverage(ctdb, i);
-		if (maxnode == -1) {
-			maxnode = i;
-			maxnum  = num;
-		} else {
-			if (num > maxnum) {
+
+		/* Get the highest and lowest number of ips's served by any 
+		   valid node which can serve this ip.
+		*/
+		maxnode = -1;
+		minnode = -1;
+		for (i=0;i<nodemap->num;i++) {
+			if (nodemap->nodes[i].flags & mask) {
+				continue;
+			}
+
+			/* only check nodes that can actually serve this ip */
+			if (can_node_serve_ip(ctdb, i, tmp_ip)) {
+				/* no it couldnt   so skip to the next node */
+				continue;
+			}
+
+			num = node_ip_coverage(ctdb, i, all_ips);
+			if (maxnode == -1) {
 				maxnode = i;
 				maxnum  = num;
+			} else {
+				if (num > maxnum) {
+					maxnode = i;
+					maxnum  = num;
+				}
 			}
-		}
-		if (minnode == -1) {
-			minnode = i;
-			minnum  = num;
-		} else {
-			if (num < minnum) {
+			if (minnode == -1) {
 				minnode = i;
 				minnum  = num;
+			} else {
+				if (num < minnum) {
+					minnode = i;
+					minnum  = num;
+				}
 			}
 		}
-	}
-	if (maxnode == -1) {
-		DEBUG(0,(__location__ " Could not find maxnode\n"));
-		return -1;
-	}
+		if (maxnode == -1) {
+			DEBUG(0,(__location__ " Could not find maxnode. May not be able to server ip '%s'\n", inet_ntoa(tmp_ip->sin.sin_addr)));
+			continue;
+		}
 
-	/* if the spread between the smallest and largest coverage by
-	   a node is >=2 we steal one of the ips from the node with the
-	   most coverage to even things out a bit
-	*/
-	if (maxnum > minnum+1) {
-		/* mark one of maxnode's vnn's as unassigned and try
-		   again
+		/* if the spread between the smallest and largest coverage by
+		   a node is >=2 we steal one of the ips from the node with
+		   most coverage to even things out a bit.
+		   try to do this at most 5 times  since we dont want to spend
+		   too much time balancing the ip coverage.
 		*/
-		for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-			if (vnn->pnn == maxnode) {
-				vnn->pnn = -1;
-				goto try_again;
+		if ( (maxnum > minnum+1)
+		  && (retries < 5) ){
+			struct ctdb_public_ip_list *tmp;
+
+			/* mark one of maxnode's vnn's as unassigned and try
+			   again
+			*/
+			for (tmp=all_ips;tmp;tmp=tmp->next) {
+				if (tmp->pnn == maxnode) {
+					tmp->pnn = -1;
+					retries++;
+					goto try_again;
+				}
 			}
 		}
 	}
 
 
 
-	/* at this point ->pnn is the node which will own each IP */
+	/* at this point ->pnn is the node which will own each IP
+	   or -1 if there is no node that can cover this ip
+	*/
 
 	/* now tell all nodes to delete any alias that they should not
 	   have.  This will be a NOOP on nodes that don't currently
@@ -658,16 +791,16 @@ try_again:
 			continue;
 		}
 
-		for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-			if (vnn->pnn == nodemap->nodes[i].pnn) {
+		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+			if (tmp_ip->pnn == nodemap->nodes[i].pnn) {
 				/* This node should be serving this
 				   vnn so dont tell it to release the ip
 				*/
 				continue;
 			}
-			ip.pnn = vnn->pnn;
+			ip.pnn = tmp_ip->pnn;
 			ip.sin.sin_family = AF_INET;
-			inet_aton(vnn->public_address, &ip.sin.sin_addr);
+			ip.sin.sin_addr   = tmp_ip->sin.sin_addr;
 
 			ret = ctdb_ctrl_release_ip(ctdb, TAKEOVER_TIMEOUT(),
 						   nodemap->nodes[i].pnn, 
@@ -675,33 +808,37 @@ try_again:
 			if (ret != 0) {
 				DEBUG(0,("Failed to tell vnn %u to release IP %s\n",
 					 nodemap->nodes[i].pnn,
-					 vnn->public_address));
+					 inet_ntoa(tmp_ip->sin.sin_addr)));
+				talloc_free(tmp_ctx);
 				return -1;
 			}
 		}
 	}
 
+
 	/* tell all nodes to get their own IPs */
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (vnn->pnn == -1) {
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
 			/* this IP won't be taken over */
 			continue;
 		}
-		ip.pnn = vnn->pnn;
+		ip.pnn = tmp_ip->pnn;
 		ip.sin.sin_family = AF_INET;
-		inet_aton(vnn->public_address, &ip.sin.sin_addr);
+		ip.sin.sin_addr = tmp_ip->sin.sin_addr;
 
 		ret = ctdb_ctrl_takeover_ip(ctdb, TAKEOVER_TIMEOUT(), 
-				    vnn->pnn, 
+				    tmp_ip->pnn, 
 				    &ip);
 		if (ret != 0) {
 			DEBUG(0,("Failed asking vnn %u to take over IP %s\n",
-				 vnn->pnn, 
-				 vnn->public_address));
+				 tmp_ip->pnn, 
+				 inet_ntoa(tmp_ip->sin.sin_addr)));
+			talloc_free(tmp_ctx);
 			return -1;
 		}
 	}
 
+	talloc_free(tmp_ctx);
 	return 0;
 }
 

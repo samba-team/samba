@@ -186,6 +186,12 @@ struct ctdb_node {
 	/* a list of controls pending to this node, so we can time them out quickly
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
+
+	/* used by the recovery daemon when distributing ip addresses 
+	   across the nodes.  it needs to know which public ip's can be handled
+	   by each node.
+	*/
+	struct ctdb_all_public_ips *public_ips;
 };
 
 /*

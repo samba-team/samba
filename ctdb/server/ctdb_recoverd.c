@@ -1543,6 +1543,30 @@ again:
 	}
 
 
+	/* update the list of public ips that a node can handle for
+	   all connected nodes
+	*/
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		/* release any existing data */
+		if (ctdb->nodes[j]->public_ips) {
+			talloc_free(ctdb->nodes[j]->public_ips);
+			ctdb->nodes[j]->public_ips = NULL;
+		}
+		/* grab a new shiny list of public ips from the node */
+		if (ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(),
+			ctdb->nodes[j]->pnn, 
+			ctdb->nodes,
+			&ctdb->nodes[j]->public_ips)) {
+			DEBUG(0,("Failed to read public ips from node : %u\n", 
+				ctdb->nodes[j]->pnn));
+			goto again;
+		}
+	}
+
+
 	/* verify that all active nodes agree that we are the recmaster */
 	switch (verify_recmaster(ctdb, nodemap, pnn)) {
 	case MONITOR_RECOVERY_NEEDED:
