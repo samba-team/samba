@@ -376,6 +376,8 @@ struct smbsrv_connection {
 	struct share_context *share_context;
 };
 
+struct model_ops;
+
 NTSTATUS smbsrv_add_socket(struct event_context *event_context,
 			       const struct model_ops *model_ops,
 			       const char *address);
