@@ -456,7 +456,7 @@ SMB_OFF_T get_file_size(char *file_name)
 
 char *attrib_string(uint16 mode)
 {
-	static fstring attrstr;
+	fstring attrstr;
 
 	attrstr[0] = 0;
 
@@ -467,7 +467,7 @@ char *attrib_string(uint16 mode)
 	if (mode & aSYSTEM) fstrcat(attrstr,"S");
 	if (mode & aRONLY) fstrcat(attrstr,"R");	  
 
-	return(attrstr);
+	return talloc_strdup(talloc_tos(), attrstr);
 }
 
 /*******************************************************************
@@ -1557,17 +1557,17 @@ BOOL process_exists_by_pid(pid_t pid)
 
 const char *uidtoname(uid_t uid)
 {
-	static fstring name;
+	fstring name;
 	struct passwd *pass;
 
-	pass = getpwuid_alloc(NULL, uid);
+	pass = getpwuid_alloc(talloc_tos(), uid);
 	if (pass) {
 		fstrcpy(name, pass->pw_name);
 		TALLOC_FREE(pass);
 	} else {
 		slprintf(name, sizeof(name) - 1, "%ld",(long int)uid);
 	}
-	return name;
+	return talloc_strdup(talloc_tos(), name);
 }
 
 
@@ -1577,14 +1577,17 @@ const char *uidtoname(uid_t uid)
 
 char *gidtoname(gid_t gid)
 {
-	static fstring name;
+	fstring name;
 	struct group *grp;
 
 	grp = getgrgid(gid);
-	if (grp)
-		return(grp->gr_name);
-	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
-	return(name);
+	if (grp) {
+		fstrcpy(name, grp->gr_name);
+	}
+	else {
+		slprintf(name,sizeof(name) - 1, "%d",(int)gid);
+	}
+	return talloc_strdup(talloc_tos(), name);
 }
 
 /*******************************************************************
@@ -1838,15 +1841,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
 	dname = dname - 2;
 #endif
 
-	{
-		static pstring buf;
-		int len = NAMLEN(ptr);
-		memcpy(buf, dname, len);
-		buf[len] = 0;
-		dname = buf;
-	}
-
-	return(dname);
+	return talloc_strdup(talloc_tos(), dname);
 }
 
 /*******************************************************************
@@ -2609,7 +2604,7 @@ char *myhostname(void)
 
 char *lock_path(const char *name)
 {
-	static pstring fname;
+	pstring fname;
 
 	pstrcpy(fname,lp_lockdir());
 	trim_char(fname,'\0','/');
@@ -2620,7 +2615,7 @@ char *lock_path(const char *name)
 	pstrcat(fname,"/");
 	pstrcat(fname,name);
 
-	return fname;
+	return talloc_strdup(talloc_tos(), fname);
 }
 
 /*****************************************************************
@@ -2629,7 +2624,7 @@ char *lock_path(const char *name)
 
 char *pid_path(const char *name)
 {
-	static pstring fname;
+	pstring fname;
 
 	pstrcpy(fname,lp_piddir());
 	trim_char(fname,'\0','/');
@@ -2640,7 +2635,7 @@ char *pid_path(const char *name)
 	pstrcat(fname,"/");
 	pstrcat(fname,name);
 
-	return fname;
+	return talloc_strdup(talloc_tos(), fname);
 }
 
 /**
@@ -2653,9 +2648,7 @@ char *pid_path(const char *name)
 
 char *lib_path(const char *name)
 {
-	static pstring fname;
-	fstr_sprintf(fname, "%s/%s", dyn_LIBDIR, name);
-	return fname;
+	return talloc_asprintf(talloc_tos(), "%s/%s", dyn_LIBDIR, name);
 }
 
 /**
@@ -2672,29 +2665,18 @@ const char *shlib_ext(void)
 /*******************************************************************
  Given a filename - get its directory name
  NB: Returned in static storage.  Caveats:
- o  Not safe in thread environment.
- o  Caller must not free.
  o  If caller wishes to preserve, they should copy.
 ********************************************************************/
 
 char *parent_dirname(const char *path)
 {
-	static pstring dirpath;
-	char *p;
+	char *parent;
 
-	if (!path)
-		return(NULL);
-
-	pstrcpy(dirpath, path);
-	p = strrchr_m(dirpath, '/');  /* Find final '/', if any */
-	if (!p) {
-		pstrcpy(dirpath, ".");    /* No final "/", so dir is "." */
-	} else {
-		if (p == dirpath)
-			++p;    /* For root "/", leave "/" in place */
-		*p = '\0';
+	if (!parent_dirname_talloc(talloc_tos(), path, &parent, NULL)) {
+		return NULL;
 	}
-	return dirpath;
+
+	return parent;
 }
 
 BOOL parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
@@ -3159,9 +3141,9 @@ struct server_id interpret_pid(const char *pid_string)
 #endif
 }
 
-char *procid_str_static(const struct server_id *pid)
+char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
 {
-	static fstring str;
+	fstring str;
 #ifdef CLUSTER_SUPPORT
 	if (pid->vnn == NONCLUSTER_VNN) {
 		fstr_sprintf(str, "%d", (int)pid->pid);
@@ -3172,12 +3154,12 @@ char *procid_str_static(const struct server_id *pid)
 #else
 	fstr_sprintf(str, "%d", (int)pid->pid);
 #endif
-	return str;
+	return talloc_strdup(mem_ctx, str);
 }
 
-char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
+char *procid_str_static(const struct server_id *pid)
 {
-	return talloc_strdup(mem_ctx, procid_str_static(pid));
+	return procid_str(talloc_tos(), pid);
 }
 
 BOOL procid_valid(const struct server_id *pid)

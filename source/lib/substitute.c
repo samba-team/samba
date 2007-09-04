@@ -263,7 +263,7 @@ struct api_longvar {
 	char* (*fn)( void );
 };
 
-struct api_longvar longvar_table[] = {
+static struct api_longvar longvar_table[] = {
 	{ "DomainSID",		longvar_domainsid },
 	{ NULL, 		NULL }
 };
@@ -339,7 +339,7 @@ static char *realloc_expand_longvar(char *str, char *p)
 
 static char *automount_path(const char *user_name)
 {
-	static pstring server_path;
+	pstring server_path;
 
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
@@ -368,7 +368,7 @@ static char *automount_path(const char *user_name)
 
 	DEBUG(4,("Home server path: %s\n", server_path));
 
-	return server_path;
+	return talloc_strdup(talloc_tos(), server_path);
 }
 
 /*******************************************************************
@@ -379,7 +379,7 @@ static char *automount_path(const char *user_name)
 
 static const char *automount_server(const char *user_name)
 {
-	static pstring server_name;
+	pstring server_name;
 	const char *local_machine_name = get_local_machine_name(); 
 
 	/* use the local machine name as the default */
@@ -405,7 +405,7 @@ static const char *automount_server(const char *user_name)
 
 	DEBUG(4,("Home server: %s\n", server_name));
 
-	return server_name;
+	return talloc_strdup(talloc_tos(), server_name);
 }
 
 /****************************************************************************

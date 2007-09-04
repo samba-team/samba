@@ -102,7 +102,7 @@ void normalize_reg_path( pstring keyname )
 
 char* reg_remaining_path( const char *key )
 {
-	static pstring new_path;
+	pstring new_path;
 	char *p;
 	
 	if ( !key || !*key )
@@ -121,7 +121,7 @@ char* reg_remaining_path( const char *key )
 	else
 		p++;
 		
-	return p;
+	return talloc_strdup(talloc_tos(), p);
 }
 
 /**********************************************************************

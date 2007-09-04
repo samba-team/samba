@@ -303,13 +303,13 @@ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 
 char *http_timestring(time_t t)
 {
-	static fstring buf;
+	fstring buf;
 	struct tm *tm = localtime(&t);
 
 	if (t == TIME_T_MAX) {
-		slprintf(buf,sizeof(buf)-1,"never");
+		fstrcpy(buf, "never");
 	} else if (!tm) {
-		slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
+		fstr_sprintf(buf, "%ld seconds since the Epoch", (long)t);
 	} else {
 #ifndef HAVE_STRFTIME
 		const char *asct = asctime(tm);
@@ -321,7 +321,7 @@ char *http_timestring(time_t t)
 		strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
 #endif /* !HAVE_STRFTIME */
 	}
-	return buf;
+	return talloc_strdup(talloc_tos(), buf);
 }
 
 
@@ -689,7 +689,7 @@ int set_server_zone_offset(time_t t)
 
 char *current_timestring(BOOL hires)
 {
-	static fstring TimeBuf;
+	fstring TimeBuf;
 	struct timeval tp;
 	time_t t;
 	struct tm *tm;
@@ -739,7 +739,7 @@ char *current_timestring(BOOL hires)
 		}
 #endif
 	}
-	return(TimeBuf);
+	return talloc_strdup(talloc_tos(), TimeBuf);
 }
 
 
@@ -1423,8 +1423,6 @@ const char *time_to_asc(const time_t t)
 
 const char *display_time(NTTIME nttime)
 {
-	static fstring string;
-
 	float high;
 	float low;
 	int sec;
@@ -1452,8 +1450,8 @@ const char *display_time(NTTIME nttime)
 	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
 	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
 
-	fstr_sprintf(string, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
-	return (string);
+	return talloc_asprintf(talloc_tos(), "%u days, %u hours, %u minutes, "
+			       "%u seconds", days, hours, mins, secs);
 }
 
 BOOL nt_time_is_set(const NTTIME *nt)

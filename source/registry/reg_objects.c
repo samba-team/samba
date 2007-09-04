@@ -439,9 +439,9 @@ uint32 regval_dword( REGISTRY_VALUE *val )
 
 char* regval_sz( REGISTRY_VALUE *val )
 {
-	static pstring data;
+	pstring data;
 
 	rpcstr_pull( data, regval_data_p(val), sizeof(data), regval_size(val), 0 );
 	
-	return data;
+	return talloc_strdup(talloc_tos(), data);
 }
