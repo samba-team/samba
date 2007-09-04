@@ -1414,9 +1414,6 @@ BOOL winbindd_internal_child(struct winbindd_child *child)
 	return False;
 }
 
-void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain);
-void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain);
-
 #ifdef HAVE_KRB5_LOCATE_PLUGIN_H
 
 /*********************************************************************
@@ -1495,6 +1492,17 @@ void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
 
 	unsetenv(var);
 	free(var);
+}
+#else
+
+void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain)
+{
+	return;
+}
+
+void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
+{
+	return;
 }
 
 #endif /* HAVE_KRB5_LOCATE_PLUGIN_H */
