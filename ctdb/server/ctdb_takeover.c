@@ -1242,7 +1242,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	vnn = find_public_ip_vnn(ctdb, addr);
 	if (vnn == NULL) {
 		DEBUG(0,(__location__ " Could not killtcp, '%s' is not a public address\n", addr)); 
-		return 0;
+		return -1;
 	}
 
 	vnn_list = vnn->vnn_list;
@@ -1336,9 +1336,7 @@ int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_control_killtcp *killtcp = (struct ctdb_control_killtcp *)indata.dptr;
 
-	ctdb_killtcp_add_connection(ctdb, &killtcp->src, &killtcp->dst);
-
-	return 0;
+	return ctdb_killtcp_add_connection(ctdb, &killtcp->src, &killtcp->dst);
 }
 
 /*
