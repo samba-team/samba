@@ -262,7 +262,7 @@ static void daemon_request_message_from_client(struct ctdb_client *client,
 	int res;
 
 	/* maybe the message is for another client on this node */
-	if (ctdb_get_vnn(client->ctdb)==c->hdr.destnode) {
+	if (ctdb_get_pnn(client->ctdb)==c->hdr.destnode) {
 		ctdb_request_message(client->ctdb, (struct ctdb_req_header *)c);
 		return;
 	}

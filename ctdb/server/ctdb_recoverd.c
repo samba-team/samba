@@ -1078,7 +1078,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	   send a new election message to all other nodes
 	 */
 	if (ctdb_election_win(rec, em)) {
-		ret = send_election_request(rec, mem_ctx, ctdb_get_vnn(ctdb));
+		ret = send_election_request(rec, mem_ctx, ctdb_get_pnn(ctdb));
 		if (ret!=0) {
 			DEBUG(0, (__location__ " failed to initiate recmaster election"));
 		}
@@ -1096,7 +1096,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* ok, let that guy become recmaster then */
-	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), ctdb_get_vnn(ctdb), em->vnn);
+	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), ctdb_get_pnn(ctdb), em->vnn);
 	if (ret != 0) {
 		DEBUG(0, (__location__ " failed to send recmaster election request"));
 		talloc_free(mem_ctx);

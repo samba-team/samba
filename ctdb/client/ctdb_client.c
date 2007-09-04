@@ -2474,9 +2474,9 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
 }
 
 /*
-  return the vnn of this node
+  return the pnn of this node
 */
-uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
+uint32_t ctdb_get_pnn(struct ctdb_context *ctdb)
 {
 	return ctdb->pnn;
 }
