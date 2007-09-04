@@ -809,7 +809,7 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 /*
   send a ctdb message
 */
-int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 			     uint64_t srvid, TDB_DATA data);
 
 

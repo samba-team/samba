@@ -44,7 +44,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	if (!ctdb_validate_pnn(ctdb, c->pnn)) {
-		DEBUG(0,("Bad vnn %u in flag_change_handler\n", c->pnn));
+		DEBUG(0,("Bad pnn %u in flag_change_handler\n", c->pnn));
 		return;
 	}
 
@@ -910,14 +910,14 @@ static int ctdb_local_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DAT
 /*
   send a ctdb message
 */
-int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 			     uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
 	int len;
 
 	/* see if this is a message to ourselves */
-	if (vnn == ctdb->pnn) {
+	if (pnn == ctdb->pnn) {
 		return ctdb_local_message(ctdb, srvid, data);
 	}
 
@@ -926,7 +926,7 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 				    struct ctdb_req_message);
 	CTDB_NO_MEMORY(ctdb, r);
 
-	r->hdr.destnode  = vnn;
+	r->hdr.destnode  = pnn;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);

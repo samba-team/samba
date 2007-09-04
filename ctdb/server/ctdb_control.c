@@ -393,7 +393,7 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_control_state);
 	if (state == NULL) {
-		DEBUG(0,("vnn %u Invalid reqid %u in ctdb_reply_control\n",
+		DEBUG(0,("pnn %u Invalid reqid %u in ctdb_reply_control\n",
 			 ctdb->pnn, hdr->reqid));
 		return;
 	}
