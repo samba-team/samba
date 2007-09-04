@@ -231,7 +231,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_ltdb_header header;
 
-	DEBUG(2,("vnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
+	DEBUG(2,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
 
 	ZERO_STRUCT(header);
 	header.rsn = rsn + 1;
