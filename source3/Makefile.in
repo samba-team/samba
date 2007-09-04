@@ -242,11 +242,16 @@ LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 
 RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 
-LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
-		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_echo.o \
-		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o \
-		 librpc/gen_ndr/ndr_srvsvc.o librpc/gen_ndr/ndr_svcctl.o \
-		 librpc/gen_ndr/ndr_eventlog.o librpc/gen_ndr/ndr_wkssvc.o \
+LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
+		 librpc/gen_ndr/ndr_lsa.o \
+		 librpc/gen_ndr/ndr_dfs.o \
+		 librpc/gen_ndr/ndr_echo.o \
+		 librpc/gen_ndr/ndr_winreg.o \
+		 librpc/gen_ndr/ndr_initshutdown.o \
+		 librpc/gen_ndr/ndr_srvsvc.o \
+		 librpc/gen_ndr/ndr_svcctl.o \
+		 librpc/gen_ndr/ndr_eventlog.o \
+		 librpc/gen_ndr/ndr_unixinfo.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_epmapper.o
 
@@ -353,12 +358,18 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o
 
-LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
-		   librpc/gen_ndr/cli_dfs.o librpc/gen_ndr/cli_echo.o \
-		   librpc/gen_ndr/cli_srvsvc.o librpc/gen_ndr/cli_svcctl.o \
-		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
-		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_epmapper.o \
-		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
+LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
+		   librpc/gen_ndr/cli_dfs.o \
+		   librpc/gen_ndr/cli_echo.o \
+		   librpc/gen_ndr/cli_srvsvc.o \
+		   librpc/gen_ndr/cli_svcctl.o \
+		   librpc/gen_ndr/cli_winreg.o \
+		   librpc/gen_ndr/cli_initshutdown.o \
+		   librpc/gen_ndr/cli_eventlog.o \
+		   librpc/gen_ndr/cli_unixinfo.o \
+		   librpc/gen_ndr/cli_epmapper.o \
+		   $(LIBNDR_GEN_OBJ) \
+		   $(RPCCLIENT_NDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
