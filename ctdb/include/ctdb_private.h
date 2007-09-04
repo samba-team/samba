@@ -155,6 +155,9 @@ struct ctdb_vnn {
 	/* whether we need to update the other nodes with changes to our list
 	   of connected clients */
 	bool tcp_update_needed;
+
+	/* a context to hang sending gratious arp events off */
+	TALLOC_CTX *takeover_ctx;
 };
 
 struct ctdb_vnn_list {
@@ -356,7 +359,6 @@ struct ctdb_context {
 	void *saved_scheduler_param;
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
-	TALLOC_CTX *takeover_ctx;
 };
 
 struct ctdb_db_context {

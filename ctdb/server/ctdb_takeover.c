@@ -1,5 +1,5 @@
 /* 
-   ctdb recovery code
+   ctdb ip takeover code
 
    Copyright (C) Ronnie Sahlberg  2007
    Copyright (C) Andrew Tridgell  2007
@@ -108,7 +108,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 		return;
 	}
 
-	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover_ctx, 
+	event_add_timed(arp->ctdb->ev, arp->vnn->takeover_ctx, 
 			timeval_current_ofs(CTDB_ARP_INTERVAL, 0), 
 			ctdb_control_send_arp, arp);
 }
@@ -141,12 +141,14 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 		return;
 	}
 
-	if (!ctdb->takeover_ctx) {
-		ctdb->takeover_ctx = talloc_new(ctdb);
-		if (!ctdb->takeover_ctx) goto failed;
+	if (!state->vnn->takeover_ctx) {
+		state->vnn->takeover_ctx = talloc_new(ctdb);
+		if (!state->vnn->takeover_ctx) {
+			goto failed;
+		}
 	}
 
-	arp = talloc_zero(ctdb->takeover_ctx, struct ctdb_takeover_arp);
+	arp = talloc_zero(state->vnn->takeover_ctx, struct ctdb_takeover_arp);
 	if (!arp) goto failed;
 	
 	arp->ctdb = ctdb;
@@ -163,7 +165,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 		state->vnn->tcp_update_needed = true;
 	}
 
-	event_add_timed(arp->ctdb->ev, arp->ctdb->takeover_ctx, 
+	event_add_timed(arp->ctdb->ev, state->vnn->takeover_ctx, 
 			timeval_zero(), ctdb_control_send_arp, arp);
 
 	/* the control succeeded */
@@ -335,6 +337,9 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	vnn->pnn = pip->pnn;
 
 	if (!ctdb_sys_have_ip(ip)) {
+		DEBUG(0,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
+			 ip, vnn->public_netmask_bits, 
+			 vnn->vnn_list->iface));
 		return 0;
 	}
 
@@ -343,8 +348,8 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		 vnn->vnn_list->iface));
 
 	/* stop any previous arps */
-	talloc_free(ctdb->takeover_ctx);
-	ctdb->takeover_ctx = NULL;
+	talloc_free(vnn->takeover_ctx);
+	vnn->takeover_ctx = NULL;
 
 	state = talloc(ctdb, struct takeover_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
