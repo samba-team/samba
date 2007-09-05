@@ -381,8 +381,7 @@ REGFIO_OBJ = registry/regfio.o
 
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
 
-RPC_REG_OBJ =  rpc_server/srv_winreg.o rpc_server/srv_winreg_nt.o \
-	       registry/reg_frontend_legacy.o \
+RPC_REG_OBJ =  rpc_server/srv_winreg_nt.o \
 	       librpc/gen_ndr/srv_winreg.o \
 	       $(REGFIO_OBJ)
 
@@ -401,7 +400,7 @@ RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
 
 RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o
 
-RPC_DFS_OBJ =  rpc_server/srv_dfs_nt.o librpc/gen_ndr/srv_dfs.o
+RPC_DFS_OBJ =  librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
 
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 
@@ -419,8 +418,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o $(RPC_PARSE_OBJ2) \
                 rpc_parse/parse_samr.o \
                 rpc_parse/parse_ds.o rpc_parse/parse_spoolss.o \
 	        rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
-                rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o $(REGOBJS_OBJ) \
-		rpc_parse/parse_reg.o 
+                rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o $(REGOBJS_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
@@ -1402,7 +1400,7 @@ bin/librpc_NETLOGON.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NETLOG_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NETLOG_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/librpc_reg.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_REG_OBJ)
+bin/librpc_winreg.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_REG_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_REG_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`

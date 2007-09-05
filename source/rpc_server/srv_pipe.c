@@ -2363,7 +2363,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			wkssvc_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_WINREG:
-			reg_get_pipe_fns( &cmds, &n_cmds );
+			winreg_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SPOOLSS:
 			spoolss_get_pipe_fns( &cmds, &n_cmds );
