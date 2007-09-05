@@ -40,6 +40,7 @@ which causes problems on some clients.<br>
 This file should look something like :
 <pre>
   CTDB_MANAGES_NFS=yes
+  NFS_TICKLE_SHARED_DIRECTORY=/gpfs0/nfs-tickles
   LOCKD_TCPPORT=599
   LOCKD_UDPPORT=599
   STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
@@ -65,6 +66,13 @@ Don't forget to create this directory:
   mkdir /gpfs0/nfs-state
 </pre>
 
+NFS_TICKLE_SHARED_DIRECTORY is where ctdb will store information about which
+clients have established tcp connections to the cluster. This information
+is used during failover of ip addresses.
+This allows the node that takes over an ip address to very quickly 'tickle' and reset any tcp connections for the ip address it took over.<br>
+The reason to do this is to improve the speed at which a client will detect
+that the tcp connection for NFS needs to be reestablished and to speed up
+recovery in the client.<br>
 
 <h2>chkconfig</h2>
 
