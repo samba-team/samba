@@ -156,7 +156,7 @@ int smbc_open(const char *furl, int flags, mode_t mode)
 	SMBCFILE * file;
 	int fd;
 
-	file = statcont->open(statcont, furl, flags, mode);
+	file = (statcont->open)(statcont, furl, flags, mode);
 	if (!file)
 		return -1;
 

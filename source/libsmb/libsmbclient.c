@@ -5981,7 +5981,7 @@ smbc_open_print_job_ctx(SMBCCTX *context,
 
         /* What if the path is empty, or the file exists? */
 
-        return context->open(context, fname, O_WRONLY, 666);
+        return (context->open)(context, fname, O_WRONLY, 666);
 
 }
 
@@ -6022,7 +6022,7 @@ smbc_print_file_ctx(SMBCCTX *c_file,
 
         /* Try to open the file for reading ... */
 
-        if ((long)(fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
+        if ((long)(fid1 = (c_file->open)(c_file, fname, O_RDONLY, 0666)) < 0) {
                 
                 DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
                 return -1;  /* smbc_open sets errno */
