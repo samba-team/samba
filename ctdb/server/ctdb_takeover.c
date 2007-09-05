@@ -212,7 +212,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	struct ctdb_vnn *vnn;
 
 	/* update out vnn list */
-	vnn->pnn = pip->pnn;
 	vnn = find_public_ip_vnn(ctdb, ip);
 	if (vnn == NULL) {
 		DEBUG(0,("takeoverip called for an ip '%s' that is not a public address\n", ip));
