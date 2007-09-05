@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Volker Lendecke 2006
+ *  Copyright (C) Michael Adam 2007
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -119,13 +120,9 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 
 			valstr = (value->v.sz.str);
 			len = value->v.sz.len;
-			DEBUG(10, ("theval->size: %d, value->v.sz.len: %d, "
-				   "value->v.sz.str: '%s'\n",
-				   theval->size, (int)value->v.sz.len,
-				   value->v.sz.str));
 			if (valstr[len - 1] != '\0') {
 				DEBUG(10, ("string is not '\\0'-terminated. "
-				      "adding '\\0'...\n"));
+				      "adding '\\0'.\n"));
 				valstr = TALLOC_REALLOC_ARRAY(mem_ctx, valstr,
 							      char, len + 1);
 				if (valstr == NULL) {
@@ -140,7 +137,7 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 			if (!lp_canonicalize_parameter(valname, &canon_valname,
 						       &inverse))
 			{
-				DEBUG(5, ("oops: lp_canonicalize_parameter "
+				DEBUG(5, ("Error: lp_canonicalize_parameter "
 				      "failed after lp_parameter_is_valid. "
 				      "This should not happen!\n"));
 				TALLOC_FREE(mem_ctx);
@@ -159,10 +156,6 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 			value->type = REG_SZ;
 			value->v.sz.str = CONST_DISCARD(char *, canon_valstr);
 			value->v.sz.len = strlen(canon_valstr) + 1;
-
-			DEBUG(10, ("NEW: value->type: %d, value->v.sz.len: %d, "
-				   "value->v.sz.str: '%s'\n", value->type,
-				   (int)value->v.sz.len, value->v.sz.str));
 
 			err = registry_push_value(mem_ctx, value, &value_data);
 			if (!W_ERROR_IS_OK(err)) {
