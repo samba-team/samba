@@ -1192,7 +1192,7 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_NODEMAP, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
+	if (ret != 0 || res != 0 || outdata.dsize == 0) {
 		DEBUG(0,(__location__ " ctdb_control for getnodes failed\n"));
 		return -1;
 	}
