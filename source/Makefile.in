@@ -42,7 +42,6 @@ LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AWK=@AWK@
 PICFLAG=@PICFLAG@
 DYNEXP=@DYNEXP@
-PYTHON=@PYTHON@
 PERL=@PERL@
 
 PIDL_ARGS=@PIDL_ARGS@
@@ -1824,35 +1823,6 @@ installpammodules: $(PAM_MODULES)
 			"$(DESTDIR)/$(PAMMODULESDIR)"; \
 	done
 
-# Python extensions
-
-PYTHON_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
-	$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	$(SECRETS_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
-
-python_ext: $(PYTHON_OBJ)
-	@if test -z "$(PYTHON)"; then \
-		echo Use the option --with-python to configure python; \
-		exit 1; \
-	fi
-	PYTHON_OBJS="$(PYTHON_OBJ)" \
-	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-	LIBS="$(LDFLAGS) $(LIBS) $(PASSDB_LIBS) $(IDMAP_LIBS) $(KRB5LIBS) $(LDAP_LIBS)" \
-		$(PYTHON) python/setup.py build
-
-python_install: $(PYTHON_OBJ)
-	@if test -z "$(PYTHON)"; then \
-		echo Use the option --with-python to configure python; \
-		exit 1; \
-	fi
-	PYTHON_OBJS="$(PYTHON_OBJ)" \
-	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
-	LIBS="$(LDFLAGS) $(LIBS)" \
-		$(PYTHON) python/setup.py install --root=$(DESTDIR)
-
-python_clean:
-	@-if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
-
 # revert to the previously installed version
 revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS)
@@ -1935,7 +1905,7 @@ uninstallpammodules:
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean: delheaders python_clean
+clean: delheaders 
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
