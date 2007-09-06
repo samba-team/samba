@@ -41,6 +41,7 @@ case $cmd in
      takeip)
 	ip=$2
 
+	echo $ip >> /etc/ctdb/state/nfs/restart
 	echo $ip >> /etc/ctdb/state/statd/restart
 
 	# having a list of what IPs we have allows statd to do the right 
@@ -55,8 +56,8 @@ case $cmd in
 	maskbits=$3
 
 	echo $ip >> /etc/ctdb/state/nfs/restart
-
 	echo $ip >> /etc/ctdb/state/statd/restart
+
 	/bin/rm -f /etc/ctdb/state/statd/ip/$ip
 	exit 0
 	;;
@@ -72,7 +73,7 @@ case $cmd in
 			destip=`echo $dest | cut -d: -f1`
 			destport=`echo $dest | cut -d: -f2`
 			ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 
-#			ctdb killtcp $destip:$destport $srcip:$srcport >/dev/null 2>&1
+			ctdb killtcp $destip:$destport $srcip:$srcport >/dev/null 2>&1
 		done
 	} > /dev/null 2>&1
 
@@ -91,9 +92,9 @@ case $cmd in
 	} > /dev/null 2>&1
 	/bin/rm -f /etc/ctdb/state/nfs/restart
 
-	# if we have taken or released any ips we must send out
-	# statd notifications to recover lost nfs locks
-	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/state/statd/restart ] && {
+	# always restart the lockmanager so that we start with a clusterwide
+	# graceperiod when ip addresses has changed
+	[ -x /etc/ctdb/statd-callout ] && {
 		/etc/ctdb/statd-callout notify &
 	} >/dev/null 2>&1
 
