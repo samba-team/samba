@@ -44,8 +44,8 @@
 	r->out.info->field = samdb_result_uint(msg, attr, 0);
 #define QUERY_RID(msg, field, attr) \
 	r->out.info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
-#define QUERY_NTTIME(msg, field, attr) \
-	r->out.info->field = samdb_result_nttime(msg, attr, 0);
+#define QUERY_UINT64(msg, field, attr) \
+	r->out.info->field = samdb_result_uint64(msg, attr, 0);
 #define QUERY_APASSC(msg, field, attr) \
 	r->out.info->field = samdb_result_allow_password_change(sam_ctx, mem_ctx, \
 							   a_state->domain_state->domain_dn, msg, attr);
@@ -3151,9 +3151,9 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_STRING(msg, info3.logon_script,          "scriptPath");
 		QUERY_STRING(msg, info3.profile_path,          "profilePath");
 		QUERY_STRING(msg, info3.workstations,          "userWorkstations");
-		QUERY_NTTIME(msg, info3.last_logon,            "lastLogon");
-		QUERY_NTTIME(msg, info3.last_logoff,           "lastLogoff");
-		QUERY_NTTIME(msg, info3.last_password_change,  "pwdLastSet");
+		QUERY_UINT64(msg, info3.last_logon,            "lastLogon");
+		QUERY_UINT64(msg, info3.last_logoff,           "lastLogoff");
+		QUERY_UINT64(msg, info3.last_password_change,  "pwdLastSet");
 		QUERY_APASSC(msg, info3.allow_password_change, "pwdLastSet");
 		QUERY_FPASSC(msg, info3.force_password_change, "pwdLastSet");
 		QUERY_LHOURS(msg, info3.logon_hours,           "logonHours");
@@ -3177,13 +3177,13 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_STRING(msg, info5.profile_path,          "profilePath");
 		QUERY_STRING(msg, info5.description,           "description");
 		QUERY_STRING(msg, info5.workstations,          "userWorkstations");
-		QUERY_NTTIME(msg, info5.last_logon,            "lastLogon");
-		QUERY_NTTIME(msg, info5.last_logoff,           "lastLogoff");
+		QUERY_UINT64(msg, info5.last_logon,            "lastLogon");
+		QUERY_UINT64(msg, info5.last_logoff,           "lastLogoff");
 		QUERY_LHOURS(msg, info5.logon_hours,           "logonHours");
 		QUERY_UINT  (msg, info5.bad_password_count,    "badPwdCount");
 		QUERY_UINT  (msg, info5.logon_count,           "logonCount");
-		QUERY_NTTIME(msg, info5.last_password_change,  "pwdLastSet");
-		QUERY_NTTIME(msg, info5.acct_expiry,           "accountExpires");
+		QUERY_UINT64(msg, info5.last_password_change,  "pwdLastSet");
+		QUERY_UINT64(msg, info5.acct_expiry,           "accountExpires");
 		QUERY_AFLAGS(msg, info5.acct_flags,            "userAccountControl");
 		break;
 
@@ -3230,17 +3230,17 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		break;
 
 	case 17:
-		QUERY_NTTIME(msg, info17.acct_expiry,   "accountExpires");
+		QUERY_UINT64(msg, info17.acct_expiry,   "accountExpires");
 
 	case 20:
 		QUERY_STRING(msg, info20.parameters,    "userParameters");
 		break;
 
 	case 21:
-		QUERY_NTTIME(msg, info21.last_logon,           "lastLogon");
-		QUERY_NTTIME(msg, info21.last_logoff,          "lastLogoff");
-		QUERY_NTTIME(msg, info21.last_password_change, "pwdLastSet");
-		QUERY_NTTIME(msg, info21.acct_expiry,          "accountExpires");
+		QUERY_UINT64(msg, info21.last_logon,           "lastLogon");
+		QUERY_UINT64(msg, info21.last_logoff,          "lastLogoff");
+		QUERY_UINT64(msg, info21.last_password_change, "pwdLastSet");
+		QUERY_UINT64(msg, info21.acct_expiry,          "accountExpires");
 		QUERY_APASSC(msg, info21.allow_password_change,"pwdLastSet");
 		QUERY_FPASSC(msg, info21.force_password_change,"pwdLastSet");
 		QUERY_STRING(msg, info21.account_name,         "sAMAccountName");
