@@ -541,7 +541,7 @@ smbc_remove_unused_server(SMBCCTX * context,
 
 	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
 
-	context->callbacks.remove_cached_srv_fn(context, srv);
+	(context->callbacks.remove_cached_srv_fn)(context, srv);
 
         SAFE_FREE(srv);
 	
@@ -561,19 +561,19 @@ find_server(SMBCCTX *context,
         
  check_server_cache:
 
-	srv = context->callbacks.get_cached_srv_fn(context, server, share, 
-						   workgroup, username);
+	srv = (context->callbacks.get_cached_srv_fn)(context, server, share, 
+                                                     workgroup, username);
 
 	if (!auth_called && !srv && (!username[0] || !password[0])) {
                 if (context->internal->_auth_fn_with_context != NULL) {
-                         context->internal->_auth_fn_with_context(
+                        (context->internal->_auth_fn_with_context)(
                                 context,
                                 server, share,
                                 workgroup, sizeof(fstring),
                                 username, sizeof(fstring),
                                 password, sizeof(fstring));
                 } else {
-                        context->callbacks.auth_fn(
+                        (context->callbacks.auth_fn)(
                                 server, share,
                                 workgroup, sizeof(fstring),
                                 username, sizeof(fstring),
@@ -591,22 +591,22 @@ find_server(SMBCCTX *context,
 	}
 	
 	if (srv) {
-		if (context->callbacks.check_server_fn(context, srv)) {
+		if ((context->callbacks.check_server_fn)(context, srv)) {
 			/*
                          * This server is no good anymore 
                          * Try to remove it and check for more possible
                          * servers in the cache
                          */
-			if (context->callbacks.remove_unused_server_fn(context,
-                                                                       srv)) { 
+			if ((context->callbacks.remove_unused_server_fn)(context,
+                                                                         srv)) { 
                                 /*
                                  * We could not remove the server completely,
                                  * remove it from the cache so we will not get
                                  * it again. It will be removed when the last
                                  * file/dir is closed.
                                  */
-				context->callbacks.remove_cached_srv_fn(context,
-                                                                        srv);
+				(context->callbacks.remove_cached_srv_fn)(context,
+                                                                          srv);
 			}
 			
 			/*
@@ -683,14 +683,14 @@ smbc_server(SMBCCTX *context,
                 if (srv->cli->cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
                         if (context->internal->_auth_fn_with_context != NULL) {
-                                context->internal->_auth_fn_with_context(
+                                (context->internal->_auth_fn_with_context)(
                                         context,
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
                                         password, sizeof(fstring));
                         } else {
-                                context->callbacks.auth_fn(
+                                (context->callbacks.auth_fn)(
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
@@ -703,8 +703,8 @@ smbc_server(SMBCCTX *context,
                                 errno = smbc_errno(context, srv->cli);
                                 cli_shutdown(srv->cli);
 				srv->cli = NULL;
-                                context->callbacks.remove_cached_srv_fn(context,
-                                                                        srv);
+                                (context->callbacks.remove_cached_srv_fn)(context,
+                                                                          srv);
                                 srv = NULL;
                         }
 
@@ -881,7 +881,9 @@ smbc_server(SMBCCTX *context,
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
-	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
+	if ((context->callbacks.add_cached_srv_fn)(context, srv,
+                                                   server, share,
+                                                   workgroup, username)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
@@ -940,14 +942,14 @@ smbc_attr_server(SMBCCTX *context,
                 if (*password == '\0') {
                         /* ... then retrieve it now. */
                         if (context->internal->_auth_fn_with_context != NULL) {
-                                context->internal->_auth_fn_with_context(
+                                (context->internal->_auth_fn_with_context)(
                                         context,
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
                                         password, sizeof(fstring));
                         } else {
-                                context->callbacks.auth_fn(
+                                (context->callbacks.auth_fn)(
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
@@ -1019,11 +1021,11 @@ smbc_attr_server(SMBCCTX *context,
                 /* now add it to the cache (internal or external) */
 
                 errno = 0;      /* let cache function set errno if it likes */
-                if (context->callbacks.add_cached_srv_fn(context, ipc_srv,
-                                                         server,
-                                                         "*IPC$",
-                                                         workgroup,
-                                                         username)) {
+                if ((context->callbacks.add_cached_srv_fn)(context, ipc_srv,
+                                                           server,
+                                                           "*IPC$",
+                                                           workgroup,
+                                                           username)) {
                         DEBUG(3, (" Failed to add server to cache\n"));
                         if (errno == 0) {
                                 errno = ENOMEM;
@@ -1186,7 +1188,7 @@ smbc_open_ctx(SMBCCTX *context,
 		int eno = 0;
 
 		eno = smbc_errno(context, srv->cli);
-		file = context->opendir(context, fname);
+		file = (context->opendir)(context, fname);
 		if (!file) errno = eno;
 		return file;
 
@@ -1425,7 +1427,7 @@ smbc_close_ctx(SMBCCTX *context,
 	/* IS a dir ... */
 	if (!file->file) {
 		
-		return context->closedir(context, file);
+		return (context->closedir)(context, file);
 
 	}
 
@@ -1462,7 +1464,7 @@ smbc_close_ctx(SMBCCTX *context,
 		DLIST_REMOVE(context->internal->_files, file);
 		SAFE_FREE(file->fname);
 		SAFE_FREE(file);
-		context->callbacks.remove_unused_server_fn(context, srv);
+		(context->callbacks.remove_unused_server_fn)(context, srv);
 
 		return -1;
 
@@ -2175,7 +2177,7 @@ smbc_fstat_ctx(SMBCCTX *context,
 
 	if (!file->file) {
 
-		return context->fstatdir(context, file, st);
+		return (context->fstatdir)(context, file, st);
 
 	}
 
@@ -2946,20 +2948,22 @@ smbc_opendir_ctx(SMBCCTX *context,
                                  */
                                 cb = &context->callbacks;
                                 if (cli_is_error(targetcli) &&
-                                    cb->check_server_fn(context, srv)) {
+                                    (cb->check_server_fn)(context, srv)) {
 
-                                    /* ... then remove it. */
-                                    if (cb->remove_unused_server_fn(context,
-                                                                    srv)) { 
-                                        /*
-                                         * We could not remove the server
-                                         * completely, remove it from the
-                                         * cache so we will not get it
-                                         * again. It will be removed when the
-                                         * last file/dir is closed.
-                                         */
-                                        cb->remove_cached_srv_fn(context, srv);
-                                    }
+                                        /* ... then remove it. */
+                                        if ((cb->remove_unused_server_fn)(context,
+                                                                          srv)) { 
+                                                /*
+                                                 * We could not remove the
+                                                 * server completely, remove
+                                                 * it from the cache so we
+                                                 * will not get it again. It
+                                                 * will be removed when the
+                                                 * last file/dir is closed.
+                                                 */
+                                                (cb->remove_cached_srv_fn)(context,
+                                                                           srv);
+                                        }
                                 }
 
                                 errno = saved_errno;
@@ -6031,24 +6035,24 @@ smbc_print_file_ctx(SMBCCTX *c_file,
 
         /* Now, try to open the printer file for writing */
 
-        if ((long)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
+        if ((long)(fid2 = (c_print->open_print_job)(c_print, printq)) < 0) {
 
                 saverr = errno;  /* Save errno */
-                c_file->close_fn(c_file, fid1);
+                (c_file->close_fn)(c_file, fid1);
                 errno = saverr;
                 return -1;
 
         }
 
-        while ((bytes = c_file->read(c_file, fid1, buf, sizeof(buf))) > 0) {
+        while ((bytes = (c_file->read)(c_file, fid1, buf, sizeof(buf))) > 0) {
 
                 tot_bytes += bytes;
 
-                if ((c_print->write(c_print, fid2, buf, bytes)) < 0) {
+                if (((c_print->write)(c_print, fid2, buf, bytes)) < 0) {
 
                         saverr = errno;
-                        c_file->close_fn(c_file, fid1);
-                        c_print->close_fn(c_print, fid2);
+                        (c_file->close_fn)(c_file, fid1);
+                        (c_print->close_fn)(c_print, fid2);
                         errno = saverr;
 
                 }
@@ -6057,8 +6061,8 @@ smbc_print_file_ctx(SMBCCTX *c_file,
 
         saverr = errno;
 
-        c_file->close_fn(c_file, fid1);  /* We have to close these anyway */
-        c_print->close_fn(c_print, fid2);
+        (c_file->close_fn)(c_file, fid1);  /* We have to close these anyway */
+        (c_print->close_fn)(c_print, fid2);
 
         if (bytes < 0) {
 
@@ -6308,7 +6312,7 @@ smbc_free_context(SMBCCTX *context,
                 
                 f = context->internal->_files;
                 while (f) {
-                        context->close_fn(context, f);
+                        (context->close_fn)(context, f);
                         f = f->next;
                 }
                 context->internal->_files = NULL;
@@ -6324,8 +6328,8 @@ smbc_free_context(SMBCCTX *context,
                                 DEBUG(1, ("Forced shutdown: %p (fd=%d)\n",
                                           s, s->cli->fd));
                                 cli_shutdown(s->cli);
-                                context->callbacks.remove_cached_srv_fn(context,
-                                                                        s);
+                                (context->callbacks.remove_cached_srv_fn)(context,
+                                                                          s);
                                 next = s->next;
                                 DLIST_REMOVE(context->internal->_servers, s);
                                 SAFE_FREE(s);
@@ -6336,7 +6340,7 @@ smbc_free_context(SMBCCTX *context,
         }
         else {
                 /* This is the polite way */    
-                if (context->callbacks.purge_cached_fn(context)) {
+                if ((context->callbacks.purge_cached_fn)(context)) {
                         DEBUG(1, ("Could not purge all servers, "
                                   "free_context failed.\n"));
                         errno = EBUSY;
