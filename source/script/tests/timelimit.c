@@ -80,6 +80,8 @@ int main(int argc, char *argv[])
 	}
 
 	signal(SIGTERM, sig_term);
+	signal(SIGINT,  sig_term);
+	signal(SIGQUIT, sig_term);
 	signal(SIGUSR1, sig_usr1);
 	signal(SIGALRM, sig_alrm_term);
 	alarm(maxtime);
