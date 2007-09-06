@@ -353,6 +353,19 @@ static BOOL centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx, DOM_SID 
 	return True;
 }
 
+
+/*
+  pull a NTSTATUS from a cache entry
+*/
+static NTSTATUS centry_ntstatus(struct cache_entry *centry)
+{
+	NTSTATUS status;
+
+	status = NT_STATUS(centry_uint32(centry));
+	return status;
+}
+
+
 /* the server is considered down if it can't give us a sequence number */
 static BOOL wcache_server_down(struct winbindd_domain *domain)
 {
@@ -587,7 +600,7 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 		return NULL;
 	}
 	
-	centry->status = NT_STATUS(centry_uint32(centry));
+	centry->status = centry_ntstatus(centry);
 	centry->sequence_number = centry_uint32(centry);
 
 	return centry;
@@ -746,6 +759,17 @@ static void centry_put_sid(struct cache_entry *centry, const DOM_SID *sid)
 	centry_put_string(centry, sid_to_string(sid_string, sid));
 }
 
+
+/*
+  put NTSTATUS into a centry
+*/
+static void centry_put_ntstatus(struct cache_entry *centry, NTSTATUS status)
+{
+	uint32 status_value = NT_STATUS_V(status);
+	centry_put_uint32(centry, status_value);
+}
+
+
 /*
   push a NTTIME into a centry 
 */
@@ -784,7 +808,7 @@ struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status
 	centry->data = SMB_XMALLOC_ARRAY(uint8, centry->len);
 	centry->ofs = 0;
 	centry->sequence_number = domain->sequence_number;
-	centry_put_uint32(centry, NT_STATUS_V(status));
+	centry_put_ntstatus(centry, status);
 	centry_put_uint32(centry, centry->sequence_number);
 	return centry;
 }
@@ -842,18 +866,16 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	struct cache_entry *centry;
 	fstring sid_string;
 
-	if (is_null_sid(sid)) {
-		return;
-	}
-
 	centry = centry_start(domain, status);
 	if (!centry)
 		return;
+
 	if (NT_STATUS_IS_OK(status)) {
 		centry_put_uint32(centry, type);
 		centry_put_string(centry, domain_name);
 		centry_put_string(centry, name);
 	}
+
 	centry_end(centry, "SN/%s", sid_to_string(sid_string, sid));
 	DEBUG(10,("wcache_save_sid_to_name: %s -> %s (%s)\n", sid_string, 
 		  name, nt_errstr(status)));
@@ -1376,9 +1398,10 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
 	if (!centry)
 		goto do_query;
-	*type = (enum lsa_SidType)centry_uint32(centry);
+
 	status = centry->status;
 	if (NT_STATUS_IS_OK(status)) {
+		*type = (enum lsa_SidType)centry_uint32(centry);
 		centry_sid(centry, mem_ctx, sid);
 	}
 
@@ -1411,17 +1434,18 @@ do_query:
 	/* and save it */
 	refresh_sequence_number(domain, False);
 
-	if (domain->online && !is_null_sid(sid)) {
+	if (domain->online &&
+	    (NT_STATUS_IS_OK(status) || NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))) {
 		wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
-	}
 
-	/* Only save the reverse mapping if this was not a UPN */
-	if (NT_STATUS_IS_OK(status) && !strchr(name, '@')) {
-		strupper_m(CONST_DISCARD(char *,domain_name));
-		strlower_m(CONST_DISCARD(char *,name));
-		wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
+		/* Only save the reverse mapping if this was not a UPN */
+		if (!strchr(name, '@')) {
+			strupper_m(CONST_DISCARD(char *,domain_name));
+			strlower_m(CONST_DISCARD(char *,name));
+			wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
+		}
 	}
-
+	
 	return status;
 }
 
@@ -1445,12 +1469,13 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	centry = wcache_fetch(cache, domain, "SN/%s", sid_to_string(sid_string, sid));
 	if (!centry)
 		goto do_query;
-	if (NT_STATUS_IS_OK(centry->status)) {
+
+	status = centry->status;
+	if (NT_STATUS_IS_OK(status)) {
 		*type = (enum lsa_SidType)centry_uint32(centry);
 		*domain_name = centry_string(centry, mem_ctx);
 		*name = centry_string(centry, mem_ctx);
 	}
-	status = centry->status;
 
 	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status: %s\n",
 		domain->name, nt_errstr(status) ));
@@ -1547,15 +1572,23 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			char *dom;
 			have_mapped = True;
 			(*types)[i] = (enum lsa_SidType)centry_uint32(centry);
+
 			dom = centry_string(centry, mem_ctx);
 			if (*domain_name == NULL) {
 				*domain_name = dom;
 			} else {
 				talloc_free(dom);
 			}
+
 			(*names)[i] = centry_string(centry, *names);
-		} else {
+
+		} else if (NT_STATUS_EQUAL(centry->status, NT_STATUS_NONE_MAPPED)) {
 			have_unmapped = True;
+
+		} else {
+			/* something's definitely wrong */
+			result = centry->status;
+			goto error;
 		}
 
 		centry_free(centry);
@@ -1578,6 +1611,30 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 						rids, num_rids, domain_name,
 						names, types);
 
+	/*
+	  None of the queried rids has been found so save all negative entries
+	*/
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED)) {
+		for (i = 0; i < num_rids; i++) {
+			DOM_SID sid;
+			const char *name = "";
+			const enum lsa_SidType type = SID_NAME_UNKNOWN;
+			NTSTATUS status = NT_STATUS_NONE_MAPPED;
+			
+			if (!sid_compose(&sid, domain_sid, rids[i])) {
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+
+			wcache_save_sid_to_name(domain, status, &sid, *domain_name,
+						name, type);
+		}
+
+		return result;
+	}
+
+	/*
+	  Some or all of the queried rids have been found.
+	*/
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
 		return result;
@@ -1639,15 +1696,19 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	
 	if (!centry)
 		goto do_query;
-
-	info->acct_name = centry_string(centry, mem_ctx);
-	info->full_name = centry_string(centry, mem_ctx);
-	info->homedir = centry_string(centry, mem_ctx);
-	info->shell = centry_string(centry, mem_ctx);
-	info->primary_gid = centry_uint32(centry);
-	centry_sid(centry, mem_ctx, &info->user_sid);
-	centry_sid(centry, mem_ctx, &info->group_sid);
+	
+	/* if status is not ok then this is a negative hit
+	   and the rest of the data doesn't matter */
 	status = centry->status;
+	if (NT_STATUS_IS_OK(status)) {
+		info->acct_name = centry_string(centry, mem_ctx);
+		info->full_name = centry_string(centry, mem_ctx);
+		info->homedir = centry_string(centry, mem_ctx);
+		info->shell = centry_string(centry, mem_ctx);
+		info->primary_gid = centry_uint32(centry);
+		centry_sid(centry, mem_ctx, &info->user_sid);
+		centry_sid(centry, mem_ctx, &info->group_sid);
+	}
 
 	DEBUG(10,("query_user: [Cached] - cached info for domain %s status: %s\n",
 		domain->name, nt_errstr(status) ));
@@ -1752,10 +1813,12 @@ do_query:
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
+
 	centry_put_uint32(centry, *num_groups);
 	for (i=0; i<(*num_groups); i++) {
 		centry_put_sid(centry, &(*user_gids)[i]);
 	}	
+
 	centry_end(centry, "UG/%s", sid_to_string(sid_string, user_sid));
 	centry_free(centry);
 
