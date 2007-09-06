@@ -111,7 +111,10 @@ static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	*r = talloc_size(mem_ctx, ndr_table_$name.calls[opnum].struct_size);
+	*r = talloc_named(mem_ctx,
+			  ndr_table_$name.calls[opnum].struct_size,
+			  \"struct %s\",
+			  ndr_table_$name.calls[opnum].name);
 	NT_STATUS_HAVE_NO_MEMORY(*r);
 
         /* unravel the NDR for the packet */
