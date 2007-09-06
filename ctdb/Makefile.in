@@ -165,6 +165,7 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/50.samba $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/60.nfs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/61.nfstickle $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 tools/ctdb_diagnostics $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 tools/onnode.ssh $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 tools/onnode.rsh $(DESTDIR)$(bindir)
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi

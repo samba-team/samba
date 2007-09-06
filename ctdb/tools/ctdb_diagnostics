@@ -1,0 +1,174 @@
+#!/bin/sh
+# a script to test the basic setup of a CTDB/Samba install 
+# tridge@samba.org September 2007
+
+PATH="$PATH:/sbin:/usr/sbin:/usr/lpp/mmfs/bin"
+
+CONFIG_FILES="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/ctdb/public_addresses /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab"
+
+2>&1
+
+cat <<EOF
+--------------------------------------------------------------------
+ctdb_diagnostics starting. This script will gather information about
+your ctdb cluster. You should send the output of this script along
+with any ctdb or clustered Samba bug reports.
+--------------------------------------------------------------------
+EOF
+
+date
+
+error() {
+    msg="$1"
+    echo "ERROR: $msg"
+    NUM_ERRORS=`expr $NUM_ERRORS + 1`
+    echo " ERROR[$NUM_ERRORS]: $msg" >> $ERRORS
+}
+
+show_file() {
+    fname="$1"
+    echo "  ================================"
+    echo "  File: $fname"
+    echo "  `ls -l $fname`"
+    cat "$fname" | sed 's/^/  /'
+    echo "  ================================"
+}
+
+show_all() {
+    echo "running $1 on all nodes"
+    onnode all "hostname; date; $1 2>&1 | sed 's/^/  /'"
+}
+
+ERRORS="/tmp/diag_err.$$"
+NUM_NODES=`wc -l < /etc/ctdb/nodes`
+MAX_NODE=`expr $NUM_NODES - 1`
+NUM_ERRORS=0
+cat <<EOF
+Diagnosis started on a $NUM_NODES node cluster. The following node list will be used:
+EOF
+show_file /etc/ctdb/nodes
+
+
+cat <<EOF
+--------------------------------------------------------------------
+Comping critical config files on all nodes
+EOF
+
+for f in $CONFIG_FILES; do
+ [ -r "$f" ] || {
+    error "$f is missing"
+    next;
+ }
+ show_file $f
+ for i in `seq 0 $MAX_NODE`; do
+     echo "Testing for same config file $f on node $i"
+     tmpf=/tmp/`basename $f`.node$i
+     onnode $i cat $f > $tmpf
+     cmp $f $tmpf || {
+	 error "File $f is different on node $i"
+	 diff -u $f $tmpf
+     }
+     rm -f $tmpf
+ done
+done
+
+cat <<EOF
+--------------------------------------------------------------------
+Checking for clock drift
+EOF
+t=`date +%s`
+for i in `seq 0 $MAX_NODE`; do
+    t2=`onnode $i date +%s`
+    d=`expr $t2 - $t`
+    if [ $d -gt 30 -o $d -lt -30 ]; then
+	error "time on node $i differs by $d seconds"
+    fi
+done
+
+cat <<EOF
+--------------------------------------------------------------------
+Showing software versions
+EOF
+show_all "uname -a"
+[ -x /bin/rpm ] && {
+    show_all "rpm -qa | egrep 'samba|ctdb|gpfs'"
+}
+
+
+cat <<EOF
+--------------------------------------------------------------------
+Showing ctdb status and recent log entries
+EOF
+show_all "ctdb status; ctdb ip"
+show_all "ctdb statistics"
+
+echo "Showing log.ctdb"
+show_all "tail -100 /var/log/log.ctdb"
+
+echo "Showing log.ctdb"
+show_all "tail -100 /var/log/log.ctdb"
+
+
+cat <<EOF
+--------------------------------------------------------------------
+Showing filesystem and process status
+EOF
+show_all "df; df -i; mount"
+show_all uptime
+show_all "ps axfw"
+show_all "dmesg"
+show_all "/sbin/lspci"
+show_all "/sbin/ifconfig -a"
+show_all "/sbin/ip addr list"
+show_all "/sbin/route -n"
+
+[ -d /usr/lpp/mmfs ] && {
+cat <<EOF
+--------------------------------------------------------------------
+Showing GPFS status and recent log entries
+EOF
+ echo "Showing mmfs.log.latest"
+ show_all "tail -100 /var/adm/ras/mmfs.log.latest"
+ show_all "/usr/lpp/mmfs/bin/mmlsconfig"
+ show_all "/usr/lpp/mmfs/bin/mmlsfs all"
+ show_all "/usr/lpp/mmfs/bin/mmlsnsd"
+ show_all "/usr/lpp/mmfs/bin/mmfsadm dump version"
+ show_all "/usr/lpp/mmfs/bin/mmfsadm dump waiters"
+ show_all "/usr/lpp/mmfs/bin/mmlsmount all"
+ show_all "/usr/lpp/mmfs/bin/mmlsquota"
+ show_all "/usr/lpp/mmfs/bin/mmlscluster"
+ show_all "/usr/lpp/mmfs/bin/mmlsmgr"
+ fslist=`mount|grep type.gpfs|awk '{print $1}'`
+ for fs in $fslist; do
+     show_all "/usr/lpp/mmfs/bin/mmlssnapshot $fs"
+     show_all "/usr/lpp/mmfs/bin/mmlsdisk $fs"
+     show_all "/usr/lpp/mmfs/bin/mmlsfileset $fs"
+ done
+}
+
+cat <<EOF
+--------------------------------------------------------------------
+Showing Samba status
+EOF
+show_all "smbstatus -n -B"
+show_all "net ads testjoin"
+show_all "lsof -n | grep smbd"
+show_all "netstat -tan"
+show_all "net ads info"
+show_all "date"
+show_all "smbclient -U% -L 127.0.0.1"
+WORKGROUP=`testparm -s --parameter-name=WORKGROUP 2> /dev/null`
+show_all id "$WORKGROUP/Administrator"
+show_all "wbinfo -p"
+show_all "wbinfo --sequence"
+show_all "smbd -b"
+
+date
+echo "Diagnostics finished with $NUM_ERRORS errors"
+
+[ -r $ERRORS ] && {
+    cat $ERRORS
+    rm -f $ERRORS
+}
+exit $NUM_ERRORS
+

@@ -104,6 +104,7 @@ fi
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
 %{_bindir}/smnotify
+%{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode.ssh
 %{_bindir}/onnode.rsh
 %{_bindir}/onnode
