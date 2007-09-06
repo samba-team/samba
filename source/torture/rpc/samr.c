@@ -227,8 +227,8 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 #define INT_EQUAL(i1, i2, field) \
 		if (i1 != i2) { \
-			printf("Failed to set %s to 0x%x - got 0x%x (%s)\n", \
-			       #field, i2, i1, __location__); \
+			printf("Failed to set %s to 0x%llx - got 0x%llx (%s)\n", \
+			       #field, (unsigned long long)i2, (unsigned long long)i1, __location__); \
 			ret = False; \
 			break; \
 		}
@@ -373,17 +373,30 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_STRING(14, workstations, 21, workstations, "14workstation21", 0);
 	TEST_USERINFO_STRING(21, workstations, 21, workstations, "21workstation21", 
 			   SAMR_FIELD_WORKSTATIONS);
+	TEST_USERINFO_STRING(21, workstations, 3, workstations, "21workstation3", 
+			   SAMR_FIELD_WORKSTATIONS);
+	TEST_USERINFO_STRING(21, workstations, 5, workstations, "21workstation5", 
+			   SAMR_FIELD_WORKSTATIONS);
+	TEST_USERINFO_STRING(21, workstations, 14, workstations, "21workstation14", 
+			   SAMR_FIELD_WORKSTATIONS);
 
 	TEST_USERINFO_STRING(20, parameters, 21, parameters, "xx20-21 parameters", 0);
 	TEST_USERINFO_STRING(21, parameters, 21, parameters, "xx21-21 parameters", 
 			   SAMR_FIELD_PARAMETERS);
+	TEST_USERINFO_STRING(21, parameters, 20, parameters, "xx21-20 parameters", 
+			   SAMR_FIELD_PARAMETERS);
 
+	TEST_USERINFO_INT(2, country_code, 2, country_code, __LINE__, 0);
 	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__, 0);
 	TEST_USERINFO_INT(21, country_code, 21, country_code, __LINE__, 
+			  SAMR_FIELD_COUNTRY_CODE);
+	TEST_USERINFO_INT(21, country_code, 2, country_code, __LINE__, 
 			  SAMR_FIELD_COUNTRY_CODE);
 
 	TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__, 0);
 	TEST_USERINFO_INT(21, code_page, 21, code_page, __LINE__, 
+			  SAMR_FIELD_CODE_PAGE);
+	TEST_USERINFO_INT(21, code_page, 2, code_page, __LINE__, 
 			  SAMR_FIELD_CODE_PAGE);
 
 	TEST_USERINFO_INT(17, acct_expiry, 21, acct_expiry, __LINE__, 0);
@@ -3357,8 +3370,8 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 	}
 #define INT_EQUAL_QUERY(s1, s2, user)		\
 		if (s1 != s2) { \
-			printf("%s mismatch for %s: 0x%x != 0x%x (%s)\n", \
-			       #s1, user.string, (unsigned int)s1, (unsigned int)s2, __location__); \
+			printf("%s mismatch for %s: 0x%llx != 0x%llx (%s)\n", \
+			       #s1, user.string, (unsigned long long)s1, (unsigned long long)s2, __location__); \
 			ret = False; \
 		}
 
