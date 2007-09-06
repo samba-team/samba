@@ -14,16 +14,20 @@ loadconfig nfs
 
 case "$1" in
   add-client)
+	# the callout does not tell us to which ip the client connected
+	# so we must add it to all the ips that we serve
         for f in `/bin/ls /etc/ctdb/state/statd/ip/*`; do
 	    ip=`/bin/basename $f`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] || /bin/mkdir $STATD_SHARED_DIRECTORY/$ip
-	    /bin/touch $STATD_SHARED_DIRECTORY/$ip/sm/$2
+	    /bin/touch $STATD_SHARED_DIRECTORY/$ip/$2
 	done
 	;;
   del-client)
+	# the callout does not tell us to which ip the client connected
+	# so we must add it to all the ips that we serve
         for f in `/bin/ls /etc/ctdb/state/statd/ip/*`; do
 	    ip=`/bin/basename $f`
-	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/sm/$2
+	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/$2
 	done
 	;;
   notify)
@@ -31,10 +35,7 @@ case "$1" in
         for f in `/bin/ls /etc/ctdb/state/statd/ip/*`; do
 	    ip=`/bin/basename $f`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && [ -x /usr/bin/smnotify ] && {
-		/bin/rm -rf /tmp/statd/$ip
-		/bin/mkdir -p /tmp/statd/$ip
-		/bin/cp $STATD_SHARED_DIRECTORY/$ip/sm/* /tmp/statd/$ip
-		for g in `/bin/ls /tmp/statd/$ip/*`; do
+		for g in `/bin/ls $STATD_SHARED_DIRECTORY/$ip/*`; do
 			client=`/bin/basename $g`
 			# send the notifications twice so we force the other
 			# end to recognice a state change has occured and that
@@ -42,6 +43,7 @@ case "$1" in
 			#
 			/usr/bin/smnotify --client=$client --ip=$ip --server=$ip --stateval=4
 			/usr/bin/smnotify --client=$client --ip=$ip --server=$ip --stateval=5
+			/bin/rm -f $g
 		done
 	    }
 	done

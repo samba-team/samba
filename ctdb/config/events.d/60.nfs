@@ -15,8 +15,8 @@ PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 case $cmd in 
      startup)
 	/bin/mkdir -p /etc/ctdb/state/nfs
-	/bin/mkdir -p ${STATD_SHARED_DIRECTORY}/${PUBLIC_IP}
 	/bin/mkdir -p /etc/ctdb/state/statd/ip
+	/bin/mkdir -p $STATD_SHARED_DIRECTORY
 	ctdb_wait_directories "nfslock" "$STATD_SHARED_DIRECTORY"
 
 
