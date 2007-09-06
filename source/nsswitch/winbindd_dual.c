@@ -357,6 +357,22 @@ void async_domain_request(TALLOC_CTX *mem_ctx,
 	init_child_connection(domain, domain_init_recv, state);
 }
 
+static void domain_init_recv(void *private_data_data, BOOL success)
+{
+	struct domain_request_state *state =
+		talloc_get_type_abort(private_data_data, struct domain_request_state);
+
+	if (!success) {
+		DEBUG(5, ("Domain init returned an error\n"));
+		state->continuation(state->private_data_data, False);
+		return;
+	}
+
+	async_request(state->mem_ctx, &state->domain->child,
+		      state->request, state->response,
+		      state->continuation, state->private_data_data);
+}
+
 static void recvfrom_child(void *private_data_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
@@ -392,21 +408,6 @@ void sendto_domain(struct winbindd_cli_state *state,
 			     recvfrom_child, state);
 }
 
-static void domain_init_recv(void *private_data_data, BOOL success)
-{
-	struct domain_request_state *state =
-		talloc_get_type_abort(private_data_data, struct domain_request_state);
-
-	if (!success) {
-		DEBUG(5, ("Domain init returned an error\n"));
-		state->continuation(state->private_data_data, False);
-		return;
-	}
-
-	async_request(state->mem_ctx, &state->domain->child,
-		      state->request, state->response,
-		      state->continuation, state->private_data_data);
-}
 
 struct winbindd_child_dispatch_table {
 	enum winbindd_cmd cmd;
