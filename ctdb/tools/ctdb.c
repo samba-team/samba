@@ -561,31 +561,6 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 /*
-  display public ip address of this node
- */
-static int control_publicip(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	struct ctdb_all_public_ips *ips;
-	int mypnn;
-
-	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (mypnn == -1) {
-		return -1;
-	}
-
-	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, ctdb, &ips);
-	if (ret != 0) {
-		DEBUG(0, ("Unable to get public ips from node %u\n", options.pnn));
-		return ret;
-	}
-
-	printf("%-16s\n", inet_ntoa(ips->ips[mypnn].sin.sin_addr));
-
-	return 0;
-}
-
-/*
   display pid of a ctdb daemon
  */
 static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1050,7 +1025,6 @@ static const struct {
 	{ "statistics",      control_statistics,        false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,  "reset statistics"},
 	{ "ip",              control_ip,                true,  "show which public ip's that ctdb manages" },
-	{ "publicip",        control_publicip,          false, "show the default public ip address for this node" },
 	{ "process-exists",  control_process_exists,    true,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
