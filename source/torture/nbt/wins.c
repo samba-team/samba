@@ -284,10 +284,9 @@ static bool nbt_test_wins(struct torture_context *tctx)
 /*
   test WINS operations
 */
-struct torture_suite *torture_nbt_wins(void)
+struct torture_suite *torture_nbt_wins(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), 
-													   "WINS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "WINS");
 
 	torture_suite_add_simple_test(suite, "wins", nbt_test_wins);
 

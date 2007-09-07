@@ -104,10 +104,9 @@ static bool bench_namequery(struct torture_context *tctx)
 /*
   benchmark how fast a server can respond to name queries
 */
-struct torture_suite *torture_bench_nbt(void)
+struct torture_suite *torture_bench_nbt(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), 
-							   "BENCH");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "BENCH");
 	torture_suite_add_simple_test(suite, "namequery", bench_namequery);
 
 	return suite;

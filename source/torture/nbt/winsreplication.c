@@ -9669,11 +9669,10 @@ static bool torture_nbt_winsreplication_owned(struct torture_context *tctx)
 /*
   test simple WINS replication operations
 */
-struct torture_suite *torture_nbt_winsreplication(void)
+struct torture_suite *torture_nbt_winsreplication(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(),
-		"WINSREPLICATION");
+		mem_ctx, "WINSREPLICATION");
 	struct torture_tcase *tcase;
 
 	tcase = torture_suite_add_simple_test(suite, "assoc_ctx1", 

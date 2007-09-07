@@ -29,7 +29,7 @@ bool torture_nbt_get_name(struct torture_context *tctx,
 			  const char **address)
 {
 	make_nbt_name_server(name, strupper_talloc(tctx, 
-						   torture_setting_string(tctx, "host", NULL)));
+			     torture_setting_string(tctx, "host", NULL)));
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
@@ -43,18 +43,17 @@ bool torture_nbt_get_name(struct torture_context *tctx,
 NTSTATUS torture_nbt_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(),
-		"NBT");
+		talloc_autofree_context(), "NBT");
 	/* nbt tests */
-	torture_suite_add_suite(suite, torture_nbt_register());
-	torture_suite_add_suite(suite, torture_nbt_wins());
-	torture_suite_add_suite(suite, torture_nbt_dgram());
-	torture_suite_add_suite(suite, torture_nbt_winsreplication());
-	torture_suite_add_suite(suite, torture_bench_nbt());
-	torture_suite_add_suite(suite, torture_bench_wins());
+	torture_suite_add_suite(suite, torture_nbt_register(suite));
+	torture_suite_add_suite(suite, torture_nbt_wins(suite));
+	torture_suite_add_suite(suite, torture_nbt_dgram(suite));
+	torture_suite_add_suite(suite, torture_nbt_winsreplication(suite));
+	torture_suite_add_suite(suite, torture_bench_nbt(suite));
+	torture_suite_add_suite(suite, torture_bench_wins(suite));
 
 	suite->description = talloc_strdup(suite, 
-							"NetBIOS over TCP/IP and WINS tests");
+					 "NetBIOS over TCP/IP and WINS tests");
 
 	torture_register_suite(suite);
 
