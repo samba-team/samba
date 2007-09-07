@@ -52,7 +52,7 @@ struct cluster_state {
 */
 static struct server_id ctdb_id(struct cluster_ops *ops, uint32_t id)
 {
-	struct cluster_state *state = ops->private;
+	struct cluster_state *state = (struct cluster_state *)ops->private;
 	struct ctdb_context *ctdb = state->ctdb;
 	struct server_id server_id;
 	server_id.node = ctdb_get_vnn(ctdb);
@@ -100,7 +100,7 @@ static struct tdb_wrap *ctdb_tdb_tmp_open(struct cluster_ops *ops,
 */
 static void *ctdb_backend_handle(struct cluster_ops *ops)
 {
-	struct cluster_state *state = ops->private;
+	struct cluster_state *state = (struct cluster_state *)ops->private;
 	return (void *)state->ctdb;
 }
 
@@ -138,7 +138,7 @@ static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
 				  struct server_id server,
 				  cluster_message_fn_t handler)
 {
-	struct cluster_state *state = ops->private;
+	struct cluster_state *state = (struct cluster_state *)ops->private;
 	struct ctdb_handler_state *h;
 	int ret;
 
@@ -169,7 +169,7 @@ static NTSTATUS ctdb_message_init(struct cluster_ops *ops,
 static NTSTATUS ctdb_message_send(struct cluster_ops *ops,
 				  struct server_id server, DATA_BLOB *data)
 {
-	struct cluster_state *state = ops->private;
+	struct cluster_state *state = (struct cluster_state *)ops->private;
 	struct ctdb_context *ctdb = state->ctdb;
 	TDB_DATA tdata;
 	int ret;

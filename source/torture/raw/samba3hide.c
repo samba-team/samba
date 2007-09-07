@@ -125,7 +125,7 @@ static NTSTATUS smbcli_chmod(struct smbcli_tree *tree, const char *fname,
 	return smb_raw_setpathinfo(tree, &sfinfo);
 }
 
-BOOL torture_samba3_hide(struct torture_context *torture)
+bool torture_samba3_hide(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	const char *fname = "test.txt";
@@ -274,7 +274,7 @@ BOOL torture_samba3_hide(struct torture_context *torture)
  * close. smb_close should return NT_STATUS_ACCESS_DENIED.
  */
 
-BOOL torture_samba3_closeerr(struct torture_context *tctx)
+bool torture_samba3_closeerr(struct torture_context *tctx)
 {
 	struct smbcli_state *cli = NULL;
 	BOOL result = False;

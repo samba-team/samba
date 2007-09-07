@@ -600,7 +600,7 @@ BOOL asn1_read_LDAPString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s)
 		data->has_error = True;
 		return False;
 	}
-	*s = talloc_size(mem_ctx, len+1);
+	*s = talloc_array(mem_ctx, char, len+1);
 	if (! *s) {
 		data->has_error = True;
 		return False;

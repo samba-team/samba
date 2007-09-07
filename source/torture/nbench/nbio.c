@@ -386,7 +386,7 @@ static struct smbcli_state *c;
 static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, 
 			   uint16_t fnum, uint8_t level, void *private)
 {
-	struct smbcli_tree *tree = private;
+	struct smbcli_tree *tree = (struct smbcli_tree *)private;
 	return smbcli_oplock_ack(tree, fnum, OPLOCK_BREAK_TO_NONE);
 }
 

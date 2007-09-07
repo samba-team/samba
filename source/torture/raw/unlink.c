@@ -439,8 +439,7 @@ done:
 */
 struct torture_suite *torture_raw_unlink(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "UNLINK");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "UNLINK");
 
 	torture_suite_add_1smb_test(suite, "unlink", test_unlink);
 	torture_suite_add_1smb_test(suite, "delete_on_close", test_delete_on_close);

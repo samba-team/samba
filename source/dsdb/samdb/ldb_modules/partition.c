@@ -678,8 +678,10 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 static int sort_compare(void *void1,
 			void *void2, void *opaque)
 {
-	struct dsdb_control_current_partition **pp1 = void1;
-	struct dsdb_control_current_partition **pp2 = void2;
+	struct dsdb_control_current_partition **pp1 = 
+		(struct dsdb_control_current_partition **)void1;
+	struct dsdb_control_current_partition **pp2 = 
+		(struct dsdb_control_current_partition **)void2;
 	struct dsdb_control_current_partition *partition1 = talloc_get_type(*pp1,
 							    struct dsdb_control_current_partition);
 	struct dsdb_control_current_partition *partition2 = talloc_get_type(*pp2,
@@ -692,7 +694,8 @@ static const char *relative_path(struct ldb_module *module,
 				 TALLOC_CTX *mem_ctx, 
 				 const char *name) 
 {
-	const char *base_url = ldb_get_opaque(module->ldb, "ldb_url");
+	const char *base_url = 
+		(const char *)ldb_get_opaque(module->ldb, "ldb_url");
 	char *path, *p, *full_name;
 	if (name == NULL) {
 		return NULL;

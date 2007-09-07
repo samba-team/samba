@@ -244,7 +244,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	char *user, *pass;	
 	user=buf;
 	
-	pass=memchr(buf,' ',length);
+	pass = memchr(buf, ' ', length);
 	if (!pass) {
 		DEBUG(2, ("Password not found. Denying access\n"));
 		mux_printf(mux_id, "ERR\n");
@@ -367,7 +367,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	TALLOC_CTX *mem_ctx;
 
 	if (*private) {
-		state = *private;
+		state = (struct gensec_ntlm_state *)*private;
 	} else {
 		state = talloc_zero(NULL, struct gensec_ntlm_state);
 		if (!state) {

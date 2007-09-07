@@ -160,8 +160,8 @@ done:
 /* 
    basic testing of all RAW_MKDIR_* calls 
 */
-BOOL torture_raw_mkdir(struct torture_context *torture, 
-					   struct smbcli_state *cli)
+bool torture_raw_mkdir(struct torture_context *torture, 
+		       struct smbcli_state *cli)
 {
 	bool ret = true;
 

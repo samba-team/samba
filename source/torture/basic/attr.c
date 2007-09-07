@@ -86,8 +86,8 @@ static const struct trunc_open_results attr_results[] = {
 };
 
 
-BOOL torture_openattrtest(struct torture_context *tctx, 
-						  struct smbcli_state *cli1)
+bool torture_openattrtest(struct torture_context *tctx, 
+			  struct smbcli_state *cli1)
 {
 	const char *fname = "\\openattr.file";
 	int fnum1;

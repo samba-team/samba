@@ -108,7 +108,7 @@ static bool test_write(struct torture_context *tctx,
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -242,7 +242,7 @@ static bool test_writex(struct torture_context *tctx,
 		torture_comment(tctx, "dangerous not set - limiting range of test to 2^%d\n", max_bits);
 	}
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -424,7 +424,7 @@ static bool test_writeunlock(struct torture_context *tctx,
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -567,7 +567,7 @@ static bool test_writeclose(struct torture_context *tctx,
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;

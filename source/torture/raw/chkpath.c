@@ -215,7 +215,7 @@ done:
    basic testing of chkpath calls 
 */
 bool torture_raw_chkpath(struct torture_context *torture, 
-						 struct smbcli_state *cli)
+			 struct smbcli_state *cli)
 {
 	bool ret = true;
 	int fnum;

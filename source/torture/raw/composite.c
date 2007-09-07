@@ -400,7 +400,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
    basic testing of libcli composite calls
 */
 bool torture_raw_composite(struct torture_context *tctx, 
-						   struct smbcli_state *cli)
+			   struct smbcli_state *cli)
 {
 	bool ret = true;
 

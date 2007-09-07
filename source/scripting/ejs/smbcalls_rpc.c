@@ -144,7 +144,8 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 
 	credentials = mprGetProperty(this, "credentials", NULL);
 	if (credentials) {
-		creds = mprGetPtr(credentials, "creds");
+		creds = (struct cli_credentials *)
+				mprGetPtr(credentials, "creds");
 	} else {
 		creds = cmdline_credentials;
 	}
@@ -188,7 +189,7 @@ static int ejs_irpc_call(int eid, struct MprVar *io,
 	int i, count;
 	struct MprVar *results;
 
-	p = mprGetThisPtr(eid, "irpc");
+	p = (struct ejs_irpc_connection *)mprGetThisPtr(eid, "irpc");
 
 	ejs = talloc(mprMemCtx(), struct ejs_rpc);
 	if (ejs == NULL) {

@@ -67,7 +67,7 @@ static const struct resolve_method *find_method(const char *name)
 */
 static void resolve_handler(struct composite_context *creq)
 {
-	struct composite_context *c = creq->async.private_data;
+	struct composite_context *c = (struct composite_context *)creq->async.private_data;
 	struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 	const struct resolve_method *method = find_method(state->methods[0]);
 

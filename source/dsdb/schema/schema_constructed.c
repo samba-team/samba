@@ -38,10 +38,6 @@ static char *dsdb_subSchema_list_append(char *v, const char *list_name)
 		NULL
 	};
 
-	if (!attrs) {
-		return v;
-	}
-
 	v = talloc_asprintf_append(v, "%s ( ", list_name);
 	if (!v) return NULL;
 

@@ -220,7 +220,7 @@ static bool test_assoc_ctx2(struct torture_context *tctx)
 /*
   display a replication entry
 */
-static void display_entry(TALLOC_CTX *tctx, struct wrepl_name *name)
+static void display_entry(struct torture_context *tctx, struct wrepl_name *name)
 {
 	int i;
 
@@ -537,8 +537,8 @@ static const struct wrepl_ip addresses_X_3_4[] = {
 	}
 };
 
-static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *tctx,
-								 const char *address)
+static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
+		struct torture_context *tctx, const char *address)
 {
 	struct test_wrepl_conflict_conn *ctx;
 	struct wrepl_associate associate;
@@ -9450,7 +9450,8 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 {
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
-	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
+	struct test_conflict_owned_active_vs_replica_struct *rec = 
+		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private;
 
 	_NBT_ASSERT(req_packet->qdcount, 1);
 	_NBT_ASSERT(req_packet->questions[0].question_type, NBT_QTYPE_NETBIOS);
@@ -9546,7 +9547,8 @@ static void test_conflict_owned_active_vs_replica_handler_release(
 {
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
-	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
+	struct test_conflict_owned_active_vs_replica_struct *rec = 
+		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private;
 
 	_NBT_ASSERT(req_packet->qdcount, 1);
 	_NBT_ASSERT(req_packet->questions[0].question_type, NBT_QTYPE_NETBIOS);
@@ -9597,7 +9599,8 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 							  struct nbt_name_packet *req_packet, 
 							  struct socket_address *src)
 {
-	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
+	struct test_conflict_owned_active_vs_replica_struct *rec = 
+		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private;
 
 	rec->defend.ret = false;
 

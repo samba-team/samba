@@ -200,13 +200,16 @@ _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format,
 	int i;
 
 	for (i=0;i<ndr->depth;i++) {
-		ndr->private_data = talloc_asprintf_append(ndr->private_data, "    ");
+		ndr->private_data = talloc_asprintf_append(
+					(char *)ndr->private_data, "    ");
 	}
 
 	va_start(ap, format);
-	ndr->private_data = talloc_vasprintf_append(ndr->private_data, format, ap);
+	ndr->private_data = talloc_vasprintf_append((char *)ndr->private_data, 
+						    format, ap);
 	va_end(ap);
-	ndr->private_data = talloc_asprintf_append(ndr->private_data, "\n");
+	ndr->private_data = talloc_asprintf_append((char *)ndr->private_data, 
+						   "\n");
 }
 
 /*
@@ -276,7 +279,7 @@ _PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, c
 	ndr->depth = 1;
 	ndr->flags = 0;
 	fn(ndr, name, ptr);
-	ret = talloc_steal(mem_ctx, ndr->private_data);
+	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
 	talloc_free(ndr);
 	return ret;
@@ -301,7 +304,7 @@ _PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, co
 	ndr->flags = 0;
 	ndr_print_set_switch_value(ndr, ptr, level);
 	fn(ndr, name, ptr);
-	ret = talloc_steal(mem_ctx, ndr->private_data);
+	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
 	talloc_free(ndr);
 	return ret;
@@ -327,7 +330,7 @@ _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 	ndr->depth = 1;
 	ndr->flags = 0;
 	fn(ndr, name, flags, ptr);
-	ret = talloc_steal(mem_ctx, ndr->private_data);
+	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
 	talloc_free(ndr);
 	return ret;

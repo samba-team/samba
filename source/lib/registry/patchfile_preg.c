@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
+#include "lib/registry/patchfile.h"
 #include "system/filesys.h"
 #include "pstring.h"
 

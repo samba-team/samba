@@ -1410,8 +1410,8 @@ static void progress_bar(struct torture_context *tctx, uint_t i, uint_t total)
 /*
   this produces a matrix of deny mode behaviour for 1 connection
  */
-BOOL torture_denytest1(struct torture_context *tctx, 
-					   struct smbcli_state *cli1)
+bool torture_denytest1(struct torture_context *tctx, 
+		       struct smbcli_state *cli1)
 {
 	int fnum1, fnum2;
 	int i;
@@ -1500,9 +1500,9 @@ failed:
 /*
   this produces a matrix of deny mode behaviour with 2 connections
  */
-BOOL torture_denytest2(struct torture_context *tctx, 
-					   struct smbcli_state *cli1, 
-					   struct smbcli_state *cli2)
+bool torture_denytest2(struct torture_context *tctx, 
+		       struct smbcli_state *cli1, 
+		       struct smbcli_state *cli2)
 {
 	int fnum1, fnum2;
 	int i;
@@ -1588,9 +1588,9 @@ failed:
 /*
    simple test harness for playing with deny modes
  */
-BOOL torture_denytest3(struct torture_context *tctx, 
-					   struct smbcli_state *cli1,
-					   struct smbcli_state *cli2)
+bool torture_denytest3(struct torture_context *tctx, 
+		       struct smbcli_state *cli1,
+		       struct smbcli_state *cli2)
 {
 	int fnum1, fnum2;
 	const char *fname;
@@ -1889,7 +1889,8 @@ failed:
 /*
   a denytest for ntcreatex
  */
-BOOL torture_ntdenytest1(struct torture_context *tctx, struct smbcli_state *cli, int client)
+bool torture_ntdenytest1(struct torture_context *tctx, 
+			 struct smbcli_state *cli, int client)
 {
 	extern int torture_seed;
 
@@ -1903,9 +1904,9 @@ BOOL torture_ntdenytest1(struct torture_context *tctx, struct smbcli_state *cli,
 /*
   a denytest for ntcreatex
  */
-BOOL torture_ntdenytest2(struct torture_context *torture, 
-						 struct smbcli_state *cli1,
-						 struct smbcli_state *cli2)
+bool torture_ntdenytest2(struct torture_context *torture, 
+			 struct smbcli_state *cli1,
+			 struct smbcli_state *cli2)
 {
 	return torture_ntdenytest(torture, cli1, cli2, 0);
 }
@@ -1929,8 +1930,8 @@ BOOL torture_ntdenytest2(struct torture_context *torture,
 /*
   test sharing of handles with DENY_DOS on a single connection
 */
-BOOL torture_denydos_sharing(struct torture_context *tctx, 
-							 struct smbcli_state *cli)
+bool torture_denydos_sharing(struct torture_context *tctx, 
+			     struct smbcli_state *cli)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;

@@ -199,7 +199,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 				      TALLOC_CTX *out_mem_ctx, 
 				      const DATA_BLOB input, DATA_BLOB *out)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	NTSTATUS status;
 	uint32_t i;
 
@@ -229,7 +229,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
 				    DATA_BLOB *session_key)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
 	if (!gensec_ntlmssp_state->session_key.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -344,7 +344,7 @@ DATA_BLOB ntlmssp_weakend_key(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 static BOOL gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 					uint32_t feature)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	if (feature & GENSEC_FEATURE_SIGN) {
 		if (!gensec_ntlmssp_state->session_key.length) {
 			return False;

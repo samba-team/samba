@@ -139,9 +139,8 @@ WERROR local_get_predefined_key (const struct registry_context *ctx,
 		return WERR_NOT_FOUND;
 	
 	*key = reg_import_hive_key(ctx, mp->key, 
-							   mp->path.predefined_key, 
-							   mp->path.elements
-							   );
+				   mp->path.predefined_key, 
+				   mp->path.elements);
 
 	return WERR_OK;
 }

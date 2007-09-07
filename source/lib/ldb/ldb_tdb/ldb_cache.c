@@ -58,7 +58,7 @@ static const struct {
 */
 static void ltdb_attributes_unload(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	struct ldb_message *msg;
 	int i;
 
@@ -105,7 +105,7 @@ static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
 */
 static int ltdb_attributes_load(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	struct ldb_message *msg = ltdb->cache->attributes;
 	struct ldb_dn *dn;
 	int i, r;
@@ -172,7 +172,7 @@ failed:
 */
 static int ltdb_subclasses_load(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	struct ldb_message *msg = ltdb->cache->subclasses;
 	struct ldb_dn *dn;
 	int i, j, r;
@@ -208,7 +208,7 @@ failed:
 */
 static void ltdb_subclasses_unload(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	struct ldb_message *msg;
 	int i;
 
@@ -232,7 +232,7 @@ static void ltdb_subclasses_unload(struct ldb_module *module)
 */
 static int ltdb_baseinfo_init(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	struct ldb_message *msg;
 	struct ldb_message_element el;
 	struct ldb_val val;
@@ -285,7 +285,7 @@ failed:
  */
 static void ltdb_cache_free(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 
 	ltdb->sequence_number = 0;
 	talloc_free(ltdb->cache);
@@ -308,7 +308,7 @@ int ltdb_cache_reload(struct ldb_module *module)
 */
 int ltdb_cache_load(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	struct ldb_dn *baseinfo_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
@@ -417,7 +417,7 @@ failed:
 */
 int ltdb_increase_sequence_number(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
 	struct ldb_message *msg;
 	struct ldb_message_element el[2];
 	struct ldb_val val;

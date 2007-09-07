@@ -463,7 +463,7 @@ bool torture_raw_eas(struct torture_context *torture, struct smbcli_state *cli)
 /* 
    test max EA size
 */
-BOOL torture_max_eas(struct torture_context *torture)
+bool torture_max_eas(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

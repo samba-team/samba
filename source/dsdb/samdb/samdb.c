@@ -1070,7 +1070,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 	struct dom_sid *domain_sid;
 
 	/* see if we have a cached copy */
-	domain_sid = ldb_get_opaque(ldb, "cache.domain_sid");
+	domain_sid = (struct dom_sid *)ldb_get_opaque(ldb, "cache.domain_sid");
 	if (domain_sid) {
 		return domain_sid;
 	}
@@ -1137,7 +1137,7 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	struct ldb_dn *settings_dn;
 	
 	/* see if we have a cached copy */
-	settings_dn = ldb_get_opaque(ldb, "cache.settings_dn");
+	settings_dn = (struct ldb_dn *)ldb_get_opaque(ldb, "cache.settings_dn");
 	if (settings_dn) {
 		return settings_dn;
 	}
@@ -1190,7 +1190,7 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 	struct GUID *invocation_id;
 	
 	/* see if we have a cached copy */
-	invocation_id = ldb_get_opaque(ldb, "cache.invocation_id");
+	invocation_id = (struct GUID *)ldb_get_opaque(ldb, "cache.invocation_id");
 	if (invocation_id) {
 		return invocation_id;
 	}
@@ -1240,7 +1240,8 @@ bool samdb_set_ntds_invocation_id(struct ldb_context *ldb, const struct GUID *in
 	struct GUID *invocation_id_old;
 
 	/* see if we have a cached copy */
-	invocation_id_old = ldb_get_opaque(ldb, "cache.invocation_id");
+	invocation_id_old = (struct GUID *)ldb_get_opaque(ldb, 
+							 "cache.invocation_id");
 
 	tmp_ctx = talloc_new(ldb);
 	if (tmp_ctx == NULL) {
@@ -1283,7 +1284,7 @@ const struct GUID *samdb_ntds_objectGUID(struct ldb_context *ldb)
 	struct GUID *ntds_guid;
 	
 	/* see if we have a cached copy */
-	ntds_guid = ldb_get_opaque(ldb, "cache.ntds_guid");
+	ntds_guid = (struct GUID *)ldb_get_opaque(ldb, "cache.ntds_guid");
 	if (ntds_guid) {
 		return ntds_guid;
 	}
@@ -1333,7 +1334,7 @@ bool samdb_set_ntds_objectGUID(struct ldb_context *ldb, const struct GUID *ntds_
 	struct GUID *ntds_guid_old;
 	
 	/* see if we have a cached copy */
-	ntds_guid_old = ldb_get_opaque(ldb, "cache.ntds_guid");
+	ntds_guid_old = (struct GUID *)ldb_get_opaque(ldb, "cache.ntds_guid");
 
 	tmp_ctx = talloc_new(ldb);
 	if (tmp_ctx == NULL) {

@@ -693,7 +693,7 @@ static int nsuniqueid_init(struct ldb_module *module)
 static int get_seq(struct ldb_context *ldb, void *context, 
 		   struct ldb_reply *ares) 
 {
-	unsigned long long *max_seq = context;
+	unsigned long long *max_seq = (unsigned long long *)context;
 	unsigned long long seq;
 	if (ares->type == LDB_REPLY_ENTRY) {
 		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "contextCSN");

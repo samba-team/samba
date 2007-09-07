@@ -42,7 +42,7 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 {
 	NTSTATUS status;
 	struct nbt_netlogon_packet netlogon;
-	int *replies = dgmslot->private;
+	int *replies = (int *)dgmslot->private;
 
 	printf("netlogon reply from %s:%d\n", src->addr, src->port);
 
@@ -227,7 +227,7 @@ static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 {
 	NTSTATUS status;
 	struct nbt_ntlogon_packet ntlogon;
-	int *replies = dgmslot->private;
+	int *replies = (int *)dgmslot->private;
 
 	printf("ntlogon reply from %s:%d\n", src->addr, src->port);
 
