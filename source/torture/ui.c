@@ -251,6 +251,7 @@ static bool internal_torture_run_test(struct torture_context *context,
 	    context->last_result = TORTURE_SKIP;
 	    context->last_reason = talloc_asprintf(context, 
 	    	"disabled %s - enable dangerous tests to use", test->name);
+	    success = true;
 	} else {
 	    success = test->run(context, tcase, test);
 
