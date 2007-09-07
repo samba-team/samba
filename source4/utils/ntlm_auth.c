@@ -120,7 +120,7 @@ static void mux_printf(unsigned int mux_id, const char *format, ...)
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static BOOL parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
+static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
 					fstring user)
 {
 
@@ -322,6 +322,24 @@ static const char *get_password(struct cli_credentials *credentials)
 
 	manage_squid_request(NUM_HELPER_MODES /* bogus */, manage_gensec_get_pw_request, (void **)&password);
 	return password;
+}
+
+/**
+ Check if a string is part of a list.
+**/
+static bool in_list(const char *s, const char *list, bool casesensitive)
+{
+	pstring tok;
+	const char *p=list;
+
+	if (!list)
+		return false;
+
+	while (next_token(&p, tok, LIST_SEP, sizeof(tok))) {
+		if ((casesensitive?strcmp:strcasecmp_m)(tok,s) == 0)
+			return true;
+	}
+	return false;
 }
 
 static void gensec_want_feature_list(struct gensec_security *state, char* feature_list)

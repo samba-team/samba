@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "libcli/raw/smb.h"
-#include "pstring.h"
 #include "system/locale.h"
 
 /**
@@ -237,7 +236,7 @@ _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_he
 	int i;
 	char *hex_buffer;
 
-	*out_hex_buffer = smb_xmalloc((len*2)+1);
+	*out_hex_buffer = malloc_array_p(char, (len*2)+1);
 	hex_buffer = *out_hex_buffer;
 
 	for (i = 0; i < len; i++)
@@ -457,7 +456,7 @@ _PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 	if (!s || !*s) {
 		return talloc_strdup(mem_ctx, "");
 	}
-	ret = talloc_size(mem_ctx, strlen(s)+2);
+	ret = talloc_array(mem_ctx, char, strlen(s)+2);
 	if (!ret) {
 		return ret;
 	}
@@ -566,7 +565,7 @@ _PUBLIC_ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 	};
 	char *ret;
 
-	ret = talloc_size(mem_ctx, ARRAY_SIZE(attr_strs)+1);
+	ret = talloc_array(mem_ctx, char, ARRAY_SIZE(attr_strs)+1);
 	if (!ret) {
 		return NULL;
 	}
