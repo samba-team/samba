@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "pstring.h"
 #include "system/locale.h"
 
 /**

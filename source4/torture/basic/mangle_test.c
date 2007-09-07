@@ -25,7 +25,6 @@
 #include "lib/util/util_tdb.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
-#include "pstring.h"
 
 static TDB_CONTEXT *tdb;
 
@@ -33,11 +32,12 @@ static TDB_CONTEXT *tdb;
 
 static uint_t total, collisions, failures;
 
-static BOOL test_one(struct smbcli_state *cli, const char *name)
+static bool test_one(struct torture_context *tctx ,struct smbcli_state *cli, 
+		     const char *name)
 {
 	int fnum;
 	const char *shortname;
-	fstring name2;
+	const char *name2;
 	NTSTATUS status;
 	TDB_DATA data;
 
@@ -46,12 +46,12 @@ static BOOL test_one(struct smbcli_state *cli, const char *name)
 	fnum = smbcli_open(cli->tree, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
 		printf("open of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
 		printf("close of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	/* get the short name */
@@ -61,7 +61,7 @@ static BOOL test_one(struct smbcli_state *cli, const char *name)
 		return False;
 	}
 
-	snprintf(name2, sizeof(name2), "\\mangle_test\\%s", shortname);
+	name2 = talloc_asprintf(tctx, "\\mangle_test\\%s", shortname);
 	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, name2))) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
 		       name2, name, smbcli_errstr(cli->tree));
@@ -112,18 +112,21 @@ static BOOL test_one(struct smbcli_state *cli, const char *name)
 }
 
 
-static void gen_name(char *name)
+static char *gen_name(TALLOC_CTX *mem_ctx)
 {
 	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~...";
 	uint_t max_idx = strlen(chars);
 	uint_t len;
 	int i;
 	char *p;
+	char *name;
 
-	fstrcpy(name, "\\mangle_test\\");
-	p = name + strlen(name);
+	name = talloc_strdup(mem_ctx, "\\mangle_test\\");
 
 	len = 1 + random() % NAME_LENGTH;
+
+	name = talloc_realloc(mem_ctx, name, char, strlen(name) + len + 6);
+	p = name + strlen(name);
 	
 	for (i=0;i<len;i++) {
 		p[i] = chars[random() % max_idx];
@@ -152,6 +155,8 @@ static void gen_name(char *name)
 			s[4] = 0;
 		}
 	}
+
+	return name;
 }
 
 
@@ -173,13 +178,11 @@ bool torture_mangle(struct torture_context *torture,
 	}
 
 	for (i=0;i<torture_numops;i++) {
-		fstring name;
+		char *name;
 
-		ZERO_STRUCT(name);
+		name = gen_name(torture);
 
-		gen_name(name);
-
-		if (!test_one(cli, name)) {
+		if (!test_one(torture, cli, name)) {
 			break;
 		}
 		if (total && total % 100 == 0) {
