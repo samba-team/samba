@@ -645,7 +645,7 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 	}
 
 	for (i=0;i<el->num_values;i++) {
-		if (strcasecmp(value, (char *)el->values[i].data) == 0) {
+		if (ldb_attr_cmp(value, (char *)el->values[i].data) == 0) {
 			return el;
 		}
 	}
