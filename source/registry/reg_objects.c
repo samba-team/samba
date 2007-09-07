@@ -329,27 +329,12 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 
 	/* allocate a new value and store the pointer in the arrya */
 		
-	ctr->values[ctr->num_values] = TALLOC_P( ctr, REGISTRY_VALUE);
-	if (!ctr->values[ctr->num_values]) {
+	ctr->values[ctr->num_values] = regval_compose(ctr, name, type, data_p,
+						      size);
+	if (ctr->values[ctr->num_values] == NULL) {
 		ctr->num_values = 0;
 		return 0;
 	}
-
-	/* init the value */
-	
-	fstrcpy( ctr->values[ctr->num_values]->valuename, name );
-	ctr->values[ctr->num_values]->type = type;
-	if (size) {
-		ctr->values[ctr->num_values]->data_p = (uint8 *)TALLOC_MEMDUP(
-			ctr, data_p, size );
-		if (!ctr->values[ctr->num_values]->data_p) {
-			ctr->num_values = 0;
-			return 0;
-		}
-	} else {
-		ctr->values[ctr->num_values]->data_p = NULL;
-	}
-	ctr->values[ctr->num_values]->size = size;
 	ctr->num_values++;
 
 	return ctr->num_values;
