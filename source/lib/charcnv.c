@@ -804,6 +804,71 @@ char *strdup_upper(const char *s)
 	return SMB_STRDUP(out_buffer);
 }
 
+/**
+ talloc_strdup() a unix string to upper case.
+**/
+
+char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
+{
+	char *out_buffer = talloc_strdup(ctx,s);
+	const unsigned char *p = (const unsigned char *)s;
+	unsigned char *q = (unsigned char *)out_buffer;
+
+	if (!q) {
+		return NULL;
+	}
+
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	while (1) {
+		if (*p & 0x80)
+			break;
+		*q++ = toupper_ascii(*p);
+		if (!*p)
+			break;
+		p++;
+	}
+
+	if (*p) {
+		/* MB case. */
+		size_t size;
+		smb_ucs2_t *ubuf = NULL;
+
+		/* We're not using the ascii buffer above. */
+		TALLOC_FREE(out_buffer);
+
+		size = convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE,
+				s, strlen(s),
+				(void *)&ubuf,
+				True);
+		if (size == (size_t)-1) {
+			return NULL;
+		}
+
+		strupper_w(ubuf);
+
+		size = convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX,
+				ubuf, size,
+				(void *)&out_buffer,
+				True);
+
+		/* Don't need the intermediate buffer
+ 		 * anymore.
+ 		 */
+
+		TALLOC_FREE(ubuf);
+
+		if (size == (size_t)-1) {
+			return NULL;
+		}
+	}
+
+	return out_buffer;
+}
+
 size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;

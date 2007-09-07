@@ -380,12 +380,11 @@ static void dptr_close_oldest(BOOL old)
  wcard must not be zero.
 ****************************************************************************/
 
-NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
+NTSTATUS dptr_create(connection_struct *conn, const char *path, BOOL old_handle, BOOL expect_close,uint16 spid,
 		const char *wcard, BOOL wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
-        const char *dir2;
 	NTSTATUS status;
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
@@ -399,17 +398,12 @@ NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOO
 		return status;
 	}
 
-	/* use a const pointer from here on */
-	dir2 = path;
-	if (!*dir2)
-		dir2 = ".";
-
-	dir_hnd = OpenDir(conn, dir2, wcard, attr);
+	dir_hnd = OpenDir(conn, path, wcard, attr);
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
 	}
 
-	string_set(&conn->dirpath,dir2);
+	string_set(&conn->dirpath,path);
 
 	if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
 		dptr_idleoldest();
@@ -488,7 +482,7 @@ NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOO
 
 	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
 
-	string_set(&dptr->path,dir2);
+	string_set(&dptr->path,path);
 	dptr->conn = conn;
 	dptr->dir_hnd = dir_hnd;
 	dptr->spid = spid;
@@ -758,10 +752,15 @@ BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 	return True;
 }
 
-static BOOL mangle_mask_match(connection_struct *conn, fstring filename, char *mask)
+static BOOL mangle_mask_match(connection_struct *conn, const char *filename,
+		char *mask)
 {
-	mangle_map(filename,True,False,conn->params);
-	return mask_match_search(filename,mask,False);
+	char mname[13];
+
+	if (!name_to_8_3(filename,mname,False,conn->params)) {
+		return False;
+	}
+	return mask_match_search(mname,mask,False);
 }
 
 /****************************************************************************
@@ -806,9 +805,14 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 
-			if (!mangle_is_8_3(filename, False, conn->params))
-				mangle_map(filename,True,False,
-					   conn->params);
+			if (!mangle_is_8_3(filename, False, conn->params)) {
+				char mname[13];
+				if (!name_to_8_3(filename,mname,False,
+					   conn->params)) {
+					continue;
+				}
+				pstrcpy(filename,mname);
+			}
 
 			pstrcpy(fname,filename);
 			*path = 0;

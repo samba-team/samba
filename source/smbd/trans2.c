@@ -783,7 +783,8 @@ static void call_trans2open(connection_struct *conn,
 	int open_ofun;
 	uint32 open_size;
 	char *pname;
-	pstring fname;
+	pstring fname_in;
+	char *fname = NULL;
 	SMB_OFF_T size=0;
 	int fattr=0,mtime=0;
 	SMB_INO_T inode = 0;
@@ -829,8 +830,8 @@ static void call_trans2open(connection_struct *conn,
 		return;
 	}
 
-	srvstr_get_path(params, req->flags2, fname, pname,
-			sizeof(fname), total_params - 28, STR_TERMINATE,
+	srvstr_get_path(params, req->flags2, fname_in, pname,
+			sizeof(fname_in), total_params - 28, STR_TERMINATE,
 			&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -843,7 +844,7 @@ static void call_trans2open(connection_struct *conn,
 
 	/* XXXX we need to handle passed times, sattr and flags */
 
-	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
@@ -1163,6 +1164,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 	uint32 nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 	BOOL check_mangled_names = lp_manglednames(conn->params);
+	char mangled_name[13]; /* mangled 8.3 name. */
 
 	*fname = 0;
 	*out_of_space = False;
@@ -1215,10 +1217,15 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 		 * pathreal which is composed from dname.
 		 */
 
-		pstrcpy(fname,dname);      
+		pstrcpy(fname,dname);
 
-		/* This will mangle fname if it's an illegal name. */
-		mangle_map(fname,False,True,conn->params);
+		/* Mangle fname if it's an illegal name. */
+		if (mangle_must_mangle(fname,conn->params)) {
+			if (!name_to_8_3(fname,mangled_name,True,conn->params)) {
+				continue; /* Error - couldn't mangle. */
+			}
+			pstrcpy(fname,mangled_name);
+		}
 
 		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask))) {
 			got_match = mask_match(fname, mask, conn->case_sensitive);
@@ -1226,19 +1233,17 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 
 		if(!got_match && check_mangled_names &&
 		   !mangle_is_8_3(fname, False, conn->params)) {
-			pstring mangled_name;
-
 			/*
 			 * It turns out that NT matches wildcards against
 			 * both long *and* short names. This may explain some
 			 * of the wildcard wierdness from old DOS clients
 			 * that some people have been seeing.... JRA.
 			 */
-
-			pstrcpy(mangled_name, fname);
-
 			/* Force the mangling into 8.3. */
-			mangle_map( mangled_name, True, False, conn->params);
+			if (!name_to_8_3( fname, mangled_name, False, conn->params)) {
+				continue; /* Error - couldn't mangle. */
+			}
+
 			if(!(got_match = *got_exact_match = exact_match(conn, mangled_name, mask))) {
 				got_match = mask_match(mangled_name, mask, conn->case_sensitive);
 			}
@@ -1483,10 +1488,11 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 			 * a Win2k client bug. JRA.
 			 */
 			if (!was_8_3 && check_mangled_names) {
-				pstring mangled_name;
-				pstrcpy(mangled_name, fname);
-				mangle_map(mangled_name,True,True,
-					   conn->params);
+				if (!name_to_8_3(fname,mangled_name,True,
+						   conn->params)) {
+					/* Error - mangle failed ! */
+					memset(mangled_name,'\0',12);
+				}
 				mangled_name[12] = 0;
 				len = srvstr_push(base_data, flags2,
 						  p+2, mangled_name, 24,
@@ -1638,10 +1644,11 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 			 * a Win2k client bug. JRA.
 			 */
 			if (!was_8_3 && check_mangled_names) {
-				pstring mangled_name;
-				pstrcpy(mangled_name, fname);
-				mangle_map(mangled_name,True,True,
-					   conn->params);
+				if (!name_to_8_3(fname,mangled_name,True,
+						conn->params)) {
+					/* Error - mangle failed ! */
+					memset(mangled_name,'\0',12);
+				}
 				mangled_name[12] = 0;
 				len = srvstr_push(base_data, flags2,
 						  p+2, mangled_name, 24,
@@ -1754,7 +1761,8 @@ static void call_trans2findfirst(connection_struct *conn,
 	BOOL close_if_end;
 	BOOL requires_resume_key;
 	int info_level;
-	pstring directory;
+	pstring directory_in;
+	char *directory = NULL;
 	pstring mask;
 	char *p;
 	int last_entry_off=0;
@@ -1784,7 +1792,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	requires_resume_key = (findfirst_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
 	info_level = SVAL(params,6);
 
-	*directory = *mask = 0;
+	*directory_in = *mask = 0;
 
 	DEBUG(3,("call_trans2findfirst: dirtype = %x, maxentries = %d, close_after_first=%d, \
 close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
@@ -1819,15 +1827,15 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return;
 	}
 
-	srvstr_get_path_wcard(params, req->flags2, directory,
-			      params+12, sizeof(directory), total_params - 12,
+	srvstr_get_path_wcard(params, req->flags2, directory_in,
+			      params+12, sizeof(directory_in), total_params - 12,
 			      STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		return;
 	}
 
-	ntstatus = resolve_dfspath_wcard(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, directory, &mask_contains_wcard);
+	ntstatus = resolve_dfspath_wcard(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, directory_in, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -1838,11 +1846,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return;
 	}
 
-	ntstatus = unix_convert(conn, directory, True, NULL, &sbuf);
+	ntstatus = unix_convert(conn, directory_in, True, &directory, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		return;
 	}
+
 	ntstatus = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
@@ -1858,7 +1867,11 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		} else {
 			pstrcpy(mask,directory);
 		}
-		pstrcpy(directory,"./");
+		directory = talloc_strdup(talloc_tos(), "./");
+		if (!directory) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 	} else {
 		pstrcpy(mask,p+1);
 		*p = 0;
@@ -2030,14 +2043,18 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	send_trans2_replies(req, params, 10, pdata, PTR_DIFF(p,pdata),
 			    max_data_bytes);
 
-	if ((! *directory) && dptr_path(dptr_num))
-		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
+	if ((! *directory) && dptr_path(dptr_num)) {
+		directory = talloc_strdup(talloc_tos(),dptr_path(dptr_num));
+		if (!directory) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+		}
+	}
 
 	DEBUG( 4, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
 		smb_fn_name(CVAL(req->inbuf,smb_com)),
 		mask, directory, dirtype, numentries ) );
 
-	/* 
+	/*
 	 * Force a name mangle here to ensure that the
 	 * mask as an 8.3 name is top of the mangled cache.
 	 * The reasons for this are subtle. Don't remove
@@ -2045,8 +2062,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 * (see PR#13758). JRA.
 	 */
 
-	if(!mangle_is_8_3_wildcards( mask, False, conn->params))
-		mangle_map(mask, True, True, conn->params);
+	if(!mangle_is_8_3_wildcards( mask, False, conn->params)) {
+		char mangled_name[13];
+		name_to_8_3(mask, mangled_name, True, conn->params);
+	}
 
 	return;
 }
@@ -2270,14 +2289,20 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		long current_pos = 0;
 		/*
-		 * Remember, mangle_map is called by
+		 * Remember, name_to_8_3 is called by
 		 * get_lanman2_dir_entry(), so the resume name
 		 * could be mangled. Ensure we check the unmangled name.
 		 */
 
 		if (mangle_is_mangled(resume_name, conn->params)) {
-			mangle_check_cache(resume_name, sizeof(resume_name)-1,
-					   conn->params);
+			char *new_resume_name = NULL;
+			mangle_lookup_name_from_8_3(talloc_tos(),
+						resume_name,
+						&new_resume_name,
+						conn->params);
+			if (new_resume_name) {
+				pstrcpy(resume_name, new_resume_name);
+			}
 		}
 
 		/*
@@ -3483,7 +3508,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	unsigned int data_size = 0;
 	unsigned int param_size = 2;
 	SMB_STRUCT_STAT sbuf;
-	pstring fname, dos_fname;
+	pstring dos_fname;
+	char *fname = NULL;
 	char *fullpathname;
 	char *base_name;
 	char *p;
@@ -3530,23 +3556,31 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		if(fsp && (fsp->fake_file_handle)) {
+		/* Initial check for valid fsp ptr. */
+		if (!check_fsp_open(conn, req, fsp, &current_user)) {
+			return;
+		}
+
+		fname = talloc_strdup(talloc_tos(),fsp->fsp_name);
+		if (!fname) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
+		if(fsp->fake_file_handle) {
 			/*
 			 * This is actually for the QUOTA_FAKE_FILE --metze
 			 */
-						
-			pstrcpy(fname, fsp->fsp_name);
+
 			/* We know this name is ok, it's already passed the checks. */
-			
+
 		} else if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
 			 * to do this call. JRA.
 			 */
-			/* We know this name is ok, it's already passed the checks. */
-			pstrcpy(fname, fsp->fsp_name);
-		  
+
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
@@ -3570,7 +3604,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			pstrcpy(fname, fsp->fsp_name);
 			if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
 				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadfid);
@@ -3581,7 +3614,9 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			delete_pending = get_delete_on_close_flag(fileid);
 			access_mask = fsp->access_mask;
 		}
+
 	} else {
+		pstring fname_in;
 		NTSTATUS status = NT_STATUS_OK;
 
 		/* qpathinfo */
@@ -3599,8 +3634,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		srvstr_get_path(params, req->flags2, fname, &params[6],
-				sizeof(fname), total_params - 6,
+		srvstr_get_path(params, req->flags2, fname_in, &params[6],
+				sizeof(fname_in), total_params - 6,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
@@ -3609,7 +3644,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 		status = resolve_dfspath(conn,
 					 req->flags2 & FLAGS2_DFS_PATHNAMES,
-					 fname);
+					 fname_in);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
@@ -3620,7 +3655,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(conn, fname, False, NULL, &sbuf);
+		status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -3962,16 +3997,16 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		case SMB_QUERY_FILE_ALT_NAME_INFO:
 		case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 		{
-			pstring short_name;
-
+			char mangled_name[13];
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALTERNATE_NAME_INFORMATION\n"));
-			pstrcpy(short_name,base_name);
-			/* Mangle if not already 8.3 */
-			if(!mangle_is_8_3(short_name, True, conn->params)) {
-				mangle_map(short_name,True,True,conn->params);
+			if (!name_to_8_3(base_name,mangled_name,
+						True,conn->params)) {
+				reply_nterror(
+					req,
+					NT_STATUS_NO_MEMORY);
 			}
 			len = srvstr_push(dstart, req->flags2,
-					  pdata+4, short_name,
+					  pdata+4, mangled_name,
 					  PTR_DIFF(dend, pdata+4),
 					  STR_UNICODE);
 			data_size = 4 + len;
@@ -4395,17 +4430,22 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
  code.
 ****************************************************************************/
 
-NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring newname)
+NTSTATUS hardlink_internals(connection_struct *conn,
+		char *oldname_in,
+		char *newname_in)
 {
 	SMB_STRUCT_STAT sbuf1, sbuf2;
-	pstring last_component_oldname;
-	pstring last_component_newname;
+	char *last_component_oldname = NULL;
+	char *last_component_newname = NULL;
+	char *oldname = NULL;
+	char *newname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	status = unix_convert(conn, oldname, False, last_component_oldname, &sbuf1);
+	status = unix_convert(conn, oldname_in, False, &oldname,
+			&last_component_oldname, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4420,7 +4460,8 @@ NTSTATUS hardlink_internals(connection_struct *conn, pstring oldname, pstring ne
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = unix_convert(conn, newname, False, last_component_newname, &sbuf2);
+	status = unix_convert(conn, newname_in, False, &newname,
+			&last_component_newname, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4882,13 +4923,15 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 
 static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					    struct smb_request *req,
-					    const char *pdata, int total_data,
-					    files_struct *fsp, pstring fname)
+					    const char *pdata,
+					    int total_data,
+					    files_struct *fsp,
+					    const char *fname)
 {
 	BOOL overwrite;
 	uint32 root_fid;
 	uint32 len;
-	pstring newname;
+	pstring newname_in;
 	pstring base_name;
 	BOOL dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
@@ -4906,8 +4949,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path_wcard(pdata, req->flags2, newname, &pdata[12],
-			      sizeof(newname), len, 0, &status,
+	srvstr_get_path_wcard(pdata, req->flags2, newname_in, &pdata[12],
+			      sizeof(newname_in), len, 0, &status,
 			      &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4915,13 +4958,13 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 
 	status = resolve_dfspath_wcard(conn,
 				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       newname, &dest_has_wcard);
+				       newname_in, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* Check the new name has no '/' characters. */
-	if (strchr_m(newname, '/')) {
+	if (strchr_m(newname_in, '/')) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -4934,16 +4977,19 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		pstrcpy(base_name, "./");
 	}
 	/* Append the new name. */
-	pstrcat(base_name, newname);
+	pstrcat(base_name, newname_in);
 
 	if (fsp) {
 		SMB_STRUCT_STAT sbuf;
-		pstring newname_last_component;
+		char *newname = NULL;
+		char *newname_last_component = NULL;
 
 		ZERO_STRUCT(sbuf);
 
-		status = unix_convert(conn, newname, False,
-				      newname_last_component, &sbuf);
+		status = unix_convert(conn, newname_in, False,
+					&newname,
+					&newname_last_component,
+					&sbuf);
 
 		/* If an error we expect this to be
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
@@ -4961,7 +5007,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					      overwrite);
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
-			fname, newname ));
+			fname, base_name ));
 		status = rename_internals(conn, req, fname, base_name, 0,
 					  overwrite, False, dest_has_wcard);
 	}
@@ -6121,7 +6167,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	char *pdata = *ppdata;
 	uint16 info_level;
 	SMB_STRUCT_STAT sbuf;
-	pstring fname;
+	char *fname = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
@@ -6140,15 +6186,24 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		fsp = file_fsp(SVAL(params,0));
-		info_level = SVAL(params,2);    
+		/* Basic check for non-null fsp. */
+	        if (!check_fsp_open(conn, req, fsp, &current_user)) {
+			return;
+		}
+		info_level = SVAL(params,2);
 
-		if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
+		fname = talloc_strdup(talloc_tos(),fsp->fsp_name);
+		if (!fname) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+
+		if(fsp->is_directory || fsp->fh->fd == -1) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
 			 * to do this call. JRA.
 			 */
-			pstrcpy(fname, fsp->fsp_name);
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
@@ -6163,7 +6218,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 					return;
 				}
 			}
-		} else if (fsp && fsp->print_file) {
+		} else if (fsp->print_file) {
 			/*
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
@@ -6171,26 +6226,23 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				fsp->fh->private_options |= FILE_DELETE_ON_CLOSE;
 
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
-	
+
 				SSVAL(params,0,0);
 				send_trans2_replies(req, params, 2,
 						    *ppdata, 0,
 						    max_data_bytes);
 				return;
-			}
-			else {
+			} else {
 				reply_unixerror(req, ERRDOS, ERRbadpath);
 				return;
 			}
-	    } else {
+		} else {
 			/*
 			 * Original code - this is an open file.
 			 */
 		        if (!check_fsp(conn, req, fsp, &current_user)) {
 				return;
 			}
-
-			pstrcpy(fname, fsp->fsp_name);
 
 			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
@@ -6199,15 +6251,17 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			}
 		}
 	} else {
+		pstring fname_in;
+
 		/* set path info */
 		if (total_params < 7) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
-		info_level = SVAL(params,0);    
-		srvstr_get_path(params, req->flags2, fname, &params[6],
-				sizeof(fname), total_params - 6, STR_TERMINATE,
+		info_level = SVAL(params,0);
+		srvstr_get_path(params, req->flags2, fname_in, &params[6],
+				sizeof(fname_in), total_params - 6, STR_TERMINATE,
 				&status);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
@@ -6216,7 +6270,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 
 		status = resolve_dfspath(conn,
 					 req->flags2 & FLAGS2_DFS_PATHNAMES,
-					 fname);
+					 fname_in);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
@@ -6228,7 +6282,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(conn, fname, False, NULL, &sbuf);
+		status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -6550,7 +6604,8 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	pstring directory;
+	pstring directory_in;
+	char *directory = NULL;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
@@ -6565,17 +6620,17 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 		return;
 	}
 
-	srvstr_get_path(params, req->flags2, directory, &params[4],
-			sizeof(directory), total_params - 4, STR_TERMINATE,
+	srvstr_get_path(params, req->flags2, directory_in, &params[4],
+			sizeof(directory_in), total_params - 4, STR_TERMINATE,
 			&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
 	}
 
-	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
+	DEBUG(3,("call_trans2mkdir : name = %s\n", directory_in));
 
-	status = unix_convert(conn, directory, False, NULL, &sbuf);
+	status = unix_convert(conn, directory_in, False, &directory, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;

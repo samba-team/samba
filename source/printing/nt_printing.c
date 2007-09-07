@@ -659,13 +659,18 @@ BOOL nt_printing_init(struct messaging_context *msg_ctx)
  Function to allow filename parsing "the old way".
 ********************************************************************/
 
-static void driver_unix_convert(char *name,connection_struct *conn,
-		char *saved_last_component, SMB_STRUCT_STAT *pst)
+static void driver_unix_convert(connection_struct *conn,
+		pstring name,
+		SMB_STRUCT_STAT *pst)
 {
+	char *new_name = NULL;
 	unix_format(name);
 	unix_clean_name(name);
 	trim_string(name,"/","/");
-	unix_convert(conn, name, False, saved_last_component, pst);
+	unix_convert(conn, name, False, &new_name, NULL, pst);
+	if (new_name) {
+		pstrcpy(name, new_name);
+	}
 }
 
 /*******************************************************************
@@ -1288,7 +1293,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	/* Get file version info (if available) for previous file (if it exists) */
 	pstrcpy(filepath, old_file);
 
-	driver_unix_convert(filepath,conn,NULL,&stat_buf);
+	driver_unix_convert(conn,filepath,&stat_buf);
 
 	status = open_file_ntcreate(conn, NULL, filepath, &stat_buf,
 				FILE_GENERIC_READ,
@@ -1324,7 +1329,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	/* Get file version info (if available) for new file */
 	pstrcpy(filepath, new_file);
-	driver_unix_convert(filepath,conn,NULL,&stat_buf);
+	driver_unix_convert(conn,filepath,&stat_buf);
 
 	status = open_file_ntcreate(conn, NULL, filepath, &stat_buf,
 				FILE_GENERIC_READ,
@@ -1452,7 +1457,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	 * deriver the cversion. */
 	slprintf(driverpath, sizeof(driverpath)-1, "%s/%s", architecture, driverpath_in);
 
-	driver_unix_convert(driverpath,conn,NULL,&st);
+	driver_unix_convert(conn,driverpath,&st);
 
 	if ( !vfs_file_exist( conn, driverpath, &st ) ) {
 		*perr = WERR_BADFILE;
@@ -1793,7 +1798,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	 */
 	DEBUG(5,("Creating first directory\n"));
 	slprintf(new_dir, sizeof(new_dir)-1, "%s/%d", architecture, driver->cversion);
-	driver_unix_convert(new_dir, conn, NULL, &st);
+	driver_unix_convert(conn,new_dir,&st);
 	create_directory(conn, new_dir);
 
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
@@ -1819,7 +1824,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->driverpath);	
 		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-			driver_unix_convert(new_name, conn, NULL, &st);
+			driver_unix_convert(conn,new_name,&st);
 			if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1835,7 +1840,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->datafile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				driver_unix_convert(new_name, conn, NULL, &st);
+				driver_unix_convert(conn,new_name,&st);
 				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1853,7 +1858,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->configfile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				driver_unix_convert(new_name, conn, NULL, &st);
+				driver_unix_convert(conn,new_name,&st);
 				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1872,7 +1877,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->helpfile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				driver_unix_convert(new_name, conn, NULL, &st);
+				driver_unix_convert(conn,new_name,&st);
 				if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1900,7 +1905,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 				slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->dependentfiles[i]);	
 				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-					driver_unix_convert(new_name, conn, NULL, &st);
+					driver_unix_convert(conn,new_name,&st);
 					if ( !NT_STATUS_IS_OK(copy_file(conn, new_name, old_name,
 							OPENX_FILE_EXISTS_TRUNCATE|
 							OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
@@ -4938,7 +4943,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	if ( *info_3->driverpath ) {
 		if ( (s = strchr( &info_3->driverpath[1], '\\' )) != NULL ) {
 			pstrcpy( file, s );
-			driver_unix_convert(file, conn, NULL, &st);
+			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting driverfile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -4947,7 +4952,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	if ( *info_3->configfile ) {
 		if ( (s = strchr( &info_3->configfile[1], '\\' )) != NULL ) {
 			pstrcpy( file, s );
-			driver_unix_convert(file, conn, NULL, &st);
+			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting configfile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -4956,7 +4961,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	if ( *info_3->datafile ) {
 		if ( (s = strchr( &info_3->datafile[1], '\\' )) != NULL ) {
 			pstrcpy( file, s );
-			driver_unix_convert(file, conn, NULL, &st);
+			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting datafile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -4965,7 +4970,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	if ( *info_3->helpfile ) {
 		if ( (s = strchr( &info_3->helpfile[1], '\\' )) != NULL ) {
 			pstrcpy( file, s );
-			driver_unix_convert(file, conn, NULL, &st);
+			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting helpfile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -4981,7 +4986,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 			
 			if ( (p = strchr( info_3->dependentfiles[i]+1, '\\' )) != NULL ) {
 				pstrcpy( file, p );
-				driver_unix_convert(file, conn, NULL, &st);
+				driver_unix_convert(conn,file,&st);
 				DEBUG(10,("deleting dependent file [%s]\n", file));
 				unlink_internals(conn, NULL, 0, file, False);
 			}
