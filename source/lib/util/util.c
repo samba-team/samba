@@ -190,28 +190,27 @@ _PUBLIC_ void msleep(unsigned int t)
  Get my own name, return in malloc'ed storage.
 **/
 
-_PUBLIC_ char* get_myname(void)
+_PUBLIC_ char *get_myname(void)
 {
 	char *hostname;
-	const int host_name_max = 255;
 	char *p;
 
-	hostname = malloc(host_name_max+1);
+	hostname = (char *)malloc(MAXHOSTNAMELEN+1);
 	*hostname = 0;
 
 	/* get my host name */
-	if (gethostname(hostname, host_name_max+1) == -1) {
+	if (gethostname(hostname, MAXHOSTNAMELEN+1) == -1) {
 		DEBUG(0,("gethostname failed\n"));
 		return NULL;
 	} 
 
 	/* Ensure null termination. */
-	hostname[host_name_max] = '\0';
+	hostname[MAXHOSTNAMELEN] = '\0';
 
 	/* split off any parts after an initial . */
-	p = strchr(hostname,'.');
+	p = strchr(hostname, '.');
 
-	if (p)
+	if (p != NULL)
 		*p = 0;
 	
 	return hostname;
