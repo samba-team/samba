@@ -24,6 +24,9 @@ case $cmd in
      #############################
      # called when ctdbd starts up
      startup)
+	# make sure that we only respond to ARP messages from the NIC where
+	# a particular ip address is associated.
+	echo 1 > /proc/sys/ipv4/conf/all/arp_filter
 	;;
 
 
