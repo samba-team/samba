@@ -205,7 +205,7 @@ terminate_path_at_separator(char * path)
 /*
   parse a //server/share type UNC name
 */
-BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
+bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 		      char **hostname, char **sharename)
 {
 	char *p;
@@ -220,12 +220,9 @@ BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 	*hostname = talloc_strdup(mem_ctx, &unc_name[2]);
 	p = terminate_path_at_separator(*hostname);
 
-	if (p && *p) {
+	if (p != NULL && *p) {
 		*sharename = talloc_strdup(mem_ctx, p);
 		terminate_path_at_separator(*sharename);
-	} else {
-		*sharename = talloc_strdup(mem_ctx, 
-					   lp_parm_string(-1, "torture", "share"));
 	}
 
 	if (*hostname && *sharename) {

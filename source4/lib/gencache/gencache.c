@@ -50,22 +50,23 @@ static struct tdb_wrap *cache;
 BOOL gencache_init(void)
 {
 	char* cache_fname = NULL;
+	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 	
 	/* skip file open if it's already opened */
 	if (cache) return True;
 
-	asprintf(&cache_fname, "%s/%s", lp_lockdir(), "gencache.tdb");
-	if (cache_fname)
+	cache_fname = lock_path(mem_ctx, "gencache.tdb");
+	if (cache_fname != NULL) {
 		DEBUG(5, ("Opening cache file at %s\n", cache_fname));
-	else {
+	} else {
 		DEBUG(0, ("Filename allocation failed.\n"));
-		return False;
+		return false;
 	}
 
-	cache = tdb_wrap_open(NULL, cache_fname, 0, TDB_DEFAULT,
+	cache = tdb_wrap_open(mem_ctx, cache_fname, 0, TDB_DEFAULT,
 			      O_RDWR|O_CREAT, 0644);
 
-	SAFE_FREE(cache_fname);
+	talloc_free(cache_fname);
 	if (!cache) {
 		DEBUG(5, ("Attempt to open gencache.tdb has failed.\n"));
 		return False;

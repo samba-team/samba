@@ -429,10 +429,6 @@ _PUBLIC_ const struct socket_ops *socket_getops_byname(const char *family, enum 
 
 #if HAVE_IPV6
 	if (strcmp("ipv6", family) == 0) {
-		if (lp_parm_bool(-1, "socket", "noipv6", False)) {
-			DEBUG(3, ("IPv6 support was disabled in smb.conf"));
-			return NULL;
-		}
 		return socket_ipv6_ops(type);
 	}
 #endif
