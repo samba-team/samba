@@ -1527,28 +1527,31 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
 	DOM_SID sid;
 	char *pwd;
 	time_t last_set_time;
-                                                                                                                     
+
 	/* if we are a DC and this is not our domain, then lookup an account
 		for the domain trust */
-                                                                                                                     
-	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) {
-		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &last_set_time)) {
+
+	if (IS_DC && !strequal(domain, lp_workgroup()) &&
+	    lp_allow_trusted_domains())
+	{
+		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &last_set_time))
+		{
 			DEBUG(0, ("get_trust_pw: could not fetch trust "
 				"account password for trusted domain %s\n",
 				domain));
 			return False;
 		}
-                                                                                                                     
+
 		*channel = SEC_CHAN_DOMAIN;
 		E_md4hash(pwd, ret_pwd);
 		SAFE_FREE(pwd);
 
 		return True;
 	}
-                                                                                                                     
+
 	/* Just get the account for the requested domain. In the future this
 	 * might also cover to be member of more than one domain. */
-                                                                                                                     
+
 	if (secrets_fetch_trust_account_password(domain, ret_pwd,
 						&last_set_time, channel))
 		return True;
@@ -1558,4 +1561,3 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
 	return False;
 }
 
-/* END */
