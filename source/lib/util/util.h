@@ -562,11 +562,6 @@ _PUBLIC_ bool str_list_check(const char **list, const char *s);
 */
 _PUBLIC_ bool str_list_check_ci(const char **list, const char *s);
 
-/**
- Check if a string is part of a list.
-**/
-_PUBLIC_ bool in_list(const char *s, const char *list, bool casesensitive);
-
 /* The following definitions come from lib/util/util_file.c  */
 
 
