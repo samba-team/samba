@@ -489,7 +489,8 @@ static void reply_ntcreate_and_X_quota(connection_struct *conn,
 void reply_ntcreate_and_X(connection_struct *conn,
 			  struct smb_request *req)
 {  
-	pstring fname;
+	pstring fname_in;
+	char *fname = NULL;
 	uint32 flags;
 	uint32 access_mask;
 	uint32 file_attributes;
@@ -589,8 +590,8 @@ void reply_ntcreate_and_X(connection_struct *conn,
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path((char *)req->inbuf, req->flags2, fname,
-					smb_buf(req->inbuf), sizeof(fname), 0,
+			srvstr_get_path((char *)req->inbuf, req->flags2, fname_in,
+					smb_buf(req->inbuf), sizeof(fname_in), 0,
 					STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				reply_nterror(req, status);
@@ -602,7 +603,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
-			if( is_ntfs_stream_name(fname)) {
+			if( is_ntfs_stream_name(fname_in)) {
 				reply_nterror(
 					req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 				END_PROFILE(SMBntcreateX);
@@ -625,15 +626,15 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		 * Copy in the base directory name.
 		 */
 
-		pstrcpy( fname, dir_fsp->fsp_name );
-		dir_name_len = strlen(fname);
+		pstrcpy( fname_in, dir_fsp->fsp_name );
+		dir_name_len = strlen(fname_in);
 
 		/*
 		 * Ensure it ends in a '\'.
 		 */
 
-		if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
-			pstrcat(fname, "/");
+		if((fname_in[dir_name_len-1] != '\\') && (fname_in[dir_name_len-1] != '/')) {
+			pstrcat(fname_in, "/");
 			dir_name_len++;
 		}
 
@@ -645,10 +646,10 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			END_PROFILE(SMBntcreateX);
 			return;
 		}
-		pstrcat(fname, rel_fname);
+		pstrcat(fname_in, rel_fname);
 	} else {
-		srvstr_get_path((char *)req->inbuf, req->flags2, fname,
-				smb_buf(req->inbuf), sizeof(fname), 0,
+		srvstr_get_path((char *)req->inbuf, req->flags2, fname_in,
+				smb_buf(req->inbuf), sizeof(fname_in), 0,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
@@ -660,8 +661,8 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
-		if( is_ntfs_stream_name(fname)) {
-			enum FAKE_FILE_TYPE fake_file_type = is_fake_file(fname);
+		if( is_ntfs_stream_name(fname_in)) {
+			enum FAKE_FILE_TYPE fake_file_type = is_fake_file(fname_in);
 			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
 				/*
 				 * Here we go! support for changing the disk quotas --metze
@@ -673,7 +674,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 				 * xp also tries a QUERY_FILE_INFO on the file and then close it
 				 */
 				reply_ntcreate_and_X_quota(conn, req,
-							  fake_file_type, fname);
+							  fake_file_type, fname_in);
 			} else {
 				reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			}
@@ -686,7 +687,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	 * Now contruct the smb_open_mode value from the filename, 
 	 * desired access and the share access.
 	 */
-	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, fname);
+	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, fname_in);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -707,17 +708,17 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	/*
 	 * Ordinary file or directory.
 	 */
-		
+
 	/*
 	 * Check if POSIX semantics are wanted.
 	 */
-		
+
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		case_state = set_posix_case_semantics(NULL, conn);
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
-		
-	status = unix_convert(conn, fname, False, NULL, &sbuf);
+
+	status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		reply_nterror(req, status);
@@ -1200,7 +1201,7 @@ static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, 
 		}
 		offset += next_offset;
 	}
-                                                                                                                             
+
 	return ea_list_head;
 }
 
@@ -1215,7 +1216,8 @@ static void call_nt_transact_create(connection_struct *conn,
 				    char **ppdata, uint32 data_count,
 				    uint32 max_data_count)
 {
-	pstring fname;
+	pstring fname_in;
+	char *fname = NULL;
 	char *params = *ppparams;
 	char *data = *ppdata;
 	/* Breakout the oplock request bits so we can set the reply bits separately. */
@@ -1334,8 +1336,8 @@ static void call_nt_transact_create(connection_struct *conn,
 		}
 
 		if(!dir_fsp->is_directory) {
-			srvstr_get_path(params, req->flags2, fname,
-					params+53, sizeof(fname),
+			srvstr_get_path(params, req->flags2, fname_in,
+					params+53, sizeof(fname_in),
 					parameter_count-53, STR_TERMINATE,
 					&status);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1347,7 +1349,7 @@ static void call_nt_transact_create(connection_struct *conn,
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
-			if( is_ntfs_stream_name(fname)) {
+			if( is_ntfs_stream_name(fname_in)) {
 				reply_nterror(req,
 					      NT_STATUS_OBJECT_PATH_NOT_FOUND);
 				return;
@@ -1361,15 +1363,15 @@ static void call_nt_transact_create(connection_struct *conn,
 		 * Copy in the base directory name.
 		 */
 
-		pstrcpy( fname, dir_fsp->fsp_name );
-		dir_name_len = strlen(fname);
+		pstrcpy( fname_in, dir_fsp->fsp_name );
+		dir_name_len = strlen(fname_in);
 
 		/*
 		 * Ensure it ends in a '\'.
 		 */
 
-		if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
-			pstrcat(fname, "/");
+		if((fname_in[dir_name_len-1] != '\\') && (fname_in[dir_name_len-1] != '/')) {
+			pstrcat(fname_in, "/");
 			dir_name_len++;
 		}
 
@@ -1383,11 +1385,11 @@ static void call_nt_transact_create(connection_struct *conn,
 				reply_nterror(req, status);
 				return;
 			}
-			pstrcat(fname, tmpname);
+			pstrcat(fname_in, tmpname);
 		}
 	} else {
-		srvstr_get_path(params, req->flags2, fname, params+53,
-				sizeof(fname), parameter_count-53,
+		srvstr_get_path(params, req->flags2, fname_in, params+53,
+				sizeof(fname_in), parameter_count-53,
 				STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
@@ -1398,7 +1400,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
-		if( is_ntfs_stream_name(fname)) {
+		if( is_ntfs_stream_name(fname_in)) {
 			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			return;
 		}
@@ -1412,7 +1414,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	/*
 	 * Ordinary file or directory.
 	 */
-		
+
 	/*
 	 * Check if POSIX semantics are wanted.
 	 */
@@ -1421,9 +1423,9 @@ static void call_nt_transact_create(connection_struct *conn,
 		case_state = set_posix_case_semantics(NULL, conn);
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
-		
+
 	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
-				 fname);
+				 fname_in);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1435,7 +1437,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 
-	status = unix_convert(conn, fname, False, NULL, &sbuf);
+	status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		reply_nterror(req, status);
@@ -1776,11 +1778,15 @@ void reply_ntcancel(connection_struct *conn, struct smb_request *req)
 
 static NTSTATUS copy_internals(connection_struct *conn,
 			       struct smb_request *req,
-			       char *oldname, char *newname, uint32 attrs)
+			       const char *oldname_in,
+			       const char *newname_in,
+			       uint32 attrs)
 {
 	SMB_STRUCT_STAT sbuf1, sbuf2;
-	pstring last_component_oldname;
-	pstring last_component_newname;
+	char *oldname = NULL;
+	char *newname = NULL;
+	char *last_component_oldname = NULL;
+	char *last_component_newname = NULL;
 	files_struct *fsp1,*fsp2;
 	uint32 fattr;
 	int info;
@@ -1794,7 +1800,8 @@ static NTSTATUS copy_internals(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	status = unix_convert(conn, oldname, False, last_component_oldname, &sbuf1);
+	status = unix_convert(conn, oldname_in, False, &oldname,
+			&last_component_oldname, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1814,7 +1821,8 @@ static NTSTATUS copy_internals(connection_struct *conn,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	status = unix_convert(conn, newname, False, last_component_newname, &sbuf2);
+	status = unix_convert(conn, newname_in, False, &newname,
+			&last_component_newname, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1840,7 +1848,8 @@ static NTSTATUS copy_internals(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("copy_internals: doing file copy %s to %s\n", oldname, newname));
+	DEBUG(10,("copy_internals: doing file copy %s to %s\n",
+				oldname, newname));
 
         status = open_file_ntcreate(conn, req, oldname, &sbuf1,
 			FILE_READ_DATA, /* Read-only. */

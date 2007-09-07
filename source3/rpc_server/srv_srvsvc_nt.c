@@ -2047,7 +2047,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 	connection_struct *conn = NULL;
 	BOOL became_user = False; 
 	WERROR status = WERR_OK;
-	pstring tmp_file;
+	char *tmp_file = NULL;
 
 	ZERO_STRUCT(st);
 
@@ -2072,26 +2072,29 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 	}
 	became_user = True;
 
-	pstrcpy(tmp_file, r->in.file);
-	nt_status = unix_convert(conn, tmp_file, False, NULL, &st);
+	if (!r->in.file) {
+		status = WERR_INVALID_PARAM;
+		goto error_exit;
+	}
+	nt_status = unix_convert(conn, r->in.file, False, &tmp_file, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", r->in.file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
-	nt_status = check_name(conn, r->in.file);
+	nt_status = check_name(conn, tmp_file);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_query_secdesc: can't access %s\n", r->in.file));
+		DEBUG(3,("_srv_net_file_query_secdesc: can't access %s\n", tmp_file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
-	nt_status = open_file_stat(conn, NULL, r->in.file, &st, &fsp);
+	nt_status = open_file_stat(conn, NULL, tmp_file, &st, &fsp);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
-			nt_status = open_directory(conn, NULL, r->in.file, &st,
+			nt_status = open_directory(conn, NULL, tmp_file, &st,
 					READ_CONTROL_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
@@ -2100,7 +2103,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 					NULL, &fsp);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", r->in.file));
+			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", tmp_file));
 			status = WERR_ACCESS_DENIED;
 			goto error_exit;
 		}
@@ -2109,7 +2112,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 	sd_size = SMB_VFS_GET_NT_ACL(fsp, fsp->fsp_name, (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 
 	if (sd_size == 0) {
-		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", r->in.file));
+		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", tmp_file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
@@ -2152,7 +2155,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
 	WERROR status = WERR_OK;
-	pstring tmp_file;
+	char *tmp_file = NULL;
 
 	ZERO_STRUCT(st);
 
@@ -2176,28 +2179,31 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 	}
 	became_user = True;
 
-	pstrcpy(tmp_file, r->in.file);
-	nt_status = unix_convert(conn, tmp_file, False, NULL, &st);
+	if (!r->in.file) {
+		status = WERR_INVALID_PARAM;
+		goto error_exit;
+	}
+	nt_status = unix_convert(conn, r->in.file, False, &tmp_file, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", r->in.file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
-	nt_status = check_name(conn, r->in.file);
+	nt_status = check_name(conn, tmp_file);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_set_secdesc: can't access %s\n", r->in.file));
+		DEBUG(3,("_srv_net_file_set_secdesc: can't access %s\n", tmp_file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 
-	nt_status = open_file_stat(conn, NULL, r->in.file, &st, &fsp);
+	nt_status = open_file_stat(conn, NULL, tmp_file, &st, &fsp);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
-			nt_status = open_directory(conn, NULL, r->in.file, &st,
+			nt_status = open_directory(conn, NULL, tmp_file, &st,
 						FILE_READ_ATTRIBUTES,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
@@ -2206,7 +2212,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 						NULL, &fsp);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", r->in.file));
+			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", tmp_file));
 			status = WERR_ACCESS_DENIED;
 			goto error_exit;
 		}
@@ -2215,7 +2221,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 	nt_status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name, r->in.securityinformation, r->in.sd_buf.sd);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", r->in.file));
+		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", tmp_file));
 		status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
