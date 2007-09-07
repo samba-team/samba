@@ -163,7 +163,7 @@ sub check_or_start($$$$) {
 		open STDERR, '>&STDOUT';
 	
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("smbd");
-		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("smbd"), "-F", "-S", "-d0" , "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start smbd: $!");
+		exec($self->binpath("timelimit"), $smbd_maxtime, $self->binpath("smbd"), "-F", "-S", "-d0" , "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
