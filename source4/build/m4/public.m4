@@ -68,20 +68,13 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
     		echo "*** in your path, or set the PKG_CONFIG environment variable"
     		echo "*** to the full path to pkg-config."
     		echo "*** Or see http://pkg-config.freedesktop.org/ to get pkg-config."
-		SMB_EXT_LIB($1)
-		SMB_ENABLE($1, NO)
-		$4
-
+			ac_cv_$1_found=no
 	else
 		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
         		AC_MSG_CHECKING(for $2)
 
-          		if test "$SMB_$1"x = "NO"x ; then
-				SMB_ENABLE($1, NO)
-				AC_MSG_RESULT(disabled)		
-				$4
-          		elif $PKG_CONFIG --exists '$2' ; then
-            			AC_MSG_RESULT(yes)
+          		if $PKG_CONFIG --exists '$2' ; then
+				AC_MSG_RESULT(yes)
 
 
 				$1_CFLAGS="`$PKG_CONFIG --cflags '$2'`"
@@ -101,23 +94,27 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 					[`$PKG_CONFIG --cflags-only-other '$2'`],
 					[`$PKG_CONFIG --cflags-only-I '$2'`],
 					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`])
-				$3
+				ac_cv_$1_found=yes
 
         		else
-				SMB_EXT_LIB($1)
-				SMB_ENABLE($1, NO)
 				AC_MSG_RESULT(no)
             			$PKG_CONFIG --errors-to-stdout --print-errors '$2'
-				$4
+				ac_cv_$1_found=no
         		fi
      		else
         		echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
         			echo "*** See http://pkg-config.freedesktop.org/"
-				SMB_EXT_LIB($1)
-				SMB_ENABLE($1, NO)
-				$4
+				ac_cv_$1_found=no
      		fi
   	fi
+	if test x$ac_cv_$1_found = x"yes"; then
+		ifelse([$3], [], [echo -n ""], [$3])
+	else
+		ifelse([$4], [], [
+			  SMB_EXT_LIB($1)
+			  SMB_ENABLE($1, NO)
+		], [$4])
+	fi
 ])
 
 dnl SMB_INCLUDE_MK(file)
