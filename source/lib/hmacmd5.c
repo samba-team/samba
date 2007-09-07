@@ -121,7 +121,8 @@ void hmac_md5_final(unsigned char *digest, HMACMD5Context *ctx)
  use the microsoft hmacmd5 init method because the key is 16 bytes.
 ************************************************************/
 
-void hmac_md5( unsigned char key[16], unsigned char *data, int data_len, unsigned char *digest)
+void hmac_md5( unsigned char key[16], const unsigned char *data, int data_len,
+	       unsigned char *digest)
 {
 	HMACMD5Context ctx;
 	hmac_md5_init_limK_to_64(key, 16, &ctx);

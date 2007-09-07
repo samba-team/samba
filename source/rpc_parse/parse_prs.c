@@ -1551,7 +1551,7 @@ static void schannel_digest(struct schannel_auth_struct *a,
 			  uchar digest_final[16]) 
 {
 	uchar whole_packet_digest[16];
-	static uchar zeros[4];
+	static const uchar zeros[4] = { 0, };
 	struct MD5Context ctx3;
 	
 	/* verfiy the signature on the packet by MD5 over various bits */
@@ -1580,7 +1580,7 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
 				   RPC_AUTH_SCHANNEL_CHK *verf,
 				   uchar sealing_key[16]) 
 {
-	static uchar zeros[4];
+	static const uchar zeros[4] = { 0, };
 	uchar digest2[16];
 	uchar sess_kf0[16];
 	int i;
@@ -1607,7 +1607,7 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
 static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
 				     RPC_AUTH_SCHANNEL_CHK *verf)
 {
-	static uchar zeros[4];
+	static const uchar zeros[4] = { 0, };
 	uchar sequence_key[16];
 	uchar digest1[16];
 
