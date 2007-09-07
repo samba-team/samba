@@ -34,7 +34,7 @@
 	} \
 } while (0)
 
-BOOL torture_samba3_checkfsp(struct torture_context *torture)
+bool torture_samba3_checkfsp(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	const char *fname = "test.txt";
@@ -323,7 +323,7 @@ static NTSTATUS raw_smbcli_ntcreate(struct smbcli_tree *tree, const char *fname,
 }
 
 
-BOOL torture_samba3_badpath(struct torture_context *torture)
+bool torture_samba3_badpath(struct torture_context *torture)
 {
 	struct smbcli_state *cli_nt;
 	struct smbcli_state *cli_dos;
@@ -607,7 +607,7 @@ static void count_fn(struct clilist_file_info *info, const char *name,
 	*counter += 1;
 }
 
-BOOL torture_samba3_caseinsensitive(struct torture_context *torture)
+bool torture_samba3_caseinsensitive(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx;
@@ -672,7 +672,7 @@ BOOL torture_samba3_caseinsensitive(struct torture_context *torture)
  * on an underlying file
  */
 
-BOOL torture_samba3_posixtimedlock(struct torture_context *tctx)
+bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 {
 	struct smbcli_state *cli;
 	NTSTATUS status;

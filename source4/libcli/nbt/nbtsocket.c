@@ -214,7 +214,8 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	/* find the matching request */
-	req = idr_find(nbtsock->idr, packet->name_trn_id);
+	req = (struct nbt_name_request *)idr_find(nbtsock->idr, 
+						  packet->name_trn_id);
 	if (req == NULL) {
 		if (nbtsock->unexpected.handler) {
 			nbtsock->unexpected.handler(nbtsock, packet, src);

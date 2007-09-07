@@ -28,7 +28,7 @@
  * basic testing of all RAW_CLOSE_* calls 
 */
 bool torture_raw_close(struct torture_context *torture,
-					   struct smbcli_state *cli)
+		       struct smbcli_state *cli)
 {
 	bool ret = true;
 	union smb_close io;

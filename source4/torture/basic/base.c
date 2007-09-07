@@ -1715,7 +1715,7 @@ NTSTATUS torture_base_init(void)
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "BASE");
 
 	torture_suite_add_2smb_test(suite, "FDPASS", run_fdpasstest);
-	torture_suite_add_suite(suite, torture_base_locktest());
+	torture_suite_add_suite(suite, torture_base_locktest(suite));
 	torture_suite_add_1smb_test(suite, "UNLINK", torture_unlinktest);
 	torture_suite_add_1smb_test(suite, "ATTR",   run_attrtest);
 	torture_suite_add_1smb_test(suite, "TRANS2", run_trans2test);
@@ -1750,7 +1750,7 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_1smb_test(suite, "CASETABLE", torture_casetable);
 	torture_suite_add_1smb_test(suite, "UTABLE", torture_utable);
 	torture_suite_add_simple_test(suite, "SMB", torture_smb_scan);
-	torture_suite_add_suite(suite, torture_trans2_aliases());
+	torture_suite_add_suite(suite, torture_trans2_aliases(suite));
 	torture_suite_add_1smb_test(suite, "TRANS2-SCAN", torture_trans2_scan);
 	torture_suite_add_1smb_test(suite, "NTTRANS", torture_nttrans_scan);
 

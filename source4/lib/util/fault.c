@@ -153,7 +153,7 @@ _PUBLIC_ _NORETURN_ void smb_panic(const char *why)
 /**
 report a fault
 **/
-static void fault_report(int sig)
+_NORETURN_ static void fault_report(int sig)
 {
 	static int counter;
 	
@@ -172,7 +172,7 @@ static void fault_report(int sig)
 /**
 catch serious errors
 **/
-static void sig_fault(int sig)
+_NORETURN_ static void sig_fault(int sig)
 {
 	if (fault_handlers.fault_handler) {
 		/* we have a fault handler, call it. It may not return. */

@@ -640,7 +640,7 @@ _PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 {
 	uint32_t i;
 	uint8_t zero[4] = {0,0,0,0};
-	const char *var = _var;
+	const char *var = (const char *)_var;
 
 	for (i = 0; memcmp(var+i*element_size,zero,element_size) != 0; i++);
 
@@ -731,5 +731,5 @@ _PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset)
 {
 	/* FIXME: Treat special chars special here, taking chset into account */
 	/* Also include 0 byte */
-	return strlen(var)+1;
+	return strlen((const char *)var)+1;
 }

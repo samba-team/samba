@@ -67,7 +67,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	req->out.size      = SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size;
 
 	req->out.allocated = req->out.size + body_dynamic_size;
-	req->out.buffer    = talloc_size(req, req->out.allocated);
+	req->out.buffer    = talloc_array(req, uint8_t, req->out.allocated);
 	if (req->out.buffer == NULL) {
 		talloc_free(req);
 		return NULL;

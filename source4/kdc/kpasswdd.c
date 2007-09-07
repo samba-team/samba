@@ -267,7 +267,8 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 							reply);
 		}
 		
-		password = talloc_strndup(mem_ctx, chpw.newpasswd.data, 
+		password = talloc_strndup(mem_ctx, 
+					  (const char *)chpw.newpasswd.data, 
 					  chpw.newpasswd.length);
 		if (!password) {
 			free_ChangePasswdDataMS(&chpw);

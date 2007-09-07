@@ -47,7 +47,7 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 				TALLOC_CTX *out_mem_ctx, 
 				DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
 	if (gensec_ntlmssp_state->unicode) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
@@ -87,7 +87,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 				  TALLOC_CTX *out_mem_ctx,
 				  const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
@@ -292,7 +292,7 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	nt_status = gensec_ntlmssp_start(gensec_security);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	gensec_ntlmssp_state = gensec_security->private_data;
+	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
 	gensec_ntlmssp_state->role = NTLMSSP_CLIENT;
 

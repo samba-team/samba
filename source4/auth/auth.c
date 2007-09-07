@@ -443,9 +443,8 @@ static int num_backends;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-NTSTATUS auth_register(const void *_ops)
+NTSTATUS auth_register(const struct auth_operations *ops)
 {
-	const struct auth_operations *ops = _ops;
 	struct auth_operations *new_ops;
 	
 	if (auth_backend_byname(ops->name) != NULL) {

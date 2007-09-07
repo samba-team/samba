@@ -88,8 +88,8 @@ static void show_bits(const struct bitmapping *bm, uint32_t value)
 /*
   print out server properties
  */
-BOOL torture_test_properties(struct torture_context *torture, 
-							 struct smbcli_state *cli)
+bool torture_test_properties(struct torture_context *torture, 
+			     struct smbcli_state *cli)
 {
 	BOOL correct = True;
 	union smb_fsinfo fs;

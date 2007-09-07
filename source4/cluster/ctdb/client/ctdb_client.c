@@ -1970,7 +1970,7 @@ int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb,
 	int ret;
 
 	data.dsize = offsetof(struct ctdb_control_set_tunable, name) + strlen(name) + 1;
-	data.dptr  = talloc_size(ctdb, data.dsize);
+	data.dptr  = talloc_array(ctdb, unsigned char, data.dsize);
 	CTDB_NO_MEMORY(ctdb, data.dptr);
 
 	t = (struct ctdb_control_set_tunable *)data.dptr;

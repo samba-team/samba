@@ -1664,7 +1664,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 			DATA_BLOB value_list;
 
 			value_list.length = (nk->num_values+1)*4;
-			value_list.data = (void *)talloc_array(private_data, uint32_t, nk->num_values+1);
+			value_list.data = talloc_array(private_data, uint32_t, nk->num_values+1);
 			W_ERROR_HAVE_NO_MEMORY(value_list.data);
 			memcpy(value_list.data, values.data, nk->num_values * 4);
 

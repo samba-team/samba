@@ -93,7 +93,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -220,7 +220,7 @@ static bool test_lockread(struct torture_context *tctx,
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -365,7 +365,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -604,7 +604,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -778,7 +778,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\test.txt";
 	const uint8_t data[] = "TEST DATA";
 
-	buf = talloc_zero_size(tctx, maxsize);
+	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;

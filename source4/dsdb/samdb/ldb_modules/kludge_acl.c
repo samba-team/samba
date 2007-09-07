@@ -60,7 +60,7 @@ struct kludge_private_data {
 static enum user_is what_is_user(struct ldb_module *module) 
 {
 	struct auth_session_info *session_info
-		= ldb_get_opaque(module->ldb, "sessionInfo");
+		= (struct auth_session_info *)ldb_get_opaque(module->ldb, "sessionInfo");
 	if (!session_info) {
 		return ANONYMOUS;
 	}
@@ -87,7 +87,7 @@ static enum user_is what_is_user(struct ldb_module *module)
 static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module) 
 {
 	struct auth_session_info *session_info
-		= ldb_get_opaque(module->ldb, "sessionInfo");
+		= (struct auth_session_info *)ldb_get_opaque(module->ldb, "sessionInfo");
 	if (!session_info) {
 		return "UNKNOWN (NULL)";
 	}

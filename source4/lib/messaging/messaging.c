@@ -504,7 +504,7 @@ NTSTATUS messaging_send_ptr(struct messaging_context *msg, struct server_id serv
 {
 	DATA_BLOB blob;
 
-	blob.data = (void *)&ptr;
+	blob.data = (uint8_t *)&ptr;
 	blob.length = sizeof(void *);
 
 	return messaging_send(msg, server, msg_type, &blob);

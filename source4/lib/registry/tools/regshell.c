@@ -262,8 +262,7 @@ static WERROR cmd_rmval(struct regshell_context *ctx, int argc, char **argv)
 	return WERR_OK; 
 }
 
-static WERROR cmd_exit(struct regshell_context *ctx,
-									 int argc, char **argv)
+_NORETURN_ static WERROR cmd_exit(struct regshell_context *ctx, int argc, char **argv)
 {
 	exit(0);
 	return WERR_OK;
@@ -275,8 +274,7 @@ static struct {
 	const char *name;
 	const char *alias;
 	const char *help;
-	WERROR (*handle)(struct regshell_context *ctx,
-								   int argc, char **argv);
+	WERROR (*handle)(struct regshell_context *ctx, int argc, char **argv);
 } regshell_cmds[] = {
 	{"ck", "cd", "Change current key", cmd_ck },
 	{"info", "i", "Show detailed information of a key", cmd_info },

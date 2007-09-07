@@ -886,7 +886,7 @@ static bool torture_raw_context_int(struct torture_context *tctx,
    basic testing of session/tree context calls
 */
 bool torture_raw_context(struct torture_context *torture, 
-						 struct smbcli_state *cli)
+			 struct smbcli_state *cli)
 {
 	bool ret = true;
 	if (lp_use_spnego()) {

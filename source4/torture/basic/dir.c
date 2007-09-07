@@ -33,8 +33,8 @@ static void list_fn(struct clilist_file_info *finfo, const char *name, void *sta
 /*
   test directory listing speed
  */
-BOOL torture_dirtest1(struct torture_context *tctx, 
-					  struct smbcli_state *cli)
+bool torture_dirtest1(struct torture_context *tctx, 
+		      struct smbcli_state *cli)
 {
 	int i;
 	int fnum;
@@ -76,8 +76,8 @@ BOOL torture_dirtest1(struct torture_context *tctx,
 	return correct;
 }
 
-BOOL torture_dirtest2(struct torture_context *tctx, 
-					  struct smbcli_state *cli)
+bool torture_dirtest2(struct torture_context *tctx, 
+		      struct smbcli_state *cli)
 {
 	int i;
 	int fnum, num_seen;

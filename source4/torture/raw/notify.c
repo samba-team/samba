@@ -1019,7 +1019,7 @@ done:
 
 static void tcp_dis_handler(struct smbcli_transport *t, void *p)
 {
-	struct smbcli_state *cli = p;
+	struct smbcli_state *cli = (struct smbcli_state *)p;
 	smbcli_transport_dead(cli->transport, NT_STATUS_LOCAL_DISCONNECT);
 	cli->transport = NULL;
 	cli->tree = NULL;
@@ -1284,8 +1284,8 @@ done:
    basic testing of change notify
 */
 bool torture_raw_notify(struct torture_context *torture, 
-						struct smbcli_state *cli, 
-						struct smbcli_state *cli2)
+			struct smbcli_state *cli, 
+			struct smbcli_state *cli2)
 {
 	bool ret = true;
 		

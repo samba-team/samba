@@ -92,7 +92,7 @@ static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_secur
 					    const uint8_t *whole_pdu, size_t pdu_length, 
 					    const DATA_BLOB *sig)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -112,7 +112,7 @@ static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_securi
 					   const uint8_t *whole_pdu, size_t pdu_length, 
 					   const DATA_BLOB *sig)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -132,7 +132,7 @@ static NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_securit
 					  const uint8_t *whole_pdu, size_t pdu_length, 
 					  DATA_BLOB *sig)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -152,7 +152,7 @@ static NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_securit
 					  const uint8_t *whole_pdu, size_t pdu_length, 
 					  DATA_BLOB *sig)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -171,7 +171,7 @@ static NTSTATUS gensec_spnego_wrap(struct gensec_security *gensec_security,
 				   const DATA_BLOB *in, 
 				   DATA_BLOB *out)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -188,7 +188,7 @@ static NTSTATUS gensec_spnego_unwrap(struct gensec_security *gensec_security,
 				     const DATA_BLOB *in, 
 				     DATA_BLOB *out)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -206,7 +206,7 @@ static NTSTATUS gensec_spnego_wrap_packets(struct gensec_security *gensec_securi
 					   DATA_BLOB *out,
 					   size_t *len_processed) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -222,7 +222,7 @@ static NTSTATUS gensec_spnego_wrap_packets(struct gensec_security *gensec_securi
 static NTSTATUS gensec_spnego_packet_full_request(struct gensec_security *gensec_security, 
 					     	DATA_BLOB blob, size_t *size)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -240,7 +240,7 @@ static NTSTATUS gensec_spnego_unwrap_packets(struct gensec_security *gensec_secu
 					     DATA_BLOB *out,
 					     size_t *len_processed) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -255,7 +255,7 @@ static NTSTATUS gensec_spnego_unwrap_packets(struct gensec_security *gensec_secu
 
 static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, size_t data_size) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -267,7 +267,7 @@ static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, si
 
 static size_t gensec_spnego_max_input_size(struct gensec_security *gensec_security) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -279,7 +279,7 @@ static size_t gensec_spnego_max_input_size(struct gensec_security *gensec_securi
 
 static size_t gensec_spnego_max_wrapped_size(struct gensec_security *gensec_security) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
@@ -292,7 +292,7 @@ static size_t gensec_spnego_max_wrapped_size(struct gensec_security *gensec_secu
 static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
 					  DATA_BLOB *session_key)
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	if (!spnego_state->sub_sec_security) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -304,7 +304,7 @@ static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_securit
 static NTSTATUS gensec_spnego_session_info(struct gensec_security *gensec_security,
 								      struct auth_session_info **session_info) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	if (!spnego_state->sub_sec_security) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -685,7 +685,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
 				     const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
 	struct spnego_data spnego_out;
@@ -1002,7 +1002,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 static BOOL gensec_spnego_have_feature(struct gensec_security *gensec_security,
 				       uint32_t feature) 
 {
-	struct spnego_state *spnego_state = gensec_security->private_data;
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	if (!spnego_state->sub_sec_security) {
 		return False;
 	}

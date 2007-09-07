@@ -152,7 +152,7 @@ done:
    basic testing of some ioctl calls 
 */
 bool torture_raw_ioctl(struct torture_context *torture, 
-					   struct smbcli_state *cli)
+		       struct smbcli_state *cli)
 {
 	bool ret = true;
 

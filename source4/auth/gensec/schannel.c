@@ -44,7 +44,7 @@ static NTSTATUS schannel_session_key(struct gensec_security *gensec_security,
 static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
 				       const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct schannel_state *state = gensec_security->private_data;
+	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;
 	NTSTATUS status;
 	struct schannel_bind bind_schannel;
 	struct schannel_bind_ack bind_schannel_ack;
@@ -207,7 +207,7 @@ static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 		return status;
 	}
 
-	state = gensec_security->private_data;
+	state = (struct schannel_state *)gensec_security->private_data;
 	state->initiator = False;
 		
 	return NT_STATUS_OK;
@@ -223,7 +223,7 @@ static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 		return status;
 	}
 
-	state = gensec_security->private_data;
+	state = (struct schannel_state *)gensec_security->private_data;
 	state->initiator = True;
 		
 	return NT_STATUS_OK;

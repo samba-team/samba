@@ -193,7 +193,7 @@ static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data,
 */
 static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p, NTSTATUS status)
 {
-	struct sock_private *sock = p->transport.private_data;
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 
 	if (sock && sock->sock) {
 		sock_dead(p, status);

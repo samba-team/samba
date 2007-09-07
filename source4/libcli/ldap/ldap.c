@@ -497,7 +497,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB blob)
 {
-	char *result = talloc_size(mem_ctx, blob.length+1);
+	char *result = talloc_array(mem_ctx, char, blob.length+1);
 	memcpy(result, blob.data, blob.length);
 	result[blob.length] = '\0';
 	return result;
@@ -955,7 +955,7 @@ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 			}
 			if (pwlen != 0) {
-				char *pw = talloc_size(msg, pwlen+1);
+				char *pw = talloc_array(msg, char, pwlen+1);
 				if (!pw) {
 					return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 				}
@@ -1162,7 +1162,7 @@ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		if (len == -1) {
 			return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 		}
-		dn = talloc_size(msg, len+1);
+		dn = talloc_array(msg, char, len+1);
 		if (dn == NULL)
 			break;
 		asn1_read(data, dn, len);
@@ -1198,7 +1198,7 @@ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			if (len == -1) {
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 			}
-			newsup = talloc_size(msg, len+1);
+			newsup = talloc_array(msg, char, len+1);
 			if (newsup == NULL) {
 				return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 			}

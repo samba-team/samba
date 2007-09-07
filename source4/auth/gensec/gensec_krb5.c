@@ -500,7 +500,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security, 
 					DATA_BLOB *session_key) 
 {
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
 	krb5_auth_context auth_context = gensec_krb5_state->auth_context;
 	krb5_keyblock *skey;
@@ -539,7 +539,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 					 struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
@@ -666,7 +666,7 @@ static NTSTATUS gensec_krb5_wrap(struct gensec_security *gensec_security,
 				   const DATA_BLOB *in, 
 				   DATA_BLOB *out)
 {
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
 	krb5_auth_context auth_context = gensec_krb5_state->auth_context;
 	krb5_error_code ret;
@@ -696,7 +696,7 @@ static NTSTATUS gensec_krb5_unwrap(struct gensec_security *gensec_security,
 				     const DATA_BLOB *in, 
 				     DATA_BLOB *out)
 {
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
 	krb5_auth_context auth_context = gensec_krb5_state->auth_context;
 	krb5_error_code ret;
@@ -725,7 +725,7 @@ static NTSTATUS gensec_krb5_unwrap(struct gensec_security *gensec_security,
 static BOOL gensec_krb5_have_feature(struct gensec_security *gensec_security,
 				     uint32_t feature)
 {
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		return True;
 	} 

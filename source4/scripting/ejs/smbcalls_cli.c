@@ -483,7 +483,7 @@ static int ejs_tree_disconnect(MprVarHandle eid, int argc, MprVar **argv)
 		return -1;
 	}
 
-	tree = talloc_check_name(argv[0]->ptr, "struct smbcli_tree");
+	tree = talloc_get_type(argv[0]->ptr, struct smbcli_tree);
 
 	result = smb_tree_disconnect(tree);
 
@@ -512,7 +512,7 @@ static int ejs_mkdir(MprVarHandle eid, int argc, MprVar **argv)
 		return -1;
 	}
 
-	tree = argv[0]->ptr;
+	tree = (struct smbcli_tree *)argv[0]->ptr;
 
 	if (!mprVarIsString(argv[1]->type)) {
 		ejsSetErrorMsg(eid, "arg 2 must be a string");
@@ -546,7 +546,7 @@ static int ejs_rmdir(MprVarHandle eid, int argc, MprVar **argv)
 		return -1;
 	}
 
-	tree = argv[0]->ptr;
+	tree = (struct smbcli_tree *)argv[0]->ptr;
 
 	if (!mprVarIsString(argv[1]->type)) {
 		ejsSetErrorMsg(eid, "arg 2 must be a string");
@@ -580,7 +580,7 @@ static int ejs_rename(MprVarHandle eid, int argc, MprVar **argv)
 		return -1;
 	}
 
-	tree = argv[0]->ptr;
+	tree = (struct smbcli_tree *)argv[0]->ptr;
 
 	if (!mprVarIsString(argv[1]->type)) {
 		ejsSetErrorMsg(eid, "arg 2 must be a string");
@@ -619,7 +619,7 @@ static int ejs_unlink(MprVarHandle eid, int argc, MprVar **argv)
 		return -1;
 	}
 
-	tree = argv[0]->ptr;
+	tree = (struct smbcli_tree *)argv[0]->ptr;
 
 	if (!mprVarIsString(argv[1]->type)) {
 		ejsSetErrorMsg(eid, "arg 2 must be a string");
@@ -666,7 +666,7 @@ static int ejs_list(MprVarHandle eid, int argc, MprVar **argv)
 		return -1;
 	}
 
-	tree = argv[0]->ptr;
+	tree = (struct smbcli_tree *)argv[0]->ptr;
 
 	if (!mprVarIsString(argv[1]->type)) {
 		ejsSetErrorMsg(eid, "arg 2 must be a string");

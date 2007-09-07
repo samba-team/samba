@@ -33,7 +33,7 @@
 
   1) the server does not allow an unlink on a file that is open
 */
-BOOL torture_unlinktest(struct torture_context *tctx, struct smbcli_state *cli)
+bool torture_unlinktest(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	const char *fname = BASEDIR "\\unlink.tst";
 	int fnum;

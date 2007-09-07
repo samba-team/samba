@@ -126,7 +126,7 @@ static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 /* 
    basic testing of disconnects
 */
-BOOL torture_disconnect(struct torture_context *torture)
+bool torture_disconnect(struct torture_context *torture)
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;

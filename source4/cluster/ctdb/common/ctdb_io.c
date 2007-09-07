@@ -73,8 +73,9 @@ static void queue_io_read(struct ctdb_queue *queue)
 	}
 
 
-	queue->partial.data = talloc_realloc_size(queue, queue->partial.data, 
-						  num_ready + queue->partial.length);
+	queue->partial.data = talloc_realloc(queue, queue->partial.data, 
+					     uint8_t, 
+					     num_ready + queue->partial.length);
 
 	if (queue->partial.data == NULL) {
 		DEBUG(0,("read error alloc failed for %u\n", 

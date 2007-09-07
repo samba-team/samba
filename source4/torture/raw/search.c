@@ -32,7 +32,7 @@
 */
 static BOOL single_search_callback(void *private, const union smb_search_data *file)
 {
-	union smb_search_data *data = private;
+	union smb_search_data *data = (union smb_search_data *)private;
 
 	*data = *file;
 
@@ -511,7 +511,7 @@ struct multiple_result {
 */
 static BOOL multiple_search_callback(void *private, const union smb_search_data *file)
 {
-	struct multiple_result *data = private;
+	struct multiple_result *data = (struct multiple_result *)private;
 
 
 	data->count++;
@@ -541,7 +541,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	union smb_search_next io2;
 	NTSTATUS status;
 	const int per_search = 100;
-	struct multiple_result *result = data;
+	struct multiple_result *result = (struct multiple_result *)data;
 
 	if (data_level == RAW_SEARCH_DATA_SEARCH) {
 		io.search_first.level = RAW_SEARCH_SEARCH;
