@@ -20,7 +20,6 @@
 /* DOS error codes.  please read doserr.h */
 
 #include "includes.h"
-#include "pstring.h"
 
 struct werror_code_struct {
 	const char *dos_errstr;
@@ -133,7 +132,7 @@ static const struct werror_code_struct dos_errs[] =
  *****************************************************************************/
 const char *win_errstr(WERROR werror)
 {
-        static pstring msg;
+        static char msg[40];
         int idx = 0;
 
 	while (dos_errs[idx].dos_errstr != NULL) {

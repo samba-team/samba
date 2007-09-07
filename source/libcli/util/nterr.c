@@ -20,7 +20,6 @@
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
-#include "pstring.h"
 #include "libcli/ldap/ldap.h"
 
 typedef struct
@@ -862,7 +861,7 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
  *****************************************************************************/
 const char *get_nt_error_c_code(NTSTATUS nt_code)
 {
-        static pstring out;
+        static char out[40];
         int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
