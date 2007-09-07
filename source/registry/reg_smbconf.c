@@ -168,7 +168,7 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 			DEBUG(10, ("adding canonicalized parameter to "
 				   "container.\n"));
 
-			theval = regval_compose(mem_ctx, canon_valname,
+			theval = regval_compose(val, canon_valname,
 						value->type,
 						(char *)value_data.data,
 						value_data.length);
@@ -178,15 +178,6 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 				TALLOC_FREE(mem_ctx);
 				return False;
 			}
-			res = regval_ctr_copyvalue(new_val_ctr, theval);
-			if (res == 0) {
-				DEBUG(10, ("error calling regval_ctr_addvalue. "
-				      "(no memory?)\n"));
-				TALLOC_FREE(mem_ctx);
-				return False;
-			}
-			DEBUG(10, ("parameter added. container now has %d "
-				   "values.\n", res));
 
 			TALLOC_FREE(mem_ctx);
 		} else {
@@ -194,15 +185,15 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 				   "copying it to new container...\n",
 				   (lp_parameter_is_valid(valname)?
 				    "valid":"unknown")));
-			res = regval_ctr_copyvalue(new_val_ctr, theval);
-			if (res == 0) {
-				DEBUG(10, ("error calling regval_ctr_copyvalue."
-					   " (no memory?)\n"));
-				return False;
-			}
-			DEBUG(10, ("parameter copied. container now has %d "
-				   "values.\n", res));
 		}
+		res = regval_ctr_copyvalue(new_val_ctr, theval);
+		if (res == 0) {
+			DEBUG(10, ("error calling regval_ctr_copyvalue."
+				   " (no memory?)\n"));
+			return False;
+		}
+		DEBUG(10, ("parameter copied. container now has %d "
+			   "values.\n", res));
 	}
 	return regdb_ops.store_values(key, new_val_ctr);
 }
