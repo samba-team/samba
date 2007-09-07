@@ -214,7 +214,7 @@ static BOOL irpc_setup(struct torture_context *tctx, void **_data)
 
 	*_data = data = talloc(tctx, struct irpc_test_data);
 
-	lp_set_cmdline("lock dir", "lockdir.tmp");
+	lp_set_cmdline("pid directory", "piddir.tmp");
 
 	data->ev = tctx->ev;
 	torture_assert(tctx, data->msg_ctx1 = 
