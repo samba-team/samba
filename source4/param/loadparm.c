@@ -54,7 +54,6 @@
 #include "includes.h"
 #include "version.h"
 #include "dynconfig.h"
-#include "pstring.h"
 #include "system/time.h"
 #include "system/locale.h"
 #include "system/network.h" /* needed for TCP_NODELAY */
@@ -62,19 +61,20 @@
 #include "libcli/raw/signing.h"
 #include "lib/util/dlinklist.h"
 #include "param/loadparm.h"
+#include "pstring.h"
 
-static BOOL bLoaded = False;
+static bool bLoaded = false;
 
-#define standard_sub_basic(str,len)
+#define standard_sub_basic strdup
 
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
 #define VALID(i) ServicePtrs[i]->valid
 
-static BOOL do_parameter(const char *, const char *, void *);
-static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...);
+static bool do_parameter(const char *, const char *, void *);
+static bool do_parameter_var(const char *pszParmName, const char *fmt, ...);
 
-static BOOL defaults_saved = False;
+static bool defaults_saved = False;
 
 struct param_opt {
 	struct param_opt *prev, *next;
@@ -1015,7 +1015,7 @@ static int lp_int(const char *s)
 
 	if (!s) {
 		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
-		return (-1);
+		return -1;
 	}
 
 	return strtol(s, NULL, 0); 
@@ -1029,7 +1029,7 @@ static int lp_ulong(const char *s)
 
 	if (!s) {
 		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
-		return (-1);
+		return -1;
 	}
 
 	return strtoul(s, NULL, 0);
@@ -1043,7 +1043,7 @@ static double lp_double(const char *s)
 
 	if (!s) {
 		DEBUG(0,("lp_double(%s): is called with NULL!\n",s));
-		return (-1);
+		return -1;
 	}
 
 	return strtod(s, NULL);
@@ -1257,7 +1257,7 @@ static int add_a_service(const service *pservice, const char *name)
 				data = pdata;
 			}
 			ServicePtrs[i]->param_opt = NULL;
-			return (i);
+			return i;
 		}
 	}
 
@@ -1274,7 +1274,7 @@ static int add_a_service(const service *pservice, const char *name)
 					   
 		if (!tsp) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
-			return (-1);
+			return -1;
 		}
 		else {
 			ServicePtrs = tsp;
@@ -1282,7 +1282,7 @@ static int add_a_service(const service *pservice, const char *name)
 		}
 		if (!ServicePtrs[iNumServices]) {
 			DEBUG(0,("add_a_service: out of memory!\n"));
-			return (-1);
+			return -1;
 		}
 
 		iNumServices++;
@@ -1295,7 +1295,7 @@ static int add_a_service(const service *pservice, const char *name)
 	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name)
 		string_set(&ServicePtrs[i]->szService, name);
-	return (i);
+	return i;
 }
 
 /***************************************************************************
@@ -1312,7 +1312,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
-		return (False);
+		return false;
 
 	if (!(*(ServicePtrs[iDefaultService]->szPath))
 	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(-1))) {
@@ -1336,7 +1336,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, newHomedir));
 	
-	return (True);
+	return true;
 }
 
 /***************************************************************************
@@ -1345,20 +1345,20 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 
 int lp_add_service(const char *pszService, int iDefaultService)
 {
-	return (add_a_service(ServicePtrs[iDefaultService], pszService));
+	return add_a_service(ServicePtrs[iDefaultService], pszService);
 }
 
 /***************************************************************************
  Add the IPC service.
 ***************************************************************************/
 
-static BOOL lp_add_hidden(const char *name, const char *fstype)
+static bool lp_add_hidden(const char *name, const char *fstype)
 {
 	pstring comment;
 	int i = add_a_service(&sDefault, name);
 
 	if (i < 0)
-		return (False);
+		return false;
 
 	slprintf(comment, sizeof(comment) - 1,
 		 "%s Service (%s)", fstype, Globals.szServerString);
@@ -1369,8 +1369,8 @@ static BOOL lp_add_hidden(const char *name, const char *fstype)
 	ServicePtrs[i]->iMaxConnections = -1;
 	ServicePtrs[i]->bAvailable = True;
 	ServicePtrs[i]->bRead_only = True;
-	ServicePtrs[i]->bPrint_ok = False;
-	ServicePtrs[i]->bBrowseable = False;
+	ServicePtrs[i]->bPrint_ok = false;
+	ServicePtrs[i]->bBrowseable = false;
 
 	if (strcasecmp(fstype, "IPC") == 0) {
 		lp_do_parameter(i, "ntvfs handler", "default");
@@ -1378,20 +1378,20 @@ static BOOL lp_add_hidden(const char *name, const char *fstype)
 
 	DEBUG(3, ("adding hidden service %s\n", name));
 
-	return (True);
+	return true;
 }
 
 /***************************************************************************
  Add a new printer service, with defaults coming from service iFrom.
 ***************************************************************************/
 
-BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
+bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 {
 	const char *comment = "From Printcap";
 	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
 
 	if (i < 0)
-		return (False);
+		return false;
 
 	/* note that we do NOT default the availability flag to True - */
 	/* we take it from the default service passed. This allows all */
@@ -1409,7 +1409,7 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
-	return (True);
+	return true;
 }
 
 /***************************************************************************
@@ -1422,11 +1422,11 @@ static int map_parameter(const char *pszParmName)
 	int iIndex;
 
 	if (*pszParmName == '-')
-		return (-1);
+		return -1;
 
 	for (iIndex = 0; parm_table[iIndex].label; iIndex++)
 		if (strwicmp(parm_table[iIndex].label, pszParmName) == 0)
-			return (iIndex);
+			return iIndex;
 
 	/* Warn only if it isn't parametric option */
 	if (strchr(pszParmName, ':') == NULL)
@@ -1434,7 +1434,7 @@ static int map_parameter(const char *pszParmName)
 	/* We do return 'fail' for parametric options as well because they are
 	   stored in different storage
 	 */
-	return (-1);
+	return -1;
 }
 
 
@@ -1475,7 +1475,7 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
 			break;
 		}
 
-	return (iService);
+	return iService;
 }
 
 /***************************************************************************
@@ -1483,12 +1483,13 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(service * pserviceDest, service * pserviceSource, int *pcopymapDest)
+static void copy_service(service *pserviceDest, service *pserviceSource, 
+			 int *pcopymapDest)
 {
 	int i;
-	BOOL bcopyall = (pcopymapDest == NULL);
+	bool bcopyall = (pcopymapDest == NULL);
 	struct param_opt *data, *pdata, *paramo;
-	BOOL not_added;
+	bool not_added;
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].ptr && parm_table[i].class == P_LOCAL &&
@@ -1600,7 +1601,7 @@ static BOOL service_ok(int iService)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
 			  ServicePtrs[iService]->szService));
 
-	return (bRetval);
+	return bRetval;
 }
 
 static struct file_lists {
@@ -1659,11 +1660,10 @@ BOOL lp_file_list_changed(void)
 	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	while (f) {
-		pstring n2;
+		char *n2;
 		time_t mod_time;
 
-		pstrcpy(n2, f->name);
-		standard_sub_basic(n2,sizeof(n2));
+		n2 = standard_sub_basic(f->name);
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -1677,34 +1677,31 @@ BOOL lp_file_list_changed(void)
 			f->modtime = mod_time;
 			SAFE_FREE(f->subfname);
 			f->subfname = strdup(n2);
-			return (True);
+			return true;
 		}
 		f = f->next;
 	}
-	return (False);
+	return false;
 }
 
 /***************************************************************************
  Handle the include operation.
 ***************************************************************************/
 
-static BOOL handle_include(const char *pszParmValue, char **ptr)
+static bool handle_include(const char *pszParmValue, char **ptr)
 {
-	pstring fname;
-	pstrcpy(fname, pszParmValue);
-
-	standard_sub_basic(fname,sizeof(fname));
+	char *fname = standard_sub_basic(pszParmValue);
 
 	add_to_file_list(pszParmValue, fname);
 
 	string_set(ptr, fname);
 
 	if (file_exist(fname))
-		return (pm_process(fname, do_section, do_parameter, NULL));
+		return pm_process(fname, do_section, do_parameter, NULL);
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
-	return (False);
+	return false;
 }
 
 /***************************************************************************
@@ -1740,7 +1737,7 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr)
 	}
 
 	free_service(&serviceTemp);
-	return (bRetval);
+	return bRetval;
 }
 
 /***************************************************************************
@@ -1848,7 +1845,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			return lp_do_parameter_parametric(snum, pszParmName, pszParmValue, 0);
 		}
 		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
-		return (True);
+		return true;
 	}
 
 	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
@@ -1872,7 +1869,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			DEBUG(0,
 			      ("Global parameter %s found in service section!\n",
 			       pszParmName));
-			return (True);
+			return true;
 		}
 		parm_ptr =
 			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
@@ -1893,7 +1890,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
 		parm_table[parmnum].special(pszParmValue, (char **)parm_ptr);
-		return (True);
+		return true;
 	}
 
 	/* now switch on the type of variable it is */
@@ -1978,7 +1975,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		}
 	}
 
-	return (True);
+	return true;
 }
 
 /***************************************************************************
@@ -1987,8 +1984,8 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue, void *userdata)
 {
-	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
-				pszParmName, pszParmValue));
+	return lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
+				pszParmName, pszParmValue);
 }
 
 /*
@@ -2169,7 +2166,7 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_SEP:
 			break;
 	}
-	return (False);
+	return false;
 }
 
 /***************************************************************************
@@ -2191,7 +2188,7 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
 	/* check for multiple global sections */
 	if (bInGlobalSection) {
 		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
-		return (True);
+		return true;
 	}
 
 	/* if we have a current service, tidy it up before moving on */
@@ -2209,11 +2206,11 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
 		if ((iServiceIndex = add_a_service(&sDefault, pszSectionName))
 		    < 0) {
 			DEBUG(0, ("Failed to add a new service\n"));
-			return (False);
+			return false;
 		}
 	}
 
-	return (bRetval);
+	return bRetval;
 }
 
 
@@ -2430,7 +2427,7 @@ static void lp_add_auto_services(const char *str)
 
 BOOL lp_loaded(void)
 {
-	return (bLoaded);
+	return bLoaded;
 }
 
 /***************************************************************************
@@ -2470,7 +2467,7 @@ void lp_killservice(int iServiceIn)
 
 BOOL lp_load(void)
 {
-	pstring n2;
+	char *n2;
 	BOOL bRetval;
 	struct param_opt *data;
 
@@ -2492,8 +2489,7 @@ BOOL lp_load(void)
 	
 	init_globals();
 
-	pstrcpy(n2, lp_configfile());
-	standard_sub_basic(n2,sizeof(n2));
+	n2 = standard_sub_basic(lp_configfile());
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
 	
 	add_to_file_list(lp_configfile(), n2);
@@ -2521,7 +2517,7 @@ BOOL lp_load(void)
 
 	init_iconv();
 
-	return (bRetval);
+	return bRetval;
 }
 
 /***************************************************************************
@@ -2539,7 +2535,7 @@ void lp_resetnumservices(void)
 
 int lp_numservices(void)
 {
-	return (iNumServices);
+	return iNumServices;
 }
 
 /***************************************************************************
@@ -2584,7 +2580,7 @@ does not copy the found service.
 int lp_servicenumber(const char *pszServiceName)
 {
 	int iService;
-        fstring serviceName;
+        char *serviceName;
  
  
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
@@ -2593,8 +2589,7 @@ int lp_servicenumber(const char *pszServiceName)
 			 * The substitution here is used to support %U is
 			 * service names
 			 */
-			fstrcpy(serviceName, ServicePtrs[iService]->szService);
-			standard_sub_basic(serviceName,sizeof(serviceName));
+			serviceName = standard_sub_basic(ServicePtrs[iService]->szService);
 			if (strequal(serviceName, pszServiceName))
 				break;
 		}
@@ -2603,7 +2598,7 @@ int lp_servicenumber(const char *pszServiceName)
 	if (iService < 0)
 		DEBUG(7,("lp_servicenumber: couldn't find %s\n", pszServiceName));
 
-	return (iService);
+	return iService;
 }
 
 int lp_find_valid_service(const char *pszServiceName)
@@ -2632,7 +2627,7 @@ const char *volume_label(int snum)
 	const char *ret = lp_volume(snum);
 	if (!*ret)
 		return lp_servicename(snum);
-	return (ret);
+	return ret;
 }
 
 
