@@ -43,12 +43,6 @@ case "$1" in
 	# a clusterwide grace period (so other clients dont take out
 	# conflicting locks through other nodes before all locks have been
 	# reclaimed)
-	# we must also let some time pass between stopping and restarting the
-	# lockmanager since othervise there is a window where the lockmanager
-	# will respond "strangely" immediately after restarting it, which
-	# causes clients to fail to reclaim the locks.
-	# 
-	service nfslock stop > /dev/null 2>&1
 
 	# we need these settings to make sure that no tcp connections survive
 	# across a very fast failover/failback
@@ -61,6 +55,7 @@ case "$1" in
 	rm -f /var/lib/nfs/statd/sm/*
 	rm -f /var/lib/nfs/statd/sm.bak/*
 	cat $STATD_SHARED_DIRECTORY/state >/var/lib/nfs/statd/state
+
 
 	# we must keep a monotonically increasing state variable for the entire
 	# cluster  so state always increases when ip addresses fail from one
@@ -82,6 +77,14 @@ case "$1" in
 	# we must also stop nfs (on linux)
 #	service nfs stop > /dev/null 2>&1
 #	service nfs start > /dev/null 2>&1
+
+	# we must also let some time pass between stopping and restarting the
+	# lockmanager since othervise there is a window where the lockmanager
+	# will respond "strangely" immediately after restarting it, which
+	# causes clients to fail to reclaim the locks.
+	# 
+	service nfslock stop > /dev/null 2>&1
+	sleep 2
 
 	# copy all monitored clients on this node to the local lockmanager
 	for f in `/bin/ls /etc/ctdb/state/statd/ip/* 2>/dev/null`; do
