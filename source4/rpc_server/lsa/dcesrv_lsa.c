@@ -2301,7 +2301,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		DEBUG(0,("Failed to create secret record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn), 
 			 ldb_errstring(secret_state->sam_ldb)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_SECRET);
@@ -2398,8 +2398,8 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		}
 		
 		if (ret != 1) {
-			DEBUG(0,("Found %d records matching DN %s\n", ret,
-				 ldb_dn_get_linearized(policy_state->system_dn)));
+			DEBUG(0,("Found %d records matching CN=%s\n", 
+				 ret, ldb_binary_encode_string(mem_ctx, name)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} 
