@@ -270,6 +270,36 @@ BOOL regval_ctr_key_exists( REGVAL_CTR *ctr, const char *value )
 	
 	return False;
 }
+
+/***********************************************************************
+ * compose a REGISTRY_VALUE from input data
+ **********************************************************************/
+
+REGISTRY_VALUE *regval_compose(TALLOC_CTX *ctx, const char *name, uint16 type,
+			       const char *data_p, size_t size)
+{
+	REGISTRY_VALUE *regval = TALLOC_P(ctx, REGISTRY_VALUE);
+
+	if (regval == NULL) {
+		return NULL;
+	}
+
+	fstrcpy(regval->valuename, name);
+	regval->type = type;
+	if (size) {
+		regval->data_p = (uint8 *)TALLOC_MEMDUP(regval, data_p, size);
+		if (!regval->data_p) {
+			TALLOC_FREE(regval);
+			return NULL;
+		}
+	} else {
+		regval->data_p = NULL;
+	}
+	regval->size = size;
+
+	return regval;
+}
+
 /***********************************************************************
  Add a new registry value to the array
  **********************************************************************/
