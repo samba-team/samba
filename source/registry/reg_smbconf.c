@@ -167,10 +167,18 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 
 			DEBUG(10, ("adding canonicalized parameter to "
 				   "container.\n"));
-			res = regval_ctr_addvalue(new_val_ctr, canon_valname,
-						  value->type,
-						  (char *)value_data.data,
-						  value_data.length);
+
+			theval = regval_compose(mem_ctx, canon_valname,
+						value->type,
+						(char *)value_data.data,
+						value_data.length);
+			if (theval == NULL) {
+				DEBUG(10, ("error composing registry value. "
+					   "(no memory?)\n"));
+				TALLOC_FREE(mem_ctx);
+				return False;
+			}
+			res = regval_ctr_copyvalue(new_val_ctr, theval);
 			if (res == 0) {
 				DEBUG(10, ("error calling regval_ctr_addvalue. "
 				      "(no memory?)\n"));
