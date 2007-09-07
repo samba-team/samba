@@ -41,14 +41,15 @@ This file should look something like :
 <pre>
   CTDB_MANAGES_NFS=yes
   NFS_TICKLE_SHARED_DIRECTORY=/gpfs0/nfs-tickles
+  STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
+  NFS_HOSTNAME=ctdb
   STATD_PORT=595
   STATD_OUTGOING_PORT=596
   MOUNTD_PORT=597
   RQUOTAD_PORT=598
   LOCKD_TCPPORT=599
   LOCKD_UDPPORT=599
-  STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
-  STATD_HOSTNAME="ctdb -H /etc/ctdb/statd-callout -p 97"
+  STATD_HOSTNAME="$NFS_HOSTNAME -H /etc/ctdb/statd-callout -p 97"
 </pre>
 
 The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
@@ -74,6 +75,11 @@ This allows the node that takes over an ip address to very quickly 'tickle' and 
 The reason to do this is to improve the speed at which a client will detect
 that the tcp connection for NFS needs to be reestablished and to speed up
 recovery in the client.<br>
+
+NFS_HOSTNAME is the dns name for the ctdb cluster and which is used when clients map nfs shares. This name must be in DNS and resolve back into the public ip addresses of the cluster.<br>
+Always use the same name here as you use for the samba hostname.
+
+
 
 <h2>chkconfig</h2>
 
