@@ -67,7 +67,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
     		echo "*** The pkg-config script could not be found. Make sure it is"
     		echo "*** in your path, or set the PKG_CONFIG environment variable"
     		echo "*** to the full path to pkg-config."
-    		echo "*** Or see http://www.freedesktop.org/software/pkgconfig to get pkg-config."
+    		echo "*** Or see http://pkg-config.freedesktop.org/ to get pkg-config."
 		SMB_EXT_LIB($1)
 		SMB_ENABLE($1, NO)
 		$4
@@ -112,7 +112,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
         		fi
      		else
         		echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
-        			echo "*** See http://www.freedesktop.org/software/pkgconfig"
+        			echo "*** See http://pkg-config.freedesktop.org/"
 				SMB_EXT_LIB($1)
 				SMB_ENABLE($1, NO)
 				$4
