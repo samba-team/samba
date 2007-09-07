@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Volker Lendecke 2006
@@ -8,12 +8,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -224,10 +224,10 @@ static WERROR smbconf_set_secdesc(const char *key,
 }
 
 
-/* 
+/*
  * Table of function pointers for accessing smb.conf data
  */
- 
+
 REGISTRY_OPS smbconf_reg_ops = {
 	smbconf_fetch_keys,
 	smbconf_fetch_values,
