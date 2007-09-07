@@ -27,7 +27,7 @@
 ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, void *_buf, off_t offset, 
 		 size_t size)
 {
-	uint8_t *buf = _buf;
+	uint8_t *buf = (uint8_t *)_buf;
 	union smb_read parms;
 	int readsize;
 	ssize_t total = 0;
@@ -87,7 +87,7 @@ ssize_t smbcli_write(struct smbcli_tree *tree,
 		     int fnum, uint16_t write_mode,
 		     const void *_buf, off_t offset, size_t size)
 {
-	const uint8_t *buf = _buf;
+	const uint8_t *buf = (const uint8_t *)_buf;
 	union smb_write parms;
 	int block = (tree->session->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32));
 	ssize_t total = 0;
@@ -133,7 +133,7 @@ ssize_t smbcli_write(struct smbcli_tree *tree,
 ssize_t smbcli_smbwrite(struct smbcli_tree *tree,
 		     int fnum, const void *_buf, off_t offset, size_t size1)
 {
-	const uint8_t *buf = _buf;
+	const uint8_t *buf = (const uint8_t *)_buf;
 	union smb_write parms;
 	ssize_t total = 0;
 

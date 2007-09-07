@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "auth/credentials/credentials.h"
 #include "lib/registry/registry.h"
+#include "lib/registry/tools/common.h"
 
 struct registry_context *reg_common_open_remote(const char *remote, struct cli_credentials *creds)
 {

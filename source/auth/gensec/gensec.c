@@ -1222,7 +1222,7 @@ NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	generic_security_ops[gensec_num_backends] = discard_const(ops);
+	generic_security_ops[gensec_num_backends] = discard_const_p(struct gensec_security_ops, ops);
 	gensec_num_backends++;
 	generic_security_ops[gensec_num_backends] = NULL;
 

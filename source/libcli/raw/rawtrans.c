@@ -86,7 +86,7 @@ NTSTATUS smb_raw_trans2_recv(struct smbcli_request *req,
 
 	/* allocate it */
 	if (total_data != 0) {
-		tdata = talloc_size(mem_ctx, total_data);
+		tdata = talloc_array(mem_ctx, uint8_t, total_data);
 		if (!tdata) {
 			DEBUG(0,("smb_raw_receive_trans: failed to enlarge data buffer to %d bytes\n", total_data));
 			req->status = NT_STATUS_NO_MEMORY;
@@ -96,7 +96,7 @@ NTSTATUS smb_raw_trans2_recv(struct smbcli_request *req,
 	}
 
 	if (total_param != 0) {
-		tparam = talloc_size(mem_ctx, total_param);
+		tparam = talloc_array(mem_ctx, uint8_t, total_param);
 		if (!tparam) {
 			DEBUG(0,("smb_raw_receive_trans: failed to enlarge param buffer to %d bytes\n", total_param));
 			req->status = NT_STATUS_NO_MEMORY;

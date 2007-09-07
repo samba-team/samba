@@ -50,7 +50,7 @@ static const struct ndr_interface_call *find_function(
 
 #if (_SAMBA_BUILD_ >= 4)
 
-static void show_pipes(void)
+_NORETURN_ static void show_pipes(void)
 {
 	const struct ndr_interface_list *l;
 	printf("\nYou must specify a pipe\n");
@@ -67,7 +67,7 @@ static void show_pipes(void)
 
 #endif
 
-static void show_functions(const struct ndr_interface_table *p)
+_NORETURN_ static void show_functions(const struct ndr_interface_table *p)
 {
 	int i;
 	printf("\nYou must specify a function\n");

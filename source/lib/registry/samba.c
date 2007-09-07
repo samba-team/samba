@@ -24,7 +24,7 @@
  * @brief Samba-specific registry functions
  */
 
-WERROR mount_samba_hive(struct registry_context *ctx,
+static WERROR mount_samba_hive(struct registry_context *ctx,
 						struct auth_session_info *auth_info,
 						struct cli_credentials *creds,
 						const char *name, 

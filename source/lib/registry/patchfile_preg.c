@@ -42,37 +42,37 @@ static WERROR preg_read_utf16(int fd, char *c)
 /* FIXME These functions need to be implemented */
 static WERROR reg_preg_diff_add_key(void *_data, const char *key_name)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	return WERR_OK;
 }
 
 static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	return WERR_OK;
 }
 
 static WERROR reg_preg_diff_set_value(void *_data, const char *key_name, const char *value_name, uint32_t value_type, DATA_BLOB value_data)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	return WERR_OK;
 }
 
 static WERROR reg_preg_diff_del_value(void *_data, const char *key_name, const char *value_name)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	return WERR_OK;
 }
 
 static WERROR reg_preg_diff_del_all_values(void *_data, const char *key_name)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	return WERR_OK;
 }
 
 static WERROR reg_preg_diff_done(void *_data)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 
 	close(data->fd);
 	talloc_free(data);

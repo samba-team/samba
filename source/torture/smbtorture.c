@@ -179,7 +179,7 @@ static void print_test_list(void)
 	}
 }
 
-static void usage(poptContext pc)
+_NORETURN_ static void usage(poptContext pc)
 {
 	struct torture_suite *o;
 	struct torture_suite *s;
@@ -271,7 +271,7 @@ static void usage(poptContext pc)
 	exit(1);
 }
 
-static void max_runtime_handler(int sig)
+_NORETURN_ static void max_runtime_handler(int sig)
 {
 	DEBUG(0,("maximum runtime exceeded for smbtorture - terminating\n"));
 	exit(1);

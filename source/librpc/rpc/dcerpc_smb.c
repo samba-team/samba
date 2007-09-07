@@ -39,7 +39,7 @@ struct smb_private {
 */
 static void pipe_dead(struct dcerpc_connection *c, NTSTATUS status)
 {
-	struct smb_private *smb = c->transport.private_data;
+	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 
 	if (smb->dead) {
 		return;
@@ -141,7 +141,7 @@ static void smb_read_callback(struct smbcli_request *req)
 */
 static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLOB *blob)
 {
-	struct smb_private *smb = c->transport.private_data;
+	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 	union smb_read *io;
 	struct smb_read_state *state;
 	struct smbcli_request *req;
@@ -197,7 +197,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 */
 static NTSTATUS send_read_request(struct dcerpc_connection *c)
 {
-	struct smb_private *smb = c->transport.private_data;
+	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 
 	if (smb->dead) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -220,7 +220,7 @@ struct smb_trans_state {
 */
 static void smb_trans_callback(struct smbcli_request *req)
 {
-	struct smb_trans_state *state = req->async.private;
+	struct smb_trans_state *state = (struct smb_trans_state *)req->async.private;
 	struct dcerpc_connection *c = state->c;
 	NTSTATUS status;
 
@@ -249,7 +249,7 @@ static void smb_trans_callback(struct smbcli_request *req)
 */
 static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *blob)
 {
-        struct smb_private *smb = c->transport.private_data;
+        struct smb_private *smb = (struct smb_private *)c->transport.private_data;
         struct smb_trans2 *trans;
         uint16_t setup[2];
 	struct smb_trans_state *state;
@@ -297,7 +297,7 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
 */
 static void smb_write_callback(struct smbcli_request *req)
 {
-	struct dcerpc_connection *c = req->async.private;
+	struct dcerpc_connection *c = (struct dcerpc_connection *)req->async.private;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
 		DEBUG(0,("dcerpc_smb: write callback error\n"));
@@ -312,7 +312,7 @@ static void smb_write_callback(struct smbcli_request *req)
 */
 static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, BOOL trigger_read)
 {
-	struct smb_private *smb = c->transport.private_data;
+	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 	union smb_write io;
 	struct smbcli_request *req;
 
@@ -356,7 +356,7 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, B
 */
 static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 {
-	struct smb_private *smb = c->transport.private_data;
+	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 	union smb_close io;
 	struct smbcli_request *req;
 
@@ -382,7 +382,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 */
 static const char *smb_peer_name(struct dcerpc_connection *c)
 {
-	struct smb_private *smb = c->transport.private_data;
+	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 	return smb->server_name;
 }
 
@@ -400,7 +400,7 @@ static const char *smb_target_hostname(struct dcerpc_connection *c)
 */
 static NTSTATUS smb_session_key(struct dcerpc_connection *c, DATA_BLOB *session_key)
 {
-	struct smb_private *smb = c->transport.private_data;
+	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 
 	if (smb->tree->session->user_session_key.data) {
 		*session_key = smb->tree->session->user_session_key;

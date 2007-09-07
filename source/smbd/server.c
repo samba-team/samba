@@ -168,7 +168,7 @@ static void server_stdin_handler(struct event_context *event_ctx, struct fd_even
 /*
   die if the user selected maximum runtime is exceeded
 */
-static void max_runtime_handler(struct event_context *ev, struct timed_event *te, 
+_NORETURN_ static void max_runtime_handler(struct event_context *ev, struct timed_event *te, 
 				struct timeval t, void *private)
 {
 	const char *binary_name = private;

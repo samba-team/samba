@@ -146,7 +146,7 @@ WERROR local_get_predefined_key (const struct registry_context *ctx,
 	return WERR_OK;
 }
 
-WERROR local_enum_key(TALLOC_CTX *mem_ctx,
+static WERROR local_enum_key(TALLOC_CTX *mem_ctx,
 					  const struct registry_key *key, uint32_t idx,
 					  const char **name,
 					  const char **keyclass,
@@ -169,7 +169,7 @@ static WERROR local_create_key (TALLOC_CTX *mem_ctx,
 	struct hive_key *hivekey;
 	const char **elements;
 	int i;
-	char *last_part;
+	const char *last_part;
 
 	last_part = strrchr(name, '\\');
 	if (last_part == NULL) {
