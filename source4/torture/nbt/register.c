@@ -155,11 +155,11 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 /*
   test name registration to a server
 */
-struct torture_suite *torture_nbt_register(void)
+struct torture_suite *torture_nbt_register(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
 
-	suite = torture_suite_create(talloc_autofree_context(), "REGISTER");
+	suite = torture_suite_create(mem_ctx, "REGISTER");
 	torture_suite_add_simple_test(suite, "register_own", nbt_register_own);
 	torture_suite_add_simple_test(suite, "refresh_own", nbt_refresh_own);
 

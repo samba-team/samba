@@ -282,11 +282,10 @@ static bool bench_wins(struct torture_context *tctx)
   benchmark how fast a WINS server can respond to a mixture of
   registration/refresh/release and name query requests
 */
-struct torture_suite *torture_bench_wins(void)
+struct torture_suite *torture_bench_wins(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(
-										talloc_autofree_context(),
-										"BENCH-WINS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
+							   "BENCH-WINS");
 
 	torture_suite_add_simple_test(suite, "wins", bench_wins);
 

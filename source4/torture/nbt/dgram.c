@@ -340,9 +340,9 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 /*
   test nbt dgram operations
 */
-struct torture_suite *torture_nbt_dgram(void)
+struct torture_suite *torture_nbt_dgram(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "DGRAM");
+	struct torture_suite *suite = torture_suite_create(suite, "DGRAM");
 
 	torture_suite_add_simple_test(suite, "netlogon", nbt_test_netlogon);
 	torture_suite_add_simple_test(suite, "netlogon2", nbt_test_netlogon2);
