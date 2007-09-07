@@ -407,15 +407,14 @@ static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
 /*
   start listening on the given address
 */
-static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
+static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
+			       uint16_t kdc_port, uint16_t kpasswd_port)
 {
 	const struct model_ops *model_ops;
  	struct kdc_socket *kdc_socket;
  	struct kdc_socket *kpasswd_socket;
 	struct socket_address *kdc_address, *kpasswd_address;
 	NTSTATUS status;
-	uint16_t kdc_port = lp_krb5_port();
-	uint16_t kpasswd_port = lp_kpasswd_port();
 
 	kdc_socket = talloc(kdc, struct kdc_socket);
 	NT_STATUS_HAVE_NO_MEMORY(kdc_socket);
@@ -526,7 +525,8 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc)
 	
 	for (i=0; i<num_interfaces; i++) {
 		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
-		status = kdc_add_socket(kdc, address);
+		status = kdc_add_socket(kdc, address, lp_krb5_port(), 
+					lp_kpasswd_port());
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 

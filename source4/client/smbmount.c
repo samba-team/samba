@@ -911,7 +911,7 @@ static void parse_mount_smb(int argc, char **argv)
 	DEBUG(3,("mount.smbfs started (version %s)\n", VERSION));
 
 	if (*workgroup == 0) {
-		pstrcpy(workgroup,lp_workgroup());
+		pstrcpy(workgroup, lp_workgroup());
 	}
 
 	if (!*my_netbios_name) {

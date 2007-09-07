@@ -62,7 +62,8 @@ static void continue_one(struct composite_context *creq);
 /*
   setup an async socket_connect, with multiple ports
 */
-_PUBLIC_ struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,
+_PUBLIC_ struct composite_context *socket_connect_multi_send(
+						    TALLOC_CTX *mem_ctx,
 						    const char *server_address,
 						    int num_server_ports,
 						    uint16_t *server_ports,

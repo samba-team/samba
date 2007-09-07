@@ -26,9 +26,10 @@
 /*
   wins name resolution method - async send
  */
-struct composite_context *resolve_name_wins_send(TALLOC_CTX *mem_ctx, 
-						 struct event_context *event_ctx,
-						 struct nbt_name *name)
+struct composite_context *resolve_name_wins_send(
+				TALLOC_CTX *mem_ctx, 
+				struct event_context *event_ctx,
+				struct nbt_name *name)
 {
 	const char **address_list = lp_wins_server_list();
 	if (address_list == NULL) return NULL;

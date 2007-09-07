@@ -3045,10 +3045,10 @@ static struct smbclient_context *do_connect(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 handle a -L query
 ****************************************************************************/
-static int do_host_query(const char *query_host)
+static int do_host_query(const char *query_host, const char *workgroup)
 {
 	browse_host(query_host);
-	list_servers(lp_workgroup());
+	list_servers(workgroup);
 	return(0);
 }
 
@@ -3209,7 +3209,7 @@ static int do_message_op(const char *desthost, const char *destip, int name_type
 	}
   
 	if (query_host) {
-		return do_host_query(query_host);
+		return do_host_query(query_host, lp_workgroup());
 	}
 
 	if (message) {

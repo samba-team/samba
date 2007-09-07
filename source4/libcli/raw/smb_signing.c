@@ -375,7 +375,7 @@ BOOL smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
 }
 
 
-BOOL smbcli_init_signing(struct smbcli_transport *transport) 
+bool smbcli_init_signing(struct smbcli_transport *transport) 
 {
 	transport->negotiate.sign_info.mac_key = data_blob(NULL, 0);
 	if (!smbcli_set_signing_off(&transport->negotiate.sign_info)) {

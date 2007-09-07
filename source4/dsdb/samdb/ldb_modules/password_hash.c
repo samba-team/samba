@@ -340,17 +340,17 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
-/*
- * TODO:
- *
- * w2k and w2k3 doesn't support AES, so we'll not include
- * the AES key here yet.
- *
- * Also we don't have an example supplementalCredentials blob
- * from Windows Longhorn Server with AES support
- *
- */
+	if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
+	/*
+	 * TODO:
+	 *
+	 * w2k and w2k3 doesn't support AES, so we'll not include
+	 * the AES key here yet.
+	 *
+	 * Also we don't have an example supplementalCredentials blob
+	 * from Windows Longhorn Server with AES support
+	 *
+	 */
 	/*
 	 * create ENCTYPE_AES256_CTS_HMAC_SHA1_96 key out of
 	 * the salt and the cleartext password
