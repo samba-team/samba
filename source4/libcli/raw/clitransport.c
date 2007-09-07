@@ -635,7 +635,7 @@ NTSTATUS smb_raw_echo_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 	p->out.sequence_number = SVAL(req->in.vwv, VWV(0));
 	p->out.size = req->in.data_size;
 	talloc_free(p->out.data);
-	p->out.data = talloc_size(mem_ctx, p->out.size);
+	p->out.data = talloc_array(mem_ctx, uint8_t, p->out.size);
 	NT_STATUS_HAVE_NO_MEMORY(p->out.data);
 
 	if (!smbcli_raw_pull_data(req, req->in.data, p->out.size, p->out.data)) {

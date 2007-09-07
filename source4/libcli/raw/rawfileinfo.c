@@ -66,7 +66,7 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 		if (size == -1) {
 			return NT_STATUS_ILLEGAL_CHARACTER;
 		}
-		io->streams[n].stream_name.s = vstr;
+		io->streams[n].stream_name.s = (const char *)vstr;
 		io->streams[n].stream_name.private_length = nlen;
 		io->num_streams++;
 		len = IVAL(blob.data, ofs);

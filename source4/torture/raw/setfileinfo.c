@@ -23,6 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/raw/proto.h"
 
 #define BASEDIR "\\testsfileinfo"
 

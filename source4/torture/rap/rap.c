@@ -155,7 +155,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	if ( string_offset + len + 1 >  ndr->data_size )
 		return NT_STATUS_INVALID_PARAMETER;
 
-	*dest = talloc_zero_size(mem_ctx, len+1);
+	*dest = talloc_zero_array(mem_ctx, char, len+1);
 	pull_string(*dest, p, len+1, len, STR_ASCII);
 
 	return NT_STATUS_OK;

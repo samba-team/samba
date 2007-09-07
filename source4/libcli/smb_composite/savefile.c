@@ -180,7 +180,7 @@ static NTSTATUS savefile_close(struct composite_context *c,
 */
 static void savefile_handler(struct smbcli_request *req)
 {
-	struct composite_context *c = req->async.private;
+	struct composite_context *c = (struct composite_context *)req->async.private;
 	struct savefile_state *state = talloc_get_type(c->private_data, struct savefile_state);
 
 	/* when this handler is called, the stage indicates what

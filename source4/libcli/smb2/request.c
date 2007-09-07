@@ -229,7 +229,7 @@ static NTSTATUS smb2_grow_buffer(struct smb2_request_buffer *buf, size_t increas
 
 	dynamic_ofs = buf->dynamic - buf->buffer;
 
-	buffer_ptr = talloc_realloc_size(buf, buf->buffer, newsize);
+	buffer_ptr = talloc_realloc(buf, buf->buffer, uint8_t, newsize);
 	NT_STATUS_HAVE_NO_MEMORY(buffer_ptr);
 
 	buf->buffer	= buffer_ptr;

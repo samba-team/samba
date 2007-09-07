@@ -40,7 +40,7 @@ struct dotreg_data {
 
 static WERROR reg_dotreg_diff_add_key(void *_data, const char *key_name)
 {
-	struct dotreg_data *data = _data;
+	struct dotreg_data *data = (struct dotreg_data *)_data;
 
 	fdprintf(data->fd, "\n[%s]\n", key_name);
 	
@@ -49,7 +49,7 @@ static WERROR reg_dotreg_diff_add_key(void *_data, const char *key_name)
 
 static WERROR reg_dotreg_diff_del_key(void *_data, const char *key_name)
 {
-	struct dotreg_data *data = _data;
+	struct dotreg_data *data = (struct dotreg_data *)_data;
 
 	fdprintf(data->fd, "\n[-%s]\n", key_name);
 	
@@ -59,7 +59,7 @@ static WERROR reg_dotreg_diff_del_key(void *_data, const char *key_name)
 static WERROR reg_dotreg_diff_set_value(void *_data, const char *path, 
 										const char *value_name, uint32_t value_type, DATA_BLOB value)
 {
-	struct dotreg_data *data = _data;
+	struct dotreg_data *data = (struct dotreg_data *)_data;
 
 	fdprintf(data->fd, "\"%s\"=%s:%s\n",
 			value_name, str_regtype(value_type), 
@@ -70,7 +70,7 @@ static WERROR reg_dotreg_diff_set_value(void *_data, const char *path,
 
 static WERROR reg_dotreg_diff_del_value(void *_data, const char *path, const char *value_name)
 {
-	struct dotreg_data *data = _data;
+	struct dotreg_data *data = (struct dotreg_data *)_data;
 
 	fdprintf(data->fd, "\"%s\"=-\n", value_name);
 
@@ -130,7 +130,8 @@ _PUBLIC_ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
 /**
  * Load diff file
  */
-_PUBLIC_ WERROR reg_dotreg_diff_load(int fd, const struct reg_diff_callbacks *callbacks, void *callback_data)
+_PUBLIC_ WERROR reg_dotreg_diff_load(int fd, 
+		const struct reg_diff_callbacks *callbacks, void *callback_data)
 {
 	char *line, *p, *q;
 	char *curkey = NULL;

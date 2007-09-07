@@ -253,8 +253,8 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
  * Load diff file
  */
 _PUBLIC_ WERROR reg_diff_load(const char *filename, 
-							  const struct reg_diff_callbacks *callbacks, 
-							  void *callback_data)
+			      const struct reg_diff_callbacks *callbacks, 
+			      void *callback_data)
 {
 	int fd;
 	char hdr[4];
@@ -295,7 +295,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
  */
 static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name) 
 {
-	struct registry_context *ctx = _ctx;
+	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
 	WERROR error;
 
@@ -310,7 +310,7 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 
 static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name) 
 {
-	struct registry_context *ctx = _ctx;
+	struct registry_context *ctx = (struct registry_context *)_ctx;
 	WERROR error;
 
 	error = reg_key_del_abs(ctx, key_name);
@@ -325,7 +325,7 @@ static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name)
 
 static WERROR reg_diff_apply_set_value(void *_ctx, const char *path, const char *value_name, uint32_t value_type, DATA_BLOB value)
 {
-	struct registry_context *ctx = _ctx;
+	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
 	WERROR error;
 	
@@ -350,7 +350,7 @@ static WERROR reg_diff_apply_set_value(void *_ctx, const char *path, const char 
 
 static WERROR reg_diff_apply_del_value (void *_ctx, const char *key_name, const char *value_name)
 {
-	struct registry_context *ctx = _ctx;
+	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
 	WERROR error;
 	
@@ -374,7 +374,7 @@ static WERROR reg_diff_apply_del_value (void *_ctx, const char *key_name, const 
 
 static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 {
-	struct registry_context *ctx = _ctx;
+	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *key;
 	WERROR error;
 	int i;

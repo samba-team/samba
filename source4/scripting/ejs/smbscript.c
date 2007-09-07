@@ -29,7 +29,7 @@
 
 static EjsId eid;
 
-static void smbscript_ejs_exception(const char *reason)
+_NORETURN_ static void smbscript_ejs_exception(const char *reason)
 {
 	Ejs *ep = ejsPtr(eid);
 	ejsSetErrorMsg(eid, "%s", reason);

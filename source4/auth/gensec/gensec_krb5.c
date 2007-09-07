@@ -191,7 +191,7 @@ static NTSTATUS gensec_krb5_server_start(struct gensec_security *gensec_security
 		return nt_status;
 	}
 	
-	gensec_krb5_state = gensec_security->private_data;
+	gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	gensec_krb5_state->state_position = GENSEC_KRB5_SERVER_START;
 
 	return NT_STATUS_OK;
@@ -203,7 +203,7 @@ static NTSTATUS gensec_fake_gssapi_krb5_server_start(struct gensec_security *gen
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		struct gensec_krb5_state *gensec_krb5_state;
-		gensec_krb5_state = gensec_security->private_data;
+		gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 		gensec_krb5_state->gssapi = True;
 	}
 	return nt_status;
@@ -240,7 +240,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		return nt_status;
 	}
 
-	gensec_krb5_state = gensec_security->private_data;
+	gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_START;
 
 	principal = gensec_get_target_principal(gensec_security);

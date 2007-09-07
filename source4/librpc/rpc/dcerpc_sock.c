@@ -45,7 +45,7 @@ struct sock_private {
 */
 static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 {
-	struct sock_private *sock = p->transport.private_data;
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 
 	if (!sock) return;
 
@@ -111,7 +111,7 @@ static NTSTATUS sock_process_recv(void *private, DATA_BLOB blob)
 {
 	struct dcerpc_connection *p = talloc_get_type(private, 
 						      struct dcerpc_connection);
-	struct sock_private *sock = p->transport.private_data;
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 	sock->pending_reads--;
 	if (sock->pending_reads == 0) {
 		packet_recv_disable(sock->packet);
@@ -128,7 +128,7 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 {
 	struct dcerpc_connection *p = talloc_get_type(private, 
 						      struct dcerpc_connection);
-	struct sock_private *sock = p->transport.private_data;
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 
 	if (flags & EVENT_FD_WRITE) {
 		packet_queue_run(sock->packet);
@@ -149,7 +149,7 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 */
 static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 {
-	struct sock_private *sock = p->transport.private_data;
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 	sock->pending_reads++;
 	if (sock->pending_reads == 1) {
 		packet_recv_enable(sock->packet);
@@ -163,7 +163,7 @@ static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, 
 				  BOOL trigger_read)
 {
-	struct sock_private *sock = p->transport.private_data;
+	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 	DATA_BLOB blob;
 	NTSTATUS status;
 

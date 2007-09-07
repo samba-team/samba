@@ -33,7 +33,7 @@ struct delete_state {
 */
 static void delete_fn(struct clilist_file_info *finfo, const char *name, void *state)
 {
-	struct delete_state *dstate = state;
+	struct delete_state *dstate = (struct delete_state *)state;
 	char *s, *n;
 	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
 		return;

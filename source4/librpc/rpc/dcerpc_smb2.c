@@ -41,7 +41,7 @@ struct smb2_private {
 */
 static void pipe_dead(struct dcerpc_connection *c, NTSTATUS status)
 {
-	struct smb2_private *smb = c->transport.private_data;
+	struct smb2_private *smb = (struct smb2_private *)c->transport.private_data;
 
 	if (smb->dead) {
 		return;
@@ -145,7 +145,7 @@ static void smb2_read_callback(struct smb2_request *req)
 */
 static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLOB *blob)
 {
-	struct smb2_private *smb = c->transport.private_data;
+	struct smb2_private *smb = (struct smb2_private *)c->transport.private_data;
 	struct smb2_read io;
 	struct smb2_read_state *state;
 	struct smb2_request *req;
@@ -190,7 +190,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 */
 static NTSTATUS send_read_request(struct dcerpc_connection *c)
 {
-	struct smb2_private *smb = c->transport.private_data;
+	struct smb2_private *smb = (struct smb2_private *)c->transport.private_data;
 
 	if (smb->dead) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -280,7 +280,7 @@ static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *
 */
 static void smb2_write_callback(struct smb2_request *req)
 {
-	struct dcerpc_connection *c = req->async.private;
+	struct dcerpc_connection *c = (struct dcerpc_connection *)req->async.private;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
 		DEBUG(0,("dcerpc_smb2: write callback error\n"));
@@ -296,7 +296,7 @@ static void smb2_write_callback(struct smb2_request *req)
 static NTSTATUS smb2_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, 
 				  BOOL trigger_read)
 {
-	struct smb2_private *smb = c->transport.private_data;
+	struct smb2_private *smb = (struct smb2_private *)c->transport.private_data;
 	struct smb2_write io;
 	struct smb2_request *req;
 
@@ -328,7 +328,7 @@ static NTSTATUS smb2_send_request(struct dcerpc_connection *c, DATA_BLOB *blob,
 */
 static NTSTATUS smb2_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 {
-	struct smb2_private *smb = c->transport.private_data;
+	struct smb2_private *smb = (struct smb2_private *)c->transport.private_data;
 	struct smb2_close io;
 	struct smb2_request *req;
 

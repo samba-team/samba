@@ -191,7 +191,7 @@ static void standard_new_task(struct event_context *ev,
 
 
 /* called when a task goes down */
-static void standard_terminate(struct event_context *ev, const char *reason) 
+_NORETURN_ static void standard_terminate(struct event_context *ev, const char *reason) 
 {
 	DEBUG(2,("standard_terminate: reason[%s]\n",reason));
 

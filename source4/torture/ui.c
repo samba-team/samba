@@ -87,12 +87,12 @@ void torture_tcase_set_fixture(struct torture_tcase *tcase,
 }
 
 static bool wrap_test_with_testcase(struct torture_context *torture_ctx,
-									struct torture_tcase *tcase,
-									struct torture_test *test)
+				    struct torture_tcase *tcase,
+				    struct torture_test *test)
 {
 	bool (*fn) (struct torture_context *, 
-				 const void *tcase_data,
-				 const void *test_data);
+		    const void *tcase_data,
+		    const void *test_data);
 
 	fn = test->fn;
 

@@ -959,7 +959,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->recv_handler = NULL;
 
 	if (object != NULL) {
-		req->object = talloc_memdup(req, object, sizeof(*object));
+		req->object = talloc_memdup(req, (void *)object, sizeof(*object));
 		if (req->object == NULL) {
 			talloc_free(req);
 			return NULL;
