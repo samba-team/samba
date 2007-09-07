@@ -144,7 +144,8 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump *r)
+NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
+			struct libnet_SamDump *r)
 {
 	NTSTATUS nt_status;
 	struct libnet_SamSync r2;

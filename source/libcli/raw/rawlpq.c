@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smb.h"
+#include "libcli/raw/libcliraw.h"
 
 /****************************************************************************
  lpq - async send

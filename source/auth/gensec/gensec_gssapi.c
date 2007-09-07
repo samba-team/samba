@@ -1229,7 +1229,9 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return NT_STATUS_FOOBAR;
 	}
 
-	principal_string = talloc_strndup(mem_ctx, name_token.value, name_token.length);
+	principal_string = talloc_strndup(mem_ctx, 
+					  (const char *)name_token.value, 
+					  name_token.length);
 
 	gss_release_buffer(&min_stat, &name_token);
 

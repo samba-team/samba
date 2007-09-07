@@ -223,8 +223,8 @@ static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call, TALLOC_C
 	uint8_t *extra_data;
 	size_t extra_data_len = 0;
 
-	extra_data = call->response.extra_data.data;
-	if (extra_data) {
+	extra_data = (uint8_t *)call->response.extra_data.data;
+	if (extra_data != NULL) {
 		extra_data_len = call->response.length -
 			sizeof(call->response);
 	}

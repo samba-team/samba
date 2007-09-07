@@ -538,7 +538,8 @@ static void ldapsrv_task_init(struct task_server *task)
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		status = add_socket(task->event_ctx, model_ops, lp_socket_address(), ldap_service);
+		status = add_socket(task->event_ctx, model_ops, 
+				    lp_socket_address(), ldap_service);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

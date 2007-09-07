@@ -188,7 +188,8 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 NTSTATUS resolve_name(struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **reply_addr, 
 		      struct event_context *ev)
 {
-	struct composite_context *c = resolve_name_send(name, ev, lp_name_resolve_order());
+	struct composite_context *c = resolve_name_send(name, ev, 
+						lp_name_resolve_order());
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
 

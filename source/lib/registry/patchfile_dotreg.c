@@ -79,7 +79,7 @@ static WERROR reg_dotreg_diff_del_value(void *_data, const char *path, const cha
 
 static WERROR reg_dotreg_diff_done(void *_data)
 {
-	struct dotreg_data *data = _data;
+	struct dotreg_data *data = (struct dotreg_data *)_data;
 
 	close(data->fd);
 	talloc_free(data);
