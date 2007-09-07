@@ -25,7 +25,6 @@
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/msrpc_parse.h"
 #include "lib/crypto/crypto.h"
-#include "pstring.h"
 #include "system/filesys.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
@@ -105,59 +104,6 @@ static const char *ntlmssp_target_name(struct gensec_ntlmssp_state *gensec_ntlms
 	}
 }
 
-/*
-  Andrew, please remove these totally bogus calls when you get time
-*/
-static BOOL get_myfullname(char *my_name)
-{
-	pstring hostname;
-
-	*hostname = 0;
-
-	/* get my host name */
-	if (gethostname(hostname, sizeof(hostname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
-		return False;
-	} 
-
-	/* Ensure null termination. */
-	hostname[sizeof(hostname)-1] = '\0';
-
-	if (my_name)
-		fstrcpy(my_name, hostname);
-	return True;
-}
-
-static BOOL get_mydomname(char *my_domname)
-{
-	pstring hostname;
-	char *p;
-
-	/* arrgh! relies on full name in system */
-
-	*hostname = 0;
-	/* get my host name */
-	if (gethostname(hostname, sizeof(hostname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
-		return False;
-	} 
-
-	/* Ensure null termination. */
-	hostname[sizeof(hostname)-1] = '\0';
-
-	p = strchr_m(hostname, '.');
-
-	if (!p)
-		return False;
-
-	p++;
-	
-	if (my_domname)
-		fstrcpy(my_domname, p);
-
-	return True;
-}
-
 
 
 /**
@@ -176,7 +122,8 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	DATA_BLOB struct_blob;
-	fstring dnsname, dnsdomname;
+	char dnsname[MAXHOSTNAMELEN], dnsdomname[MAXHOSTNAMELEN];
+	const char *p;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
 	const uint8_t *cryptkey;
@@ -227,13 +174,20 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	gensec_ntlmssp_state->chal = data_blob_talloc(gensec_ntlmssp_state, cryptkey, 8);
 	gensec_ntlmssp_state->internal_chal = data_blob_talloc(gensec_ntlmssp_state, cryptkey, 8);
 
-	/* This should be a 'netbios domain -> DNS domain' mapping */
-	dnsdomname[0] = '\0';
-	get_mydomname(dnsdomname);
-	strlower_m(dnsdomname);
-	
 	dnsname[0] = '\0';
-	get_myfullname(dnsname);
+	if (gethostname(dnsname, sizeof(dnsname)) == -1) {
+		DEBUG(0,("gethostname failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* This should be a 'netbios domain -> DNS domain' mapping */
+	p = strchr(dnsname, '.');
+	if (p != NULL) {
+		safe_strcpy(dnsdomname, p+1, sizeof(dnsdomname));
+		strlower_m(dnsdomname);
+	} else {
+		dnsdomname[0] = '\0';
+	}
 	
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
