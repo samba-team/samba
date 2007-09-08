@@ -2540,24 +2540,8 @@ struct loadparm_service *lp_servicebynum(int snum)
 
 struct loadparm_service *lp_service(const char *service_name)
 {
-	int snum = lp_servicenumber(service_name);
-	if (snum < 0)
-		return NULL;
-	return loadparm.ServicePtrs[snum];
-}
-
-/***************************************************************************
-Return the number of the service with the given name, or -1 if it doesn't
-exist. Note that this is a DIFFERENT ANIMAL from the internal function
-getservicebyname()! This works ONLY if all services have been loaded, and
-does not copy the found service.
-***************************************************************************/
-
-int lp_servicenumber(const char *pszServiceName)
-{
 	int iService;
         char *serviceName;
- 
  
 	for (iService = loadparm.iNumServices - 1; iService >= 0; iService--) {
 		if (loadparm.ServicePtrs[iService] && 
@@ -2568,16 +2552,15 @@ int lp_servicenumber(const char *pszServiceName)
 			 */
 			serviceName = standard_sub_basic(loadparm.ServicePtrs[iService],
 							 loadparm.ServicePtrs[iService]->szService);
-			if (strequal(serviceName, pszServiceName))
-				break;
+			if (strequal(serviceName, service_name))
+				return loadparm.ServicePtrs[iService];
 		}
 	}
 
-	if (iService < 0)
-		DEBUG(7,("lp_servicenumber: couldn't find %s\n", pszServiceName));
-
-	return iService;
+	DEBUG(7,("lp_servicenumber: couldn't find %s\n", service_name));
+	return NULL;
 }
+
 
 /*******************************************************************
  A useful volume label function. 
