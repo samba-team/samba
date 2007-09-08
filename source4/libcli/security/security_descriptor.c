@@ -60,7 +60,7 @@ static struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	nacl->aces = talloc_memdup (nacl, oacl->aces, sizeof(struct security_ace) * oacl->num_aces);
+	nacl->aces = (struct security_ace *)talloc_memdup (nacl, oacl->aces, sizeof(struct security_ace) * oacl->num_aces);
 	if ((nacl->aces == NULL) && (oacl->num_aces > 0)) {
 		goto failed;
 	}
@@ -69,7 +69,7 @@ static struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < oacl->num_aces; i++) {
 		nacl->aces[i].trustee.sub_auths = 
-			talloc_memdup(nacl->aces, nacl->aces[i].trustee.sub_auths,
+			(uint32_t *)talloc_memdup(nacl->aces, nacl->aces[i].trustee.sub_auths,
 				      sizeof(uint32_t) * nacl->aces[i].trustee.num_auths);
 
 		if ((nacl->aces[i].trustee.sub_auths == NULL) && (nacl->aces[i].trustee.num_auths > 0)) {
@@ -163,7 +163,7 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 
 	sd->dacl->aces[sd->dacl->num_aces] = *ace;
 	sd->dacl->aces[sd->dacl->num_aces].trustee.sub_auths = 
-		talloc_memdup(sd->dacl->aces, 
+		(uint32_t *)talloc_memdup(sd->dacl->aces, 
 			      sd->dacl->aces[sd->dacl->num_aces].trustee.sub_auths,
 			      sizeof(uint32_t) * 
 			      sd->dacl->aces[sd->dacl->num_aces].trustee.num_auths);

@@ -433,7 +433,7 @@ static int ejs_find_domainsecrets(MprVarHandle eid, int argc, struct MprVar **ar
 		return -1;
 	}
 
-	samba3 = mprGetThisPtr(eid, "samba3");
+	samba3 = (struct samba3 *)mprGetThisPtr(eid, "samba3");
 	mprAssert(samba3);
 	sec = samba3_find_domainsecrets(samba3, mprToString(argv[0]));
 

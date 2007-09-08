@@ -393,7 +393,7 @@ _PUBLIC_ char *strchr_m(const char *s, char c)
 		size_t size;
 		codepoint_t c2 = next_codepoint(s, &size);
 		if (c2 == c) {
-			return discard_const(s);
+			return discard_const_p(char, s);
 		}
 		s += size;
 	}
@@ -418,7 +418,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 		size_t size;
 		codepoint_t c2 = next_codepoint(s, &size);
 		if (c2 == c) {
-			ret = discard_const(s);
+			ret = discard_const_p(char, s);
 		}
 		s += size;
 	}
@@ -482,7 +482,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
-	dest = talloc_size(ctx, 2*(strlen(src))+1);
+	dest = talloc_array(ctx, char, 2*(strlen(src))+1);
 	if (dest == NULL) {
 		return NULL;
 	}
@@ -505,7 +505,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 	dest[size] = 0;
 
 	/* trim it so talloc_append_string() works */
-	dest = talloc_realloc_size(ctx, dest, size+1);
+	dest = talloc_realloc(ctx, dest, char, size+1);
 
 	talloc_set_name_const(dest, dest);
 
@@ -526,7 +526,7 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
-	dest = talloc_size(ctx, 2*(strlen(src))+1);
+	dest = talloc_array(ctx, char, 2*(strlen(src))+1);
 	if (dest == NULL) {
 		return NULL;
 	}
@@ -549,7 +549,7 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 	dest[size] = 0;
 
 	/* trim it so talloc_append_string() works */
-	dest = talloc_realloc_size(ctx, dest, size+1);
+	dest = talloc_realloc(ctx, dest, char, size+1);
 
 	talloc_set_name_const(dest, dest);
 

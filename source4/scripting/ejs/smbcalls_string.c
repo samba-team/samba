@@ -437,7 +437,7 @@ static int ejs_encodeURIComponent(MprVarHandle eid, int argc, char **argv)
 		if (!isalnum(s[i])) count++;
 	}
 	
-	ret = talloc_size(mprMemCtx(), i + count*2 + 1);
+	ret = talloc_array(mprMemCtx(), char, i + count*2 + 1);
 	if (ret == NULL) {
 		return -1;
 	}
@@ -470,7 +470,7 @@ static int ejs_decodeURIComponent(MprVarHandle eid, int argc, char **argv)
 	
 	s = argv[0];
 
-	ret = talloc_size(mprMemCtx(), strlen(s) + 1);
+	ret = talloc_array(mprMemCtx(), char, strlen(s) + 1);
 	if (ret == NULL) {
 		return -1;
 	}

@@ -39,9 +39,9 @@ _PUBLIC_ DATA_BLOB data_blob_named(const void *p, size_t length, const char *nam
 	}
 
 	if (p) {
-		ret.data = talloc_memdup(NULL, p, length);
+		ret.data = (uint8_t *)talloc_memdup(NULL, p, length);
 	} else {
-		ret.data = talloc_size(NULL, length);
+		ret.data = talloc_array(NULL, uint8_t, length);
 	}
 	if (ret.data == NULL) {
 		ret.length = 0;
@@ -175,7 +175,7 @@ _PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 _PUBLIC_ DATA_BLOB data_blob_string_const(const char *str)
 {
 	DATA_BLOB blob;
-	blob.data = discard_const(str);
+	blob.data = discard_const_p(uint8_t, str);
 	blob.length = strlen(str);
 	return blob;
 }
@@ -187,7 +187,7 @@ _PUBLIC_ DATA_BLOB data_blob_string_const(const char *str)
 _PUBLIC_ DATA_BLOB data_blob_const(const void *p, size_t length)
 {
 	DATA_BLOB blob;
-	blob.data = discard_const(p);
+	blob.data = discard_const_p(uint8_t, p);
 	blob.length = length;
 	return blob;
 }
@@ -198,7 +198,7 @@ _PUBLIC_ DATA_BLOB data_blob_const(const void *p, size_t length)
 **/
 _PUBLIC_ bool data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t length)
 {
-	blob->data = talloc_realloc_size(mem_ctx, blob->data, length);
+	blob->data = talloc_realloc(mem_ctx, blob->data, uint8_t, length);
 	if (blob->data == NULL)
 		return false;
 	blob->length = length;

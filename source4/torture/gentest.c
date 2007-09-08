@@ -1353,7 +1353,7 @@ static BOOL handler_readx(int instance)
 	parm[0].readx.in.maxcnt = gen_io_count();
 	parm[0].readx.in.remaining = gen_io_count();
 	parm[0].readx.in.read_for_execute = gen_bool();
-	parm[0].readx.out.data = talloc_size(current_op.mem_ctx,
+	parm[0].readx.out.data = talloc_array(current_op.mem_ctx, uint8_t,
 					     MAX(parm[0].readx.in.mincnt, parm[0].readx.in.maxcnt));
 
 	GEN_COPY_PARM;
@@ -1381,7 +1381,7 @@ static BOOL handler_writex(int instance)
 	parm[0].writex.in.wmode = gen_bits_mask(0xFFFF);
 	parm[0].writex.in.remaining = gen_io_count();
 	parm[0].writex.in.count = gen_io_count();
-	parm[0].writex.in.data = talloc_zero_size(current_op.mem_ctx, parm[0].writex.in.count);
+	parm[0].writex.in.data = talloc_zero_array(current_op.mem_ctx, uint8_t, parm[0].writex.in.count);
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM(writex.in.file.fnum);

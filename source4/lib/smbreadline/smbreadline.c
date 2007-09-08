@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "system/select.h"
 #include "system/readline.h"
+#include "lib/smbreadline/smbreadline.h"
 
 /*******************************************************************
  Similar to sys_select() but catch EINTR and continue.

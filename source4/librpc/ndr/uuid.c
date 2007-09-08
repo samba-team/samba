@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "librpc/ndr/libndr.h"
 
 /**
   build a GUID from a string

@@ -78,7 +78,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 		  get credential values from credentials object
 		*/
 		mprCreds = *(argv[0]);
-		creds = mprGetPtr(&mprCreds, "creds");
+		creds = (struct cli_credentials *)mprGetPtr(&mprCreds, "creds");
 		if (creds == NULL) {
 			ejsSetErrorMsg(eid, "invalid credentials parameter");
 			talloc_free(ctx);
@@ -122,7 +122,7 @@ static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct libnet_context *ctx;
 	struct libnet_Join *join;
 	NTSTATUS status;
-	ctx = mprGetThisPtr(eid, "ctx");
+	ctx = (struct libnet_context *)mprGetThisPtr(eid, "ctx");
 	mem_ctx = talloc_new(mprMemCtx());
 
 	join = talloc(mem_ctx, struct libnet_Join);
@@ -181,7 +181,7 @@ static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct libnet_context *ctx;
 	struct libnet_samsync_ldb *samsync;
 	NTSTATUS status;
-	ctx = mprGetThisPtr(eid, "ctx");
+	ctx = (struct libnet_context *)mprGetThisPtr(eid, "ctx");
 	mem_ctx = talloc_new(mprMemCtx());
 
 	samsync = talloc(mem_ctx, struct libnet_samsync_ldb);

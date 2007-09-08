@@ -152,7 +152,7 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 	smb_iconv_t descriptor;
 
 	if (srclen == (size_t)-1)
-		srclen = strlen(src)+1;
+		srclen = strlen(inbuf)+1;
 
 	descriptor = get_conv_handle(from, to);
 
@@ -351,9 +351,9 @@ static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t s
 
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
 		if (src_len == (size_t)-1) {
-			src_len = strlen(src) + 1;
+			src_len = strlen((const char *)src) + 1;
 		} else {
-			size_t len = strnlen(src, src_len);
+			size_t len = strnlen((const char *)src, src_len);
 			if (len < src_len)
 				len++;
 			src_len = len;

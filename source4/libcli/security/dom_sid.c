@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/security.h"
+#include "libcli/security/security.h"
 
 /*****************************************************************
  Compare the auth portion of two sids.
@@ -78,7 +79,7 @@ static int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid
  Compare two sids.
 *****************************************************************/  
 
-BOOL dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
+bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	return dom_sid_compare(sid1, sid2) == 0;
 }

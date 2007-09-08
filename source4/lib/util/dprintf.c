@@ -48,7 +48,7 @@ _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBU
 	   charset, but beware of it growing */
 	maxlen = ret*2;
 again:
-	p2 = malloc(maxlen);
+	p2 = (char *)malloc(maxlen);
 	if (!p2) {
 		SAFE_FREE(p);
 		return -1;

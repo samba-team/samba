@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/tdb/include/tdb.h"
 #include "pstring.h"
+#include "lib/util/util_tdb.h"
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
@@ -127,7 +128,7 @@ int tdb_store_int32_byblob(struct tdb_context *tdb, const char *keystr, size_t l
 	int32_t v_store;
 
 	SIVAL(&v_store,0,v);
-	data.dptr = (void *)&v_store;
+	data.dptr = (unsigned char *)&v_store;
 	data.dsize = sizeof(int32_t);
 
 	return tdb_store(tdb, key, data, TDB_REPLACE);
@@ -187,7 +188,7 @@ bool tdb_store_uint32_byblob(struct tdb_context *tdb, const char *keystr, size_t
 	bool ret = true;
 
 	SIVAL(&v_store, 0, value);
-	data.dptr = (void *)&v_store;
+	data.dptr = (unsigned char *)&v_store;
 	data.dsize = sizeof(uint32_t);
 
 	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)

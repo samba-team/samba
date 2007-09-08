@@ -34,7 +34,7 @@
  */
 static struct ldb_context *ejs_get_ldb_context(int eid)
 {
-	struct ldb_context *ldb = mprGetThisPtr(eid, "db");
+	struct ldb_context *ldb = (struct ldb_context *)mprGetThisPtr(eid, "db");
 	if (ldb == NULL) {
 		ejsSetErrorMsg(eid, "invalid ldb connection");
 	}

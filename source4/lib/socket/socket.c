@@ -408,7 +408,7 @@ _PUBLIC_ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx
 	addr->family = NULL; 
 	addr->addr = NULL;
 	addr->port = 0;
-	addr->sockaddr = talloc_memdup(addr, sockaddr, sockaddrlen);
+	addr->sockaddr = (struct sockaddr *)talloc_memdup(addr, sockaddr, sockaddrlen);
 	if (!addr->sockaddr) {
 		talloc_free(addr);
 		return NULL;

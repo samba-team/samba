@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "lib/tls/tls.h"
 
 #if ENABLE_GNUTLS
 #include "gnutls/gnutls.h"

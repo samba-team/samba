@@ -56,7 +56,7 @@ struct epoll_event_context {
   called when a epoll call fails, and we should fallback
   to using select
 */
-static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
+_NORETURN_ static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
 	DEBUG(0,("%s (%s) - calling abort()\n", reason, strerror(errno)));
 	abort();

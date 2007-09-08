@@ -72,7 +72,7 @@ static double dir_total;
 /*******************************************************************
  Reduce a file name, removing .. elements.
 ********************************************************************/
-void dos_clean_name(char *s)
+static void dos_clean_name(char *s)
 {
 	char *p=NULL,*r;
 
@@ -98,7 +98,7 @@ number taken from the buffer. This may not equal the number written.
 ****************************************************************************/
 static int writefile(int f, const void *_b, int n, BOOL translation)
 {
-	const uint8_t *b = _b;
+	const uint8_t *b = (const uint8_t *)_b;
 	int i;
 
 	if (!translation) {
@@ -126,7 +126,7 @@ static int writefile(int f, const void *_b, int n, BOOL translation)
 ****************************************************************************/
 static int readfile(void *_b, int n, XFILE *f, BOOL translation)
 {
-	uint8_t *b = _b;
+	uint8_t *b = (uint8_t *)_b;
 	int i;
 	int c;
 
@@ -281,11 +281,11 @@ static int cmd_cd(struct smbclient_context *ctx, const char **args)
 }
 
 
-BOOL mask_match(struct smbcli_state *c, const char *string, const char *pattern, 
-		BOOL is_case_sensitive)
+static bool mask_match(struct smbcli_state *c, const char *string, 
+		const char *pattern, bool is_case_sensitive)
 {
 	char *p2, *s2;
-	BOOL ret;
+	bool ret;
 
 	if (ISDOTDOT(string))
 		string = ".";
@@ -397,7 +397,7 @@ static void init_do_list_queue(void)
 {
 	reset_do_list_queue();
 	do_list_queue_size = 1024;
-	do_list_queue = malloc(do_list_queue_size);
+	do_list_queue = malloc_array_p(char, do_list_queue_size);
 	if (do_list_queue == 0) { 
 		d_printf("malloc fail for size %d\n",
 			 (int)do_list_queue_size);
@@ -491,7 +491,7 @@ a helper for do_list
   ****************************************************************************/
 static void do_list_helper(struct clilist_file_info *f, const char *mask, void *state)
 {
-	struct smbclient_context *ctx = state;
+	struct smbclient_context *ctx = (struct smbclient_context *)state;
 
 	if (f->attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		if (do_list_dirs && do_this_one(ctx, f)) {
@@ -2831,7 +2831,7 @@ static char **remote_completion(const char *text, int len)
 	if (info.count == 2)
 		info.matches[0] = strdup(info.matches[1]);
 	else {
-		info.matches[0] = malloc(info.samelen+1);
+		info.matches[0] = malloc_array_p(char, info.samelen+1);
 		if (!info.matches[0])
 			goto cleanup;
 		strncpy(info.matches[0], info.matches[1], info.samelen);
@@ -2913,7 +2913,7 @@ static char **completion_fn(const char *text, int start, int end)
 			matches[0] = strdup(matches[1]);
 			break;
 		default:
-			matches[0] = malloc(samelen+1);
+			matches[0] = malloc_array_p(char, samelen+1);
 			if (!matches[0])
 				goto cleanup;
 			strncpy(matches[0], matches[1], samelen);
