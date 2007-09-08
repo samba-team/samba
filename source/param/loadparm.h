@@ -41,12 +41,14 @@ struct enum_list {
 	const char *name;
 };
 
+struct loadparm_context;
+
 struct parm_struct {
 	const char *label;
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	bool (*special)(const char *, char **);
+	bool (*special)(struct loadparm_context *, const char *, char **);
 	const struct enum_list *enum_list;
 	unsigned int flags;
 	union {
