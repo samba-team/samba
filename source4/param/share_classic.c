@@ -326,19 +326,19 @@ static NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static const struct share_ops ops = {
+	.name = "classic",
+	.init = sclassic_init,
+	.string_option = sclassic_string_option,
+	.int_option = sclassic_int_option,
+	.bool_option = sclassic_bool_option,
+	.string_list_option = sclassic_string_list_option,
+	.list_all = sclassic_list_all,
+	.get_config = sclassic_get_config
+};
+
 NTSTATUS share_classic_init(void)
 {
-	static struct share_ops ops = {
-		.name = "classic",
-		.init = sclassic_init,
-		.string_option = sclassic_string_option,
-		.int_option = sclassic_int_option,
-		.bool_option = sclassic_bool_option,
-		.string_list_option = sclassic_string_list_option,
-		.list_all = sclassic_list_all,
-		.get_config = sclassic_get_config
-	};
-
 	return share_register(&ops);
 }
 

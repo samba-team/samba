@@ -69,11 +69,7 @@ static bool bLoaded = false;
 
 #define standard_sub_basic talloc_strdup
 
-/* some helpful bits */
-#define VALID(i) (loadparm.ServicePtrs[i] != NULL)
-
 static bool do_parameter(const char *, const char *, void *);
-
 static bool defaults_saved = false;
 
 struct param_opt {
@@ -274,18 +270,27 @@ static struct loadparm_context {
 	int iNumServices;
 	struct loadparm_service *currentService;
 	bool bInGlobalSection;
+	struct file_lists {
+		struct file_lists *next;
+		char *name;
+		char *subfname;
+		time_t modtime;
+	} *file_lists;
 } loadparm = {
 	.iNumServices = 0,
 	.currentService = NULL,
 	.bInGlobalSection = true,
 	.ServicePtrs = NULL,
+	.file_lists = NULL,
 };
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static bool handle_include(const char *pszParmValue, char **ptr);
-static bool handle_copy(const char *pszParmValue, char **ptr);
+static bool handle_include(struct loadparm_context *lp_ctx, 
+			   const char *pszParmValue, char **ptr);
+static bool handle_copy(struct loadparm_context *lp_ctx, 
+			const char *pszParmValue, char **ptr);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2, "SMB2"},
@@ -1169,7 +1174,8 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 	service->bBrowseable = false;
 
 	if (strcasecmp(fstype, "IPC") == 0) {
-		lp_do_service_parameter(service, "ntvfs handler", "default");
+		lp_do_service_parameter(lp_ctx, service, "ntvfs handler", 
+					"default");
 	}
 
 	DEBUG(3, ("adding hidden service %s\n", name));
@@ -1406,21 +1412,16 @@ static bool service_ok(struct loadparm_service *service)
 	return bRetval;
 }
 
-static struct file_lists {
-	struct file_lists *next;
-	char *name;
-	char *subfname;
-	time_t modtime;
-} *file_lists = NULL;
 
 /*******************************************************************
  Keep a linked list of all config files so we know when one has changed 
  it's date and needs to be reloaded.
 ********************************************************************/
 
-static void add_to_file_list(const char *fname, const char *subfname)
+static void add_to_file_list(struct loadparm_context *lp_ctx, 
+			     const char *fname, const char *subfname)
 {
-	struct file_lists *f = file_lists;
+	struct file_lists *f = lp_ctx->file_lists;
 
 	while (f) {
 		if (f->name && !strcmp(f->name, fname))
@@ -1432,7 +1433,7 @@ static void add_to_file_list(const char *fname, const char *subfname)
 		f = talloc(talloc_autofree_context(), struct file_lists);
 		if (!f)
 			return;
-		f->next = file_lists;
+		f->next = lp_ctx->file_lists;
 		f->name = talloc_strdup(f, fname);
 		if (!f->name) {
 			talloc_free(f);
@@ -1443,7 +1444,7 @@ static void add_to_file_list(const char *fname, const char *subfname)
 			talloc_free(f);
 			return;
 		}
-		file_lists = f;
+		lp_ctx->file_lists = f;
 		f->modtime = file_modtime(subfname);
 	} else {
 		time_t t = file_modtime(subfname);
@@ -1456,12 +1457,12 @@ static void add_to_file_list(const char *fname, const char *subfname)
  Check if a config file has changed date.
 ********************************************************************/
 
-bool lp_file_list_changed(void)
+bool lp_file_list_changed(struct loadparm_context *lp_ctx)
 {
 	struct file_lists *f;
 	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	for (f = file_lists; f != NULL; f = f->next) {
+	for (f = lp_ctx->file_lists; f != NULL; f = f->next) {
 		char *n2;
 		time_t mod_time;
 
@@ -1488,17 +1489,18 @@ bool lp_file_list_changed(void)
  Handle the include operation.
 ***************************************************************************/
 
-static bool handle_include(const char *pszParmValue, char **ptr)
+static bool handle_include(struct loadparm_context *lp_ctx, 
+			   const char *pszParmValue, char **ptr)
 {
 	char *fname = standard_sub_basic(talloc_autofree_context(), 
 					 pszParmValue);
 
-	add_to_file_list(pszParmValue, fname);
+	add_to_file_list(lp_ctx, pszParmValue, fname);
 
 	string_set(talloc_autofree_context(), ptr, fname);
 
 	if (file_exist(fname))
-		return pm_process(fname, do_section, do_parameter, &loadparm);
+		return pm_process(fname, do_section, do_parameter, lp_ctx);
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
@@ -1509,7 +1511,8 @@ static bool handle_include(const char *pszParmValue, char **ptr)
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static bool handle_copy(const char *pszParmValue, char **ptr)
+static bool handle_copy(struct loadparm_context *lp_ctx, 
+			const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
 	struct loadparm_service *serviceTemp;
@@ -1520,17 +1523,18 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
-	if ((serviceTemp = getservicebyname(&loadparm, pszParmValue)) != NULL) {
-		if (serviceTemp == loadparm.currentService) {
+	if ((serviceTemp = getservicebyname(lp_ctx, pszParmValue)) != NULL) {
+		if (serviceTemp == lp_ctx->currentService) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
-			copy_service(loadparm.currentService,
+			copy_service(lp_ctx->currentService,
 				     serviceTemp,
-				     loadparm.currentService->copymap);
+				     lp_ctx->currentService->copymap);
 			bRetval = true;
 		}
 	} else {
-		DEBUG(0, ("Unable to copy service - source not found: %s\n", pszParmValue));
+		DEBUG(0, ("Unable to copy service - source not found: %s\n", 
+			  pszParmValue));
 		bRetval = false;
 	}
 
@@ -1620,12 +1624,14 @@ static bool lp_do_parameter_parametric(struct loadparm_service *service,
 }
 
 static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr, 
-			 const char *pszParmName, const char *pszParmValue)
+			 const char *pszParmName, const char *pszParmValue,
+			 struct loadparm_context *lp_ctx)
 {
 	int i;
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		parm_table[parmnum].special(pszParmValue, (char **)parm_ptr);
+		parm_table[parmnum].special(lp_ctx, pszParmValue, 
+					    (char **)parm_ptr);
 		return true;
 	}
 
@@ -1742,10 +1748,11 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 	parm_ptr = parm_table[parmnum].ptr;
 
 	return set_variable(talloc_autofree_context(), parmnum, parm_ptr, 
-			    pszParmName, pszParmValue);
+			    pszParmName, pszParmValue, lp_ctx);
 }
 
-bool lp_do_service_parameter(struct loadparm_service *service, 
+bool lp_do_service_parameter(struct loadparm_context *lp_ctx, 
+			     struct loadparm_service *service, 
 			     const char *pszParmName, const char *pszParmValue)
 {
 	void *def_ptr = NULL;
@@ -1792,24 +1799,7 @@ bool lp_do_service_parameter(struct loadparm_service *service,
 			service->copymap[i] = false;
 
 	return set_variable(service, parmnum, parm_ptr, pszParmName, 
-			    pszParmValue);
-}
-
-/***************************************************************************
- Process a parameter for a particular service number. If snum < 0
- then assume we are in the globals.
-***************************************************************************/
-bool lp_do_parameter(struct loadparm_service *service, const char *pszParmName, 
-		     const char *pszParmValue)
-{
-	if (service == NULL) {
-		return lp_do_global_parameter(&loadparm, pszParmName, 
-					      pszParmValue);
-	} else {
-		return lp_do_service_parameter(service,
-					pszParmName, pszParmValue);
-	}
-	return true;
+			    pszParmValue, lp_ctx);
 }
 
 /***************************************************************************
@@ -1819,11 +1809,13 @@ bool lp_do_parameter(struct loadparm_service *service, const char *pszParmName,
 static bool do_parameter(const char *pszParmName, const char *pszParmValue, 
 			 void *userdata)
 {
-	if (loadparm.bInGlobalSection) 
-		return lp_do_global_parameter(&loadparm, pszParmName, 
+	struct loadparm_context *lp_ctx = (struct loadparm_context *)userdata;
+
+	if (lp_ctx->bInGlobalSection) 
+		return lp_do_global_parameter(lp_ctx, pszParmName, 
 					      pszParmValue);
 	else 
-		return lp_do_service_parameter(loadparm.currentService,
+		return lp_do_service_parameter(lp_ctx, lp_ctx->currentService,
 					       pszParmName, pszParmValue);
 }
 
@@ -1873,7 +1865,7 @@ bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	/* reset the CMDLINE flag in case this has been called before */
 	parm_table[parmnum].flags &= ~FLAG_CMDLINE;
 
-	if (!lp_do_parameter(NULL, pszParmName, pszParmValue)) {
+	if (!lp_do_global_parameter(&loadparm, pszParmName, pszParmValue)) {
 		return false;
 	}
 
@@ -2450,47 +2442,48 @@ bool lp_load(void)
 	char *n2;
 	bool bRetval;
 	struct param_opt *data;
+	struct loadparm_context *lp_ctx = &loadparm;
 
 	bRetval = false;
 
-	if (loadparm.Globals.param_opt != NULL) {
+	if (lp_ctx->Globals.param_opt != NULL) {
 		struct param_opt *next;
-		for (data=loadparm.Globals.param_opt; data; data=next) {
+		for (data = lp_ctx->Globals.param_opt; data; data=next) {
 			next = data->next;
 			if (data->flags & FLAG_CMDLINE) continue;
-			DLIST_REMOVE(loadparm.Globals.param_opt, data);
+			DLIST_REMOVE(lp_ctx->Globals.param_opt, data);
 			talloc_free(data);
 		}
 	}
 
-	if (!loadparm_init(&loadparm))
+	if (!loadparm_init(lp_ctx))
 		return false;
 	
-	loadparm.bInGlobalSection = true;
+	lp_ctx->bInGlobalSection = true;
 	n2 = standard_sub_basic(talloc_autofree_context(), lp_configfile());
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
 	
-	add_to_file_list(lp_configfile(), n2);
+	add_to_file_list(lp_ctx, lp_configfile(), n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
-	loadparm.currentService = NULL;
-	bRetval = pm_process(n2, do_section, do_parameter, &loadparm);
+	lp_ctx->currentService = NULL;
+	bRetval = pm_process(n2, do_section, do_parameter, lp_ctx);
 
 	/* finish up the last section */
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
 	if (bRetval)
-		if (loadparm.currentService != NULL)
-			bRetval = service_ok(loadparm.currentService);
+		if (lp_ctx->currentService != NULL)
+			bRetval = service_ok(lp_ctx->currentService);
 
-	lp_add_auto_services(&loadparm, lp_auto_services());
+	lp_add_auto_services(lp_ctx, lp_auto_services());
 
-	lp_add_hidden(&loadparm, "IPC$", "IPC");
-	lp_add_hidden(&loadparm, "ADMIN$", "DISK");
+	lp_add_hidden(lp_ctx, "IPC$", "IPC");
+	lp_add_hidden(lp_ctx, "ADMIN$", "DISK");
 
 	bLoaded = true;
 
-	if (!loadparm.Globals.szWINSservers && loadparm.Globals.bWINSsupport) {
-		lp_do_parameter(NULL, "wins server", "127.0.0.1");
+	if (!lp_ctx->Globals.szWINSservers && lp_ctx->Globals.bWINSsupport) {
+		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 
 	init_iconv();
@@ -2502,16 +2495,17 @@ bool lp_load(void)
  Return the max number of services.
 ***************************************************************************/
 
-int lp_numservices(void)
+int lp_numservices(struct loadparm_context *lp_ctx)
 {
-	return loadparm.iNumServices;
+	return lp_ctx->iNumServices;
 }
 
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
 
-void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
+void lp_dump(FILE *f, bool show_defaults, int maxtoprint, 
+	     struct loadparm_context *lp_ctx)
 {
 	int iService;
 
@@ -2523,7 +2517,7 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 	dump_a_service(&sDefault, f);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, loadparm.ServicePtrs[iService]);
+		lp_dump_one(f, show_defaults, lp_ctx->ServicePtrs[iService]);
 }
 
 /***************************************************************************
@@ -2566,7 +2560,8 @@ int lp_servicenumber(const char *pszServiceName)
  
  
 	for (iService = loadparm.iNumServices - 1; iService >= 0; iService--) {
-		if (VALID(iService) && loadparm.ServicePtrs[iService]->szService) {
+		if (loadparm.ServicePtrs[iService] && 
+		    loadparm.ServicePtrs[iService]->szService) {
 			/*
 			 * The substitution here is used to support %U is
 			 * service names
