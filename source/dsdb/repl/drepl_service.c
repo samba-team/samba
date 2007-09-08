@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "param/param.h"
 
 static WERROR dreplsrv_init_creds(struct dreplsrv_service *service)
 {

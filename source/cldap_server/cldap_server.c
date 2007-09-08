@@ -33,6 +33,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "db_wrap.h"
 #include "auth/auth.h"
+#include "param/param.h"
 
 /*
   handle incoming cldap requests

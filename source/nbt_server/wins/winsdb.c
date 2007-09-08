@@ -30,6 +30,7 @@
 #include "db_wrap.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
 uint64_t winsdb_get_maxVersion(struct winsdb_handle *h)
 {

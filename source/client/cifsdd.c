@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 
 #include "cifsdd.h"
+#include "param/param.h"
 
 const char * const PROGNAME = "cifsdd";
 

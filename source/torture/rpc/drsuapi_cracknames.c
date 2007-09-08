@@ -447,7 +447,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 				.comment = "display name for Microsoft Support Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE,
-				.skip = lp_parm_bool(-1, "torture", "samba4", False)
+				.skip = torture_setting_bool(tctx, "samba4", False)
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,

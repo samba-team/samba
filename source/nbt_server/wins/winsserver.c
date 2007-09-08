@@ -32,6 +32,7 @@
 #include "lib/socket/socket.h"
 #include "lib/socket/netif.h"
 #include "lib/ldb/include/ldb.h"
+#include "param/param.h"
 
 /*
   work out the ttl we will use given a client requested ttl

@@ -28,6 +28,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ALIASNAME "samrtorturetestalias"

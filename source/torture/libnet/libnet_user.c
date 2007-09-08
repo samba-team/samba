@@ -27,6 +27,7 @@
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "torture/libnet/usertest.h"
+#include "param/param.h"
 
 
 static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,

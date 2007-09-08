@@ -28,6 +28,7 @@
 #include "libcli/composite/composite.h"
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/resolve/resolve.h"
+#include "param/param.h"
 
 /* transport private information used by general socket pipe transports */
 struct sock_private {

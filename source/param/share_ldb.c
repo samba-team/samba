@@ -25,6 +25,7 @@
 #include "auth/auth.h"
 #include "db_wrap.h"
 #include "param/share.h"
+#include "param/param.h"
 
 static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, struct share_context **ctx)
 {

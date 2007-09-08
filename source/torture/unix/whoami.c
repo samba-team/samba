@@ -24,6 +24,7 @@
 #include "libcli/raw/interfaces.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 /* Size (in bytes) of the required fields in the SMBwhoami response. */
 #define WHOAMI_REQUIRED_SIZE	40

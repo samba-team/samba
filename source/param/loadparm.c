@@ -61,6 +61,7 @@
 #include "smb_server/smb_server.h"
 #include "libcli/raw/signing.h"
 #include "lib/util/dlinklist.h"
+#include "param/param.h"
 #include "param/loadparm.h"
 #include "pstring.h"
 

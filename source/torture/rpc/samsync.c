@@ -36,6 +36,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "param/param.h"
 
 #define TEST_MACHINE_NAME "samsynctest"
 #define TEST_WKSTA_MACHINE_NAME "samsynctest2"

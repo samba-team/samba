@@ -29,6 +29,7 @@
 #include "system/network.h"
 #include "lib/events/events.h"
 #include "roken.h"
+#include "param/param.h"
 
 /*
   context structure for operations on cldap packets

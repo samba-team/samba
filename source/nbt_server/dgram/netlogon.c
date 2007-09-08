@@ -27,6 +27,7 @@
 #include "auth/auth.h"
 #include "db_wrap.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 /*
   reply to a GETDC request

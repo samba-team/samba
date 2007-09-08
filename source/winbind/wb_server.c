@@ -31,6 +31,7 @@
 #include "lib/stream/packet.h"
 #include "smbd/service.h"
 #include "param/secrets.h"
+#include "param/param.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)
 {

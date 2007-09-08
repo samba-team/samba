@@ -25,6 +25,7 @@
 #include "lib/util/dlinklist.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/popt_common.h"
+#include "param/param.h"
 
 _PUBLIC_ int torture_numops=10;
 _PUBLIC_ int torture_entries=1000;

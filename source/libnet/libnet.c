@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "lib/events/events.h"
+#include "param/param.h"
 
 struct libnet_context *libnet_context_init(struct event_context *ev)
 {

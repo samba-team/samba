@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/raw/ioctl.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 /*
   connect to a share - used when a tree_connect operation comes

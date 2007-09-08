@@ -31,6 +31,7 @@
 #include "auth/credentials/credentials.h"
 #include "ntvfs/ntvfs.h"
 #include "lib/util/dlinklist.h"
+#include "param/param.h"
 
 struct cvfs_file {
 	struct cvfs_file *prev, *next;

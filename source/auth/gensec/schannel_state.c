@@ -26,6 +26,7 @@
 #include "db_wrap.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/auth.h"
+#include "param/param.h"
 
 /**
   connect to the schannel ldb

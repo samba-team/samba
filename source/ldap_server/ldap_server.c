@@ -40,6 +40,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "dsdb/samdb/samdb.h"
+#include "param/param.h"
 /*
   close the socket and shutdown a server_context
 */

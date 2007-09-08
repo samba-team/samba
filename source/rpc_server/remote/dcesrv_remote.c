@@ -23,6 +23,7 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/ndr/ndr_table.h"
+#include "param/param.h"
 
 
 struct dcesrv_remote_private {
@@ -114,7 +115,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 
 static void remote_op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
 {
-	struct dcesrv_remote_private *private = context->private;
+	struct dcesrv_remote_private *private = (struct dcesrv_remote_private *)context->private;
 
 	talloc_free(private->c_pipe);
 
@@ -124,7 +125,7 @@ static void remote_op_unbind(struct dcesrv_connection_context *context, const st
 static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
 	NTSTATUS status;
-	const struct ndr_interface_table *table = dce_call->context->iface->private;
+	const struct ndr_interface_table *table = (const struct ndr_interface_table *)dce_call->context->iface->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
 	dce_call->fault_code = 0;

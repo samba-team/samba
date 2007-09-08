@@ -27,6 +27,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/dir.h"
+#include "param/param.h"
 
 /**
  * @file
@@ -38,7 +39,7 @@
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
 */
-_PUBLIC_ BOOL is_myname(const char *name)
+_PUBLIC_ bool is_myname(const char *name)
 {
 	const char **aliases;
 	int i;

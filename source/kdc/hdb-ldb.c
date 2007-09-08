@@ -49,6 +49,7 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/auth/libcli_auth.h"
+#include "param/param.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 

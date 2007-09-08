@@ -26,6 +26,7 @@
 #include "libcli/resolve/resolve.h"
 #include "nbt_server/dgram/proto.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 /*
   a list of mailslots that we have static handlers for

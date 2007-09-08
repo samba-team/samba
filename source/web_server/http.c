@@ -32,6 +32,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/tls/tls.h"
 #include "scripting/ejs/smbcalls.h"
+#include "param/param.h"
 
 #define SAMBA_SESSION_KEY "SambaSessionId"
 #define HTTP_PREAUTH_URI  "/scripting/preauth.esp"

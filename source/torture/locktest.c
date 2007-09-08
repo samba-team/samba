@@ -24,6 +24,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/libcli.h"
+#include "param/param.h"
 
 static int numops = 1000;
 static BOOL showall;

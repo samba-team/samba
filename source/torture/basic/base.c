@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
+#include "param/param.h"
 
 
 #define CHECK_MAX_FAILURES(label) do { if (++failures >= torture_failures) goto label; } while (0)

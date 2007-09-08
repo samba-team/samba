@@ -26,6 +26,7 @@
 #include "lib/util/dlinklist.h"
 #include "build.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 /* the list of currently registered NTVFS backends, note that there
  * can be more than one backend with the same name, as long as they

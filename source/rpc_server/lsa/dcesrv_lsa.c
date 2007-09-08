@@ -32,6 +32,7 @@
 #include "param/secrets.h"
 #include "db_wrap.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
+#include "param/param.h"
 
 /*
   this type allows us to distinguish handle types

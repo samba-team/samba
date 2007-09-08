@@ -38,6 +38,7 @@
 #include "heimdal/kdc/windc_plugin.h"
 #include "heimdal/lib/krb5/krb5_locl.h"
 #include "heimdal/kdc/kdc_locl.h"
+#include "param/param.h"
 
 
 /* Disgusting hack to get a mem_ctx into the hdb plugin, when used as a keytab */

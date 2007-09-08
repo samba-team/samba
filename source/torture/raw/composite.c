@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/util.h"
+#include "param/param.h"
 
 #define BASEDIR "\\composite"
 

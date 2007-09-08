@@ -24,6 +24,7 @@
 #include "auth/gensec/gensec.h"
 #include "librpc/ndr/ndr_table.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 
 /*

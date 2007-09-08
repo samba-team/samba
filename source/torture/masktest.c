@@ -26,6 +26,7 @@
 #include "pstring.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 static struct cli_credentials *credentials;
 static BOOL showall = False;

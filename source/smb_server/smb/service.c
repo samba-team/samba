@@ -21,6 +21,8 @@
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
 #include "ntvfs/ntvfs.h"
+#include "param/share.h"
+#include "param/param.h"
 
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the

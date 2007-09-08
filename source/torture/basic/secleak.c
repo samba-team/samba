@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 static BOOL try_failed_login(struct smbcli_state *cli)
 {

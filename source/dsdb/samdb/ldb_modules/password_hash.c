@@ -48,6 +48,7 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/crypto/crypto.h"
+#include "param/param.h"
 
 /* If we have decided there is reason to work on this request, then
  * setup all the password hash types correctly.

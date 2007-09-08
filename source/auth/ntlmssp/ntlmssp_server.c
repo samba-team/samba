@@ -30,6 +30,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
+#include "param/param.h"
 
 /** 
  * Set a username on an NTLMSSP context - ensures it is talloc()ed 

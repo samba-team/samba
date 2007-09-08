@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 /**************************/
 /* srvsvc_NetShare        */

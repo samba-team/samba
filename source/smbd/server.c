@@ -39,6 +39,7 @@
 #include "param/secrets.h"
 #include "smbd/pidfile.h"
 #include "cluster/ctdb/ctdb_cluster.h"
+#include "param/param.h"
 
 /*
   recursively delete a directory tree

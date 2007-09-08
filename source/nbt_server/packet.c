@@ -23,6 +23,7 @@
 #include "nbt_server/nbt_server.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 /*
   we received a badly formed packet - log it

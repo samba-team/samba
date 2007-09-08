@@ -23,6 +23,7 @@
 #include "lib/cmdline/credentials.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 /* Handle command line options:
  *		-U,--user

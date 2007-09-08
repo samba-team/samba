@@ -48,6 +48,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "lib/crypto/crypto.h"
 #include "libcli/security/proto.h"
+#include "param/param.h"
 
 static struct cli_credentials *create_anon_creds(TALLOC_CTX *mem_ctx)
 {

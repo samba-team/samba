@@ -30,6 +30,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 
 static BOOL test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,

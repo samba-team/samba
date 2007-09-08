@@ -25,6 +25,7 @@
 #include "libcli/nbt/libnbt.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 #define NBT_MAX_REPLIES 1000
 

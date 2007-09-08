@@ -28,6 +28,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 /*********************************************************************
  Client side NTLMSSP

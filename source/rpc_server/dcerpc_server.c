@@ -33,6 +33,7 @@
 #include "system/filesys.h"
 #include "libcli/security/security.h"
 #include "build.h"
+#include "param/param.h"
 
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 

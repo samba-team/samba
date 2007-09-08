@@ -23,6 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "param/param.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

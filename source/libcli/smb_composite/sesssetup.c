@@ -29,6 +29,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "version.h"
+#include "param/param.h"
 
 struct sesssetup_state {
 	union smb_sesssetup setup;

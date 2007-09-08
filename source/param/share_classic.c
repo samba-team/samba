@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "param/share.h"
+#include "param/param.h"
 
 struct sclassic_snum {
 	int snum;

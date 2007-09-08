@@ -32,6 +32,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/schannel_state.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;

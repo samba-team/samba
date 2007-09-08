@@ -27,6 +27,7 @@
 #include "lib/events/events.h"
 #include "lib/util/dlinklist.h"
 #include "libcli/raw/smb.h"
+#include "param/param.h"
 
 #include <linux/inotify.h>
 #include <asm/unistd.h>

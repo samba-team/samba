@@ -28,6 +28,7 @@
 #include "nbt_server/dgram/proto.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
 
 /*

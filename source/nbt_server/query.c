@@ -26,6 +26,7 @@
 #include "nbt_server/wins/winsserver.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "lib/socket/socket.h"
+#include "param/param.h"
 
 /*
   answer a name query

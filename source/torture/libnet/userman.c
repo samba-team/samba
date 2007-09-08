@@ -23,6 +23,7 @@
 #include "torture/libnet/usertest.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "param/param.h"
 
 
 static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,

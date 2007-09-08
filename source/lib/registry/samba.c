@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "param/param.h"
 
 /**
  * @file

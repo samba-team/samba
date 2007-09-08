@@ -25,6 +25,7 @@
 #include "param/loadparm.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
 /*
   return a list of defined services

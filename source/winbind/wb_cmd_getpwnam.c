@@ -27,7 +27,7 @@
 #include "smbd/service_task.h"
 #include "nsswitch/winbindd_nss.h"
 #include "libnet/libnet_proto.h"
-#include "param/proto.h"
+#include "param/param.h"
 #include "libcli/security/proto.h"
 
 struct cmd_getpwnam_state {

@@ -31,6 +31,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "param/param.h"
 
 /*
  * complete a domain join, when joining to a AD domain:

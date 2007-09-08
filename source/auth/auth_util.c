@@ -27,6 +27,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 /* this default function can be used by mostly all backends
  * which don't want to set a challenge

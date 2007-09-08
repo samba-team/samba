@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
 #include "lib/socket/socket.h"
+#include "param/param.h"
 
 /*
   send a nbt name release request

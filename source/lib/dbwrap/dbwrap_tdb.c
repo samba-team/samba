@@ -25,6 +25,7 @@
 #include "lib/dbwrap/dbwrap.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
+#include "param/param.h"
 
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;

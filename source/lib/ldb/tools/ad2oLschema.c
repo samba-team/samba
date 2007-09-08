@@ -36,6 +36,7 @@
 #include "system/locale.h"
 #include "tools/cmdline.h"
 #include "tools/convert.h"
+#include "param/param.h"
 
 struct schema_conv {
 	int count;

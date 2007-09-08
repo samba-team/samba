@@ -31,6 +31,7 @@
 #include "torture/rpc/rpc.h"
 #include "auth/gensec/schannel_proto.h"
 #include "libcli/auth/libcli_auth.h"
+#include "param/param.h"
 
 #define TEST_MACHINE_NAME "samlogontest"
 #define TEST_USER_NAME "samlogontestuser"

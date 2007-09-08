@@ -30,6 +30,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 #include "torture/torture.h"
+#include "param/param.h"
 
 
 static BOOL test_connect_service(struct libnet_context *ctx,

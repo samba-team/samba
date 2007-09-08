@@ -30,6 +30,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "system/filesys.h"
+#include "param/param.h"
 
 #define TEST_MACHINE_NAME "schannel"
 

@@ -24,6 +24,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 struct resolve_state {
 	struct nbt_name name;

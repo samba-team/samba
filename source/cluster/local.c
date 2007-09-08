@@ -25,6 +25,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "db_wrap.h"
 #include "system/filesys.h"
+#include "param/param.h"
 
 /*
   server a server_id for the local node

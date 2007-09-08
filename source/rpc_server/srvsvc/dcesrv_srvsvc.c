@@ -28,6 +28,7 @@
 #include "libcli/security/security.h"
 #include "system/time.h"
 #include "rpc_server/srvsvc/proto.h"
+#include "param/param.h"
 
 #define SRVSVC_CHECK_ADMIN_ACCESS do { \
 	struct security_token *t = dce_call->conn->auth_state.session_info->security_token; \

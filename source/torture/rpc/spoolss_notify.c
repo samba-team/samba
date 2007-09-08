@@ -31,6 +31,7 @@
 #include "lib/socket/netif.h"
 #include "dlinklist.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 static NTSTATUS spoolss__op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {

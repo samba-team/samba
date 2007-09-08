@@ -32,6 +32,7 @@
 #include "lib/socket/netif.h"
 #include "param/share.h"
 #include "dsdb/samdb/samdb.h"
+#include "param/param.h"
 
 static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 {

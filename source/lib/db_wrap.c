@@ -35,6 +35,7 @@
 #include "lib/ldb/samba/ldif_handlers.h"
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
+#include "param/param.h"
 
 static struct tdb_wrap *tdb_list;
 
