@@ -3338,6 +3338,7 @@ static struct tdb_wrap *lp_regdb_open(void)
 	become_root();
 	reg_tdb = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, 
 				REG_TDB_FLAGS, O_RDWR, 0600);
+	unbecome_root();
 	if (!reg_tdb) {
 		DEBUG(1, ("lp_regdb_open: failed to open %s: %s\n",
 			 lock_path("registry.tdb"), strerror(errno)));
@@ -3346,7 +3347,6 @@ static struct tdb_wrap *lp_regdb_open(void)
 	else {
 		DEBUG(10, ("lp_regdb_open: reg tdb opened.\n"));
 	}
-	unbecome_root();
 
 	vers_id = tdb_fetch_int32(reg_tdb->tdb, vstring);
 	if (vers_id != REGVER_V1) {
