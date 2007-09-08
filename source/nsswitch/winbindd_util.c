@@ -147,7 +147,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	/* See if we found a match.  Check if we need to update the
 	   SID. */
 
-	if ( domain ) {
+	if ( domain && sid) {
 		if ( sid_equal( &domain->sid, &global_sid_NULL ) )
 			sid_copy( &domain->sid, sid );
 
@@ -306,10 +306,10 @@ static void trustdom_recv(void *private_data, BOOL success)
 			}			
 		}
 
-			/* use the real alt_name if we have one, else pass in NULL */
+		/* use the real alt_name if we have one, else pass in NULL */
 
-			if ( !strequal( alt_name, "(null)" ) )
-				alternate_name = alt_name;
+		if ( !strequal( alt_name, "(null)" ) )
+			alternate_name = alt_name;
 
 		/* If we have an existing domain structure, calling
  		   add_trusted_domain() will update the SID if
