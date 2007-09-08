@@ -32,10 +32,10 @@
    for consistency between the calls. 
 */
 bool torture_raw_sfileinfo(struct torture_context *torture, 
-						   struct smbcli_state *cli)
+			   struct smbcli_state *cli)
 {
-	BOOL ret = True;
-	int fnum_saved, d_fnum, fnum2, fnum = -1;
+	bool ret = true;
+	int fnum = -1;
 	char *fnum_fname;
 	char *fnum_fname_new;
 	char *path_fname;
