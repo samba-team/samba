@@ -362,7 +362,8 @@ static int net_sam_set(int argc, const char **argv)
 static int net_sam_policy_set(int argc, const char **argv)
 {
 	const char *account_policy = NULL;
-	uint32 value, old_value;
+	uint32 value = 0;
+	uint32 old_value = 0;
 	int field;
 	char *endptr;
 
@@ -409,19 +410,20 @@ static int net_sam_policy_set(int argc, const char **argv)
 	if (!pdb_get_account_policy(field, &old_value)) {
 		d_fprintf(stderr, "Valid account policy, but unable to fetch "
 			  "value!\n");
+	} else {
+		d_printf("Account policy \"%s\" value was: %d\n", account_policy,
+			old_value);
 	}
 
 	if (!pdb_set_account_policy(field, value)) {
 		d_fprintf(stderr, "Valid account policy, but unable to "
 			  "set value!\n");
 		return -1;
+	} else {
+		d_printf("Account policy \"%s\" value is now: %d\n", account_policy,
+			value);
 	}
 
-	d_printf("Account policy \"%s\" value was: %d\n", account_policy,
-		 old_value);
-
-	d_printf("Account policy \"%s\" value is now: %d\n", account_policy,
-		 value);
 	return 0;
 }
 
