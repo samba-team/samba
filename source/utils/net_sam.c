@@ -504,6 +504,138 @@ static int net_sam_policy(int argc, const char **argv)
         return net_run_function2(argc, argv, "net sam policy", func);
 }
 
+extern PRIVS privs[];
+
+static int net_sam_rights_list(int argc, const char **argv)
+{
+	SE_PRIV mask;
+
+	if (argc > 1) {
+		d_fprintf(stderr, "usage: net sam rights list [name]\n");
+		return -1;
+	}
+
+	if (argc == 0) {
+		int i;
+		int num = count_all_privileges();
+
+		for (i=0; i<num; i++) {
+			d_printf("%s\n", privs[i].name);
+		}
+		return 0;
+	}
+
+	if (se_priv_from_name(argv[0], &mask)) {
+		DOM_SID *sids;
+		int i, num_sids;
+		NTSTATUS status;
+
+		status = privilege_enum_sids(&mask, talloc_tos(),
+					     &sids, &num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "Could not list rights: %s\n",
+				  nt_errstr(status));
+			return -1;
+		}
+
+		for (i=0; i<num_sids; i++) {
+			const char *dom, *name;
+			enum lsa_SidType type;
+
+			if (lookup_sid(talloc_tos(), &sids[i], &dom, &name,
+				       &type)) {
+				d_printf("%s\\%s\n", dom, name);
+			}
+			else {
+				d_printf("%s\n", sid_string_tos(&sids[i]));
+			}
+		}
+		return 0;
+	}
+
+	return -1;
+}
+
+static int net_sam_rights_grant(int argc, const char **argv)
+{
+	DOM_SID sid;
+	enum lsa_SidType type;
+	const char *dom, *name;
+	SE_PRIV mask;
+
+	if (argc != 2) {
+		d_fprintf(stderr, "usage: net sam rights grant <name> "
+			  "<right>\n");
+		return -1;
+	}
+
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		return -1;
+	}
+
+	if (!se_priv_from_name(argv[1], &mask)) {
+		d_fprintf(stderr, "%s unknown\n", argv[1]);
+		return -1;
+	}
+
+	if (!grant_privilege(&sid, &mask)) {
+		d_fprintf(stderr, "Could not grant privilege\n");
+		return -1;
+	}
+
+	d_printf("Granted %s to %s\\%s\n", argv[1], dom, name);
+	return 0;
+}
+
+static int net_sam_rights_revoke(int argc, const char **argv)
+{
+	DOM_SID sid;
+	enum lsa_SidType type;
+	const char *dom, *name;
+	SE_PRIV mask;
+
+	if (argc != 2) {
+		d_fprintf(stderr, "usage: net sam rights revoke <name> "
+			  "<right>\n");
+		return -1;
+	}
+
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		return -1;
+	}
+
+	if (!se_priv_from_name(argv[1], &mask)) {
+		d_fprintf(stderr, "%s unknown\n", argv[1]);
+		return -1;
+	}
+
+	if (!revoke_privilege(&sid, &mask)) {
+		d_fprintf(stderr, "Could not revoke privilege\n");
+		return -1;
+	}
+
+	d_printf("Revoked %s from %s\\%s\n", argv[1], dom, name);
+	return 0;
+}
+
+static int net_sam_rights(int argc, const char **argv)
+{
+	struct functable2 func[] = {
+		{ "list", net_sam_rights_list,
+		  "List possible user rights" },
+		{ "grant", net_sam_rights_grant,
+		  "Grant a right" },
+		{ "revoke", net_sam_rights_revoke,
+		  "Revoke a right" },
+		{ NULL }
+	};
+        return net_run_function2(argc, argv, "net sam rights", func);
+}
+
 /*
  * Map a unix group to a domain group
  */
@@ -1521,6 +1653,8 @@ int net_sam(int argc, const char **argv)
 		  "Set details of a SAM account" },
 		{ "policy", net_sam_policy,
 		  "Set account policies" },
+		{ "rights", net_sam_rights,
+		  "Manipulate user privileges" },
 #ifdef HAVE_LDAP
 		{ "provision", net_sam_provision,
 		  "Provision a clean User Database" },
@@ -1528,11 +1662,9 @@ int net_sam(int argc, const char **argv)
 		{ NULL, NULL, NULL }
 	};
 
-	/* we shouldn't have silly checks like this */
 	if (getuid() != 0) {
-		d_fprintf(stderr, "You must be root to edit the SAM "
-			  "directly.\n");
-		return -1;
+		d_fprintf(stderr, "You are not root, most things won't "
+			  "work\n");
 	}
 	
 	return net_run_function2(argc, argv, "net sam", func);

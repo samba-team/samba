@@ -31,6 +31,7 @@ typedef struct {
 } SID_LIST;
 
 typedef struct {
+	TALLOC_CTX *mem_ctx;
 	SE_PRIV privilege;
 	SID_LIST sids;
 } PRIV_SID_LIST;
@@ -183,7 +184,8 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 		return 0;
 	}
 
-	if (!add_sid_to_array( NULL, &sid, &priv->sids.list, &priv->sids.count )) {
+	if (!add_sid_to_array( priv->mem_ctx, &sid, &priv->sids.list,
+			       &priv->sids.count )) {
 		return 0;
 	}
 	
@@ -211,6 +213,35 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 
 	/* give the memory away; caller will free */
 	
+	*sids      = priv.sids.list;
+	*num_sids  = priv.sids.count;
+
+	return NT_STATUS_OK;
+}
+
+/*********************************************************************
+ Retrieve list of SIDs granted a particular privilege
+*********************************************************************/
+
+NTSTATUS privilege_enum_sids(const SE_PRIV *mask, TALLOC_CTX *mem_ctx,
+			     DOM_SID **sids, int *num_sids)
+{
+	TDB_CONTEXT *tdb = get_account_pol_tdb();
+	PRIV_SID_LIST priv;
+
+	if (!tdb) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	ZERO_STRUCT(priv);
+
+	se_priv_copy(&priv.privilege, mask);
+	priv.mem_ctx = mem_ctx;
+
+	tdb_traverse( tdb, priv_traverse_fn, &priv);
+
+	/* give the memory away; caller will free */
+
 	*sids      = priv.sids.list;
 	*num_sids  = priv.sids.count;
 

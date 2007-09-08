@@ -207,6 +207,13 @@ const char *sid_string_static(const DOM_SID *sid)
 	return sid_str;
 }
 
+char *sid_string_tos(const DOM_SID *sid)
+{
+	fstring sid_str;
+	sid_to_string(sid_str, sid);
+	return talloc_strdup(talloc_tos(), sid_str);
+}
+
 /*****************************************************************
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
