@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/libcli.h"
 
 /****************************************************************************
   Read size bytes at offset offset using SMBreadX.

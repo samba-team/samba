@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/libcli.h"
 
 /****************************************************************************
 send a qpathinfo call

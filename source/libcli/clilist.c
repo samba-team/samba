@@ -118,7 +118,8 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	state.dirlist_len = 0;
 	state.total_received = 0;
 	
-	state.dirlist = talloc_new(state.mem_ctx);
+	state.dirlist = talloc_array(state.mem_ctx, 
+				     struct clilist_file_info, 0);
 	mask = talloc_strdup(state.mem_ctx, Mask);
 
 	if (level == RAW_SEARCH_DATA_GENERIC) {
@@ -275,7 +276,8 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	state.total_received = 0;
 	state.data_level = RAW_SEARCH_DATA_SEARCH;
 
-	state.dirlist = talloc_new(state.mem_ctx);
+	state.dirlist = talloc_array(state.mem_ctx, struct clilist_file_info,
+				     0);
 	mask = talloc_strdup(state.mem_ctx, Mask);
   
 	while (1) {

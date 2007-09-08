@@ -328,7 +328,7 @@ static NTSTATUS gensec_fake_gssapi_krb5_client_start(struct gensec_security *gen
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		struct gensec_krb5_state *gensec_krb5_state;
-		gensec_krb5_state = gensec_security->private_data;
+		gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 		gensec_krb5_state->gssapi = True;
 	}
 	return nt_status;
@@ -369,7 +369,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 				   TALLOC_CTX *out_mem_ctx, 
 				   const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
 
@@ -417,7 +417,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		if (ret) {
 			DEBUG(1,("krb5_rd_rep (mutual authentication) failed (%s)\n",
 				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, out_mem_ctx)));
-			dump_data_pw("Mutual authentication message:\n", inbuf.data, inbuf.length);
+			dump_data_pw("Mutual authentication message:\n", (uint8_t *)inbuf.data, inbuf.length);
 			nt_status = NT_STATUS_ACCESS_DENIED;
 		} else {
 			*out = data_blob(NULL, 0);
@@ -478,7 +478,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		if (ret) {
 			return NT_STATUS_LOGON_FAILURE;
 		}
-		unwrapped_out.data = outbuf.data;
+		unwrapped_out.data = (uint8_t *)outbuf.data;
 		unwrapped_out.length = outbuf.length;
 		gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
 		/* wrap that up in a nice GSS-API wrapping */

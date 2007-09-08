@@ -145,13 +145,13 @@ static struct group *nss_getgrent(void)
 	static int buflen = 1024;
 	NSS_STATUS status;
 
-	if (!buf) buf = malloc(buflen);
+	if (!buf) buf = malloc_array_p(char, buflen);
 
 again:	
 	status = _nss_getgrent_r(&grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = realloc(buf, buflen);
+		buf = realloc_p(buf, char, buflen);
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -173,12 +173,12 @@ static struct group *nss_getgrnam(const char *name)
 	static int buflen = 1000;
 	NSS_STATUS status;
 
-	if (!buf) buf = malloc(buflen);
+	if (!buf) buf = malloc_array_p(char, buflen);
 again:	
 	status = _nss_getgrnam_r(name, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = realloc(buf, buflen);
+		buf = realloc_p(buf, char, buflen);
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -200,12 +200,12 @@ static struct group *nss_getgrgid(gid_t gid)
 	static int buflen = 1000;
 	NSS_STATUS status;
 	
-	if (!buf) buf = malloc(buflen);
+	if (!buf) buf = malloc_array_p(char, buflen);
 again:	
 	status = _nss_getgrgid_r(gid, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = realloc(buf, buflen);
+		buf = realloc_p(buf, char, buflen);
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {

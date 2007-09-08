@@ -181,7 +181,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	remote_host = mprGetPtr(argv[1], "socket_address");
+	remote_host = (struct socket_address *)mprGetPtr(argv[1], "socket_address");
 	if (remote_host == NULL) {
 		ejsSetErrorMsg(eid, "userAuth requires a socket address second parameter");
 		return -1;

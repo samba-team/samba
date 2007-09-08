@@ -45,7 +45,7 @@ int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct MprVar obj;
 
 	/* libnet context */
-	ctx = mprGetThisPtr(eid, "ctx");
+	ctx = (struct libnet_context *)mprGetThisPtr(eid, "ctx");
 	if (ctx == NULL) {
 		ejsSetErrorMsg(eid, "ctx property returns null pointer");
 		return 0;
@@ -128,14 +128,14 @@ static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv)
 	}
 	
 	/* libnet context */
-	ctx = mprGetThisPtr(eid, "ctx");
+	ctx = (struct libnet_context *)mprGetThisPtr(eid, "ctx");
 	if (ctx == NULL) {
 		ejsSetErrorMsg(eid, "ctx property returns null pointer");
 		goto done;
 	}
 
 	/* domain where the account is to be created */
-	userman_domain = mprGetThisPtr(eid, "domain");
+	userman_domain = (const char *)mprGetThisPtr(eid, "domain");
 	if (userman_domain == NULL) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
 		goto done;
@@ -197,7 +197,7 @@ static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv)
 	}
 	
 	/* domain where the account is to be deleted */
-	userman_domain = mprGetThisPtr(eid, "domain");
+	userman_domain = (struct libnet_context *)mprGetThisPtr(eid, "domain");
 	if (!userman_domain) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
 		goto done;
@@ -253,14 +253,14 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 	}
 
 	/* libnet context */
-	ctx = mprGetThisPtr(eid, "ctx");
+	ctx = (struct libnet_context *)mprGetThisPtr(eid, "ctx");
 	if (ctx == NULL) {
 		ejsSetErrorMsg(eid, "ctx property returns null pointer");
 		goto done;
 	}
 	
 	/* domain where the user account is to be queried */
-	userman_domain = mprGetThisPtr(eid, "domain");
+	userman_domain = (struct libnet_context *)mprGetThisPtr(eid, "domain");
 	if (userman_domain == NULL) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
 		return -1;
@@ -331,7 +331,7 @@ static int ejs_net_userlist(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	/* libnet context */
-	ctx = mprGetThisPtr(eid, "ctx");
+	ctx = (struct libnet_context *)mprGetThisPtr(eid, "ctx");
 	if (ctx == NULL) {
 		ejsSetErrorMsg(eid, "ctx property returns null pointer");
 		goto done;

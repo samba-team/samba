@@ -106,7 +106,7 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 
 	if (data) {
 		data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
-		data->dptr = talloc_memdup(mem_ctx, 
+		data->dptr = (unsigned char *)talloc_memdup(mem_ctx, 
 					   sizeof(struct ctdb_ltdb_header)+rec.dptr,
 					   data->dsize);
 	}
@@ -144,7 +144,7 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	}
 
 	rec.dsize = sizeof(*header) + data.dsize;
-	rec.dptr = talloc_size(ctdb, rec.dsize);
+	rec.dptr = (unsigned char *)talloc_size(ctdb, rec.dsize);
 	CTDB_NO_MEMORY(ctdb, rec.dptr);
 
 	memcpy(rec.dptr, header, sizeof(*header));

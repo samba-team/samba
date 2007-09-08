@@ -32,7 +32,7 @@
  */
 static struct registry_context *ejs_get_reg_context(int eid)
 {
-	struct registry_context *rctx = mprGetThisPtr(eid, "registry");
+	struct registry_context *rctx = (struct registry_context *)mprGetThisPtr(eid, "registry");
 	if (rctx == NULL) {
 		ejsSetErrorMsg(eid, "unable to find registry");
 	}

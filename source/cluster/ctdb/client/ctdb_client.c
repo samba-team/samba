@@ -79,7 +79,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 
 	c->key = call->key;
 	c->call_data = &call->call_data;
-	c->record_data.dptr = talloc_memdup(c, data->dptr, data->dsize);
+	c->record_data.dptr = (unsigned char *)talloc_memdup(c, data->dptr, data->dsize);
 	c->record_data.dsize = data->dsize;
 	CTDB_NO_MEMORY(ctdb, c->record_data.dptr);
 	c->new_data = NULL;
@@ -311,9 +311,10 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 	}
 
 	if (state->call.reply_data.dsize) {
-		call->reply_data.dptr = talloc_memdup(state->ctdb_db,
-						      state->call.reply_data.dptr,
-						      state->call.reply_data.dsize);
+		call->reply_data.dptr = (unsigned char *)talloc_memdup(
+					state->ctdb_db,
+					state->call.reply_data.dptr,
+					state->call.reply_data.dsize);
 		call->reply_data.dsize = state->call.reply_data.dsize;
 	} else {
 		call->reply_data.dptr = NULL;
@@ -484,7 +485,7 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 /*
   tell the daemon we no longer want a srvid
 */
-int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
+static int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
 {
 	int res;
 	int32_t status;
@@ -580,7 +581,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 
 	h->ctdb_db = ctdb_db;
 	h->key     = key;
-	h->key.dptr = talloc_memdup(h, key.dptr, key.dsize);
+	h->key.dptr = (unsigned char *)talloc_memdup(h, key.dptr, key.dsize);
 	if (h->key.dptr == NULL) {
 		talloc_free(h);
 		return NULL;
@@ -812,7 +813,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 
 	if (outdata) {
 		*outdata = state->outdata;
-		outdata->dptr = talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
+		outdata->dptr = (unsigned char *)talloc_memdup(mem_ctx, outdata->dptr, outdata->dsize);
 	}
 
 	*status = state->status;
@@ -1156,10 +1157,10 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid
 	rec = (struct ctdb_rec_data *)&reply->data[0];
 
 	for (i=0;i<reply->count;i++) {
-		keys->keys[i].dptr = talloc_memdup(mem_ctx, &rec->data[0], rec->keylen);
+		keys->keys[i].dptr = (unsigned char *)talloc_memdup(mem_ctx, &rec->data[0], rec->keylen);
 		keys->keys[i].dsize = rec->keylen;
 		
-		keys->data[i].dptr = talloc_memdup(mem_ctx, &rec->data[keys->keys[i].dsize], rec->datalen);
+		keys->data[i].dptr = (unsigned char *)talloc_memdup(mem_ctx, &rec->data[keys->keys[i].dsize], rec->datalen);
 		keys->data[i].dsize = rec->datalen;
 
 		if (keys->data[i].dsize < sizeof(struct ctdb_ltdb_header)) {
@@ -1333,7 +1334,7 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32
 	int32_t res;
 	TDB_DATA data;
 
-	data.dptr = discard_const(name);
+	data.dptr = (unsigned char *)discard_const(name);
 	data.dsize = strlen(name)+1;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
@@ -1468,7 +1469,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
 	ctdb_db->db_name = talloc_strdup(ctdb_db, name);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db->db_name);
 
-	data.dptr = discard_const(name);
+	data.dptr = (unsigned char *)discard_const(name);
 	data.dsize = strlen(name)+1;
 
 	/* tell ctdb daemon to attach */
@@ -1929,7 +1930,7 @@ int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb,
 	int ret;
 
 	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen(name) + 1;
-	data.dptr  = talloc_size(ctdb, data.dsize);
+	data.dptr  = (unsigned char *)talloc_size(ctdb, data.dsize);
 	CTDB_NO_MEMORY(ctdb, data.dptr);
 
 	t = (struct ctdb_control_get_tunable *)data.dptr;

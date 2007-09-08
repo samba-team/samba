@@ -595,7 +595,7 @@ static void init_globals(void)
 		    parm_table[i].ptr &&
 		    !(parm_table[i].flags & FLAG_CMDLINE)) {
 			string_set(talloc_autofree_context(), 
-				   parm_table[i].ptr, "");
+				   (char **)parm_table[i].ptr, "");
 		}
 	}
 
@@ -1473,12 +1473,14 @@ static void copy_service(struct service *pserviceDest,
 					break;
 
 				case P_STRING:
-					string_set(pserviceDest, dest_ptr,
+					string_set(pserviceDest, 
+						   (char **)dest_ptr,
 						   *(char **)src_ptr);
 					break;
 
 				case P_USTRING:
-					string_set(pserviceDest, dest_ptr,
+					string_set(pserviceDest, 
+						   (char **)dest_ptr,
 						   *(char **)src_ptr);
 					strupper(*(char **)dest_ptr);
 					break;
@@ -1904,11 +1906,11 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_STRING:
-			string_set(mem_ctx, parm_ptr, pszParmValue);
+			string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_USTRING:
-			string_set(mem_ctx, parm_ptr, pszParmValue);
+			string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
 			strupper(*(char **)parm_ptr);
 			break;
 

@@ -39,7 +39,7 @@ static int ejs_param_get(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	ctx = mprGetThisPtr(eid, "param");
+	ctx = (struct param_context *)mprGetThisPtr(eid, "param");
 	mprAssert(ctx);
 	
 	if (argc == 2) {
@@ -72,7 +72,7 @@ static int ejs_param_get_list(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	ctx = mprGetThisPtr(eid, "param");
+	ctx = (struct param_context *)mprGetThisPtr(eid, "param");
 	mprAssert(ctx);
 	
 	if (argc == 2) {
@@ -107,7 +107,7 @@ static int ejs_param_set(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	ctx = mprGetThisPtr(eid, "param");
+	ctx = (struct param_context *)mprGetThisPtr(eid, "param");
 	mprAssert(ctx);
 
 	
@@ -148,7 +148,7 @@ static int ejs_param_data(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	ctx = mprGetThisPtr(eid, "param");
+	ctx = (struct param_context *)mprGetThisPtr(eid, "param");
 	mprAssert(ctx);
 
 	ret = mprObject("array");
@@ -184,7 +184,7 @@ static int ejs_param_load(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	ctx = mprGetThisPtr(eid, "param");
+	ctx = (struct param_context *)mprGetThisPtr(eid, "param");
 	mprAssert(ctx);
 
 	ret = param_read(ctx, argv[0]);
@@ -209,7 +209,7 @@ static int ejs_param_save(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	ctx = mprGetThisPtr(eid, "param");
+	ctx = (struct param_context *)mprGetThisPtr(eid, "param");
 	mprAssert(ctx);
 
 	ret = param_write(ctx, argv[0]);

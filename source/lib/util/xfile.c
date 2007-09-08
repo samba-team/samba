@@ -85,7 +85,7 @@ static int x_allocate_buffer(XFILE *f)
 {
 	if (f->buf) return 1;
 	if (f->bufsize == 0) return 0;
-	f->buf = malloc(f->bufsize);
+	f->buf = (char *)malloc(f->bufsize);
 	if (!f->buf) return 0;
 	f->next = f->buf;
 	return 1;

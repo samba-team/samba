@@ -115,7 +115,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 			DEBUG(0,("Invalid packet of length 0\n"));
 			goto failed;
 		}
-		d2 = talloc_memdup(queue, data, len);
+		d2 = (uint8_t *)talloc_memdup(queue, data, len);
 		if (d2 == NULL) {
 			DEBUG(0,("read error memdup failed for %u\n", len));
 			/* sigh */
@@ -132,7 +132,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 			queue->partial.data = data;
 			queue->partial.length = nread;
 		} else {
-			queue->partial.data = talloc_memdup(queue, data, nread);
+			queue->partial.data = (uint8_t *)talloc_memdup(queue, data, nread);
 			if (queue->partial.data == NULL) {
 				DEBUG(0,("read error memdup partial failed for %u\n", 
 					 (unsigned)nread));
@@ -266,7 +266,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	pkt = talloc(queue, struct ctdb_queue_pkt);
 	CTDB_NO_MEMORY(queue->ctdb, pkt);
 
-	pkt->data = talloc_memdup(pkt, data, length2);
+	pkt->data = (uint8_t *)talloc_memdup(pkt, data, length2);
 	CTDB_NO_MEMORY(queue->ctdb, pkt->data);
 
 	pkt->length = length2;

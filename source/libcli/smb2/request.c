@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
+#include "libcli/smb2/smb2_calls.h"
 
 /*
   initialise a smb2 request

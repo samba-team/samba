@@ -177,15 +177,15 @@ void param_set_ulong(struct param_context *ctx, const char *section, const char 
 	p->value = talloc_asprintf(p, "%lu", value);
 }
 
-static BOOL param_sfunc (const char *name, void *_ctx)
+static bool param_sfunc (const char *name, void *_ctx)
 {
-	struct param_context *ctx = _ctx;
+	struct param_context *ctx = (struct param_context *)_ctx;
 	struct param_section *section = param_get_section(ctx, name);
 
 	if (section == NULL) {
 		section = talloc_zero(ctx, struct param_section);
 		if (section == NULL)
-			return False;
+			return false;
 
 		section->name = talloc_strdup(section, name);
 
@@ -195,12 +195,12 @@ static BOOL param_sfunc (const char *name, void *_ctx)
 	/* Make sure this section is on top of the list for param_pfunc */
 	DLIST_PROMOTE(ctx->sections, section);
 
-	return True;
+	return true;
 }
 
-static BOOL param_pfunc (const char *name, const char *value, void *_ctx)
+static bool param_pfunc (const char *name, const char *value, void *_ctx)
 {
-	struct param_context *ctx = _ctx;
+	struct param_context *ctx = (struct param_context *)_ctx;
 	struct param *p = param_section_get(ctx->sections, name);
 
 	if (!p) {

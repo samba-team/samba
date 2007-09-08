@@ -30,7 +30,7 @@
 */
 static struct cli_credentials *ejs_creds_get_credentials(int eid)
 {
-	struct cli_credentials *creds = mprGetThisPtr(eid, "creds");
+	struct cli_credentials *creds = (struct cli_credentials *)mprGetThisPtr(eid, "creds");
 	if (creds == NULL) {
 		ejsSetErrorMsg(eid, "NULL ejs credentials");
 	}
