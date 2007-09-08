@@ -70,7 +70,6 @@ static bool bLoaded = false;
 #define standard_sub_basic talloc_strdup
 
 /* some helpful bits */
-#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < loadparm.iNumServices) && VALID(i))
 #define VALID(i) (loadparm.ServicePtrs[i] != NULL)
 
 static bool do_parameter(const char *, const char *, void *);
@@ -193,7 +192,7 @@ struct global
 /* 
  * This structure describes a single service. 
  */
-struct service
+struct loadparm_service
 {
 	char *szService;
 	char *szPath;
@@ -232,7 +231,7 @@ struct service
 
 
 /* This is a default service used to prime a services structure */
-static struct service sDefault = {
+static struct loadparm_service sDefault = {
 	NULL,			/* szService */
 	NULL,			/* szPath */
 	NULL,			/* szCopy */
@@ -271,9 +270,9 @@ static struct service sDefault = {
 /* local variables */
 static struct loadparm_context {
 	struct global Globals;
-	struct service **ServicePtrs;
+	struct loadparm_service **ServicePtrs;
 	int iNumServices;
-	struct service *currentService;
+	struct loadparm_service *currentService;
 	bool bInGlobalSection;
 } loadparm = {
 	.iNumServices = 0,
@@ -660,15 +659,15 @@ static const char *lp_string(const char *s)
  int fn_name(void) {return(*(int *)(ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- const char *fn_name(struct service *service) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault.val)));}
+ const char *fn_name(struct loadparm_service *service) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault.val)));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
- const char *fn_name(struct service *service) {return (const char *)(service != NULL && service->val != NULL) ? service->val : sDefault.val;}
+ const char *fn_name(struct loadparm_service *service) {return (const char *)(service != NULL && service->val != NULL) ? service->val : sDefault.val;}
 #define FN_LOCAL_LIST(fn_name,val) \
- const char **fn_name(struct service *service) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault.val);}
+ const char **fn_name(struct loadparm_service *service) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
- bool fn_name(struct service *service) {return((service != NULL)? service->val : sDefault.val);}
+ bool fn_name(struct loadparm_service *service) {return((service != NULL)? service->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(struct service *service) {return((service != NULL)? service->val : sDefault.val);}
+ int fn_name(struct loadparm_service *service) {return((service != NULL)? service->val : sDefault.val);}
 
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, &loadparm.Globals.server_role)
 _PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, &loadparm.Globals.smb_ports)
@@ -794,18 +793,20 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, &loadparm.Globals.client_signing)
 
 /* local prototypes */
 static int map_parameter(const char *pszParmName);
-static struct service *getservicebyname(const char *pszServiceName);
-static void copy_service(struct service *pserviceDest,
-			 struct service *pserviceSource, int *pcopymapDest);
-static bool service_ok(struct service *service);
+static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx, 
+					const char *pszServiceName);
+static void copy_service(struct loadparm_service *pserviceDest,
+			 struct loadparm_service *pserviceSource, 
+			 int *pcopymapDest);
+static bool service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
-static void init_copymap(struct service *pservice);
+static void init_copymap(struct loadparm_service *pservice);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-const char *lp_get_parametric(struct service *service, const char *type, 
-			      const char *option)
+const char *lp_get_parametric(struct loadparm_service *service, 
+			      const char *type, const char *option)
 {
 	char *vfskey;
         struct param_opt *data;
@@ -908,7 +909,7 @@ static bool lp_bool(const char *s)
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-const char *lp_parm_string(struct service *service, const char *type, 
+const char *lp_parm_string(struct loadparm_service *service, const char *type, 
 			   const char *option)
 {
 	const char *value = lp_get_parametric(service, type, option);
@@ -923,7 +924,8 @@ const char *lp_parm_string(struct service *service, const char *type,
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-const char **lp_parm_string_list(struct service *service, const char *type, 
+const char **lp_parm_string_list(struct loadparm_service *service, 
+				 const char *type, 
 				 const char *option, const char *separator)
 {
 	const char *value = lp_get_parametric(service, type, option);
@@ -938,8 +940,8 @@ const char **lp_parm_string_list(struct service *service, const char *type,
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-int lp_parm_int(struct service *service, const char *type, const char *option, 
-		int default_v)
+int lp_parm_int(struct loadparm_service *service, const char *type, 
+		const char *option, int default_v)
 {
 	const char *value = lp_get_parametric(service, type, option);
 	
@@ -954,7 +956,7 @@ int lp_parm_int(struct service *service, const char *type, const char *option,
  * Parametric option has following syntax: 'Type: option = value'.
  */
 
-int lp_parm_bytes(struct service *service, const char *type, 
+int lp_parm_bytes(struct loadparm_service *service, const char *type, 
 		  const char *option, int default_v)
 {
 	uint64_t bval;
@@ -973,7 +975,7 @@ int lp_parm_bytes(struct service *service, const char *type,
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-unsigned long lp_parm_ulong(struct service *service, const char *type, 
+unsigned long lp_parm_ulong(struct loadparm_service *service, const char *type, 
 			    const char *option, unsigned long default_v)
 {
 	const char *value = lp_get_parametric(service, type, option);
@@ -985,7 +987,7 @@ unsigned long lp_parm_ulong(struct service *service, const char *type,
 }
 
 
-double lp_parm_double(struct service *service, const char *type, 
+double lp_parm_double(struct loadparm_service *service, const char *type, 
 		      const char *option, double default_v)
 {
 	const char *value = lp_get_parametric(service, type, option);
@@ -999,7 +1001,7 @@ double lp_parm_double(struct service *service, const char *type,
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-bool lp_parm_bool(struct service *service, const char *type, 
+bool lp_parm_bool(struct loadparm_service *service, const char *type, 
 		  const char *option, bool default_v)
 {
 	const char *value = lp_get_parametric(service, type, option);
@@ -1015,9 +1017,10 @@ bool lp_parm_bool(struct service *service, const char *type,
  Initialise a service to the defaults.
 ***************************************************************************/
 
-static struct service *init_service(TALLOC_CTX *mem_ctx)
+static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx)
 {
-	struct service *pservice = talloc_zero(mem_ctx, struct service);
+	struct loadparm_service *pservice = 
+		talloc_zero(mem_ctx, struct loadparm_service);
 	copy_service(pservice, &sDefault, NULL);
 	return pservice;
 }
@@ -1027,12 +1030,12 @@ static struct service *init_service(TALLOC_CTX *mem_ctx)
  service. 
 ***************************************************************************/
 
-static struct service *add_a_service(struct loadparm_context *lp_ctx, 
-				     const struct service *pservice, 
+static struct loadparm_service *add_a_service(struct loadparm_context *lp_ctx, 
+				     const struct loadparm_service *pservice, 
 				     const char *name)
 {
 	int i;
-	struct service tservice;
+	struct loadparm_service tservice;
 	int num_to_alloc = lp_ctx->iNumServices + 1;
 	struct param_opt *data, *pdata;
 
@@ -1040,7 +1043,8 @@ static struct service *add_a_service(struct loadparm_context *lp_ctx,
 
 	/* it might already exist */
 	if (name) {
-		struct service *service = getservicebyname(name);
+		struct loadparm_service *service = getservicebyname(lp_ctx, 
+								    name);
 		if (service != NULL) {
 			/* Clean all parametric options for service */
 			/* They will be added during parsing again */
@@ -1062,9 +1066,9 @@ static struct service *add_a_service(struct loadparm_context *lp_ctx,
 
 	/* if not, then create one */
 	if (i == lp_ctx->iNumServices) {
-		struct service **tsp;
+		struct loadparm_service **tsp;
 		
-		tsp = realloc_p(lp_ctx->ServicePtrs, struct service *, 
+		tsp = realloc_p(lp_ctx->ServicePtrs, struct loadparm_service *, 
 				num_to_alloc);
 					   
 		if (!tsp) {
@@ -1096,10 +1100,11 @@ static struct service *add_a_service(struct loadparm_context *lp_ctx,
 ***************************************************************************/
 
 bool lp_add_home(struct loadparm_context *lp_ctx, 
-		 const char *pszHomename, struct service *default_service,
+		 const char *pszHomename, 
+		 struct loadparm_service *default_service,
 		 const char *user, const char *pszHomedir)
 {
-	struct service *service;
+	struct loadparm_service *service;
 	pstring newHomedir;
 
 	service = add_a_service(lp_ctx, default_service, pszHomename);
@@ -1133,9 +1138,9 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
  Add a new service, based on an old one.
 ***************************************************************************/
 
-struct service *lp_add_service(struct loadparm_context *lp_ctx, 
+struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx, 
 			       const char *pszService, 
-			       struct service *default_service)
+			       struct loadparm_service *default_service)
 {
 	return add_a_service(lp_ctx, default_service, pszService);
 }
@@ -1147,7 +1152,7 @@ struct service *lp_add_service(struct loadparm_context *lp_ctx,
 static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name, 
 			  const char *fstype)
 {
-	struct service *service = add_a_service(lp_ctx, &sDefault, name);
+	struct loadparm_service *service = add_a_service(lp_ctx, &sDefault, name);
 
 	if (service == NULL)
 		return false;
@@ -1178,10 +1183,10 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 
 bool lp_add_printer(struct loadparm_context *lp_ctx,
 		    const char *pszPrintername, 
-		    struct service *default_service)
+		    struct loadparm_service *default_service)
 {
 	const char *comment = "From Printcap";
-	struct service *service;
+	struct loadparm_service *service;
 	service = add_a_service(lp_ctx, default_service, pszPrintername);
 
 	if (service == NULL)
@@ -1245,7 +1250,7 @@ struct parm_struct *lp_parm_struct(const char *name)
 /*
   return the parameter pointer for a parameter
 */
-void *lp_parm_ptr(struct service *service, struct parm_struct *parm)
+void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm)
 {
 	if (service == NULL)
 		return parm->ptr;
@@ -1257,14 +1262,15 @@ void *lp_parm_ptr(struct service *service, struct parm_struct *parm)
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
 
-static struct service *getservicebyname(const char *pszServiceName)
+static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx, 
+					const char *pszServiceName)
 {
 	int iService;
 
-	for (iService = loadparm.iNumServices - 1; iService >= 0; iService--)
-		if (VALID(iService) &&
-		    strwicmp(loadparm.ServicePtrs[iService]->szService, pszServiceName) == 0) {
-			return loadparm.ServicePtrs[iService];
+	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--)
+		if (lp_ctx->ServicePtrs[iService] != NULL &&
+		    strwicmp(lp_ctx->ServicePtrs[iService]->szService, pszServiceName) == 0) {
+			return lp_ctx->ServicePtrs[iService];
 		}
 
 	return NULL;
@@ -1275,8 +1281,8 @@ static struct service *getservicebyname(const char *pszServiceName)
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(struct service *pserviceDest, 
-			 struct service *pserviceSource, 
+static void copy_service(struct loadparm_service *pserviceDest, 
+			 struct loadparm_service *pserviceSource, 
 			 int *pcopymapDest)
 {
 	int i;
@@ -1368,7 +1374,7 @@ Check a service for consistency. Return False if the service is in any way
 incomplete or faulty, else True.
 ***************************************************************************/
 
-static bool service_ok(struct service *service)
+static bool service_ok(struct loadparm_service *service)
 {
 	bool bRetval;
 
@@ -1506,7 +1512,7 @@ static bool handle_include(const char *pszParmValue, char **ptr)
 static bool handle_copy(const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
-	struct service *serviceTemp;
+	struct loadparm_service *serviceTemp;
 
 	string_set(talloc_autofree_context(), ptr, pszParmValue);
 
@@ -1514,7 +1520,7 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
-	if ((serviceTemp = getservicebyname(pszParmValue)) != NULL) {
+	if ((serviceTemp = getservicebyname(&loadparm, pszParmValue)) != NULL) {
 		if (serviceTemp == loadparm.currentService) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
@@ -1535,7 +1541,7 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
  Initialise a copymap.
 ***************************************************************************/
 
-static void init_copymap(struct service *pservice)
+static void init_copymap(struct loadparm_service *pservice)
 {
 	int i;
 	talloc_free(pservice->copymap);
@@ -1550,22 +1556,10 @@ static void init_copymap(struct service *pservice)
 		pservice->copymap[i] = true;
 }
 
-#if 0 /* not used anywhere */
-/***************************************************************************
- Return the local pointer to a parameter given the service number and the 
- pointer into the default structure.
-***************************************************************************/
-
-void *lp_local_ptr(int snum, void *ptr)
-{
-	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
-}
-#endif
-
 /***************************************************************************
  Process a parametric option
 ***************************************************************************/
-static bool lp_do_parameter_parametric(struct service *service, 
+static bool lp_do_parameter_parametric(struct loadparm_service *service, 
 				       const char *pszParmName, 
 				       const char *pszParmValue, int flags)
 {
@@ -1751,7 +1745,7 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 			    pszParmName, pszParmValue);
 }
 
-bool lp_do_service_parameter(struct service *service, 
+bool lp_do_service_parameter(struct loadparm_service *service, 
 			     const char *pszParmName, const char *pszParmValue)
 {
 	void *def_ptr = NULL;
@@ -1805,7 +1799,7 @@ bool lp_do_service_parameter(struct service *service,
  Process a parameter for a particular service number. If snum < 0
  then assume we are in the globals.
 ***************************************************************************/
-bool lp_do_parameter(struct service *service, const char *pszParmName, 
+bool lp_do_parameter(struct loadparm_service *service, const char *pszParmName, 
 		     const char *pszParmValue)
 {
 	if (service == NULL) {
@@ -2126,7 +2120,7 @@ static void dump_globals(FILE *f, bool show_defaults)
  Display the contents of a single services record.
 ***************************************************************************/
 
-static void dump_a_service(struct service * pService, FILE * f)
+static void dump_a_service(struct loadparm_service * pService, FILE * f)
 {
 	int i;
 	struct param_opt *data;
@@ -2167,7 +2161,7 @@ static void dump_a_service(struct service * pService, FILE * f)
 
 bool lp_dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 {
-	struct service * pService = loadparm.ServicePtrs[snum];
+	struct loadparm_service * pService = loadparm.ServicePtrs[snum];
 	struct parm_struct *parm;
 	void *ptr;
 	
@@ -2213,7 +2207,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			return &parm_table[(*i)++];
 		}
 	} else {
-		struct service *pService = loadparm.ServicePtrs[snum];
+		struct loadparm_service *pService = loadparm.ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].class == P_SEPARATOR)
@@ -2248,15 +2242,6 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 
 
 /***************************************************************************
- Return TRUE if the passed service number is within range.
-***************************************************************************/
-
-bool lp_snum_ok(int iService)
-{
-	return (LP_SNUM_OK(iService) && loadparm.ServicePtrs[iService]->bAvailable);
-}
-
-/***************************************************************************
  Auto-load some home services.
 ***************************************************************************/
 
@@ -2283,25 +2268,13 @@ void lp_killunused(struct smbsrv_connection *smb, bool (*snumused) (struct smbsr
 {
 	int i;
 	for (i = 0; i < loadparm.iNumServices; i++) {
-		if (!VALID(i))
+		if (loadparm.ServicePtrs[i] == NULL)
 			continue;
 
 		if (!snumused || !snumused(smb, i)) {
 			talloc_free(loadparm.ServicePtrs[i]);
 			loadparm.ServicePtrs[i] = NULL;
 		}
-	}
-}
-
-/***************************************************************************
- Unload a service.
-***************************************************************************/
-
-void lp_killservice(int iServiceIn)
-{
-	if (VALID(iServiceIn)) {
-		talloc_free(loadparm.ServicePtrs[iServiceIn]);
-		loadparm.ServicePtrs[iServiceIn] = NULL;
 	}
 }
 
@@ -2557,7 +2530,7 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 Display the contents of one service in human-readable form.
 ***************************************************************************/
 
-void lp_dump_one(FILE *f, bool show_defaults, struct service *service)
+void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service)
 {
 	if (service != NULL) {
 		if (service->szService[0] == '\0')
@@ -2566,12 +2539,12 @@ void lp_dump_one(FILE *f, bool show_defaults, struct service *service)
 	}
 }
 
-struct service *lp_servicebynum(int snum)
+struct loadparm_service *lp_servicebynum(int snum)
 {
 	return loadparm.ServicePtrs[snum];
 }
 
-struct service *lp_service(const char *service_name)
+struct loadparm_service *lp_service(const char *service_name)
 {
 	int snum = lp_servicenumber(service_name);
 	if (snum < 0)
@@ -2611,28 +2584,10 @@ int lp_servicenumber(const char *pszServiceName)
 	return iService;
 }
 
-int lp_find_valid_service(const char *pszServiceName)
-{
-	int iService;
-
-	iService = lp_servicenumber(pszServiceName);
-
-	if (iService >= 0 && !lp_snum_ok(iService)) {
-		DEBUG(0,("lp_find_valid_service: Invalid snum %d for '%s'\n",iService, pszServiceName));
-		iService = -1;
-	}
-
-	if (iService == -1) {
-		DEBUG(3,("lp_find_valid_service: failed to find service '%s'\n", pszServiceName));
-	}
-
-	return iService;
-}
-
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/
-const char *volume_label(struct service *service)
+const char *volume_label(struct loadparm_service *service)
 {
 	const char *ret = lp_volume(service);
 	if (!*ret)
@@ -2650,16 +2605,7 @@ bool lp_domain_logons(void)
 	return (lp_server_role() == ROLE_DOMAIN_CONTROLLER);
 }
 
-/*******************************************************************
- Remove a service.
-********************************************************************/
-
-void lp_remove_service(int snum)
-{
-	loadparm.ServicePtrs[snum] = NULL;
-}
-
-const char *lp_printername(struct service *service)
+const char *lp_printername(struct loadparm_service *service)
 {
 	const char *ret = _lp_printername(service);
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
@@ -2673,9 +2619,9 @@ const char *lp_printername(struct service *service)
  Return the max print jobs per queue.
 ********************************************************************/
 
-int lp_maxprintjobs(int snum)
+int lp_maxprintjobs(struct loadparm_service *service)
 {
-	int maxjobs = LP_SNUM_OK(snum) ? loadparm.ServicePtrs[snum]->iMaxPrintJobs : sDefault.iMaxPrintJobs;
+	int maxjobs = (service != NULL) ? service->iMaxPrintJobs : sDefault.iMaxPrintJobs;
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
 		maxjobs = PRINT_MAX_JOBID - 1;
 

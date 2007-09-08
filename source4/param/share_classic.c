@@ -23,10 +23,6 @@
 #include "param/share.h"
 #include "param/param.h"
 
-struct service {
-	struct service *service;
-};
-
 static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, struct share_context **ctx)
 {
 	*ctx = talloc(mem_ctx, struct share_context);
@@ -43,7 +39,8 @@ static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, 
 
 static const char *sclassic_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
 {
-	struct service *s = talloc_get_type(scfg->opaque, struct service);
+	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
+						     struct loadparm_service);
 	char *parm, *val;
 	const char *ret;
 
@@ -102,7 +99,8 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 
 static int sclassic_int_option(struct share_config *scfg, const char *opt_name, int defval)
 {
-	struct service *s = talloc_get_type(scfg->opaque, struct service);
+	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
+						     struct loadparm_service);
 	char *parm, *val;
 	int ret;
 
@@ -157,7 +155,8 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name, 
 			  bool defval)
 {
-	struct service *s = talloc_get_type(scfg->opaque, struct service);
+	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
+						     struct loadparm_service);
 	char *parm, *val;
 	BOOL ret;
 
@@ -223,7 +222,8 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 
 static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name)
 {
-	struct service *s = talloc_get_type(scfg->opaque, struct service);
+	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
+						     struct loadparm_service);
 	char *parm, *val;
 	const char **ret;
 
@@ -297,7 +297,7 @@ static NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
 				    struct share_config **scfg)
 {
 	struct share_config *s;
-	struct service *service;
+	struct loadparm_service *service;
 
 	service = lp_service(name);
 
