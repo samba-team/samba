@@ -124,8 +124,12 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 	subrec = SMB_MALLOC_P(struct subnet_record);
 	if (!subrec) {
 		DEBUG(0,("make_subnet: malloc fail !\n"));
-		close(nmb_sock);
-		close(dgram_sock);
+		if (nmb_sock != -1) {
+			close(nmb_sock);
+		}
+		if (dgram_sock != -1) {
+			close(dgram_sock);
+		}
 		return(NULL);
 	}
   
@@ -133,8 +137,12 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 
 	if((subrec->subnet_name = SMB_STRDUP(name)) == NULL) {
 		DEBUG(0,("make_subnet: malloc fail for subnet name !\n"));
-		close(nmb_sock);
-		close(dgram_sock);
+		if (nmb_sock != -1) {
+			close(nmb_sock);
+		}
+		if (dgram_sock != -1) {
+			close(dgram_sock);
+		}
 		ZERO_STRUCTP(subrec);
 		SAFE_FREE(subrec);
 		return(NULL);
