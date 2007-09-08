@@ -588,7 +588,8 @@ static void init_globals(void)
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].ptr &&
 		    !(parm_table[i].flags & FLAG_CMDLINE)) {
-			string_set(parm_table[i].ptr, "");
+			string_set(talloc_autofree_context(), 
+				   parm_table[i].ptr, "");
 		}
 	}
 
@@ -1180,6 +1181,14 @@ static service *init_service(TALLOC_CTX *mem_ctx)
 	return pservice;
 }
 
+void string_free(char **str)
+{
+	if (str) {
+		talloc_free(*str);
+		*str = NULL;
+	}
+}
+
 /***************************************************************************
  Free the dynamically allocated parts of a service struct.
 ***************************************************************************/
@@ -1250,10 +1259,8 @@ static int add_a_service(const service *pservice, const char *name)
 			/* They will be added during parsing again */
 			data = ServicePtrs[i]->param_opt;
 			while (data) {
-				string_free(&data->key);
-				string_free(&data->value);
 				pdata = data->next;
-				SAFE_FREE(data);
+				talloc_free(data);
 				data = pdata;
 			}
 			ServicePtrs[i]->param_opt = NULL;
@@ -1291,7 +1298,7 @@ static int add_a_service(const service *pservice, const char *name)
 	}
 	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name != NULL)
-		string_set(&ServicePtrs[i]->szService, name);
+		string_set(ServicePtrs[i], &ServicePtrs[i]->szService, name);
 	return i;
 }
 
@@ -1319,13 +1326,13 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
 	}
 
-	string_set(&ServicePtrs[i]->szPath, newHomedir);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->szPath, newHomedir);
 
 	if (!(*(ServicePtrs[i]->comment))) {
-		pstring comment;
-		slprintf(comment, sizeof(comment) - 1,
+		char *comment = talloc_asprintf(ServicePtrs[i], 
 			 "Home directory of %s", user);
-		string_set(&ServicePtrs[i]->comment, comment);
+		string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
+		talloc_free(comment);
 	}
 	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
@@ -1357,15 +1364,15 @@ static bool lp_add_hidden(const char *name, const char *fstype)
 	if (i < 0)
 		return false;
 
-	string_set(&ServicePtrs[i]->szPath, tmpdir());
+	string_set(ServicePtrs[i], &ServicePtrs[i]->szPath, tmpdir());
 
 	asprintf(&comment, "%s Service (%s)", fstype, Globals.szServerString);
 	if (comment == NULL)
 		return false;
 
-	string_set(&ServicePtrs[i]->comment, comment);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 	SAFE_FREE(comment);
-	string_set(&ServicePtrs[i]->fstype, fstype);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->fstype, fstype);
 	ServicePtrs[i]->iMaxConnections = -1;
 	ServicePtrs[i]->bAvailable = true;
 	ServicePtrs[i]->bRead_only = true;
@@ -1399,8 +1406,9 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
-	string_set(&ServicePtrs[i]->comment, comment);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->szPrintername, 
+		   pszPrintername);
+	string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = False;
@@ -1514,12 +1522,12 @@ static void copy_service(service *pserviceDest, service *pserviceSource,
 					break;
 
 				case P_STRING:
-					string_set(dest_ptr,
+					string_set(pserviceDest, dest_ptr,
 						   *(char **)src_ptr);
 					break;
 
 				case P_USTRING:
-					string_set(dest_ptr,
+					string_set(pserviceDest, dest_ptr,
 						   *(char **)src_ptr);
 					strupper(*(char **)dest_ptr);
 					break;
@@ -1549,18 +1557,19 @@ static void copy_service(service *pserviceDest, service *pserviceSource,
 			/* If we already have same option, override it */
 			if (strcmp(pdata->key, data->key) == 0) {
 				string_free(&pdata->value);
-				pdata->value = strdup(data->value);
-				not_added = False;
+				pdata->value = talloc_reference(pdata, 
+							     data->value);
+				not_added = false;
 				break;
 			}
 			pdata = pdata->next;
 		}
 		if (not_added) {
-			paramo = malloc_p(struct param_opt);
-			if (!paramo)
+			paramo = talloc(pserviceDest, struct param_opt);
+			if (paramo == NULL)
 				smb_panic("OOM");
-			paramo->key = strdup(data->key);
-			paramo->value = strdup(data->value);
+			paramo->key = talloc_reference(paramo, data->key);
+			paramo->value = talloc_reference(paramo, data->value);
 			DLIST_ADD(pserviceDest->param_opt, paramo);
 		}
 		data = data->next;
@@ -1694,7 +1703,7 @@ static bool handle_include(const char *pszParmValue, char **ptr)
 
 	add_to_file_list(pszParmValue, fname);
 
-	string_set(ptr, fname);
+	string_set(talloc_autofree_context(), ptr, fname);
 
 	if (file_exist(fname))
 		return pm_process(fname, do_section, do_parameter, NULL);
@@ -1714,7 +1723,7 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
 	int iTemp;
 	service *serviceTemp;
 
-	string_set(ptr, pszParmValue);
+	string_set(talloc_autofree_context(), ptr, pszParmValue);
 
 	serviceTemp = init_service(talloc_autofree_context());
 
@@ -1778,6 +1787,7 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 {
 	struct param_opt *paramo, *data;
 	char *name;
+	TALLOC_CTX *mem_ctx;
 
 	while (isspace((unsigned char)*pszParmName)) {
 		pszParmName++;
@@ -1790,8 +1800,10 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 
 	if (snum < 0) {
 		data = Globals.param_opt;
+		mem_ctx = talloc_autofree_context();
 	} else {
 		data = ServicePtrs[snum]->param_opt;
+		mem_ctx = ServicePtrs[snum];
 	}
 
 	/* Traverse destination */
@@ -1804,19 +1816,19 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 				return True;
 			}
 
-			free(paramo->value);
-			paramo->value = strdup(pszParmValue);
+			talloc_free(paramo->value);
+			paramo->value = talloc_strdup(paramo, pszParmValue);
 			paramo->flags = flags;
 			free(name);
 			return True;
 		}
 	}
 
-	paramo = malloc_p(struct param_opt);
+	paramo = talloc(mem_ctx, struct param_opt);
 	if (!paramo)
 		smb_panic("OOM");
-	paramo->key = strdup(name);
-	paramo->value = strdup(pszParmValue);
+	paramo->key = talloc_strdup(paramo, name);
+	paramo->value = talloc_strdup(paramo, pszParmValue);
 	paramo->flags = flags;
 	if (snum < 0) {
 		DLIST_ADD(Globals.param_opt, paramo);
@@ -1826,18 +1838,19 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 
 	free(name);
 	
-	return True;
+	return true;
 }
 
 /***************************************************************************
  Process a parameter for a particular service number. If snum < 0
  then assume we are in the globals.
 ***************************************************************************/
-BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
+bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
+	TALLOC_CTX *mem_ctx;
 
 	parmnum = map_parameter(pszParmName);
 
@@ -1865,6 +1878,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	/* we might point at a service, the default service or a global */
 	if (snum < 0) {
 		parm_ptr = def_ptr;
+		mem_ctx = talloc_autofree_context();
 	} else {
 		if (parm_table[parmnum].class == P_GLOBAL) {
 			DEBUG(0,
@@ -1875,6 +1889,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		parm_ptr =
 			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
 							    &sDefault);
+		mem_ctx = ServicePtrs[snum];
 	}
 
 	if (snum >= 0) {
@@ -1931,16 +1946,16 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		}
 
 		case P_LIST:
-			*(const char ***)parm_ptr = str_list_make(talloc_autofree_context(), 
+			*(const char ***)parm_ptr = str_list_make(mem_ctx, 
 								  pszParmValue, NULL);
 			break;
 
 		case P_STRING:
-			string_set(parm_ptr, pszParmValue);
+			string_set(mem_ctx, parm_ptr, pszParmValue);
 			break;
 
 		case P_USTRING:
-			string_set(parm_ptr, pszParmValue);
+			string_set(mem_ctx, parm_ptr, pszParmValue);
 			strupper(*(char **)parm_ptr);
 			break;
 
@@ -2481,10 +2496,8 @@ bool lp_load(void)
 		for (data=Globals.param_opt; data; data=next) {
 			next = data->next;
 			if (data->flags & FLAG_CMDLINE) continue;
-			free(data->key);
-			free(data->value);
 			DLIST_REMOVE(Globals.param_opt, data);
-			free(data);
+			talloc_free(data);
 		}
 	}
 	

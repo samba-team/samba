@@ -371,15 +371,10 @@ _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_he
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 
 /**
- Free a string value.
-**/
-_PUBLIC_ void string_free(char **s);
-
-/**
  Set a string value, deallocating any existing space, and allocing the space
  for the string
 **/
-_PUBLIC_ bool string_set(char **dest, const char *src);
+_PUBLIC_ bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src);
 
 /**
  Substitute a string for a pattern in another string. Make sure there is 
