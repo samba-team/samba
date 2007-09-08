@@ -69,8 +69,8 @@ static bool bLoaded = false;
 #define standard_sub_basic talloc_strdup
 
 /* some helpful bits */
-#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && VALID(i))
-#define VALID(i) (ServicePtrs[i] != NULL)
+#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < loadparm.iNumServices) && VALID(i))
+#define VALID(i) (loadparm.ServicePtrs[i] != NULL)
 
 static bool do_parameter(const char *, const char *, void *);
 static bool do_parameter_var(const char *pszParmName, const char *fmt, ...);
@@ -87,7 +87,7 @@ struct param_opt {
 /* 
  * This structure describes global (ie., server-wide) parameters.
  */
-typedef struct
+struct global
 {
 	enum server_role server_role;
 
@@ -187,15 +187,13 @@ typedef struct
 	int bDisableNetbios;
 	int bRpcBigEndian;
 	struct param_opt *param_opt;
-}
-global;
+};
 
-static global Globals;
 
 /* 
  * This structure describes a single service. 
  */
-typedef struct
+struct service
 {
 	char *szService;
 	char *szPath;
@@ -230,12 +228,11 @@ typedef struct
 	struct param_opt *param_opt;
 
 	char dummy[3];		/* for alignment */
-}
-service;
+};
 
 
 /* This is a default service used to prime a services structure */
-static service sDefault = {
+static struct service sDefault = {
 	NULL,			/* szService */
 	NULL,			/* szPath */
 	NULL,			/* szCopy */
@@ -272,10 +269,18 @@ static service sDefault = {
 };
 
 /* local variables */
-static service **ServicePtrs = NULL;
-static int iNumServices = 0;
-static int iServiceIndex = 0;
-static bool bInGlobalSection = True;
+static struct loadparm_context {
+	struct global Globals;
+	struct service **ServicePtrs;
+	int iNumServices;
+	int iServiceIndex;
+	bool bInGlobalSection;
+} loadparm = {
+	.iNumServices = 0,
+	.iServiceIndex = 0,
+	.bInGlobalSection = true,
+	.ServicePtrs = NULL,
+};
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
@@ -376,49 +381,49 @@ static const struct enum_list enum_server_role[] = {
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR},
 
-	{"server role", P_ENUM, P_GLOBAL, &Globals.server_role, NULL, enum_server_role, FLAG_BASIC},
+	{"server role", P_ENUM, P_GLOBAL, &loadparm.Globals.server_role, NULL, enum_server_role, FLAG_BASIC},
 
 	{"dos charset", P_STRING, P_GLOBAL, &dos_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"unix charset", P_STRING, P_GLOBAL, &unix_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ncalrpc dir", P_STRING, P_GLOBAL, &Globals.ncalrpc_dir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ncalrpc dir", P_STRING, P_GLOBAL, &loadparm.Globals.ncalrpc_dir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"display charset", P_STRING, P_GLOBAL, &display_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE},
-	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkgroup, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"realm", P_STRING, P_GLOBAL, &Globals.szRealm, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios name", P_USTRING, P_GLOBAL, &Globals.szNetbiosName, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios scope", P_USTRING, P_GLOBAL, &Globals.szNetbiosScope, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED  | FLAG_DEVELOPER},
-	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"workgroup", P_USTRING, P_GLOBAL, &loadparm.Globals.szWorkgroup, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"realm", P_STRING, P_GLOBAL, &loadparm.Globals.szRealm, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"netbios name", P_USTRING, P_GLOBAL, &loadparm.Globals.szNetbiosName, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"netbios aliases", P_LIST, P_GLOBAL, &loadparm.Globals.szNetbiosAliases, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"netbios scope", P_USTRING, P_GLOBAL, &loadparm.Globals.szNetbiosScope, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"server string", P_STRING, P_GLOBAL, &loadparm.Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED  | FLAG_DEVELOPER},
+	{"interfaces", P_LIST, P_GLOBAL, &loadparm.Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"bind interfaces only", P_BOOL, P_GLOBAL, &loadparm.Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"ntvfs handler", P_LIST, P_LOCAL, &sDefault.ntvfs_handler, NULL, NULL, FLAG_ADVANCED},
-	{"ntptr providor", P_STRING, P_GLOBAL, &Globals.ntptr_providor, NULL, NULL, FLAG_ADVANCED},
-	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, &Globals.dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
-	{"server services", P_LIST, P_GLOBAL, &Globals.server_services, NULL, NULL, FLAG_ADVANCED},
+	{"ntptr providor", P_STRING, P_GLOBAL, &loadparm.Globals.ntptr_providor, NULL, NULL, FLAG_ADVANCED},
+	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, &loadparm.Globals.dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
+	{"server services", P_LIST, P_GLOBAL, &loadparm.Globals.server_services, NULL, NULL, FLAG_ADVANCED},
 
 	{"Security Options", P_SEP, P_SEPARATOR},
 	
-	{"security", P_ENUM, P_GLOBAL, &Globals.security, NULL, enum_security, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"encrypt passwords", P_BOOL, P_GLOBAL, &Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"password server", P_LIST, P_GLOBAL, &Globals.szPasswordServers, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"sam database", P_STRING, P_GLOBAL, &Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"secrets database", P_STRING, P_GLOBAL, &Globals.szSECRETS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"wins config database", P_STRING, P_GLOBAL, &Globals.szWINS_CONFIG_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"wins database", P_STRING, P_GLOBAL, &Globals.szWINS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"lanman auth", P_BOOL, P_GLOBAL, &Globals.bLanmanAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ntlm auth", P_BOOL, P_GLOBAL, &Globals.bNTLMAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, &Globals.bClientNTLMv2Auth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client lanman auth", P_BOOL, P_GLOBAL, &Globals.bClientLanManAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client plaintext auth", P_BOOL, P_GLOBAL, &Globals.bClientPlaintextAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client use spnego principal", P_BOOL, P_GLOBAL, &Globals.client_use_spnego_principal, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"security", P_ENUM, P_GLOBAL, &loadparm.Globals.security, NULL, enum_security, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"encrypt passwords", P_BOOL, P_GLOBAL, &loadparm.Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"null passwords", P_BOOL, P_GLOBAL, &loadparm.Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"obey pam restrictions", P_BOOL, P_GLOBAL, &loadparm.Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"password server", P_LIST, P_GLOBAL, &loadparm.Globals.szPasswordServers, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"sam database", P_STRING, P_GLOBAL, &loadparm.Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"secrets database", P_STRING, P_GLOBAL, &loadparm.Globals.szSECRETS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"spoolss database", P_STRING, P_GLOBAL, &loadparm.Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"wins config database", P_STRING, P_GLOBAL, &loadparm.Globals.szWINS_CONFIG_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"wins database", P_STRING, P_GLOBAL, &loadparm.Globals.szWINS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"private dir", P_STRING, P_GLOBAL, &loadparm.Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"passwd chat", P_STRING, P_GLOBAL, &loadparm.Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"password level", P_INTEGER, P_GLOBAL, &loadparm.Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"lanman auth", P_BOOL, P_GLOBAL, &loadparm.Globals.bLanmanAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ntlm auth", P_BOOL, P_GLOBAL, &loadparm.Globals.bNTLMAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, &loadparm.Globals.bClientNTLMv2Auth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client lanman auth", P_BOOL, P_GLOBAL, &loadparm.Globals.bClientLanManAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client plaintext auth", P_BOOL, P_GLOBAL, &loadparm.Globals.bClientPlaintextAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client use spnego principal", P_BOOL, P_GLOBAL, &loadparm.Globals.client_use_spnego_principal, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"read only", P_BOOL, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE},
 
@@ -438,52 +443,52 @@ static struct parm_struct parm_table[] = {
 	
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
-	{"smb ports", P_LIST, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"nbt port", P_INTEGER, P_GLOBAL, &Globals.nbt_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"dgram port", P_INTEGER, P_GLOBAL, &Globals.dgram_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"cldap port", P_INTEGER, P_GLOBAL, &Globals.cldap_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"krb5 port", P_INTEGER, P_GLOBAL, &Globals.krb5_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"kpasswd port", P_INTEGER, P_GLOBAL, &Globals.kpasswd_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web port", P_INTEGER, P_GLOBAL, &Globals.web_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls enabled", P_BOOL, P_GLOBAL, &Globals.tls_enabled, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls keyfile", P_STRING, P_GLOBAL, &Globals.tls_keyfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls certfile", P_STRING, P_GLOBAL, &Globals.tls_certfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls cafile", P_STRING, P_GLOBAL, &Globals.tls_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls crlfile", P_STRING, P_GLOBAL, &Globals.tls_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls dh params file", P_STRING, P_GLOBAL, &Globals.tls_dhpfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web application directory", P_STRING, P_GLOBAL, &Globals.webapps_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
-	{"server max protocol", P_ENUM, P_GLOBAL, &Globals.srv_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
-	{"server min protocol", P_ENUM, P_GLOBAL, &Globals.srv_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
-	{"client max protocol", P_ENUM, P_GLOBAL, &Globals.cli_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
-	{"client min protocol", P_ENUM, P_GLOBAL, &Globals.cli_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
-	{"unicode", P_BOOL, P_GLOBAL, &Globals.bUnicode, NULL, NULL, FLAG_DEVELOPER},
-	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, FLAG_DEVELOPER},
-	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_DEVELOPER},
-	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"smb ports", P_LIST, P_GLOBAL, &loadparm.Globals.smb_ports, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"nbt port", P_INTEGER, P_GLOBAL, &loadparm.Globals.nbt_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"dgram port", P_INTEGER, P_GLOBAL, &loadparm.Globals.dgram_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"cldap port", P_INTEGER, P_GLOBAL, &loadparm.Globals.cldap_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"krb5 port", P_INTEGER, P_GLOBAL, &loadparm.Globals.krb5_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"kpasswd port", P_INTEGER, P_GLOBAL, &loadparm.Globals.kpasswd_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"web port", P_INTEGER, P_GLOBAL, &loadparm.Globals.web_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls enabled", P_BOOL, P_GLOBAL, &loadparm.Globals.tls_enabled, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls keyfile", P_STRING, P_GLOBAL, &loadparm.Globals.tls_keyfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls certfile", P_STRING, P_GLOBAL, &loadparm.Globals.tls_certfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls cafile", P_STRING, P_GLOBAL, &loadparm.Globals.tls_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls crlfile", P_STRING, P_GLOBAL, &loadparm.Globals.tls_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls dh params file", P_STRING, P_GLOBAL, &loadparm.Globals.tls_dhpfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"web application directory", P_STRING, P_GLOBAL, &loadparm.Globals.webapps_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"large readwrite", P_BOOL, P_GLOBAL, &loadparm.Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
+	{"server max protocol", P_ENUM, P_GLOBAL, &loadparm.Globals.srv_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"server min protocol", P_ENUM, P_GLOBAL, &loadparm.Globals.srv_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"client max protocol", P_ENUM, P_GLOBAL, &loadparm.Globals.cli_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"client min protocol", P_ENUM, P_GLOBAL, &loadparm.Globals.cli_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"unicode", P_BOOL, P_GLOBAL, &loadparm.Globals.bUnicode, NULL, NULL, FLAG_DEVELOPER},
+	{"read raw", P_BOOL, P_GLOBAL, &loadparm.Globals.bReadRaw, NULL, NULL, FLAG_DEVELOPER},
+	{"write raw", P_BOOL, P_GLOBAL, &loadparm.Globals.bWriteRaw, NULL, NULL, FLAG_DEVELOPER},
+	{"disable netbios", P_BOOL, P_GLOBAL, &loadparm.Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
-	{"nt status support", P_BOOL, P_GLOBAL, &Globals.bNTStatusSupport, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"nt status support", P_BOOL, P_GLOBAL, &loadparm.Globals.bNTStatusSupport, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
-	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, FLAG_DEVELOPER},
-	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, FLAG_DEVELOPER},
-	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"max xmit", P_BYTES, P_GLOBAL, &Globals.max_xmit, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"announce version", P_STRING, P_GLOBAL, &loadparm.Globals.szAnnounceVersion, NULL, NULL, FLAG_DEVELOPER},
+	{"announce as", P_ENUM, P_GLOBAL, &loadparm.Globals.announce_as, NULL, enum_announce_as, FLAG_DEVELOPER},
+	{"max mux", P_INTEGER, P_GLOBAL, &loadparm.Globals.max_mux, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"max xmit", P_BYTES, P_GLOBAL, &loadparm.Globals.max_xmit, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
-	{"name resolve order", P_LIST, P_GLOBAL, &Globals.szNameResolveOrder, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"max wins ttl", P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"min wins ttl", P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, FLAG_DEVELOPER},
-	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
-	{"client signing", P_ENUM, P_GLOBAL, &Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
-	{"rpc big endian", P_BOOL, P_GLOBAL, &Globals.bRpcBigEndian, NULL, NULL, FLAG_DEVELOPER},
+	{"name resolve order", P_LIST, P_GLOBAL, &loadparm.Globals.szNameResolveOrder, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"max wins ttl", P_INTEGER, P_GLOBAL, &loadparm.Globals.max_wins_ttl, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"min wins ttl", P_INTEGER, P_GLOBAL, &loadparm.Globals.min_wins_ttl, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"time server", P_BOOL, P_GLOBAL, &loadparm.Globals.bTimeServer, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"unix extensions", P_BOOL, P_GLOBAL, &loadparm.Globals.bUnixExtensions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"use spnego", P_BOOL, P_GLOBAL, &loadparm.Globals.bUseSpnego, NULL, NULL, FLAG_DEVELOPER},
+	{"server signing", P_ENUM, P_GLOBAL, &loadparm.Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
+	{"client signing", P_ENUM, P_GLOBAL, &loadparm.Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
+	{"rpc big endian", P_BOOL, P_GLOBAL, &loadparm.Globals.bRpcBigEndian, NULL, NULL, FLAG_DEVELOPER},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
 		
 	{"max connections", P_INTEGER, P_LOCAL, &sDefault.iMaxConnections, NULL, NULL, FLAG_SHARE},
-	{"paranoid server security", P_BOOL, P_GLOBAL, &Globals.paranoid_server_security, NULL, NULL, FLAG_DEVELOPER},
-	{"socket options", P_STRING, P_GLOBAL, &Globals.socket_options, NULL, NULL, FLAG_DEVELOPER},
+	{"paranoid server security", P_BOOL, P_GLOBAL, &loadparm.Globals.paranoid_server_security, NULL, NULL, FLAG_DEVELOPER},
+	{"socket options", P_STRING, P_GLOBAL, &loadparm.Globals.socket_options, NULL, NULL, FLAG_DEVELOPER},
 
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"case insensitive filesystem", P_BOOL, P_LOCAL, &sDefault.bCIFileSystem, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -510,18 +515,18 @@ static struct parm_struct parm_table[] = {
 
 	{"Browse Options", P_SEP, P_SEPARATOR},
 	
-	{"preferred master", P_ENUM, P_GLOBAL, &Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"prefered master", P_ENUM, P_GLOBAL, &Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_HIDE},
-	{"local master", P_BOOL, P_GLOBAL, &Globals.bLocalMaster, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"preferred master", P_ENUM, P_GLOBAL, &loadparm.Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"prefered master", P_ENUM, P_GLOBAL, &loadparm.Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_HIDE},
+	{"local master", P_BOOL, P_GLOBAL, &loadparm.Globals.bLocalMaster, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"browseable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"browsable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_HIDE},
 
 	{"WINS Options", P_SEP, P_SEPARATOR},
 	
-	{"wins server", P_LIST, P_GLOBAL, &Globals.szWINSservers, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"dns proxy", P_BOOL, P_GLOBAL, &Globals.bWINSdnsProxy, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"wins hook", P_STRING, P_GLOBAL, &Globals.szWINSHook, NULL, NULL, FLAG_ADVANCED}, 
+	{"wins server", P_LIST, P_GLOBAL, &loadparm.Globals.szWINSservers, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"wins support", P_BOOL, P_GLOBAL, &loadparm.Globals.bWINSsupport, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"dns proxy", P_BOOL, P_GLOBAL, &loadparm.Globals.bWINSdnsProxy, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"wins hook", P_STRING, P_GLOBAL, &loadparm.Globals.szWINSHook, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"Locking Options", P_SEP, P_SEPARATOR},
 	
@@ -531,19 +536,19 @@ static struct parm_struct parm_table[] = {
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	
-	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
-	{"share backend", P_STRING, P_GLOBAL, &Globals.szShareBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_HIDE}, 
-	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"modules dir", P_STRING, P_GLOBAL, &Globals.szModulesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"pid directory", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
-	{"js include", P_LIST, P_GLOBAL, &Globals.jsInclude, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"jsonrpc services directory", P_STRING, P_GLOBAL, &Globals.jsonrpcServicesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"setup directory", P_STRING, P_GLOBAL, &Globals.szSetupDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"config file", P_STRING, P_GLOBAL, &loadparm.Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
+	{"share backend", P_STRING, P_GLOBAL, &loadparm.Globals.szShareBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"preload", P_STRING, P_GLOBAL, &loadparm.Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"auto services", P_STRING, P_GLOBAL, &loadparm.Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"lock dir", P_STRING, P_GLOBAL, &loadparm.Globals.szLockDir, NULL, NULL, FLAG_HIDE}, 
+	{"lock directory", P_STRING, P_GLOBAL, &loadparm.Globals.szLockDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"modules dir", P_STRING, P_GLOBAL, &loadparm.Globals.szModulesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"pid directory", P_STRING, P_GLOBAL, &loadparm.Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
+	{"js include", P_LIST, P_GLOBAL, &loadparm.Globals.jsInclude, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"jsonrpc services directory", P_STRING, P_GLOBAL, &loadparm.Globals.jsonrpcServicesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"setup directory", P_STRING, P_GLOBAL, &loadparm.Globals.szSetupDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
-	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, FLAG_DEVELOPER},
+	{"socket address", P_STRING, P_GLOBAL, &loadparm.Globals.szSocketAddress, NULL, NULL, FLAG_DEVELOPER},
 	{"copy", P_STRING, P_LOCAL, &sDefault.szCopy, handle_copy, NULL, FLAG_HIDE},
 	{"include", P_STRING, P_LOCAL, &sDefault.szInclude, handle_include, NULL, FLAG_HIDE},
 	
@@ -554,12 +559,12 @@ static struct parm_struct parm_table[] = {
 	{"panic action", P_STRING, P_GLOBAL, &panic_action, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
-	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"winbindd socket directory", P_STRING, P_GLOBAL, &Globals.szWinbinddSocketDirectory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"winbind sealed pipes", P_BOOL, P_GLOBAL, &Globals.bWinbindSealedPipes, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"host msdfs", P_BOOL, P_GLOBAL, &loadparm.Globals.bHostMSDfs, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"winbind separator", P_STRING, P_GLOBAL, &loadparm.Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"winbindd socket directory", P_STRING, P_GLOBAL, &loadparm.Globals.szWinbinddSocketDirectory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"winbind sealed pipes", P_BOOL, P_GLOBAL, &loadparm.Globals.bWinbindSealedPipes, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"template shell", P_STRING, P_GLOBAL, &loadparm.Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"template homedir", P_STRING, P_GLOBAL, &loadparm.Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -804,7 +809,7 @@ static const char *lp_string(const char *s)
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  const char **fn_name(void) {return(*(const char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
- BOOL fn_name(void) {return((BOOL)*(int *)(ptr));}
+ bool fn_name(void) {return((bool)*(int *)(ptr));}
 #if 0 /* unused */
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
  char fn_name(void) {return(*(char *)(ptr));}
@@ -813,113 +818,113 @@ static const char *lp_string(const char *s)
  int fn_name(void) {return(*(int *)(ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- const char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
+ const char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && loadparm.ServicePtrs[(i)]->val) ? loadparm.ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
- const char *fn_name(int i) {return (const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
+ const char *fn_name(int i) {return (const char *)((LP_SNUM_OK(i) && loadparm.ServicePtrs[(i)]->val) ? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_LIST(fn_name,val) \
- const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+ const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
- BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+ bool fn_name(int i) {return(LP_SNUM_OK(i)? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
 #if 0 /* unused */
 #define FN_LOCAL_CHAR(fn_name,val) \
  char fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #endif
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+ int fn_name(int i) {return(LP_SNUM_OK(i)? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
 
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, &Globals.server_role)
-_PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, &Globals.smb_ports)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_nbt_port, &Globals.nbt_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_dgram_port, &Globals.dgram_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cldap_port, &Globals.cldap_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, &Globals.krb5_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, &Globals.kpasswd_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, &Globals.web_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, &loadparm.Globals.server_role)
+_PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, &loadparm.Globals.smb_ports)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_nbt_port, &loadparm.Globals.nbt_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_dgram_port, &loadparm.Globals.dgram_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cldap_port, &loadparm.Globals.cldap_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, &loadparm.Globals.krb5_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, &loadparm.Globals.kpasswd_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, &loadparm.Globals.web_port)
 _PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, &dos_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_webapps_directory, &Globals.webapps_directory)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, &Globals.tls_enabled)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, &Globals.tls_keyfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, &Globals.tls_certfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, &Globals.tls_cafile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, &Globals.tls_crlfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, &Globals.tls_dhpfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_webapps_directory, &loadparm.Globals.webapps_directory)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, &loadparm.Globals.tls_enabled)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, &loadparm.Globals.tls_keyfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, &loadparm.Globals.tls_certfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, &loadparm.Globals.tls_cafile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, &loadparm.Globals.tls_crlfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, &loadparm.Globals.tls_dhpfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, &unix_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &display_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, &Globals.szShareBackend)
-_PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_secrets_url, &Globals.szSECRETS_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, &Globals.szWINS_CONFIG_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, &Globals.szWinbinddSocketDirectory)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &Globals.bWinbindSealedPipes)
-_PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
-_PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_modulesdir, &Globals.szModulesDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_setupdir, &Globals.szSetupDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
-_PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &Globals.dcerpc_ep_servers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_server_services, &Globals.server_services)
-_PUBLIC_ FN_GLOBAL_STRING(lp_ntptr_providor, &Globals.ntptr_providor)
-_PUBLIC_ FN_GLOBAL_STRING(lp_auto_services, &Globals.szAutoServices)
-_PUBLIC_ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
-_PUBLIC_ FN_GLOBAL_LIST(lp_passwordserver, &Globals.szPasswordServers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_name_resolve_order, &Globals.szNameResolveOrder)
-_PUBLIC_ FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
-_PUBLIC_ FN_GLOBAL_STRING(lp_socket_options, &Globals.socket_options)
-_PUBLIC_ FN_GLOBAL_STRING(lp_workgroup, &Globals.szWorkgroup)
-_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_name, &Globals.szNetbiosName)
-_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_scope, &Globals.szNetbiosScope)
-_PUBLIC_ FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
-_PUBLIC_ FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
-_PUBLIC_ FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
+_PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &loadparm.Globals.szConfigFile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, &loadparm.Globals.szShareBackend)
+_PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, &loadparm.Globals.szSAM_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_secrets_url, &loadparm.Globals.szSECRETS_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, &loadparm.Globals.szSPOOLSS_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, &loadparm.Globals.szWINS_CONFIG_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, &loadparm.Globals.szWINS_URL)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbind_separator, &loadparm.Globals.szWinbindSeparator)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, &loadparm.Globals.szWinbinddSocketDirectory)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, &loadparm.Globals.szTemplateShell)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, &loadparm.Globals.szTemplateHomedir)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &loadparm.Globals.bWinbindSealedPipes)
+_PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, &loadparm.Globals.szPrivateDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, &loadparm.Globals.szServerString)
+_PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, &loadparm.Globals.szLockDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_modulesdir, &loadparm.Globals.szModulesDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_setupdir, &loadparm.Globals.szSetupDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_ncalrpc_dir, &loadparm.Globals.ncalrpc_dir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_piddir, &loadparm.Globals.szPidDir)
+_PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &loadparm.Globals.dcerpc_ep_servers)
+_PUBLIC_ FN_GLOBAL_LIST(lp_server_services, &loadparm.Globals.server_services)
+_PUBLIC_ FN_GLOBAL_STRING(lp_ntptr_providor, &loadparm.Globals.ntptr_providor)
+_PUBLIC_ FN_GLOBAL_STRING(lp_auto_services, &loadparm.Globals.szAutoServices)
+_PUBLIC_ FN_GLOBAL_STRING(lp_passwd_chat, &loadparm.Globals.szPasswdChat)
+_PUBLIC_ FN_GLOBAL_LIST(lp_passwordserver, &loadparm.Globals.szPasswordServers)
+_PUBLIC_ FN_GLOBAL_LIST(lp_name_resolve_order, &loadparm.Globals.szNameResolveOrder)
+_PUBLIC_ FN_GLOBAL_STRING(lp_realm, &loadparm.Globals.szRealm)
+_PUBLIC_ FN_GLOBAL_STRING(lp_socket_options, &loadparm.Globals.socket_options)
+_PUBLIC_ FN_GLOBAL_STRING(lp_workgroup, &loadparm.Globals.szWorkgroup)
+_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_name, &loadparm.Globals.szNetbiosName)
+_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_scope, &loadparm.Globals.szNetbiosScope)
+_PUBLIC_ FN_GLOBAL_LIST(lp_wins_server_list, &loadparm.Globals.szWINSservers)
+_PUBLIC_ FN_GLOBAL_LIST(lp_interfaces, &loadparm.Globals.szInterfaces)
+_PUBLIC_ FN_GLOBAL_STRING(lp_socket_address, &loadparm.Globals.szSocketAddress)
+_PUBLIC_ FN_GLOBAL_LIST(lp_netbios_aliases, &loadparm.Globals.szNetbiosAliases)
 
-_PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_dns_proxy, &Globals.bWINSdnsProxy)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_local_master, &Globals.bLocalMaster)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_null_passwords, &Globals.bNullPasswords)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_plaintext_auth, &Globals.bClientPlaintextAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_lanman_auth, &Globals.bClientLanManAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, &Globals.bClientNTLMv2Auth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_use_spnego_principal, &Globals.client_use_spnego_principal)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_unix_extensions, &Globals.bUnixExtensions)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_rpc_big_endian, &Globals.bRpcBigEndian)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_min_wins_ttl, &Globals.min_wins_ttl)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_xmit, &Globals.max_xmit)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_maxprotocol, &Globals.srv_maxprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_minprotocol, &Globals.srv_minprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_maxprotocol, &Globals.cli_maxprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, &Globals.cli_minprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_security, &Globals.security)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
-_PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &Globals.jsInclude)
-_PUBLIC_ FN_GLOBAL_STRING(lp_jsonrpc_services_dir, &Globals.jsonrpcServicesDir)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, &loadparm.Globals.bDisableNetbios)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, &loadparm.Globals.bWINSsupport)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_dns_proxy, &loadparm.Globals.bWINSdnsProxy)
+_PUBLIC_ FN_GLOBAL_STRING(lp_wins_hook, &loadparm.Globals.szWINSHook)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_local_master, &loadparm.Globals.bLocalMaster)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_readraw, &loadparm.Globals.bReadRaw)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_large_readwrite, &loadparm.Globals.bLargeReadwrite)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_writeraw, &loadparm.Globals.bWriteRaw)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_null_passwords, &loadparm.Globals.bNullPasswords)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &loadparm.Globals.bObeyPamRestrictions)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_encrypted_passwords, &loadparm.Globals.bEncryptPasswords)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_time_server, &loadparm.Globals.bTimeServer)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &loadparm.Globals.bBindInterfacesOnly)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_unicode, &loadparm.Globals.bUnicode)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_nt_status_support, &loadparm.Globals.bNTStatusSupport)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_lanman_auth, &loadparm.Globals.bLanmanAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_ntlm_auth, &loadparm.Globals.bNTLMAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_plaintext_auth, &loadparm.Globals.bClientPlaintextAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_lanman_auth, &loadparm.Globals.bClientLanManAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, &loadparm.Globals.bClientNTLMv2Auth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_use_spnego_principal, &loadparm.Globals.client_use_spnego_principal)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_host_msdfs, &loadparm.Globals.bHostMSDfs)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_unix_extensions, &loadparm.Globals.bUnixExtensions)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_use_spnego, &loadparm.Globals.bUseSpnego)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_rpc_big_endian, &loadparm.Globals.bRpcBigEndian)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_wins_ttl, &loadparm.Globals.max_wins_ttl)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_min_wins_ttl, &loadparm.Globals.min_wins_ttl)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_maxmux, &loadparm.Globals.max_mux)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_xmit, &loadparm.Globals.max_xmit)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_passwordlevel, &loadparm.Globals.pwordlevel)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_maxprotocol, &loadparm.Globals.srv_maxprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_minprotocol, &loadparm.Globals.srv_minprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_maxprotocol, &loadparm.Globals.cli_maxprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, &loadparm.Globals.cli_minprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_security, &loadparm.Globals.security)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &loadparm.Globals.paranoid_server_security)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, &loadparm.Globals.announce_as)
+_PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &loadparm.Globals.jsInclude)
+_PUBLIC_ FN_GLOBAL_STRING(lp_jsonrpc_services_dir, &loadparm.Globals.jsonrpcServicesDir)
 _PUBLIC_ FN_LOCAL_STRING(lp_servicename, szService)
 _PUBLIC_ FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 _PUBLIC_ FN_LOCAL_STRING(lp_pathname, szPath)
@@ -946,19 +951,19 @@ _PUBLIC_ FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, &loadparm.Globals.server_signing)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, &loadparm.Globals.client_signing)
 
 /* local prototypes */
 
 static int map_parameter(const char *pszParmName);
 static int getservicebyname(const char *pszServiceName,
-			    service * pserviceDest);
-static void copy_service(service * pserviceDest,
-			 service * pserviceSource, int *pcopymapDest);
+			    struct service * pserviceDest);
+static void copy_service(struct service * pserviceDest,
+			 struct service * pserviceSource, int *pcopymapDest);
 static bool service_ok(int iService);
 static bool do_section(const char *pszSectionName, void *);
-static void init_copymap(service * pservice);
+static void init_copymap(struct service * pservice);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -972,7 +977,7 @@ const char *lp_get_parametric(int lookup_service, const char *type, const char *
 		return NULL;
 	
 	data = (lookup_service < 0) ? 
-		Globals.param_opt : ServicePtrs[lookup_service]->param_opt;
+		loadparm.Globals.param_opt : loadparm.ServicePtrs[lookup_service]->param_opt;
     
 	asprintf(&vfskey, "%s:%s", type, option);
 	strlower(vfskey);
@@ -988,13 +993,12 @@ const char *lp_get_parametric(int lookup_service, const char *type, const char *
 	if (lookup_service >= 0) {
 		/* Try to fetch the same option but from globals */
 		/* but only if we are not already working with Globals */
-		data = Globals.param_opt;
-		while (data) {
+		for (data = loadparm.Globals.param_opt; data; 
+		     data = data->next) {
 			if (strcmp(data->key, vfskey) == 0) {
 				free(vfskey);
 				return data->value;
 			}
-			data = data->next;
 		}
 	}
 
@@ -1049,18 +1053,18 @@ static double lp_double(const char *s)
 /*******************************************************************
 convenience routine to return boolean parameters.
 ********************************************************************/
-static BOOL lp_bool(const char *s)
+static bool lp_bool(const char *s)
 {
-	BOOL ret = False;
+	bool ret = false;
 
 	if (!s) {
 		DEBUG(0,("lp_bool(%s): is called with NULL!\n",s));
-		return False;
+		return false;
 	}
 	
 	if (!set_boolean(s, &ret)) {
 		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
-		return False;
+		return false;
 	}
 
 	return ret;
@@ -1156,7 +1160,8 @@ double lp_parm_double(int lookup_service, const char *type, const char *option, 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-BOOL lp_parm_bool(int lookup_service, const char *type, const char *option, BOOL default_v)
+bool lp_parm_bool(int lookup_service, const char *type, const char *option, 
+		  bool default_v)
 {
 	const char *value = lp_get_parametric(lookup_service, type, option);
 	
@@ -1171,10 +1176,9 @@ BOOL lp_parm_bool(int lookup_service, const char *type, const char *option, BOOL
  Initialise a service to the defaults.
 ***************************************************************************/
 
-static service *init_service(TALLOC_CTX *mem_ctx)
+static struct service *init_service(TALLOC_CTX *mem_ctx)
 {
-	service *pservice = talloc(mem_ctx, service);
-	memset((char *)pservice, '\0', sizeof(service));
+	struct service *pservice = talloc_zero(mem_ctx, struct service);
 	copy_service(pservice, &sDefault, NULL);
 	return pservice;
 }
@@ -1192,11 +1196,11 @@ void string_free(char **str)
  service. 
 ***************************************************************************/
 
-static int add_a_service(const service *pservice, const char *name)
+static int add_a_service(const struct service *pservice, const char *name)
 {
 	int i;
-	service tservice;
-	int num_to_alloc = iNumServices + 1;
+	struct service tservice;
+	int num_to_alloc = loadparm.iNumServices + 1;
 	struct param_opt *data, *pdata;
 
 	tservice = *pservice;
@@ -1207,48 +1211,48 @@ static int add_a_service(const service *pservice, const char *name)
 		if (i >= 0) {
 			/* Clean all parametric options for service */
 			/* They will be added during parsing again */
-			data = ServicePtrs[i]->param_opt;
+			data = loadparm.ServicePtrs[i]->param_opt;
 			while (data) {
 				pdata = data->next;
 				talloc_free(data);
 				data = pdata;
 			}
-			ServicePtrs[i]->param_opt = NULL;
+			loadparm.ServicePtrs[i]->param_opt = NULL;
 			return i;
 		}
 	}
 
 	/* find an invalid one */
-	for (i = 0; i < iNumServices; i++)
-		if (ServicePtrs[i] == NULL)
+	for (i = 0; i < loadparm.iNumServices; i++)
+		if (loadparm.ServicePtrs[i] == NULL)
 			break;
 
 	/* if not, then create one */
-	if (i == iNumServices) {
-		service **tsp;
+	if (i == loadparm.iNumServices) {
+		struct service **tsp;
 		
-		tsp = realloc_p(ServicePtrs, service *,	num_to_alloc);
+		tsp = realloc_p(loadparm.ServicePtrs, struct service *, num_to_alloc);
 					   
 		if (!tsp) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
 			return -1;
 		}
 		else {
-			ServicePtrs = tsp;
-			ServicePtrs[iNumServices] = NULL;
+			loadparm.ServicePtrs = tsp;
+			loadparm.ServicePtrs[loadparm.iNumServices] = NULL;
 		}
 
-		iNumServices++;
+		loadparm.iNumServices++;
 	} 
 
-	ServicePtrs[i] = init_service(talloc_autofree_context());
-	if (ServicePtrs[i] == NULL) {
+	loadparm.ServicePtrs[i] = init_service(talloc_autofree_context());
+	if (loadparm.ServicePtrs[i] == NULL) {
 		DEBUG(0,("add_a_service: out of memory!\n"));
 		return -1;
 	}
-	copy_service(ServicePtrs[i], &tservice, NULL);
+	copy_service(loadparm.ServicePtrs[i], &tservice, NULL);
 	if (name != NULL)
-		string_set(ServicePtrs[i], &ServicePtrs[i]->szService, name);
+		string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->szService, name);
 	return i;
 }
 
@@ -1257,35 +1261,32 @@ static int add_a_service(const service *pservice, const char *name)
  from service ifrom.
 ***************************************************************************/
 
-BOOL lp_add_home(const char *pszHomename, int iDefaultService, 
+bool lp_add_home(const char *pszHomename, int iDefaultService, 
 		 const char *user, const char *pszHomedir)
 {
 	int i;
 	pstring newHomedir;
 
-	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
+	i = add_a_service(loadparm.ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
 		return false;
 
-	if (!(*(ServicePtrs[iDefaultService]->szPath))
-	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(-1))) {
+	if (!(*(loadparm.ServicePtrs[iDefaultService]->szPath))
+	    || strequal(loadparm.ServicePtrs[iDefaultService]->szPath, lp_pathname(-1))) {
 		pstrcpy(newHomedir, pszHomedir);
 	} else {
 		pstrcpy(newHomedir, lp_pathname(iDefaultService));
 		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
 	}
 
-	string_set(ServicePtrs[i], &ServicePtrs[i]->szPath, newHomedir);
+	string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->szPath, newHomedir);
 
-	if (!(*(ServicePtrs[i]->comment))) {
-		char *comment = talloc_asprintf(ServicePtrs[i], 
-			 "Home directory of %s", user);
-		string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
-		talloc_free(comment);
+	if (!(*(loadparm.ServicePtrs[i]->comment))) {
+		loadparm.ServicePtrs[i]->comment = talloc_asprintf(loadparm.ServicePtrs[i], "Home directory of %s", user);
 	}
-	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	loadparm.ServicePtrs[i]->bAvailable = sDefault.bAvailable;
+	loadparm.ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, newHomedir));
@@ -1299,7 +1300,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 
 int lp_add_service(const char *pszService, int iDefaultService)
 {
-	return add_a_service(ServicePtrs[iDefaultService], pszService);
+	return add_a_service(loadparm.ServicePtrs[iDefaultService], pszService);
 }
 
 /***************************************************************************
@@ -1309,21 +1310,21 @@ int lp_add_service(const char *pszService, int iDefaultService)
 static bool lp_add_hidden(const char *name, const char *fstype)
 {
 	int i = add_a_service(&sDefault, name);
+	struct service *service = loadparm.ServicePtrs[i];
 
 	if (i < 0)
 		return false;
 
-	string_set(ServicePtrs[i], &ServicePtrs[i]->szPath, tmpdir());
+	string_set(service, &service->szPath, tmpdir());
 
-	ServicePtrs[i]->comment = talloc_asprintf(ServicePtrs[i], 
-						  "%s Service (%s)", 
-					fstype, Globals.szServerString);
-	string_set(ServicePtrs[i], &ServicePtrs[i]->fstype, fstype);
-	ServicePtrs[i]->iMaxConnections = -1;
-	ServicePtrs[i]->bAvailable = true;
-	ServicePtrs[i]->bRead_only = true;
-	ServicePtrs[i]->bPrint_ok = false;
-	ServicePtrs[i]->bBrowseable = false;
+	service->comment = talloc_asprintf(service, "%s Service (%s)", 
+				fstype, loadparm.Globals.szServerString);
+	string_set(service, &service->fstype, fstype);
+	service->iMaxConnections = -1;
+	service->bAvailable = true;
+	service->bRead_only = true;
+	service->bPrint_ok = false;
+	service->bBrowseable = false;
 
 	if (strcasecmp(fstype, "IPC") == 0) {
 		lp_do_parameter(i, "ntvfs handler", "default");
@@ -1341,7 +1342,8 @@ static bool lp_add_hidden(const char *name, const char *fstype)
 bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 {
 	const char *comment = "From Printcap";
-	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
+	int i = add_a_service(loadparm.ServicePtrs[iDefaultService], 
+			      pszPrintername);
 
 	if (i < 0)
 		return false;
@@ -1352,14 +1354,14 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(ServicePtrs[i], &ServicePtrs[i]->szPrintername, 
+	string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->szPrintername, 
 		   pszPrintername);
-	string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->comment, comment);
+	loadparm.ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
-	ServicePtrs[i]->bRead_only = False;
+	loadparm.ServicePtrs[i]->bRead_only = False;
 	/* Printer services must be printable. */
-	ServicePtrs[i]->bPrint_ok = True;
+	loadparm.ServicePtrs[i]->bPrint_ok = True;
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
@@ -1410,22 +1412,23 @@ void *lp_parm_ptr(int snum, struct parm_struct *parm)
 	if (snum == -1) {
 		return parm->ptr;
 	}
-	return ((char *)ServicePtrs[snum]) + PTR_DIFF(parm->ptr, &sDefault);
+	return ((char *)loadparm.ServicePtrs[snum]) + PTR_DIFF(parm->ptr, &sDefault);
 }
 
 /***************************************************************************
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
 
-static int getservicebyname(const char *pszServiceName, service * pserviceDest)
+static int getservicebyname(const char *pszServiceName, 
+			    struct service * pserviceDest)
 {
 	int iService;
 
-	for (iService = iNumServices - 1; iService >= 0; iService--)
+	for (iService = loadparm.iNumServices - 1; iService >= 0; iService--)
 		if (VALID(iService) &&
-		    strwicmp(ServicePtrs[iService]->szService, pszServiceName) == 0) {
+		    strwicmp(loadparm.ServicePtrs[iService]->szService, pszServiceName) == 0) {
 			if (pserviceDest != NULL)
-				copy_service(pserviceDest, ServicePtrs[iService], NULL);
+				copy_service(pserviceDest, loadparm.ServicePtrs[iService], NULL);
 			break;
 		}
 
@@ -1437,7 +1440,8 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(service *pserviceDest, service *pserviceSource, 
+static void copy_service(struct service *pserviceDest, 
+			 struct service *pserviceSource, 
 			 int *pcopymapDest)
 {
 	int i;
@@ -1527,34 +1531,34 @@ Check a service for consistency. Return False if the service is in any way
 incomplete or faulty, else True.
 ***************************************************************************/
 
-static BOOL service_ok(int iService)
+static bool service_ok(int iService)
 {
-	BOOL bRetval;
+	bool bRetval;
 
-	bRetval = True;
-	if (ServicePtrs[iService]->szService[0] == '\0') {
+	bRetval = true;
+	if (loadparm.ServicePtrs[iService]->szService[0] == '\0') {
 		DEBUG(0, ("The following message indicates an internal error:\n"));
 		DEBUG(0, ("No service name in service entry.\n"));
-		bRetval = False;
+		bRetval = false;
 	}
 
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
-	if (strwicmp(ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
-		if (!ServicePtrs[iService]->bPrint_ok) {
+	if (strwicmp(loadparm.ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
+		if (!loadparm.ServicePtrs[iService]->bPrint_ok) {
 			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
-			       ServicePtrs[iService]->szService));
-			ServicePtrs[iService]->bPrint_ok = True;
+			       loadparm.ServicePtrs[iService]->szService));
+			loadparm.ServicePtrs[iService]->bPrint_ok = True;
 		}
 		/* [printers] service must also be non-browsable. */
-		if (ServicePtrs[iService]->bBrowseable)
-			ServicePtrs[iService]->bBrowseable = False;
+		if (loadparm.ServicePtrs[iService]->bBrowseable)
+			loadparm.ServicePtrs[iService]->bBrowseable = False;
 	}
 
 	/* If a service is flagged unavailable, log the fact at level 0. */
-	if (!ServicePtrs[iService]->bAvailable)
+	if (!loadparm.ServicePtrs[iService]->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
-			  ServicePtrs[iService]->szService));
+			  loadparm.ServicePtrs[iService]->szService));
 
 	return bRetval;
 }
@@ -1582,18 +1586,18 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 
 	if (!f) {
-		f = malloc_p(struct file_lists);
+		f = talloc(talloc_autofree_context(), struct file_lists);
 		if (!f)
 			return;
 		f->next = file_lists;
-		f->name = strdup(fname);
+		f->name = talloc_strdup(f, fname);
 		if (!f->name) {
-			SAFE_FREE(f);
+			talloc_free(f);
 			return;
 		}
-		f->subfname = strdup(subfname);
+		f->subfname = talloc_strdup(f, subfname);
 		if (!f->subfname) {
-			SAFE_FREE(f);
+			talloc_free(f);
 			return;
 		}
 		file_lists = f;
@@ -1630,8 +1634,8 @@ BOOL lp_file_list_changed(void)
 				 ("file %s modified: %s\n", n2,
 				  ctime(&mod_time)));
 			f->modtime = mod_time;
-			SAFE_FREE(f->subfname);
-			f->subfname = strdup(n2);
+			talloc_free(f->subfname);
+			f->subfname = talloc_strdup(f, n2);
 			return true;
 		}
 		f = f->next;
@@ -1668,7 +1672,7 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
 	int iTemp;
-	service *serviceTemp;
+	struct service *serviceTemp;
 
 	string_set(talloc_autofree_context(), ptr, pszParmValue);
 
@@ -1679,12 +1683,12 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
 	if ((iTemp = getservicebyname(pszParmValue, serviceTemp)) >= 0) {
-		if (iTemp == iServiceIndex) {
+		if (iTemp == loadparm.iServiceIndex) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
-			copy_service(ServicePtrs[iServiceIndex],
+			copy_service(loadparm.ServicePtrs[loadparm.iServiceIndex],
 				     serviceTemp,
-				     ServicePtrs[iServiceIndex]->copymap);
+				     loadparm.ServicePtrs[loadparm.iServiceIndex]->copymap);
 			bRetval = true;
 		}
 	} else {
@@ -1700,7 +1704,7 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
  Initialise a copymap.
 ***************************************************************************/
 
-static void init_copymap(service *pservice)
+static void init_copymap(struct service *pservice)
 {
 	int i;
 	talloc_free(pservice->copymap);
@@ -1747,11 +1751,11 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 	strlower(name);
 
 	if (snum < 0) {
-		data = Globals.param_opt;
+		data = loadparm.Globals.param_opt;
 		mem_ctx = talloc_autofree_context();
 	} else {
-		data = ServicePtrs[snum]->param_opt;
-		mem_ctx = ServicePtrs[snum];
+		data = loadparm.ServicePtrs[snum]->param_opt;
+		mem_ctx = loadparm.ServicePtrs[snum];
 	}
 
 	/* Traverse destination */
@@ -1779,9 +1783,9 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 	paramo->value = talloc_strdup(paramo, pszParmValue);
 	paramo->flags = flags;
 	if (snum < 0) {
-		DLIST_ADD(Globals.param_opt, paramo);
+		DLIST_ADD(loadparm.Globals.param_opt, paramo);
 	} else {
-		DLIST_ADD(ServicePtrs[snum]->param_opt, paramo);
+		DLIST_ADD(loadparm.ServicePtrs[snum]->param_opt, paramo);
 	}
 
 	free(name);
@@ -1835,20 +1839,20 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			return true;
 		}
 		parm_ptr =
-			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
+			((char *)loadparm.ServicePtrs[snum]) + PTR_DIFF(def_ptr,
 							    &sDefault);
-		mem_ctx = ServicePtrs[snum];
+		mem_ctx = loadparm.ServicePtrs[snum];
 	}
 
 	if (snum >= 0) {
-		if (!ServicePtrs[snum]->copymap)
-			init_copymap(ServicePtrs[snum]);
+		if (!loadparm.ServicePtrs[snum]->copymap)
+			init_copymap(loadparm.ServicePtrs[snum]);
 
 		/* this handles the aliases - set the copymap for other entries with
 		   the same data pointer */
 		for (i = 0; parm_table[i].label; i++)
 			if (parm_table[i].ptr == parm_table[parmnum].ptr)
-				ServicePtrs[snum]->copymap[i] = false;
+				loadparm.ServicePtrs[snum]->copymap[i] = false;
 	}
 
 	/* if it is a special case then go ahead */
@@ -1948,7 +1952,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue, void *userdata)
 {
-	return lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
+	return lp_do_parameter(loadparm.bInGlobalSection ? -2 : loadparm.iServiceIndex,
 				pszParmName, pszParmValue);
 }
 
@@ -2147,10 +2151,10 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
 	bRetval = False;
 
 	/* if we've just struck a global section, note the fact. */
-	bInGlobalSection = isglobal;
+	loadparm.bInGlobalSection = isglobal;
 
 	/* check for multiple global sections */
-	if (bInGlobalSection) {
+	if (loadparm.bInGlobalSection) {
 		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
 		return true;
 	}
@@ -2158,8 +2162,8 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
 	/* if we have a current service, tidy it up before moving on */
 	bRetval = True;
 
-	if (iServiceIndex >= 0)
-		bRetval = service_ok(iServiceIndex);
+	if (loadparm.iServiceIndex >= 0)
+		bRetval = service_ok(loadparm.iServiceIndex);
 
 	/* if all is still well, move to the next record in the services array */
 	if (bRetval) {
@@ -2167,7 +2171,7 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((iServiceIndex = add_a_service(&sDefault, pszSectionName))
+		if ((loadparm.iServiceIndex = add_a_service(&sDefault, pszSectionName))
 		    < 0) {
 			DEBUG(0, ("Failed to add a new service\n"));
 			return false;
@@ -2230,11 +2234,10 @@ static void dump_globals(FILE *f, BOOL show_defaults)
 			print_parameter(&parm_table[i], parm_table[i].ptr, f);
 			fprintf(f, "\n");
 	}
-	if (Globals.param_opt != NULL) {
-		data = Globals.param_opt;
-		while(data) {
+	if (loadparm.Globals.param_opt != NULL) {
+		for (data = loadparm.Globals.param_opt; data; 
+		     data = data->next) {
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
-			data = data->next;
 		}
         }
 
@@ -2244,7 +2247,7 @@ static void dump_globals(FILE *f, BOOL show_defaults)
  Display the contents of a single services record.
 ***************************************************************************/
 
-static void dump_a_service(service * pService, FILE * f)
+static void dump_a_service(struct service * pService, FILE * f)
 {
 	int i;
 	struct param_opt *data;
@@ -2277,17 +2280,15 @@ static void dump_a_service(service * pService, FILE * f)
 			fprintf(f, "\n");
 	}
 	if (pService->param_opt != NULL) {
-		data = pService->param_opt;
-		while(data) {
+		for (data = pService->param_opt; data; data = data->next) {
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
-			data = data->next;
 		}
         }
 }
 
-BOOL lp_dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
+bool lp_dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 {
-	service * pService = ServicePtrs[snum];
+	struct service * pService = loadparm.ServicePtrs[snum];
 	struct parm_struct *parm;
 	void *ptr;
 	
@@ -2333,7 +2334,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			return &parm_table[(*i)++];
 		}
 	} else {
-		service *pService = ServicePtrs[snum];
+		struct service *pService = loadparm.ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].class == P_SEPARATOR)
@@ -2373,7 +2374,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 
 bool lp_snum_ok(int iService)
 {
-	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
+	return (LP_SNUM_OK(iService) && loadparm.ServicePtrs[iService]->bAvailable);
 }
 
 /***************************************************************************
@@ -2401,13 +2402,13 @@ BOOL lp_loaded(void)
 void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsrv_connection *, int))
 {
 	int i;
-	for (i = 0; i < iNumServices; i++) {
+	for (i = 0; i < loadparm.iNumServices; i++) {
 		if (!VALID(i))
 			continue;
 
 		if (!snumused || !snumused(smb, i)) {
-			talloc_free(ServicePtrs[i]);
-			ServicePtrs[i] = NULL;
+			talloc_free(loadparm.ServicePtrs[i]);
+			loadparm.ServicePtrs[i] = NULL;
 		}
 	}
 }
@@ -2419,8 +2420,8 @@ void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsr
 void lp_killservice(int iServiceIn)
 {
 	if (VALID(iServiceIn)) {
-		talloc_free(ServicePtrs[iServiceIn]);
-		ServicePtrs[iServiceIn] = NULL;
+		talloc_free(loadparm.ServicePtrs[iServiceIn]);
+		loadparm.ServicePtrs[iServiceIn] = NULL;
 	}
 }
 
@@ -2437,14 +2438,14 @@ bool lp_load(void)
 
 	bRetval = false;
 
-	bInGlobalSection = true;
+	loadparm.bInGlobalSection = true;
 
-	if (Globals.param_opt != NULL) {
+	if (loadparm.Globals.param_opt != NULL) {
 		struct param_opt *next;
-		for (data=Globals.param_opt; data; data=next) {
+		for (data=loadparm.Globals.param_opt; data; data=next) {
 			next = data->next;
 			if (data->flags & FLAG_CMDLINE) continue;
-			DLIST_REMOVE(Globals.param_opt, data);
+			DLIST_REMOVE(loadparm.Globals.param_opt, data);
 			talloc_free(data);
 		}
 	}
@@ -2457,14 +2458,14 @@ bool lp_load(void)
 	add_to_file_list(lp_configfile(), n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
-	iServiceIndex = -1;
+	loadparm.iServiceIndex = -1;
 	bRetval = pm_process(n2, do_section, do_parameter, NULL);
 
 	/* finish up the last section */
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
 	if (bRetval)
-		if (iServiceIndex >= 0)
-			bRetval = service_ok(iServiceIndex);
+		if (loadparm.iServiceIndex >= 0)
+			bRetval = service_ok(loadparm.iServiceIndex);
 
 	lp_add_auto_services(lp_auto_services());
 
@@ -2473,7 +2474,7 @@ bool lp_load(void)
 
 	bLoaded = true;
 
-	if (!Globals.szWINSservers && Globals.bWINSsupport) {
+	if (!loadparm.Globals.szWINSservers && loadparm.Globals.bWINSsupport) {
 		lp_do_parameter(-1, "wins server", "127.0.0.1");
 	}
 
@@ -2488,7 +2489,7 @@ bool lp_load(void)
 
 void lp_resetnumservices(void)
 {
-	iNumServices = 0;
+	loadparm.iNumServices = 0;
 }
 
 /***************************************************************************
@@ -2497,7 +2498,7 @@ void lp_resetnumservices(void)
 
 int lp_numservices(void)
 {
-	return iNumServices;
+	return loadparm.iNumServices;
 }
 
 /***************************************************************************
@@ -2526,9 +2527,9 @@ Display the contents of one service in human-readable form.
 void lp_dump_one(FILE *f, bool show_defaults, int snum)
 {
 	if (VALID(snum)) {
-		if (ServicePtrs[snum]->szService[0] == '\0')
+		if (loadparm.ServicePtrs[snum]->szService[0] == '\0')
 			return;
-		dump_a_service(ServicePtrs[snum], f);
+		dump_a_service(loadparm.ServicePtrs[snum], f);
 	}
 }
 
@@ -2545,14 +2546,14 @@ int lp_servicenumber(const char *pszServiceName)
         char *serviceName;
  
  
-	for (iService = iNumServices - 1; iService >= 0; iService--) {
-		if (VALID(iService) && ServicePtrs[iService]->szService) {
+	for (iService = loadparm.iNumServices - 1; iService >= 0; iService--) {
+		if (VALID(iService) && loadparm.ServicePtrs[iService]->szService) {
 			/*
 			 * The substitution here is used to support %U is
 			 * service names
 			 */
-			serviceName = standard_sub_basic(ServicePtrs[iService],
-							 ServicePtrs[iService]->szService);
+			serviceName = standard_sub_basic(loadparm.ServicePtrs[iService],
+							 loadparm.ServicePtrs[iService]->szService);
 			if (strequal(serviceName, pszServiceName))
 				break;
 		}
@@ -2609,7 +2610,7 @@ bool lp_domain_logons(void)
 
 void lp_remove_service(int snum)
 {
-	ServicePtrs[snum] = NULL;
+	loadparm.ServicePtrs[snum] = NULL;
 }
 
 /*******************************************************************
@@ -2643,7 +2644,7 @@ const char *lp_printername(int snum)
 
 int lp_maxprintjobs(int snum)
 {
-	int maxjobs = LP_SNUM_OK(snum) ? ServicePtrs[snum]->iMaxPrintJobs : sDefault.iMaxPrintJobs;
+	int maxjobs = LP_SNUM_OK(snum) ? loadparm.ServicePtrs[snum]->iMaxPrintJobs : sDefault.iMaxPrintJobs;
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
 		maxjobs = PRINT_MAX_JOBID - 1;
 
