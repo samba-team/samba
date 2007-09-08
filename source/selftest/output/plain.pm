@@ -77,9 +77,15 @@ sub start_test($$)
 	my ($state, $testname) = @_;
 }
 
-sub end_test($$$$$)
+sub end_test($$$$$$)
 {
-	my ($state, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $state, $testname, $result, $unexpected, $reason) = @_;
+
+	if ($unexpected and $self->{immediate} and not $self->{verbose}) {
+		print "$testname: $result [ $reason ]\n";
+		print $self->{test_output}->{$state->{NAME}}."\n";
+	}
+	$self->{test_output}->{$state->{NAME}} = "";
 }
 
 sub summary($)

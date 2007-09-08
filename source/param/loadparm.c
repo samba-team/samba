@@ -74,7 +74,6 @@ static bool bLoaded = false;
 #define VALID(i) (loadparm.ServicePtrs[i] != NULL)
 
 static bool do_parameter(const char *, const char *, void *);
-static bool do_parameter_var(const char *pszParmName, const char *fmt, ...);
 
 static bool defaults_saved = false;
 
@@ -248,22 +247,22 @@ static struct service sDefault = {
 	1000,			/* iMaxPrintJobs */
 	0,			/* iMaxConnections */
 	0,			/* iCSCPolicy */
-	True,			/* bAvailable */
-	True,			/* bBrowseable */
-	True,			/* bRead_only */
-	False,			/* bPrint_ok */
-	False,			/* bMap_system */
-	False,			/* bMap_hidden */
-	True,			/* bMap_archive */
-	True,			/* bStrictLocking */
+	true,			/* bAvailable */
+	true,			/* bBrowseable */
+	true,			/* bRead_only */
+	false,			/* bPrint_ok */
+	false,			/* bMap_system */
+	false,			/* bMap_hidden */
+	true,			/* bMap_archive */
+	true,			/* bStrictLocking */
 	0744,			/* iCreate_mask */
 	0000,			/* iCreate_force_mode */
 	0755,			/* iDir_mask */
 	0000,			/* iDir_force_mode */	
 	NULL,			/* copymap */
-	False,			/* bMSDfsRoot */
-	False,			/* bStrictSync */
-	False,			/* bCIFileSystem */
+	false,			/* bMSDfsRoot */
+	false,			/* bStrictSync */
+	false,			/* bCIFileSystem */
 	NULL,			/* Parametric options */
 
 	""			/* dummy */
@@ -274,11 +273,11 @@ static struct loadparm_context {
 	struct global Globals;
 	struct service **ServicePtrs;
 	int iNumServices;
-	int iServiceIndex;
+	struct service *currentService;
 	bool bInGlobalSection;
 } loadparm = {
 	.iNumServices = 0,
-	.iServiceIndex = 0,
+	.currentService = NULL,
 	.bInGlobalSection = true,
 	.ServicePtrs = NULL,
 };
@@ -316,12 +315,12 @@ static const struct enum_list enum_announce_as[] = {
 };
 
 static const struct enum_list enum_bool_auto[] = {
-	{False, "No"},
-	{False, "False"},
-	{False, "0"},
-	{True, "Yes"},
-	{True, "True"},
-	{True, "1"},
+	{false, "No"},
+	{false, "False"},
+	{false, "0"},
+	{true, "Yes"},
+	{true, "True"},
+	{true, "1"},
 	{Auto, "Auto"},
 	{-1, NULL}
 };
@@ -599,136 +598,137 @@ static void init_globals(void)
 		}
 	}
 
-	do_parameter("config file", dyn_CONFIGFILE, NULL);
+	lp_do_global_parameter("config file", dyn_CONFIGFILE);
 
-	do_parameter("share backend", "classic", NULL);
+	lp_do_global_parameter("share backend", "classic");
 	
-	do_parameter("server role", "standalone", NULL);
+	lp_do_global_parameter("server role", "standalone");
 
 	/* options that can be set on the command line must be initialised via
-	   the slower do_parameter() to ensure that FLAG_CMDLINE is obeyed */
+	   the slower lp_do_global_parameter() to ensure that FLAG_CMDLINE is obeyed */
 #ifdef TCP_NODELAY
-	do_parameter("socket options", "TCP_NODELAY", NULL);
+	lp_do_global_parameter("socket options", "TCP_NODELAY");
 #endif
-	do_parameter("workgroup", DEFAULT_WORKGROUP, NULL);
+	lp_do_global_parameter("workgroup", DEFAULT_WORKGROUP);
 	myname = get_myname();
-	do_parameter("netbios name", myname, NULL);
+	lp_do_global_parameter("netbios name", myname);
 	SAFE_FREE(myname);
-	do_parameter("name resolve order", "lmhosts wins host bcast", NULL);
+	lp_do_global_parameter("name resolve order", "lmhosts wins host bcast");
 
-	do_parameter("fstype", FSTYPE_STRING, NULL);
-	do_parameter("ntvfs handler", "unixuid default", NULL);
-	do_parameter("max connections", "-1", NULL);
+	lp_do_global_parameter("fstype", FSTYPE_STRING);
+	lp_do_global_parameter("ntvfs handler", "unixuid default");
+	lp_do_global_parameter("max connections", "-1");
 
-	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo", NULL);
-	do_parameter("server services", "smb rpc nbt wrepl ldap cldap web kdc drepl winbind", NULL);
-	do_parameter("ntptr providor", "simple_ldb", NULL);
-	do_parameter("auth methods:domain controller", "anonymous sam_ignoredomain", NULL);
-	do_parameter("auth methods:member server", "anonymous sam winbind", NULL);
-	do_parameter("auth methods:standalone", "anonymous sam_ignoredomain", NULL);
-	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
-	do_parameter("sam database", "sam.ldb", NULL);
-	do_parameter("secrets database", "secrets.ldb", NULL);
-	do_parameter("spoolss database", "spoolss.ldb", NULL);
-	do_parameter("wins config database", "wins_config.ldb", NULL);
-	do_parameter("wins database", "wins.ldb", NULL);
-	do_parameter("registry:HKEY_LOCAL_MACHINE", "hklm.ldb", NULL);
+	lp_do_global_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo");
+	lp_do_global_parameter("server services", "smb rpc nbt wrepl ldap cldap web kdc drepl winbind");
+	lp_do_global_parameter("ntptr providor", "simple_ldb");
+	lp_do_global_parameter("auth methods:domain controller", "anonymous sam_ignoredomain");
+	lp_do_global_parameter("auth methods:member server", "anonymous sam winbind");
+	lp_do_global_parameter("auth methods:standalone", "anonymous sam_ignoredomain");
+	lp_do_global_parameter("private dir", dyn_PRIVATE_DIR);
+	lp_do_global_parameter("sam database", "sam.ldb");
+	lp_do_global_parameter("secrets database", "secrets.ldb");
+	lp_do_global_parameter("spoolss database", "spoolss.ldb");
+	lp_do_global_parameter("wins config database", "wins_config.ldb");
+	lp_do_global_parameter("wins database", "wins.ldb");
+	lp_do_global_parameter("registry:HKEY_LOCAL_MACHINE", "hklm.ldb");
 
 	/* This hive should be dynamically generated by Samba using
 	   data from the sam, but for the moment leave it in a tdb to
 	   keep regedt32 from popping up an annoying dialog. */
-	do_parameter("registry:HKEY_USERS", "hku.ldb", NULL);
+	lp_do_global_parameter("registry:HKEY_USERS", "hku.ldb");
 	
 	/* using UTF8 by default allows us to support all chars */
-	do_parameter("unix charset", "UTF8", NULL);
+	lp_do_global_parameter("unix charset", "UTF8");
 
 	/* Use codepage 850 as a default for the dos character set */
-	do_parameter("dos charset", "CP850", NULL);
+	lp_do_global_parameter("dos charset", "CP850");
 
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
-	do_parameter("passwd chat", DEFAULT_PASSWD_CHAT, NULL);
+	lp_do_global_parameter("passwd chat", DEFAULT_PASSWD_CHAT);
 
-	do_parameter("pid directory", dyn_PIDDIR, NULL);
-	do_parameter("lock dir", dyn_LOCKDIR, NULL);
-	do_parameter("modules dir", dyn_MODULESDIR, NULL);
-	do_parameter("ncalrpc dir", dyn_NCALRPCDIR, NULL);
+	lp_do_global_parameter("pid directory", dyn_PIDDIR);
+	lp_do_global_parameter("lock dir", dyn_LOCKDIR);
+	lp_do_global_parameter("modules dir", dyn_MODULESDIR);
+	lp_do_global_parameter("ncalrpc dir", dyn_NCALRPCDIR);
 
-	do_parameter("socket address", "0.0.0.0", NULL);
-	do_parameter_var("server string", "Samba %s", SAMBA_VERSION_STRING);
+	lp_do_global_parameter("socket address", "0.0.0.0");
+	lp_do_global_parameter_var("server string", 
+				   "Samba %s", SAMBA_VERSION_STRING);
 
-	do_parameter_var("announce version", "%d.%d", 
+	lp_do_global_parameter_var("announce version", "%d.%d", 
 			 DEFAULT_MAJOR_VERSION,
 			 DEFAULT_MINOR_VERSION);
 
-	do_parameter("password server", "*", NULL);
+	lp_do_global_parameter("password server", "*");
 
-	do_parameter("max mux", "50", NULL);
-	do_parameter("max xmit", "12288", NULL);
-	do_parameter("password level", "0", NULL);
-	do_parameter("LargeReadwrite", "True", NULL);
-	do_parameter("server min protocol", "CORE", NULL);
-	do_parameter("server max protocol", "NT1", NULL);
-	do_parameter("client min protocol", "CORE", NULL);
-	do_parameter("client max protocol", "NT1", NULL);
-	do_parameter("security", "USER", NULL);
-	do_parameter("paranoid server security", "True", NULL);
-	do_parameter("EncryptPasswords", "True", NULL);
-	do_parameter("ReadRaw", "True", NULL);
-	do_parameter("WriteRaw", "True", NULL);
-	do_parameter("NullPasswords", "False", NULL);
-	do_parameter("ObeyPamRestrictions", "False", NULL);
-	do_parameter("announce as", "NT SERVER", NULL);
+	lp_do_global_parameter("max mux", "50");
+	lp_do_global_parameter("max xmit", "12288");
+	lp_do_global_parameter("password level", "0");
+	lp_do_global_parameter("LargeReadwrite", "True");
+	lp_do_global_parameter("server min protocol", "CORE");
+	lp_do_global_parameter("server max protocol", "NT1");
+	lp_do_global_parameter("client min protocol", "CORE");
+	lp_do_global_parameter("client max protocol", "NT1");
+	lp_do_global_parameter("security", "USER");
+	lp_do_global_parameter("paranoid server security", "True");
+	lp_do_global_parameter("EncryptPasswords", "True");
+	lp_do_global_parameter("ReadRaw", "True");
+	lp_do_global_parameter("WriteRaw", "True");
+	lp_do_global_parameter("NullPasswords", "False");
+	lp_do_global_parameter("ObeyPamRestrictions", "False");
+	lp_do_global_parameter("announce as", "NT SERVER");
 
-	do_parameter("TimeServer", "False", NULL);
-	do_parameter("BindInterfacesOnly", "False", NULL);
-	do_parameter("Unicode", "True", NULL);
-	do_parameter("ClientLanManAuth", "True", NULL);
-	do_parameter("LanmanAuth", "True", NULL);
-	do_parameter("NTLMAuth", "True", NULL);
-	do_parameter("client use spnego principal", "False", NULL);
+	lp_do_global_parameter("TimeServer", "False");
+	lp_do_global_parameter("BindInterfacesOnly", "False");
+	lp_do_global_parameter("Unicode", "True");
+	lp_do_global_parameter("ClientLanManAuth", "True");
+	lp_do_global_parameter("LanmanAuth", "True");
+	lp_do_global_parameter("NTLMAuth", "True");
+	lp_do_global_parameter("client use spnego principal", "False");
 	
-	do_parameter("UnixExtensions", "False", NULL);
+	lp_do_global_parameter("UnixExtensions", "False");
 
-	do_parameter("PreferredMaster", "Auto", NULL);
-	do_parameter("LocalMaster", "True", NULL);
+	lp_do_global_parameter("PreferredMaster", "Auto");
+	lp_do_global_parameter("LocalMaster", "True");
 
-	do_parameter("wins support", "False", NULL);
-	do_parameter("dns proxy", "True", NULL);
+	lp_do_global_parameter("wins support", "False");
+	lp_do_global_parameter("dns proxy", "True");
 
-	do_parameter("winbind separator", "\\", NULL);
-	do_parameter("winbind sealed pipes", "True", NULL);
-	do_parameter("winbindd socket directory", dyn_WINBINDD_SOCKET_DIR, NULL);
-	do_parameter("template shell", "/bin/false", NULL);
-	do_parameter("template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%", NULL);
+	lp_do_global_parameter("winbind separator", "\\");
+	lp_do_global_parameter("winbind sealed pipes", "True");
+	lp_do_global_parameter("winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
+	lp_do_global_parameter("template shell", "/bin/false");
+	lp_do_global_parameter("template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
 
-	do_parameter("client signing", "Yes", NULL);
-	do_parameter("server signing", "auto", NULL);
+	lp_do_global_parameter("client signing", "Yes");
+	lp_do_global_parameter("server signing", "auto");
 
-	do_parameter("use spnego", "True", NULL);
+	lp_do_global_parameter("use spnego", "True");
 
-	do_parameter("smb ports", "445 139", NULL);
-	do_parameter("nbt port", "137", NULL);
-	do_parameter("dgram port", "138", NULL);
-	do_parameter("cldap port", "389", NULL);
-	do_parameter("krb5 port", "88", NULL);
-	do_parameter("kpasswd port", "464", NULL);
-	do_parameter("web port", "901", NULL);
-	do_parameter("web application directory", dyn_WEBAPPSDIR, NULL);
-	do_parameter("jsonrpc services directory", dyn_SERVICESDIR, NULL);
+	lp_do_global_parameter("smb ports", "445 139");
+	lp_do_global_parameter("nbt port", "137");
+	lp_do_global_parameter("dgram port", "138");
+	lp_do_global_parameter("cldap port", "389");
+	lp_do_global_parameter("krb5 port", "88");
+	lp_do_global_parameter("kpasswd port", "464");
+	lp_do_global_parameter("web port", "901");
+	lp_do_global_parameter("web application directory", dyn_WEBAPPSDIR);
+	lp_do_global_parameter("jsonrpc services directory", dyn_SERVICESDIR);
 
-	do_parameter("nt status support", "True", NULL);
+	lp_do_global_parameter("nt status support", "True");
 
-	do_parameter("max wins ttl", "518400", NULL); /* 6 days */
-	do_parameter("min wins ttl", "10", NULL);
+	lp_do_global_parameter("max wins ttl", "518400"); /* 6 days */
+	lp_do_global_parameter("min wins ttl", "10");
 
-	do_parameter("tls enabled", "True", NULL);
-	do_parameter("tls keyfile", "tls/key.pem", NULL);
-	do_parameter("tls certfile", "tls/cert.pem", NULL);
-	do_parameter("tls cafile", "tls/ca.pem", NULL);
-	do_parameter_var("js include", "%s", dyn_JSDIR);
-	do_parameter_var("setup directory", "%s", dyn_SETUPDIR);
+	lp_do_global_parameter("tls enabled", "True");
+	lp_do_global_parameter("tls keyfile", "tls/key.pem");
+	lp_do_global_parameter("tls certfile", "tls/cert.pem");
+	lp_do_global_parameter("tls cafile", "tls/ca.pem");
+	lp_do_global_parameter_var("js include", "%s", dyn_JSDIR);
+	lp_do_global_parameter_var("setup directory", "%s", dyn_SETUPDIR);
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(parm_table[i].flags & FLAG_CMDLINE)) {
@@ -958,11 +958,10 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, &loadparm.Globals.client_signing)
 /* local prototypes */
 
 static int map_parameter(const char *pszParmName);
-static int getservicebyname(const char *pszServiceName,
-			    struct service * pserviceDest);
+static struct service *getservicebyname(const char *pszServiceName);
 static void copy_service(struct service * pserviceDest,
 			 struct service * pserviceSource, int *pcopymapDest);
-static bool service_ok(int iService);
+static bool service_ok(struct service *service);
 static bool do_section(const char *pszSectionName, void *);
 static void init_copymap(struct service * pservice);
 
@@ -1197,7 +1196,7 @@ void string_free(char **str)
  service. 
 ***************************************************************************/
 
-static int add_a_service(const struct service *pservice, const char *name)
+static struct service *add_a_service(const struct service *pservice, const char *name)
 {
 	int i;
 	struct service tservice;
@@ -1208,18 +1207,18 @@ static int add_a_service(const struct service *pservice, const char *name)
 
 	/* it might already exist */
 	if (name) {
-		i = getservicebyname(name, NULL);
-		if (i >= 0) {
+		struct service *service = getservicebyname(name);
+		if (service != NULL) {
 			/* Clean all parametric options for service */
 			/* They will be added during parsing again */
-			data = loadparm.ServicePtrs[i]->param_opt;
+			data = service->param_opt;
 			while (data) {
 				pdata = data->next;
 				talloc_free(data);
 				data = pdata;
 			}
-			loadparm.ServicePtrs[i]->param_opt = NULL;
-			return i;
+			service->param_opt = NULL;
+			return service;
 		}
 	}
 
@@ -1236,7 +1235,7 @@ static int add_a_service(const struct service *pservice, const char *name)
 					   
 		if (!tsp) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
-			return -1;
+			return NULL;
 		}
 		else {
 			loadparm.ServicePtrs = tsp;
@@ -1249,12 +1248,12 @@ static int add_a_service(const struct service *pservice, const char *name)
 	loadparm.ServicePtrs[i] = init_service(talloc_autofree_context());
 	if (loadparm.ServicePtrs[i] == NULL) {
 		DEBUG(0,("add_a_service: out of memory!\n"));
-		return -1;
+		return NULL;
 	}
 	copy_service(loadparm.ServicePtrs[i], &tservice, NULL);
 	if (name != NULL)
 		string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->szService, name);
-	return i;
+	return loadparm.ServicePtrs[i];
 }
 
 /***************************************************************************
@@ -1265,12 +1264,12 @@ static int add_a_service(const struct service *pservice, const char *name)
 bool lp_add_home(const char *pszHomename, int iDefaultService, 
 		 const char *user, const char *pszHomedir)
 {
-	int i;
+	struct service *service;
 	pstring newHomedir;
 
-	i = add_a_service(loadparm.ServicePtrs[iDefaultService], pszHomename);
+	service = add_a_service(loadparm.ServicePtrs[iDefaultService], pszHomename);
 
-	if (i < 0)
+	if (service == NULL)
 		return false;
 
 	if (!(*(loadparm.ServicePtrs[iDefaultService]->szPath))
@@ -1281,16 +1280,16 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
 	}
 
-	string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->szPath, newHomedir);
+	string_set(service, &service->szPath, newHomedir);
 
-	if (!(*(loadparm.ServicePtrs[i]->comment))) {
-		loadparm.ServicePtrs[i]->comment = talloc_asprintf(loadparm.ServicePtrs[i], "Home directory of %s", user);
+	if (!(*(service->comment))) {
+		service->comment = talloc_asprintf(service, "Home directory of %s", user);
 	}
-	loadparm.ServicePtrs[i]->bAvailable = sDefault.bAvailable;
-	loadparm.ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	service->bAvailable = sDefault.bAvailable;
+	service->bBrowseable = sDefault.bBrowseable;
 
-	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
-	       user, newHomedir));
+	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", 
+		  pszHomename, user, newHomedir));
 	
 	return true;
 }
@@ -1299,7 +1298,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
  Add a new service, based on an old one.
 ***************************************************************************/
 
-int lp_add_service(const char *pszService, int iDefaultService)
+struct service *lp_add_service(const char *pszService, int iDefaultService)
 {
 	return add_a_service(loadparm.ServicePtrs[iDefaultService], pszService);
 }
@@ -1310,10 +1309,9 @@ int lp_add_service(const char *pszService, int iDefaultService)
 
 static bool lp_add_hidden(const char *name, const char *fstype)
 {
-	int i = add_a_service(&sDefault, name);
-	struct service *service = loadparm.ServicePtrs[i];
+	struct service *service = add_a_service(&sDefault, name);
 
-	if (i < 0)
+	if (service == NULL)
 		return false;
 
 	string_set(service, &service->szPath, tmpdir());
@@ -1328,7 +1326,7 @@ static bool lp_add_hidden(const char *name, const char *fstype)
 	service->bBrowseable = false;
 
 	if (strcasecmp(fstype, "IPC") == 0) {
-		lp_do_parameter(i, "ntvfs handler", "default");
+		lp_do_service_parameter(service, "ntvfs handler", "default");
 	}
 
 	DEBUG(3, ("adding hidden service %s\n", name));
@@ -1343,10 +1341,11 @@ static bool lp_add_hidden(const char *name, const char *fstype)
 bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 {
 	const char *comment = "From Printcap";
-	int i = add_a_service(loadparm.ServicePtrs[iDefaultService], 
+	struct service *service;
+	service = add_a_service(loadparm.ServicePtrs[iDefaultService], 
 			      pszPrintername);
 
-	if (i < 0)
+	if (service == NULL)
 		return false;
 
 	/* note that we do NOT default the availability flag to True - */
@@ -1355,14 +1354,13 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->szPrintername, 
-		   pszPrintername);
-	string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->comment, comment);
-	loadparm.ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	string_set(service, &service->szPrintername, pszPrintername);
+	string_set(service, &service->comment, comment);
+	service->bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
-	loadparm.ServicePtrs[i]->bRead_only = False;
+	service->bRead_only = false;
 	/* Printer services must be printable. */
-	loadparm.ServicePtrs[i]->bPrint_ok = True;
+	service->bPrint_ok = true;
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
@@ -1420,20 +1418,17 @@ void *lp_parm_ptr(int snum, struct parm_struct *parm)
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
 
-static int getservicebyname(const char *pszServiceName, 
-			    struct service * pserviceDest)
+static struct service *getservicebyname(const char *pszServiceName)
 {
 	int iService;
 
 	for (iService = loadparm.iNumServices - 1; iService >= 0; iService--)
 		if (VALID(iService) &&
 		    strwicmp(loadparm.ServicePtrs[iService]->szService, pszServiceName) == 0) {
-			if (pserviceDest != NULL)
-				copy_service(pserviceDest, loadparm.ServicePtrs[iService], NULL);
-			break;
+			return loadparm.ServicePtrs[iService];
 		}
 
-	return iService;
+	return NULL;
 }
 
 /***************************************************************************
@@ -1503,7 +1498,7 @@ static void copy_service(struct service *pserviceDest,
 	
 	data = pserviceSource->param_opt;
 	while (data) {
-		not_added = True;
+		not_added = true;
 		pdata = pserviceDest->param_opt;
 		/* Traverse destination */
 		while (pdata) {
@@ -1534,12 +1529,12 @@ Check a service for consistency. Return False if the service is in any way
 incomplete or faulty, else True.
 ***************************************************************************/
 
-static bool service_ok(int iService)
+static bool service_ok(struct service *service)
 {
 	bool bRetval;
 
 	bRetval = true;
-	if (loadparm.ServicePtrs[iService]->szService[0] == '\0') {
+	if (service->szService[0] == '\0') {
 		DEBUG(0, ("The following message indicates an internal error:\n"));
 		DEBUG(0, ("No service name in service entry.\n"));
 		bRetval = false;
@@ -1547,21 +1542,21 @@ static bool service_ok(int iService)
 
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
-	if (strwicmp(loadparm.ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
-		if (!loadparm.ServicePtrs[iService]->bPrint_ok) {
+	if (strwicmp(service->szService, PRINTERS_NAME) == 0) {
+		if (!service->bPrint_ok) {
 			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
-			       loadparm.ServicePtrs[iService]->szService));
-			loadparm.ServicePtrs[iService]->bPrint_ok = True;
+			       service->szService));
+			service->bPrint_ok = true;
 		}
 		/* [printers] service must also be non-browsable. */
-		if (loadparm.ServicePtrs[iService]->bBrowseable)
-			loadparm.ServicePtrs[iService]->bBrowseable = False;
+		if (service->bBrowseable)
+			service->bBrowseable = false;
 	}
 
 	/* If a service is flagged unavailable, log the fact at level 0. */
-	if (!loadparm.ServicePtrs[iService]->bAvailable)
+	if (!service->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
-			  loadparm.ServicePtrs[iService]->szService));
+			  service->szService));
 
 	return bRetval;
 }
@@ -1616,12 +1611,12 @@ static void add_to_file_list(const char *fname, const char *subfname)
  Check if a config file has changed date.
 ********************************************************************/
 
-BOOL lp_file_list_changed(void)
+bool lp_file_list_changed(void)
 {
-	struct file_lists *f = file_lists;
+	struct file_lists *f;
 	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	while (f) {
+	for (f = file_lists; f != NULL; f = f->next) {
 		char *n2;
 		time_t mod_time;
 
@@ -1633,15 +1628,13 @@ BOOL lp_file_list_changed(void)
 		mod_time = file_modtime(n2);
 
 		if (mod_time && ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0))) {
-			DEBUGADD(6,
-				 ("file %s modified: %s\n", n2,
+			DEBUGADD(6, ("file %s modified: %s\n", n2,
 				  ctime(&mod_time)));
 			f->modtime = mod_time;
 			talloc_free(f->subfname);
 			f->subfname = talloc_strdup(f, n2);
 			return true;
 		}
-		f = f->next;
 	}
 	return false;
 }
@@ -1674,24 +1667,21 @@ static bool handle_include(const char *pszParmValue, char **ptr)
 static bool handle_copy(const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
-	int iTemp;
 	struct service *serviceTemp;
 
 	string_set(talloc_autofree_context(), ptr, pszParmValue);
-
-	serviceTemp = init_service(talloc_autofree_context());
 
 	bRetval = false;
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
-	if ((iTemp = getservicebyname(pszParmValue, serviceTemp)) >= 0) {
-		if (iTemp == loadparm.iServiceIndex) {
+	if ((serviceTemp = getservicebyname(pszParmValue)) != NULL) {
+		if (serviceTemp == loadparm.currentService) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
-			copy_service(loadparm.ServicePtrs[loadparm.iServiceIndex],
+			copy_service(loadparm.currentService,
 				     serviceTemp,
-				     loadparm.ServicePtrs[loadparm.iServiceIndex]->copymap);
+				     loadparm.currentService->copymap);
 			bRetval = true;
 		}
 	} else {
@@ -1699,7 +1689,6 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
 		bRetval = false;
 	}
 
-	talloc_free(serviceTemp);
 	return bRetval;
 }
 
@@ -1737,7 +1726,8 @@ void *lp_local_ptr(int snum, void *ptr)
 /***************************************************************************
  Process a parametric option
 ***************************************************************************/
-static bool lp_do_parameter_parametric(int snum, const char *pszParmName, 
+static bool lp_do_parameter_parametric(struct service *service, 
+				       const char *pszParmName, 
 				       const char *pszParmValue, int flags)
 {
 	struct param_opt *paramo, *data;
@@ -1749,16 +1739,16 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 	}
 
 	name = strdup(pszParmName);
-	if (!name) return False;
+	if (!name) return false;
 
 	strlower(name);
 
-	if (snum < 0) {
+	if (service == NULL) {
 		data = loadparm.Globals.param_opt;
 		mem_ctx = talloc_autofree_context();
 	} else {
-		data = loadparm.ServicePtrs[snum]->param_opt;
-		mem_ctx = loadparm.ServicePtrs[snum];
+		data = service->param_opt;
+		mem_ctx = service;
 	}
 
 	/* Traverse destination */
@@ -1768,14 +1758,14 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 		if (strcmp(paramo->key, name) == 0) {
 			if ((paramo->flags & FLAG_CMDLINE) &&
 			    !(flags & FLAG_CMDLINE)) {
-				return True;
+				return true;
 			}
 
 			talloc_free(paramo->value);
 			paramo->value = talloc_strdup(paramo, pszParmValue);
 			paramo->flags = flags;
 			free(name);
-			return True;
+			return true;
 		}
 	}
 
@@ -1785,10 +1775,10 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 	paramo->key = talloc_strdup(paramo, name);
 	paramo->value = talloc_strdup(paramo, pszParmValue);
 	paramo->flags = flags;
-	if (snum < 0) {
+	if (service == NULL) {
 		DLIST_ADD(loadparm.Globals.param_opt, paramo);
 	} else {
-		DLIST_ADD(loadparm.ServicePtrs[snum]->param_opt, paramo);
+		DLIST_ADD(service->param_opt, paramo);
 	}
 
 	free(name);
@@ -1796,68 +1786,10 @@ static bool lp_do_parameter_parametric(int snum, const char *pszParmName,
 	return true;
 }
 
-/***************************************************************************
- Process a parameter for a particular service number. If snum < 0
- then assume we are in the globals.
-***************************************************************************/
-bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
+static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr, 
+			 const char *pszParmName, const char *pszParmValue)
 {
-	int parmnum, i;
-	void *parm_ptr = NULL;	/* where we are going to store the result */
-	void *def_ptr = NULL;
-	TALLOC_CTX *mem_ctx;
-
-	parmnum = map_parameter(pszParmName);
-
-	if (parmnum < 0) {
-		if (strchr(pszParmName, ':')) {
-			return lp_do_parameter_parametric(snum, pszParmName, pszParmValue, 0);
-		}
-		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
-		return true;
-	}
-
-	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
-		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
-			  pszParmName));
-	}
-
-	/* if the flag has been set on the command line, then don't allow override,
-	   but don't report an error */
-	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
-		return True;
-	}
-
-	def_ptr = parm_table[parmnum].ptr;
-
-	/* we might point at a service, the default service or a global */
-	if (snum < 0) {
-		parm_ptr = def_ptr;
-		mem_ctx = talloc_autofree_context();
-	} else {
-		if (parm_table[parmnum].class == P_GLOBAL) {
-			DEBUG(0,
-			      ("Global parameter %s found in service section!\n",
-			       pszParmName));
-			return true;
-		}
-		parm_ptr =
-			((char *)loadparm.ServicePtrs[snum]) + PTR_DIFF(def_ptr,
-							    &sDefault);
-		mem_ctx = loadparm.ServicePtrs[snum];
-	}
-
-	if (snum >= 0) {
-		if (!loadparm.ServicePtrs[snum]->copymap)
-			init_copymap(loadparm.ServicePtrs[snum]);
-
-		/* this handles the aliases - set the copymap for other entries with
-		   the same data pointer */
-		for (i = 0; parm_table[i].label; i++)
-			if (parm_table[i].ptr == parm_table[parmnum].ptr)
-				loadparm.ServicePtrs[snum]->copymap[i] = false;
-	}
-
+	int i;
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
 		parm_table[parmnum].special(pszParmValue, (char **)parm_ptr);
@@ -1868,10 +1800,10 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	switch (parm_table[parmnum].type)
 	{
 		case P_BOOL: {
-			BOOL b;
+			bool b;
 			if (!set_boolean(pszParmValue, &b)) {
 				DEBUG(0,("lp_do_parameter(%s): value is not boolean!\n", pszParmValue));
-				return False;
+				return false;
 			}
 			*(int *)parm_ptr = b;
 			}
@@ -1897,7 +1829,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 			DEBUG(0,("lp_do_parameter(%s): value is not "
 			    "a valid size specifier!\n", pszParmValue));
-			return False;
+			return false;
 		}
 
 		case P_LIST:
@@ -1928,7 +1860,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			if (!parm_table[parmnum].enum_list[i].name) {
 				DEBUG(0,("Unknown enumerated value '%s' for '%s'\n", 
 					 pszParmValue, pszParmName));
-				return False;
+				return false;
 			}
 			break;
 		case P_SEP:
@@ -1945,7 +1877,102 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			parm_table[i].flags &= ~FLAG_DEFAULT;
 		}
 	}
+	return true;
+}
 
+
+bool lp_do_global_parameter(const char *pszParmName, const char *pszParmValue)
+{
+	int parmnum = map_parameter(pszParmName);
+	void *parm_ptr;
+
+	if (parmnum < 0) {
+		if (strchr(pszParmName, ':')) {
+			return lp_do_parameter_parametric(NULL, pszParmName, pszParmValue, 0);
+		}
+		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
+		return true;
+	}
+
+	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
+		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
+			  pszParmName));
+	}
+
+	/* if the flag has been set on the command line, then don't allow override,
+	   but don't report an error */
+	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+		return true;
+	}
+
+	parm_ptr = parm_table[parmnum].ptr;
+
+	return set_variable(talloc_autofree_context(), parmnum, parm_ptr, 
+			    pszParmName, pszParmValue);
+}
+
+bool lp_do_service_parameter(struct service *service, 
+			     const char *pszParmName, const char *pszParmValue)
+{
+	void *def_ptr = NULL;
+	void *parm_ptr;
+	int i;
+	int parmnum = map_parameter(pszParmName);
+
+	if (parmnum < 0) {
+		if (strchr(pszParmName, ':')) {
+			return lp_do_parameter_parametric(service, pszParmName, pszParmValue, 0);
+		}
+		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
+		return true;
+	}
+
+	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
+		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
+			  pszParmName));
+	}
+
+	/* if the flag has been set on the command line, then don't allow override,
+	   but don't report an error */
+	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+		return true;
+	}
+
+	def_ptr = parm_table[parmnum].ptr;
+
+	if (parm_table[parmnum].class == P_GLOBAL) {
+		DEBUG(0,
+		      ("Global parameter %s found in service section!\n",
+		       pszParmName));
+		return true;
+	}
+	parm_ptr = ((char *)service) + PTR_DIFF(def_ptr, &sDefault);
+
+	if (!service->copymap)
+		init_copymap(service);
+
+	/* this handles the aliases - set the copymap for other 
+	 * entries with the same data pointer */
+	for (i = 0; parm_table[i].label; i++)
+		if (parm_table[i].ptr == parm_table[parmnum].ptr)
+			service->copymap[i] = false;
+
+	return set_variable(service, parmnum, parm_ptr, pszParmName, 
+			    pszParmValue);
+}
+
+/***************************************************************************
+ Process a parameter for a particular service number. If snum < 0
+ then assume we are in the globals.
+***************************************************************************/
+bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
+{
+	if (snum < 0) {
+		return lp_do_global_parameter(pszParmName, pszParmValue);
+	} else {
+		return lp_do_service_parameter(loadparm.ServicePtrs[snum],
+					pszParmName, pszParmValue);
+	}
 	return true;
 }
 
@@ -1953,27 +1980,30 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
  Process a parameter.
 ***************************************************************************/
 
-static BOOL do_parameter(const char *pszParmName, const char *pszParmValue, void *userdata)
+static bool do_parameter(const char *pszParmName, const char *pszParmValue, 
+			 void *userdata)
 {
-	return lp_do_parameter(loadparm.bInGlobalSection ? -2 : loadparm.iServiceIndex,
-				pszParmName, pszParmValue);
+	if (loadparm.bInGlobalSection) 
+		return lp_do_global_parameter(pszParmName, pszParmValue);
+	else 
+		return lp_do_service_parameter(loadparm.currentService,
+					       pszParmName, pszParmValue);
 }
 
 /*
   variable argument do parameter
 */
-static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
-
-static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...)
+bool lp_do_global_parameter_var(const char *pszParmName, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
+bool lp_do_global_parameter_var(const char *pszParmName, const char *fmt, ...) 
 {
 	char *s;
-	BOOL ret;
+	bool ret;
 	va_list ap;
 
 	va_start(ap, fmt);	
 	s = talloc_vasprintf(NULL, fmt, ap);
 	va_end(ap);
-	ret = do_parameter(pszParmName, s, NULL);
+	ret = lp_do_global_parameter(pszParmName, s);
 	talloc_free(s);
 	return ret;
 }
@@ -1984,7 +2014,7 @@ static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...)
   parsing code. It sets the parameter then marks the parameter as unable to be modified
   by smb.conf processing
 */
-BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
+bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum = map_parameter(pszParmName);
 	int i;
@@ -1994,19 +2024,19 @@ BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
-		return lp_do_parameter_parametric(-1, pszParmName, pszParmValue, FLAG_CMDLINE);
+		return lp_do_parameter_parametric(NULL, pszParmName, pszParmValue, FLAG_CMDLINE);
 	}
 
 	if (parmnum < 0) {
 		DEBUG(0,("Unknown option '%s'\n", pszParmName));
-		return False;
+		return false;
 	}
 
 	/* reset the CMDLINE flag in case this has been called before */
 	parm_table[parmnum].flags &= ~FLAG_CMDLINE;
 
 	if (!lp_do_parameter(-2, pszParmName, pszParmValue)) {
-		return False;
+		return false;
 	}
 
 	parm_table[parmnum].flags |= FLAG_CMDLINE;
@@ -2019,26 +2049,26 @@ BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 		parm_table[i].flags |= FLAG_CMDLINE;
 	}
 
-	return True;
+	return true;
 }
 
 /*
   set a option from the commandline in 'a=b' format. Use to support --option
 */
-BOOL lp_set_option(const char *option)
+bool lp_set_option(const char *option)
 {
 	char *p, *s;
-	BOOL ret;
+	bool ret;
 
 	s = strdup(option);
 	if (!s) {
-		return False;
+		return false;
 	}
 
 	p = strchr(s, '=');
 	if (!p) {
 		free(s);
-		return False;
+		return false;
 	}
 
 	*p = 0;
@@ -2071,7 +2101,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_BOOL:
-			fprintf(f, "%s", BOOLSTR((BOOL)*(int *)ptr));
+			fprintf(f, "%s", BOOLSTR((bool)*(int *)ptr));
 			break;
 
 		case P_INTEGER:
@@ -2108,7 +2138,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
  Check if two parameters are equal.
 ***************************************************************************/
 
-static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
+static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
 	switch (type) {
 		case P_BOOL:
@@ -2146,12 +2176,12 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
  Returns True on success, False on failure. 
 ***************************************************************************/
 
-static BOOL do_section(const char *pszSectionName, void *userdata)
+static bool do_section(const char *pszSectionName, void *userdata)
 {
-	BOOL bRetval;
-	BOOL isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
+	bool bRetval;
+	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
 			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
-	bRetval = False;
+	bRetval = false;
 
 	/* if we've just struck a global section, note the fact. */
 	loadparm.bInGlobalSection = isglobal;
@@ -2163,10 +2193,10 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
 	}
 
 	/* if we have a current service, tidy it up before moving on */
-	bRetval = True;
+	bRetval = true;
 
-	if (loadparm.iServiceIndex >= 0)
-		bRetval = service_ok(loadparm.iServiceIndex);
+	if (loadparm.currentService != NULL)
+		bRetval = service_ok(loadparm.currentService);
 
 	/* if all is still well, move to the next record in the services array */
 	if (bRetval) {
@@ -2174,8 +2204,8 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((loadparm.iServiceIndex = add_a_service(&sDefault, pszSectionName))
-		    < 0) {
+		if ((loadparm.currentService = add_a_service(&sDefault, pszSectionName))
+		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
 			return false;
 		}
@@ -2189,10 +2219,10 @@ static BOOL do_section(const char *pszSectionName, void *userdata)
  Determine if a partcular base parameter is currentl set to the default value.
 ***************************************************************************/
 
-static BOOL is_default(int i)
+static bool is_default(int i)
 {
 	if (!defaults_saved)
-		return False;
+		return false;
 	switch (parm_table[i].type) {
 		case P_LIST:
 			return str_list_equal((const char **)parm_table[i].def.lvalue, 
@@ -2213,14 +2243,14 @@ static BOOL is_default(int i)
 		case P_SEP:
 			break;
 	}
-	return False;
+	return false;
 }
 
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
 
-static void dump_globals(FILE *f, BOOL show_defaults)
+static void dump_globals(FILE *f, bool show_defaults)
 {
 	int i;
 	struct param_opt *data;
@@ -2297,7 +2327,7 @@ bool lp_dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 	
 	parm = lp_parm_struct(parm_name);
 	if (!parm) {
-		return False;
+		return false;
 	}
 	
 	if (isGlobal)
@@ -2309,7 +2339,7 @@ bool lp_dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 	print_parameter(parm,
 			ptr, f);
 	fprintf(f, "\n");
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -2393,7 +2423,7 @@ static void lp_add_auto_services(const char *str)
  Have we loaded a services file yet?
 ***************************************************************************/
 
-BOOL lp_loaded(void)
+bool lp_loaded(void)
 {
 	return bLoaded;
 }
@@ -2402,7 +2432,7 @@ BOOL lp_loaded(void)
  Unload unused services.
 ***************************************************************************/
 
-void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsrv_connection *, int))
+void lp_killunused(struct smbsrv_connection *smb, bool (*snumused) (struct smbsrv_connection *, int))
 {
 	int i;
 	for (i = 0; i < loadparm.iNumServices; i++) {
@@ -2461,14 +2491,14 @@ bool lp_load(void)
 	add_to_file_list(lp_configfile(), n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
-	loadparm.iServiceIndex = -1;
+	loadparm.currentService = NULL;
 	bRetval = pm_process(n2, do_section, do_parameter, NULL);
 
 	/* finish up the last section */
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
 	if (bRetval)
-		if (loadparm.iServiceIndex >= 0)
-			bRetval = service_ok(loadparm.iServiceIndex);
+		if (loadparm.currentService != NULL)
+			bRetval = service_ok(loadparm.currentService);
 
 	lp_add_auto_services(lp_auto_services());
 
@@ -2508,12 +2538,12 @@ int lp_numservices(void)
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
 
-void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
+void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 {
 	int iService;
 
 	if (show_defaults)
-		defaults_saved = False;
+		defaults_saved = false;
 
 	dump_globals(f, show_defaults);
 
@@ -2614,21 +2644,6 @@ bool lp_domain_logons(void)
 void lp_remove_service(int snum)
 {
 	loadparm.ServicePtrs[snum] = NULL;
-}
-
-/*******************************************************************
- Copy a service.
-********************************************************************/
-
-void lp_copy_service(int snum, const char *new_name)
-{
-	const char *oldname = lp_servicename(snum);
-	do_section(new_name, NULL);
-	if (snum >= 0) {
-		snum = lp_servicenumber(new_name);
-		if (snum >= 0)
-			lp_do_parameter(snum, "copy", oldname);
-	}
 }
 
 const char *lp_printername(int snum)
