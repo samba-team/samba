@@ -315,8 +315,10 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 
 	namelen = strlen(name) + 1;
 
-	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL)
+	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL) {
+		free(ip_list);
 		return NSS_STATUS_TRYAGAIN;
+	}
 
 	memcpy(he->h_name, name, namelen);
 
@@ -325,24 +327,29 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	if ((i = (unsigned long)(buffer) % sizeof(char*)) != 0)
 		i = sizeof(char*) - i;
 
-	if (get_static(&buffer, &buflen, i) == NULL)
+	if (get_static(&buffer, &buflen, i) == NULL) {
+		free(ip_list);
 		return NSS_STATUS_TRYAGAIN;
+	}
 
 	if ((he->h_addr_list = (char **)get_static(
-		     &buffer, &buflen, (count + 1) * sizeof(char *))) == NULL)
+		     &buffer, &buflen, (count + 1) * sizeof(char *))) == NULL) {
+		free(ip_list);
 		return NSS_STATUS_TRYAGAIN;
+	}
 
 	for (i = 0; i < count; i++) {
 		if ((he->h_addr_list[i] = get_static(&buffer, &buflen,
-						     INADDRSZ)) == NULL)
+						     INADDRSZ)) == NULL) {
+			free(ip_list);
 			return NSS_STATUS_TRYAGAIN;
+		}
 		memcpy(he->h_addr_list[i], &ip_list[i], INADDRSZ);
 	}
 
 	he->h_addr_list[count] = NULL;
 
-	if (ip_list)
-		free(ip_list);
+	free(ip_list);
 
 	/* Set h_addr_type and h_length */
 
