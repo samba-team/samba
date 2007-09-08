@@ -232,7 +232,7 @@ const char *socket_wrapper_dir(void)
 	return s;
 }
 
-static unsigned int socket_wrapper_default_iface(void)
+unsigned int socket_wrapper_default_iface(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DEFAULT_IFACE");
 	if (s) {

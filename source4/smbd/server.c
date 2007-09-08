@@ -153,7 +153,7 @@ static void setup_signals(void)
 static void server_stdin_handler(struct event_context *event_ctx, struct fd_event *fde, 
 				 uint16_t flags, void *private)
 {
-	const char *binary_name = private;
+	const char *binary_name = (const char *)private;
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
 		DEBUG(0,("%s: EOF on stdin - terminating\n", binary_name));
@@ -169,10 +169,11 @@ static void server_stdin_handler(struct event_context *event_ctx, struct fd_even
 /*
   die if the user selected maximum runtime is exceeded
 */
-_NORETURN_ static void max_runtime_handler(struct event_context *ev, struct timed_event *te, 
-				struct timeval t, void *private)
+_NORETURN_ static void max_runtime_handler(struct event_context *ev, 
+					   struct timed_event *te, 
+					   struct timeval t, void *private)
 {
-	const char *binary_name = private;
+	const char *binary_name = (const char *)private;
 	DEBUG(0,("%s: maximum runtime exceeded - terminating\n", binary_name));
 	exit(0);
 }

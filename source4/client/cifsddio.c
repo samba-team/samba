@@ -149,16 +149,14 @@ struct cifs_handle
 
 #define IO_HANDLE_TO_SMB(h) ((struct cifs_handle *)(h))
 
-BOOL smb_seek_func(void * handle, uint64_t offset)
+static bool smb_seek_func(void * handle, uint64_t offset)
 {
 	IO_HANDLE_TO_SMB(handle)->offset = offset;
 	return(True);
 }
 
-BOOL smb_read_func(void * handle,
-		uint8_t * buf,
-		uint64_t wanted,
-		uint64_t * actual)
+static bool smb_read_func(void * handle, uint8_t * buf, uint64_t wanted,
+			  uint64_t * actual)
 {
 	NTSTATUS		ret;
 	union smb_read		r;
@@ -193,10 +191,8 @@ BOOL smb_read_func(void * handle,
 	return(True);
 }
 
-BOOL smb_write_func(void * handle,
-		uint8_t * buf,
-		uint64_t wanted,
-		uint64_t * actual)
+static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
+			   uint64_t * actual)
 {
 	NTSTATUS		ret;
 	union smb_write		w;
