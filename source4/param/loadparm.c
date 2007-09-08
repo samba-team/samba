@@ -793,24 +793,24 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, &loadparm.Globals.server_signing)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, &loadparm.Globals.client_signing)
 
 /* local prototypes */
-
 static int map_parameter(const char *pszParmName);
 static struct service *getservicebyname(const char *pszServiceName);
-static void copy_service(struct service * pserviceDest,
-			 struct service * pserviceSource, int *pcopymapDest);
+static void copy_service(struct service *pserviceDest,
+			 struct service *pserviceSource, int *pcopymapDest);
 static bool service_ok(struct service *service);
 static bool do_section(const char *pszSectionName, void *);
-static void init_copymap(struct service * pservice);
+static void init_copymap(struct service *pservice);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-const char *lp_get_parametric(struct service *service, const char *type, const char *option)
+const char *lp_get_parametric(struct service *service, const char *type, 
+			      const char *option)
 {
 	char *vfskey;
         struct param_opt *data;
 	
-	data = (service == NULL ?  loadparm.Globals.param_opt : service->param_opt);
+	data = (service == NULL ? loadparm.Globals.param_opt : service->param_opt);
     
 	asprintf(&vfskey, "%s:%s", type, option);
 	strlower(vfskey);
@@ -929,7 +929,8 @@ const char **lp_parm_string_list(struct service *service, const char *type,
 	const char *value = lp_get_parametric(service, type, option);
 	
 	if (value)
-		return str_list_make(talloc_autofree_context(), value, separator);
+		return str_list_make(talloc_autofree_context(), value, 
+				     separator);
 
 	return NULL;
 }
@@ -1021,24 +1022,18 @@ static struct service *init_service(TALLOC_CTX *mem_ctx)
 	return pservice;
 }
 
-void string_free(char **str)
-{
-	if (str) {
-		talloc_free(*str);
-		*str = NULL;
-	}
-}
-
 /***************************************************************************
  Add a new service to the services array initialising it with the given 
  service. 
 ***************************************************************************/
 
-static struct service *add_a_service(const struct service *pservice, const char *name)
+static struct service *add_a_service(struct loadparm_context *lp_ctx, 
+				     const struct service *pservice, 
+				     const char *name)
 {
 	int i;
 	struct service tservice;
-	int num_to_alloc = loadparm.iNumServices + 1;
+	int num_to_alloc = lp_ctx->iNumServices + 1;
 	struct param_opt *data, *pdata;
 
 	tservice = *pservice;
@@ -1061,37 +1056,38 @@ static struct service *add_a_service(const struct service *pservice, const char 
 	}
 
 	/* find an invalid one */
-	for (i = 0; i < loadparm.iNumServices; i++)
-		if (loadparm.ServicePtrs[i] == NULL)
+	for (i = 0; i < lp_ctx->iNumServices; i++)
+		if (lp_ctx->ServicePtrs[i] == NULL)
 			break;
 
 	/* if not, then create one */
-	if (i == loadparm.iNumServices) {
+	if (i == lp_ctx->iNumServices) {
 		struct service **tsp;
 		
-		tsp = realloc_p(loadparm.ServicePtrs, struct service *, num_to_alloc);
+		tsp = realloc_p(lp_ctx->ServicePtrs, struct service *, 
+				num_to_alloc);
 					   
 		if (!tsp) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
 			return NULL;
 		}
 		else {
-			loadparm.ServicePtrs = tsp;
-			loadparm.ServicePtrs[loadparm.iNumServices] = NULL;
+			lp_ctx->ServicePtrs = tsp;
+			lp_ctx->ServicePtrs[lp_ctx->iNumServices] = NULL;
 		}
 
-		loadparm.iNumServices++;
+		lp_ctx->iNumServices++;
 	} 
 
-	loadparm.ServicePtrs[i] = init_service(talloc_autofree_context());
-	if (loadparm.ServicePtrs[i] == NULL) {
+	lp_ctx->ServicePtrs[i] = init_service(talloc_autofree_context());
+	if (lp_ctx->ServicePtrs[i] == NULL) {
 		DEBUG(0,("add_a_service: out of memory!\n"));
 		return NULL;
 	}
-	copy_service(loadparm.ServicePtrs[i], &tservice, NULL);
+	copy_service(lp_ctx->ServicePtrs[i], &tservice, NULL);
 	if (name != NULL)
-		string_set(loadparm.ServicePtrs[i], &loadparm.ServicePtrs[i]->szService, name);
-	return loadparm.ServicePtrs[i];
+		string_set(lp_ctx->ServicePtrs[i], &lp_ctx->ServicePtrs[i]->szService, name);
+	return lp_ctx->ServicePtrs[i];
 }
 
 /***************************************************************************
@@ -1099,13 +1095,14 @@ static struct service *add_a_service(const struct service *pservice, const char 
  from service ifrom.
 ***************************************************************************/
 
-bool lp_add_home(const char *pszHomename, struct service *default_service,
+bool lp_add_home(struct loadparm_context *lp_ctx, 
+		 const char *pszHomename, struct service *default_service,
 		 const char *user, const char *pszHomedir)
 {
 	struct service *service;
 	pstring newHomedir;
 
-	service = add_a_service(default_service, pszHomename);
+	service = add_a_service(lp_ctx, default_service, pszHomename);
 
 	if (service == NULL)
 		return false;
@@ -1136,19 +1133,21 @@ bool lp_add_home(const char *pszHomename, struct service *default_service,
  Add a new service, based on an old one.
 ***************************************************************************/
 
-struct service *lp_add_service(const char *pszService, 
+struct service *lp_add_service(struct loadparm_context *lp_ctx, 
+			       const char *pszService, 
 			       struct service *default_service)
 {
-	return add_a_service(default_service, pszService);
+	return add_a_service(lp_ctx, default_service, pszService);
 }
 
 /***************************************************************************
  Add the IPC service.
 ***************************************************************************/
 
-static bool lp_add_hidden(const char *name, const char *fstype)
+static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name, 
+			  const char *fstype)
 {
-	struct service *service = add_a_service(&sDefault, name);
+	struct service *service = add_a_service(lp_ctx, &sDefault, name);
 
 	if (service == NULL)
 		return false;
@@ -1177,11 +1176,13 @@ static bool lp_add_hidden(const char *name, const char *fstype)
  Add a new printer service, with defaults coming from service iFrom.
 ***************************************************************************/
 
-bool lp_add_printer(const char *pszPrintername, struct service *default_service)
+bool lp_add_printer(struct loadparm_context *lp_ctx,
+		    const char *pszPrintername, 
+		    struct service *default_service)
 {
 	const char *comment = "From Printcap";
 	struct service *service;
-	service = add_a_service(default_service, pszPrintername);
+	service = add_a_service(lp_ctx, default_service, pszPrintername);
 
 	if (service == NULL)
 		return false;
@@ -1342,7 +1343,7 @@ static void copy_service(struct service *pserviceDest,
 		while (pdata) {
 			/* If we already have same option, override it */
 			if (strcmp(pdata->key, data->key) == 0) {
-				string_free(&pdata->value);
+				talloc_free(pdata->value);
 				pdata->value = talloc_reference(pdata, 
 							     data->value);
 				not_added = false;
@@ -1491,7 +1492,7 @@ static bool handle_include(const char *pszParmValue, char **ptr)
 	string_set(talloc_autofree_context(), ptr, fname);
 
 	if (file_exist(fname))
-		return pm_process(fname, do_section, do_parameter, NULL);
+		return pm_process(fname, do_section, do_parameter, &loadparm);
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
@@ -2021,16 +2022,17 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 
 static bool do_section(const char *pszSectionName, void *userdata)
 {
+	struct loadparm_context *lp_ctx = (struct loadparm_context *)userdata;
 	bool bRetval;
 	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
 			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
 	bRetval = false;
 
 	/* if we've just struck a global section, note the fact. */
-	loadparm.bInGlobalSection = isglobal;
+	lp_ctx->bInGlobalSection = isglobal;
 
 	/* check for multiple global sections */
-	if (loadparm.bInGlobalSection) {
+	if (lp_ctx->bInGlobalSection) {
 		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
 		return true;
 	}
@@ -2038,8 +2040,8 @@ static bool do_section(const char *pszSectionName, void *userdata)
 	/* if we have a current service, tidy it up before moving on */
 	bRetval = true;
 
-	if (loadparm.currentService != NULL)
-		bRetval = service_ok(loadparm.currentService);
+	if (lp_ctx->currentService != NULL)
+		bRetval = service_ok(lp_ctx->currentService);
 
 	/* if all is still well, move to the next record in the services array */
 	if (bRetval) {
@@ -2047,7 +2049,8 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((loadparm.currentService = add_a_service(&sDefault, pszSectionName))
+		if ((loadparm.currentService = add_a_service(lp_ctx, &sDefault, 
+							     pszSectionName))
 		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
 			return false;
@@ -2257,7 +2260,8 @@ bool lp_snum_ok(int iService)
  Auto-load some home services.
 ***************************************************************************/
 
-static void lp_add_auto_services(const char *str)
+static void lp_add_auto_services(struct loadparm_context *lp_ctx, 
+				 const char *str)
 {
 	return;
 }
@@ -2497,7 +2501,7 @@ bool lp_load(void)
 
 	/* We get sections first, so have to start 'behind' to make up */
 	loadparm.currentService = NULL;
-	bRetval = pm_process(n2, do_section, do_parameter, NULL);
+	bRetval = pm_process(n2, do_section, do_parameter, &loadparm);
 
 	/* finish up the last section */
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
@@ -2505,10 +2509,10 @@ bool lp_load(void)
 		if (loadparm.currentService != NULL)
 			bRetval = service_ok(loadparm.currentService);
 
-	lp_add_auto_services(lp_auto_services());
+	lp_add_auto_services(&loadparm, lp_auto_services());
 
-	lp_add_hidden("IPC$", "IPC");
-	lp_add_hidden("ADMIN$", "DISK");
+	lp_add_hidden(&loadparm, "IPC$", "IPC");
+	lp_add_hidden(&loadparm, "ADMIN$", "DISK");
 
 	bLoaded = true;
 
