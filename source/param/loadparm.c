@@ -10,6 +10,7 @@
    Copyright (C) Stefan (metze) Metzmacher 2002
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James Myers 2003 <myersjj@samba.org>
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -68,13 +69,13 @@ static bool bLoaded = false;
 #define standard_sub_basic strdup
 
 /* some helpful bits */
-#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
-#define VALID(i) ServicePtrs[i]->valid
+#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && VALID(i))
+#define VALID(i) (ServicePtrs[i] != NULL)
 
 static bool do_parameter(const char *, const char *, void *);
 static bool do_parameter_var(const char *pszParmName, const char *fmt, ...);
 
-static bool defaults_saved = False;
+static bool defaults_saved = false;
 
 struct param_opt {
 	struct param_opt *prev, *next;
@@ -88,7 +89,7 @@ struct param_opt {
  */
 typedef struct
 {
-	int server_role;
+	enum server_role server_role;
 
 	char **smb_ports;
 	char *ncalrpc_dir;
@@ -196,7 +197,6 @@ static global Globals;
  */
 typedef struct
 {
-	int valid;
 	char *szService;
 	char *szPath;
 	char *szCopy;
@@ -236,7 +236,6 @@ service;
 
 /* This is a default service used to prime a services structure */
 static service sDefault = {
-	True,			/* valid */
 	NULL,			/* szService */
 	NULL,			/* szPath */
 	NULL,			/* szCopy */
@@ -276,13 +275,13 @@ static service sDefault = {
 static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
-static BOOL bInGlobalSection = True;
+static bool bInGlobalSection = True;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_include(const char *pszParmValue, char **ptr);
-static BOOL handle_copy(const char *pszParmValue, char **ptr);
+static bool handle_include(const char *pszParmValue, char **ptr);
+static bool handle_copy(const char *pszParmValue, char **ptr);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2, "SMB2"},
@@ -545,8 +544,6 @@ static struct parm_struct parm_table[] = {
 	{"setup directory", P_STRING, P_GLOBAL, &Globals.szSetupDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, FLAG_DEVELOPER},
-	{"-valid", P_BOOL, P_LOCAL, &sDefault.valid, NULL, NULL, FLAG_HIDE},
-	
 	{"copy", P_STRING, P_LOCAL, &sDefault.szCopy, handle_copy, NULL, FLAG_HIDE},
 	{"include", P_STRING, P_LOCAL, &sDefault.szInclude, handle_include, NULL, FLAG_HIDE},
 	
@@ -960,8 +957,8 @@ static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
 			 service * pserviceSource, int *pcopymapDest);
-static BOOL service_ok(int iService);
-static BOOL do_section(const char *pszSectionName, void *);
+static bool service_ok(int iService);
+static bool do_section(const char *pszSectionName, void *);
 static void init_copymap(service * pservice);
 
 /* This is a helper function for parametrical options support. */
@@ -972,7 +969,8 @@ const char *lp_get_parametric(int lookup_service, const char *type, const char *
 	char *vfskey;
         struct param_opt *data;
 	
-	if (lookup_service >= iNumServices) return NULL;
+	if (lookup_service >= 0 && !LP_SNUM_OK(lookup_service))
+		return NULL;
 	
 	data = (lookup_service < 0) ? 
 		Globals.param_opt : ServicePtrs[lookup_service]->param_opt;
@@ -1174,10 +1172,12 @@ BOOL lp_parm_bool(int lookup_service, const char *type, const char *option, BOOL
  Initialise a service to the defaults.
 ***************************************************************************/
 
-static void init_service(service * pservice)
+static service *init_service(TALLOC_CTX *mem_ctx)
 {
+	service *pservice = talloc(mem_ctx, service);
 	memset((char *)pservice, '\0', sizeof(service));
 	copy_service(pservice, &sDefault, NULL);
+	return pservice;
 }
 
 /***************************************************************************
@@ -1263,7 +1263,7 @@ static int add_a_service(const service *pservice, const char *name)
 
 	/* find an invalid one */
 	for (i = 0; i < iNumServices; i++)
-		if (!ServicePtrs[i]->valid)
+		if (ServicePtrs[i] == NULL)
 			break;
 
 	/* if not, then create one */
@@ -1278,22 +1278,19 @@ static int add_a_service(const service *pservice, const char *name)
 		}
 		else {
 			ServicePtrs = tsp;
-			ServicePtrs[iNumServices] = malloc_p(service);
-		}
-		if (!ServicePtrs[iNumServices]) {
-			DEBUG(0,("add_a_service: out of memory!\n"));
-			return -1;
+			ServicePtrs[iNumServices] = NULL;
 		}
 
 		iNumServices++;
-	} else
-		free_service(ServicePtrs[i]);
+	} 
 
-	ServicePtrs[i]->valid = True;
-
-	init_service(ServicePtrs[i]);
+	ServicePtrs[i] = init_service(talloc_autofree_context());
+	if (ServicePtrs[i] == NULL) {
+		DEBUG(0,("add_a_service: out of memory!\n"));
+		return -1;
+	}
 	copy_service(ServicePtrs[i], &tservice, NULL);
-	if (name)
+	if (name != NULL)
 		string_set(&ServicePtrs[i]->szService, name);
 	return i;
 }
@@ -1354,21 +1351,24 @@ int lp_add_service(const char *pszService, int iDefaultService)
 
 static bool lp_add_hidden(const char *name, const char *fstype)
 {
-	pstring comment;
+	char *comment = NULL;
 	int i = add_a_service(&sDefault, name);
 
 	if (i < 0)
 		return false;
 
-	slprintf(comment, sizeof(comment) - 1,
-		 "%s Service (%s)", fstype, Globals.szServerString);
-
 	string_set(&ServicePtrs[i]->szPath, tmpdir());
+
+	asprintf(&comment, "%s Service (%s)", fstype, Globals.szServerString);
+	if (comment == NULL)
+		return false;
+
 	string_set(&ServicePtrs[i]->comment, comment);
+	SAFE_FREE(comment);
 	string_set(&ServicePtrs[i]->fstype, fstype);
 	ServicePtrs[i]->iMaxConnections = -1;
-	ServicePtrs[i]->bAvailable = True;
-	ServicePtrs[i]->bRead_only = True;
+	ServicePtrs[i]->bAvailable = true;
+	ServicePtrs[i]->bRead_only = true;
 	ServicePtrs[i]->bPrint_ok = false;
 	ServicePtrs[i]->bBrowseable = false;
 
@@ -1708,35 +1708,35 @@ static bool handle_include(const char *pszParmValue, char **ptr)
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static BOOL handle_copy(const char *pszParmValue, char **ptr)
+static bool handle_copy(const char *pszParmValue, char **ptr)
 {
-	BOOL bRetval;
+	bool bRetval;
 	int iTemp;
-	service serviceTemp;
+	service *serviceTemp;
 
 	string_set(ptr, pszParmValue);
 
-	init_service(&serviceTemp);
+	serviceTemp = init_service(talloc_autofree_context());
 
-	bRetval = False;
+	bRetval = false;
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
-	if ((iTemp = getservicebyname(pszParmValue, &serviceTemp)) >= 0) {
+	if ((iTemp = getservicebyname(pszParmValue, serviceTemp)) >= 0) {
 		if (iTemp == iServiceIndex) {
 			DEBUG(0, ("Can't copy service %s - unable to copy self!\n", pszParmValue));
 		} else {
 			copy_service(ServicePtrs[iServiceIndex],
-				     &serviceTemp,
+				     serviceTemp,
 				     ServicePtrs[iServiceIndex]->copymap);
-			bRetval = True;
+			bRetval = true;
 		}
 	} else {
 		DEBUG(0, ("Unable to copy service - source not found: %s\n", pszParmValue));
-		bRetval = False;
+		bRetval = false;
 	}
 
-	free_service(&serviceTemp);
+	free_service(serviceTemp);
 	return bRetval;
 }
 
@@ -1773,7 +1773,8 @@ void *lp_local_ptr(int snum, void *ptr)
 /***************************************************************************
  Process a parametric option
 ***************************************************************************/
-static BOOL lp_do_parameter_parametric(int snum, const char *pszParmName, const char *pszParmValue, int flags)
+static bool lp_do_parameter_parametric(int snum, const char *pszParmName, 
+				       const char *pszParmValue, int flags)
 {
 	struct param_opt *paramo, *data;
 	char *name;
@@ -2407,7 +2408,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
  Return TRUE if the passed service number is within range.
 ***************************************************************************/
 
-BOOL lp_snum_ok(int iService)
+bool lp_snum_ok(int iService)
 {
 	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
 }
@@ -2442,8 +2443,8 @@ void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsr
 			continue;
 
 		if (!snumused || !snumused(smb, i)) {
-			ServicePtrs[i]->valid = False;
 			free_service(ServicePtrs[i]);
+			ServicePtrs[i] = NULL;
 		}
 	}
 }
@@ -2455,8 +2456,8 @@ void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsr
 void lp_killservice(int iServiceIn)
 {
 	if (VALID(iServiceIn)) {
-		ServicePtrs[iServiceIn]->valid = False;
 		free_service(ServicePtrs[iServiceIn]);
+		ServicePtrs[iServiceIn] = NULL;
 	}
 }
 
@@ -2465,15 +2466,15 @@ void lp_killservice(int iServiceIn)
  False on failure.
 ***************************************************************************/
 
-BOOL lp_load(void)
+bool lp_load(void)
 {
 	char *n2;
-	BOOL bRetval;
+	bool bRetval;
 	struct param_opt *data;
 
-	bRetval = False;
+	bRetval = false;
 
-	bInGlobalSection = True;
+	bInGlobalSection = true;
 
 	if (Globals.param_opt != NULL) {
 		struct param_opt *next;
@@ -2509,7 +2510,7 @@ BOOL lp_load(void)
 	lp_add_hidden("IPC$", "IPC");
 	lp_add_hidden("ADMIN$", "DISK");
 
-	bLoaded = True;
+	bLoaded = true;
 
 	if (!Globals.szWINSservers && Globals.bWINSsupport) {
 		lp_do_parameter(-1, "wins server", "127.0.0.1");
@@ -2561,7 +2562,7 @@ void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 Display the contents of one service in human-readable form.
 ***************************************************************************/
 
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum)
+void lp_dump_one(FILE *f, bool show_defaults, int snum)
 {
 	if (VALID(snum)) {
 		if (ServicePtrs[snum]->szService[0] == '\0')
@@ -2635,7 +2636,7 @@ const char *volume_label(int snum)
  If we are PDC then prefer us as DMB
 ************************************************************/
 
-BOOL lp_domain_logons(void)
+bool lp_domain_logons(void)
 {
 	return (lp_server_role() == ROLE_DOMAIN_CONTROLLER);
 }
@@ -2646,7 +2647,7 @@ BOOL lp_domain_logons(void)
 
 void lp_remove_service(int snum)
 {
-	ServicePtrs[snum]->valid = False;
+	ServicePtrs[snum] = NULL;
 }
 
 /*******************************************************************
