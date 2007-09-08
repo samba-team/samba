@@ -260,36 +260,23 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 }
 
 /**
- Set a string value, allocing the space for the string
+ Set a string value, deallocating any existing space, and allocing the space
+ for the string
 **/
-static bool string_init(char **dest,const char *src)
+_PUBLIC_ bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
-	if (!src) src = "";
+	talloc_free(*dest);
 
-	(*dest) = strdup(src);
+	if (src == NULL) 
+		src = "";
+
+	*dest = talloc_strdup(mem_ctx, src);
 	if ((*dest) == NULL) {
 		DEBUG(0,("Out of memory in string_init\n"));
 		return false;
 	}
+
 	return true;
-}
-
-/**
- Free a string value.
-**/
-_PUBLIC_ void string_free(char **s)
-{
-	if (s) SAFE_FREE(*s);
-}
-
-/**
- Set a string value, deallocating any existing space, and allocing the space
- for the string
-**/
-_PUBLIC_ bool string_set(char **dest, const char *src)
-{
-	string_free(dest);
-	return string_init(dest,src);
 }
 
 /**
@@ -304,7 +291,7 @@ _PUBLIC_ bool string_set(char **dest, const char *src)
  use of len==0 which was for no length checks to be done.
 **/
 
-_PUBLIC_ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
+_PUBLIC_ void string_sub(char *s, const char *pattern, const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
