@@ -819,19 +819,15 @@ static const char *lp_string(const char *s)
  int fn_name(void) {return(*(int *)(ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- const char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && loadparm.ServicePtrs[(i)]->val) ? loadparm.ServicePtrs[(i)]->val : sDefault.val));}
+ const char *fn_name(struct service *service) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault.val)));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
- const char *fn_name(int i) {return (const char *)((LP_SNUM_OK(i) && loadparm.ServicePtrs[(i)]->val) ? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
+ const char *fn_name(struct service *service) {return (const char *)(service != NULL && service->val != NULL) ? service->val : sDefault.val;}
 #define FN_LOCAL_LIST(fn_name,val) \
- const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
+ const char **fn_name(struct service *service) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
- bool fn_name(int i) {return(LP_SNUM_OK(i)? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
-#if 0 /* unused */
-#define FN_LOCAL_CHAR(fn_name,val) \
- char fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
-#endif
+ bool fn_name(struct service *service) {return((service != NULL)? service->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(int i) {return(LP_SNUM_OK(i)? loadparm.ServicePtrs[(i)]->val : sDefault.val);}
+ int fn_name(struct service *service) {return((service != NULL)? service->val : sDefault.val);}
 
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, &loadparm.Globals.server_role)
 _PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, &loadparm.Globals.smb_ports)
@@ -968,16 +964,12 @@ static void init_copymap(struct service * pservice);
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-const char *lp_get_parametric(int lookup_service, const char *type, const char *option)
+const char *lp_get_parametric(struct service *service, const char *type, const char *option)
 {
 	char *vfskey;
         struct param_opt *data;
 	
-	if (lookup_service >= 0 && !LP_SNUM_OK(lookup_service))
-		return NULL;
-	
-	data = (lookup_service < 0) ? 
-		loadparm.Globals.param_opt : loadparm.ServicePtrs[lookup_service]->param_opt;
+	data = (service == NULL ?  loadparm.Globals.param_opt : service->param_opt);
     
 	asprintf(&vfskey, "%s:%s", type, option);
 	strlower(vfskey);
@@ -990,7 +982,7 @@ const char *lp_get_parametric(int lookup_service, const char *type, const char *
 		data = data->next;
 	}
 
-	if (lookup_service >= 0) {
+	if (service != NULL) {
 		/* Try to fetch the same option but from globals */
 		/* but only if we are not already working with Globals */
 		for (data = loadparm.Globals.param_opt; data; 
@@ -1075,9 +1067,10 @@ static bool lp_bool(const char *s)
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-const char *lp_parm_string(int lookup_service, const char *type, const char *option)
+const char *lp_parm_string(struct service *service, const char *type, 
+			   const char *option)
 {
-	const char *value = lp_get_parametric(lookup_service, type, option);
+	const char *value = lp_get_parametric(service, type, option);
 
 	if (value)
 		return lp_string(value);
@@ -1089,10 +1082,10 @@ const char *lp_parm_string(int lookup_service, const char *type, const char *opt
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-const char **lp_parm_string_list(int lookup_service, const char *type, const char *option,
-				 const char *separator)
+const char **lp_parm_string_list(struct service *service, const char *type, 
+				 const char *option, const char *separator)
 {
-	const char *value = lp_get_parametric(lookup_service, type, option);
+	const char *value = lp_get_parametric(service, type, option);
 	
 	if (value)
 		return str_list_make(talloc_autofree_context(), value, separator);
@@ -1103,9 +1096,10 @@ const char **lp_parm_string_list(int lookup_service, const char *type, const cha
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-int lp_parm_int(int lookup_service, const char *type, const char *option, int default_v)
+int lp_parm_int(struct service *service, const char *type, const char *option, 
+		int default_v)
 {
-	const char *value = lp_get_parametric(lookup_service, type, option);
+	const char *value = lp_get_parametric(service, type, option);
 	
 	if (value)
 		return lp_int(value);
@@ -1118,11 +1112,12 @@ int lp_parm_int(int lookup_service, const char *type, const char *option, int de
  * Parametric option has following syntax: 'Type: option = value'.
  */
 
-int lp_parm_bytes(int lookup_service, const char *type, const char *option, int default_v)
+int lp_parm_bytes(struct service *service, const char *type, 
+		  const char *option, int default_v)
 {
 	uint64_t bval;
 
-	const char *value = lp_get_parametric(lookup_service, type, option);
+	const char *value = lp_get_parametric(service, type, option);
 
 	if (value && conv_str_size(value, &bval)) {
 		if (bval <= INT_MAX) {
@@ -1136,9 +1131,10 @@ int lp_parm_bytes(int lookup_service, const char *type, const char *option, int 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *option, unsigned long default_v)
+unsigned long lp_parm_ulong(struct service *service, const char *type, 
+			    const char *option, unsigned long default_v)
 {
-	const char *value = lp_get_parametric(lookup_service, type, option);
+	const char *value = lp_get_parametric(service, type, option);
 	
 	if (value)
 		return lp_ulong(value);
@@ -1147,9 +1143,10 @@ unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *op
 }
 
 
-double lp_parm_double(int lookup_service, const char *type, const char *option, double default_v)
+double lp_parm_double(struct service *service, const char *type, 
+		      const char *option, double default_v)
 {
-	const char *value = lp_get_parametric(lookup_service, type, option);
+	const char *value = lp_get_parametric(service, type, option);
 	
 	if (value)
 		return lp_double(value);
@@ -1160,10 +1157,10 @@ double lp_parm_double(int lookup_service, const char *type, const char *option, 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-bool lp_parm_bool(int lookup_service, const char *type, const char *option, 
-		  bool default_v)
+bool lp_parm_bool(struct service *service, const char *type, 
+		  const char *option, bool default_v)
 {
-	const char *value = lp_get_parametric(lookup_service, type, option);
+	const char *value = lp_get_parametric(service, type, option);
 	
 	if (value)
 		return lp_bool(value);
@@ -1261,22 +1258,22 @@ static struct service *add_a_service(const struct service *pservice, const char 
  from service ifrom.
 ***************************************************************************/
 
-bool lp_add_home(const char *pszHomename, int iDefaultService, 
+bool lp_add_home(const char *pszHomename, struct service *default_service,
 		 const char *user, const char *pszHomedir)
 {
 	struct service *service;
 	pstring newHomedir;
 
-	service = add_a_service(loadparm.ServicePtrs[iDefaultService], pszHomename);
+	service = add_a_service(default_service, pszHomename);
 
 	if (service == NULL)
 		return false;
 
-	if (!(*(loadparm.ServicePtrs[iDefaultService]->szPath))
-	    || strequal(loadparm.ServicePtrs[iDefaultService]->szPath, lp_pathname(-1))) {
+	if (!(*(default_service->szPath))
+	    || strequal(default_service->szPath, sDefault.szPath)) {
 		pstrcpy(newHomedir, pszHomedir);
 	} else {
-		pstrcpy(newHomedir, lp_pathname(iDefaultService));
+		pstrcpy(newHomedir, lp_pathname(default_service));
 		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
 	}
 
@@ -1285,8 +1282,8 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	if (!(*(service->comment))) {
 		service->comment = talloc_asprintf(service, "Home directory of %s", user);
 	}
-	service->bAvailable = sDefault.bAvailable;
-	service->bBrowseable = sDefault.bBrowseable;
+	service->bAvailable = default_service->bAvailable;
+	service->bBrowseable = default_service->bBrowseable;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", 
 		  pszHomename, user, newHomedir));
@@ -1298,9 +1295,10 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
  Add a new service, based on an old one.
 ***************************************************************************/
 
-struct service *lp_add_service(const char *pszService, int iDefaultService)
+struct service *lp_add_service(const char *pszService, 
+			       struct service *default_service)
 {
-	return add_a_service(loadparm.ServicePtrs[iDefaultService], pszService);
+	return add_a_service(default_service, pszService);
 }
 
 /***************************************************************************
@@ -1338,12 +1336,11 @@ static bool lp_add_hidden(const char *name, const char *fstype)
  Add a new printer service, with defaults coming from service iFrom.
 ***************************************************************************/
 
-bool lp_add_printer(const char *pszPrintername, int iDefaultService)
+bool lp_add_printer(const char *pszPrintername, struct service *default_service)
 {
 	const char *comment = "From Printcap";
 	struct service *service;
-	service = add_a_service(loadparm.ServicePtrs[iDefaultService], 
-			      pszPrintername);
+	service = add_a_service(default_service, pszPrintername);
 
 	if (service == NULL)
 		return false;
@@ -1406,12 +1403,12 @@ struct parm_struct *lp_parm_struct(const char *name)
 /*
   return the parameter pointer for a parameter
 */
-void *lp_parm_ptr(int snum, struct parm_struct *parm)
+void *lp_parm_ptr(struct service *service, struct parm_struct *parm)
 {
-	if (snum == -1) {
+	if (service == NULL)
 		return parm->ptr;
-	}
-	return ((char *)loadparm.ServicePtrs[snum]) + PTR_DIFF(parm->ptr, &sDefault);
+
+	return ((char *)service) + PTR_DIFF(parm->ptr, &sDefault);
 }
 
 /***************************************************************************
@@ -2517,15 +2514,6 @@ bool lp_load(void)
 }
 
 /***************************************************************************
- Reset the max number of services.
-***************************************************************************/
-
-void lp_resetnumservices(void)
-{
-	loadparm.iNumServices = 0;
-}
-
-/***************************************************************************
  Return the max number of services.
 ***************************************************************************/
 
@@ -2550,20 +2538,33 @@ void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 	dump_a_service(&sDefault, f);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, iService);
+		lp_dump_one(f, show_defaults, loadparm.ServicePtrs[iService]);
 }
 
 /***************************************************************************
 Display the contents of one service in human-readable form.
 ***************************************************************************/
 
-void lp_dump_one(FILE *f, bool show_defaults, int snum)
+void lp_dump_one(FILE *f, bool show_defaults, struct service *service)
 {
-	if (VALID(snum)) {
-		if (loadparm.ServicePtrs[snum]->szService[0] == '\0')
+	if (service != NULL) {
+		if (service->szService[0] == '\0')
 			return;
-		dump_a_service(loadparm.ServicePtrs[snum], f);
+		dump_a_service(service, f);
 	}
+}
+
+struct service *lp_servicebynum(int snum)
+{
+	return loadparm.ServicePtrs[snum];
+}
+
+struct service *lp_service(const char *service_name)
+{
+	int snum = lp_servicenumber(service_name);
+	if (snum < 0)
+		return NULL;
+	return loadparm.ServicePtrs[snum];
 }
 
 /***************************************************************************
@@ -2619,11 +2620,11 @@ int lp_find_valid_service(const char *pszServiceName)
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/
-const char *volume_label(int snum)
+const char *volume_label(struct service *service)
 {
-	const char *ret = lp_volume(snum);
+	const char *ret = lp_volume(service);
 	if (!*ret)
-		return lp_servicename(snum);
+		return lp_servicename(service);
 	return ret;
 }
 
@@ -2646,11 +2647,11 @@ void lp_remove_service(int snum)
 	loadparm.ServicePtrs[snum] = NULL;
 }
 
-const char *lp_printername(int snum)
+const char *lp_printername(struct service *service)
 {
-	const char *ret = _lp_printername(snum);
+	const char *ret = _lp_printername(service);
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
-		ret = lp_const_servicename(snum);
+		ret = lp_const_servicename(service);
 
 	return ret;
 }

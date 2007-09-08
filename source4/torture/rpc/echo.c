@@ -78,8 +78,8 @@ static bool test_echodata(struct torture_context *tctx,
 		len = 1 + (random() % 5000);
 	}
 
-	data_in = talloc_size(tctx, len);
-	data_out = talloc_size(tctx, len);
+	data_in = talloc_array(tctx, uint8_t, len);
+	data_out = talloc_array(tctx, uint8_t, len);
 	for (i=0;i<len;i++) {
 		data_in[i] = i;
 	}
@@ -159,7 +159,7 @@ static bool test_sinkdata(struct torture_context *tctx,
 		len = 200000 + (random() % 5000);
 	}
 
-	data_in = talloc_size(tctx, len);
+	data_in = talloc_array(tctx, uint8_t, len);
 	for (i=0;i<len;i++) {
 		data_in[i] = i+1;
 	}

@@ -582,7 +582,7 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 	size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
 				     blob.data, blob.length, &vstr);
 	data_blob_free(&blob);
-	(*str) = vstr;
+	(*str) = (char *)vstr;
 	if (size == -1) {
 		return NT_STATUS_ILLEGAL_CHARACTER;
 	}

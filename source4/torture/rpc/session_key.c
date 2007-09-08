@@ -145,7 +145,8 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
         struct dcerpc_pipe *p;
 	struct policy_handle *handle;
 	struct dcerpc_binding *binding;
-	const struct secret_settings *settings = _data;
+	const struct secret_settings *settings = 
+		(const struct secret_settings *)_data;
 
 	lp_set_cmdline("ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
 	lp_set_cmdline("ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");

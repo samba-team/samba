@@ -442,7 +442,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		return werror_to_ntstatus(status);
 	}
 
-	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
+	if (lp_parm_bool(NULL, "become dc", "dump objects", false)) {
 		for (i=0; i < objs->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
@@ -670,7 +670,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		return werror_to_ntstatus(status);
 	}
 
-	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
+	if (lp_parm_bool(NULL, "become dc", "dump objects", false)) {
 		for (i=0; i < objs->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
@@ -700,7 +700,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 			return NT_STATUS_FOOBAR;
 		}
 
-		if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
+		if (lp_parm_bool(NULL, "become dc", "dump objects", false)) {
 			DEBUG(0,("# %s\n", sa->lDAPDisplayName));
 			NDR_PRINT_DEBUG(drsuapi_DsReplicaLinkedAttribute, &linked_attributes[i]);
 			dump_data(0,
@@ -726,7 +726,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	s = talloc_zero(torture, struct test_become_dc_state);
 	if (!s) return False;
 
-	s->netbios_name = lp_parm_string(-1, "become dc", "smbtorture dc");
+	s->netbios_name = lp_parm_string(NULL, "become dc", "smbtorture dc");
 	if (!s->netbios_name || !s->netbios_name[0]) {
 		s->netbios_name = "smbtorturedc";
 	}
@@ -834,7 +834,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 		goto cleanup;
 	}
 
-	if (lp_parm_bool(-1, "become dc", "do not unjoin", false)) {
+	if (lp_parm_bool(NULL, "become dc", "do not unjoin", false)) {
 		talloc_free(s);
 		return ret;
 	}

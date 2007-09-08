@@ -214,9 +214,9 @@ done:
    basic testing of streams calls
 */
 bool torture_raw_streams(struct torture_context *torture, 
-						 struct smbcli_state *cli)
+			 struct smbcli_state *cli)
 {
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;

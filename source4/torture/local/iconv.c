@@ -34,7 +34,7 @@ static bool iconv_untestable(struct torture_context *tctx)
 {
 	iconv_t cd;
 
-	if (!lp_parm_bool(-1, "iconv", "native", true))
+	if (!lp_parm_bool(NULL, "iconv", "native", true))
 		torture_skip(tctx, "system iconv disabled - skipping test");
 
 	cd = iconv_open("UTF-16LE", "UCS-4LE");
@@ -314,10 +314,10 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 
 static bool test_next_codepoint(struct torture_context *tctx)
 {
+	unsigned int codepoint;
 	if (iconv_untestable(tctx))
 		return true;
 
-	unsigned int codepoint;
 	for (codepoint=0;codepoint<(1<<20);codepoint++) {
 		if (!test_codepoint(tctx, codepoint))
 			return false;
@@ -403,13 +403,13 @@ struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "ICONV");
 
 	torture_suite_add_simple_test(suite, "next_codepoint()",
-								   test_next_codepoint);
+				      test_next_codepoint);
 
 	torture_suite_add_simple_test(suite, "first 1M codepoints",
-								   test_first_1m);
+				      test_first_1m);
 
 	torture_suite_add_simple_test(suite, "5M random UTF-16LE sequences",
-								   test_random_5m);
+				      test_random_5m);
 	return suite;
 }
 

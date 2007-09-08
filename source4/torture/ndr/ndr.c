@@ -36,7 +36,7 @@ static bool wrap_ndr_pull_test(struct torture_context *tctx,
 							   struct torture_test *test)
 {
 	bool (*check_fn) (struct torture_context *ctx, void *data) = test->fn;
-	const struct ndr_pull_test_data *data = test->data;
+	const struct ndr_pull_test_data *data = (const struct ndr_pull_test_data *)test->data;
 	void *ds = talloc_zero_size(tctx, data->struct_size);
 	struct ndr_pull *ndr = ndr_pull_init_blob(&(data->data), tctx);
 

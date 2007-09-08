@@ -81,7 +81,7 @@ static struct tdb_wrap *ctdb_tdb_tmp_open(struct cluster_ops *ops,
 					  TALLOC_CTX *mem_ctx, const char *dbname, 
 					  int flags)
 {
-	const char *dir = lp_parm_string(-1, "ctdb", "shared data");
+	const char *dir = lp_parm_string(NULL, "ctdb", "shared data");
 	char *path;
 	struct tdb_wrap *w;
 	if (dir == NULL) {
@@ -201,7 +201,7 @@ void cluster_ctdb_init(struct event_context *ev, const char *model)
 	struct cluster_state *state;
 	int ret;
 
-	if (!lp_parm_bool(-1, "ctdb", "enable", False)) {
+	if (!lp_parm_bool(NULL, "ctdb", "enable", false)) {
 		return;
 	}
 

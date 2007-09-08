@@ -1747,7 +1747,7 @@ static const uint8_t lsarlookupsids3_out_data[] = {
 };
 
 static bool lsarlookupsids3_out_check(struct torture_context *tctx, 
-									 struct lsa_LookupSids3 *r)
+				      struct lsa_LookupSids3 *r)
 {
 	/* FIXME: Handle */
 	torture_assert(tctx, r->out.names != NULL, "names ptr");

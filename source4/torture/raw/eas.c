@@ -247,10 +247,10 @@ static BOOL test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING SETFILEINFO MAX. EA_SET\n");
 
-	maxeasize  = lp_parm_int(-1, "torture", "maxeasize", 65536);
-	maxeanames = lp_parm_int(-1, "torture", "maxeanames", 101);
-	maxeastart = lp_parm_int(-1, "torture", "maxeastart", 1);
-	maxeadebug = lp_parm_int(-1, "torture", "maxeadebug", 0);
+	maxeasize  = lp_parm_int(NULL, "torture", "maxeasize", 65536);
+	maxeanames = lp_parm_int(NULL, "torture", "maxeanames", 101);
+	maxeastart = lp_parm_int(NULL, "torture", "maxeastart", 1);
+	maxeadebug = lp_parm_int(NULL, "torture", "maxeadebug", 0);
 
 	/* Do some sanity check on possibly passed parms */
 	if (maxeasize <= 0) {
@@ -447,7 +447,7 @@ done:
 */
 bool torture_raw_eas(struct torture_context *torture, struct smbcli_state *cli)
 {
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;

@@ -233,7 +233,7 @@ static bool test_schannel(struct torture_context *tctx,
 {
 	struct test_join *join_ctx;
 	NTSTATUS status;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = lp_parm_string(NULL, "torture", "binding");
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;
@@ -435,7 +435,7 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	torture_assert(torture, join_ctx != NULL, 
 		       "Failed to join domain with acct_flags=ACB_WSTRUST");
 
-	credentials2 = talloc_memdup(torture, credentials1, sizeof(*credentials1));
+	credentials2 = (struct cli_credentials *)talloc_memdup(torture, credentials1, sizeof(*credentials1));
 	credentials1->netlogon_creds = NULL;
 	credentials2->netlogon_creds = NULL;
 

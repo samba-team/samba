@@ -277,8 +277,8 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	share = lp_parm_string(-1, "torture", "share");
-	host  = lp_parm_string(-1, "torture", "host");
+	share = lp_parm_string(NULL, "torture", "share");
+	host  = lp_parm_string(NULL, "torture", "host");
 	
 	printf("create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, mem_ctx, False);
@@ -385,8 +385,8 @@ static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	share = lp_parm_string(-1, "torture", "share");
-	host  = lp_parm_string(-1, "torture", "host");
+	share = lp_parm_string(NULL, "torture", "share");
+	host  = lp_parm_string(NULL, "torture", "host");
 
 	printf("create the first new sessions\n");
 	session1 = smbcli_session_init(cli->transport, mem_ctx, False);
@@ -746,8 +746,8 @@ static BOOL test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	share = lp_parm_string(-1, "torture", "share");
-	host  = lp_parm_string(-1, "torture", "host");
+	share = lp_parm_string(NULL, "torture", "share");
+	host  = lp_parm_string(NULL, "torture", "host");
 	
 	printf("create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, mem_ctx, False);

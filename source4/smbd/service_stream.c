@@ -175,7 +175,7 @@ static void stream_new_connection(struct event_context *ev,
 	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
 					       0, stream_io_handler_fde, srv_conn);
 
-	if (!socket_check_access(sock, "smbd", lp_hostsallow(-1), lp_hostsdeny(-1))) {
+	if (!socket_check_access(sock, "smbd", lp_hostsallow(NULL), lp_hostsdeny(NULL))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
 		return;
 	}

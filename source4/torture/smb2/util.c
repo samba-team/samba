@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
+#include "torture/smb2/proto.h"
 
 
 /*
@@ -302,8 +303,8 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 BOOL torture_smb2_connection(TALLOC_CTX *mem_ctx, struct smb2_tree **tree)
 {
 	NTSTATUS status;
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *share = lp_parm_string(-1, "torture", "share");
+	const char *host = lp_parm_string(NULL, "torture", "host");
+	const char *share = lp_parm_string(NULL, "torture", "share");
 	struct cli_credentials *credentials = cmdline_credentials;
 
 	status = smb2_connect(mem_ctx, host, share, credentials, tree, 

@@ -52,10 +52,7 @@
 #include "torture/util.h"
 #include "param/param.h"
 
-
-
-
-void lock_byte(struct smbcli_state *cli, int fd, int offset, int lock_timeout)
+static void lock_byte(struct smbcli_state *cli, int fd, int offset, int lock_timeout)
 {
 	union smb_lock io;
 	struct smb_lock_entry lock;
@@ -93,7 +90,7 @@ try_again:
 	}
 }
 
-void unlock_byte(struct smbcli_state *cli, int fd, int offset)
+static void unlock_byte(struct smbcli_state *cli, int fd, int offset)
 {
 	union smb_lock io;
 	struct smb_lock_entry lock;
@@ -120,7 +117,7 @@ void unlock_byte(struct smbcli_state *cli, int fd, int offset)
 	}
 }
 
-void write_byte(struct smbcli_state *cli, int fd, uint8_t c, int offset)
+static void write_byte(struct smbcli_state *cli, int fd, uint8_t c, int offset)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -140,7 +137,7 @@ void write_byte(struct smbcli_state *cli, int fd, uint8_t c, int offset)
 	}
 }	
 
-void read_byte(struct smbcli_state *cli, int fd, uint8_t *c, int offset)
+static void read_byte(struct smbcli_state *cli, int fd, uint8_t *c, int offset)
 {
 	union smb_read io;
 	NTSTATUS status;
@@ -179,7 +176,7 @@ static double end_timer(void)
 /* 
    ping pong
 */
-BOOL torture_ping_pong(struct torture_context *torture)
+bool torture_ping_pong(struct torture_context *torture)
 {
 	const char *fn;
 	int num_locks;
@@ -194,21 +191,21 @@ BOOL torture_ping_pong(struct torture_context *torture)
 	uint8_t *val;
 	int count, loops;
 
-	fn = lp_parm_string(-1, "torture", "filename");
+	fn = lp_parm_string(NULL, "torture", "filename");
 	if (fn == NULL) {
 		DEBUG(0,("You must specify the filename using --option=torture:filename=...\n"));
 		return false;
 	}
 
-	num_locks = lp_parm_int(-1, "torture", "num_locks", -1);
+	num_locks = lp_parm_int(NULL, "torture", "num_locks", -1);
 	if (num_locks == -1) {
 		DEBUG(0,("You must specify num_locks using --option=torture:num_locks=...\n"));
 		return false;
 	}
 
-	do_reads     = lp_parm_bool(-1, "torture", "read", False);
-	do_writes    = lp_parm_bool(-1, "torture", "write", False);
-	lock_timeout =  lp_parm_int(-1, "torture", "lock_timeout", 100000);
+	do_reads     = lp_parm_bool(NULL, "torture", "read", false);
+	do_writes    = lp_parm_bool(NULL, "torture", "write", false);
+	lock_timeout =  lp_parm_int(NULL, "torture", "lock_timeout", 100000);
 
 	if (!torture_open_connection(&cli, 0)) {
 		DEBUG(0,("Could not open connection\n"));

@@ -152,7 +152,7 @@ static int http_readFile(EspHandle handle,
 	fd = open(path, O_RDONLY);
 	if (fd == -1 || fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)) goto failed;
 
-	*buf = talloc_size(handle, st.st_size+1);
+	*buf = talloc_array(handle, char, st.st_size+1);
 	if (*buf == NULL) goto failed;
 
 	if (read(fd, *buf, st.st_size) != st.st_size) goto failed;
@@ -808,7 +808,7 @@ static void http_setup_session(struct esp_state *esp)
 		s->data = NULL;
 		s->te = NULL;
 		s->edata = edata;
-		s->lifetime = lp_parm_int(-1, "web", "sessiontimeout", 900);
+		s->lifetime = lp_parm_int(NULL, "web", "sessiontimeout", 900);
 		DLIST_ADD(edata->sessions, s);
 		talloc_set_destructor(s, session_destructor);
 		if (!generated_key) {

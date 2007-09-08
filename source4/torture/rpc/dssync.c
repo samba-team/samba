@@ -84,7 +84,7 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 	struct DsSyncTest *ctx;
 	struct drsuapi_DsBindInfo28 *our_bind_info28;
 	struct drsuapi_DsBindInfoCtr *our_bind_info_ctr;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = lp_parm_string(NULL, "torture", "binding");
 	ctx = talloc_zero(mem_ctx, struct DsSyncTest);
 	if (!ctx) return NULL;
 
@@ -149,7 +149,7 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
-	if (lp_parm_bool(-1,"dssync","xpress",False)) {
+	if (lp_parm_bool(NULL, "dssync", "xpress", false)) {
 		our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 	}
 	our_bind_info28->site_guid		= GUID_zero();
@@ -420,11 +420,11 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 	static uint32_t object_id;
 	const char *save_values_dir;
 
-	if (!lp_parm_bool(-1,"dssync","print_pwd_blobs", false)) {
+	if (!lp_parm_bool(NULL,"dssync","print_pwd_blobs", false)) {
 		return;	
 	}
 
-	save_values_dir = lp_parm_string(-1,"dssync","save_pwd_blobs_dir");
+	save_values_dir = lp_parm_string(NULL, "dssync", "save_pwd_blobs_dir");
 
 	for (; cur; cur = cur->next_object) {
 		const char *dn;
@@ -560,17 +560,17 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 
-	partition = lp_parm_string(-1, "dssync", "partition");
+	partition = lp_parm_string(NULL, "dssync", "partition");
 	if (partition == NULL) {
 		partition = ctx->domain_dn;
 		printf("dssync:partition not specified, defaulting to %s.\n", ctx->domain_dn);
 	}
 
-	highest_usn = lp_parm_int(-1, "dssync", "highest_usn", 0);
+	highest_usn = lp_parm_int(NULL, "dssync", "highest_usn", 0);
 
-	array[0].level = lp_parm_int(-1, "dssync", "get_nc_changes_level", array[0].level);
+	array[0].level = lp_parm_int(NULL, "dssync", "get_nc_changes_level", array[0].level);
 
-	if (lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
+	if (lp_parm_bool(NULL, "dssync", "print_pwd_blobs", false)) {
 		const struct samr_Password *nthash;
 		nthash = cli_credentials_get_nt_hash(ctx->new_dc.credentials, ctx);
 		if (nthash) {
@@ -606,10 +606,10 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			r.in.req.req5.highwatermark.highest_usn		= highest_usn;
 			r.in.req.req5.uptodateness_vector		= NULL;
 			r.in.req.req5.replica_flags			= 0;
-			if (lp_parm_bool(-1,"dssync","compression",False)) {
+			if (lp_parm_bool(NULL, "dssync", "compression", false)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			if (lp_parm_bool(-1,"dssync","neighbour_writeable",True)) {
+			if (lp_parm_bool(NULL, "dssync", "neighbour_writeable", true)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
 			r.in.req.req5.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
@@ -637,10 +637,10 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			r.in.req.req8.highwatermark.highest_usn		= highest_usn;
 			r.in.req.req8.uptodateness_vector		= NULL;
 			r.in.req.req8.replica_flags			= 0;
-			if (lp_parm_bool(-1,"dssync","compression",False)) {
+			if (lp_parm_bool(NULL, "dssync", "compression", false)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			if (lp_parm_bool(-1,"dssync","neighbour_writeable",True)) {
+			if (lp_parm_bool(NULL, "dssync", "neighbour_writeable", true)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
 			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
@@ -760,8 +760,8 @@ static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
 	r.in.bind_handle	= &ctx->new_dc.drsuapi.bind_handle;
 	r.in.level		= 1;
 
-	r.in.req.req1.unknown1	= lp_parm_int(-1, "dssync", "nt4-1", 3);
-	r.in.req.req1.unknown2	= lp_parm_int(-1, "dssync", "nt4-2", 0x00004000);
+	r.in.req.req1.unknown1	= lp_parm_int(NULL, "dssync", "nt4-1", 3);
+	r.in.req.req1.unknown2	= lp_parm_int(NULL, "dssync", "nt4-2", 0x00004000);
 
 	while (1) {
 		r.in.req.req1.length	= cookie.length;
@@ -800,9 +800,9 @@ static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
 	return ret;
 }
 
-BOOL torture_rpc_dssync(struct torture_context *torture)
+bool torture_rpc_dssync(struct torture_context *torture)
 {
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx;
 	struct DsSyncTest *ctx;
 	

@@ -582,7 +582,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						      KRB5_AUTHDATA_WIN2K_PAC, 
 						      &pac_data);
 	
-	if (ret && lp_parm_bool(-1, "gensec", "require_pac", False)) {
+	if (ret && lp_parm_bool(NULL, "gensec", "require_pac", false)) {
 		DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s \n",
 			  principal_string,
 			  smb_get_krb5_error_message(context, 

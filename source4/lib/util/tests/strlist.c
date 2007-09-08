@@ -35,7 +35,7 @@ static const char *test_lists_shell_strings[] = {
 static bool test_lists_shell(struct torture_context *tctx,
 							 const void *test_data)
 {
-	const char *data = test_data;
+	const char *data = (const char *)test_data;
 	const char **ret1, **ret2, *tmp;
 	bool match = true;
 	TALLOC_CTX *mem_ctx = tctx;

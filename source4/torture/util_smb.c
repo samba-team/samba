@@ -479,10 +479,10 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	(*c)->transport->options.use_oplocks = lp_parm_bool(-1, "torture", 
-														"use_oplocks", False);
-	(*c)->transport->options.use_level2_oplocks = lp_parm_bool(-1, "torture", 
-												"use_level2_oplocks", False);
+	(*c)->transport->options.use_oplocks = lp_parm_bool(NULL, "torture", 
+														"use_oplocks", false);
+	(*c)->transport->options.use_level2_oplocks = lp_parm_bool(NULL, "torture", 
+												"use_level2_oplocks", false);
 
 	return True;
 }
@@ -495,10 +495,10 @@ _PUBLIC_ bool torture_get_conn_index(int conn_index,
 	int num_unc_names = 0;
 	const char *p;
 
-	(*host) = talloc_strdup(mem_ctx, lp_parm_string(-1, "torture", "host"));
-	(*share) = talloc_strdup(mem_ctx, lp_parm_string(-1, "torture", "share"));
+	(*host) = talloc_strdup(mem_ctx, lp_parm_string(NULL, "torture", "host"));
+	(*share) = talloc_strdup(mem_ctx, lp_parm_string(NULL, "torture", "share"));
 	
-	p = lp_parm_string(-1, "torture", "unclist");
+	p = lp_parm_string(NULL, "torture", "unclist");
 	if (!p) {
 		return True;
 	}

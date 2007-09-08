@@ -126,7 +126,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 	char *random_pw;
-	const char *dc_binding = lp_parm_string(-1, "torture", "dc_binding");
+	const char *dc_binding = lp_parm_string(NULL, "torture", "dc_binding");
 
 	join = talloc(NULL, struct test_join);
 	if (join == NULL) {
@@ -327,9 +327,9 @@ _PUBLIC_ struct test_join *torture_join_domain(const char *machine_name,
 	tj->libnet_r = libnet_r;
 		
 	libnet_ctx->cred = cmdline_credentials;
-	libnet_r->in.binding = lp_parm_string(-1, "torture", "binding");
+	libnet_r->in.binding = lp_parm_string(NULL, "torture", "binding");
 	if (!libnet_r->in.binding) {
-		libnet_r->in.binding = talloc_asprintf(libnet_r, "ncacn_np:%s", lp_parm_string(-1, "torture", "host"));
+		libnet_r->in.binding = talloc_asprintf(libnet_r, "ncacn_np:%s", lp_parm_string(NULL, "torture", "host"));
 	}
 	libnet_r->in.level = LIBNET_JOINDOMAIN_SPECIFIED;
 	libnet_r->in.netbios_name = machine_name;

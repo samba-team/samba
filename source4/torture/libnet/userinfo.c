@@ -300,7 +300,7 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL torture_userinfo(struct torture_context *torture)
+bool torture_userinfo(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;

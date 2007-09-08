@@ -165,8 +165,8 @@ static void dreplsrv_task_init(struct task_server *task)
 		return;
 	}
 
-	periodic_startup_interval	= lp_parm_int(-1, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
-	service->periodic.interval	= lp_parm_int(-1, "dreplsrv", "periodic_interval", 300); /* in seconds */
+	periodic_startup_interval	= lp_parm_int(NULL, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
+	service->periodic.interval	= lp_parm_int(NULL, "dreplsrv", "periodic_interval", 300); /* in seconds */
 
 	status = dreplsrv_periodic_schedule(service, periodic_startup_interval);
 	if (!W_ERROR_IS_OK(status)) {

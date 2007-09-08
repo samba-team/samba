@@ -123,7 +123,7 @@ static struct smbcli_state *connect_one(char *share, int snum, int conn)
 		char **unc_list = NULL;
 		int num_unc_names;
 		const char *p;
-		p = lp_parm_string(-1, "torture", "unclist");
+		p = lp_parm_string(NULL, "torture", "unclist");
 		if (p) {
 			char *h, *s;
 			unc_list = file_lines_load(p, &num_unc_names, NULL);

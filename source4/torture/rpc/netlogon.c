@@ -1226,7 +1226,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 
 static void async_callback(struct rpc_request *req)
 {
-	int *counter = req->async.private_data;
+	int *counter = (int *)req->async.private_data;
 	if (NT_STATUS_IS_OK(req->status)) {
 		(*counter)++;
 	}
@@ -1278,7 +1278,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	for (i=0;i<ASYNC_COUNT;i++) {
 		creds_client_authenticator(creds, &a);
 
-		creds_async[i] = talloc_memdup(creds, creds, sizeof(*creds));
+		creds_async[i] = (struct creds_CredentialState *)talloc_memdup(creds, creds, sizeof(*creds));
 		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, tctx, &r);
 
 		req[i]->async.callback = async_callback;

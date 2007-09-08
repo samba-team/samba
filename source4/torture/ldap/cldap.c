@@ -270,10 +270,10 @@ done:
 	return ret;	
 }
 
-BOOL torture_cldap(struct torture_context *torture)
+bool torture_cldap(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	const char *host = torture_setting_string(torture, "host", NULL);
 
 	mem_ctx = talloc_init("torture_cldap");

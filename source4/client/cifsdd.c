@@ -103,7 +103,7 @@ static struct argdef args[] =
  */
 };
 
-struct argdef * find_named_arg(const char * arg)
+static struct argdef * find_named_arg(const char * arg)
 {
 	int i;
 
@@ -419,7 +419,7 @@ static int copy_files(void)
 	 * could accumulate a remainder if ibs and obs don't match.
 	 */
 	iomax = 2 * MAX(ibs, obs);
-	if ((iobuf = malloc(iomax)) == NULL) {
+	if ((iobuf = malloc_array_p(uint8_t, iomax)) == NULL) {
 		fprintf(stderr,
 			"%s: failed to allocate IO buffer of %llu bytes\n",
 			PROGNAME, (unsigned long long)iomax);

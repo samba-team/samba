@@ -31,9 +31,9 @@ NTSTATUS torture_temp_dir(struct torture_context *tctx, const char *prefix,
 								   const char **tempdir);
 
 static bool test_del_nonexistant_key(struct torture_context *tctx,
-									 const void *test_data)
+				     const void *test_data)
 {
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	WERROR error = hive_key_del(root, "bla");
 	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND, 
 							  "invalid return code");
@@ -45,7 +45,7 @@ static bool test_keyinfo_root(struct torture_context *tctx,
 						 const void *test_data)
 {
 	uint32_t num_subkeys, num_values;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	WERROR error;
 
 	/* This is a new backend. There should be no subkeys and no 
@@ -67,7 +67,7 @@ static bool test_keyinfo_nums(struct torture_context *tctx,
 						 const void *test_data)
 {
 	uint32_t num_subkeys, num_values;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	WERROR error;
 	struct hive_key *subkey;
 	uint32_t data = 42;
@@ -100,7 +100,7 @@ static bool test_add_subkey(struct torture_context *tctx,
 {
 	WERROR error;
 	struct hive_key *subkey;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
 
 	error = hive_key_add_name(mem_ctx, root, "Nested Key", NULL, 
@@ -114,9 +114,9 @@ static bool test_add_subkey(struct torture_context *tctx,
 }
 
 static bool test_flush_key(struct torture_context *tctx,
-					  const void *test_data)
+			   const void *test_data)
 {
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 
 	torture_assert_werr_ok(tctx, hive_key_flush(root), "flush key");
 
@@ -127,7 +127,7 @@ static bool test_del_key(struct torture_context *tctx, const void *test_data)
 {
 	WERROR error;
 	struct hive_key *subkey;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
 
 	error = hive_key_add_name(mem_ctx, root, "Nested Key", NULL, 
@@ -148,7 +148,7 @@ static bool test_set_value(struct torture_context *tctx,
 {
 	WERROR error;
 	struct hive_key *subkey;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
 	uint32_t data = 42;
 
@@ -167,7 +167,7 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 {
 	WERROR error;
 	struct hive_key *subkey;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
 	uint32_t data = 42;
 	uint32_t type;
@@ -200,7 +200,7 @@ static bool test_del_value(struct torture_context *tctx, const void *test_data)
 {
 	WERROR error;
 	struct hive_key *subkey;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
 	uint32_t data = 42;
 	uint32_t type;
@@ -231,7 +231,7 @@ static bool test_list_values(struct torture_context *tctx,
 {
 	WERROR error;
 	struct hive_key *subkey;
-	const struct hive_key *root = test_data;
+	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
 	uint32_t data = 42;
 	uint32_t type;

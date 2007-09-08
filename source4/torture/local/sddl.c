@@ -33,7 +33,7 @@ static bool test_sddl(struct torture_context *tctx,
 {
 	struct security_descriptor *sd, *sd2;
 	struct dom_sid *domain;
-	const char *sddl = test_data;
+	const char *sddl = (const char *)test_data;
 	const char *sddl2;
 	TALLOC_CTX *mem_ctx = tctx;
 

@@ -58,7 +58,7 @@ static void nbtd_wins_register_retry(struct event_context *ev, struct timed_even
 static void nbtd_wins_start_refresh_timer(struct nbtd_iface_name *iname)
 {
 	uint32_t refresh_time;
-	uint32_t max_refresh_time = lp_parm_int(-1, "nbtd", "max_refresh_time", 7200);
+	uint32_t max_refresh_time = lp_parm_int(NULL, "nbtd", "max_refresh_time", 7200);
 
 	refresh_time = MIN(max_refresh_time, iname->ttl/2);
 	
@@ -179,7 +179,7 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* none of the WINS servers responded - try again 
 		   periodically */
-		int wins_retry_time = lp_parm_int(-1, "nbtd", "wins_retry", 300);
+		int wins_retry_time = lp_parm_int(NULL, "nbtd", "wins_retry", 300);
 		event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
 				iname,
 				timeval_current_ofs(wins_retry_time, 0),

@@ -1573,7 +1573,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	u.info21.fields_present = SAMR_FIELD_WORKSTATIONS | SAMR_FIELD_LOGON_HOURS;
 	u.info21.workstations.string = TEST_MACHINE_NAME;
 	u.info21.logon_hours.units_per_week = 168;
-	u.info21.logon_hours.bits = talloc_zero_size(mem_ctx, 168);
+	u.info21.logon_hours.bits = talloc_zero_array(mem_ctx, uint8_t, 168);
 
 	status = dcerpc_samr_SetUserInfo(torture_join_samr_pipe(user_ctx_wrong_time), mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {

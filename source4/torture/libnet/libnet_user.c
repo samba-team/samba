@@ -418,7 +418,7 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 		case acct_expiry:
 			continue_if_field_set(r->in.acct_expiry);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			r->in.acct_expiry = talloc_memdup(mem_ctx, &now, sizeof(now));
+			r->in.acct_expiry = (struct timeval *)talloc_memdup(mem_ctx, &now, sizeof(now));
 			fldname = "acct_expiry";
 			break;
 

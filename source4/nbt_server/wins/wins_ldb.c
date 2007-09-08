@@ -87,7 +87,7 @@ static int wins_ldb_init(struct ldb_module *ctx)
 
 	ctx->private_data = NULL;
 
-	owner = lp_parm_string(-1, "winsdb", "local_owner");
+	owner = lp_parm_string(NULL, "winsdb", "local_owner");
 	if (!owner) {
 		owner = iface_n_ip(0);
 		if (!owner) {

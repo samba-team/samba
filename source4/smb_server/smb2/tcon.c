@@ -41,7 +41,8 @@ static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *h, uint8
 	req = smb2srv_init_request(handle->tcon->smb_conn);
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
-	req->in.buffer		= talloc_size(req, NBT_HDR_SIZE + SMB2_MIN_SIZE);
+	req->in.buffer		= talloc_array(req, uint8_t, 
+					       NBT_HDR_SIZE + SMB2_MIN_SIZE);
 	NT_STATUS_HAVE_NO_MEMORY(req->in.buffer);
 	req->in.size		= NBT_HDR_SIZE + SMB2_MIN_SIZE;
 	req->in.allocated	= req->in.size;
