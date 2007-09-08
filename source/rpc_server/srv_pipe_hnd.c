@@ -1035,6 +1035,7 @@ static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
 	if(n > RPC_MAX_PDU_FRAG_LEN) {
                 DEBUG(5,("read_from_pipe: too large read (%u) requested on \
 pipe %s. We can only service %d sized reads.\n", (unsigned int)n, p->name, RPC_MAX_PDU_FRAG_LEN ));
+		n = RPC_MAX_PDU_FRAG_LEN;
 	}
 
 	/*
