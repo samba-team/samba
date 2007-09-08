@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/security/security.h"
 #include "auth/pam_errors.h"
+#include "param/param.h"
 
 /* 
    Send off the reply to an async Samba3 query, handling filling in the PAM, NTSTATUS and string errors.

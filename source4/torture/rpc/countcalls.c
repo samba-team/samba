@@ -25,6 +25,7 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 
 	

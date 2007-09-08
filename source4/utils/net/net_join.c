@@ -23,6 +23,7 @@
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 int net_join(struct net_context *ctx, int argc, const char **argv) 
 {

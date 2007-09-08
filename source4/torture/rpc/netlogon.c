@@ -30,6 +30,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "param/param.h"
 
 #define TEST_MACHINE_NAME "torturetest"
 

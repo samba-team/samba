@@ -35,6 +35,7 @@
 #include "libcli/security/security.h"
 #include "rpc_server/samr/proto.h"
 #include "db_wrap.h"
+#include "param/param.h"
 
 /* these query macros make samr_Query[User|Group]Info a bit easier to read */
 

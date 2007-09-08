@@ -27,6 +27,7 @@
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {

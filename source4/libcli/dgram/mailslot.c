@@ -36,6 +36,7 @@
 #include "lib/util/dlinklist.h"
 #include "libcli/dgram/libdgram.h"
 #include "lib/socket/socket.h"
+#include "param/param.h"
 
 /*
   destroy a mailslot handler

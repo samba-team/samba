@@ -35,6 +35,7 @@
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/flags.h"
+#include "param/param.h"
 
 /*
   connect to the SAM database

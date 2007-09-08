@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "param/param.h"
 
 #define SETUP_REQUEST_TREE(cmd, wct, buflen) do { \
 	req = smbcli_request_setup(tree, cmd, wct, buflen); \

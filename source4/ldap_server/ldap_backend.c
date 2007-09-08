@@ -26,6 +26,7 @@
 #include "lib/db_wrap.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\

@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 /*****************************************************************************
  * Windows 2003 (w2k3) does the following steps when changing the server role

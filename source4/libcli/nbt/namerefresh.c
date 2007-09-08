@@ -23,6 +23,7 @@
 #include "libcli/nbt/libnbt.h"
 #include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
+#include "param/param.h"
 
 /*
   send a nbt name refresh request

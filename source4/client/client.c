@@ -40,6 +40,7 @@
 #include "libcli/security/security.h"
 #include "lib/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 static int io_bufsize = 64512;
 

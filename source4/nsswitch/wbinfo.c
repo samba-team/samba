@@ -30,6 +30,7 @@
 #include "libcli/security/security.h"
 #include "lib/cmdline/popt_common.h"
 #include "dynconfig.h"
+#include "param/param.h"
 
 extern int winbindd_fd;
 

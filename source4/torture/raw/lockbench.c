@@ -30,6 +30,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "param/param.h"
 
 #define BASEDIR "\\benchlock"
 #define FNAME BASEDIR "\\lock.dat"

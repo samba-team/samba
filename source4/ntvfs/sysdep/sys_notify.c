@@ -27,6 +27,7 @@
 #include "ntvfs/sysdep/sys_notify.h"
 #include "lib/events/events.h"
 #include "lib/util/dlinklist.h"
+#include "param/param.h"
 #include "build.h"
 
 /* list of registered backends */

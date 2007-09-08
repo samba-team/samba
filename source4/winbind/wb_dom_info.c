@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/samr.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/finddcs.h"
+#include "param/param.h"
 
 struct get_dom_info_state {
 	struct composite_context *ctx;

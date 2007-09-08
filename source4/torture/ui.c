@@ -22,6 +22,7 @@
 #include "torture/ui.h"
 #include "torture/torture.h"
 #include "lib/util/dlinklist.h"
+#include "param/param.h"
 
 void torture_comment(struct torture_context *context, const char *comment, ...)
 {

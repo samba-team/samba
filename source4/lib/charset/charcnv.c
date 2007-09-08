@@ -21,6 +21,7 @@
 */
 #include "includes.h"
 #include "system/iconv.h"
+#include "param/param.h"
 
 /**
  * @file

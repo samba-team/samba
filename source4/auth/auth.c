@@ -23,6 +23,7 @@
 #include "auth/auth.h"
 #include "lib/events/events.h"
 #include "build.h"
+#include "param/param.h"
 
 /***************************************************************************
  Set a fixed challenge

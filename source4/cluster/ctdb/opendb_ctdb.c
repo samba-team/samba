@@ -49,6 +49,7 @@
 #include "ntvfs/common/ntvfs_common.h"
 #include "cluster/cluster.h"
 #include "include/ctdb.h"
+#include "param/param.h"
 
 struct odb_context {
 	struct ctdb_context *ctdb;

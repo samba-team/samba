@@ -41,6 +41,7 @@
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/common/ntvfs_common.h"
 #include "cluster/cluster.h"
+#include "param/param.h"
 
 static const struct opendb_ops *ops;
 

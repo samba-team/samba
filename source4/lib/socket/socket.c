@@ -23,6 +23,7 @@
 #include "lib/socket/socket.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "param/param.h"
 
 /*
   auto-close sockets on free

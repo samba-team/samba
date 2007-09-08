@@ -38,4 +38,5 @@ struct ldb_context;
 struct ldb_message;
 struct cli_credentials;
 
+#include "param/param.h"
 #include "scripting/ejs/proto.h"

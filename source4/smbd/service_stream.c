@@ -28,6 +28,7 @@
 #include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"
 #include "cluster/cluster.h"
+#include "param/param.h"
 
 /* the range of ports to try for dcerpc over tcp endpoints */
 #define SERVER_TCP_LOW_PORT  1024

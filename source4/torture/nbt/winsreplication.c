@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
+#include "param/param.h"
 
 #define CHECK_STATUS(tctx, status, correct) \
 	torture_assert_ntstatus_equal(tctx, status, correct, \

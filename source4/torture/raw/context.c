@@ -27,6 +27,7 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 #define BASEDIR "\\rawcontext"
 

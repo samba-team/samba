@@ -26,6 +26,7 @@
 #include "lib/events/events.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 
 /*

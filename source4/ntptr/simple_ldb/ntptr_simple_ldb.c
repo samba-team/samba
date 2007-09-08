@@ -35,6 +35,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "db_wrap.h"
 #include "rpc_server/common/common.h"
+#include "param/param.h"
 
 /*
   connect to the SPOOLSS database

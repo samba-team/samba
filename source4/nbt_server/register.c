@@ -29,6 +29,7 @@
 #include "nbt_server/wins/winsserver.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "dsdb/samdb/samdb.h"
+#include "param/param.h"
 
 
 static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname);

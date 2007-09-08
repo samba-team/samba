@@ -50,6 +50,7 @@
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "param/param.h"
 
 
 

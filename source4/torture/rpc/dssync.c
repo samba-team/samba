@@ -32,6 +32,7 @@
 #include "auth/credentials/credentials.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;

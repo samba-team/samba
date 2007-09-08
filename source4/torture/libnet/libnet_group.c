@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 
 #define TEST_GROUPNAME  "libnetgrouptest"

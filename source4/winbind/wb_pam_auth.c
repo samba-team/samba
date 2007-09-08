@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/winbind.h"
+#include "param/param.h"
 
 /* Oh, there is so much to keep an eye on when authenticating a user.  Oh my! */
 struct pam_auth_crap_state {

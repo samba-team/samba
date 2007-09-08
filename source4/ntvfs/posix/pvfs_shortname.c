@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/locale.h"
 #include "vfs_posix.h"
+#include "param/param.h"
 
 /*
   this mangling scheme uses the following format

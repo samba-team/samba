@@ -27,6 +27,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/libcli.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 #if 0
 

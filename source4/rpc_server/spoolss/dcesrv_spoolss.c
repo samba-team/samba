@@ -29,6 +29,7 @@
 #include "smbd/service_stream.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 enum spoolss_handle {
 	SPOOLSS_NOTIFY

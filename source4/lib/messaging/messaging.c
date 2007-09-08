@@ -34,6 +34,7 @@
 #include "lib/util/util_tdb.h"
 #include "lib/util/util_tdb.h"
 #include "cluster/cluster.h"
+#include "param/param.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1

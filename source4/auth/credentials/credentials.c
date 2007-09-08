@@ -27,6 +27,7 @@
 #include "auth/credentials/credentials_krb5.h"
 #include "libcli/auth/libcli_auth.h"
 #include "lib/events/events.h"
+#include "param/param.h"
 
 /**
  * Create a new credentials structure

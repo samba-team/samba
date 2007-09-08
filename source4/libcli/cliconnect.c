@@ -25,6 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "param/param.h"
 
 /*
   wrapper around smbcli_sock_connect()

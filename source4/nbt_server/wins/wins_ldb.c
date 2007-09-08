@@ -35,6 +35,7 @@
 #include "lib/ldb/include/ldb_private.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
 static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 {

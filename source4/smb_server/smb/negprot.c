@@ -27,6 +27,7 @@
 #include "smb_server/service_smb_proto.h"
 #include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
+#include "param/param.h"
 
 
 /* initialise the auth_context for this server and return the cryptkey */

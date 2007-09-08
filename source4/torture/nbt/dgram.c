@@ -30,6 +30,7 @@
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
 #define TEST_NAME "TORTURE_TEST"
 

@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "torture/rpc/rpc.h"
 #include "dlinklist.h"
+#include "param/param.h"
 
 #define TEST_MACHINE_NAME "torturetest"
 

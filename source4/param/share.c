@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "param/share.h"
 #include "build.h"
+#include "param/param.h"
 
 const char *share_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
 {

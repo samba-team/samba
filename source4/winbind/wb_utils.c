@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "param/param.h"
 
 
 /* Split a domain\\user string into it's parts, because the client supplies it

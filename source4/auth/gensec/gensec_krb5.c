@@ -36,6 +36,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,

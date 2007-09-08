@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
+#include "param/param.h"
 
 static const struct {
 	enum protocol_types prot;

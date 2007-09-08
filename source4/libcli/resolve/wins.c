@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
 #include "libcli/resolve/resolve.h"
+#include "param/param.h"
 
 /*
   wins name resolution method - async send

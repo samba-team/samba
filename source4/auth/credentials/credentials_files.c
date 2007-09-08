@@ -29,6 +29,7 @@
 #include "db_wrap.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "param/param.h"
 
 /**
  * Read a file descriptor, and parse it for a password (eg from a file or stdin)

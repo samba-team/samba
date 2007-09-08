@@ -33,6 +33,7 @@
 #include "db_wrap.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
 /*
   fill in the cldap netlogon union for a given version

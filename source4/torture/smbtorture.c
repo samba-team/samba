@@ -34,6 +34,7 @@
 #include "build.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
+#include "param/param.h"
 
 static bool run_matching(struct torture_context *torture,
 						 const char *prefix, 

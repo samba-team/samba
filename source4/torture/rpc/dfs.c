@@ -487,7 +487,7 @@ bool torture_rpc_dfs(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	BOOL ret = True;
 	enum dfs_ManagerVersion version;
-	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *host = torture_setting_string(torture, "host", NULL);
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_netdfs);
 	torture_assert_ntstatus_ok(torture, status, "Unable to connect");

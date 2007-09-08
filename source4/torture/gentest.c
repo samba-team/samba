@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/security.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2

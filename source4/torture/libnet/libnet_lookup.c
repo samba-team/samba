@@ -26,6 +26,7 @@
 #include "libcli/libcli.h"
 #include "torture/rpc/rpc.h"
 #include "torture/torture.h"
+#include "param/param.h"
 
 
 BOOL torture_lookup(struct torture_context *torture)
