@@ -185,7 +185,7 @@ struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char 
 
 #if _SAMBA_BUILD_
 	if (name == NULL) {
-		name = lp_parm_string(-1, "event", "backend");
+		name = lp_parm_string(NULL, "event", "backend");
 	}
 #endif
 	if (name == NULL) {

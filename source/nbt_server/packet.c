@@ -327,7 +327,7 @@ void nbtd_wack_reply(struct nbt_name_socket *nbtsock,
 	packet->answers[0].rr_class          = NBT_QCLASS_IP;
 	packet->answers[0].ttl               = ttl;
 	packet->answers[0].rdata.data.length = 2;
-	packet->answers[0].rdata.data.data   = talloc_size(packet, 2);
+	packet->answers[0].rdata.data.data   = talloc_array(packet, uint8_t, 2);
 	if (packet->answers[0].rdata.data.data == NULL) goto failed;
 	RSSVAL(packet->answers[0].rdata.data.data, 0, request_packet->operation);
 

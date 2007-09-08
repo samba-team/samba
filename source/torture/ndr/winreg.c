@@ -240,7 +240,7 @@ static const uint8_t querymultiplevalues_in_data[] = {
 };
 
 static bool querymultiplevalues_in_check(struct torture_context *tctx, 
-										 struct winreg_QueryMultipleValues *r)
+					 struct winreg_QueryMultipleValues *r)
 {
 	torture_assert_int_equal(tctx, r->in.num_values, 1, "num values");
 	torture_assert_str_equal(tctx, r->in.values[0].name->name, "HOMEPATH", 
@@ -272,7 +272,7 @@ static const uint8_t querymultiplevalues_out_data[] = {
 };
 
 static bool querymultiplevalues_out_check(struct torture_context *tctx, 
-										 struct winreg_QueryMultipleValues *r)
+					  struct winreg_QueryMultipleValues *r)
 {
 	torture_assert_str_equal(tctx, r->out.values[0].name->name, "HOMEPATH", 
 							 "name");
@@ -458,7 +458,7 @@ static const uint8_t getkeysecurity_in_data[] = {
 };
 
 static bool getkeysecurity_in_check(struct torture_context *tctx, 
-									struct winreg_GetKeySecurity *r)
+				    struct winreg_GetKeySecurity *r)
 {
 	/* FIXME: Handle */
 	torture_assert_int_equal(tctx, r->in.sec_info, 2, "sec info");
@@ -476,7 +476,7 @@ static const uint8_t getkeysecurity_out_data[] = {
 };
 
 static bool getkeysecurity_out_check(struct torture_context *tctx, 
-									 struct winreg_GetKeySecurity *r)
+				     struct winreg_GetKeySecurity *r)
 {
 	torture_assert_int_equal(tctx, r->in.sd->size, 20, "sd size");
 	torture_assert_int_equal(tctx, r->in.sd->len, 20, "sd len");

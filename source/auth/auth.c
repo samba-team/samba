@@ -419,13 +419,13 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 	const char **auth_methods = NULL;
 	switch (lp_server_role()) {
 	case ROLE_STANDALONE:
-		auth_methods = lp_parm_string_list(-1, "auth methods", "standalone", NULL);
+		auth_methods = lp_parm_string_list(NULL, "auth methods", "standalone", NULL);
 		break;
 	case ROLE_DOMAIN_MEMBER:
-		auth_methods = lp_parm_string_list(-1, "auth methods", "member server", NULL);
+		auth_methods = lp_parm_string_list(NULL, "auth methods", "member server", NULL);
 		break;
 	case ROLE_DOMAIN_CONTROLLER:
-		auth_methods = lp_parm_string_list(-1, "auth methods", "domain controller", NULL);
+		auth_methods = lp_parm_string_list(NULL, "auth methods", "domain controller", NULL);
 		break;
 	}
 	return auth_context_create_methods(mem_ctx, auth_methods, ev, msg, auth_ctx);

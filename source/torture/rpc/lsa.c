@@ -1224,7 +1224,7 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_QuerySecurity r;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+	if (lp_parm_bool(NULL, "torture", "samba4", false)) {
 		printf("skipping QuerySecurity test against Samba4\n");
 		return True;
 	}
@@ -1463,7 +1463,7 @@ static BOOL test_QueryForestTrustInformation(struct dcerpc_pipe *p,
 
 	printf("\nTesting lsaRQueryForestTrustInformation\n");
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+	if (lp_parm_bool(NULL, "torture", "samba4", false)) {
 		printf("skipping QueryForestTrustInformation against Samba4\n");
 		return True;
 	}
@@ -1830,7 +1830,7 @@ static BOOL test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 	BOOL ret = True;
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+	if (lp_parm_bool(NULL, "torture", "samba4", false)) {
 		printf("skipping QueryDomainInformationPolicy test against Samba4\n");
 		return True;
 	}
@@ -1866,7 +1866,7 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	BOOL ret = True;
 	printf("\nTesting QueryInfoPolicy\n");
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+	if (lp_parm_bool(NULL, "torture", "samba4", false)) {
 		printf("skipping QueryInfoPolicy against Samba4\n");
 		return True;
 	}
@@ -1904,7 +1904,7 @@ static BOOL test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 	int i;
 	BOOL ret = True;
 	printf("\nTesting QueryInfoPolicy2\n");
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+	if (lp_parm_bool(NULL, "torture", "samba4", false)) {
 		printf("skipping QueryInfoPolicy2 against Samba4\n");
 		return True;
 	}

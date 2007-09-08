@@ -80,7 +80,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.buf_size = *r.out.bytes_needed;
-		r.out.service = talloc_size(tctx, *r.out.bytes_needed);
+		r.out.service = talloc_array(tctx, uint8_t, *r.out.bytes_needed);
 		
 		status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 

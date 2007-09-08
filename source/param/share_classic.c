@@ -23,8 +23,8 @@
 #include "param/share.h"
 #include "param/param.h"
 
-struct sclassic_snum {
-	int snum;
+struct service {
+	struct service *service;
 };
 
 static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, struct share_context **ctx)
@@ -43,7 +43,7 @@ static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, 
 
 static const char *sclassic_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
 {
-	struct sclassic_snum *s = talloc_get_type(scfg->opaque, struct sclassic_snum);
+	struct service *s = talloc_get_type(scfg->opaque, struct service);
 	char *parm, *val;
 	const char *ret;
 
@@ -56,7 +56,7 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string(s->snum, parm, val);
+		ret = lp_parm_string(s, parm, val);
 		if (!ret) {
 			ret = defval;
 		}
@@ -69,25 +69,25 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 	}
 
 	if (strcmp(opt_name, SHARE_PATH) == 0) {
-		return lp_pathname(s->snum);
+		return lp_pathname(s);
 	}
 
 	if (strcmp(opt_name, SHARE_COMMENT) == 0) {
-		return lp_comment(s->snum);
+		return lp_comment(s);
 	}
 
 	if (strcmp(opt_name, SHARE_VOLUME) == 0) {
-		return volume_label(s->snum);
+		return volume_label(s);
 	}
 
 	if (strcmp(opt_name, SHARE_TYPE) == 0) {
-		if (lp_print_ok(s->snum)) {
+		if (lp_print_ok(s)) {
 			return "PRINTER";
 		}
-		if (strcmp("NTFS", lp_fstype(s->snum)) == 0) {
+		if (strcmp("NTFS", lp_fstype(s)) == 0) {
 			return "DISK";
 		}
-		return lp_fstype(s->snum);
+		return lp_fstype(s);
 	}
 
 	if (strcmp(opt_name, SHARE_PASSWORD) == 0) {
@@ -100,9 +100,9 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 	return defval;
 }
 
-int sclassic_int_option(struct share_config *scfg, const char *opt_name, int defval)
+static int sclassic_int_option(struct share_config *scfg, const char *opt_name, int defval)
 {
-	struct sclassic_snum *s = talloc_get_type(scfg->opaque, struct sclassic_snum);
+	struct service *s = talloc_get_type(scfg->opaque, struct service);
 	char *parm, *val;
 	int ret;
 
@@ -115,7 +115,7 @@ int sclassic_int_option(struct share_config *scfg, const char *opt_name, int def
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_int(s->snum, parm, val, defval);
+		ret = lp_parm_int(s, parm, val, defval);
 		if (!ret) {
 			ret = defval;
 		}
@@ -124,27 +124,27 @@ int sclassic_int_option(struct share_config *scfg, const char *opt_name, int def
 	}
 
 	if (strcmp(opt_name, SHARE_CSC_POLICY) == 0) {
-		return lp_csc_policy(s->snum);
+		return lp_csc_policy(s);
 	}
 
 	if (strcmp(opt_name, SHARE_MAX_CONNECTIONS) == 0) {
-		return lp_max_connections(s->snum);
+		return lp_max_connections(s);
 	}
 
 	if (strcmp(opt_name, SHARE_CREATE_MASK) == 0) {
-		return lp_create_mask(s->snum);
+		return lp_create_mask(s);
 	}
 
 	if (strcmp(opt_name, SHARE_DIR_MASK) == 0) {
-		return lp_dir_mask(s->snum);
+		return lp_dir_mask(s);
 	}
 
 	if (strcmp(opt_name, SHARE_FORCE_DIR_MODE) == 0) {
-		return lp_force_dir_mode(s->snum);
+		return lp_force_dir_mode(s);
 	}
 
 	if (strcmp(opt_name, SHARE_FORCE_CREATE_MODE) == 0) {
-		return lp_force_create_mode(s->snum);
+		return lp_force_create_mode(s);
 	}
 
 
@@ -154,9 +154,10 @@ int sclassic_int_option(struct share_config *scfg, const char *opt_name, int def
 	return defval;
 }
 
-BOOL sclassic_bool_option(struct share_config *scfg, const char *opt_name, BOOL defval)
+static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name, 
+			  bool defval)
 {
-	struct sclassic_snum *s = talloc_get_type(scfg->opaque, struct sclassic_snum);
+	struct service *s = talloc_get_type(scfg->opaque, struct service);
 	char *parm, *val;
 	BOOL ret;
 
@@ -169,49 +170,49 @@ BOOL sclassic_bool_option(struct share_config *scfg, const char *opt_name, BOOL 
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_bool(s->snum, parm, val, defval);
+		ret = lp_parm_bool(s, parm, val, defval);
 		talloc_free(parm);
 		return ret;
 	}
 
 	if (strcmp(opt_name, SHARE_AVAILABLE) == 0) {
-		return lp_snum_ok(s->snum);
+		return s != NULL;
 	}
 
 	if (strcmp(opt_name, SHARE_BROWSEABLE) == 0) {
-		return lp_browseable(s->snum);
+		return lp_browseable(s);
 	}
 
 	if (strcmp(opt_name, SHARE_READONLY) == 0) {
-		return lp_readonly(s->snum);
+		return lp_readonly(s);
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_SYSTEM) == 0) {
-		return lp_map_system(s->snum);
+		return lp_map_system(s);
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_HIDDEN) == 0) {
-		return lp_map_hidden(s->snum);
+		return lp_map_hidden(s);
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_ARCHIVE) == 0) {
-		return lp_map_archive(s->snum);
+		return lp_map_archive(s);
 	}
 
 	if (strcmp(opt_name, SHARE_STRICT_LOCKING) == 0) {
-		return lp_strict_locking(s->snum);
+		return lp_strict_locking(s);
 	}
 
 	if (strcmp(opt_name, SHARE_STRICT_SYNC) == 0) {
-		return lp_strict_sync(s->snum);
+		return lp_strict_sync(s);
 	}
 
 	if (strcmp(opt_name, SHARE_MSDFS_ROOT) == 0) {
-		return lp_msdfs_root(s->snum);
+		return lp_msdfs_root(s);
 	}
 
 	if (strcmp(opt_name, SHARE_CI_FILESYSTEM) == 0) {
-		return lp_ci_filesystem(s->snum);
+		return lp_ci_filesystem(s);
 	}
 
 	DEBUG(0,("request for unknown share bool option '%s'\n",
@@ -220,9 +221,9 @@ BOOL sclassic_bool_option(struct share_config *scfg, const char *opt_name, BOOL 
 	return defval;
 }
 
-const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name)
+static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name)
 {
-	struct sclassic_snum *s = talloc_get_type(scfg->opaque, struct sclassic_snum);
+	struct service *s = talloc_get_type(scfg->opaque, struct service);
 	char *parm, *val;
 	const char **ret;
 
@@ -235,21 +236,21 @@ const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct share_confi
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string_list(s->snum, parm, val, ",;");
+		ret = lp_parm_string_list(s, parm, val, ",;");
 		talloc_free(parm);
 		return ret;
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_ALLOW) == 0) {
-		return lp_hostsallow(s->snum);
+		return lp_hostsallow(s);
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_DENY) == 0) {
-		return lp_hostsdeny(s->snum);
+		return lp_hostsdeny(s);
 	}
 
 	if (strcmp(opt_name, SHARE_NTVFS_HANDLER) == 0) {
-		return lp_ntvfs_handler(s->snum);
+		return lp_ntvfs_handler(s);
 	}
 
 	DEBUG(0,("request for unknown share list option '%s'\n",
@@ -258,10 +259,10 @@ const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct share_confi
 	return NULL;
 }
 
-NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
-				     struct share_context *ctx,
-				     int *count,
-				     const char ***names)
+static NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
+				  struct share_context *ctx,
+				  int *count,
+				  const char ***names)
 {
 	int i;
 	int num_services;
@@ -276,7 +277,7 @@ NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_services; i++) {
-		n[i] = talloc_strdup(n, lp_servicename(i));
+		n[i] = talloc_strdup(n, lp_servicename(lp_servicebynum(i)));
 		if (!n[i]) {
 			DEBUG(0,("ERROR: Out of memory!\n"));
 			talloc_free(n);
@@ -290,24 +291,17 @@ NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
-			     struct share_context *ctx,
-			     const char *name,
-			     struct share_config **scfg)
+static NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
+				    struct share_context *ctx,
+				    const char *name,
+				    struct share_config **scfg)
 {
-	int i, snum;
 	struct share_config *s;
-	struct sclassic_snum *scnum;
+	struct service *service;
 
-	snum = -1;
-	for (i = 0; i < lp_numservices(); i++) {
-		if (strcasecmp_m(name, lp_servicename(i)) == 0) {
-			snum = i;
-			break;
-		}
-	}
+	service = lp_service(name);
 
-	if (snum < 0) {
+	if (service == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -317,22 +311,14 @@ NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	s->name = talloc_strdup(s, lp_servicename(snum));
+	s->name = talloc_strdup(s, lp_servicename(service));
 	if (!s->name) {
 		DEBUG(0,("ERROR: Out of memory!\n"));
 		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	scnum = talloc(s, struct sclassic_snum);
-	if (!scnum) {
-		DEBUG(0,("ERROR: Out of memory!\n"));
-		talloc_free(s);
-		return NT_STATUS_NO_MEMORY;
-	}
-	scnum->snum = snum;
-
-	s->opaque = (void *)scnum;
+	s->opaque = (void *)service;
 	s->ctx = ctx;
 	
 	*scfg = s;

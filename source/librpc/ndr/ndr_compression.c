@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/compression/mszip.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/ndr/ndr_compression.h"
 
 static NTSTATUS ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 						 struct ndr_push *ndrpush,

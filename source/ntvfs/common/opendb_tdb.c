@@ -88,7 +88,7 @@ static struct odb_context *odb_tdb_init(TALLOC_CTX *mem_ctx,
 	odb->ntvfs_ctx = ntvfs_ctx;
 
 	/* leave oplocks disabled by default until the code is working */
-	odb->oplocks = lp_parm_bool(-1, "opendb", "oplocks", False);
+	odb->oplocks = lp_parm_bool(NULL, "opendb", "oplocks", false);
 
 	return odb;
 }

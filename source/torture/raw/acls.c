@@ -1736,7 +1736,7 @@ done:
 */
 bool torture_raw_acls(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;

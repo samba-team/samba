@@ -110,7 +110,7 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 				  char **error_string)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-	struct samdump_state *samdump_state = private;
+	struct samdump_state *samdump_state = (struct samdump_state *)private;
 
 	*error_string = NULL;
 	switch (delta->delta_type) {
@@ -163,7 +163,7 @@ NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 
 	r2.out.error_string            = NULL;
 	r2.in.binding_string           = r->in.binding_string;
-	r2.in.rid_crypt                = lp_parm_bool(-1, "vampire", "rid decrypt", True);
+	r2.in.rid_crypt                = lp_parm_bool(NULL, "vampire", "rid decrypt", true);
 	r2.in.init_fn                  = NULL;
 	r2.in.delta_fn                 = libnet_samdump_fn;
 	r2.in.fn_ctx                   = samdump_state;

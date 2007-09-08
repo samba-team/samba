@@ -75,7 +75,7 @@ static struct charset_functions *charsets = NULL;
 
 bool charset_register_backend(const void *_funcs) 
 {
-	struct charset_functions *funcs = memdup(_funcs,sizeof(struct charset_functions));
+	struct charset_functions *funcs = (struct charset_functions *)memdup(_funcs,sizeof(struct charset_functions));
 	struct charset_functions *c;
 
 	/* Check whether we already have this charset... */
@@ -199,7 +199,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 
 #ifdef HAVE_NATIVE_ICONV
-	if ((!from || !to) && !lp_parm_bool(-1, "iconv", "native", true)) {
+	if ((!from || !to) && !lp_parm_bool(NULL, "iconv", "native", true)) {
 		goto failed;
 	}
 	if (!from) {

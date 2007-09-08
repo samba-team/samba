@@ -125,7 +125,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		/* Now read the actual record */
 
 		r.in.number_of_bytes = *r.out.real_size;
-		r.out.data = talloc_size(tctx, r.in.number_of_bytes);
+		r.out.data = talloc_array(tctx, uint8_t, r.in.number_of_bytes);
 
 		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
 

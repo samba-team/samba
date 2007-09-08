@@ -196,7 +196,7 @@ void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 
 	req->in.size      = NBT_HDR_SIZE+SMB2_HDR_BODY+body_fixed_size;
 	req->in.allocated = req->in.size;
-	req->in.buffer    = talloc_size(req, req->in.allocated);
+	req->in.buffer    = talloc_array(req, uint8_t, req->in.allocated);
 	if (!req->in.buffer) goto nomem;
 	req->in.hdr       = req->in.buffer + NBT_HDR_SIZE;
 	req->in.body      = req->in.hdr + SMB2_HDR_BODY;

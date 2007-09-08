@@ -151,8 +151,9 @@ static int do_global_checks(void)
 	ret = do_global_checks();
 
 	for (s=0;s<lp_numservices();s++) {
-		if (lp_snum_ok(s))
-			if (strlen(lp_servicename(s)) > 12) {
+		struct service *service = lp_servicebynum(s);
+		if (service != NULL)
+			if (strlen(lp_servicename(lp_servicebynum(s))) > 12) {
 				fprintf(stderr, "WARNING: You have some share names that are longer than 12 characters.\n" );
 				fprintf(stderr, "These may not be accessible to some older clients.\n" );
 				fprintf(stderr, "(Eg. Windows9x, WindowsMe, and not listed in smbclient in Samba 3.0.)\n" );
@@ -161,9 +162,10 @@ static int do_global_checks(void)
 	}
 
 	for (s=0;s<lp_numservices();s++) {
-		if (lp_snum_ok(s)) {
-			const char **deny_list = lp_hostsdeny(s);
-			const char **allow_list = lp_hostsallow(s);
+		struct service *service = lp_servicebynum(s);
+		if (service != NULL) {
+			const char **deny_list = lp_hostsdeny(service);
+			const char **allow_list = lp_hostsallow(service);
 			int i;
 			if(deny_list) {
 				for (i=0; deny_list[i]; i++) {
@@ -171,7 +173,7 @@ static int do_global_checks(void)
 					char *hasquery = strchr_m(deny_list[i], '?');
 					if(hasstar || hasquery) {
 						fprintf(stderr,"Invalid character %c in hosts deny list (%s) for service %s.\n",
-							   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
+							   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(service) );
 					}
 				}
 			}
@@ -182,7 +184,7 @@ static int do_global_checks(void)
 					char *hasquery = strchr_m(allow_list[i], '?');
 					if(hasstar || hasquery) {
 						fprintf(stderr,"Invalid character %c in hosts allow list (%s) for service %s.\n",
-							   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );
+							   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(service) );
 					}
 				}
 			}
@@ -197,24 +199,20 @@ static int do_global_checks(void)
 			getc(stdin);
 		}
 		if (section_name || parameter_name) {
-			BOOL isGlobal = False;
+			struct service *service = NULL;
 			if (!section_name) {
 				section_name = GLOBAL_NAME;
-				isGlobal = True;
-			} else if ((isGlobal=!strwicmp(section_name, GLOBAL_NAME)) == 0 &&
-				 (s=lp_servicenumber(section_name)) == -1) {
+				service = NULL;
+			} else if ((!strwicmp(section_name, GLOBAL_NAME)) == 0 &&
+				 (service=lp_service(section_name)) == NULL) {
 					fprintf(stderr,"Unknown section %s\n",
 						section_name);
 					return(1);
 			}
 			if (!parameter_name) {
-				if (isGlobal == True) {
-					lp_dump(stdout, show_defaults, 0);
-				} else {
-					lp_dump_one(stdout, show_defaults, s);
-				}
+				lp_dump_one(stdout, show_defaults, service);
 			} else {
-				ret = !lp_dump_a_parameter(s, parameter_name, stdout, isGlobal);
+				ret = !lp_dump_a_parameter(s, parameter_name, stdout, (service == NULL));
 			}
 		} else {
 			lp_dump(stdout, show_defaults, lp_numservices());
@@ -225,14 +223,15 @@ static int do_global_checks(void)
 	if(cname && caddr){
 		/* this is totally ugly, a real `quick' hack */
 		for (s=0;s<lp_numservices();s++) {
-			if (lp_snum_ok(s)) {
-				if (allow_access(NULL, lp_hostsdeny(-1), lp_hostsallow(-1), cname, caddr)
-				    && allow_access(NULL, lp_hostsdeny(s), lp_hostsallow(s), cname, caddr)) {
+			struct service *service = lp_servicebynum(s);
+			if (service != NULL) {
+				if (allow_access(NULL, lp_hostsdeny(NULL), lp_hostsallow(NULL), cname, caddr)
+				    && allow_access(NULL, lp_hostsdeny(service), lp_hostsallow(service), cname, caddr)) {
 					fprintf(stderr,"Allow connection from %s (%s) to %s\n",
-						   cname,caddr,lp_servicename(s));
+						   cname,caddr,lp_servicename(service));
 				} else {
 					fprintf(stderr,"Deny connection from %s (%s) to %s\n",
-						   cname,caddr,lp_servicename(s));
+						   cname,caddr,lp_servicename(service));
 				}
 			}
 		}

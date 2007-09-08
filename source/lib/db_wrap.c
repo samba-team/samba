@@ -161,7 +161,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	}
 
 	/* allow admins to force non-sync ldb for all databases */
-	if (lp_parm_bool(-1, "ldb", "nosync", False)) {
+	if (lp_parm_bool(NULL, "ldb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 

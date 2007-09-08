@@ -176,7 +176,7 @@ static BOOL test_mux_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.writex.in.wmode = 0;
 	io.writex.in.remaining = 0;
 	io.writex.in.count = 4;
-	io.writex.in.data = (void *)&fnum;	
+	io.writex.in.data = (const uint8_t *)&fnum;	
 	req = smb_raw_write_send(cli->tree, &io);
 
 	/* unlock the range */

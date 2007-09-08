@@ -29,7 +29,7 @@ static int fde_count;
 static void fde_handler(struct event_context *ev_ctx, struct fd_event *f, 
 			uint16_t flags, void *private)
 {
-	int *fd = private;
+	int *fd = (int *)private;
 	char c;
 #ifdef SA_SIGINFO
 	kill(getpid(), SIGUSR1);
@@ -43,14 +43,14 @@ static void fde_handler(struct event_context *ev_ctx, struct fd_event *f,
 static void finished_handler(struct event_context *ev_ctx, struct timed_event *te,
 			     struct timeval tval, void *private)
 {
-	int *finished = private;
+	int *finished = (int *)private;
 	(*finished) = 1;
 }
 
 static void count_handler(struct event_context *ev_ctx, struct signal_event *te,
 			  int signum, int count, void *info, void *private)
 {
-	int *countp = private;
+	int *countp = (int *)private;
 	(*countp) += count;
 }
 

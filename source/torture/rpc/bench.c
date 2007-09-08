@@ -72,7 +72,7 @@ static BOOL bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct timeval tv = timeval_current();
 	BOOL ret = True;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	int timelimit = lp_parm_int(NULL, "torture", "timelimit", 10);
 	int count=0;
 
 	printf("Running for %d seconds\n", timelimit);
@@ -82,7 +82,7 @@ static BOOL bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		talloc_free(tmp_ctx);
 		count++;
 		if (count % 50 == 0) {
-			if (lp_parm_bool(-1, "torture", "progress", true)) {
+			if (lp_parm_bool(NULL, "torture", "progress", true)) {
 				printf("%.1f queries per second  \r", 
 				       count / timeval_elapsed(&tv));
 			}

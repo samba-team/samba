@@ -155,7 +155,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	
 	gensec_gssapi_state->gss_exchange_count = 0;
 	gensec_gssapi_state->max_wrap_buf_size
-		= lp_parm_int(-1, "gensec_gssapi", "max wrap buf size", 65536);
+		= lp_parm_int(NULL, "gensec_gssapi", "max wrap buf size", 65536);
 		
 	gensec_gssapi_state->sasl = False;
 	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
@@ -170,16 +170,16 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
 	
 	gensec_gssapi_state->want_flags = 0;
-	if (lp_parm_bool(-1, "gensec_gssapi", "mutual", True)) {
+	if (lp_parm_bool(NULL, "gensec_gssapi", "mutual", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_MUTUAL_FLAG;
 	}
-	if (lp_parm_bool(-1, "gensec_gssapi", "delegation", True)) {
+	if (lp_parm_bool(NULL, "gensec_gssapi", "delegation", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_DELEG_FLAG;
 	}
-	if (lp_parm_bool(-1, "gensec_gssapi", "replay", True)) {
+	if (lp_parm_bool(NULL, "gensec_gssapi", "replay", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_REPLAY_FLAG;
 	}
-	if (lp_parm_bool(-1, "gensec_gssapi", "sequence", True)) {
+	if (lp_parm_bool(NULL, "gensec_gssapi", "sequence", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_SEQUENCE_FLAG;
 	}
 
@@ -230,7 +230,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 
 	/* don't do DNS lookups of any kind, it might/will fail for a netbios name */
-	ret = gsskrb5_set_dns_canonicalize(lp_parm_bool(-1, "krb5", "set_dns_canonicalize", false));
+	ret = gsskrb5_set_dns_canonicalize(lp_parm_bool(NULL, "krb5", "set_dns_canonicalize", false));
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: gsskrb5_set_dns_canonicalize failed\n"));
 		talloc_free(gensec_gssapi_state);
@@ -1317,7 +1317,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			talloc_free(mem_ctx);
 			return nt_status;
 		}
-	} else if (!lp_parm_bool(-1, "gensec", "require_pac", False)) {
+	} else if (!lp_parm_bool(NULL, "gensec", "require_pac", false)) {
 		DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		nt_status = sam_get_server_info_principal(mem_ctx, principal_string,

@@ -417,7 +417,7 @@ NTSTATUS ejs_push_array_uint8(struct ejs_rpc *ejs,
 			      const uint8_t *r, uint32_t length)
 {
 	DATA_BLOB blob;
-	blob.data = discard_const(r);
+	blob.data = (uint8_t *)discard_const(r);
 	blob.length = length;
 	mprSetVar(v, name, mprDataBlob(blob));
 	return NT_STATUS_OK;

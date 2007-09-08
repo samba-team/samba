@@ -37,7 +37,7 @@ static int ejs_lpServices(MprVarHandle eid, int argc, char **argv)
 	if (argc != 0) return -1;
 	
 	for (i=0;i<lp_numservices();i++) {
-		list = str_list_add(list, lp_servicename(i));
+		list = str_list_add(list, lp_servicename(lp_servicebynum(i)));
 	}
 	talloc_steal(mprMemCtx(), list);
 	mpr_Return(eid, mprList("services", list));
@@ -87,9 +87,10 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 	if (argc < 1) return -1;
 
 	if (argc == 2) {
+		struct service *service;
 		/* its a share parameter */
-		int snum = lp_servicenumber(argv[0]);
-		if (snum == -1) {
+		service = lp_service(argv[0]);
+		if (service == NULL) {
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
@@ -104,7 +105,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 				mpr_Return(eid, mprCreateUndefinedVar());
 				return 0;
 			}
-			value = lp_get_parametric(snum, type, option);
+			value = lp_get_parametric(service, type, option);
 			if (value == NULL) {
 				mpr_Return(eid, mprCreateUndefinedVar());
 				return 0;
@@ -118,7 +119,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		parm_ptr = lp_parm_ptr(snum, parm);
+		parm_ptr = lp_parm_ptr(service, parm);
 	} else if (strchr(argv[0], ':')) {
 		/* its a global parametric option */
 		const char *type = talloc_strndup(mprMemCtx(), 
@@ -129,7 +130,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		value = lp_get_parametric(-1, type, option);
+		value = lp_get_parametric(NULL, type, option);
 		if (value == NULL) {
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
@@ -143,7 +144,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		parm_ptr = lp_parm_ptr(-1, parm);
+		parm_ptr = lp_parm_ptr(NULL, parm);
 	}
 
 	if (parm == NULL || parm_ptr == NULL) {

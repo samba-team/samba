@@ -27,7 +27,7 @@ static bool test_list_empty(struct torture_context *tctx,
 			    const void *tcase_data, 
 			    const void *test_data)
 {
-	struct share_context *ctx = discard_const(tcase_data);
+	struct share_context *ctx = (struct share_context *)discard_const(tcase_data);
 	int count;
 	const char **names;
 
@@ -41,7 +41,7 @@ static bool test_create(struct torture_context *tctx,
 			const void *tcase_data, 
 			const void *test_data)
 {
-	struct share_context *ctx = discard_const(tcase_data);
+	struct share_context *ctx = (struct share_context *)discard_const(tcase_data);
 	int count;
 	const char **names;
 	int i;
@@ -79,7 +79,7 @@ static bool test_create_invalid(struct torture_context *tctx,
 				const void *tcase_data, 
 				const void *test_data)
 {
-	struct share_context *ctx = discard_const(tcase_data);
+	struct share_context *ctx = (struct share_context *)discard_const(tcase_data);
 	NTSTATUS status;
 
 	status = share_create(ctx, "bla", NULL, 0);
@@ -102,7 +102,7 @@ static bool test_share_remove_invalid(struct torture_context *tctx,
 				      const void *tcase_data, 
 				      const void *test_data)
 {
-	struct share_context *ctx = discard_const(tcase_data);
+	struct share_context *ctx = (struct share_context *)discard_const(tcase_data);
 	NTSTATUS status;
 
 	status = share_remove(ctx, "nonexistant");
@@ -121,7 +121,7 @@ static bool test_share_remove(struct torture_context *tctx,
 			      const void *tcase_data, 
 			      const void *test_data)
 {
-	struct share_context *ctx = discard_const(tcase_data);
+	struct share_context *ctx = (struct share_context *)discard_const(tcase_data);
 	struct share_info inf[] = { 
 		{ SHARE_INFO_STRING, SHARE_TYPE, discard_const_p(void *, "IPC$") },
 		{ SHARE_INFO_STRING, SHARE_PATH, discard_const_p(void *, "/tmp/bla") }
@@ -144,7 +144,7 @@ static bool test_double_create(struct torture_context *tctx,
 			       const void *tcase_data, 
 			       const void *test_data)
 {
-	struct share_context *ctx = discard_const(tcase_data);
+	struct share_context *ctx = (struct share_context *)discard_const(tcase_data);
 	struct share_info inf[] = { 
 		{ SHARE_INFO_STRING, SHARE_TYPE, discard_const_p(void *, "IPC$") },
 		{ SHARE_INFO_STRING, SHARE_PATH, discard_const_p(void *, "/tmp/bla") }

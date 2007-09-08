@@ -434,7 +434,6 @@ static BOOL test_notify_mask_change(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 	union smb_open io;
 	int fnum;
 	struct smbcli_request *req1, *req2;
-	union smb_setfileinfo sfinfo;
 
 	printf("TESTING CHANGE NOTIFY WITH MASK CHANGE\n");
 
@@ -712,7 +711,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
-	if (lp_parm_bool(-1, "torture", "samba3", False)) {
+	if (lp_parm_bool(NULL, "torture", "samba3", false)) {
 		printf("Samba3 does not yet support create times "
 		       "everywhere\n");
 	}

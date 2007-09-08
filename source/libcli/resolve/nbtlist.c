@@ -155,7 +155,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 
 		state->io_queries[i].in.broadcast   = broadcast;
 		state->io_queries[i].in.wins_lookup = wins_lookup;
-		state->io_queries[i].in.timeout     = lp_parm_int(-1, "nbt", "timeout", 1);
+		state->io_queries[i].in.timeout     = lp_parm_int(NULL, "nbt", "timeout", 1);
 		state->io_queries[i].in.retries     = 2;
 
 		state->queries[i] = nbt_name_query_send(state->nbtsock, &state->io_queries[i]);

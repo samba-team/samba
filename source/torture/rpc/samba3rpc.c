@@ -1230,7 +1230,7 @@ static BOOL test_join3(TALLOC_CTX *mem_ctx,
 	struct cli_credentials *wks_creds;
 
 	status = smbcli_full_connection(mem_ctx, &cli,
-					lp_parm_string(-1, "torture", "host"),
+					lp_parm_string(NULL, "torture", "host"),
 					"IPC$", NULL, smb_creds, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",

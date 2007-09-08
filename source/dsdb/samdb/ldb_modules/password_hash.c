@@ -341,7 +341,7 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (lp_parm_bool(-1, "password_hash", "create_aes_key", false)) {
+	if (lp_parm_bool(NULL, "password_hash", "create_aes_key", false)) {
 	/*
 	 * TODO:
 	 *

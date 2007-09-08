@@ -86,7 +86,7 @@ static bool test_addone(struct torture_context *test, const void *_data,
 {
 	struct echo_AddOne r;
 	NTSTATUS status;
-	const struct irpc_test_data *data = _data;
+	const struct irpc_test_data *data = (const struct irpc_test_data *)_data;
 	uint32_t value = (uint32_t)_value;
 
 	/* make the call */
@@ -115,7 +115,7 @@ static bool test_echodata(struct torture_context *tctx,
 {
 	struct echo_EchoData r;
 	NTSTATUS status;
-	const struct irpc_test_data *data = tcase_data;
+	const struct irpc_test_data *data = (const struct irpc_test_data *)tcase_data;
 	TALLOC_CTX *mem_ctx = tctx;
 
 	/* make the call */
@@ -144,7 +144,7 @@ static bool test_echodata(struct torture_context *tctx,
 
 static void irpc_callback(struct irpc_request *irpc)
 {
-	struct echo_AddOne *r = irpc->r;
+	struct echo_AddOne *r = (struct echo_AddOne *)irpc->r;
 	int *pong_count = (int *)irpc->async.private;
 	NTSTATUS status = irpc_call_recv(irpc);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -166,7 +166,7 @@ static bool test_speed(struct torture_context *tctx,
 {
 	int ping_count = 0;
 	int pong_count = 0;
-	const struct irpc_test_data *data = tcase_data;
+	const struct irpc_test_data *data = (const struct irpc_test_data *)tcase_data;
 	struct timeval tv;
 	struct echo_AddOne r;
 	TALLOC_CTX *mem_ctx = tctx;

@@ -85,7 +85,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 	/* parse any lines that are available */
 	b = web->input.partial;
 	while (!web->input.end_of_headers &&
-	       (p=memchr(b.data, '\n', b.length))) {
+	       (p=(uint8_t *)memchr(b.data, '\n', b.length))) {
 		const char *line = (const char *)b.data;
 		*p = 0;
 		if (p != b.data && p[-1] == '\r') {

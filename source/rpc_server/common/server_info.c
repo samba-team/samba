@@ -36,7 +36,7 @@ _PUBLIC_ enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ct
 {
 	enum srvsvc_PlatformId id;
 
-	id = lp_parm_int(-1, "server_info", "platform_id", PLATFORM_ID_NT);
+	id = lp_parm_int(NULL, "server_info", "platform_id", PLATFORM_ID_NT);
 
 	return id;
 }
@@ -66,19 +66,19 @@ const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 /* This hardcoded value should go into a ldb database! */
 _PUBLIC_ uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_parm_int(-1, "server_info", "version_major", 5);
+	return lp_parm_int(NULL, "server_info", "version_major", 5);
 }
 
 /* This hardcoded value should go into a ldb database! */
 _PUBLIC_ uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_parm_int(-1, "server_info", "version_minor", 2);
+	return lp_parm_int(NULL, "server_info", "version_minor", 2);
 }
 
 /* This hardcoded value should go into a ldb database! */
 _PUBLIC_ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_parm_int(-1, "server_info", "version_build", 3790);
+	return lp_parm_int(NULL, "server_info", "version_build", 3790);
 }
 
 /* This hardcoded value should go into a ldb database! */

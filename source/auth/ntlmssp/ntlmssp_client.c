@@ -299,13 +299,13 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	gensec_ntlmssp_state->get_domain = lp_workgroup;
 
-	gensec_ntlmssp_state->unicode = lp_parm_bool(-1, "ntlmssp_client", "unicode", True);
+	gensec_ntlmssp_state->unicode = lp_parm_bool(NULL, "ntlmssp_client", "unicode", true);
 
-	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(-1, "ntlmssp_client", "send_nt_reponse", True);
+	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(NULL, "ntlmssp_client", "send_nt_reponse", true);
 
 	gensec_ntlmssp_state->allow_lm_key = (lp_client_lanman_auth() 
-					      && (lp_parm_bool(-1, "ntlmssp_client", "allow_lm_key", False)
-						  || lp_parm_bool(-1, "ntlmssp_client", "lm_key", False)));
+					      && (lp_parm_bool(NULL, "ntlmssp_client", "allow_lm_key", false)
+						  || lp_parm_bool(NULL, "ntlmssp_client", "lm_key", false)));
 
 	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
 
@@ -315,27 +315,27 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_REQUEST_TARGET;
 
-	if (lp_parm_bool(-1, "ntlmssp_client", "128bit", True)) {
+	if (lp_parm_bool(NULL, "ntlmssp_client", "128bit", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
 	}
 
-	if (lp_parm_bool(-1, "ntlmssp_client", "56bit", False)) {
+	if (lp_parm_bool(NULL, "ntlmssp_client", "56bit", false)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;		
 	}
 
-	if (lp_parm_bool(-1, "ntlmssp_client", "lm_key", False)) {
+	if (lp_parm_bool(NULL, "ntlmssp_client", "lm_key", false)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
-	if (lp_parm_bool(-1, "ntlmssp_client", "keyexchange", True)) {
+	if (lp_parm_bool(NULL, "ntlmssp_client", "keyexchange", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
 	}
 
-	if (lp_parm_bool(-1, "ntlmssp_client", "alwayssign", True)) {
+	if (lp_parm_bool(NULL, "ntlmssp_client", "alwayssign", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;		
 	}
 
-	if (lp_parm_bool(-1, "ntlmssp_client", "ntlm2", True)) {
+	if (lp_parm_bool(NULL, "ntlmssp_client", "ntlm2", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
 	} else {
 		/* apparently we can't do ntlmv2 if we don't do ntlm2 */

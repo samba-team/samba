@@ -154,7 +154,7 @@ EjsId ejsOpenEngine(EjsHandle primaryHandle, EjsHandle altHandle)
 	MprVar	*np;
 	Ejs		*ep;
 
-	ep = mprMalloc(sizeof(Ejs));
+	ep = (Ejs *)mprMalloc(sizeof(Ejs));
 	if (ep == 0) {
 		return (EjsId) -1;
 	}

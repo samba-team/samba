@@ -29,7 +29,8 @@
 
 float tdb_speed;
 
-static BOOL tdb_add_record(struct tdb_wrap *tdbw, const char *fmt1, const char *fmt2, int i)
+static bool tdb_add_record(struct tdb_wrap *tdbw, const char *fmt1, 
+			   const char *fmt2, int i)
 {
 	TDB_DATA key, data;
 	int ret;

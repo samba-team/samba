@@ -121,7 +121,7 @@ static union smb_fsinfo *find(const char *name)
    quiescent, which is sometimes hard to achieve
 */
 bool torture_raw_qfsinfo(struct torture_context *torture, 
-						 struct smbcli_state *cli)
+			 struct smbcli_state *cli)
 {
 	int i;
 	BOOL ret = True;

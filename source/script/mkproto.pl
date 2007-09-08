@@ -139,7 +139,7 @@ sub handle_loadparm($$)
 
 		my %smap = (
 			    "GLOBAL" => "void",
-			    "LOCAL" => "int "
+			    "LOCAL" => "struct service *"
 			    );
 
 		$file->("$tmap{$type}$name($smap{$scope});\n");

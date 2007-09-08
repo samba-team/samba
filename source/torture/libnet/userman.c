@@ -357,7 +357,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		case acct_expiry:
 			continue_if_field_set(mod->in.change.acct_expiry);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod->in.change.acct_expiry = talloc_memdup(mem_ctx, &now, sizeof(now));
+			mod->in.change.acct_expiry = (struct timeval *)talloc_memdup(mem_ctx, &now, sizeof(now));
 			mod->in.change.fields |= USERMOD_FIELD_ACCT_EXPIRY;
 			fldname = "acct_expiry";
 			break;
@@ -533,7 +533,7 @@ done:
 }
 
 
-BOOL torture_userdel(struct torture_context *torture)
+bool torture_userdel(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;

@@ -111,7 +111,7 @@ BOOL torture_rpc_countcalls(struct torture_context *torture)
 	if (!mem_ctx) {
 		return False;
 	}
-	iface_name = lp_parm_string(-1, "countcalls", "interface");
+	iface_name = lp_parm_string(NULL, "countcalls", "interface");
 	if (iface_name != NULL) {
 		iface = ndr_table_by_name(iface_name);
 		if (!iface) {

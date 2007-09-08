@@ -82,7 +82,8 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	req->out.size		= SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size;
 
 	req->out.allocated	= req->out.size + body_dynamic_size;
-	req->out.buffer		= talloc_size(req, req->out.allocated);
+	req->out.buffer		= talloc_array(req, uint8_t, 
+					       req->out.allocated);
 	NT_STATUS_HAVE_NO_MEMORY(req->out.buffer);
 
 	req->out.hdr		= req->out.buffer	+ NBT_HDR_SIZE;

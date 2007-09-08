@@ -538,7 +538,7 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 			r.in.req.req5.highwatermark.highest_usn		= 0;
 			r.in.req.req5.uptodateness_vector		= NULL;
 			r.in.req.req5.replica_flags			= 0;
-			if (lp_parm_bool(-1, "drsuapi", "compression", false)) {
+			if (lp_parm_bool(NULL, "drsuapi", "compression", false)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
 			r.in.req.req5.max_object_count			= 0;
@@ -560,10 +560,10 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 			r.in.req.req8.highwatermark.highest_usn		= 0;
 			r.in.req.req8.uptodateness_vector		= NULL;
 			r.in.req.req8.replica_flags			= 0;
-			if (lp_parm_bool(-1, "drsuapi", "compression", false)) {
+			if (lp_parm_bool(NULL, "drsuapi", "compression", false)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			if (lp_parm_bool(-1, "drsuapi", "neighbour_writeable",true)) {
+			if (lp_parm_bool(NULL, "drsuapi", "neighbour_writeable",true)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
 			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP

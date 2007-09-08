@@ -44,7 +44,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 			gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP),
 			"Failed to start GENSEC for NTLMSSP");
 
-	gensec_ntlmssp_state = gensec_security->private_data;
+	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
 	gensec_ntlmssp_state->session_key = strhex_to_data_blob("0102030405060708090a0b0c0d0e0f00");
 	dump_data_pw("NTLMSSP session key: \n", 
@@ -98,7 +98,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 		gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP),
 		"GENSEC start mech by oid");
 
-	gensec_ntlmssp_state = gensec_security->private_data;
+	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
 	gensec_ntlmssp_state->session_key = strhex_to_data_blob("0102030405e538b0");
 	dump_data_pw("NTLMSSP session key: \n", 
