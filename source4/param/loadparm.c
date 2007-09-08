@@ -66,7 +66,7 @@
 
 static bool bLoaded = false;
 
-#define standard_sub_basic strdup
+#define standard_sub_basic talloc_strdup
 
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && VALID(i))
@@ -920,8 +920,6 @@ _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_se
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 _PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &Globals.jsInclude)
 _PUBLIC_ FN_GLOBAL_STRING(lp_jsonrpc_services_dir, &Globals.jsonrpcServicesDir)
-_PUBLIC_ 
-_PUBLIC_ 
 _PUBLIC_ FN_LOCAL_STRING(lp_servicename, szService)
 _PUBLIC_ FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 _PUBLIC_ FN_LOCAL_STRING(lp_pathname, szPath)
@@ -1190,54 +1188,6 @@ void string_free(char **str)
 }
 
 /***************************************************************************
- Free the dynamically allocated parts of a service struct.
-***************************************************************************/
-
-static void free_service(service *pservice)
-{
-	int i;
-        struct param_opt *data, *pdata;
-	if (!pservice)
-		return;
-
-	if (pservice->szService)
-		DEBUG(5, ("free_service: Freeing service %s\n",
-		       pservice->szService));
-
-	string_free(&pservice->szService);
-	SAFE_FREE(pservice->copymap);
-
-	for (i = 0; parm_table[i].label; i++) {
-		if ((parm_table[i].type == P_STRING ||
-		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].class == P_LOCAL) {
-			string_free((char **)
-				    (((char *)pservice) +
-				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
-		} else if (parm_table[i].type == P_LIST &&
-			   parm_table[i].class == P_LOCAL) {
-			char ***listp = (char ***)(((char *)pservice) + 
-						   PTR_DIFF(parm_table[i].ptr, &sDefault));
-			talloc_free(*listp);
-			*listp = NULL;
-		}
-	}
-				
-	DEBUG(5,("Freeing parametrics:\n"));
-	data = pservice->param_opt;
-	while (data) {
-		DEBUG(5,("[%s = %s]\n", data->key, data->value));
-		string_free(&data->key);
-		string_free(&data->value);
-		pdata = data->next;
-		SAFE_FREE(data);
-		data = pdata;
-	}
-
-	ZERO_STRUCTP(pservice);
-}
-
-/***************************************************************************
  Add a new service to the services array initialising it with the given 
  service. 
 ***************************************************************************/
@@ -1358,7 +1308,6 @@ int lp_add_service(const char *pszService, int iDefaultService)
 
 static bool lp_add_hidden(const char *name, const char *fstype)
 {
-	char *comment = NULL;
 	int i = add_a_service(&sDefault, name);
 
 	if (i < 0)
@@ -1366,12 +1315,9 @@ static bool lp_add_hidden(const char *name, const char *fstype)
 
 	string_set(ServicePtrs[i], &ServicePtrs[i]->szPath, tmpdir());
 
-	asprintf(&comment, "%s Service (%s)", fstype, Globals.szServerString);
-	if (comment == NULL)
-		return false;
-
-	string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
-	SAFE_FREE(comment);
+	ServicePtrs[i]->comment = talloc_asprintf(ServicePtrs[i], 
+						  "%s Service (%s)", 
+					fstype, Globals.szServerString);
 	string_set(ServicePtrs[i], &ServicePtrs[i]->fstype, fstype);
 	ServicePtrs[i]->iMaxConnections = -1;
 	ServicePtrs[i]->bAvailable = true;
@@ -1672,7 +1618,7 @@ BOOL lp_file_list_changed(void)
 		char *n2;
 		time_t mod_time;
 
-		n2 = standard_sub_basic(f->name);
+		n2 = standard_sub_basic(talloc_autofree_context(), f->name);
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -1699,7 +1645,8 @@ BOOL lp_file_list_changed(void)
 
 static bool handle_include(const char *pszParmValue, char **ptr)
 {
-	char *fname = standard_sub_basic(pszParmValue);
+	char *fname = standard_sub_basic(talloc_autofree_context(), 
+					 pszParmValue);
 
 	add_to_file_list(pszParmValue, fname);
 
@@ -1745,7 +1692,7 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
 		bRetval = false;
 	}
 
-	free_service(serviceTemp);
+	talloc_free(serviceTemp);
 	return bRetval;
 }
 
@@ -1753,18 +1700,19 @@ static bool handle_copy(const char *pszParmValue, char **ptr)
  Initialise a copymap.
 ***************************************************************************/
 
-static void init_copymap(service * pservice)
+static void init_copymap(service *pservice)
 {
 	int i;
-	SAFE_FREE(pservice->copymap);
-	pservice->copymap = malloc_array_p(int, NUMPARAMETERS);
-	if (!pservice->copymap)
+	talloc_free(pservice->copymap);
+	pservice->copymap = talloc_array(pservice, int, NUMPARAMETERS);
+	if (pservice->copymap == NULL) {
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
 		       (int)NUMPARAMETERS));
-	else
-		for (i = 0; i < NUMPARAMETERS; i++)
-			pservice->copymap[i] = True;
+		return;
+	}
+	for (i = 0; i < NUMPARAMETERS; i++)
+		pservice->copymap[i] = true;
 }
 
 #if 0 /* not used anywhere */
@@ -1900,7 +1848,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		   the same data pointer */
 		for (i = 0; parm_table[i].label; i++)
 			if (parm_table[i].ptr == parm_table[parmnum].ptr)
-				ServicePtrs[snum]->copymap[i] = False;
+				ServicePtrs[snum]->copymap[i] = false;
 	}
 
 	/* if it is a special case then go ahead */
@@ -2458,7 +2406,7 @@ void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsr
 			continue;
 
 		if (!snumused || !snumused(smb, i)) {
-			free_service(ServicePtrs[i]);
+			talloc_free(ServicePtrs[i]);
 			ServicePtrs[i] = NULL;
 		}
 	}
@@ -2471,7 +2419,7 @@ void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsr
 void lp_killservice(int iServiceIn)
 {
 	if (VALID(iServiceIn)) {
-		free_service(ServicePtrs[iServiceIn]);
+		talloc_free(ServicePtrs[iServiceIn]);
 		ServicePtrs[iServiceIn] = NULL;
 	}
 }
@@ -2503,7 +2451,7 @@ bool lp_load(void)
 	
 	init_globals();
 
-	n2 = standard_sub_basic(lp_configfile());
+	n2 = standard_sub_basic(talloc_autofree_context(), lp_configfile());
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
 	
 	add_to_file_list(lp_configfile(), n2);
@@ -2603,7 +2551,8 @@ int lp_servicenumber(const char *pszServiceName)
 			 * The substitution here is used to support %U is
 			 * service names
 			 */
-			serviceName = standard_sub_basic(ServicePtrs[iService]->szService);
+			serviceName = standard_sub_basic(ServicePtrs[iService],
+							 ServicePtrs[iService]->szService);
 			if (strequal(serviceName, pszServiceName))
 				break;
 		}
