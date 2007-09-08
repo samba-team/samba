@@ -140,11 +140,6 @@ void sub_set_smb_name(const char *name)
 	}
 }
 
-char* sub_get_smb_name( void )
-{
-	return smb_user_name;
-}
-
 /*******************************************************************
  Setup the strings used by substitutions. Called per packet. Ensure
  %U name is set correctly also.
