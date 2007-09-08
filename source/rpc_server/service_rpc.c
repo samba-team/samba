@@ -216,7 +216,7 @@ static const struct stream_server_ops dcesrv_stream_ops = {
 
 
 
-NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 			    struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
@@ -241,7 +241,7 @@ NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoi
 	return status;
 }
 
-NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 			       struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
@@ -309,7 +309,7 @@ static NTSTATUS add_socket_rpc_pipe_iface(struct dcesrv_context *dce_ctx, struct
 	return status;
 }
 
-NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 				   struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
@@ -356,7 +356,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 	return status;
 }
 
-NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 				   struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
@@ -379,7 +379,7 @@ NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoin
 }
 
 
-NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+static NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 			  struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	switch (e->ep_description->transport) {

@@ -34,6 +34,19 @@ struct machine_acct_pass {
 #define SECRETS_KRBTGT_SEARCH "(&((|(realm=%s)(flatname=%s))(samAccountName=krbtgt)))"
 #define SECRETS_PRINCIPAL_SEARCH "(&(|(realm=%s)(flatname=%s))(servicePrincipalName=%s))"
 
-#include "param/secrets_proto.h"
+/**
+ * Use a TDB to store an incrementing random seed.
+ *
+ * Initialised to the current pid, the very first time Samba starts,
+ * and incremented by one each time it is needed.  
+ * 
+ * @note Not called by systems with a working /dev/urandom.
+ */
+void secrets_shutdown(void);
+bool secrets_init(void);
+struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx);
+struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
+				       const char *domain);
+
 
 #endif /* _SECRETS_H */

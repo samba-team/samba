@@ -46,6 +46,5 @@ PRIVATE_DEPENDENCIES = LIBLDB
 ################################################
 
 [SUBSYSTEM::SECRETS]
-PRIVATE_PROTO_HEADER = secrets_proto.h
 OBJ_FILES = secrets.o
 PRIVATE_DEPENDENCIES = DB_WRAP UTIL_TDB

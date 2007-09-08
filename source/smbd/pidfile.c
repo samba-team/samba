@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "param/param.h"
+#include "smbd/pidfile.h"
 
 /**
  * @file
