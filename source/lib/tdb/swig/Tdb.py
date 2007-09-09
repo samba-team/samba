@@ -69,7 +69,7 @@ class Tdb:
         tdb_delete(self.tdb, key)
 
     def has_key(self, key):
-        return tdb_exists(self.tdb, key)
+        return tdb_exists(self.tdb, key) != 0
 
     # Tdb iterator
 
@@ -113,3 +113,7 @@ class Tdb:
     def clear(self):
         for k in iter(self):
             del(self[k])
+
+    # TODO: iterkeys, itervalues, iteritems
+
+    # TODO: any other missing methods for container types
