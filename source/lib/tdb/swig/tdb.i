@@ -102,7 +102,21 @@ typedef int mode_t;
 #define TDB_CONVERT 16 /* convert endian (internal use) */
 #define TDB_BIGENDIAN 32 /* header is big-endian (internal use) */
 
-/* Throw an IOError exception if tdb_open() or tdb_open_ex() returns NULL */
+enum TDB_ERROR {
+     TDB_SUCCESS=0, 
+     TDB_ERR_CORRUPT, 
+     TDB_ERR_IO, 
+     TDB_ERR_LOCK, 
+     TDB_ERR_OOM, 
+     TDB_ERR_EXISTS, 
+     TDB_ERR_NOLOCK, 
+     TDB_ERR_LOCK_TIMEOUT,
+     TDB_ERR_NOEXIST, 
+     TDB_ERR_EINVAL, 
+     TDB_ERR_RDONLY
+};
+
+/* Throw an IOError exception from errno if tdb_open() returns NULL */
 
 %exception {
 	$action
@@ -115,16 +129,7 @@ typedef int mode_t;
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 
-TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
-			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn,
-			 tdb_hash_func hash_fn);
-
 %exception;
-
-int tdb_reopen(TDB_CONTEXT *tdb);
-
-int tdb_reopen_all(int parent_longlived);
 
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 
@@ -147,13 +152,3 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state);
 
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
-
-int tdb_lockall(TDB_CONTEXT *tdb);
-
-void tdb_unlockall(TDB_CONTEXT *tdb);
-
-/* Low level locking functions: use with care */
-
-int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
-
-int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
