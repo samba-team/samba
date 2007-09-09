@@ -72,12 +72,6 @@ case "$1" in
 	
 
 
-	# we need to restart lockmanager to make sure we get a clusterwide
-	# lock grace period. but to stop lockmanager completely
-	# we must also stop nfs (on linux)
-#	service nfs stop > /dev/null 2>&1
-#	service nfs start > /dev/null 2>&1
-
 	# we must also let some time pass between stopping and restarting the
 	# lockmanager since othervise there is a window where the lockmanager
 	# will respond "strangely" immediately after restarting it, which

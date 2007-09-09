@@ -1058,7 +1058,7 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
-bool ctdb_sys_have_ip(const char *ip);
+bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname);
 int ctdb_sys_send_tcp(int fd,
 		      const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src,

@@ -46,6 +46,7 @@ case $cmd in
 		 echo "`/bin/date` Failed to bringup interface $iface"
 		 exit 1
 	}
+	/sbin/ip addr del $ip/32 dev lo >/dev/null 2>/dev/null
 	/sbin/ip addr add $ip/$maskbits dev $iface || {
 		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
@@ -70,6 +71,7 @@ case $cmd in
 		 echo "`/bin/date` Failed to del $ip on dev $iface"
 		 exit 1
 	}
+	/sbin/ip addr add $ip/32 dev lo >/dev/null 2>/dev/null
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush

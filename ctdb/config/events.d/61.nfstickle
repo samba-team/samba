@@ -41,13 +41,6 @@ case $cmd in
 	;;
 
      releaseip)
-	iface=$1
-	ip=$2
-	if netstat -tn | egrep "^tcp.*$ip:2049.*ESTABLISHED" > /dev/null 2>&1; then
-		echo "`date` Restarting NFS due to established connections for IP $ip"
-		( service nfs status > /dev/null 2>&1 && 
-                      service nfs restart > /dev/null 2>&1 ) &
-	fi		
 	exit 0
 	;;
 
