@@ -1030,6 +1030,28 @@ static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx)
 	return pservice;
 }
 
+/**
+ Set a string value, deallocating any existing space, and allocing the space
+ for the string
+**/
+static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
+{
+	talloc_free(*dest);
+
+	if (src == NULL) 
+		src = "";
+
+	*dest = talloc_strdup(mem_ctx, src);
+	if ((*dest) == NULL) {
+		DEBUG(0,("Out of memory in string_init\n"));
+		return false;
+	}
+
+	return true;
+}
+
+
+
 /***************************************************************************
  Add a new service to the services array initialising it with the given 
  service. 
@@ -2495,19 +2517,21 @@ bool lp_load(void)
  Return the max number of services.
 ***************************************************************************/
 
-int lp_numservices(struct loadparm_context *lp_ctx)
+int lp_numservices(void)
 {
-	return lp_ctx->iNumServices;
+	return loadparm.iNumServices;
 }
 
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
 
-void lp_dump(FILE *f, bool show_defaults, int maxtoprint, 
-	     struct loadparm_context *lp_ctx)
+void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 {
+	struct loadparm_context *lp_ctx;
 	int iService;
+
+	lp_ctx = &loadparm;
 
 	if (show_defaults)
 		defaults_saved = false;

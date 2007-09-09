@@ -137,7 +137,8 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
 
 	/* temporary IDs use an idtree, the rest use a array of pointers */
 	if (rec->header->msg_type >= MSG_TMP_BASE) {
-		d = idr_find(msg->dispatch_tree, rec->header->msg_type);
+		d = (struct dispatch_fn *)idr_find(msg->dispatch_tree, 
+						   rec->header->msg_type);
 	} else if (rec->header->msg_type < msg->num_types) {
 		d = msg->dispatch[rec->header->msg_type];
 	} else {
@@ -417,7 +418,8 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
 	struct dispatch_fn *d, *next;
 
 	if (msg_type >= msg->num_types) {
-		d = idr_find(msg->dispatch_tree, msg_type);
+		d = (struct dispatch_fn *)idr_find(msg->dispatch_tree, 
+						   msg_type);
 		if (!d) return;
 		idr_remove(msg->dispatch_tree, msg_type);
 		talloc_free(d);
@@ -666,7 +668,7 @@ static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_me
 {
 	struct irpc_request *irpc;
 
-	irpc = idr_find(msg_ctx->idr, m->header.callid);
+	irpc = (struct irpc_request *)idr_find(msg_ctx->idr, m->header.callid);
 	if (irpc == NULL) return;
 
 	/* parse the reply data */

@@ -151,7 +151,7 @@ static int do_global_checks(void)
 	ret = do_global_checks();
 
 	for (s=0;s<lp_numservices();s++) {
-		struct service *service = lp_servicebynum(s);
+		struct loadparm_service *service = lp_servicebynum(s);
 		if (service != NULL)
 			if (strlen(lp_servicename(lp_servicebynum(s))) > 12) {
 				fprintf(stderr, "WARNING: You have some share names that are longer than 12 characters.\n" );
@@ -162,7 +162,7 @@ static int do_global_checks(void)
 	}
 
 	for (s=0;s<lp_numservices();s++) {
-		struct service *service = lp_servicebynum(s);
+		struct loadparm_service *service = lp_servicebynum(s);
 		if (service != NULL) {
 			const char **deny_list = lp_hostsdeny(service);
 			const char **allow_list = lp_hostsallow(service);
@@ -199,7 +199,7 @@ static int do_global_checks(void)
 			getc(stdin);
 		}
 		if (section_name || parameter_name) {
-			struct service *service = NULL;
+			struct loadparm_service *service = NULL;
 			if (!section_name) {
 				section_name = GLOBAL_NAME;
 				service = NULL;
@@ -223,7 +223,7 @@ static int do_global_checks(void)
 	if(cname && caddr){
 		/* this is totally ugly, a real `quick' hack */
 		for (s=0;s<lp_numservices();s++) {
-			struct service *service = lp_servicebynum(s);
+			struct loadparm_service *service = lp_servicebynum(s);
 			if (service != NULL) {
 				if (allow_access(NULL, lp_hostsdeny(NULL), lp_hostsallow(NULL), cname, caddr)
 				    && allow_access(NULL, lp_hostsdeny(service), lp_hostsallow(service), cname, caddr)) {

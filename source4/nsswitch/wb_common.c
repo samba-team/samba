@@ -613,13 +613,13 @@ NSS_STATUS winbindd_request(int req_type,
  enable them
  ************************************************************************/
  
-BOOL winbind_off( void )
+bool winbind_off( void )
 {
 	setenv(WINBINDD_DONT_ENV, "1", 1);
 	return True;
 }
 
-BOOL winbind_on( void )
+bool winbind_on( void )
 {
 	setenv(WINBINDD_DONT_ENV, "0", 1);
 	return True;

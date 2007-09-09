@@ -126,7 +126,8 @@ static WERROR local_open_key(TALLOC_CTX *mem_ctx,
 WERROR local_get_predefined_key (const struct registry_context *ctx, 
 	  uint32_t key_id, struct registry_key **key) 
 {	
-	struct registry_local *rctx = talloc_get_type(ctx, struct registry_local);
+	struct registry_local *rctx = talloc_get_type(ctx, 
+						      struct registry_local);
 	struct mountpoint *mp;
 
 	for (mp = rctx->mountpoints; mp != NULL; mp = mp->next) {

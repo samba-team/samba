@@ -211,8 +211,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *call
 			close(fd);
 			return WERR_GENERAL_FAILURE;
 		}
-		data.length = length;
-		data.data = talloc_memdup(mem_ctx, buf, length);
+		data = data_blob_talloc(mem_ctx, buf, length);
 		
 		/* Check if delimiter is in place (whine if it isn't) */
 		buf_ptr = buf;
