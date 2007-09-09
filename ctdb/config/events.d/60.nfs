@@ -58,7 +58,6 @@ case $cmd in
 
 	/bin/rm -f /etc/ctdb/state/statd/ip/$ip
 
-	#XXX we should only RST our local ports here
 	# RST all tcp connections to the lockmanager
 	[ ! -z "$LOCKD_TCPPORT" ] && {
 	        # RST all tcp connections used for NLM to ensure that they do
@@ -75,9 +74,9 @@ case $cmd in
 	} > /dev/null 2>&1
 
 
-        # RST all tcp connections used for NFS to ensure that they do
-	# not survive in ESTABLISHED state across a failover/failback
-	# and create an ack storm
+        # RST the local side for all tcp connections used for NFS to ensure 
+	# that they do not survive in ESTABLISHED state across a 
+	# failover/failback and create an ack storm
 	netstat -tn |egrep "^tcp.*\s+$ip:2049\s+.*ESTABLISHED" | awk '{print $4" "$5}' | while read dest src; do
 		srcip=`echo $src | cut -d: -f1`
 		srcport=`echo $src | cut -d: -f2`
