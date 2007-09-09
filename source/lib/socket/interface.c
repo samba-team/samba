@@ -75,12 +75,13 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 {
 	struct interface *iface;
 	struct ipv4_addr bcast;
-	if (iface_find(ip, False)) {
+
+	if (iface_find(ip, false)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
 		return;
 	}
 
-	iface = talloc(local_interfaces, struct interface);
+	iface = talloc(local_interfaces == NULL ? talloc_autofree_context() : local_interfaces, struct interface);
 	if (!iface) return;
 	
 	ZERO_STRUCTPN(iface);
