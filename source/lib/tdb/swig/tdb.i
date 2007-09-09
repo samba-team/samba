@@ -149,6 +149,4 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 
-int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state);
-
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
