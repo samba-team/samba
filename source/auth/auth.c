@@ -455,13 +455,14 @@ NTSTATUS auth_register(const struct auth_operations *ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	backends = realloc_p(backends, struct auth_backend, num_backends+1);
-	if (!backends) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	backends = talloc_realloc(talloc_autofree_context(), backends, 
+				  struct auth_backend, num_backends+1);
+	NT_STATUS_HAVE_NO_MEMORY(backends);
 
-	new_ops = smb_xmemdup(ops, sizeof(*ops));
-	new_ops->name = smb_xstrdup(ops->name);
+	new_ops = talloc_memdup(backends, ops, sizeof(*ops));
+	NT_STATUS_HAVE_NO_MEMORY(new_ops);
+	new_ops->name = talloc_strdup(new_ops, ops->name);
+	NT_STATUS_HAVE_NO_MEMORY(new_ops->name);
 
 	backends[num_backends].ops = new_ops;
 

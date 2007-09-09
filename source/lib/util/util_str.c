@@ -260,26 +260,6 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 }
 
 /**
- Set a string value, deallocating any existing space, and allocing the space
- for the string
-**/
-_PUBLIC_ bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
-{
-	talloc_free(*dest);
-
-	if (src == NULL) 
-		src = "";
-
-	*dest = talloc_strdup(mem_ctx, src);
-	if ((*dest) == NULL) {
-		DEBUG(0,("Out of memory in string_init\n"));
-		return false;
-	}
-
-	return true;
-}
-
-/**
  Substitute a string for a pattern in another string. Make sure there is 
  enough room!
 

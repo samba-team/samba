@@ -23,6 +23,8 @@
 
 #include "librpc/gen_ndr/nbt.h"
 
+struct substitute_context;
+
 /* 
    smbcli_state: internal state used in libcli library for single-threaded callers, 
    i.e. a single session on a single socket. 

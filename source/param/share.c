@@ -116,12 +116,7 @@ NTSTATUS share_register(const struct share_ops *ops)
 		smb_panic("out of memory in share_register");
 	}
 
-	backends[i] = malloc(sizeof(struct share_ops));
-	if (!backends[i]) {
-		smb_panic("out of memory in share_register");
-	}
-
-	backends[i] = smb_xmemdup(ops, sizeof(*ops));
+	backends[i] = (struct share_ops *)smb_xmemdup(ops, sizeof(*ops));
 	backends[i]->name = smb_xstrdup(ops->name);
 
 	backends[i + 1] = NULL;

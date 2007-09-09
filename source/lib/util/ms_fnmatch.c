@@ -201,11 +201,10 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 		if (pattern[i] == '*' || pattern[i] == '<') count++;
 	}
 
-	max_n = talloc_array(NULL, struct max_n, count);
-	if (!max_n) {
+	max_n = talloc_zero_array(NULL, struct max_n, count);
+	if (max_n == NULL) {
 		return -1;
 	}
-	memset(max_n, 0, sizeof(struct max_n) * count);
 
 	ret = ms_fnmatch_core(pattern, string, max_n, strrchr(string, '.'));
 

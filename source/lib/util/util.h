@@ -28,7 +28,6 @@
  * @brief Helpful macros
  */
 
-struct substitute_context;
 struct smbsrv_tcon;
 
 extern const char *logfile;
@@ -73,7 +72,7 @@ extern const char *panic_action;
  */
 #define SMB_ASSERT(b) do { if (!(b)) { \
 	DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)); \
-	smb_panic("assert failed"); abort(); }} while (0)
+	smb_panic("assert failed"); }} while (0)
 
 #ifndef SAFE_FREE /* Oh no this is also defined in tdb.h */
 /**
@@ -369,12 +368,6 @@ _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_he
  * talloc version of hex_encode()
  */
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
-
-/**
- Set a string value, deallocating any existing space, and allocing the space
- for the string
-**/
-_PUBLIC_ bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src);
 
 /**
  Substitute a string for a pattern in another string. Make sure there is 
@@ -780,8 +773,6 @@ enum protocol_types {
 	PROTOCOL_SMB2
 };
 
-
-
 int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol);
 
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
@@ -838,6 +829,6 @@ _PUBLIC_ int idr_remove(struct idr_context *idp, int id);
 /**
  Become a daemon, discarding the controlling terminal.
 **/
-_PUBLIC_ void become_daemon(bool Fork);
+_PUBLIC_ void become_daemon(bool fork);
 
 #endif /* _SAMBA_UTIL_H_ */

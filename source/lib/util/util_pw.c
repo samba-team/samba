@@ -21,37 +21,26 @@
 
 #include "includes.h"
 
-static struct passwd *alloc_copy_passwd(const struct passwd *from) 
+static struct passwd *alloc_copy_passwd(TALLOC_CTX *mem_ctx, 
+					const struct passwd *from) 
 {
-	struct passwd *ret = smb_xmalloc_p(struct passwd);
-	ZERO_STRUCTP(ret);
-	ret->pw_name = smb_xstrdup(from->pw_name);
-	ret->pw_passwd = smb_xstrdup(from->pw_passwd);
+	struct passwd *ret = talloc_zero(mem_ctx, struct passwd);
+
+	if (ret == NULL)
+		return NULL;
+
+	ret->pw_name = talloc_strdup(ret, from->pw_name);
+	ret->pw_passwd = talloc_strdup(ret, from->pw_passwd);
 	ret->pw_uid = from->pw_uid;
 	ret->pw_gid = from->pw_gid;
-	ret->pw_gecos = smb_xstrdup(from->pw_gecos);
-	ret->pw_dir = smb_xstrdup(from->pw_dir);
-	ret->pw_shell = smb_xstrdup(from->pw_shell);
+	ret->pw_gecos = talloc_strdup(ret, from->pw_gecos);
+	ret->pw_dir = talloc_strdup(ret, from->pw_dir);
+	ret->pw_shell = talloc_strdup(ret, from->pw_shell);
+
 	return ret;
 }
 
-void passwd_free (struct passwd **buf)
-{
-	if (!*buf) {
-		DEBUG(0, ("attempted double-free of allocated passwd\n"));
-		return;
-	}
-
-	SAFE_FREE((*buf)->pw_name);
-	SAFE_FREE((*buf)->pw_passwd);
-	SAFE_FREE((*buf)->pw_gecos);
-	SAFE_FREE((*buf)->pw_dir);
-	SAFE_FREE((*buf)->pw_shell);
-
-	SAFE_FREE(*buf);
-}
-
-struct passwd *getpwnam_alloc(const char *name) 
+struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name) 
 {
 	struct passwd *temp;
 
@@ -66,10 +55,10 @@ struct passwd *getpwnam_alloc(const char *name)
 		return NULL;
 	}
 
-	return alloc_copy_passwd(temp);
+	return alloc_copy_passwd(mem_ctx, temp);
 }
 
-struct passwd *getpwuid_alloc(uid_t uid) 
+struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) 
 {
 	struct passwd *temp;
 
@@ -84,5 +73,5 @@ struct passwd *getpwuid_alloc(uid_t uid)
 		return NULL;
 	}
 
-	return alloc_copy_passwd(temp);
+	return alloc_copy_passwd(mem_ctx, temp);
 }
