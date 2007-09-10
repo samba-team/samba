@@ -1682,7 +1682,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		struct lock_struct *locks = br_lck->lock_data;
 		DEBUG(10,("brl_get_locks_internal: %u current locks on file_id %s\n",
 			br_lck->num_locks,
-			  file_id_static_string(&fsp->file_id)));
+			  file_id_string_tos(&fsp->file_id)));
 		for( i = 0; i < br_lck->num_locks; i++) {
 			print_lock_struct(i, &locks[i]);
 		}

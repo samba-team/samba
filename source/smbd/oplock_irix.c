@@ -154,7 +154,7 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
      
 	DEBUG(5,("irix_oplock_receive_message: kernel oplock break request "
 		 "received for file_id %s gen_id = %ul",
-		 file_id_static_string(&fsp->file_id),
+		 file_id_string_tos(&fsp->file_id),
 		 fsp->fh->gen_id ));
 
 	return fsp;
@@ -171,7 +171,7 @@ static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 			DEBUG(0,("irix_set_kernel_oplock: Unable to get "
 				 "kernel oplock on file %s, file_id %s "
 				 "gen_id = %ul. Error was %s\n", 
-				 fsp->fsp_name, file_id_static_string(&fsp->file_id), 
+				 fsp->fsp_name, file_id_string_tos(&fsp->file_id), 
 				 fsp->fh->gen_id,
 				 strerror(errno) ));
 		} else {
@@ -180,7 +180,7 @@ static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 				 "gen_id = %ul. Another process had the file "
 				 "open.\n",
 				 fsp->fsp_name, fsp->fh->fd,
-				 file_id_static_string(&fsp->file_id),
+				 file_id_string_tos(&fsp->file_id),
 				 fsp->fh->gen_id ));
 		}
 		return False;
@@ -188,7 +188,7 @@ static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 	
 	DEBUG(10,("irix_set_kernel_oplock: got kernel oplock on file %s, file_id = %s "
 		  "gen_id = %ul\n",
-		  fsp->fsp_name, file_id_static_string(&fsp->file_id),
+		  fsp->fsp_name, file_id_string_tos(&fsp->file_id),
 		  fsp->fh->gen_id));
 
 	return True;
@@ -208,7 +208,7 @@ static void irix_release_kernel_oplock(files_struct *fsp)
 		int state = sys_fcntl_long(fsp->fh->fd, F_OPLKACK, -1);
 		dbgtext("irix_release_kernel_oplock: file %s, file_id = %s"
 			"gen_id = %ul, has kernel oplock state "
-			"of %x.\n", fsp->fsp_name, file_id_static_string(&fsp->file_id),
+			"of %x.\n", fsp->fsp_name, file_id_string_tos(&fsp->file_id),
                         fsp->fh->gen_id, state );
 	}
 
@@ -221,7 +221,7 @@ static void irix_release_kernel_oplock(files_struct *fsp)
 				"removing kernel oplock on file " );
 			dbgtext("%s, file_id = %s gen_id = %ul. "
 				"Error was %s\n",
-				fsp->fsp_name, file_id_static_string(&fsp->file_id),
+				fsp->fsp_name, file_id_string_tos(&fsp->file_id),
 				fsp->fh->gen_id,
 				strerror(errno) );
 		}

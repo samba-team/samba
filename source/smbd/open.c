@@ -2343,7 +2343,7 @@ void msg_file_was_renamed(struct messaging_context *msg,
 
 	DEBUG(10,("msg_file_was_renamed: Got rename message for sharepath %s, new name %s, "
 		"file_id %s\n",
-		  sharepath, newname, file_id_static_string(&id)));
+		  sharepath, newname, file_id_string_tos(&id)));
 
 	for(fsp = file_find_di_first(id); fsp; fsp = file_find_di_next(fsp)) {
 		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {

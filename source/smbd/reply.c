@@ -5017,7 +5017,7 @@ static void rename_open_files(connection_struct *conn,
 			continue;
 		}
 		DEBUG(10,("rename_open_files: renaming file fnum %d (file_id %s) from %s -> %s\n",
-			  fsp->fnum, file_id_static_string(&fsp->file_id),
+			  fsp->fnum, file_id_string_tos(&fsp->file_id),
 			fsp->fsp_name, newname ));
 		string_set(&fsp->fsp_name, newname);
 		did_rename = True;
@@ -5025,7 +5025,7 @@ static void rename_open_files(connection_struct *conn,
 
 	if (!did_rename) {
 		DEBUG(10,("rename_open_files: no open files on file_id %s for %s\n",
-			  file_id_static_string(&lck->id), newname ));
+			  file_id_string_tos(&lck->id), newname ));
 	}
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */

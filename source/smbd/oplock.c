@@ -119,7 +119,7 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 
 	DEBUG(5,("set_file_oplock: granted oplock on file %s, %s/%lu, "
 		    "tv_sec = %x, tv_usec = %x\n",
-		 fsp->fsp_name, file_id_static_string(&fsp->file_id),
+		 fsp->fsp_name, file_id_string_tos(&fsp->file_id),
 		 fsp->fh->gen_id, (int)fsp->open_time.tv_sec,
 		 (int)fsp->open_time.tv_usec ));
 
@@ -192,7 +192,7 @@ BOOL remove_oplock(files_struct *fsp)
 	if (!ret) {
 		DEBUG(0,("remove_oplock: failed to remove share oplock for "
 			 "file %s fnum %d, %s\n",
-			 fsp->fsp_name, fsp->fnum, file_id_static_string(&fsp->file_id)));
+			 fsp->fsp_name, fsp->fnum, file_id_string_tos(&fsp->file_id)));
 	}
 	release_file_oplock(fsp);
 	TALLOC_FREE(lck);
@@ -217,7 +217,7 @@ BOOL downgrade_oplock(files_struct *fsp)
 	if (!ret) {
 		DEBUG(0,("downgrade_oplock: failed to downgrade share oplock "
 			 "for file %s fnum %d, file_id %s\n",
-			 fsp->fsp_name, fsp->fnum, file_id_static_string(&fsp->file_id)));
+			 fsp->fsp_name, fsp->fnum, file_id_string_tos(&fsp->file_id)));
 	}
 
 	downgrade_file_oplock(fsp);
@@ -289,7 +289,7 @@ static files_struct *initial_break_processing(struct file_id id, unsigned long f
 
 	if( DEBUGLVL( 3 ) ) {
 		dbgtext( "initial_break_processing: called for %s/%u\n",
-			 file_id_static_string(&id), (int)file_id);
+			 file_id_string_tos(&id), (int)file_id);
 		dbgtext( "Current oplocks_open (exclusive = %d, levelII = %d)\n",
 			exclusive_oplocks_open, level_II_oplocks_open );
 	}
@@ -306,7 +306,7 @@ static files_struct *initial_break_processing(struct file_id id, unsigned long f
 		/* The file could have been closed in the meantime - return success. */
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "initial_break_processing: cannot find open file with " );
-			dbgtext( "file_id %s gen_id = %lu", file_id_static_string(&id), file_id);
+			dbgtext( "file_id %s gen_id = %lu", file_id_string_tos(&id), file_id);
 			dbgtext( "allowing break to succeed.\n" );
 		}
 		return NULL;
@@ -326,7 +326,7 @@ static files_struct *initial_break_processing(struct file_id id, unsigned long f
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "initial_break_processing: file %s ", fsp->fsp_name );
 			dbgtext( "(file_id = %s gen_id = %lu) has no oplock.\n",
-				 file_id_static_string(&id), fsp->fh->gen_id );
+				 file_id_string_tos(&id), fsp->fh->gen_id );
 			dbgtext( "Allowing break to succeed regardless.\n" );
 		}
 		return NULL;
@@ -405,7 +405,7 @@ static void process_oplock_async_level2_break_message(struct messaging_context *
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock async level 2 break message from pid %d: %s/%lu\n",
-		   (int)procid_to_pid(&src), file_id_static_string(&msg.id), msg.share_file_id));
+		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id), msg.share_file_id));
 
 	fsp = initial_break_processing(msg.id, msg.share_file_id);
 
@@ -493,7 +493,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock break message from pid %d: %s/%lu\n",
-		   (int)procid_to_pid(&src), file_id_static_string(&msg.id), msg.share_file_id));
+		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id), msg.share_file_id));
 
 	fsp = initial_break_processing(msg.id, msg.share_file_id);
 
@@ -523,7 +523,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	if (EXCLUSIVE_OPLOCK_TYPE(msg.op_type) &&
 	    !EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(3, ("Already downgraded oplock on %s: %s\n",
-			  file_id_static_string(&fsp->file_id),
+			  file_id_string_tos(&fsp->file_id),
 			  fsp->fsp_name));
 		/* We just send the same message back. */
 		messaging_send_buf(msg_ctx, src, MSG_SMB_BREAK_RESPONSE,
@@ -605,7 +605,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	file_id = (unsigned long)IVAL(data->data, 16);
 
 	DEBUG(10, ("Got kernel oplock break message from pid %d: %s/%u\n",
-		   (int)procid_to_pid(&src), file_id_static_string(&id),
+		   (int)procid_to_pid(&src), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
 	fsp = initial_break_processing(id, file_id);
@@ -695,7 +695,7 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock break response from pid %d: %s/%lu mid %u\n",
-		   (int)procid_to_pid(&src), file_id_static_string(&msg.id), msg.share_file_id,
+		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id), msg.share_file_id,
 		   (unsigned int)msg.op_mid));
 
 	/* Here's the hack from open.c, store the mid in the 'port' field */
@@ -724,7 +724,7 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got open retry msg from pid %d: %s mid %u\n",
-		   (int)procid_to_pid(&src), file_id_static_string(&msg.id),
+		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id),
 		   (unsigned int)msg.op_mid));
 
 	schedule_deferred_open_smb_message(msg.op_mid);

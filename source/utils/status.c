@@ -214,7 +214,7 @@ static void print_brl(struct file_id id,
 	}
 
 	d_printf("%-10s %-15s %-4s %-9.0f %-9.0f %-24s %-24s\n", 
-		 procid_str_static(&pid), file_id_static_string(&id),
+		 procid_str_static(&pid), file_id_string_tos(&id),
 		 desc,
 		 (double)start, (double)size,
 		 sharepath, fname);

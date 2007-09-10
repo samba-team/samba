@@ -273,8 +273,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		DEBUG(5,("close_remove_share_mode: file %s. stored file_id %s, "
 			 "stat file_id %s\n",
 			 fsp->fsp_name,
-			 file_id_static_string(&fsp->file_id),
-			 file_id_static_string2(&id)));
+			 file_id_string_tos(&fsp->file_id),
+			 file_id_string_tos(&id)));
 		/*
 		 * Don't save the errno here, we ignore this error
 		 */

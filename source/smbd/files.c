@@ -233,7 +233,7 @@ void file_dump_open_table(void)
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, gen = %lu, fileid=%s\n",
 			count, fsp->fnum, fsp->fsp_name, fsp->fh->fd, (unsigned long)fsp->fh->gen_id,
-			  file_id_static_string(&fsp->file_id)));
+			  file_id_string_tos(&fsp->file_id)));
 	}
 }
 
@@ -280,7 +280,7 @@ files_struct *file_find_dif(struct file_id id, unsigned long gen_id)
 			    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
 				DEBUG(0,("file_find_dif: file %s file_id = %s, gen = %u \
 oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, 
-					 file_id_static_string(&fsp->file_id),
+					 file_id_string_tos(&fsp->file_id),
 					 (unsigned int)fsp->fh->gen_id,
 					 (unsigned int)fsp->oplock_type ));
 				smb_panic("file_find_dif");

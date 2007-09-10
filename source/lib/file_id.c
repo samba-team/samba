@@ -55,25 +55,11 @@ BOOL file_id_equal(const struct file_id *id1, const struct file_id *id2)
 /*
   a static string for a file_id structure
  */
-const char *file_id_static_string(const struct file_id *id)
+const char *file_id_string_tos(const struct file_id *id)
 {
-	static char buf[32];
-	snprintf(buf, sizeof(buf), "%llx:%llx", 
-		 (unsigned long long)id->devid, 
-		 (unsigned long long)id->inode);
-	return buf;
-}
-
-/*
-  a 2nd static string for a file_id structure so we can print 2 at once
- */
-const char *file_id_static_string2(const struct file_id *id)
-{
-	static char buf[32];
-	snprintf(buf, sizeof(buf), "%llx:%llx", 
-		 (unsigned long long)id->devid, 
-		 (unsigned long long)id->inode);
-	return buf;
+	return talloc_asprintf(talloc_tos(), "%llx:%llx", 
+			       (unsigned long long)id->devid, 
+			       (unsigned long long)id->inode);
 }
 
 /*
