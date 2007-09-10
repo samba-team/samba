@@ -48,7 +48,7 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
 <div id="banner">
   <div class="stripe"></div>
   <div class="logout">
-  <b>logged in as @@session.authinfo.username</b>
+  <b>logged in as @@session.authinfo.username</b> (@@session.authinfo.user_class)
   <form method="post" action="/logout.esp@@global.SESSIONURI">
   <input type="submit" value="Logout" />
   </form>
