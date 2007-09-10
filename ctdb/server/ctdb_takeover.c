@@ -457,7 +457,6 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 	for (i=0;i<nlines;i++) {
 		unsigned mask;
 		struct sockaddr_in addr;
-		char ifacebuf[100];
 		const char *iface;
 		char *tok;
 
@@ -477,7 +476,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 			}
 			iface = ctdb->default_public_interface;
 		} else {
-			iface = ifacebuf;
+			iface = tok;
 		}
 
 		if (add_public_address(ctdb, addr, mask, iface)) {
