@@ -432,14 +432,21 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		if (ret != 0) {
 			struct ldb_dn *first_try_dn = msg->dn;
 			/* Try again with the default DN */
-			msg->dn = talloc_steal(msg, msgs[0]->dn);
-			ret = samdb_add(state->sam_ldb, mem_ctx, msg);
-			if (ret != 0) {
-				*error_string = talloc_asprintf(mem_ctx, "Failed to create user record.  Tried both %s and %s: %s",
+			if (!remote_msgs) {
+				*error_string = talloc_asprintf(mem_ctx, "Failed to create user record.  Tried %s: %s",
 								ldb_dn_get_linearized(first_try_dn),
-								ldb_dn_get_linearized(msg->dn),
 								ldb_errstring(state->sam_ldb));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			} else {
+				msg->dn = talloc_steal(msg, remote_msgs[0]->dn);
+				ret = samdb_add(state->sam_ldb, mem_ctx, msg);
+				if (ret != 0) {
+					*error_string = talloc_asprintf(mem_ctx, "Failed to create user record.  Tried both %s and %s: %s",
+									ldb_dn_get_linearized(first_try_dn),
+									ldb_dn_get_linearized(msg->dn),
+									ldb_errstring(state->sam_ldb));
+					return NT_STATUS_INTERNAL_DB_CORRUPTION;
+				}
 			}
 		}
 	} else {
