@@ -3232,6 +3232,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 
 	case 17:
 		QUERY_UINT64(msg, info17.acct_expiry,   "accountExpires");
+		break;
 
 	case 20:
 		QUERY_STRING(msg, info20.parameters,    "userParameters");
