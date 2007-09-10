@@ -13,6 +13,7 @@ RPC-HANDLES.*/mixed-shared
 RPC-EPMAPPER.*/Insert
 RPC-EPMAPPER.*/InqObject
 RPC-DFS.*
+RPC-DRSUAPI.*
 RPC-LSALOOKUP
 RPC-CRACKNAMES
 blackbox.smbclient.*USER and PASSWD
@@ -26,11 +27,5 @@ RPC-NETLOGON.*/LogonControl2
 RPC-NETLOGON.*/GetAnyDCName
 RPC-NETLOGON.*/DsrEnumerateDomainTrusts
 RPC-NETLOGON.*/DsrGetDcSiteCoverageW
-RPC-DRSUAPI.*/DsReplicaUpdateRefs
-RPC-DRSUAPI.*/DsReplicaGetInfo
-RPC-DRSUAPI.*/DsCrackNames
-RPC-DRSUAPI.*/DsGetDomainControllerInfo
-RPC-DRSUAPI.*/QuerySitesByCost
-RPC-DRSUAPI.*/DsGetNCChange
 BASE-CHARSET.*/Testing partial surrogate
 .*NET-API-DELSHARE.*				# DelShare isn't implemented yet
