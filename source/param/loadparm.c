@@ -1580,10 +1580,10 @@ static void init_globals(BOOL first_time_only)
 	Globals.bStatCache = True;	/* use stat cache by default */
 	Globals.iMaxStatCacheSize = 1024; /* one Meg by default. */
 	Globals.restrict_anonymous = 0;
-	Globals.bClientLanManAuth = True;	/* Do use the LanMan hash if it is available */
-	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
-	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
-	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
+	Globals.bClientLanManAuth = False;	/* Do NOT use the LanMan hash if it is available */
+	Globals.bClientPlaintextAuth = False;	/* Do NOT use a plaintext password even if is requested by the server */
+	Globals.bLanmanAuth = False;	/* Do NOT use the LanMan hash, even if it is supplied */
+	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
 	Globals.bClientNTLMv2Auth = False; /* Client should not use NTLMv2, as we can't tell that the server supports it. */
 	/* Note, that we will use NTLM2 session security (which is different), if it is available */
 
