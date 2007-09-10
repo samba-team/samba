@@ -57,9 +57,11 @@ BOOL file_id_equal(const struct file_id *id1, const struct file_id *id2)
  */
 const char *file_id_string_tos(const struct file_id *id)
 {
-	return talloc_asprintf(talloc_tos(), "%llx:%llx", 
-			       (unsigned long long)id->devid, 
-			       (unsigned long long)id->inode);
+	char *result = talloc_asprintf(talloc_tos(), "%llx:%llx", 
+				       (unsigned long long)id->devid, 
+				       (unsigned long long)id->inode);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /*
