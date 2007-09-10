@@ -1483,7 +1483,7 @@ static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *ha
 
 	do_log(SMB_VFS_OP_FILE_ID_CREATE,
 	       !file_id_equal(&id_zero, &result),
-	       handle, "%s", file_id_static_string(&result));
+	       handle, "%s", file_id_string_tos(&result));
 
 	return result;
 }

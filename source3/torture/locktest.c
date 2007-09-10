@@ -138,7 +138,7 @@ static void print_brl(struct file_id id,
 #endif
 
 	printf("%s   %s    %s  %.0f:%.0f(%.0f)\n", 
-	       procid_str_static(&pid), file_id_static_string(&id),
+	       procid_str_static(&pid), file_id_string_tos(&id),
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)start+size-1,(double)size);
 

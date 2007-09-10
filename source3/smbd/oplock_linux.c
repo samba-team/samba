@@ -168,14 +168,14 @@ static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
 			 "fd = %d, file_id = %s. (%s)\n",
 			 fsp->fsp_name, fsp->fh->fd, 
-			 file_id_static_string(&fsp->file_id),
+			 file_id_string_tos(&fsp->file_id),
 			 strerror(errno)));
 		return False;
 	}
 	
 	DEBUG(3,("linux_set_kernel_oplock: got kernel oplock on file %s, "
 		 "file_id = %s gen_id = %lu\n",
-		 fsp->fsp_name, file_id_static_string(&fsp->file_id),
+		 fsp->fsp_name, file_id_string_tos(&fsp->file_id),
 		 fsp->fh->gen_id));
 
 	return True;
@@ -195,7 +195,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		int state = fcntl(fsp->fh->fd, F_GETLEASE, 0);
 		dbgtext("linux_release_kernel_oplock: file %s, file_id = %s "
 			"gen_id = %lu has kernel oplock state "
-			"of %x.\n", fsp->fsp_name, file_id_static_string(&fsp->file_id),
+			"of %x.\n", fsp->fsp_name, file_id_string_tos(&fsp->file_id),
 			fsp->fh->gen_id, state );
 	}
 
@@ -208,7 +208,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 				"removing kernel oplock on file " );
 			dbgtext("%s, file_id = %s, gen_id = %lu. "
 				"Error was %s\n", fsp->fsp_name,
-				file_id_static_string(&fsp->file_id),
+				file_id_string_tos(&fsp->file_id),
 				fsp->fh->gen_id, strerror(errno) );
 		}
 	}
