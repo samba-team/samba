@@ -194,7 +194,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 {
 	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *ctdb_db, *tmp_db;
-	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
+	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	int ret;
 
 	/* If the node is inactive it is not part of the cluster
@@ -254,7 +254,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	/* open the database */
 	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s.%u", 
 					   ctdb->db_directory, 
-					   db_name, ctdb->vnn);
+					   db_name, ctdb->pnn);
 
 	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 
 				      ctdb->tunable.database_hash_size, 
@@ -308,7 +308,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode)
 {
 	struct ctdb_db_context *ctdb_db;
-	if (srcnode == ctdb->vnn) {
+	if (srcnode == ctdb->pnn) {
 		/* don't update ourselves! */
 		return 0;
 	}

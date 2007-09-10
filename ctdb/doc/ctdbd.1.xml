@@ -27,7 +27,6 @@
 		<arg choice="opt">--usage</arg>
 		<arg choice="opt">-i --interactive</arg>
 		<arg choice="opt">--public-addresses=&lt;filename&gt;</arg>
-		<arg choice="opt">--public-interface=&lt;interface&gt;</arg>
 		<arg choice="opt">--event-script=&lt;filename&gt;</arg>
 		<arg choice="opt">--logfile=&lt;filename&gt;</arg>
 		<arg choice="opt">--listen=&lt;address&gt;</arg>
@@ -122,18 +121,10 @@
       <varlistentry><term>--public_addresses=&lt;filename&gt;</term>
         <listitem>
           <para>
-            When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains one entry for each node in the cluster.
+            When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it iwll distribute these public ip addresses evenly across the availabel nodes.
           </para>
           <para>
             This is usually the file /etc/ctdb/public_addresses
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--public-interface=&lt;interface&gt;</term>
-        <listitem>
-          <para>
-            When used with IP takeover this option specifies which physical interface should be used to attach the public addresses to.
           </para>
         </listitem>
       </varlistentry>
@@ -216,7 +207,7 @@
   <refsect1><title>Private vs Public addresses</title>
     <para>
       When used for ip takeover in a HA environment, each node in a ctdb 
-      cluster has two ip addresses assigned to it. One private and one public.
+      cluster has multiple ip addresses assigned to it. One private and one or more public.
     </para>
 
     <refsect2><title>Private address</title>
@@ -262,7 +253,7 @@
       </para>
       <para>
         The ctdb cluster will assign/reassign these public addresses across the
-        available nodes in the cluster. When one node fails, its public address
+        available healthy nodes in the cluster. When one node fails, its public address
         will be migrated to and taken over by a different node in the cluster
         to ensure that all public addresses are always available to clients.
       </para>
@@ -272,33 +263,26 @@
         public addresses and which physical node is currently serving it.
       </para>
       <para>
-        By default, each node will when operational always serve its primary 
-        public address which is the corresponding line for that node number 
-        in the public addresses file. I.e. as long as node X is available and
-        fully oprational it will always be the node that serves the 
-        corresponding public address.
-      </para>
-      <para>
-        The list of public addresses also contain the netmask for that address.
-        the reason for this is because ctdbd needs to know which mask to use
-        when it adds/removes the address from a physical node. This netmask
-        is also used by ctdbd when making decisions on which node should take
-        over a public ip address for a failed node.
-        A node will only be allowed to take over a public address from a
-        different node IFF that public address resides in the same subnet
-        as the primary public address for that node.
+        The list of public addresses also contain the netmask and the 
+	interface where this address should be attached.
       </para>
       Example /etc/ctdb/public_addresses for a four node cluster:
       <screen format="linespecific">
-        11.1.1.1/24
-        11.1.1.2/24
-        11.1.2.1/24
-        11.1.2.2/24
+        11.1.1.1/24 eth0
+        11.1.1.2/24 eth0
+        11.1.2.1/24 eth1
+        11.1.2.2/24 eth1
       </screen>
       <para>
-        In this example, if node 3 fails, its public address can be taken over 
-        by node 2 since node 2 is on the same subnet as 3 but not by node 0 or 
-        node 1 since node 0 and 1 are both on a different subnet from node 3.
+        In this example, two nodes in the cluster will serve 11.1.1.1 and 
+	11.1.1.2 through interface eth0  and two (possibly other) nodes will
+	serve 11.1.2.1 and 11.1.2.2 through eth1.
+      </para>
+      <para>
+        The public address file must be the same on all nodes.
+	Since this file also specifies which interface the address should be 
+	attached to it is imporant that all nodes use the same naming convention
+	for interfaces.
       </para>
     </refsect2>
   </refsect1>

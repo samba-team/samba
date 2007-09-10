@@ -141,8 +141,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_PID:
 		return getpid();
 
-	case CTDB_CONTROL_GET_VNN:
-		return ctdb->vnn;
+	case CTDB_CONTROL_GET_PNN:
+		return ctdb->pnn;
 
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -289,7 +289,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_kill_tcp(ctdb, indata);
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct sockaddr_in));
 		return ctdb_control_get_tcp_tickle_list(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
@@ -393,8 +393,8 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_control_state);
 	if (state == NULL) {
-		DEBUG(0,("vnn %u Invalid reqid %u in ctdb_reply_control\n",
-			 ctdb->vnn, hdr->reqid));
+		DEBUG(0,("pnn %u Invalid reqid %u in ctdb_reply_control\n",
+			 ctdb->pnn, hdr->reqid));
 		return;
 	}
 
@@ -469,7 +469,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	if (destnode != CTDB_BROADCAST_VNNMAP && 
 	    destnode != CTDB_BROADCAST_ALL && 
 	    destnode != CTDB_BROADCAST_CONNECTED && 
-	    (!ctdb_validate_vnn(ctdb, destnode) || 
+	    (!ctdb_validate_pnn(ctdb, destnode) || 
 	     (ctdb->nodes[destnode]->flags & NODE_FLAGS_DISCONNECTED))) {
 		if (!(flags & CTDB_CTRL_FLAG_NOREPLY)) {
 			callback(ctdb, -1, tdb_null, "ctdb_control to disconnected node", private_data);

@@ -55,7 +55,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	hdr->operation    = operation;
 	hdr->ctdb_magic   = CTDB_MAGIC;
 	hdr->ctdb_version = CTDB_VERSION;
-	hdr->srcnode      = ctdb->vnn;
+	hdr->srcnode      = ctdb->pnn;
 	if (ctdb->vnn_map) {
 		hdr->generation = ctdb->vnn_map->generation;
 	}
@@ -109,7 +109,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 
 	/* we need to force the record to be written out if this was a remote access,
 	   so that the lacount is updated */
-	if (c->new_data == NULL && header->laccessor != ctdb->vnn) {
+	if (c->new_data == NULL && header->laccessor != ctdb->pnn) {
 		c->new_data = &c->record_data;
 	}
 
@@ -365,7 +365,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 	state->call = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->vnn);
+	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->pnn);
 
 	return state;
 }
@@ -400,7 +400,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 
-	if (ret == 0 && header.dmaster == ctdb->vnn) {
+	if (ret == 0 && header.dmaster == ctdb->pnn) {
 		state = ctdb_client_call_local_send(ctdb_db, call, &header, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call->key);
@@ -509,7 +509,7 @@ int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void 
 /*
   send a message - from client context
  */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		      uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;
@@ -520,7 +520,7 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			       len, struct ctdb_req_message);
 	CTDB_NO_MEMORY(ctdb, r);
 
-	r->hdr.destnode  = vnn;
+	r->hdr.destnode  = pnn;
 	r->srvid         = srvid;
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
@@ -618,7 +618,7 @@ again:
 
 	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
 
-	if (ret != 0 || h->header.dmaster != ctdb_db->ctdb->vnn) {
+	if (ret != 0 || h->header.dmaster != ctdb_db->ctdb->pnn) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		ret = ctdb_client_force_migration(ctdb_db, key);
 		if (ret != 0) {
@@ -1192,7 +1192,7 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_NODEMAP, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
+	if (ret != 0 || res != 0 || outdata.dsize == 0) {
 		DEBUG(0,(__location__ " ctdb_control for getnodes failed\n"));
 		return -1;
 	}
@@ -1540,7 +1540,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 
 	for (i=0;i<map->num;i++) {
 		if (!(map->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
-			nodes[*num_nodes] = map->nodes[i].vnn;
+			nodes[*num_nodes] = map->nodes[i].pnn;
 			(*num_nodes)++;
 		}
 	}
@@ -1869,18 +1869,18 @@ int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t d
 }
 
 /*
-  get vnn of a node, or -1
+  get pnn of a node, or -1
  */
-int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
 {
 	int ret;
 	int32_t res;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_VNN, 0, tdb_null, 
+			   CTDB_CONTROL_GET_PNN, 0, tdb_null, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getvnn failed\n"));
+		DEBUG(0,(__location__ " ctdb_control for getpnn failed\n"));
 		return -1;
 	}
 
@@ -2300,15 +2300,16 @@ int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
  */
 int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 
 			      struct timeval timeout, uint32_t destnode, 
-			      TALLOC_CTX *mem_ctx, uint32_t vnn,
+			      TALLOC_CTX *mem_ctx, 
+			      struct sockaddr_in *ip,
 			      struct ctdb_control_tcp_tickle_list **list)
 {
 	int ret;
 	TDB_DATA data, outdata;
 	int32_t status;
 
-	data.dptr = (uint8_t*)&vnn;
-	data.dsize = sizeof(vnn);
+	data.dptr = (uint8_t*)ip;
+	data.dsize = sizeof(struct sockaddr_in);
 
 	ret = ctdb_control(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_TCP_TICKLE_LIST, 0, data, 
@@ -2473,10 +2474,10 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
 }
 
 /*
-  return the vnn of this node
+  return the pnn of this node
 */
-uint32_t ctdb_get_vnn(struct ctdb_context *ctdb)
+uint32_t ctdb_get_pnn(struct ctdb_context *ctdb)
 {
-	return ctdb->vnn;
+	return ctdb->pnn;
 }
 

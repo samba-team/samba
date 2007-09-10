@@ -124,10 +124,10 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 		return NULL;
 	}
 
-	/* get our vnn */
-	ctdb->vnn = ctdb_ctrl_getvnn(ctdb, timeval_current_ofs(3, 0), CTDB_CURRENT_NODE);
-	if (ctdb->vnn == (uint32_t)-1) {
-		DEBUG(0,(__location__ " Failed to get ctdb vnn\n"));
+	/* get our pnn */
+	ctdb->pnn = ctdb_ctrl_getpnn(ctdb, timeval_current_ofs(3, 0), CTDB_CURRENT_NODE);
+	if (ctdb->pnn == (uint32_t)-1) {
+		DEBUG(0,(__location__ " Failed to get ctdb pnn\n"));
 		talloc_free(ctdb);
 		return NULL;
 	}

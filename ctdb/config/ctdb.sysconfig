@@ -5,16 +5,15 @@
 # there is no default
 # CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 
-# should ctdb do IP takeover? If it should, then specify a file
+# Should ctdb do IP takeover? If it should, then specify a file
 # containing the list of public IP addresses that ctdb will manage
 # Note that these IPs must be different from those in $NODES above
-# there is no default
+# there is no default.
+# The syntax is one line per public address of the form :
+#   <ipaddress>/<netmask> <interface>
+# Example: 10.1.1.1/24 eth0
+#
 # CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
-
-# when doing IP takeover you also must specify what network interface
-# to use for the public addresses
-# there is no default
-# CTDB_PUBLIC_INTERFACE=eth0
 
 # should ctdb manage starting/stopping the Samba service for you?
 # default is to not manage Samba

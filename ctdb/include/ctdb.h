@@ -201,8 +201,8 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 */
 void ctdb_shutdown(struct ctdb_context *ctdb);
 
-/* return vnn of this node */
-uint32_t ctdb_get_vnn(struct ctdb_context *ctdb);
+/* return pnn of this node */
+uint32_t ctdb_get_pnn(struct ctdb_context *ctdb);
 
 /*
   return the number of nodes
@@ -222,7 +222,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, s
 int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call);
 
 /* send a ctdb message */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		      uint64_t srvid, TDB_DATA data);
 
 
@@ -391,7 +391,7 @@ int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 
 int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
-int ctdb_ctrl_getvnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb, 
 			  struct timeval timeout, 
@@ -418,7 +418,7 @@ enum ctdb_server_id_type { SERVER_TYPE_SAMBA=1 };
 
 struct ctdb_server_id {
 	enum ctdb_server_id_type type;
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t server_id;
 };
 

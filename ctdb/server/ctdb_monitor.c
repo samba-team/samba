@@ -43,7 +43,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	/* send a keepalive to all other nodes, unless */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];
-		if (node->vnn == ctdb->vnn) {
+		if (node->pnn == ctdb->pnn) {
 			continue;
 		}
 		
@@ -65,9 +65,9 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 		node->rx_cnt = 0;
 
 		if (node->dead_count >= ctdb->tunable.keepalive_limit) {
-			DEBUG(0,("dead count reached for node %u\n", node->vnn));
+			DEBUG(0,("dead count reached for node %u\n", node->pnn));
 			ctdb_node_dead(node);
-			ctdb_send_keepalive(ctdb, node->vnn);
+			ctdb_send_keepalive(ctdb, node->pnn);
 			/* maybe tell the transport layer to kill the
 			   sockets as well?
 			*/
@@ -75,8 +75,8 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 		}
 		
 		if (node->tx_cnt == 0) {
-			DEBUG(5,("sending keepalive to %u\n", node->vnn));
-			ctdb_send_keepalive(ctdb, node->vnn);
+			DEBUG(5,("sending keepalive to %u\n", node->pnn));
+			ctdb_send_keepalive(ctdb, node->pnn);
 		}
 
 		node->tx_cnt = 0;
@@ -95,7 +95,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
  */
 static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 {
-	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
+	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	TDB_DATA data;
 	struct ctdb_node_flag_change c;
 
@@ -103,7 +103,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 			ctdb_check_health, ctdb);
 
-	c.vnn = ctdb->vnn;
+	c.pnn = ctdb->pnn;
 	c.old_flags = node->flags;
 
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
@@ -111,7 +111,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		node->flags |= NODE_FLAGS_UNHEALTHY;
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(0,("monitor event OK - node re-enabled\n"));
-		ctdb->nodes[ctdb->vnn]->flags &= ~NODE_FLAGS_UNHEALTHY;
+		ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_UNHEALTHY;
 	} else {
 		/* no change */
 		return;
@@ -193,7 +193,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_node_modflags *m = (struct ctdb_node_modflags *)indata.dptr;
 	TDB_DATA data;
 	struct ctdb_node_flag_change c;
-	struct ctdb_node *node = ctdb->nodes[ctdb->vnn];
+	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	uint32_t old_flags = node->flags;
 
 	node->flags |= m->set;
@@ -204,10 +204,10 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
-	DEBUG(0, ("Control modflags on node %u - flags now 0x%x\n", ctdb->vnn, node->flags));
+	DEBUG(0, ("Control modflags on node %u - flags now 0x%x\n", ctdb->pnn, node->flags));
 
 	/* if we have been banned, go into recovery mode */
-	c.vnn = ctdb->vnn;
+	c.pnn = ctdb->pnn;
 	c.old_flags = old_flags;
 	c.new_flags = node->flags;
 

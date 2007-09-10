@@ -25,12 +25,13 @@
 #include "cmdline.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
 
 static void usage(void);
 
 static struct {
 	int timelimit;
-	uint32_t vnn;
+	uint32_t pnn;
 	int machinereadable;
 } options;
 
@@ -41,22 +42,22 @@ static struct {
  */
 static int control_process_exists(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	uint32_t vnn, pid;
+	uint32_t pnn, pid;
 	int ret;
 	if (argc < 1) {
 		usage();
 	}
 
-	if (sscanf(argv[0], "%u:%u", &vnn, &pid) != 2) {
-		DEBUG(0, ("Badly formed vnn:pid\n"));
+	if (sscanf(argv[0], "%u:%u", &pnn, &pid) != 2) {
+		DEBUG(0, ("Badly formed pnn:pid\n"));
 		return -1;
 	}
 
-	ret = ctdb_ctrl_process_exists(ctdb, vnn, pid);
+	ret = ctdb_ctrl_process_exists(ctdb, pnn, pid);
 	if (ret == 0) {
-		printf("%u:%u exists\n", vnn, pid);
+		printf("%u:%u exists\n", pnn, pid);
 	} else {
-		printf("%u:%u does not exist\n", vnn, pid);
+		printf("%u:%u does not exist\n", pnn, pid);
 	}
 	return ret;
 }
@@ -178,13 +179,13 @@ static int control_statistics(struct ctdb_context *ctdb, int argc, const char **
 	int ret;
 	struct ctdb_statistics statistics;
 
-	if (options.vnn == CTDB_BROADCAST_ALL) {
+	if (options.pnn == CTDB_BROADCAST_ALL) {
 		return control_statistics_all(ctdb);
 	}
 
-	ret = ctdb_ctrl_statistics(ctdb, options.vnn, &statistics);
+	ret = ctdb_ctrl_statistics(ctdb, options.pnn, &statistics);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get statistics from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get statistics from node %u\n", options.pnn));
 		return ret;
 	}
 	show_statistics(&statistics);
@@ -199,9 +200,9 @@ static int control_statistics_reset(struct ctdb_context *ctdb, int argc, const c
 {
 	int ret;
 
-	ret = ctdb_statistics_reset(ctdb, options.vnn);
+	ret = ctdb_statistics_reset(ctdb, options.pnn);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to reset statistics on node %u\n", options.vnn));
+		DEBUG(0, ("Unable to reset statistics on node %u\n", options.pnn));
 		return ret;
 	}
 	return 0;
@@ -217,23 +218,23 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	uint32_t recmode, recmaster;
-	int myvnn;
+	int mypnn;
 
-	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
-	if (myvnn == -1) {
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
+	if (mypnn == -1) {
 		return -1;
 	}
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.vnn, ctdb, &nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get nodemap from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get nodemap from node %u\n", options.pnn));
 		return ret;
 	}
 
 	if(options.machinereadable){
 		printf(":Node:IP:Disonnected:Disabled:Permanently Disabled:\n");
 		for(i=0;i<nodemap->num;i++){
-			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].vnn,
+			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
@@ -270,16 +271,16 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			flags_str = talloc_strdup(ctdb, "OK");
 			CTDB_NO_MEMORY_FATAL(ctdb, flags_str);
 		}
-		printf("vnn:%d %-16s %s%s\n", nodemap->nodes[i].vnn,
+		printf("pnn:%d %-16s %s%s\n", nodemap->nodes[i].pnn,
 		       inet_ntoa(nodemap->nodes[i].sin.sin_addr),
 		       flags_str,
-		       nodemap->nodes[i].vnn == myvnn?" (THIS NODE)":"");
+		       nodemap->nodes[i].pnn == mypnn?" (THIS NODE)":"");
 		talloc_free(flags_str);
 	}
 
-	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.vnn, ctdb, &vnnmap);
+	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &vnnmap);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get vnnmap from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get vnnmap from node %u\n", options.pnn));
 		return ret;
 	}
 	if (vnnmap->generation == INVALID_GENERATION) {
@@ -292,16 +293,16 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		printf("hash:%d lmaster:%d\n", i, vnnmap->map[i]);
 	}
 
-	ret = ctdb_ctrl_getrecmode(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmode);
+	ret = ctdb_ctrl_getrecmode(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmode);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get recmode from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get recmode from node %u\n", options.pnn));
 		return ret;
 	}
 	printf("Recovery mode:%s (%d)\n",recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"RECOVERY",recmode);
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get recmaster from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get recmaster from node %u\n", options.pnn));
 		return ret;
 	}
 	printf("Recovery master:%d\n",recmaster);
@@ -310,27 +311,31 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
-  get a list of all tickles for this vnn
+  get a list of all tickles for this pnn
  */
 static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	struct ctdb_control_tcp_tickle_list *list;
-	uint32_t vnn;
+	struct sockaddr_in ip;
 	int i, ret;
 
 	if (argc < 1) {
 		usage();
 	}
 
-	vnn = strtoul(argv[0], NULL, 0);
+	ip.sin_family = AF_INET;
+	if (inet_aton(argv[0], &ip.sin_addr) == 0) {
+		DEBUG(0,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
 
-	ret = ctdb_ctrl_get_tcp_tickles(ctdb, TIMELIMIT(), options.vnn, ctdb, vnn, &list);
+	ret = ctdb_ctrl_get_tcp_tickles(ctdb, TIMELIMIT(), options.pnn, ctdb, &ip, &list);
 	if (ret == -1) {
 		DEBUG(0, ("Unable to list tickles\n"));
 		return -1;
 	}
 
-	printf("Tickles for vnn:%u\n", list->vnn);
+	printf("Tickles for ip:%s\n", inet_ntoa(list->ip.sin_addr));
 	printf("Num tickles:%u\n", list->tickles.num);
 	for (i=0;i<list->tickles.num;i++) {
 		printf("SRC: %s:%u   ", inet_ntoa(list->tickles.connections[i].saddr.sin_addr), ntohs(list->tickles.connections[i].saddr.sin_port));
@@ -364,9 +369,9 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = ctdb_ctrl_killtcp(ctdb, TIMELIMIT(), options.vnn, &killtcp);
+	ret = ctdb_ctrl_killtcp(ctdb, TIMELIMIT(), options.pnn, &killtcp);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to killtcp from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to killtcp from node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -386,13 +391,13 @@ static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.pnn       = strtoul(argv[0], NULL, 0);
 	server_id.type      = strtoul(argv[1], NULL, 0);
 	server_id.server_id = strtoul(argv[2], NULL, 0);
 
 	ret = ctdb_ctrl_register_server_id(ctdb, TIMELIMIT(), &server_id);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to register server_id from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to register server_id from node %u\n", options.pnn));
 		return ret;
 	}
 	return -1;
@@ -410,13 +415,13 @@ static int unregsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.pnn       = strtoul(argv[0], NULL, 0);
 	server_id.type      = strtoul(argv[1], NULL, 0);
 	server_id.server_id = strtoul(argv[2], NULL, 0);
 
 	ret = ctdb_ctrl_unregister_server_id(ctdb, TIMELIMIT(), &server_id);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to unregister server_id from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to unregister server_id from node %u\n", options.pnn));
 		return ret;
 	}
 	return -1;
@@ -435,20 +440,20 @@ static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	server_id.vnn       = strtoul(argv[0], NULL, 0);
+	server_id.pnn       = strtoul(argv[0], NULL, 0);
 	server_id.type      = strtoul(argv[1], NULL, 0);
 	server_id.server_id = strtoul(argv[2], NULL, 0);
 
-	ret = ctdb_ctrl_check_server_id(ctdb, TIMELIMIT(), options.vnn, &server_id, &status);
+	ret = ctdb_ctrl_check_server_id(ctdb, TIMELIMIT(), options.pnn, &server_id, &status);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to check server_id from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to check server_id from node %u\n", options.pnn));
 		return ret;
 	}
 
 	if (status) {
-		printf("Server id %d:%d:%d EXISTS\n", server_id.vnn, server_id.type, server_id.server_id);
+		printf("Server id %d:%d:%d EXISTS\n", server_id.pnn, server_id.type, server_id.server_id);
 	} else {
-		printf("Server id %d:%d:%d does NOT exist\n", server_id.vnn, server_id.type, server_id.server_id);
+		printf("Server id %d:%d:%d does NOT exist\n", server_id.pnn, server_id.type, server_id.server_id);
 	}
 	return 0;
 }
@@ -461,15 +466,15 @@ static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
 	int i, ret;
 	struct ctdb_server_id_list *server_ids;
 
-	ret = ctdb_ctrl_get_server_id_list(ctdb, ctdb, TIMELIMIT(), options.vnn, &server_ids);
+	ret = ctdb_ctrl_get_server_id_list(ctdb, ctdb, TIMELIMIT(), options.pnn, &server_ids);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get server_id list from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get server_id list from node %u\n", options.pnn));
 		return ret;
 	}
 
 	for (i=0; i<server_ids->num; i++) {
 		printf("Server id %d:%d:%d\n", 
-			server_ids->server_ids[i].vnn, 
+			server_ids->server_ids[i].pnn, 
 			server_ids->server_ids[i].type, 
 			server_ids->server_ids[i].server_id); 
 	}
@@ -515,69 +520,76 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 	return -1;
 }
 
+
+static void *store_ip(void *p, void *d)
+{
+	return p;
+}
+static void print_ip(void *param, void *data)
+{
+	struct ctdb_public_ip *ip = (struct ctdb_public_ip *)data;
+
+	if(options.machinereadable){
+		printf(":%s:%d:\n", inet_ntoa(ip->sin.sin_addr), ip->pnn);
+	} else {
+		printf("%-16s %d\n", inet_ntoa(ip->sin.sin_addr), ip->pnn);
+	}
+}
+
 /*
   display public ip status
  */
 static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
+	int i, j, ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	trbt_tree_t *tree;
+	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_all_public_ips *ips;
-	int myvnn;
+	struct ctdb_public_ip *ip;
 
-	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
-	if (myvnn == -1) {
-		return -1;
-	}
 
-	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.vnn, ctdb, &ips);
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &nodemap);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get public ips from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
+	/* create a tree to store the public addresses in indexed by s_addr */
+	tree = trbt_create(tmp_ctx, 0);
+	CTDB_NO_MEMORY(ctdb, tree);
+
+	for (i=0;i<nodemap->num;i++) {
+		/* dont read the public ip list from disconnected nodes */
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), i, tmp_ctx, &ips);
+		if (ret != 0) {
+			DEBUG(0, ("Unable to get public ips from node %u\n", i));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+
+		/* store the public ip */
+		for(j=0;j<ips->num;j++){
+			ip = talloc_memdup(tmp_ctx, &ips->ips[j], sizeof(struct ctdb_public_ip));
+			/* ntohl() so that we sort by the first octet */
+			trbt_insert32_callback(tree, ntohl(ips->ips[j].sin.sin_addr.s_addr), store_ip, ip);
+		}
+	}
+
+	/* traverse the tree and read back all the public ips one by one */
 	if(options.machinereadable){
 		printf(":Public IP:Node:\n");
-		for(i=0;i<ips->num;i++){
-			printf(":%s:%d:\n",
-			inet_ntoa(ips->ips[i].sin.sin_addr),
-			ips->ips[i].takeover_vnn);
-		}
-		return 0;
 	}
+	trbt_traversearray32(tree, 1, print_ip, NULL);
 
-
-	printf("Number of nodes:%d\n", ips->num);
-	for(i=0;i<ips->num;i++){
-		printf("%-16s %d\n",
-			inet_ntoa(ips->ips[i].sin.sin_addr),
-			ips->ips[i].takeover_vnn);
-	}
-
-	return 0;
-}
-
-/*
-  display public ip address of this node
- */
-static int control_publicip(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	struct ctdb_all_public_ips *ips;
-	int myvnn;
-
-	myvnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);
-	if (myvnn == -1) {
-		return -1;
-	}
-
-	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.vnn, ctdb, &ips);
-	if (ret != 0) {
-		DEBUG(0, ("Unable to get public ips from node %u\n", options.vnn));
-		return ret;
-	}
-
-	printf("%-16s\n", inet_ntoa(ips->ips[myvnn].sin.sin_addr));
-
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -589,9 +601,9 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 	uint32_t pid;
 	int ret;
 
-	ret = ctdb_ctrl_getpid(ctdb, TIMELIMIT(), options.vnn, &pid);
+	ret = ctdb_ctrl_getpid(ctdb, TIMELIMIT(), options.pnn, &pid);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get daemon pid from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get daemon pid from node %u\n", options.pnn));
 		return ret;
 	}
 	printf("Pid:%d\n", pid);
@@ -606,9 +618,9 @@ static int control_disable(struct ctdb_context *ctdb, int argc, const char **arg
 {
 	int ret;
 
-	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.vnn, NODE_FLAGS_PERMANENTLY_DISABLED, 0);
+	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, NODE_FLAGS_PERMANENTLY_DISABLED, 0);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to disable node %u\n", options.vnn));
+		DEBUG(0, ("Unable to disable node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -622,9 +634,9 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	int ret;
 
-	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.vnn, 0, NODE_FLAGS_PERMANENTLY_DISABLED);
+	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, 0, NODE_FLAGS_PERMANENTLY_DISABLED);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to enable node %u\n", options.vnn));
+		DEBUG(0, ("Unable to enable node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -648,13 +660,13 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	ban_time = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
 	if (ret != 0) {
 		DEBUG(0,("Failed to find the recmaster\n"));
 		return -1;
 	}
 
-	b.vnn = options.vnn;
+	b.pnn = options.pnn;
 	b.ban_time = ban_time;
 
 	data.dptr = (uint8_t *)&b;
@@ -662,7 +674,7 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_BAN_NODE, data);
 	if (ret != 0) {
-		DEBUG(0,("Failed to tell the recmaster to ban node %u\n", options.vnn));
+		DEBUG(0,("Failed to tell the recmaster to ban node %u\n", options.pnn));
 		return -1;
 	}
 	
@@ -679,18 +691,18 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 	uint32_t recmaster;
 	TDB_DATA data;
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.vnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
 	if (ret != 0) {
 		DEBUG(0,("Failed to find the recmaster\n"));
 		return -1;
 	}
 
-	data.dptr = (uint8_t *)&options.vnn;
+	data.dptr = (uint8_t *)&options.pnn;
 	data.dsize = sizeof(uint32_t);
 
 	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_UNBAN_NODE, data);
 	if (ret != 0) {
-		DEBUG(0,("Failed to tell the recmaster to unban node %u\n", options.vnn));
+		DEBUG(0,("Failed to tell the recmaster to unban node %u\n", options.pnn));
 		return -1;
 	}
 	
@@ -705,9 +717,9 @@ static int control_shutdown(struct ctdb_context *ctdb, int argc, const char **ar
 {
 	int ret;
 
-	ret = ctdb_ctrl_shutdown(ctdb, TIMELIMIT(), options.vnn);
+	ret = ctdb_ctrl_shutdown(ctdb, TIMELIMIT(), options.pnn);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to shutdown node %u\n", options.vnn));
+		DEBUG(0, ("Unable to shutdown node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -721,13 +733,13 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 {
 	int ret;
 
-	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.vnn);
+	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.pnn);
 	if (ret != 0) {
 		DEBUG(0, ("Unable to freeze node\n"));
 		return ret;
 	}
 
-	ret = ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.vnn, CTDB_RECOVERY_ACTIVE);
+	ret = ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
 		DEBUG(0, ("Unable to set recovery mode\n"));
 		return ret;
@@ -745,9 +757,9 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 	uint32_t monmode;
 	int ret;
 
-	ret = ctdb_ctrl_getmonmode(ctdb, TIMELIMIT(), options.vnn, &monmode);
+	ret = ctdb_ctrl_getmonmode(ctdb, TIMELIMIT(), options.pnn, &monmode);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get monmode from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get monmode from node %u\n", options.pnn));
 		return ret;
 	}
 	printf("Monitoring mode:%s (%d)\n",monmode==CTDB_MONITORING_ACTIVE?"ACTIVE":"DISABLED",monmode);
@@ -769,9 +781,9 @@ static int control_setmonmode(struct ctdb_context *ctdb, int argc, const char **
 
 	monmode = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_setmonmode(ctdb, TIMELIMIT(), options.vnn, monmode);
+	ret = ctdb_ctrl_setmonmode(ctdb, TIMELIMIT(), options.pnn, monmode);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to set monmode on node %u\n", options.vnn));
+		DEBUG(0, ("Unable to set monmode on node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -820,9 +832,9 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	int i, ret;
 	struct ctdb_dbid_map *dbmap=NULL;
 
-	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.vnn, ctdb, &dbmap);
+	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &dbmap);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get dbids from node %u\n", options.vnn));
+		DEBUG(0, ("Unable to get dbids from node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -831,8 +843,8 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		const char *path;
 		const char *name;
 
-		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.vnn, dbmap->dbids[i], ctdb, &path);
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.vnn, dbmap->dbids[i], ctdb, &name);
+		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbids[i], ctdb, &path);
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbids[i], ctdb, &name);
 		printf("dbid:0x%08x name:%s path:%s\n", dbmap->dbids[i], name, path);
 	}
 
@@ -846,12 +858,12 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
 	struct timeval tv = timeval_current();
-	ret = ctdb_ctrl_ping(ctdb, options.vnn);
+	ret = ctdb_ctrl_ping(ctdb, options.pnn);
 	if (ret == -1) {
-		printf("Unable to get ping response from node %u\n", options.vnn);
+		printf("Unable to get ping response from node %u\n", options.pnn);
 	} else {
 		printf("response from %u time=%.6f sec  (%d clients)\n", 
-		       options.vnn, timeval_elapsed(&tv), ret);
+		       options.pnn, timeval_elapsed(&tv), ret);
 	}
 	return 0;
 }
@@ -871,7 +883,7 @@ static int control_getvar(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	name = argv[0];
-	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), options.vnn, name, &value);
+	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), options.pnn, name, &value);
 	if (ret == -1) {
 		DEBUG(0, ("Unable to get tunable variable '%s'\n", name));
 		return -1;
@@ -897,7 +909,7 @@ static int control_setvar(struct ctdb_context *ctdb, int argc, const char **argv
 	name = argv[0];
 	value = strtoul(argv[1], NULL, 0);
 
-	ret = ctdb_ctrl_set_tunable(ctdb, TIMELIMIT(), options.vnn, name, value);
+	ret = ctdb_ctrl_set_tunable(ctdb, TIMELIMIT(), options.pnn, name, value);
 	if (ret == -1) {
 		DEBUG(0, ("Unable to set tunable variable '%s'\n", name));
 		return -1;
@@ -914,7 +926,7 @@ static int control_listvars(struct ctdb_context *ctdb, int argc, const char **ar
 	const char **list;
 	int ret, i;
 
-	ret = ctdb_ctrl_list_tunables(ctdb, TIMELIMIT(), options.vnn, ctdb, &list, &count);
+	ret = ctdb_ctrl_list_tunables(ctdb, TIMELIMIT(), options.pnn, ctdb, &list, &count);
 	if (ret == -1) {
 		DEBUG(0, ("Unable to list tunable variables\n"));
 		return -1;
@@ -937,12 +949,12 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 	int ret;
 	uint32_t level;
 
-	ret = ctdb_ctrl_get_debuglevel(ctdb, options.vnn, &level);
+	ret = ctdb_ctrl_get_debuglevel(ctdb, options.pnn, &level);
 	if (ret != 0) {
 	  DEBUG(0, ("Unable to get debuglevel response from node %u\n", 
-		       options.vnn));
+		       options.pnn));
 	} else {
-		printf("Node %u is at debug level %u\n", options.vnn, level);
+		printf("Node %u is at debug level %u\n", options.pnn, level);
 	}
 	return 0;
 }
@@ -962,9 +974,9 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 
 	level = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_set_debuglevel(ctdb, options.vnn, level);
+	ret = ctdb_ctrl_set_debuglevel(ctdb, options.pnn, level);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to set debug level on node %u\n", options.vnn));
+		DEBUG(0, ("Unable to set debug level on node %u\n", options.pnn));
 	}
 	return 0;
 }
@@ -977,9 +989,9 @@ static int control_freeze(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	int ret;
 
-	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.vnn);
+	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.pnn);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to freeze node %u\n", options.vnn));
+		DEBUG(0, ("Unable to freeze node %u\n", options.pnn));
 	}		
 	return 0;
 }
@@ -991,9 +1003,9 @@ static int control_thaw(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
 
-	ret = ctdb_ctrl_thaw(ctdb, TIMELIMIT(), options.vnn);
+	ret = ctdb_ctrl_thaw(ctdb, TIMELIMIT(), options.pnn);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to thaw node %u\n", options.vnn));
+		DEBUG(0, ("Unable to thaw node %u\n", options.pnn));
 	}		
 	return 0;
 }
@@ -1026,7 +1038,7 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	return ctdb_control(ctdb, options.vnn, 0, CTDB_CONTROL_DUMP_MEMORY,
+	return ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_DUMP_MEMORY,
 			    CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL, NULL);
 }
 
@@ -1046,7 +1058,6 @@ static const struct {
 	{ "statistics",      control_statistics,        false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,  "reset statistics"},
 	{ "ip",              control_ip,                true,  "show which public ip's that ctdb manages" },
-	{ "publicip",        control_publicip,          false, "show the default public ip address for this node" },
 	{ "process-exists",  control_process_exists,    true,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
@@ -1067,11 +1078,11 @@ static const struct {
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
 	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
-	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this vnn", "<vnn>" },
+	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this ip", "<ip>" },
 
-	{ "regsrvid",        regsrvid,			false, "register a server id", "<vnn> <type> <id>" },
-	{ "unregsrvid",      unregsrvid,		false, "unregister a server id", "<vnn> <type> <id>" },
-	{ "chksrvid",        chksrvid,			false, "check if a server id exists", "<vnn> <type> <id>" },
+	{ "regsrvid",        regsrvid,			false, "register a server id", "<pnn> <type> <id>" },
+	{ "unregsrvid",      unregsrvid,		false, "unregister a server id", "<pnn> <type> <id>" },
+	{ "chksrvid",        chksrvid,			false, "check if a server id exists", "<pnn> <type> <id>" },
 	{ "getsrvids",       getsrvids,			false, "get a list of all server ids"},
 };
 
@@ -1123,7 +1134,7 @@ int main(int argc, const char *argv[])
 
 	/* set some defaults */
 	options.timelimit = 3;
-	options.vnn = CTDB_CURRENT_NODE;
+	options.pnn = CTDB_CURRENT_NODE;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -1150,9 +1161,9 @@ int main(int argc, const char *argv[])
 	/* setup the node number to contact */
 	if (nodestring != NULL) {
 		if (strcmp(nodestring, "all") == 0) {
-			options.vnn = CTDB_BROADCAST_ALL;
+			options.pnn = CTDB_BROADCAST_ALL;
 		} else {
-			options.vnn = strtoul(nodestring, NULL, 0);
+			options.pnn = strtoul(nodestring, NULL, 0);
 		}
 	}
 
@@ -1171,17 +1182,17 @@ int main(int argc, const char *argv[])
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
 			int j;
 
-			if (options.vnn == CTDB_CURRENT_NODE) {
-				int vnn;
-				vnn = ctdb_ctrl_getvnn(ctdb, TIMELIMIT(), options.vnn);		
-				if (vnn == -1) {
+			if (options.pnn == CTDB_CURRENT_NODE) {
+				int pnn;
+				pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
+				if (pnn == -1) {
 					return -1;
 				}
-				options.vnn = vnn;
+				options.pnn = pnn;
 			}
 
 			if (ctdb_commands[i].auto_all && 
-			    options.vnn == CTDB_BROADCAST_ALL) {
+			    options.pnn == CTDB_BROADCAST_ALL) {
 				uint32_t *nodes;
 				uint32_t num_nodes;
 				ret = 0;
@@ -1190,7 +1201,7 @@ int main(int argc, const char *argv[])
 				CTDB_NO_MEMORY(ctdb, nodes);
 	
 				for (j=0;j<num_nodes;j++) {
-					options.vnn = nodes[j];
+					options.pnn = nodes[j];
 					ret |= ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
 				}
 				talloc_free(nodes);

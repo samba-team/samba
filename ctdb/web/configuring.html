@@ -38,7 +38,6 @@ The most important options are:
 <ul>
 <li>CTDB_NODES
 <li>CTDB_RECOVERY_LOCK
-<li>CTDB_PUBLIC_INTERFACE
 <li>CTDB_PUBLIC_ADDRESSES
 </ul>
 
@@ -82,33 +81,11 @@ Content of /etc/ctdb/nodes:
 The default for this file is /etc/ctdb/nodes.
 
 
-<h3>CTDB_PUBLIC_INTERFACE</h3>
-
-This parameter is used to tell CTDB which network interface is used to
-hold the public ip addresses when CTDB is used to manage IP
-takeover.<p>
-
-This can be the same network interface as is used for the private
-addresses in the CTDB_NODES list but it is recommended that you use a
-different interface.<p>
-
-Example using eth0 for the public interface:
-<pre>
-  CTDB_PUBLIC_INTERFACE=eth0
-</pre>
-
-It is strongly recommended that you use CTDB with IP takeover.<p>
-
-When you use this parameter you must also specify the
-CTDB_PUBLIC_ADDRESSES parameter.
-
 <h3>CTDB_PUBLIC_ADDRESSES</h3>
 
-In order to use IP takeover you must specify a file containing a list
-of public IP addresses. One IP address for each node.<p>
+This file specifies a list of public ip addresses which the cluster will 
+serve. This file must be the same on all nodes.<p>
 
-
-This file contains a list of public cluster addresses.<p>
 
 These are the addresses that the SMBD daemons and other services will
 bind to and which clients will use to connect to the cluster. This
@@ -122,10 +99,10 @@ Example 4 node cluster:
 </pre>
 Content of /etc/ctdb/public_addresses:
 <pre>
- 192.168.1.1/24
- 192.168.1.2/24
- 192.168.2.1/24
- 192.168.2.2/24
+ 192.168.1.1/24 eth0
+ 192.168.1.2/24 eth0
+ 192.168.2.1/24 eth1
+ 192.168.2.2/24 eth1
 </pre>
 
 These are the IP addresses that you should configure in DNS for the
@@ -138,18 +115,11 @@ cluster.<p>
 
 The CTDB cluster utilizes IP takeover techniques to ensure that as long as at least one node in the cluster is available, all the public IP addresses will always be available to clients.<p>
 
-This means that if one physical node fails, the public address of that
-node will be taken over by a different node in the cluster. This
+This means that if one physical node fails, the public addresses that
+node was serving will be taken over by a different node in the cluster. This
 provides a guarantee that all ip addresses exposed to clients will
 always be reachable by clients even if a node has been powered off or
 has crashed.<p>
-
-CTDB nodes will only take over IP addresses that are inside the same
-subnet as its own public IP address. In the example above, nodes 0 and
-1 would be able to take over each others public ip and analog for
-nodes 2 and 3, but node 0 and 1 would NOT be able to take over the IP
-addresses for nodes 2 or 3 since they are on a different
-subnet.<p>
 
 Do not assign these addresses to any of the interfaces on the
 host. CTDB will add and remove these addresses automatically at
@@ -157,9 +127,7 @@ runtime.<p>
 
 This parameter is used when CTDB operated in takeover ip mode.<p>
 
-The usual location for this file is /etc/ctdb/public_addresses. If you
-use this you <strong>must</strong> also specify the
-CTDB_PUBLIC_INTERFACE parameter.<p>
+The usual location for this file is /etc/ctdb/public_addresses.
 
 <h2>Event scripts</h2>
 

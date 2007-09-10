@@ -90,7 +90,7 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	int *count = (int *)private_data;
 	int dest;
 	(*count)++;
-	dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
+	dest = (ctdb_get_pnn(ctdb) + incr) % num_nodes;
 	ctdb_send_message(ctdb, dest, srvid, data);
 	if (incr == 1) {
 		msg_plus++;
@@ -104,9 +104,9 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 */
 static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 {
-	int vnn=ctdb_get_vnn(ctdb);
+	int pnn=ctdb_get_pnn(ctdb);
 
-	if (vnn == 0) {
+	if (pnn == 0) {
 		/* two messages are injected into the ring, moving
 		   in opposite directions */
 		int dest, incr;
@@ -116,18 +116,18 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 		data.dsize = sizeof(incr);
 
 		incr = 1;
-		dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
+		dest = (ctdb_get_pnn(ctdb) + incr) % num_nodes;
 		ctdb_send_message(ctdb, dest, 0, data);
 		
 		incr = -1;
-		dest = (ctdb_get_vnn(ctdb) + incr) % num_nodes;
+		dest = (ctdb_get_pnn(ctdb) + incr) % num_nodes;
 		ctdb_send_message(ctdb, dest, 0, data);
 	}
 	
 	start_timer();
 
 	while (end_timer() < timelimit) {
-		if (vnn == 0 && msg_count % 10000 == 0) {
+		if (pnn == 0 && msg_count % 10000 == 0) {
 			printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\r", 
 			       msg_count/end_timer(), msg_plus, msg_minus);
 			fflush(stdout);

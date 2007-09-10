@@ -241,13 +241,26 @@ int ctdb_sys_send_tcp(int s,
 
   we try to bind to it, and if that fails then we don't have that IP
   on an interface
+  if is_loopback is specified it will also return whether the ip address
+  is attached to the loopback interface or not
+
+  ifname, if non-NULL, will return the name of the interface this ip is tied to
  */
-bool ctdb_sys_have_ip(const char *ip)
+bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname)
 {
 	struct sockaddr_in sin;
-	int s;
+	struct ifreq *ifr = NULL;
+	struct ifconf ifc;
+	int s, i, num_ifs;
 	int ret;
 
+	if (is_loopback) {
+		*is_loopback = false;
+	}
+	if (*ifname) {
+		*ifname = NULL;
+	}
+	
 	sin.sin_port = 0;
 	inet_aton(ip, &sin.sin_addr);
 	sin.sin_family = AF_INET;
@@ -256,6 +269,75 @@ bool ctdb_sys_have_ip(const char *ip)
 		return false;
 	}
 	ret = bind(s, (struct sockaddr *)&sin, sizeof(sin));
+	if (ret) {
+		goto finished;
+	}
+
+
+	/* find out how much space we need to store the interface details */
+	ifc.ifc_len = 0;
+	ifc.ifc_req = NULL;
+	ret = ioctl(s, SIOCGIFCONF, &ifc);
+	if (ret) {
+		DEBUG(0,(__location__ " ioctl to read interface list failed\n"));
+		goto finished;
+	}
+
+	ifr = talloc_size(mem_ctx, ifc.ifc_len);
+
+	/* get a list of all interface names and addresses */
+	ifc.ifc_req = ifr;
+	ret = ioctl(s, SIOCGIFCONF, &ifc);
+	if (ret) {
+		DEBUG(0,(__location__ " ioctl to read interface list failed\n"));
+		goto finished;
+	}
+
+	/* loop over all interfaces and search for the one matching ip */
+	num_ifs = ifc.ifc_len/sizeof(struct ifreq);
+	for (i=0; i<num_ifs;i++) {
+		struct sockaddr_in *sa;
+
+		/* we only care bout ipv4 addresses */
+		sa = (struct sockaddr_in *)&ifr[i].ifr_addr;
+		if (sa->sin_family != AF_INET) {
+			continue;
+		}
+
+		/* this is not the interface you are looking for */
+		if(strcmp(inet_ntoa(sa->sin_addr), ip)){
+			continue;
+		}
+
+		/* this is the ifr entry for this interface/address 
+		   read the interface flags so we can tell if it is 
+		   loopback or not
+		*/
+		ret = ioctl(s, SIOCGIFFLAGS, &ifr[i]);
+		if (ret) {
+			DEBUG(0,(__location__ " failed to read interface flags for interface %s\n", ifr[i].ifr_name));
+			goto finished;
+		}
+
+		/* was this ip tied to a loopback interface ? */
+		if(ifr[i].ifr_flags & IFF_LOOPBACK) {
+			if (is_loopback != NULL) {
+				*is_loopback = true;
+			}
+		}
+
+		if (ifname) {
+			*ifname = talloc_asprintf(mem_ctx, "%s", ifr[i].ifr_name);
+		}
+
+		/* if we got this far, we have found our interface so we can
+		   exit the loop.
+		*/		
+		break;
+	}	
+
+finished:
+	talloc_free(ifr);
 	close(s);
 	return ret == 0;
 }

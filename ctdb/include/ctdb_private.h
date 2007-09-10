@@ -53,7 +53,7 @@ struct ctdb_tcp_wire_array {
 
 /* the list of tcp tickles used by get/set tcp tickle list */
 struct ctdb_control_tcp_tickle_list {
-	uint32_t vnn;
+	struct sockaddr_in ip;
 	struct ctdb_tcp_wire_array tickles;
 };
 
@@ -107,9 +107,9 @@ struct ctdb_address {
 };
 
 /*
-  check a vnn is valid
+  check that a pnn is valid
  */
-#define ctdb_validate_vnn(ctdb, vnn) (((uint32_t)(vnn)) < (ctdb)->num_nodes)
+#define ctdb_validate_pnn(ctdb, pnn) (((uint32_t)(pnn)) < (ctdb)->num_nodes)
 
 
 /* called from the queue code when a packet comes in. Called with data==NULL
@@ -136,6 +136,31 @@ struct ctdb_client {
 };
 
 
+/* state associated with a public ip address */
+struct ctdb_vnn {
+	struct ctdb_vnn *prev, *next;
+
+	const char *iface;
+	const char *public_address;
+	uint8_t public_netmask_bits;
+
+	/* the node number that is serving this public address, if any. 
+	   If no node serves this ip it is set to -1 */
+	int32_t pnn;
+
+	/* List of clients to tickle for this public address */
+	struct ctdb_tcp_array *tcp_array;
+
+	/* whether we need to update the other nodes with changes to our list
+	   of connected clients */
+	bool tcp_update_needed;
+
+	/* a context to hang sending gratious arp events off */
+	TALLOC_CTX *takeover_ctx;
+
+	struct ctdb_kill_tcp *killtcp;
+};
+
 /*
   state associated with one node
 */
@@ -144,7 +169,7 @@ struct ctdb_node {
 	struct ctdb_address address;
 	const char *name; /* for debug messages */
 	void *private_data; /* private to transport */
-	uint32_t vnn;
+	uint32_t pnn;
 #define NODE_FLAGS_DISCONNECTED		0x00000001 /* node isn't connected */
 #define NODE_FLAGS_UNHEALTHY  		0x00000002 /* monitoring says node is unhealthy */
 #define NODE_FLAGS_PERMANENTLY_DISABLED	0x00000004 /* administrator has disabled node */
@@ -162,20 +187,11 @@ struct ctdb_node {
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
 
-	/* the public address of this node, if known */
-	const char *public_address;
-	uint8_t public_netmask_bits;
-
-	/* the node number that has taken over this nodes public address, if any. 
-	   If not taken over, then set to -1 */
-	int32_t takeover_vnn;
-
-	/* List of clients to tickle for this public address */
-	struct ctdb_tcp_array *tcp_array;
-
-	/* whether we need to update the other nodes with changes to our list
-	   of connected clients */
-	bool tcp_update_needed;
+	/* used by the recovery daemon when distributing ip addresses 
+	   across the nodes.  it needs to know which public ip's can be handled
+	   by each node.
+	*/
+	struct ctdb_all_public_ips *public_ips;
 };
 
 /*
@@ -299,14 +315,6 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
-/* information about IP takeover */
-struct ctdb_takeover {
-	bool enabled;
-	const char *interface;
-	const char *event_script_dir;
-	TALLOC_CTX *last_ctx;
-};
-
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -325,13 +333,14 @@ struct ctdb_context {
 	char *node_list_file;
 	char *recovery_lock_file;
 	int recovery_lock_fd;
-	uint32_t vnn; /* our own vnn */
+	uint32_t pnn; /* our own pnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
 	unsigned flags;
 	struct idr_context *idr;
 	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
+	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
@@ -344,12 +353,11 @@ struct ctdb_context {
 	uint32_t num_clients;
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
-	struct ctdb_takeover takeover;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_setsched;
 	void *saved_scheduler_param;
-	struct ctdb_kill_tcp *killtcp;
 	struct _trbt_tree_t *server_ids;	
+	const char *event_script_dir;
 };
 
 struct ctdb_db_context {
@@ -430,7 +438,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_RECMASTER           = 32,
 		    CTDB_CONTROL_FREEZE                  = 33,
 		    CTDB_CONTROL_THAW                    = 34,
-		    CTDB_CONTROL_GET_VNN                 = 35,
+		    CTDB_CONTROL_GET_PNN                 = 35,
 		    CTDB_CONTROL_SHUTDOWN                = 36,
 		    CTDB_CONTROL_GET_MONMODE             = 37,
 		    CTDB_CONTROL_SET_MONMODE             = 38,
@@ -503,7 +511,6 @@ struct ctdb_control_killtcp {
   struct for tcp_add and tcp_remove controls
  */
 struct ctdb_control_tcp_vnn {
-	uint32_t vnn;
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
 };
@@ -512,7 +519,7 @@ struct ctdb_control_tcp_vnn {
   structure used for CTDB_SRVID_NODE_FLAGS_CHANGED
  */
 struct ctdb_node_flag_change {
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t new_flags;
 	uint32_t old_flags;
 };
@@ -529,7 +536,7 @@ struct ctdb_node_modflags {
   struct for admin setting a ban
  */
 struct ctdb_ban_info {
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t ban_time;
 };
 
@@ -803,7 +810,7 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 /*
   send a ctdb message
 */
-int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 			     uint64_t srvid, TDB_DATA data);
 
 
@@ -954,7 +961,7 @@ struct ctdb_control_list_tunable {
    status
  */
 struct ctdb_node_and_flags {
-	uint32_t vnn;
+	uint32_t pnn;
 	uint32_t flags;
 	struct sockaddr_in sin;
 
@@ -1031,8 +1038,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 				 bool *async_reply);
 
 struct ctdb_public_ip {
-	uint32_t vnn;
-	uint32_t takeover_vnn;
+	uint32_t pnn;
 	struct sockaddr_in sin;
 };
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
@@ -1052,7 +1058,7 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
-bool ctdb_sys_have_ip(const char *ip);
+bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname);
 int ctdb_sys_send_tcp(int fd,
 		      const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src,
@@ -1122,7 +1128,7 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 		      struct timeval timeout, 
 		      uint32_t destnode,
 		      TALLOC_CTX *mem_ctx,
-		      uint32_t vnn,
+		      struct sockaddr_in *ip,
 		      struct ctdb_control_tcp_tickle_list **list);
 
 

@@ -27,7 +27,7 @@ static uint32_t *get_server_id_key(struct ctdb_server_id *server_id)
 	static uint32_t key[SERVER_ID_KEY_SIZE];
 
 	key[0] = server_id->type;
-	key[1] = server_id->vnn;
+	key[1] = server_id->pnn;
 	key[2] = server_id->server_id;
 
 	return &key[0];

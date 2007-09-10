@@ -69,7 +69,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 	if (h == NULL) {
 		printf("Failed to fetch record '%s' on node %d\n", 
-		       (const char *)key.dptr, ctdb_get_vnn(ctdb));
+		       (const char *)key.dptr, ctdb_get_pnn(ctdb));
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -83,7 +83,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	}
 	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
 						      "msg_count=%d on node %d\n",
-						      msg_count, ctdb_get_vnn(ctdb));
+						      msg_count, ctdb_get_pnn(ctdb));
 	data.dsize = strlen((const char *)data.dptr)+1;
 
 	ret = ctdb_record_store(h, data);
@@ -98,7 +98,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	nulldata.dptr = NULL;
 	nulldata.dsize = 0;
 
-	dest = (ctdb_get_vnn(ctdb) + 1) % num_nodes;
+	dest = (ctdb_get_pnn(ctdb) + 1) % num_nodes;
 	ctdb_send_message(ctdb, dest, 0, nulldata);
 }
 
@@ -123,16 +123,16 @@ static void message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 */
 static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
 {
-	int vnn=ctdb_get_vnn(ctdb);
+	int pnn=ctdb_get_pnn(ctdb);
 
-	if (vnn == num_nodes - 1) {
+	if (pnn == num_nodes - 1) {
 		bench_fetch_1node(ctdb);
 	}
 	
 	start_timer();
 
 	while (end_timer() < timelimit) {
-		if (vnn == 0 && msg_count % 100 == 0) {
+		if (pnn == 0 && msg_count % 100 == 0) {
 			printf("Fetch: %.2f msgs/sec\r", msg_count/end_timer());
 			fflush(stdout);
 		}

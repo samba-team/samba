@@ -49,7 +49,7 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 		h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 		if (h == NULL) {
 			printf("Failed to fetch record '%s' on node %d\n", 
-			       (const char *)key.dptr, ctdb_get_vnn(ctdb));
+			       (const char *)key.dptr, ctdb_get_pnn(ctdb));
 			talloc_free(tmp_ctx);
 			return;
 		}
@@ -77,7 +77,7 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 			h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 			if (h == NULL) {
 				printf("Failed to fetch record '%s' on node %d\n", 
-				       (const char *)key.dptr, ctdb_get_vnn(ctdb));
+				       (const char *)key.dptr, ctdb_get_pnn(ctdb));
 				talloc_free(tmp_ctx);
 				return;
 			}

@@ -162,7 +162,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	node_map->num = num_nodes;
 	for (i=0; i<num_nodes; i++) {
 		inet_aton(ctdb->nodes[i]->address.address, &node_map->nodes[i].sin.sin_addr);
-		node_map->nodes[i].vnn   = ctdb->nodes[i]->vnn;
+		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
 		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
 	}
 
@@ -330,7 +330,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		/* The check for dmaster gives priority to the dmaster
 		   if the rsn values are equal */
 		if (header.rsn < hdr->rsn ||
-		    (header.dmaster != ctdb->vnn && header.rsn == hdr->rsn)) {
+		    (header.dmaster != ctdb->pnn && header.rsn == hdr->rsn)) {
 			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to store record\n"));

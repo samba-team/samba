@@ -104,7 +104,7 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 {
 	
 	uint32_t lmaster = ctdb_lmaster(ctdb, &key);
-	if (ctdb->vnn == lmaster) {
+	if (ctdb->pnn == lmaster) {
 		c->hdr.destnode = header->dmaster;
 	} else if ((c->hopcount % ctdb->tunable.max_redirect_count) == 0) {
 		c->hdr.destnode = lmaster;
@@ -133,7 +133,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	int ret, len;
 	TALLOC_CTX *tmp_ctx;
 
-	if (ctdb->vnn != ctdb_lmaster(ctdb, &key)) {
+	if (ctdb->pnn != ctdb_lmaster(ctdb, &key)) {
 		DEBUG(0,(__location__ " Caller is not lmaster!\n"));
 		return;
 	}
@@ -186,7 +186,7 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	int len;
 	uint32_t lmaster = ctdb_lmaster(ctdb, key);
 
-	if (lmaster == ctdb->vnn) {
+	if (lmaster == ctdb->pnn) {
 		ctdb_send_dmaster_reply(ctdb_db, header, *key, *data, 
 					c->hdr.srcnode, c->hdr.reqid);
 		return;
@@ -231,11 +231,11 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_ltdb_header header;
 
-	DEBUG(2,("vnn %u dmaster response %08x\n", ctdb->vnn, ctdb_hash(&key)));
+	DEBUG(2,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
 
 	ZERO_STRUCT(header);
 	header.rsn = rsn + 1;
-	header.dmaster = ctdb->vnn;
+	header.dmaster = ctdb->pnn;
 
 	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
@@ -246,8 +246,8 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 
 	if (state == NULL) {
-		DEBUG(0,("vnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
-			 ctdb->vnn, hdr->reqid, hdr->srcnode));
+		DEBUG(0,("pnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
+			 ctdb->pnn, hdr->reqid, hdr->srcnode));
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return;
 	}
@@ -259,7 +259,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
-	ctdb_call_local(ctdb_db, &state->call, &header, state, &data, ctdb->vnn);
+	ctdb_call_local(ctdb_db, &state->call, &header, state, &data, ctdb->pnn);
 
 	ctdb_ltdb_unlock(ctdb_db, state->call.key);
 
@@ -310,20 +310,20 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		return;
 	}
 
-	if (ctdb_lmaster(ctdb, &key) != ctdb->vnn) {
-		DEBUG(0,("vnn %u dmaster request to non-lmaster lmaster=%u gen=%u curgen=%u\n",
-			 ctdb->vnn, ctdb_lmaster(ctdb, &key), 
+	if (ctdb_lmaster(ctdb, &key) != ctdb->pnn) {
+		DEBUG(0,("pnn %u dmaster request to non-lmaster lmaster=%u gen=%u curgen=%u\n",
+			 ctdb->pnn, ctdb_lmaster(ctdb, &key), 
 			 hdr->generation, ctdb->vnn_map->generation));
 		ctdb_fatal(ctdb, "ctdb_req_dmaster to non-lmaster");
 	}
 
-	DEBUG(2,("vnn %u dmaster request on %08x for %u from %u\n", 
-		 ctdb->vnn, ctdb_hash(&key), c->dmaster, c->hdr.srcnode));
+	DEBUG(2,("pnn %u dmaster request on %08x for %u from %u\n", 
+		 ctdb->pnn, ctdb_hash(&key), c->dmaster, c->hdr.srcnode));
 
 	/* its a protocol error if the sending node is not the current dmaster */
 	if (header.dmaster != hdr->srcnode) {
-		DEBUG(0,("vnn %u dmaster request non-master %u dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u\n",
-			 ctdb->vnn, hdr->srcnode, header.dmaster, ctdb_hash(&key),
+		DEBUG(0,("pnn %u dmaster request non-master %u dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u\n",
+			 ctdb->pnn, hdr->srcnode, header.dmaster, ctdb_hash(&key),
 			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation));
 		ctdb_fatal(ctdb, "ctdb_req_dmaster from non-master");
 		return;
@@ -334,7 +334,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 
 	/* check if the new dmaster is the lmaster, in which case we
 	   skip the dmaster reply */
-	if (c->dmaster == ctdb->vnn) {
+	if (c->dmaster == ctdb->pnn) {
 		ctdb_become_dmaster(ctdb_db, hdr, key, data, c->rsn);
 	} else {
 		ctdb_send_dmaster_reply(ctdb_db, &header, key, data, c->dmaster, hdr->reqid);
@@ -387,7 +387,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	/* if we are not the dmaster, then send a redirect to the
 	   requesting node */
-	if (header.dmaster != ctdb->vnn) {
+	if (header.dmaster != ctdb->pnn) {
 		talloc_free(data.dptr);
 		ctdb_call_send_redirect(ctdb, call.key, c, &header);
 		ctdb_ltdb_unlock(ctdb_db, call.key);
@@ -402,12 +402,12 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   then give them the record
 	   or if the node requested an immediate migration
 	*/
-	if ( c->hdr.srcnode != ctdb->vnn &&
+	if ( c->hdr.srcnode != ctdb->pnn &&
 	     ((header.laccessor == c->hdr.srcnode
 	       && header.lacount >= ctdb->tunable.max_lacount)
 	      || (c->flags & CTDB_IMMEDIATE_MIGRATION)) ) {
-		DEBUG(2,("vnn %u starting migration of %08x to %u\n", 
-			 ctdb->vnn, ctdb_hash(&call.key), c->hdr.srcnode));
+		DEBUG(2,("pnn %u starting migration of %08x to %u\n", 
+			 ctdb->pnn, ctdb_hash(&call.key), c->hdr.srcnode));
 		ctdb_call_send_dmaster(ctdb_db, c, &header, &call.key, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call.key);
@@ -520,8 +520,8 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
-		DEBUG(0,("vnn %u Invalid reqid %u in ctdb_reply_error\n",
-			 ctdb->vnn, hdr->reqid));
+		DEBUG(0,("pnn %u Invalid reqid %u in ctdb_reply_error\n",
+			 ctdb->pnn, hdr->reqid));
 		return;
 	}
 
@@ -570,7 +570,7 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 	state->c->hdr.generation = state->generation;
 
 	/* send the packet to ourselves, it will be redirected appropriately */
-	state->c->hdr.destnode = ctdb->vnn;
+	state->c->hdr.destnode = ctdb->pnn;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 	DEBUG(0,("resent ctdb_call\n"));
@@ -625,7 +625,7 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	state->call = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->vnn);
+	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->pnn);
 
 	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
 

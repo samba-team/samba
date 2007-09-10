@@ -286,12 +286,12 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	ctdb->name = talloc_asprintf(ctdb, "%s:%u", 
 				     ctdb->address.address, 
 				     ctdb->address.port);
-	ctdb->vnn = ctdb->nodes[i]->vnn;
+	ctdb->pnn = ctdb->nodes[i]->pnn;
 	ctdb->nodes[i]->flags &= ~NODE_FLAGS_DISCONNECTED;
-	DEBUG(1,("ctdb chose network address %s:%u vnn %u\n", 
+	DEBUG(1,("ctdb chose network address %s:%u pnn %u\n", 
 		 ctdb->address.address, 
 		 ctdb->address.port, 
-		 ctdb->vnn));
+		 ctdb->pnn));
 
 	if (listen(ctcp->listen_fd, 10) == -1) {
 		goto failed;

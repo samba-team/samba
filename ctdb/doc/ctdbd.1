@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 08/23/2007
+.\"      Date: 09/03/2007
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "08/23/2007" "" ""
+.TH "CTDBD" "1" "09/03/2007" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -16,7 +16,7 @@ ctdbd \- The CTDB cluster daemon
 .HP 6
 \fBctdbd\fR
 .HP 6
-\fBctdbd\fR {\-\-reclock=<filename>} {\-\-nlist=<filename>} {\-\-dbdir=<directory>} [\-?\ \-\-help] [\-\-usage] [\-i\ \-\-interactive] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] [\-\-event\-script=<filename>] [\-\-logfile=<filename>] [\-\-listen=<address>] [\-\-transport=<STRING>] [\-\-socket=<filename>] [\-d\ \-\-debug=<INTEGER>] [\-\-torture]
+\fBctdbd\fR {\-\-reclock=<filename>} {\-\-nlist=<filename>} {\-\-dbdir=<directory>} [\-?\ \-\-help] [\-\-usage] [\-i\ \-\-interactive] [\-\-public\-addresses=<filename>] [\-\-event\-script=<filename>] [\-\-logfile=<filename>] [\-\-listen=<address>] [\-\-transport=<STRING>] [\-\-socket=<filename>] [\-d\ \-\-debug=<INTEGER>] [\-\-torture]
 .SH "DESCRIPTION"
 .PP
 ctdbd is the main ctdb daemon.
@@ -66,14 +66,9 @@ By default ctdbd will detach itself from the shell and run in the background as 
 .PP
 \-\-public_addresses=<filename>
 .RS 3n
-When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains one entry for each node in the cluster.
+When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it iwll distribute these public ip addresses evenly across the availabel nodes.
 .sp
 This is usually the file /etc/ctdb/public_addresses
-.RE
-.PP
-\-\-public\-interface=<interface>
-.RS 3n
-When used with IP takeover this option specifies which physical interface should be used to attach the public addresses to.
 .RE
 .PP
 \-\-event\-script=<filename>
@@ -122,7 +117,7 @@ You do NOT want to use this option unless you are developing and testing new fun
 .RE
 .SH "PRIVATE VS PUBLIC ADDRESSES"
 .PP
-When used for ip takeover in a HA environment, each node in a ctdb cluster has two ip addresses assigned to it. One private and one public.
+When used for ip takeover in a HA environment, each node in a ctdb cluster has multiple ip addresses assigned to it. One private and one or more public.
 .SS "Private address"
 .PP
 This is the physical ip address of the node which is configured in linux and attached to a physical interface. This address uniquely identifies a physical node in the cluster and is the ip addresses that ctdbd will use to communicate with the ctdbd daemons on the other nodes in the cluster.
@@ -149,28 +144,28 @@ Since the private addresses are only available to the network when the correspon
 .PP
 A public address on the other hand is not attached to an interface. This address is managed by ctdbd itself and is attached/detached to a physical node at runtime. You should NOT have this address configured to an interface in linux. Let ctdbd manage these addresses.
 .PP
-The ctdb cluster will assign/reassign these public addresses across the available nodes in the cluster. When one node fails, its public address will be migrated to and taken over by a different node in the cluster to ensure that all public addresses are always available to clients.
+The ctdb cluster will assign/reassign these public addresses across the available healthy nodes in the cluster. When one node fails, its public address will be migrated to and taken over by a different node in the cluster to ensure that all public addresses are always available to clients.
 .PP
 These addresses are not physically attached to a specific node. The 'ctdb ip' command can be used to view the current assignment of public addresses and which physical node is currently serving it.
 .PP
-By default, each node will when operational always serve its primary public address which is the corresponding line for that node number in the public addresses file. I.e. as long as node X is available and fully oprational it will always be the node that serves the corresponding public address.
-.PP
-The list of public addresses also contain the netmask for that address. the reason for this is because ctdbd needs to know which mask to use when it adds/removes the address from a physical node. This netmask is also used by ctdbd when making decisions on which node should take over a public ip address for a failed node. A node will only be allowed to take over a public address from a different node IFF that public address resides in the same subnet as the primary public address for that node.
+The list of public addresses also contain the netmask and the interface where this address should be attached.
 
       Example /etc/ctdb/public_addresses for a four node cluster:
       
 .sp
 .RS 3n
 .nf
-        11.1.1.1/24
-        11.1.1.2/24
-        11.1.2.1/24
-        11.1.2.2/24
+        11.1.1.1/24 eth0
+        11.1.1.2/24 eth0
+        11.1.2.1/24 eth1
+        11.1.2.2/24 eth1
       
 .fi
 .RE
 .PP
-In this example, if node 3 fails, its public address can be taken over by node 2 since node 2 is on the same subnet as 3 but not by node 0 or node 1 since node 0 and 1 are both on a different subnet from node 3.
+In this example, two nodes in the cluster will serve 11.1.1.1 and 11.1.1.2 through interface eth0 and two (possibly other) nodes will serve 11.1.2.1 and 11.1.2.2 through eth1.
+.PP
+The public address file must be the same on all nodes. Since this file also specifies which interface the address should be attached to it is imporant that all nodes use the same naming convention for interfaces.
 .SH "NODE STATUS"
 .PP
 The current status of each node in the cluster can be viewed by the 'ctdb status' command.

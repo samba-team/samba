@@ -105,14 +105,14 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 				     node->address.address, 
 				     node->address.port);
 	/* this assumes that the nodes are kept in sorted order, and no gaps */
-	node->vnn = ctdb->num_nodes;
+	node->pnn = ctdb->num_nodes;
 
 	/* nodes start out disconnected */
 	node->flags |= NODE_FLAGS_DISCONNECTED;
 
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {
-		ctdb->vnn = node->vnn;
+		ctdb->pnn = node->pnn;
 		node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	}
 
@@ -226,7 +226,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	case CTDB_REQ_DMASTER:
 	case CTDB_REPLY_DMASTER:
 		/* we dont allow these calls when banned */
-		if (ctdb->nodes[ctdb->vnn]->flags & NODE_FLAGS_BANNED) {
+		if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_BANNED) {
 			DEBUG(0,(__location__ " ctdb operation %u"
 				" request %u"
 				" length %u from node %u to %u while node"
@@ -401,7 +401,7 @@ static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb,
 {
 	int i;
 	for (i=0;i<ctdb->num_nodes;i++) {
-		hdr->destnode = ctdb->nodes[i]->vnn;
+		hdr->destnode = ctdb->nodes[i]->pnn;
 		ctdb_queue_packet(ctdb, hdr);
 	}
 }
@@ -428,7 +428,7 @@ static void ctdb_broadcast_packet_connected(struct ctdb_context *ctdb,
 	int i;
 	for (i=0;i<ctdb->num_nodes;i++) {
 		if (!(ctdb->nodes[i]->flags & NODE_FLAGS_DISCONNECTED)) {
-			hdr->destnode = ctdb->nodes[i]->vnn;
+			hdr->destnode = ctdb->nodes[i]->pnn;
 			ctdb_queue_packet(ctdb, hdr);
 		}
 	}
@@ -455,7 +455,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	ctdb->statistics.node_packets_sent++;
 
-	if (!ctdb_validate_vnn(ctdb, hdr->destnode)) {
+	if (!ctdb_validate_pnn(ctdb, hdr->destnode)) {
 	  	DEBUG(0,(__location__ " cant send to node %u that does not exist\n", 
 			 hdr->destnode));
 		return;
@@ -463,7 +463,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	node = ctdb->nodes[hdr->destnode];
 
-	if (hdr->destnode == ctdb->vnn) {
+	if (hdr->destnode == ctdb->pnn) {
 		ctdb_defer_packet(ctdb, hdr);
 	} else {
 		node->tx_cnt++;

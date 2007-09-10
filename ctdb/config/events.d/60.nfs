@@ -15,8 +15,8 @@ PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 case $cmd in 
      startup)
 	/bin/mkdir -p /etc/ctdb/state/nfs
-	/bin/mkdir -p ${STATD_SHARED_DIRECTORY}/${PUBLIC_IP}
 	/bin/mkdir -p /etc/ctdb/state/statd/ip
+	/bin/mkdir -p $STATD_SHARED_DIRECTORY
 	ctdb_wait_directories "nfslock" "$STATD_SHARED_DIRECTORY"
 
 
@@ -54,19 +54,16 @@ case $cmd in
 	ip=$2
 	maskbits=$3
 
-	echo $ip >> /etc/ctdb/state/nfs/restart
-
 	echo $ip >> /etc/ctdb/state/statd/restart
-	/bin/rm -f /etc/ctdb/state/statd/ip/$ip
-	exit 0
-	;;
 
-     recovered)
-	[ -f /etc/ctdb/state/nfs/restart ] && [ ! -z "$LOCKD_TCPPORT" ] && {
+	/bin/rm -f /etc/ctdb/state/statd/ip/$ip
+
+	# RST all tcp connections to the lockmanager
+	[ ! -z "$LOCKD_TCPPORT" ] && {
 	        # RST all tcp connections used for NLM to ensure that they do
 		# not survive in ESTABLISHED state across a failover/failback
 		# and create an ack storm
-		netstat -tn |egrep "^tcp.*\s+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:${LOCKD_TCPPORT}\s+.*ESTABLISHED" | awk '{print $4" "$5}' | while read dest src; do
+		netstat -tn |egrep "^tcp.*\s+$ip:${LOCKD_TCPPORT}\s+.*ESTABLISHED" | awk '{print $4" "$5}' | while read dest src; do
 			srcip=`echo $src | cut -d: -f1`
 			srcport=`echo $src | cut -d: -f2`
 			destip=`echo $dest | cut -d: -f1`
@@ -76,24 +73,26 @@ case $cmd in
 		done
 	} > /dev/null 2>&1
 
-	[ -f /etc/ctdb/state/nfs/restart ] && {
-	        # RST all tcp connections used for NFS to ensure that they do
-		# not survive in ESTABLISHED state across a failover/failback
-		# and create an ack storm
-		netstat -tn |egrep '^tcp.*\s+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:2049\s+.*ESTABLISHED' | awk '{print $4" "$5}' | while read dest src; do
-			srcip=`echo $src | cut -d: -f1`
-			srcport=`echo $src | cut -d: -f2`
-			destip=`echo $dest | cut -d: -f1`
-			destport=`echo $dest | cut -d: -f2`
-			ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 
-			ctdb killtcp $destip:$destport $srcip:$srcport >/dev/null 2>&1
-		done
-	} > /dev/null 2>&1
-	/bin/rm -f /etc/ctdb/state/nfs/restart
 
-	# if we have taken or released any ips we must send out
-	# statd notifications to recover lost nfs locks
-	[ -x /etc/ctdb/statd-callout ] && [ -f /etc/ctdb/state/statd/restart ] && {
+        # RST the local side for all tcp connections used for NFS to ensure 
+	# that they do not survive in ESTABLISHED state across a 
+	# failover/failback and create an ack storm
+	netstat -tn |egrep "^tcp.*\s+$ip:2049\s+.*ESTABLISHED" | awk '{print $4" "$5}' | while read dest src; do
+		srcip=`echo $src | cut -d: -f1`
+		srcport=`echo $src | cut -d: -f2`
+		destip=`echo $dest | cut -d: -f1`
+		destport=`echo $dest | cut -d: -f2`
+		ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 
+#		ctdb killtcp $destip:$destport $srcip:$srcport >/dev/null 2>&1
+	done
+
+	exit 0
+	;;
+
+     recovered)
+	# always restart the lockmanager so that we start with a clusterwide
+	# graceperiod when ip addresses has changed
+	[ -x /etc/ctdb/statd-callout ] && {
 		/etc/ctdb/statd-callout notify &
 	} >/dev/null 2>&1
 
