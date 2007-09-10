@@ -92,9 +92,9 @@ int32_t ctdb_control_check_server_id(struct ctdb_context *ctdb,
 {
 	struct ctdb_server_id *server_id = (struct ctdb_server_id *)indata.dptr;
 
-	return (int32_t)trbt_lookuparray32(ctdb->server_ids, 
-				SERVER_ID_KEY_SIZE,
-				get_server_id_key(server_id));
+	return trbt_lookuparray32(ctdb->server_ids, 
+				  SERVER_ID_KEY_SIZE,
+				  get_server_id_key(server_id)) == NULL? 0 : 1;
 }
 
 /*

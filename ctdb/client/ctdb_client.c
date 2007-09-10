@@ -2379,6 +2379,8 @@ int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb,
 
 /*
   check if a server id exists
+
+  if a server id does exist, return *status == 1, otherwise *status == 0
  */
 int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 
