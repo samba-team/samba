@@ -36,8 +36,6 @@
 
 #define SAMBA_SESSION_KEY "SambaSessionId"
 #define HTTP_PREAUTH_URI  "/scripting/preauth.esp"
-#define JSONRPC_REQUEST   "/services"
-#define JSONRPC_SERVER    "/request.esp"
 
 /* state of the esp subsystem for a specific request */
 struct esp_state {
@@ -171,12 +169,12 @@ failed:
 	return -1;
 }
 
-static int http_readFileFromWebappsDir(EspHandle handle,
+static int http_readFileFromSwatDir(EspHandle handle,
                                        char **buf,
                                        int *len,
                                        const char *path)
 {
-    return http_readFile(handle, buf, len, path, lp_webapps_directory());
+    return http_readFile(handle, buf, len, path, lp_swat_directory());
 }
 
 
@@ -390,7 +388,7 @@ static void http_simple_request(struct websrv_context *web)
 	const char *path;
 	struct stat st;
 
-	path = http_local_path(web, url, lp_webapps_directory());
+	path = http_local_path(web, url, lp_swat_directory());
 	if (path == NULL) goto invalid;
 
 	/* looks ok */
@@ -472,7 +470,7 @@ static void http_setup_arrays(struct esp_state *esp)
 		       talloc_asprintf(esp, "%u", socket_address->port));
 	}
 
-	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_webapps_directory());
+	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory());
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->conn->socket)?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SAMBA");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
@@ -517,7 +515,7 @@ static void esp_request(struct esp_state *esp, const char *url)
 	int res;
 	char *emsg = NULL, *buf;
 
-	if (http_readFile(web, &buf, &size, url, lp_webapps_directory()) != 0) {
+	if (http_readFile(web, &buf, &size, url, lp_swat_directory()) != 0) {
 		http_error_unix(web, url);
 		return;
 	}
@@ -539,89 +537,17 @@ static void esp_request(struct esp_state *esp, const char *url)
 }
 
 /*
-  process a JSON RPC request
-*/
-static void jsonrpc_request(struct esp_state *esp)
-{
-	struct websrv_context *web = esp->web;
-	const char *path = http_local_path(web,
-                                           JSONRPC_SERVER,
-                                           lp_jsonrpc_services_dir());
-        MprVar *global;
-        MprVar v;
-        MprVar temp;
-	int size;
-	int res;
-	char *emsg = NULL;
-	char *emsg2 = NULL;
-        char *buf;
-        char *error_script =
-                "error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server); "
-                "error.setError(jsonrpc.Constant.ErrorCode.UnexpectedOutput, "
-                "               global.errorString);"
-                "error.Send();";
-
-        /* Ensure we got a valid path. */
-	if (path == NULL) {
-                /* should never occur */
-		http_error(esp->web, 500, "Internal server error");
-		return;
-	}
-
-        /* Ensure that the JSON-RPC server request script exists */
-	if (!file_exist(path)) {
-		http_error_unix(esp->web, path);
-		return;
-	}
-
-        /* Call the server request script */
-	if (http_readFile(web, &buf, &size,
-                          JSONRPC_SERVER, lp_jsonrpc_services_dir()) != 0) {
-		http_error_unix(web, JSONRPC_SERVER);
-		return;
-	}
-
-#if HAVE_SETJMP_H
-	if (setjmp(ejs_exception_buf) != 0) {
-		http_error(web, 500, exception_reason);
-		return;
-	}
-#endif
-
-	res = espProcessRequest(esp->req, JSONRPC_SERVER, buf, &emsg);
-	if (res != 0 && emsg) {
-                /* Save the error in a string accessible from javascript */
-                global = ejsGetGlobalObject(0);
-                v = mprString(emsg);
-                mprCreateProperty(global, "errorString", &v);
-
-                /* Create and send a JsonRpcError object */
-                if (ejsEvalScript(0,
-                                  error_script,
-                                  &temp,
-                                  &emsg2) != 0) {
-                        http_writeBlock(web, "<pre>", 5);
-                        http_writeBlock(web, emsg, strlen(emsg));
-                        http_writeBlock(web, "</pre>", 6);
-                }
-	}
-	talloc_free(buf);
-}
-
-/*
   perform pre-authentication on every page if /scripting/preauth.esp
   exists.  If this script generates any non-whitepace output at all,
   then we don't run the requested URL.
 
-  note that the preauth is run even for static pages such as images, but not
-  for JSON-RPC service requests which do their own authentication via the
-  JSON-RPC server.
+  note that the preauth is run even for static pages such as images
 */
 static BOOL http_preauth(struct esp_state *esp)
 {
 	const char *path = http_local_path(esp->web,
                                            HTTP_PREAUTH_URI,
-                                           lp_webapps_directory());
+                                           lp_swat_directory());
 	int i;
 	if (path == NULL) {
 		http_error(esp->web, 500, "Internal server error");
@@ -834,7 +760,7 @@ static const struct Esp esp_control = {
 	.setHeader       = http_setHeader,
 	.redirect        = http_redirect,
 	.setResponseCode = http_setResponseCode,
-	.readFile        = http_readFileFromWebappsDir,
+	.readFile        = http_readFileFromSwatDir,
 	.mapToStorage    = http_mapToStorage,
 	.setCookie       = http_setCookie,
 	.createSession   = http_createSession,
@@ -858,8 +784,7 @@ void http_process_input(struct websrv_context *web)
 	const char *file_type = NULL;
         enum page_type {
                 page_type_simple,
-                page_type_esp,
-                page_type_jsonrpc
+                page_type_esp
         };
         enum page_type page_type;
 	const struct {
@@ -945,35 +870,21 @@ void http_process_input(struct websrv_context *web)
 	esp->req = espCreateRequest(web, web->input.url, esp->variables);
 	if (esp->req == NULL) goto internal_error;
 
-	/*
-         * Work out the mime type.  First, we see if the request is a JSON-RPC
-         * service request.  If not, we look at the extension.
-         */
-        if (strncmp(web->input.url,
-                    JSONRPC_REQUEST,
-                    sizeof(JSONRPC_REQUEST) - 1) == 0 &&
-            (web->input.url[sizeof(JSONRPC_REQUEST) - 1] == '\0' ||
-             web->input.url[sizeof(JSONRPC_REQUEST) - 1] == '/')) {
-            page_type = page_type_jsonrpc;
-            file_type = "text/json";
-            
-        } else {
-            p = strrchr(web->input.url, '.');
-            if (p == NULL) {
-                    page_type = page_type_esp;
-		    file_type = "text/html";
-            }
-            for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
+	p = strrchr(web->input.url, '.');
+	if (p == NULL) {
+		page_type = page_type_esp;
+		file_type = "text/html";
+	}
+	for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
 		if (strcmp(mime_types[i].extension, p+1) == 0) {
-                    page_type = mime_types[i].page_type;
-                    file_type = mime_types[i].mime_type;
+			page_type = mime_types[i].page_type;
+			file_type = mime_types[i].mime_type;
 		}
-            }
-            if (file_type == NULL) {
+	}
+	if (file_type == NULL) {
                 page_type = page_type_simple;
 		file_type = "text/html";
-            }
-        }
+	}
 
 	/* setup basic headers */
 	http_setResponseCode(web, 200);
@@ -1001,10 +912,6 @@ void http_process_input(struct websrv_context *web)
                 if (http_preauth(esp)) {
                         esp_request(esp, web->input.url);
                 }
-                break;
-
-        case page_type_jsonrpc:
-                jsonrpc_request(esp);
                 break;
         }
 

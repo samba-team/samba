@@ -1,8 +1,0 @@
-\bqx\.ui\.embed\.IconHtmlEmbed\.START_IMAGE\b="<img src\=\""
-\bqx\.ui\.embed\.IconHtmlEmbed\.START_STYLE\b="\" style\=\"vertical-align:middle;"
-\bqx\.ui\.embed\.IconHtmlEmbed\.STYLE_MARGIN\b="margin-right:"
-\bqx\.ui\.embed\.IconHtmlEmbed\.STYLE_WIDTH\b="width:"
-\bqx\.ui\.embed\.IconHtmlEmbed\.STYLE_HEIGHT\b="height:"
-\bqx\.ui\.embed\.IconHtmlEmbed\.PIXEL_UNIT\b="px;"
-\bqx\.ui\.embed\.IconHtmlEmbed\.FILTER_START\b="filter:"
-\bqx\.ui\.embed\.IconHtmlEmbed\.STOP_IMAGE\b="\"/>"

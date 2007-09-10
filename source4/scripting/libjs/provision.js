@@ -162,7 +162,6 @@ function ldb_erase(info, ldb)
 	/* delete the specials */
 	ldb.del("@INDEXLIST");
 	ldb.del("@ATTRIBUTES");
-	ldb.del("@SUBCLASSES");
 	ldb.del("@MODULES");
 	ldb.del("@PARTITION");
 	ldb.del("@KLUDGEACL");

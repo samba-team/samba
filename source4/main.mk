@@ -58,8 +58,7 @@ showlayout:
 	@echo '  logfilebase: $(LOGFILEBASE)'
 	@echo '  setupdir:    $(SETUPDIR)'
 	@echo '  jsdir:       $(JSDIR)'
-	@echo '  webappsdir:  $(WEBAPPSDIR)'
-	@echo '  servicesdir: $(SERVICESDIR)'
+	@echo '  swatdir:     $(SWATDIR)'
 	@echo '  mandir:      $(MANDIR)'
 	@echo '  torturedir:  $(TORTUREDIR)'
 	@echo '  datadir:     $(DATADIR)'
@@ -86,7 +85,7 @@ showflags:
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-install: showlayout everything installbin installdat installwebapps installmisc installlib \
+install: showlayout everything installbin installdat installswat installmisc installlib \
 	installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
@@ -147,9 +146,8 @@ installheader: headers installdirs
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(DATADIR) $(srcdir)
 
-installwebapps: installdirs
-	@$(SHELL) $(srcdir)/script/installwebapps.sh $(DESTDIR)$(WEBAPPSDIR) $(srcdir)
-	@$(SHELL) $(srcdir)/script/installjsonrpc.sh $(DESTDIR)$(SERVICESDIR) $(srcdir)
+installswat: installdirs
+	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installman: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
@@ -268,7 +266,6 @@ distclean: clean
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f config.pm config.mk
-	-rm -rf ../webapps/qooxdoo-*-sdk/frontend/framework/.cache
 	-rm -f $(PC_FILES)
 
 removebackup:

@@ -63,11 +63,6 @@ $AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
 
-if test x"${AUTOGEN_SKIP_SWAT}" != x"yes"; then
-	echo "$0: building Web Application Framework (SWAT)"
-	(cd ../webapps/swat && make distclean build || exit 1)
-fi
-
 echo "Now run ./configure and then make."
 exit 0
 

@@ -126,7 +126,7 @@ struct global
 	char *szTemplateShell;
 	char *szTemplateHomedir;
 	int bWinbindSealedPipes;
-	char *webapps_directory;
+	char *swat_directory;
 	int tls_enabled;
 	char *tls_keyfile;
 	char *tls_certfile;
@@ -460,7 +460,7 @@ static struct parm_struct parm_table[] = {
 	{"tls cafile", P_STRING, P_GLOBAL, &loadparm.Globals.tls_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls crlfile", P_STRING, P_GLOBAL, &loadparm.Globals.tls_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls dh params file", P_STRING, P_GLOBAL, &loadparm.Globals.tls_dhpfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web application directory", P_STRING, P_GLOBAL, &loadparm.Globals.webapps_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"swat directory", P_STRING, P_GLOBAL, &loadparm.Globals.swat_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &loadparm.Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
 	{"server max protocol", P_ENUM, P_GLOBAL, &loadparm.Globals.srv_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
 	{"server min protocol", P_ENUM, P_GLOBAL, &loadparm.Globals.srv_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
@@ -549,7 +549,6 @@ static struct parm_struct parm_table[] = {
 	{"modules dir", P_STRING, P_GLOBAL, &loadparm.Globals.szModulesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"pid directory", P_STRING, P_GLOBAL, &loadparm.Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
 	{"js include", P_LIST, P_GLOBAL, &loadparm.Globals.jsInclude, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"jsonrpc services directory", P_STRING, P_GLOBAL, &loadparm.Globals.jsonrpcServicesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"setup directory", P_STRING, P_GLOBAL, &loadparm.Globals.szSetupDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"socket address", P_STRING, P_GLOBAL, &loadparm.Globals.szSocketAddress, NULL, NULL, FLAG_DEVELOPER},
@@ -683,7 +682,7 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, &loadparm.Globals.krb5_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, &loadparm.Globals.kpasswd_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, &loadparm.Globals.web_port)
 _PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, &dos_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_webapps_directory, &loadparm.Globals.webapps_directory)
+_PUBLIC_ FN_GLOBAL_STRING(lp_swat_directory, &loadparm.Globals.swat_directory)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, &loadparm.Globals.tls_enabled)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, &loadparm.Globals.tls_keyfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, &loadparm.Globals.tls_certfile)
@@ -766,7 +765,6 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_security, &loadparm.Globals.security)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &loadparm.Globals.paranoid_server_security)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, &loadparm.Globals.announce_as)
 _PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &loadparm.Globals.jsInclude)
-_PUBLIC_ FN_GLOBAL_STRING(lp_jsonrpc_services_dir, &loadparm.Globals.jsonrpcServicesDir)
 _PUBLIC_ FN_LOCAL_STRING(lp_servicename, szService)
 _PUBLIC_ FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 _PUBLIC_ FN_LOCAL_STRING(lp_pathname, szPath)
@@ -2429,8 +2427,7 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 	lp_do_global_parameter(lp_ctx, "krb5 port", "88");
 	lp_do_global_parameter(lp_ctx, "kpasswd port", "464");
 	lp_do_global_parameter(lp_ctx, "web port", "901");
-	lp_do_global_parameter(lp_ctx, "web application directory", dyn_WEBAPPSDIR);
-	lp_do_global_parameter(lp_ctx, "jsonrpc services directory", dyn_SERVICESDIR);
+	lp_do_global_parameter(lp_ctx, "swat directory", dyn_SWATDIR);
 
 	lp_do_global_parameter(lp_ctx, "nt status support", "True");
 

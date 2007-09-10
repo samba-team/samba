@@ -1,8 +1,0 @@
-(?<!JSON: )[\"\']text\/json[\"\']=qx.util.Mime.JSON
-(?<!JSON: )[\"\']application\/json[\"\']=qx.util.Mime.JSON
-(?<!XML: )[\"\']application\/xml[\"\']=qx.util.Mime.XML
-(?<!TEXT: )[\"\']text\/plain[\"\']=qx.util.Mime.TEXT
-(?<!HTML: )[\"\']text\/html[\"\']=qx.util.Mime.HTML
-
-# text/javascript is not autmatically replaced with application/javascript.
-# Instead, a info warning is given, see info/ folder.
