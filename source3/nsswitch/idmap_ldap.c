@@ -78,6 +78,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 	char *secret = NULL;
 	const char *tmp = NULL;
 	char *user_dn = NULL;
+	bool anon = false;
 
 	/* assume anonymous if we don't have a specified user */
 
@@ -106,7 +107,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 		if (!fetch_ldap_pw(&user_dn, &secret)) {
 			DEBUG(2, ("get_credentials: Failed to lookup ldap "
 				  "bind creds. Using anonymous connection.\n"));
-			*dn = talloc_strdup(mem_ctx, "");
+			anon = true;
 		} else {
 			*dn = talloc_strdup(mem_ctx, user_dn);
 			SAFE_FREE( user_dn );
@@ -114,10 +115,10 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	smbldap_set_creds(ldap_state, false, *dn, secret);
+	smbldap_set_creds(ldap_state, anon, *dn, secret);
 	ret = NT_STATUS_OK;
 
- done:
+done:
 	SAFE_FREE(secret);
 
 	return ret;
