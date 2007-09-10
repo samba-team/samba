@@ -29,5 +29,5 @@
     special configuration to use it.</para>
 </description>
 
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
