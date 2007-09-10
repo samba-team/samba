@@ -1,8 +1,0 @@
-\bqx\.ui\.window\.Window\.MODE_OPAQUE\b="opaque"
-\bqx\.ui\.window\.Window\.MODE_LAZYOPAQUE\b="lazyopaque"
-\bqx\.ui\.window\.Window\.MODE_FRAME\b="frame"
-\bqx\.ui\.window\.Window\.MODE_TRANSLUCENT\b="translucent"
-\bqx\.ui\.window\.Window\.MODE_MINIMIZED\b="minimized"
-\bqx\.ui\.window\.Window\.MODE_MAXIMIZED\b="maximized"
-\bqx\.ui\.window\.Window\.STATE_ACTIVE\b="active"
-\bqx\.ui\.window\.Window\.STATE_MAXIMIZED\b="maximized"

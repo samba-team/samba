@@ -1,3 +1,0 @@
-\bQxSet\b=Does not exist anymore. Maybe qx.manager.object.ObjectManager can be used instead.
-\bQxTransport\b=Does not exist anymore. Please use qx.io.remote.RemoteRequest now.
-\bQxXmlHttpTransport\b=Does not exist anymore. Please use qx.io.remote.RemoteRequest now.

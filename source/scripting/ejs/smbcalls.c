@@ -161,51 +161,6 @@ static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 
-/*
- * jsonrpc_include() allows you to include jsonrpc files from a path based at
- * "jsonrpc services directory =" in smb.conf.
- */
-static int jsonrpc_include(int eid, int argc, char **argv)
-{
-        int ret = -1;
-        char *path;
-        char *emsg;
-	const char *jsonrpc_services_dir = lp_jsonrpc_services_dir();
-        struct MprVar result;
-
-
-	if (jsonrpc_services_dir == NULL || jsonrpc_services_dir == NULL) {
-		ejsSetErrorMsg(eid, "'jsonrpc services directory' not set");
-		return -1;
-	}
-
-        if (argc != 1) {
-                mpr_Return(eid, mprCreateIntegerVar(-1));
-		return 0;
-        }
-
-        path = talloc_asprintf(mprMemCtx(), "%s/%s",
-                               jsonrpc_services_dir,
-                               argv[0]);
-        if (path == NULL) {
-                mpr_Return(eid, mprCreateIntegerVar(-1));
-                return 0;
-        }
-
-        if (file_exist(path)) {
-                ret = ejsEvalFile(eid, path, &result, &emsg);
-                if (ret < 0) {
-                        ejsSetErrorMsg(eid, "Could not eval file");
-                        printf("file found; ret=%d (%s)\n", ret, emsg);
-                }
-        }
-        
-        mpr_Return(eid, mprCreateIntegerVar(ret));
-        talloc_free(path);
-	return 0;
-}
-
-
 static void (*ejs_exception_handler) (const char *) = NULL;
 
 _PUBLIC_ void ejs_exception(const char *reason)
@@ -240,6 +195,5 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	ejsDefineCFunction(-1, "nativeTypeOf", ejs_typeof_native, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "version", ejs_version, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "jsonrpc_include", jsonrpc_include, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 
