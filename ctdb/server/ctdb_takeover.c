@@ -183,12 +183,12 @@ failed:
   Find the vnn of the node that has a public ip address
   returns -1 if the address is not known as a public address
  */
-static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb, char *ip)
+static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb, struct sockaddr_in ip)
 {
 	struct ctdb_vnn *vnn;
 
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (!strcmp(vnn->public_address, ip)) {
+		if (ctdb_same_ip(&vnn->public_address, &ip)) {
 			return vnn;
 		}
 	}
@@ -210,21 +210,21 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	struct takeover_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
-	char *ip = talloc_strdup(tmp_ctx, inet_ntoa(pip->sin.sin_addr));
 	bool have_ip, is_loopback;
 	char *ifname = NULL;
 
 	/* update out vnn list */
-	vnn = find_public_ip_vnn(ctdb, ip);
+	vnn = find_public_ip_vnn(ctdb, pip->sin);
 	if (vnn == NULL) {
-		DEBUG(0,("takeoverip called for an ip '%s' that is not a public address\n", ip));
+		DEBUG(0,("takeoverip called for an ip '%s' that is not a public address\n", 
+			 inet_ntoa(pip->sin.sin_addr)));
 		talloc_free(tmp_ctx);
 		return 0;
 	}
 	vnn->pnn = pip->pnn;
 
 	/* if our kernel already has this IP, do nothing */
-	have_ip = ctdb_sys_have_ip(ip, &is_loopback, tmp_ctx, &ifname);
+	have_ip = ctdb_sys_have_ip(pip->sin, &is_loopback, tmp_ctx, &ifname);
 	/* if we have the ip and it is not set to a loopback address */
 	if (have_ip && !is_loopback) {
 		talloc_free(tmp_ctx);
@@ -242,7 +242,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	state->vnn = vnn;
 
 	DEBUG(0,("Takeover of IP %s/%u on interface %s\n", 
-		 ip, vnn->public_netmask_bits, 
+		 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 		 vnn->iface));
 
 	ctdb_stop_monitoring(ctdb);
@@ -252,11 +252,11 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 					 state, takeover_ip_callback, state,
 					 "takeip %s %s %u",
 					 vnn->iface, 
-					 ip,
+					 inet_ntoa(pip->sin.sin_addr),
 					 vnn->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
-			 ip, vnn->iface));
+			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
 		talloc_free(tmp_ctx);
 		talloc_free(state);
 		return -1;
@@ -272,18 +272,18 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 /*
   kill any clients that are registered with a IP that is being released
  */
-static void release_kill_clients(struct ctdb_context *ctdb, struct in_addr in)
+static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in in)
 {
 	struct ctdb_client_ip *ip;
 
 	for (ip=ctdb->client_ip_list; ip; ip=ip->next) {
-		if (ip->ip.sin_addr.s_addr == in.s_addr) {
+		if (ctdb_same_ip(&ip->ip, &in)) {
 			struct ctdb_client *client = ctdb_reqid_find(ctdb, 
 								     ip->client_id, 
 								     struct ctdb_client);
 			if (client->pid != 0) {
 				DEBUG(0,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
-					 (unsigned)client->pid, inet_ntoa(in),
+					 (unsigned)client->pid, inet_ntoa(in.sin_addr),
 					 ip->client_id));
 				kill(client->pid, SIGKILL);
 			}
@@ -313,7 +313,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
 
 	/* kill clients that have registered with this IP */
-	release_kill_clients(ctdb, state->sin->sin_addr);
+	release_kill_clients(ctdb, *state->sin);
 	
 	/* the control succeeded */
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
@@ -332,31 +332,31 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	int ret;
 	struct takeover_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
-	char *ip = talloc_strdup(tmp_ctx, inet_ntoa(pip->sin.sin_addr));
 	struct ctdb_vnn *vnn;
 	bool have_ip, is_loopback;
 	char *ifname = NULL;
 
 	/* update our vnn list */
-	vnn = find_public_ip_vnn(ctdb, ip);
+	vnn = find_public_ip_vnn(ctdb, pip->sin);
 	if (vnn == NULL) {
-		DEBUG(0,("releaseip called for an ip '%s' that is not a public address\n", ip));
+		DEBUG(0,("releaseip called for an ip '%s' that is not a public address\n", 
+			 inet_ntoa(pip->sin.sin_addr)));
 		talloc_free(tmp_ctx);
 		return 0;
 	}
 	vnn->pnn = pip->pnn;
 
-	have_ip = ctdb_sys_have_ip(ip, &is_loopback, tmp_ctx, &ifname);
+	have_ip = ctdb_sys_have_ip(pip->sin, &is_loopback, tmp_ctx, &ifname);
 	if ( (!have_ip) || is_loopback) { 
 		DEBUG(0,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
-			 ip, vnn->public_netmask_bits, 
+			 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 			 vnn->iface));
 		talloc_free(tmp_ctx);
 		return 0;
 	}
 
 	DEBUG(0,("Release of IP %s/%u on interface %s\n", 
-		 ip, vnn->public_netmask_bits, 
+		 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 		 vnn->iface));
 
 	/* stop any previous arps */
@@ -380,11 +380,11 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					 state, release_ip_callback, state,
 					 "releaseip %s %s %u",
 					 vnn->iface, 
-					 ip,
+					 inet_ntoa(pip->sin.sin_addr),
 					 vnn->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
-			 ip, vnn->iface));
+			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
 		talloc_free(tmp_ctx);
 		talloc_free(state);
 		return -1;
@@ -399,39 +399,26 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 
 
 
-static int add_public_address(struct ctdb_context *ctdb, int ip0, int ip1, int ip2, int ip3, int nm, char *iface)
+static int add_public_address(struct ctdb_context *ctdb, struct sockaddr_in addr, unsigned mask, const char *iface)
 {
 	struct ctdb_vnn      *vnn;
-	char *public_address;
 
 	/* Verify that we dont have an entry for this ip yet */
-	public_address = talloc_asprintf(ctdb, "%d.%d.%d.%d", ip0, ip1, ip2, ip3);
-	CTDB_NO_MEMORY_FATAL(ctdb, public_address);
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (!strcmp(public_address, vnn->public_address)) {
-			DEBUG(0,("Same ip '%s' specified multiple times in the public address list \n", public_address));
-			talloc_free(public_address);
+		if (ctdb_same_sockaddr(&addr, &vnn->public_address)) {
+			DEBUG(0,("Same ip '%s' specified multiple times in the public address list \n", 
+				 inet_ntoa(addr.sin_addr)));
 			exit(1);
 		}		
-	}
-
-	
-	/* make sure the netmask is ok */
-	if (nm > 32) {
-		DEBUG(0, ("Illegal netmask for IP %s\n", public_address));
-		talloc_free(public_address);
-		exit(1);
 	}
 
 	/* create a new vnn structure for this ip address */
 	vnn = talloc_zero(ctdb, struct ctdb_vnn);
 	CTDB_NO_MEMORY_FATAL(ctdb, vnn);
-	if (iface) {
-		vnn->iface = talloc_strdup(vnn, iface);
-	}
-	vnn->public_address      = talloc_steal(vnn, public_address);
-	vnn->public_netmask_bits = nm;
-	vnn->pnn        = -1;
+	vnn->iface = talloc_strdup(vnn, iface);
+	vnn->public_address      = addr;
+	vnn->public_netmask_bits = mask;
+	vnn->pnn                 = -1;
 	
 	DLIST_ADD(ctdb->vnn, vnn);
 
@@ -468,17 +455,33 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 	}
 
 	for (i=0;i<nlines;i++) {
-		int ip0, ip1, ip2, ip3, nm;
-		char iface[256];
+		unsigned mask;
+		struct sockaddr_in addr;
+		char ifacebuf[100];
+		const char *iface;
+		char *tok;
 
-		if (sscanf(lines[i], "%d.%d.%d.%d/%d %255s", &ip0, &ip1, &ip2, &ip3, &nm, iface) != 6) {
-			DEBUG(0,("Badly formed line '%s' in public address list\n", lines[i]));
+		tok = strtok(lines[i], " \t");
+		if (!tok || !parse_ip_mask(tok, &addr, &mask)) {
+			DEBUG(0,("Badly formed line %u in public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
 		}
+		tok = strtok(NULL, " \t");
+		if (tok == NULL) {
+			if (NULL == ctdb->default_public_interface) {
+				DEBUG(0,("No default public interface and no interface specified at line %u of public address list\n",
+					 i+1));
+				talloc_free(lines);
+				return -1;
+			}
+			iface = ctdb->default_public_interface;
+		} else {
+			iface = ifacebuf;
+		}
 
-		if (add_public_address(ctdb, ip0, ip1, ip2, ip3, nm, iface)) {
-			DEBUG(0,("Failed to add '%s' to the public address list\n", lines[i]));
+		if (add_public_address(ctdb, addr, mask, iface)) {
+			DEBUG(0,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
 		}
@@ -551,7 +554,7 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 		struct ctdb_public_ip_list *ip,
 		struct ctdb_public_ip_list *all_ips)
 {
-	int pnn, min, num;
+	int pnn, min=0, num;
 	int i;
 
 	pnn    = -1;
@@ -651,7 +654,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	struct ctdb_public_ip ip;
 	uint32_t mask;
 	struct ctdb_public_ip_list *all_ips, *tmp_ip;
-	int maxnode, maxnum, minnode, minnum, num;
+	int maxnode, maxnum=0, minnode, minnum=0, num;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 
@@ -882,14 +885,11 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	int ret;
 	TDB_DATA data;
 	struct ctdb_client_ip *ip;
-	char *addr;
 	struct ctdb_vnn *vnn;
 
-	addr = inet_ntoa(p->dest.sin_addr);
-
-	vnn = find_public_ip_vnn(ctdb, addr);
+	vnn = find_public_ip_vnn(ctdb, p->dest);
 	if (vnn == NULL) {
-		DEBUG(3,("Could not add client IP %s. This is not a public address.\n", addr)); 
+		DEBUG(3,("Could not add client IP %s. This is not a public address.\n", inet_ntoa(p->dest.sin_addr))); 
 		return 0;
 	}
 
@@ -975,12 +975,11 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_tcp_connection tcp;
 	struct ctdb_vnn *vnn;
-	char *addr;
 
-	addr = inet_ntoa(p->dest.sin_addr);
-	vnn = find_public_ip_vnn(ctdb, addr);
+	vnn = find_public_ip_vnn(ctdb, p->dest);
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n", addr));
+		DEBUG(0,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n", 
+			 inet_ntoa(p->dest.sin_addr)));
 		return-1;
 	}
 
@@ -1045,7 +1044,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tcp_connection *conn)
 {
 	struct ctdb_tcp_connection *tcpp;
-	struct ctdb_vnn *vnn = find_public_ip_vnn(ctdb, inet_ntoa(conn->daddr.sin_addr));
+	struct ctdb_vnn *vnn = find_public_ip_vnn(ctdb, conn->daddr);
 
 	if (vnn == NULL) {
 		DEBUG(0,(__location__ " unable to find public address %s\n", inet_ntoa(conn->daddr.sin_addr)));
@@ -1137,15 +1136,11 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		have_ip = ctdb_sys_have_ip(vnn->public_address, &is_loopback, tmp_ctx, &ifname);
 		if (have_ip && !is_loopback) {
-			struct in_addr in;
-
 			ctdb_event_script(ctdb, "releaseip %s %s %u",
 					  vnn->iface, 
-					  vnn->public_address,
+					  inet_ntoa(vnn->public_address.sin_addr),
 					  vnn->public_netmask_bits);
-			if (inet_aton(vnn->public_address, &in) != 0) {
-				release_kill_clients(ctdb, in);
-			}
+			release_kill_clients(ctdb, vnn->public_address);
 		}
 	}
 	talloc_free(tmp_ctx);
@@ -1179,10 +1174,8 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 	ips->num = num;
 	i = 0;
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		ips->ips[i].pnn   = vnn->pnn;
-		ips->ips[i].sin.sin_family = AF_INET;
-		inet_aton(vnn->public_address, 
-			  &ips->ips[i].sin.sin_addr);
+		ips->ips[i].pnn = vnn->pnn;
+		ips->ips[i].sin = vnn->public_address;
 		i++;
 	}
 
@@ -1363,9 +1356,9 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	struct ctdb_killtcp_con *con;
 	struct ctdb_vnn *vnn;
 
-	vnn = find_public_ip_vnn(ctdb, inet_ntoa(dst->sin_addr));
+	vnn = find_public_ip_vnn(ctdb, *dst);
 	if (vnn == NULL) {
-		vnn = find_public_ip_vnn(ctdb, inet_ntoa(src->sin_addr));
+		vnn = find_public_ip_vnn(ctdb, *src);
 	}
 	if (vnn == NULL) {
 		DEBUG(0,(__location__ " Could not killtcp, not a public address\n")); 
@@ -1474,7 +1467,6 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 {
 	struct ctdb_control_tcp_tickle_list *list = (struct ctdb_control_tcp_tickle_list *)indata.dptr;
 	struct ctdb_tcp_array *tcparray;
-	char *addr;
 	struct ctdb_vnn *vnn;
 
 	/* We must at least have tickles.num or else we cant verify the size
@@ -1495,11 +1487,10 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 		return -1;
 	}	
 
-	addr = inet_ntoa(list->ip.sin_addr);
-
-	vnn = find_public_ip_vnn(ctdb, addr);
+	vnn = find_public_ip_vnn(ctdb, list->ip);
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n", addr)); 
+		DEBUG(0,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n", 
+			 inet_ntoa(list->ip.sin_addr))); 
 		return 1;
 	}
 
@@ -1534,15 +1525,12 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	struct ctdb_control_tcp_tickle_list *list;
 	struct ctdb_tcp_array *tcparray;
 	int num;
-	char *addr;
 	struct ctdb_vnn *vnn;
 
-
-	addr = inet_ntoa(ip->sin_addr);
-
-	vnn = find_public_ip_vnn(ctdb, addr);
+	vnn = find_public_ip_vnn(ctdb, *ip);
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " Could not get tcp tickle list, '%s' is not a public address\n", addr)); 
+		DEBUG(0,(__location__ " Could not get tcp tickle list, '%s' is not a public address\n", 
+			 inet_ntoa(ip->sin_addr))); 
 		return 1;
 	}
 
@@ -1627,7 +1615,6 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int ret;
 	struct ctdb_vnn *vnn;
-	struct sockaddr_in ip;
 
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		/* we only send out updates for public addresses that 
@@ -1640,14 +1627,14 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 		if (!vnn->tcp_update_needed) {
 			continue;
 		}
-		inet_aton(vnn->public_address, &ip.sin_addr);
 		ret = ctdb_ctrl_set_tcp_tickles(ctdb, 
 				TAKEOVER_TIMEOUT(),
 				CTDB_BROADCAST_CONNECTED,
-				&ip,
+				&vnn->public_address,
 				vnn->tcp_array);
 		if (ret != 0) {
-			DEBUG(0,("Failed to send the tickle update for public address %s\n", vnn->public_address));
+			DEBUG(0,("Failed to send the tickle update for public address %s\n", 
+				 inet_ntoa(vnn->public_address.sin_addr)));
 		}
 	}
 
