@@ -458,7 +458,7 @@ char *share_mode_str(int num, struct share_mode_entry *e)
 		 e->share_access, e->private_options,
 		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,
-		 file_id_static_string(&e->id));
+		 file_id_string_tos(&e->id));
 
 	return share_str;
 }
@@ -906,7 +906,7 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 		DEBUG(10,("rename_share_filename: sending rename message to pid %s "
 			  "file_id %s sharepath %s newname %s\n",
 			  procid_str_static(&se->pid),
-			  file_id_static_string(&lck->id),
+			  file_id_string_tos(&lck->id),
 			  lck->servicepath, lck->filename ));
 
 		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
