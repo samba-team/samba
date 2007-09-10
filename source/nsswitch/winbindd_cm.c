@@ -1715,6 +1715,16 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 		DEBUG(5, ("set_dc_type_and_flags_connect: rpccli_ds_getprimarydominfo "
 			  "on domain %s failed: (%s)\n",
 			  domain->name, nt_errstr(result)));
+
+		/* older samba3 DCs will return DCERPC_FAULT_OP_RNG_ERROR for
+		 * every opcode on the LSARPC_DS pipe, continue with
+		 * no_lsarpc_ds mode here as well to get domain->initialized
+		 * set - gd */
+
+		if (NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR) {
+			goto no_lsarpc_ds;
+		}
+
 		return;
 	}
 	
