@@ -46,6 +46,7 @@ static struct {
 	const char *logfile;
 	const char *recovery_lock_file;
 	const char *db_dir;
+	const char *public_interface;
 	int         no_setsched;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
@@ -100,6 +101,7 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
+		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
@@ -196,6 +198,11 @@ int main(int argc, const char *argv[])
 			DEBUG(0,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
+	}
+
+	if (options.public_interface) {
+		ctdb->default_public_interface = talloc_strdup(ctdb, options.public_interface);
+		CTDB_NO_MEMORY(ctdb, ctdb->default_public_interface);
 	}
 
 	if (options.public_address_list) {
