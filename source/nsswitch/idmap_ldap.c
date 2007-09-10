@@ -78,7 +78,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 	char *secret = NULL;
 	const char *tmp = NULL;
 	char *user_dn = NULL;
-	bool anon = false;
+	BOOL anon = False;
 
 	/* assume anonymous if we don't have a specified user */
 
@@ -87,10 +87,10 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 	if ( tmp ) {
 		if (!dom) {
 			/* only the alloc backend can pass in a NULL dom */
-			secret = idmap_fetch_secret("ldap", true,
+			secret = idmap_fetch_secret("ldap", True,
 						    NULL, tmp);
 		} else {
-			secret = idmap_fetch_secret("ldap", false,
+			secret = idmap_fetch_secret("ldap", False,
 						    dom->name, tmp);
 		}
 
@@ -107,7 +107,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 		if (!fetch_ldap_pw(&user_dn, &secret)) {
 			DEBUG(2, ("get_credentials: Failed to lookup ldap "
 				  "bind creds. Using anonymous connection.\n"));
-			anon = true;
+			anon = True;
 		} else {
 			*dn = talloc_strdup(mem_ctx, user_dn);
 			SAFE_FREE( user_dn );
