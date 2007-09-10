@@ -246,9 +246,8 @@ int ctdb_sys_send_tcp(int s,
 
   ifname, if non-NULL, will return the name of the interface this ip is tied to
  */
-bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname)
+bool ctdb_sys_have_ip(struct sockaddr_in ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname)
 {
-	struct sockaddr_in sin;
 	struct ifreq *ifr = NULL;
 	struct ifconf ifc;
 	int s, i, num_ifs;
@@ -261,14 +260,12 @@ bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, ch
 		*ifname = NULL;
 	}
 	
-	sin.sin_port = 0;
-	inet_aton(ip, &sin.sin_addr);
-	sin.sin_family = AF_INET;
+	ip.sin_port = 0;
 	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (s == -1) {
 		return false;
 	}
-	ret = bind(s, (struct sockaddr *)&sin, sizeof(sin));
+	ret = bind(s, (struct sockaddr *)&ip, sizeof(ip));
 	if (ret) {
 		goto finished;
 	}
@@ -305,7 +302,7 @@ bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, ch
 		}
 
 		/* this is not the interface you are looking for */
-		if(strcmp(inet_ntoa(sa->sin_addr), ip)){
+		if (!ctdb_same_ip(sa, &ip)) {
 			continue;
 		}
 
@@ -320,7 +317,7 @@ bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, ch
 		}
 
 		/* was this ip tied to a loopback interface ? */
-		if(ifr[i].ifr_flags & IFF_LOOPBACK) {
+		if (ifr[i].ifr_flags & IFF_LOOPBACK) {
 			if (is_loopback != NULL) {
 				*is_loopback = true;
 			}

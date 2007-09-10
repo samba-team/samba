@@ -141,7 +141,7 @@ struct ctdb_vnn {
 	struct ctdb_vnn *prev, *next;
 
 	const char *iface;
-	const char *public_address;
+	struct sockaddr_in public_address;
 	uint8_t public_netmask_bits;
 
 	/* the node number that is serving this public address, if any. 
@@ -358,6 +358,7 @@ struct ctdb_context {
 	void *saved_scheduler_param;
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
+	const char *default_public_interface;
 };
 
 struct ctdb_db_context {
@@ -693,9 +694,12 @@ struct ctdb_req_keepalive {
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
+bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask);
 int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
+bool ctdb_same_ip(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2);
+bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2);
 uint32_t ctdb_hash(const TDB_DATA *key);
 uint32_t ctdb_hash_string(const char *str);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
@@ -1058,7 +1062,7 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
-bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname);
+bool ctdb_sys_have_ip(struct sockaddr_in ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname);
 int ctdb_sys_send_tcp(int fd,
 		      const struct sockaddr_in *dest, 
 		      const struct sockaddr_in *src,

@@ -248,18 +248,15 @@ void set_close_on_exec(int fd)
 
 
 /*
-  parse a ip:port pair
+  parse a ip:num pair with the given separator
  */
-bool parse_ip_port(const char *s, struct sockaddr_in *ip)
+static bool parse_ip_num(const char *s, struct in_addr *addr, unsigned *num, const char sep)
 {
 	const char *p;
 	char *endp = NULL;
-	unsigned port;
 	char buf[16];
 
-	ip->sin_family = AF_INET;
-
-	p = strchr(s, ':');
+	p = strchr(s, sep);
 	if (p == NULL) {
 		return false;
 	}
@@ -268,18 +265,65 @@ bool parse_ip_port(const char *s, struct sockaddr_in *ip)
 		return false;
 	}
 
-	port = strtoul(p+1, &endp, 10);
+	*num = strtoul(p+1, &endp, 10);
 	if (endp == NULL || *endp != 0) {
 		/* trailing garbage */
 		return false;
 	}
-	ip->sin_port = htons(port);
 
 	strlcpy(buf, s, 1+p-s);
 
-	if (inet_aton(buf, &ip->sin_addr) == 0) {
+	if (inet_aton(buf, addr) == 0) {
 		return false;
 	}
 
 	return true;
+}
+
+
+/*
+  parse a ip:port pair
+ */
+bool parse_ip_port(const char *s, struct sockaddr_in *ip)
+{
+	unsigned port;
+	if (!parse_ip_num(s, &ip->sin_addr, &port, ':')) {
+		return false;
+	}
+	ip->sin_family = AF_INET;
+	ip->sin_port   = htons(port);
+	return true;
+}
+
+/*
+  parse a ip/mask pair
+ */
+bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask)
+{
+	if (!parse_ip_num(s, &ip->sin_addr, mask, '/')) {
+		return false;
+	}
+	if (*mask > 32) {
+		return false;
+	}
+	ip->sin_family = AF_INET;
+	ip->sin_port   = 0;
+	return true;
+}
+
+/*
+  compare two sockaddr_in structures - matching only on IP
+ */
+bool ctdb_same_ip(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
+{
+	return ip1->sin_family == ip2->sin_family &&
+		ip1->sin_addr.s_addr == ip2->sin_addr.s_addr;
+}
+
+/*
+  compare two sockaddr_in structures
+ */
+bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
+{
+	return ctdb_same_ip(ip1, ip2) && ip1->sin_port == ip2->sin_port;
 }

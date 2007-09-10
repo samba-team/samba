@@ -111,7 +111,7 @@ show_all "tail -100 /var/log/log.ctdb"
 
 cat <<EOF
 --------------------------------------------------------------------
-Showing filesystem and process status
+Showing system and process status
 EOF
 show_all "df; df -i; mount"
 show_all uptime
@@ -121,6 +121,8 @@ show_all "/sbin/lspci"
 show_all "/sbin/ifconfig -a"
 show_all "/sbin/ip addr list"
 show_all "/sbin/route -n"
+show_all "crontab -l"
+show_all "sysctl -a"
 
 [ -d /usr/lpp/mmfs ] && {
 cat <<EOF

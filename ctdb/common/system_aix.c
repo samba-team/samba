@@ -165,24 +165,21 @@ int ctdb_sys_send_tcp(int s,
   we try to bind to it, and if that fails then we don't have that IP
   on an interface
  */
-bool ctdb_sys_have_ip(const char *ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname)
+bool ctdb_sys_have_ip(struct sockaddr_in ip, bool *is_loopback, TALLOC_CTX *mem_ctx, char **ifname)
 {
-	struct sockaddr_in sin;
 	int s;
 	int ret;
-
+	
 	if (is_loopback) {
 		DEBUG(0,(__location__ " NOT IMPLEMENTED YET: ctdb_sys_have_ip() does not yet support is_loopback on AIX. This needs to be implemented similar to system_linux.c\n"));
 	}
 
-	sin.sin_port = 0;
-	inet_aton(ip, &sin.sin_addr);
-	sin.sin_family = AF_INET;
+	ip.sin_port = 0;
 	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (s == -1) {
 		return false;
 	}
-	ret = bind(s, (struct sockaddr *)&sin, sizeof(sin));
+	ret = bind(s, (struct sockaddr *)&ip, sizeof(ip));
 	close(s);
 	return ret == 0;
 }
