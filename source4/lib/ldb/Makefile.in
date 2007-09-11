@@ -30,11 +30,14 @@ POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
 POPT_OBJ = @POPT_OBJ@
 
+LDAP_LIBS = @LDAP_LIBS@
+
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ $(POPT_LIBS) $(TALLOC_LIBS) $(TDB_LIBS)
+LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ $(POPT_LIBS) $(TALLOC_LIBS) $(TDB_LIBS) \
+		  $(LDAP_LIBS)
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
