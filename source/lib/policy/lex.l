@@ -58,7 +58,7 @@ END { return END; }
 EXPLAIN { return EXPLAIN; }
 ITEMLIST { return ITEMLIST; }
 KEYNAME { return KEYNAME; }
-CLASS_MACHINE { return CLASS_MACHINE; }
+MACHINE { return CLASS_MACHINE; }
 MIN { return MINIMUM; }
 MAX { return MAXIMUM; }
 NAME { return NAME; }
@@ -69,7 +69,7 @@ REQUIRED { return REQUIRED; }
 SPIN { return SPIN; }
 SUPPORTED { return SUPPORTED; }
 TEXT { return TEXT; }
-CLASS_USER { return CLASS_USER; }
+USER { return CLASS_USER; }
 VALUE { return VALUE; }
 VALUENAME { return VALUENAME; }
 VALUEON { return VALUEON; }
