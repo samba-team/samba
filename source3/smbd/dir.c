@@ -1019,7 +1019,6 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 	}
 
 	if (hide_unreadable || hide_unwriteable || hide_special) {
-		pstring link_target;
 		char *entry = NULL;
 
 		if (asprintf(&entry, "%s/%s", dir_path, name) == -1) {
@@ -1029,7 +1028,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 		/* If it's a dfs symlink, ignore _hide xxxx_ options */
 		if (lp_host_msdfs() &&
 				lp_msdfs_root(SNUM(conn)) &&
-				is_msdfs_link(conn, entry, link_target, NULL)) {
+				is_msdfs_link(conn, entry, NULL)) {
 			SAFE_FREE(entry);
 			return True;
 		}

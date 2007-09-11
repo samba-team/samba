@@ -514,6 +514,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	BOOL extended_oplock_granted = False;
 	NTSTATUS status;
 	struct case_semantics_state *case_state = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
 
@@ -682,12 +683,15 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			return;
 		}
 	}
-	
+
 	/*
-	 * Now contruct the smb_open_mode value from the filename, 
+	 * Now contruct the smb_open_mode value from the filename,
 	 * desired access and the share access.
 	 */
-	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, fname_in);
+	status = resolve_dfspath(ctx, conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname_in,
+				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -718,7 +722,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
-	status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
+	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		reply_nterror(req, status);
@@ -1242,11 +1246,11 @@ static void call_nt_transact_create(connection_struct *conn,
 	struct timespec a_timespec;
 	struct timespec m_timespec;
 	struct ea_list *ea_list = NULL;
-	TALLOC_CTX *ctx = NULL;
 	char *pdata = NULL;
 	NTSTATUS status;
 	size_t param_len;
 	struct case_semantics_state *case_state = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1424,8 +1428,10 @@ static void call_nt_transact_create(connection_struct *conn,
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
-	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
-				 fname_in);
+	status = resolve_dfspath(ctx, conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname_in,
+				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1437,7 +1443,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 
-	status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
+	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		reply_nterror(req, status);
@@ -1594,7 +1600,6 @@ static void call_nt_transact_create(connection_struct *conn,
 
 		status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_destroy(ctx);
 			close_file(fsp,ERROR_CLOSE);
 			TALLOC_FREE(case_state);
 			reply_nterror(req, status);
@@ -1918,14 +1923,17 @@ static NTSTATUS copy_internals(connection_struct *conn,
 
 void reply_ntrename(connection_struct *conn, struct smb_request *req)
 {
-	pstring oldname;
-	pstring newname;
+	pstring oldname_in;
+	pstring newname_in;
+	char *oldname = NULL;
+	char *newname = NULL;
 	char *p;
 	NTSTATUS status;
 	BOOL src_has_wcard = False;
 	BOOL dest_has_wcard = False;
 	uint32 attrs;
 	uint16 rename_type;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntrename);
 
@@ -1939,8 +1947,8 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 	rename_type = SVAL(req->inbuf,smb_vwv1);
 
 	p = smb_buf(req->inbuf) + 1;
-	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, oldname, p,
-				   sizeof(oldname), 0, STR_TERMINATE, &status,
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, oldname_in, p,
+				   sizeof(oldname_in), 0, STR_TERMINATE, &status,
 				   &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -1948,31 +1956,33 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if( is_ntfs_stream_name(oldname)) {
+	if( is_ntfs_stream_name(oldname_in)) {
 		/* Can't rename a stream. */
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBntrename);
 		return;
 	}
 
-	if (ms_has_wild(oldname)) {
+	if (ms_has_wild(oldname_in)) {
 		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 		END_PROFILE(SMBntrename);
 		return;
 	}
 
 	p++;
-	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, newname, p,
-				   sizeof(newname), 0, STR_TERMINATE, &status,
+	p += srvstr_get_path_wcard((char *)req->inbuf, req->flags2, newname_in, p,
+				   sizeof(newname_in), 0, STR_TERMINATE, &status,
 				   &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBntrename);
 		return;
 	}
-	
-	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
-				 oldname);
+
+	status = resolve_dfspath(ctx, conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				oldname_in,
+				&oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -1985,8 +1995,10 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
-				 newname);
+	status = resolve_dfspath(ctx, conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				newname_in,
+				&newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -2000,7 +2012,7 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 	}
 
 	DEBUG(3,("reply_ntrename : %s -> %s\n",oldname,newname));
-	
+
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
 			status = rename_internals(conn, req, oldname, newname,

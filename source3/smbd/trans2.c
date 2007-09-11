@@ -1268,14 +1268,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 					continue;
 				}
 			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
-				pstring link_target;
-
-				/* Needed to show the msdfs symlinks as 
+				/* Needed to show the msdfs symlinks as
 				 * directories */
 
-				if(lp_host_msdfs() && 
+				if(lp_host_msdfs() &&
 				   lp_msdfs_root(SNUM(conn)) &&
-				   ((ms_dfs_link = is_msdfs_link(conn, pathreal, link_target, &sbuf)) == True)) {
+				   ((ms_dfs_link = is_msdfs_link(conn, pathreal, &sbuf)) == True)) {
 					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s "
 						"as a directory\n",
 						pathreal));
@@ -1778,6 +1776,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	TALLOC_CTX *ea_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -1835,7 +1834,11 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return;
 	}
 
-	ntstatus = resolve_dfspath_wcard(conn, req->flags2 & FLAGS2_DFS_PATHNAMES, directory_in, &mask_contains_wcard);
+	ntstatus = resolve_dfspath_wcard(ctx, conn,
+			req->flags2 & FLAGS2_DFS_PATHNAMES,
+			directory_in,
+			&directory,
+			&mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -1846,7 +1849,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return;
 	}
 
-	ntstatus = unix_convert(conn, directory_in, True, &directory, NULL, &sbuf);
+	ntstatus = unix_convert(conn, directory, True, &directory, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		return;
@@ -3524,6 +3527,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 	char *lock_data = NULL;
+	TALLOC_CTX *ctx = NULL;
 
 	if (!params) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -3642,9 +3646,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = resolve_dfspath(conn,
-					 req->flags2 & FLAGS2_DFS_PATHNAMES,
-					 fname_in);
+		status = resolve_dfspath(ctx,
+					conn,
+					req->flags2 & FLAGS2_DFS_PATHNAMES,
+					fname_in,
+					&fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
@@ -3655,7 +3661,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
+		status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -4431,8 +4437,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 ****************************************************************************/
 
 NTSTATUS hardlink_internals(connection_struct *conn,
-		char *oldname_in,
-		char *newname_in)
+		const char *oldname_in,
+		const char *newname_in)
 {
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	char *last_component_oldname = NULL;
@@ -4889,9 +4895,11 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 					struct smb_request *req,
 					const char *pdata, int total_data,
-					pstring fname)
+					const char *fname)
 {
-	pstring oldname;
+	pstring oldname_in;
+	char *oldname = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 
 	/* Set a hard link. */
@@ -4899,14 +4907,16 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(pdata, req->flags2, oldname, pdata,
-			sizeof(oldname), total_data, STR_TERMINATE, &status);
+	srvstr_get_path(pdata, req->flags2, oldname_in, pdata,
+			sizeof(oldname_in), total_data, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = resolve_dfspath(conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
-				 oldname);
+	status = resolve_dfspath(ctx, conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				oldname_in,
+				&oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4932,10 +4942,12 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32 root_fid;
 	uint32 len;
 	pstring newname_in;
+	char *newname = NULL;
 	pstring base_name;
 	BOOL dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (total_data < 13) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -4956,15 +4968,17 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
-	status = resolve_dfspath_wcard(conn,
+	status = resolve_dfspath_wcard(ctx, conn,
 				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       newname_in, &dest_has_wcard);
+				       newname_in,
+				       &newname,
+				       &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* Check the new name has no '/' characters. */
-	if (strchr_m(newname_in, '/')) {
+	if (strchr_m(newname, '/')) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -4977,16 +4991,15 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		pstrcpy(base_name, "./");
 	}
 	/* Append the new name. */
-	pstrcat(base_name, newname_in);
+	pstrcat(base_name, newname);
 
 	if (fsp) {
 		SMB_STRUCT_STAT sbuf;
-		char *newname = NULL;
 		char *newname_last_component = NULL;
 
 		ZERO_STRUCT(sbuf);
 
-		status = unix_convert(conn, newname_in, False,
+		status = unix_convert(conn, newname, False,
 					&newname,
 					&newname_last_component,
 					&sbuf);
@@ -6171,6 +6184,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!params) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -6268,9 +6282,10 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = resolve_dfspath(conn,
+		status = resolve_dfspath(ctx, conn,
 					 req->flags2 & FLAGS2_DFS_PATHNAMES,
-					 fname_in);
+					 fname_in,
+					 &fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
@@ -6282,7 +6297,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(conn, fname_in, False, &fname, NULL, &sbuf);
+		status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
