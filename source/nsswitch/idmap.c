@@ -431,9 +431,10 @@ NTSTATUS idmap_init(void)
 		if (compat) {
 			parm_backend = talloc_strdup(idmap_ctx, compat_backend);
 		} else {
-			char *backend = lp_parm_const_string(-1, config_option,
-							     "backend", "tdb");
-			parm_backend = talloc_strdup(idmap_ctx,	backend);
+			parm_backend = talloc_strdup(idmap_ctx,
+						     lp_parm_const_string(
+							-1, config_option,
+							"backend", "tdb"));
 		}
 		IDMAP_CHECK_ALLOC(parm_backend);
 
