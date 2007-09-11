@@ -40,6 +40,7 @@ struct smbldap_state;
 #define LDAP_OBJ_IDMAP_ENTRY		"sambaIdmapEntry"
 #define LDAP_OBJ_SID_ENTRY		"sambaSidEntry"
 #define LDAP_OBJ_TRUST_PASSWORD         "sambaTrustPassword"
+#define LDAP_OBJ_TRUSTDOM_PASSWORD      "sambaTrustedDomainPassword"
 
 #define LDAP_OBJ_ACCOUNT		"account"
 #define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
