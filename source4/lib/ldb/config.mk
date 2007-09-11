@@ -72,10 +72,9 @@ OBJ_FILES = \
 
 ################################################
 # Start MODULE ldb_map
-[MODULE::ldb_map]
+[SUBSYSTEM::ldb_map]
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include -Ilib/ldb/ldb_map
-SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		ldb_map/ldb_map_inbound.o \
 		ldb_map/ldb_map_outbound.o \
