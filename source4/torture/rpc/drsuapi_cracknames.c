@@ -815,6 +815,27 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			}, 
 			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "NT AUTHORITY\\ -> DN",
+				.str = "NT AUTHORITY\\",
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			}, 
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "NT AUTHORITY\\ANONYMOUS LOGON -> DN",
+				.str = "NT AUTHORITY\\ANONYMOUS LOGON",
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			}, 
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "NT AUTHORITY\\SYSTEM -> DN",
+				.str = "NT AUTHORITY\\SYSTEM",
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			}, 
+			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.comment = "BUITIN SID -> NT4 account",
@@ -846,6 +867,20 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.comment = "Builtin Administrors SID -> NT4 Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.str = SID_NT_ANONYMOUS,
+				.comment = "NT Anonymous SID -> NT4 Account",
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.str = SID_NT_SYSTEM,
+				.comment = "NT SYSTEM SID -> NT4 Account",
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
