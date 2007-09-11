@@ -42,6 +42,12 @@
 #define LDB_MODULE_PREFIX	"modules:"
 #define LDB_MODULE_PREFIX_LEN	8
 
+void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
+{
+	talloc_free(ldb->modules_dir);
+	ldb->modules_dir = talloc_strdup(ldb, path);
+}
+
 static char *ldb_modules_strdup_no_spaces(TALLOC_CTX *mem_ctx, const char *string)
 {
 	int i, len;
@@ -203,21 +209,12 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 	char *path;
 	void *handle;
 	int (*init_fn) (void);
-	char *modulesdir;
 
-	if (getenv("LD_LDB_MODULE_PATH") != NULL) {
-		modulesdir = talloc_strdup(ldb, getenv("LD_LDB_MODULE_PATH"));
-	} else {
-#ifdef _SAMBA_BUILD_
-		modulesdir = talloc_asprintf(ldb, "%s/ldb", dyn_MODULESDIR);
-#else
-		modulesdir = talloc_strdup(ldb, MODULESDIR);
-#endif
-	}
+	if (ldb->modules_dir == NULL)
+		return -1;
 
-	path = talloc_asprintf(ldb, "%s/%s.%s", modulesdir, name, SHLIBEXT);
-
-	talloc_free(modulesdir);
+	path = talloc_asprintf(ldb, "%s/%s.%s", ldb->modules_dir, name, 
+			       SHLIBEXT);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s\n", name, path);
 

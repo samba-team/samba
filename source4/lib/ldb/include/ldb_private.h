@@ -120,6 +120,8 @@ struct ldb_context {
 	unsigned int flags;
 
 	unsigned int create_perms;
+
+	char *modules_dir;
 };
 
 #ifndef ARRAY_SIZE
