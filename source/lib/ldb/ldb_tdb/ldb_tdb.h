@@ -1,11 +1,4 @@
-
-#ifdef _SAMBA_BUILD_
-#include "system/filesys.h"
-#endif
-
-#if (_SAMBA_BUILD_ >= 4)
-#include "lib/tdb/include/tdb.h"
-#elif defined(_SAMBA_BUILD_)
+#if (_SAMBA_BUILD_ == 3)
 #include "tdb/include/tdb.h"
 #else
 #include "tdb.h"
