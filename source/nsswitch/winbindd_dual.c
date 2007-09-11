@@ -468,9 +468,8 @@ static void child_process_request(struct winbindd_domain *domain,
 	state->response.result = WINBINDD_ERROR;
 	state->response.length = sizeof(struct winbindd_response);
 
-	state->mem_ctx = talloc_init("winbind request");
-	if (state->mem_ctx == NULL)
-		return;
+	/* as all requests in the child are sync, we can use talloc_tos() */
+	state->mem_ctx = talloc_tos();
 
 	/* Process command */
 
@@ -488,8 +487,6 @@ static void child_process_request(struct winbindd_domain *domain,
 			  (int)state->request.cmd ));
 		state->response.result = WINBINDD_ERROR;
 	}
-
-	talloc_destroy(state->mem_ctx);
 }
 
 void setup_domain_child(struct winbindd_domain *domain,
