@@ -10,6 +10,6 @@ Version: @PACKAGE_VERSION@
 Requires.private: tdb
 Requires: talloc
 Libs: -L${libdir} -lldb
-Cflags: -I${includedir} @CFLAGS@
+Cflags: -I${includedir} 
 Modulesdir: ${modulesdir}
 URL: http://ldb.samba.org/
