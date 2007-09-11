@@ -29,7 +29,7 @@ case $cmd in
 	echo 1 > /proc/sys/ipv4/conf/all/arp_filter
 
         # move all public addresses onto loopback
-        cat /etc/ctdb/public_addresses| cut -d/ -f1 | while read ip; do
+        cat $CTDB_PUBLIC_ADDRESSES | cut -d/ -f1 | while read ip; do
                 /sbin/ip addr add $ip/32 dev lo >/dev/null 2>/dev/null
         done
 	;;
