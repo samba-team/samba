@@ -3,6 +3,7 @@ include samba3/config.mk
 include socket/config.mk
 include charset/config.mk
 include ldb/config.mk
+include ldb-samba/config.mk
 include tls/config.mk
 include registry/config.mk
 include policy/config.mk

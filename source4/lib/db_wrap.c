@@ -32,7 +32,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/samba/ldif_handlers.h"
+#include "lib/ldb-samba/ldif_handlers.h"
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"

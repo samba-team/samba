@@ -312,5 +312,3 @@ LIBRARY_REALNAME = swig/_ldb.$(SHLIBEXT)
 OBJ_FILES = swig/ldb_wrap.o
 # End LIBRARY swig_ldb
 #######################
-
-include samba/config.mk
