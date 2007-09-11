@@ -753,7 +753,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
        
 	if ( gid ) {		
 		if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
-			*gid = 0;		
+			*gid = (uint32)-1;
 	}
 		
 	return NT_STATUS_OK;

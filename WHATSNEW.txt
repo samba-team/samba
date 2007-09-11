@@ -1,11 +1,38 @@
+                   ==============================
+                   Release Notes for Samba 3.0.26
+                             Sep 11, 2007
+                   ==============================
+
+This is a security release of Samba 3.0 to address
+
+  o CVE-2007-4138
+	Versions: All Samba 3.0.25 releases
+	Incorrect primary group assignment for
+	domain users using the rfc2307 or sfu
+	winbind nss info plugin.
+
+The original security announcement for this and past advisories
+can be found http://www.samba.org/samba/security/
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.25c
+---------------------
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix CVE-2007-4138 in the "winbind nss info = {sfu | rfc2307}"
+      plugin (idmap_ad.c)
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
                    ===============================
                    Release Notes for Samba 3.0.25c
                              Aug 20, 2007
                    ===============================
-
-This is the latest production release of the Samba 3.0.25 code 
-base and is the version that servers should be run for for all 
-current bug fixes.  
 
 Major bug fixes included in Samba 3.0.25c are:
 
@@ -131,10 +158,6 @@ o   Jim McDonough <jmcd@us.ibm.com>
 o   Atsushi Nakabayashi <nakabayashi@miraclelinux.com>
     * Ensure proper exit when nmbd is unable to reopen the wins.tdb.
     * Fix error path memleaks in the messaging subsystem.
-
-
-
-Release notes for older releases follow:
 
       --------------------------------------------------
                    ===============================
