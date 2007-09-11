@@ -226,11 +226,12 @@ sub cleanup_pcap($$$)
 	$state->{PCAP_FILE} = undef;
 }
 
-sub run_testsuite($$$$$$)
+sub run_testsuite($$$$$$$)
 {
-	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my ($envname, $envvars, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
 	my $msg_state = {
 		ENVNAME	=> $envname,
+		ENVVARS => $envvars,
 		NAME	=> $name,
 		CMD	=> $cmd,
 		INDEX	=> $i,
@@ -755,7 +756,8 @@ $envvarstr
 			next;
 		}
 
-		run_testsuite($envname, $name, $cmd, $i, $suitestotal, $msg_ops);
+		run_testsuite($envname, $envvars, $name, $cmd, $i, $suitestotal, 
+		              $msg_ops);
 
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");
