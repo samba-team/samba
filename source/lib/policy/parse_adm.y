@@ -37,8 +37,8 @@ extern int yylex (void);
 
 %token CATEGORY
 %token CLASS
-%token USER
-%token MACHINE
+%token CLASS_USER
+%token CLASS_MACHINE
 %token POLICY
 %token KEYNAME
 %token EXPLAIN
@@ -73,7 +73,7 @@ admfile: classes strings;
 classes: /* empty */ | class classes;
 
 class: CLASS classvalue categories;
-classvalue: USER|MACHINE;
+classvalue: CLASS_USER|CLASS_MACHINE;
 
 categories: /* empty */ | category categories;
 

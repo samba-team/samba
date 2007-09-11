@@ -68,8 +68,8 @@
    enum yytokentype {
      CATEGORY = 258,
      CLASS = 259,
-     USER = 260,
-     MACHINE = 261,
+     CLASS_USER = 260,
+     CLASS_MACHINE = 261,
      POLICY = 262,
      KEYNAME = 263,
      EXPLAIN = 264,
@@ -106,8 +106,8 @@
 /* Tokens.  */
 #define CATEGORY 258
 #define CLASS 259
-#define USER 260
-#define MACHINE 261
+#define CLASS_USER 260
+#define CLASS_MACHINE 261
 #define POLICY 262
 #define KEYNAME 263
 #define EXPLAIN 264
@@ -520,19 +520,19 @@ static const yytype_uint8 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "CATEGORY", "CLASS", "USER", "MACHINE",
-  "POLICY", "KEYNAME", "EXPLAIN", "VALUENAME", "VALUEON", "VALUEOFF",
-  "PART", "ITEMLIST", "NAME", "VALUE", "NUMERIC", "EDITTEXT", "TEXT",
-  "DROPDOWNLIST", "CHECKBOX", "MINIMUM", "MAXIMUM", "DEFAULT", "END",
-  "ACTIONLIST", "DEL", "SUPPORTED", "LITERAL", "INTEGER", "LOOKUPLITERAL",
-  "CLIENTEXT", "REQUIRED", "NOSORT", "SPIN", "EQUALS", "STRINGSSECTION",
-  "$accept", "admfile", "classes", "class", "classvalue", "categories",
-  "string", "category", "categoryitem", "categoryitems", "policy",
-  "policyitem", "policyitems", "valuetype", "part", "spin", "partitem",
-  "partitems", "min", "max", "defaultvalue", "explain", "value", "valueon",
-  "valueoff", "valuename", "keyname", "itemlist", "itemname", "itemvalue",
-  "item", "items", "supported", "actionlist", "actions", "variable",
-  "variables", "strings", 0
+  "$end", "error", "$undefined", "CATEGORY", "CLASS", "CLASS_USER",
+  "CLASS_MACHINE", "POLICY", "KEYNAME", "EXPLAIN", "VALUENAME", "VALUEON",
+  "VALUEOFF", "PART", "ITEMLIST", "NAME", "VALUE", "NUMERIC", "EDITTEXT",
+  "TEXT", "DROPDOWNLIST", "CHECKBOX", "MINIMUM", "MAXIMUM", "DEFAULT",
+  "END", "ACTIONLIST", "DEL", "SUPPORTED", "LITERAL", "INTEGER",
+  "LOOKUPLITERAL", "CLIENTEXT", "REQUIRED", "NOSORT", "SPIN", "EQUALS",
+  "STRINGSSECTION", "$accept", "admfile", "classes", "class", "classvalue",
+  "categories", "string", "category", "categoryitem", "categoryitems",
+  "policy", "policyitem", "policyitems", "valuetype", "part", "spin",
+  "partitem", "partitems", "min", "max", "defaultvalue", "explain",
+  "value", "valueon", "valueoff", "valuename", "keyname", "itemlist",
+  "itemname", "itemvalue", "item", "items", "supported", "actionlist",
+  "actions", "variable", "variables", "strings", 0
 };
 #endif
 
