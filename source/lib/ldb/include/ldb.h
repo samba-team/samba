@@ -779,6 +779,7 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type);
 int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeout);
 int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq);
 void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms);
+void ldb_set_modules_dir(struct ldb_context *ldb, const char *path);
 
 /**
   Initialise ldbs' global information
@@ -876,7 +877,7 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 
   \param ret_req the request structure is returned here (talloced on mem_ctx)
   \param ldb the context associated with the database (from ldb_init())
-  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param mem_ctx a talloc memory context (used as parent of ret_req)
   \param base the Base Distinguished Name for the query (use ldb_dn_new() for an empty one)
   \param scope the search scope for the query
   \param expression the search expression to use for this query
@@ -904,7 +905,7 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 
   \param ret_req the request structure is returned here (talloced on mem_ctx)
   \param ldb the context associated with the database (from ldb_init())
-  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param mem_ctx a talloc memory context (used as parent of ret_req)
   \param message contains the entry to be added 
   \param controls an array of controls
   \param context the callback function context
@@ -926,7 +927,7 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 
   \param ret_req the request structure is returned here (talloced on mem_ctx)
   \param ldb the context associated with the database (from ldb_init())
-  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param mem_ctx a talloc memory context (used as parent of ret_req)
   \param message contains the entry to be modified
   \param controls an array of controls
   \param context the callback function context
@@ -948,7 +949,7 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 
   \param ret_req the request structure is returned here (talloced on mem_ctx)
   \param ldb the context associated with the database (from ldb_init())
-  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param mem_ctx a talloc memory context (used as parent of ret_req)
   \param dn the DN to be deleted
   \param controls an array of controls
   \param context the callback function context
@@ -970,7 +971,7 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 
   \param ret_req the request structure is returned here (talloced on mem_ctx)
   \param ldb the context associated with the database (from ldb_init())
-  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param mem_ctx a talloc memory context (used as parent of ret_req)
   \param olddn the old DN
   \param newdn the new DN
   \param controls an array of controls
@@ -1137,7 +1138,7 @@ int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct
 
   \param ret_req the request structure is returned here (talloced on mem_ctx)
   \param ldb the context associated with the database (from ldb_init())
-  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param mem_ctx a talloc memory context (used as parent of ret_req)
   \param oid the OID of the extended operation.
   \param data a void pointer a the extended operation specific parameters,
   it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it  

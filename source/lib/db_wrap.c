@@ -120,6 +120,9 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	ldb_set_modules_dir(ldb, 
+			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir()));
+
 	/* we want to use the existing event context if possible. This
 	   relies on the fact that in smbd, everything is a child of
 	   the main event_context */
