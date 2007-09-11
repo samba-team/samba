@@ -603,7 +603,7 @@ failed:
 	return status;
 }
 
-#endif
+#endif /* HAVE_GSSAPI */
 
 #ifdef HAVE_KRB5
 struct ads_service_principal {
@@ -774,7 +774,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads,
 #endif
 	return ads_sasl_spnego_rawkrb5_bind(ads, p->string);
 }
-#endif
+#endif /* HAVE_KRB5 */
 
 /* 
    this performs a SASL/SPNEGO bind
