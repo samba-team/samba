@@ -34,6 +34,13 @@ sub showitem($$$)
 	}
 }
 
+sub showisexternal($$$)
+{
+	my ($output, $desc, $name) = @_;
+	print "Using external $desc: ".
+	    (($output->{$name}->{TYPE} eq "EXT_LIB")?"yes":"no")."\n";
+}
+
 sub show($$)
 {
 	my ($output,$config) = @_;
@@ -47,8 +54,10 @@ sub show($$)
 	showitem($output, "using libblkid", ["BLKID"]);
 	showitem($output, "using iconv", ["ICONV"]);
 	showitem($output, "using pam", ["PAM"]);
-	print "Using external popt: ".
-	    (($output->{LIBPOPT}->{TYPE} eq "EXT_LIB")?"yes":"no")."\n";
+	showisexternal($output, "popt", "LIBPOPT");
+	showisexternal($output, "talloc", "LIBTALLOC");
+	showisexternal($output, "tdb", "LIBTDB");
+	showisexternal($output, "ldb", "LIBLDB");
 	print "Developer mode: ".(enabled($config->{developer})?"yes":"no")."\n";
 	print "Automatic dependencies: ".
 	    (enabled($config->{automatic_dependencies})
