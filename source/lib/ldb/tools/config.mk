@@ -1,7 +1,7 @@
 ################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
-CFLAGS = -Ilib/ldb
+CFLAGS = -Ilib/ldb -Ilib/ldb/include
 OBJ_FILES= \
 		cmdline.o
 PUBLIC_DEPENDENCIES = LIBLDB LIBPOPT
