@@ -1460,7 +1460,21 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 	if (dest_len) {
 		/* Did we already process the terminating zero ? */
 		if (dest[dest_len-1] != 0) {
-			dest[dest_len-1] = 0;
+			size_t size = talloc_get_size(dest);
+			/* Have we got space to append the '\0' ? */
+			if (size <= dest_len) {
+				/* No, realloc. */
+				dest = TALLOC_REALLOC(ctx, dest,
+						dest_len+1);
+				if (!dest) {
+					/* talloc fail. */
+					dest_len = (size_t)-1;
+					return 0;
+				}
+			}
+			/* Yay - space ! */
+			dest[dest_len] = '\0';
+			dest_len++;
 		}
 	} else if (dest) {
 		dest[0] = 0;

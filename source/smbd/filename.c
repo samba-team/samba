@@ -553,8 +553,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 					tmp = talloc_asprintf(ctx,
 						"%s/%s", dirpath,
 						found_name);
-				}
-				else {
+				} else {
 					tmp = talloc_strdup(ctx,
 						found_name);
 				}

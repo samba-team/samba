@@ -752,8 +752,9 @@ BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 	return True;
 }
 
-static BOOL mangle_mask_match(connection_struct *conn, const char *filename,
-		char *mask)
+static BOOL mangle_mask_match(connection_struct *conn,
+		const char *filename,
+		const char *mask)
 {
 	char mname[13];
 
@@ -791,11 +792,11 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 
 		DEBUG(6,("readdir on dirptr 0x%lx now at offset %ld\n",
 			(long)conn->dirptr,TellDir(conn->dirptr->dir_hnd)));
-      
-		if (dname == NULL) 
+
+		if (dname == NULL)
 			return(False);
-      
-		pstrcpy(filename,dname);      
+
+		pstrcpy(filename,dname);
 
 		/* notice the special *.* handling. This appears to be the only difference
 			between the wildcard handling in this routine and in the trans2 routines.
