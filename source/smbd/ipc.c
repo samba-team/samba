@@ -54,9 +54,10 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 	if(data_len < 0)
 		data_len = 0;
 
-	DEBUG(5,("copy_trans_params_and_data: params[%d..%d] data[%d..%d]\n",
+	DEBUG(5,("copy_trans_params_and_data: params[%d..%d] data[%d..%d] (align %d)\n",
 			param_offset, param_offset + param_len,
-			data_offset , data_offset  + data_len));
+			data_offset , data_offset  + data_len,
+			align));
 
 	*copy_into = '\0';
 
@@ -65,7 +66,12 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 	if (param_len)
 		memcpy(copy_into, &rparam[param_offset], param_len);
 
-	copy_into += param_len + align;
+	copy_into += param_len;
+	if (align) {
+		memset(copy_into, '\0', align);
+	}
+
+	copy_into += align;
 
 	if (data_len )
 		memcpy(copy_into, &rdata[data_offset], data_len);
