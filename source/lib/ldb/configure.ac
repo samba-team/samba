@@ -41,8 +41,8 @@ AC_SEARCH_LIBS(dlopen, dl, AC_DEFINE(HAVE_DLOPEN, [1], [have dlopen]))
 SHLIBEXT="so" # Should be set based on OS later on
 AC_SUBST(SHLIBEXT)
 
-AC_DEFINE_UNQUOTED(MODULESDIR, LIBDIR "/ldb" , [Modules directory] )
-AC_SUBST(MODULESDIR)
+AC_DEFINE_UNQUOTED(LDB_MODULESDIR, LIBDIR "/ldb" , [Modules directory] )
+AC_SUBST(LDB_MODULESDIR)
 
 TESTS=""
 EXTRA_OBJ=""
