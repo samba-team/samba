@@ -168,8 +168,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 					       (*num_entries) + count);
 		if (! *info) {
 			talloc_destroy(mem_ctx2);
-			status = NT_STATUS_NO_MEMORY;
-			break;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		memcpy(&(*info)[*num_entries], info2, count*sizeof(*info2));

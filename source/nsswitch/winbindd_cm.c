@@ -1032,19 +1032,27 @@ static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 
 			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
-			if (domain->primary && (ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
-				char *sitename = sitename_fetch(ads->config.realm);
+			if (domain->primary && (ads->config.flags & ADS_KDC)) {
+				if (ads_closest_dc(ads)) {
+					char *sitename = sitename_fetch(ads->config.realm);
 
-				/* We're going to use this KDC for this realm/domain.
-				   If we are using sites, then force the krb5 libs
-				   to use this KDC. */
+					/* We're going to use this KDC for this realm/domain.
+					   If we are using sites, then force the krb5 libs
+					   to use this KDC. */
 
-				create_local_private_krb5_conf_for_domain(domain->alt_name,
-								domain->name,
-								sitename,
-								ip);
+					create_local_private_krb5_conf_for_domain(domain->alt_name,
+									domain->name,
+									sitename,
+									ip);
 
-				SAFE_FREE(sitename);
+					SAFE_FREE(sitename);
+				} else {
+					/* use an off site KDC */
+					create_local_private_krb5_conf_for_domain(domain->alt_name,
+									domain->name,
+									NULL,
+									ip);
+				}
 				/* Ensure we contact this DC also. */
 				saf_store( domain->name, name);
 				saf_store( domain->alt_name, name);
@@ -1550,6 +1558,16 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 		DEBUG(5, ("set_dc_type_and_flags: rpccli_ds_getprimarydominfo "
 			  "on domain %s failed: (%s)\n",
 			  domain->name, nt_errstr(result)));
+
+		/* older samba3 DCs will return DCERPC_FAULT_OP_RNG_ERROR for
+		 * every opcode on the LSARPC_DS pipe, continue with
+		 * no_lsarpc_ds mode here as well to get domain->initialized
+		 * set - gd */
+
+		if (NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR) {
+			goto no_lsarpc_ds;
+		}
+
 		return;
 	}
 	

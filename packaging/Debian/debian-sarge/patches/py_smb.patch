@@ -1,0 +1,11 @@
+--- samba-3.0.25c.orig/source/python/py_smb.c	2007-09-03 15:34:13.000000000 +0000
++++ samba-3.0.25c/source/python/py_smb.c	2007-09-03 15:34:31.000000000 +0000
+@@ -48,7 +48,7 @@
+ 
+ 	ZERO_STRUCT(ip);
+ 
+-	if (!cli_connect(cli, server, &ip))
++	if (!NT_STATUS_IS_OK(cli_connect(cli, server, &ip)))
+ 		return NULL;
+ 
+ 	return new_cli_state_object(cli);

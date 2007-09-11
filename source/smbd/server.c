@@ -363,7 +363,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 				unsigned port = atoi(tok);
-				if (port == 0) {
+				if (port == 0 || port > 0xffff) {
 					continue;
 				}
 				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
@@ -403,7 +403,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		
 		for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 			unsigned port = atoi(tok);
-			if (port == 0) continue;
+			if (port == 0 || port > 0xffff) continue;
 			/* open an incoming socket */
 			s = open_socket_in(SOCK_STREAM, port, 0,
 					   interpret_addr(lp_socket_address()),True);

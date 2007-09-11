@@ -1,3 +1,75 @@
+                   ===============================
+                   Release Notes for Samba 3.0.26a
+                             Sep 11, 2007
+                   ===============================
+
+This is a bug fix release of the Samba 3.0.26 code base and is the 
+version that servers should be run for for all current bug Samba 3.0.x
+fixes.  
+
+Major bug fixes included in Samba 3.0.26a are:
+
+  o Memory leaks in Winbind's IDMap manager.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.26
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Fix read_sock() semantics in wb_common.c to address "invalid
+      request size" errors in winbindd logs.
+    * Fix use of pwrite() in tdb IO code paths.
+
+     
+o   Jeremy Allison <jra@samba.org>
+    * Fix logic error in timeout of blocking lock processing.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix error code in the msrpc EnumerateDomainGroups() Winbind
+      method when a memory allocation fails.
+    * Fix Winbind initialization storms when contacting an older Samba DC.
+
+    
+o   Volker Lendecke <vl@samba.org>
+    * Fix compile failure in NFSv4 VFS module.
+    * Fix compile failures on True64.
+    * Fix compile failure in unmaintained python bindings.
+    * BUG 4917: Fix memory leaks in Winbind's idmap_ldap and
+      idmap_cache backends.
+    * Coverity fixes in the group mapping code.
+
+
+o   Derrell Lipman <derrell@samba.org>
+    * Remove NetBIOS keepalives from libsmbclient and consolidate on
+      the use of getpeername() when checking connection health.
+    * Use formal syntax for invoking function pointers in
+      libsmbclient.
+
+
+o   Lars Mueller <lars@samba.org>
+    * Fixes for Winbind's AD site support when the host is not
+      configured in any site or nor DC's are present within the host's
+      configured site.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Debian packaging updates for 3.0.25c.
+    * Add sanity checks for "smb ports" values.
+    * Fix compile issues related to the VFS "open" method and newer
+      glibc implementations.
+    * Fix a segv in smbldap_set_creds() when using an anonymous
+      connection.
+    * BUG 4772: Fix us of ldap_base_dn for the idmap_ldap plugin.
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
                    ==============================
                    Release Notes for Samba 3.0.26
                              Sep 11, 2007
@@ -25,8 +97,6 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix CVE-2007-4138 in the "winbind nss info = {sfu | rfc2307}"
       plugin (idmap_ad.c)
 
-
-Release notes for older releases follow:
 
       --------------------------------------------------
                    ===============================

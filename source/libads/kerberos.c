@@ -490,9 +490,11 @@ int kerberos_kinit_password(const char *principal,
 
 static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sitename, struct in_addr primary_ip)
 {
-	struct ip_service *ip_srv_site;
+	int i;
+	struct ip_service *ip_srv_site = NULL;
 	struct ip_service *ip_srv_nonsite;
-	int count_site, count_nonsite, i;
+	int count_site = 0;
+	int count_nonsite;
 	char *kdc_str = talloc_asprintf(mem_ctx, "\tkdc = %s\n",
 					inet_ntoa(primary_ip));
 

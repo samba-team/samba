@@ -157,13 +157,13 @@ int smbc_open(const char *furl, int flags, mode_t mode)
 	SMBCFILE * file;
 	int fd;
 
-	file = statcont->open(statcont, furl, flags, mode);
+	file = (statcont->open)(statcont, furl, flags, mode);
 	if (!file)
 		return -1;
 
 	fd = add_fd(file);
 	if (fd == -1) 
-		statcont->close_fn(statcont, file);
+                (statcont->close_fn)(statcont, file);
 	return fd;
 }
 
@@ -173,15 +173,15 @@ int smbc_creat(const char *furl, mode_t mode)
 	SMBCFILE * file;
 	int fd;
 
-	file = statcont->creat(statcont, furl, mode);
+	file = (statcont->creat)(statcont, furl, mode);
 	if (!file)
 		return -1;
 
 	fd = add_fd(file);
 	if (fd == -1) {
 		/* Hmm... should we delete the file too ? I guess we could try */
-		statcont->close_fn(statcont, file);
-		statcont->unlink(statcont, furl);
+		(statcont->close_fn)(statcont, file);
+		(statcont->unlink)(statcont, furl);
 	}
 	return fd;
 }
@@ -190,36 +190,36 @@ int smbc_creat(const char *furl, mode_t mode)
 ssize_t smbc_read(int fd, void *buf, size_t bufsize)
 {
 	SMBCFILE * file = find_fd(fd);
-	return statcont->read(statcont, file, buf, bufsize);
+	return (statcont->read)(statcont, file, buf, bufsize);
 }
 
 ssize_t smbc_write(int fd, void *buf, size_t bufsize)
 {
 	SMBCFILE * file = find_fd(fd);
-	return statcont->write(statcont, file, buf, bufsize);
+	return (statcont->write)(statcont, file, buf, bufsize);
 }
 
 off_t smbc_lseek(int fd, off_t offset, int whence)
 {
 	SMBCFILE * file = find_fd(fd);
-	return statcont->lseek(statcont, file, offset, whence);
+	return (statcont->lseek)(statcont, file, offset, whence);
 }
 
 int smbc_close(int fd)
 {
 	SMBCFILE * file = find_fd(fd);
 	del_fd(fd);
-	return statcont->close_fn(statcont, file);
+	return (statcont->close_fn)(statcont, file);
 }
 
 int smbc_unlink(const char *fname)
 {
-        return statcont->unlink(statcont, fname);
+        return (statcont->unlink)(statcont, fname);
 }
 
 int smbc_rename(const char *ourl, const char *nurl)
 {
-	return statcont->rename(statcont, ourl, statcont, nurl);
+	return (statcont->rename)(statcont, ourl, statcont, nurl);
 }
 
 int smbc_opendir(const char *durl)
@@ -227,13 +227,13 @@ int smbc_opendir(const char *durl)
 	SMBCFILE * file;
 	int fd;
 
-	file = statcont->opendir(statcont, durl);
+	file = (statcont->opendir)(statcont, durl);
 	if (!file)
 		return -1;
 
 	fd = add_fd(file);
 	if (fd == -1) 
-		statcont->closedir(statcont, file);
+		(statcont->closedir)(statcont, file);
 
 	return fd;
 }
@@ -242,62 +242,62 @@ int smbc_closedir(int dh)
 {
 	SMBCFILE * file = find_fd(dh);
 	del_fd(dh);
-	return statcont->closedir(statcont, file);
+	return (statcont->closedir)(statcont, file);
 }
 
 int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count)
 {
 	SMBCFILE * file = find_fd(dh);
-	return statcont->getdents(statcont, file,dirp, count);
+	return (statcont->getdents)(statcont, file,dirp, count);
 }
 
 struct smbc_dirent* smbc_readdir(unsigned int dh)
 {
 	SMBCFILE * file = find_fd(dh);
-	return statcont->readdir(statcont, file);
+	return (statcont->readdir)(statcont, file);
 }
 
 off_t smbc_telldir(int dh)
 {
 	SMBCFILE * file = find_fd(dh);
-	return statcont->telldir(statcont, file);
+	return (statcont->telldir)(statcont, file);
 }
 
 int smbc_lseekdir(int fd, off_t offset)
 {
 	SMBCFILE * file = find_fd(fd);
-	return statcont->lseekdir(statcont, file, offset);
+	return (statcont->lseekdir)(statcont, file, offset);
 }
 
 int smbc_mkdir(const char *durl, mode_t mode)
 {
-	return statcont->mkdir(statcont, durl, mode);
+	return (statcont->mkdir)(statcont, durl, mode);
 }
 
 int smbc_rmdir(const char *durl)
 {
-	return statcont->rmdir(statcont, durl);
+	return (statcont->rmdir)(statcont, durl);
 }
 
 int smbc_stat(const char *url, struct stat *st)
 {
-	return statcont->stat(statcont, url, st);
+	return (statcont->stat)(statcont, url, st);
 }
 
 int smbc_fstat(int fd, struct stat *st)
 {
 	SMBCFILE * file = find_fd(fd);
-	return statcont->fstat(statcont, file, st);
+	return (statcont->fstat)(statcont, file, st);
 }
 
 int smbc_chmod(const char *url, mode_t mode)
 {
-	return statcont->chmod(statcont, url, mode);
+	return (statcont->chmod)(statcont, url, mode);
 }
 
 int smbc_utimes(const char *fname, struct timeval *tbuf)
 {
-        return statcont->utimes(statcont, fname, tbuf);
+        return (statcont->utimes)(statcont, fname, tbuf);
 }
 
 #ifdef HAVE_UTIME_H
@@ -306,13 +306,13 @@ int smbc_utime(const char *fname, struct utimbuf *utbuf)
         struct timeval tv[2];
 
         if (utbuf == NULL)
-                return statcont->utimes(statcont, fname, NULL);
+                return (statcont->utimes)(statcont, fname, NULL);
 
         tv[0].tv_sec = utbuf->actime;
         tv[1].tv_sec = utbuf->modtime;
         tv[0].tv_usec = tv[1].tv_usec = 0;
 
-        return statcont->utimes(statcont, fname, tv);
+        return (statcont->utimes)(statcont, fname, tv);
 }
 #endif
 
@@ -322,7 +322,7 @@ int smbc_setxattr(const char *fname,
                   size_t size,
                   int flags)
 {
-        return statcont->setxattr(statcont, fname, name, value, size, flags);
+        return (statcont->setxattr)(statcont, fname, name, value, size, flags);
 }
 
 int smbc_lsetxattr(const char *fname,
@@ -331,7 +331,7 @@ int smbc_lsetxattr(const char *fname,
                    size_t size,
                    int flags)
 {
-        return statcont->setxattr(statcont, fname, name, value, size, flags);
+        return (statcont->setxattr)(statcont, fname, name, value, size, flags);
 }
 
 int smbc_fsetxattr(int fd,
@@ -345,8 +345,8 @@ int smbc_fsetxattr(int fd,
 		errno = EBADF;
 		return -1;
 	}
-        return statcont->setxattr(statcont, file->fname,
-                                  name, value, size, flags);
+        return (statcont->setxattr)(statcont, file->fname,
+                                    name, value, size, flags);
 }
 
 int smbc_getxattr(const char *fname,
@@ -354,7 +354,7 @@ int smbc_getxattr(const char *fname,
                   const void *value,
                   size_t size)
 {
-        return statcont->getxattr(statcont, fname, name, value, size);
+        return (statcont->getxattr)(statcont, fname, name, value, size);
 }
 
 int smbc_lgetxattr(const char *fname,
@@ -362,7 +362,7 @@ int smbc_lgetxattr(const char *fname,
                    const void *value,
                    size_t size)
 {
-        return statcont->getxattr(statcont, fname, name, value, size);
+        return (statcont->getxattr)(statcont, fname, name, value, size);
 }
 
 int smbc_fgetxattr(int fd,
@@ -375,19 +375,19 @@ int smbc_fgetxattr(int fd,
 		errno = EBADF;
 		return -1;
 	}
-        return statcont->getxattr(statcont, file->fname, name, value, size);
+        return (statcont->getxattr)(statcont, file->fname, name, value, size);
 }
 
 int smbc_removexattr(const char *fname,
                      const char *name)
 {
-        return statcont->removexattr(statcont, fname, name);
+        return (statcont->removexattr)(statcont, fname, name);
 }
 
 int smbc_lremovexattr(const char *fname,
                       const char *name)
 {
-        return statcont->removexattr(statcont, fname, name);
+        return (statcont->removexattr)(statcont, fname, name);
 }
 
 int smbc_fremovexattr(int fd,
@@ -398,21 +398,21 @@ int smbc_fremovexattr(int fd,
 		errno = EBADF;
 		return -1;
 	}
-        return statcont->removexattr(statcont, file->fname, name);
+        return (statcont->removexattr)(statcont, file->fname, name);
 }
 
 int smbc_listxattr(const char *fname,
                    char *list,
                    size_t size)
 {
-        return statcont->listxattr(statcont, fname, list, size);
+        return (statcont->listxattr)(statcont, fname, list, size);
 }
 
 int smbc_llistxattr(const char *fname,
                     char *list,
                     size_t size)
 {
-        return statcont->listxattr(statcont, fname, list, size);
+        return (statcont->listxattr)(statcont, fname, list, size);
 }
 
 int smbc_flistxattr(int fd,
@@ -424,29 +424,29 @@ int smbc_flistxattr(int fd,
 		errno = EBADF;
 		return -1;
 	}
-        return statcont->listxattr(statcont, file->fname, list, size);
+        return (statcont->listxattr)(statcont, file->fname, list, size);
 }
 
 int smbc_print_file(const char *fname, const char *printq)
 {
-	return statcont->print_file(statcont, fname, statcont, printq);
+	return (statcont->print_file)(statcont, fname, statcont, printq);
 }
 
 int smbc_open_print_job(const char *fname)
 {
-	SMBCFILE * file = statcont->open_print_job(statcont, fname);
+	SMBCFILE * file = (statcont->open_print_job)(statcont, fname);
 	if (!file) return -1;
 	return file->cli_fd;
 }
 
 int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn)
 {
-	return statcont->list_print_jobs(statcont, purl, fn);
+	return (statcont->list_print_jobs)(statcont, purl, fn);
 }
 
 int smbc_unlink_print_job(const char *purl, int id)
 {
-	return statcont->unlink_print_job(statcont, purl, id);
+	return (statcont->unlink_print_job)(statcont, purl, id);
 }
 
 

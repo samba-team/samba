@@ -33,8 +33,6 @@ extern struct current_user current_user;
 
 /* Make directory handle internals available. */
 
-#define NAME_CACHE_SIZE 100
-
 struct name_cache_entry {
 	char *name;
 	long offset;
@@ -45,6 +43,7 @@ struct smb_Dir {
 	SMB_STRUCT_DIR *dir;
 	long offset;
 	char *dir_path;
+	size_t name_cache_size;
 	struct name_cache_entry *name_cache;
 	unsigned int name_cache_index;
 	unsigned int file_number;
@@ -1062,12 +1061,14 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 struct smb_Dir *OpenDir(connection_struct *conn, const char *name, const char *mask, uint32 attr)
 {
 	struct smb_Dir *dirp = SMB_MALLOC_P(struct smb_Dir);
+
 	if (!dirp) {
 		return NULL;
 	}
 	ZERO_STRUCTP(dirp);
 
 	dirp->conn = conn;
+	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 
 	dirp->dir_path = SMB_STRDUP(name);
 	if (!dirp->dir_path) {
@@ -1079,9 +1080,14 @@ struct smb_Dir *OpenDir(connection_struct *conn, const char *name, const char *m
 		goto fail;
 	}
 
-	dirp->name_cache = SMB_CALLOC_ARRAY(struct name_cache_entry, NAME_CACHE_SIZE);
-	if (!dirp->name_cache) {
-		goto fail;
+	if (dirp->name_cache_size) {
+		dirp->name_cache = SMB_CALLOC_ARRAY(struct name_cache_entry,
+				dirp->name_cache_size);
+		if (!dirp->name_cache) {
+			goto fail;
+		}
+	} else {
+		dirp->name_cache = NULL;
 	}
 
 	dirhandles_open++;
@@ -1114,7 +1120,7 @@ int CloseDir(struct smb_Dir *dirp)
 	}
 	SAFE_FREE(dirp->dir_path);
 	if (dirp->name_cache) {
-		for (i = 0; i < NAME_CACHE_SIZE; i++) {
+		for (i = 0; i < dirp->name_cache_size; i++) {
 			SAFE_FREE(dirp->name_cache[i].name);
 		}
 	}
@@ -1230,7 +1236,12 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 {
 	struct name_cache_entry *e;
 
-	dirp->name_cache_index = (dirp->name_cache_index+1) % NAME_CACHE_SIZE;
+	if (!dirp->name_cache_size || !dirp->name_cache) {
+		return;
+	}
+
+	dirp->name_cache_index = (dirp->name_cache_index+1) %
+					dirp->name_cache_size;
 	e = &dirp->name_cache[dirp->name_cache_index];
 	SAFE_FREE(e->name);
 	e->name = SMB_STRDUP(name);
@@ -1249,20 +1260,22 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 	connection_struct *conn = dirp->conn;
 
 	/* Search back in the name cache. */
-	for (i = dirp->name_cache_index; i >= 0; i--) {
-		struct name_cache_entry *e = &dirp->name_cache[i];
-		if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
-			*poffset = e->offset;
-			SeekDir(dirp, e->offset);
-			return True;
+	if (dirp->name_cache_size && dirp->name_cache) {
+		for (i = dirp->name_cache_index; i >= 0; i--) {
+			struct name_cache_entry *e = &dirp->name_cache[i];
+			if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+				*poffset = e->offset;
+				SeekDir(dirp, e->offset);
+				return True;
+			}
 		}
-	}
-	for (i = NAME_CACHE_SIZE-1; i > dirp->name_cache_index; i--) {
-		struct name_cache_entry *e = &dirp->name_cache[i];
-		if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
-			*poffset = e->offset;
-			SeekDir(dirp, e->offset);
-			return True;
+		for (i = dirp->name_cache_size - 1; i > dirp->name_cache_index; i--) {
+			struct name_cache_entry *e = &dirp->name_cache[i];
+			if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+				*poffset = e->offset;
+				SeekDir(dirp, e->offset);
+				return True;
+			}
 		}
 	}
 

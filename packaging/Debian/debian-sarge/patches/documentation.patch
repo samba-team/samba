@@ -13,15 +13,15 @@
  .PP
 @@ -87,12 +94,12 @@
  .TP 3n
- &#8226;
+ \(bu
 -/usr/local/samba/sbin/swat
 +/usr/sbin/swat
  .TP 3n
- &#8226;
+ \(bu
 -/usr/local/samba/swat/images/*
 +/usr/share/samba/swat/images/*
  .TP 3n
- &#8226;
+ \(bu
 -/usr/local/samba/swat/help/*
 +/usr/share/samba/swat/help/*
  .SS "Inetd Installation"
@@ -43,8 +43,8 @@
 -you should add a line like this:
 +you should add a line like this (not needed for Debian since the maintainer scripts do it automatically. You need to uncomment the line, though, because it is added commented out for security reasons):
  .PP
--\fBswat stream tcp nowait.400 root /usr/local/samba/sbin/swat swat\fR
-+\fBswat stream tcp nowait.400 root /usr/sbin/swat swat\fR
+-swat stream tcp nowait.400 root /usr/local/samba/sbin/swat swat
++swat stream tcp nowait.400 root /usr/sbin/swat swat
  .PP
  Once you have edited
  \fI/etc/services\fR

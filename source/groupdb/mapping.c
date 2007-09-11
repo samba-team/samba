@@ -179,6 +179,7 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 			fstrcpy( map->comment, "Ordinary Users" );
 			sid_copy( &map->sid, &sid );
 			map->sid_name_use = SID_NAME_DOM_GRP;
+			map->gid = (gid_t)-1;
 			
 			return True;
 		}
