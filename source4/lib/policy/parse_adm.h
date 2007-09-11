@@ -41,8 +41,8 @@
    enum yytokentype {
      CATEGORY = 258,
      CLASS = 259,
-     USER = 260,
-     MACHINE = 261,
+     CLASS_USER = 260,
+     CLASS_MACHINE = 261,
      POLICY = 262,
      KEYNAME = 263,
      EXPLAIN = 264,
@@ -79,8 +79,8 @@
 /* Tokens.  */
 #define CATEGORY 258
 #define CLASS 259
-#define USER 260
-#define MACHINE 261
+#define CLASS_USER 260
+#define CLASS_MACHINE 261
 #define POLICY 262
 #define KEYNAME 263
 #define EXPLAIN 264
