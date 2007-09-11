@@ -667,8 +667,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 	if (!given_principal ||
 	    strequal(given_principal, ADS_IGNORE_PRINCIPAL)) {
 
-		status = ads_guess_service_principal(ads, given_principal,
-						     &p->string);
+		status = ads_guess_service_principal(ads, &p->string);
 		if (!ADS_ERR_OK(status)) {
 			return status;
 		}
@@ -1103,7 +1102,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	return status;
 }
 
-#endif /* HAVE_GGSAPI */
+#endif /* HAVE_GSSAPI */
 
 /* mapping between SASL mechanisms and functions */
 static struct {
