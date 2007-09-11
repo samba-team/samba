@@ -5470,6 +5470,45 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 }
 
+
+/**********************************************************************
+ trusted domains functions
+ *********************************************************************/
+
+static BOOL ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
+				      const char *domain,
+				      char** pwd,
+				      DOM_SID *sid,
+	        	 	      time_t *pass_last_set_time)
+{
+	return secrets_fetch_trusted_domain_password(domain, pwd,
+				sid, pass_last_set_time);
+
+}
+
+static BOOL ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
+				      const char* domain,
+				      const char* pwd,
+	        	  	      const DOM_SID *sid)
+{
+	return secrets_store_trusted_domain_password(domain, pwd, sid);
+}
+
+static BOOL ldapsam_del_trusteddom_pw(struct pdb_methods *methods,
+				      const char *domain)
+{
+	return trusted_domain_password_delete(domain);
+}
+
+static NTSTATUS ldapsam_enum_trusteddoms(struct pdb_methods *methods,
+					 TALLOC_CTX *mem_ctx,
+					 uint32 *num_domains,
+					 struct trustdom_info ***domains)
+{
+	return secrets_trusted_domains(mem_ctx, num_domains, domains);
+}
+
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -5534,6 +5573,11 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 
 	(*pdb_method)->rid_algorithm = ldapsam_rid_algorithm;
 	(*pdb_method)->new_rid = ldapsam_new_rid;
+
+	(*pdb_method)->get_trusteddom_pw = ldapsam_get_trusteddom_pw;
+	(*pdb_method)->set_trusteddom_pw = ldapsam_set_trusteddom_pw;
+	(*pdb_method)->del_trusteddom_pw = ldapsam_del_trusteddom_pw;
+	(*pdb_method)->enum_trusteddoms = ldapsam_enum_trusteddoms;
 
 	/* TODO: Setup private data and free */
 
