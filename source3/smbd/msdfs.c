@@ -817,9 +817,9 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		}
 
 		if (pdp->reqpath[0] != '\0') {
-			ref->alternate_path = talloc_asprintf(ctx,
-					"%s%s",
+			ref->alternate_path = talloc_asprintf_append(
 					ref->alternate_path,
+					"%s",
 					pdp->reqpath);
 			if (!ref->alternate_path) {
 				TALLOC_FREE(pdp);
@@ -1298,7 +1298,6 @@ BOOL create_msdfs_link(const struct junction_map *jucn,
 		goto out;
 	}
 	for(i=0; i<jucn->referral_count; i++) {
-		char *old_msdfs_link = msdfs_link;
 		char *refpath = jucn->referral_list[i].alternate_path;
 
 		/* Alternate paths always use Windows separators. */
@@ -1310,21 +1309,18 @@ BOOL create_msdfs_link(const struct junction_map *jucn,
 			continue;
 		}
 		if (i > 0 && insert_comma) {
-			msdfs_link = talloc_asprintf(conn->mem_ctx,
-					"%s,%s",
-					old_msdfs_link,
+			msdfs_link = talloc_asprintf_append(msdfs_link,
+					",%s",
 					refpath);
 		} else {
-			msdfs_link = talloc_asprintf(conn->mem_ctx,
-					"%s%s",
-					old_msdfs_link,
+			msdfs_link = talloc_asprintf_append(msdfs_link,
+					"%s",
 					refpath);
 		}
 
 		if (!msdfs_link) {
 			goto out;
 		}
-		TALLOC_FREE(old_msdfs_link);
 		if (!insert_comma) {
 			insert_comma = True;
 		}
