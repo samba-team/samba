@@ -91,6 +91,27 @@ sub start_testsuite($$)
 
 	$self->print_html_header("Test Results for $state->{NAME}",
 		                     *TEST);
+
+	print TEST "<h2>Environment settings</h2>\n";
+
+	print TEST "  <table>\n";
+	print TEST "    <tr><td><b>Variable name</b></td><td><b>Variable value</b></td></tr>\n";
+	foreach (keys %{$state->{ENVVARS}}) {
+		print TEST "    <tr><td>$_</td><td>";
+		my $val = $state->{ENVVARS}->{$_};
+		if ($val =~ /^\.\// and -r $val) { 
+			print TEST "<a href=\"../$val\">$val</a>"; 
+		} elsif (-r $val) {
+			print TEST "<a href=\"$val\">$val</a>"; 
+		} else { 
+			print TEST $val; 
+		}
+		print TEST "</td></tr>\n";
+	}
+	print TEST "  </table>\n";
+
+	print TEST "<h2>Tests</h2>\n";
+
 	print TEST "  <table>\n";
 }
 
