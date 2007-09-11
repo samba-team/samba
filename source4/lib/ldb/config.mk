@@ -71,19 +71,6 @@ OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE ldb_ildap
-[MODULE::ldb_ildap]
-SUBSYSTEM = LIBLDB
-CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBCLI_LDAP
-INIT_FUNCTION = ldb_ildap_init
-ALIASES = ldapi ldaps ldap
-OBJ_FILES = \
-		ldb_ildap/ldb_ildap.o
-# End MODULE ldb_ildap
-################################################
-
-################################################
 # Start MODULE ldb_map
 [MODULE::ldb_map]
 PRIVATE_DEPENDENCIES = LIBTALLOC
@@ -186,89 +173,6 @@ PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 ################################################
 
 ################################################
-# Start SUBSYSTEM LIBLDB_CMDLINE
-[SUBSYSTEM::LIBLDB_CMDLINE]
-CFLAGS = -Ilib/ldb
-OBJ_FILES= \
-		tools/cmdline.o
-PUBLIC_DEPENDENCIES = LIBLDB LIBPOPT
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL POPT_SAMBA POPT_CREDENTIALS gensec
-# End SUBSYSTEM LIBLDB_CMDLINE
-################################################
-
-################################################
-# Start BINARY ldbadd
-[BINARY::ldbadd]
-INSTALLDIR = BINDIR
-OBJ_FILES = \
-		tools/ldbadd.o
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE LIBCLI_RESOLVE
-MANPAGE = man/ldbadd.1
-# End BINARY ldbadd
-################################################
-
-################################################
-# Start BINARY ldbdel
-[BINARY::ldbdel]
-INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/ldbdel.o
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE
-MANPAGE = man/ldbdel.1
-# End BINARY ldbdel
-################################################
-
-################################################
-# Start BINARY ldbmodify
-[BINARY::ldbmodify]
-INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/ldbmodify.o
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE
-MANPAGE = man/ldbmodify.1
-# End BINARY ldbmodify
-################################################
-
-################################################
-# Start BINARY ldbsearch
-[BINARY::ldbsearch]
-INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/ldbsearch.o
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE 
-MANPAGE = man/ldbsearch.1
-# End BINARY ldbsearch
-################################################
-
-################################################
-# Start BINARY ldbedit
-[BINARY::ldbedit]
-INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/ldbedit.o
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE
-MANPAGE = man/ldbedit.1
-# End BINARY ldbedit
-################################################
-
-################################################
-# Start BINARY ldbrename
-[BINARY::ldbrename]
-INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/ldbrename.o
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE
-MANPAGE = man/ldbrename.1
-# End BINARY ldbrename
-################################################
-
-################################################
 # Start BINARY ldbtest
 [BINARY::ldbtest]
 OBJ_FILES= \
@@ -312,3 +216,6 @@ LIBRARY_REALNAME = swig/_ldb.$(SHLIBEXT)
 OBJ_FILES = swig/ldb_wrap.o
 # End LIBRARY swig_ldb
 #######################
+
+include tools/config.mk
+include ldb_ildap/config.mk
