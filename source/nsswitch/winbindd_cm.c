@@ -2161,7 +2161,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	if (domain->primary && !get_trust_pw(domain->name, mach_pwd, &sec_chan_type)) {
+	if ((IS_DC || domain->primary) && !get_trust_pw(domain->name, mach_pwd, &sec_chan_type)) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -2171,7 +2171,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return result;
 	}
 
-	if ( !domain->primary ) {
+	if ((!IS_DC) && (!domain->primary)) {
 		/* Clear the schannel request bit and drop down */
 		neg_flags &= ~NETLOGON_NEG_SCHANNEL;		
 		goto no_schannel;
