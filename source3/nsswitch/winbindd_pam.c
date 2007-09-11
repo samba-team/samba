@@ -1824,17 +1824,17 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			: rpccli_netlogon_sam_network_logon;
 
 		result = logon_fn(netlogon_pipe,
-							   state->mem_ctx,
-							   state->request.data.auth_crap.logon_parameters,
-							   contact_domain->dcname,
-							   name_user,
-							   name_domain, 
-									/* Bug #3248 - found by Stefan Burkei. */
-							   workstation, /* We carefully set this above so use it... */
-							   state->request.data.auth_crap.chal,
-							   lm_resp,
-							   nt_resp,
-							   &info3);
+				  state->mem_ctx,
+				  state->request.data.auth_crap.logon_parameters,
+				  contact_domain->dcname,
+				  name_user,
+				  name_domain, 
+				       	/* Bug #3248 - found by Stefan Burkei. */
+				  workstation, /* We carefully set this above so use it... */
+				  state->request.data.auth_crap.chal,
+				  lm_resp,
+				  nt_resp,
+				  &info3);
 
 		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
 		    && contact_domain->can_do_samlogon_ex) {
