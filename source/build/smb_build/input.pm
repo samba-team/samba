@@ -91,7 +91,11 @@ sub check_module($$$)
 	}
 
 	if (not defined($mod->{OUTPUT_TYPE})) {
-		$mod->{OUTPUT_TYPE} = $default_ot;
+		if ($INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
+			$mod->{OUTPUT_TYPE} = ["SHARED_LIBRARY"];
+		} else {
+			$mod->{OUTPUT_TYPE} = $default_ot;
+		}
 	}
 
 	if (grep(/SHARED_LIBRARY/, @{$mod->{OUTPUT_TYPE}})) {
