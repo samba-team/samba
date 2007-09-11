@@ -53,7 +53,6 @@ failed:
 }
 
 ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
-				       const char *given_principal,
 				       char **returned_principal)
 {
 	char *princ = NULL;
