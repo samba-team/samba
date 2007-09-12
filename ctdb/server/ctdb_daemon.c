@@ -210,7 +210,7 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", 
 			 (unsigned long long)srvid));
 	} else {
-		DEBUG(2,(__location__ " Registered message handler for srvid=%llu\n", 
+		DEBUG(1,(__location__ " Registered message handler for srvid=%llu\n", 
 			 (unsigned long long)srvid));
 	}
 
@@ -218,7 +218,7 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 	if ((srvid & 0xFFFFFFFF) == srvid &&
 	    kill(srvid, 0) == 0) {
 		client->pid = srvid;
-		DEBUG(3,(__location__ " Registered PID %u for client %u\n",
+		DEBUG(1,(__location__ " Registered PID %u for client %u\n",
 			 (unsigned)client->pid, client_id));
 	}
 	return res;
