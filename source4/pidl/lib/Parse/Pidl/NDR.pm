@@ -288,9 +288,20 @@ sub can_contain_deferred($)
 
 	return 1 if ($type->{TYPE} eq "DECLARE"); # assume the worst
 
-	foreach my $x (@{$type->{DATA}->{ELEMENTS}}) {
-		return 1 if ($x->{POINTERS});
-		return 1 if (can_contain_deferred ($x));
+	if ($type->{TYPE} eq "TYPEDEF") {
+		return 0 unless defined($type->{DATA}->{ELEMENTS});
+
+		foreach my $x (@{$type->{DATA}->{ELEMENTS}}) {
+			return 1 if ($x->{POINTERS});
+			return 1 if (can_contain_deferred ($x));
+		}
+	} else {
+		return 0 unless defined($type->{ELEMENTS});
+
+		foreach my $x (@{$type->{ELEMENTS}}) {
+			return 1 if ($x->{POINTERS});
+			return 1 if (can_contain_deferred ($x));
+		}
 	}
 	
 	return 0;
