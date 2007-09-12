@@ -58,7 +58,7 @@
 	    idmap domains = MAIN TRUSTED1
 
 	    idmap config MAIN:backend      = rid
-	    idmap config MAIN:base_rid     = 1000
+	    idmap config MAIN:base_rid     = 0
 	    idmap config MAIN:range        = 10000 - 49999
 
 	    idmap config TRUSTED1:backend  = rid
