@@ -435,7 +435,7 @@ The very first step is to add an account for the SAMBA domain on RUMBA's PDC.
 <indexterm><primary>password</primary></indexterm>
 Launch the <application>Domain User Manager</application>, then from the menu select
 <guimenu>Policies</guimenu>, <guimenuitem>Trust Relationships</guimenuitem>.
-Now, next to the <guilabel>Trusted Domains</guilabel> box, press the <guibutton>Add</guibutton>
+Now, next to the <guilabel>Trusting Domains</guilabel> box, press the <guibutton>Add</guibutton>
 button and type in the name of the trusted domain (SAMBA) and the password to use in securing
 the relationship.
 </para>
