@@ -1226,8 +1226,7 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
  * accumulating output into a string buffer.
  **/
 char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
-{	
-	struct talloc_chunk *tc;
+{
 	int len, s_len;
 	va_list ap2;
 	char c;
@@ -1236,9 +1235,7 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 		return talloc_vasprintf(NULL, fmt, ap);
 	}
 
-	tc = talloc_chunk_from_ptr(s);
-
-	s_len = tc->size - 1;
+	s_len = strlen(s);
 
 	va_copy(ap2, ap);
 	len = vsnprintf(&c, 1, fmt, ap2);
