@@ -6,7 +6,8 @@
 <description>
     <para>
     If this parameter is set then Samba debug messages are logged into the system 
-    syslog only, and not to the debug log files.
+    syslog only, and not to the debug log files. There still will be some
+	logging to log.[sn]mbd even if <emphasis>syslog only<emphasis> is enabled.
     </para>
 </description>
 <value type="default">no</value>
