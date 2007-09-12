@@ -65,7 +65,7 @@ static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
 		BOOL *is_data_outstanding);
 static ssize_t write_to_internal_pipe(void *np_conn, char *data, size_t n);
 static BOOL close_internal_rpc_pipe_hnd(void *np_conn);
-static void *make_internal_rpc_pipe_p(char *pipe_name, 
+static void *make_internal_rpc_pipe_p(const char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
 
 /****************************************************************************
@@ -167,7 +167,7 @@ static BOOL pipe_init_outgoing_data(pipes_struct *p)
  Find first available pipe slot.
 ****************************************************************************/
 
-smb_np_struct *open_rpc_pipe_p(char *pipe_name, 
+smb_np_struct *open_rpc_pipe_p(const char *pipe_name, 
 			      connection_struct *conn, uint16 vuid)
 {
 	int i;
@@ -275,7 +275,7 @@ smb_np_struct *open_rpc_pipe_p(char *pipe_name,
  Make an internal namedpipes structure
 ****************************************************************************/
 
-static void *make_internal_rpc_pipe_p(char *pipe_name, 
+static void *make_internal_rpc_pipe_p(const char *pipe_name, 
 			      connection_struct *conn, uint16 vuid)
 {
 	pipes_struct *p;
