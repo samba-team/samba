@@ -90,8 +90,8 @@
 		<listitem><para>specifies a file that contains a username and/or password. 
 The format of the file is:
 <programlisting>
-username = &lt;value&gt;
-password = &lt;value&gt;
+username=value
+password=value
 </programlisting></para>
 
 		<para>This is preferred over having passwords in plaintext in a
