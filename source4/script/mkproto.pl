@@ -68,19 +68,23 @@ GetOptions(
 	'help' => \&usage
 ) or exit(1);
 
-if (not defined($public_define) and defined($public_file)) {
-	$public_define = ".." . uc($public_file) . "__";
-	$public_define =~ tr{./}{__};
-} elsif (not defined($public_define)) {
-	$public_define = '_PROTO_H_';
+sub normalize_define($$)
+{
+	my ($define, $file) = @_;
+
+	if (not defined($define) and defined($file)) {
+		$define = "__" . uc($file) . "__";
+		$define =~ tr{./}{__};
+		$define =~ tr{\-}{_};
+	} elsif (not defined($define)) {
+		$define = '_PROTO_H_';
+	}
+
+	return $define;
 }
 
-if (not defined($private_define) and defined($private_file)) {
-	$private_define = "__" . uc($private_file) . "__";
-	$private_define =~ tr{./}{__};
-} elsif (not defined($public_define)) {
-	$public_define = '_PROTO_H_';
-}
+$public_define = normalize_define($public_define, $public_file);
+$private_define = normalize_define($private_define, $private_file);
 
 if ((defined($private_file) and defined($public_file) and ($private_file eq $public_file)) or 
 	(not defined($private_file) and not defined($public_file))) {
