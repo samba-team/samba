@@ -92,6 +92,8 @@ start() {
 stop() {
 	echo -n $"Shutting down ctdbd service: "
 	ctdb shutdown
+	sleep 1
+	killall -q -9 ctdbd
 	RETVAL=$?
 	case $init_style in
 	    suse)
