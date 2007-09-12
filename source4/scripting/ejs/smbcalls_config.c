@@ -87,7 +87,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 	if (argc < 1) return -1;
 
 	if (argc == 2) {
-		struct service *service;
+		struct loadparm_service *service;
 		/* its a share parameter */
 		service = lp_service(argv[0]);
 		if (service == NULL) {
