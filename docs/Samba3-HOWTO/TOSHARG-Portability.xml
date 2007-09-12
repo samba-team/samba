@@ -145,7 +145,7 @@ After creating the files, you then assemble them using
 </screen>
 
 <para>
-which should produce the files <filename>seteuid.o</filename> and 
+which should produce the files <filename>seteuid.o</filename> and
 <filename>setegid.o</filename>.
 </para>
 
@@ -158,7 +158,7 @@ the Samba Makefile. Your LIBSM line will look something like this:
 LIBSM = setegid.o seteuid.o -ln
 </programlisting></para>
 
-<para> 
+<para>
 You should then remove the line:
 </para>
 
@@ -180,7 +180,7 @@ entry to <filename>/etc/hosts</filename> as follows:
 127.0.0.1 loopback "hostname"."domainname"
 </programlisting>
 </para>
-	
+
 <para>
 <indexterm><primary>loopback interface</primary></indexterm>
 This causes Samba to loop back onto the loopback interface.
@@ -199,8 +199,34 @@ in the line starting 127.0.0.1.
 <title>AIX: Sequential Read Ahead</title>
 <!-- From an email by William Jojo <jojowil@hvcc.edu> -->
 <para>
-Disabling sequential read ahead using <userinput>vmtune -r 0</userinput> improves 
-Samba performance significantly.
+Disabling sequential read ahead can improve Samba performance significantly
+when there is a relatively high level of multiprogramming (many smbd processes
+or mixed with another workload), not an abundance of physical memory or slower
+disk technology. These can cause AIX to have a higher WAIT values. Disabling
+sequential read-ahead can also have an adverse affect on other workloads in the
+system so you will need to evaluate other applications for impact.
+</para>
+
+<para>
+It is recommended to use the defaults provided by IBM, but if you experience a
+high amount of wait time, try disabling read-ahead with the following commands:
+</para>
+
+<para>
+For AIX 5.1 and earlier: <userinput>vmtune -r 0</userinput>
+</para>
+
+<para>
+For AIX 5.2 and later jfs filesystems: <userinput>ioo -o minpgahead=0</userinput>
+</para>
+
+<para>
+For AIX 5.2 and later jfs2 filesystems: <userinput>ioo -o j2_minPageReadAhead=0</userinput>
+</para>
+
+<para>
+If you have a mix of jfs and jfs2 filesystems on the same host, simply use both
+ioo commands.
 </para>
 </sect1>
 
