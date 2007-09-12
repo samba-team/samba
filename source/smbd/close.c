@@ -478,7 +478,8 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 
 		TALLOC_FREE(lck);
 
-		status = rmdir_internals(fsp->conn, fsp->fsp_name);
+		status = rmdir_internals(talloc_tos(),
+				fsp->conn, fsp->fsp_name);
 
 		DEBUG(5,("close_directory: %s. Delete on close was set - "
 			 "deleting directory returned %s.\n",

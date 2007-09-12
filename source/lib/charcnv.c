@@ -1106,7 +1106,11 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 		}
 		/* Ensure we don't use an insane length from the client. */
 		if (src_len >= 1024*1024) {
-			smb_panic("Bad src length in pull_ascii_base_talloc\n");
+			char *msg = talloc_asprintf(ctx,
+					"Bad src length (%u) in "
+					"pull_ascii_base_talloc",
+					src_len);
+			smb_panic(msg);
 		}
 	}
 

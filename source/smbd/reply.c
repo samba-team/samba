@@ -1193,9 +1193,9 @@ void reply_dskattr(connection_struct *conn, struct smb_request *req)
 
 void reply_search(connection_struct *conn, struct smb_request *req)
 {
-	pstring mask;
+	char *mask = NULL;
 	char *directory = NULL;
-	pstring fname;
+	char *fname = NULL;
 	SMB_OFF_T size;
 	uint32 mode;
 	time_t date;
@@ -1228,8 +1228,6 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 		END_PROFILE(SMBsearch);
 		return;
 	}
-
-	*mask = *fname = 0;
 
 	/* If we were called as SMBffirst then we must expect close. */
 	if(CVAL(req->inbuf,smb_com) == SMBffirst) {
@@ -1297,8 +1295,8 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 
 		p = strrchr_m(directory,'/');
 		if (!p) {
-			pstrcpy(mask,directory);
-			directory = talloc_strdup(talloc_tos(),".");
+			mask = directory;
+			directory = talloc_strdup(ctx,".");
 			if (!directory) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBsearch);
@@ -1306,11 +1304,11 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 			}
 		} else {
 			*p = 0;
-			pstrcpy(mask,p+1);
+			mask = p+1;
 		}
 
 		if (*directory == '\0') {
-			directory = talloc_strdup(talloc_tos(),".");
+			directory = talloc_strdup(ctx,".");
 			if (!directory) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBsearch);
@@ -1349,7 +1347,10 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 			goto SearchEmpty;
 		}
 		string_set(&conn->dirpath,dptr_path(dptr_num));
-		pstrcpy(mask, dptr_wcard(dptr_num));
+		mask = dptr_wcard(dptr_num);
+		if (!mask) {
+			goto SearchEmpty;
+		}
 		/*
 		 * For a 'continue' search we have no string. So
 		 * check from the initial saved string.
@@ -1363,8 +1364,12 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 	if ((dirtype&0x1F) == aVOLID) {
 		char buf[DIR_STRUCT_SIZE];
 		memcpy(buf,status,21);
-		make_dir_struct(buf,"???????????",volume_label(SNUM(conn)),
-				0,aVOLID,0,!allow_long_path_components);
+		if (!make_dir_struct(ctx,buf,"???????????",volume_label(SNUM(conn)),
+				0,aVOLID,0,!allow_long_path_components)) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsearch);
+			return;
+		}
 		dptr_fill(buf+12,dptr_num);
 		if (dptr_zero(buf+12) && (status_len==0)) {
 			numentries = 1;
@@ -1393,12 +1398,23 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 		}
 
 		for (i=numentries;(i<maxentries) && !finished;i++) {
-			finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
+			finished = !get_dir_entry(ctx,conn,mask,dirtype,&fname,
+					&size,&mode,&date,check_descend);
 			if (!finished) {
 				char buf[DIR_STRUCT_SIZE];
 				memcpy(buf,status,21);
-				make_dir_struct(buf,mask,fname,size, mode,date,
-						!allow_long_path_components);
+				if (!make_dir_struct(ctx,
+						buf,
+						mask,
+						fname,
+						size,
+						mode,
+						date,
+						!allow_long_path_components)) {
+					reply_nterror(req, NT_STATUS_NO_MEMORY);
+					END_PROFILE(SMBsearch);
+					return;
+				}
 				if (!dptr_fill(buf+12,dptr_num)) {
 					break;
 				}
@@ -2237,8 +2253,10 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
  * unlink a file with all relevant access checks
  *******************************************************************/
 
-static NTSTATUS do_unlink(connection_struct *conn, struct smb_request *req,
-			  char *fname, uint32 dirtype)
+static NTSTATUS do_unlink(connection_struct *conn,
+			struct smb_request *req,
+			const char *fname,
+			uint32 dirtype)
 {
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
@@ -2362,15 +2380,14 @@ static NTSTATUS do_unlink(connection_struct *conn, struct smb_request *req,
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, const char *name_in, BOOL has_wild)
 {
-	pstring directory;
-	pstring mask;
+	const char *directory = NULL;
+	char *mask = NULL;
 	char *name = NULL;
-	char *p;
+	char *p = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf;
-
-	*directory = *mask = 0;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	status = unix_convert(conn, name_in, has_wild, &name, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2379,12 +2396,15 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 	p = strrchr_m(name,'/');
 	if (!p) {
-		pstrcpy(directory,".");
-		pstrcpy(mask,name);
+		directory = talloc_strdup(ctx, ".");
+		if (!directory) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		mask = name;
 	} else {
 		*p = 0;
-		pstrcpy(directory,name);
-		pstrcpy(mask,p+1);
+		directory = name;
+		mask = p+1;
 	}
 
 	/*
@@ -2398,18 +2418,23 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 	if (!VALID_STAT(sbuf) && mangle_is_mangled(mask,conn->params)) {
 		char *new_mask = NULL;
-		mangle_lookup_name_from_8_3(talloc_tos(),
+		mangle_lookup_name_from_8_3(ctx,
 				mask,
 				&new_mask,
 				conn->params );
 		if (new_mask) {
-			pstrcpy(mask, new_mask);
+			mask = new_mask;
 		}
 	}
 
 	if (!has_wild) {
-		pstrcat(directory,"/");
-		pstrcat(directory,mask);
+		directory = talloc_asprintf(ctx,
+				"%s/%s",
+				directory,
+				mask);
+		if (!directory) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		if (dirtype == 0) {
 			dirtype = FILE_ATTRIBUTE_NORMAL;
 		}
@@ -2435,7 +2460,8 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		}
 
 		if (strequal(mask,"????????.???")) {
-			pstrcpy(mask,"*");
+			mask[0] = '*';
+			mask[1] = '\0';
 		}
 
 		status = check_name(conn, directory);
@@ -2447,35 +2473,37 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		if (dir_hnd == NULL) {
 			return map_nt_error_from_unix(errno);
 		}
-		
+
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
 		   the pattern matches against the long name, otherwise the short name 
 		   We don't implement this yet XXXX
 		*/
-		
+
 		status = NT_STATUS_NO_SUCH_FILE;
 
 		while ((dname = ReadDirName(dir_hnd, &offset))) {
 			SMB_STRUCT_STAT st;
-			pstring fname;
-			pstrcpy(fname,dname);
+			char *fname = NULL;
 
 			if (!is_visible_file(conn, directory, dname, &st, True)) {
 				continue;
 			}
 
 			/* Quick check for "." and ".." */
-			if (fname[0] == '.') {
-				if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-					continue;
-				}
-			}
-
-			if(!mask_match(fname, mask, conn->case_sensitive)) {
+			if (ISDOT(dname) || ISDOTDOT(dname)) {
 				continue;
 			}
-				
-			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
+
+			if(!mask_match(dname, mask, conn->case_sensitive)) {
+				continue;
+			}
+
+			fname = talloc_asprintf(ctx, "%s/%s",
+					directory,
+					dname);
+			if (!fname) {
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -2485,16 +2513,19 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 			status = do_unlink(conn, req, fname, dirtype);
 			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(fname);
 				continue;
 			}
 
 			count++;
 			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",
 				 fname));
+
+			TALLOC_FREE(fname);
 		}
 		CloseDir(dir_hnd);
 	}
-	
+
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
 		status = map_nt_error_from_unix(errno);
 	}
@@ -2577,9 +2608,12 @@ void reply_unlink(connection_struct *conn, struct smb_request *req)
 
 static void fail_readraw(void)
 {
-	pstring errstr;
-	slprintf(errstr, sizeof(errstr)-1, "FAIL ! reply_readbraw: socket write fail (%s)",
-		strerror(errno) );
+	const char *errstr = talloc_asprintf(talloc_tos(),
+			"FAIL ! reply_readbraw: socket write fail (%s)",
+			strerror(errno));
+	if (!errstr) {
+		errstr = "";
+	}
 	exit_server_cleanly(errstr);
 }
 
@@ -3097,12 +3131,14 @@ static int setup_readX_header(const uint8 *inbuf, uint8 *outbuf,
 			      False);
 	data = smb_buf(outbuf);
 
+	memset(outbuf+smb_vwv0,'\0',24); /* valgrind init. */
+
+	SCVAL(outbuf,smb_vwv0,0xFF);
 	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,smb_maxcnt);
 	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 	SSVAL(outbuf,smb_vwv7,(smb_maxcnt >> 16));
 	SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
-	SCVAL(outbuf,smb_vwv0,0xFF);
 	/* Reset the outgoing length, set_message truncates at 0x1FFFF. */
 	_smb_setlen_large(outbuf,(smb_size + 12*2 + smb_maxcnt - 4));
 	return outsize;
@@ -3136,7 +3172,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 #if defined(WITH_SENDFILE)
 	/*
-	 * We can only use sendfile on a non-chained packet 
+	 * We can only use sendfile on a non-chained packet
 	 * but we can use on a non-oplocked file. tridge proved this
 	 * on a train in Germany :-). JRA.
 	 */
@@ -3146,7 +3182,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
 
-		/* 
+		/*
 		 * Set up the packet header before send. We
 		 * assume here the sendfile will work (get the
 		 * correct amount of data).
@@ -4790,7 +4826,9 @@ void reply_mkdir(connection_struct *conn, struct smb_request *req)
  tree recursively. Return True on ok, False on fail.
 ****************************************************************************/
 
-static BOOL recursive_rmdir(connection_struct *conn, char *directory)
+static BOOL recursive_rmdir(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			char *directory)
 {
 	const char *dname = NULL;
 	BOOL ret = True;
@@ -4801,25 +4839,27 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 		return False;
 
 	while((dname = ReadDirName(dir_hnd, &offset))) {
-		pstring fullname;
+		char *fullname = NULL;
 		SMB_STRUCT_STAT st;
 
-		if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
+		}
 
-		if (!is_visible_file(conn, directory, dname, &st, False))
+		if (!is_visible_file(conn, directory, dname, &st, False)) {
 			continue;
+		}
 
 		/* Construct the full name. */
-		if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname)) {
+		fullname = talloc_asprintf(ctx,
+				"%s/%s",
+				directory,
+				dname);
+		if (!fullname) {
 			errno = ENOMEM;
 			ret = False;
 			break;
 		}
-
-		pstrcpy(fullname, directory);
-		pstrcat(fullname, "/");
-		pstrcat(fullname, dname);
 
 		if(SMB_VFS_LSTAT(conn,fullname, &st) != 0) {
 			ret = False;
@@ -4827,7 +4867,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 		}
 
 		if(st.st_mode & S_IFDIR) {
-			if(!recursive_rmdir(conn, fullname)) {
+			if(!recursive_rmdir(ctx, conn, fullname)) {
 				ret = False;
 				break;
 			}
@@ -4839,6 +4879,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 			ret = False;
 			break;
 		}
+		TALLOC_FREE(fullname);
 	}
 	CloseDir(dir_hnd);
 	return ret;
@@ -4848,7 +4889,9 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
  The internals of the rmdir code - called elsewhere.
 ****************************************************************************/
 
-NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
+NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			const char *directory)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
@@ -4878,7 +4921,7 @@ NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
 	}
 
 	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
-		/* 
+		/*
 		 * Check to see if the only thing in this directory are
 		 * vetoed files/directories. If so then delete them and
 		 * retry. If we fail to delete any of them (and we *don't*
@@ -4909,34 +4952,40 @@ NTSTATUS rmdir_internals(connection_struct *conn, const char *directory)
 
 		RewindDir(dir_hnd,&dirpos);
 		while ((dname = ReadDirName(dir_hnd,&dirpos))) {
-			pstring fullname;
+			char *fullname = NULL;
 
-			if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+			if (ISDOT(dname) || ISDOTDOT(dname)) {
 				continue;
-			if (!is_visible_file(conn, directory, dname, &st, False))
+			}
+			if (!is_visible_file(conn, directory, dname, &st, False)) {
 				continue;
+			}
 
-			/* Construct the full name. */
-			if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname)) {
+			fullname = talloc_asprintf(ctx,
+					"%s/%s",
+					directory,
+					dname);
+
+			if(!fullname) {
 				errno = ENOMEM;
 				break;
 			}
 
-			pstrcpy(fullname, directory);
-			pstrcat(fullname, "/");
-			pstrcat(fullname, dname);
-                   
-			if(SMB_VFS_LSTAT(conn,fullname, &st) != 0)
+			if(SMB_VFS_LSTAT(conn,fullname, &st) != 0) {
 				break;
+			}
 			if(st.st_mode & S_IFDIR) {
 				if(lp_recursive_veto_delete(SNUM(conn))) {
-					if(!recursive_rmdir(conn, fullname))
+					if(!recursive_rmdir(ctx, conn, fullname))
 						break;
 				}
-				if(SMB_VFS_RMDIR(conn,fullname) != 0)
+				if(SMB_VFS_RMDIR(conn,fullname) != 0) {
 					break;
-			} else if(SMB_VFS_UNLINK(conn,fullname) != 0)
+				}
+			} else if(SMB_VFS_UNLINK(conn,fullname) != 0) {
 				break;
+			}
+			TALLOC_FREE(fullname);
 		}
 		CloseDir(dir_hnd);
 		/* Retry the rmdir */
@@ -5012,17 +5061,17 @@ void reply_rmdir(connection_struct *conn, struct smb_request *req)
 	}
 
 	dptr_closepath(directory, req->smbpid);
-	status = rmdir_internals(conn, directory);
+	status = rmdir_internals(ctx, conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBrmdir);
 		return;
 	}
- 
+
 	reply_outbuf(req, 0, 0);
-  
+
 	DEBUG( 3, ( "rmdir %s\n", directory ) );
-  
+
 	END_PROFILE(SMBrmdir);
 	return;
 }
@@ -5451,19 +5500,21 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 /****************************************************************************
  The guts of the rename command, split out so it may be called by the NT SMB
- code. 
+ code.
 ****************************************************************************/
 
-NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
-				const char *name_in,
-				const char *newname_in,
-				uint32 attrs,
-				BOOL replace_if_exists,
-				BOOL src_has_wild,
-				BOOL dest_has_wild)
+NTSTATUS rename_internals(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			struct smb_request *req,
+			const char *name_in,
+			const char *newname_in,
+			uint32 attrs,
+			BOOL replace_if_exists,
+			BOOL src_has_wild,
+			BOOL dest_has_wild)
 {
-	pstring directory;
-	pstring mask;
+	char *directory = NULL;
+	char *mask = NULL;
 	char *last_component_src = NULL;
 	char *last_component_dest = NULL;
 	char *name = NULL;
@@ -5475,9 +5526,6 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname;
 	long offset = 0;
-	pstring destname;
-
-	*directory = *mask = 0;
 
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
@@ -5496,8 +5544,8 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 
 	/*
 	 * Split the old name into directory and last component
-	 * strings. Note that unix_convert may have stripped off a 
-	 * leading ./ from both name and newname if the rename is 
+	 * strings. Note that unix_convert may have stripped off a
+	 * leading ./ from both name and newname if the rename is
 	 * at the root of the share. We need to make sure either both
 	 * name and newname contain a / character or neither of them do
 	 * as this is checked in resolve_wildcards().
@@ -5505,12 +5553,18 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 
 	p = strrchr_m(name,'/');
 	if (!p) {
-		pstrcpy(directory,".");
-		pstrcpy(mask,name);
+		directory = talloc_strdup(ctx, ".");
+		if (!directory) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		mask = name;
 	} else {
 		*p = 0;
-		pstrcpy(directory,name);
-		pstrcpy(mask,p+1);
+		directory = talloc_strdup(ctx, name);
+		if (!directory) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		mask = p+1;
 		*p = '/'; /* Replace needed for exceptional test below. */
 	}
 
@@ -5525,12 +5579,12 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 
 	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params)) {
 		char *new_mask = NULL;
-		mangle_lookup_name_from_8_3(talloc_tos(),
+		mangle_lookup_name_from_8_3(ctx,
 					mask,
 					&new_mask,
 					conn->params );
 		if (new_mask) {
-			pstrcpy(mask, new_mask);
+			mask = new_mask;
 		}
 	}
 
@@ -5543,12 +5597,16 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 		BOOL is_short_name = mangle_is_8_3(name, True, conn->params);
 
 		/* Add a terminating '/' to the directory name. */
-		pstrcat(directory,"/");
-		pstrcat(directory,mask);
+		directory = talloc_asprintf_append(directory,
+				"/%s",
+				mask);
+		if (!directory) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		/* Ensure newname contains a '/' also */
 		if(strrchr_m(newname,'/') == 0) {
-			newname = talloc_asprintf(talloc_tos(),
+			newname = talloc_asprintf(ctx,
 						"./%s",
 						newname);
 			if (!newname) {
@@ -5559,23 +5617,25 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 		DEBUG(3, ("rename_internals: case_sensitive = %d, "
 			  "case_preserve = %d, short case preserve = %d, "
 			  "directory = %s, newname = %s, "
-			  "last_component_dest = %s, is_8_3 = %d\n", 
+			  "last_component_dest = %s, is_8_3 = %d\n",
 			  conn->case_sensitive, conn->case_preserve,
-			  conn->short_case_preserve, directory, 
+			  conn->short_case_preserve, directory,
 			  newname, last_component_dest, is_short_name));
 
 		/* The dest name still may have wildcards. */
 		if (dest_has_wild) {
 			char *mod_newname = NULL;
-			if (!resolve_wildcards(talloc_tos(),
+			if (!resolve_wildcards(ctx,
 					directory,newname,&mod_newname)) {
-				DEBUG(6, ("rename_internals: resolve_wildcards %s %s failed\n", 
-					  directory,newname));
+				DEBUG(6, ("rename_internals: resolve_wildcards "
+					"%s %s failed\n",
+					directory,
+					newname));
 				return NT_STATUS_NO_MEMORY;
 			}
 			newname = mod_newname;
 		}
-				
+
 		ZERO_STRUCT(sbuf1);
 		SMB_VFS_STAT(conn, directory, &sbuf1);
 
@@ -5613,41 +5673,38 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 	 * Wildcards - process each file that matches.
 	 */
 	if (strequal(mask,"????????.???")) {
-		pstrcpy(mask,"*");
+		mask[0] = '*';
+		mask[1] = '\0';
 	}
-			
+
 	status = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	dir_hnd = OpenDir(conn, directory, mask, attrs);
 	if (dir_hnd == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
-		
+
 	status = NT_STATUS_NO_SUCH_FILE;
 	/*
 	 * Was status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	 * - gentest fix. JRA
 	 */
-			
-	while ((dname = ReadDirName(dir_hnd, &offset))) {
-		files_struct *fsp;
-		pstring fname;
-		BOOL sysdir_entry = False;
-		char *mod_destname = NULL;
 
-		pstrcpy(fname,dname);
-				
+	while ((dname = ReadDirName(dir_hnd, &offset))) {
+		files_struct *fsp = NULL;
+		char *fname = NULL;
+		char *destname = NULL;
+		BOOL sysdir_entry = False;
+
 		/* Quick check for "." and ".." */
-		if (fname[0] == '.') {
-			if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-				if (attrs & aDIR) {
-					sysdir_entry = True;
-				} else {
-					continue;
-				}
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
+			if (attrs & aDIR) {
+				sysdir_entry = True;
+			} else {
+				continue;
 			}
 		}
 
@@ -5655,27 +5712,34 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 			continue;
 		}
 
-		if(!mask_match(fname, mask, conn->case_sensitive)) {
+		if(!mask_match(dname, mask, conn->case_sensitive)) {
 			continue;
 		}
-				
+
 		if (sysdir_entry) {
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 			break;
 		}
 
-		slprintf(fname, sizeof(fname)-1, "%s/%s", directory, dname);
+		fname = talloc_asprintf(ctx,
+				"%s/%s",
+				directory,
+				dname);
+		if (!fname) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-		pstrcpy(destname,newname);
-			
-		if (!resolve_wildcards(talloc_tos(),
-				fname,destname,&mod_destname)) {
-			DEBUG(6, ("resolve_wildcards %s %s failed\n", 
+		if (!resolve_wildcards(ctx,
+				fname,newname,&destname)) {
+			DEBUG(6, ("resolve_wildcards %s %s failed\n",
 				  fname, destname));
+			TALLOC_FREE(fname);
 			continue;
 		}
-		pstrcpy(destname,mod_destname);
-				
+		if (!destname) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		ZERO_STRUCT(sbuf1);
 		SMB_VFS_STAT(conn, fname, &sbuf1);
 
@@ -5714,13 +5778,16 @@ NTSTATUS rename_internals(connection_struct *conn, struct smb_request *req,
 
 		DEBUG(3,("rename_internals: doing rename on %s -> "
 			 "%s\n",fname,destname));
+
+		TALLOC_FREE(fname);
+		TALLOC_FREE(destname);
 	}
 	CloseDir(dir_hnd);
 
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
 		status = map_nt_error_from_unix(errno);
 	}
-	
+
 	return status;
 }
 
@@ -5804,7 +5871,7 @@ void reply_mv(connection_struct *conn, struct smb_request *req)
 
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 
-	status = rename_internals(conn, req, name, newname, attrs, False,
+	status = rename_internals(ctx, conn, req, name, newname, attrs, False,
 				  src_has_wcard, dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -5831,9 +5898,10 @@ void reply_mv(connection_struct *conn, struct smb_request *req)
  * TODO: check error codes on all callers
  */
 
-NTSTATUS copy_file(connection_struct *conn,
-			char *src,
-			char *dest1,
+NTSTATUS copy_file(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			const char *src,
+			const char *dest1,
 			int ofun,
 			int count,
 			BOOL target_is_directory)
@@ -5841,24 +5909,32 @@ NTSTATUS copy_file(connection_struct *conn,
 	SMB_STRUCT_STAT src_sbuf, sbuf2;
 	SMB_OFF_T ret=-1;
 	files_struct *fsp1,*fsp2;
-	pstring dest;
+	char *dest = NULL;
  	uint32 dosattrs;
 	uint32 new_create_disposition;
 	NTSTATUS status;
- 
-	pstrcpy(dest,dest1);
+
+	dest = talloc_strdup(ctx, dest1);
+	if (!dest) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	if (target_is_directory) {
-		char *p = strrchr_m(src,'/');
+		const char *p = strrchr_m(src,'/');
 		if (p) {
 			p++;
 		} else {
 			p = src;
 		}
-		pstrcat(dest,"/");
-		pstrcat(dest,p);
+		dest = talloc_asprintf_append(dest,
+				"/%s",
+				p);
+		if (!dest) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (!vfs_file_exist(conn,src,&src_sbuf)) {
+		TALLOC_FREE(dest);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -5867,6 +5943,7 @@ NTSTATUS copy_file(connection_struct *conn,
 	} else {
 		if (!map_open_params_to_ntcreate(dest1,0,ofun,
 				NULL, NULL, &new_create_disposition, NULL)) {
+			TALLOC_FREE(dest);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
@@ -5881,6 +5958,7 @@ NTSTATUS copy_file(connection_struct *conn,
 			NULL, &fsp1);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(dest);
 		return status;
 	}
 
@@ -5898,6 +5976,8 @@ NTSTATUS copy_file(connection_struct *conn,
 			INTERNAL_OPEN_ONLY,
 			NULL, &fsp2);
 
+	TALLOC_FREE(dest);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(fsp1,ERROR_CLOSE);
 		return status;
@@ -5913,7 +5993,7 @@ NTSTATUS copy_file(connection_struct *conn,
 			src_sbuf.st_size = 0;
 		}
 	}
-  
+
 	if (src_sbuf.st_size) {
 		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_size);
 	}
@@ -5950,8 +6030,8 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 {
 	char *name = NULL;
 	char *newname = NULL;
-	pstring directory;
-	pstring mask;
+	char *directory = NULL;
+	char *mask = NULL;
 	char *p;
 	int count=0;
 	int error = ERRnoaccess;
@@ -5977,8 +6057,6 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 	tid2 = SVAL(req->inbuf,smb_vwv0);
 	ofun = SVAL(req->inbuf,smb_vwv1);
 	flags = SVAL(req->inbuf,smb_vwv2);
-
-	*directory = *mask = 0;
 
 	p = smb_buf(req->inbuf);
 	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &name, p,
@@ -6080,12 +6158,22 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 
 	p = strrchr_m(name,'/');
 	if (!p) {
-		pstrcpy(directory,"./");
-		pstrcpy(mask,name);
+		directory = talloc_strdup(ctx, "./");
+		if (!directory) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBcopy);
+			return;
+		}
+		mask = name;
 	} else {
 		*p = 0;
-		pstrcpy(directory,name);
-		pstrcpy(mask,p+1);
+		directory = talloc_strdup(ctx, name);
+		if (!directory) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBcopy);
+			return;
+		}
+		mask = p+1;
 	}
 
 	/*
@@ -6099,21 +6187,22 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 
 	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params)) {
 		char *new_mask = NULL;
-		mangle_lookup_name_from_8_3( talloc_tos(),
+		mangle_lookup_name_from_8_3(ctx,
 					mask,
 					&new_mask,
 					conn->params );
 		if (new_mask) {
-			pstrcpy(mask, new_mask);
+			mask = new_mask;
 		}
 	}
 
 	if (!source_has_wild) {
-		pstrcat(directory,"/");
-		pstrcat(directory,mask);
+		directory = talloc_asprintf_append(directory,
+				"/%s",
+				mask);
 		if (dest_has_wild) {
 			char *mod_newname = NULL;
-			if (!resolve_wildcards(talloc_tos(),
+			if (!resolve_wildcards(ctx,
 					directory,newname,&mod_newname)) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
@@ -6135,9 +6224,9 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 			END_PROFILE(SMBcopy);
 			return;
 		}
-		
-		status = copy_file(conn,directory,newname,ofun,
-					count,target_is_directory);
+
+		status = copy_file(ctx,conn,directory,newname,ofun,
+				count,target_is_directory);
 
 		if(!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
@@ -6148,12 +6237,13 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 		}
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
-		const char *dname;
+		const char *dname = NULL;
 		long offset = 0;
-		pstring destname;
 
-		if (strequal(mask,"????????.???"))
-			pstrcpy(mask,"*");
+		if (strequal(mask,"????????.???")) {
+			mask[0] = '*';
+			mask[1] = '\0';
+		}
 
 		status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6161,7 +6251,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 			END_PROFILE(SMBcopy);
 			return;
 		}
-		
+
 		dir_hnd = OpenDir(conn, directory, mask, 0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
@@ -6173,26 +6263,41 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 		error = ERRbadfile;
 
 		while ((dname = ReadDirName(dir_hnd, &offset))) {
-			char *mod_destname = NULL;
-			pstring fname;
-			pstrcpy(fname,dname);
-    
+			char *destname = NULL;
+			char *fname = NULL;
+
+			if (ISDOT(dname) || ISDOTDOT(dname)) {
+				continue;
+			}
+
 			if (!is_visible_file(conn, directory, dname, &sbuf1, False)) {
 				continue;
 			}
 
-			if(!mask_match(fname, mask, conn->case_sensitive)) {
+			if(!mask_match(dname, mask, conn->case_sensitive)) {
 				continue;
 			}
 
 			error = ERRnoaccess;
-			slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-			pstrcpy(destname,newname);
-			if (!resolve_wildcards(talloc_tos(),
-					fname,destname,&mod_destname)) {
+			fname = talloc_asprintf(ctx,
+					"%s/%s",
+					directory,
+					dname);
+			if (!fname) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBcopy);
+				return;
+			}
+
+			if (!resolve_wildcards(ctx,
+					fname,newname,&destname)) {
 				continue;
 			}
-			pstrcpy(destname,mod_destname);
+			if (!destname) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBcopy);
+				return;
+			}
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -6200,25 +6305,27 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 				END_PROFILE(SMBcopy);
 				return;
 			}
-		
+
 			status = check_name(conn, destname);
 			if (!NT_STATUS_IS_OK(status)) {
 				reply_nterror(req, status);
 				END_PROFILE(SMBcopy);
 				return;
 			}
-		
+
 			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname, destname));
 
-			status = copy_file(conn,fname,destname,ofun,
+			status = copy_file(ctx,conn,fname,destname,ofun,
 					count,target_is_directory);
 			if (NT_STATUS_IS_OK(status)) {
 				count++;
 			}
+			TALLOC_FREE(fname);
+			TALLOC_FREE(destname);
 		}
 		CloseDir(dir_hnd);
 	}
-  
+
 	if (count == 0) {
 		if(err) {
 			/* Error on close... */
