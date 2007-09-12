@@ -26,7 +26,14 @@ case $cmd in
      startup)
 	# make sure that we only respond to ARP messages from the NIC where
 	# a particular ip address is associated.
-	echo 1 > /proc/sys/net/ipv4/conf/all/arp_filter
+	[ -f /proc/sys/net/ipv4/conf/all/arp_filter ] && {
+	    echo 1 > /proc/sys/net/ipv4/conf/all/arp_filter
+	}
+	# make sure we don't reply to arp requests for IPs we have moved to scope
+	# host on loopback
+	[ -f /proc/sys/net/ipv4/conf/all/arp_ignore ] && {
+	    echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
+	}
 	;;
 
 
@@ -71,7 +78,9 @@ case $cmd in
 		 echo "`/bin/date` Failed to del $ip on dev $iface"
 		 exit 1
 	}
-	/sbin/ip addr add $ip/32 dev lo >/dev/null 2>/dev/null
+	# we put the IP on loopback so our killtcp code can work, this allows
+	# us to avoid restarting the NFS server when we release an IP
+	/sbin/ip addr add $ip/32 dev lo scope host >/dev/null 2>/dev/null
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
@@ -90,12 +99,21 @@ case $cmd in
 
      monitor)
 	[ -x /usr/sbin/ethtool ] && {
-		cat $CTDB_PUBLIC_ADDRESSES | sed -e "s/^[^\t ]*[\t ]*//" -e "s/[\t ]*$//" | sort | uniq | while read IFACE; do
-	    		/usr/sbin/ethtool $IFACE | grep 'Link detected: yes' > /dev/null || {
-				echo "`date` ERROR: No link on the public network interface $IFACE"
-				exit 1
-	    		}
-		done
+	    [ -z "$CTDB_PUBLIC_INTERFACE" ] || {
+	    	/usr/sbin/ethtool $CTDB_PUBLIC_INTERFACE | grep 'Link detected: yes' > /dev/null || {
+		    echo "`date` ERROR: No link on the public network interface $CTDB_PUBLIC_INTERFACE"
+		    exit 1
+	    	}
+	    }
+	    cat $CTDB_PUBLIC_ADDRESSES | sed -e "s/^[^\t ]*[\t ]*//" -e "s/[\t ]*$//" | 
+	    sort | uniq | while read IFACE; do
+		[ -z "$IFACE" ] || {
+	    	    /usr/sbin/ethtool $IFACE | grep 'Link detected: yes' > /dev/null || {
+			echo "`date` ERROR: No link on the public network interface $IFACE"
+			exit 1
+	    	    }
+		}
+	    done
 	}
 	;;
 
