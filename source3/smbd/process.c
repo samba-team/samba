@@ -1227,7 +1227,7 @@ void remove_from_common_flags2(uint32 v)
 void construct_reply_common(const char *inbuf, char *outbuf)
 {
 	set_message(inbuf,outbuf,0,0,False);
-	
+
 	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
 	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 

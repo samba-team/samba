@@ -79,9 +79,9 @@ typedef struct canon_ace {
 struct pai_entry {
 	struct pai_entry *next, *prev;
 	enum ace_owner owner_type;
-	posix_id unix_ug; 
+	posix_id unix_ug;
 };
-	
+
 struct pai_val {
 	BOOL pai_protected;
 	unsigned int num_entries;
@@ -1001,7 +1001,7 @@ NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_i
  Ensure the enforced permissions for this share apply.
 ****************************************************************************/
 
-static void apply_default_perms(files_struct *fsp, canon_ace *pace, mode_t type)
+static void apply_default_perms(const files_struct *fsp, canon_ace *pace, mode_t type)
 {
 	int snum = SNUM(fsp->conn);
 	mode_t and_bits = (mode_t)0;
@@ -1047,7 +1047,7 @@ static void apply_default_perms(files_struct *fsp, canon_ace *pace, mode_t type)
 
 static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 {
-	fstring u_name;
+	const char *u_name = NULL;
 
 	/* "Everyone" always matches every uid. */
 
@@ -1059,7 +1059,11 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 	if (uid_ace->unix_ug.uid == current_user.ut.uid && group_ace->unix_ug.gid == current_user.ut.gid)
 		return True;
 
-	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
+	/* u_name talloc'ed off tos. */
+	u_name = uidtoname(uid_ace->unix_ug.uid);
+	if (!u_name) {
+		return False;
+	}
 	return user_in_group_sid(u_name, &group_ace->trustee);
 }
 
@@ -1074,7 +1078,7 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 ****************************************************************************/
 
 static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
-							files_struct *fsp,
+							const files_struct *fsp,
 							const DOM_SID *pfile_owner_sid,
 							const DOM_SID *pfile_grp_sid,
 							SMB_STRUCT_STAT *pst,
@@ -2106,7 +2110,7 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
  Create a linked list of canonical ACE entries.
 ****************************************************************************/
 
-static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
+static canon_ace *canonicalise_acl( const files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
 					const DOM_SID *powner, const DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
 {
 	connection_struct *conn = fsp->conn;
@@ -4416,8 +4420,9 @@ static int check_posix_acl_group_access(connection_struct *conn, const char *fna
 
 BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 {
-	SMB_STRUCT_STAT sbuf;  
-	pstring dname;
+	SMB_STRUCT_STAT sbuf;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *dname = NULL;
 	int ret;
 
 	if (!CAN_WRITE(conn)) {
@@ -4425,7 +4430,12 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	}
 
 	/* Get the parent directory permission mask and owners. */
-	pstrcpy(dname, parent_dirname(fname));
+	if (!parent_dirname_talloc(ctx,
+				fname,
+				&dname,
+				NULL)) {
+		return False;
+	}
 	if(SMB_VFS_STAT(conn, dname, &sbuf) != 0) {
 		return False;
 	}
@@ -4445,7 +4455,7 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 #ifdef S_ISVTX
 	/* sticky bit means delete only by owner or root. */
 	if (sbuf.st_mode & S_ISVTX) {
-		SMB_STRUCT_STAT sbuf_file;  
+		SMB_STRUCT_STAT sbuf_file;
 		if(SMB_VFS_STAT(conn, fname, &sbuf_file) != 0) {
 			if (errno == ENOENT) {
 				/* If the file doesn't already exist then
@@ -4563,21 +4573,19 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
  descriptor via TALLOC_FREE().  This is designed for dealing with 
  user space access checks in smbd outside of the VFS.  For example,
  checking access rights in OpenEventlog().
- 
+
  Assume we are dealing with files (for now)
 ********************************************************************/
 
-SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
+SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 {
 	SEC_DESC *psd, *ret_sd;
 	connection_struct conn;
 	files_struct finfo;
 	struct fd_handle fh;
-	pstring path;
-	pstring filename;
-	
+
 	ZERO_STRUCT( conn );
-	
+
 	if ( !(conn.mem_ctx = talloc_init( "novfs_get_nt_acl" )) ) {
 		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
 		return NULL;
@@ -4590,35 +4598,33 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	}
 
 	conn.params->service = -1;
-	
-	pstrcpy( path, "/" );
-	set_conn_connectpath(&conn, path);
-	
+
+	set_conn_connectpath(&conn, "/");
+
 	if (!smbd_vfs_init(&conn)) {
 		DEBUG(0,("get_nt_acl_no_snum: Unable to create a fake connection struct!\n"));
 		conn_free_internal( &conn );
 		return NULL;
         }
-	
+
 	ZERO_STRUCT( finfo );
 	ZERO_STRUCT( fh );
-	
+
 	finfo.fnum = -1;
 	finfo.conn = &conn;
 	finfo.fh = &fh;
 	finfo.fh->fd = -1;
-	pstrcpy( filename, fname );
-	finfo.fsp_name = filename;
-	
+	finfo.fsp_name = CONST_DISCARD(char *,fname);
+
 	if (get_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd ) == 0) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		conn_free_internal( &conn );
 		return NULL;
 	}
-	
+
 	ret_sd = dup_sec_desc( ctx, psd );
-	
+
 	conn_free_internal( &conn );
-	
+
 	return ret_sd;
 }

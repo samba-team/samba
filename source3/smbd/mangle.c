@@ -135,6 +135,8 @@ BOOL name_to_8_3(const char *in,
 		BOOL cache83,
 		const struct share_params *p)
 {
+	memset(out,'\0',13);
+
 	/* name mangling can be disabled for speed, in which case
 	   we just truncate the string */
 	if (!lp_manglednames(p)) {

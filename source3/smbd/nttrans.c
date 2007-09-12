@@ -2050,16 +2050,18 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = rename_internals(conn, req, oldname, newname,
-						  attrs, False, src_has_wcard,
-						  dest_has_wcard);
+			status = rename_internals(ctx, conn, req, oldname,
+					newname, attrs, False, src_has_wcard,
+					dest_has_wcard);
 			break;
 		case RENAME_FLAG_HARD_LINK:
 			if (src_has_wcard || dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
-				status = hardlink_internals(conn, oldname, newname);
+				status = hardlink_internals(conn,
+						oldname,
+						newname);
 			}
 			break;
 		case RENAME_FLAG_COPY:
@@ -2235,8 +2237,15 @@ static void call_nt_transact_rename(connection_struct *conn,
 		return;
 	}
 
-	status = rename_internals(conn, req, fsp->fsp_name,
-				  new_name, 0, replace_if_exists, False, dest_has_wcard);
+	status = rename_internals(ctx,
+			conn,
+			req,
+			fsp->fsp_name,
+			new_name,
+			0,
+			replace_if_exists,
+			False,
+			dest_has_wcard);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -2252,7 +2261,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	 */
 	send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
 
-	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
+	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n",
 		 fsp->fsp_name, new_name));
 
 	return;

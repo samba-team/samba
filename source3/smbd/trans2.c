@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
    Copyright (C) Jeremy Allison			1994-2007
@@ -13,12 +13,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -211,7 +211,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 			if (strnequal(p, "system.", 7) || samba_private_attr_name(p))
 				continue;
-		
+
 			listp = TALLOC_P(mem_ctx, struct ea_list);
 			if (!listp)
 				return NULL;
@@ -1008,7 +1008,9 @@ static void call_trans2open(connection_struct *conn,
  Case can be significant or not.
 **********************************************************/
 
-static BOOL exact_match(connection_struct *conn, char *str, char *mask)
+static BOOL exact_match(connection_struct *conn,
+		const char *str,
+		const char *mask)
 {
 	if (mask[0] == '.' && mask[1] == 0)
 		return False;
@@ -1134,21 +1136,29 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
-static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
-				 char *path_mask,uint32 dirtype,int info_level,
-				 int requires_resume_key,
-				 BOOL dont_descend,char **ppdata, 
-				 char *base_data, char *end_data,
-				 int space_remaining,
-				 BOOL *out_of_space, BOOL *got_exact_match,
-				 int *last_entry_off, struct ea_list *name_list, TALLOC_CTX *ea_ctx)
+static BOOL get_lanman2_dir_entry(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				uint16 flags2,
+				const char *path_mask,
+				uint32 dirtype,
+				int info_level,
+				int requires_resume_key,
+				BOOL dont_descend,
+				char **ppdata,
+				char *base_data,
+				char *end_data,
+				int space_remaining,
+				BOOL *out_of_space,
+				BOOL *got_exact_match,
+				int *last_entry_off,
+				struct ea_list *name_list)
 {
 	const char *dname;
 	BOOL found = False;
 	SMB_STRUCT_STAT sbuf;
-	pstring mask;
-	pstring pathreal;
-	pstring fname;
+	const char *mask = NULL;
+	char *pathreal = NULL;
+	const char *fname = NULL;
 	char *p, *q, *pdata = *ppdata;
 	uint32 reskey=0;
 	long prev_dirpos=0;
@@ -1166,7 +1176,6 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 	BOOL check_mangled_names = lp_manglednames(conn->params);
 	char mangled_name[13]; /* mangled 8.3 name. */
 
-	*fname = 0;
 	*out_of_space = False;
 	*got_exact_match = False;
 
@@ -1174,18 +1183,20 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 	ZERO_STRUCT(adate_ts);
 	ZERO_STRUCT(create_date_ts);
 
-	if (!conn->dirptr)
+	if (!conn->dirptr) {
 		return(False);
+	}
 
 	p = strrchr_m(path_mask,'/');
 	if(p != NULL) {
-		if(p[1] == '\0')
-			pstrcpy(mask,"*.*");
-		else
-			pstrcpy(mask, p+1);
-	} else
-		pstrcpy(mask, path_mask);
-
+		if(p[1] == '\0') {
+			mask = talloc_strdup(ctx,"*.*");
+		} else {
+			mask = p+1;
+		}
+	} else {
+		mask = path_mask;
+	}
 
 	while (!found) {
 		BOOL got_match;
@@ -1193,7 +1204,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 
 		/* Needed if we run out of space */
 		long curr_dirpos = prev_dirpos = dptr_TellDir(conn->dirptr);
-		dname = dptr_ReadDirName(conn->dirptr,&curr_dirpos,&sbuf);
+		dname = dptr_ReadDirName(ctx,conn->dirptr,&curr_dirpos,&sbuf);
 
 		/*
 		 * Due to bugs in NT client redirectors we are not using
@@ -1206,7 +1217,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 
 		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %ld\n",
 			(long)conn->dirptr,curr_dirpos));
-      
+
 		if (!dname) {
 			return(False);
 		}
@@ -1217,14 +1228,15 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 		 * pathreal which is composed from dname.
 		 */
 
-		pstrcpy(fname,dname);
+		pathreal = NULL;
+		fname = dname;
 
 		/* Mangle fname if it's an illegal name. */
-		if (mangle_must_mangle(fname,conn->params)) {
-			if (!name_to_8_3(fname,mangled_name,True,conn->params)) {
+		if (mangle_must_mangle(dname,conn->params)) {
+			if (!name_to_8_3(dname,mangled_name,True,conn->params)) {
 				continue; /* Error - couldn't mangle. */
 			}
-			pstrcpy(fname,mangled_name);
+			fname = mangled_name;
 		}
 
 		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask))) {
@@ -1250,21 +1262,34 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 		}
 
 		if (got_match) {
-			BOOL isdots = (strequal(dname,"..") || strequal(dname,"."));
+			BOOL isdots = (ISDOT(dname) || ISDOTDOT(dname));
+
 			if (dont_descend && !isdots) {
 				continue;
 			}
-	  
-			pstrcpy(pathreal,conn->dirpath);
-			if(needslash) {
-				pstrcat(pathreal,"/");
+
+			if (needslash) {
+				pathreal = NULL;
+				pathreal = talloc_asprintf(ctx,
+					"%s/%s",
+					conn->dirpath,
+					dname);
+			} else {
+				pathreal = talloc_asprintf(ctx,
+					"%s%s",
+					conn->dirpath,
+					dname);
 			}
-			pstrcat(pathreal,dname);
+
+			if (!pathreal) {
+				return False;
+			}
 
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
 				if (SMB_VFS_LSTAT(conn,pathreal,&sbuf) != 0) {
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't lstat [%s] (%s)\n",
 						pathreal,strerror(errno)));
+					TALLOC_FREE(pathreal);
 					continue;
 				}
 			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
@@ -1283,6 +1308,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
 						pathreal,strerror(errno)));
+					TALLOC_FREE(pathreal);
 					continue;
 				}
 			}
@@ -1295,6 +1321,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 
 			if (!dir_check_ftype(conn,mode,dirtype)) {
 				DEBUG(5,("get_lanman2_dir_entry: [%s] attribs didn't match %x\n",fname,dirtype));
+				TALLOC_FREE(pathreal);
 				continue;
 			}
 
@@ -1316,9 +1343,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 			create_date = convert_timespec_to_time_t(create_date_ts);
 			mdate = convert_timespec_to_time_t(mdate_ts);
 			adate = convert_timespec_to_time_t(adate_ts);
-			
+
 			DEBUG(5,("get_lanman2_dir_entry: found %s fname=%s\n",pathreal,fname));
-	  
+
 			found = True;
 
 			dptr_DirCacheAdd(conn->dirptr, dname, curr_dirpos);
@@ -1425,7 +1452,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 			SSVAL(p,20,mode);
 			p += 22; /* p now points to the EA area. */
 
-			file_list = get_ea_list_from_file(ea_ctx, conn, NULL, pathreal, &ea_len);
+			file_list = get_ea_list_from_file(ctx, conn, NULL, pathreal, &ea_len);
 			name_list = ea_list_union(name_list, file_list, &ea_len);
 
 			/* We need to determine if this entry will fit in the space available. */
@@ -1439,7 +1466,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 			}
 
 			/* Push the ea_data followed by the name. */
-			p += fill_ea_buffer(ea_ctx, p, space_remaining, conn, name_list);
+			p += fill_ea_buffer(ctx, p, space_remaining, conn, name_list);
 			nameptr = p;
 			len = srvstr_push(base_data, flags2,
 					  p + 1, fname, PTR_DIFF(end_data, p),
@@ -1537,7 +1564,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 			SIVAL(pdata,0,len);
 			p = pdata + len;
 			break;
-      
+
 		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_FULL_DIRECTORY_INFO\n"));
 			p += 4;
@@ -1713,7 +1740,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn, uint16 flags2,
 
 			break;
 
-		default:      
+		default:
 			return(False);
 	}
 
@@ -1760,7 +1787,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	BOOL requires_resume_key;
 	int info_level;
 	char *directory = NULL;
-	pstring mask;
+	const char *mask = NULL;
 	char *p;
 	int last_entry_off=0;
 	int dptr_num = -1;
@@ -1772,7 +1799,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	int space_remaining;
 	BOOL mask_contains_wcard = False;
 	SMB_STRUCT_STAT sbuf;
-	TALLOC_CTX *ea_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1789,8 +1815,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	close_if_end = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
 	requires_resume_key = (findfirst_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
 	info_level = SVAL(params,6);
-
-	*mask = 0;
 
 	DEBUG(3,("call_trans2findfirst: dirtype = %x, maxentries = %d, close_after_first=%d, \
 close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
@@ -1864,10 +1888,10 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	if(p == NULL) {
 		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
 		if((directory[0] == '.') && (directory[1] == '\0')) {
-			pstrcpy(mask,"*");
+			mask = "*";
 			mask_contains_wcard = True;
 		} else {
-			pstrcpy(mask,directory);
+			mask = directory;
 		}
 		directory = talloc_strdup(talloc_tos(), "./");
 		if (!directory) {
@@ -1875,7 +1899,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return;
 		}
 	} else {
-		pstrcpy(mask,p+1);
+		mask = p+1;
 		*p = 0;
 	}
 
@@ -1901,16 +1925,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			reply_doserror(req, ERRDOS, ERReasnotsupported);
 			return;
 		}
-                                                                                                                                                        
-		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
 
 		/* Pull out the list of names. */
-		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
+		ea_list = read_ea_name_list(ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
-			talloc_destroy(ea_ctx);
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
@@ -1919,7 +1937,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL ) {
-		talloc_destroy(ea_ctx);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -1929,7 +1946,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Realloc the params space */
 	*pparams = (char *)SMB_REALLOC(*pparams, 10);
 	if (*pparams == NULL) {
-		talloc_destroy(ea_ctx);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -1949,7 +1965,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				&conn->dirptr);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		talloc_destroy(ea_ctx);
 		reply_nterror(req, ntstatus);
 		return;
 	}
@@ -1957,13 +1972,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	dptr_num = dptr_dnum(conn->dirptr);
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n", dptr_num, mask, dirtype));
 
-	/* We don't need to check for VOL here as this is returned by 
+	/* We don't need to check for VOL here as this is returned by
 		a different TRANS2 call. */
-  
+
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n", conn->dirpath,lp_dontdescend(SNUM(conn))));
 	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
-    
+
 	p = pdata;
 	space_remaining = max_data_bytes;
 	out_of_space = False;
@@ -1977,14 +1992,19 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			out_of_space = True;
 			finished = False;
 		} else {
-			finished = !get_lanman2_dir_entry(conn,
+			TALLOC_CTX *sub_ctx = talloc_stackframe();
+
+			finished = !get_lanman2_dir_entry(sub_ctx,
+					conn,
 					req->flags2,
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
 					&p,pdata,data_end,
 					space_remaining, &out_of_space,
 					&got_exact_match,
-					&last_entry_off, ea_list, ea_ctx);
+					&last_entry_off, ea_list);
+
+			TALLOC_FREE(sub_ctx);
 		}
 
 		if (finished && out_of_space)
@@ -2005,8 +2025,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
 	}
-  
-	talloc_destroy(ea_ctx);
 
 	/* Check if we can close the dirptr */
 	if(close_after_first || (finished && close_if_end)) {
@@ -2014,8 +2032,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		dptr_close(&dptr_num);
 	}
 
-	/* 
-	 * If there are no matching entries we must return ERRDOS/ERRbadfile - 
+	/*
+	 * If there are no matching entries we must return ERRDOS/ERRbadfile -
 	 * from observation of NT. NB. This changes to ERRDOS,ERRnofiles if
 	 * the protocol level is less than NT1. Tested with smbclient. JRA.
 	 * This should fix the OS/2 client bug #2335.
@@ -2101,9 +2119,9 @@ static void call_trans2findnext(connection_struct *conn,
 	BOOL continue_bit;
 	BOOL mask_contains_wcard = False;
 	char *resume_name = NULL;
-	pstring mask;
-	pstring directory;
-	char *p;
+	const char *mask = NULL;
+	const char *directory = NULL;
+	char *p = NULL;
 	uint16 dirtype;
 	int numentries = 0;
 	int i, last_entry_off=0;
@@ -2111,7 +2129,6 @@ static void call_trans2findnext(connection_struct *conn,
 	BOOL dont_descend = False;
 	BOOL out_of_space = False;
 	int space_remaining;
-	TALLOC_CTX *ea_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -2130,8 +2147,6 @@ static void call_trans2findnext(connection_struct *conn,
 	close_if_end = (findnext_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
 	requires_resume_key = (findnext_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
 	continue_bit = (findnext_flags & FLAG_TRANS2_FIND_CONTINUE);
-
-	*mask = *directory = 0;
 
 	srvstr_get_path_wcard(ctx, params, req->flags2, &resume_name,
 			      params+12,
@@ -2202,21 +2217,15 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
-                                                                                                                                                     
+
 		if (!lp_ea_support(SNUM(conn))) {
 			reply_doserror(req, ERRDOS, ERReasnotsupported);
 			return;
 		}
-                                                                                                                                                     
-		if ((ea_ctx = talloc_init("findnext_ea_list")) == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
 
 		/* Pull out the list of names. */
-		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
+		ea_list = read_ea_name_list(ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
-			talloc_destroy(ea_ctx);
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
@@ -2225,7 +2234,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL) {
-		talloc_destroy(ea_ctx);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -2236,7 +2244,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Realloc the params space */
 	*pparams = (char *)SMB_REALLOC(*pparams, 6*SIZEOFWORD);
 	if(*pparams == NULL ) {
-		talloc_destroy(ea_ctx);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -2245,7 +2252,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	/* Check that the dptr is valid */
 	if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num))) {
-		talloc_destroy(ea_ctx);
 		reply_doserror(req, ERRDOS, ERRnofiles);
 		return;
 	}
@@ -2255,34 +2261,33 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Get the wildcard mask from the dptr */
 	if((p = dptr_wcard(dptr_num))== NULL) {
 		DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
-		talloc_destroy(ea_ctx);
 		reply_doserror(req, ERRDOS, ERRnofiles);
 		return;
 	}
 
-	pstrcpy(mask, p);
-	pstrcpy(directory,conn->dirpath);
+	mask = p;
+	directory = conn->dirpath;
 
 	/* Get the attr mask from the dptr */
 	dirtype = dptr_attr(dptr_num);
 
 	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld)\n",
-		dptr_num, mask, dirtype, 
+		dptr_num, mask, dirtype,
 		(long)conn->dirptr,
 		dptr_TellDir(conn->dirptr)));
 
-	/* We don't need to check for VOL here as this is returned by 
+	/* We don't need to check for VOL here as this is returned by
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",conn->dirpath,lp_dontdescend(SNUM(conn))));
 	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
-    
+
 	p = pdata;
 	space_remaining = max_data_bytes;
 	out_of_space = False;
 
-	/* 
+	/*
 	 * Seek to the correct position. We no longer use the resume key but
 	 * depend on the last file name instead.
 	 */
@@ -2299,12 +2304,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		if (mangle_is_mangled(resume_name, conn->params)) {
 			char *new_resume_name = NULL;
-			mangle_lookup_name_from_8_3(talloc_tos(),
+			mangle_lookup_name_from_8_3(ctx,
 						resume_name,
 						&new_resume_name,
 						conn->params);
 			if (new_resume_name) {
-				pstrcpy(resume_name, new_resume_name);
+				resume_name = new_resume_name;
 			}
 		}
 
@@ -2329,14 +2334,19 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			out_of_space = True;
 			finished = False;
 		} else {
-			finished = !get_lanman2_dir_entry(conn,
+			TALLOC_CTX *sub_ctx = talloc_stackframe();
+
+			finished = !get_lanman2_dir_entry(sub_ctx,
+						conn,
 						req->flags2,
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
 						&p,pdata,data_end,
 						space_remaining, &out_of_space,
 						&got_exact_match,
-						&last_entry_off, ea_list, ea_ctx);
+						&last_entry_off, ea_list);
+
+			TALLOC_FREE(sub_ctx);
 		}
 
 		if (finished && out_of_space)
@@ -2357,8 +2367,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
 	}
-  
-	talloc_destroy(ea_ctx);
+
+	DEBUG( 3, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
+		smb_fn_name(CVAL(req->inbuf,smb_com)),
+		mask, directory, dirtype, numentries ) );
 
 	/* Check if we can close the dirptr */
 	if(close_after_request || (finished && close_if_end)) {
@@ -2374,13 +2386,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	send_trans2_replies(req, params, 8, pdata, PTR_DIFF(p,pdata),
 			    max_data_bytes);
-
-	if ((! *directory) && dptr_path(dptr_num))
-		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
-
-	DEBUG( 3, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-		smb_fn_name(CVAL(req->inbuf,smb_com)),
-		mask, directory, dirtype, numentries ) );
 
 	return;
 }
@@ -3511,7 +3516,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	unsigned int data_size = 0;
 	unsigned int param_size = 2;
 	SMB_STRUCT_STAT sbuf;
-	pstring dos_fname;
+	char *dos_fname = NULL;
 	char *fname = NULL;
 	char *fullpathname;
 	char *base_name;
@@ -3523,7 +3528,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	struct timespec create_time_ts, mtime_ts, atime_ts;
 	files_struct *fsp = NULL;
 	struct file_id fileid;
-	TALLOC_CTX *data_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 	char *lock_data = NULL;
@@ -3712,7 +3716,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	DEBUG(3,("call_trans2qfilepathinfo %s (fnum = %d) level=%d call=%d total_data=%d\n",
 		fname,fsp ? fsp->fnum : -1, info_level,tran_call,total_data));
 
-	p = strrchr_m(fname,'/'); 
+	p = strrchr_m(fname,'/');
 	if (!p)
 		base_name = fname;
 	else
@@ -3754,15 +3758,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return;
 			}
 
-			if ((data_ctx = talloc_init("ea_list")) == NULL) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
 			/* Pull out the list of names. */
-			ea_list = read_ea_name_list(data_ctx, pdata + 4, ea_size - 4);
+			ea_list = read_ea_name_list(ctx, pdata + 4, ea_size - 4);
 			if (!ea_list) {
-				talloc_destroy(data_ctx);
 				reply_nterror(
 					req, NT_STATUS_INVALID_PARAMETER);
 				return;
@@ -3783,16 +3781,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return;
 			}
 
-			if ((data_ctx = talloc_init("lock_request")) == NULL) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
 			/* Copy the lock range data. */
 			lock_data = (char *)TALLOC_MEMDUP(
-				data_ctx, pdata, total_data);
+				ctx, pdata, total_data);
 			if (!lock_data) {
-				talloc_destroy(data_ctx);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
@@ -3803,7 +3795,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if (*pparams == NULL) {
-		talloc_destroy(data_ctx);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -3812,7 +3803,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
 	*ppdata = (char *)SMB_REALLOC(*ppdata, data_size); 
 	if (*ppdata == NULL ) {
-		talloc_destroy(data_ctx);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -3857,10 +3847,20 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	/* NT expects the name to be in an exact form of the *full*
 	   filename. See the trans2 torture test */
-	if (strequal(base_name,".")) {
-		pstrcpy(dos_fname, "\\");
+	if (ISDOT(base_name)) {
+		dos_fname = talloc_strdup(ctx, "\\");
+		if (!dos_fname) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 	} else {
-		pstr_sprintf(dos_fname, "\\%s", fname);
+		dos_fname = talloc_asprintf(ctx,
+				"\\%s",
+				fname);
+		if (!dos_fname) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 		string_replace(dos_fname, '/', '\\');
 	}
 
@@ -3894,14 +3894,14 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		case SMB_INFO_IS_NAME_VALID:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_IS_NAME_VALID\n"));
 			if (tran_call == TRANSACT2_QFILEINFO) {
-				/* os/2 needs this ? really ?*/      
+				/* os/2 needs this ? really ?*/
 				reply_doserror(req, ERRDOS, ERRbadfunc);
 				return;
 			}
 			data_size = 0;
 			param_size = 0;
 			break;
-			
+
 		case SMB_INFO_QUERY_EAS_FROM_LIST:
 		{
 			size_t total_ea_len = 0;
@@ -3909,18 +3909,16 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
 
-			ea_file_list = get_ea_list_from_file(data_ctx, conn, fsp, fname, &total_ea_len);
+			ea_file_list = get_ea_list_from_file(ctx, conn, fsp, fname, &total_ea_len);
 			ea_list = ea_list_union(ea_list, ea_file_list, &total_ea_len);
 
 			if (!ea_list || (total_ea_len > data_size)) {
-				talloc_destroy(data_ctx);
 				data_size = 4;
 				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
 				break;
 			}
 
-			data_size = fill_ea_buffer(data_ctx, pdata, data_size, conn, ea_list);
-			talloc_destroy(data_ctx);
+			data_size = fill_ea_buffer(ctx, pdata, data_size, conn, ea_list);
 			break;
 		}
 
@@ -3931,22 +3929,14 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
 
-			data_ctx = talloc_init("ea_ctx");
-			if (!data_ctx) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
-			ea_list = get_ea_list_from_file(data_ctx, conn, fsp, fname, &total_ea_len);
+			ea_list = get_ea_list_from_file(ctx, conn, fsp, fname, &total_ea_len);
 			if (!ea_list || (total_ea_len > data_size)) {
-				talloc_destroy(data_ctx);
 				data_size = 4;
 				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
 				break;
 			}
 
-			data_size = fill_ea_buffer(data_ctx, pdata, data_size, conn, ea_list);
-			talloc_destroy(data_ctx);
+			data_size = fill_ea_buffer(ctx, pdata, data_size, conn, ea_list);
 			break;
 		}
 
@@ -4219,7 +4209,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
-				pstring buffer;
+				char *buffer = TALLOC_SIZE(ctx, 1024);
+
+				if (!buffer) {
+					reply_nterror(req, NT_STATUS_NO_MEMORY);
+					return;
+				}
 
 				DEBUG(10,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_LINK\n"));
 #ifdef S_ISLNK
@@ -4232,7 +4227,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				reply_unixerror(req, ERRDOS, ERRbadlink);
 				return;
 #endif
-				len = SMB_VFS_READLINK(conn,fullpathname, buffer, sizeof(pstring)-1);     /* read link */
+				len = SMB_VFS_READLINK(conn,fullpathname,
+						buffer, 1023);
 				if (len == -1) {
 					reply_unixerror(req, ERRDOS,
 							ERRnoaccess);
@@ -4364,7 +4360,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				case POSIX_LOCK_TYPE_UNLOCK:
 				default:
 					/* There's no point in asking for an unlock... */
-					talloc_destroy(data_ctx);
 					reply_nterror(
 						req,
 						NT_STATUS_INVALID_PARAMETER);
@@ -4860,21 +4855,32 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 	/* !widelinks forces the target path to be within the share. */
 	/* This means we can interpret the target as a pathname. */
 	if (!lp_widelinks(SNUM(conn))) {
-		pstring rel_name;
+		char *rel_name = NULL;
 		char *last_dirp = NULL;
 
 		if (*link_target == '/') {
 			/* No absolute paths allowed. */
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		pstrcpy(rel_name, newname);
+		rel_name = talloc_strdup(ctx,newname);
+		if (!rel_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		last_dirp = strrchr_m(rel_name, '/');
 		if (last_dirp) {
 			last_dirp[1] = '\0';
 		} else {
-			pstrcpy(rel_name, "./");
+			rel_name = talloc_strdup(ctx,"./");
+			if (!rel_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
-		pstrcat(rel_name, link_target);
+		rel_name = talloc_asprintf_append(ctx,
+				"%s",
+				link_target);
+		if (!rel_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		status = check_name(conn, rel_name);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4945,7 +4951,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32 root_fid;
 	uint32 len;
 	char *newname = NULL;
-	pstring base_name;
+	char *base_name = NULL;
 	BOOL dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
@@ -4988,15 +4994,26 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	}
 
 	/* Create the base directory. */
-	pstrcpy(base_name, fname);
+	base_name = talloc_strdup(ctx, fname);
+	if (!base_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	p = strrchr_m(base_name, '/');
 	if (p) {
 		p[1] = '\0';
 	} else {
-		pstrcpy(base_name, "./");
+		base_name = talloc_strdup(ctx, "./");
+		if (!base_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	/* Append the new name. */
-	pstrcat(base_name, newname);
+	base_name = talloc_asprintf_append(base_name,
+			"%s",
+			newname);
+	if (!base_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (fsp) {
 		SMB_STRUCT_STAT sbuf;
@@ -5026,7 +5043,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, base_name ));
-		status = rename_internals(conn, req, fname, base_name, 0,
+		status = rename_internals(ctx, conn, req, fname, base_name, 0,
 					  overwrite, False, dest_has_wcard);
 	}
 
