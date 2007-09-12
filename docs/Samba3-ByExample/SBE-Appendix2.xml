@@ -24,33 +24,33 @@
 	as well as two Microsoft Windows XP Professional Workstations, each equipped with an Ethernet
 	card connected using a hub. Also required is one additional server (either Windows
 	NT4 Server, Windows 2000 Server, or a Samba-3 on UNIX/Linux server) running a network
-	sniffer and analysis application (ethereal is a good choice). All work should be undertaken
+	sniffer and analysis application (Wireshark is a good choice). All work should be undertaken
 	on a quiet network where there is no other traffic. It is best to use a dedicated hub
 	with only the machines under test connected at the time of the exercises.
 	</para>
 
       <para><indexterm>
-	  <primary>Ethereal</primary>
+	  <primary>Wireshark</primary>
 	</indexterm>
-	Ethereal has become the network protocol analyzer of choice for many network administrators. 
-	You may find more information regarding this tool from the 
-	<ulink url="http://www.ethereal.com">Ethereal</ulink> Web site. Ethereal installation 
-	files for Windows may be obtained from the Ethereal Web site. Ethereal is provided with 
-	SUSE and Red Hat Linux distributions, as well as with many other Linux distributions. It may 
-	not be installed on your system by default. If it is not installed, you may also need 
-	to install the <command>libpcap </command> software before you can install or use Ethereal. 
-	Please refer to the instructions for your operating system or to the Ethereal Web site 
-	for information regarding the installation and operation of Ethereal.
+	Wireshark (formerly Ethereal) has become the network protocol analyzer of choice for many network administrators.
+	You may find more information regarding this tool from the
+	<ulink url="http://www.wireshark.org">Wireshark</ulink> Web site. Wireshark installation
+	files for Windows may be obtained from the Wireshark Web site. Wireshark is provided with
+	SUSE and Red Hat Linux distributions, as well as with many other Linux distributions. It may
+	not be installed on your system by default. If it is not installed, you may also need
+	to install the <command>libpcap</command> software before you can install or use Wireshark.
+	Please refer to the instructions for your operating system or to the Wireshark Web site
+	for information regarding the installation and operation of Wireshark.
 	</para>
 
 	<para>
-	To obtain <command>ethereal</command> for your system, please visit the Ethereal
-	<ulink url="http://www.ethereal.com/download.html#binaries">download site</ulink>.
+	To obtain <command>Wireshark</command> for your system, please visit the Wireshark
+	<ulink url="http://www.wireshark.org/download.html">download site</ulink>.
 	</para>
 
 	<note><para>
 	The successful completion of this chapter requires that you capture network traffic
-	using <command>Ethereal</command>. It is recommended that you use a hub, not an
+	using <command>Wireshark</command>. It is recommended that you use a hub, not an
 	Ethernet switch. It is necessary for the device used to act as a repeater, not as a
 	filter. Ethernet switches may filter out traffic that is not directed at the machine
 	that is used to monitor traffic; this would not allow you to complete the projects.
@@ -69,17 +69,17 @@
 	</indexterm><indexterm>
 	  <primary>protocol analysis</primary>
 	</indexterm>
-	Please do not be alarmed at the use of a high-powered analysis tool (Ethereal) in this
-	primer.  We expose you only to a minimum of detail necessary to complete 
+	Please do not be alarmed at the use of a high-powered analysis tool (Wireshark) in this
+	primer.  We expose you only to a minimum of detail necessary to complete
 	the exercises. If you choose to use any other network sniffer and protocol
 	analysis tool, be advised that it may not allow you to examine the contents of
 	recently added security protocols used by Windows 200x/XP.
 	</para>
 
 	<para>
-	You could just skim through the exercises and try to absorb the key points made. 
-	The exercises provide all the information necessary to convince the die-hard network 
-	engineer. You possibly do not require so much convincing and may just want to move on, 
+	You could just skim through the exercises and try to absorb the key points made.
+	The exercises provide all the information necessary to convince the die-hard network
+	engineer. You possibly do not require so much convincing and may just want to move on,
 	in which case you should at least read <link linkend="chap01conc"/>.
 	</para>
 
@@ -94,8 +94,8 @@
 
 	<para>
 	The purpose of this chapter is to create familiarity with key aspects of Microsoft Windows
-	network computing. If you want a solid technical grounding, do not gloss over these exercises. 
-	The points covered are recurrent issues on the Samba mailing lists. 
+	network computing. If you want a solid technical grounding, do not gloss over these exercises.
+	The points covered are recurrent issues on the Samba mailing lists.
 	</para>
 
       <para><indexterm>
@@ -142,7 +142,7 @@
 	  </indexterm>
 		The networking protocols used by MS Windows networking when working with Samba
 		use TCP/IP as the transport protocol. The protocols that are specific to Windows
-		networking are encapsulated in TCP/IP. The network analyzer we use (Ethereal)
+		networking are encapsulated in TCP/IP. The network analyzer we use (Wireshark)
 		is able to show you the contents of the TCP/IP packets (or messages).
 		</para>
 
@@ -182,12 +182,12 @@
 	<title>Exercises</title>
 
 	<para>
-	<indexterm><primary>ethereal</primary></indexterm>
+	<indexterm><primary>wireshark</primary></indexterm>
 	You are embarking on a course of discovery. The first part of the exercise requires
 	two MS Windows 9x/Me systems. We called one machine <constant>WINEPRESSME</constant> and the
 	other <constant>MILGATE98</constant>. Each needs an IP address; we used <literal>10.1.1.10</literal>
 	and <literal>10.1.1.11</literal>. The test machines need to be networked via a <emphasis>hub</emphasis>. A UNIX/Linux
-	machine is required to run <command>Ethereal</command> to enable the network activity to be captured.
+	machine is required to run <command>Wireshark</command> to enable the network activity to be captured.
 	It is important that the machine from which network activity is captured must not interfere with
 	the operation of the Windows workstations. It is helpful for this machine to be passive (does not
 	send broadcast information) to the network.
@@ -212,7 +212,7 @@
 	<para>
 	<indexterm><primary>ethereal</primary></indexterm>
 	The network captures provided on the CD-ROM included with this book were captured using <constant>Ethereal</constant>
-	version <literal>0.10.6</literal>. A later version suffices without problems, but an earlier version may not
+	version <literal>0.10.6</literal>. A later version suffices without problems (i.e. you should be using Wireshark), but an earlier version may not
 	expose all the information needed. Each capture file has been decoded and listed as a trace file. A summary of all
 	packets has also been included. This makes it possible for you to do all the studying you like without the need to
 	perform the time-consuming equipment configuration and test work. This is a good time to point out that the value
@@ -231,8 +231,8 @@
 	<title>Monitoring Windows 9x Steps</title>
 
 		<step><para>
-		Start the machine from which network activity will be monitored (using <command>ethereal</command>).
-		Launch <command>ethereal</command>, click
+		Start the machine from which network activity will be monitored (using <command>Wireshark</command>).
+		Launch <command>Wireshark</command>, click
 			<menuchoice>
 				<guimenu>Capture</guimenu>
 				<guimenuitem>Start</guimenuitem>
@@ -240,7 +240,7 @@
 		</para>
 
 		<para>
-		Click the following: 
+		Click the following:
 		<orderedlist>
 		<listitem><para>Update list of packets in real time</para></listitem>
 		<listitem><para>Automatic scrolling in live capture</para></listitem>
@@ -419,7 +419,7 @@
 		of various announcements, re-election of a browse master, and name queries. These create
 		the symphony of announcements by which network browsing is made possible.
 		</para>
-	
+
 	  <para><indexterm>
 	      <primary>CIFS</primary>
 	    </indexterm>
@@ -444,8 +444,8 @@
 	<title>Monitoring of Second Machine Activity</title>
 
 		<step><para>
-		On the machine from which network activity will be monitored (using <command>ethereal</command>),
-		launch <command>ethereal</command> and click
+		On the machine from which network activity will be monitored (using <command>Wireshark</command>),
+		launch <command>Wireshark</command> and click
 			<menuchoice>
 				<guimenu>Capture</guimenu>
 				<guimenuitem>Start</guimenuitem>
@@ -453,7 +453,7 @@
 		</para>
 
 		<para>
-		Click: 
+		Click:
 		<orderedlist>
 			<listitem><para>Update list of packets in real time</para></listitem>
 			<listitem><para>Automatic scrolling in live capture</para></listitem>
@@ -625,12 +625,12 @@
 		</para></step>
 
 		<step><para>
-		Start ethereal (or the network sniffer of your choice).
+		Start Wireshark (or the network sniffer of your choice).
 		</para></step>
 
 		<step><para>
 		From the WINEPRESSME machine, right-click <guimenu>Network Neighborhood</guimenu>, select
-		<guimenuitem>Explore</guimenuitem>, select 
+		<guimenuitem>Explore</guimenuitem>, select
 		<menuchoice>
 			<guimenuitem>My Network Places</guimenuitem>
 			<guimenuitem>Entire Network</guimenuitem>
@@ -650,7 +650,7 @@
 		<step><para>
 		<indexterm><primary>session setup</primary></indexterm>
 		From the top of the packets captured, scan down to locate the first packet that has
-		interpreted as <constant>Session Setup AndX, User: anonymous; Tree Connect AndX, 
+		interpreted as <constant>Session Setup AndX, User: anonymous; Tree Connect AndX,
 		Path: \\MILGATE98\IPC$</constant>.
 		</para></step>
 
@@ -686,8 +686,8 @@
 
 	  	<para>
 		<indexterm><primary>IPC$</primary></indexterm>
-		The <constant>IPC$</constant> share serves a vital purpose<footnote><para>TOSHARG2, Sect 4.5.1</para></footnote> 
-		in SMB/CIFS-based networking.  A Windows client connects to this resource to obtain the list of 
+		The <constant>IPC$</constant> share serves a vital purpose<footnote><para>TOSHARG2, Sect 4.5.1</para></footnote>
+		in SMB/CIFS-based networking.  A Windows client connects to this resource to obtain the list of
 		resources that are available on the server. The server responds with the shares and print queues that
 		are available. In most but not all cases, the connection is made with a <constant>NULL</constant>
 		username and a <constant>NULL</constant> password.
@@ -780,7 +780,7 @@
 	<title>Steps to Explore Windows XP Pro Connection Set-up</title>
 
 		<step><para>
-		Start your domain controller. Also, start the ethereal monitoring machine, launch ethereal,
+		Start your domain controller. Also, start the Wireshark monitoring machine, launch Wireshark,
 		and then wait for the next step to complete.
 		</para></step>
 
@@ -789,8 +789,8 @@
 		</para></step>
 
 		<step><para>
-		On the machine from which network activity will be monitored (using <command>ethereal</command>),
-                launch <command>ethereal</command> and click
+		On the machine from which network activity will be monitored (using <command>Wireshark</command>),
+                launch <command>Wireshark</command> and click
                         <menuchoice>
                                 <guimenu>Capture</guimenu>
                                 <guimenuitem>Start</guimenuitem>
@@ -810,7 +810,7 @@
 		</para></step>
 
 		<step><para>
-		On the Windows XP Professional client, press <guimenu>Ctrl-Alt-Delete</guimenu> to bring 
+		On the Windows XP Professional client, press <guimenu>Ctrl-Alt-Delete</guimenu> to bring
 		up the domain logon screen. Log in using valid credentials for a domain user account.
 		</para></step>
 
@@ -834,7 +834,7 @@
 		</para></step>
 
 		<step><para>
-		Stop the capture on the <command>ethereal</command> monitoring machine. Be sure to save the captured data
+		Stop the capture on the <command>Wireshark</command> monitoring machine. Be sure to save the captured data
 		to a file so that you can refer to it again later.
 		</para></step>
 
@@ -908,7 +908,7 @@
 	    </indexterm>
 		This exercise demonstrates that, while the specific protocol for the Session Setup AndX is handled
 		in a more sophisticated manner by recent MS Windows clients, the underlying rules or principles
-		remain the same. Thus it is demonstrated  that MS Windows XP Professional clients still use a 
+		remain the same. Thus it is demonstrated  that MS Windows XP Professional clients still use a
 		<constant>NULL-Session</constant> connection to query and locate resources on an advanced network
 		technology server (one using Windows NT4/200x or Samba). It also demonstrates that an authenticated
 		connection must be made before resources can be used.
@@ -932,7 +932,7 @@
 
 		<listitem><para>
 		Network browsing protocols query information stored on browse masters that manage
-		information provided by NetBIOS Name Registrations and by way of ongoing host 
+		information provided by NetBIOS Name Registrations and by way of ongoing host
 		announcements and workgroup announcements.
 		</para></listitem>
 
@@ -1151,7 +1151,7 @@
 		<para>
 		<indexterm><primary>WINS</primary></indexterm>
 		<indexterm><primary>NetBIOS</primary></indexterm>
-		Yes, there are two ways to do this. The first involves use of WINS (See <emphasis>TOSHARG2</emphasis>, Chapter 9, 
+		Yes, there are two ways to do this. The first involves use of WINS (See <emphasis>TOSHARG2</emphasis>, Chapter 9,
 		Section 9.5, <quote>WINS &smbmdash; The Windows Inter-networking Name Server</quote>); the
 		alternate method involves disabling the use of NetBIOS over TCP/IP. This second method requires
 		a correctly configured DNS server (see <emphasis>TOSHARG2</emphasis>, Chapter 9, Section 9.3, <quote>Discussion</quote>).
@@ -1161,9 +1161,9 @@
 		<indexterm><primary>broadcast</primary></indexterm>
 		<indexterm><primary>NetBIOS</primary><secondary>Node Type</secondary></indexterm>
 		<indexterm><primary>Hybrid</primary></indexterm>
-		The use of WINS reduces network broadcast traffic. The reduction is greatest when all network 
-		clients are configured to operate in <parameter>Hybrid Mode</parameter>. This can be effected through 
-		use of DHCP to set the NetBIOS node type to type 8 for all network clients. Additionally, it is 
+		The use of WINS reduces network broadcast traffic. The reduction is greatest when all network
+		clients are configured to operate in <parameter>Hybrid Mode</parameter>. This can be effected through
+		use of DHCP to set the NetBIOS node type to type 8 for all network clients. Additionally, it is
 		beneficial to configure Samba to use <smbconfoption name="name resolve order">wins host cast</smbconfoption>.
 		</para>
 
@@ -1201,11 +1201,11 @@
 		disabling this. When network connections are dropped by the client, it is not possible to re-establish
 		the connection automatically. Users need to log off and then log on again. Plain-text password support
 		may interfere with recent enhancements that are part of the Microsoft move toward a more secure computing
-		environment. 
+		environment.
 		</para>
 
 		<para>
-		Samba-3 supports Microsoft encrypted passwords. Be advised not to reintroduce plain-text password handling. 
+		Samba-3 supports Microsoft encrypted passwords. Be advised not to reintroduce plain-text password handling.
 		Just create user accounts by running <command>smbpasswd -a 'username'</command>
 		</para>
 
