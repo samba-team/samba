@@ -13,7 +13,8 @@
 
     <para>
     This parameter sets the threshold for sending messages to syslog.  Only messages with debug 
-    level less than this value will be sent to syslog.
+    level less than this value will be sent to syslog. There still will be some
+    logging to log.[sn]mbd even if <emphasis>syslog only<emphasis> is enabled.
     </para>
 </description>
 <value type="default">1</value>
