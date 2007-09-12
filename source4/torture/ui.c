@@ -24,6 +24,25 @@
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
 
+/**
+ create a temporary directory.
+*/
+_PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx, 
+				   const char *prefix, 
+				   char **tempdir)
+{
+	SMB_ASSERT(tctx->outputdir != NULL);
+
+	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", tctx->outputdir, prefix);
+	NT_STATUS_HAVE_NO_MEMORY(*tempdir);
+
+	if (mkdtemp(*tempdir) == NULL) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
+}
+
 void torture_comment(struct torture_context *context, const char *comment, ...)
 {
 	va_list ap;

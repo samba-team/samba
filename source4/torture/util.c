@@ -25,22 +25,6 @@
 #include "libcli/raw/libcliraw.h"
 
 /**
- create a temporary directory.
-*/
-_PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx, 
-				   const char *prefix, 
-				   char **tempdir)
-{
-	SMB_ASSERT(tctx->outputdir != NULL);
-	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", tctx->outputdir, prefix);
-
-	if (mkdtemp(*tempdir) == NULL)
-		return NT_STATUS_UNSUCCESSFUL;
-
-	return NT_STATUS_OK;
-}
-
-/**
   check if 2 NTTIMEs are equal.
 */
 BOOL nt_time_equal(NTTIME *t1, NTTIME *t2)

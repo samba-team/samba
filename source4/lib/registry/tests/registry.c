@@ -28,9 +28,6 @@
 #include "libcli/security/security.h"
 #include "system/filesys.h"
 
-NTSTATUS torture_temp_dir(struct torture_context *tctx, const char *prefix, 
-								   const char **tempdir);
-
 /**
  * Test obtaining a predefined key.
  */
