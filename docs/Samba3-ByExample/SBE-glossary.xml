@@ -53,7 +53,7 @@
 		<glossterm>Domain Master Browser</glossterm>
 		<acronym>DMB</acronym>
 		<glossdef><para>
-		The Domain Master Browser maintains a list of all the servers that 
+		The Domain Master Browser maintains a list of all the servers that
 		have announced their services within a given workgroup or NT domain.
 		</para></glossdef>
 	</glossentry>
@@ -79,16 +79,6 @@
 		register a computer name and its address with a dynamic DNS server.
 		</para></glossdef>
         </glossentry>
-
-	<glossentry>
-		<glossterm>Ethereal</glossterm>
-		<acronym>ethereal</acronym>
-		<glossdef><para>
-		A network analyzer, also known as a network sniffer or a protocol analyzer. Ethereal is
-		freely available for UNIX/Linux and Microsoft Windows systems from
-		<ulink url="http://www.ethereal.com">the Ethereal Web site</ulink>.
-		</para></glossdef>
-	</glossentry>
 
 	<glossentry>
 		<glossterm>Group IDentifier</glossterm>
@@ -130,10 +120,10 @@
 	  outweigh any need to add, delete, or modify records. LDAP does
 	  provide a means for replication of the database to keep slave
 	  servers up to date with a master. It also has built-in capability to
-	  handle external references and deferral. 
+	  handle external references and deferral.
 	</para></glossdef>
     </glossentry>
-	
+
 	<glossentry>
 		<glossterm>Local Master Browser</glossterm>
 		<acronym>LMB</acronym>
@@ -177,7 +167,7 @@
 		<glossterm>Network Basic Input/Output System</glossterm>
 		<acronym>NetBIOS</acronym>
 		<glossdef><para>
-		NetBIOS is a simple application programming interface (API) invented in the 1980s 
+		NetBIOS is a simple application programming interface (API) invented in the 1980s
 		that allows programs to send data to certain network names. NetBIOS is always run over
 		another network protocol such as IPX/SPX, TCP/IP, or Logical Link Control (LLC).
 		NetBIOS run over LLC is best known as NetBEUI (the NetBIOS Extended User Interface
@@ -189,11 +179,11 @@
 		<glossterm>NetBT</glossterm>
 		<acronym>NBT</acronym>
 		<glossdef><para>
-		Protocol for transporting NetBIOS frames over TCP/IP. Uses ports 137, 138, and 139. 
+		Protocol for transporting NetBIOS frames over TCP/IP. Uses ports 137, 138, and 139.
 		NetBT is a fully routable protocol.
 		</para></glossdef>
 	</glossentry>
-	
+
 	<glossentry>
 		<glossterm>NT/LanManager Security Support Provider</glossterm>
 		<acronym>NTLMSSP</acronym>
@@ -210,7 +200,7 @@
 		<acronym>SMB</acronym>
 		<glossdef><para>
 		SMB was the original name of the protocol spoken by Samba. It was invented in the 1980s
-		by IBM and adopted and extended further by Microsoft. Microsoft renamed the protocol to 
+		by IBM and adopted and extended further by Microsoft. Microsoft renamed the protocol to
 		CIFS during the Internet hype in the 1990s.
 		</para></glossdef>
 	</glossentry>
@@ -252,6 +242,16 @@
 		<acronym>UNC</acronym>
 		<glossdef><para>A syntax for specifying the location of network resources (such as file shares).
 		The UNC syntax was developed in the early days of MS DOS 3.x and is used internally by the SMB protocol.
+		</para></glossdef>
+	</glossentry>
+
+	<glossentry>
+		<glossterm>Wireshark</glossterm>
+		<acronym>wireshark</acronym>
+		<glossdef><para>
+		A network analyzer, also known as a network sniffer or a protocol analyzer. Formerly known as Ethereal, Wireshark is
+		freely available for UNIX/Linux and Microsoft Windows systems from
+		<ulink url="http://www.wireshark.org">the Wireshark Web site</ulink>.
 		</para></glossdef>
 	</glossentry>
 
