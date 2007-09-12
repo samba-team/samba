@@ -27,9 +27,6 @@
 #include "librpc/gen_ndr/winreg.h"
 #include "system/filesys.h"
 
-NTSTATUS torture_temp_dir(struct torture_context *tctx, const char *prefix, 
-								   const char **tempdir);
-
 static bool test_del_nonexistant_key(struct torture_context *tctx,
 				     const void *test_data)
 {
