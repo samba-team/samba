@@ -123,6 +123,7 @@ show_all "/sbin/ip addr list"
 show_all "/sbin/route -n"
 show_all "crontab -l"
 show_all "sysctl -a"
+show_all "/sbin/iptables -L -n"
 
 [ -d /usr/lpp/mmfs ] && {
 cat <<EOF

@@ -20,6 +20,37 @@ shift
 	exit 0
 }
 
+################################################
+# kill off any TCP connections with the given IP
+kill_tcp_connections() {
+    _IP="$1"    
+    _failed=0
+    _killcount=0
+    netstat -tn |egrep "^tcp.*\s+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' | 
+    while read dest src; do
+	srcip=`echo $src | cut -d: -f1`
+	srcport=`echo $src | cut -d: -f2`
+	destip=`echo $dest | cut -d: -f1`
+	destport=`echo $dest | cut -d: -f2`
+	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
+	_killcount=`expr $_killcount + 1`
+    done
+    [ _failed = 0 ] || {
+	echo "Failed to send killtcp control"
+	return;
+    }
+    _count=0
+    while netstat -tn | grep $_IP > /dev/null; do
+	sleep 1
+	_count=`expr $_count + 1`
+	[ $_count -gt 5 ] && {
+	    echo "Timed out killing tcp connections for IP $_IP"
+	    return;
+	}
+    done
+    echo "`date` killed $_killcount TCP connections to released IP $_IP"
+}
+
 case $cmd in 
      #############################
      # called when ctdbd starts up
@@ -28,11 +59,6 @@ case $cmd in
 	# a particular ip address is associated.
 	[ -f /proc/sys/net/ipv4/conf/all/arp_filter ] && {
 	    echo 1 > /proc/sys/net/ipv4/conf/all/arp_filter
-	}
-	# make sure we don't reply to arp requests for IPs we have moved to scope
-	# host on loopback
-	[ -f /proc/sys/net/ipv4/conf/all/arp_ignore ] && {
-	    echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
 	}
 	;;
 
@@ -53,11 +79,12 @@ case $cmd in
 		 echo "`/bin/date` Failed to bringup interface $iface"
 		 exit 1
 	}
-	/sbin/ip addr del $ip/32 dev lo >/dev/null 2>/dev/null
 	/sbin/ip addr add $ip/$maskbits dev $iface || {
 		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
 	}
+	# cope with the script being killed while we have the interface blocked
+	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
@@ -71,16 +98,32 @@ case $cmd in
 	   echo "`/bin/date` must supply interface, IP and maskbits"
 	   exit 1
 	fi
+
+	# releasing an IP is a bit more complex than it seems. Once the IP
+	# is released, any open tcp connections to that IP on this host will end
+	# up being stuck. Some of them (such as NFS connections) will be unkillable
+	# so we need to use the killtcp ctdb function to kill them off. We also
+	# need to make sure that no new connections get established while we are 
+	# doing this! So what we do is this:
+	# 1) firewall this IP, so no new external packets arrive for it
+	# 2) use netstat -tn to find existing connections, and kill them 
+	# 3) remove the IP from the interface
+	# 4) remove the firewall rule
 	iface=$1
 	ip=$2
 	maskbits=$3
-	/sbin/ip addr del $ip/$maskbits dev $iface || {
+
+	failed=0
+	# we do an extra delete to cope with the script being killed
+	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+	/sbin/iptables -I INPUT -i $iface -d $ip -j DROP
+	kill_tcp_connections $ip
+	/sbin/ip addr del $ip/$maskbits dev $iface || failed=1
+	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP
+	[ $failed = 0 ] || {
 		 echo "`/bin/date` Failed to del $ip on dev $iface"
 		 exit 1
 	}
-	# we put the IP on loopback so our killtcp code can work, this allows
-	# us to avoid restarting the NFS server when we release an IP
-	/sbin/ip addr add $ip/32 dev lo scope host >/dev/null 2>/dev/null
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
