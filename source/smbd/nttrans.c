@@ -1396,7 +1396,6 @@ static void call_nt_transact_create(connection_struct *conn,
 		if (!fname) {
 			reply_nterror(
 				req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBntcreateX);
 			return;
 		}
 		memcpy(fname, dir_fsp->fsp_name, dir_name_len+1);
