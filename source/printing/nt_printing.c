@@ -667,7 +667,7 @@ static void driver_unix_convert(connection_struct *conn,
 	unix_format(name);
 	unix_clean_name(name);
 	trim_string(name,"/","/");
-	unix_convert(conn, name, False, &new_name, NULL, pst);
+	unix_convert(talloc_tos(),conn, name, False, &new_name, NULL, pst);
 	if (new_name) {
 		pstrcpy(name, new_name);
 	}

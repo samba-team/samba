@@ -745,7 +745,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		reply_nterror(req, status);
@@ -1479,7 +1479,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(case_state);
 		reply_nterror(req, status);
@@ -1817,11 +1817,12 @@ void reply_ntcancel(connection_struct *conn, struct smb_request *req)
  Copy a file.
 ****************************************************************************/
 
-static NTSTATUS copy_internals(connection_struct *conn,
-			       struct smb_request *req,
-			       const char *oldname_in,
-			       const char *newname_in,
-			       uint32 attrs)
+static NTSTATUS copy_internals(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				struct smb_request *req,
+				const char *oldname_in,
+				const char *newname_in,
+				uint32 attrs)
 {
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	char *oldname = NULL;
@@ -1841,7 +1842,7 @@ static NTSTATUS copy_internals(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	status = unix_convert(conn, oldname_in, False, &oldname,
+	status = unix_convert(ctx, conn, oldname_in, False, &oldname,
 			&last_component_oldname, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1862,7 +1863,7 @@ static NTSTATUS copy_internals(connection_struct *conn,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	status = unix_convert(conn, newname_in, False, &newname,
+	status = unix_convert(ctx, conn, newname_in, False, &newname,
 			&last_component_newname, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -2058,7 +2059,8 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
-				status = hardlink_internals(conn,
+				status = hardlink_internals(ctx,
+						conn,
 						oldname,
 						newname);
 			}
@@ -2068,7 +2070,7 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
-				status = copy_internals(conn, req, oldname,
+				status = copy_internals(ctx, conn, req, oldname,
 							newname, attrs);
 			}
 			break;

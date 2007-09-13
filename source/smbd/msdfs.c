@@ -476,7 +476,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 * think this is needed. JRA.
 	 */
 
-	status = unix_convert(conn, pdp->reqpath, search_flag, &localpath,
+	status = unix_convert(ctx, conn, pdp->reqpath, search_flag, &localpath,
 			NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,
 					NT_STATUS_OBJECT_PATH_NOT_FOUND)) {

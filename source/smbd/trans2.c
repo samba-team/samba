@@ -844,7 +844,7 @@ static void call_trans2open(connection_struct *conn,
 
 	/* XXXX we need to handle passed times, sattr and flags */
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
@@ -1872,7 +1872,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return;
 	}
 
-	ntstatus = unix_convert(conn, directory, True, &directory, NULL, &sbuf);
+	ntstatus = unix_convert(ctx, conn, directory, True, &directory, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		return;
@@ -3664,7 +3664,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+		status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -4430,7 +4430,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
  code.
 ****************************************************************************/
 
-NTSTATUS hardlink_internals(connection_struct *conn,
+NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
+		connection_struct *conn,
 		const char *oldname_in,
 		const char *newname_in)
 {
@@ -4444,7 +4445,7 @@ NTSTATUS hardlink_internals(connection_struct *conn,
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	status = unix_convert(conn, oldname_in, False, &oldname,
+	status = unix_convert(ctx, conn, oldname_in, False, &oldname,
 			&last_component_oldname, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4460,7 +4461,7 @@ NTSTATUS hardlink_internals(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = unix_convert(conn, newname_in, False, &newname,
+	status = unix_convert(ctx, conn, newname_in, False, &newname,
 			&last_component_newname, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4933,7 +4934,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 		fname, oldname));
 
-	return hardlink_internals(conn, oldname, fname);
+	return hardlink_internals(ctx, conn, oldname, fname);
 }
 
 /****************************************************************************
@@ -5021,7 +5022,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 
 		ZERO_STRUCT(sbuf);
 
-		status = unix_convert(conn, newname, False,
+		status = unix_convert(ctx, conn, newname, False,
 					&newname,
 					&newname_last_component,
 					&sbuf);
@@ -6317,7 +6318,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+		status = unix_convert(ctx, conn, fname, False,
+				&fname, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -6665,7 +6667,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-	status = unix_convert(conn, directory, False, &directory, NULL, &sbuf);
+	status = unix_convert(ctx, conn, directory, False, &directory, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;

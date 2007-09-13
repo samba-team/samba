@@ -935,27 +935,40 @@ static size_t ucs2_align(const void *base_ptr, const void *p, int flags)
  * </dl>
  *
  * @param dest_len the maximum length in bytes allowed in the
- * destination.  If @p dest_len is -1 then no maximum is used.
+ * destination.
  **/
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len = strlen(src);
-	pstring tmpbuf;
+	char *tmpbuf = NULL;
+	size_t ret;
 
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	/* No longer allow a length of -1. */
+	if (dest_len == (size_t)-1) {
+		smb_panic("push_ascii - dest_len == -1");
+		return (size_t)0;
+	}
 
 	if (flags & STR_UPPER) {
-		pstrcpy(tmpbuf, src);
+		tmpbuf = SMB_STRDUP(src);
+		if (!tmpbuf) {
+			smb_panic("malloc fail");
+			return (size_t)0;
+		}
 		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 
-	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
+	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
 		src_len++;
+	}
 
-	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
+	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
+	SAFE_FREE(tmpbuf);
+	if (ret == (size_t)-1) {
+		return 0;
+	}
+	return ret;
 }
 
 size_t push_ascii_fstring(void *dest, const char *src)
@@ -1005,6 +1018,18 @@ size_t push_ascii_nstring(void *dest, const char *src)
 	SAFE_FREE(buffer);
 	conv_silent = False;
 	return dest_len;
+}
+
+/********************************************************************
+ Push and malloc an ascii string. src and dest null terminated.
+********************************************************************/
+
+size_t push_ascii_allocate(char **dest, const char *src)
+{
+	size_t src_len = strlen(src)+1;
+
+	*dest = NULL;
+	return convert_string_allocate(NULL, CH_UNIX, CH_DOS, src, src_len, (void **)dest, True);
 }
 
 /**

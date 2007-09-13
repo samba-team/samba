@@ -2048,6 +2048,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 	BOOL became_user = False; 
 	WERROR status = WERR_OK;
 	char *tmp_file = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(st);
 
@@ -2076,7 +2077,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecur
 		status = WERR_INVALID_PARAM;
 		goto error_exit;
 	}
-	nt_status = unix_convert(conn, r->in.file, False, &tmp_file, NULL, &st);
+	nt_status = unix_convert(ctx, conn, r->in.file, False, &tmp_file, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", r->in.file));
 		status = WERR_ACCESS_DENIED;
@@ -2156,6 +2157,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 	BOOL became_user = False;
 	WERROR status = WERR_OK;
 	char *tmp_file = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(st);
 
@@ -2183,7 +2185,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecur
 		status = WERR_INVALID_PARAM;
 		goto error_exit;
 	}
-	nt_status = unix_convert(conn, r->in.file, False, &tmp_file, NULL, &st);
+	nt_status = unix_convert(ctx, conn, r->in.file, False, &tmp_file, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", r->in.file));
 		status = WERR_ACCESS_DENIED;
