@@ -50,13 +50,12 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 		SMB_SUBSYSTEM(ldb_map, [], [LIBLDB])
 	],
 	[
+		m4_include(lib/ldb/sqlite3.m4)
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
 	]
 )
 
-m4_include(lib/ldb/sqlite3.m4)
-m4_include(lib/ldb/libldb.m4)
 m4_include(lib/tls/config.m4)
 m4_include(lib/events/config.m4)
 
