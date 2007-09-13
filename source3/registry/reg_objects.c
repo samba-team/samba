@@ -347,43 +347,8 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
 {
 	if ( val ) {
-		/* allocate a slot in the array of pointers */
-		
-		if (  ctr->num_values == 0 ) {
-			ctr->values = TALLOC_P( ctr, REGISTRY_VALUE *);
-		} else {
-			ctr->values = TALLOC_REALLOC_ARRAY( ctr, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
-		}
-
-		if (!ctr->values) {
-			ctr->num_values = 0;
-			return 0;
-		}
-
-		/* allocate a new value and store the pointer in the arrya */
-		
-		ctr->values[ctr->num_values] = TALLOC_P( ctr, REGISTRY_VALUE);
-		if (!ctr->values[ctr->num_values]) {
-			ctr->num_values = 0;
-			return 0;
-		}
-
-		/* init the value */
-	
-		fstrcpy( ctr->values[ctr->num_values]->valuename, val->valuename );
-		ctr->values[ctr->num_values]->type = val->type;
-		if (val->size) {
-			ctr->values[ctr->num_values]->data_p = (uint8 *)TALLOC_MEMDUP(
-				ctr, val->data_p, val->size );
-			if (!ctr->values[ctr->num_values]->data_p) {
-				ctr->num_values = 0;
-				return 0;
-			}
-		} else {
-			ctr->values[ctr->num_values]->data_p = NULL;
-		}
-		ctr->values[ctr->num_values]->size = val->size;
-		ctr->num_values++;
+		regval_ctr_addvalue(ctr, val->valuename, val->type,
+				    (char *)val->data_p, val->size);
 	}
 
 	return ctr->num_values;
