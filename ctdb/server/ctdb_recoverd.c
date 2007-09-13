@@ -43,6 +43,7 @@ struct ctdb_recoverd {
 	struct ban_state **banned_nodes;
 	struct timeval priority_time;
 	bool need_takeover_run;
+	bool need_recovery;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -731,6 +732,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	uint32_t generation;
 	struct ctdb_dbid_map *dbmap;
 
+	/* if recovery fails, force it again */
+	rec->need_recovery = true;
+
 	if (rec->last_culprit != culprit ||
 	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
 		/* either a new node is the culprit, or we've decide to forgive them */
@@ -927,6 +931,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
 
 	DEBUG(0, (__location__ " Recovery complete\n"));
+
+	rec->need_recovery = false;
 
 	/* We just finished a recovery successfully. 
 	   We now wait for rerecovery_timeout before we allow 
@@ -1575,6 +1581,12 @@ again:
 		goto again;
 	}
 
+
+	if (rec->need_recovery) {
+		/* a previous recovery didn't finish */
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+		goto again;		
+	}
 
 	/* verify that all active nodes are in normal mode 
 	   and not in recovery mode 

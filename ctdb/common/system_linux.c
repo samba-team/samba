@@ -255,6 +255,7 @@ bool ctdb_sys_have_ip(struct sockaddr_in ip)
 		return false;
 	}
 	ret = bind(s, (struct sockaddr *)&ip, sizeof(ip));
+
 	close(s);
 	return ret == 0;
 }
