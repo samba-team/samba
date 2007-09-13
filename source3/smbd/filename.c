@@ -107,7 +107,8 @@ stat struct will be filled with zeros (and this can be detected by checking
 for nlinks = 0, which can never be true for any file).
 ****************************************************************************/
 
-NTSTATUS unix_convert(connection_struct *conn,
+NTSTATUS unix_convert(TALLOC_CTX *ctx,
+			connection_struct *conn,
 			const char *orig_path,
 			BOOL allow_wcard_last_component,
 			char **pp_conv_path,
@@ -121,7 +122,6 @@ NTSTATUS unix_convert(connection_struct *conn,
 	BOOL component_was_mangled = False;
 	BOOL name_has_wildcard = False;
 	NTSTATUS result;
-	TALLOC_CTX *ctx = talloc_tos();
 
 	SET_STAT_INVALID(*pst);
 	*pp_conv_path = NULL;

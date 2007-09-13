@@ -549,9 +549,14 @@ size_t str_charnum(const char *s)
 
 size_t str_ascii_charnum(const char *s)
 {
-	pstring tmpbuf2;
-	push_ascii(tmpbuf2, s, sizeof(tmpbuf2), STR_TERMINATE);
-	return strlen(tmpbuf2);
+	size_t ret;
+	char *tmpbuf2 = NULL;
+	if (push_ascii_allocate(&tmpbuf2, s) == (size_t)-1) {
+		return 0;
+	}
+	ret = strlen(tmpbuf2);
+	SAFE_FREE(tmpbuf2);
+	return ret;
 }
 
 BOOL trim_char(char *s,char cfront,char cback)

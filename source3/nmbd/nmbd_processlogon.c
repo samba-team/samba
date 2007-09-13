@@ -68,7 +68,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 	DEBUG(4,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
 
 	switch (code) {
-		case 0:    
+		case 0:
 			{
 				fstring mach_str, user_str, getdc_str;
 				char *q = buf + 2;
@@ -108,7 +108,9 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 				fstrcpy(reply_name, "\\\\");
 				fstrcat(reply_name, my_name);
-				push_ascii_fstring(q, reply_name);
+				push_ascii(q,reply_name,
+						sizeof(outbuf)-PTR_DIFF(q, outbuf),
+						STR_TERMINATE);
 				q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
 
 				SSVAL(q, 0, token);
@@ -116,7 +118,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
 
-				send_mailslot(True, getdc_str, 
+				send_mailslot(True, getdc_str,
 						outbuf,PTR_DIFF(q,outbuf),
 						global_myname(), 0x0,
 						mach_str,
@@ -132,7 +134,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				char *q = buf + 2;
 				char *machine = q;
 
-				if (!lp_domain_master()) {  
+				if (!lp_domain_master()) {
 					/* We're not Primary Domain Controller -- ignore this */
 					return;
 				}
@@ -204,7 +206,9 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				q += 2;
 
 				fstrcpy(reply_name,my_name);
-				push_ascii_fstring(q, reply_name);
+				push_ascii(q, reply_name,
+						sizeof(outbuf)-PTR_DIFF(q, outbuf),
+						STR_TERMINATE);
 				q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
 
 				/* PDC and domain name */
@@ -212,8 +216,15 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 					/* Make a full reply */
 					q = ALIGN2(q, outbuf);
 
-					q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
-					q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True); /* Domain name*/
+					q += dos_PutUniCode(q, my_name,
+						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						True); /* PDC name */
+					q += dos_PutUniCode(q, lp_workgroup(),
+						sizeof(pstring) - (q-outbuf),
+						True); /* Domain name*/
+					if (sizeof(pstring) - PTR_DIFF(q, outbuf) < 8) {
+						return;
+					}
 					SIVAL(q, 0, 1); /* our nt version */
 					SSVAL(q, 4, 0xffff); /* our lmnttoken */
 					SSVAL(q, 6, 0xffff); /* our lm20token */
@@ -349,9 +360,15 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 					q += 2;
 
-					q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
-					q += dos_PutUniCode(q, ascuser, sizeof(pstring), True);
-					q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True);
+					q += dos_PutUniCode(q, reply_name,
+						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						True);
+					q += dos_PutUniCode(q, ascuser,
+						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						True);
+					q += dos_PutUniCode(q, lp_workgroup(),
+						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						True);
 				}
 #ifdef HAVE_ADS
 				else {
@@ -366,7 +383,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 					get_mydnsdomname(domain);
 					get_myname(hostname);
-	
+
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
+						return;
+					}
 					if (SVAL(uniuser, 0) == 0) {
 						SIVAL(q, 0, SAMLOGON_AD_UNK_R);	/* user unknown */
 					} else {
@@ -379,6 +399,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q += 4;
 
 					/* Push Domain GUID */
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < UUID_FLAT_SIZE) {
+						return;
+					}
 					if (False == secrets_fetch_domain_guid(domain, &domain_guid)) {
 						DEBUG(2, ("Could not fetch DomainGUID for %s\n", domain));
 						return;
@@ -394,12 +417,20 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q1 = q;
 					while ((component = strtok(dc, "."))) {
 						dc = NULL;
-						size = push_ascii(&q[1], component, -1, 0);
+						if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 1) {
+							return;
+						}
+						size = push_ascii(&q[1], component,
+							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
+							0);
 						SCVAL(q, 0, size);
 						q += (size + 1);
 					}
 
 					/* Unk0 */
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 4) {
+						return;
+					}
 					SCVAL(q, 0, 0);
 					q++;
 
@@ -409,43 +440,73 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q += 2;
 
 					/* Hostname */
-					size = push_ascii(&q[1], hostname, -1, 0);
+					size = push_ascii(&q[1], hostname,
+							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
+							0);
 					SCVAL(q, 0, size);
 					q += (size + 1);
+
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 3) {
+						return;
+					}
+
 					SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
 					SCVAL(q, 1, str_offset & 0xFF);
 					q += 2;
 
 					/* NETBIOS of domain */
-					size = push_ascii(&q[1], lp_workgroup(), -1, STR_UPPER);
+					size = push_ascii(&q[1], lp_workgroup(),
+							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
+							STR_UPPER);
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
 					/* Unk1 */
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 2) {
+						return;
+					}
+
 					SCVAL(q, 0, 0);
 					q++;
 
 					/* NETBIOS of hostname */
-					size = push_ascii(&q[1], my_name, -1, 0);
+					size = push_ascii(&q[1], my_name,
+							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
+							0);
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
 					/* Unk2 */
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 4) {
+						return;
+					}
+
 					SCVAL(q, 0, 0);
 					q++;
 
 					/* User name */
 					if (SVAL(uniuser, 0) != 0) {
-						size = push_ascii(&q[1], ascuser, -1, 0);
+						size = push_ascii(&q[1], ascuser,
+							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
+							0);
 						SCVAL(q, 0, size);
 						q += (size + 1);
 					}
 
 					q_orig = q;
 					/* Site name */
-					size = push_ascii(&q[1], "Default-First-Site-Name", -1, 0);
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 1) {
+						return;
+					}
+					size = push_ascii(&q[1], "Default-First-Site-Name",
+							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
+							0);
 					SCVAL(q, 0, size);
 					q += (size + 1);
+
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 18) {
+						return;
+					}
 
 					/* Site name (2) */
 					str_offset = q - q_orig;
@@ -466,6 +527,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q += 4; /* unknown */
 				}	
 #endif
+
+				if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
+					return;
+				}
 
 				/* tell the client what version we are */
 				SIVAL(q, 0, ((ntversion < 11) || (SEC_ADS != lp_security())) ? 1 : 13); 

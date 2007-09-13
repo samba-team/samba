@@ -879,7 +879,7 @@ void reply_checkpath(connection_struct *conn, struct smb_request *req)
 
 	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->inbuf,smb_vwv0)));
 
-	status = unix_convert(conn, name, False, &name, NULL, &sbuf);
+	status = unix_convert(ctx, conn, name, False, &name, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto path_err;
 	}
@@ -986,7 +986,7 @@ void reply_getatr(connection_struct *conn, struct smb_request *req)
 		size = 0;
 		mtime = 0;
 	} else {
-		status = unix_convert(conn, fname, False, &fname, NULL,&sbuf);
+		status = unix_convert(ctx, conn, fname, False, &fname, NULL,&sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			END_PROFILE(SMBgetatr);
@@ -1081,7 +1081,7 @@ void reply_setatr(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBsetatr);
@@ -1107,7 +1107,7 @@ void reply_setatr(connection_struct *conn, struct smb_request *req)
 
 	mode = SVAL(req->inbuf,smb_vwv0);
 	mtime = srv_make_unix_date3(req->inbuf+smb_vwv1);
-  
+
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
 		if (VALID_STAT_OF_DIR(sbuf))
 			mode |= aDIR;
@@ -1279,7 +1279,8 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 	if (status_len == 0) {
 		SMB_STRUCT_STAT sbuf;
 
-		nt_status = unix_convert(conn, path, True, &directory, NULL, &sbuf);
+		nt_status = unix_convert(ctx, conn, path, True,
+				&directory, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_nterror(req, nt_status);
 			END_PROFILE(SMBsearch);
@@ -1612,13 +1613,13 @@ void reply_open(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBopen);
 		return;
 	}
-    
+
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -1776,7 +1777,7 @@ void reply_open_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBopenX);
@@ -1996,7 +1997,7 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcreate);
@@ -2132,7 +2133,7 @@ void reply_ctemp(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBctemp);
@@ -2389,7 +2390,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	status = unix_convert(conn, name_in, has_wild, &name, NULL, &sbuf);
+	status = unix_convert(ctx, conn, name_in, has_wild, &name, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4777,7 +4778,7 @@ void reply_mkdir(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, directory, False, &directory, NULL, &sbuf);
+	status = unix_convert(ctx, conn, directory, False, &directory, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBmkdir);
@@ -5045,7 +5046,7 @@ void reply_rmdir(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, directory, False, &directory,
+	status = unix_convert(ctx, conn, directory, False, &directory,
 			NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -5530,13 +5531,13 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 
-	status = unix_convert(conn, name_in, src_has_wild, &name,
+	status = unix_convert(ctx, conn, name_in, src_has_wild, &name,
 			&last_component_src, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = unix_convert(conn, newname_in, dest_has_wild, &newname,
+	status = unix_convert(ctx, conn, newname_in, dest_has_wild, &newname,
 			&last_component_dest, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6120,14 +6121,16 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = unix_convert(conn, name, source_has_wild, &name, NULL, &sbuf1);
+	status = unix_convert(ctx, conn, name, source_has_wild,
+			&name, NULL, &sbuf1);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
 		return;
 	}
 
-	status = unix_convert(conn, newname, dest_has_wild, &newname, NULL, &sbuf2);
+	status = unix_convert(ctx, conn, newname, dest_has_wild,
+			&newname, NULL, &sbuf2);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
