@@ -291,7 +291,8 @@ WERROR _dfs_Enum(pipes_struct *p, struct dfs_Enum *r)
 	}
 	vfs_ChDir(p->conn,p->conn->connectpath);
 
-	DEBUG(5,("_dfs_Enum: %d junctions found in Dfs, doing level %d\n", num_jn, r->in.level));
+	DEBUG(5,("_dfs_Enum: %u junctions found in Dfs, doing level %d\n",
+				(unsigned int)num_jn, r->in.level));
 
 	*r->out.total = num_jn;
 

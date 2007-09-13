@@ -44,7 +44,7 @@ static BOOL is_samr_lsa_pipe(const char *pipe_name)
  pipes of the same name.
 ****************************************************************************/
 
-BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
+BOOL init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 {
 	pipes_struct *plist = get_first_internal_pipe();
 	struct handle_list *hl = NULL;
