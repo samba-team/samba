@@ -205,29 +205,22 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 				 TDB_DATA indata, 
 				 bool *async_reply)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int ret;
 	struct takeover_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
-	bool have_ip, is_loopback;
-	char *ifname = NULL;
 
 	/* update out vnn list */
 	vnn = find_public_ip_vnn(ctdb, pip->sin);
 	if (vnn == NULL) {
 		DEBUG(0,("takeoverip called for an ip '%s' that is not a public address\n", 
 			 inet_ntoa(pip->sin.sin_addr)));
-		talloc_free(tmp_ctx);
 		return 0;
 	}
 	vnn->pnn = pip->pnn;
 
 	/* if our kernel already has this IP, do nothing */
-	have_ip = ctdb_sys_have_ip(pip->sin, &is_loopback, tmp_ctx, &ifname);
-	/* if we have the ip and it is not set to a loopback address */
-	if (have_ip && !is_loopback) {
-		talloc_free(tmp_ctx);
+	if (ctdb_sys_have_ip(pip->sin)) {
 		return 0;
 	}
 
@@ -257,7 +250,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
-		talloc_free(tmp_ctx);
 		talloc_free(state);
 		return -1;
 	}
@@ -265,7 +257,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	/* tell ctdb_control.c that we will be replying asynchronously */
 	*async_reply = true;
 
-	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -276,11 +267,17 @@ static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in i
 {
 	struct ctdb_client_ip *ip;
 
+	DEBUG(1,("release_kill_clients for ip %s\n", inet_ntoa(in.sin_addr)));
+
 	for (ip=ctdb->client_ip_list; ip; ip=ip->next) {
+		DEBUG(2,("checking for client %u with IP %s\n", 
+			 ip->client_id, inet_ntoa(ip->ip.sin_addr)));
 		if (ctdb_same_ip(&ip->ip, &in)) {
 			struct ctdb_client *client = ctdb_reqid_find(ctdb, 
 								     ip->client_id, 
 								     struct ctdb_client);
+			DEBUG(1,("matched client %u with IP %s and pid %u\n", 
+				 ip->client_id, inet_ntoa(ip->ip.sin_addr), client->pid));
 			if (client->pid != 0) {
 				DEBUG(0,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
 					 (unsigned)client->pid, inet_ntoa(in.sin_addr),
@@ -328,40 +325,34 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 				TDB_DATA indata, 
 				bool *async_reply)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int ret;
 	struct takeover_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
-	bool have_ip, is_loopback;
-	char *ifname = NULL;
 
 	/* update our vnn list */
 	vnn = find_public_ip_vnn(ctdb, pip->sin);
 	if (vnn == NULL) {
 		DEBUG(0,("releaseip called for an ip '%s' that is not a public address\n", 
 			 inet_ntoa(pip->sin.sin_addr)));
-		talloc_free(tmp_ctx);
 		return 0;
 	}
 	vnn->pnn = pip->pnn;
 
-	have_ip = ctdb_sys_have_ip(pip->sin, &is_loopback, tmp_ctx, &ifname);
-	if ( (!have_ip) || is_loopback) { 
-		DEBUG(0,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
+	/* stop any previous arps */
+	talloc_free(vnn->takeover_ctx);
+	vnn->takeover_ctx = NULL;
+
+	if (!ctdb_sys_have_ip(pip->sin)) {
+		DEBUG(2,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
 			 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 			 vnn->iface));
-		talloc_free(tmp_ctx);
 		return 0;
 	}
 
 	DEBUG(0,("Release of IP %s/%u on interface %s\n", 
 		 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 		 vnn->iface));
-
-	/* stop any previous arps */
-	talloc_free(vnn->takeover_ctx);
-	vnn->takeover_ctx = NULL;
 
 	state = talloc(ctdb, struct takeover_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -385,15 +376,12 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
 			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
-		talloc_free(tmp_ctx);
 		talloc_free(state);
 		return -1;
 	}
 
 	/* tell the control that we will be reply asynchronously */
 	*async_reply = true;
-
-	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -767,7 +755,7 @@ try_again:
 			}
 		}
 		if (maxnode == -1) {
-			DEBUG(0,(__location__ " Could not find maxnode. May not be able to server ip '%s'\n", inet_ntoa(tmp_ip->sin.sin_addr)));
+			DEBUG(0,(__location__ " Could not find maxnode. May not be able to serve ip '%s'\n", inet_ntoa(tmp_ip->sin.sin_addr)));
 			continue;
 		}
 
@@ -845,8 +833,8 @@ try_again:
 		ip.sin.sin_addr = tmp_ip->sin.sin_addr;
 
 		ret = ctdb_ctrl_takeover_ip(ctdb, TAKEOVER_TIMEOUT(), 
-				    tmp_ip->pnn, 
-				    &ip);
+					    tmp_ip->pnn, 
+					    &ip);
 		if (ret != 0) {
 			DEBUG(0,("Failed asking vnn %u to take over IP %s\n",
 				 tmp_ip->pnn, 
@@ -866,6 +854,8 @@ try_again:
  */
 static int ctdb_client_ip_destructor(struct ctdb_client_ip *ip)
 {
+	DEBUG(3,("destroying client tcp for %s:%u (client_id %u)\n",
+		 inet_ntoa(ip->ip.sin_addr), ntohs(ip->ip.sin_port), ip->client_id));
 	DLIST_REMOVE(ip->ctdb->client_ip_list, ip);
 	return 0;
 }
@@ -888,8 +878,19 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	vnn = find_public_ip_vnn(ctdb, p->dest);
 	if (vnn == NULL) {
-		DEBUG(3,("Could not add client IP %s. This is not a public address.\n", inet_ntoa(p->dest.sin_addr))); 
+		if (ntohl(p->dest.sin_addr.s_addr) != INADDR_LOOPBACK) {
+			DEBUG(0,("Could not add client IP %s. This is not a public address.\n", 
+				 inet_ntoa(p->dest.sin_addr))); 
+		}
 		return 0;
+	}
+
+	if (vnn->pnn != ctdb->pnn) {
+		DEBUG(0,("Attempt to register tcp client for IP %s we don't hold - failing (client_id %u pid %u)\n",
+			 inet_ntoa(p->dest.sin_addr),
+			 client_id, client->pid));
+		/* failing this call will tell smbd to die */
+		return -1;
 	}
 
 	ip = talloc(client, struct ctdb_client_ip);
@@ -915,10 +916,10 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	DEBUG(2,("registered tcp client for %u->%s:%u\n",
+	DEBUG(1,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
 		 (unsigned)ntohs(p->dest.sin_port), 
 		 inet_ntoa(p->src.sin_addr),
-		 (unsigned)ntohs(p->src.sin_port)));
+		 (unsigned)ntohs(p->src.sin_port), client_id, client->pid));
 
 	/* tell all nodes about this tcp connection */
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
@@ -1128,21 +1129,17 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 void ctdb_release_all_ips(struct ctdb_context *ctdb)
 {
 	struct ctdb_vnn *vnn;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	bool have_ip, is_loopback;
-	char *ifname = NULL;
 
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		have_ip = ctdb_sys_have_ip(vnn->public_address, &is_loopback, tmp_ctx, &ifname);
-		if (have_ip && !is_loopback) {
-			ctdb_event_script(ctdb, "releaseip %s %s %u",
-					  vnn->iface, 
-					  inet_ntoa(vnn->public_address.sin_addr),
-					  vnn->public_netmask_bits);
-			release_kill_clients(ctdb, vnn->public_address);
+		if (!ctdb_sys_have_ip(vnn->public_address)) {
+			continue;
 		}
+		ctdb_event_script(ctdb, "releaseip %s %s %u",
+				  vnn->iface, 
+				  inet_ntoa(vnn->public_address.sin_addr),
+				  vnn->public_netmask_bits);
+		release_kill_clients(ctdb, vnn->public_address);
 	}
-	talloc_free(tmp_ctx);
 }
 
 

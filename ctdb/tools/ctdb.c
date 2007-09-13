@@ -375,7 +375,7 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		return ret;
 	}
 
-	return -1;
+	return 0;
 }
 
 

@@ -42,6 +42,7 @@ struct ctdb_recoverd {
 	struct timeval first_recover_time;
 	struct ban_state **banned_nodes;
 	struct timeval priority_time;
+	bool need_takeover_run;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -904,6 +905,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	  if enabled, tell nodes to takeover their public IPs
 	 */
 	if (ctdb->vnn) {
+		rec->need_takeover_run = false;
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
@@ -1154,6 +1156,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	TALLOC_CTX *tmp_ctx;
 	uint32_t changed_flags;
 	int i;
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 
 	if (data.dsize != sizeof(*c)) {
 		DEBUG(0,(__location__ "Invalid data in ctdb_node_flag_change\n"));
@@ -1212,13 +1215,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		   during recovery
 		*/
 		if (changed_flags & NODE_FLAGS_DISABLED) {
-			ret = ctdb_takeover_run(ctdb, nodemap);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
-			}
-			/* send a message to all clients telling them that the 
-			   cluster has been reconfigured */
-			ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
+			rec->need_takeover_run = true;
 		}
 	}
 
@@ -1419,7 +1416,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	int i, j, ret;
-	bool need_takeover_run;
 	struct ctdb_recoverd *rec;
 
 	rec = talloc_zero(ctdb, struct ctdb_recoverd);
@@ -1444,8 +1440,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_UNBAN_NODE, unban_handler, rec);
 	
 again:
-	need_takeover_run = false;
-
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
 		mem_ctx = NULL;
@@ -1538,7 +1532,7 @@ again:
 	/* if we are not the recmaster then we do not need to check
 	   if recovery is needed
 	 */
-	if (pnn!=recmaster) {
+	if (pnn != recmaster) {
 		goto again;
 	}
 
@@ -1658,7 +1652,7 @@ again:
 		   matches in this code) */
 		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
 			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
-			need_takeover_run = true;
+			rec->need_takeover_run = true;
 		}
 	}
 
@@ -1746,10 +1740,13 @@ again:
 	}
 
 	/* we might need to change who has what IP assigned */
-	if (need_takeover_run && ctdb->vnn) {
+	if (rec->need_takeover_run) {
+		rec->need_takeover_run = false;
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+			DEBUG(0, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
+			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
+				    vnnmap, nodemap->nodes[j].pnn);
 		}
 	}
 
