@@ -73,7 +73,7 @@ static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, 
 }
 #endif /* HAVE_PAM_VSYSLOG */
 
-static BOOL _pam_log_is_silent(int ctrl)
+static bool _pam_log_is_silent(int ctrl)
 {
 	return on(ctrl, WINBIND_SILENT);
 }
@@ -92,27 +92,27 @@ static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *fo
 	va_end(args);
 }
 
-static BOOL _pam_log_is_debug_enabled(int ctrl)
+static bool _pam_log_is_debug_enabled(int ctrl)
 {
 	if (ctrl == -1) {
-		return False;
+		return false;
 	}
 
 	if (_pam_log_is_silent(ctrl)) {
-		return False;
+		return false;
 	}
 
 	if (!(ctrl & WINBIND_DEBUG_ARG)) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL _pam_log_is_debug_state_enabled(int ctrl)
+static bool _pam_log_is_debug_state_enabled(int ctrl)
 {
 	if (!(ctrl & WINBIND_DEBUG_STATE)) {
-		return False;
+		return false;
 	}
 
 	return _pam_log_is_debug_enabled(ctrl);
@@ -231,23 +231,23 @@ static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char 
 		goto config_from_pam;
 	}
 
-	if (iniparser_getboolean(d, "global:debug", False)) {
+	if (iniparser_getboolean(d, "global:debug", false)) {
 		ctrl |= WINBIND_DEBUG_ARG;
 	}
 
-	if (iniparser_getboolean(d, "global:debug_state", False)) {
+	if (iniparser_getboolean(d, "global:debug_state", false)) {
 		ctrl |= WINBIND_DEBUG_STATE;
 	}
 
-	if (iniparser_getboolean(d, "global:cached_login", False)) {
+	if (iniparser_getboolean(d, "global:cached_login", false)) {
 		ctrl |= WINBIND_CACHED_LOGIN;
 	}
 
-	if (iniparser_getboolean(d, "global:krb5_auth", False)) {
+	if (iniparser_getboolean(d, "global:krb5_auth", false)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
-	if (iniparser_getboolean(d, "global:silent", False)) {
+	if (iniparser_getboolean(d, "global:silent", false)) {
 		ctrl |= WINBIND_SILENT;
 	}
 
@@ -260,7 +260,7 @@ static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char 
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
 
-	if (iniparser_getboolean(d, "global:try_first_pass", False)) {
+	if (iniparser_getboolean(d, "global:try_first_pass", false)) {
 		ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 	}
 
@@ -394,7 +394,7 @@ static int _make_remark(pam_handle_t * pamh, int flags, int type, const char *te
 	}
 
 	pmsg[0] = &msg[0];
-	msg[0].msg = CONST_DISCARD(char *, text);
+	msg[0].msg = discard_const_p(char, text);
 	msg[0].msg_style = type;
 	
 	resp = NULL;
@@ -562,55 +562,55 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
  * @param already_expired pointer to a boolean to indicate if the password is
  *        already expired.
  *
- * @return boolean Returns True if message has been sent, False if not.
+ * @return boolean Returns true if message has been sent, false if not.
  */
 
-static BOOL _pam_send_password_expiry_message(pam_handle_t *pamh,
+static bool _pam_send_password_expiry_message(pam_handle_t *pamh,
 					      int ctrl,
 					      time_t next_change,
 					      time_t now,
 					      int warn_pwd_expire,
-					      BOOL *already_expired)
+					      bool *already_expired)
 {
 	int days = 0;
 	struct tm tm_now, tm_next_change;
 
 	if (already_expired) {
-		*already_expired = False;
+		*already_expired = false;
 	}
 
 	if (next_change <= now) {
 		PAM_WB_REMARK_DIRECT(pamh, ctrl, "NT_STATUS_PASSWORD_EXPIRED");
 		if (already_expired) {
-			*already_expired = True;
+			*already_expired = true;
 		}
-		return True;
+		return true;
 	}
 
 	if ((next_change < 0) ||
 	    (next_change > now + warn_pwd_expire * SECONDS_PER_DAY)) {
-		return False;
+		return false;
 	}
 
 	if ((localtime_r(&now, &tm_now) == NULL) || 
 	    (localtime_r(&next_change, &tm_next_change) == NULL)) {
-		return False;
+		return false;
 	}
 
 	days = (tm_next_change.tm_yday+tm_next_change.tm_year*365) - (tm_now.tm_yday+tm_now.tm_year*365);
 
 	if (days == 0) {
 		_make_remark(pamh, ctrl, PAM_TEXT_INFO, "Your password expires today");
-		return True;
+		return true;
 	} 
 	
 	if (days > 0 && days < warn_pwd_expire) {
 		_make_remark_format(pamh, ctrl, PAM_TEXT_INFO, "Your password will expire in %d %s", 
 			days, (days > 1) ? "days":"day");
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -628,13 +628,13 @@ static void _pam_warn_password_expiry(pam_handle_t *pamh,
 				      int flags, 
 				      const struct winbindd_response *response,
 				      int warn_pwd_expire,
-				      BOOL *already_expired)
+				      bool *already_expired)
 {
 	time_t now = time(NULL);
 	time_t next_change = 0;
 
 	if (already_expired) {
-		*already_expired = False;
+		*already_expired = false;
 	}
 
 	/* accounts with ACB_PWNOEXP set never receive a warning */
@@ -677,7 +677,7 @@ static void _pam_warn_password_expiry(pam_handle_t *pamh,
 
 #define IS_SID_STRING(name) (strncmp("S-", name, 2) == 0)
 
-static BOOL safe_append_string(char *dest,
+static bool safe_append_string(char *dest,
 			const char *src,
 			int dest_buffer_size)
 /**
@@ -688,21 +688,21 @@ static BOOL safe_append_string(char *dest,
  * @param src Source string buffer.
  * @param dest_buffer_size Size of dest buffer in bytes.
  *
- * @return False if dest buffer is not big enough (no bytes copied), True on success.
+ * @return false if dest buffer is not big enough (no bytes copied), true on success.
  */
 {
 	int dest_length = strlen(dest);
 	int src_length = strlen(src);
 
 	if ( dest_length + src_length + 1 > dest_buffer_size ) {
-		return False;
+		return false;
 	}
 
 	memcpy(dest + dest_length, src, src_length + 1);
-	return True;
+	return true;
 }
 
-static BOOL winbind_name_to_sid_string(pam_handle_t *pamh,
+static bool winbind_name_to_sid_string(pam_handle_t *pamh,
 				int ctrl,
 				const char *user,
 				const char *name,
@@ -718,7 +718,7 @@ static BOOL winbind_name_to_sid_string(pam_handle_t *pamh,
  * @param sid_list_buffer Where to append the string sid.
  * @param sid_list_buffer Size of sid_list_buffer (in bytes).
  *
- * @return False on failure, True on success.
+ * @return false on failure, true on success.
  */
 {
 	const char* sid_string;
@@ -741,20 +741,20 @@ static BOOL winbind_name_to_sid_string(pam_handle_t *pamh,
 
 		if (pam_winbind_request_log(pamh, ctrl, WINBINDD_LOOKUPNAME, &sid_request, &sid_response, user)) {
 			_pam_log(pamh, ctrl, LOG_INFO, "could not lookup name: %s\n", name); 
-			return False;
+			return false;
 		}
 
 		sid_string = sid_response.data.sid.sid;
 	}
 
 	if (!safe_append_string(sid_list_buffer, sid_string, sid_list_buffer_size)) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
+static bool winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
 				int ctrl,
 				const char *user,
 				const char *name_list,
@@ -770,10 +770,10 @@ static BOOL winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
  * @param sid_list_buffer Where to put the list of string sids.
  * @param sid_list_buffer Size of sid_list_buffer (in bytes).
  *
- * @return False on failure, True on success.
+ * @return false on failure, true on success.
  */
 {
-	BOOL result = False;
+	bool result = false;
 	char *current_name = NULL;
 	const char *search_location;
 	const char *comma;
@@ -806,7 +806,7 @@ static BOOL winbind_name_list_to_sid_string_list(pam_handle_t *pamh,
 		goto out;
 	}
 
-	result = True;
+	result = true;
 
 out:
 	SAFE_FREE(current_name);
@@ -922,7 +922,7 @@ static void _pam_free_data_info3(pam_handle_t *pamh)
  * @return void.
  */
 
-static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *username, uint32 info3_user_flgs)
+static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *username, uint32_t info3_user_flgs)
 {
 	/* inform about logon type */
 	if (PAM_WB_GRACE_LOGON(info3_user_flgs)) {
@@ -952,7 +952,7 @@ static void _pam_warn_logon_type(pam_handle_t *pamh, int ctrl, const char *usern
  * @return void.
  */
 
-static void _pam_warn_krb5_failure(pam_handle_t *pamh, int ctrl, const char *username, uint32 info3_user_flgs)
+static void _pam_warn_krb5_failure(pam_handle_t *pamh, int ctrl, const char *username, uint32_t info3_user_flgs)
 {
 	if (PAM_WB_KRB5_CLOCK_SKEW(info3_user_flgs)) {
 		_make_remark(pamh, ctrl, PAM_ERROR_MSG, 
@@ -1049,7 +1049,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int ret;
-	BOOL already_expired = False;
+	bool already_expired = false;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
@@ -1151,7 +1151,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 					  warn_pwd_expire,
 					  &already_expired);
 
-		if (already_expired == True) {
+		if (already_expired == true) {
 			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Password has expired "
 				       "(Password was last set: %lld, the policy says "
 				       "it should expire here %lld (now it's: %lu))\n",
@@ -1403,7 +1403,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 		if (comment != NULL && off(ctrl, WINBIND_SILENT)) {
 			pmsg[0] = &msg[0];
 			msg[0].msg_style = PAM_TEXT_INFO;
-			msg[0].msg = CONST_DISCARD(char *, comment);
+			msg[0].msg = discard_const_p(char, comment);
 			i = 1;
 		} else {
 			i = 0;
@@ -1411,13 +1411,13 @@ static int _winbind_read_password(pam_handle_t * pamh,
 
 		pmsg[i] = &msg[i];
 		msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
-		msg[i++].msg = CONST_DISCARD(char *, prompt1);
+		msg[i++].msg = discard_const_p(char, prompt1);
 		replies = 1;
 
 		if (prompt2 != NULL) {
 			pmsg[i] = &msg[i];
 			msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
-			msg[i++].msg = CONST_DISCARD(char *, prompt2);
+			msg[i++].msg = discard_const_p(char, prompt2);
 			++replies;
 		}
 		/* so call the conversation expecting i responses */
@@ -1812,7 +1812,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 		retval = PAM_SUCCESS;
 
-		if (!asprintf(&new_authtok_required_during_auth, "%d", True)) {
+		if (!asprintf(&new_authtok_required_during_auth, "%d", true)) {
 			retval = PAM_BUF_ERR;
 			goto out;
 		}
@@ -2110,10 +2110,10 @@ out:
  * @param ctrl PAM winbind options.
  * @param user The username
  *
- * @return boolean Returns True if required, False if not.
+ * @return boolean Returns true if required, false if not.
  */
 
-static BOOL _pam_require_krb5_auth_after_chauthtok(pam_handle_t *pamh, int ctrl, const char *user)
+static bool _pam_require_krb5_auth_after_chauthtok(pam_handle_t *pamh, int ctrl, const char *user)
 {
 
 	/* Make sure that we only do this if 
@@ -2125,26 +2125,26 @@ static BOOL _pam_require_krb5_auth_after_chauthtok(pam_handle_t *pamh, int ctrl,
 	struct passwd *pwd = NULL;
 
 	if (!(ctrl & WINBIND_KRB5_AUTH)) {
-		return False;
+		return false;
 	}
 
 	_pam_get_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH, &new_authtok_reqd_during_auth);
 	pam_set_data(pamh, PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH, NULL, NULL);
 
 	if (new_authtok_reqd_during_auth) {
-		return True;
+		return true;
 	}
 
 	pwd = getpwnam(user);
 	if (!pwd) {
-		return False;
+		return false;
 	}
 
 	if (getuid() == pwd->pw_uid) {
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 

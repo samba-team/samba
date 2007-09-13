@@ -16,4 +16,7 @@ int read_reply(struct winbindd_response *response);
 void close_sock(void);
 void free_response(struct winbindd_response *response);
 const char *nss_err_str(NSS_STATUS ret);
+bool winbind_env_set(void);
+bool winbind_off(void);
+bool winbind_on(void);
 

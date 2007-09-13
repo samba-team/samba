@@ -95,13 +95,13 @@ static char *get_static(char **buffer, size_t *buflen, size_t len)
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
 
-static BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
+static bool next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 {
 	char *s;
-	BOOL quoted;
+	bool quoted;
 	size_t len=1;
 
-	if (!ptr) return(False);
+	if (!ptr) return false;
 
 	s = *ptr;
 
@@ -112,10 +112,10 @@ static BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 	while (*s && strchr(sep,*s)) s++;
 	
 	/* nothing left? */
-	if (! *s) return(False);
+	if (! *s) return false;
 	
 	/* copy over the token */
-	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+	for (quoted = false; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
@@ -127,7 +127,7 @@ static BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 	*ptr = (*s) ? s+1 : s;  
 	*buff = 0;
 	
-	return(True);
+	return true;
 }
 
 
@@ -431,13 +431,13 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			called_again = True;
+			called_again = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
 		*errnop = errno = 0;
-		called_again = False;
+		called_again = false;
 		ndx_pw_cache++;
 
 		/* If we've finished with this lot of results free cache */
@@ -487,7 +487,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -500,12 +500,12 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = errno = 0;
 	}
 
@@ -554,7 +554,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 					 &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -567,12 +567,12 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = errno = 0;
 	}
 
@@ -714,13 +714,13 @@ winbind_getgrent(enum winbindd_cmd cmd,
 		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			called_again = True;
+			called_again = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
 		*errnop = 0;
-		called_again = False;
+		called_again = false;
 		ndx_gr_cache++;
 
 		/* If we've finished with this lot of results free cache */
@@ -791,7 +791,7 @@ _nss_winbind_getgrnam_r(const char *name,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -806,12 +806,12 @@ _nss_winbind_getgrnam_r(const char *name,
 				 &buflen);
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = 0;
 	}
 
@@ -860,7 +860,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -875,12 +875,12 @@ _nss_winbind_getgrgid_r(gid_t gid,
 				 &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = 0;
 	}
 

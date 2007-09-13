@@ -11,15 +11,6 @@
    products. You do not need to give any attribution.  
 */
 
-
-#ifndef CONST_DISCARD
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#endif
-
-#ifndef CONST_ADD
-#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
-#endif
-
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
 #endif
@@ -50,11 +41,7 @@
    between /lib/libnss_winbind.so.2 and /li64/libnss_winbind.so.2.
    The easiest way to do this is to always use 8byte values for time_t. */
 
-#if defined(int64)
-#  define SMB_TIME_T int64
-#else
-#  define SMB_TIME_T time_t
-#endif
+#define SMB_TIME_T int64_t
 
 /* Socket commands */
 
@@ -192,8 +179,8 @@ typedef struct winbindd_gr {
 	fstring gr_name;
 	fstring gr_passwd;
 	gid_t gr_gid;
-	uint32 num_gr_mem;
-	uint32 gr_mem_ofs;   /* offset to group membership */
+	uint32_t num_gr_mem;
+	uint32_t gr_mem_ofs;   /* offset to group membership */
 } WINBINDD_GR;
 
 /* PAM specific request flags */
@@ -231,13 +218,13 @@ typedef struct winbindd_gr {
  ******************************************************************************/
 
 struct winbindd_request {
-	uint32 length;
+	uint32_t length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	enum winbindd_cmd original_cmd;   /* Original Winbindd command
 					     issued to parent process */
 	pid_t pid;               /* pid of calling process */
-	uint32 wb_flags;         /* generic flags */
-	uint32 flags;            /* flags relevant *only* to a given request */
+	uint32_t wb_flags;       /* generic flags */
+	uint32_t flags;          /* flags relevant *only* to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
 
 	union {
@@ -257,14 +244,14 @@ struct winbindd_request {
 			uid_t uid;
 		} auth;              /* pam_winbind auth module */
                 struct {
-                        unsigned char chal[8];
-			uint32 logon_parameters;
+                        uint8_t chal[8];
+			uint32_t logon_parameters;
                         fstring user;
                         fstring domain;
                         fstring lm_resp;
-                        uint32 lm_resp_len;
+                        uint32_t lm_resp_len;
                         fstring nt_resp;
-                        uint32 nt_resp_len;
+                        uint32_t nt_resp_len;
 			fstring workstation;
 		        fstring require_membership_of_sid;
                 } auth_crap;
@@ -276,14 +263,14 @@ struct winbindd_request {
 		struct {
 			fstring user;
 			fstring domain;
-			unsigned char new_nt_pswd[516];
-			uint16	new_nt_pswd_len;
-			unsigned char old_nt_hash_enc[16];
-			uint16 	old_nt_hash_enc_len;
-			unsigned char new_lm_pswd[516];
-			uint16	new_lm_pswd_len;
-			unsigned char old_lm_hash_enc[16];
-			uint16	old_lm_hash_enc_len;
+			uint8_t new_nt_pswd[516];
+			uint16_t new_nt_pswd_len;
+			uint8_t old_nt_hash_enc[16];
+			uint16_t old_nt_hash_enc_len;
+			uint8_t new_lm_pswd[516];
+			uint16_t new_lm_pswd_len;
+			uint8_t old_lm_hash_enc[16];
+			uint16_t old_lm_hash_enc_len;
 		} chng_pswd_auth_crap;/* pam_winbind passwd module */
 		struct {
 			fstring user;
@@ -295,13 +282,13 @@ struct winbindd_request {
 			fstring dom_name;       /* lookupname */
 			fstring name;       
 		} name;
-		uint32 num_entries;  /* getpwent, getgrent */
+		uint32_t num_entries;  /* getpwent, getgrent */
 		struct {
 			fstring username;
 			fstring groupname;
 		} acct_mgt;
 		struct {
-			BOOL is_primary;
+			bool is_primary;
 			fstring dcname;
 		} init_conn;
 		struct {
@@ -310,10 +297,10 @@ struct winbindd_request {
 		} dual_sid2id;
 		struct {
 			fstring sid;
-			uint32 type;
-			uint32 id;
+			uint32_t type;
+			uint32_t id;
 		} dual_idmapset;
-		BOOL list_all_domains;
+		bool list_all_domains;
 
 		struct {
 			uid_t uid;
@@ -324,8 +311,8 @@ struct winbindd_request {
 			   produce an actual challenge response. It merely
 			   succeeds if there are cached credentials available
 			   that could be used. */
-			uint32 initial_blob_len; /* blobs in extra_data */
-			uint32 challenge_blob_len;
+			uint32_t initial_blob_len; /* blobs in extra_data */
+			uint32_t challenge_blob_len;
 		} ccache_ntlm_auth;
 
 		/* padding -- needed to fix alignment between 32bit and 64bit libs.
@@ -338,7 +325,7 @@ struct winbindd_request {
 		SMB_TIME_T padding;
 		char *data;
 	} extra_data;
-	uint32 extra_len;
+	uint32_t extra_len;
 	char null_term;
 };
 
@@ -364,7 +351,7 @@ struct winbindd_response {
     
 	/* Header information */
 
-	uint32 length;                        /* Length of response */
+	uint32_t length;                      /* Length of response */
 	enum winbindd_result result;          /* Result code */
 
 	/* Fixed length return data */
@@ -382,7 +369,7 @@ struct winbindd_response {
 
 		struct winbindd_gr gr;
 
-		uint32 num_entries; /* getpwent, getgrent */
+		uint32_t num_entries; /* getpwent, getgrent */
 		struct winbindd_sid {
 			fstring sid;        /* lookupname, [ug]id_to_sid */
 			int type;
@@ -403,20 +390,20 @@ struct winbindd_response {
 		fstring dc_name;
 
 		struct auth_reply {
-			uint32 nt_status;
+			uint32_t nt_status;
 			fstring nt_status_string;
 			fstring error_string;
 			int pam_error;
 			char user_session_key[16];
 			char first_8_lm_hash[8];
 			fstring krb5ccname;
-			uint32 reject_reason;
-			uint32 padding;
+			uint32_t reject_reason;
+			uint32_t padding;
 			struct policy_settings {
-				uint32 min_length_password;
-				uint32 password_history;
-				uint32 password_properties;
-				uint32 padding;
+				uint32_t min_length_password;
+				uint32_t password_history;
+				uint32_t password_properties;
+				uint32_t padding;
 				SMB_TIME_T expire;
 				SMB_TIME_T min_passwordage;
 			} policy;
@@ -427,14 +414,14 @@ struct winbindd_response {
 				SMB_TIME_T pass_last_set_time;
 				SMB_TIME_T pass_can_change_time;
 				SMB_TIME_T pass_must_change_time;
-				uint32 logon_count;
-				uint32 bad_pw_count;
-				uint32 user_rid;
-				uint32 group_rid;
-				uint32 num_groups;
-				uint32 user_flgs;
-				uint32 acct_flags;
-				uint32 num_other_sids;
+				uint32_t logon_count;
+				uint32_t bad_pw_count;
+				uint32_t user_rid;
+				uint32_t group_rid;
+				uint32_t num_groups;
+				uint32_t user_flgs;
+				uint32_t acct_flags;
+				uint32_t num_other_sids;
 				fstring dom_sid;
 				fstring user_name;
 				fstring full_name;
@@ -450,21 +437,21 @@ struct winbindd_response {
 			fstring name;
 			fstring alt_name;
 			fstring sid;
-			BOOL native_mode;
-			BOOL active_directory;
-			BOOL primary;
-			uint32 sequence_number;
+			bool native_mode;
+			bool active_directory;
+			bool primary;
+			uint32_t sequence_number;
 		} domain_info;
 		struct {
 			fstring acct_name;
 			fstring full_name;
 			fstring homedir;
 			fstring shell;
-			uint32 primary_gid;			
-			uint32 group_rid;
+			uint32_t primary_gid;
+			uint32_t group_rid;
 		} user_info;
 		struct {
-			uint32 auth_blob_len; /* blob in extra_data */
+			uint32_t auth_blob_len; /* blob in extra_data */
 		} ccache_ntlm_auth;
 	} data;
 
@@ -482,8 +469,8 @@ struct WINBINDD_MEMORY_CREDS {
 	uid_t uid;
 	int ref_count;
 	size_t len;
-	unsigned char *nt_hash; /* Base pointer for the following 2 */
-	unsigned char *lm_hash;
+	uint8_t *nt_hash; /* Base pointer for the following 2 */
+	uint8_t *lm_hash;
 	char *pass;
 };
 
