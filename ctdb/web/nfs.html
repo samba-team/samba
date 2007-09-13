@@ -50,6 +50,8 @@ This file should look something like :
   LOCKD_TCPPORT=599
   LOCKD_UDPPORT=599
   STATD_HOSTNAME="$NFS_HOSTNAME -H /etc/ctdb/statd-callout -p 97"
+  RPCNFSDARGS="-N 4"
+
 </pre>
 
 The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
@@ -79,6 +81,7 @@ recovery in the client.<br>
 NFS_HOSTNAME is the dns name for the ctdb cluster and which is used when clients map nfs shares. This name must be in DNS and resolve back into the public ip addresses of the cluster.<br>
 Always use the same name here as you use for the samba hostname.
 
+RPCNFSDARGS is used to disable support for NFSv4 which is not yet supported by CTDB.
 
 
 <h2>chkconfig</h2>
