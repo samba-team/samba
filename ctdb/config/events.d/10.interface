@@ -16,7 +16,7 @@ shift
 }
 
 [ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
-	echo "No public addresses file found. Nothing to do for 10.interfaces"
+	echo "`date` No public addresses file found. Nothing to do for 10.interfaces"
 	exit 0
 }
 
@@ -35,16 +35,16 @@ kill_tcp_connections() {
 	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
 	_killcount=`expr $_killcount + 1`
     done
-    [ _failed = 0 ] || {
-	echo "Failed to send killtcp control"
+    [ $_failed = 0 ] || {
+	echo "`date` Failed to send killtcp control"
 	return;
     }
     _count=0
-    while netstat -tn | grep $_IP > /dev/null; do
+    while netstat -tn |egrep "^tcp.*\s+$_IP:.*ESTABLISHED" > /dev/null; do
 	sleep 1
 	_count=`expr $_count + 1`
-	[ $_count -gt 5 ] && {
-	    echo "Timed out killing tcp connections for IP $_IP"
+	[ $_count -gt 3 ] && {
+	    echo "`date` Timed out killing tcp connections for IP $_IP"
 	    return;
 	}
     done
@@ -67,7 +67,7 @@ case $cmd in
      # called when ctdbd wants to claim an IP address
      takeip)
 	if [ $# != 3 ]; then
-	   echo "must supply interface, IP and maskbits"
+	   echo "`date` must supply interface, IP and maskbits"
 	   exit 1
 	fi
 	iface=$1
