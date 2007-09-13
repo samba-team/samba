@@ -102,8 +102,10 @@ dnl the configure uses --with-static-modules=socket_ipv6
 #
 # This tests need LIBS="$NSL_LIBS $SOCKET_LIBS"
 #
+old_CFLAGS=$CFLAGS
 old_LIBS=$LIBS
 LIBS="$NSL_LIBS $SOCKET_LIBS"
+CFLAGS="$CFLAGS -Ilib/replace"
 iface=no;
 AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
 AC_TRY_RUN([
@@ -140,4 +142,5 @@ if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
 fi
 fi
 
+CFLAGS=$old_CFLAGS
 LIBS=$old_LIBS
