@@ -50,7 +50,7 @@ case $cmd in
 	nice service smb start
 
 	# wait for the Samba tcp ports to become available
-	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
+	smb_ports=`testparm -s --parameter-name="smb ports" 2> /dev/null`
 	ctdb_wait_tcp_ports "Samba" $smb_ports
 
 	# wait for winbind to be ready
@@ -96,7 +96,7 @@ case $cmd in
 	smb_dirs=`testparm -s 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
 	ctdb_check_directories "Samba" $smb_dirs	
 
-	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
+	smb_ports=`testparm -s --parameter-name="smb ports" 2> /dev/null`
 	ctdb_check_tcp_ports "Samba" $smb_ports
 
 	# check winbind is OK
