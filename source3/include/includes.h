@@ -303,12 +303,6 @@ typedef sig_atomic_t VOLATILE SIG_ATOMIC_T;
 typedef int VOLATILE SIG_ATOMIC_T;
 #endif
 
-#ifndef HAVE_SOCKLEN_T_TYPE
-#define HAVE_SOCKLEN_T_TYPE
-typedef int socklen_t;
-#endif
-
-
 #ifndef uchar
 #define uchar unsigned char
 #endif
