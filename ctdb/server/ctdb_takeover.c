@@ -833,8 +833,8 @@ try_again:
 		ip.sin.sin_addr = tmp_ip->sin.sin_addr;
 
 		ret = ctdb_ctrl_takeover_ip(ctdb, TAKEOVER_TIMEOUT(), 
-				    tmp_ip->pnn, 
-				    &ip);
+					    tmp_ip->pnn, 
+					    &ip);
 		if (ret != 0) {
 			DEBUG(0,("Failed asking vnn %u to take over IP %s\n",
 				 tmp_ip->pnn, 

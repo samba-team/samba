@@ -1214,7 +1214,9 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		if (changed_flags & NODE_FLAGS_DISABLED) {
 			ret = ctdb_takeover_run(ctdb, nodemap);
 			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+				DEBUG(0, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
+				ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), 
+						     ctdb->pnn, CTDB_RECOVERY_ACTIVE);
 			}
 			/* send a message to all clients telling them that the 
 			   cluster has been reconfigured */
@@ -1749,7 +1751,9 @@ again:
 	if (need_takeover_run && ctdb->vnn) {
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+			DEBUG(0, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
+			ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), 
+					     ctdb->pnn, CTDB_RECOVERY_ACTIVE);
 		}
 	}
 
