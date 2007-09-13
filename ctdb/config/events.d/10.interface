@@ -25,8 +25,10 @@ shift
 kill_tcp_connections() {
     _IP="$1"    
     _failed=0
+
     _killcount=0
-    netstat -tn |egrep "^tcp.*\s+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' | 
+    connfile="/etc/ctdb/state/connections.$_IP"
+    netstat -tn |egrep "^tcp.*\s+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     while read dest src; do
 	srcip=`echo $src | cut -d: -f1`
 	srcport=`echo $src | cut -d: -f2`
@@ -34,9 +36,13 @@ kill_tcp_connections() {
 	destport=`echo $dest | cut -d: -f2`
 	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
 	_killcount=`expr $_killcount + 1`
-    done
+    done < $connfile
+    /bin/rm -f $connfile
     [ $_failed = 0 ] || {
 	echo "`date` Failed to send killtcp control"
+	return;
+    }
+    [ $_killcount -gt 0 ] || {
 	return;
     }
     _count=0
