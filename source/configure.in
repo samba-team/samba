@@ -767,7 +767,6 @@ case "$host_os" in
 				AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to use large file support])
 				AC_DEFINE(_ALIGNMENT_REQUIRED, 1, [Required alignment])
 				AC_DEFINE(_MAX_ALIGNMENT, 4, [Maximum alignment])
-				AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, [Unix 98 sources -- needed for socklen_t in getsockopt on HP/UX 11])
 				;;
       esac
       ;;
@@ -1162,19 +1161,6 @@ if test x"$samba_cv_unixsocket" = x"yes"; then
    AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixscoket support])
 fi
 
-
-AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <sys/socket.h>],[socklen_t i = 0],
-	samba_cv_socklen_t=yes,samba_cv_socklen_t=no)])
-if test x"$samba_cv_socklen_t" = x"yes"; then
-   AC_DEFINE(HAVE_SOCKLEN_T_TYPE,1,[Whether we have the variable type socklen_t])
-fi
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
