@@ -1109,7 +1109,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 			char *msg = talloc_asprintf(ctx,
 					"Bad src length (%u) in "
 					"pull_ascii_base_talloc",
-					src_len);
+					(unsigned int)src_len);
 			smb_panic(msg);
 		}
 	}
