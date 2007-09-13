@@ -24,10 +24,6 @@
 
 #include "winbind_client.h"
 
-BOOL winbind_env_set( void );
-BOOL winbind_off( void );
-BOOL winbind_on( void );
-
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */
@@ -530,16 +526,16 @@ int read_reply(struct winbindd_response *response)
 	return result1 + result2;
 }
 
-BOOL winbind_env_set( void )
+bool winbind_env_set(void)
 {
 	char *env;
 	
 	if ((env=getenv(WINBINDD_DONT_ENV)) != NULL) {
 		if(strcmp(env, "1") == 0) {
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }
 
 /* 
@@ -656,21 +652,14 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
  enable them
  ************************************************************************/
  
-/* Use putenv() instead of setenv() in these functions as not all
-   environments have the latter. */
-
-BOOL winbind_off( void )
+bool winbind_off(void)
 {
-	static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=1");
-
-	return putenv(s) != -1;
+	return setenv(WINBINDD_DONT_ENV, "1", 1) != -1;
 }
 
-BOOL winbind_on( void )
+bool winbind_on(void)
 {
-	static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=0");
-
-	return putenv(s) != -1;
+	return setenv(WINBINDD_DONT_ENV, "0", 1) != -1;
 }
 
 /*************************************************************************
