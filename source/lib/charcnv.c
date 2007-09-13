@@ -841,7 +841,7 @@ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
 		TALLOC_FREE(out_buffer);
 
 		size = convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE,
-				s, strlen(s),
+				s, strlen(s)+1,
 				(void *)&ubuf,
 				True);
 		if (size == (size_t)-1) {
