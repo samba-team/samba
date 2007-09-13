@@ -157,11 +157,11 @@ ctdb_check_tcp_ports() {
   for p in $wait_ports; do
       all_ok=1
       if [ -x /usr/bin/netcat ]; then
-          /usr/bin/netcat -z 127.0.0.1 $p || all_ok=0
+          /usr/bin/netcat -z 127.0.0.1 $p > /dev/null || all_ok=0
       elif [ -x /usr/bin/nc ]; then
-          /usr/bin/nc -z 127.0.0.1 $p || all_ok=0
+          /usr/bin/nc -z 127.0.0.1 $p > /dev/null || all_ok=0
       elif [ -x /usr/bin/netstat ]; then
-          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p .*LISTEN") || all_ok=0
+          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
       fi
       [ $all_ok -eq 1 ] || {
 	  echo "`date` ERROR: $service_name tcp port $p is not responding"
