@@ -909,6 +909,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
+			rec->need_takeover_run = true;
 			return -1;
 		}
 		DEBUG(1, (__location__ " Recovery - done takeover\n"));
@@ -1745,6 +1746,7 @@ again:
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
+			rec->need_takeover_run = true;
 			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
 				    vnnmap, nodemap->nodes[j].pnn);
 		}
