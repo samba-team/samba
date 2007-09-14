@@ -150,6 +150,14 @@ void dump_core_setup(const char *progname)
 
  void dump_core(void)
 {
+	static bool called;
+
+	if (called) {
+		DEBUG(0, ("dump_core() called recursive\n"));
+		exit(1);
+	}
+	called = true;
+
 	/* Note that even if core dumping has been disabled, we still set up
 	 * the core path. This is to handle the case where core dumping is
 	 * turned on in smb.conf and the relevant daemon is not restarted.
