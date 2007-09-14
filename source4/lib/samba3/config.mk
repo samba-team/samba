@@ -18,7 +18,6 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBTDB NDR_SECURITY \
 # Start SUBSYSTEM LIBSAMBA3
 [SUBSYSTEM::SMBPASSWD]
 PRIVATE_PROTO_HEADER = samba3_smbpasswd_proto.h
-PUBLIC_HEADERS = samba3.h
 OBJ_FILES = smbpasswd.o
 # End SUBSYSTEM LIBSAMBA3
 ################################################
