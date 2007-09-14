@@ -27,7 +27,7 @@
 		<arg choice="opt">--usage</arg>
 		<arg choice="opt">-i --interactive</arg>
 		<arg choice="opt">--public-addresses=&lt;filename&gt;</arg>
-		<arg choice="opt">--event-script=&lt;filename&gt;</arg>
+		<arg choice="opt">--event-script-dir=&lt;directory&gt;</arg>
 		<arg choice="opt">--logfile=&lt;filename&gt;</arg>
 		<arg choice="opt">--listen=&lt;address&gt;</arg>
 		<arg choice="opt">--transport=&lt;STRING&gt;</arg>
@@ -121,7 +121,7 @@
       <varlistentry><term>--public_addresses=&lt;filename&gt;</term>
         <listitem>
           <para>
-            When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it iwll distribute these public ip addresses evenly across the availabel nodes.
+            When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes.
           </para>
           <para>
             This is usually the file /etc/ctdb/public_addresses
@@ -129,14 +129,14 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>--event-script=&lt;filename&gt;</term>
+      <varlistentry><term>--event-script-dir=&lt;directory&gt;</term>
         <listitem>
           <para>
-            This option is used to specify which events script that ctdbd will
-            use to manage services when the cluster configuration changes.
+            This option is used to specify the directory where the CTDB event
+	    scripts are stored.
           </para>
           <para>
-            This will normally be /etc/ctdb/events which is part of the ctdb distribution.
+            This will normally be /etc/ctdb/events.d which is part of the ctdb distribution.
           </para>
         </listitem>
       </varlistentry>
@@ -222,12 +222,8 @@
         The private addresses are configured in /etc/ctdb/nodes 
         (unless the --nlist option is used) and contain one line for each 
         node in the cluster. Each line contains the private ip address for one
-        node in the cluster.
-      </para>
-      <para>
-        Each node is assigned an internal node number which corresponds to 
-        which line in the nodes file that has the local private address
-        of the node.
+        node in the cluster. This file must be the same on all nodes in the
+	cluster.
       </para>
       <para>
         Since the private addresses are only available to the network when the
@@ -235,6 +231,12 @@
         for clients to connect to services provided by the cluster. Instead
         client applications should only attach to the public addresses since
         these are guaranteed to always be available.
+      </para>
+      <para>
+        When using ip takeover, it is strongly recommended that the private 
+	addresses are configured on a private network physically separated
+	from the rest of the network and that this private network is dedicated
+	to CTDB traffic.
       </para>
       Example /etc/ctdb/nodes for a four node cluster:
       <screen format="linespecific">
@@ -248,14 +250,14 @@
       <para>
         A public address on the other hand is not attached to an interface.
         This address is managed by ctdbd itself and is attached/detached to
-        a physical node at runtime. You should NOT have this address configured
-        to an interface in linux. Let ctdbd manage these addresses.
+        a physical node at runtime.
       </para>
       <para>
         The ctdb cluster will assign/reassign these public addresses across the
         available healthy nodes in the cluster. When one node fails, its public address
         will be migrated to and taken over by a different node in the cluster
-        to ensure that all public addresses are always available to clients.
+        to ensure that all public addresses are always available to clients as 
+	long as there are still nodes available capable of hosting this address.
       </para>
       <para>
         These addresses are not physically attached to a specific node. 
@@ -263,27 +265,57 @@
         public addresses and which physical node is currently serving it.
       </para>
       <para>
-        The list of public addresses also contain the netmask and the 
-	interface where this address should be attached.
+	On each node this file contains a list of the public addresses that 
+	this node is capable of hosting.
+        The list also contain the netmask and the 
+	interface where this address should be attached for the case where you
+	may want to serve data out through multiple different interfaces.
       </para>
-      Example /etc/ctdb/public_addresses for a four node cluster:
+      Example /etc/ctdb/public_addresses for a node that can host 4 public addresses:
       <screen format="linespecific">
         11.1.1.1/24 eth0
         11.1.1.2/24 eth0
         11.1.2.1/24 eth1
         11.1.2.2/24 eth1
       </screen>
-      <para>
-        In this example, two nodes in the cluster will serve 11.1.1.1 and 
-	11.1.1.2 through interface eth0  and two (possibly other) nodes will
-	serve 11.1.2.1 and 11.1.2.2 through eth1.
-      </para>
-      <para>
-        The public address file must be the same on all nodes.
-	Since this file also specifies which interface the address should be 
-	attached to it is imporant that all nodes use the same naming convention
-	for interfaces.
-      </para>
+
+	<para>
+	In most cases this file would be the same on all nodes in a cluster but
+	there are exceptions when one may want to use different files
+	on different nodes.
+	</para>
+	Example: 4 nodes partitioned into two subgroups :
+	<screen format="linespecific">
+	Node 0:/etc/ctdb/public_addresses
+		10.1.1.1/24 eth0
+		10.1.1.2/24 eth0
+
+	Node 1:/etc/ctdb/public_addresses
+		10.1.1.1/24 eth0
+		10.1.1.2/24 eth0
+
+	Node 2:/etc/ctdb/public_addresses
+		10.2.1.1/24 eth0
+		10.2.1.2/24 eth0
+
+	Node 3:/etc/ctdb/public_addresses
+		10.2.1.1/24 eth0
+		10.2.1.2/24 eth0
+	</screen>
+	<para>
+	In this example nodes 0 and 1 host two public addresses on the 
+	10.1.1.x network  while nodes 2 and 3 host two public addresses for the 
+	10.2.1.x network.
+	</para>
+	<para>
+	Ip address 10.1.1.1 can be hosted by either of nodes 0 or 1 and will be
+	available to clients as long as at least one of these two nodes are
+	available.
+	If both nodes 0 and node 1 become unavailable 10.1.1.1 also becomes 
+	unavailable. 10.1.1.1 can not be failed over to node 2 or node 3 since
+	these nodes do not have this ip address listed in their public
+	addresses file.
+	</para>
     </refsect2>
   </refsect1>
 
