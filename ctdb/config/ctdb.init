@@ -100,7 +100,7 @@ stop() {
 	    [ $count -gt 10 ] && {
 		echo -n $"killing ctdbd "
 		killall -q -9 ctdbd
-		pkill -f -9 /etc/ctdb/events.d/
+		pkill -9 -f /etc/ctdb/events.d/
 	    }
 	done
 	case $init_style in
