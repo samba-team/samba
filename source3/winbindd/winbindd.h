@@ -352,7 +352,7 @@ struct winbindd_tdc_domain {
 };
 
 
-#include "nsswitch/winbindd_proto.h"
+#include "winbindd/winbindd_proto.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30
 #define WINBINDD_RESCAN_FREQ lp_winbind_cache_time()
