@@ -4,12 +4,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 27;
+use Test::More tests => 33;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::NDR qw(GetElementLevelTable ParseElement align_type mapToScalar ParseType);
+use Parse::Pidl::NDR qw(GetElementLevelTable ParseElement align_type mapToScalar ParseType can_contain_deferred);
 
 # Case 1
 
@@ -253,3 +253,16 @@ $t = {
 	}
 };
 is_deeply(ParseType($t->{ORIGINAL}, "ref"), $t); 
+
+ok(not can_contain_deferred("uint32"));
+ok(can_contain_deferred("some_unknown_type"));
+ok(can_contain_deferred({ TYPE => "STRUCT", 
+		ELEMENTS => [ { TYPE => "uint32", POINTERS => 40 } ]}));
+ok(can_contain_deferred({ TYPE => "TYPEDEF", 
+			DATA => { TYPE => "STRUCT", 
+		ELEMENTS => [ { TYPE => "uint32", POINTERS => 40 } ]}}));
+ok(not can_contain_deferred({ TYPE => "STRUCT", 
+		ELEMENTS => [ { TYPE => "uint32" } ]}));
+ok(not can_contain_deferred({ TYPE => "TYPEDEF",
+			DATA => { TYPE => "STRUCT", 
+		ELEMENTS => [ { TYPE => "uint32" } ]}}));
