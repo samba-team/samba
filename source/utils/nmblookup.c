@@ -86,16 +86,16 @@ static char *node_status_flags(TALLOC_CTX *mem_ctx, uint16_t flags)
 	ret = talloc_asprintf(mem_ctx, "%s %s", group, type);
 
 	if (flags & NBT_NM_DEREGISTER) {
-		ret = talloc_asprintf_append(ret, " <DEREGISTERING>");
+		ret = talloc_asprintf_append_buffer(ret, " <DEREGISTERING>");
 	}
 	if (flags & NBT_NM_CONFLICT) {
-		ret = talloc_asprintf_append(ret, " <CONFLICT>");
+		ret = talloc_asprintf_append_buffer(ret, " <CONFLICT>");
 	}
 	if (flags & NBT_NM_ACTIVE) {
-		ret = talloc_asprintf_append(ret, " <ACTIVE>");
+		ret = talloc_asprintf_append_buffer(ret, " <ACTIVE>");
 	}
 	if (flags & NBT_NM_PERMANENT) {
-		ret = talloc_asprintf_append(ret, " <PERMANENT>");
+		ret = talloc_asprintf_append_buffer(ret, " <PERMANENT>");
 	}
 	
 	return ret;

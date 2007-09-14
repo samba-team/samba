@@ -238,7 +238,7 @@ static int ejs_join(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto failed;
 	}
 	for (i=1;list[i];i++) {
-		ret = talloc_asprintf_append(ret, "%s%s", separator, list[i]);
+		ret = talloc_asprintf_append_buffer(ret, "%s%s", separator, list[i]);
 		if (ret == NULL) {
 			goto failed;
 		}
@@ -275,7 +275,7 @@ static int ejs_sprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 	ret = talloc_strdup(tmp_ctx, "");
 
 	/* avoid all the format string warnings */
-	_asprintf_append = (_asprintf_append_t)talloc_asprintf_append;
+	_asprintf_append = (_asprintf_append_t)talloc_asprintf_append_buffer;
 
 	/*
 	  hackity hack ...
@@ -284,7 +284,7 @@ static int ejs_sprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 		char *fmt2;
 		int len, len_count=0;
 		char *tstr;
-		ret = talloc_asprintf_append(ret, "%*.*s", 
+		ret = talloc_asprintf_append_buffer(ret, "%*.*s", 
 					     (int)(p-format), (int)(p-format), 
 					     format);
 		if (ret == NULL) goto failed;
@@ -299,7 +299,7 @@ static int ejs_sprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 			tstr--;
 		}
 		if (strcmp(tstr, "%") == 0) {
-			ret = talloc_asprintf_append(ret, "%%");
+			ret = talloc_asprintf_append_buffer(ret, "%%");
 			if (ret == NULL) {
 				goto failed;
 			}
@@ -372,7 +372,7 @@ static int ejs_sprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 		format += len+1;
 	}
 
-	ret = talloc_asprintf_append(ret, "%s", format);
+	ret = talloc_asprintf_append_buffer(ret, "%s", format);
 	mpr_Return(eid, mprString(ret));
 	talloc_free(tmp_ctx);
 	return 0;	   

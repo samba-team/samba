@@ -514,13 +514,13 @@ BOOL ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
 
 	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b[0]/40);
 	if (!tmp_oid) goto nomem;
-	tmp_oid = talloc_asprintf_append(tmp_oid, ".%u",  b[0]%40);
+	tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  b[0]%40);
 	if (!tmp_oid) goto nomem;
 
 	for(i = 1, v = 0; i < blob.length; i++) {
 		v = (v<<7) | (b[i]&0x7f);
 		if ( ! (b[i] & 0x80)) {
-			tmp_oid = talloc_asprintf_append(tmp_oid, ".%u",  v);
+			tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  v);
 			v = 0;
 		}
 		if (!tmp_oid) goto nomem;

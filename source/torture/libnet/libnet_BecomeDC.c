@@ -345,7 +345,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 
 	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
-	tmp_dns_name	= talloc_asprintf_append(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
+	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
@@ -642,7 +642,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 
 	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
-	tmp_dns_name	= talloc_asprintf_append(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
+	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
 

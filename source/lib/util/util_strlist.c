@@ -151,7 +151,7 @@ _PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char sepera
 	ret = talloc_strdup(mem_ctx, list[0]);
 
 	for (i = 1; list[i]; i++) {
-		ret = talloc_asprintf_append(ret, "%c%s", seperator, list[i]);
+		ret = talloc_asprintf_append_buffer(ret, "%c%s", seperator, list[i]);
 	}
 
 	return ret;
@@ -174,9 +174,9 @@ _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char 
 
 	for (i = 1; list[i]; i++) {
 		if (strchr(list[i], ' ') || strlen(list[i]) == 0) 
-			ret = talloc_asprintf_append(ret, "%c\"%s\"", sep, list[i]);
+			ret = talloc_asprintf_append_buffer(ret, "%c\"%s\"", sep, list[i]);
 		else 
-			ret = talloc_asprintf_append(ret, "%c%s", sep, list[i]);
+			ret = talloc_asprintf_append_buffer(ret, "%c%s", sep, list[i]);
 	}
 
 	return ret;

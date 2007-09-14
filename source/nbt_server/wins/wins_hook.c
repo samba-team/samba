@@ -67,7 +67,7 @@ void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec,
 	if (!cmd) goto failed;
 
 	for (i=0; rec->addresses[i]; i++) {
-		cmd = talloc_asprintf_append(cmd, " %s", rec->addresses[i]->address);
+		cmd = talloc_asprintf_append_buffer(cmd, " %s", rec->addresses[i]->address);
 		if (!cmd) goto failed;
 	}
 

@@ -405,7 +405,7 @@ static char *sddl_flags_to_string(TALLOC_CTX *mem_ctx, const struct flag_map *ma
 	/* now by bits */
 	for (i=0;map[i].name;i++) {
 		if ((flags & map[i].flag) != 0) {
-			s = talloc_asprintf_append(s, "%s", map[i].name);
+			s = talloc_asprintf_append_buffer(s, "%s", map[i].name);
 			if (s == NULL) goto failed;
 			flags &= ~map[i].flag;
 		}
@@ -532,7 +532,7 @@ static char *sddl_encode_acl(TALLOC_CTX *mem_ctx, const struct security_acl *acl
 	for (i=0;i<acl->num_aces;i++) {
 		char *ace = sddl_encode_ace(sddl, &acl->aces[i], domain_sid);
 		if (ace == NULL) goto failed;
-		sddl = talloc_asprintf_append(sddl, "(%s)", ace);
+		sddl = talloc_asprintf_append_buffer(sddl, "(%s)", ace);
 		if (sddl == NULL) goto failed;
 		talloc_free(ace);
 	}
@@ -563,28 +563,28 @@ char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 	if (sd->owner_sid != NULL) {
 		char *sid = sddl_encode_sid(tmp_ctx, sd->owner_sid, domain_sid);
 		if (sid == NULL) goto failed;
-		sddl = talloc_asprintf_append(sddl, "O:%s", sid);
+		sddl = talloc_asprintf_append_buffer(sddl, "O:%s", sid);
 		if (sddl == NULL) goto failed;
 	}
 
 	if (sd->group_sid != NULL) {
 		char *sid = sddl_encode_sid(tmp_ctx, sd->group_sid, domain_sid);
 		if (sid == NULL) goto failed;
-		sddl = talloc_asprintf_append(sddl, "G:%s", sid);
+		sddl = talloc_asprintf_append_buffer(sddl, "G:%s", sid);
 		if (sddl == NULL) goto failed;
 	}
 
 	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl != NULL) {
 		char *acl = sddl_encode_acl(tmp_ctx, sd->dacl, sd->type, domain_sid);
 		if (acl == NULL) goto failed;
-		sddl = talloc_asprintf_append(sddl, "D:%s", acl);
+		sddl = talloc_asprintf_append_buffer(sddl, "D:%s", acl);
 		if (sddl == NULL) goto failed;
 	}
 
 	if ((sd->type & SEC_DESC_SACL_PRESENT) && sd->sacl != NULL) {
 		char *acl = sddl_encode_acl(tmp_ctx, sd->sacl, sd->type>>1, domain_sid);
 		if (acl == NULL) goto failed;
-		sddl = talloc_asprintf_append(sddl, "S:%s", acl);
+		sddl = talloc_asprintf_append_buffer(sddl, "S:%s", acl);
 		if (sddl == NULL) goto failed;
 	}
 

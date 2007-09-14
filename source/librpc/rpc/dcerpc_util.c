@@ -255,42 +255,42 @@ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 	}
 
 	if (t_name != NULL) {
-		s = talloc_asprintf_append(s, "%s:", t_name);
+		s = talloc_asprintf_append_buffer(s, "%s:", t_name);
 		if (s == NULL) {
 			return NULL;
 		}
 	}
 
 	if (b->host) {
-		s = talloc_asprintf_append(s, "%s", b->host);
+		s = talloc_asprintf_append_buffer(s, "%s", b->host);
 	}
 
 	if (!b->endpoint && !b->options && !b->flags) {
 		return s;
 	}
 
-	s = talloc_asprintf_append(s, "[");
+	s = talloc_asprintf_append_buffer(s, "[");
 
 	if (b->endpoint) {
-		s = talloc_asprintf_append(s, "%s", b->endpoint);
+		s = talloc_asprintf_append_buffer(s, "%s", b->endpoint);
 	}
 
 	/* this is a *really* inefficent way of dealing with strings,
 	   but this is rarely called and the strings are always short,
 	   so I don't care */
 	for (i=0;b->options && b->options[i];i++) {
-		s = talloc_asprintf_append(s, ",%s", b->options[i]);
+		s = talloc_asprintf_append_buffer(s, ",%s", b->options[i]);
 		if (!s) return NULL;
 	}
 
 	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
 		if (b->flags & ncacn_options[i].flag) {
-			s = talloc_asprintf_append(s, ",%s", ncacn_options[i].name);
+			s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
 			if (!s) return NULL;
 		}
 	}
 
-	s = talloc_asprintf_append(s, "]");
+	s = talloc_asprintf_append_buffer(s, "]");
 
 	return s;
 }

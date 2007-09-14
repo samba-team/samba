@@ -419,15 +419,15 @@ static bool test_misc(void)
 	p2 = talloc_strndup(p1, "foo", 2);
 	torture_assert("misc", strcmp("fo", p2) == 0, 
 				   "strndup doesn't work\n");
-	p2 = talloc_asprintf_append(p2, "o%c", 'd');
+	p2 = talloc_asprintf_append_buffer(p2, "o%c", 'd');
 	torture_assert("misc", strcmp("food", p2) == 0, 
-				   "talloc_asprintf_append doesn't work\n");
+				   "talloc_asprintf_append_buffer doesn't work\n");
 	CHECK_BLOCKS("misc", p2, 1);
 	CHECK_BLOCKS("misc", p1, 3);
 
-	p2 = talloc_asprintf_append(NULL, "hello %s", "world");
+	p2 = talloc_asprintf_append_buffer(NULL, "hello %s", "world");
 	torture_assert("misc", strcmp("hello world", p2) == 0,
-		"talloc_asprintf_append doesn't work\n");
+		"talloc_asprintf_append_buffer doesn't work\n");
 	CHECK_BLOCKS("misc", p2, 1);
 	CHECK_BLOCKS("misc", p1, 3);
 	talloc_free(p2);

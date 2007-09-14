@@ -569,7 +569,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			struct security_token *token = session_info->security_token; 
 			const char *sidstr = dom_sid_string(session_info, 
 							    token->sids[i]);
-			grouplist = talloc_asprintf_append(grouplist, "%s,", sidstr);
+			grouplist = talloc_asprintf_append_buffer(grouplist, "%s,", sidstr);
 		}
 
 		mux_printf(mux_id, "GL %s\n", grouplist);
