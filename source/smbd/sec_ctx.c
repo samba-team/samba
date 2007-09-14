@@ -239,7 +239,7 @@ static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *grou
 	/* Start context switch */
 	gain_root();
 #ifdef HAVE_SETGROUPS
-	if (sys_setgroups(gid, ngroups, groups) != 0) {
+	if (sys_setgroups(gid, ngroups, groups) != 0 && !non_root_mode()) {
 		smb_panic("sys_setgroups failed");
 	}
 #endif
@@ -280,7 +280,7 @@ static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *grou
 
 
 	if (syscall(SYS_initgroups, (ngroups > max) ? max : ngroups,
-			groups, uid) == 1) {
+			groups, uid) == -1 && !non_root_mode()) {
 		DEBUG(0, ("WARNING: failed to set group list "
 			"(%d groups) for UID %ld: %s\n",
 			ngroups, uid, strerror(errno)));
