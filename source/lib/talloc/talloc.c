@@ -1223,7 +1223,8 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
 /**
  * Realloc @p s to append the formatted result of @p fmt and @p ap,
  * and return @p s, which may have moved.  Good for gradually
- * accumulating output into a string buffer.
+ * accumulating output into a string buffer. Appends at the end
+ * of the string.
  **/
 char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 {
@@ -1245,7 +1246,52 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 		/* Either the vsnprintf failed or the format resulted in
 		 * no characters being formatted. In the former case, we
 		 * ought to return NULL, in the latter we ought to return
-		 * the original string. Most current callers of this 
+		 * the original string. Most current callers of this
+		 * function expect it to never return NULL.
+		 */
+		return s;
+	}
+
+	s = talloc_realloc(NULL, s, char, s_len + len+1);
+	if (!s) return NULL;
+
+	va_copy(ap2, ap);
+	vsnprintf(s+s_len, len+1, fmt, ap2);
+	va_end(ap2);
+	_talloc_set_name_const(s, s);
+
+	return s;
+}
+
+/**
+ * Realloc @p s to append the formatted result of @p fmt and @p ap,
+ * and return @p s, which may have moved. Always appends at the
+ * end of the talloc'ed buffer, not the end of the string.
+ **/
+char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap)
+{
+	struct talloc_chunk *tc;
+	int len, s_len;
+	va_list ap2;
+	char c;
+
+	if (s == NULL) {
+		return talloc_vasprintf(NULL, fmt, ap);
+	}
+
+	tc = talloc_chunk_from_ptr(s);
+
+	s_len = tc->size - 1;
+
+	va_copy(ap2, ap);
+	len = vsnprintf(&c, 1, fmt, ap2);
+	va_end(ap2);
+
+	if (len <= 0) {
+		/* Either the vsnprintf failed or the format resulted in
+		 * no characters being formatted. In the former case, we
+		 * ought to return NULL, in the latter we ought to return
+		 * the original string. Most current callers of this
 		 * function expect it to never return NULL.
 		 */
 		return s;
@@ -1273,6 +1319,21 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...)
 
 	va_start(ap, fmt);
 	s = talloc_vasprintf_append(s, fmt, ap);
+	va_end(ap);
+	return s;
+}
+
+/*
+  Realloc @p s to append the formatted result of @p fmt and return @p
+  s, which may have moved.  Good for gradually accumulating output
+  into a buffer.
+ */
+char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	s = talloc_vasprintf_append_buffer(s, fmt, ap);
 	va_end(ap);
 	return s;
 }
