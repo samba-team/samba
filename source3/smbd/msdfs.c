@@ -1309,11 +1309,11 @@ BOOL create_msdfs_link(const struct junction_map *jucn,
 			continue;
 		}
 		if (i > 0 && insert_comma) {
-			msdfs_link = talloc_asprintf_append(msdfs_link,
+			msdfs_link = talloc_asprintf_append_buffer(msdfs_link,
 					",%s",
 					refpath);
 		} else {
-			msdfs_link = talloc_asprintf_append(msdfs_link,
+			msdfs_link = talloc_asprintf_append_buffer(msdfs_link,
 					"%s",
 					refpath);
 		}
