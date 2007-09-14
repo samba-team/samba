@@ -21,6 +21,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "system/time.h"
+#include "system/network.h"
 #include "popt.h"
 #include "cmdline.h"
 #include "../include/ctdb.h"
@@ -1418,6 +1419,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	int i, j, ret;
 	struct ctdb_recoverd *rec;
+	struct ctdb_all_public_ips *ips;
 
 	rec = talloc_zero(ctdb, struct ctdb_recoverd);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec);
@@ -1528,7 +1530,34 @@ again:
 		force_election(rec, mem_ctx, pnn, nodemap);
 		goto again;
 	}
-	
+
+	/* verify that the public ip address allocation is consistent */
+	if (ctdb->vnn != NULL) {
+		ret = ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
+		if (ret != 0) {
+			DEBUG(0, ("Unable to get public ips from node %u\n", i));
+			goto again;
+		}
+		for (j=0; j<ips->num; j++) {
+			/* verify that we have the ip addresses we should have
+			   and we dont have ones we shouldnt have.
+			   if we find an inconsistency we set recmode to
+			   active on the local node and wait for the recmaster
+			   to do a full blown recovery
+			*/
+			if (ips->ips[j].pnn == pnn) {
+				if (!ctdb_sys_have_ip(ips->ips[j].sin)) {
+					DEBUG(0,("Public address '%s' is missing and we should serve this ip\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
+					ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+				}
+			} else {
+				if (ctdb_sys_have_ip(ips->ips[j].sin)) {
+					DEBUG(0,("We are still serving a public address '%s' that we should not be serving.\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
+					ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+				}
+			}
+		}
+	}
 
 	/* if we are not the recmaster then we do not need to check
 	   if recovery is needed
