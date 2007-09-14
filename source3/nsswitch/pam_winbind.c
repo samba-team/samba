@@ -440,23 +440,23 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 			       struct winbindd_response *response)
 {
 	/* Fill in request and send down pipe */
-	init_request(request, req_type);
+	winbindd_init_request(request, req_type);
 	
-	if (write_sock(request, sizeof(*request), 0, 0) == -1) {
+	if (winbind_write_sock(request, sizeof(*request), 0, 0) == -1) {
 		_pam_log(pamh, ctrl, LOG_ERR, "pam_winbind_request: write to socket failed!");
-		close_sock();
+		winbind_close_sock();
 		return PAM_SERVICE_ERR;
 	}
 	
 	/* Wait for reply */
-	if (read_reply(response) == -1) {
+	if (winbindd_read_reply(response) == -1) {
 		_pam_log(pamh, ctrl, LOG_ERR, "pam_winbind_request: read from socket failed!");
-		close_sock();
+		winbind_close_sock();
 		return PAM_SERVICE_ERR;
 	}
 
 	/* We are done with the socket - close it and avoid mischeif */
-	close_sock();
+	winbind_close_sock();
 
 	/* Copy reply data from socket */
 	if (response->result == WINBINDD_OK) {
