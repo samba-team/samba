@@ -1,5 +1,5 @@
 #include "winbind_nss_config.h"
-#include "winbindd_nss.h"
+#include "winbind_struct_protocol.h"
 
 void winbindd_init_request(struct winbindd_request *req,int rq_type);
 void winbindd_free_response(struct winbindd_response *response);

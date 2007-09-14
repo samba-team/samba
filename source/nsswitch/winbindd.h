@@ -23,12 +23,10 @@
 #ifndef _WINBINDD_H
 #define _WINBINDD_H
 
-#include "nterr.h"
-
-#include "winbindd_nss.h"
+#include "nsswitch/winbind_struct_protocol.h"
 
 #ifdef HAVE_LIBNSCD
-#include "libnscd.h"
+#include <libnscd.h>
 #endif
 
 #ifdef HAVE_SYS_MMAN_H
