@@ -1,5 +1,5 @@
 #include "nsswitch/winbind_nss_config.h"
-#include "nsswitch/winbindd_nss.h"
+#include "nsswitch/winbind_struct_protocol.h"
 
 void init_request(struct winbindd_request *req,int rq_type);
 NSS_STATUS winbindd_send_request(int req_type,
