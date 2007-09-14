@@ -858,7 +858,7 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	}
 
 	for (domain = domain_list(); domain; domain = domain->next) {
-		if ((buf = talloc_asprintf_append(buf, "%s:%s ", 
+		if ((buf = talloc_asprintf_append_buffer(buf, "%s:%s ", 
 						  domain->name, 
 						  domain->online ?
 						  "Online":"Offline")) == NULL) {
@@ -866,7 +866,7 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	buf = talloc_asprintf_append(buf, "\n");
+	buf = talloc_asprintf_append_buffer(buf, "\n");
 
 	DEBUG(5,("collect_onlinestatus: %s", buf));
 

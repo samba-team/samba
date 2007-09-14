@@ -102,7 +102,7 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 
 	while (next_token(&unix_path, tok, "/", sizeof(tok))) {
 
-		current_dir = talloc_asprintf_append(current_dir, "/%s", tok);
+		current_dir = talloc_asprintf_append_buffer(current_dir, "/%s", tok);
 		NT_STATUS_HAVE_NO_MEMORY(current_dir);
 
 		if ((mkdir(current_dir, 0644)) < 0 && errno != EEXIST) {

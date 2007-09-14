@@ -955,12 +955,12 @@ again:
 
 		bidx = idx;
 		for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
-			filter = talloc_asprintf_append(filter, "(%s=%lu)",
+			filter = talloc_asprintf_append_buffer(filter, "(%s=%lu)",
 					(ids[idx]->xid.type==ID_TYPE_UID)?uidNumber:gidNumber,
 					(unsigned long)ids[idx]->xid.id);
 			CHECK_ALLOC_DONE(filter);
 		}
-		filter = talloc_asprintf_append(filter, "))");
+		filter = talloc_asprintf_append_buffer(filter, "))");
 		CHECK_ALLOC_DONE(filter);
 		DEBUG(10, ("Filter: [%s]\n", filter));
 	} else {
@@ -1185,12 +1185,12 @@ again:
 
 		bidx = idx;
 		for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
-			filter = talloc_asprintf_append(filter, "(%s=%s)",
+			filter = talloc_asprintf_append_buffer(filter, "(%s=%s)",
 					LDAP_ATTRIBUTE_SID,
 					sid_string_static(ids[idx]->sid));
 			CHECK_ALLOC_DONE(filter);
 		}
-		filter = talloc_asprintf_append(filter, "))");
+		filter = talloc_asprintf_append_buffer(filter, "))");
 		CHECK_ALLOC_DONE(filter);
 		DEBUG(10, ("Filter: [%s]", filter));
 	} else {
