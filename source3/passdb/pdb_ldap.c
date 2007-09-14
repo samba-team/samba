@@ -2437,7 +2437,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 				goto done;
 			}
 			
-			filter = talloc_asprintf_append(filter, "(uid=%s)", escape_memberuid);
+			filter = talloc_asprintf_append_buffer(filter, "(uid=%s)", escape_memberuid);
 			if (filter == NULL) {
 				SAFE_FREE(escape_memberuid);
 				ret = NT_STATUS_NO_MEMORY;
@@ -2447,7 +2447,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			SAFE_FREE(escape_memberuid);
 		}
 
-		filter = talloc_asprintf_append(filter, "))");
+		filter = talloc_asprintf_append_buffer(filter, "))");
 		if (filter == NULL) {
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -3726,7 +3726,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	for (i=0; i<num_rids; i++) {
 		DOM_SID sid;
 		sid_compose(&sid, domain_sid, rids[i]);
-		allsids = talloc_asprintf_append(allsids, "(sambaSid=%s)",
+		allsids = talloc_asprintf_append_buffer(allsids, "(sambaSid=%s)",
 						 sid_string_static(&sid));
 		if (allsids == NULL) {
 			goto done;

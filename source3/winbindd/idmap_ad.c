@@ -315,7 +315,7 @@ again:
 							   ATYPE_WORKSTATION_TRUST,
 							   ATYPE_INTERDOMAIN_TRUST);
 			}
-			u_filter = talloc_asprintf_append(u_filter, "(%s=%lu)",
+			u_filter = talloc_asprintf_append_buffer(u_filter, "(%s=%lu)",
 							  ad_schema->posix_uidnumber_attr,
 							  (unsigned long)ids[idx]->xid.id);
 			CHECK_ALLOC_DONE(u_filter);
@@ -329,7 +329,7 @@ again:
 							   ATYPE_SECURITY_GLOBAL_GROUP,
 							   ATYPE_SECURITY_LOCAL_GROUP);
 			}
-			g_filter = talloc_asprintf_append(g_filter, "(%s=%lu)",
+			g_filter = talloc_asprintf_append_buffer(g_filter, "(%s=%lu)",
 							  ad_schema->posix_gidnumber_attr,
 							  (unsigned long)ids[idx]->xid.id);
 			CHECK_ALLOC_DONE(g_filter);
@@ -344,16 +344,16 @@ again:
 	filter = talloc_asprintf(memctx, "(|");
 	CHECK_ALLOC_DONE(filter);
 	if ( u_filter) {
-		filter = talloc_asprintf_append(filter, "%s))", u_filter);
+		filter = talloc_asprintf_append_buffer(filter, "%s))", u_filter);
 		CHECK_ALLOC_DONE(filter);
 			TALLOC_FREE(u_filter);
 	}
 	if ( g_filter) {
-		filter = talloc_asprintf_append(filter, "%s))", g_filter);
+		filter = talloc_asprintf_append_buffer(filter, "%s))", g_filter);
 		CHECK_ALLOC_DONE(filter);
 		TALLOC_FREE(g_filter);
 	}
-	filter = talloc_asprintf_append(filter, ")");
+	filter = talloc_asprintf_append_buffer(filter, ")");
 	CHECK_ALLOC_DONE(filter);
 
 	rc = ads_search_retry(ads, &res, filter, attrs);
@@ -535,12 +535,12 @@ again:
 	for (i = 0; (i < IDMAP_AD_MAX_IDS) && ids[idx]; i++, idx++) {
 
 		sidstr = sid_binstring(ids[idx]->sid);
-		filter = talloc_asprintf_append(filter, "(objectSid=%s)", sidstr);
+		filter = talloc_asprintf_append_buffer(filter, "(objectSid=%s)", sidstr);
 			
 		free(sidstr);
 		CHECK_ALLOC_DONE(filter);
 	}
-	filter = talloc_asprintf_append(filter, "))");
+	filter = talloc_asprintf_append_buffer(filter, "))");
 	CHECK_ALLOC_DONE(filter);
 	DEBUG(10, ("Filter: [%s]\n", filter));
 
