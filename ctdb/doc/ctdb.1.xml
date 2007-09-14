@@ -42,16 +42,16 @@
     <title>OPTIONS</title>
 
     <variablelist>
-      <varlistentry><term>-n &lt;vnn&gt;</term>
+      <varlistentry><term>-n &lt;pnn&gt;</term>
         <listitem>
           <para>
-            This specifies the virtual node number on which to execute the 
+            This specifies the physical node number on which to execute the 
 	    command. Default is to run the command on the deamon running on 
 	    the local host.
 	  </para>
 	  <para>
-	    The virtual node number is an integer that describes the node in the
-	    cluster. The first node has virtual node number 0.
+	    The physical node number is an integer that describes the node in the
+	    cluster. The first node has physical node number 0.
           </para>
         </listitem>
       </varlistentry>
@@ -184,10 +184,10 @@
       <para>Example output:</para>
       <screen format="linespecific">
 Number of nodes:4
-vnn:0 11.1.2.200       OK (THIS NODE)
-vnn:1 11.1.2.201       OK
-vnn:2 11.1.2.202       OK
-vnn:3 11.1.2.203       OK
+pnn:0 11.1.2.200       OK (THIS NODE)
+pnn:1 11.1.2.201       OK
+pnn:2 11.1.2.202       OK
+pnn:3 11.1.2.203       OK
 Generation:1362079228
 Size:4
 hash:0 lmaster:0
