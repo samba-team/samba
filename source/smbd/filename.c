@@ -755,7 +755,8 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
 						name,
 						&unmangled_name,
 						conn->params);
-		if (mangled) {
+		if (!mangled) {
+			/* Name is now unmangled. */
 			name = unmangled_name;
 		}
 	}
