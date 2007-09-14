@@ -334,7 +334,7 @@ _nss_winbind_setpwent(void)
 
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
-		free_response(&getpwent_response);
+		winbindd_free_response(&getpwent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_SETPWENT, NULL, NULL);
@@ -357,7 +357,7 @@ _nss_winbind_endpwent(void)
 
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
-		free_response(&getpwent_response);
+		winbindd_free_response(&getpwent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_ENDPWENT, NULL, NULL);
@@ -392,7 +392,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 	/* Else call winbindd to get a bunch of entries */
 	
 	if (num_pw_cache > 0) {
-		free_response(&getpwent_response);
+		winbindd_free_response(&getpwent_response);
 	}
 
 	ZERO_STRUCT(request);
@@ -444,7 +444,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 		if (ndx_pw_cache == num_pw_cache) {
 			ndx_pw_cache = num_pw_cache = 0;
-			free_response(&getpwent_response);
+			winbindd_free_response(&getpwent_response);
 		}
 	}
 	done:
@@ -509,7 +509,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 		*errnop = errno = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 
 #ifdef DEBUG_NSS
@@ -576,7 +576,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 		*errnop = errno = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getpwnam %s returns %s (%d)\n", getpid(),
@@ -606,7 +606,7 @@ _nss_winbind_setgrent(void)
 
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
-		free_response(&getgrent_response);
+		winbindd_free_response(&getgrent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_SETGRENT, NULL, NULL);
@@ -629,7 +629,7 @@ _nss_winbind_endgrent(void)
 
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
-		free_response(&getgrent_response);
+		winbindd_free_response(&getgrent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_ENDGRENT, NULL, NULL);
@@ -666,7 +666,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 	/* Else call winbindd to get a bunch of entries */
 	
 	if (num_gr_cache > 0) {
-		free_response(&getgrent_response);
+		winbindd_free_response(&getgrent_response);
 	}
 
 	ZERO_STRUCT(request);
@@ -727,7 +727,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 
 		if (ndx_gr_cache == num_gr_cache) {
 			ndx_gr_cache = num_gr_cache = 0;
-			free_response(&getgrent_response);
+			winbindd_free_response(&getgrent_response);
 		}
 	}
 	done:
@@ -815,7 +815,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		*errnop = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrnam %s returns %s (%d)\n", getpid(),
@@ -884,7 +884,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 		*errnop = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrgid %d returns %s (%d)\n", getpid(),
@@ -1032,7 +1032,7 @@ _nss_winbind_getusersids(const char *user_sid, char **group_sids,
 	errno = *errnop = 0;
 	
  done:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1074,7 +1074,7 @@ _nss_winbind_nametosid(const char *name, char **sid, char *buffer,
 	strcpy(*sid, response.data.sid.sid);
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1105,7 +1105,7 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 		}
 
 		sep_char = response.data.info.winbind_separator;
-		free_response(&response);
+		winbindd_free_response(&response);
 	}
 
 
@@ -1138,7 +1138,7 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 	*errnop = errno = 0;
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1237,7 +1237,7 @@ _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
 	strcpy(*sid, response.data.sid.sid);
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1276,6 +1276,6 @@ _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 	strcpy(*sid, response.data.sid.sid);
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }

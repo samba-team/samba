@@ -363,7 +363,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		if (error_string)
 			*error_string = smb_xstrdup("Reading winbind reply failed!");
-		free_response(&response);
+		winbindd_free_response(&response);
 		return nt_status;
 	}
 	
@@ -371,7 +371,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		if (error_string) 
 			*error_string = smb_xstrdup(response.data.auth.error_string);
-		free_response(&response);
+		winbindd_free_response(&response);
 		return nt_status;
 	}
 
@@ -387,12 +387,12 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
 		*unix_name = SMB_STRDUP((char *)response.extra_data.data);
 		if (!*unix_name) {
-			free_response(&response);
+			winbindd_free_response(&response);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	return nt_status;
 }
 
@@ -458,7 +458,7 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		if (error_string)
 			*error_string = smb_xstrdup("Reading winbind reply failed!");
-		free_response(&response);
+		winbindd_free_response(&response);
 		return nt_status;
 	}
 	
@@ -467,11 +467,11 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 	{
 		if (error_string) 
 			*error_string = smb_xstrdup(response.data.auth.error_string);
-		free_response(&response);
+		winbindd_free_response(&response);
 		return nt_status;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	
     return nt_status;
 }
@@ -658,7 +658,7 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	SAFE_FREE(wb_request.extra_data.data);
 
 	if (result != NSS_STATUS_SUCCESS) {
-		free_response(&wb_response);
+		winbindd_free_response(&wb_response);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -667,12 +667,12 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 				wb_response.data.ccache_ntlm_auth.auth_blob_len);
 		if (wb_response.data.ccache_ntlm_auth.auth_blob_len > 0 &&
 				reply->data == NULL) {
-			free_response(&wb_response);
+			winbindd_free_response(&wb_response);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	free_response(&wb_response);
+	winbindd_free_response(&wb_response);
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 

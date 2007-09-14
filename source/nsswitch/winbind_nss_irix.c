@@ -195,7 +195,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 
 	if (status != NSS_STATUS_SUCCESS) {
 		/* free any extra data area in response structure */
-		free_response(&response);
+		winbindd_free_response(&response);
 		nsd_logprintf(NSD_LOG_MIN, 
 			"callback (winbind) returning not found, status = %d\n",
 			status);
@@ -227,7 +227,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			return NSD_ERROR;
 		}
 		
-		free_response(&response);
+		winbindd_free_response(&response);
 		
 		nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
 		nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
@@ -252,7 +252,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	        if (rlen == 0 || result == NULL)
 	            return NSD_ERROR;
 	    
-	        free_response(&response);
+	        winbindd_free_response(&response);
 	    
 	        nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
 	        nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
@@ -279,7 +279,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	        if (rlen == 0 || result == NULL)
 	            return NSD_ERROR;
 	    
-	        free_response(&response);
+	        winbindd_free_response(&response);
 	    
 	        nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
 	        nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
@@ -290,7 +290,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	    case WINBINDD_SETPWENT:
 		nsd_logprintf(NSD_LOG_MIN,
 			"callback (winbind) SETGRENT | SETPWENT\n");
-		free_response(&response);
+		winbindd_free_response(&response);
 		return(do_list(1,rq));
 
 	    case WINBINDD_GETGRENT:
@@ -311,7 +311,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	            gr = (struct winbindd_gr *)response.extra_data.data;
 	            if (! gr ) {
 	                nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
-	                free_response(&response);
+	                winbindd_free_response(&response);
 	                return NSD_ERROR;
 	            }
 	    
@@ -338,7 +338,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	        }
 	    
 	        entries = response.data.num_entries;
-	        free_response(&response);
+	        winbindd_free_response(&response);
 	        if (entries < MAX_GETPWENT_USERS)
 	            return(do_list(2,rq));
 	        else
@@ -360,7 +360,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		    pw = (struct winbindd_pw *)response.extra_data.data;
 		    if (! pw ) {
 			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
-			free_response(&response);
+			winbindd_free_response(&response);
 			return NSD_ERROR;
 		    }
 		    for (i = 0; i < response.data.num_entries; i++) {
@@ -385,7 +385,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		}
 
 		entries = response.data.num_entries;
-		free_response(&response);
+		winbindd_free_response(&response);
 		if (entries < MAX_GETPWENT_USERS)
 		    return(do_list(2,rq));
 		else
@@ -396,11 +396,11 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	    case WINBINDD_ENDPWENT:
 		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) ENDGRENT | ENDPWENT\n");
 		nsd_append_element(rq, NS_SUCCESS, "\n", 1);
-		free_response(&response);
+		winbindd_free_response(&response);
 		return NSD_NEXT;
 
 	    default:
-		free_response(&response);
+		winbindd_free_response(&response);
 		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) invalid command %d\n", (int)rq->f_cmd_data);
 		return NSD_NEXT;
 	}

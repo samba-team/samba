@@ -500,7 +500,7 @@ _nss_winbind_ipnodes_getbyname(nss_backend_t* be, void *args)
 	  ret = parse_response(af, argp, &response);
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -523,7 +523,7 @@ _nss_winbind_hosts_getbyname(nss_backend_t* be, void *args)
 	  ret = parse_response(AF_INET, argp, &response);
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -553,7 +553,7 @@ _nss_winbind_hosts_getbyaddr(nss_backend_t* be, void *args)
 	if( ret == NSS_STATUS_SUCCESS) {
 	  parse_response(argp->key.hostaddr.type, argp, &response);
 	}
-	free_response(&response);
+	winbindd_free_response(&response);
         return ret;
 }
 
