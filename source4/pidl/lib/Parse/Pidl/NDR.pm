@@ -35,7 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
-@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType can_contain_deferred);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -264,7 +264,7 @@ sub GetElementLevelTable($)
 		TYPE => "DATA",
 		DATA_TYPE => $e->{TYPE},
 		IS_DEFERRED => $is_deferred,
-		CONTAINS_DEFERRED => can_contain_deferred($e),
+		CONTAINS_DEFERRED => can_contain_deferred($e->{TYPE}),
 		IS_SURROUNDING => 0 #FIXME
 	});
 
@@ -279,29 +279,25 @@ sub GetElementLevelTable($)
 sub can_contain_deferred($)
 {
 	sub can_contain_deferred($);
-	my $e = shift;
+	my ($type) = @_;
 
-	return 0 if (Parse::Pidl::Typelist::is_scalar($e->{TYPE}));
-	return 1 unless (hasType($e->{TYPE})); # assume the worst
+	return 1 unless (hasType($type)); # assume the worst
 
-	my $type = getType($e->{TYPE});
+	$type = getType($type);
+
+	return 0 if (Parse::Pidl::Typelist::is_scalar($type));
 
 	return 1 if ($type->{TYPE} eq "DECLARE"); # assume the worst
 
 	if ($type->{TYPE} eq "TYPEDEF") {
-		return 0 unless defined($type->{DATA}->{ELEMENTS});
+		return can_contain_deferred($type->{DATA});
+	} 
 
-		foreach my $x (@{$type->{DATA}->{ELEMENTS}}) {
-			return 1 if ($x->{POINTERS});
-			return 1 if (can_contain_deferred ($x));
-		}
-	} else {
-		return 0 unless defined($type->{ELEMENTS});
+	return 0 unless defined($type->{ELEMENTS});
 
-		foreach my $x (@{$type->{ELEMENTS}}) {
-			return 1 if ($x->{POINTERS});
-			return 1 if (can_contain_deferred ($x));
-		}
+	foreach my $x (@{$type->{ELEMENTS}}) {
+		return 1 if ($x->{POINTERS});
+		return 1 if (can_contain_deferred ($x));
 	}
 	
 	return 0;
