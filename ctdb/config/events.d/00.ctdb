@@ -9,7 +9,7 @@
 #     releaseip  : called when an IP address is released
 #     recovered  : called when ctdb has finished a recovery event
 
-. /etc/ctdb/functions
+. $CTDB_BASE/functions
 loadconfig ctdb
 
 # ensure we have /bin and /usr/bin in the path
@@ -21,8 +21,8 @@ shift
 case $cmd in 
      startup)
         # make sure we have a blank state directory for the scripts to work with
-	/bin/rm -rf /etc/ctdb/state
-	/bin/mkdir -p /etc/ctdb/state
+	/bin/rm -rf $CTDB_BASE/state
+	/bin/mkdir -p $CTDB_BASE/state
 
 	# set any tunables from the config file
 	set | grep ^CTDB_SET_ | cut -d_ -f3- | 

@@ -34,7 +34,11 @@ fi
 # Avoid using root's TMPDIR
 unset TMPDIR
 
-. /etc/ctdb/functions
+[ -z "$CTDB_BASE" ] && {
+    export CTDB_BASE="/etc/ctdb"
+}
+
+. $CTDB_BASE/functions
 loadconfig network
 loadconfig ctdb
 
@@ -100,7 +104,7 @@ stop() {
 	    [ $count -gt 10 ] && {
 		echo -n $"killing ctdbd "
 		killall -q -9 ctdbd
-		pkill -9 -f /etc/ctdb/events.d/
+		pkill -9 -f $CTDB_BASE/events.d/
 	    }
 	done
 	case $init_style in

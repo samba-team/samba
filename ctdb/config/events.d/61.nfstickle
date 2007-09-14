@@ -3,7 +3,7 @@
 
 PATH=/bin:/usr/bin:$PATH
 
-. /etc/ctdb/functions
+. $CTDB_BASE/functions
 loadconfig nfs
 
 cmd="$1"
@@ -14,7 +14,7 @@ shift
 
 case $cmd in 
      startup)
-	mkdir -p /etc/ctdb/state/nfstickle
+	mkdir -p $CTDB_BASE/state/nfstickle
 	mkdir -p $NFS_TICKLE_SHARED_DIRECTORY/`hostname`
 	# we rely on fast tcp wait1 recycling
 	echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle

@@ -3,7 +3,7 @@
 
 PATH=/bin:/usr/bin:$PATH
 
-. /etc/ctdb/functions
+. $CTDB_BASE/functions
 loadconfig ctdb
 
 cmd="$1"
@@ -28,7 +28,7 @@ periodic_cleanup() {
 case $cmd in 
      startup)
 	# create the state directory for samba
-	/bin/mkdir -p /etc/ctdb/state/samba
+	/bin/mkdir -p $CTDB_BASE/state/samba
 
 	# wait for all shared directories to become available
 	smb_dirs=`testparm -s 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
@@ -79,13 +79,13 @@ case $cmd in
      monitor)
 	# Create a dummy file to track when we need to do periodic cleanup
 	# of samba databases
-	[ -f /etc/ctdb/state/samba/periodic_cleanup ] || {
-		touch /etc/ctdb/state/samba/periodic_cleanup
+	[ -f $CTDB_BASE/state/samba/periodic_cleanup ] || {
+		touch $CTDB_BASE/state/samba/periodic_cleanup
 	}
-	[ `/usr/bin/find /etc/ctdb/state/samba/periodic_cleanup -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
+	[ `/usr/bin/find $CTDB_BASE/state/samba/periodic_cleanup -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
 		# Cleanup the databases
 	    	periodic_cleanup
-		touch /etc/ctdb/state/samba/periodic_cleanup
+		touch $CTDB_BASE/state/samba/periodic_cleanup
 	}
 
 	testparm -s 2>&1 | egrep '^WARNING|^ERROR|^Unknown' && {

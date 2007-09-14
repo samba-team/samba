@@ -229,6 +229,10 @@ int main(int argc, const char *argv[])
 
 	ctdb->do_setsched = !options.no_setsched;
 
+	/* setup a environment variable for the event scripts to use to find the
+	   installation directory */
+	setenv("CTDB_BASE", ETCDIR "/ctdb", 1);
+
 	/* start the protocol running (as a child) */
 	return ctdb_start_daemon(ctdb, interactive?False:True);
 }
