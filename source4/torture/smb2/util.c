@@ -27,6 +27,8 @@
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
+
+#include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
 
