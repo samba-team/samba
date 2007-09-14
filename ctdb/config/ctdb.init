@@ -92,9 +92,17 @@ start() {
 stop() {
 	echo -n $"Shutting down ctdbd service: "
 	ctdb shutdown
-	sleep 1
-	killall -q -9 ctdbd
 	RETVAL=$?
+	count=0
+	while killall -q -0 ctdbd; do
+	    sleep 1
+	    count=`expr $count + 1`
+	    [ $count -gt 10 ] && {
+		echo -n $"killing ctdbd "
+		killall -q -9 ctdbd
+		pkill -9 -f /etc/ctdb/events.d/
+	    }
+	done
 	case $init_style in
 	    suse)
 		rc_status -v

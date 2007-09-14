@@ -37,6 +37,11 @@ case $cmd in
 	# make sure samba is not already started
 	service smb stop > /dev/null 2>&1
 	service winbind stop > /dev/null 2>&1
+	killall -0 -q smbd winbindd && {
+	    sleep 1
+	    # make absolutely sure samba is dead
+	    killall -q -9 smbd winbindd
+	}
 
 	# start Samba service. Start it reniced, as under very heavy load 
 	# the number of smbd processes will mean that it leaves few cycles for
@@ -45,7 +50,7 @@ case $cmd in
 	nice service smb start
 
 	# wait for the Samba tcp ports to become available
-	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
+	smb_ports=`testparm -s --parameter-name="smb ports" 2> /dev/null`
 	ctdb_wait_tcp_ports "Samba" $smb_ports
 
 	# wait for winbind to be ready
@@ -91,7 +96,7 @@ case $cmd in
 	smb_dirs=`testparm -s 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
 	ctdb_check_directories "Samba" $smb_dirs	
 
-	smb_ports=`testparm -sv 2> /dev/null | egrep '\s*smb ports =' | cut -d= -f2`
+	smb_ports=`testparm -s --parameter-name="smb ports" 2> /dev/null`
 	ctdb_check_tcp_ports "Samba" $smb_ports
 
 	# check winbind is OK
