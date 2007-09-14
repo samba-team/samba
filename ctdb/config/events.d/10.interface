@@ -35,6 +35,7 @@ kill_tcp_connections() {
 	destip=`echo $dest | cut -d: -f1`
 	destport=`echo $dest | cut -d: -f2`
 	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
+	echo "`date` Killing TCP connection $srcip:$srcport $destip:$destport"
 	_killcount=`expr $_killcount + 1`
     done < $connfile
     /bin/rm -f $connfile
@@ -66,6 +67,15 @@ case $cmd in
 	[ -f /proc/sys/net/ipv4/conf/all/arp_filter ] && {
 	    echo 1 > /proc/sys/net/ipv4/conf/all/arp_filter
 	}
+	cat "$CTDB_PUBLIC_ADDRESSES" | cut -d/ -f1 | while read _IP; do
+		_IP_HELD=`/sbin/ip addr show | grep "inet $_IP/"`
+		[ -z "$_IP_HELD" ] || {
+			_IFACE=`echo $_IP_HELD | sed -e "s/.*\s//"`
+			_NM=`echo $_IP_HELD | sed -e "s/.*$_IP\///" -e "s/\s.*//"`
+			echo "`date` Removing public address $_IP/$_NM from device $_IFACE"
+			/sbin/ip addr del $_IP/$_NM dev $_IFACE
+		}
+	done
 	;;
 
 
@@ -124,7 +134,25 @@ case $cmd in
 	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 	/sbin/iptables -I INPUT -i $iface -d $ip -j DROP
 	kill_tcp_connections $ip
+
+	# the ip tool will delete all secondary IPs if this is the primary. To work around
+	# this _very_ annoying behaviour we have to keep a record of the secondaries and re-add
+	# them afterwards. yuck
+	secondaries=""
+	if /sbin/ip addr list dev $iface primary | grep "inet $ip/$maskbits " > /dev/null; then
+	    secondaries=`/sbin/ip addr list dev $iface secondary | grep " inet " | awk '{print $2}'`
+	fi
 	/sbin/ip addr del $ip/$maskbits dev $iface || failed=1
+	[ -z "$secondaries" ] || {
+	    for i in $secondaries; do
+		if /sbin/ip addr list dev $iface | grep "inet $i" > /dev/null; then
+		    echo "`date` kept secondary $i on dev $iface"
+		else 
+		    echo "`date` re-adding secondary address $i to dev $iface"
+		    /sbin/ip addr add $i dev $iface || failed=1		
+		fi
+	    done
+	}
 	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP
 	[ $failed = 0 ] || {
 		 echo "`/bin/date` Failed to del $ip on dev $iface"
