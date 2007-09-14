@@ -220,7 +220,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 						sizeof(pstring) - PTR_DIFF(q, outbuf),
 						True); /* PDC name */
 					q += dos_PutUniCode(q, lp_workgroup(),
-						sizeof(pstring) - (q-outbuf),
+						sizeof(pstring) - PTR_DIFF(q, outbuf),
 						True); /* Domain name*/
 					if (sizeof(pstring) - PTR_DIFF(q, outbuf) < 8) {
 						return;
@@ -525,7 +525,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q += 4; /* unknown */
 					SIVAL(q, 0, 0x00000000);
 					q += 4; /* unknown */
-				}	
+				}
 #endif
 
 				if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
@@ -535,7 +535,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				/* tell the client what version we are */
 				SIVAL(q, 0, ((ntversion < 11) || (SEC_ADS != lp_security())) ? 1 : 13); 
 				/* our ntversion */
-				SSVAL(q, 4, 0xffff); /* our lmnttoken */ 
+				SSVAL(q, 4, 0xffff); /* our lmnttoken */
 				SSVAL(q, 6, 0xffff); /* our lm20token */
 				q += 8;
 
@@ -549,7 +549,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					global_myname(), 0x0,
 					source_name,
 					dgram->source_name.name_type,
-					p->ip, *iface_ip(p->ip), p->port);  
+					p->ip, *iface_ip(p->ip), p->port);
 				break;
 			}
 
