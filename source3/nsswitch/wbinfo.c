@@ -21,8 +21,7 @@
 */
 
 #include "includes.h"
-#include "winbindd.h"
-#include "debug.h"
+#include "winbind_client.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
