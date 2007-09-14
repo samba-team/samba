@@ -278,31 +278,41 @@ done:
  Recursive routine to print out all children of a TREE_NODE
  *************************************************************************/
 
-static void pathtree_print_children( TREE_NODE *node, int debug, const char *path )
+static void pathtree_print_children(TALLOC_CTX *ctx,
+				TREE_NODE *node,
+				int debug,
+				const char *path )
 {
 	int i;
 	int num_children;
-	pstring path2;
-	
+	char *path2 = NULL;
+
 	if ( !node )
 		return;
-	
-	
+
 	if ( node->key )
 		DEBUG(debug,("%s: [%s] (%s)\n", path ? path : "NULL", node->key,
 			node->data_p ? "data" : "NULL" ));
 
-	*path2 = '\0';
-	if ( path )
-		pstrcpy( path2, path );
-	pstrcat( path2, node->key ? node->key : "NULL" );
-	pstrcat( path2, "/" );
-		
-	num_children = node->num_children;
-	for ( i=0; i<num_children; i++ )
-		pathtree_print_children( node->children[i], debug, path2 );
-	
+	if ( path ) {
+		path2 = talloc_strdup(ctx, path);
+		if (!path2) {
+			return;
+		}
+	}
 
+	path2 = talloc_asprintf(ctx,
+			"%s%s/",
+			path ? path : "",
+			node->key ? node->key : "NULL");
+	if (!path2) {
+		return;
+	}
+
+	num_children = node->num_children;
+	for ( i=0; i<num_children; i++ ) {
+		pathtree_print_children(ctx, node->children[i], debug, path2 );
+	}
 }
 
 /**************************************************************************
@@ -313,21 +323,23 @@ static void pathtree_print_children( TREE_NODE *node, int debug, const char *pat
 {
 	int i;
 	int num_children = tree->root->num_children;
-	
+
 	if ( tree->root->key )
 		DEBUG(debug,("ROOT/: [%s] (%s)\n", tree->root->key,
 			tree->root->data_p ? "data" : "NULL" ));
-	
+
 	for ( i=0; i<num_children; i++ ) {
-		pathtree_print_children( tree->root->children[i], debug, 
+		TALLOC_CTX *ctx = talloc_stackframe();
+		pathtree_print_children(ctx, tree->root->children[i], debug,
 			tree->root->key ? tree->root->key : "ROOT/" );
+		TALLOC_FREE(ctx);
 	}
-	
+
 }
 
 /**************************************************************************
  return the data_p for for the node in tree matching the key string
- The key string is the full path.  We must break it apart and walk 
+ The key string is the full path.  We must break it apart and walk
  the tree
  *************************************************************************/
 
