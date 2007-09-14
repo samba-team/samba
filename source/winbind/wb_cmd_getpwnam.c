@@ -25,7 +25,6 @@
 #include "winbind/wb_async_helpers.h"
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
-#include "nsswitch/winbindd_nss.h"
 #include "libnet/libnet_proto.h"
 #include "param/param.h"
 #include "libcli/security/proto.h"

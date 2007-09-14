@@ -22,8 +22,6 @@
 
 #include "includes.h"
 #include "pstring.h"
-#include "winbind_nss_config.h"
-#include "winbindd_nss.h"
 #include "winbind_client.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "libcli/auth/libcli_auth.h"

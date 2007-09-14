@@ -20,8 +20,6 @@
 */
 
 #include "includes.h"
-#include "nsswitch/winbind_nss_config.h"
-#include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
