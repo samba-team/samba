@@ -40,6 +40,47 @@ static int smbconf_fetch_values( const char *key, REGVAL_CTR *val )
 	return regdb_ops.fetch_values(key, val);
 }
 
+static WERROR regval_hilvl_to_lolvl(TALLOC_CTX *mem_ctx, const char *valname,
+				    struct registry_value *src,
+				    REGISTRY_VALUE **dst)
+{
+	WERROR err;
+	DATA_BLOB value_data;
+	REGISTRY_VALUE *newval = NULL;
+
+	if (dst == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	err = registry_push_value(mem_ctx, src, &value_data);
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(10, ("error calling registry_push_value.\n"));
+		return err;
+	}
+
+	newval = regval_compose(mem_ctx, valname, src->type,
+				(char *)value_data.data, value_data.length);
+	if (newval == NULL) {
+		DEBUG(10, ("error composing registry value. (no memory?)\n"));
+		return WERR_NOMEM;
+	}
+
+	*dst = newval;
+	return WERR_OK;
+}
+
+static WERROR regval_lolvl_to_hilvl(TALLOC_CTX *mem_ctx, REGISTRY_VALUE *src,
+				    struct registry_value **dst)
+{
+	if (dst == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	return registry_pull_value(mem_ctx, dst, regval_type(src),
+				   regval_data_p(src), regval_size(src),
+				   regval_size(src));
+}
+
 /*
  * Utility function used by smbconf_store_values to canonicalize
  * a registry value.
@@ -55,7 +96,6 @@ static REGISTRY_VALUE *smbconf_canonicalize_regval(TALLOC_CTX *mem_ctx,
 	BOOL inverse;
 	struct registry_value *value;
 	WERROR err;
-	DATA_BLOB value_data;
 	TALLOC_CTX *tmp_ctx;
 	REGISTRY_VALUE *newval = NULL;
 
@@ -71,9 +111,7 @@ static REGISTRY_VALUE *smbconf_canonicalize_regval(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	err = registry_pull_value(tmp_ctx, &value, regval_type(theval),
-				  regval_data_p(theval), regval_size(theval),
-				  regval_size(theval));
+	err = regval_lolvl_to_hilvl(tmp_ctx, theval, &value);
 	if (!W_ERROR_IS_OK(err)) {
 		goto done;
 	}
@@ -111,16 +149,9 @@ static REGISTRY_VALUE *smbconf_canonicalize_regval(TALLOC_CTX *mem_ctx,
 	value->v.sz.str = CONST_DISCARD(char *, canon_valstr);
 	value->v.sz.len = strlen(canon_valstr) + 1;
 
-	err = registry_push_value(tmp_ctx, value, &value_data);
+	err = regval_hilvl_to_lolvl(mem_ctx, canon_valname, value, &newval);
 	if (!W_ERROR_IS_OK(err)) {
-		DEBUG(10, ("error calling registry_push_value.\n"));
-		goto done;
-	}
-
-	newval = regval_compose(mem_ctx, canon_valname, value->type,
-				(char *)value_data.data, value_data.length);
-	if (newval == NULL) {
-		DEBUG(10, ("error composing registry value. (no memory?)\n"));
+		DEBUG(10, ("error calling regval_hilvl_to_lolvl.\n"));
 		goto done;
 	}
 
