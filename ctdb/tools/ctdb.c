@@ -25,7 +25,6 @@
 #include "cmdline.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
-#include "../common/rb_tree.h"
 
 static void usage(void);
 
@@ -521,73 +520,26 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
-static void *store_ip(void *p, void *d)
-{
-	return p;
-}
-static void print_ip(void *param, void *data)
-{
-	struct ctdb_public_ip *ip = (struct ctdb_public_ip *)data;
-
-	if(options.machinereadable){
-		printf(":%s:%d:\n", inet_ntoa(ip->sin.sin_addr), ip->pnn);
-	} else {
-		printf("%-16s %d\n", inet_ntoa(ip->sin.sin_addr), ip->pnn);
-	}
-}
-
 /*
   display public ip status
  */
 static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, j, ret;
+	int i, ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	trbt_tree_t *tree;
-	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_all_public_ips *ips;
-	struct ctdb_public_ip *ip;
 
-
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &nodemap);
+	/* read the public ip list from this node */
+	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get nodemap from node %u\n", options.pnn));
+		DEBUG(0, ("Unable to get public ips from node %u\n", i));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	/* create a tree to store the public addresses in indexed by s_addr */
-	tree = trbt_create(tmp_ctx, 0);
-	CTDB_NO_MEMORY(ctdb, tree);
-
-	for (i=0;i<nodemap->num;i++) {
-		/* dont read the public ip list from disconnected nodes */
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-
-		/* read the public ip list from this node */
-		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), i, tmp_ctx, &ips);
-		if (ret != 0) {
-			DEBUG(0, ("Unable to get public ips from node %u\n", i));
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-
-
-		/* store the public ip */
-		for(j=0;j<ips->num;j++){
-			ip = talloc_memdup(tmp_ctx, &ips->ips[j], sizeof(struct ctdb_public_ip));
-			/* ntohl() so that we sort by the first octet */
-			trbt_insert32_callback(tree, ntohl(ips->ips[j].sin.sin_addr.s_addr), store_ip, ip);
-		}
+	for (i=0;i<ips->num;i++) {
+		printf("%s %d\n", inet_ntoa(ips->ips[i].sin.sin_addr), ips->ips[i].pnn);
 	}
-
-	/* traverse the tree and read back all the public ips one by one */
-	if(options.machinereadable){
-		printf(":Public IP:Node:\n");
-	}
-	trbt_traversearray32(tree, 1, print_ip, NULL);
 
 	talloc_free(tmp_ctx);
 	return 0;
