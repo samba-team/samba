@@ -4876,7 +4876,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
-		rel_name = talloc_asprintf_append(ctx,
+		rel_name = talloc_asprintf_append(rel_name,
 				"%s",
 				link_target);
 		if (!rel_name) {
