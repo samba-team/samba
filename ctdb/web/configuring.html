@@ -83,17 +83,15 @@ The default for this file is /etc/ctdb/nodes.
 
 <h3>CTDB_PUBLIC_ADDRESSES</h3>
 
-This file specifies a list of public ip addresses which the cluster will 
-serve. This file must be the same on all nodes.<p>
+Each node in a CTDB cluster contains a list of public addresses which that 
+particular node can host.<p>
 
+While running the CTDB cluster will assign each public address that exists in the entire cluster to one node that will host that public address.<p>
 
 These are the addresses that the SMBD daemons and other services will
-bind to and which clients will use to connect to the cluster. This
-file must contain one address for each node, i.e. it must have the
-same number of entries as the nodes file. This file must also be the
-same for all nodes in the cluster.<p>
+bind to and which clients will use to connect to the cluster.<p>
 
-Example 4 node cluster:
+<h3>Example 4 node cluster:</h3>
 <pre>
   CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 </pre>
@@ -118,8 +116,7 @@ The CTDB cluster utilizes IP takeover techniques to ensure that as long as at le
 This means that if one physical node fails, the public addresses that
 node was serving will be taken over by a different node in the cluster. This
 provides a guarantee that all ip addresses exposed to clients will
-always be reachable by clients even if a node has been powered off or
-has crashed.<p>
+always be reachable by clients as long as at least one node still remains available in the cluster with the capability to host that public address (i.e. the public address exists in that nodes public_addresses file).
 
 Do not assign these addresses to any of the interfaces on the
 host. CTDB will add and remove these addresses automatically at
@@ -127,7 +124,35 @@ runtime.<p>
 
 This parameter is used when CTDB operated in takeover ip mode.<p>
 
-The usual location for this file is /etc/ctdb/public_addresses.
+The usual location for this file is /etc/ctdb/public_addresses.<p><p>
+
+<h3>Example 2:</h3>
+By using different public_addresses files on different nodes it is possible to 
+partition the cluster into subsets of nodes.
+
+<pre>
+Node 0 : /etc/ctdb/public_addresses
+10.1.1.1/24 eth0
+10.1.2.1/24 eth1
+</pre>
+
+<pre>
+Node 1 : /etc/ctdb/public_addresses
+10.1.2.1/24 eth1
+10.1.3.1/24 eth2
+</pre>
+
+<pre>
+Node 2 : /etc/ctdb/public_addresses
+10.1.3.2/24 eth2
+</pre>
+
+In this example we have three nodes but a total of 4 public addresses.<p>
+
+10.1.2.1 can be hosted by either node 0 or node 1 and will be available to clients as long as at least one of these nodes are available. Only if both nodes 0 and 1 fails will this public address become unavailable to clients.<p>
+
+All other public addresses can only be served by one single node respectively and will therefore only be avialable if the respective node is also available.
+
 
 <h2>Event scripts</h2>
 
