@@ -252,7 +252,7 @@ static void userdomgroups_recv_groups(struct composite_context *ctx)
 	}
 
 	for (i=0; i<num_sids; i++) {
-		sids_string = talloc_asprintf_append(
+		sids_string = talloc_asprintf_append_buffer(
 			sids_string, "%s\n", dom_sid_string(s3call, sids[i]));
 	}
 
@@ -319,7 +319,7 @@ static void usersids_recv_sids(struct composite_context *ctx)
 	}
 
 	for (i=0; i<num_sids; i++) {
-		sids_string = talloc_asprintf_append(
+		sids_string = talloc_asprintf_append_buffer(
 			sids_string, "%s\n", dom_sid_string(s3call, sids[i]));
 		if (sids_string == NULL) {
 			status = NT_STATUS_NO_MEMORY;
@@ -620,7 +620,7 @@ static void list_trustdom_recv_doms(struct composite_context *ctx)
 	}
 
 	for (i=0; i<num_domains; i++) {
-		result = talloc_asprintf_append(
+		result = talloc_asprintf_append_buffer(
 			result, "%s\\%s\\%s",
 			domains[i]->name, domains[i]->name,
 			dom_sid_string(s3call, domains[i]->sid));

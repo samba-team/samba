@@ -111,7 +111,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const
 		NT_STATUS_NOT_OK_RETURN(status);
 		if (component == NULL) break;
 		if (name) {
-			name = talloc_asprintf_append(name, ".%s", component);
+			name = talloc_asprintf_append_buffer(name, ".%s", component);
 			NT_STATUS_HAVE_NO_MEMORY(name);
 		} else {
 			name = (char *)component;

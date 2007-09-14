@@ -507,7 +507,7 @@ static void do_list_helper(struct clilist_file_info *f, const char *mask, void *
 			p = strrchr_m(mask2,'\\');
 			if (!p) return;
 			p[1] = 0;
-			mask2 = talloc_asprintf_append(mask2, "%s\\*", f->name);
+			mask2 = talloc_asprintf_append_buffer(mask2, "%s\\*", f->name);
 			add_to_do_list_queue(mask2);
 		}
 		return;
@@ -861,7 +861,7 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 	/* handle directories */
 	saved_curdir = talloc_strdup(NULL, ctx->remote_cur_dir);
 
-	ctx->remote_cur_dir = talloc_asprintf_append(NULL, "%s\\", finfo->name);
+	ctx->remote_cur_dir = talloc_asprintf_append_buffer(NULL, "%s\\", finfo->name);
 
 	string_replace(discard_const_p(char, finfo->name), '\\', '/');
 	if (ctx->lowercase) {

@@ -1645,7 +1645,7 @@ static const char *bit_string(TALLOC_CTX *mem_ctx, const struct bit_value *bv, i
 			if (ret == NULL) {
 				ret = talloc_asprintf(mem_ctx, "%s", bv[i].name);
 			} else {
-				ret = talloc_asprintf_append(ret, " | %s", bv[i].name);
+				ret = talloc_asprintf_append_buffer(ret, " | %s", bv[i].name);
 			}
 		}
 	}

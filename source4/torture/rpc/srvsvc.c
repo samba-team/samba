@@ -938,7 +938,7 @@ again:
 			}
 
 			if (!W_ERROR_IS_OK(r.out.result)) {
-				invalidc = talloc_asprintf_append(invalidc, "%c", (char)n);
+				invalidc = talloc_asprintf_append_buffer(invalidc, "%c", (char)n);
 			}
 
 			talloc_free(name);

@@ -536,26 +536,26 @@ struct cldap_request *cldap_netlogon_send(struct cldap_socket *cldap,
 				 ldap_encode_ndr_uint32(tmp_ctx, io->in.version));
 	if (filter == NULL) goto failed;
 	if (io->in.user) {
-		filter = talloc_asprintf_append(filter, "(User=%s)", io->in.user);
+		filter = talloc_asprintf_append_buffer(filter, "(User=%s)", io->in.user);
 		if (filter == NULL) goto failed;
 	}
 	if (io->in.host) {
-		filter = talloc_asprintf_append(filter, "(Host=%s)", io->in.host);
+		filter = talloc_asprintf_append_buffer(filter, "(Host=%s)", io->in.host);
 		if (filter == NULL) goto failed;
 	}
 	if (io->in.realm) {
-		filter = talloc_asprintf_append(filter, "(DnsDomain=%s)", io->in.realm);
+		filter = talloc_asprintf_append_buffer(filter, "(DnsDomain=%s)", io->in.realm);
 		if (filter == NULL) goto failed;
 	}
 	if (io->in.acct_control != -1) {
-		filter = talloc_asprintf_append(filter, "(AAC=%s)", 
+		filter = talloc_asprintf_append_buffer(filter, "(AAC=%s)", 
 						ldap_encode_ndr_uint32(tmp_ctx, io->in.acct_control));
 		if (filter == NULL) goto failed;
 	}
 	if (io->in.domain_sid) {
 		struct dom_sid *sid = dom_sid_parse_talloc(tmp_ctx, io->in.domain_sid);
 		if (sid == NULL) goto failed;
-		filter = talloc_asprintf_append(filter, "(domainSid=%s)",
+		filter = talloc_asprintf_append_buffer(filter, "(domainSid=%s)",
 						ldap_encode_ndr_dom_sid(tmp_ctx, sid));
 		if (filter == NULL) goto failed;
 	}
@@ -564,11 +564,11 @@ struct cldap_request *cldap_netlogon_send(struct cldap_socket *cldap,
 		NTSTATUS status;
 		status = GUID_from_string(io->in.domain_guid, &guid);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
-		filter = talloc_asprintf_append(filter, "(DomainGuid=%s)",
+		filter = talloc_asprintf_append_buffer(filter, "(DomainGuid=%s)",
 						ldap_encode_ndr_GUID(tmp_ctx, &guid));
 		if (filter == NULL) goto failed;
 	}
-	filter = talloc_asprintf_append(filter, ")");
+	filter = talloc_asprintf_append_buffer(filter, ")");
 	if (filter == NULL) goto failed;
 
 	search.in.dest_address = io->in.dest_address;

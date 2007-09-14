@@ -200,15 +200,15 @@ _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format,
 	int i;
 
 	for (i=0;i<ndr->depth;i++) {
-		ndr->private_data = talloc_asprintf_append(
+		ndr->private_data = talloc_asprintf_append_buffer(
 					(char *)ndr->private_data, "    ");
 	}
 
 	va_start(ap, format);
-	ndr->private_data = talloc_vasprintf_append((char *)ndr->private_data, 
+	ndr->private_data = talloc_vasprintf_append_buffer((char *)ndr->private_data, 
 						    format, ap);
 	va_end(ap);
-	ndr->private_data = talloc_asprintf_append((char *)ndr->private_data, 
+	ndr->private_data = talloc_asprintf_append_buffer((char *)ndr->private_data, 
 						   "\n");
 }
 

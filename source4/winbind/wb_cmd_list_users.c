@@ -143,7 +143,7 @@ static void cmd_list_users_recv_user_list(struct composite_context *ctx)
 
 	for (i = 0; i < user_list->out.count; ++i) {
 		DEBUG(5, ("Appending user '%s'\n", user_list->out.users[i].username));
-		state->result = talloc_asprintf_append(state->result, "%s,",
+		state->result = talloc_asprintf_append_buffer(state->result, "%s,",
 					user_list->out.users[i].username);
 	}
 

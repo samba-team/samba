@@ -192,13 +192,13 @@ static struct torture_tcase *add_test(struct torture_suite *suite, uint32_t bind
 	else
 		name = talloc_strdup(suite, "unknown");
 
-	name = talloc_asprintf_append(name, " keyexchange:%s", keyexchange?"yes":"no");
+	name = talloc_asprintf_append_buffer(name, " keyexchange:%s", keyexchange?"yes":"no");
 	settings->keyexchange = keyexchange;
 
-	name = talloc_asprintf_append(name, " ntlm2:%s", ntlm2?"yes":"no");
+	name = talloc_asprintf_append_buffer(name, " ntlm2:%s", ntlm2?"yes":"no");
 	settings->ntlm2 = ntlm2;
 
-	name = talloc_asprintf_append(name, " lm_key:%s", lm_key?"yes":"no");
+	name = talloc_asprintf_append_buffer(name, " lm_key:%s", lm_key?"yes":"no");
 	settings->lm_key = lm_key;
 
 	return torture_suite_add_simple_tcase(suite, name, test_secrets, settings);

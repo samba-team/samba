@@ -82,7 +82,7 @@ static void http_output_headers(struct websrv_context *web)
 			    web->output.response_code, response_string);
 	if (s == NULL) return;
 	for (i=0;web->output.headers[i];i++) {
-		s = talloc_asprintf_append(s, "%s\r\n", web->output.headers[i]);
+		s = talloc_asprintf_append_buffer(s, "%s\r\n", web->output.headers[i]);
 	}
 
 	/* work out the content length */
@@ -92,7 +92,7 @@ static void http_output_headers(struct websrv_context *web)
 		fstat(web->output.fd, &st);
 		content_length += st.st_size;
 	}
-	s = talloc_asprintf_append(s, "Content-Length: %u\r\n\r\n", content_length);
+	s = talloc_asprintf_append_buffer(s, "Content-Length: %u\r\n\r\n", content_length);
 	if (s == NULL) return;
 
 	b = web->output.content;
@@ -125,7 +125,7 @@ static const char *http_local_path(struct websrv_context *web,
 	if (path == NULL) return NULL;
 
 	if (directory_exist(path)) {
-		path = talloc_asprintf_append(path, "/index.esp");
+		path = talloc_asprintf_append_buffer(path, "/index.esp");
 	}
 	return path;
 }

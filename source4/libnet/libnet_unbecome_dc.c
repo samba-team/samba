@@ -698,7 +698,7 @@ struct composite_context *libnet_UnbecomeDC_send(struct libnet_context *ctx, TAL
 	/* Destination DSA dns_name construction */
 	tmp_name		= strlower_talloc(s, s->dest_dsa.netbios_name);
 	if (composite_nomem(tmp_name, c)) return c;
-	s->dest_dsa.dns_name	= talloc_asprintf_append(tmp_name, ".%s",
+	s->dest_dsa.dns_name	= talloc_asprintf_append_buffer(tmp_name, ".%s",
 				  			 s->domain.dns_name);
 	if (composite_nomem(s->dest_dsa.dns_name, c)) return c;
 
