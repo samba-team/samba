@@ -11,15 +11,6 @@
    products. You do not need to give any attribution.  
 */
 
-
-#ifndef CONST_DISCARD
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#endif
-
-#ifndef CONST_ADD
-#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
-#endif
-
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
 #endif
@@ -36,28 +27,28 @@
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
 #endif
 
+/*
+ * when compiled with socket_wrapper support
+ * the location of the WINBINDD_SOCKET_DIR
+ * can be overwritten via an environment variable
+ */
+#define WINBINDD_SOCKET_DIR_ENVVAR "WINBINDD_SOCKET_DIR"
+
 #define WINBINDD_PRIV_SOCKET_SUBDIR "winbindd_privileged" /* name of subdirectory of lp_lockdir() to hold the 'privileged' pipe */
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
-
-#ifdef SOCKET_WRAPPER
-#define WINBINDD_SOCKET_DIR_ENV "WINBINDD_SOCKET_DIR"
-#endif
+#define WINBINDD_LOCATOR_KDC_ADDRESS "WINBINDD_LOCATOR_KDC_ADDRESS"
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 18
+#define WINBIND_INTERFACE_VERSION 19
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
    between /lib/libnss_winbind.so.2 and /li64/libnss_winbind.so.2.
    The easiest way to do this is to always use 8byte values for time_t. */
 
-#if defined(int64)
-#  define SMB_TIME_T int64
-#else
-#  define SMB_TIME_T time_t
-#endif
+#define SMB_TIME_T int64_t
 
 /* Socket commands */
 
@@ -104,7 +95,7 @@ enum winbindd_cmd {
 
 	/* Lookup functions */
 
-	WINBINDD_SID_TO_UID,
+	WINBINDD_SID_TO_UID,       
 	WINBINDD_SID_TO_GID,
 	WINBINDD_SIDS_TO_XIDS,
 	WINBINDD_UID_TO_SID,
@@ -127,6 +118,7 @@ enum winbindd_cmd {
 	WINBINDD_DOMAIN_INFO,	/* Most of what we know from
 				   struct winbindd_domain */
 	WINBINDD_GETDCNAME,	/* Issue a GetDCName Request */
+	WINBINDD_DSGETDCNAME,	/* Issue a DsGetDCName Request */
 
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
@@ -194,30 +186,31 @@ typedef struct winbindd_gr {
 	fstring gr_name;
 	fstring gr_passwd;
 	gid_t gr_gid;
-	uint32 num_gr_mem;
-	uint32 gr_mem_ofs;   /* offset to group membership */
+	uint32_t num_gr_mem;
+	uint32_t gr_mem_ofs;   /* offset to group membership */
 } WINBINDD_GR;
 
+/* PAM specific request flags */
+#define WBFLAG_PAM_INFO3_NDR		0x00000001
+#define WBFLAG_PAM_INFO3_TEXT		0x00000002
+#define WBFLAG_PAM_USER_SESSION_KEY	0x00000004
+#define WBFLAG_PAM_LMKEY		0x00000008
+#define WBFLAG_PAM_CONTACT_TRUSTDOM	0x00000010
+#define WBFLAG_PAM_UNIX_NAME		0x00000080
+#define WBFLAG_PAM_AFS_TOKEN		0x00000100
+#define WBFLAG_PAM_NT_STATUS_SQUASH	0x00000200
+#define WBFLAG_PAM_KRB5			0x00001000
+#define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x00002000
+#define WBFLAG_PAM_CACHED_LOGIN		0x00004000
+#define WBFLAG_PAM_GET_PWD_POLICY	0x00008000	/* not used */
 
-#define WBFLAG_PAM_INFO3_NDR  		0x0001
-#define WBFLAG_PAM_INFO3_TEXT 		0x0002
-#define WBFLAG_PAM_USER_SESSION_KEY     0x0004
-#define WBFLAG_PAM_LMKEY      		0x0008
-#define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
-#define WBFLAG_QUERY_ONLY		0x0020
-#define WBFLAG_PAM_UNIX_NAME            0x0080
-#define WBFLAG_PAM_AFS_TOKEN            0x0100
-#define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
-
+/* generic request flags */
+#define WBFLAG_QUERY_ONLY		0x00000020	/* not used */
 /* This is a flag that can only be sent from parent to child */
-#define WBFLAG_IS_PRIVILEGED            0x0400
+#define WBFLAG_IS_PRIVILEGED		0x00000400	/* not used */
 /* Flag to say this is a winbindd internal send - don't recurse. */
-#define WBFLAG_RECURSE			0x0800
+#define WBFLAG_RECURSE			0x00000800
 
-#define WBFLAG_PAM_KRB5			0x1000
-#define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x2000
-#define WBFLAG_PAM_CACHED_LOGIN		0x4000
-#define WBFLAG_PAM_GET_PWD_POLICY	0x8000	/* not used */
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
@@ -232,12 +225,13 @@ typedef struct winbindd_gr {
  ******************************************************************************/
 
 struct winbindd_request {
-	uint32 length;
+	uint32_t length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	enum winbindd_cmd original_cmd;   /* Original Winbindd command
 					     issued to parent process */
 	pid_t pid;               /* pid of calling process */
-	uint32 flags;            /* flags relavant to a given request */
+	uint32_t wb_flags;       /* generic flags */
+	uint32_t flags;          /* flags relevant *only* to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
 
 	union {
@@ -257,14 +251,14 @@ struct winbindd_request {
 			uid_t uid;
 		} auth;              /* pam_winbind auth module */
                 struct {
-                        unsigned char chal[8];
-			uint32 logon_parameters;
+                        uint8_t chal[8];
+			uint32_t logon_parameters;
                         fstring user;
                         fstring domain;
                         fstring lm_resp;
-                        uint32 lm_resp_len;
+                        uint32_t lm_resp_len;
                         fstring nt_resp;
-                        uint32 nt_resp_len;
+                        uint32_t nt_resp_len;
 			fstring workstation;
 		        fstring require_membership_of_sid;
                 } auth_crap;
@@ -276,14 +270,14 @@ struct winbindd_request {
 		struct {
 			fstring user;
 			fstring domain;
-			unsigned char new_nt_pswd[516];
-			uint16	new_nt_pswd_len;
-			unsigned char old_nt_hash_enc[16];
-			uint16 	old_nt_hash_enc_len;
-			unsigned char new_lm_pswd[516];
-			uint16	new_lm_pswd_len;
-			unsigned char old_lm_hash_enc[16];
-			uint16	old_lm_hash_enc_len;
+			uint8_t new_nt_pswd[516];
+			uint16_t new_nt_pswd_len;
+			uint8_t old_nt_hash_enc[16];
+			uint16_t old_nt_hash_enc_len;
+			uint8_t new_lm_pswd[516];
+			uint16_t new_lm_pswd_len;
+			uint8_t old_lm_hash_enc[16];
+			uint16_t old_lm_hash_enc_len;
 		} chng_pswd_auth_crap;/* pam_winbind passwd module */
 		struct {
 			fstring user;
@@ -295,7 +289,7 @@ struct winbindd_request {
 			fstring dom_name;       /* lookupname */
 			fstring name;       
 		} name;
-		uint32 num_entries;  /* getpwent, getgrent */
+		uint32_t num_entries;  /* getpwent, getgrent */
 		struct {
 			fstring username;
 			fstring groupname;
@@ -310,8 +304,8 @@ struct winbindd_request {
 		} dual_sid2id;
 		struct {
 			fstring sid;
-			uint32 type;
-			uint32 id;
+			uint32_t type;
+			uint32_t id;
 		} dual_idmapset;
 		bool list_all_domains;
 
@@ -324,8 +318,8 @@ struct winbindd_request {
 			   produce an actual challenge response. It merely
 			   succeeds if there are cached credentials available
 			   that could be used. */
-			uint32 initial_blob_len; /* blobs in extra_data */
-			uint32 challenge_blob_len;
+			uint32_t initial_blob_len; /* blobs in extra_data */
+			uint32_t challenge_blob_len;
 		} ccache_ntlm_auth;
 
 		/* padding -- needed to fix alignment between 32bit and 64bit libs.
@@ -338,7 +332,7 @@ struct winbindd_request {
 		SMB_TIME_T padding;
 		char *data;
 	} extra_data;
-	uint32 extra_len;
+	uint32_t extra_len;
 	char null_term;
 };
 
@@ -364,7 +358,7 @@ struct winbindd_response {
     
 	/* Header information */
 
-	uint32 length;                        /* Length of response */
+	uint32_t length;                      /* Length of response */
 	enum winbindd_result result;          /* Result code */
 
 	/* Fixed length return data */
@@ -382,14 +376,14 @@ struct winbindd_response {
 
 		struct winbindd_gr gr;
 
-		uint32 num_entries; /* getpwent, getgrent */
+		uint32_t num_entries; /* getpwent, getgrent */
 		struct winbindd_sid {
 			fstring sid;        /* lookupname, [ug]id_to_sid */
 			int type;
 		} sid;
 		struct winbindd_name {
 			fstring dom_name;       /* lookupsid */
-			fstring name;
+			fstring name;       
 			int type;
 		} name;
 		uid_t uid;          /* sid_to_uid */
@@ -403,20 +397,20 @@ struct winbindd_response {
 		fstring dc_name;
 
 		struct auth_reply {
-			uint32 nt_status;
+			uint32_t nt_status;
 			fstring nt_status_string;
 			fstring error_string;
 			int pam_error;
 			char user_session_key[16];
 			char first_8_lm_hash[8];
 			fstring krb5ccname;
-			uint32 reject_reason;
-			uint32 padding;
+			uint32_t reject_reason;
+			uint32_t padding;
 			struct policy_settings {
-				uint32 min_length_password;
-				uint32 password_history;
-				uint32 password_properties;
-				uint32 padding;
+				uint32_t min_length_password;
+				uint32_t password_history;
+				uint32_t password_properties;
+				uint32_t padding;
 				SMB_TIME_T expire;
 				SMB_TIME_T min_passwordage;
 			} policy;
@@ -427,14 +421,14 @@ struct winbindd_response {
 				SMB_TIME_T pass_last_set_time;
 				SMB_TIME_T pass_can_change_time;
 				SMB_TIME_T pass_must_change_time;
-				uint32 logon_count;
-				uint32 bad_pw_count;
-				uint32 user_rid;
-				uint32 group_rid;
-				uint32 num_groups;
-				uint32 user_flgs;
-				uint32 acct_flags;
-				uint32 num_other_sids;
+				uint32_t logon_count;
+				uint32_t bad_pw_count;
+				uint32_t user_rid;
+				uint32_t group_rid;
+				uint32_t num_groups;
+				uint32_t user_flgs;
+				uint32_t acct_flags;
+				uint32_t num_other_sids;
 				fstring dom_sid;
 				fstring user_name;
 				fstring full_name;
@@ -453,18 +447,18 @@ struct winbindd_response {
 			bool native_mode;
 			bool active_directory;
 			bool primary;
-			uint32 sequence_number;
+			uint32_t sequence_number;
 		} domain_info;
 		struct {
 			fstring acct_name;
 			fstring full_name;
 			fstring homedir;
 			fstring shell;
-			uint32 primary_gid;			
-			uint32 group_rid;
+			uint32_t primary_gid;
+			uint32_t group_rid;
 		} user_info;
 		struct {
-			uint32 auth_blob_len; /* blob in extra_data */
+			uint32_t auth_blob_len; /* blob in extra_data */
 		} ccache_ntlm_auth;
 	} data;
 
@@ -482,8 +476,8 @@ struct WINBINDD_MEMORY_CREDS {
 	uid_t uid;
 	int ref_count;
 	size_t len;
-	unsigned char *nt_hash; /* Base pointer for the following 2 */
-	unsigned char *lm_hash;
+	uint8_t *nt_hash; /* Base pointer for the following 2 */
+	uint8_t *lm_hash;
 	char *pass;
 };
 
