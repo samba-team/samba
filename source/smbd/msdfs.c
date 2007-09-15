@@ -1549,7 +1549,7 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
 {
 	struct junction_map *jn = NULL;
 	int i=0;
-	size_t jn_count;
+	size_t jn_count = 0;
 	int sharecount = 0;
 
 	*p_num_jn = 0;

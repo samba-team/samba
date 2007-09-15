@@ -1493,7 +1493,7 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 			/* Have we got space to append the '\0' ? */
 			if (size <= dest_len) {
 				/* No, realloc. */
-				dest = TALLOC_REALLOC(ctx, dest,
+				dest = TALLOC_REALLOC_ARRAY(ctx, dest, char,
 						dest_len+1);
 				if (!dest) {
 					/* talloc fail. */

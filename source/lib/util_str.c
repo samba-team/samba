@@ -995,7 +995,7 @@ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 	/* We know a token can't be larger
 	 * than the entire list. */
 
-	tok = SMB_MALLOC(bufsize+1);
+	tok = SMB_MALLOC_ARRAY(char, bufsize+1);
 	if (!tok) {
 		return False;
 	}
