@@ -634,7 +634,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		 */
 
 		dir_name_len = strlen(dir_fsp->fsp_name);
-		fname = TALLOC_SIZE(ctx, dir_name_len+2);
+		fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
 		if (!fname) {
 			reply_nterror(
 				req, NT_STATUS_NO_MEMORY);
@@ -1392,7 +1392,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		 */
 
 		dir_name_len = strlen(dir_fsp->fsp_name);
-		fname = TALLOC_SIZE(ctx, dir_name_len+2);
+		fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
 		if (!fname) {
 			reply_nterror(
 				req, NT_STATUS_NO_MEMORY);

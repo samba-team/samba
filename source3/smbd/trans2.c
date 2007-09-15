@@ -4209,7 +4209,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
-				char *buffer = TALLOC_SIZE(ctx, 1024);
+				char *buffer = TALLOC_ARRAY(ctx, char, 1024);
 
 				if (!buffer) {
 					reply_nterror(req, NT_STATUS_NO_MEMORY);
