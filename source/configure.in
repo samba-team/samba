@@ -702,6 +702,10 @@ UNAME_P=`(uname -p) 2>/dev/null` || UNAME_P="unknown"
 AC_MSG_CHECKING(uname -p)
 AC_MSG_RESULT(${UNAME_P})
 
+UNAME_I=`(uname -i) 2>/dev/null` || UNAME_I="unknown"
+AC_MSG_CHECKING(uname -i)
+AC_MSG_RESULT(${UNAME_I})
+
 dnl Add #include for broken IRIX header files
   case "$host_os" in
 	*irix6*)
@@ -1401,14 +1405,32 @@ LIBS="$save_LIBS"
 # any of them.
 AC_MSG_CHECKING([for libunwind])
 save_LIBS=$LIBS
-if test x"$UNAME_P" = xunknown ; then
-    # This probably won't link without the platform-specific libunwind.
-    LIBS="$LIBS -lunwind"
-else
-    # Add the platform-specific libunwind module. uname -p seems the most
-    # plausible option and works for ia64, where libunwind is most useful.
-    LIBS="$LIBS -lunwind -lunwind-$UNAME_P"
+
+UNWIND_ARCH="unknown"
+if test x"$UNAME_I" != x"unknown"; then
+	UNWIND_ARCH="$UNAME_I"
+elif test x"$UNAME_M" != x"unknown"; then
+	UNWIND_ARCH="$UNAME_M"
+elif test x"$UNAME_P" != x"unknown"; then
+	UNWIND_ARCH="$UNAME_P"
 fi
+
+case "$UNWIND_ARCH" in
+	unknown)
+		# This probably won't link without
+		# the platform-specific libunwind.
+		LIBS="$LIBS -lunwind"
+		;;
+	i386|i586|i686)
+		# Add the platform-specific libunwind module.
+		LIBS="$LIBS -lunwind -lunwind-x86"
+		;;
+	*)
+		# Add the platform-specific libunwind module.
+		# based on uname -i, uname -m or uname -p
+		LIBS="$LIBS -lunwind -lunwind-$UNWIND_ARCH"
+		;;
+esac
 
 AC_TRY_LINK(
     [
