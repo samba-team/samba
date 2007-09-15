@@ -53,7 +53,15 @@
 
 #include "nsswitch/winbind_nss_hpux.h"
 
-#else /* Nothing's defined. Neither gnu nor sun nor hp */
+#elif defined(__NetBSD__) && defined(HAVE_GETPWENT_R)
+
+/*
+ * NetBSD 3 and newer
+ */
+
+#include "nsswitch/winbind_nss_netbsd.h"
+
+#else /* Nothing's defined. Neither gnu nor netbsd nor sun nor hp */
 
 typedef enum
 {

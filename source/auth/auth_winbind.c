@@ -109,7 +109,7 @@ static NTSTATUS winbind_check_password_samba3(struct auth_method_context *ctx,
 	memcpy(request.data.auth_crap.nt_resp, user_info->password.response.nt.data,
 	       request.data.auth_crap.nt_resp_len);
 
-	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
 
 	nt_status = NT_STATUS(response.data.auth.nt_status);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
