@@ -61,6 +61,8 @@ sub end_testsuite($$$$$)
 	my ($self, $state, $expected_ret, $ret, $envlog) = @_;
 	my $out = "";
 
+	$self->output_msg($state, "ENVLOG: $envlog\n") if ($envlog ne "");
+
 	if ($ret != $expected_ret) {
 		$self->output_msg($state, "ERROR: $ret\n");
 	}
