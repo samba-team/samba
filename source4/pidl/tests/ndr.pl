@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 33;
+use Test::More tests => 34;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -266,3 +266,5 @@ ok(not can_contain_deferred({ TYPE => "STRUCT",
 ok(not can_contain_deferred({ TYPE => "TYPEDEF",
 			DATA => { TYPE => "STRUCT", 
 		ELEMENTS => [ { TYPE => "uint32" } ]}}));
+ok(can_contain_deferred({ TYPE => "STRUCT", 
+		ELEMENTS => [ { TYPE => "someunknowntype" } ]}));
