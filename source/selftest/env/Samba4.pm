@@ -446,6 +446,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 		LDAPDIR => $ldapdir,
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
 		NCALRPCDIR => $ncalrpcdir,
+		LOCKDIR => $lockdir,
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface
 	};
