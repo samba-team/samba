@@ -280,6 +280,20 @@ static int winbind_named_pipe_sock(const char *dir)
 	return -1;
 }
 
+static const char *winbindd_socket_dir(void)
+{
+#ifdef SOCKET_WRAPPER
+	const char *env_dir;
+
+	env_dir = getenv(WINBINDD_SOCKET_DIR_ENVVAR);
+	if (env_dir) {
+		return env_dir;
+	}
+#endif
+
+	return WINBINDD_SOCKET_DIR;
+}
+
 /* Connect to winbindd socket */
 
 static int winbind_open_pipe_sock(int recursing, int need_priv)
@@ -308,7 +322,7 @@ static int winbind_open_pipe_sock(int recursing, int need_priv)
 		return -1;
 	}
 
-	if ((winbindd_fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR)) == -1) {
+	if ((winbindd_fd = winbind_named_pipe_sock(winbindd_socket_dir())) == -1) {
 		return -1;
 	}
 
