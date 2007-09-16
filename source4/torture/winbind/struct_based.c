@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   SMB torture tester
+   SMB torture tester - winbind struct based protocol
    Copyright (C) Stefan Metzmacher 2007
 
    This program is free software; you can redistribute it and/or modify
@@ -20,16 +20,28 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "torture/winbind/proto.h"
+#include "nsswitch/winbind_client.h"
 
-NTSTATUS torture_winbind_init(void)
+static bool torture_winbind_struct_ping(struct torture_context *torture)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WINBIND");
+	NSS_STATUS result;
 
-	torture_suite_add_suite(suite, torture_winbind_struct_init());
+	torture_comment(torture, "Testing WINBINDD_PING (struct based protocol)\n");
 
-	suite->description = talloc_strdup(suite, "WINBIND tests");
+	result = winbindd_request_response(WINBINDD_PING, NULL, NULL);
+	torture_assert_int_equal(torture,result,NSS_STATUS_SUCCESS,
+				 "WINBINDD_PING (struct based protocol)");
 
-	torture_register_suite(suite);
+	return true;
+}
 
-	return NT_STATUS_OK;
+struct torture_suite *torture_winbind_struct_init(void)
+{
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "STRUCT");
+
+	torture_suite_add_simple_test(suite, "PING", torture_winbind_struct_ping);
+
+	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
+
+	return suite;
 }

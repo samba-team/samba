@@ -7,8 +7,9 @@ INIT_FUNCTION = torture_winbind_init
 PRIVATE_PROTO_HEADER = \
 		proto.h
 OBJ_FILES = \
-		winbind.o
+		winbind.o \
+		struct_based.o
 PRIVATE_DEPENDENCIES = \
-		POPT_CREDENTIALS
+		LIBWINBIND-CLIENT
 # End SUBSYSTEM TORTURE_WINBIND
 #################################
