@@ -532,9 +532,15 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	/* read the public ip list from this node */
 	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get public ips from node %u\n", i));
+		DEBUG(0, ("Unable to get public ips from node %u\n", options.pnn));
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	if (options.machinereadable){
+		printf(":Public IP:Node:\n");
+	} else {
+		printf("Public IPs on node %u\n", options.pnn);
 	}
 
 	for (i=0;i<ips->num;i++) {

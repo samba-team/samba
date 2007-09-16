@@ -8,8 +8,8 @@ loadconfig() {
 	. /etc/sysconfig/$name
     elif [ -f /etc/default/$name ]; then
 	. /etc/default/$name
-    elif [ -f /etc/ctdb/sysconfig/$name ]; then
-	. /etc/ctdb/sysconfig/$name
+    elif [ -f $CTDB_BASE/sysconfig/$name ]; then
+	. $CTDB_BASE/sysconfig/$name
     fi
 }
 
