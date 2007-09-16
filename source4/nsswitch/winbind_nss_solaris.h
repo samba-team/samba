@@ -37,6 +37,9 @@
 
 #include <nss_common.h>
 
+/*
+TODO: we need to cleanup samba4's headers..
+
 #ifndef __cplusplus
 #define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
@@ -48,6 +51,7 @@
 #define delete #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define friend #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #endif
+*/
 
 #include <nss_dbdefs.h>
 #include <nsswitch.h>
