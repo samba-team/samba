@@ -144,7 +144,7 @@ static char *gen_name(TALLOC_CTX *mem_ctx)
 	}
 
 	/* and a medium probability of a common lead string */
-	if (random() % 10 == 0) {
+	if ((len > 5) && (random() % 10 == 0)) {
 		strncpy(p, "ABCDE", 5);
 	}
 
