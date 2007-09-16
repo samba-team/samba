@@ -4,7 +4,6 @@ lib/talloc/talloc.h: talloc.h
 lib/util/util.h: util.h
 lib/util/debug.h: util/debug.h
 lib/util/mutex.h: util/mutex.h
-nt_status.h: core/nt_status.h
 lib/util/byteorder.h: util/byteorder.h
 lib/util/safe_string.h: util/safe_string.h
 lib/util/xfile.h: util/xfile.h

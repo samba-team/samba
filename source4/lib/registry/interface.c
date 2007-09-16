@@ -104,11 +104,9 @@ _PUBLIC_ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent,
  * Get value by index
  */
 _PUBLIC_ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, 
-										   const struct registry_key *key, 
-										   uint32_t idx,
-										   const char **name,
-										   uint32_t *type,
-										   DATA_BLOB *data)
+					   const struct registry_key *key, 
+					   uint32_t idx, const char **name,
+					   uint32_t *type, DATA_BLOB *data)
 {
 	if (key == NULL) 
 		return WERR_INVALID_PARAM;

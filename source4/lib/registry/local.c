@@ -49,10 +49,10 @@ struct local_key {
 };
 
 
-struct registry_key *reg_import_hive_key(struct registry_context *ctx,
-									     struct hive_key *hive, 
-										 uint32_t predefined_key,
-										 const char **elements)
+struct registry_key *reg_import_hive_key(struct registry_context *ctx, 
+					 struct hive_key *hive, 
+					 uint32_t predefined_key, 
+					 const char **elements)
 {
 	struct local_key *local_key;
 	struct reg_key_path parent_path;
