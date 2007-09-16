@@ -51,7 +51,7 @@ _PUBLIC_ const char *str_regtype(int type)
 }
 
 _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, 
-								   const DATA_BLOB data)
+				   const DATA_BLOB data)
 { 
   char *ret = NULL;
 

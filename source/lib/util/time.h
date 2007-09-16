@@ -19,6 +19,10 @@
 #ifndef _SAMBA_TIME_H_
 #define _SAMBA_TIME_H_
 
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
+
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
 

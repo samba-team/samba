@@ -26,6 +26,7 @@ struct registry_context;
 #include <talloc.h>
 #include "librpc/gen_ndr/security.h"
 #include "lib/registry/hive.h"
+#include "libcli/util/nt_status.h"
 
 /* Handles for the predefined keys */
 #define HKEY_CLASSES_ROOT		 0x80000000

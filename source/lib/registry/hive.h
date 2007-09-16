@@ -23,6 +23,7 @@
 
 #include <talloc.h>
 #include "librpc/gen_ndr/security.h"
+#include "libcli/util/nt_status.h"
 
 /**
  * This file contains the hive API. This API is generally used for 

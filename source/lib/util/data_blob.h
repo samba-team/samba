@@ -24,6 +24,7 @@
 #endif
 
 #include <talloc.h>
+#include <stdint.h>
 
 /* used to hold an arbitrary blob of data */
 typedef struct datablob {
