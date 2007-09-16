@@ -96,6 +96,7 @@ PRIVATE_DEPENDENCIES = \
 #################################
 
 include smb2/config.mk
+include winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
 PRIVATE_PROTO_HEADER = ndr/proto.h
