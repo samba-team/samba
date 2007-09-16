@@ -123,19 +123,17 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE ldb_tdb
 ################################################
 
-# NOTE: this rule is broken for some systems when $builddir != $srcdir because
-# it hardcodes the use of $<. See smb_build/makefile.pm.
 ./lib/ldb/common/ldb_modules.o: lib/ldb/common/ldb_modules.c Makefile
 	@echo Compiling $<
 	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) \
 	-DSHLIBEXT=\"$(SHLIBEXT)\" \
-	-c $< -o $@
+	-c $(FIRST_PREREQ) -o $@
 
 ./lib/ldb/common/ldb.o: lib/ldb/common/ldb.c Makefile
 	@echo Compiling $<
 	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) \
 	-DLDB_MODULESDIR=\"$(MODULESDIR)/ldb\" \
-	-c $< -o $@
+	-c $(FIRST_PREREQ) -o $@
 
 
 ################################################

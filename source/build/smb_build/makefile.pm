@@ -114,17 +114,19 @@ sub _prepare_suffix_rules($)
 	}
 
 	$self->output(<< "__EOD__"
+FIRST_PREREQ = $first_prereq
+
 # Dependencies command
 DEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.o) -MT \$@ \\
     `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) $first_prereq -o \$@
+    \$(CFLAGS) \$(FIRST_PREREQ) -o \$@
 # Dependencies for host objects
 HDEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.ho) -MT \$@ \\
     `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(HOSTCC_CFLAGS) $first_prereq -o \$@
+    \$(HOSTCC_CFLAGS) \$(FIRST_PREREQ) -o \$@
 # Dependencies for precompiled headers
 PCHDEPENDS = \$(CC) -M -MG -MT include/includes.h.gch -MT \$@ \\
-    \$(CFLAGS) $first_prereq -o \$@
+    \$(CFLAGS) \$(FIRST_PREREQ) -o \$@
 
 # \$< is broken in older BSD versions:
 # when \$@ is foo/bar.o, \$< could be torture/foo/bar.c
@@ -136,20 +138,20 @@ PCHDEPENDS = \$(CC) -M -MG -MT include/includes.h.gch -MT \$@ \\
 
 # Run a static analysis checker
 CHECK = \$(CC_CHECKER) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) \$(PICFLAG) -c $first_prereq -o \$@
+    \$(CFLAGS) \$(PICFLAG) -c \$(FIRST_PREREQ) -o \$@
 
 # Run the configured compiler
 COMPILE = \$(CC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) \$(PICFLAG) -c $first_prereq -o \$@
+    \$(CFLAGS) \$(PICFLAG) -c \$(FIRST_PREREQ) -o \$@
 
 # Run the compiler for the build host
 HCOMPILE = \$(HOSTCC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(HOSTCC_CFLAGS) -c $first_prereq -o \$@
+    \$(HOSTCC_CFLAGS) -c \$(FIRST_PREREQ) -o \$@
 
 # Precompile headers
 PCHCOMPILE = @\$(CC) -Ilib/replace \\
     `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) \$(PICFLAG) -c $first_prereq -o \$@
+    \$(CFLAGS) \$(PICFLAG) -c \$(FIRST_PREREQ) -o \$@
 
 __EOD__
 );
