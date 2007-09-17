@@ -550,13 +550,13 @@ _PUBLIC_ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap,
 					      TALLOC_CTX *mem_ctx, 
 					      const struct dom_sid *sid,
 					      const char **name,
-					      uint32_t *atype)
+					      enum lsa_SidType *rtype)
 {
 	NTSTATUS status;
 	struct dom_sid *domain_sid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	uint32_t rid;
-
+	uint32_t rid, atype;
+	
 	status = sidmap_primary_domain_sid(sidmap, tmp_ctx, &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
@@ -577,7 +577,9 @@ _PUBLIC_ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap,
 	if (rid < SIDMAP_LOCAL_GROUP_BASE) {
 		struct passwd *pwd;
 		uid_t uid = rid - SIDMAP_LOCAL_USER_BASE;
-		*atype = ATYPE_NORMAL_ACCOUNT;
+		atype = ATYPE_NORMAL_ACCOUNT;
+		*rtype = samdb_atype_map(atype);
+
 		pwd = getpwuid(uid);
 		if (pwd == NULL) {
 			*name = talloc_asprintf(mem_ctx, "uid%u", uid);
@@ -587,7 +589,8 @@ _PUBLIC_ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap,
 	} else {
 		struct group *grp;
 		gid_t gid = rid - SIDMAP_LOCAL_GROUP_BASE;
-		*atype = ATYPE_LOCAL_GROUP;
+		atype = ATYPE_LOCAL_GROUP;
+		*rtype = samdb_atype_map(atype);
 		grp = getgrgid(gid);
 		if (grp == NULL) {
 			*name = talloc_asprintf(mem_ctx, "gid%u", gid);

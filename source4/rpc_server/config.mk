@@ -135,8 +135,11 @@ PRIVATE_DEPENDENCIES = \
 [MODULE::dcerpc_lsarpc]
 INIT_FUNCTION = dcerpc_server_lsa_init
 SUBSYSTEM = dcerpc_server
+PRIVATE_PROTO_HEADER= lsa/proto.h
 OBJ_FILES = \
-		lsa/dcesrv_lsa.o
+		lsa/dcesrv_lsa.o \
+		lsa/lsa_init.o \
+		lsa/lsa_lookup.o
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
