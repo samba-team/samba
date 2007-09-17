@@ -218,9 +218,10 @@ int net_rpc_shell(int argc, const char **argv)
 		return -1;
 	}
 
-	ctx->cli = net_make_ipc_connection(0);
-	if (ctx->cli == NULL) {
-		d_fprintf(stderr, "Could not open connection\n");
+	status = net_make_ipc_connection(0, &(ctx->cli));
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Could not open connection: %s\n",
+			  nt_errstr(status));
 		return -1;
 	}
 

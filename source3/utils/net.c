@@ -465,13 +465,14 @@ BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *do
 		return False;
 }
 
-struct cli_state *net_make_ipc_connection( unsigned flags )
+NTSTATUS net_make_ipc_connection(unsigned flags, struct cli_state **pcli)
 {
-	return net_make_ipc_connection_ex( NULL, NULL, NULL, flags );
+	return net_make_ipc_connection_ex(NULL, NULL, NULL, flags, pcli);
 }
 
-struct cli_state *net_make_ipc_connection_ex( const char *domain, const char *server,
-                                              struct in_addr *ip, unsigned flags)
+NTSTATUS net_make_ipc_connection_ex(const char *domain, const char *server,
+                                    struct in_addr *ip, unsigned flags,
+				    struct cli_state **pcli)
 {
 	char *server_name = NULL;
 	struct in_addr server_ip;
@@ -481,7 +482,8 @@ struct cli_state *net_make_ipc_connection_ex( const char *domain, const char *se
 	if ( !server || !ip ) {
 		if (!net_find_server(domain, flags, &server_ip, &server_name)) {
 			d_fprintf(stderr, "Unable to find a suitable server\n");
-			return NULL;
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 	} else {
 		server_name = SMB_STRDUP( server );
@@ -500,13 +502,17 @@ struct cli_state *net_make_ipc_connection_ex( const char *domain, const char *se
 		saf_store( cli->server_domain, cli->desthost );
 
 	SAFE_FREE(server_name);
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return cli;
-	} else {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Connection failed: %s\n",
 			  nt_errstr(nt_status));
-		return NULL;
+		cli = NULL;
 	}
+
+done:
+	if (pcli != NULL) {
+		*pcli = cli;
+	}
+	return nt_status;
 }
 
 static int net_user(int argc, const char **argv)

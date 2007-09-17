@@ -64,7 +64,8 @@ int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
 	}
 
 	/* Connect to remote machine */
-	if (!(cli = net_make_ipc_connection_ex(domain, server, ip, conn_flags))) {
+	ntret = net_make_ipc_connection_ex(domain, server, ip, conn_flags, &cli);
+	if (!NT_STATUS_IS_OK(ntret)) {
 		return -1;
 	}
 
@@ -180,8 +181,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Make authenticated connection to remote machine */
 
-	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) 
+	result = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	if (!NT_STATUS_IS_OK(result)) {
 		return 1;
+	}
 
 	if (!(mem_ctx = talloc_init("net_rpc_join_newstyle"))) {
 		DEBUG(0, ("Could not initialise talloc context\n"));

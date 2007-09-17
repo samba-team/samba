@@ -115,7 +115,12 @@ int run_rpc_command(struct cli_state *cli_arg,
 
 	/* make use of cli_state handed over as an argument, if possible */
 	if (!cli_arg) {
-		cli = net_make_ipc_connection(conn_flags);
+		nt_status = net_make_ipc_connection(conn_flags, &cli);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("failed to make ipc connection: %s\n",
+				  nt_errstr(nt_status)));
+			return -1;
+		}
 	} else {
 		cli = cli_arg;
 	}
@@ -5821,8 +5826,10 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	};
 
 	/* open \PIPE\lsarpc and open policy handle */
-	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
-		DEBUG(0, ("Couldn't connect to domain controller\n"));
+	nt_status = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
+			  nt_errstr(nt_status)));
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -5964,8 +5971,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	};
 
 	/* open \PIPE\lsarpc and open policy handle */
-	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
-		DEBUG(0, ("Couldn't connect to domain controller\n"));
+	nt_status = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
+			  nt_errstr(nt_status)));
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6132,8 +6141,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			d_printf("%s%s", trusting_dom_names[i], padding);
 			
 			/* connect to remote domain controller */
-			remote_cli = net_make_ipc_connection(NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS);
-			if (remote_cli) {			
+			nt_status = net_make_ipc_connection(
+					NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS,
+					&remote_cli);
+			if (NT_STATUS_IS_OK(nt_status)) {
 				/* query for domain's sid */
 				if (run_rpc_command(remote_cli, PI_LSARPC, 0, rpc_query_domain_sid, argc, argv))
 					d_fprintf(stderr, "couldn't get domain's sid\n");
@@ -6141,7 +6152,9 @@ static int rpc_trustdom_list(int argc, const char **argv)
 				cli_shutdown(remote_cli);
 			
 			} else {
-				d_fprintf(stderr, "domain controller is not responding\n");
+				d_fprintf(stderr, "domain controller is not "
+					  "responding: %s\n",
+					  nt_errstr(nt_status));
 			};
 		};
 		
