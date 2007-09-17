@@ -40,7 +40,7 @@ static const struct {
 	},
 	{
 		.name = "CREATOR GROUP",
-		.sid = SID_CREATOR_OWNER,
+		.sid = SID_CREATOR_GROUP,
 		.rtype = SID_NAME_WKN_GRP,
 	},
 	{
@@ -52,7 +52,7 @@ static const struct {
 	{
 		.domain = "NT AUTHORITY",
 		.name = "Network",
-		.sid = SID_NT_DIALUP,
+		.sid = SID_NT_NETWORK,
 		.rtype = SID_NAME_WKN_GRP,
 	},
 	{
