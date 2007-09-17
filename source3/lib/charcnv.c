@@ -759,49 +759,68 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 /**
  strdup() a unix string to upper case.
- Max size is pstring.
 **/
 
 char *strdup_upper(const char *s)
 {
-	pstring out_buffer;
+	char *out_buffer = SMB_STRDUP(s);
 	const unsigned char *p = (const unsigned char *)s;
 	unsigned char *q = (unsigned char *)out_buffer;
+
+	if (!q) {
+		return NULL;
+	}
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (1) {
+	while (*p) {
 		if (*p & 0x80)
 			break;
 		*q++ = toupper_ascii(*p);
-		if (!*p)
-			break;
 		p++;
-		if (p - ( const unsigned char *)s >= sizeof(pstring))
-			break;
 	}
 
 	if (*p) {
 		/* MB case. */
 		size_t size;
-		wpstring buffer;
-		size = convert_string(CH_UNIX, CH_UTF16LE, s, -1, buffer, sizeof(buffer), True);
+		smb_ucs2_t *buffer = NULL;
+
+		SAFE_FREE(out_buffer);
+		size = convert_string_allocate(NULL,
+					CH_UNIX,
+					CH_UTF16LE,
+					s,
+					strlen(s) + 1,
+					(void **)(void *)&buffer,
+					True);
 		if (size == (size_t)-1) {
 			return NULL;
 		}
 
 		strupper_w(buffer);
 
-		size = convert_string(CH_UTF16LE, CH_UNIX, buffer, -1, out_buffer, sizeof(out_buffer), True);
+		size = convert_string_allocate(NULL,
+					CH_UTF16LE,
+					CH_UNIX,
+					buffer,
+					size,
+					(void **)(void *)&out_buffer,
+					True);
+
+		/* Don't need the intermediate buffer
+ 		 * anymore.
+ 		 */
+
+		TALLOC_FREE(buffer);
 		if (size == (size_t)-1) {
 			return NULL;
 		}
 	}
 
-	return SMB_STRDUP(out_buffer);
+	return out_buffer;
 }
 
 /**
@@ -823,12 +842,10 @@ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (1) {
+	while (*p) {
 		if (*p & 0x80)
 			break;
 		*q++ = toupper_ascii(*p);
-		if (!*p)
-			break;
 		p++;
 	}
 
