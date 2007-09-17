@@ -83,7 +83,7 @@ static int rap_file_close(int argc, const char **argv)
 		return net_rap_file_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetFileClose(cli, atoi(argv[0]));
@@ -98,7 +98,7 @@ static int rap_file_info(int argc, const char **argv)
 	if (argc == 0)
 		return net_rap_file_usage(argc, argv);
 	
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetFileGetInfo(cli, atoi(argv[0]), one_file_fn);
@@ -128,7 +128,7 @@ int net_rap_file(int argc, const char **argv)
 		struct cli_state *cli;
 		int ret;
 		
-		if (!(cli = net_make_ipc_connection(0))) 
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                         return -1;
 
 		/* list open files */
@@ -172,7 +172,7 @@ static int rap_share_delete(int argc, const char **argv)
 		return net_rap_share_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetShareDelete(cli, argv[0]);
@@ -194,7 +194,7 @@ static int rap_share_add(int argc, const char **argv)
 		return net_rap_share_usage(argc, argv);
 	}
 			
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	sharename = SMB_STRDUP(argv[0]);
@@ -234,7 +234,7 @@ int net_rap_share(int argc, const char **argv)
 		struct cli_state *cli;
 		int ret;
 		
-		if (!(cli = net_make_ipc_connection(0))) 
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
 			return -1;
 		
 		if (opt_long_list_entries) {
@@ -320,7 +320,7 @@ static int rap_session_info(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	if (argc == 0) 
@@ -346,7 +346,7 @@ static int rap_session_delete(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	if (argc == 0) 
@@ -370,7 +370,7 @@ int net_rap_session(int argc, const char **argv)
 		struct cli_state *cli;
 		int ret;
 		
-		if (!(cli = net_make_ipc_connection(0))) 
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
 			return -1;
 
 		d_printf("Computer             User name            "\
@@ -412,7 +412,7 @@ static int net_rap_server_name(int argc, const char *argv[])
 	struct cli_state *cli;
 	char *name;
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	if (!cli_get_server_name(NULL, cli, &name)) {
@@ -444,7 +444,7 @@ int net_rap_server(int argc, const char **argv)
 		}
 	}
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	d_printf("\nEnumerating servers in this domain or workgroup: \n\n"\
@@ -472,7 +472,7 @@ int net_rap_domain(int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 	
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	d_printf("\nEnumerating domains:\n\n"\
@@ -569,7 +569,7 @@ static int rap_printq_info(int argc, const char **argv)
 	if (argc == 0) 
                 return net_rap_printq_usage(argc, argv);
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
@@ -586,7 +586,7 @@ static int rap_printq_delete(int argc, const char **argv)
 	if (argc == 0) 
                 return net_rap_printq_usage(argc, argv);
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_printjob_del(cli, atoi(argv[0]));
@@ -606,7 +606,7 @@ int net_rap_printq(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!(cli = net_make_ipc_connection(0))) 
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
 			return -1;
 
 		d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
@@ -652,7 +652,7 @@ static int rap_user_delete(int argc, const char **argv)
                 return net_rap_user_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetUserDelete(cli, argv[0]);
@@ -671,7 +671,7 @@ static int rap_user_add(int argc, const char **argv)
                 return net_rap_user_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 			
 	safe_strcpy(userinfo.user_name, argv[0], sizeof(userinfo.user_name)-1);
@@ -700,7 +700,7 @@ static int rap_user_info(int argc, const char **argv)
                 return net_rap_user_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetUserGetGroups(cli, argv[0], group_member_fn, NULL);
@@ -720,7 +720,7 @@ int net_rap_user(int argc, const char **argv)
 
 	if (argc == 0) {
 		struct cli_state *cli;
-		if (!(cli = net_make_ipc_connection(0)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                         goto done;
 		if (opt_long_list_entries) {
 			d_printf("\nUser name             Comment"\
@@ -768,7 +768,7 @@ static int rap_group_delete(int argc, const char **argv)
                 return net_rap_group_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupDelete(cli, argv[0]);
@@ -787,7 +787,7 @@ static int rap_group_add(int argc, const char **argv)
                 return net_rap_group_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 			
 	/* BB check for length 21 or smaller explicitly ? BB */
@@ -811,7 +811,7 @@ int net_rap_group(int argc, const char **argv)
 	if (argc == 0) {
 		struct cli_state *cli;
 		int ret;
-		if (!(cli = net_make_ipc_connection(0)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                         return -1;
 		if (opt_long_list_entries) {
 			d_printf("Group name            Comment\n");
@@ -852,7 +852,7 @@ static int rap_groupmember_add(int argc, const char **argv)
                 return net_rap_groupmember_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupAddUser(cli, argv[0], argv[1]);
@@ -869,7 +869,7 @@ static int rap_groupmember_delete(int argc, const char **argv)
                 return net_rap_groupmember_usage(argc, argv);
 	}
 	
-	if (!(cli = net_make_ipc_connection(0)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupDelUser(cli, argv[0], argv[1]);
@@ -886,7 +886,7 @@ static int rap_groupmember_list(int argc, const char **argv)
                 return net_rap_groupmember_usage(argc, argv);
 	}
 
-	if (!(cli = net_make_ipc_connection(0)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupGetUsers(cli, argv[0], group_member_fn, NULL ); 
@@ -962,7 +962,7 @@ int net_rap_service(int argc, const char **argv)
 	if (argc == 0) {
 		struct cli_state *cli;
 		int ret;
-		if (!(cli = net_make_ipc_connection(0))) 
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
 			return -1;
 
 		if (opt_long_list_entries) {
@@ -996,7 +996,7 @@ int net_rap_password(int argc, const char **argv)
 	if (argc < 3) 
                 return net_rap_password_usage(argc, argv);
 
-	if (!(cli = net_make_ipc_connection(0))) 
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
                 return -1;
 
 	/* BB Add check for password lengths? */
