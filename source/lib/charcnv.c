@@ -1369,6 +1369,10 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 {
 	size_t ret;
 
+	if (!src_len) {
+		return 0;
+	}
+
 	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
 
@@ -1445,6 +1449,10 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 		smb_panic("NULL talloc CTX in pull_ucs2_base_talloc\n");
 	}
 #endif
+
+	if (!src_len) {
+		return 0;
+	}
 
 	if (ucs2_align(base_ptr, src, flags)) {
 		src = (const void *)((const char *)src + 1);
