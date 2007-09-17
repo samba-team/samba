@@ -1406,7 +1406,7 @@ static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads)
 
 	num_addrs = get_my_ip_address( &iplist );
 	if ( num_addrs <= 0 ) {
-		DEBUG(4,("net_ads_join: Failed to find my non-loopback IP "
+		DEBUG(4,("net_update_dns: Failed to find my non-loopback IP "
 			 "addresses!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
