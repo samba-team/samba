@@ -128,7 +128,7 @@ BOOL test_lsa_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_LookupNames(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle,
-			    struct lsa_TransNameArray *tnames)
+			     struct lsa_TransNameArray *tnames)
 {
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
@@ -157,7 +157,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 	r.out.sids = &sids;
 
 	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -165,6 +165,95 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 	printf("\n");
 
 	return True;
+}
+
+static BOOL test_LookupNames_bogus(struct dcerpc_pipe *p, 
+			    TALLOC_CTX *mem_ctx, 
+			    struct policy_handle *handle)
+{
+	struct lsa_LookupNames r;
+	struct lsa_TransSidArray sids;
+	struct lsa_String *names;
+	uint32_t count = 0;
+	NTSTATUS status;
+	int i;
+
+	struct lsa_TranslatedName name;
+	struct lsa_TransNameArray tnames;
+
+	tnames.names = &name;
+	tnames.count = 1;
+	name.name.string = "NT AUTHORITY\\BOGUS";
+
+	printf("\nTesting LookupNames with bogus names\n");
+
+	sids.count = 0;
+	sids.sids = NULL;
+
+	names = talloc_array(mem_ctx, struct lsa_String, tnames.count);
+	for (i=0;i<tnames.count;i++) {
+		init_lsa_String(&names[i], tnames.names[i].name.string);
+	}
+
+	r.in.handle = handle;
+	r.in.num_names = tnames.count;
+	r.in.names = names;
+	r.in.sids = &sids;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.out.count = &count;
+	r.out.sids = &sids;
+
+	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		printf("LookupNames failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	return True;
+}
+
+static BOOL test_LookupNames_wellknown(struct dcerpc_pipe *p, 
+				       TALLOC_CTX *mem_ctx, 
+				       struct policy_handle *handle)
+{
+	struct lsa_TranslatedName name;
+	struct lsa_TransNameArray tnames;
+	bool ret = true;
+
+	printf("Testing LookupNames with well known names\n");
+
+	tnames.names = &name;
+	tnames.count = 1;
+	name.name.string = "NT AUTHORITY\\SYSTEM";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "NT AUTHORITY\\ANONYMOUS LOGON";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "NT AUTHORITY\\Authenticated Users";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "NT AUTHORITY";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "NT AUTHORITY\\";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "BUILTIN\\";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "BUILTIN\\Administrators";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "SYSTEM";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+
+	name.name.string = "Everyone";
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+	return ret;
 }
 
 static BOOL test_LookupNames2(struct dcerpc_pipe *p, 
@@ -201,7 +290,7 @@ static BOOL test_LookupNames2(struct dcerpc_pipe *p,
 	r.out.sids = &sids;
 
 	status = dcerpc_lsa_LookupNames2(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames2 failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -246,7 +335,7 @@ static BOOL test_LookupNames3(struct dcerpc_pipe *p,
 	r.out.sids = &sids;
 
 	status = dcerpc_lsa_LookupNames3(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames3 failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -288,7 +377,7 @@ static BOOL test_LookupNames4(struct dcerpc_pipe *p,
 	r.out.sids = &sids;
 
 	status = dcerpc_lsa_LookupNames4(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames4 failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -323,7 +412,7 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	r.out.names = &names;
 
 	status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupSids failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -364,7 +453,7 @@ static BOOL test_LookupSids2(struct dcerpc_pipe *p,
 	r.out.names = &names;
 
 	status = dcerpc_lsa_LookupSids2(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupSids2 failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -406,7 +495,7 @@ static BOOL test_LookupSids3(struct dcerpc_pipe *p,
 	r.out.names = &names;
 
 	status = dcerpc_lsa_LookupSids3(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
 			printf("not considering %s to be an error\n", nt_errstr(status));
@@ -463,8 +552,7 @@ BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 		r.out.names = &names;
 		
 		status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			printf("LookupSids failed - %s\n", nt_errstr(status));
 			return False;
 		}
@@ -493,7 +581,7 @@ BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 		r.out.names = &names;
 		
 		status = dcerpc_lsa_LookupSids3(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 			    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
 				printf("not considering %s to be an error\n", nt_errstr(status));
@@ -1879,16 +1967,54 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
 
-		if ((i == 9 || i == 10 || i == 11) &&
-		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-			printf("server failed level %u (OK)\n", i);
-			continue;
+		switch (i) {
+		case LSA_POLICY_INFO_DB:
+		case LSA_POLICY_INFO_AUDIT_FULL_SET:
+		case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+				printf("server should have failed level %u: %s\n", i, nt_errstr(status));
+				ret = False;
+			}
+			break;
+		case LSA_POLICY_INFO_DOMAIN:
+		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS:
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+				ret = False;
+			}
+			break;
+		default:
+			if (lp_parm_bool(NULL, "torture", "samba4", false)) {
+				/* Other levels not implemented yet */
+				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+					printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+					ret = False;
+				}
+			} else if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+				ret = False;
+			}
+			break;
 		}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
+		if (NT_STATUS_IS_OK(status) && i == LSA_POLICY_INFO_DNS) {
+			/* Let's look up some of these names */
+
+			struct lsa_TransNameArray tnames;
+			tnames.count = 10;
+			tnames.names = talloc_array(mem_ctx, struct lsa_TranslatedName, tnames.count);
+			tnames.names[0].name.string = r.out.info->dns.name.string;
+			tnames.names[1].name.string = r.out.info->dns.dns_domain.string;
+			tnames.names[2].name.string = talloc_asprintf(mem_ctx, "%s\\", r.out.info->dns.name.string);
+			tnames.names[3].name.string = talloc_asprintf(mem_ctx, "%s\\", r.out.info->dns.dns_domain.string);
+			tnames.names[4].name.string = talloc_asprintf(mem_ctx, "%s\\guest", r.out.info->dns.name.string);
+			tnames.names[5].name.string = talloc_asprintf(mem_ctx, "%s\\krbtgt", r.out.info->dns.name.string);
+			tnames.names[6].name.string = talloc_asprintf(mem_ctx, "%s\\guest", r.out.info->dns.dns_domain.string);
+			tnames.names[7].name.string = talloc_asprintf(mem_ctx, "%s\\krbtgt", r.out.info->dns.dns_domain.string);
+			tnames.names[8].name.string = talloc_asprintf(mem_ctx, "krbtgt@%s", r.out.info->dns.name.string);
+			tnames.names[9].name.string = talloc_asprintf(mem_ctx, "krbtgt@%s", r.out.info->dns.dns_domain.string);
+			ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 		}
 	}
 
@@ -1904,11 +2030,6 @@ static BOOL test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 	int i;
 	BOOL ret = True;
 	printf("\nTesting QueryInfoPolicy2\n");
-	if (lp_parm_bool(NULL, "torture", "samba4", false)) {
-		printf("skipping QueryInfoPolicy2 against Samba4\n");
-		return True;
-	}
-
 	for (i=1;i<13;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
@@ -1916,17 +2037,36 @@ static BOOL test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 		printf("\ntrying QueryInfoPolicy2 level %d\n", i);
 
 		status = dcerpc_lsa_QueryInfoPolicy2(p, mem_ctx, &r);
-
-		if ((i == 9 || i == 10 || i == 11) &&
-		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-			printf("server failed level %u (OK)\n", i);
-			continue;
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
-			ret = False;
-			continue;
+		
+		switch (i) {
+		case LSA_POLICY_INFO_DB:
+		case LSA_POLICY_INFO_AUDIT_FULL_SET:
+		case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+				printf("server should have failed level %u: %s\n", i, nt_errstr(status));
+				ret = False;
+			}
+			break;
+		case LSA_POLICY_INFO_DOMAIN:
+		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS:
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
+				ret = False;
+			}
+			break;
+		default:
+			if (lp_parm_bool(NULL, "torture", "samba4", false)) {
+				/* Other levels not implemented yet */
+				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+					printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
+					ret = False;
+				}
+			} else if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
+				ret = False;
+			}
+			break;
 		}
 	}
 
@@ -2013,6 +2153,14 @@ BOOL torture_rpc_lsa(struct torture_context *torture)
 	}
 
 	if (handle) {
+		if (!test_LookupNames_wellknown(p, mem_ctx, handle)) {
+			ret = False;
+		}		
+
+		if (!test_LookupNames_bogus(p, mem_ctx, handle)) {
+			ret = False;
+		}		
+
 		if (!test_LookupSids_async(p, mem_ctx, handle)) {
 			ret = False;
 		}
