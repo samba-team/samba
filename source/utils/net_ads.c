@@ -1600,8 +1600,12 @@ int net_ads_join(int argc, const char **argv)
 
 	/* Verify that everything is ok */
 
-	if ( net_rpc_join_ok(short_domain_name, ads->config.ldap_server_name, &ads->ldap.ip) != 0 ) {
-		d_fprintf(stderr, "Failed to verify membership in domain!\n");
+	nt_status = net_rpc_join_ok(short_domain_name,
+				    ads->config.ldap_server_name, &ads->ldap.ip);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_fprintf(stderr,
+			  "Failed to verify membership in domain: %s!\n",
+			  nt_errstr(nt_status));
 		goto fail;
 	}	
 
