@@ -1133,32 +1133,6 @@ char *talloc_strdup(const void *t, const char *p)
 }
 
 /*
- append to a talloced string 
-*/
-char *talloc_append_string(const void *t, char *orig, const char *append)
-{
-	char *ret;
-	size_t olen = strlen(orig);
-	size_t alenz;
-
-	if (!append)
-		return orig;
-
-	alenz = strlen(append) + 1;
-
-	ret = talloc_realloc(t, orig, char, olen + alenz);
-	if (!ret)
-		return NULL;
-
-	/* append the string with the trailing \0 */
-	memcpy(&ret[olen], append, alenz);
-
-	_talloc_set_name_const(ret, ret);
-
-	return ret;
-}
-
-/*
   strndup with a talloc
 */
 char *talloc_strndup(const void *t, const char *p, size_t n)
