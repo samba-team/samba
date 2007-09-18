@@ -26,18 +26,6 @@ lmPwdHistory: HIDDEN
 createTimestamp: HIDDEN
 modifyTimestamp: HIDDEN
 
-dn: @SUBCLASSES
-top: domain
-top: person
-top: group
-domain: domainDNS
-domain: builtinDomain
-person: organizationalPerson
-organizationalPerson: user
-user: computer
-template: userTemplate
-template: groupTemplate
-
 dn: @MODULES
 @LIST: timestamps,schema
 

@@ -21,7 +21,6 @@ struct ltdb_private {
 	struct ltdb_cache {
 		struct ldb_message *indexlist;
 		struct ldb_message *attributes;
-		struct ldb_message *subclasses;
 
 		struct {
 			char *name;
@@ -56,7 +55,6 @@ struct ltdb_context {
 #define LTDB_IDXONE     "@IDXONE"
 #define LTDB_BASEINFO   "@BASEINFO"
 #define LTDB_ATTRIBUTES "@ATTRIBUTES"
-#define LTDB_SUBCLASSES "@SUBCLASSES"
 
 /* special attribute types */
 #define LTDB_SEQUENCE_NUMBER "sequenceNumber"

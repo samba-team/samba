@@ -258,67 +258,6 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 static int list_union(struct ldb_context *, struct dn_list *, const struct dn_list *);
 
 /*
-  return a list of dn's that might match a simple indexed search on
-  the special objectclass attribute
- */
-static int ltdb_index_dn_objectclass(struct ldb_module *module, 
-				     const struct ldb_parse_tree *tree,
-				     const struct ldb_message *index_list,
-				     struct dn_list *list)
-{
-	struct ldb_context *ldb = module->ldb;
-	unsigned int i;
-	int ret;
-	const char *target = (const char *)tree->u.equality.value.data;
-	const char **subclasses;
-
-	list->count = 0;
-	list->dn = NULL;
-
-	ret = ltdb_index_dn_simple(module, tree, index_list, list);
-
-	subclasses = ldb_subclass_list(module->ldb, target);
-
-	if (subclasses == NULL) {
-		return ret;
-	}
-
-	for (i=0;subclasses[i];i++) {
-		struct ldb_parse_tree tree2;
-		struct dn_list *list2;
-		tree2.operation = LDB_OP_EQUALITY;
-		tree2.u.equality.attr = LTDB_OBJECTCLASS;
-		if (!tree2.u.equality.attr) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		tree2.u.equality.value.data = 
-			(uint8_t *)talloc_strdup(list, subclasses[i]);
-		if (tree2.u.equality.value.data == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;			
-		}
-		tree2.u.equality.value.length = strlen(subclasses[i]);
-		list2 = talloc(list, struct dn_list);
-		if (list2 == NULL) {
-			talloc_free(tree2.u.equality.value.data);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		if (ltdb_index_dn_objectclass(module, &tree2, 
-					      index_list, list2) == LDB_SUCCESS) {
-			if (list->count == 0) {
-				*list = *list2;
-				ret = LDB_SUCCESS;
-			} else {
-				list_union(ldb, list, list2);
-				talloc_free(list2);
-			}
-		}
-		talloc_free(tree2.u.equality.value.data);
-	}
-
-	return ret;
-}
-
-/*
   return a list of dn's that might match a leaf indexed search
  */
 static int ltdb_index_dn_leaf(struct ldb_module *module, 
@@ -326,9 +265,6 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 			      const struct ldb_message *index_list,
 			      struct dn_list *list)
 {
-	if (ldb_attr_cmp(tree->u.equality.attr, LTDB_OBJECTCLASS) == 0) {
-		return ltdb_index_dn_objectclass(module, tree, index_list, list);
-	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
 		list->dn = talloc_array(list, char *, 1);
 		if (list->dn == NULL) {

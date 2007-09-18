@@ -83,16 +83,6 @@ echo "Testing class search"
 checkcount 0 '(objectClass=otherclass)'
 checkcount 1 '(objectClass=testclass)'
 
-echo "Adding subclass"
-cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
-dn: @SUBCLASSES
-changetype: add
-add: otherclass
-otherclass: testclass
-EOF
-checkcount 1 '(objectClass=otherclass)'
-checkcount 1 '(objectClass=testclass)'
-
 echo "Adding index"
 cat <<EOF | $VALGRIND bin/ldbadd || exit 1
 dn: @INDEXLIST
