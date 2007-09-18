@@ -1109,20 +1109,27 @@ void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name
 	return newp;
 }
 
+static inline char *__talloc_strlendup(const void *t, const char *p, size_t len)
+{
+	char *ret;
+
+	ret = (char *)__talloc(t, len + 1);
+	if (unlikely(!ret)) return NULL;
+
+	memcpy(ret, p, len);
+	ret[len] = 0;
+
+	_talloc_set_name_const(ret, ret);
+	return ret;
+}
+
 /*
-  strdup with a talloc 
+  strdup with a talloc
 */
 char *talloc_strdup(const void *t, const char *p)
 {
-	char *ret;
-	if (!p) {
-		return NULL;
-	}
-	ret = (char *)talloc_memdup(t, p, strlen(p) + 1);
-	if (likely(ret)) {
-		_talloc_set_name_const(ret, ret);
-	}
-	return ret;
+	if (unlikely(!p)) return NULL;
+	return __talloc_strlendup(t, p, strlen(p));
 }
 
 /*
@@ -1152,21 +1159,12 @@ char *talloc_append_string(const void *t, char *orig, const char *append)
 }
 
 /*
-  strndup with a talloc 
+  strndup with a talloc
 */
 char *talloc_strndup(const void *t, const char *p, size_t n)
 {
-	size_t len;
-	char *ret;
-
-	for (len=0; len<n && p[len]; len++) ;
-
-	ret = (char *)__talloc(t, len + 1);
-	if (!ret) { return NULL; }
-	memcpy(ret, p, len);
-	ret[len] = 0;
-	_talloc_set_name_const(ret, ret);
-	return ret;
+	if (unlikely(!p)) return NULL;
+	return __talloc_strlendup(t, p, strnlen(p, n));
 }
 
 #ifndef HAVE_VA_COPY
