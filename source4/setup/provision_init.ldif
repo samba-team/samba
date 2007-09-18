@@ -23,17 +23,6 @@ sAMAccountType: INTEGER
 systemFlags: INTEGER
 userAccountControl: INTEGER
 
-dn: @SUBCLASSES
-top: domain
-top: person
-top: group
-domain: domainDNS
-person: organizationalPerson
-organizationalPerson: user
-user: computer
-template: userTemplate
-template: groupTemplate
-
 dn: @KLUDGEACL
 passwordAttribute: sambaPassword
 passwordAttribute: ntPwdHash
