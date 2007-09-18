@@ -1315,6 +1315,10 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
 
 static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
 						 const char *fmt, va_list ap)
+						 PRINTF_ATTRIBUTE(3,0);
+
+static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
+						 const char *fmt, va_list ap)
 {
 	ssize_t alen;
 	va_list ap2;
