@@ -60,6 +60,11 @@ x: 4
 	res = ldb.search("x=4", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.msgs[0].dn == "cn=x3,cn=test");
 
+	ok = ldb.rename("cn=x3,cn=test", "cn=X3,cn=test");
+	assert(ok.error == 0);
+	res = ldb.search("x=4", NULL, ldb.SCOPE_DEFAULT, attrs);
+	assert(res.msgs[0].dn == "cn=X3,cn=test");
+
 	ok = ldb.modify("
 dn: cn=x3,cn=test
 changetype: modify
