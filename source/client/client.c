@@ -20,6 +20,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* 
+ * TODO: remove this ... and don't use talloc_append_string()
+ *
+ * NOTE: I'm not changing the code yet, because I assume there're
+ *       some bugs in the existing code and I'm not sure how to fix
+ *	 them correctly.
+ */
+#define TALLOC_DEPRECATED 1
+
 #include "includes.h"
 #include "version.h"
 #include "libcli/libcli.h"
