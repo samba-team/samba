@@ -145,7 +145,7 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 		goto failed;
 	}
 
-	key_str = talloc_append_string(ldb, key_str, dn_folded);
+	key_str = talloc_strdup_append_buffer(key_str, dn_folded);
 	if (!key_str) {
 		goto failed;
 	}
