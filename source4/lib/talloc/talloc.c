@@ -1167,6 +1167,102 @@ char *talloc_strndup(const void *t, const char *p, size_t n)
 	return __talloc_strlendup(t, p, strnlen(p, n));
 }
 
+static inline char *__talloc_strlendup_append(char *s, size_t slen,
+					      const char *a, size_t alen)
+{
+	char *ret;
+
+	ret = talloc_realloc(NULL, s, char, slen + alen + 1);
+	if (unlikely(!ret)) return NULL;
+
+	/* append the string and the trailing \0 */
+	memcpy(&ret[slen], a, alen);
+	ret[slen+alen] = 0;
+
+	_talloc_set_name_const(ret, ret);
+	return ret;
+}
+
+/*
+ * Appends at the end of the string.
+ */
+char *talloc_strdup_append(char *s, const char *a)
+{
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	return __talloc_strlendup_append(s, strlen(s), a, strlen(a));
+}
+
+/*
+ * Appends at the end of the talloc'ed buffer,
+ * not the end of the string.
+ */
+char *talloc_strdup_append_buffer(char *s, const char *a)
+{
+	size_t slen;
+
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	slen = talloc_get_size(s);
+	if (likely(slen > 0)) {
+		slen--;
+	}
+
+	return __talloc_strlendup_append(s, slen, a, strlen(a));
+}
+
+/*
+ * Appends at the end of the string.
+ */
+char *talloc_strndup_append(char *s, const char *a, size_t n)
+{
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	return __talloc_strlendup_append(s, strlen(s), a, strnlen(a, n));
+}
+
+/*
+ * Appends at the end of the talloc'ed buffer,
+ * not the end of the string.
+ */
+char *talloc_strndup_append_buffer(char *s, const char *a, size_t n)
+{
+	size_t slen;
+
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	slen = talloc_get_size(s);
+	if (likely(slen > 0)) {
+		slen--;
+	}
+
+	return __talloc_strlendup_append(s, slen, a, strnlen(a, n));
+}
+
 #ifndef HAVE_VA_COPY
 #ifdef HAVE___VA_COPY
 #define va_copy(dest, src) __va_copy(dest, src)
