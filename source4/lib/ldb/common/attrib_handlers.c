@@ -278,33 +278,6 @@ int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
-  compare two objectclasses, looking at subclasses
-*/
-int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
-				      const struct ldb_val *v1, const struct ldb_val *v2)
-{
-	int ret, i;
-	const char **subclasses;
-	ret = ldb_comparison_fold(ldb, mem_ctx, v1, v2);
-	if (ret == 0) {
-		return 0;
-	}
-	subclasses = ldb_subclass_list(ldb, (char *)v1->data);
-	if (subclasses == NULL) {
-		return ret;
-	}
-	for (i=0;subclasses[i];i++) {
-		struct ldb_val vs;
-		vs.data = discard_const(subclasses[i]);
-		vs.length = strlen(subclasses[i]);
-		if (ldb_comparison_objectclass(ldb, mem_ctx, &vs, v2) == 0) {
-			return 0;
-		}
-	}
-	return ret;
-}
-
-/*
   compare two utc time values. 1 second resolution
 */
 int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
@@ -368,7 +341,7 @@ static const struct ldb_schema_syntax ldb_standard_syntaxes[] = {
 		.ldif_read_fn    = ldb_handler_copy,
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_handler_fold,
-		.comparison_fn   = ldb_comparison_objectclass
+		.comparison_fn   = ldb_comparison_fold
 	},
 	{ 
 		.name            = LDB_SYNTAX_UTC_TIME,

@@ -38,7 +38,6 @@
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
 #define LTDB_FLAG_INTEGER          (1<<1)
 #define LTDB_FLAG_HIDDEN           (1<<2)
-#define LTDB_FLAG_OBJECTCLASS      (1<<3)
 
 /* valid attribute flags */
 static const struct {
@@ -168,66 +167,6 @@ failed:
 
 
 /*
-  register any subclasses from @SUBCLASSES
-*/
-static int ltdb_subclasses_load(struct ldb_module *module)
-{
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
-	struct ldb_message *msg = ltdb->cache->subclasses;
-	struct ldb_dn *dn;
-	int i, j, r;
-
-	dn = ldb_dn_new(module, module->ldb, LTDB_SUBCLASSES);
-	if (dn == NULL) goto failed;
-
-	r = ltdb_search_dn1(module, dn, msg);
-	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
-		talloc_free(dn);
-		goto failed;
-	}
-	talloc_free(dn);
-
-	for (i=0;i<msg->num_elements;i++) {
-		struct ldb_message_element *el = &msg->elements[i];
-		for (j=0;j<el->num_values;j++) {
-			if (ldb_subclass_add(module->ldb, el->name, 
-					     (char *)el->values[j].data) != 0) {
-				goto failed;
-			}
-		}
-	}
-
-	return 0;
-failed:
-	return -1;
-}
-
-
-/*
-  de-register any @SUBCLASSES
-*/
-static void ltdb_subclasses_unload(struct ldb_module *module)
-{
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
-	struct ldb_message *msg;
-	int i;
-
-	if (ltdb->cache->subclasses == NULL) {
-		/* no previously loaded subclasses */
-		return;
-	}
-
-	msg = ltdb->cache->subclasses;
-	for (i=0;i<msg->num_elements;i++) {
-		ldb_subclass_remove(module->ldb, msg->elements[i].name);
-	}
-
-	talloc_free(ltdb->cache->subclasses);
-	ltdb->cache->subclasses = NULL;
-}
-
-
-/*
   initialise the baseinfo record
 */
 static int ltdb_baseinfo_init(struct ldb_module *module)
@@ -298,7 +237,6 @@ static void ltdb_cache_free(struct ldb_module *module)
 int ltdb_cache_reload(struct ldb_module *module)
 {
 	ltdb_attributes_unload(module);
-	ltdb_subclasses_unload(module);
 	ltdb_cache_free(module);
 	return ltdb_cache_load(module);
 }
@@ -325,10 +263,8 @@ int ltdb_cache_load(struct ldb_module *module)
 		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
 		if (ltdb->cache == NULL) goto failed;
 		ltdb->cache->indexlist = talloc_zero(ltdb->cache, struct ldb_message);
-		ltdb->cache->subclasses = talloc_zero(ltdb->cache, struct ldb_message);
 		ltdb->cache->attributes = talloc_zero(ltdb->cache, struct ldb_message);
 		if (ltdb->cache->indexlist == NULL ||
-		    ltdb->cache->subclasses == NULL ||
 		    ltdb->cache->attributes == NULL) {
 			goto failed;
 		}
@@ -369,16 +305,12 @@ int ltdb_cache_load(struct ldb_module *module)
 	memset(&ltdb->cache->last_attribute, 0, sizeof(ltdb->cache->last_attribute));
 
 	ltdb_attributes_unload(module);
-	ltdb_subclasses_unload(module);
 
 	talloc_free(ltdb->cache->indexlist);
-	talloc_free(ltdb->cache->subclasses);
 
 	ltdb->cache->indexlist = talloc_zero(ltdb->cache, struct ldb_message);
-	ltdb->cache->subclasses = talloc_zero(ltdb->cache, struct ldb_message);
 	ltdb->cache->attributes = talloc_zero(ltdb->cache, struct ldb_message);
 	if (ltdb->cache->indexlist == NULL ||
-	    ltdb->cache->subclasses == NULL ||
 	    ltdb->cache->attributes == NULL) {
 		goto failed;
 	}
@@ -392,9 +324,6 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 
 	if (ltdb_attributes_load(module) == -1) {
-		goto failed;
-	}
-	if (ltdb_subclasses_load(module) == -1) {
 		goto failed;
 	}
 

@@ -97,7 +97,6 @@ partition: cn=SideTest:" + prefix + "/" + "testside.ldb
 partition: cn=Sub,cn=PartTest:" + prefix + "/" + "testsub.ldb
 partition: cn=PartTest:" + prefix + "/" + "testpartition.ldb
 partition: cn=Sub,cn=Sub,cn=PartTest:" + prefix + "/" + "testsubsub.ldb
-replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
 modules: cn=PartTest:objectguid
