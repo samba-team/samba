@@ -111,6 +111,7 @@ typedef void TALLOC_CTX;
 #define talloc_array_p(ctx, type, count) talloc_array(ctx, type, count)
 #define talloc_realloc_p(ctx, p, type, count) talloc_realloc(ctx, p, type, count)
 #define talloc_destroy(ctx) talloc_free(ctx)
+#define talloc_append_string(c, s, a) (s?talloc_strdup_append(s,a):talloc_strdup(c, a))
 #endif
 
 /* The following definitions come from talloc.c  */
@@ -177,7 +178,5 @@ char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap) PRINT
 char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-
-char *talloc_append_string(const void *t, char *orig, const char *append);
 
 #endif
