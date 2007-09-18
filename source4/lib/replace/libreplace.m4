@@ -307,17 +307,6 @@ if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
 fi 
 
 
-AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
-	dnl Check whether the compiler can generate precompiled headers
-	touch conftest.h
-	if ${CC-cc} conftest.h 2> /dev/null && test -f conftest.h.gch; then
-		precompiled_headers=yes
-	else
-		precompiled_headers=no
-	fi])
-AC_SUBST(precompiled_headers)
-
-
 dnl Check if the C compiler understands volatile (it should, being ANSI).
 AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
 	AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
