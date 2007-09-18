@@ -856,16 +856,38 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 		goto done;
 	}
 
-	ret = ltdb_add_internal(module, msg);
-	if (ret != LDB_SUCCESS) {
-		goto done;
-	}
+	if (ldb_dn_compare(req->op.rename.olddn, req->op.rename.newdn) == 0) {
+		/* The rename operation is apparently only changing case -
+		   the DNs are the same.  Delete the old DN before adding
+		   the new one to avoid a TDB_ERR_EXISTS error.
 
-	tret = ltdb_delete_internal(module, req->op.rename.olddn);
-	if (tret != LDB_SUCCESS) {
-		ltdb_delete_internal(module, req->op.rename.newdn);
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+		   The only drawback to this is that if the delete
+		   succeeds but the add fails, we rely on the
+		   transaction to roll this all back. */
+		ret = ltdb_delete_internal(module, req->op.rename.olddn);
+		if (ret != LDB_SUCCESS) {
+			goto done;
+		}
+
+		ret = ltdb_add_internal(module, msg);
+		if (ret != LDB_SUCCESS) {
+			goto done;
+		}
+	} else {
+		/* The rename operation is changing DNs.  Try to add the new
+		   DN first to avoid clobbering another DN not related to
+		   this rename operation. */
+		ret = ltdb_add_internal(module, msg);
+		if (ret != LDB_SUCCESS) {
+			goto done;
+		}
+
+		tret = ltdb_delete_internal(module, req->op.rename.olddn);
+		if (tret != LDB_SUCCESS) {
+			ltdb_delete_internal(module, req->op.rename.newdn);
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			goto done;
+		}
 	}
 
 	if (ltdb_ac->callback) {
