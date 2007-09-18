@@ -902,8 +902,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 	static void *normal_private;
 	void **private;
 
-	buf = talloc(NULL, char);
-	buf[0] = '\0';
+	buf = talloc_strdup(NULL, "");
 
 	if (buf == NULL) {
 		DEBUG(0, ("Failed to allocate memory for reading the input "
@@ -926,7 +925,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 			exit(0);
 		}
 
-		buf = talloc_append_string(buf, buf, tmp);
+		buf = talloc_strdup_append_buffer(buf, tmp);
 		buf_size += INITIAL_BUFFER_SIZE;
 
 		if (buf_size > MAX_BUFFER_SIZE) {
