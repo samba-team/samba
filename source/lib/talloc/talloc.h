@@ -152,15 +152,6 @@ void talloc_enable_leak_report(void);
 void talloc_enable_leak_report_full(void);
 void *_talloc_zero(const void *ctx, size_t size, const char *name);
 void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name);
-char *talloc_strdup(const void *t, const char *p);
-char *talloc_strndup(const void *t, const char *p, size_t n);
-char *talloc_append_string(const void *t, char *orig, const char *append);
-char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
-char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
-char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
-char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void *_talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
@@ -170,5 +161,23 @@ size_t talloc_get_size(const void *ctx);
 void *talloc_find_parent_byname(const void *ctx, const char *name);
 void talloc_show_parents(const void *context, FILE *file);
 int talloc_is_parent(const void *context, const void *ptr);
+
+char *talloc_strdup(const void *t, const char *p);
+char *talloc_strdup_append(char *s, const char *a);
+char *talloc_strdup_append_buffer(char *s, const char *a);
+
+char *talloc_strndup(const void *t, const char *p, size_t n);
+char *talloc_strndup_append(char *s, const char *a, size_t n);
+char *talloc_strndup_append_buffer(char *s, const char *a, size_t n);
+
+char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+
+char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+
+char *talloc_append_string(const void *t, char *orig, const char *append);
 
 #endif
