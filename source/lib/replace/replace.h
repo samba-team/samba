@@ -474,7 +474,7 @@ typedef int bool;
 #define __STRING(x)    #x
 #endif
 
-#ifndef _STRINGSTRING
+#ifndef __STRINGSTRING
 #define __STRINGSTRING(x) __STRING(x)
 #endif
 
