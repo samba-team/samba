@@ -132,27 +132,11 @@ static void *append_string(void *ctx,
                            char *append,
                            int size)
 {
-    char c;
-    char *end_p = append + size;
-    void *ret;
+	if (!orig) {
+		return talloc_strndup(ctx, append, size);
+	}
 
-    /*
-     * We need to null terminate the string to be copied.  Save character at
-     * the size limit of the source string.
-     */
-    c = *end_p;
-
-    /* Temporarily null-terminate it */
-    *end_p = '\0';
-
-    /* Append the requested data */
-    ret = talloc_append_string(ctx, orig, append);
-    
-    /* Restore the original character in place of our temporary null byte */
-    *end_p = c;
-
-    /* Give 'em what they came for */
-    return ret;
+	return talloc_strndup_append(orig, append, size);
 }
 
 
