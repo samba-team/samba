@@ -1313,6 +1313,37 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
 	return ret;
 }
 
+static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
+						 const char *fmt, va_list ap)
+{
+	ssize_t alen;
+	va_list ap2;
+	char c;
+
+	va_copy(ap2, ap);
+	alen = vsnprintf(&c, 1, fmt, ap2);
+	va_end(ap2);
+
+	if (alen <= 0) {
+		/* Either the vsnprintf failed or the format resulted in
+		 * no characters being formatted. In the former case, we
+		 * ought to return NULL, in the latter we ought to return
+		 * the original string. Most current callers of this
+		 * function expect it to never return NULL.
+		 */
+		return s;
+	}
+
+	s = talloc_realloc(NULL, s, char, slen + alen + 1);
+	if (!s) return NULL;
+
+	va_copy(ap2, ap);
+	vsnprintf(s + slen, alen + 1, fmt, ap2);
+	va_end(ap2);
+
+	_talloc_set_name_const(s, s);
+	return s;
+}
 
 /**
  * Realloc @p s to append the formatted result of @p fmt and @p ap,
@@ -1322,39 +1353,11 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
  **/
 char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 {
-	int len, s_len;
-	va_list ap2;
-	char c;
-
-	if (s == NULL) {
+	if (unlikely(!s)) {
 		return talloc_vasprintf(NULL, fmt, ap);
 	}
 
-	s_len = strlen(s);
-
-	va_copy(ap2, ap);
-	len = vsnprintf(&c, 1, fmt, ap2);
-	va_end(ap2);
-
-	if (len <= 0) {
-		/* Either the vsnprintf failed or the format resulted in
-		 * no characters being formatted. In the former case, we
-		 * ought to return NULL, in the latter we ought to return
-		 * the original string. Most current callers of this
-		 * function expect it to never return NULL.
-		 */
-		return s;
-	}
-
-	s = talloc_realloc(NULL, s, char, s_len + len+1);
-	if (!s) return NULL;
-
-	va_copy(ap2, ap);
-	vsnprintf(s+s_len, len+1, fmt, ap2);
-	va_end(ap2);
-	_talloc_set_name_const(s, s);
-
-	return s;
+	return __talloc_vaslenprintf_append(s, strlen(s), fmt, ap);
 }
 
 /**
@@ -1364,42 +1367,18 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
  **/
 char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap)
 {
-	struct talloc_chunk *tc;
-	int len, s_len;
-	va_list ap2;
-	char c;
+	size_t slen;
 
-	if (s == NULL) {
+	if (unlikely(!s)) {
 		return talloc_vasprintf(NULL, fmt, ap);
 	}
 
-	tc = talloc_chunk_from_ptr(s);
-
-	s_len = tc->size - 1;
-
-	va_copy(ap2, ap);
-	len = vsnprintf(&c, 1, fmt, ap2);
-	va_end(ap2);
-
-	if (len <= 0) {
-		/* Either the vsnprintf failed or the format resulted in
-		 * no characters being formatted. In the former case, we
-		 * ought to return NULL, in the latter we ought to return
-		 * the original string. Most current callers of this
-		 * function expect it to never return NULL.
-		 */
-		return s;
+	slen = talloc_get_size(s);
+	if (likely(slen > 0)) {
+		slen--;
 	}
 
-	s = talloc_realloc(NULL, s, char, s_len + len+1);
-	if (!s) return NULL;
-
-	va_copy(ap2, ap);
-	vsnprintf(s+s_len, len+1, fmt, ap2);
-	va_end(ap2);
-	_talloc_set_name_const(s, s);
-
-	return s;
+	return __talloc_vaslenprintf_append(s, slen, fmt, ap);
 }
 
 /*
