@@ -360,6 +360,9 @@ BOOL asn1_load(struct asn1_data *data, DATA_BLOB blob)
 /* Peek into an ASN1 buffer, not advancing the pointer */
 BOOL asn1_peek(struct asn1_data *data, void *p, int len)
 {
+	if (data->has_error)
+		return False;
+
 	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len)
 		return False;
 
@@ -405,7 +408,7 @@ BOOL asn1_peek_tag(struct asn1_data *data, uint8_t tag)
 		return False;
 	}
 
-	if (!asn1_peek(data, &b, sizeof(b)))
+	if (!asn1_peek_uint8(data, &b))
 		return False;
 
 	return (b == tag);
