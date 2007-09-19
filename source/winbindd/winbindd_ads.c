@@ -1049,13 +1049,13 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		status = rpccli_lsa_lookup_sids_all(cli, tmp_ctx, 
-						    &lsa_policy,
-						    num_nocache, 
-						    sid_mem_nocache, 
-						    &domains_nocache, 
-						    &names_nocache, 
-						    &name_types_nocache);
+		status = rpccli_lsa_lookup_sids(cli, tmp_ctx, 
+						&lsa_policy,
+						num_nocache, 
+						sid_mem_nocache, 
+						&domains_nocache, 
+						&names_nocache, 
+						&name_types_nocache);
 
 		if (NT_STATUS_IS_OK(status) ||
 		    NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) 
