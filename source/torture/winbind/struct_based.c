@@ -18,9 +18,11 @@
 */
 
 #include "includes.h"
+#include "pstring.h"
 #include "torture/torture.h"
 #include "torture/winbind/proto.h"
 #include "nsswitch/winbind_client.h"
+#include "param/param.h"
 
 #define DO_STRUCT_REQ_REP(op,req,rep) do { \
 	NSS_STATUS _result; \
@@ -51,11 +53,31 @@ static bool torture_winbind_struct_ping(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_winbind_struct_getdcname(struct torture_context *torture)
+{
+	struct winbindd_request req;
+	struct winbindd_response rep;
+
+	ZERO_STRUCT(req);
+	ZERO_STRUCT(rep);
+
+	fstrcpy(req.domain_name, lp_workgroup());
+
+	DO_STRUCT_REQ_REP(WINBINDD_GETDCNAME, &req, &rep);
+
+	/*
+	 * TODO: test all trusted domains
+	 */
+
+	return true;
+}
+
 struct torture_suite *torture_winbind_struct_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "STRUCT");
 
 	torture_suite_add_simple_test(suite, "PING", torture_winbind_struct_ping);
+	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
 
 	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
 
