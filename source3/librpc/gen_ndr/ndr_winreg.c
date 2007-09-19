@@ -6,13 +6,13 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_initshutdown.h"
 #include "librpc/gen_ndr/ndr_security.h"
-NTSTATUS ndr_push_winreg_AccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+static NTSTATUS ndr_push_winreg_AccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_AccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+static NTSTATUS ndr_pull_winreg_AccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -35,13 +35,13 @@ _PUBLIC_ void ndr_print_winreg_AccessMask(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_Type(struct ndr_push *ndr, int ndr_flags, enum winreg_Type r)
+static NTSTATUS ndr_push_winreg_Type(struct ndr_push *ndr, int ndr_flags, enum winreg_Type r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_Type(struct ndr_pull *ndr, int ndr_flags, enum winreg_Type *r)
+static NTSTATUS ndr_pull_winreg_Type(struct ndr_pull *ndr, int ndr_flags, enum winreg_Type *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -136,7 +136,7 @@ _PUBLIC_ void ndr_print_winreg_String(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_KeySecurityData(struct ndr_push *ndr, int ndr_flags, const struct KeySecurityData *r)
+static NTSTATUS ndr_push_KeySecurityData(struct ndr_push *ndr, int ndr_flags, const struct KeySecurityData *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -155,7 +155,7 @@ NTSTATUS ndr_push_KeySecurityData(struct ndr_push *ndr, int ndr_flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_KeySecurityData(struct ndr_pull *ndr, int ndr_flags, struct KeySecurityData *r)
+static NTSTATUS ndr_pull_KeySecurityData(struct ndr_pull *ndr, int ndr_flags, struct KeySecurityData *r)
 {
 	uint32_t _ptr_data;
 	TALLOC_CTX *_mem_save_data_0;
@@ -208,7 +208,7 @@ _PUBLIC_ void ndr_print_KeySecurityData(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_SecBuf(struct ndr_push *ndr, int ndr_flags, const struct winreg_SecBuf *r)
+static NTSTATUS ndr_push_winreg_SecBuf(struct ndr_push *ndr, int ndr_flags, const struct winreg_SecBuf *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -222,7 +222,7 @@ NTSTATUS ndr_push_winreg_SecBuf(struct ndr_push *ndr, int ndr_flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_SecBuf(struct ndr_pull *ndr, int ndr_flags, struct winreg_SecBuf *r)
+static NTSTATUS ndr_pull_winreg_SecBuf(struct ndr_pull *ndr, int ndr_flags, struct winreg_SecBuf *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -246,13 +246,13 @@ _PUBLIC_ void ndr_print_winreg_SecBuf(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_CreateAction(struct ndr_push *ndr, int ndr_flags, enum winreg_CreateAction r)
+static NTSTATUS ndr_push_winreg_CreateAction(struct ndr_push *ndr, int ndr_flags, enum winreg_CreateAction r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_CreateAction(struct ndr_pull *ndr, int ndr_flags, enum winreg_CreateAction *r)
+static NTSTATUS ndr_pull_winreg_CreateAction(struct ndr_pull *ndr, int ndr_flags, enum winreg_CreateAction *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -272,7 +272,7 @@ _PUBLIC_ void ndr_print_winreg_CreateAction(struct ndr_print *ndr, const char *n
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-NTSTATUS ndr_push_winreg_StringBuf(struct ndr_push *ndr, int ndr_flags, const struct winreg_StringBuf *r)
+static NTSTATUS ndr_push_winreg_StringBuf(struct ndr_push *ndr, int ndr_flags, const struct winreg_StringBuf *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -291,7 +291,7 @@ NTSTATUS ndr_push_winreg_StringBuf(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_StringBuf(struct ndr_pull *ndr, int ndr_flags, struct winreg_StringBuf *r)
+static NTSTATUS ndr_pull_winreg_StringBuf(struct ndr_pull *ndr, int ndr_flags, struct winreg_StringBuf *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_name_0;
@@ -343,7 +343,7 @@ _PUBLIC_ void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_ValNameBuf(struct ndr_push *ndr, int ndr_flags, const struct winreg_ValNameBuf *r)
+static NTSTATUS ndr_push_winreg_ValNameBuf(struct ndr_push *ndr, int ndr_flags, const struct winreg_ValNameBuf *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -362,7 +362,7 @@ NTSTATUS ndr_push_winreg_ValNameBuf(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_ValNameBuf(struct ndr_pull *ndr, int ndr_flags, struct winreg_ValNameBuf *r)
+static NTSTATUS ndr_pull_winreg_ValNameBuf(struct ndr_pull *ndr, int ndr_flags, struct winreg_ValNameBuf *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_name_0;
@@ -414,7 +414,7 @@ _PUBLIC_ void ndr_print_winreg_ValNameBuf(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_KeySecurityAttribute(struct ndr_push *ndr, int ndr_flags, const struct KeySecurityAttribute *r)
+static NTSTATUS ndr_push_KeySecurityAttribute(struct ndr_push *ndr, int ndr_flags, const struct KeySecurityAttribute *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -428,7 +428,7 @@ NTSTATUS ndr_push_KeySecurityAttribute(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_KeySecurityAttribute(struct ndr_pull *ndr, int ndr_flags, struct KeySecurityAttribute *r)
+static NTSTATUS ndr_pull_KeySecurityAttribute(struct ndr_pull *ndr, int ndr_flags, struct KeySecurityAttribute *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -452,7 +452,7 @@ _PUBLIC_ void ndr_print_KeySecurityAttribute(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_QueryMultipleValue(struct ndr_push *ndr, int ndr_flags, const struct QueryMultipleValue *r)
+static NTSTATUS ndr_push_QueryMultipleValue(struct ndr_push *ndr, int ndr_flags, const struct QueryMultipleValue *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -469,7 +469,7 @@ NTSTATUS ndr_push_QueryMultipleValue(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_QueryMultipleValue(struct ndr_pull *ndr, int ndr_flags, struct QueryMultipleValue *r)
+static NTSTATUS ndr_pull_QueryMultipleValue(struct ndr_pull *ndr, int ndr_flags, struct QueryMultipleValue *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_name_0;
@@ -512,7 +512,7 @@ _PUBLIC_ void ndr_print_QueryMultipleValue(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKCR(struct ndr_push *ndr, int flags, const struct winreg_OpenHKCR *r)
+static NTSTATUS ndr_push_winreg_OpenHKCR(struct ndr_push *ndr, int flags, const struct winreg_OpenHKCR *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -529,7 +529,7 @@ NTSTATUS ndr_push_winreg_OpenHKCR(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKCR(struct ndr_pull *ndr, int flags, struct winreg_OpenHKCR *r)
+static NTSTATUS ndr_pull_winreg_OpenHKCR(struct ndr_pull *ndr, int flags, struct winreg_OpenHKCR *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -598,7 +598,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKCR(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKCU(struct ndr_push *ndr, int flags, const struct winreg_OpenHKCU *r)
+static NTSTATUS ndr_push_winreg_OpenHKCU(struct ndr_push *ndr, int flags, const struct winreg_OpenHKCU *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -615,7 +615,7 @@ NTSTATUS ndr_push_winreg_OpenHKCU(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKCU(struct ndr_pull *ndr, int flags, struct winreg_OpenHKCU *r)
+static NTSTATUS ndr_pull_winreg_OpenHKCU(struct ndr_pull *ndr, int flags, struct winreg_OpenHKCU *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -684,7 +684,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKCU(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKLM(struct ndr_push *ndr, int flags, const struct winreg_OpenHKLM *r)
+static NTSTATUS ndr_push_winreg_OpenHKLM(struct ndr_push *ndr, int flags, const struct winreg_OpenHKLM *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -701,7 +701,7 @@ NTSTATUS ndr_push_winreg_OpenHKLM(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKLM(struct ndr_pull *ndr, int flags, struct winreg_OpenHKLM *r)
+static NTSTATUS ndr_pull_winreg_OpenHKLM(struct ndr_pull *ndr, int flags, struct winreg_OpenHKLM *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -770,7 +770,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKLM(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKPD(struct ndr_push *ndr, int flags, const struct winreg_OpenHKPD *r)
+static NTSTATUS ndr_push_winreg_OpenHKPD(struct ndr_push *ndr, int flags, const struct winreg_OpenHKPD *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -787,7 +787,7 @@ NTSTATUS ndr_push_winreg_OpenHKPD(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKPD(struct ndr_pull *ndr, int flags, struct winreg_OpenHKPD *r)
+static NTSTATUS ndr_pull_winreg_OpenHKPD(struct ndr_pull *ndr, int flags, struct winreg_OpenHKPD *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -856,7 +856,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKPD(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKU(struct ndr_push *ndr, int flags, const struct winreg_OpenHKU *r)
+static NTSTATUS ndr_push_winreg_OpenHKU(struct ndr_push *ndr, int flags, const struct winreg_OpenHKU *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -873,7 +873,7 @@ NTSTATUS ndr_push_winreg_OpenHKU(struct ndr_push *ndr, int flags, const struct w
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKU(struct ndr_pull *ndr, int flags, struct winreg_OpenHKU *r)
+static NTSTATUS ndr_pull_winreg_OpenHKU(struct ndr_pull *ndr, int flags, struct winreg_OpenHKU *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -942,7 +942,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKU(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_CloseKey(struct ndr_push *ndr, int flags, const struct winreg_CloseKey *r)
+static NTSTATUS ndr_push_winreg_CloseKey(struct ndr_push *ndr, int flags, const struct winreg_CloseKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -956,7 +956,7 @@ NTSTATUS ndr_push_winreg_CloseKey(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_CloseKey(struct ndr_pull *ndr, int flags, struct winreg_CloseKey *r)
+static NTSTATUS ndr_pull_winreg_CloseKey(struct ndr_pull *ndr, int flags, struct winreg_CloseKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1014,7 +1014,7 @@ _PUBLIC_ void ndr_print_winreg_CloseKey(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_CreateKey(struct ndr_push *ndr, int flags, const struct winreg_CreateKey *r)
+static NTSTATUS ndr_push_winreg_CreateKey(struct ndr_push *ndr, int flags, const struct winreg_CreateKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1044,7 +1044,7 @@ NTSTATUS ndr_push_winreg_CreateKey(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int flags, struct winreg_CreateKey *r)
+static NTSTATUS ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int flags, struct winreg_CreateKey *r)
 {
 	uint32_t _ptr_secdesc;
 	uint32_t _ptr_action_taken;
@@ -1169,7 +1169,7 @@ _PUBLIC_ void ndr_print_winreg_CreateKey(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_DeleteKey(struct ndr_push *ndr, int flags, const struct winreg_DeleteKey *r)
+static NTSTATUS ndr_push_winreg_DeleteKey(struct ndr_push *ndr, int flags, const struct winreg_DeleteKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1182,7 +1182,7 @@ NTSTATUS ndr_push_winreg_DeleteKey(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_DeleteKey(struct ndr_pull *ndr, int flags, struct winreg_DeleteKey *r)
+static NTSTATUS ndr_pull_winreg_DeleteKey(struct ndr_pull *ndr, int flags, struct winreg_DeleteKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1227,7 +1227,7 @@ _PUBLIC_ void ndr_print_winreg_DeleteKey(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_DeleteValue(struct ndr_push *ndr, int flags, const struct winreg_DeleteValue *r)
+static NTSTATUS ndr_push_winreg_DeleteValue(struct ndr_push *ndr, int flags, const struct winreg_DeleteValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1240,7 +1240,7 @@ NTSTATUS ndr_push_winreg_DeleteValue(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_DeleteValue(struct ndr_pull *ndr, int flags, struct winreg_DeleteValue *r)
+static NTSTATUS ndr_pull_winreg_DeleteValue(struct ndr_pull *ndr, int flags, struct winreg_DeleteValue *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1285,7 +1285,7 @@ _PUBLIC_ void ndr_print_winreg_DeleteValue(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags, const struct winreg_EnumKey *r)
+static NTSTATUS ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags, const struct winreg_EnumKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1318,7 +1318,7 @@ NTSTATUS ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags, const struct w
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_EnumKey *r)
+static NTSTATUS ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_EnumKey *r)
 {
 	uint32_t _ptr_keyclass;
 	uint32_t _ptr_last_changed_time;
@@ -1466,7 +1466,7 @@ _PUBLIC_ void ndr_print_winreg_EnumKey(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_EnumValue(struct ndr_push *ndr, int flags, const struct winreg_EnumValue *r)
+static NTSTATUS ndr_push_winreg_EnumValue(struct ndr_push *ndr, int flags, const struct winreg_EnumValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1521,7 +1521,7 @@ NTSTATUS ndr_push_winreg_EnumValue(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_EnumValue(struct ndr_pull *ndr, int flags, struct winreg_EnumValue *r)
+static NTSTATUS ndr_pull_winreg_EnumValue(struct ndr_pull *ndr, int flags, struct winreg_EnumValue *r)
 {
 	uint32_t _ptr_type;
 	uint32_t _ptr_value;
@@ -1775,7 +1775,7 @@ _PUBLIC_ void ndr_print_winreg_EnumValue(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_FlushKey(struct ndr_push *ndr, int flags, const struct winreg_FlushKey *r)
+static NTSTATUS ndr_push_winreg_FlushKey(struct ndr_push *ndr, int flags, const struct winreg_FlushKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1787,7 +1787,7 @@ NTSTATUS ndr_push_winreg_FlushKey(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_FlushKey(struct ndr_pull *ndr, int flags, struct winreg_FlushKey *r)
+static NTSTATUS ndr_pull_winreg_FlushKey(struct ndr_pull *ndr, int flags, struct winreg_FlushKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1830,7 +1830,7 @@ _PUBLIC_ void ndr_print_winreg_FlushKey(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_GetKeySecurity(struct ndr_push *ndr, int flags, const struct winreg_GetKeySecurity *r)
+static NTSTATUS ndr_push_winreg_GetKeySecurity(struct ndr_push *ndr, int flags, const struct winreg_GetKeySecurity *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1847,7 +1847,7 @@ NTSTATUS ndr_push_winreg_GetKeySecurity(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_GetKeySecurity(struct ndr_pull *ndr, int flags, struct winreg_GetKeySecurity *r)
+static NTSTATUS ndr_pull_winreg_GetKeySecurity(struct ndr_pull *ndr, int flags, struct winreg_GetKeySecurity *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sd_0;
@@ -1919,7 +1919,7 @@ _PUBLIC_ void ndr_print_winreg_GetKeySecurity(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_LoadKey(struct ndr_push *ndr, int flags, const struct winreg_LoadKey *r)
+static NTSTATUS ndr_push_winreg_LoadKey(struct ndr_push *ndr, int flags, const struct winreg_LoadKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1939,7 +1939,7 @@ NTSTATUS ndr_push_winreg_LoadKey(struct ndr_push *ndr, int flags, const struct w
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_LoadKey(struct ndr_pull *ndr, int flags, struct winreg_LoadKey *r)
+static NTSTATUS ndr_pull_winreg_LoadKey(struct ndr_pull *ndr, int flags, struct winreg_LoadKey *r)
 {
 	uint32_t _ptr_keyname;
 	uint32_t _ptr_filename;
@@ -2022,7 +2022,7 @@ _PUBLIC_ void ndr_print_winreg_LoadKey(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_NotifyChangeKeyValue(struct ndr_push *ndr, int flags, const struct winreg_NotifyChangeKeyValue *r)
+static NTSTATUS ndr_push_winreg_NotifyChangeKeyValue(struct ndr_push *ndr, int flags, const struct winreg_NotifyChangeKeyValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2040,7 +2040,7 @@ NTSTATUS ndr_push_winreg_NotifyChangeKeyValue(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_NotifyChangeKeyValue(struct ndr_pull *ndr, int flags, struct winreg_NotifyChangeKeyValue *r)
+static NTSTATUS ndr_pull_winreg_NotifyChangeKeyValue(struct ndr_pull *ndr, int flags, struct winreg_NotifyChangeKeyValue *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -2095,7 +2095,7 @@ _PUBLIC_ void ndr_print_winreg_NotifyChangeKeyValue(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenKey(struct ndr_push *ndr, int flags, const struct winreg_OpenKey *r)
+static NTSTATUS ndr_push_winreg_OpenKey(struct ndr_push *ndr, int flags, const struct winreg_OpenKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.parent_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2112,7 +2112,7 @@ NTSTATUS ndr_push_winreg_OpenKey(struct ndr_push *ndr, int flags, const struct w
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenKey(struct ndr_pull *ndr, int flags, struct winreg_OpenKey *r)
+static NTSTATUS ndr_pull_winreg_OpenKey(struct ndr_pull *ndr, int flags, struct winreg_OpenKey *r)
 {
 	TALLOC_CTX *_mem_save_parent_handle_0;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -2177,7 +2177,7 @@ _PUBLIC_ void ndr_print_winreg_OpenKey(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int flags, const struct winreg_QueryInfoKey *r)
+static NTSTATUS ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int flags, const struct winreg_QueryInfoKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2209,7 +2209,7 @@ NTSTATUS ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct winreg_QueryInfoKey *r)
+static NTSTATUS ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct winreg_QueryInfoKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_classname_0;
@@ -2391,7 +2391,7 @@ _PUBLIC_ void ndr_print_winreg_QueryInfoKey(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struct winreg_QueryValue *r)
+static NTSTATUS ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struct winreg_QueryValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2442,7 +2442,7 @@ NTSTATUS ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winreg_QueryValue *r)
+static NTSTATUS ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winreg_QueryValue *r)
 {
 	uint32_t _ptr_type;
 	uint32_t _ptr_data;
@@ -2671,7 +2671,7 @@ _PUBLIC_ void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_ReplaceKey(struct ndr_push *ndr, int flags, const struct winreg_ReplaceKey *r)
+static NTSTATUS ndr_push_winreg_ReplaceKey(struct ndr_push *ndr, int flags, const struct winreg_ReplaceKey *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -2681,7 +2681,7 @@ NTSTATUS ndr_push_winreg_ReplaceKey(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_ReplaceKey(struct ndr_pull *ndr, int flags, struct winreg_ReplaceKey *r)
+static NTSTATUS ndr_pull_winreg_ReplaceKey(struct ndr_pull *ndr, int flags, struct winreg_ReplaceKey *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -2712,7 +2712,7 @@ _PUBLIC_ void ndr_print_winreg_ReplaceKey(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_RestoreKey(struct ndr_push *ndr, int flags, const struct winreg_RestoreKey *r)
+static NTSTATUS ndr_push_winreg_RestoreKey(struct ndr_push *ndr, int flags, const struct winreg_RestoreKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2727,7 +2727,7 @@ NTSTATUS ndr_push_winreg_RestoreKey(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_RestoreKey(struct ndr_pull *ndr, int flags, struct winreg_RestoreKey *r)
+static NTSTATUS ndr_pull_winreg_RestoreKey(struct ndr_pull *ndr, int flags, struct winreg_RestoreKey *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_filename_0;
@@ -2784,7 +2784,7 @@ _PUBLIC_ void ndr_print_winreg_RestoreKey(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_SaveKey(struct ndr_push *ndr, int flags, const struct winreg_SaveKey *r)
+static NTSTATUS ndr_push_winreg_SaveKey(struct ndr_push *ndr, int flags, const struct winreg_SaveKey *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2802,7 +2802,7 @@ NTSTATUS ndr_push_winreg_SaveKey(struct ndr_push *ndr, int flags, const struct w
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_SaveKey(struct ndr_pull *ndr, int flags, struct winreg_SaveKey *r)
+static NTSTATUS ndr_pull_winreg_SaveKey(struct ndr_pull *ndr, int flags, struct winreg_SaveKey *r)
 {
 	uint32_t _ptr_sec_attrib;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -2877,7 +2877,7 @@ _PUBLIC_ void ndr_print_winreg_SaveKey(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_SetKeySecurity(struct ndr_push *ndr, int flags, const struct winreg_SetKeySecurity *r)
+static NTSTATUS ndr_push_winreg_SetKeySecurity(struct ndr_push *ndr, int flags, const struct winreg_SetKeySecurity *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2892,7 +2892,7 @@ NTSTATUS ndr_push_winreg_SetKeySecurity(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_SetKeySecurity(struct ndr_pull *ndr, int flags, struct winreg_SetKeySecurity *r)
+static NTSTATUS ndr_pull_winreg_SetKeySecurity(struct ndr_pull *ndr, int flags, struct winreg_SetKeySecurity *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sd_0;
@@ -2949,7 +2949,7 @@ _PUBLIC_ void ndr_print_winreg_SetKeySecurity(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_SetValue(struct ndr_push *ndr, int flags, const struct winreg_SetValue *r)
+static NTSTATUS ndr_push_winreg_SetValue(struct ndr_push *ndr, int flags, const struct winreg_SetValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2967,7 +2967,7 @@ NTSTATUS ndr_push_winreg_SetValue(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_SetValue(struct ndr_pull *ndr, int flags, struct winreg_SetValue *r)
+static NTSTATUS ndr_pull_winreg_SetValue(struct ndr_pull *ndr, int flags, struct winreg_SetValue *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -3028,7 +3028,7 @@ _PUBLIC_ void ndr_print_winreg_SetValue(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_UnLoadKey(struct ndr_push *ndr, int flags, const struct winreg_UnLoadKey *r)
+static NTSTATUS ndr_push_winreg_UnLoadKey(struct ndr_push *ndr, int flags, const struct winreg_UnLoadKey *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -3038,7 +3038,7 @@ NTSTATUS ndr_push_winreg_UnLoadKey(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_UnLoadKey(struct ndr_pull *ndr, int flags, struct winreg_UnLoadKey *r)
+static NTSTATUS ndr_pull_winreg_UnLoadKey(struct ndr_pull *ndr, int flags, struct winreg_UnLoadKey *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -3069,7 +3069,7 @@ _PUBLIC_ void ndr_print_winreg_UnLoadKey(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_InitiateSystemShutdown(struct ndr_push *ndr, int flags, const struct winreg_InitiateSystemShutdown *r)
+static NTSTATUS ndr_push_winreg_InitiateSystemShutdown(struct ndr_push *ndr, int flags, const struct winreg_InitiateSystemShutdown *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.hostname));
@@ -3090,7 +3090,7 @@ NTSTATUS ndr_push_winreg_InitiateSystemShutdown(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_InitiateSystemShutdown(struct ndr_pull *ndr, int flags, struct winreg_InitiateSystemShutdown *r)
+static NTSTATUS ndr_pull_winreg_InitiateSystemShutdown(struct ndr_pull *ndr, int flags, struct winreg_InitiateSystemShutdown *r)
 {
 	uint32_t _ptr_hostname;
 	uint32_t _ptr_message;
@@ -3167,7 +3167,7 @@ _PUBLIC_ void ndr_print_winreg_InitiateSystemShutdown(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_AbortSystemShutdown(struct ndr_push *ndr, int flags, const struct winreg_AbortSystemShutdown *r)
+static NTSTATUS ndr_push_winreg_AbortSystemShutdown(struct ndr_push *ndr, int flags, const struct winreg_AbortSystemShutdown *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server));
@@ -3181,7 +3181,7 @@ NTSTATUS ndr_push_winreg_AbortSystemShutdown(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_AbortSystemShutdown(struct ndr_pull *ndr, int flags, struct winreg_AbortSystemShutdown *r)
+static NTSTATUS ndr_pull_winreg_AbortSystemShutdown(struct ndr_pull *ndr, int flags, struct winreg_AbortSystemShutdown *r)
 {
 	uint32_t _ptr_server;
 	TALLOC_CTX *_mem_save_server_0;
@@ -3232,7 +3232,7 @@ _PUBLIC_ void ndr_print_winreg_AbortSystemShutdown(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_GetVersion(struct ndr_push *ndr, int flags, const struct winreg_GetVersion *r)
+static NTSTATUS ndr_push_winreg_GetVersion(struct ndr_push *ndr, int flags, const struct winreg_GetVersion *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3246,7 +3246,7 @@ NTSTATUS ndr_push_winreg_GetVersion(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_GetVersion(struct ndr_pull *ndr, int flags, struct winreg_GetVersion *r)
+static NTSTATUS ndr_pull_winreg_GetVersion(struct ndr_pull *ndr, int flags, struct winreg_GetVersion *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_version_0;
@@ -3305,7 +3305,7 @@ _PUBLIC_ void ndr_print_winreg_GetVersion(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKCC(struct ndr_push *ndr, int flags, const struct winreg_OpenHKCC *r)
+static NTSTATUS ndr_push_winreg_OpenHKCC(struct ndr_push *ndr, int flags, const struct winreg_OpenHKCC *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -3322,7 +3322,7 @@ NTSTATUS ndr_push_winreg_OpenHKCC(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKCC(struct ndr_pull *ndr, int flags, struct winreg_OpenHKCC *r)
+static NTSTATUS ndr_pull_winreg_OpenHKCC(struct ndr_pull *ndr, int flags, struct winreg_OpenHKCC *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -3391,7 +3391,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKCC(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKDD(struct ndr_push *ndr, int flags, const struct winreg_OpenHKDD *r)
+static NTSTATUS ndr_push_winreg_OpenHKDD(struct ndr_push *ndr, int flags, const struct winreg_OpenHKDD *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -3408,7 +3408,7 @@ NTSTATUS ndr_push_winreg_OpenHKDD(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKDD(struct ndr_pull *ndr, int flags, struct winreg_OpenHKDD *r)
+static NTSTATUS ndr_pull_winreg_OpenHKDD(struct ndr_pull *ndr, int flags, struct winreg_OpenHKDD *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -3477,7 +3477,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKDD(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_QueryMultipleValues(struct ndr_push *ndr, int flags, const struct winreg_QueryMultipleValues *r)
+static NTSTATUS ndr_push_winreg_QueryMultipleValues(struct ndr_push *ndr, int flags, const struct winreg_QueryMultipleValues *r)
 {
 	uint32_t cntr_values_1;
 	if (flags & NDR_IN) {
@@ -3529,7 +3529,7 @@ NTSTATUS ndr_push_winreg_QueryMultipleValues(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *ndr, int flags, struct winreg_QueryMultipleValues *r)
+static NTSTATUS ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *ndr, int flags, struct winreg_QueryMultipleValues *r)
 {
 	uint32_t cntr_values_1;
 	uint32_t _ptr_buffer;
@@ -3744,7 +3744,7 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_InitiateSystemShutdownEx(struct ndr_push *ndr, int flags, const struct winreg_InitiateSystemShutdownEx *r)
+static NTSTATUS ndr_push_winreg_InitiateSystemShutdownEx(struct ndr_push *ndr, int flags, const struct winreg_InitiateSystemShutdownEx *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.hostname));
@@ -3766,7 +3766,7 @@ NTSTATUS ndr_push_winreg_InitiateSystemShutdownEx(struct ndr_push *ndr, int flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_InitiateSystemShutdownEx(struct ndr_pull *ndr, int flags, struct winreg_InitiateSystemShutdownEx *r)
+static NTSTATUS ndr_pull_winreg_InitiateSystemShutdownEx(struct ndr_pull *ndr, int flags, struct winreg_InitiateSystemShutdownEx *r)
 {
 	uint32_t _ptr_hostname;
 	uint32_t _ptr_message;
@@ -3845,7 +3845,7 @@ _PUBLIC_ void ndr_print_winreg_InitiateSystemShutdownEx(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_SaveKeyEx(struct ndr_push *ndr, int flags, const struct winreg_SaveKeyEx *r)
+static NTSTATUS ndr_push_winreg_SaveKeyEx(struct ndr_push *ndr, int flags, const struct winreg_SaveKeyEx *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -3855,7 +3855,7 @@ NTSTATUS ndr_push_winreg_SaveKeyEx(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_SaveKeyEx(struct ndr_pull *ndr, int flags, struct winreg_SaveKeyEx *r)
+static NTSTATUS ndr_pull_winreg_SaveKeyEx(struct ndr_pull *ndr, int flags, struct winreg_SaveKeyEx *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -3886,7 +3886,7 @@ _PUBLIC_ void ndr_print_winreg_SaveKeyEx(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKPT(struct ndr_push *ndr, int flags, const struct winreg_OpenHKPT *r)
+static NTSTATUS ndr_push_winreg_OpenHKPT(struct ndr_push *ndr, int flags, const struct winreg_OpenHKPT *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -3903,7 +3903,7 @@ NTSTATUS ndr_push_winreg_OpenHKPT(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKPT(struct ndr_pull *ndr, int flags, struct winreg_OpenHKPT *r)
+static NTSTATUS ndr_pull_winreg_OpenHKPT(struct ndr_pull *ndr, int flags, struct winreg_OpenHKPT *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -3972,7 +3972,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKPT(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_OpenHKPN(struct ndr_push *ndr, int flags, const struct winreg_OpenHKPN *r)
+static NTSTATUS ndr_push_winreg_OpenHKPN(struct ndr_push *ndr, int flags, const struct winreg_OpenHKPN *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -3989,7 +3989,7 @@ NTSTATUS ndr_push_winreg_OpenHKPN(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_OpenHKPN(struct ndr_pull *ndr, int flags, struct winreg_OpenHKPN *r)
+static NTSTATUS ndr_pull_winreg_OpenHKPN(struct ndr_pull *ndr, int flags, struct winreg_OpenHKPN *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -4058,7 +4058,7 @@ _PUBLIC_ void ndr_print_winreg_OpenHKPN(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_winreg_QueryMultipleValues2(struct ndr_push *ndr, int flags, const struct winreg_QueryMultipleValues2 *r)
+static NTSTATUS ndr_push_winreg_QueryMultipleValues2(struct ndr_push *ndr, int flags, const struct winreg_QueryMultipleValues2 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4068,7 +4068,7 @@ NTSTATUS ndr_push_winreg_QueryMultipleValues2(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_winreg_QueryMultipleValues2(struct ndr_pull *ndr, int flags, struct winreg_QueryMultipleValues2 *r)
+static NTSTATUS ndr_pull_winreg_QueryMultipleValues2(struct ndr_pull *ndr, int flags, struct winreg_QueryMultipleValues2 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4099,14 +4099,14 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues2(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-const struct ndr_interface_call winreg_calls[] = {
+static const struct ndr_interface_call winreg_calls[] = {
 	{
 		"winreg_OpenHKCR",
 		sizeof(struct winreg_OpenHKCR),
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKCR,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKCR,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKCR,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKCU",
@@ -4114,7 +4114,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKCU,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKCU,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKCU,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKLM",
@@ -4122,7 +4122,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKLM,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKLM,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKLM,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKPD",
@@ -4130,7 +4130,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKPD,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKPD,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKPD,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKU",
@@ -4138,7 +4138,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKU,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKU,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKU,
-		False,
+		false,
 	},
 	{
 		"winreg_CloseKey",
@@ -4146,7 +4146,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_CloseKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_CloseKey,
 		(ndr_print_function_t) ndr_print_winreg_CloseKey,
-		False,
+		false,
 	},
 	{
 		"winreg_CreateKey",
@@ -4154,7 +4154,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_CreateKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_CreateKey,
 		(ndr_print_function_t) ndr_print_winreg_CreateKey,
-		False,
+		false,
 	},
 	{
 		"winreg_DeleteKey",
@@ -4162,7 +4162,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_DeleteKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_DeleteKey,
 		(ndr_print_function_t) ndr_print_winreg_DeleteKey,
-		False,
+		false,
 	},
 	{
 		"winreg_DeleteValue",
@@ -4170,7 +4170,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_DeleteValue,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_DeleteValue,
 		(ndr_print_function_t) ndr_print_winreg_DeleteValue,
-		False,
+		false,
 	},
 	{
 		"winreg_EnumKey",
@@ -4178,7 +4178,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_EnumKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_EnumKey,
 		(ndr_print_function_t) ndr_print_winreg_EnumKey,
-		False,
+		false,
 	},
 	{
 		"winreg_EnumValue",
@@ -4186,7 +4186,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_EnumValue,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_EnumValue,
 		(ndr_print_function_t) ndr_print_winreg_EnumValue,
-		False,
+		false,
 	},
 	{
 		"winreg_FlushKey",
@@ -4194,7 +4194,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_FlushKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_FlushKey,
 		(ndr_print_function_t) ndr_print_winreg_FlushKey,
-		False,
+		false,
 	},
 	{
 		"winreg_GetKeySecurity",
@@ -4202,7 +4202,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_GetKeySecurity,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_GetKeySecurity,
 		(ndr_print_function_t) ndr_print_winreg_GetKeySecurity,
-		False,
+		false,
 	},
 	{
 		"winreg_LoadKey",
@@ -4210,7 +4210,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_LoadKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_LoadKey,
 		(ndr_print_function_t) ndr_print_winreg_LoadKey,
-		False,
+		false,
 	},
 	{
 		"winreg_NotifyChangeKeyValue",
@@ -4218,7 +4218,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_NotifyChangeKeyValue,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_NotifyChangeKeyValue,
 		(ndr_print_function_t) ndr_print_winreg_NotifyChangeKeyValue,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenKey",
@@ -4226,7 +4226,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenKey,
 		(ndr_print_function_t) ndr_print_winreg_OpenKey,
-		False,
+		false,
 	},
 	{
 		"winreg_QueryInfoKey",
@@ -4234,7 +4234,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_QueryInfoKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_QueryInfoKey,
 		(ndr_print_function_t) ndr_print_winreg_QueryInfoKey,
-		False,
+		false,
 	},
 	{
 		"winreg_QueryValue",
@@ -4242,7 +4242,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_QueryValue,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_QueryValue,
 		(ndr_print_function_t) ndr_print_winreg_QueryValue,
-		False,
+		false,
 	},
 	{
 		"winreg_ReplaceKey",
@@ -4250,7 +4250,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_ReplaceKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_ReplaceKey,
 		(ndr_print_function_t) ndr_print_winreg_ReplaceKey,
-		False,
+		false,
 	},
 	{
 		"winreg_RestoreKey",
@@ -4258,7 +4258,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_RestoreKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_RestoreKey,
 		(ndr_print_function_t) ndr_print_winreg_RestoreKey,
-		False,
+		false,
 	},
 	{
 		"winreg_SaveKey",
@@ -4266,7 +4266,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_SaveKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_SaveKey,
 		(ndr_print_function_t) ndr_print_winreg_SaveKey,
-		False,
+		false,
 	},
 	{
 		"winreg_SetKeySecurity",
@@ -4274,7 +4274,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_SetKeySecurity,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_SetKeySecurity,
 		(ndr_print_function_t) ndr_print_winreg_SetKeySecurity,
-		False,
+		false,
 	},
 	{
 		"winreg_SetValue",
@@ -4282,7 +4282,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_SetValue,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_SetValue,
 		(ndr_print_function_t) ndr_print_winreg_SetValue,
-		False,
+		false,
 	},
 	{
 		"winreg_UnLoadKey",
@@ -4290,7 +4290,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_UnLoadKey,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_UnLoadKey,
 		(ndr_print_function_t) ndr_print_winreg_UnLoadKey,
-		False,
+		false,
 	},
 	{
 		"winreg_InitiateSystemShutdown",
@@ -4298,7 +4298,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_InitiateSystemShutdown,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_InitiateSystemShutdown,
 		(ndr_print_function_t) ndr_print_winreg_InitiateSystemShutdown,
-		False,
+		false,
 	},
 	{
 		"winreg_AbortSystemShutdown",
@@ -4306,7 +4306,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_AbortSystemShutdown,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_AbortSystemShutdown,
 		(ndr_print_function_t) ndr_print_winreg_AbortSystemShutdown,
-		False,
+		false,
 	},
 	{
 		"winreg_GetVersion",
@@ -4314,7 +4314,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_GetVersion,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_GetVersion,
 		(ndr_print_function_t) ndr_print_winreg_GetVersion,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKCC",
@@ -4322,7 +4322,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKCC,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKCC,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKCC,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKDD",
@@ -4330,7 +4330,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKDD,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKDD,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKDD,
-		False,
+		false,
 	},
 	{
 		"winreg_QueryMultipleValues",
@@ -4338,7 +4338,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_QueryMultipleValues,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_QueryMultipleValues,
 		(ndr_print_function_t) ndr_print_winreg_QueryMultipleValues,
-		False,
+		false,
 	},
 	{
 		"winreg_InitiateSystemShutdownEx",
@@ -4346,7 +4346,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_InitiateSystemShutdownEx,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_InitiateSystemShutdownEx,
 		(ndr_print_function_t) ndr_print_winreg_InitiateSystemShutdownEx,
-		False,
+		false,
 	},
 	{
 		"winreg_SaveKeyEx",
@@ -4354,7 +4354,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_SaveKeyEx,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_SaveKeyEx,
 		(ndr_print_function_t) ndr_print_winreg_SaveKeyEx,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKPT",
@@ -4362,7 +4362,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKPT,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKPT,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKPT,
-		False,
+		false,
 	},
 	{
 		"winreg_OpenHKPN",
@@ -4370,7 +4370,7 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_OpenHKPN,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_OpenHKPN,
 		(ndr_print_function_t) ndr_print_winreg_OpenHKPN,
-		False,
+		false,
 	},
 	{
 		"winreg_QueryMultipleValues2",
@@ -4378,27 +4378,27 @@ const struct ndr_interface_call winreg_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_winreg_QueryMultipleValues2,
 		(ndr_pull_flags_fn_t) ndr_pull_winreg_QueryMultipleValues2,
 		(ndr_print_function_t) ndr_print_winreg_QueryMultipleValues2,
-		False,
+		false,
 	},
-	{ NULL, 0, NULL, NULL, NULL, False }
+	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
-const char * const winreg_endpoint_strings[] = {
+static const char * const winreg_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\winreg]", 
 	"ncacn_ip_tcp:", 
 	"ncalrpc:", 
 };
 
-const struct ndr_interface_string_array winreg_endpoints = {
+static const struct ndr_interface_string_array winreg_endpoints = {
 	.count	= 3,
 	.names	= winreg_endpoint_strings
 };
 
-const char * const winreg_authservice_strings[] = {
+static const char * const winreg_authservice_strings[] = {
 	"host", 
 };
 
-const struct ndr_interface_string_array winreg_authservices = {
+static const struct ndr_interface_string_array winreg_authservices = {
 	.count	= 3,
 	.names	= winreg_authservice_strings
 };

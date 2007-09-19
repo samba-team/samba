@@ -60,7 +60,7 @@ _PUBLIC_ void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_notify_depth(struct ndr_push *ndr, int ndr_flags, const struct notify_depth *r)
+static NTSTATUS ndr_push_notify_depth(struct ndr_push *ndr, int ndr_flags, const struct notify_depth *r)
 {
 	uint32_t cntr_entries_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -80,7 +80,7 @@ NTSTATUS ndr_push_notify_depth(struct ndr_push *ndr, int ndr_flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_notify_depth(struct ndr_pull *ndr, int ndr_flags, struct notify_depth *r)
+static NTSTATUS ndr_pull_notify_depth(struct ndr_pull *ndr, int ndr_flags, struct notify_depth *r)
 {
 	uint32_t cntr_entries_0;
 	TALLOC_CTX *_mem_save_entries_0;

@@ -5,7 +5,7 @@
 
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_security.h"
-NTSTATUS ndr_push_eventlog_OpenUnknown0(struct ndr_push *ndr, int ndr_flags, const struct eventlog_OpenUnknown0 *r)
+static NTSTATUS ndr_push_eventlog_OpenUnknown0(struct ndr_push *ndr, int ndr_flags, const struct eventlog_OpenUnknown0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -17,7 +17,7 @@ NTSTATUS ndr_push_eventlog_OpenUnknown0(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_OpenUnknown0(struct ndr_pull *ndr, int ndr_flags, struct eventlog_OpenUnknown0 *r)
+static NTSTATUS ndr_pull_eventlog_OpenUnknown0(struct ndr_pull *ndr, int ndr_flags, struct eventlog_OpenUnknown0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -187,7 +187,7 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogW *r)
+static NTSTATUS ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -203,7 +203,7 @@ NTSTATUS ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_ClearEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogW *r)
+static NTSTATUS ndr_pull_eventlog_ClearEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogW *r)
 {
 	uint32_t _ptr_unknown;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -266,7 +266,7 @@ _PUBLIC_ void ndr_print_eventlog_ClearEventLogW(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_BackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogW *r)
+static NTSTATUS ndr_push_eventlog_BackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -276,7 +276,7 @@ NTSTATUS ndr_push_eventlog_BackupEventLogW(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_BackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogW *r)
+static NTSTATUS ndr_pull_eventlog_BackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -307,7 +307,7 @@ _PUBLIC_ void ndr_print_eventlog_BackupEventLogW(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_CloseEventLog(struct ndr_push *ndr, int flags, const struct eventlog_CloseEventLog *r)
+static NTSTATUS ndr_push_eventlog_CloseEventLog(struct ndr_push *ndr, int flags, const struct eventlog_CloseEventLog *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -321,7 +321,7 @@ NTSTATUS ndr_push_eventlog_CloseEventLog(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_CloseEventLog(struct ndr_pull *ndr, int flags, struct eventlog_CloseEventLog *r)
+static NTSTATUS ndr_pull_eventlog_CloseEventLog(struct ndr_pull *ndr, int flags, struct eventlog_CloseEventLog *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -379,7 +379,7 @@ _PUBLIC_ void ndr_print_eventlog_CloseEventLog(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_DeregisterEventSource(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterEventSource *r)
+static NTSTATUS ndr_push_eventlog_DeregisterEventSource(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterEventSource *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -389,7 +389,7 @@ NTSTATUS ndr_push_eventlog_DeregisterEventSource(struct ndr_push *ndr, int flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_DeregisterEventSource(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterEventSource *r)
+static NTSTATUS ndr_pull_eventlog_DeregisterEventSource(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterEventSource *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -420,7 +420,7 @@ _PUBLIC_ void ndr_print_eventlog_DeregisterEventSource(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_GetNumRecords(struct ndr_push *ndr, int flags, const struct eventlog_GetNumRecords *r)
+static NTSTATUS ndr_push_eventlog_GetNumRecords(struct ndr_push *ndr, int flags, const struct eventlog_GetNumRecords *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -434,7 +434,7 @@ NTSTATUS ndr_push_eventlog_GetNumRecords(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_GetNumRecords(struct ndr_pull *ndr, int flags, struct eventlog_GetNumRecords *r)
+static NTSTATUS ndr_pull_eventlog_GetNumRecords(struct ndr_pull *ndr, int flags, struct eventlog_GetNumRecords *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_number_0;
@@ -493,7 +493,7 @@ _PUBLIC_ void ndr_print_eventlog_GetNumRecords(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_GetOldestRecord(struct ndr_push *ndr, int flags, const struct eventlog_GetOldestRecord *r)
+static NTSTATUS ndr_push_eventlog_GetOldestRecord(struct ndr_push *ndr, int flags, const struct eventlog_GetOldestRecord *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -503,7 +503,7 @@ NTSTATUS ndr_push_eventlog_GetOldestRecord(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_GetOldestRecord(struct ndr_pull *ndr, int flags, struct eventlog_GetOldestRecord *r)
+static NTSTATUS ndr_pull_eventlog_GetOldestRecord(struct ndr_pull *ndr, int flags, struct eventlog_GetOldestRecord *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -534,7 +534,7 @@ _PUBLIC_ void ndr_print_eventlog_GetOldestRecord(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_ChangeNotify(struct ndr_push *ndr, int flags, const struct eventlog_ChangeNotify *r)
+static NTSTATUS ndr_push_eventlog_ChangeNotify(struct ndr_push *ndr, int flags, const struct eventlog_ChangeNotify *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -544,7 +544,7 @@ NTSTATUS ndr_push_eventlog_ChangeNotify(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_ChangeNotify(struct ndr_pull *ndr, int flags, struct eventlog_ChangeNotify *r)
+static NTSTATUS ndr_pull_eventlog_ChangeNotify(struct ndr_pull *ndr, int flags, struct eventlog_ChangeNotify *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -575,7 +575,7 @@ _PUBLIC_ void ndr_print_eventlog_ChangeNotify(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogW *r)
+static NTSTATUS ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogW *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.unknown0));
@@ -595,7 +595,7 @@ NTSTATUS ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogW *r)
+static NTSTATUS ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogW *r)
 {
 	uint32_t _ptr_unknown0;
 	TALLOC_CTX *_mem_save_unknown0_0;
@@ -670,7 +670,7 @@ _PUBLIC_ void ndr_print_eventlog_OpenEventLogW(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_RegisterEventSourceW(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceW *r)
+static NTSTATUS ndr_push_eventlog_RegisterEventSourceW(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -680,7 +680,7 @@ NTSTATUS ndr_push_eventlog_RegisterEventSourceW(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_RegisterEventSourceW(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceW *r)
+static NTSTATUS ndr_pull_eventlog_RegisterEventSourceW(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -711,7 +711,7 @@ _PUBLIC_ void ndr_print_eventlog_RegisterEventSourceW(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_OpenBackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogW *r)
+static NTSTATUS ndr_push_eventlog_OpenBackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -721,7 +721,7 @@ NTSTATUS ndr_push_eventlog_OpenBackupEventLogW(struct ndr_push *ndr, int flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_OpenBackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogW *r)
+static NTSTATUS ndr_pull_eventlog_OpenBackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -752,7 +752,7 @@ _PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogW(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogW *r)
+static NTSTATUS ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -774,7 +774,7 @@ NTSTATUS ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogW *r)
+static NTSTATUS ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogW *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sent_size_0;
@@ -867,7 +867,7 @@ _PUBLIC_ void ndr_print_eventlog_ReadEventLogW(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_ReportEventW(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventW *r)
+static NTSTATUS ndr_push_eventlog_ReportEventW(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -877,7 +877,7 @@ NTSTATUS ndr_push_eventlog_ReportEventW(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_ReportEventW(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventW *r)
+static NTSTATUS ndr_pull_eventlog_ReportEventW(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -908,7 +908,7 @@ _PUBLIC_ void ndr_print_eventlog_ReportEventW(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_ClearEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogA *r)
+static NTSTATUS ndr_push_eventlog_ClearEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -918,7 +918,7 @@ NTSTATUS ndr_push_eventlog_ClearEventLogA(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_ClearEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogA *r)
+static NTSTATUS ndr_pull_eventlog_ClearEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -949,7 +949,7 @@ _PUBLIC_ void ndr_print_eventlog_ClearEventLogA(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_BackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogA *r)
+static NTSTATUS ndr_push_eventlog_BackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -959,7 +959,7 @@ NTSTATUS ndr_push_eventlog_BackupEventLogA(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_BackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogA *r)
+static NTSTATUS ndr_pull_eventlog_BackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -990,7 +990,7 @@ _PUBLIC_ void ndr_print_eventlog_BackupEventLogA(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_OpenEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogA *r)
+static NTSTATUS ndr_push_eventlog_OpenEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1000,7 +1000,7 @@ NTSTATUS ndr_push_eventlog_OpenEventLogA(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_OpenEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogA *r)
+static NTSTATUS ndr_pull_eventlog_OpenEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1031,7 +1031,7 @@ _PUBLIC_ void ndr_print_eventlog_OpenEventLogA(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_RegisterEventSourceA(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceA *r)
+static NTSTATUS ndr_push_eventlog_RegisterEventSourceA(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1041,7 +1041,7 @@ NTSTATUS ndr_push_eventlog_RegisterEventSourceA(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_RegisterEventSourceA(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceA *r)
+static NTSTATUS ndr_pull_eventlog_RegisterEventSourceA(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1072,7 +1072,7 @@ _PUBLIC_ void ndr_print_eventlog_RegisterEventSourceA(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_OpenBackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogA *r)
+static NTSTATUS ndr_push_eventlog_OpenBackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1082,7 +1082,7 @@ NTSTATUS ndr_push_eventlog_OpenBackupEventLogA(struct ndr_push *ndr, int flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_OpenBackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogA *r)
+static NTSTATUS ndr_pull_eventlog_OpenBackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1113,7 +1113,7 @@ _PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogA(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_ReadEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogA *r)
+static NTSTATUS ndr_push_eventlog_ReadEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1123,7 +1123,7 @@ NTSTATUS ndr_push_eventlog_ReadEventLogA(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_ReadEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogA *r)
+static NTSTATUS ndr_pull_eventlog_ReadEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1154,7 +1154,7 @@ _PUBLIC_ void ndr_print_eventlog_ReadEventLogA(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_ReportEventA(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventA *r)
+static NTSTATUS ndr_push_eventlog_ReportEventA(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1164,7 +1164,7 @@ NTSTATUS ndr_push_eventlog_ReportEventA(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_ReportEventA(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventA *r)
+static NTSTATUS ndr_pull_eventlog_ReportEventA(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventA *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1195,7 +1195,7 @@ _PUBLIC_ void ndr_print_eventlog_ReportEventA(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_RegisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_RegisterClusterSvc *r)
+static NTSTATUS ndr_push_eventlog_RegisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_RegisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1205,7 +1205,7 @@ NTSTATUS ndr_push_eventlog_RegisterClusterSvc(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_RegisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_RegisterClusterSvc *r)
+static NTSTATUS ndr_pull_eventlog_RegisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_RegisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1236,7 +1236,7 @@ _PUBLIC_ void ndr_print_eventlog_RegisterClusterSvc(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_DeregisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterClusterSvc *r)
+static NTSTATUS ndr_push_eventlog_DeregisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1246,7 +1246,7 @@ NTSTATUS ndr_push_eventlog_DeregisterClusterSvc(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_DeregisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterClusterSvc *r)
+static NTSTATUS ndr_pull_eventlog_DeregisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1277,7 +1277,7 @@ _PUBLIC_ void ndr_print_eventlog_DeregisterClusterSvc(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_WriteClusterEvents(struct ndr_push *ndr, int flags, const struct eventlog_WriteClusterEvents *r)
+static NTSTATUS ndr_push_eventlog_WriteClusterEvents(struct ndr_push *ndr, int flags, const struct eventlog_WriteClusterEvents *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1287,7 +1287,7 @@ NTSTATUS ndr_push_eventlog_WriteClusterEvents(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_WriteClusterEvents(struct ndr_pull *ndr, int flags, struct eventlog_WriteClusterEvents *r)
+static NTSTATUS ndr_pull_eventlog_WriteClusterEvents(struct ndr_pull *ndr, int flags, struct eventlog_WriteClusterEvents *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1318,7 +1318,7 @@ _PUBLIC_ void ndr_print_eventlog_WriteClusterEvents(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_GetLogIntormation(struct ndr_push *ndr, int flags, const struct eventlog_GetLogIntormation *r)
+static NTSTATUS ndr_push_eventlog_GetLogIntormation(struct ndr_push *ndr, int flags, const struct eventlog_GetLogIntormation *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1328,7 +1328,7 @@ NTSTATUS ndr_push_eventlog_GetLogIntormation(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_GetLogIntormation(struct ndr_pull *ndr, int flags, struct eventlog_GetLogIntormation *r)
+static NTSTATUS ndr_pull_eventlog_GetLogIntormation(struct ndr_pull *ndr, int flags, struct eventlog_GetLogIntormation *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -1359,7 +1359,7 @@ _PUBLIC_ void ndr_print_eventlog_GetLogIntormation(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_eventlog_FlushEventLog(struct ndr_push *ndr, int flags, const struct eventlog_FlushEventLog *r)
+static NTSTATUS ndr_push_eventlog_FlushEventLog(struct ndr_push *ndr, int flags, const struct eventlog_FlushEventLog *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1371,7 +1371,7 @@ NTSTATUS ndr_push_eventlog_FlushEventLog(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_eventlog_FlushEventLog(struct ndr_pull *ndr, int flags, struct eventlog_FlushEventLog *r)
+static NTSTATUS ndr_pull_eventlog_FlushEventLog(struct ndr_pull *ndr, int flags, struct eventlog_FlushEventLog *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1414,14 +1414,14 @@ _PUBLIC_ void ndr_print_eventlog_FlushEventLog(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-const struct ndr_interface_call eventlog_calls[] = {
+static const struct ndr_interface_call eventlog_calls[] = {
 	{
 		"eventlog_ClearEventLogW",
 		sizeof(struct eventlog_ClearEventLogW),
 		(ndr_push_flags_fn_t) ndr_push_eventlog_ClearEventLogW,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_ClearEventLogW,
 		(ndr_print_function_t) ndr_print_eventlog_ClearEventLogW,
-		False,
+		false,
 	},
 	{
 		"eventlog_BackupEventLogW",
@@ -1429,7 +1429,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_BackupEventLogW,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_BackupEventLogW,
 		(ndr_print_function_t) ndr_print_eventlog_BackupEventLogW,
-		False,
+		false,
 	},
 	{
 		"eventlog_CloseEventLog",
@@ -1437,7 +1437,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_CloseEventLog,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_CloseEventLog,
 		(ndr_print_function_t) ndr_print_eventlog_CloseEventLog,
-		False,
+		false,
 	},
 	{
 		"eventlog_DeregisterEventSource",
@@ -1445,7 +1445,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_DeregisterEventSource,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_DeregisterEventSource,
 		(ndr_print_function_t) ndr_print_eventlog_DeregisterEventSource,
-		False,
+		false,
 	},
 	{
 		"eventlog_GetNumRecords",
@@ -1453,7 +1453,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_GetNumRecords,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_GetNumRecords,
 		(ndr_print_function_t) ndr_print_eventlog_GetNumRecords,
-		False,
+		false,
 	},
 	{
 		"eventlog_GetOldestRecord",
@@ -1461,7 +1461,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_GetOldestRecord,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_GetOldestRecord,
 		(ndr_print_function_t) ndr_print_eventlog_GetOldestRecord,
-		False,
+		false,
 	},
 	{
 		"eventlog_ChangeNotify",
@@ -1469,7 +1469,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_ChangeNotify,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_ChangeNotify,
 		(ndr_print_function_t) ndr_print_eventlog_ChangeNotify,
-		False,
+		false,
 	},
 	{
 		"eventlog_OpenEventLogW",
@@ -1477,7 +1477,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_OpenEventLogW,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_OpenEventLogW,
 		(ndr_print_function_t) ndr_print_eventlog_OpenEventLogW,
-		False,
+		false,
 	},
 	{
 		"eventlog_RegisterEventSourceW",
@@ -1485,7 +1485,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_RegisterEventSourceW,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_RegisterEventSourceW,
 		(ndr_print_function_t) ndr_print_eventlog_RegisterEventSourceW,
-		False,
+		false,
 	},
 	{
 		"eventlog_OpenBackupEventLogW",
@@ -1493,7 +1493,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_OpenBackupEventLogW,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_OpenBackupEventLogW,
 		(ndr_print_function_t) ndr_print_eventlog_OpenBackupEventLogW,
-		False,
+		false,
 	},
 	{
 		"eventlog_ReadEventLogW",
@@ -1501,7 +1501,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_ReadEventLogW,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_ReadEventLogW,
 		(ndr_print_function_t) ndr_print_eventlog_ReadEventLogW,
-		False,
+		false,
 	},
 	{
 		"eventlog_ReportEventW",
@@ -1509,7 +1509,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_ReportEventW,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_ReportEventW,
 		(ndr_print_function_t) ndr_print_eventlog_ReportEventW,
-		False,
+		false,
 	},
 	{
 		"eventlog_ClearEventLogA",
@@ -1517,7 +1517,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_ClearEventLogA,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_ClearEventLogA,
 		(ndr_print_function_t) ndr_print_eventlog_ClearEventLogA,
-		False,
+		false,
 	},
 	{
 		"eventlog_BackupEventLogA",
@@ -1525,7 +1525,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_BackupEventLogA,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_BackupEventLogA,
 		(ndr_print_function_t) ndr_print_eventlog_BackupEventLogA,
-		False,
+		false,
 	},
 	{
 		"eventlog_OpenEventLogA",
@@ -1533,7 +1533,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_OpenEventLogA,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_OpenEventLogA,
 		(ndr_print_function_t) ndr_print_eventlog_OpenEventLogA,
-		False,
+		false,
 	},
 	{
 		"eventlog_RegisterEventSourceA",
@@ -1541,7 +1541,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_RegisterEventSourceA,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_RegisterEventSourceA,
 		(ndr_print_function_t) ndr_print_eventlog_RegisterEventSourceA,
-		False,
+		false,
 	},
 	{
 		"eventlog_OpenBackupEventLogA",
@@ -1549,7 +1549,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_OpenBackupEventLogA,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_OpenBackupEventLogA,
 		(ndr_print_function_t) ndr_print_eventlog_OpenBackupEventLogA,
-		False,
+		false,
 	},
 	{
 		"eventlog_ReadEventLogA",
@@ -1557,7 +1557,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_ReadEventLogA,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_ReadEventLogA,
 		(ndr_print_function_t) ndr_print_eventlog_ReadEventLogA,
-		False,
+		false,
 	},
 	{
 		"eventlog_ReportEventA",
@@ -1565,7 +1565,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_ReportEventA,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_ReportEventA,
 		(ndr_print_function_t) ndr_print_eventlog_ReportEventA,
-		False,
+		false,
 	},
 	{
 		"eventlog_RegisterClusterSvc",
@@ -1573,7 +1573,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_RegisterClusterSvc,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_RegisterClusterSvc,
 		(ndr_print_function_t) ndr_print_eventlog_RegisterClusterSvc,
-		False,
+		false,
 	},
 	{
 		"eventlog_DeregisterClusterSvc",
@@ -1581,7 +1581,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_DeregisterClusterSvc,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_DeregisterClusterSvc,
 		(ndr_print_function_t) ndr_print_eventlog_DeregisterClusterSvc,
-		False,
+		false,
 	},
 	{
 		"eventlog_WriteClusterEvents",
@@ -1589,7 +1589,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_WriteClusterEvents,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_WriteClusterEvents,
 		(ndr_print_function_t) ndr_print_eventlog_WriteClusterEvents,
-		False,
+		false,
 	},
 	{
 		"eventlog_GetLogIntormation",
@@ -1597,7 +1597,7 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_GetLogIntormation,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_GetLogIntormation,
 		(ndr_print_function_t) ndr_print_eventlog_GetLogIntormation,
-		False,
+		false,
 	},
 	{
 		"eventlog_FlushEventLog",
@@ -1605,25 +1605,25 @@ const struct ndr_interface_call eventlog_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_eventlog_FlushEventLog,
 		(ndr_pull_flags_fn_t) ndr_pull_eventlog_FlushEventLog,
 		(ndr_print_function_t) ndr_print_eventlog_FlushEventLog,
-		False,
+		false,
 	},
-	{ NULL, 0, NULL, NULL, NULL, False }
+	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
-const char * const eventlog_endpoint_strings[] = {
+static const char * const eventlog_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\eventlog]", 
 };
 
-const struct ndr_interface_string_array eventlog_endpoints = {
+static const struct ndr_interface_string_array eventlog_endpoints = {
 	.count	= 1,
 	.names	= eventlog_endpoint_strings
 };
 
-const char * const eventlog_authservice_strings[] = {
+static const char * const eventlog_authservice_strings[] = {
 	"host", 
 };
 
-const struct ndr_interface_string_array eventlog_authservices = {
+static const struct ndr_interface_string_array eventlog_authservices = {
 	.count	= 1,
 	.names	= eventlog_authservice_strings
 };

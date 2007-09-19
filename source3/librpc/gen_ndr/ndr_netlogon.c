@@ -6,7 +6,7 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_security.h"
-NTSTATUS ndr_push_netr_UasInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_UasInfo *r)
+static NTSTATUS ndr_push_netr_UasInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_UasInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -56,7 +56,7 @@ NTSTATUS ndr_push_netr_UasInfo(struct ndr_push *ndr, int ndr_flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_UasInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_UasInfo *r)
+static NTSTATUS ndr_pull_netr_UasInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_UasInfo *r)
 {
 	uint32_t _ptr_account_name;
 	TALLOC_CTX *_mem_save_account_name_0;
@@ -201,7 +201,7 @@ _PUBLIC_ void ndr_print_netr_UasInfo(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_UasLogoffInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_UasLogoffInfo *r)
+static NTSTATUS ndr_push_netr_UasLogoffInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_UasLogoffInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -213,7 +213,7 @@ NTSTATUS ndr_push_netr_UasLogoffInfo(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_UasLogoffInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_UasLogoffInfo *r)
+static NTSTATUS ndr_pull_netr_UasLogoffInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_UasLogoffInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -234,7 +234,7 @@ _PUBLIC_ void ndr_print_netr_UasLogoffInfo(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const struct netr_AcctLockStr *r)
+static NTSTATUS ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const struct netr_AcctLockStr *r)
 {
 	uint32_t cntr_bindata_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -256,7 +256,7 @@ NTSTATUS ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_AcctLockStr(struct ndr_pull *ndr, int ndr_flags, struct netr_AcctLockStr *r)
+static NTSTATUS ndr_pull_netr_AcctLockStr(struct ndr_pull *ndr, int ndr_flags, struct netr_AcctLockStr *r)
 {
 	uint32_t _ptr_bindata;
 	uint32_t cntr_bindata_1;
@@ -327,7 +327,7 @@ _PUBLIC_ void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_IdentityInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_IdentityInfo *r)
+static NTSTATUS ndr_push_netr_IdentityInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_IdentityInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -346,7 +346,7 @@ NTSTATUS ndr_push_netr_IdentityInfo(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_IdentityInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_IdentityInfo *r)
+static NTSTATUS ndr_pull_netr_IdentityInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_IdentityInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -378,7 +378,7 @@ _PUBLIC_ void ndr_print_netr_IdentityInfo(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_PasswordInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_PasswordInfo *r)
+static NTSTATUS ndr_push_netr_PasswordInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_PasswordInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -394,7 +394,7 @@ NTSTATUS ndr_push_netr_PasswordInfo(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_PasswordInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_PasswordInfo *r)
+static NTSTATUS ndr_pull_netr_PasswordInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_PasswordInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -420,7 +420,7 @@ _PUBLIC_ void ndr_print_netr_PasswordInfo(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_ChallengeResponse(struct ndr_push *ndr, int ndr_flags, const struct netr_ChallengeResponse *r)
+static NTSTATUS ndr_push_netr_ChallengeResponse(struct ndr_push *ndr, int ndr_flags, const struct netr_ChallengeResponse *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -444,7 +444,7 @@ NTSTATUS ndr_push_netr_ChallengeResponse(struct ndr_push *ndr, int ndr_flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_ChallengeResponse(struct ndr_pull *ndr, int ndr_flags, struct netr_ChallengeResponse *r)
+static NTSTATUS ndr_pull_netr_ChallengeResponse(struct ndr_pull *ndr, int ndr_flags, struct netr_ChallengeResponse *r)
 {
 	uint32_t _ptr_data;
 	TALLOC_CTX *_mem_save_data_0;
@@ -507,7 +507,7 @@ _PUBLIC_ void ndr_print_netr_ChallengeResponse(struct ndr_print *ndr, const char
 	}
 }
 
-NTSTATUS ndr_push_netr_NetworkInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_NetworkInfo *r)
+static NTSTATUS ndr_push_netr_NetworkInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_NetworkInfo *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -529,7 +529,7 @@ NTSTATUS ndr_push_netr_NetworkInfo(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NetworkInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_NetworkInfo *r)
+static NTSTATUS ndr_pull_netr_NetworkInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_NetworkInfo *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -968,7 +968,7 @@ _PUBLIC_ void ndr_print_netr_UserFlags(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_SamBaseInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_SamBaseInfo *r)
+static NTSTATUS ndr_push_netr_SamBaseInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_SamBaseInfo *r)
 {
 	uint32_t cntr_unknown_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1018,7 +1018,7 @@ NTSTATUS ndr_push_netr_SamBaseInfo(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_SamBaseInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_SamBaseInfo *r)
+static NTSTATUS ndr_pull_netr_SamBaseInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_SamBaseInfo *r)
 {
 	uint32_t _ptr_domain_sid;
 	TALLOC_CTX *_mem_save_domain_sid_0;
@@ -1126,7 +1126,7 @@ _PUBLIC_ void ndr_print_netr_SamBaseInfo(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_SamInfo2(struct ndr_push *ndr, int ndr_flags, const struct netr_SamInfo2 *r)
+static NTSTATUS ndr_push_netr_SamInfo2(struct ndr_push *ndr, int ndr_flags, const struct netr_SamInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1138,7 +1138,7 @@ NTSTATUS ndr_push_netr_SamInfo2(struct ndr_push *ndr, int ndr_flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_SamInfo2(struct ndr_pull *ndr, int ndr_flags, struct netr_SamInfo2 *r)
+static NTSTATUS ndr_pull_netr_SamInfo2(struct ndr_pull *ndr, int ndr_flags, struct netr_SamInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1158,7 +1158,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo2(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_SidAttr(struct ndr_push *ndr, int ndr_flags, const struct netr_SidAttr *r)
+static NTSTATUS ndr_push_netr_SidAttr(struct ndr_push *ndr, int ndr_flags, const struct netr_SidAttr *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1173,7 +1173,7 @@ NTSTATUS ndr_push_netr_SidAttr(struct ndr_push *ndr, int ndr_flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_SidAttr(struct ndr_pull *ndr, int ndr_flags, struct netr_SidAttr *r)
+static NTSTATUS ndr_pull_netr_SidAttr(struct ndr_pull *ndr, int ndr_flags, struct netr_SidAttr *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -1304,7 +1304,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo3(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_SamInfo6(struct ndr_push *ndr, int ndr_flags, const struct netr_SamInfo6 *r)
+static NTSTATUS ndr_push_netr_SamInfo6(struct ndr_push *ndr, int ndr_flags, const struct netr_SamInfo6 *r)
 {
 	uint32_t cntr_sids_1;
 	uint32_t cntr_unknown4_0;
@@ -1336,7 +1336,7 @@ NTSTATUS ndr_push_netr_SamInfo6(struct ndr_push *ndr, int ndr_flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_SamInfo6(struct ndr_pull *ndr, int ndr_flags, struct netr_SamInfo6 *r)
+static NTSTATUS ndr_pull_netr_SamInfo6(struct ndr_pull *ndr, int ndr_flags, struct netr_SamInfo6 *r)
 {
 	uint32_t _ptr_sids;
 	uint32_t cntr_sids_1;
@@ -1426,7 +1426,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_PacInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_PacInfo *r)
+static NTSTATUS ndr_push_netr_PacInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_PacInfo *r)
 {
 	uint32_t cntr_expansionroom_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1467,7 +1467,7 @@ NTSTATUS ndr_push_netr_PacInfo(struct ndr_push *ndr, int ndr_flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_PacInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_PacInfo *r)
+static NTSTATUS ndr_pull_netr_PacInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_PacInfo *r)
 {
 	uint32_t _ptr_pac;
 	TALLOC_CTX *_mem_save_pac_0;
@@ -1904,7 +1904,7 @@ _PUBLIC_ void ndr_print_netr_Authenticator(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_DELETE_USER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_USER *r)
+static NTSTATUS ndr_push_netr_DELTA_DELETE_USER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_USER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1933,7 +1933,7 @@ NTSTATUS ndr_push_netr_DELTA_DELETE_USER(struct ndr_push *ndr, int ndr_flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_DELETE_USER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_USER *r)
+static NTSTATUS ndr_pull_netr_DELTA_DELETE_USER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_USER *r)
 {
 	uint32_t _ptr_account_name;
 	TALLOC_CTX *_mem_save_account_name_0;
@@ -1996,7 +1996,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_DELETE_USER(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_USER_KEY16(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_KEY16 *r)
+static NTSTATUS ndr_push_netr_USER_KEY16(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_KEY16 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2011,7 +2011,7 @@ NTSTATUS ndr_push_netr_USER_KEY16(struct ndr_push *ndr, int ndr_flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_USER_KEY16(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_KEY16 *r)
+static NTSTATUS ndr_pull_netr_USER_KEY16(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_KEY16 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2037,7 +2037,7 @@ _PUBLIC_ void ndr_print_netr_USER_KEY16(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_PasswordHistory(struct ndr_push *ndr, int ndr_flags, const struct netr_PasswordHistory *r)
+static NTSTATUS ndr_push_netr_PasswordHistory(struct ndr_push *ndr, int ndr_flags, const struct netr_PasswordHistory *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2055,7 +2055,7 @@ NTSTATUS ndr_push_netr_PasswordHistory(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_PasswordHistory(struct ndr_pull *ndr, int ndr_flags, struct netr_PasswordHistory *r)
+static NTSTATUS ndr_pull_netr_PasswordHistory(struct ndr_pull *ndr, int ndr_flags, struct netr_PasswordHistory *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2090,7 +2090,7 @@ _PUBLIC_ void ndr_print_netr_PasswordHistory(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_USER_KEYS2(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_KEYS2 *r)
+static NTSTATUS ndr_push_netr_USER_KEYS2(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_KEYS2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2105,7 +2105,7 @@ NTSTATUS ndr_push_netr_USER_KEYS2(struct ndr_push *ndr, int ndr_flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_USER_KEYS2(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_KEYS2 *r)
+static NTSTATUS ndr_pull_netr_USER_KEYS2(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_KEYS2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2130,7 +2130,7 @@ _PUBLIC_ void ndr_print_netr_USER_KEYS2(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_USER_KEY_UNION(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_KEY_UNION *r)
+static NTSTATUS ndr_push_netr_USER_KEY_UNION(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_KEY_UNION *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2142,7 +2142,7 @@ NTSTATUS ndr_push_netr_USER_KEY_UNION(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_USER_KEY_UNION(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_KEY_UNION *r)
+static NTSTATUS ndr_pull_netr_USER_KEY_UNION(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_KEY_UNION *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2197,7 +2197,7 @@ _PUBLIC_ void ndr_print_netr_USER_KEYS(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_USER_PRIVATE_INFO(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_PRIVATE_INFO *r)
+static NTSTATUS ndr_push_netr_USER_PRIVATE_INFO(struct ndr_push *ndr, int ndr_flags, const struct netr_USER_PRIVATE_INFO *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2224,7 +2224,7 @@ NTSTATUS ndr_push_netr_USER_PRIVATE_INFO(struct ndr_push *ndr, int ndr_flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_USER_PRIVATE_INFO(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_PRIVATE_INFO *r)
+static NTSTATUS ndr_pull_netr_USER_PRIVATE_INFO(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_PRIVATE_INFO *r)
 {
 	uint32_t _ptr_SensitiveData;
 	TALLOC_CTX *_mem_save_SensitiveData_0;
@@ -2280,7 +2280,7 @@ _PUBLIC_ void ndr_print_netr_USER_PRIVATE_INFO(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_USER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_USER *r)
+static NTSTATUS ndr_push_netr_DELTA_USER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_USER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2345,7 +2345,7 @@ NTSTATUS ndr_push_netr_DELTA_USER(struct ndr_push *ndr, int ndr_flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_USER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_USER *r)
+static NTSTATUS ndr_pull_netr_DELTA_USER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_USER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2454,7 +2454,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_USER(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_DOMAIN(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DOMAIN *r)
+static NTSTATUS ndr_push_netr_DELTA_DOMAIN(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DOMAIN *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2490,7 +2490,7 @@ NTSTATUS ndr_push_netr_DELTA_DOMAIN(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_DOMAIN(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DOMAIN *r)
+static NTSTATUS ndr_pull_netr_DELTA_DOMAIN(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DOMAIN *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2552,7 +2552,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_DOMAIN(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_GROUP(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_GROUP *r)
+static NTSTATUS ndr_push_netr_DELTA_GROUP(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_GROUP *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2583,7 +2583,7 @@ NTSTATUS ndr_push_netr_DELTA_GROUP(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_GROUP(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_GROUP *r)
+static NTSTATUS ndr_pull_netr_DELTA_GROUP(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_GROUP *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2635,7 +2635,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_RENAME(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_RENAME *r)
+static NTSTATUS ndr_push_netr_DELTA_RENAME(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_RENAME *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2661,7 +2661,7 @@ NTSTATUS ndr_push_netr_DELTA_RENAME(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_RENAME(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_RENAME *r)
+static NTSTATUS ndr_pull_netr_DELTA_RENAME(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_RENAME *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2704,7 +2704,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_RENAME(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_GROUP_MEMBER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_GROUP_MEMBER *r)
+static NTSTATUS ndr_push_netr_DELTA_GROUP_MEMBER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_GROUP_MEMBER *r)
 {
 	uint32_t cntr_rids_1;
 	uint32_t cntr_attribs_1;
@@ -2735,7 +2735,7 @@ NTSTATUS ndr_push_netr_DELTA_GROUP_MEMBER(struct ndr_push *ndr, int ndr_flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_GROUP_MEMBER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_GROUP_MEMBER *r)
+static NTSTATUS ndr_pull_netr_DELTA_GROUP_MEMBER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_GROUP_MEMBER *r)
 {
 	uint32_t _ptr_rids;
 	uint32_t cntr_rids_1;
@@ -2848,7 +2848,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_ALIAS(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ALIAS *r)
+static NTSTATUS ndr_push_netr_DELTA_ALIAS(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ALIAS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2876,7 +2876,7 @@ NTSTATUS ndr_push_netr_DELTA_ALIAS(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_ALIAS(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ALIAS *r)
+static NTSTATUS ndr_pull_netr_DELTA_ALIAS(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ALIAS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2923,7 +2923,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ALIAS(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_ALIAS_MEMBER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ALIAS_MEMBER *r)
+static NTSTATUS ndr_push_netr_DELTA_ALIAS_MEMBER(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ALIAS_MEMBER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2939,7 +2939,7 @@ NTSTATUS ndr_push_netr_DELTA_ALIAS_MEMBER(struct ndr_push *ndr, int ndr_flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_ALIAS_MEMBER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ALIAS_MEMBER *r)
+static NTSTATUS ndr_pull_netr_DELTA_ALIAS_MEMBER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ALIAS_MEMBER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2967,7 +2967,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ALIAS_MEMBER(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_QUOTA_LIMITS(struct ndr_push *ndr, int ndr_flags, const struct netr_QUOTA_LIMITS *r)
+static NTSTATUS ndr_push_netr_QUOTA_LIMITS(struct ndr_push *ndr, int ndr_flags, const struct netr_QUOTA_LIMITS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2983,7 +2983,7 @@ NTSTATUS ndr_push_netr_QUOTA_LIMITS(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_QUOTA_LIMITS(struct ndr_pull *ndr, int ndr_flags, struct netr_QUOTA_LIMITS *r)
+static NTSTATUS ndr_pull_netr_QUOTA_LIMITS(struct ndr_pull *ndr, int ndr_flags, struct netr_QUOTA_LIMITS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -3012,7 +3012,7 @@ _PUBLIC_ void ndr_print_netr_QUOTA_LIMITS(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_POLICY(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_POLICY *r)
+static NTSTATUS ndr_push_netr_DELTA_POLICY(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_POLICY *r)
 {
 	uint32_t cntr_eventauditoptions_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -3058,7 +3058,7 @@ NTSTATUS ndr_push_netr_DELTA_POLICY(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_POLICY(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_POLICY *r)
+static NTSTATUS ndr_pull_netr_DELTA_POLICY(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_POLICY *r)
 {
 	uint32_t _ptr_eventauditoptions;
 	uint32_t cntr_eventauditoptions_1;
@@ -3180,7 +3180,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_POLICY(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_TRUSTED_DOMAIN(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_TRUSTED_DOMAIN *r)
+static NTSTATUS ndr_push_netr_DELTA_TRUSTED_DOMAIN(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_TRUSTED_DOMAIN *r)
 {
 	uint32_t cntr_controller_names_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -3219,7 +3219,7 @@ NTSTATUS ndr_push_netr_DELTA_TRUSTED_DOMAIN(struct ndr_push *ndr, int ndr_flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_TRUSTED_DOMAIN(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_TRUSTED_DOMAIN *r)
+static NTSTATUS ndr_pull_netr_DELTA_TRUSTED_DOMAIN(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_TRUSTED_DOMAIN *r)
 {
 	uint32_t _ptr_controller_names;
 	uint32_t cntr_controller_names_1;
@@ -3312,7 +3312,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_TRUSTED_DOMAIN(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_DELETE_TRUST(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_TRUST *r)
+static NTSTATUS ndr_push_netr_DELTA_DELETE_TRUST(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_TRUST *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -3323,7 +3323,7 @@ NTSTATUS ndr_push_netr_DELTA_DELETE_TRUST(struct ndr_push *ndr, int ndr_flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_DELETE_TRUST(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_TRUST *r)
+static NTSTATUS ndr_pull_netr_DELTA_DELETE_TRUST(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_TRUST *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -3342,7 +3342,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_DELETE_TRUST(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_ACCOUNT(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ACCOUNT *r)
+static NTSTATUS ndr_push_netr_DELTA_ACCOUNT(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ACCOUNT *r)
 {
 	uint32_t cntr_privilege_attrib_1;
 	uint32_t cntr_privilege_name_1;
@@ -3390,7 +3390,7 @@ NTSTATUS ndr_push_netr_DELTA_ACCOUNT(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_ACCOUNT(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ACCOUNT *r)
+static NTSTATUS ndr_pull_netr_DELTA_ACCOUNT(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ACCOUNT *r)
 {
 	uint32_t _ptr_privilege_attrib;
 	uint32_t cntr_privilege_attrib_1;
@@ -3529,7 +3529,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_DELETE_ACCOUNT(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_ACCOUNT *r)
+static NTSTATUS ndr_push_netr_DELTA_DELETE_ACCOUNT(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_ACCOUNT *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -3540,7 +3540,7 @@ NTSTATUS ndr_push_netr_DELTA_DELETE_ACCOUNT(struct ndr_push *ndr, int ndr_flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_DELETE_ACCOUNT(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_ACCOUNT *r)
+static NTSTATUS ndr_pull_netr_DELTA_DELETE_ACCOUNT(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_ACCOUNT *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -3559,7 +3559,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_DELETE_ACCOUNT(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_DELETE_SECRET(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_SECRET *r)
+static NTSTATUS ndr_push_netr_DELTA_DELETE_SECRET(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_DELETE_SECRET *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -3570,7 +3570,7 @@ NTSTATUS ndr_push_netr_DELTA_DELETE_SECRET(struct ndr_push *ndr, int ndr_flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_DELETE_SECRET(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_SECRET *r)
+static NTSTATUS ndr_pull_netr_DELTA_DELETE_SECRET(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_SECRET *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -3589,7 +3589,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_DELETE_SECRET(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_CIPHER_VALUE(struct ndr_push *ndr, int ndr_flags, const struct netr_CIPHER_VALUE *r)
+static NTSTATUS ndr_push_netr_CIPHER_VALUE(struct ndr_push *ndr, int ndr_flags, const struct netr_CIPHER_VALUE *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3608,7 +3608,7 @@ NTSTATUS ndr_push_netr_CIPHER_VALUE(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_CIPHER_VALUE(struct ndr_pull *ndr, int ndr_flags, struct netr_CIPHER_VALUE *r)
+static NTSTATUS ndr_pull_netr_CIPHER_VALUE(struct ndr_pull *ndr, int ndr_flags, struct netr_CIPHER_VALUE *r)
 {
 	uint32_t _ptr_cipher_data;
 	TALLOC_CTX *_mem_save_cipher_data_0;
@@ -3661,7 +3661,7 @@ _PUBLIC_ void ndr_print_netr_CIPHER_VALUE(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_SECRET(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_SECRET *r)
+static NTSTATUS ndr_push_netr_DELTA_SECRET(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_SECRET *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3692,7 +3692,7 @@ NTSTATUS ndr_push_netr_DELTA_SECRET(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_SECRET(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_SECRET *r)
+static NTSTATUS ndr_pull_netr_DELTA_SECRET(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_SECRET *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -3744,13 +3744,13 @@ _PUBLIC_ void ndr_print_netr_DELTA_SECRET(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DeltaEnum(struct ndr_push *ndr, int ndr_flags, enum netr_DeltaEnum r)
+static NTSTATUS ndr_push_netr_DeltaEnum(struct ndr_push *ndr, int ndr_flags, enum netr_DeltaEnum r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DeltaEnum(struct ndr_pull *ndr, int ndr_flags, enum netr_DeltaEnum *r)
+static NTSTATUS ndr_pull_netr_DeltaEnum(struct ndr_pull *ndr, int ndr_flags, enum netr_DeltaEnum *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
@@ -3789,7 +3789,7 @@ _PUBLIC_ void ndr_print_netr_DeltaEnum(struct ndr_print *ndr, const char *name, 
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-NTSTATUS ndr_push_netr_DELTA_UNION(struct ndr_push *ndr, int ndr_flags, const union netr_DELTA_UNION *r)
+static NTSTATUS ndr_push_netr_DELTA_UNION(struct ndr_push *ndr, int ndr_flags, const union netr_DELTA_UNION *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -4008,7 +4008,7 @@ NTSTATUS ndr_push_netr_DELTA_UNION(struct ndr_push *ndr, int ndr_flags, const un
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr_flags, union netr_DELTA_UNION *r)
+static NTSTATUS ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr_flags, union netr_DELTA_UNION *r)
 {
 	int level;
 	uint16_t _level;
@@ -4567,7 +4567,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_UNION(struct ndr_print *ndr, const char *name
 	}
 }
 
-NTSTATUS ndr_push_netr_DELTA_ID_UNION(struct ndr_push *ndr, int ndr_flags, const union netr_DELTA_ID_UNION *r)
+static NTSTATUS ndr_push_netr_DELTA_ID_UNION(struct ndr_push *ndr, int ndr_flags, const union netr_DELTA_ID_UNION *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -4767,7 +4767,7 @@ NTSTATUS ndr_push_netr_DELTA_ID_UNION(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int ndr_flags, union netr_DELTA_ID_UNION *r)
+static NTSTATUS ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int ndr_flags, union netr_DELTA_ID_UNION *r)
 {
 	int level;
 	uint16_t _level;
@@ -5175,7 +5175,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ID_UNION(struct ndr_print *ndr, const char *n
 	}
 }
 
-NTSTATUS ndr_push_netr_DELTA_ENUM(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ENUM *r)
+static NTSTATUS ndr_push_netr_DELTA_ENUM(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ENUM *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -5192,7 +5192,7 @@ NTSTATUS ndr_push_netr_DELTA_ENUM(struct ndr_push *ndr, int ndr_flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_ENUM(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ENUM *r)
+static NTSTATUS ndr_pull_netr_DELTA_ENUM(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ENUM *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -5221,7 +5221,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ENUM(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DELTA_ENUM_ARRAY(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ENUM_ARRAY *r)
+static NTSTATUS ndr_push_netr_DELTA_ENUM_ARRAY(struct ndr_push *ndr, int ndr_flags, const struct netr_DELTA_ENUM_ARRAY *r)
 {
 	uint32_t cntr_delta_enum_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -5243,7 +5243,7 @@ NTSTATUS ndr_push_netr_DELTA_ENUM_ARRAY(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DELTA_ENUM_ARRAY(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ENUM_ARRAY *r)
+static NTSTATUS ndr_pull_netr_DELTA_ENUM_ARRAY(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ENUM_ARRAY *r)
 {
 	uint32_t _ptr_delta_enum;
 	uint32_t cntr_delta_enum_1;
@@ -5308,7 +5308,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ENUM_ARRAY(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_UAS_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct netr_UAS_INFO_0 *r)
+static NTSTATUS ndr_push_netr_UAS_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct netr_UAS_INFO_0 *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -5326,7 +5326,7 @@ NTSTATUS ndr_push_netr_UAS_INFO_0(struct ndr_push *ndr, int ndr_flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_UAS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct netr_UAS_INFO_0 *r)
+static NTSTATUS ndr_pull_netr_UAS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct netr_UAS_INFO_0 *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -5359,7 +5359,7 @@ _PUBLIC_ void ndr_print_netr_UAS_INFO_0(struct ndr_print *ndr, const char *name,
 	}
 }
 
-NTSTATUS ndr_push_netr_AccountBuffer(struct ndr_push *ndr, int ndr_flags, const struct netr_AccountBuffer *r)
+static NTSTATUS ndr_push_netr_AccountBuffer(struct ndr_push *ndr, int ndr_flags, const struct netr_AccountBuffer *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -5375,7 +5375,7 @@ NTSTATUS ndr_push_netr_AccountBuffer(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_AccountBuffer(struct ndr_pull *ndr, int ndr_flags, struct netr_AccountBuffer *r)
+static NTSTATUS ndr_pull_netr_AccountBuffer(struct ndr_pull *ndr, int ndr_flags, struct netr_AccountBuffer *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -5399,7 +5399,7 @@ _PUBLIC_ void ndr_print_netr_AccountBuffer(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETLOGON_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct netr_NETLOGON_INFO_1 *r)
+static NTSTATUS ndr_push_netr_NETLOGON_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct netr_NETLOGON_INFO_1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -5411,7 +5411,7 @@ NTSTATUS ndr_push_netr_NETLOGON_INFO_1(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETLOGON_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_1 *r)
+static NTSTATUS ndr_pull_netr_NETLOGON_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -5432,7 +5432,7 @@ _PUBLIC_ void ndr_print_netr_NETLOGON_INFO_1(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETLOGON_INFO_2(struct ndr_push *ndr, int ndr_flags, const struct netr_NETLOGON_INFO_2 *r)
+static NTSTATUS ndr_push_netr_NETLOGON_INFO_2(struct ndr_push *ndr, int ndr_flags, const struct netr_NETLOGON_INFO_2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -5449,7 +5449,7 @@ NTSTATUS ndr_push_netr_NETLOGON_INFO_2(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETLOGON_INFO_2(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_2 *r)
+static NTSTATUS ndr_pull_netr_NETLOGON_INFO_2(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -5480,7 +5480,7 @@ _PUBLIC_ void ndr_print_netr_NETLOGON_INFO_2(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETLOGON_INFO_3(struct ndr_push *ndr, int ndr_flags, const struct netr_NETLOGON_INFO_3 *r)
+static NTSTATUS ndr_push_netr_NETLOGON_INFO_3(struct ndr_push *ndr, int ndr_flags, const struct netr_NETLOGON_INFO_3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -5497,7 +5497,7 @@ NTSTATUS ndr_push_netr_NETLOGON_INFO_3(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETLOGON_INFO_3(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_3 *r)
+static NTSTATUS ndr_pull_netr_NETLOGON_INFO_3(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -5528,7 +5528,7 @@ _PUBLIC_ void ndr_print_netr_NETLOGON_INFO_3(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push *ndr, int ndr_flags, const union netr_CONTROL_QUERY_INFORMATION *r)
+static NTSTATUS ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push *ndr, int ndr_flags, const union netr_CONTROL_QUERY_INFORMATION *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -5578,7 +5578,7 @@ NTSTATUS ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push *ndr, int ndr_f
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull *ndr, int ndr_flags, union netr_CONTROL_QUERY_INFORMATION *r)
+static NTSTATUS ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull *ndr, int ndr_flags, union netr_CONTROL_QUERY_INFORMATION *r)
 {
 	int level;
 	uint32_t _level;
@@ -5700,13 +5700,13 @@ _PUBLIC_ void ndr_print_netr_CONTROL_QUERY_INFORMATION(struct ndr_print *ndr, co
 	}
 }
 
-NTSTATUS ndr_push_netr_LogonControlCode(struct ndr_push *ndr, int ndr_flags, enum netr_LogonControlCode r)
+static NTSTATUS ndr_push_netr_LogonControlCode(struct ndr_push *ndr, int ndr_flags, enum netr_LogonControlCode r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonControlCode(struct ndr_pull *ndr, int ndr_flags, enum netr_LogonControlCode *r)
+static NTSTATUS ndr_pull_netr_LogonControlCode(struct ndr_pull *ndr, int ndr_flags, enum netr_LogonControlCode *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -5727,7 +5727,7 @@ _PUBLIC_ void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char 
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-NTSTATUS ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push *ndr, int ndr_flags, const union netr_CONTROL_DATA_INFORMATION *r)
+static NTSTATUS ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push *ndr, int ndr_flags, const union netr_CONTROL_DATA_INFORMATION *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -5793,7 +5793,7 @@ NTSTATUS ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push *ndr, int ndr_fl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull *ndr, int ndr_flags, union netr_CONTROL_DATA_INFORMATION *r)
+static NTSTATUS ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull *ndr, int ndr_flags, union netr_CONTROL_DATA_INFORMATION *r)
 {
 	int level;
 	uint32_t _level;
@@ -5942,7 +5942,7 @@ _PUBLIC_ void ndr_print_netr_CONTROL_DATA_INFORMATION(struct ndr_print *ndr, con
 	}
 }
 
-NTSTATUS ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DsRGetDCNameInfo *r)
+static NTSTATUS ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DsRGetDCNameInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -5998,7 +5998,7 @@ NTSTATUS ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r)
+static NTSTATUS ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r)
 {
 	uint32_t _ptr_dc_unc;
 	TALLOC_CTX *_mem_save_dc_unc_0;
@@ -6178,7 +6178,7 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCNameInfo(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_Blob(struct ndr_push *ndr, int ndr_flags, const struct netr_Blob *r)
+static NTSTATUS ndr_push_netr_Blob(struct ndr_push *ndr, int ndr_flags, const struct netr_Blob *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -6194,7 +6194,7 @@ NTSTATUS ndr_push_netr_Blob(struct ndr_push *ndr, int ndr_flags, const struct ne
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_Blob(struct ndr_pull *ndr, int ndr_flags, struct netr_Blob *r)
+static NTSTATUS ndr_pull_netr_Blob(struct ndr_pull *ndr, int ndr_flags, struct netr_Blob *r)
 {
 	uint32_t _ptr_data;
 	TALLOC_CTX *_mem_save_data_0;
@@ -6238,7 +6238,7 @@ _PUBLIC_ void ndr_print_netr_Blob(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_BinaryString(struct ndr_push *ndr, int ndr_flags, const struct netr_BinaryString *r)
+static NTSTATUS ndr_push_netr_BinaryString(struct ndr_push *ndr, int ndr_flags, const struct netr_BinaryString *r)
 {
 	uint32_t cntr_data_1;
 	{
@@ -6265,7 +6265,7 @@ NTSTATUS ndr_push_netr_BinaryString(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_BinaryString(struct ndr_pull *ndr, int ndr_flags, struct netr_BinaryString *r)
+static NTSTATUS ndr_pull_netr_BinaryString(struct ndr_pull *ndr, int ndr_flags, struct netr_BinaryString *r)
 {
 	uint32_t _ptr_data;
 	uint32_t cntr_data_1;
@@ -6346,7 +6346,7 @@ _PUBLIC_ void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *nam
 	}
 }
 
-NTSTATUS ndr_push_netr_DomainQuery1(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainQuery1 *r)
+static NTSTATUS ndr_push_netr_DomainQuery1(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainQuery1 *r)
 {
 	uint32_t cntr_unknown7_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -6412,7 +6412,7 @@ NTSTATUS ndr_push_netr_DomainQuery1(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DomainQuery1(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainQuery1 *r)
+static NTSTATUS ndr_pull_netr_DomainQuery1(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainQuery1 *r)
 {
 	uint32_t _ptr_workstation_domain;
 	TALLOC_CTX *_mem_save_workstation_domain_0;
@@ -6616,7 +6616,7 @@ _PUBLIC_ void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DomainQuery(struct ndr_push *ndr, int ndr_flags, const union netr_DomainQuery *r)
+static NTSTATUS ndr_push_netr_DomainQuery(struct ndr_push *ndr, int ndr_flags, const union netr_DomainQuery *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -6656,7 +6656,7 @@ NTSTATUS ndr_push_netr_DomainQuery(struct ndr_push *ndr, int ndr_flags, const un
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DomainQuery(struct ndr_pull *ndr, int ndr_flags, union netr_DomainQuery *r)
+static NTSTATUS ndr_pull_netr_DomainQuery(struct ndr_pull *ndr, int ndr_flags, union netr_DomainQuery *r)
 {
 	int level;
 	uint32_t _level;
@@ -6748,7 +6748,7 @@ _PUBLIC_ void ndr_print_netr_DomainQuery(struct ndr_print *ndr, const char *name
 	}
 }
 
-NTSTATUS ndr_push_netr_DomainTrustInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainTrustInfo *r)
+static NTSTATUS ndr_push_netr_DomainTrustInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainTrustInfo *r)
 {
 	uint32_t cntr_unknown1_0;
 	uint32_t cntr_unknown_0;
@@ -6781,7 +6781,7 @@ NTSTATUS ndr_push_netr_DomainTrustInfo(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DomainTrustInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainTrustInfo *r)
+static NTSTATUS ndr_pull_netr_DomainTrustInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainTrustInfo *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -6865,7 +6865,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DomainInfo1(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainInfo1 *r)
+static NTSTATUS ndr_push_netr_DomainInfo1(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainInfo1 *r)
 {
 	uint32_t cntr_trusts_1;
 	uint32_t cntr_unknown_0;
@@ -6893,7 +6893,7 @@ NTSTATUS ndr_push_netr_DomainInfo1(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DomainInfo1(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainInfo1 *r)
+static NTSTATUS ndr_pull_netr_DomainInfo1(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainInfo1 *r)
 {
 	uint32_t _ptr_trusts;
 	uint32_t cntr_trusts_1;
@@ -6977,7 +6977,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DomainInfo(struct ndr_push *ndr, int ndr_flags, const union netr_DomainInfo *r)
+static NTSTATUS ndr_push_netr_DomainInfo(struct ndr_push *ndr, int ndr_flags, const union netr_DomainInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -7017,7 +7017,7 @@ NTSTATUS ndr_push_netr_DomainInfo(struct ndr_push *ndr, int ndr_flags, const uni
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, union netr_DomainInfo *r)
+static NTSTATUS ndr_pull_netr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, union netr_DomainInfo *r)
 {
 	int level;
 	uint32_t _level;
@@ -7109,7 +7109,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo(struct ndr_print *ndr, const char *name,
 	}
 }
 
-NTSTATUS ndr_push_netr_CryptPassword(struct ndr_push *ndr, int ndr_flags, const struct netr_CryptPassword *r)
+static NTSTATUS ndr_push_netr_CryptPassword(struct ndr_push *ndr, int ndr_flags, const struct netr_CryptPassword *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -7126,7 +7126,7 @@ NTSTATUS ndr_push_netr_CryptPassword(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_CryptPassword(struct ndr_pull *ndr, int ndr_flags, struct netr_CryptPassword *r)
+static NTSTATUS ndr_pull_netr_CryptPassword(struct ndr_pull *ndr, int ndr_flags, struct netr_CryptPassword *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -7157,13 +7157,13 @@ _PUBLIC_ void ndr_print_netr_CryptPassword(struct ndr_print *ndr, const char *na
 	}
 }
 
-NTSTATUS ndr_push_netr_TrustFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+static NTSTATUS ndr_push_netr_TrustFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_TrustFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+static NTSTATUS ndr_pull_netr_TrustFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -7184,13 +7184,13 @@ _PUBLIC_ void ndr_print_netr_TrustFlags(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_TrustType(struct ndr_push *ndr, int ndr_flags, enum netr_TrustType r)
+static NTSTATUS ndr_push_netr_TrustType(struct ndr_push *ndr, int ndr_flags, enum netr_TrustType r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_TrustType(struct ndr_pull *ndr, int ndr_flags, enum netr_TrustType *r)
+static NTSTATUS ndr_pull_netr_TrustType(struct ndr_pull *ndr, int ndr_flags, enum netr_TrustType *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -7211,13 +7211,13 @@ _PUBLIC_ void ndr_print_netr_TrustType(struct ndr_print *ndr, const char *name, 
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-NTSTATUS ndr_push_netr_TrustAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+static NTSTATUS ndr_push_netr_TrustAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_TrustAttributes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+static NTSTATUS ndr_pull_netr_TrustAttributes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -7239,7 +7239,7 @@ _PUBLIC_ void ndr_print_netr_TrustAttributes(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DomainTrust(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainTrust *r)
+static NTSTATUS ndr_push_netr_DomainTrust(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainTrust *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -7273,7 +7273,7 @@ NTSTATUS ndr_push_netr_DomainTrust(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DomainTrust(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainTrust *r)
+static NTSTATUS ndr_pull_netr_DomainTrust(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainTrust *r)
 {
 	uint32_t _ptr_netbios_name;
 	TALLOC_CTX *_mem_save_netbios_name_0;
@@ -7373,7 +7373,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrust(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonUasLogon(struct ndr_push *ndr, int flags, const struct netr_LogonUasLogon *r)
+static NTSTATUS ndr_push_netr_LogonUasLogon(struct ndr_push *ndr, int flags, const struct netr_LogonUasLogon *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -7402,7 +7402,7 @@ NTSTATUS ndr_push_netr_LogonUasLogon(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonUasLogon(struct ndr_pull *ndr, int flags, struct netr_LogonUasLogon *r)
+static NTSTATUS ndr_pull_netr_LogonUasLogon(struct ndr_pull *ndr, int flags, struct netr_LogonUasLogon *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_info;
@@ -7497,7 +7497,7 @@ _PUBLIC_ void ndr_print_netr_LogonUasLogon(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonUasLogoff(struct ndr_push *ndr, int flags, const struct netr_LogonUasLogoff *r)
+static NTSTATUS ndr_push_netr_LogonUasLogoff(struct ndr_push *ndr, int flags, const struct netr_LogonUasLogoff *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -7524,7 +7524,7 @@ NTSTATUS ndr_push_netr_LogonUasLogoff(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonUasLogoff(struct ndr_pull *ndr, int flags, struct netr_LogonUasLogoff *r)
+static NTSTATUS ndr_pull_netr_LogonUasLogoff(struct ndr_pull *ndr, int flags, struct netr_LogonUasLogoff *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -7613,7 +7613,7 @@ _PUBLIC_ void ndr_print_netr_LogonUasLogoff(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonSamLogon(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogon *r)
+static NTSTATUS ndr_push_netr_LogonSamLogon(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogon *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -7658,7 +7658,7 @@ NTSTATUS ndr_push_netr_LogonSamLogon(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogon *r)
+static NTSTATUS ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogon *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_computer_name;
@@ -7839,7 +7839,7 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogon(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonSamLogoff(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogoff *r)
+static NTSTATUS ndr_push_netr_LogonSamLogoff(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogoff *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -7878,7 +7878,7 @@ NTSTATUS ndr_push_netr_LogonSamLogoff(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonSamLogoff(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogoff *r)
+static NTSTATUS ndr_pull_netr_LogonSamLogoff(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogoff *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_computer_name;
@@ -8027,7 +8027,7 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogoff(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_ServerReqChallenge(struct ndr_push *ndr, int flags, const struct netr_ServerReqChallenge *r)
+static NTSTATUS ndr_push_netr_ServerReqChallenge(struct ndr_push *ndr, int flags, const struct netr_ServerReqChallenge *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -8052,7 +8052,7 @@ NTSTATUS ndr_push_netr_ServerReqChallenge(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr, int flags, struct netr_ServerReqChallenge *r)
+static NTSTATUS ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr, int flags, struct netr_ServerReqChallenge *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -8144,7 +8144,7 @@ _PUBLIC_ void ndr_print_netr_ServerReqChallenge(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_ServerAuthenticate(struct ndr_push *ndr, int flags, const struct netr_ServerAuthenticate *r)
+static NTSTATUS ndr_push_netr_ServerAuthenticate(struct ndr_push *ndr, int flags, const struct netr_ServerAuthenticate *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -8174,7 +8174,7 @@ NTSTATUS ndr_push_netr_ServerAuthenticate(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate *r)
+static NTSTATUS ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -8276,7 +8276,7 @@ _PUBLIC_ void ndr_print_netr_ServerAuthenticate(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_ServerPasswordSet(struct ndr_push *ndr, int flags, const struct netr_ServerPasswordSet *r)
+static NTSTATUS ndr_push_netr_ServerPasswordSet(struct ndr_push *ndr, int flags, const struct netr_ServerPasswordSet *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -8306,7 +8306,7 @@ NTSTATUS ndr_push_netr_ServerPasswordSet(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_ServerPasswordSet(struct ndr_pull *ndr, int flags, struct netr_ServerPasswordSet *r)
+static NTSTATUS ndr_pull_netr_ServerPasswordSet(struct ndr_pull *ndr, int flags, struct netr_ServerPasswordSet *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -8401,7 +8401,7 @@ _PUBLIC_ void ndr_print_netr_ServerPasswordSet(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DatabaseDeltas(struct ndr_push *ndr, int flags, const struct netr_DatabaseDeltas *r)
+static NTSTATUS ndr_push_netr_DatabaseDeltas(struct ndr_push *ndr, int flags, const struct netr_DatabaseDeltas *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.logon_server, CH_UTF16)));
@@ -8434,7 +8434,7 @@ NTSTATUS ndr_push_netr_DatabaseDeltas(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DatabaseDeltas(struct ndr_pull *ndr, int flags, struct netr_DatabaseDeltas *r)
+static NTSTATUS ndr_pull_netr_DatabaseDeltas(struct ndr_pull *ndr, int flags, struct netr_DatabaseDeltas *r)
 {
 	uint32_t _ptr_delta_enum_array;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -8559,7 +8559,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseDeltas(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DatabaseSync(struct ndr_push *ndr, int flags, const struct netr_DatabaseSync *r)
+static NTSTATUS ndr_push_netr_DatabaseSync(struct ndr_push *ndr, int flags, const struct netr_DatabaseSync *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.logon_server, CH_UTF16)));
@@ -8592,7 +8592,7 @@ NTSTATUS ndr_push_netr_DatabaseSync(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DatabaseSync(struct ndr_pull *ndr, int flags, struct netr_DatabaseSync *r)
+static NTSTATUS ndr_pull_netr_DatabaseSync(struct ndr_pull *ndr, int flags, struct netr_DatabaseSync *r)
 {
 	uint32_t _ptr_delta_enum_array;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -8717,7 +8717,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseSync(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_AccountDeltas(struct ndr_push *ndr, int flags, const struct netr_AccountDeltas *r)
+static NTSTATUS ndr_push_netr_AccountDeltas(struct ndr_push *ndr, int flags, const struct netr_AccountDeltas *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.logon_server));
@@ -8760,7 +8760,7 @@ NTSTATUS ndr_push_netr_AccountDeltas(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_AccountDeltas(struct ndr_pull *ndr, int flags, struct netr_AccountDeltas *r)
+static NTSTATUS ndr_pull_netr_AccountDeltas(struct ndr_pull *ndr, int flags, struct netr_AccountDeltas *r)
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
@@ -8923,7 +8923,7 @@ _PUBLIC_ void ndr_print_netr_AccountDeltas(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_AccountSync(struct ndr_push *ndr, int flags, const struct netr_AccountSync *r)
+static NTSTATUS ndr_push_netr_AccountSync(struct ndr_push *ndr, int flags, const struct netr_AccountSync *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.logon_server));
@@ -8969,7 +8969,7 @@ NTSTATUS ndr_push_netr_AccountSync(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_AccountSync(struct ndr_pull *ndr, int flags, struct netr_AccountSync *r)
+static NTSTATUS ndr_pull_netr_AccountSync(struct ndr_pull *ndr, int flags, struct netr_AccountSync *r)
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
@@ -9155,7 +9155,7 @@ _PUBLIC_ void ndr_print_netr_AccountSync(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_GetDcName(struct ndr_push *ndr, int flags, const struct netr_GetDcName *r)
+static NTSTATUS ndr_push_netr_GetDcName(struct ndr_push *ndr, int flags, const struct netr_GetDcName *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.logon_server, CH_UTF16)));
@@ -9183,7 +9183,7 @@ NTSTATUS ndr_push_netr_GetDcName(struct ndr_push *ndr, int flags, const struct n
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_GetDcName(struct ndr_pull *ndr, int flags, struct netr_GetDcName *r)
+static NTSTATUS ndr_pull_netr_GetDcName(struct ndr_pull *ndr, int flags, struct netr_GetDcName *r)
 {
 	uint32_t _ptr_domainname;
 	uint32_t _ptr_dcname;
@@ -9275,7 +9275,7 @@ _PUBLIC_ void ndr_print_netr_GetDcName(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonControl(struct ndr_push *ndr, int flags, const struct netr_LogonControl *r)
+static NTSTATUS ndr_push_netr_LogonControl(struct ndr_push *ndr, int flags, const struct netr_LogonControl *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.logon_server));
@@ -9297,7 +9297,7 @@ NTSTATUS ndr_push_netr_LogonControl(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonControl(struct ndr_pull *ndr, int flags, struct netr_LogonControl *r)
+static NTSTATUS ndr_pull_netr_LogonControl(struct ndr_pull *ndr, int flags, struct netr_LogonControl *r)
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
@@ -9376,7 +9376,7 @@ _PUBLIC_ void ndr_print_netr_LogonControl(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_GetAnyDCName(struct ndr_push *ndr, int flags, const struct netr_GetAnyDCName *r)
+static NTSTATUS ndr_push_netr_GetAnyDCName(struct ndr_push *ndr, int flags, const struct netr_GetAnyDCName *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.logon_server));
@@ -9407,7 +9407,7 @@ NTSTATUS ndr_push_netr_GetAnyDCName(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_GetAnyDCName(struct ndr_pull *ndr, int flags, struct netr_GetAnyDCName *r)
+static NTSTATUS ndr_pull_netr_GetAnyDCName(struct ndr_pull *ndr, int flags, struct netr_GetAnyDCName *r)
 {
 	uint32_t _ptr_logon_server;
 	uint32_t _ptr_domainname;
@@ -9517,7 +9517,7 @@ _PUBLIC_ void ndr_print_netr_GetAnyDCName(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonControl2(struct ndr_push *ndr, int flags, const struct netr_LogonControl2 *r)
+static NTSTATUS ndr_push_netr_LogonControl2(struct ndr_push *ndr, int flags, const struct netr_LogonControl2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.logon_server));
@@ -9541,7 +9541,7 @@ NTSTATUS ndr_push_netr_LogonControl2(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int flags, struct netr_LogonControl2 *r)
+static NTSTATUS ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int flags, struct netr_LogonControl2 *r)
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
@@ -9624,7 +9624,7 @@ _PUBLIC_ void ndr_print_netr_LogonControl2(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_ServerAuthenticate2(struct ndr_push *ndr, int flags, const struct netr_ServerAuthenticate2 *r)
+static NTSTATUS ndr_push_netr_ServerAuthenticate2(struct ndr_push *ndr, int flags, const struct netr_ServerAuthenticate2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -9658,7 +9658,7 @@ NTSTATUS ndr_push_netr_ServerAuthenticate2(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate2 *r)
+static NTSTATUS ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate2 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -9785,7 +9785,7 @@ _PUBLIC_ void ndr_print_netr_ServerAuthenticate2(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int flags, const struct netr_DatabaseSync2 *r)
+static NTSTATUS ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int flags, const struct netr_DatabaseSync2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.logon_server, CH_UTF16)));
@@ -9819,7 +9819,7 @@ NTSTATUS ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int flags, struct netr_DatabaseSync2 *r)
+static NTSTATUS ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int flags, struct netr_DatabaseSync2 *r)
 {
 	uint32_t _ptr_delta_enum_array;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -9946,7 +9946,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseSync2(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DatabaseRedo(struct ndr_push *ndr, int flags, const struct netr_DatabaseRedo *r)
+static NTSTATUS ndr_push_netr_DatabaseRedo(struct ndr_push *ndr, int flags, const struct netr_DatabaseRedo *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.logon_server, CH_UTF16)));
@@ -9979,7 +9979,7 @@ NTSTATUS ndr_push_netr_DatabaseRedo(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DatabaseRedo(struct ndr_pull *ndr, int flags, struct netr_DatabaseRedo *r)
+static NTSTATUS ndr_pull_netr_DatabaseRedo(struct ndr_pull *ndr, int flags, struct netr_DatabaseRedo *r)
 {
 	uint32_t _ptr_change_log_entry;
 	uint32_t _ptr_delta_enum_array;
@@ -10102,7 +10102,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseRedo(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonControl2Ex(struct ndr_push *ndr, int flags, const struct netr_LogonControl2Ex *r)
+static NTSTATUS ndr_push_netr_LogonControl2Ex(struct ndr_push *ndr, int flags, const struct netr_LogonControl2Ex *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.logon_server));
@@ -10126,7 +10126,7 @@ NTSTATUS ndr_push_netr_LogonControl2Ex(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonControl2Ex(struct ndr_pull *ndr, int flags, struct netr_LogonControl2Ex *r)
+static NTSTATUS ndr_pull_netr_LogonControl2Ex(struct ndr_pull *ndr, int flags, struct netr_LogonControl2Ex *r)
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
@@ -10209,7 +10209,7 @@ _PUBLIC_ void ndr_print_netr_LogonControl2Ex(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRENUMERATETRUSTEDDOMAINS(struct ndr_push *ndr, int flags, const struct netr_NETRENUMERATETRUSTEDDOMAINS *r)
+static NTSTATUS ndr_push_netr_NETRENUMERATETRUSTEDDOMAINS(struct ndr_push *ndr, int flags, const struct netr_NETRENUMERATETRUSTEDDOMAINS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10219,7 +10219,7 @@ NTSTATUS ndr_push_netr_NETRENUMERATETRUSTEDDOMAINS(struct ndr_push *ndr, int fla
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINS(struct ndr_pull *ndr, int flags, struct netr_NETRENUMERATETRUSTEDDOMAINS *r)
+static NTSTATUS ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINS(struct ndr_pull *ndr, int flags, struct netr_NETRENUMERATETRUSTEDDOMAINS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10250,7 +10250,7 @@ _PUBLIC_ void ndr_print_netr_NETRENUMERATETRUSTEDDOMAINS(struct ndr_print *ndr, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DsRGetDCName(struct ndr_push *ndr, int flags, const struct netr_DsRGetDCName *r)
+static NTSTATUS ndr_push_netr_DsRGetDCName(struct ndr_push *ndr, int flags, const struct netr_DsRGetDCName *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_unc));
@@ -10287,7 +10287,7 @@ NTSTATUS ndr_push_netr_DsRGetDCName(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DsRGetDCName(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCName *r)
+static NTSTATUS ndr_pull_netr_DsRGetDCName(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCName *r)
 {
 	uint32_t _ptr_server_unc;
 	uint32_t _ptr_domain_name;
@@ -10434,7 +10434,7 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCName(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRLOGONDUMMYROUTINE1(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONDUMMYROUTINE1 *r)
+static NTSTATUS ndr_push_netr_NETRLOGONDUMMYROUTINE1(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONDUMMYROUTINE1 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10444,7 +10444,7 @@ NTSTATUS ndr_push_netr_NETRLOGONDUMMYROUTINE1(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRLOGONDUMMYROUTINE1(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONDUMMYROUTINE1 *r)
+static NTSTATUS ndr_pull_netr_NETRLOGONDUMMYROUTINE1(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONDUMMYROUTINE1 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10475,7 +10475,7 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONDUMMYROUTINE1(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRLOGONSETSERVICEBITS(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONSETSERVICEBITS *r)
+static NTSTATUS ndr_push_netr_NETRLOGONSETSERVICEBITS(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONSETSERVICEBITS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10485,7 +10485,7 @@ NTSTATUS ndr_push_netr_NETRLOGONSETSERVICEBITS(struct ndr_push *ndr, int flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRLOGONSETSERVICEBITS(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONSETSERVICEBITS *r)
+static NTSTATUS ndr_pull_netr_NETRLOGONSETSERVICEBITS(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONSETSERVICEBITS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10516,7 +10516,7 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONSETSERVICEBITS(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRLOGONGETTRUSTRID(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONGETTRUSTRID *r)
+static NTSTATUS ndr_push_netr_NETRLOGONGETTRUSTRID(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONGETTRUSTRID *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10526,7 +10526,7 @@ NTSTATUS ndr_push_netr_NETRLOGONGETTRUSTRID(struct ndr_push *ndr, int flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRLOGONGETTRUSTRID(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONGETTRUSTRID *r)
+static NTSTATUS ndr_pull_netr_NETRLOGONGETTRUSTRID(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONGETTRUSTRID *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10557,7 +10557,7 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONGETTRUSTRID(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
+static NTSTATUS ndr_push_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10567,7 +10567,7 @@ NTSTATUS ndr_push_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_push *ndr, int fl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
+static NTSTATUS ndr_pull_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10598,7 +10598,7 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
+static NTSTATUS ndr_push_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10608,7 +10608,7 @@ NTSTATUS ndr_push_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_push *ndr, int fl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
+static NTSTATUS ndr_pull_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10639,7 +10639,7 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_ServerAuthenticate3(struct ndr_push *ndr, int flags, const struct netr_ServerAuthenticate3 *r)
+static NTSTATUS ndr_push_netr_ServerAuthenticate3(struct ndr_push *ndr, int flags, const struct netr_ServerAuthenticate3 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -10675,7 +10675,7 @@ NTSTATUS ndr_push_netr_ServerAuthenticate3(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_ServerAuthenticate3(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate3 *r)
+static NTSTATUS ndr_pull_netr_ServerAuthenticate3(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate3 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -10816,7 +10816,7 @@ _PUBLIC_ void ndr_print_netr_ServerAuthenticate3(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DsRGetDCNameEx(struct ndr_push *ndr, int flags, const struct netr_DsRGetDCNameEx *r)
+static NTSTATUS ndr_push_netr_DsRGetDCNameEx(struct ndr_push *ndr, int flags, const struct netr_DsRGetDCNameEx *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_unc));
@@ -10856,7 +10856,7 @@ NTSTATUS ndr_push_netr_DsRGetDCNameEx(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCNameEx *r)
+static NTSTATUS ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCNameEx *r)
 {
 	uint32_t _ptr_server_unc;
 	uint32_t _ptr_domain_name;
@@ -11009,7 +11009,7 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCNameEx(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DsRGetSiteName(struct ndr_push *ndr, int flags, const struct netr_DsRGetSiteName *r)
+static NTSTATUS ndr_push_netr_DsRGetSiteName(struct ndr_push *ndr, int flags, const struct netr_DsRGetSiteName *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.computer_name));
@@ -11033,7 +11033,7 @@ NTSTATUS ndr_push_netr_DsRGetSiteName(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DsRGetSiteName(struct ndr_pull *ndr, int flags, struct netr_DsRGetSiteName *r)
+static NTSTATUS ndr_pull_netr_DsRGetSiteName(struct ndr_pull *ndr, int flags, struct netr_DsRGetSiteName *r)
 {
 	uint32_t _ptr_computer_name;
 	uint32_t _ptr_site;
@@ -11117,7 +11117,7 @@ _PUBLIC_ void ndr_print_netr_DsRGetSiteName(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonGetDomainInfo(struct ndr_push *ndr, int flags, const struct netr_LogonGetDomainInfo *r)
+static NTSTATUS ndr_push_netr_LogonGetDomainInfo(struct ndr_push *ndr, int flags, const struct netr_LogonGetDomainInfo *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
@@ -11150,7 +11150,7 @@ NTSTATUS ndr_push_netr_LogonGetDomainInfo(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonGetDomainInfo(struct ndr_pull *ndr, int flags, struct netr_LogonGetDomainInfo *r)
+static NTSTATUS ndr_pull_netr_LogonGetDomainInfo(struct ndr_pull *ndr, int flags, struct netr_LogonGetDomainInfo *r)
 {
 	uint32_t _ptr_computer_name;
 	TALLOC_CTX *_mem_save_computer_name_0;
@@ -11276,7 +11276,7 @@ _PUBLIC_ void ndr_print_netr_LogonGetDomainInfo(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_ServerPasswordSet2(struct ndr_push *ndr, int flags, const struct netr_ServerPasswordSet2 *r)
+static NTSTATUS ndr_push_netr_ServerPasswordSet2(struct ndr_push *ndr, int flags, const struct netr_ServerPasswordSet2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -11306,7 +11306,7 @@ NTSTATUS ndr_push_netr_ServerPasswordSet2(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_ServerPasswordSet2(struct ndr_pull *ndr, int flags, struct netr_ServerPasswordSet2 *r)
+static NTSTATUS ndr_pull_netr_ServerPasswordSet2(struct ndr_pull *ndr, int flags, struct netr_ServerPasswordSet2 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -11401,7 +11401,7 @@ _PUBLIC_ void ndr_print_netr_ServerPasswordSet2(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRSERVERPASSWORDGET(struct ndr_push *ndr, int flags, const struct netr_NETRSERVERPASSWORDGET *r)
+static NTSTATUS ndr_push_netr_NETRSERVERPASSWORDGET(struct ndr_push *ndr, int flags, const struct netr_NETRSERVERPASSWORDGET *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11411,7 +11411,7 @@ NTSTATUS ndr_push_netr_NETRSERVERPASSWORDGET(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRSERVERPASSWORDGET(struct ndr_pull *ndr, int flags, struct netr_NETRSERVERPASSWORDGET *r)
+static NTSTATUS ndr_pull_netr_NETRSERVERPASSWORDGET(struct ndr_pull *ndr, int flags, struct netr_NETRSERVERPASSWORDGET *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11442,7 +11442,7 @@ _PUBLIC_ void ndr_print_netr_NETRSERVERPASSWORDGET(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRLOGONSENDTOSAM(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONSENDTOSAM *r)
+static NTSTATUS ndr_push_netr_NETRLOGONSENDTOSAM(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONSENDTOSAM *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11452,7 +11452,7 @@ NTSTATUS ndr_push_netr_NETRLOGONSENDTOSAM(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRLOGONSENDTOSAM(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONSENDTOSAM *r)
+static NTSTATUS ndr_pull_netr_NETRLOGONSENDTOSAM(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONSENDTOSAM *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11483,7 +11483,7 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONSENDTOSAM(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DSRADDRESSTOSITENAMESW(struct ndr_push *ndr, int flags, const struct netr_DSRADDRESSTOSITENAMESW *r)
+static NTSTATUS ndr_push_netr_DSRADDRESSTOSITENAMESW(struct ndr_push *ndr, int flags, const struct netr_DSRADDRESSTOSITENAMESW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11493,7 +11493,7 @@ NTSTATUS ndr_push_netr_DSRADDRESSTOSITENAMESW(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DSRADDRESSTOSITENAMESW(struct ndr_pull *ndr, int flags, struct netr_DSRADDRESSTOSITENAMESW *r)
+static NTSTATUS ndr_pull_netr_DSRADDRESSTOSITENAMESW(struct ndr_pull *ndr, int flags, struct netr_DSRADDRESSTOSITENAMESW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11524,7 +11524,7 @@ _PUBLIC_ void ndr_print_netr_DSRADDRESSTOSITENAMESW(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DsRGetDCNameEx2(struct ndr_push *ndr, int flags, const struct netr_DsRGetDCNameEx2 *r)
+static NTSTATUS ndr_push_netr_DsRGetDCNameEx2(struct ndr_push *ndr, int flags, const struct netr_DsRGetDCNameEx2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_unc));
@@ -11572,7 +11572,7 @@ NTSTATUS ndr_push_netr_DsRGetDCNameEx2(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCNameEx2 *r)
+static NTSTATUS ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCNameEx2 *r)
 {
 	uint32_t _ptr_server_unc;
 	uint32_t _ptr_client_account;
@@ -11753,7 +11753,7 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCNameEx2(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
+static NTSTATUS ndr_push_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11763,7 +11763,7 @@ NTSTATUS ndr_push_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_push *ndr,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
+static NTSTATUS ndr_pull_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11794,7 +11794,7 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_prin
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct ndr_push *ndr, int flags, const struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r)
+static NTSTATUS ndr_push_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct ndr_push *ndr, int flags, const struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11804,7 +11804,7 @@ NTSTATUS ndr_push_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct ndr_push *ndr, int f
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct ndr_pull *ndr, int flags, struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r)
+static NTSTATUS ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct ndr_pull *ndr, int flags, struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11835,7 +11835,7 @@ _PUBLIC_ void ndr_print_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct ndr_print *ndr
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DSRADDRESSTOSITENAMESEXW(struct ndr_push *ndr, int flags, const struct netr_DSRADDRESSTOSITENAMESEXW *r)
+static NTSTATUS ndr_push_netr_DSRADDRESSTOSITENAMESEXW(struct ndr_push *ndr, int flags, const struct netr_DSRADDRESSTOSITENAMESEXW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11845,7 +11845,7 @@ NTSTATUS ndr_push_netr_DSRADDRESSTOSITENAMESEXW(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DSRADDRESSTOSITENAMESEXW(struct ndr_pull *ndr, int flags, struct netr_DSRADDRESSTOSITENAMESEXW *r)
+static NTSTATUS ndr_pull_netr_DSRADDRESSTOSITENAMESEXW(struct ndr_pull *ndr, int flags, struct netr_DSRADDRESSTOSITENAMESEXW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11876,7 +11876,7 @@ _PUBLIC_ void ndr_print_netr_DSRADDRESSTOSITENAMESEXW(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DSRGETDCSITECOVERAGEW(struct ndr_push *ndr, int flags, const struct netr_DSRGETDCSITECOVERAGEW *r)
+static NTSTATUS ndr_push_netr_DSRGETDCSITECOVERAGEW(struct ndr_push *ndr, int flags, const struct netr_DSRGETDCSITECOVERAGEW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11886,7 +11886,7 @@ NTSTATUS ndr_push_netr_DSRGETDCSITECOVERAGEW(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DSRGETDCSITECOVERAGEW(struct ndr_pull *ndr, int flags, struct netr_DSRGETDCSITECOVERAGEW *r)
+static NTSTATUS ndr_pull_netr_DSRGETDCSITECOVERAGEW(struct ndr_pull *ndr, int flags, struct netr_DSRGETDCSITECOVERAGEW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -11917,7 +11917,7 @@ _PUBLIC_ void ndr_print_netr_DSRGETDCSITECOVERAGEW(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonSamLogonEx(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogonEx *r)
+static NTSTATUS ndr_push_netr_LogonSamLogonEx(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogonEx *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -11954,7 +11954,7 @@ NTSTATUS ndr_push_netr_LogonSamLogonEx(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogonEx *r)
+static NTSTATUS ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogonEx *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_computer_name;
@@ -12102,7 +12102,7 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogonEx(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DsrEnumerateDomainTrusts(struct ndr_push *ndr, int flags, const struct netr_DsrEnumerateDomainTrusts *r)
+static NTSTATUS ndr_push_netr_DsrEnumerateDomainTrusts(struct ndr_push *ndr, int flags, const struct netr_DsrEnumerateDomainTrusts *r)
 {
 	uint32_t cntr_trusts_1;
 	if (flags & NDR_IN) {
@@ -12132,7 +12132,7 @@ NTSTATUS ndr_push_netr_DsrEnumerateDomainTrusts(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DsrEnumerateDomainTrusts(struct ndr_pull *ndr, int flags, struct netr_DsrEnumerateDomainTrusts *r)
+static NTSTATUS ndr_pull_netr_DsrEnumerateDomainTrusts(struct ndr_pull *ndr, int flags, struct netr_DsrEnumerateDomainTrusts *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_trusts;
@@ -12253,7 +12253,7 @@ _PUBLIC_ void ndr_print_netr_DsrEnumerateDomainTrusts(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_push *ndr, int flags, const struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
+static NTSTATUS ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_push *ndr, int flags, const struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12263,7 +12263,7 @@ NTSTATUS ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_push *ndr, int fla
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_pull *ndr, int flags, struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
+static NTSTATUS ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_pull *ndr, int flags, struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12294,7 +12294,7 @@ _PUBLIC_ void ndr_print_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_print *ndr, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRSERVERTRUSTPASSWORDSGET(struct ndr_push *ndr, int flags, const struct netr_NETRSERVERTRUSTPASSWORDSGET *r)
+static NTSTATUS ndr_push_netr_NETRSERVERTRUSTPASSWORDSGET(struct ndr_push *ndr, int flags, const struct netr_NETRSERVERTRUSTPASSWORDSGET *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12304,7 +12304,7 @@ NTSTATUS ndr_push_netr_NETRSERVERTRUSTPASSWORDSGET(struct ndr_push *ndr, int fla
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRSERVERTRUSTPASSWORDSGET(struct ndr_pull *ndr, int flags, struct netr_NETRSERVERTRUSTPASSWORDSGET *r)
+static NTSTATUS ndr_pull_netr_NETRSERVERTRUSTPASSWORDSGET(struct ndr_pull *ndr, int flags, struct netr_NETRSERVERTRUSTPASSWORDSGET *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12335,7 +12335,7 @@ _PUBLIC_ void ndr_print_netr_NETRSERVERTRUSTPASSWORDSGET(struct ndr_print *ndr, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_DSRGETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct netr_DSRGETFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_push_netr_DSRGETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct netr_DSRGETFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12345,7 +12345,7 @@ NTSTATUS ndr_push_netr_DSRGETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int fl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_DSRGETFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct netr_DSRGETFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_pull_netr_DSRGETFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct netr_DSRGETFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12376,7 +12376,7 @@ _PUBLIC_ void ndr_print_netr_DSRGETFORESTTRUSTINFORMATION(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRGETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct netr_NETRGETFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_push_netr_NETRGETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct netr_NETRGETFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12386,7 +12386,7 @@ NTSTATUS ndr_push_netr_NETRGETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int f
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRGETFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct netr_NETRGETFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_pull_netr_NETRGETFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct netr_NETRGETFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12417,7 +12417,7 @@ _PUBLIC_ void ndr_print_netr_NETRGETFORESTTRUSTINFORMATION(struct ndr_print *ndr
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_LogonSamLogonWithFlags(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogonWithFlags *r)
+static NTSTATUS ndr_push_netr_LogonSamLogonWithFlags(struct ndr_push *ndr, int flags, const struct netr_LogonSamLogonWithFlags *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -12466,7 +12466,7 @@ NTSTATUS ndr_push_netr_LogonSamLogonWithFlags(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_LogonSamLogonWithFlags(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogonWithFlags *r)
+static NTSTATUS ndr_pull_netr_LogonSamLogonWithFlags(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogonWithFlags *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_computer_name;
@@ -12672,7 +12672,7 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogonWithFlags(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_netr_NETRSERVERGETTRUSTINFO(struct ndr_push *ndr, int flags, const struct netr_NETRSERVERGETTRUSTINFO *r)
+static NTSTATUS ndr_push_netr_NETRSERVERGETTRUSTINFO(struct ndr_push *ndr, int flags, const struct netr_NETRSERVERGETTRUSTINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12682,7 +12682,7 @@ NTSTATUS ndr_push_netr_NETRSERVERGETTRUSTINFO(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_netr_NETRSERVERGETTRUSTINFO(struct ndr_pull *ndr, int flags, struct netr_NETRSERVERGETTRUSTINFO *r)
+static NTSTATUS ndr_pull_netr_NETRSERVERGETTRUSTINFO(struct ndr_pull *ndr, int flags, struct netr_NETRSERVERGETTRUSTINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -12713,14 +12713,14 @@ _PUBLIC_ void ndr_print_netr_NETRSERVERGETTRUSTINFO(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-const struct ndr_interface_call netlogon_calls[] = {
+static const struct ndr_interface_call netlogon_calls[] = {
 	{
 		"netr_LogonUasLogon",
 		sizeof(struct netr_LogonUasLogon),
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonUasLogon,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonUasLogon,
 		(ndr_print_function_t) ndr_print_netr_LogonUasLogon,
-		False,
+		false,
 	},
 	{
 		"netr_LogonUasLogoff",
@@ -12728,7 +12728,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonUasLogoff,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonUasLogoff,
 		(ndr_print_function_t) ndr_print_netr_LogonUasLogoff,
-		False,
+		false,
 	},
 	{
 		"netr_LogonSamLogon",
@@ -12736,7 +12736,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonSamLogon,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonSamLogon,
 		(ndr_print_function_t) ndr_print_netr_LogonSamLogon,
-		False,
+		false,
 	},
 	{
 		"netr_LogonSamLogoff",
@@ -12744,7 +12744,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonSamLogoff,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonSamLogoff,
 		(ndr_print_function_t) ndr_print_netr_LogonSamLogoff,
-		False,
+		false,
 	},
 	{
 		"netr_ServerReqChallenge",
@@ -12752,7 +12752,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_ServerReqChallenge,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_ServerReqChallenge,
 		(ndr_print_function_t) ndr_print_netr_ServerReqChallenge,
-		False,
+		false,
 	},
 	{
 		"netr_ServerAuthenticate",
@@ -12760,7 +12760,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_ServerAuthenticate,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_ServerAuthenticate,
 		(ndr_print_function_t) ndr_print_netr_ServerAuthenticate,
-		False,
+		false,
 	},
 	{
 		"netr_ServerPasswordSet",
@@ -12768,7 +12768,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_ServerPasswordSet,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_ServerPasswordSet,
 		(ndr_print_function_t) ndr_print_netr_ServerPasswordSet,
-		False,
+		false,
 	},
 	{
 		"netr_DatabaseDeltas",
@@ -12776,7 +12776,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DatabaseDeltas,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DatabaseDeltas,
 		(ndr_print_function_t) ndr_print_netr_DatabaseDeltas,
-		False,
+		false,
 	},
 	{
 		"netr_DatabaseSync",
@@ -12784,7 +12784,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DatabaseSync,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DatabaseSync,
 		(ndr_print_function_t) ndr_print_netr_DatabaseSync,
-		False,
+		false,
 	},
 	{
 		"netr_AccountDeltas",
@@ -12792,7 +12792,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_AccountDeltas,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_AccountDeltas,
 		(ndr_print_function_t) ndr_print_netr_AccountDeltas,
-		False,
+		false,
 	},
 	{
 		"netr_AccountSync",
@@ -12800,7 +12800,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_AccountSync,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_AccountSync,
 		(ndr_print_function_t) ndr_print_netr_AccountSync,
-		False,
+		false,
 	},
 	{
 		"netr_GetDcName",
@@ -12808,7 +12808,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_GetDcName,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_GetDcName,
 		(ndr_print_function_t) ndr_print_netr_GetDcName,
-		False,
+		false,
 	},
 	{
 		"netr_LogonControl",
@@ -12816,7 +12816,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonControl,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonControl,
 		(ndr_print_function_t) ndr_print_netr_LogonControl,
-		False,
+		false,
 	},
 	{
 		"netr_GetAnyDCName",
@@ -12824,7 +12824,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_GetAnyDCName,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_GetAnyDCName,
 		(ndr_print_function_t) ndr_print_netr_GetAnyDCName,
-		False,
+		false,
 	},
 	{
 		"netr_LogonControl2",
@@ -12832,7 +12832,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonControl2,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonControl2,
 		(ndr_print_function_t) ndr_print_netr_LogonControl2,
-		False,
+		false,
 	},
 	{
 		"netr_ServerAuthenticate2",
@@ -12840,7 +12840,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_ServerAuthenticate2,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_ServerAuthenticate2,
 		(ndr_print_function_t) ndr_print_netr_ServerAuthenticate2,
-		False,
+		false,
 	},
 	{
 		"netr_DatabaseSync2",
@@ -12848,7 +12848,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DatabaseSync2,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DatabaseSync2,
 		(ndr_print_function_t) ndr_print_netr_DatabaseSync2,
-		False,
+		false,
 	},
 	{
 		"netr_DatabaseRedo",
@@ -12856,7 +12856,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DatabaseRedo,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DatabaseRedo,
 		(ndr_print_function_t) ndr_print_netr_DatabaseRedo,
-		False,
+		false,
 	},
 	{
 		"netr_LogonControl2Ex",
@@ -12864,7 +12864,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonControl2Ex,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonControl2Ex,
 		(ndr_print_function_t) ndr_print_netr_LogonControl2Ex,
-		False,
+		false,
 	},
 	{
 		"netr_NETRENUMERATETRUSTEDDOMAINS",
@@ -12872,7 +12872,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRENUMERATETRUSTEDDOMAINS,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINS,
 		(ndr_print_function_t) ndr_print_netr_NETRENUMERATETRUSTEDDOMAINS,
-		False,
+		false,
 	},
 	{
 		"netr_DsRGetDCName",
@@ -12880,7 +12880,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DsRGetDCName,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DsRGetDCName,
 		(ndr_print_function_t) ndr_print_netr_DsRGetDCName,
-		False,
+		false,
 	},
 	{
 		"netr_NETRLOGONDUMMYROUTINE1",
@@ -12888,7 +12888,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONDUMMYROUTINE1,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONDUMMYROUTINE1,
 		(ndr_print_function_t) ndr_print_netr_NETRLOGONDUMMYROUTINE1,
-		False,
+		false,
 	},
 	{
 		"netr_NETRLOGONSETSERVICEBITS",
@@ -12896,7 +12896,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONSETSERVICEBITS,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONSETSERVICEBITS,
 		(ndr_print_function_t) ndr_print_netr_NETRLOGONSETSERVICEBITS,
-		False,
+		false,
 	},
 	{
 		"netr_NETRLOGONGETTRUSTRID",
@@ -12904,7 +12904,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONGETTRUSTRID,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONGETTRUSTRID,
 		(ndr_print_function_t) ndr_print_netr_NETRLOGONGETTRUSTRID,
-		False,
+		false,
 	},
 	{
 		"netr_NETRLOGONCOMPUTESERVERDIGEST",
@@ -12912,7 +12912,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONCOMPUTESERVERDIGEST,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONCOMPUTESERVERDIGEST,
 		(ndr_print_function_t) ndr_print_netr_NETRLOGONCOMPUTESERVERDIGEST,
-		False,
+		false,
 	},
 	{
 		"netr_NETRLOGONCOMPUTECLIENTDIGEST",
@@ -12920,7 +12920,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONCOMPUTECLIENTDIGEST,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONCOMPUTECLIENTDIGEST,
 		(ndr_print_function_t) ndr_print_netr_NETRLOGONCOMPUTECLIENTDIGEST,
-		False,
+		false,
 	},
 	{
 		"netr_ServerAuthenticate3",
@@ -12928,7 +12928,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_ServerAuthenticate3,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_ServerAuthenticate3,
 		(ndr_print_function_t) ndr_print_netr_ServerAuthenticate3,
-		False,
+		false,
 	},
 	{
 		"netr_DsRGetDCNameEx",
@@ -12936,7 +12936,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DsRGetDCNameEx,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DsRGetDCNameEx,
 		(ndr_print_function_t) ndr_print_netr_DsRGetDCNameEx,
-		False,
+		false,
 	},
 	{
 		"netr_DsRGetSiteName",
@@ -12944,7 +12944,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DsRGetSiteName,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DsRGetSiteName,
 		(ndr_print_function_t) ndr_print_netr_DsRGetSiteName,
-		False,
+		false,
 	},
 	{
 		"netr_LogonGetDomainInfo",
@@ -12952,7 +12952,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonGetDomainInfo,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonGetDomainInfo,
 		(ndr_print_function_t) ndr_print_netr_LogonGetDomainInfo,
-		False,
+		false,
 	},
 	{
 		"netr_ServerPasswordSet2",
@@ -12960,7 +12960,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_ServerPasswordSet2,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_ServerPasswordSet2,
 		(ndr_print_function_t) ndr_print_netr_ServerPasswordSet2,
-		False,
+		false,
 	},
 	{
 		"netr_NETRSERVERPASSWORDGET",
@@ -12968,7 +12968,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRSERVERPASSWORDGET,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRSERVERPASSWORDGET,
 		(ndr_print_function_t) ndr_print_netr_NETRSERVERPASSWORDGET,
-		False,
+		false,
 	},
 	{
 		"netr_NETRLOGONSENDTOSAM",
@@ -12976,7 +12976,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONSENDTOSAM,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONSENDTOSAM,
 		(ndr_print_function_t) ndr_print_netr_NETRLOGONSENDTOSAM,
-		False,
+		false,
 	},
 	{
 		"netr_DSRADDRESSTOSITENAMESW",
@@ -12984,7 +12984,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DSRADDRESSTOSITENAMESW,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DSRADDRESSTOSITENAMESW,
 		(ndr_print_function_t) ndr_print_netr_DSRADDRESSTOSITENAMESW,
-		False,
+		false,
 	},
 	{
 		"netr_DsRGetDCNameEx2",
@@ -12992,7 +12992,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DsRGetDCNameEx2,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DsRGetDCNameEx2,
 		(ndr_print_function_t) ndr_print_netr_DsRGetDCNameEx2,
-		False,
+		false,
 	},
 	{
 		"netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN",
@@ -13000,7 +13000,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN,
 		(ndr_print_function_t) ndr_print_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN,
-		False,
+		false,
 	},
 	{
 		"netr_NETRENUMERATETRUSTEDDOMAINSEX",
@@ -13008,7 +13008,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRENUMERATETRUSTEDDOMAINSEX,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINSEX,
 		(ndr_print_function_t) ndr_print_netr_NETRENUMERATETRUSTEDDOMAINSEX,
-		False,
+		false,
 	},
 	{
 		"netr_DSRADDRESSTOSITENAMESEXW",
@@ -13016,7 +13016,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DSRADDRESSTOSITENAMESEXW,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DSRADDRESSTOSITENAMESEXW,
 		(ndr_print_function_t) ndr_print_netr_DSRADDRESSTOSITENAMESEXW,
-		False,
+		false,
 	},
 	{
 		"netr_DSRGETDCSITECOVERAGEW",
@@ -13024,7 +13024,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DSRGETDCSITECOVERAGEW,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DSRGETDCSITECOVERAGEW,
 		(ndr_print_function_t) ndr_print_netr_DSRGETDCSITECOVERAGEW,
-		False,
+		false,
 	},
 	{
 		"netr_LogonSamLogonEx",
@@ -13032,7 +13032,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonSamLogonEx,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonSamLogonEx,
 		(ndr_print_function_t) ndr_print_netr_LogonSamLogonEx,
-		False,
+		false,
 	},
 	{
 		"netr_DsrEnumerateDomainTrusts",
@@ -13040,7 +13040,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DsrEnumerateDomainTrusts,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DsrEnumerateDomainTrusts,
 		(ndr_print_function_t) ndr_print_netr_DsrEnumerateDomainTrusts,
-		False,
+		false,
 	},
 	{
 		"netr_DSRDEREGISTERDNSHOSTRECORDS",
@@ -13048,7 +13048,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS,
 		(ndr_print_function_t) ndr_print_netr_DSRDEREGISTERDNSHOSTRECORDS,
-		False,
+		false,
 	},
 	{
 		"netr_NETRSERVERTRUSTPASSWORDSGET",
@@ -13056,7 +13056,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRSERVERTRUSTPASSWORDSGET,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRSERVERTRUSTPASSWORDSGET,
 		(ndr_print_function_t) ndr_print_netr_NETRSERVERTRUSTPASSWORDSGET,
-		False,
+		false,
 	},
 	{
 		"netr_DSRGETFORESTTRUSTINFORMATION",
@@ -13064,7 +13064,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_DSRGETFORESTTRUSTINFORMATION,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_DSRGETFORESTTRUSTINFORMATION,
 		(ndr_print_function_t) ndr_print_netr_DSRGETFORESTTRUSTINFORMATION,
-		False,
+		false,
 	},
 	{
 		"netr_NETRGETFORESTTRUSTINFORMATION",
@@ -13072,7 +13072,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRGETFORESTTRUSTINFORMATION,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRGETFORESTTRUSTINFORMATION,
 		(ndr_print_function_t) ndr_print_netr_NETRGETFORESTTRUSTINFORMATION,
-		False,
+		false,
 	},
 	{
 		"netr_LogonSamLogonWithFlags",
@@ -13080,7 +13080,7 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_LogonSamLogonWithFlags,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonSamLogonWithFlags,
 		(ndr_print_function_t) ndr_print_netr_LogonSamLogonWithFlags,
-		False,
+		false,
 	},
 	{
 		"netr_NETRSERVERGETTRUSTINFO",
@@ -13088,27 +13088,27 @@ const struct ndr_interface_call netlogon_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_netr_NETRSERVERGETTRUSTINFO,
 		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRSERVERGETTRUSTINFO,
 		(ndr_print_function_t) ndr_print_netr_NETRSERVERGETTRUSTINFO,
-		False,
+		false,
 	},
-	{ NULL, 0, NULL, NULL, NULL, False }
+	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
-const char * const netlogon_endpoint_strings[] = {
+static const char * const netlogon_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\netlogon]", 
 	"ncacn_ip_tcp:", 
 	"ncalrpc:", 
 };
 
-const struct ndr_interface_string_array netlogon_endpoints = {
+static const struct ndr_interface_string_array netlogon_endpoints = {
 	.count	= 3,
 	.names	= netlogon_endpoint_strings
 };
 
-const char * const netlogon_authservice_strings[] = {
+static const char * const netlogon_authservice_strings[] = {
 	"host", 
 };
 
-const struct ndr_interface_string_array netlogon_authservices = {
+static const struct ndr_interface_string_array netlogon_authservices = {
 	.count	= 3,
 	.names	= netlogon_authservice_strings
 };
