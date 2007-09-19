@@ -113,7 +113,9 @@ cat <<EOF
 --------------------------------------------------------------------
 Showing system and process status
 EOF
-show_all "df; df -i; mount"
+show_all "df"
+show_all "df -i"
+show_all "mount"
 show_all "w"
 show_all "ps axfw"
 show_all "dmesg"
