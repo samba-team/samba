@@ -234,6 +234,6 @@ int ldb_msg_sanity_check(struct ldb_context *ldb, const struct ldb_message *msg)
 
 /* DN operations */
 
-struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
+/* struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn); */
 
-char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *dn);
+/* char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *dn); */
