@@ -53,6 +53,7 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	char *uniuser; /* Unicode user name. */
 	pstring ascuser;
 	char *unicomp; /* Unicode computer name. */
+	size_t size;
 
 	memset(outbuf, 0, sizeof(outbuf));
 
@@ -108,9 +109,12 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 				fstrcpy(reply_name, "\\\\");
 				fstrcat(reply_name, my_name);
-				push_ascii(q,reply_name,
+				size = push_ascii(q,reply_name,
 						sizeof(outbuf)-PTR_DIFF(q, outbuf),
 						STR_TERMINATE);
+				if (size == (size_t)-1) {
+					return;
+				}
 				q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
 
 				SSVAL(q, 0, token);
@@ -206,9 +210,12 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				q += 2;
 
 				fstrcpy(reply_name,my_name);
-				push_ascii(q, reply_name,
+				size = push_ascii(q, reply_name,
 						sizeof(outbuf)-PTR_DIFF(q, outbuf),
 						STR_TERMINATE);
+				if (size == (size_t)-1) {
+					return;
+				}
 				q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
 
 				/* PDC and domain name */
@@ -377,7 +384,6 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					pstring domain;
 					pstring hostname;
 					char *component, *dc, *q1;
-					uint8 size;
 					char *q_orig = q;
 					int str_offset;
 
@@ -423,6 +429,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						size = push_ascii(&q[1], component,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+						if (size == (size_t)-1 || size > 0xff) {
+							return;
+						}
 						SCVAL(q, 0, size);
 						q += (size + 1);
 					}
@@ -443,6 +452,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], hostname,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+					if (size == (size_t)-1 || size > 0xff) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
@@ -458,6 +470,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], lp_workgroup(),
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							STR_UPPER);
+					if (size == (size_t)-1 || size > 0xff) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
@@ -473,6 +488,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], my_name,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+					if (size == (size_t)-1 || size > 0xff) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
@@ -489,6 +507,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						size = push_ascii(&q[1], ascuser,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+						if (size == (size_t)-1 || size > 0xff) {
+							return;
+						}
 						SCVAL(q, 0, size);
 						q += (size + 1);
 					}
@@ -501,6 +522,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], "Default-First-Site-Name",
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+					if (size == (size_t)-1 || size > 0xff) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 

@@ -745,7 +745,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 	size = push_ucs2_allocate(&buffer, src);
 	if (size == (size_t)-1) {
-		return 0;
+		return (size_t)-1;
 	}
 	if (!strupper_w(buffer) && (dest == src)) {
 		free(buffer);
@@ -963,14 +963,12 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 	/* No longer allow a length of -1. */
 	if (dest_len == (size_t)-1) {
 		smb_panic("push_ascii - dest_len == -1");
-		return (size_t)0;
 	}
 
 	if (flags & STR_UPPER) {
 		tmpbuf = SMB_STRDUP(src);
 		if (!tmpbuf) {
 			smb_panic("malloc fail");
-			return (size_t)0;
 		}
 		strupper_m(tmpbuf);
 		src = tmpbuf;
@@ -981,10 +979,12 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 	}
 
 	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
-	SAFE_FREE(tmpbuf);
-	if (ret == (size_t)-1) {
-		return 0;
+	if (ret == (size_t)-1 &&
+			(flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
+			&& dest_len > 0) {
+		((char *)dest)[0] = '\0';
 	}
+	SAFE_FREE(tmpbuf);
 	return ret;
 }
 
@@ -1071,7 +1071,6 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
 		smb_panic("pull_ascii - invalid dest_len of -1");
-		return 0;
 	}
 
 	if (flags & STR_TERMINATE) {
@@ -1168,7 +1167,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 				True);
 
 	if (dest_len == (size_t)-1) {
-		return 0;
+		dest_len = 0;
 	}
 
 	if (dest_len && dest) {
@@ -1228,7 +1227,6 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
 		smb_panic("push_ucs2 - invalid dest_len of -1");
-		return 0;
 	}
 
 	if (flags & STR_TERMINATE)
@@ -1249,7 +1247,12 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 
 	ret =  convert_string(CH_UNIX, CH_UTF16LE, src, src_len, dest, dest_len, True);
 	if (ret == (size_t)-1) {
-		return 0;
+		if ((flags & STR_TERMINATE) &&
+				dest &&
+				dest_len) {
+			*(char *)dest = 0;
+		}
+		return len;
 	}
 
 	len += ret;
@@ -1327,13 +1330,12 @@ static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
 		smb_panic("push_utf8 - invalid dest_len of -1");
-		return 0;
 	}
 
 	if (flags & STR_UPPER) {
 		tmpbuf = strdup_upper(src);
 		if (!tmpbuf) {
-			return 0;
+			return (size_t)-1;
 		}
 		src = tmpbuf;
 		src_len = strlen(src);
@@ -1434,7 +1436,8 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 
 	ret = convert_string(CH_UTF16LE, CH_UNIX, src, src_len, dest, dest_len, True);
 	if (ret == (size_t)-1) {
-		return 0;
+		ret = 0;
+		dest_len = 0;
 	}
 
 	if (src_len == (size_t)-1)
@@ -1523,7 +1526,7 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 					(void *)&dest,
 					True);
 	if (dest_len == (size_t)-1) {
-		return 0;
+		dest_len = 0;
 	}
 
 	if (src_len == (size_t)-1)
@@ -1668,11 +1671,9 @@ size_t push_string_fn(const char *function, unsigned int line,
 	 * JRA.
 	 */
 #if 0
-	if (dest_len != (size_t)-1)
-		clobber_region(function, line, dest, dest_len);
+	clobber_region(function, line, dest, dest_len);
 #else
-	if (dest_len != (size_t)-1)
-		memset(dest, '\0', dest_len);
+	memset(dest, '\0', dest_len);
 #endif
 #endif
 
@@ -1705,8 +1706,7 @@ size_t pull_string_fn(const char *function, unsigned int line,
 		      int flags)
 {
 #ifdef DEVELOPER
-	if (dest_len != (size_t)-1)
-		clobber_region(function, line, dest, dest_len);
+	clobber_region(function, line, dest, dest_len);
 #endif
 
 	if ((base_ptr == NULL) && ((flags & (STR_ASCII|STR_UNICODE)) == 0)) {
