@@ -259,19 +259,19 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 		if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			goto fail;
 		}
 
 		if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			goto fail;
 		}
 
 		if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			goto fail;
 		}
 	} else {
 		(*domains) = NULL;
@@ -312,7 +312,8 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 		    !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)) 
 		{
 			/* An actual error occured */
-			goto done;
+			result = hunk_result;
+			goto fail;
 		}
 
 		/* adapt overall result */
@@ -333,7 +334,12 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 		hunk_types += hunk_num_sids;
 	}
 
-done:
+	return result;
+
+fail:
+	TALLOC_FREE(*domains);
+	TALLOC_FREE(*names);
+	TALLOC_FREE(*types);
 	return result;
 }
 
