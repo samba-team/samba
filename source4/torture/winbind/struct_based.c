@@ -22,15 +22,31 @@
 #include "torture/winbind/proto.h"
 #include "nsswitch/winbind_client.h"
 
+#define DO_STRUCT_REQ_REP(op,req,rep) do { \
+	NSS_STATUS _result; \
+	_result = winbindd_request_response(op, req, rep); \
+	torture_assert_int_equal(torture, _result, NSS_STATUS_SUCCESS, \
+				 __STRING(op) "(struct based)"); \
+} while (0)
+
 static bool torture_winbind_struct_ping(struct torture_context *torture)
 {
-	NSS_STATUS result;
+	struct timeval tv = timeval_current();
+	int timelimit = torture_setting_int(torture, "timelimit", 5);
+	uint32_t total = 0;
 
-	torture_comment(torture, "Testing WINBINDD_PING (struct based protocol)\n");
+	torture_comment(torture,
+			"Running WINBINDD_PING (struct based) for %d seconds\n",
+			timelimit);
 
-	result = winbindd_request_response(WINBINDD_PING, NULL, NULL);
-	torture_assert_int_equal(torture,result,NSS_STATUS_SUCCESS,
-				 "WINBINDD_PING (struct based protocol)");
+	while (timeval_elapsed(&tv) < timelimit) {
+		DO_STRUCT_REQ_REP(WINBINDD_PING, NULL, NULL);
+		total++;
+	}
+
+	torture_comment(torture,
+			"%u (%.1f/s) WINBINDD_PING (struct based)\n",
+			total, total / timeval_elapsed(&tv));
 
 	return true;
 }
