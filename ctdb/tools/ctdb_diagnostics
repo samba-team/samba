@@ -4,7 +4,7 @@
 
 PATH="$PATH:/sbin:/usr/sbin:/usr/lpp/mmfs/bin"
 
-CONFIG_FILES="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/ctdb/public_addresses /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab"
+CONFIG_FILES="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/ctdb/public_addresses /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
 
 2>&1
 
@@ -113,24 +113,43 @@ cat <<EOF
 --------------------------------------------------------------------
 Showing system and process status
 EOF
-show_all "df; df -i; mount"
-show_all uptime
+show_all "df"
+show_all "df -i"
+show_all "mount"
+show_all "w"
 show_all "ps axfw"
 show_all "dmesg"
 show_all "/sbin/lspci"
+show_all "cat /proc/partitions"
+show_all "cat /proc/cpuinfo"
+show_all "cat /proc/scsi/scsi"
 show_all "/sbin/ifconfig -a"
 show_all "/sbin/ip addr list"
 show_all "/sbin/route -n"
+show_all "netstat -s"
 show_all "crontab -l"
 show_all "sysctl -a"
 show_all "/sbin/iptables -L -n"
+show_all "/sbin/iptables -L -n -t nat"
+show_all "/usr/sbin/rpcinfo -p"
+show_all "/usr/sbin/showmount -a"
+show_all "/usr/sbin/showmount -e"
+show_all "/usr/sbin/nfsstat -v"
+[ -x /sbin/multipath ] && {
+    show_all "/sbin/multipath -l"
+}
+[ -x /sbin/chkconfig ] && {
+    show_all "/sbin/chkconfig --list"
+}
+[ -x /usr/sbin/getenforce ] && {
+    show_all "/usr/sbin/getenforce"
+}
 
 [ -d /usr/lpp/mmfs ] && {
 cat <<EOF
 --------------------------------------------------------------------
 Showing GPFS status and recent log entries
 EOF
- echo "Showing mmfs.log.latest"
  show_all "tail -100 /var/adm/ras/mmfs.log.latest"
  show_all "/usr/lpp/mmfs/bin/mmlsconfig"
  show_all "/usr/lpp/mmfs/bin/mmlsfs all"

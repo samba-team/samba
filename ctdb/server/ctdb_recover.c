@@ -661,6 +661,8 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 		return false;
 	}
 
+	set_close_on_exec(ctdb->recovery_lock_fd);
+
 	lock.l_type = F_WRLCK;
 	lock.l_whence = SEEK_SET;
 	lock.l_start = 0;

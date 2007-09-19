@@ -90,7 +90,14 @@ static int epoll_ctx_destructor(struct epoll_event_context *epoll_ev)
 */
 static void epoll_init_ctx(struct epoll_event_context *epoll_ev)
 {
+	unsigned v;
+
 	epoll_ev->epoll_fd = epoll_create(64);
+
+	/* on exec, don't inherit the fd */
+	v = fcntl(epoll_ev->epoll_fd, F_GETFD, 0);
+        fcntl(epoll_ev->epoll_fd, F_SETFD, v | FD_CLOEXEC);
+
 	epoll_ev->pid = getpid();
 	talloc_set_destructor(epoll_ev, epoll_ctx_destructor);
 }
@@ -105,6 +112,7 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct fd_even
 static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 {
 	struct fd_event *fde;
+	unsigned v;
 
 	if (epoll_ev->pid == getpid()) {
 		return;
@@ -116,6 +124,11 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
 		return;
 	}
+
+	/* on exec, don't inherit the fd */
+	v = fcntl(epoll_ev->epoll_fd, F_GETFD, 0);
+        fcntl(epoll_ev->epoll_fd, F_SETFD, v | FD_CLOEXEC);
+
 	epoll_ev->pid = getpid();
 	for (fde=epoll_ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(epoll_ev, fde);

@@ -138,6 +138,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	int rev = 0, locked = 0;
 	unsigned char *vp;
 	u32 vertest;
+	unsigned v;
 
 	if (!(tdb = (struct tdb_context *)calloc(1, sizeof *tdb))) {
 		/* Can't log this */
@@ -196,6 +197,10 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 name, strerror(errno)));
 		goto fail;	/* errno set by open(2) */
 	}
+
+	/* on exec, don't inherit the fd */
+	v = fcntl(tdb->fd, F_GETFD, 0);
+        fcntl(tdb->fd, F_SETFD, v | FD_CLOEXEC);
 
 	/* ensure there is only one process initialising at once */
 	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
