@@ -447,8 +447,8 @@ struct winbindd_response {
 			bool native_mode;
 			bool active_directory;
 			bool primary;
-			uint32_t sequence_number;
 		} domain_info;
+		uint32_t sequence_number;
 		struct {
 			fstring acct_name;
 			fstring full_name;

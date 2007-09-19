@@ -410,7 +410,7 @@ static void sequence_recv(void *private_data, BOOL success)
 	uint32 seq = DOM_SEQUENCE_NONE;
 
 	if ((success) && (state->response->result == WINBINDD_OK))
-		seq = state->response->data.domain_info.sequence_number;
+		seq = state->response->data.sequence_number;
 
 	if (seq == DOM_SEQUENCE_NONE) {
 		state->extra_data = talloc_asprintf(state->mem_ctx,
@@ -459,7 +459,7 @@ enum winbindd_result winbindd_dual_show_sequence(struct winbindd_domain *domain,
 
 	domain->methods->sequence_number(domain, &domain->sequence_number);
 
-	state->response.data.domain_info.sequence_number =
+	state->response.data.sequence_number =
 		domain->sequence_number;
 
 	return WINBINDD_OK;
@@ -519,8 +519,6 @@ void winbindd_domain_info(struct winbindd_cli_state *state)
 		domain->active_directory;
 	state->response.data.domain_info.primary =
 		domain->primary;
-	state->response.data.domain_info.sequence_number =
-		domain->sequence_number;
 
 	request_ok(state);
 }
@@ -554,8 +552,6 @@ static void domain_info_init_recv(void *private_data, BOOL success)
 		domain->active_directory;
 	state->response.data.domain_info.primary =
 		domain->primary;
-	state->response.data.domain_info.sequence_number =
-		domain->sequence_number;
 
 	request_ok(state);
 }
