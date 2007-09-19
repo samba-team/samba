@@ -98,14 +98,6 @@ char *rep_inet_ntoa(struct in_addr ip);
 #define MSG_WAITALL 0
 #endif
 
-/*
- * Some older systems seem not to have MAXHOSTNAMELEN
- * defined.
- */
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN 254
-#endif
-
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif

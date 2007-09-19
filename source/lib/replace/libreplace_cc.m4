@@ -62,7 +62,7 @@ case "$host_os" in
 		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
 		if test "`uname -r`" = "B.11.00" -o "`uname -r`" = "B.11.11"; then
 			AC_MSG_WARN([Enabling HPUX 11.00/11.11 header bug workaround])
-			CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64 -Dpread=pread64 -Dpwrite=pwrite64"
+			CFLAGS="$CFLAGS -Dpread=pread64 -Dpwrite=pwrite64"
 		fi
 		if test "`uname -r`" = "B.11.23"; then
 			AC_MSG_WARN([Enabling HPUX 11.23 machine/sys/getppdp.h bug workaround])
