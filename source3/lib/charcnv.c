@@ -745,7 +745,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 	size = push_ucs2_allocate(&buffer, src);
 	if (size == (size_t)-1) {
-		smb_panic("failed to create UCS2 buffer");
+		return 0;
 	}
 	if (!strupper_w(buffer) && (dest == src)) {
 		free(buffer);
@@ -1068,8 +1068,11 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 {
 	size_t ret;
 
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("pull_ascii - invalid dest_len of -1");
+		return 0;
+	}
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
@@ -1213,7 +1216,7 @@ size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src)
  * </dl>
  *
  * @param dest_len is the maximum length allowed in the
- * destination. If dest_len is -1 then no maxiumum is used.
+ * destination.
  **/
 
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
@@ -1222,9 +1225,11 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	size_t src_len;
 	size_t ret;
 
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("push_ucs2 - invalid dest_len of -1");
+		return 0;
+	}
 
 	if (flags & STR_TERMINATE)
 		src_len = (size_t)-1;
@@ -1315,23 +1320,33 @@ size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
 
 static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 {
-	size_t src_len = strlen(src);
-	pstring tmpbuf;
+	size_t src_len = 0;
+	size_t ret;
+	char *tmpbuf = NULL;
 
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
-
-	if (flags & STR_UPPER) {
-		pstrcpy(tmpbuf, src);
-		strupper_m(tmpbuf);
-		src = tmpbuf;
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("push_utf8 - invalid dest_len of -1");
+		return 0;
 	}
 
-	if (flags & STR_TERMINATE)
-		src_len++;
+	if (flags & STR_UPPER) {
+		tmpbuf = strdup_upper(src);
+		if (!tmpbuf) {
+			return 0;
+		}
+		src = tmpbuf;
+		src_len = strlen(src);
+	}
 
-	return convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len, True);
+	src_len = strlen(src);
+	if (flags & STR_TERMINATE) {
+		src_len++;
+	}
+
+	ret = convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len, True);
+	SAFE_FREE(tmpbuf);
+	return ret;
 }
 
 size_t push_utf8_fstring(void *dest, const char *src)
@@ -1390,8 +1405,11 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 		return 0;
 	}
 
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("push_utf8 - invalid dest_len of -1");
+		return 0;
+	}
 
 	if (ucs2_align(base_ptr, src, flags)) {
 		src = (const void *)((const char *)src + 1);
