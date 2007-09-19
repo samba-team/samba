@@ -172,6 +172,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 			NT_STATUS_UNSUCCESSFUL );
 
 	if (!NT_STATUS_IS_OK(r.status) &&
+	    !NT_STATUS_EQUAL(r.status, NT_STATUS_NONE_MAPPED) &&
 	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) 
 	{
 		/* An actual error occured */
@@ -181,7 +182,9 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	if (r.mapped_count == 0) {
+	if (NT_STATUS_EQUAL(r.status, NT_STATUS_NONE_MAPPED) ||
+	    (r.mapped_count == 0))
+	{
 		for (i = 0; i < num_sids; i++) {
 			(names)[i] = NULL;
 			(domains)[i] = NULL;
