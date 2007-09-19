@@ -35,7 +35,7 @@ static int open_winbindd_socket(void)
 {
 	if (_winbindd_socket == -1) {
 		_winbindd_socket = create_pipe_sock(
-			WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME, 0755);
+			get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME, 0755);
 		DEBUG(10, ("open_winbindd_socket: opened socket fd %d\n",
 			   _winbindd_socket));
 	}
@@ -119,7 +119,7 @@ void winbindd_release_sockets(void)
 	/* Remove socket file */
 	if (unlink_winbindd_socket) {
 		pstr_sprintf(path, "%s/%s",
-			 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
+			 get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME);
 		unlink(path);
 	}
 }

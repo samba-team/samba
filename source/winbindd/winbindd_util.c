@@ -1158,6 +1158,11 @@ void fill_domain_username(fstring name, const char *domain, const char *user, BO
  * Winbindd socket accessor functions
  */
 
+const char *get_winbind_pipe_dir(void) 
+{
+	return lp_parm_const_string(-1, "winbindd", "socket dir", WINBINDD_SOCKET_DIR);
+}
+
 char *get_winbind_priv_pipe_dir(void) 
 {
 	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
