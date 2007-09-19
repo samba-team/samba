@@ -31,10 +31,15 @@
 #include "lib/talloc/talloc.h"
 #include "lib/events/events.h"
 #include "libcli/nbt/libnbt.h"
+#include "param/param.h"
 
 /* Undo strcpy safety macro as it's used by swig )-: */
 
 #undef strcpy
+
+/* Loadparm parameters */
+
+static struct loadparm_context lp_ctx;
 
 %}
 
@@ -132,4 +137,6 @@ struct nbt_name_query {
 NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
 			TALLOC_CTX *mem_ctx, struct nbt_name_query *io);
 
-void lp_load(void);
+%init %{
+      loadparm_init(&lp_ctx);
+%}
