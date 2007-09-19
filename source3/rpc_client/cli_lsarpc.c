@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RPC pipe client
    Copyright (C) Tim Potter                        2000-2001,
    Copyright (C) Andrew Tridgell              1992-1997,2000,
    Copyright (C) Rafal Szczesniak                       2002
    Copyright (C) Jeremy Allison				2005.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -84,7 +84,7 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 
 /** Open a LSA policy handle
   *
-  * @param cli Handle on an initialised SMB connection 
+  * @param cli Handle on an initialised SMB connection
   */
 
 NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
@@ -176,7 +176,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(r.status) &&
 	    !NT_STATUS_EQUAL(r.status, NT_STATUS_NONE_MAPPED) &&
-	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) 
+	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED))
 	{
 		/* An actual error occured */
 		result = r.status;
@@ -213,7 +213,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 			(names)[i] = talloc_strdup(mem_ctx, name);
 			(domains)[i] = talloc_strdup(mem_ctx, dom_name);
 			(types)[i] = (enum lsa_SidType)r.names.name[i].sid_name_use;
-			
+
 			if (((names)[i] == NULL) || ((domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
 				result = NT_STATUS_UNSUCCESSFUL;
@@ -232,7 +232,7 @@ done:
 	return result;
 }
 
-/* Lookup a list of sids 
+/* Lookup a list of sids
  *
  * do it the right way: there is a limit (of 20480 for w2k3) entries
  * returned by this call. when the sids list contains more entries,
@@ -246,9 +246,9 @@ done:
 
 NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    POLICY_HND *pol, 
+				    POLICY_HND *pol,
 				    int num_sids,
-				    const DOM_SID *sids, 
+				    const DOM_SID *sids,
 				    char ***domains,
 				    char ***names,
 				    enum lsa_SidType **types)
@@ -284,7 +284,7 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 		(*names) = NULL;
 		(*types) = NULL;
 	}
-	
+
 	sids_left = num_sids;
 	hunk_domains = *domains;
 	hunk_names = *names;
@@ -294,20 +294,20 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 		int hunk_num_sids;
 		NTSTATUS hunk_result = NT_STATUS_OK;
 
-		hunk_num_sids = ((sids_left > LOOKUP_SIDS_HUNK_SIZE) 
-				? LOOKUP_SIDS_HUNK_SIZE 
+		hunk_num_sids = ((sids_left > LOOKUP_SIDS_HUNK_SIZE)
+				? LOOKUP_SIDS_HUNK_SIZE
 				: sids_left);
 
 		DEBUG(10, ("rpccli_lsa_lookup_sids_all: processing items "
-			   "%d -- %d of %d.\n", 
-			   sids_processed, 
+			   "%d -- %d of %d.\n",
+			   sids_processed,
 			   sids_processed + hunk_num_sids - 1,
 			   num_sids));
 
 		hunk_result = rpccli_lsa_lookup_sids_noalloc(cli,
 							     mem_ctx,
 							     pol,
-							     hunk_num_sids, 
+							     hunk_num_sids,
 							     hunk_sids,
 							     hunk_domains,
 							     hunk_names,
@@ -315,7 +315,7 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 
 		if (!NT_STATUS_IS_OK(hunk_result) &&
 		    !NT_STATUS_EQUAL(hunk_result, STATUS_SOME_UNMAPPED) &&
-		    !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)) 
+		    !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED))
 		{
 			/* An actual error occured */
 			result = hunk_result;
@@ -323,8 +323,8 @@ NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
 		}
 
 		/* adapt overall result */
-		if (( NT_STATUS_IS_OK(result) && 
-		     !NT_STATUS_IS_OK(hunk_result)) 
+		if (( NT_STATUS_IS_OK(result) &&
+		     !NT_STATUS_IS_OK(hunk_result))
 		    ||
 		    ( NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) &&
 		     !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)))
@@ -354,7 +354,7 @@ fail:
 NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				POLICY_HND *pol, int num_sids,
-				const DOM_SID *sids, 
+				const DOM_SID *sids,
 				char ***domains,
 				char ***names,
 				enum lsa_SidType **types)
@@ -384,7 +384,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(r.status) &&
 	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) {
-	  
+
 		/* An actual error occured */
 		result = r.status;
 
@@ -421,7 +421,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 		(*names) = NULL;
 		(*types) = NULL;
 	}
-		
+
 	for (i = 0; i < num_sids; i++) {
 		fstring name, dom_name;
 		uint32 dom_idx = r.names.name[i].domain_idx;
@@ -438,7 +438,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 			(*names)[i] = talloc_strdup(mem_ctx, name);
 			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
 			(*types)[i] = (enum lsa_SidType)r.names.name[i].sid_name_use;
-			
+
 			if (((*names)[i] == NULL) || ((*domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 				result = NT_STATUS_UNSUCCESSFUL;
@@ -461,7 +461,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol, int num_names, 
+				 POLICY_HND *pol, int num_names,
 				 const char **names,
 				 const char ***dom_names,
 				 int level,
@@ -474,7 +474,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	DOM_R_REF ref;
 	NTSTATUS result;
 	int i;
-	
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -574,7 +574,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_lsa_query_info_policy_new(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 					  POLICY_HND *pol, uint16 info_class,
-					  LSA_INFO_CTR *ctr) 
+					  LSA_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
@@ -602,13 +602,13 @@ NTSTATUS rpccli_lsa_query_info_policy_new(struct rpc_pipe_client *cli, TALLOC_CT
  done:
 
 	*ctr = r.ctr;
-	
+
 	return result;
 }
 
 NTSTATUS rpccli_lsa_query_info_policy2_new(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 					  POLICY_HND *pol, uint16 info_class,
-					  LSA_INFO_CTR2 *ctr) 
+					  LSA_INFO_CTR2 *ctr)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO2 q;
@@ -636,7 +636,7 @@ NTSTATUS rpccli_lsa_query_info_policy2_new(struct rpc_pipe_client *cli, TALLOC_C
  done:
 
 	*ctr = r.ctr;
-	
+
 	return result;
 }
 
@@ -648,7 +648,7 @@ NTSTATUS rpccli_lsa_query_info_policy2_new(struct rpc_pipe_client *cli, TALLOC_C
 
 NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      POLICY_HND *pol, uint16 info_class, 
+				      POLICY_HND *pol, uint16 info_class,
 				      char **domain_name, DOM_SID **domain_sid)
 {
 	prs_struct qbuf, rbuf;
@@ -680,7 +680,7 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 	case 3:
 		if (domain_name && (r.ctr.info.id3.buffer_dom_name != 0)) {
-			*domain_name = unistr2_tdup(mem_ctx, 
+			*domain_name = unistr2_tdup(mem_ctx,
 						   &r.ctr.info.id3.
 						   uni_domain_name);
 			if (!*domain_name) {
@@ -699,16 +699,16 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		break;
 
 	case 5:
-		
+
 		if (domain_name && (r.ctr.info.id5.buffer_dom_name != 0)) {
-			*domain_name = unistr2_tdup(mem_ctx, 
+			*domain_name = unistr2_tdup(mem_ctx,
 						   &r.ctr.info.id5.
 						   uni_domain_name);
 			if (!*domain_name) {
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
-			
+
 		if (domain_sid && (r.ctr.info.id5.buffer_dom_sid != 0)) {
 			*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
 			if (!*domain_sid) {
@@ -717,12 +717,12 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 			sid_copy(*domain_sid, &r.ctr.info.id5.dom_sid.sid);
 		}
 		break;
-			
+
 	default:
 		DEBUG(3, ("unknown info class %d\n", info_class));
-		break;		      
+		break;
 	}
-	
+
  done:
 
 	return result;
@@ -738,7 +738,7 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       POLICY_HND *pol, uint16 info_class, 
+				       POLICY_HND *pol, uint16 info_class,
 				       char **domain_name, char **dns_name,
 				       char **forest_name,
 				       struct GUID **domain_guid,
@@ -775,7 +775,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 	ZERO_STRUCTP(domain_guid);
 
 	if (domain_name && r.ctr.info.id12.hdr_nb_dom_name.buffer) {
-		*domain_name = unistr2_tdup(mem_ctx, 
+		*domain_name = unistr2_tdup(mem_ctx,
 					    &r.ctr.info.id12
 					    .uni_nb_dom_name);
 		if (!*domain_name) {
@@ -783,7 +783,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 		}
 	}
 	if (dns_name && r.ctr.info.id12.hdr_dns_dom_name.buffer) {
-		*dns_name = unistr2_tdup(mem_ctx, 
+		*dns_name = unistr2_tdup(mem_ctx,
 					 &r.ctr.info.id12
 					 .uni_dns_dom_name);
 		if (!*dns_name) {
@@ -791,21 +791,21 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 		}
 	}
 	if (forest_name && r.ctr.info.id12.hdr_forest_name.buffer) {
-		*forest_name = unistr2_tdup(mem_ctx, 
+		*forest_name = unistr2_tdup(mem_ctx,
 					    &r.ctr.info.id12
 					    .uni_forest_name);
 		if (!*forest_name) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
-	
+
 	if (domain_guid) {
 		*domain_guid = TALLOC_P(mem_ctx, struct GUID);
 		if (!*domain_guid) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		memcpy(*domain_guid, 
-		       &r.ctr.info.id12.dom_guid, 
+		memcpy(*domain_guid,
+		       &r.ctr.info.id12.dom_guid,
 		       sizeof(struct GUID));
 	}
 
@@ -814,10 +814,10 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 		if (!*domain_sid) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		sid_copy(*domain_sid, 
+		sid_copy(*domain_sid,
 			 &r.ctr.info.id12.dom_sid.sid);
 	}
-	
+
  done:
 
 	return result;
@@ -825,7 +825,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_lsa_set_info_policy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *pol, uint16 info_class,
-				    LSA_INFO_CTR ctr) 
+				    LSA_INFO_CTR ctr)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_SET_INFO q;
@@ -875,7 +875,7 @@ NTSTATUS rpccli_lsa_set_info_policy(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
-				   POLICY_HND *pol, uint32 *enum_ctx, 
+				   POLICY_HND *pol, uint32 *enum_ctx,
 				   uint32 *num_domains,
 				   char ***domain_names, DOM_SID **domain_sids)
 {
@@ -889,31 +889,31 @@ NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(out);
 
 	/* 64k is enough for about 2000 trusted domains */
-	
+
         init_q_enum_trust_dom(&in, pol, *enum_ctx, 0x10000);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMTRUSTDOM, 
-	            in, out, 
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMTRUSTDOM,
+	            in, out,
 	            qbuf, rbuf,
 	            lsa_io_q_enum_trust_dom,
-	            lsa_io_r_enum_trust_dom, 
+	            lsa_io_r_enum_trust_dom,
 	            NT_STATUS_UNSUCCESSFUL );
 
 
 	/* check for an actual error */
 
-	if ( !NT_STATUS_IS_OK(out.status) 
-		&& !NT_STATUS_EQUAL(out.status, NT_STATUS_NO_MORE_ENTRIES) 
+	if ( !NT_STATUS_IS_OK(out.status)
+		&& !NT_STATUS_EQUAL(out.status, NT_STATUS_NO_MORE_ENTRIES)
 		&& !NT_STATUS_EQUAL(out.status, STATUS_MORE_ENTRIES) )
 	{
 		return out.status;
 	}
-		
+
 	/* Return output parameters */
 
 	*num_domains  = out.count;
 	*enum_ctx     = out.enum_context;
-	
+
 	if ( out.count ) {
 
 		/* Allocate memory for trusted domain names and sids */
@@ -932,7 +932,7 @@ NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 
 		for (i = 0; i < out.count; i++) {
 
-			rpcstr_pull( tmp, out.domlist->domains[i].name.string->buffer, 
+			rpcstr_pull( tmp, out.domlist->domains[i].name.string->buffer,
 				sizeof(tmp), out.domlist->domains[i].name.length, 0);
 			(*domain_names)[i] = talloc_strdup(mem_ctx, tmp);
 
@@ -1021,7 +1021,7 @@ NTSTATUS rpccli_lsa_enum_privilege(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 /** Get privilege name */
 
 NTSTATUS rpccli_lsa_get_dispname(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, const char *name, 
+			      POLICY_HND *pol, const char *name,
 			      uint16 lang_id, uint16 lang_id_sys,
 			      fstring description, uint16 *lang_id_desc)
 {
@@ -1049,7 +1049,7 @@ NTSTATUS rpccli_lsa_get_dispname(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	}
 
 	/* Return output parameters */
-	
+
 	rpcstr_pull_unistr2_fstring(description , &r.desc);
 	*lang_id_desc = r.lang_id;
 
@@ -1061,7 +1061,7 @@ NTSTATUS rpccli_lsa_get_dispname(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 /** Enumerate list of SIDs  */
 
 NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *pol, uint32 *enum_ctx, uint32 pref_max_length, 
+                                POLICY_HND *pol, uint32 *enum_ctx, uint32 pref_max_length,
                                 uint32 *num_sids, DOM_SID **sids)
 {
 	prs_struct qbuf, rbuf;
@@ -1124,7 +1124,7 @@ NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
  * */
 
 NTSTATUS rpccli_lsa_create_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 desired_access, 
+                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 desired_access,
 			     POLICY_HND *user_pol)
 {
 	prs_struct qbuf, rbuf;
@@ -1162,7 +1162,7 @@ NTSTATUS rpccli_lsa_create_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
  * @param cli Handle on an initialised SMB connection */
 
 NTSTATUS rpccli_lsa_open_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 des_access, 
+                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 des_access,
 			     POLICY_HND *user_pol)
 {
 	prs_struct qbuf, rbuf;
@@ -1294,7 +1294,7 @@ NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *m
 /** Query LSA security object */
 
 NTSTATUS rpccli_lsa_query_secobj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 sec_info, 
+			      POLICY_HND *pol, uint32 sec_info,
 			      SEC_DESC_BUF **psdb)
 {
 	prs_struct qbuf, rbuf;
@@ -1373,7 +1373,7 @@ NTSTATUS rpccli_lsa_enum_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX 
 		goto done;
 	}
 
-	
+
 	privileges = TALLOC_ARRAY( mem_ctx, fstring, *count );
 	names      = TALLOC_ARRAY( mem_ctx, char *, *count );
 
@@ -1390,11 +1390,11 @@ NTSTATUS rpccli_lsa_enum_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX 
 			continue;
 
 		rpcstr_pull( privileges[i], uni_string->string->buffer, sizeof(privileges[i]), -1, STR_TERMINATE );
-			
+
 		/* now copy to the return array */
 		names[i] = talloc_strdup( mem_ctx, privileges[i] );
 	}
-	
+
 	*priv_names = names;
 
 done:
@@ -1486,18 +1486,18 @@ BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
 	NTSTATUS result;
 	POLICY_HND lsa_pol;
 	BOOL ret = False;
- 
+
 	ZERO_STRUCT(cli);
 	if((cli = cli_initialise()) == NULL) {
 		DEBUG(0,("fetch_domain_sid: unable to initialize client connection.\n"));
 		return False;
 	}
- 
+
 	if(!resolve_name( remote_machine, &cli->dest_ip, 0x20)) {
 		DEBUG(0,("fetch_domain_sid: Can't resolve address for %s\n", remote_machine));
 		goto done;
 	}
- 
+
 	if (!cli_connect(cli, remote_machine, &cli->dest_ip)) {
 		DEBUG(0,("fetch_domain_sid: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(cli) ));
@@ -1505,35 +1505,35 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 	}
 
 	if (!attempt_netbios_session_request(cli, global_myname, remote_machine, &cli->dest_ip)) {
-		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS session request.\n", 
+		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS session request.\n",
 			remote_machine));
 		goto done;
 	}
- 
+
 	cli->protocol = PROTOCOL_NT1;
- 
+
 	if (!cli_negprot(cli)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the negotiate protocol. \
 Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 		goto done;
 	}
- 
+
 	if (cli->protocol != PROTOCOL_NT1) {
 		DEBUG(0,("fetch_domain_sid: machine %s didn't negotiate NT protocol.\n",
 			remote_machine));
 		goto done;
 	}
- 
+
 	/*
 	 * Do an anonymous session setup.
 	 */
- 
+
 	if (!cli_session_setup(cli, "", "", 0, "", 0, "")) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 		goto done;
 	}
- 
+
 	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(0,("fetch_domain_sid: machine %s isn't in user level security mode\n",
 			remote_machine));
@@ -1547,26 +1547,26 @@ Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 	}
 
 	/* Fetch domain sid */
- 
+
 	if (!cli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("fetch_domain_sid: Error connecting to SAM pipe\n"));
 		goto done;
 	}
- 
+
 	result = cli_lsa_open_policy(cli, cli->mem_ctx, True, SEC_RIGHTS_QUERY_VALUE, &lsa_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error opening lsa policy handle. %s\n",
 			nt_errstr(result) ));
 		goto done;
 	}
- 
+
 	result = cli_lsa_query_info_policy(cli, cli->mem_ctx, &lsa_pol, 5, domain, psid);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error querying lsa policy handle. %s\n",
 			nt_errstr(result) ));
 		goto done;
 	}
- 
+
 	ret = True;
 
   done:
@@ -1603,7 +1603,7 @@ NTSTATUS rpccli_lsa_open_trusted_domain(struct rpc_pipe_client *cli, TALLOC_CTX 
 		NT_STATUS_UNSUCCESSFUL);
 
 	/* Return output parameters */
-	
+
 	result = r.status;
 
 	if (NT_STATUS_IS_OK(result)) {
@@ -1614,8 +1614,8 @@ NTSTATUS rpccli_lsa_open_trusted_domain(struct rpc_pipe_client *cli, TALLOC_CTX 
 }
 
 NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-					   POLICY_HND *pol, 
-					   uint16 info_class,  
+					   POLICY_HND *pol,
+					   uint16 info_class,
 					   LSA_TRUSTED_DOMAIN_INFO **info)
 {
 	prs_struct qbuf, rbuf;
@@ -1628,7 +1628,7 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLO
 
 	/* Marshall data and send request */
 
-	init_q_query_trusted_domain_info(&q, pol, info_class); 
+	init_q_query_trusted_domain_info(&q, pol, info_class);
 
 	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYTRUSTDOMINFO,
 		q, r,
@@ -1644,7 +1644,7 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLO
 	}
 
 	*info = r.info;
-		
+
 done:
 	return result;
 }
@@ -1675,7 +1675,7 @@ NTSTATUS rpccli_lsa_open_trusted_domain_by_name(struct rpc_pipe_client *cli, TAL
 		NT_STATUS_UNSUCCESSFUL);
 
 	/* Return output parameters */
-	
+
 	result = r.status;
 
 	if (NT_STATUS_IS_OK(result)) {
@@ -1687,8 +1687,8 @@ NTSTATUS rpccli_lsa_open_trusted_domain_by_name(struct rpc_pipe_client *cli, TAL
 
 
 NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-						  POLICY_HND *pol, 
-						  uint16 info_class, DOM_SID *dom_sid, 
+						  POLICY_HND *pol,
+						  uint16 info_class, DOM_SID *dom_sid,
 						  LSA_TRUSTED_DOMAIN_INFO **info)
 {
 	prs_struct qbuf, rbuf;
@@ -1701,7 +1701,7 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli
 
 	/* Marshall data and send request */
 
-	init_q_query_trusted_domain_info_by_sid(&q, pol, info_class, dom_sid); 
+	init_q_query_trusted_domain_info_by_sid(&q, pol, info_class, dom_sid);
 
 	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYSID,
 		q, r,
@@ -1724,8 +1724,8 @@ done:
 }
 
 NTSTATUS rpccli_lsa_query_trusted_domain_info_by_name(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-						   POLICY_HND *pol, 
-						   uint16 info_class, const char *domain_name, 
+						   POLICY_HND *pol,
+						   uint16 info_class, const char *domain_name,
 						   LSA_TRUSTED_DOMAIN_INFO **info)
 {
 	prs_struct qbuf, rbuf;
@@ -1738,7 +1738,7 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_name(struct rpc_pipe_client *cl
 
 	/* Marshall data and send request */
 
-	init_q_query_trusted_domain_info_by_name(&q, pol, info_class, domain_name); 
+	init_q_query_trusted_domain_info_by_name(&q, pol, info_class, domain_name);
 
 	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYNAME,
 		q, r,
@@ -1756,12 +1756,12 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_name(struct rpc_pipe_client *cl
 	*info = r.info;
 
 done:
-	
+
 	return result;
 }
 
 NTSTATUS cli_lsa_query_domain_info_policy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-					  POLICY_HND *pol, 
+					  POLICY_HND *pol,
 					  uint16 info_class, LSA_DOM_INFO_UNION **info)
 {
 	prs_struct qbuf, rbuf;
@@ -1774,9 +1774,9 @@ NTSTATUS cli_lsa_query_domain_info_policy(struct rpc_pipe_client *cli, TALLOC_CT
 
 	/* Marshall data and send request */
 
-	init_q_query_dom_info(&q, pol, info_class); 
+	init_q_query_dom_info(&q, pol, info_class);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYDOMINFOPOL, 
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYDOMINFOPOL,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_query_dom_info,
