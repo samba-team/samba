@@ -375,6 +375,14 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 #define HOST_NAME_MAX 64
 #endif
 
+/*
+ * Some older systems seem not to have MAXHOSTNAMELEN
+ * defined.
+ */
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN HOST_NAME_MAX
+#endif
+
 #ifndef UINT16_MAX
 #define UINT16_MAX 65535
 #endif
@@ -466,7 +474,7 @@ typedef int bool;
 #define __STRING(x)    #x
 #endif
 
-#ifndef _STRINGSTRING
+#ifndef __STRINGSTRING
 #define __STRINGSTRING(x) __STRING(x)
 #endif
 

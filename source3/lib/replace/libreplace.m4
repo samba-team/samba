@@ -152,6 +152,7 @@ AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp socketpair)
+AC_CHECK_FUNCS(isatty)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
 AC_HAVE_DECL(errno, [#include <errno.h>])
@@ -304,17 +305,6 @@ samba_cv_HAVE_OPEN_O_DIRECT=yes,samba_cv_HAVE_OPEN_O_DIRECT=no)])
 if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
     AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
 fi 
-
-
-AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
-	dnl Check whether the compiler can generate precompiled headers
-	touch conftest.h
-	if ${CC-cc} conftest.h 2> /dev/null && test -f conftest.h.gch; then
-		precompiled_headers=yes
-	else
-		precompiled_headers=no
-	fi])
-AC_SUBST(precompiled_headers)
 
 
 dnl Check if the C compiler understands volatile (it should, being ANSI).
