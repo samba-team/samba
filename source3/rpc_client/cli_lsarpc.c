@@ -171,6 +171,9 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 			lsa_io_r_lookup_sids,
 			NT_STATUS_UNSUCCESSFUL );
 
+	DEBUG(10, ("LSA_LOOKUPSIDS returned '%s', mapped count = %d'\n",
+		   nt_errstr(r.status), r.mapped_count));
+
 	if (!NT_STATUS_IS_OK(r.status) &&
 	    !NT_STATUS_EQUAL(r.status, NT_STATUS_NONE_MAPPED) &&
 	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) 
