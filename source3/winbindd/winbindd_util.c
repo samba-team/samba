@@ -631,8 +631,6 @@ static void init_child_recv(void *private_data, BOOL success)
 		state->response->data.domain_info.native_mode;
 	state->domain->active_directory =
 		state->response->data.domain_info.active_directory;
-	state->domain->sequence_number =
-		state->response->data.domain_info.sequence_number;
 
 	init_dc_connection(state->domain);
 
@@ -677,8 +675,6 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		= domain->active_directory;
 	state->response.data.domain_info.primary
 		= domain->primary;
-	state->response.data.domain_info.sequence_number =
-		domain->sequence_number;
 
 	return WINBINDD_OK;
 }
