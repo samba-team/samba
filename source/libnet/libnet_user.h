@@ -85,6 +85,12 @@ struct libnet_ModifyUser {
 		} \
 	}
 
+#define SET_FIELD_UINT32(new, current, mod, field, flag) \
+	if (current->field != new.field) { \
+		mod->field = new.field; \
+		mod->fields |= flag; \
+	}
+
 
 struct libnet_UserInfo {
 	struct {
