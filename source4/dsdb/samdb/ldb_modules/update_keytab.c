@@ -179,7 +179,7 @@ static int update_kt_del_trans(struct ldb_module *module)
 	talloc_free(data->changed_dns);
 	data->changed_dns = NULL;
 
-	return ldb_next_end_trans(module);
+	return ldb_next_del_trans(module);
 }
 
 static int update_kt_init(struct ldb_module *module)
