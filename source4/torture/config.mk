@@ -132,6 +132,7 @@ OBJ_FILES = \
 		rpc/spoolss_notify.o \
 		rpc/unixinfo.o \
 		rpc/samr.o \
+		rpc/samr_accessmask.o \
 		rpc/wkssvc.o \
 		rpc/srvsvc.o \
 		rpc/svcctl.o \
