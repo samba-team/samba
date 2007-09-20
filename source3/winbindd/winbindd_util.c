@@ -186,7 +186,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	}
 	
 	/* Link to domain list */
-	DLIST_ADD(_domain_list, domain);
+	DLIST_ADD_END(_domain_list, domain, struct winbindd_domain *);
         
 	wcache_tdc_add_domain( domain );
         
@@ -688,6 +688,25 @@ BOOL init_domain_list(void)
 	/* Free existing list */
 	free_domain_list();
 
+	/* BUILTIN domain */
+
+	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
+				    &global_sid_Builtin);
+	if (domain) {
+		setup_domain_child(domain, &domain->child, NULL);
+	}
+
+	/* Local SAM */
+
+	domain = add_trusted_domain(get_global_sam_name(), NULL,
+				    &passdb_methods, get_global_sam_sid());
+	if (domain) {
+		if ( role != ROLE_DOMAIN_MEMBER ) {
+			domain->primary = True;
+		}
+		setup_domain_child(domain, &domain->child, NULL);
+	}
+
 	/* Add ourselves as the first entry. */
 
 	if ( role == ROLE_DOMAIN_MEMBER ) {
@@ -712,25 +731,6 @@ BOOL init_domain_list(void)
 			   early here. */
 			set_domain_online_request(domain);
 		}
-	}
-
-	/* Local SAM */
-
-	domain = add_trusted_domain(get_global_sam_name(), NULL,
-				    &passdb_methods, get_global_sam_sid());
-	if (domain) {
-		if ( role != ROLE_DOMAIN_MEMBER ) {
-			domain->primary = True;
-		}
-		setup_domain_child(domain, &domain->child, NULL);
-	}
-
-	/* BUILTIN domain */
-
-	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
-				    &global_sid_Builtin);
-	if (domain) {
-		setup_domain_child(domain, &domain->child, NULL);
 	}
 
 	return True;
