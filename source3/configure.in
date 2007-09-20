@@ -755,25 +755,9 @@ case "$host_os" in
 # password hashing - hence the USE_BOTH_CRYPT_CALLS define.
 #
       case `uname -r` in
-			*9*|*10*)
-#				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4 -DMAX_POSITIVE_LOCK_OFFSET=0x1ffffffffffLL"
-		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS, 1, [Whether to use both of HPUX' crypt calls])
-#				AC_DEFINE(_HPUX_SOURCE, 1, [Whether to use HPUX extensions])
-#				AC_DEFINE(_POSIX_SOURCE, 1, [Whether to use POSIX compatible functions])
-#				AC_DEFINE(_ALIGNMENT_REQUIRED,1,[Required alignment])
-#				AC_DEFINE(_MAX_ALIGNMENT,4,[Maximum alignment])
-#				AC_DEFINE(MAX_POSITIVE_LOCK_OFFSET,0x1ffffffffffLL,[Maximun positive lock offset])
-				;;
-			*11*)
-#				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_LARGEFILE64_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4 -DMAX_POSITIVE_LOCK_OFFSET=0x1ffffffffffLL"
-		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS, 1, [Whether to use both of HPUX' crypt calls])
-#				AC_DEFINE(_HPUX_SOURCE, 1, [Whether to use HPUX extensions])
-#				AC_DEFINE(_POSIX_SOURCE, 1, [Whether to use POSIX compatible functions])
-#				AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to use large file support])
-#				AC_DEFINE(_ALIGNMENT_REQUIRED, 1, [Required alignment])
-#				AC_DEFINE(_MAX_ALIGNMENT, 4, [Maximum alignment])
-#				AC_DEFINE(MAX_POSITIVE_LOCK_OFFSET,0x1ffffffffffLL,[Maximun positive lock offset])
-				;;
+		*9*|*10*|*11)
+			AC_DEFINE(USE_BOTH_CRYPT_CALLS, 1, [Whether to use both of HPUX' crypt calls])
+		;;
       esac
       ;;
 
