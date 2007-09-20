@@ -332,6 +332,47 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * test if the ACLs are enforced for users.
+ * a normal testuser only gets the rights provided in hte ACL for
+ * Everyone   which does not include the SAMR_ACCESS_SHUTDOWN_SERVER
+ * right.  If the ACLs are checked when a user connects   
+ * a testuser that requests the accessmask with only this bit set
+ * the connect should fail.
+ */
+static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx, 
+				   struct dcerpc_pipe *p,
+				   struct cli_credentials *test_credentials,
+				   const struct dom_sid *test_sid)
+
+{
+	NTSTATUS status;
+	struct policy_handle uch;
+	bool ret = True;
+	struct dcerpc_pipe *test_p;
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
+
+	printf("testing if ACLs are enforced for non domain admin users when connecting to SAMR");
+
+
+	status = dcerpc_pipe_connect(tctx, 
+			     &test_p, binding, &ndr_table_samr,
+			     test_credentials, NULL);
+
+	/* connect to SAMR as the user */
+	status = torture_samr_Connect5(tctx, test_p, SAMR_ACCESS_SHUTDOWN_SERVER, &uch);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("Connect5 failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	printf(" OK\n");
+
+	/* disconnec the user */
+	talloc_free(test_p);
+
+	return ret;
+}
+
 /* check which bits in accessmask allows us to LookupDomain()
    by default we must specify at least one of :
    in the access mask to Connect5() in order to be allowed to perform
@@ -578,6 +619,22 @@ static bool test_samr_connect(struct torture_context *tctx,
 	if (!test_samr_connect_user_acl(tctx, p, test_credentials, test_sid)) {
 		ret = False;
 	}
+
+	/* test if the ACLs that are reported from the Connect5 
+	 * policy handle is enforced.
+	 * i.e. an ordinary user only has the same rights as Everybody
+	 *   ReadControl
+	 *   Samr/OpenDomain
+	 *   Samr/EnumDomains
+	 *   Samr/ConnectToServer
+	 * is granted and should therefore not be able to connect when
+	 * requesting SAMR_ACCESS_SHUTDOWN_SERVER
+	 */
+	if (!test_samr_connect_user_acl_enforced(tctx, p, test_credentials, test_sid)) {
+		ret = False;
+	}
+
+
 
 	/* remove the test user */
 	torture_leave_domain(testuser);
