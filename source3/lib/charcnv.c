@@ -1409,8 +1409,7 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
-		smb_panic("push_utf8 - invalid dest_len of -1");
-		return 0;
+		smb_panic("pull_ucs2 - invalid dest_len of -1");
 	}
 
 	if (ucs2_align(base_ptr, src, flags)) {
