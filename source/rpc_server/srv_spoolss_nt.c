@@ -1549,7 +1549,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
 
-	unistr2_to_ascii(name, q_u->printername, sizeof(name)-1);
+	unistr2_to_ascii(name, q_u->printername, sizeof(name));
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
@@ -1997,8 +1997,8 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		return WERR_ACCESS_DENIED;
 	}
 
-	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
-	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
+	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver));
+	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch));
 	
 	/* check that we have a valid driver name first */
 	
@@ -2092,8 +2092,8 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 		return WERR_ACCESS_DENIED;
 	}
 	
-	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
-	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
+	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver));
+	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch));
 
 	/* check that we have a valid driver name first */
 	if ((version=get_version_id(arch)) == -1) {
@@ -2470,7 +2470,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		goto done;
 	}
 	
-	unistr2_to_ascii(value, valuename, sizeof(value)-1);
+	unistr2_to_ascii(value, valuename, sizeof(value));
 	
 	if ( Printer->printer_type == SPLHND_SERVER )
 		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
@@ -2688,7 +2688,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	Printer->notify.option=dup_spool_notify_option(option);
 
 	unistr2_to_ascii(Printer->notify.localmachine, localmachine, 
-		       sizeof(Printer->notify.localmachine)-1);
+		       sizeof(Printer->notify.localmachine));
 
 	/* Connect to the client machine and send a ReplyOpenPrinter */
 
@@ -4804,7 +4804,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	 * Level 5: same as Level 2
 	 */
 
-	unistr2_to_ascii(name, servername, sizeof(name)-1);
+	unistr2_to_ascii(name, servername, sizeof(name));
 	strupper_m(name);
 
 	switch (level) {
@@ -5788,7 +5788,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	*serverminorversion = 0;
 
 	fstrcpy(servername, get_server_name( printer ));
-	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
+	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture));
 
 	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
@@ -7215,8 +7215,8 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	*needed   = 0;
 	*returned = 0;
 
-	unistr2_to_ascii(architecture, &q_u->environment, sizeof(architecture)-1);
-	unistr2_to_ascii(servername, &q_u->name, sizeof(servername)-1);
+	unistr2_to_ascii(architecture, &q_u->environment, sizeof(architecture));
+	unistr2_to_ascii(servername, &q_u->name, sizeof(servername));
 
 	if ( !is_myname_or_ipaddr( servername ) )
 		return WERR_UNKNOWN_PRINTER_DRIVER;
@@ -7388,7 +7388,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	rpcbuf_move(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
-	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
+	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name));
 
 	DEBUG(4,("_spoolss_getform\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
@@ -8004,8 +8004,8 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	DRIVER_DIRECTORY_1 *info=NULL;
 	WERROR result = WERR_OK;
 
-	unistr2_to_ascii(servername, name, sizeof(servername)-1);
-	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
+	unistr2_to_ascii(servername, name, sizeof(servername));
+	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi));
 
 	/* check for beginning double '\'s and that the server
 	   long enough */
@@ -8322,7 +8322,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
+	unistr2_to_ascii(valuename, value, sizeof(valuename));
 	
 	/*
 	 * When client side code sets a magic printer data key, detect it and save
@@ -8414,7 +8414,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
+	unistr2_to_ascii(valuename, value, sizeof(valuename));
 
 	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
 	
@@ -9136,8 +9136,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	DEBUG(4,("_spoolss_getprinterdataex\n"));
 
-        unistr2_to_ascii(keyname, &q_u->keyname, sizeof(keyname) - 1);
-        unistr2_to_ascii(valuename, &q_u->valuename, sizeof(valuename) - 1);
+        unistr2_to_ascii(keyname, &q_u->keyname, sizeof(keyname));
+        unistr2_to_ascii(valuename, &q_u->valuename, sizeof(valuename));
 	
 	DEBUG(10, ("_spoolss_getprinterdataex: key => [%s], value => [%s]\n", 
 		keyname, valuename));
@@ -9268,8 +9268,8 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-        unistr2_to_ascii( valuename, &q_u->value, sizeof(valuename) - 1);
-        unistr2_to_ascii( keyname, &q_u->key, sizeof(keyname) - 1);
+        unistr2_to_ascii( valuename, &q_u->value, sizeof(valuename));
+        unistr2_to_ascii( keyname, &q_u->key, sizeof(keyname));
 	
 	/* check for OID in valuename */
 	
@@ -9346,8 +9346,8 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
-	unistr2_to_ascii( keyname, key, sizeof(keyname)-1 );
+	unistr2_to_ascii(valuename, value, sizeof(valuename));
+	unistr2_to_ascii(keyname, key, sizeof(keyname));
 
 	status = delete_printer_dataex( printer, keyname, valuename );
 
@@ -9395,7 +9395,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 		
 	/* get the list of subkey names */
 	
-	unistr2_to_ascii( key, &q_u->key, sizeof(key)-1 );
+	unistr2_to_ascii(key, &q_u->key, sizeof(key));
 	data = printer->info_2->data;
 
 	num_keys = get_printer_subkeys( data, key, &keynames );
@@ -9470,7 +9470,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 	
 	/* delete the key and all subneys */
 	
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+        unistr2_to_ascii(key, &q_u->keyname, sizeof(key));
  
 	status = delete_all_printer_data( printer->info_2, key );	
 
@@ -9521,7 +9521,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	 * --jerry
 	 */
 	 
-	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	unistr2_to_ascii(key, &q_u->key, sizeof(key));
 	if ( !strlen(key) ) {
 		result = WERR_INVALID_PARAM;
 		goto done;
@@ -9541,7 +9541,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	
 	p_data = printer->info_2->data;
 	
-	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	unistr2_to_ascii(key, &q_u->key, sizeof(key));
 	if ( (key_index = lookup_printerkey( p_data, key)) == -1  )
 	{
 		DEBUG(10,("_spoolss_enumprinterdataex: Unknown keyname [%s]\n", key));
@@ -9658,7 +9658,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
 	WERROR result = WERR_OK;
 
-	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
+	unistr2_to_ascii(long_archi, environment, sizeof(long_archi));
 
 	if (!get_short_archi(long_archi))
 		return WERR_INVALID_ENVIRONMENT;

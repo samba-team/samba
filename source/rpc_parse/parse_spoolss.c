@@ -5384,14 +5384,14 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 
 	d->cversion=uni->cversion;
 
-	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
-	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
-	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
-	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
-	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
-	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
-	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
-	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
+	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name));
+	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment));
+	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath));
+	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile));
+	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile));
+	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile));
+	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname));
+	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype));
 
 	DEBUGADD(8,( "version:         %d\n", d->cversion));
 	DEBUGADD(8,( "name:            %s\n", d->name));
@@ -5431,14 +5431,14 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 
 	d->version=uni->version;
 
-	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
-	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
-	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
-	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
-	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
-	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
-	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
-	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
+	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name));
+	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment));
+	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath));
+	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile));
+	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile));
+	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile));
+	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname));
+	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype));
 
 	DEBUGADD(8,( "version:         %d\n", d->version));
 	DEBUGADD(8,( "name:            %s\n", d->name));
@@ -5475,17 +5475,17 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	d->status=uni->status;
 	d->cjobs=uni->cjobs;
 	
-	unistr2_to_ascii(d->servername, &uni->servername, sizeof(d->servername)-1);
-	unistr2_to_ascii(d->printername, &uni->printername, sizeof(d->printername)-1);
-	unistr2_to_ascii(d->sharename, &uni->sharename, sizeof(d->sharename)-1);
-	unistr2_to_ascii(d->portname, &uni->portname, sizeof(d->portname)-1);
-	unistr2_to_ascii(d->drivername, &uni->drivername, sizeof(d->drivername)-1);
-	unistr2_to_ascii(d->comment, &uni->comment, sizeof(d->comment)-1);
-	unistr2_to_ascii(d->location, &uni->location, sizeof(d->location)-1);
-	unistr2_to_ascii(d->sepfile, &uni->sepfile, sizeof(d->sepfile)-1);
-	unistr2_to_ascii(d->printprocessor, &uni->printprocessor, sizeof(d->printprocessor)-1);
-	unistr2_to_ascii(d->datatype, &uni->datatype, sizeof(d->datatype)-1);
-	unistr2_to_ascii(d->parameters, &uni->parameters, sizeof(d->parameters)-1);
+	unistr2_to_ascii(d->servername, &uni->servername, sizeof(d->servername));
+	unistr2_to_ascii(d->printername, &uni->printername, sizeof(d->printername));
+	unistr2_to_ascii(d->sharename, &uni->sharename, sizeof(d->sharename));
+	unistr2_to_ascii(d->portname, &uni->portname, sizeof(d->portname));
+	unistr2_to_ascii(d->drivername, &uni->drivername, sizeof(d->drivername));
+	unistr2_to_ascii(d->comment, &uni->comment, sizeof(d->comment));
+	unistr2_to_ascii(d->location, &uni->location, sizeof(d->location));
+	unistr2_to_ascii(d->sepfile, &uni->sepfile, sizeof(d->sepfile));
+	unistr2_to_ascii(d->printprocessor, &uni->printprocessor, sizeof(d->printprocessor));
+	unistr2_to_ascii(d->datatype, &uni->datatype, sizeof(d->datatype));
+	unistr2_to_ascii(d->parameters, &uni->parameters, sizeof(d->parameters));
 
 	return True;
 }

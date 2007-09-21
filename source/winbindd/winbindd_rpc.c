@@ -96,8 +96,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			fstring username, fullname;
 			uint32 rid = ctr.sam.info1->sam[j].rid_user;
 			
-			unistr2_to_ascii( username, &(&ctr.sam.info1->str[j])->uni_acct_name, sizeof(username)-1);
-			unistr2_to_ascii( fullname, &(&ctr.sam.info1->str[j])->uni_full_name, sizeof(fullname)-1);
+			unistr2_to_ascii( username, &(&ctr.sam.info1->str[j])->uni_acct_name, sizeof(username));
+			unistr2_to_ascii( fullname, &(&ctr.sam.info1->str[j])->uni_full_name, sizeof(fullname));
 			
 			(*info)[i].acct_name = talloc_strdup(mem_ctx, username );
 			(*info)[i].full_name = talloc_strdup(mem_ctx, fullname );

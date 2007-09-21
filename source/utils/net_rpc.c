@@ -1257,9 +1257,9 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 		loop_count++;
 
 		for (i = 0; i < num_entries; i++) {
-			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user)-1);
+			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user));
 			if (opt_long_list_entries) 
-				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc)-1);
+				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc));
 			
 			if (opt_long_list_entries)
 				printf("%-21.21s %s\n", user, desc);
@@ -1808,7 +1808,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	
 			if (user_ctr->info.id21->group_rid == group_rid) {
 				unistr2_to_ascii(temp, &(user_ctr->info.id21)->uni_user_name, 
-						sizeof(temp)-1);
+						sizeof(temp));
 				if (opt_verbose) 
 					d_printf("Group is primary group of %s\n",temp);
 				group_is_primary = True;
@@ -2515,8 +2515,8 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 
 			fstring group, desc;
 
-			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group)-1);
-			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc)-1);
+			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group));
+			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc));
 			
 			if (opt_long_list_entries)
 				printf("%-21.21s %-50.50s\n",

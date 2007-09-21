@@ -4470,7 +4470,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
+	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name));
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
@@ -4659,10 +4659,10 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 
 	switch (ctr->switch_value1) {
 		case 1:
-			unistr2_to_ascii(map.comment, &(ctr->group.info1.uni_acct_desc), sizeof(map.comment)-1);
+			unistr2_to_ascii(map.comment, &(ctr->group.info1.uni_acct_desc), sizeof(map.comment));
 			break;
 		case 4:
-			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment)-1);
+			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment));
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -4743,7 +4743,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 				return NT_STATUS_INVALID_PARAMETER;
 
 			unistr2_to_ascii( acct_name, ctr->alias.info2.name.string, 
-				sizeof(acct_name)-1 );
+				sizeof(acct_name));
 
 			/* If the name is the same just reply "ok".  Yes this
 			   doesn't allow you to change the case of a group name. */
@@ -4766,7 +4766,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			if ( ctr->alias.info3.description.string ) {
 				unistr2_to_ascii( info.acct_desc, 
 					ctr->alias.info3.description.string, 
-					sizeof(info.acct_desc)-1 );
+					sizeof(info.acct_desc));
 			}
 			else
 				fstrcpy( info.acct_desc, "" );
