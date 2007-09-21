@@ -7,17 +7,17 @@
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett 2001-2002
    Copyright (C) Guenther Deschner 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,23 +27,23 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx, 
-				    struct winbindd_cli_state *state, 
-				    NET_USER_INFO_3 *info3) 
+static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
+				    struct winbindd_cli_state *state,
+				    NET_USER_INFO_3 *info3)
 {
 	fstring str_sid;
 
-	state->response.data.auth.info3.logon_time = 
+	state->response.data.auth.info3.logon_time =
 		nt_time_to_unix(info3->logon_time);
-	state->response.data.auth.info3.logoff_time = 
+	state->response.data.auth.info3.logoff_time =
 		nt_time_to_unix(info3->logoff_time);
-	state->response.data.auth.info3.kickoff_time = 
+	state->response.data.auth.info3.kickoff_time =
 		nt_time_to_unix(info3->kickoff_time);
-	state->response.data.auth.info3.pass_last_set_time = 
+	state->response.data.auth.info3.pass_last_set_time =
 		nt_time_to_unix(info3->pass_last_set_time);
-	state->response.data.auth.info3.pass_can_change_time = 
+	state->response.data.auth.info3.pass_can_change_time =
 		nt_time_to_unix(info3->pass_can_change_time);
-	state->response.data.auth.info3.pass_must_change_time = 
+	state->response.data.auth.info3.pass_must_change_time =
 		nt_time_to_unix(info3->pass_must_change_time);
 
 	state->response.data.auth.info3.logon_count = info3->logon_count;
@@ -60,30 +60,38 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	state->response.data.auth.info3.acct_flags = info3->acct_flags;
 	state->response.data.auth.info3.num_other_sids = info3->num_other_sids;
 
-	unistr2_to_ascii(state->response.data.auth.info3.user_name, 
-		&info3->uni_user_name, sizeof(state->response.data.auth.info3.user_name));
-	unistr2_to_ascii(state->response.data.auth.info3.full_name, 
-		&info3->uni_full_name, sizeof(state->response.data.auth.info3.full_name));
-	unistr2_to_ascii(state->response.data.auth.info3.logon_script, 
-		&info3->uni_logon_script, sizeof(state->response.data.auth.info3.logon_script));
-	unistr2_to_ascii(state->response.data.auth.info3.profile_path, 
-		&info3->uni_profile_path, sizeof(state->response.data.auth.info3.profile_path));
-	unistr2_to_ascii(state->response.data.auth.info3.home_dir, 
-		&info3->uni_home_dir, sizeof(state->response.data.auth.info3.home_dir));
-	unistr2_to_ascii(state->response.data.auth.info3.dir_drive, 
-		&info3->uni_dir_drive, sizeof(state->response.data.auth.info3.dir_drive));
+	unistr2_to_ascii(state->response.data.auth.info3.user_name,
+		&info3->uni_user_name,
+		sizeof(state->response.data.auth.info3.user_name));
+	unistr2_to_ascii(state->response.data.auth.info3.full_name,
+		&info3->uni_full_name,
+		sizeof(state->response.data.auth.info3.full_name));
+	unistr2_to_ascii(state->response.data.auth.info3.logon_script,
+		&info3->uni_logon_script,
+		sizeof(state->response.data.auth.info3.logon_script));
+	unistr2_to_ascii(state->response.data.auth.info3.profile_path,
+		&info3->uni_profile_path,
+		sizeof(state->response.data.auth.info3.profile_path));
+	unistr2_to_ascii(state->response.data.auth.info3.home_dir,
+		&info3->uni_home_dir,
+		sizeof(state->response.data.auth.info3.home_dir));
+	unistr2_to_ascii(state->response.data.auth.info3.dir_drive,
+		&info3->uni_dir_drive,
+		sizeof(state->response.data.auth.info3.dir_drive));
 
-	unistr2_to_ascii(state->response.data.auth.info3.logon_srv, 
-		&info3->uni_logon_srv, sizeof(state->response.data.auth.info3.logon_srv));
-	unistr2_to_ascii(state->response.data.auth.info3.logon_dom, 
-		&info3->uni_logon_dom, sizeof(state->response.data.auth.info3.logon_dom));
+	unistr2_to_ascii(state->response.data.auth.info3.logon_srv,
+		&info3->uni_logon_srv,
+		sizeof(state->response.data.auth.info3.logon_srv));
+	unistr2_to_ascii(state->response.data.auth.info3.logon_dom,
+		&info3->uni_logon_dom,
+		sizeof(state->response.data.auth.info3.logon_dom));
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx, 
-				    struct winbindd_cli_state *state, 
-				    NET_USER_INFO_3 *info3) 
+static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
+				    struct winbindd_cli_state *state,
+				    NET_USER_INFO_3 *info3)
 {
 	prs_struct ps;
 	uint32 size;
