@@ -25,11 +25,34 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 
+#define DO_STRUCT_REQ_REP_EXT(op,req,rep,expected,strict,warnaction,cmt) do { \
+	NSS_STATUS __got, __expected = (expected); \
+	__got = winbindd_request_response(op, req, rep); \
+	if (__got != __expected) { \
+		const char *__cmt = (cmt); \
+		if (strict) { \
+			torture_result(torture, TORTURE_FAIL, \
+				__location__ ": " __STRING(op) \
+				" returned %d, expected %d%s%s", \
+				__got, __expected, \
+				(__cmt) ? ": " : "", \
+				(__cmt) ? (__cmt) : ""); \
+			return false; \
+		} else { \
+			torture_warning(torture, \
+				__location__ ": " __STRING(op) \
+				" returned %d, expected %d%s%s", \
+				__got, __expected, \
+				(__cmt) ? ": " : "", \
+				(__cmt) ? (__cmt) : ""); \
+			warnaction; \
+		} \
+	} \
+} while(0)
+
 #define DO_STRUCT_REQ_REP(op,req,rep) do { \
-	NSS_STATUS _result; \
-	_result = winbindd_request_response(op, req, rep); \
-	torture_assert_int_equal(torture, _result, NSS_STATUS_SUCCESS, \
-				 __STRING(op) "(struct based)"); \
+	bool __noop = false; \
+	DO_STRUCT_REQ_REP_EXT(op,req,rep,NSS_STATUS_SUCCESS,true,__noop=true,NULL); \
 } while (0)
 
 static bool torture_winbind_struct_ping(struct torture_context *torture)
