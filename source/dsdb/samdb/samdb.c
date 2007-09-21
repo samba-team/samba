@@ -636,10 +636,6 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 {
 	int i;
 	struct ldb_message_element *el = ldb_msg_find_element(msg, name);
-	struct ldb_val v;
-
-	v.data = discard_const_p(uint8_t, value);
-	v.length = strlen(value);
 
 	if (!el) {
 		return NULL;
