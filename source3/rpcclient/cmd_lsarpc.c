@@ -86,7 +86,7 @@ static void display_query_info_3(DOM_QUERY_3 d)
 {
 	fstring name;
 
-	unistr2_to_ascii(name, &d.uni_domain_name, d.uni_dom_max_len);
+	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
 
 	d_printf("Domain Name: %s\n", name);
 	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
