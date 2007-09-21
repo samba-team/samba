@@ -32,23 +32,6 @@
 
 #include "local.h"
 
-#ifdef __GNUC__
-/** gcc attribute used on function parameters so that it does not emit
- * warnings about them being unused. **/
-#  define UNUSED(param) param __attribute__ ((unused))
-#else
-#  define UNUSED(param) param
-/** Feel free to add definitions for other compilers here. */
-#endif
-
-#ifndef _PUBLIC_
-#ifdef HAVE_VISIBILITY_ATTR
-#  define _PUBLIC_ __attribute__((visibility("default")))
-#else
-#  define _PUBLIC_
-#endif
-#endif
-
 #ifndef PRINTF_ATTRIBUTE
 #if __GNUC__ >= 3
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
@@ -58,46 +41,6 @@
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
-#endif
-#endif
-
-#ifndef _DEPRECATED_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
-#define _DEPRECATED_ __attribute__ ((deprecated))
-#else
-#define _DEPRECATED_
-#endif
-#endif
-
-#ifndef _WARN_UNUSED_RESULT_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
-#define _WARN_UNUSED_RESULT_ __attribute__ ((warn_unused_result))
-#else
-#define _WARN_UNUSED_RESULT_
-#endif
-#endif
-
-#ifndef _NORETURN_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
-#define _NORETURN_ __attribute__ ((noreturn))
-#else
-#define _NORETURN_
-#endif
-#endif
-
-#ifndef _PURE_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1)
-#define _PURE_ __attribute__((pure))
-#else
-#define _PURE_
-#endif
-#endif
-
-#ifndef NONNULL
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1)
-#define NONNULL(param) param __attribute__((nonnull))
-#else
-#define NONNULL(param) param
 #endif
 #endif
 
