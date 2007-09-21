@@ -55,6 +55,26 @@
 	DO_STRUCT_REQ_REP_EXT(op,req,rep,NSS_STATUS_SUCCESS,true,__noop=true,NULL); \
 } while (0)
 
+static bool torture_winbind_struct_interface_version(struct torture_context *torture)
+{
+	struct winbindd_request req;
+	struct winbindd_response rep;
+
+	ZERO_STRUCT(req);
+	ZERO_STRUCT(rep);
+
+	torture_comment(torture, "Running WINBINDD_INTERFACE_VERSION (struct based)\n");
+
+	DO_STRUCT_REQ_REP(WINBINDD_INTERFACE_VERSION, &req, &rep);
+
+	torture_assert_int_equal(torture,
+				 rep.data.interface_version,
+				 WINBIND_INTERFACE_VERSION,
+				 "winbind server and client doesn't match");
+
+	return true;
+}
+
 static bool torture_winbind_struct_ping(struct torture_context *torture)
 {
 	struct timeval tv = timeval_current();
@@ -258,6 +278,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "STRUCT");
 
+	torture_suite_add_simple_test(suite, "INTERFACE_VERSION", torture_winbind_struct_interface_version);
 	torture_suite_add_simple_test(suite, "PING", torture_winbind_struct_ping);
 	torture_suite_add_simple_test(suite, "LIST_TRUSTDOM", torture_winbind_struct_list_trustdom);
 	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
