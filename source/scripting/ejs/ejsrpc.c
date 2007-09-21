@@ -311,7 +311,7 @@ NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
 	return mprSetVar(v, name, mprCreatePtrVar(NULL));
 }
 
-BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
+bool ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
 {
 	NTSTATUS status = mprGetVar(&v, name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -372,16 +372,16 @@ NTSTATUS ejs_push_DATA_BLOB(struct ejs_rpc *ejs,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS ejs_pull_BOOL(struct ejs_rpc *ejs, 
-		       struct MprVar *v, const char *name, BOOL *r)
+NTSTATUS ejs_pull_bool(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, bool *r)
 {
 	NDR_CHECK(mprGetVar(&v, name));
 	*r = mprVarToBool(v);
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ejs_push_BOOL(struct ejs_rpc *ejs, 
-		       struct MprVar *v, const char *name, const BOOL *r)
+NTSTATUS ejs_push_bool(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, const bool *r)
 {
 	return mprSetVar(v, name, mprCreateBoolVar(*r));
 }

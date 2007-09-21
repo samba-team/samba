@@ -113,9 +113,9 @@ NTSTATUS ejs_pull_DATA_BLOB(struct ejs_rpc *ejs,
 			    struct MprVar *v, const char *name, DATA_BLOB *r);
 NTSTATUS ejs_push_DATA_BLOB(struct ejs_rpc *ejs, 
 			    struct MprVar *v, const char *name, const DATA_BLOB *r);
-NTSTATUS ejs_pull_BOOL(struct ejs_rpc *ejs, 
+NTSTATUS ejs_pull_bool(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, bool *r);
-NTSTATUS ejs_push_BOOL(struct ejs_rpc *ejs, 
+NTSTATUS ejs_push_bool(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, const bool *r);
 
 NTSTATUS ejs_pull_array_uint8(struct ejs_rpc *ejs, 
