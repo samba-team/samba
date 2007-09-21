@@ -61,22 +61,22 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	state->response.data.auth.info3.num_other_sids = info3->num_other_sids;
 
 	unistr2_to_ascii(state->response.data.auth.info3.user_name, 
-		&info3->uni_user_name, sizeof(fstring));
+		&info3->uni_user_name, sizeof(state->response.data.auth.info3.user_name));
 	unistr2_to_ascii(state->response.data.auth.info3.full_name, 
-		&info3->uni_full_name, sizeof(fstring));
+		&info3->uni_full_name, sizeof(state->response.data.auth.info3.full_name));
 	unistr2_to_ascii(state->response.data.auth.info3.logon_script, 
-		&info3->uni_logon_script, sizeof(fstring));
+		&info3->uni_logon_script, sizeof(state->response.data.auth.info3.logon_script));
 	unistr2_to_ascii(state->response.data.auth.info3.profile_path, 
-		&info3->uni_profile_path, sizeof(fstring));
+		&info3->uni_profile_path, sizeof(state->response.data.auth.info3.profile_path));
 	unistr2_to_ascii(state->response.data.auth.info3.home_dir, 
-		&info3->uni_home_dir, sizeof(fstring));
+		&info3->uni_home_dir, sizeof(state->response.data.auth.info3.home_dir));
 	unistr2_to_ascii(state->response.data.auth.info3.dir_drive, 
-		&info3->uni_dir_drive, sizeof(fstring));
+		&info3->uni_dir_drive, sizeof(state->response.data.auth.info3.dir_drive));
 
 	unistr2_to_ascii(state->response.data.auth.info3.logon_srv, 
-		&info3->uni_logon_srv, sizeof(fstring));
+		&info3->uni_logon_srv, sizeof(state->response.data.auth.info3.logon_srv));
 	unistr2_to_ascii(state->response.data.auth.info3.logon_dom, 
-		&info3->uni_logon_dom, sizeof(fstring));
+		&info3->uni_logon_dom, sizeof(state->response.data.auth.info3.logon_dom));
 
 	return NT_STATUS_OK;
 }
