@@ -219,21 +219,37 @@ static bool torture_winbind_struct_list_trustdom(struct torture_context *torture
 
 static bool torture_winbind_struct_getdcname(struct torture_context *torture)
 {
-	struct winbindd_request req;
-	struct winbindd_response rep;
+	bool ok;
+	bool strict = torture_setting_bool(torture, "strict mode", false);
+	struct torture_trust_domain *listd = NULL;
+	uint32_t i;
 
 	torture_comment(torture, "Running WINBINDD_GETDCNAME (struct based)\n");
 
-	ZERO_STRUCT(req);
-	ZERO_STRUCT(rep);
+	ok = get_trusted_domains(torture, &listd);
+	torture_assert(torture, ok, "failed to get trust list");
 
-	fstrcpy(req.domain_name, lp_workgroup());
+	for (i=0; listd[i].netbios_name; i++) {
+		struct winbindd_request req;
+		struct winbindd_response rep;
 
-	DO_STRUCT_REQ_REP(WINBINDD_GETDCNAME, &req, &rep);
+		ZERO_STRUCT(req);
+		ZERO_STRUCT(rep);
 
-	/*
-	 * TODO: test all trusted domains
-	 */
+		fstrcpy(req.domain_name, listd[i].netbios_name);
+
+		ok = true;
+		DO_STRUCT_REQ_REP_EXT(WINBINDD_GETDCNAME, &req, &rep,
+				      NSS_STATUS_SUCCESS,
+				      (i <2 || strict), ok = false,
+				      talloc_asprintf(torture, "DOMAIN '%s'",
+				      		      req.domain_name));
+		if (!ok) continue;
+
+		/* TODO: check rep.data.dc_name; */
+		torture_comment(torture, "DOMAIN '%s' => DCNAME '%s'\n",
+				req.domain_name, rep.data.dc_name);
+	}
 
 	return true;
 }
