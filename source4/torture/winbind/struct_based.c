@@ -131,8 +131,11 @@ static bool get_trusted_domains(struct torture_context *torture,
 
 		dcount++;
 	}
-
 	SAFE_FREE(rep.extra_data.data);
+
+	torture_assert(torture, dcount >= 2,
+		       "The list of trusted domain should contain 2 entries");
+
 	*_d = d;
 	return true;
 }
@@ -211,9 +214,6 @@ static bool torture_winbind_struct_list_trustdom(struct torture_context *torture
 		 */
 	}
 
-	torture_assert(torture, i >= 2,
-		       "The list of trusted domain should contain 2 entries");
-
 	return true;
 }
 
@@ -243,8 +243,8 @@ struct torture_suite *torture_winbind_struct_init(void)
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "STRUCT");
 
 	torture_suite_add_simple_test(suite, "PING", torture_winbind_struct_ping);
-	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
 	torture_suite_add_simple_test(suite, "LIST_TRUSTDOM", torture_winbind_struct_list_trustdom);
+	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
 
 	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
 
