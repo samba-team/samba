@@ -272,7 +272,7 @@ static bool torture_winbind_struct_list_trustdom(struct torture_context *torture
 			ok = dom_sid_equal(builtin_sid,
 					   listd[i].sid);
 			torture_assert(torture, ok, "BUILTIN domain should have S-1-5-32");
-				       
+
 			continue;
 		}
 
@@ -280,6 +280,74 @@ static bool torture_winbind_struct_list_trustdom(struct torture_context *torture
 		 * TODO: verify the content of the 2nd and 3rd (in member server mode)
 		 *       domain entries
 		 */
+	}
+
+	return true;
+}
+
+static bool torture_winbind_struct_domain_info(struct torture_context *torture)
+{
+	bool ok;
+	struct torture_trust_domain *listd = NULL;
+	uint32_t i;
+
+	torture_comment(torture, "Running WINBINDD_DOMAIN_INFO (struct based)\n");
+
+	ok = get_trusted_domains(torture, &listd);
+	torture_assert(torture, ok, "failed to get trust list");
+
+	for (i=0; listd[i].netbios_name; i++) {
+		struct winbindd_request req;
+		struct winbindd_response rep;
+		struct dom_sid *sid;
+		char *flagstr = talloc_strdup(torture," ");
+
+		ZERO_STRUCT(req);
+		ZERO_STRUCT(rep);
+
+		fstrcpy(req.domain_name, listd[i].netbios_name);
+
+		DO_STRUCT_REQ_REP(WINBINDD_DOMAIN_INFO, &req, &rep);
+
+		torture_assert_str_equal(torture,
+					 rep.data.domain_info.name,
+					 listd[i].netbios_name,
+					 "Netbios domain name doesn't match");
+
+		torture_assert_str_equal(torture,
+					 rep.data.domain_info.alt_name,
+					 listd[i].dns_name,
+					 "DNS domain name doesn't match");
+
+		sid = dom_sid_parse_talloc(torture, rep.data.domain_info.sid);
+		torture_assert(torture, sid, "Failed to parse SID");
+
+		ok = dom_sid_equal(listd[i].sid, sid);
+		torture_assert(torture, ok, "SID's doesn't match");
+
+		if (rep.data.domain_info.primary) {
+			flagstr = talloc_strdup_append(flagstr, "PR ");
+		}
+
+		if (rep.data.domain_info.active_directory) {
+			torture_assert(torture,
+				       strlen(rep.data.domain_info.alt_name)>0,
+				       "Active Directory without DNS name");
+			flagstr = talloc_strdup_append(flagstr, "AD ");
+		}
+
+		if (rep.data.domain_info.native_mode) {
+			torture_assert(torture,
+				       rep.data.domain_info.active_directory,
+				       "Native-Mode, but no Active Directory");
+			flagstr = talloc_strdup_append(flagstr, "NA ");
+		}
+
+		/* TODO: check rep.data.dc_name; */
+		torture_comment(torture, "DOMAIN '%s' => '%s' [%s]\n",
+				rep.data.domain_info.name,
+				rep.data.domain_info.alt_name,
+				flagstr);
 	}
 
 	return true;
@@ -331,6 +399,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 	torture_suite_add_simple_test(suite, "NETBIOS_NAME", torture_winbind_struct_netbios_name);
 	torture_suite_add_simple_test(suite, "DOMAIN_NAME", torture_winbind_struct_domain_name);
 	torture_suite_add_simple_test(suite, "LIST_TRUSTDOM", torture_winbind_struct_list_trustdom);
+	torture_suite_add_simple_test(suite, "DOMAIN_INFO", torture_winbind_struct_domain_info);
 	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
 
 	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
