@@ -92,56 +92,6 @@ static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
        	ctdb_start_tcp_tickle_update(ctdb);
 }
 
-/* go into main ctdb loop */
-static void ctdb_main_loop(struct ctdb_context *ctdb)
-{
-	int ret = -1;
-
-	if (strcmp(ctdb->transport, "tcp") == 0) {
-		int ctdb_tcp_init(struct ctdb_context *);
-		ret = ctdb_tcp_init(ctdb);
-	}
-#ifdef USE_INFINIBAND
-	if (strcmp(ctdb->transport, "ib") == 0) {
-		int ctdb_ibw_init(struct ctdb_context *);
-		ret = ctdb_ibw_init(ctdb);
-	}
-#endif
-	if (ret != 0) {
-		DEBUG(0,("Failed to initialise transport '%s'\n", ctdb->transport));
-		return;
-	}
-
-	/* initialise the transport  */
-	if (ctdb->methods->initialise(ctdb) != 0) {
-		DEBUG(0,("transport failed to initialise!\n"));
-		ctdb_fatal(ctdb, "transport failed to initialise");
-	}
-
-	/* tell all other nodes we've just started up */
-	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
-				 0, CTDB_CONTROL_STARTUP, 0,
-				 CTDB_CTRL_FLAG_NOREPLY,
-				 tdb_null, NULL, NULL);
-
-	/* release any IPs we hold from previous runs of the daemon */
-	ctdb_release_all_ips(ctdb);
-
-	ret = ctdb_event_script_callback(ctdb, timeval_zero(), ctdb, 
-					 ctdb_start_transport, NULL, "startup");
-	if (ret != 0) {
-		DEBUG(0,("Failed startup event script\n"));
-		return;
-	}
-
-	/* go into a wait loop to allow other nodes to complete */
-	event_loop_wait(ctdb->ev);
-
-	DEBUG(0,("event_loop_wait() returned. this should not happen\n"));
-	exit(1);
-}
-
-
 static void block_signal(int signum)
 {
 	struct sigaction act;
@@ -626,7 +576,7 @@ static void print_exit_message(void)
 */
 int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 {
-	int res;
+	int res, ret = -1;
 	struct fd_event *fde;
 	const char *domain_socket_name;
 
@@ -665,23 +615,66 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	ctdb->ev = event_context_init(NULL);
 
-	/* start frozen, then let the first election sort things out */
-	if (!ctdb_blocking_freeze(ctdb)) {
-		DEBUG(0,("Failed to get initial freeze\n"));
-		exit(12);
-	}
-
 	/* force initial recovery for election */
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+
+	if (strcmp(ctdb->transport, "tcp") == 0) {
+		int ctdb_tcp_init(struct ctdb_context *);
+		ret = ctdb_tcp_init(ctdb);
+	}
+#ifdef USE_INFINIBAND
+	if (strcmp(ctdb->transport, "ib") == 0) {
+		int ctdb_ibw_init(struct ctdb_context *);
+		ret = ctdb_ibw_init(ctdb);
+	}
+#endif
+	if (ret != 0) {
+		DEBUG(0,("Failed to initialise transport '%s'\n", ctdb->transport));
+		return -1;
+	}
+
+	/* initialise the transport  */
+	if (ctdb->methods->initialise(ctdb) != 0) {
+		DEBUG(0,("transport failed to initialise!\n"));
+		ctdb_fatal(ctdb, "transport failed to initialise");
+	}
+
+	/* attach to any existing persistent databases */
+	if (ctdb_attach_persistent(ctdb) != 0) {
+		ctdb_fatal(ctdb, "Failed to attach to persistent databases\n");		
+	}
+
+	/* start frozen, then let the first election sort things out */
+	if (!ctdb_blocking_freeze(ctdb)) {
+		ctdb_fatal(ctdb, "Failed to get initial freeze\n");
+	}
 
 	/* now start accepting clients, only can do this once frozen */
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, 
 			   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_accept_client, ctdb);
 
-	ctdb_main_loop(ctdb);
+	/* tell all other nodes we've just started up */
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
+				 0, CTDB_CONTROL_STARTUP, 0,
+				 CTDB_CTRL_FLAG_NOREPLY,
+				 tdb_null, NULL, NULL);
 
-	return 0;
+	/* release any IPs we hold from previous runs of the daemon */
+	ctdb_release_all_ips(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, timeval_zero(), ctdb, 
+					 ctdb_start_transport, NULL, "startup");
+	if (ret != 0) {
+		DEBUG(0,("Failed startup event script\n"));
+		return -1;
+	}
+
+	/* go into a wait loop to allow other nodes to complete */
+	event_loop_wait(ctdb->ev);
+
+	DEBUG(0,("event_loop_wait() returned. this should not happen\n"));
+	exit(1);
 }
 
 /*

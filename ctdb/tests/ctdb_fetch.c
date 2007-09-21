@@ -219,7 +219,7 @@ int main(int argc, const char *argv[])
 				 &cluster_ready);
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb");
+	ctdb_db = ctdb_attach(ctdb, "test.tdb", false);
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);

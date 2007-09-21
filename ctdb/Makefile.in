@@ -48,10 +48,10 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	server/ctdb_tunables.o server/ctdb_monitor.o server/ctdb_server.o \
 	server/ctdb_control.o server/ctdb_call.o server/ctdb_ltdb_server.o \
 	server/ctdb_traverse.o server/eventscript.o server/ctdb_takeover.o \
-	server/ctdb_serverids.o \
+	server/ctdb_serverids.o server/ctdb_persistent.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
-TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store bin/rb_test \
+TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store bin/ctdb_persistent bin/rb_test \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify
@@ -119,6 +119,10 @@ bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/ctdb_fetch.o
 bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/ctdb_store.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/ctdb_store.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/ctdb_persistent.o 
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/ctdb_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@

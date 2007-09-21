@@ -134,6 +134,7 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
   set the directory for the local databases
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir);
+int ctdb_set_tdb_dir_persistent(struct ctdb_context *ctdb, const char *dir);
 
 /*
   set some flags
@@ -167,7 +168,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
 /*
   attach to a ctdb database
 */
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name);
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent);
 
 /*
   find an attached ctdb_db handle given a name
@@ -267,7 +268,10 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb,
  */
 struct ctdb_dbid_map {
 	uint32_t num;
-	uint32_t dbids[1];
+	struct ctdb_dbid {
+		uint32_t dbid;
+		bool persistent;
+	} dbs[1];
 };
 int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, 
 	struct timeval timeout, uint32_t destnode, 
@@ -295,7 +299,7 @@ int ctdb_ctrl_copydb(struct ctdb_context *ctdb,
 
 int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **name);
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, const char *name);
+int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, const char *name, bool persistent);
 
 int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
 

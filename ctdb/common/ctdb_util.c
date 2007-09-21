@@ -165,13 +165,20 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
 
 /*
   form a ctdb_rec_data record from a key/data pair
+  
+  note that header may be NULL. If not NULL then it is included in the data portion
+  of the record
  */
-struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	TDB_DATA key, TDB_DATA data)
+struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
+					   TDB_DATA key, 
+					   struct ctdb_ltdb_header *header,
+					   TDB_DATA data)
 {
 	size_t length;
 	struct ctdb_rec_data *d;
 
-	length = offsetof(struct ctdb_rec_data, data) + key.dsize + data.dsize;
+	length = offsetof(struct ctdb_rec_data, data) + key.dsize + 
+		data.dsize + (header?sizeof(*header):0);
 	d = (struct ctdb_rec_data *)talloc_size(mem_ctx, length);
 	if (d == NULL) {
 		return NULL;
@@ -179,9 +186,15 @@ struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
 	d->length = length;
 	d->reqid = reqid;
 	d->keylen = key.dsize;
-	d->datalen = data.dsize;
 	memcpy(&d->data[0], key.dptr, key.dsize);
-	memcpy(&d->data[key.dsize], data.dptr, data.dsize);
+	if (header) {
+		d->datalen = data.dsize + sizeof(*header);
+		memcpy(&d->data[key.dsize], header, sizeof(*header));
+		memcpy(&d->data[key.dsize+sizeof(*header)], data.dptr, data.dsize);
+	} else {
+		d->datalen = data.dsize;
+		memcpy(&d->data[key.dsize], data.dptr, data.dsize);
+	}
 	return d;
 }
 

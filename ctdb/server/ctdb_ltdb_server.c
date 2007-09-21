@@ -22,6 +22,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "system/dir.h"
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
@@ -186,36 +187,16 @@ static void ctdb_check_db_empty(struct ctdb_db_context *ctdb_db)
 	}
 }
 
+
 /*
-  a client has asked to attach a new database
+  attach to a database, handling both persistent and non-persistent databases
+  return 0 on success, -1 on failure
  */
-int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
-			       TDB_DATA *outdata)
+static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, bool persistent)
 {
-	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *ctdb_db, *tmp_db;
-	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	int ret;
-
-	/* If the node is inactive it is not part of the cluster
-	   and we should not allow clients to attach to any
-	   databases
-	*/
-	if (node->flags & NODE_FLAGS_INACTIVE) {
-		DEBUG(0,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
-		return -1;
-	}
-
-
-	/* see if we already have this name */
-	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
-		if (strcmp(db_name, tmp_db->db_name) == 0) {
-			/* this is not an error */
-			outdata->dptr  = (uint8_t *)&tmp_db->db_id;
-			outdata->dsize = sizeof(tmp_db->db_id);
-			return 0;
-		}
-	}
+	struct TDB_DATA key;
 
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY(ctdb, ctdb_db);
@@ -224,10 +205,10 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	ctdb_db->db_name = talloc_strdup(ctdb_db, db_name);
 	CTDB_NO_MEMORY(ctdb, ctdb_db->db_name);
 
-	ctdb_db->db_id = ctdb_hash(&indata);
-
-	outdata->dptr  = (uint8_t *)&ctdb_db->db_id;
-	outdata->dsize = sizeof(ctdb_db->db_id);
+	key.dsize = strlen(db_name)+1;
+	key.dptr  = discard_const(db_name);
+	ctdb_db->db_id = ctdb_hash(&key);
+	ctdb_db->persistent = persistent;
 
 	/* check for hash collisions */
 	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
@@ -251,21 +232,31 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 
+	if (persistent && mkdir(ctdb->db_directory_persistent, 0700) == -1 && errno != EEXIST) {
+		DEBUG(0,(__location__ " Unable to create ctdb persistent directory '%s'\n", 
+			 ctdb->db_directory_persistent));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
 	/* open the database */
 	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s.%u", 
-					   ctdb->db_directory, 
+					   persistent?ctdb->db_directory_persistent:ctdb->db_directory, 
 					   db_name, ctdb->pnn);
 
 	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 
 				      ctdb->tunable.database_hash_size, 
-				      TDB_CLEAR_IF_FIRST, O_CREAT|O_RDWR, 0666);
+				      persistent?TDB_DEFAULT:TDB_CLEAR_IF_FIRST, 
+				      O_CREAT|O_RDWR, 0666);
 	if (ctdb_db->ltdb == NULL) {
 		DEBUG(0,("Failed to open tdb '%s'\n", ctdb_db->db_path));
 		talloc_free(ctdb_db);
 		return -1;
 	}
 
-	ctdb_check_db_empty(ctdb_db);
+	if (!persistent) {
+		ctdb_check_db_empty(ctdb_db);
+	}
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
@@ -290,15 +281,110 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		talloc_free(ctdb_db);
 		return -1;
 	}
+
+	DEBUG(1,("Attached to database '%s'\n", ctdb_db->db_path));
 	
+	/* success */
+	return 0;
+}
+
+
+/*
+  a client has asked to attach a new database
+ */
+int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
+			       TDB_DATA *outdata, bool persistent)
+{
+	const char *db_name = (const char *)indata.dptr;
+	struct ctdb_db_context *db;
+	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
+
+	/* If the node is inactive it is not part of the cluster
+	   and we should not allow clients to attach to any
+	   databases
+	*/
+	if (node->flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(0,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
+		return -1;
+	}
+
+
+	/* see if we already have this name */
+	db = ctdb_db_handle(ctdb, db_name);
+	if (db) {
+		outdata->dptr  = (uint8_t *)&db->db_id;
+		outdata->dsize = sizeof(db->db_id);
+		return 0;
+	}
+
+	if (ctdb_local_attach(ctdb, db_name, persistent) != 0) {
+		return -1;
+	}
+
+	db = ctdb_db_handle(ctdb, db_name);
+	if (!db) {
+		DEBUG(0,("Failed to find db handle for name '%s'\n", db_name));
+		return -1;
+	}
+
+	outdata->dptr  = (uint8_t *)&db->db_id;
+	outdata->dsize = sizeof(db->db_id);
+
 	/* tell all the other nodes about this database */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
 				 CTDB_CONTROL_DB_ATTACH, 0, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
 
-	DEBUG(1,("Attached to database '%s'\n", ctdb_db->db_path));
-
 	/* success */
+	return 0;
+}
+
+
+/*
+  attach to all existing persistent databases
+ */
+int ctdb_attach_persistent(struct ctdb_context *ctdb)
+{
+	DIR *d;
+	struct dirent *de;
+
+	/* open the persistent db directory and scan it for files */
+	d = opendir(ctdb->db_directory_persistent);
+	if (d == NULL) {
+		return 0;
+	}
+
+	while ((de=readdir(d))) {
+		char *p, *s;
+		size_t len = strlen(de->d_name);
+		uint32_t node;
+		
+		s = talloc_strdup(ctdb, de->d_name);
+		CTDB_NO_MEMORY(ctdb, s);
+
+		/* only accept names ending in .tdb */
+		p = strstr(s, ".tdb.");
+		if (len < 7 || p == NULL) {
+			talloc_free(s);
+			continue;
+		}
+		if (sscanf(p+5, "%u", &node) != 1 || node != ctdb->pnn) {
+			talloc_free(s);
+			continue;
+		}
+		p[4] = 0;
+
+		if (ctdb_local_attach(ctdb, s, true) != 0) {
+			DEBUG(0,("Failed to attach to persistent database '%s'\n", de->d_name));
+			closedir(d);
+			talloc_free(s);
+			return -1;
+		}
+		DEBUG(0,("Attached to persistent database %s\n", s));
+
+		talloc_free(s);
+	}
+	closedir(d);
 	return 0;
 }
 

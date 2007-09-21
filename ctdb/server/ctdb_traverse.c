@@ -95,7 +95,7 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 		return 0;
 	}
 
-	d = ctdb_marshall_record(h, 0, key, data);
+	d = ctdb_marshall_record(h, 0, key, NULL, data);
 	if (d == NULL) {
 		/* error handling is tricky in this child code .... */
 		return -1;
@@ -280,7 +280,7 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 	struct ctdb_rec_data *d;
 	TDB_DATA cdata;
 
-	d = ctdb_marshall_record(state, state->reqid, key, data);
+	d = ctdb_marshall_record(state, state->reqid, key, NULL, data);
 	if (d == NULL) {
 		/* darn .... */
 		DEBUG(0,("Out of memory in traverse_all_callback\n"));
@@ -408,7 +408,7 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 
 	state = talloc_get_type(p, struct traverse_start_state);
 
-	d = ctdb_marshall_record(state, state->reqid, key, data);
+	d = ctdb_marshall_record(state, state->reqid, key, NULL, data);
 	if (d == NULL) {
 		return;
 	}

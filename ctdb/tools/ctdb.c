@@ -762,7 +762,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	db_name = argv[0];
-	ctdb_db = ctdb_attach(ctdb, db_name);
+	ctdb_db = ctdb_attach(ctdb, db_name, false);
 
 	if (ctdb_db == NULL) {
 		DEBUG(0,("Unable to attach to database '%s'\n", db_name));
@@ -800,10 +800,13 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
 		const char *name;
+		bool persistent;
 
-		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbids[i], ctdb, &path);
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbids[i], ctdb, &name);
-		printf("dbid:0x%08x name:%s path:%s\n", dbmap->dbids[i], name, path);
+		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
+		persistent = dbmap->dbs[i].persistent;
+		printf("dbid:0x%08x name:%s path:%s %s\n", dbmap->dbs[i].dbid, name, 
+		       path, persistent?"PERSISTENT":"");
 	}
 
 	return 0;
@@ -982,7 +985,7 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 	db_name = argv[0];
 
-	ctdb_db = ctdb_attach(ctdb, db_name);
+	ctdb_db = ctdb_attach(ctdb, db_name, false);
 	if (ctdb_db == NULL) {
 		DEBUG(0,("Unable to attach to database '%s'\n", db_name));
 		return -1;
