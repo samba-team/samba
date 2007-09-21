@@ -97,6 +97,30 @@ static bool torture_winbind_struct_ping(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
+{
+	struct winbindd_request req;
+	struct winbindd_response rep;
+	const char *expected;
+
+	ZERO_STRUCT(req);
+	ZERO_STRUCT(rep);
+
+	torture_comment(torture, "Running WINBINDD_NETBIOS_NAME (struct based)\n");
+
+	DO_STRUCT_REQ_REP(WINBINDD_NETBIOS_NAME, &req, &rep);
+
+	expected = torture_setting_string(torture,
+					  "winbindd netbios name",
+					  lp_netbios_name());
+
+	torture_assert_str_equal(torture,
+				 rep.data.netbios_name, expected,
+				 "winbindd's netbios name doesn't match");
+
+	return true;
+}
+
 struct torture_trust_domain {
 	const char *netbios_name;
 	const char *dns_name;
@@ -280,6 +304,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 
 	torture_suite_add_simple_test(suite, "INTERFACE_VERSION", torture_winbind_struct_interface_version);
 	torture_suite_add_simple_test(suite, "PING", torture_winbind_struct_ping);
+	torture_suite_add_simple_test(suite, "NETBIOS_NAME", torture_winbind_struct_netbios_name);
 	torture_suite_add_simple_test(suite, "LIST_TRUSTDOM", torture_winbind_struct_list_trustdom);
 	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
 
