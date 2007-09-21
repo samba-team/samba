@@ -368,7 +368,6 @@ static bool torture_winbind_struct_domain_info(struct torture_context *torture)
 			flagstr = talloc_strdup_append(flagstr, "NA ");
 		}
 
-		/* TODO: check rep.data.dc_name; */
 		torture_comment(torture, "DOMAIN '%s' => '%s' [%s]\n",
 				rep.data.domain_info.name,
 				rep.data.domain_info.alt_name,
