@@ -44,6 +44,7 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 {
 	struct ctdb_persistent_state *state = talloc_get_type(private_data, 
 							      struct ctdb_persistent_state);
+
 	if (status != 0) {
 		DEBUG(0,("ctdb_persistent_callback failed with status %d (%s)\n",
 			 status, errormsg));
@@ -57,6 +58,18 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 	}
 }
 
+/*
+  called if persistent store times out
+ */
+static void ctdb_persistent_store_timeout(struct event_context *ev, struct timed_event *te, 
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_persistent_state *state = talloc_get_type(private_data, struct ctdb_persistent_state);
+	
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "timeout in ctdb_persistent_state");
+
+	talloc_free(state);
+}
 
 /*
   store a persistent record - called from a ctdb client when it has updated
@@ -75,7 +88,7 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->ctdb = ctdb;
-	state->c    = c;
+	state->c    = talloc_steal(state, c);
 
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];
@@ -110,6 +123,12 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	
 	/* we need to wait for the replies */
 	*async_reply = true;
+
+	/* but we wont wait forever */
+	event_add_timed(ctdb->ev, state, 
+			timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			ctdb_persistent_store_timeout, state);
+
 	return 0;
 }
 
