@@ -7,7 +7,7 @@ shift
 
 killall -q ctdbd
 
-CTDB_OPTIONS="--reclock=rec.lock --nlist $NODES --event-script-dir=tests/events.d --logfile=-  --dbdir=test.db $*"
+CTDB_OPTIONS="--reclock=rec.lock --nlist $NODES --event-script-dir=tests/events.d --logfile=-  --dbdir=test.db --dbdir-persistent=test.db/persistent $*"
 if [ `id -u` -eq 0 ]; then
     CTDB_OPTIONS="$CTDB_OPTIONS --public-addresses=tests/public_addresses --public-interface=lo"
 fi

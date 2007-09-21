@@ -1,8 +1,8 @@
 /* 
-   simple tool to create a lot of records on a tdb and to read them out
+   simple tool to test persistent databases
 
-   Copyright (C) Andrew Tridgell  2006
-	Ronnie sahlberg 2007
+   Copyright (C) Andrew Tridgell  2006-2007
+   Copyright (c) Ronnie sahlberg  2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,25 +27,21 @@
 #include <sys/time.h>
 #include <time.h>
 
-static int num_records = 10;
-
-
-static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
+static void test_store_records(struct ctdb_context *ctdb, struct event_context *ev)
 {
 	TDB_DATA key, data;
 	struct ctdb_db_context *ctdb_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	int ret;
+	int ret, i;
 	struct ctdb_record_handle *h;
-	uint32_t i;
+	unsigned node=0, count=0;
 	
-	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
+	ctdb_db = ctdb_db_handle(ctdb, "persistent.tdb");
 
-	printf("creating %d records\n", num_records);
-	for (i=0;i<num_records;i++) {
-		key.dptr = (uint8_t *)&i;
-		key.dsize = sizeof(uint32_t); 
+	key.dptr = discard_const("testkey");
+	key.dsize = strlen((const char *)key.dptr)+1;
 
+	for (i=0;i<10;i++) {
 		h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 		if (h == NULL) {
 			printf("Failed to fetch record '%s' on node %d\n", 
@@ -53,39 +49,28 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 			talloc_free(tmp_ctx);
 			return;
 		}
-
-		data.dptr = (uint8_t *)&i;
-		data.dsize = sizeof(uint32_t);
-
-		ret = ctdb_record_store(h, data);
-		talloc_free(h);
-		if (ret != 0) {
-			printf("Failed to store record\n");
-		}
-		if (i % 1000 == 0) {
-			printf("%u\r", i);
-			fflush(stdout);
-		}
-	}
-
-	printf("fetching all %d records\n", num_records);
-	while (1) {
-		for (i=0;i<num_records;i++) {
-			key.dptr = (uint8_t *)&i;
-			key.dsize = sizeof(uint32_t); 
-
-			h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
-			if (h == NULL) {
-				printf("Failed to fetch record '%s' on node %d\n", 
-				       (const char *)key.dptr, ctdb_get_pnn(ctdb));
-				talloc_free(tmp_ctx);
-				return;
+		
+		printf("Current value: %*.*s\n", data.dsize, data.dsize, data.dptr);
+		
+		if (data.dsize != 0) {
+			if (sscanf((char *)data.dptr, "Node %u Count %u", &node, &count) != 2) {
+				printf("Badly formatted node data!\n");
+				exit(1);
 			}
-			talloc_free(h);
 		}
-		sleep(1);
-		printf(".");
-		fflush(stdout);
+		
+		node = ctdb_get_pnn(ctdb);
+		count++;
+		
+		data.dptr = (uint8_t *)talloc_asprintf(h, "Node %u Count %u", node, count);
+		data.dsize = strlen((char *)data.dptr)+1;
+		
+		ret = ctdb_record_store(h, data);
+		if (ret != 0) {
+			DEBUG(0,("Failed to store record\n"));
+			exit(1);
+		}
+		talloc_free(h);
 	}
 
 	talloc_free(tmp_ctx);
@@ -102,7 +87,6 @@ int main(int argc, const char *argv[])
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
-		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -122,8 +106,6 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	/* talloc_enable_leak_report_full(); */
-
 	/* setup the remaining options for the main program to use */
 	extra_argv = poptGetArgs(pc);
 	if (extra_argv) {
@@ -136,7 +118,7 @@ int main(int argc, const char *argv[])
 	ctdb = ctdb_cmdline_client(ev);
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", false);
+	ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true);
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
@@ -150,7 +132,8 @@ int main(int argc, const char *argv[])
 		event_loop_once(ev);
 	}
 
-	store_records(ctdb, ev);
+	printf("Starting test\n");
+	test_store_records(ctdb, ev);
 
 	return 0;
 }

@@ -46,6 +46,7 @@ static struct {
 	const char *logfile;
 	const char *recovery_lock_file;
 	const char *db_dir;
+	const char *db_dir_persistent;
 	const char *public_interface;
 	int         no_setsched;
 } options = {
@@ -54,6 +55,7 @@ static struct {
 	.event_script_dir = ETCDIR "/ctdb/events.d",
 	.logfile = VARDIR "/log/log.ctdb",
 	.db_dir = VARDIR "/ctdb",
+	.db_dir_persistent = VARDIR "/ctdb/persistent",
 };
 
 
@@ -108,6 +110,7 @@ int main(int argc, const char *argv[])
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
+		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
 		POPT_TABLEEND
@@ -196,6 +199,13 @@ int main(int argc, const char *argv[])
 		ret = ctdb_set_tdb_dir(ctdb, options.db_dir);
 		if (ret == -1) {
 			DEBUG(0,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb)));
+			exit(1);
+		}
+	}
+	if (options.db_dir_persistent) {
+		ret = ctdb_set_tdb_dir_persistent(ctdb, options.db_dir_persistent);
+		if (ret == -1) {
+			DEBUG(0,("ctdb_set_tdb_dir_persistent failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
 	}

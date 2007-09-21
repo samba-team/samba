@@ -125,7 +125,7 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 	}
 
 
-	outdata->dsize = offsetof(struct ctdb_dbid_map, dbids) + 4*len;
+	outdata->dsize = offsetof(struct ctdb_dbid_map, dbs) + sizeof(dbid_map->dbs[0])*len;
 	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
 	if (!outdata->dptr) {
 		DEBUG(0, (__location__ " Failed to allocate dbmap array\n"));
@@ -134,8 +134,9 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 
 	dbid_map = (struct ctdb_dbid_map *)outdata->dptr;
 	dbid_map->num = len;
-	for(i=0,ctdb_db=ctdb->db_list;ctdb_db;i++,ctdb_db=ctdb_db->next){
-		dbid_map->dbids[i] = ctdb_db->db_id;
+	for (i=0,ctdb_db=ctdb->db_list;ctdb_db;i++,ctdb_db=ctdb_db->next){
+		dbid_map->dbs[i].dbid       = ctdb_db->db_id;
+		dbid_map->dbs[i].persistent = ctdb_db->persistent;
 	}
 
 	return 0;
@@ -254,7 +255,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 
 	for (i=0;i<reply->count;i++) {
 		struct ctdb_rec_data *rec;
-		rec = ctdb_marshall_record(outdata, 0, params.recs[i].key, params.recs[i].data);
+		rec = ctdb_marshall_record(outdata, 0, params.recs[i].key, NULL, params.recs[i].data);
 		reply = talloc_realloc_size(outdata, reply, rec->length + len);
 		memcpy(len+(uint8_t *)reply, rec, rec->length);
 		len += rec->length;

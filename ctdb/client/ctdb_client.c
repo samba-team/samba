@@ -638,7 +638,46 @@ again:
 */
 int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 {
-	return ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
+	int ret;
+	int32_t status;
+	struct ctdb_rec_data *rec;
+	TDB_DATA recdata;
+
+	if (h->ctdb_db->persistent) {
+		h->header.rsn++;
+	}
+
+	ret = ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* don't need the persistent_store control for non-persistent databases */
+	if (!h->ctdb_db->persistent) {
+		return 0;
+	}
+
+	rec = ctdb_marshall_record(h, h->ctdb_db->db_id, h->key, &h->header, data);
+	if (rec == NULL) {
+		DEBUG(0,("Unable to marshall record in ctdb_record_store\n"));
+		return -1;
+	}
+
+	recdata.dptr = (uint8_t *)rec;
+	recdata.dsize = rec->length;
+
+	ret = ctdb_control(h->ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, 
+			   CTDB_CONTROL_PERSISTENT_STORE, 0,
+			   recdata, NULL, NULL, &status, NULL, NULL);
+
+	talloc_free(rec);
+
+	if (ret != 0 || status != 0) {
+		DEBUG(0,("Failed persistent store in ctdb_record_store\n"));
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
@@ -1449,7 +1488,8 @@ int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint3
 /*
   create a database
  */
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, const char *name)
+int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
+		       TALLOC_CTX *mem_ctx, const char *name, bool persistent)
 {
 	int ret;
 	int32_t res;
@@ -1459,7 +1499,8 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32
 	data.dsize = strlen(name)+1;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_DB_ATTACH, 0, data, 
+			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH, 
+			   0, data, 
 			   mem_ctx, &data, &res, &timeout, NULL);
 
 	if (ret != 0 || res != 0) {
@@ -1571,7 +1612,7 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode)
 /*
   attach to a specific database - client call
 */
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent)
 {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
@@ -1594,7 +1635,8 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
 	data.dsize = strlen(name)+1;
 
 	/* tell ctdb daemon to attach */
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_DB_ATTACH,
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
+			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
 			   0, data, ctdb_db, &data, &res, NULL, NULL);
 	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,("Failed to attach to database '%s'\n", name));
@@ -1618,6 +1660,8 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name)
 		talloc_free(ctdb_db);
 		return NULL;
 	}
+
+	ctdb_db->persistent = persistent;
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 

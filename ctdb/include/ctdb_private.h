@@ -328,6 +328,7 @@ struct ctdb_context {
 	struct ctdb_address address;
 	const char *name;
 	const char *db_directory;
+	const char *db_directory_persistent;
 	const char *transport;
 	const char *logfile;
 	char *node_list_file;
@@ -365,6 +366,7 @@ struct ctdb_db_context {
 	struct ctdb_db_context *next, *prev;
 	struct ctdb_context *ctdb;
 	uint32_t db_id;
+	bool persistent;
 	const char *db_name;
 	const char *db_path;
 	struct tdb_wrap *ltdb;
@@ -465,6 +467,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_UNREGISTER_SERVER_ID	 = 58,
 		    CTDB_CONTROL_CHECK_SERVER_ID	 = 59,
 		    CTDB_CONTROL_GET_SERVER_ID_LIST	 = 60,
+		    CTDB_CONTROL_DB_ATTACH_PERSISTENT    = 61,
+		    CTDB_CONTROL_PERSISTENT_STORE        = 62,
+		    CTDB_CONTROL_UPDATE_RECORD           = 63,
 };	
 
 /*
@@ -514,6 +519,15 @@ struct ctdb_control_killtcp {
 struct ctdb_control_tcp_vnn {
 	struct sockaddr_in src;
 	struct sockaddr_in dest;
+};
+
+/*
+  persistent store control - update this record on all other nodes
+ */
+struct ctdb_control_persistent_store {
+	uint32_t db_id;
+	uint32_t len;
+	uint8_t  data[1];
 };
 
 /*
@@ -857,7 +871,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 			     void *private_data);
 
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
-			       TDB_DATA *outdata);
+			       TDB_DATA *outdata, bool persistent);
 
 int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 			 ctdb_fn_t fn, int id);
@@ -991,7 +1005,8 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
 int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequency);
 
-struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	TDB_DATA key, TDB_DATA data);
+struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
+					   TDB_DATA key, struct ctdb_ltdb_header *, TDB_DATA data);
 
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
@@ -1145,5 +1160,15 @@ int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb,
 		      TDB_DATA indata);
 int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb, 
 		      TDB_DATA *outdata);
+
+int ctdb_attach_persistent(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb, 
+				      struct ctdb_req_control *c, 
+				      TDB_DATA recdata, bool *async_reply);
+int32_t ctdb_control_update_record(struct ctdb_context *ctdb, 
+				   struct ctdb_req_control *c, TDB_DATA recdata, 
+				   bool *async_reply);
+
 
 #endif

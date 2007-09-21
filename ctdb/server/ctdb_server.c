@@ -82,6 +82,18 @@ int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)
 }
 
 /*
+  set the directory for the persistent databases
+*/
+int ctdb_set_tdb_dir_persistent(struct ctdb_context *ctdb, const char *dir)
+{
+	ctdb->db_directory_persistent = talloc_strdup(ctdb, dir);
+	if (ctdb->db_directory_persistent == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
+/*
   add a node to the list of active nodes
 */
 static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)

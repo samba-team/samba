@@ -301,7 +301,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 
 
 			for (i=0;i<remote_dbmap->num;i++) {
-				if (dbmap->dbids[db] == remote_dbmap->dbids[i]) {
+				if (dbmap->dbs[db].dbid == remote_dbmap->dbs[i].dbid) {
 					break;
 				}
 			}
@@ -310,12 +310,14 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 				continue;
 			}
 			/* ok so we need to create this database */
-			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), pnn, dbmap->dbids[db], mem_ctx, &name);
+			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), pnn, dbmap->dbs[db].dbid, 
+					    mem_ctx, &name);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to get dbname from node %u\n", pnn));
 				return -1;
 			}
-			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, mem_ctx, name);
+			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+					   mem_ctx, name, dbmap->dbs[db].persistent);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to create remote db:%s\n", name));
 				return -1;
@@ -359,7 +361,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			const char *name;
 
 			for (i=0;i<(*dbmap)->num;i++) {
-				if (remote_dbmap->dbids[db] == (*dbmap)->dbids[i]) {
+				if (remote_dbmap->dbs[db].dbid == (*dbmap)->dbs[i].dbid) {
 					break;
 				}
 			}
@@ -371,13 +373,14 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			   rebuild dbmap
 			 */
 			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					    remote_dbmap->dbids[db], mem_ctx, &name);
+					    remote_dbmap->dbs[db].dbid, mem_ctx, &name);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to get dbname from node %u\n", 
 					  nodemap->nodes[j].pnn));
 				return -1;
 			}
-			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, name);
+			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, name, 
+					   remote_dbmap->dbs[db].persistent);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to create local db:%s\n", name));
 				return -1;
@@ -416,7 +419,7 @@ static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node
 				continue;
 			}
 			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					       pnn, dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
+					       pnn, dbmap->dbs[i].dbid, CTDB_LMASTER_ANY, mem_ctx);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", 
 					  nodemap->nodes[j].pnn, pnn));
@@ -444,9 +447,11 @@ static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctd
 			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 				continue;
 			}
-			ret = ctdb_ctrl_setdmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, ctdb, dbmap->dbids[i], pnn);
+			ret = ctdb_ctrl_setdmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+						   ctdb, dbmap->dbs[i].dbid, pnn);
 			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to set dmaster for node %u db:0x%08x\n", nodemap->nodes[j].pnn, dbmap->dbids[i]));
+				DEBUG(0, (__location__ " Unable to set dmaster for node %u db:0x%08x\n", 
+					  nodemap->nodes[j].pnn, dbmap->dbs[i].dbid));
 				return -1;
 			}
 		}
@@ -537,7 +542,7 @@ static int vacuum_all_databases(struct ctdb_context *ctdb, struct ctdb_node_map 
 
 	/* update dmaster to point to this node for all databases/nodes */
 	for (i=0;i<dbmap->num;i++) {
-		if (vacuum_db(ctdb, dbmap->dbids[i], nodemap) != 0) {
+		if (vacuum_db(ctdb, dbmap->dbs[i].dbid, nodemap) != 0) {
 			return -1;
 		}
 	}
@@ -565,7 +570,7 @@ static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_
 				continue;
 			}
 			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), pnn, nodemap->nodes[j].pnn, 
-					       dbmap->dbids[i], CTDB_LMASTER_ANY, mem_ctx);
+					       dbmap->dbs[i].dbid, CTDB_LMASTER_ANY, mem_ctx);
 			if (ret != 0) {
 				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", 
 					  pnn, nodemap->nodes[j].pnn));
@@ -919,6 +924,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(1, (__location__ " Recovery - done takeover\n"));
 	}
 
+	for (i=0;i<dbmap->num;i++) {
+		DEBUG(0,("Recovered database with db_id 0x%08x\n", dbmap->dbs[i].dbid));
+	}
 
 	/* disable recovery mode */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
@@ -1804,8 +1812,6 @@ static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde,
 	DEBUG(0,("recovery daemon parent died - exiting\n"));
 	_exit(1);
 }
-
-
 
 /*
   startup the recovery daemon as a child of the main ctdb daemon

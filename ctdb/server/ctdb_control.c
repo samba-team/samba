@@ -175,7 +175,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_DB_ATTACH:
-		return ctdb_control_db_attach(ctdb, indata, outdata);
+		return ctdb_control_db_attach(ctdb, indata, outdata, false);
+
+	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
+		return ctdb_control_db_attach(ctdb, indata, outdata, true);
 
 	case CTDB_CONTROL_SET_CALL: {
 		struct ctdb_control_set_call *sc = 
@@ -311,6 +314,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_SERVER_ID_LIST:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_server_id_list(ctdb, outdata);
+
+	case CTDB_CONTROL_PERSISTENT_STORE:
+		return ctdb_control_persistent_store(ctdb, c, indata, async_reply);
+
+	case CTDB_CONTROL_UPDATE_RECORD:
+		return ctdb_control_update_record(ctdb, c, indata, async_reply);
 
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
