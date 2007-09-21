@@ -236,6 +236,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	NTSTATUS result;
 	WERROR werr;
 	unsigned int orig_timeout;
+	struct winbindd_domain *req_domain;
 
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
@@ -255,9 +256,18 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
 
-	werr = rpccli_netlogon_getanydcname(netlogon_pipe, state->mem_ctx, domain->dcname,
-					    state->request.domain_name,
-					    dcname_slash);
+	req_domain = find_domain_from_name_noinit(state->request.domain_name);
+	if (req_domain == domain) {
+		werr = rpccli_netlogon_getdcname(netlogon_pipe, state->mem_ctx,
+						 domain->dcname,
+						 state->request.domain_name,
+						 dcname_slash);
+	} else {
+		werr = rpccli_netlogon_getanydcname(netlogon_pipe, state->mem_ctx,
+						    domain->dcname,
+						    state->request.domain_name,
+						    dcname_slash);
+	}
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
