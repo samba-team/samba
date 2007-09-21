@@ -760,7 +760,7 @@ BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
 {
 	int i,count;
 	fstring form_name;
-	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
+	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name));
 	DEBUGADD(6,("Looking for builtin form %s \n", form_name));
 	count = sizeof(default_forms) / sizeof(default_forms[0]);
 	for (i=0;i<count;i++) {
@@ -863,7 +863,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 
 	update=False;
 	
-	unistr2_to_ascii(form_name, &form->name, sizeof(form_name)-1);
+	unistr2_to_ascii(form_name, &form->name, sizeof(form_name));
 	for (n=0; n<*count; n++) {
 		if ( strequal((*list)[n].name, form_name) ) {
 			update=True;
@@ -876,7 +876,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 			DEBUG(0,("add_a_form: failed to enlarge forms list!\n"));
 			return False;
 		}
-		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
+		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name));
 		(*count)++;
 	}
 	
@@ -906,7 +906,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
 
 	*ret = WERR_OK;
 
-	unistr2_to_ascii(form_name, del_name, sizeof(form_name)-1);
+	unistr2_to_ascii(form_name, del_name, sizeof(form_name));
 
 	for (n=0; n<*count; n++) {
 		if (!strncmp((*list)[n].name, form_name, strlen(form_name))) {
@@ -938,7 +938,7 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 {
 	int n=0;
 	fstring form_name;
-	unistr2_to_ascii(form_name, &(form->name), sizeof(form_name)-1);
+	unistr2_to_ascii(form_name, &(form->name), sizeof(form_name));
 
 	DEBUG(106, ("[%s]\n", form_name));
 	for (n=0; n<count; n++) {

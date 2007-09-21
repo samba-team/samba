@@ -585,8 +585,8 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	GROUP_MAP map;
 	BOOL insert = True;
 
-	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name)-1);
-	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment)-1);
+	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name));
+	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment));
 
 	/* add the group to the mapping table */
 	sid_copy(&group_sid, get_global_sam_sid());
@@ -776,8 +776,8 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	GROUP_MAP map;
 	BOOL insert = True;
 
-	unistr2_to_ascii(name, &delta->uni_als_name, sizeof(name)-1);
-	unistr2_to_ascii(comment, &delta->uni_als_desc, sizeof(comment)-1);
+	unistr2_to_ascii(name, &delta->uni_als_name, sizeof(name));
+	unistr2_to_ascii(comment, &delta->uni_als_desc, sizeof(comment));
 
 	/* Find out whether the group is already mapped */
 	sid_copy(&alias_sid, &dom_sid);
@@ -839,7 +839,7 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 	u_lockoutreset = uint64s_nt_time_to_unix_abs(&delta->account_lockout.reset_count);
 	u_lockouttime = uint64s_nt_time_to_unix_abs(&delta->account_lockout.lockout_duration);
 
-	unistr2_to_ascii(domname, &delta->uni_dom_name, sizeof(domname) - 1);
+	unistr2_to_ascii(domname, &delta->uni_dom_name, sizeof(domname));
 
 	/* we don't handle BUILTIN account policies */	
 	if (!strequal(domname, get_global_sam_name())) {
@@ -1399,7 +1399,7 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	/* Get the group name */
 	unistr2_to_ascii(groupname, 
 	  		 &(delta->group_info.uni_grp_name),
-			 sizeof(groupname)-1);
+			 sizeof(groupname));
 
 	/* Set up the group type (always 2 for group info) */
 	grouptype = 2;
@@ -1470,7 +1470,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	/* Get the username */
 	unistr2_to_ascii(username, 
 			 &(delta->account_info.uni_acct_name),
-			 sizeof(username)-1);
+			 sizeof(username));
 
 	/* Get the rid */
 	rid = delta->account_info.user_rid;
@@ -1482,7 +1482,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	/* Get the home directory */
 	if (delta->account_info.acb_info & ACB_NORMAL) {
 		unistr2_to_ascii(homedir, &(delta->account_info.uni_home_dir),
-				 sizeof(homedir)-1);
+				 sizeof(homedir));
 		if (!*homedir) {
 			pstr_sprintf(homedir, "/home/%s", username);
 		} else {
@@ -1496,27 +1496,27 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 
         /* Get the logon script */
         unistr2_to_ascii(logonscript, &(delta->account_info.uni_logon_script),
-			 sizeof(logonscript)-1);
+			 sizeof(logonscript));
 
         /* Get the home drive */
         unistr2_to_ascii(homedrive, &(delta->account_info.uni_dir_drive),
-			 sizeof(homedrive)-1);
+			 sizeof(homedrive));
 
         /* Get the home path */
         unistr2_to_ascii(homepath, &(delta->account_info.uni_home_dir),
-			 sizeof(homepath)-1);
+			 sizeof(homepath));
 
 	/* Get the description */
 	unistr2_to_ascii(description, &(delta->account_info.uni_acct_desc),
-			 sizeof(description)-1);
+			 sizeof(description));
 
 	/* Get the display name */
 	unistr2_to_ascii(fullname, &(delta->account_info.uni_full_name),
-			 sizeof(fullname)-1);
+			 sizeof(fullname));
 
 	/* Get the profile path */
 	unistr2_to_ascii(profilepath, &(delta->account_info.uni_profile),
-			 sizeof(profilepath)-1);
+			 sizeof(profilepath));
 
 	/* Get lm and nt password data */
 	if (memcmp(delta->account_info.pass.buf_lm_pwd, zero_buf, 16) != 0) {
@@ -1620,11 +1620,11 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 
 	/* Get the alias name */
 	unistr2_to_ascii(aliasname, &(delta->alias_info.uni_als_name),
-			 sizeof(aliasname)-1);
+			 sizeof(aliasname));
 
 	/* Get the alias description */
 	unistr2_to_ascii(description, &(delta->alias_info.uni_als_desc),
-			 sizeof(description)-1);
+			 sizeof(description));
 
 	/* Set up the group type */
 	switch (db_type) {
@@ -1895,7 +1895,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 				unistr2_to_ascii(
 					domainname, 
 					&deltas[k].domain_info.uni_dom_name,
-					sizeof(domainname)-1);
+					sizeof(domainname));
 				break;
 
 			case SAM_DELTA_GROUP_INFO:
