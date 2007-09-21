@@ -165,7 +165,7 @@ _PUBLIC_ void do_debug_header(int level, const char *location, const char *func)
   @note You should never have to call this function directly. Call the DEBUG()
   macro instead.
 */
-_PUBLIC_ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2);
+_PUBLIC_ void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
 
 /**
   reopen the log file (usually called because the log file name might have changed)
@@ -313,9 +313,9 @@ _PUBLIC_ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
 /* The following definitions come from lib/util/dprintf.c  */
 
-_PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0);
-_PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3);
-_PUBLIC_ int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2);
+_PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
+_PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
+_PUBLIC_ int d_printf(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
 _PUBLIC_ void display_set_stderr(void);
 
 /* The following definitions come from lib/util/util_str.c  */
@@ -604,8 +604,8 @@ _PUBLIC_ void file_lines_slashcont(char **lines);
   save a lump of data into a file. Mostly used for debugging 
 */
 _PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length);
-_PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0);
-_PUBLIC_ int fdprintf(int fd, const char *format, ...) _PRINTF_ATTRIBUTE(2,3);
+_PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
+_PUBLIC_ int fdprintf(int fd, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 _PUBLIC_ bool large_file_support(const char *path);
 
 /* The following definitions come from lib/util/util.c  */
