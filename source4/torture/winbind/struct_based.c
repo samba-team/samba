@@ -122,6 +122,35 @@ static bool torture_winbind_struct_info(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_winbind_struct_priv_pipe_dir(struct torture_context *torture)
+{
+	struct winbindd_response rep;
+	const char *default_dir;
+	const char *expected_dir;
+	const char *got_dir;
+
+	ZERO_STRUCT(rep);
+
+	torture_comment(torture, "Running WINBINDD_PRIV_PIPE_DIR (struct based)\n");
+
+	DO_STRUCT_REQ_REP(WINBINDD_PRIV_PIPE_DIR, NULL, &rep);
+
+	got_dir = (const char *)rep.extra_data.data;
+
+	torture_assert(torture, got_dir, "NULL WINBINDD_PRIV_PIPE_DIR\n");
+
+	default_dir = lock_path(torture, WINBINDD_PRIV_SOCKET_SUBDIR);
+	expected_dir = torture_setting_string(torture,
+					      "winbindd private pipe dir",
+					      default_dir);
+
+	torture_assert_str_equal(torture, got_dir, expected_dir,
+				 "WINBINDD_PRIV_PIPE_DIR doesn't match");
+
+	SAFE_FREE(rep.extra_data.data);
+	return true;
+}
+
 static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 {
 	struct winbindd_request req;
@@ -421,6 +450,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 	torture_suite_add_simple_test(suite, "INTERFACE_VERSION", torture_winbind_struct_interface_version);
 	torture_suite_add_simple_test(suite, "PING", torture_winbind_struct_ping);
 	torture_suite_add_simple_test(suite, "INFO", torture_winbind_struct_info);
+	torture_suite_add_simple_test(suite, "PRIV_PIPE_DIR", torture_winbind_struct_priv_pipe_dir);
 	torture_suite_add_simple_test(suite, "NETBIOS_NAME", torture_winbind_struct_netbios_name);
 	torture_suite_add_simple_test(suite, "DOMAIN_NAME", torture_winbind_struct_domain_name);
 	torture_suite_add_simple_test(suite, "LIST_TRUSTDOM", torture_winbind_struct_list_trustdom);
