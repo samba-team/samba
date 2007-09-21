@@ -332,7 +332,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 
 	/* tell all the other nodes about this database */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
-				 CTDB_CONTROL_DB_ATTACH, 0, CTDB_CTRL_FLAG_NOREPLY,
+				 persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:
+						CTDB_CONTROL_DB_ATTACH,
+				 0, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
 
 	/* success */
