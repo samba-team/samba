@@ -153,16 +153,14 @@ static bool torture_winbind_struct_priv_pipe_dir(struct torture_context *torture
 
 static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 {
-	struct winbindd_request req;
 	struct winbindd_response rep;
 	const char *expected;
 
-	ZERO_STRUCT(req);
 	ZERO_STRUCT(rep);
 
 	torture_comment(torture, "Running WINBINDD_NETBIOS_NAME (struct based)\n");
 
-	DO_STRUCT_REQ_REP(WINBINDD_NETBIOS_NAME, &req, &rep);
+	DO_STRUCT_REQ_REP(WINBINDD_NETBIOS_NAME, NULL, &rep);
 
 	expected = torture_setting_string(torture,
 					  "winbindd netbios name",
@@ -177,16 +175,14 @@ static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 
 static bool torture_winbind_struct_domain_name(struct torture_context *torture)
 {
-	struct winbindd_request req;
 	struct winbindd_response rep;
 	const char *expected;
 
-	ZERO_STRUCT(req);
 	ZERO_STRUCT(rep);
 
 	torture_comment(torture, "Running WINBINDD_DOMAIN_NAME (struct based)\n");
 
-	DO_STRUCT_REQ_REP(WINBINDD_DOMAIN_NAME, &req, &rep);
+	DO_STRUCT_REQ_REP(WINBINDD_DOMAIN_NAME, NULL, &rep);
 
 	expected = torture_setting_string(torture,
 					  "winbindd netbios domain",
