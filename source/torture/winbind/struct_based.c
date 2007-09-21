@@ -24,6 +24,7 @@
 #include "nsswitch/winbind_client.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "auth/pam_errors.h"
 
 #define DO_STRUCT_REQ_REP_EXT(op,req,rep,expected,strict,warnaction,cmt) do { \
 	NSS_STATUS __got, __expected = (expected); \
@@ -191,6 +192,56 @@ static bool torture_winbind_struct_domain_name(struct torture_context *torture)
 	torture_assert_str_equal(torture,
 				 rep.data.domain_name, expected,
 				 "winbindd's netbios domain doesn't match");
+
+	return true;
+}
+
+static bool torture_winbind_struct_check_machacc(struct torture_context *torture)
+{
+	bool ok;
+	bool strict = torture_setting_bool(torture, "strict mode", false);
+	struct winbindd_response rep;
+
+	ZERO_STRUCT(rep);
+
+	torture_comment(torture, "Running WINBINDD_CHECK_MACHACC (struct based)\n");
+
+	ok = true;
+	DO_STRUCT_REQ_REP_EXT(WINBINDD_CHECK_MACHACC, NULL, &rep,
+			      NSS_STATUS_SUCCESS, strict, ok = false,
+			      "WINBINDD_CHECK_MACHACC");
+
+	if (!ok) {
+		torture_assert(torture,
+			       strlen(rep.data.auth.nt_status_string)>0,
+			       "Failed with empty nt_status_string");
+
+		torture_warning(torture,"%s:%s:%s:%d\n",
+				nt_errstr(NT_STATUS(rep.data.auth.nt_status)),
+				rep.data.auth.nt_status_string,
+				rep.data.auth.error_string,
+				rep.data.auth.pam_error);
+		return true;
+	}
+
+	torture_assert_ntstatus_ok(torture,
+				   NT_STATUS(rep.data.auth.nt_status),
+				   "WINBINDD_CHECK_MACHACC ok: nt_status");
+
+	torture_assert_str_equal(torture,
+				 rep.data.auth.nt_status_string,
+				 nt_errstr(NT_STATUS_OK),
+				 "WINBINDD_CHECK_MACHACC ok:nt_status_string");
+
+	torture_assert_str_equal(torture,
+				 rep.data.auth.error_string,
+				 nt_errstr(NT_STATUS_OK),
+				 "WINBINDD_CHECK_MACHACC ok: error_string");
+
+	torture_assert_int_equal(torture,
+				 rep.data.auth.pam_error,
+				 nt_status_to_pam(NT_STATUS_OK),
+				 "WINBINDD_CHECK_MACHACC ok: pam_error");
 
 	return true;
 }
@@ -449,6 +500,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 	torture_suite_add_simple_test(suite, "PRIV_PIPE_DIR", torture_winbind_struct_priv_pipe_dir);
 	torture_suite_add_simple_test(suite, "NETBIOS_NAME", torture_winbind_struct_netbios_name);
 	torture_suite_add_simple_test(suite, "DOMAIN_NAME", torture_winbind_struct_domain_name);
+	torture_suite_add_simple_test(suite, "CHECK_MACHACC", torture_winbind_struct_check_machacc);
 	torture_suite_add_simple_test(suite, "LIST_TRUSTDOM", torture_winbind_struct_list_trustdom);
 	torture_suite_add_simple_test(suite, "DOMAIN_INFO", torture_winbind_struct_domain_info);
 	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
