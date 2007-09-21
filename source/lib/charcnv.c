@@ -1403,13 +1403,16 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 {
 	size_t ret;
 
-	if (!src_len) {
-		return 0;
-	}
-
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
 		smb_panic("pull_ucs2 - invalid dest_len of -1");
+	}
+
+	if (!src_len) {
+		if (dest && dest_len > 0) {
+			dest[0] = '\0';
+		}
+		return 0;
 	}
 
 	if (ucs2_align(base_ptr, src, flags)) {
