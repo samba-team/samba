@@ -74,7 +74,8 @@ It is presumed it's available just like any other commands from your shell.
 Must be run as a user with permission to write to the install directory.
 
   # cd source
-  # ./setup/provision --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
+  # ./setup/provision --realm=YOUR.REALM --domain=YOURDOM \
+  #  --adminpass=SOMEPASSWORD --server-role='domain controller'
 
 REMINDER: Add the "bin" directory of the path you installed to
           (e.g. /usr/local/samba/bin) to your path, or the provision command
