@@ -297,10 +297,6 @@ sub provision($$$$$$)
 		$tmpdir);
 
 
-	my $localdomain = $domain;
-	$localdomain = $netbiosname if $server_role eq "member server";
-	my $localrealm = $realm;
-	$localrealm = $netbiosname if $server_role eq "member server";
 	my $localbasedn = $basedn;
 	$localbasedn = "DC=$netbiosname" if $server_role eq "member server";
 
@@ -416,9 +412,9 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
 	push (@provision_options, "--host-ip=$ifaceipv4");
-	push (@provision_options, "--quiet");
-	push (@provision_options, "--domain=$localdomain");
-	push (@provision_options, "--realm=$localrealm");
+#	push (@provision_options, "--quiet");
+	push (@provision_options, "--domain=$domain");
+	push (@provision_options, "--realm=$realm");
 	push (@provision_options, "--adminpass=$password");
 	push (@provision_options, "--krbtgtpass=krbtgt$password");
 	push (@provision_options, "--machinepass=machine$password");
@@ -426,6 +422,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	push (@provision_options, "--simple-bind-dn=cn=Manager,$localbasedn");
 	push (@provision_options, "--password=$password");
 	push (@provision_options, "--root=$root");
+	push (@provision_options, "--server-role=$server_role");
 
 	my $ldap_uri= "$ldapdir/ldapi";
 	$ldap_uri =~ s|/|%2F|g;
@@ -454,7 +451,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	if (defined($self->{ldap})) {
 
                 push (@provision_options, "--ldap-backend=$ldap_uri");
-	        system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$root --realm=$localrealm --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+	        system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$root --realm=$realm --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
 
 	        if ($self->{ldap} eq "openldap") {
 		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration) or die("Unable to create openldap directories");

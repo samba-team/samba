@@ -32,6 +32,7 @@ options = GetOptions(ARGV,
 		'users=s',
 		'quiet',
 		'blank',
+		'server-role=s',
 		'partitions-only',
 		'ldap-base',
 		'ldap-backend=s',
@@ -84,6 +85,7 @@ provision [options]
  --users	GROUPNAME	choose 'users' group
  --quiet			Be quiet
  --blank			do not add users or groups, just the structure
+ --server-role  ROLE            Set server role to provision for (default standalone)
  --partitions-only              Configure Samba's partitions, but do not modify them (ie, join a BDC)
  --ldap-base			output only an LDIF file, suitable for creating an LDAP baseDN
  --ldap-backend LDAPSERVER      LDAP server to use for this provision
@@ -112,6 +114,7 @@ if (options["realm"] == undefined ||
 var lp = loadparm_init();
 lp.set("realm", options.realm);
 lp.set("workgroup", options.domain);
+lp.set("server role", options["server-role"]);
 lp.reload();
 
 var subobj = provision_guess();

@@ -1,8 +1,8 @@
 [globals]
 	netbios name	= ${HOSTNAME}
-	workgroup	= ${DOMAIN}
-	realm		= ${REALM}
-	server role     = domain controller
+	workgroup	= ${DOMAIN_CONF}
+	realm		= ${REALM_CONF}
+	server role     = ${SERVERROLE}
 
 [netlogon]
 	path = ${NETLOGONPATH}
