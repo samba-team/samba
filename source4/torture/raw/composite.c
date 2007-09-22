@@ -68,7 +68,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_composite_savefile(cli->tree, &io1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("savefile failed: %s\n", nt_errstr(status));
+		printf("(%s) savefile failed: %s\n", __location__,nt_errstr(status));
 		return False;
 	}
 
@@ -88,7 +88,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	while (*count != num_ops) {
 		event_loop_once(cli->transport->socket->event.ctx);
 		if (lp_parm_bool(NULL, "torture", "progress", true)) {
-			printf("count=%d\r", *count);
+			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
@@ -97,18 +97,18 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<num_ops;i++) {
 		status = smb_composite_loadfile_recv(c[i], mem_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("loadfile[%d] failed - %s\n", i, nt_errstr(status));
+			printf("(%s) loadfile[%d] failed - %s\n", __location__, i, nt_errstr(status));
 			return False;
 		}
 
 		if (io2.out.size != len) {
-			printf("wrong length in returned data - %d should be %d\n",
+			printf("(%s) wrong length in returned data - %d should be %d\n",__location__,
 			       io2.out.size, (int)len);
 			return False;
 		}
 		
 		if (memcmp(io2.out.data, data, len) != 0) {
-			printf("wrong data in loadfile!\n");
+			printf("(%s) wrong data in loadfile!\n",__location__);
 			return False;
 		}
 	}
@@ -148,7 +148,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_composite_savefile(cli->tree, &io1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("savefile failed: %s\n", nt_errstr(status));
+		printf("(%s) savefile failed: %s\n",__location__, nt_errstr(status));
 		return False;
 	}
 
@@ -178,7 +178,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	while (*count != torture_numops) {
 		event_loop_once(event_ctx);
 		if (lp_parm_bool(NULL, "torture", "progress", true)) {
-			printf("count=%d\r", *count);
+			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
@@ -187,22 +187,22 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<torture_numops;i++) {
 		status = smb_composite_fetchfile_recv(c[i], mem_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("loadfile[%d] failed - %s\n", i,
+			printf("(%s) loadfile[%d] failed - %s\n", __location__, i,
 			       nt_errstr(status));
 			ret = False;
 			continue;
 		}
 
 		if (io2.out.size != len) {
-			printf("wrong length in returned data - %d "
-			       "should be %d\n",
+			printf("(%s) wrong length in returned data - %d "
+			       "should be %d\n", __location__,
 			       io2.out.size, (int)len);
 			ret = False;
 			continue;
 		}
 		
 		if (memcmp(io2.out.data, data, len) != 0) {
-			printf("wrong data in loadfile!\n");
+			printf("(%s) wrong data in loadfile!\n", __location__);
 			ret = False;
 			continue;
 		}
@@ -243,7 +243,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	  
 		status = smb_composite_savefile(cli->tree, &io1);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("savefile failed: %s\n", nt_errstr(status));
+			printf("(%s) savefile failed: %s\n", __location__, nt_errstr(status));
 			return False;
 		}
 
@@ -252,7 +252,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io_orig[i]->in.sd = security_descriptor_initialise(io_orig[i]);
 		status = smb_composite_appendacl(cli->tree, io_orig[i], io_orig[i]);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("appendacl failed: %s\n", nt_errstr(status));
+			printf("(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
 			return False;
 		}
 	}
@@ -272,7 +272,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = security_descriptor_dacl_add(test_sd, ace);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("appendacl failed: %s\n", nt_errstr(status));
+		printf("(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
 		return False;
 	}
 
@@ -298,7 +298,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	while (*count != num_ops) {
 		event_loop_once(event_ctx);
 		if (lp_parm_bool(NULL, "torture", "progress", true)) {
-			printf("count=%d\r", *count);
+			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
@@ -307,13 +307,13 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0; i < num_ops; i++) {
 		status = smb_composite_appendacl_recv(c[i], io[i]);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("appendacl[%d] failed - %s\n", i, nt_errstr(status));
+			printf("(%s) appendacl[%d] failed - %s\n", __location__, i, nt_errstr(status));
 			return False;
 		}
 		
 		security_descriptor_dacl_add(io_orig[i]->out.sd, ace);
 		if (!security_acl_equal(io_orig[i]->out.sd->dacl, io[i]->out.sd->dacl)) {
-			printf("appendacl[%d] failed - needed acl isn't set\n", i);
+			printf("(%s) appendacl[%d] failed - needed acl isn't set\n", __location__, i);
 			return False;
 		}
 	}
@@ -365,7 +365,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	while (*count < torture_numops) {
 		event_loop_once(event_ctx);
 		if (lp_parm_bool(NULL, "torture", "progress", true)) {
-			printf("count=%d\r", *count);
+			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
@@ -374,14 +374,14 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<torture_numops;i++) {
 		status = smb_composite_fsinfo_recv(c[i], mem_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("fsinfo[%d] failed - %s\n", i, nt_errstr(status));
+			printf("(%s) fsinfo[%d] failed - %s\n", __location__, i, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 
 		if (io1.out.fsinfo->generic.level != RAW_QFS_OBJECTID_INFORMATION) {
-			printf("wrong level in returned info - %d "
-			       "should be %d\n",
+			printf("(%s) wrong level in returned info - %d "
+			       "should be %d\n", __location__,
 			       io1.out.fsinfo->generic.level, RAW_QFS_OBJECTID_INFORMATION);
 			ret = False;
 			continue;
