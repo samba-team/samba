@@ -35,8 +35,14 @@ if cd $dir && $LEX $ARGS $file; then
 	if [ -r $base.yy.c ];then
 	        # we must guarantee that config.h comes first
 	        echo "#include \"config.h\"" > $base.c
-		sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c >> $base.c
+		sed -e "s|$base\.yy\.c|$DEST|" $base.yy.c >> $base.c
 		rm -f $base.yy.c
+	elif [ -r $base.c ];then
+	        # we must guarantee that config.h comes first
+		mv $base.c $base.c.tmp
+	        echo "#include \"config.h\"" > $base.c
+		sed -e "s|$base\.yy\.c|$DEST|" $base.c.tmp >> $base.c
+		rm -f $base.c.tmp
 	elif [ ! -r base.c ]; then
 		echo "$base.c nor $base.yy.c generated."
 		exit 1
