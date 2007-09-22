@@ -1,0 +1,5 @@
+[globals]
+	netbios name	= ${HOSTNAME}
+	workgroup	= ${DOMAIN_CONF}
+	realm		= ${REALM_CONF}
+	server role     = ${SERVERROLE}

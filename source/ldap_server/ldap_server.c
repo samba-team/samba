@@ -513,6 +513,18 @@ static void ldapsrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	const struct model_ops *model_ops;
 
+	switch (lp_server_role()) {
+	case ROLE_STANDALONE:
+		task_server_terminate(task, "ldap_server: no LDAP server required in standalone configuration");
+		return;
+	case ROLE_DOMAIN_MEMBER:
+		task_server_terminate(task, "ldap_server: no LDAP server required in member server configuration");
+		return;
+	case ROLE_DOMAIN_CONTROLLER:
+		/* Yes, we want an LDAP server */
+		break;
+	}
+
 	task_server_set_title(task, "task[ldapsrv]");
 
 	/* run the ldap server as a single process */

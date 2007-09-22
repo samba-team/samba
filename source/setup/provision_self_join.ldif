@@ -21,3 +21,21 @@ servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
 servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
 servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
 ${HOSTGUID_ADD}
+
+#Provide a account for DNS keytab export
+dn: CN=dns,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: dns
+description: DNS Service Account
+showInAdvancedViewOnly: TRUE
+userAccountControl: 514
+accountExpires: 9223372036854775807
+sAMAccountName: dns
+sAMAccountType: 805306368
+servicePrincipalName: DNS/${DNSDOMAIN}
+isCriticalSystemObject: TRUE
+sambaPassword:: ${DNSPASS_B64}
+
