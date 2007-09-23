@@ -23,6 +23,7 @@
 #define __LIBCLI_RAW_INTERFACES_H__
 
 #include "smb.h" 
+#include "librpc/gen_ndr/misc.h" /* for struct GUID */
 
 /* this structure is just a wrapper for a string, the only reason we
    bother with this is that it allows us to check the length provided

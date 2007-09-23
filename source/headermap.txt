@@ -33,9 +33,9 @@ librpc/ndr/libndr.h: ndr.h
 lib/registry/registry.h: registry/registry.h
 lib/registry/hive.h: registry/hive.h
 lib/registry/patchfile.h: registry/patchfile.h
-libcli/util/nterr.h: core/nterr.h
+libcli/util/werror.h: core/werror.h
 libcli/util/doserr.h: core/doserr.h
-libcli/util/nt_status.h: core/ntstatus.h
+libcli/util/ntstatus.h: core/ntstatus.h
 libcli/cldap/cldap.h: cldap.h
 lib/samba3/samba3.h: samba3.h
 librpc/gen_ndr/dcerpc.h: gen_ndr/dcerpc.h

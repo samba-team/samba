@@ -3,11 +3,9 @@ include ldap/config.mk
 include security/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
-PUBLIC_PROTO_HEADER = util/proto.h
 PUBLIC_HEADERS = util/error.h util/nterr.h util/doserr.h util/nt_status.h
 OBJ_FILES = util/doserr.o \
 		util/errormap.o \
-		util/clierror.o \
 		util/nterr.o \
 
 [SUBSYSTEM::ASN1_UTIL]
@@ -133,6 +131,7 @@ OBJ_FILES = raw/rawfile.o \
 		raw/clitransport.o \
 		raw/clisession.o \
 		raw/clitree.o \
+		raw/clierror.o \
 		raw/rawrequest.o \
 		raw/rawreadwrite.o \
 		raw/rawsearch.o \

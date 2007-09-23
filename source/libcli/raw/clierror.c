@@ -66,7 +66,7 @@ NTSTATUS smbcli_nt_error(struct smbcli_tree *tree)
 
 
 /* Return true if the last packet was an error */
-BOOL smbcli_is_error(struct smbcli_tree *tree)
+bool smbcli_is_error(struct smbcli_tree *tree)
 {
 	return NT_STATUS_IS_ERR(smbcli_nt_error(tree));
 }

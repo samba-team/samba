@@ -19,8 +19,33 @@
 #ifndef _SAMBA_ERROR_H_
 #define _SAMBA_ERROR_H_
 
-#include "libcli/util/nterr.h"
+#include "libcli/util/werror.h"
 #include "libcli/util/doserr.h"
-#include "libcli/util/proto.h"
+#include "libcli/util/ntstatus.h"
+
+/** NT error on DOS connection! (NT_STATUS_OK) */
+bool ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2);
+
+/*****************************************************************************
+convert a NT status code to a dos class/code
+ *****************************************************************************/
+void ntstatus_to_dos(NTSTATUS ntstatus, uint8_t *eclass, uint32_t *ecode);
+
+/*****************************************************************************
+convert a WERROR to a NT status32 code
+ *****************************************************************************/
+NTSTATUS werror_to_ntstatus(WERROR error);
+
+/*****************************************************************************
+convert a NTSTATUS to a WERROR
+ *****************************************************************************/
+WERROR ntstatus_to_werror(NTSTATUS error);
+
+/*********************************************************************
+ Map an NT error code from a Unix error code.
+*********************************************************************/
+NTSTATUS map_nt_error_from_unix(int unix_error);
+
+
 
 #endif /* _SAMBA_ERROR_H */

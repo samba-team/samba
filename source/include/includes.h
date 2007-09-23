@@ -39,20 +39,16 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <talloc.h>
-#include "libcli/util/nt_status.h"
 #ifndef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #endif
-#include "charset/charset.h"
 #include "util/util.h"
-#include "librpc/gen_ndr/misc.h"
 
 typedef bool BOOL;
 
 #define False false
 #define True true
 
-struct smbcli_tree;
 #include "libcli/util/error.h"
 
 /* String routines */

@@ -22,6 +22,7 @@
 #define _SMB_LDAP_H
 
 #include "lib/ldb/include/ldb.h"
+#include "librpc/gen_ndr/misc.h"
 
 enum ldap_request_tag {
 	LDAP_TAG_BindRequest = 0,

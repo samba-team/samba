@@ -23,6 +23,8 @@
 #ifndef __SERVICE_STREAM_H__
 #define __SERVICE_STREAM_H__
 
+#include "librpc/gen_ndr/misc.h"
+
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct stream_connection_critical_sizes.

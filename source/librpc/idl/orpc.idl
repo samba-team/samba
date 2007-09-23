@@ -5,6 +5,8 @@
   http://www.ietf.org/internet-drafts/draft-brown-dcom-v1-spec-04.txt
  */
 
+import "misc.idl";
+
 [
 	pointer_default(unique)
 ]
