@@ -23,7 +23,7 @@
 #include <talloc.h>
 #include "lib/util/util.h" /* for discard_const */
 #include "lib/charset/charset.h"
-#include "libcli/util/nt_status.h"
+#include "libcli/util/ntstatus.h"
 
 /*
   this provides definitions for the libcli/rpc/ MSRPC library

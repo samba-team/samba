@@ -29,6 +29,7 @@
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/misc.h"
 
 /* a linked list of messaging handlers, allowing incoming messages
    to be directed to the right messaging context */

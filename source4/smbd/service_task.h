@@ -22,6 +22,8 @@
 #ifndef __SERVICE_TASK_H__
 #define __SERVICE_TASK_H__ 
 
+#include "librpc/gen_ndr/misc.h"
+
 struct task_server {
 	struct event_context *event_ctx;
 	const struct model_ops *model_ops;

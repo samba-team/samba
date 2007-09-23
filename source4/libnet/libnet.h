@@ -18,6 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "librpc/gen_ndr/misc.h"
+
 struct libnet_context {
 	/* here we need:
 	 * a client env context

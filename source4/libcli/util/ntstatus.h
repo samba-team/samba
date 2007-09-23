@@ -20,8 +20,24 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _NTERR_H
-#define _NTERR_H
+#ifndef _NTSTATUS_H
+#define _NTSTATUS_H
+
+/* the following rather strange looking definitions of NTSTATUS 
+   are there in order to catch common coding errors where different error types
+   are mixed up. This is especially important as we slowly convert Samba
+   from using bool for internal functions 
+*/
+
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32_t v;} NTSTATUS;
+#define NT_STATUS(x) ((NTSTATUS) { x })
+#define NT_STATUS_V(x) ((x).v)
+#else
+typedef uint32_t NTSTATUS;
+#define NT_STATUS(x) (x)
+#define NT_STATUS_V(x) (x)
+#endif
 
 /* Win32 Status codes. */
 
@@ -585,4 +601,75 @@
  * this means we need a torture test */
 #define NT_STATUS_FOOBAR NT_STATUS_UNSUCCESSFUL
 
-#endif /* _NTERR_H */
+/*****************************************************************************
+ returns an NT error message.  not amazingly helpful, but better than a number.
+ *****************************************************************************/
+const char *nt_errstr(NTSTATUS nt_code);
+
+/************************************************************************
+ Print friendler version fo NT error code
+ ***********************************************************************/
+const char *get_friendly_nt_error_msg(NTSTATUS nt_code);
+
+/*****************************************************************************
+ returns an NT_STATUS constant as a string for inclusion in autogen C code
+ *****************************************************************************/
+const char *get_nt_error_c_code(NTSTATUS nt_code);
+
+/*****************************************************************************
+ returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
+ *****************************************************************************/
+NTSTATUS nt_status_string_to_code(const char *nt_status_str);
+
+#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
+#define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+/* checking for DOS error mapping here is ugly, but unfortunately the
+   alternative is a very intrusive rewrite of the torture code */
+#define NT_STATUS_EQUAL(x,y) (NT_STATUS_IS_DOS(x)||NT_STATUS_IS_DOS(y)?ntstatus_dos_equal(x,y):NT_STATUS_V(x) == NT_STATUS_V(y))
+
+#define NT_STATUS_HAVE_NO_MEMORY(x) do { \
+	if (!(x)) {\
+		return NT_STATUS_NO_MEMORY;\
+	}\
+} while (0)
+
+#define NT_STATUS_IS_OK_RETURN(x) do { \
+	if (NT_STATUS_IS_OK(x)) {\
+		return x;\
+	}\
+} while (0)
+
+#define NT_STATUS_NOT_OK_RETURN(x) do { \
+	if (!NT_STATUS_IS_OK(x)) {\
+		return x;\
+	}\
+} while (0)
+
+#define NT_STATUS_IS_ERR_RETURN(x) do { \
+	if (NT_STATUS_IS_ERR(x)) {\
+		return x;\
+	}\
+} while (0)
+
+#define NT_STATUS_NOT_ERR_RETURN(x) do { \
+	if (!NT_STATUS_IS_ERR(x)) {\
+		return x;\
+	}\
+} while (0)
+
+/* this defines special NTSTATUS codes to represent DOS errors.  I
+   have chosen this macro to produce status codes in the invalid
+   NTSTATUS range */
+#define NT_STATUS_DOS(class, code) NT_STATUS(0xF1000000 | ((class)<<16) | code)
+#define NT_STATUS_IS_DOS(status) ((NT_STATUS_V(status) & 0xFF000000) == 0xF1000000)
+#define NT_STATUS_DOS_CLASS(status) ((NT_STATUS_V(status) >> 16) & 0xFF)
+#define NT_STATUS_DOS_CODE(status) (NT_STATUS_V(status) & 0xFFFF)
+
+/* define ldap error codes as NTSTATUS codes */
+#define NT_STATUS_LDAP(code) NT_STATUS(0xF2000000 | code)
+#define NT_STATUS_IS_LDAP(status) ((NT_STATUS_V(status) & 0xFF000000) == 0xF2000000)
+#define NT_STATUS_LDAP_CODE(status) (NT_STATUS_V(status) & ~0xFF000000)
+
+
+
+#endif /* _NTSTATUS_H */
