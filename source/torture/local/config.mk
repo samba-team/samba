@@ -28,6 +28,7 @@ OBJ_FILES = \
 		../../lib/registry/tests/registry.o \
 		resolve.o \
 		../../lib/util/tests/strlist.o \
+		../../lib/util/tests/str.o \
 		../../lib/util/tests/file.o \
 		../../lib/util/tests/genrand.o \
 		../../lib/compression/testsuite.o \

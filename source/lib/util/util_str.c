@@ -274,7 +274,7 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 _PUBLIC_ void string_sub(char *s, const char *pattern, const char *insert, size_t len)
 {
 	char *p;
-	ssize_t ls,lp,li, i;
+	ssize_t ls, lp, li, i;
 
 	if (!insert || !pattern || !*pattern || !s)
 		return;
@@ -286,7 +286,7 @@ _PUBLIC_ void string_sub(char *s, const char *pattern, const char *insert, size_
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
 
-	while (lp <= ls && (p = strstr(s,pattern))) {
+	while (lp <= ls && (p = strstr(s, pattern))) {
 		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
