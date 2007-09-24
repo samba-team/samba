@@ -12,7 +12,6 @@ include/includes.h: \
 		include/config.h \
 		lib/charset/charset.h \
 		param/proto.h \
-		libcli/util/proto.h \
 		librpc/gen_ndr/misc.h
 
 heimdal_basics: \
