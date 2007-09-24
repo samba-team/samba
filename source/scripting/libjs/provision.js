@@ -585,12 +585,12 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var st = sys.stat(paths.smbconf);
 	if (st == undefined) {
 		var smbconfsuffix;
-		if (subobj.ROLE == "domain controller") {
+		if (subobj.SERVERROLE == "domain controller") {
 			smbconfsuffix = "dc";
-		} else if (subobj.ROLE == "member server") {
+		} else if (subobj.SERVERROLE == "member server") {
 			smbconfsuffix = "member";
 		} else {
-			smbconfsuffix = subobj.ROLE;
+			smbconfsuffix = subobj.SERVERROLE;
 		}
 		message("Setting up " + paths.smbconf +"\n");
 		setup_file("provision.smb.conf." + smbconfsuffix, info.message, paths.smbconf, subobj);
