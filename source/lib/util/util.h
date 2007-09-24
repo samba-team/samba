@@ -383,6 +383,10 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 **/
 _PUBLIC_ void string_sub(char *s,const char *pattern, const char *insert, size_t len);
 
+
+_PUBLIC_ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s, 
+				const char *pattern, const char *insert);
+
 /**
  Similar to string_sub() but allows for any character to be substituted. 
  Use with caution!

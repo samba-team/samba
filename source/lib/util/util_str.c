@@ -317,6 +317,42 @@ _PUBLIC_ void string_sub(char *s, const char *pattern, const char *insert, size_
 	}
 }
 
+/**
+ * Talloc'ed version of string_sub
+ */
+_PUBLIC_ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s, 
+				const char *pattern, const char *insert)
+{
+	const char *p;
+	char *ret;
+	size_t len, alloc_len;
+
+	if (insert == NULL || pattern == NULL || !*pattern || s == NULL)
+		return NULL;
+
+	/* determine length needed */
+	len = strlen(s);
+	
+	for (p = strstr(s, pattern); p != NULL; 
+	     p = strstr(p+strlen(pattern), pattern)) {
+		len += strlen(insert) - strlen(pattern);
+	}
+
+	alloc_len = MAX(len, strlen(s))+1;
+	ret = talloc_array(mem_ctx, char, alloc_len);
+	if (ret == NULL)
+		return NULL;
+	strncpy(ret, s, alloc_len);
+	string_sub(ret, pattern, insert, alloc_len);
+
+	ret = talloc_realloc(mem_ctx, ret, char, len+1);
+	if (ret == NULL)
+		return NULL;
+
+	SMB_ASSERT(ret[len] == '\0');
+
+	return ret;
+}
 
 /**
  Similar to string_sub() but allows for any character to be substituted. 
