@@ -80,6 +80,7 @@ struct ctdb_tunable {
 	uint32_t election_timeout;
 	uint32_t takeover_timeout;
 	uint32_t monitor_interval;
+	uint32_t monitor_retry;
 	uint32_t tickle_update_interval;
 	uint32_t script_timeout;
 	uint32_t recovery_grace_period;

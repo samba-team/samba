@@ -40,6 +40,10 @@
 # defaults to /var/ctdb
 # CTDB_DBDIR=/var/ctdb
 
+# the directory to put the local persistent ctdb database files in
+# defaults to /var/ctdb/persistent
+# CTDB_DBDIR_PERSISTENT=/var/ctdb/persistent
+
 # the directory where service specific event scripts are stored
 # defaults to /etc/ctdb/events.d
 # CTDB_EVENT_SCRIPT_DIR=/etc/ctdb/events.d

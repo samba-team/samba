@@ -61,6 +61,12 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 }
 
+static void print_exit_message(void)
+{
+	DEBUG(0,("CTDB daemon shutting down\n"));
+}
+
+
 /* called when the "startup" event script has finished */
 static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
 {
@@ -80,6 +86,9 @@ static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
 		DEBUG(0,("Failed to start recovery daemon\n"));
 		exit(11);
 	}
+
+	/* Make sure we log something when the daemon terminates */
+	atexit(print_exit_message);
 
 	/* a handler for when nodes are disabled/enabled */
 	ctdb_register_message_handler(ctdb, ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, 
@@ -566,11 +575,6 @@ static int unlink_destructor(const char *name)
 	return 0;
 }
 
-static void print_exit_message(void)
-{
-	DEBUG(0,("CTDB daemon shutting down\n"));
-}
-
 /*
   start the protocol going as a daemon
 */
@@ -593,9 +597,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	if (do_fork && fork()) {
 		return 0;
 	}
-
-	/* Make sure we log something when the daemon terminates */
-	atexit(print_exit_message);
 
 	tdb_reopen_all(False);
 

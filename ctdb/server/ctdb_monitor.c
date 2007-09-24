@@ -98,10 +98,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	TDB_DATA data;
 	struct ctdb_node_flag_change c;
-
-	event_add_timed(ctdb->ev, ctdb->monitor_context, 
-			timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
-			ctdb_check_health, ctdb);
+	uint32_t next_interval;
 
 	c.pnn = ctdb->pnn;
 	c.old_flags = node->flags;
@@ -111,9 +108,20 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		node->flags |= NODE_FLAGS_UNHEALTHY;
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(0,("monitor event OK - node re-enabled\n"));
-		ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_UNHEALTHY;
+		node->flags &= ~NODE_FLAGS_UNHEALTHY;
+	}
+
+	if (node->flags & NODE_FLAGS_UNHEALTHY) {
+		next_interval = ctdb->tunable.monitor_retry;
 	} else {
-		/* no change */
+		next_interval = ctdb->tunable.monitor_interval;
+	}
+
+	event_add_timed(ctdb->ev, ctdb->monitor_context, 
+			timeval_current_ofs(next_interval, 0), 
+			ctdb_check_health, ctdb);
+
+	if (c.old_flags == node->flags) {
 		return;
 	}
 
@@ -151,7 +159,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	if (ret != 0) {
 		DEBUG(0,("Unable to launch monitor event script\n"));
 		event_add_timed(ctdb->ev, ctdb->monitor_context, 
-				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+				timeval_current_ofs(ctdb->tunable.monitor_retry, 0), 
 				ctdb_check_health, ctdb);
 	}	
 }
@@ -179,7 +187,7 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 
 	te = event_add_timed(ctdb->ev, ctdb->monitor_context,
-			     timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+			     timeval_current_ofs(ctdb->tunable.monitor_retry, 0), 
 			     ctdb_check_health, ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 }

@@ -88,7 +88,7 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->ctdb = ctdb;
-	state->c    = talloc_steal(state, c);
+	state->c    = c;
 
 	for (i=0;i<ctdb->vnn_map->size;i++) {
 		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
@@ -124,7 +124,10 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	/* we need to wait for the replies */
 	*async_reply = true;
 
-	/* but we wont wait forever */
+	/* need to keep the control structure around */
+	talloc_steal(state, c);
+
+	/* but we won't wait forever */
 	event_add_timed(ctdb->ev, state, 
 			timeval_current_ofs(ctdb->tunable.control_timeout, 0),
 			ctdb_persistent_store_timeout, state);
@@ -161,7 +164,8 @@ static int ctdb_persistent_store(struct ctdb_persistent_lock_state *state)
 
 	if (oldheader.rsn >= state->header->rsn) {
 		DEBUG(0,("existing header for db_id 0x%08x has larger RSN %llu than new RSN %llu in ctdb_persistent_store\n",
-			 state->ctdb_db->db_id, oldheader.rsn, state->header->rsn));
+			 state->ctdb_db->db_id, 
+			 (unsigned long long)oldheader.rsn, (unsigned long long)state->header->rsn));
 		return -1;
 	}
 
@@ -249,7 +253,8 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->data.dsize = rec->datalen;
 
 	if (state->data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(0,("Invalid data size %u in ctdb_control_update_record\n", state->data.dsize));
+		DEBUG(0,("Invalid data size %u in ctdb_control_update_record\n", 
+			 (unsigned)state->data.dsize));
 		return -1;
 	}
 

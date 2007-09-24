@@ -30,10 +30,6 @@ case $cmd in
 	# create the state directory for samba
 	/bin/mkdir -p $CTDB_BASE/state/samba
 
-	# wait for all shared directories to become available
-	smb_dirs=`testparm -s 2> /dev/null | egrep '^\s*path = '  | cut -d= -f2`
-	ctdb_wait_directories "Samba" $smb_dirs	
-
 	# make sure samba is not already started
 	service smb stop > /dev/null 2>&1
 	service winbind stop > /dev/null 2>&1
@@ -48,13 +44,6 @@ case $cmd in
 	# anything else
 	service winbind start
 	nice service smb start
-
-	# wait for the Samba tcp ports to become available
-	smb_ports=`testparm -s --parameter-name="smb ports" 2> /dev/null`
-	ctdb_wait_tcp_ports "Samba" $smb_ports
-
-	# wait for winbind to be ready
-	ctdb_wait_command "winbind" "wbinfo -p"
 	;;
 	
      takeip)
