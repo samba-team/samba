@@ -63,7 +63,6 @@
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
 #include "param/loadparm.h"
-#include "pstring.h"
 
 static bool bLoaded = false;
 
@@ -82,7 +81,7 @@ struct param_opt {
 /* 
  * This structure describes global (ie., server-wide) parameters.
  */
-struct global
+struct loadparm_global
 {
 	enum server_role server_role;
 
@@ -265,7 +264,7 @@ static struct loadparm_service sDefault = {
 
 /* local variables */
 static struct loadparm_context {
-	struct global Globals;
+	struct loadparm_global Globals;
 	struct loadparm_service **ServicePtrs;
 	int iNumServices;
 	struct loadparm_service *currentService;
@@ -1130,7 +1129,6 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 		 const char *user, const char *pszHomedir)
 {
 	struct loadparm_service *service;
-	pstring newHomedir;
 
 	service = add_a_service(lp_ctx, default_service, pszHomename);
 
@@ -1139,13 +1137,10 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 
 	if (!(*(default_service->szPath))
 	    || strequal(default_service->szPath, sDefault.szPath)) {
-		pstrcpy(newHomedir, pszHomedir);
+		service->szPath = talloc_strdup(service, pszHomedir);
 	} else {
-		pstrcpy(newHomedir, lp_pathname(default_service));
-		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
+		service->szPath = string_sub_talloc(service, lp_pathname(default_service),"%H", pszHomedir); 
 	}
-
-	string_set(service, &service->szPath, newHomedir);
 
 	if (!(*(service->comment))) {
 		service->comment = talloc_asprintf(service, "Home directory of %s", user);
@@ -1154,7 +1149,7 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 	service->bBrowseable = default_service->bBrowseable;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", 
-		  pszHomename, user, newHomedir));
+		  pszHomename, user, service->szPath));
 	
 	return true;
 }
@@ -2571,8 +2566,9 @@ struct loadparm_service *lp_service(const char *service_name)
 			 * The substitution here is used to support %U is
 			 * service names
 			 */
-			serviceName = standard_sub_basic(loadparm.ServicePtrs[iService],
-							 loadparm.ServicePtrs[iService]->szService);
+			serviceName = standard_sub_basic(
+					loadparm.ServicePtrs[iService],
+					loadparm.ServicePtrs[iService]->szService);
 			if (strequal(serviceName, service_name))
 				return loadparm.ServicePtrs[iService];
 		}
