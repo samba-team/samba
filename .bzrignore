@@ -200,3 +200,5 @@ test-results
 source/lib/ldb-samba/ldif_handlers.h
 rpc_server/lsa/proto.h
 torture/winbind/proto.h
+source/rpc_server/lsa/proto.h
+source/torture/winbind/proto.h
