@@ -198,3 +198,5 @@ source/lib/registry/tools/common.h
 source/librpc/ndr/ndr_table.h
 test-results
 source/lib/ldb-samba/ldif_handlers.h
+rpc_server/lsa/proto.h
+torture/winbind/proto.h
