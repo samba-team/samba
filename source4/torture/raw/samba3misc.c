@@ -817,3 +817,73 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	smbcli_deltree(cli->tree, dirname);
 	return ret;
 }
+
+bool torture_samba3_rootdirfid(struct torture_context *tctx)
+{
+	struct smbcli_state *cli;
+	NTSTATUS status;
+	uint16_t dnum;
+	union smb_open io;
+	const char *fname = "testfile";
+	bool ret = false;
+
+	if (!torture_open_connection(&cli, 0)) {
+		ret = false;
+		goto done;
+	}
+
+	smbcli_unlink(cli->tree, fname);
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.access_mask =
+		SEC_STD_SYNCHRONIZE | SEC_FILE_EXECUTE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ
+		| NTCREATEX_SHARE_ACCESS_READ;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.fname = "\\";
+	status = smb_raw_open(cli->tree, tctx, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smb_open on the directory failed: %s\n",
+			 nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+	dnum = io.ntcreatex.out.file.fnum;
+
+	io.ntcreatex.in.flags =
+		NTCREATEX_FLAGS_REQUEST_OPLOCK
+		| NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.root_fid = dnum;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.fname = fname;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smb_open on the file %s failed: %s\n",
+			 fname, nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	smbcli_close(cli->tree, dnum);
+	smbcli_unlink(cli->tree, fname);
+
+	ret = true;
+ done:
+	return ret;
+}
+
