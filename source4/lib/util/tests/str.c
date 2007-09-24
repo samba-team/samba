@@ -58,6 +58,40 @@ static bool test_string_sub_shorter(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_string_sub_special_char(struct torture_context *tctx)
+{
+	char tmp[100];
+	safe_strcpy(tmp, "foobla", sizeof(tmp));
+	string_sub(tmp, "foo", "%b;l", sizeof(tmp));
+	torture_assert_str_equal(tctx, tmp, "_b_lbla", "invalid sub");
+	return true;
+}
+
+static bool test_string_sub_talloc_simple(struct torture_context *tctx)
+{
+	char *t;
+	
+	t = string_sub_talloc(tctx, "foobla", "foo", "bl");
+
+	torture_assert_str_equal(tctx, t, "blbla", "invalid sub");
+
+	return true;
+}
+
+static bool test_string_sub_talloc_multiple(struct torture_context *tctx)
+{
+	char *t;
+	
+	t = string_sub_talloc(tctx, "fooblafoo", "foo", "aapnootmies");
+
+	torture_assert_str_equal(tctx, t, "aapnootmiesblaaapnootmies", 
+				 "invalid sub");
+
+	return true;
+}
+
+
+
 struct torture_suite *torture_local_util_str(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "STR");
@@ -73,6 +107,15 @@ struct torture_suite *torture_local_util_str(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "string_sub_longer", 
 				      test_string_sub_longer);
+
+	torture_suite_add_simple_test(suite, "string_sub_special_chars", 
+				      test_string_sub_special_char);
+
+	torture_suite_add_simple_test(suite, "string_sub_talloc_simple", 
+				      test_string_sub_talloc_simple);
+
+	torture_suite_add_simple_test(suite, "string_sub_talloc_multiple", 
+				      test_string_sub_talloc_multiple);
 
 	return suite;
 }
