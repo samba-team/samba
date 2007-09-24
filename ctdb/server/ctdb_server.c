@@ -119,8 +119,8 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	/* this assumes that the nodes are kept in sorted order, and no gaps */
 	node->pnn = ctdb->num_nodes;
 
-	/* nodes start out disconnected */
-	node->flags |= NODE_FLAGS_DISCONNECTED;
+	/* nodes start out disconnected and unhealthy */
+	node->flags |= NODE_FLAGS_DISCONNECTED | NODE_FLAGS_UNHEALTHY;
 
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {

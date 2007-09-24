@@ -17,12 +17,6 @@ case $cmd in
 	/bin/mkdir -p $CTDB_BASE/state/nfs
 	/bin/mkdir -p $CTDB_BASE/state/statd/ip
 	/bin/mkdir -p $STATD_SHARED_DIRECTORY
-	ctdb_wait_directories "nfslock" "$STATD_SHARED_DIRECTORY"
-
-
-	# wait for all nfs exported directories to become available
-	nfs_dirs=`grep -v '^#' < /etc/exports | cut -d' ' -f1`
-	ctdb_wait_directories "NFS" $nfs_dirs
 
 	# make sure nfs is stopped before we start it, or it may get a bind error
 	service nfs stop > /dev/null 2>&1

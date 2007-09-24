@@ -50,7 +50,7 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 			return;
 		}
 		
-		printf("Current value: %*.*s\n", data.dsize, data.dsize, data.dptr);
+		printf("Current value: %*.*s\n", (int)data.dsize, (int)data.dsize, data.dptr);
 		
 		if (data.dsize != 0) {
 			if (sscanf((char *)data.dptr, "Node %u Count %u", &node, &count) != 2) {
