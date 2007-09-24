@@ -3,10 +3,10 @@ include ldap/config.mk
 include security/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
-PUBLIC_HEADERS = util/error.h util/nterr.h util/doserr.h util/nt_status.h
+PUBLIC_HEADERS = util/error.h util/ntstatus.h util/doserr.h util/werror.h
 OBJ_FILES = util/doserr.o \
-		util/errormap.o \
-		util/nterr.o \
+		    util/errormap.o \
+		    util/nterr.o \
 
 [SUBSYSTEM::ASN1_UTIL]
 PUBLIC_PROTO_HEADER = util/asn1_proto.h
