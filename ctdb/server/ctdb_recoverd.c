@@ -1561,12 +1561,30 @@ again:
 			if (ips->ips[j].pnn == pnn) {
 				if (!ctdb_sys_have_ip(ips->ips[j].sin)) {
 					DEBUG(0,("Public address '%s' is missing and we should serve this ip\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
-					ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+					ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+					if (ret != 0) {
+						DEBUG(0,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
+						goto again;
+					}
+					ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+					if (ret != 0) {
+						DEBUG(0,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
+						goto again;
+					}
 				}
 			} else {
 				if (ctdb_sys_have_ip(ips->ips[j].sin)) {
 					DEBUG(0,("We are still serving a public address '%s' that we should not be serving.\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
-					ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+					ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+					if (ret != 0) {
+						DEBUG(0,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
+						goto again;
+					}
+					ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+					if (ret != 0) {
+						DEBUG(0,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
+						goto again;
+					}
 				}
 			}
 		}
