@@ -14,7 +14,6 @@ options = GetOptions(ARGV,
 		'realm=s',
 		'domain=s',
 		'domain-guid=s',
-		'domain-guid=s',
 		'domain-sid=s',
 		'policy-guid=s',
 		'host-name=s',
@@ -169,6 +168,18 @@ if (ldapbase) {
 } else {
 	provision(subobj, message, blank, paths, system_session, creds, ldapbackend);
 	provision_dns(subobj, message, paths, system_session, creds);
+	message("To reproduce this provision, run with:\n");
+	message("--realm='" + subobj.REALM_CONF + "' --domain='" + subobj.DOMAIN_CONF + "' --domain-guid='" + subobj.DOMAINGUID + "' \\\n");
+	message("--policy-guid='" + subobj.POLICYGUID + "' --host-name='" + subobj.HOSTNAME + "' --host-ip='" + subobj.HOSTIP + "' \\\n");
+	message("--host-guid='" + subobj.HOSTGUID + "' --invocationid='" + subobj.INVOCATIONID + "' \\\n");
+	message("--adminpass='" + subobj.ADMINPASS + "' --krbtgtpass='" + subobj.KRBTGTPASS + "' \\\n");
+	message("--machinepass='" + subobj.MACHINEPASS + "' --dnspass='" + subobj.DNSPASS + "' \\\n");
+	message("--root='" + subobj.ROOT + "' --nobody='" + subobj.NOBODY + "' --nogroup-'" + subobj.NOGROUP + "' \\\n");
+	message("--wheel='" + subobj.WHEEL + "' --users='" + subobj.USERS + "' --server-role='" + subobj.SERVERROLE + "' \\\n");
+	message("--ldap-backend='" + subobj.LDAPBACKEND + "' --ldap-mdoule='" + subobj.LDAPMODULE + "' \\\n");
+	message("--aci='" + subobj.ACI + "' \\\n")
 }
+
+
 message("All OK\n");
 return 0;
