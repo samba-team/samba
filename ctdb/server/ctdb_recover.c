@@ -671,6 +671,8 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	lock.l_pid = 0;
 
 	if (fcntl(ctdb->recovery_lock_fd, F_SETLK, &lock) != 0) {
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
 		return false;
 	}
 
