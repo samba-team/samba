@@ -586,7 +586,6 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		char *rel_fname = NULL;
 		files_struct *dir_fsp = file_fsp(
 			SVAL(req->inbuf, smb_ntcreate_RootDirectoryFid));
-		size_t dir_name_len;
 
 		if(!dir_fsp) {
 			reply_doserror(req, ERRDOS, ERRbadfid);
@@ -629,29 +628,46 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			return;
 		}
 
-		/*
-		 * Copy in the base directory name.
-		 */
+		if (ISDOT(dir_fsp->fsp_name)) {
+			/*
+			 * We're at the toplevel dir, the final file name
+			 * must not contain ./, as this is filtered out
+			 * normally by srvstr_get_path and unix_convert
+			 * explicitly rejects paths containing ./.
+			 */
+			fname = talloc_strdup(ctx,"");
+			if (!fname) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBntcreateX);
+				return;
+			}
+		} else {
+			size_t dir_name_len = strlen(dir_fsp->fsp_name);
 
-		dir_name_len = strlen(dir_fsp->fsp_name);
-		fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
-		if (!fname) {
-			reply_nterror(
-				req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-		memcpy(fname, dir_fsp->fsp_name, dir_name_len+1);
+			/*
+			 * Copy in the base directory name.
+			 */
 
-		/*
-		 * Ensure it ends in a '/'.
-		 * We used TALLOC_SIZE +2 to add space for the '/'.
-		 */
+			fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
+			if (!fname) {
+				reply_nterror(
+					req, NT_STATUS_NO_MEMORY);
+				END_PROFILE(SMBntcreateX);
+				return;
+			}
+			memcpy(fname, dir_fsp->fsp_name, dir_name_len+1);
 
-		if(dir_name_len && (fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
-			fname[dir_name_len] = '/';
-			fname[dir_name_len+1] = '\0';
-			dir_name_len++;
+			/*
+			 * Ensure it ends in a '/'.
+			 * We used TALLOC_SIZE +2 to add space for the '/'.
+			 */
+
+			if(dir_name_len &&
+					(fname[dir_name_len-1] != '\\') &&
+					(fname[dir_name_len-1] != '/')) {
+				fname[dir_name_len] = '/';
+				fname[dir_name_len+1] = '\0';
+			}
 		}
 
 		srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &rel_fname,
@@ -1356,7 +1372,6 @@ static void call_nt_transact_create(connection_struct *conn,
 		 */
 		char *tmpname = NULL;
 		files_struct *dir_fsp = file_fsp(SVAL(params,4));
-		size_t dir_name_len;
 
 		if(!dir_fsp) {
 			reply_doserror(req, ERRDOS, ERRbadfid);
@@ -1387,28 +1402,43 @@ static void call_nt_transact_create(connection_struct *conn,
 			return;
 		}
 
-		/*
-		 * Copy in the base directory name.
-		 */
+		if (ISDOT(dir_fsp->fsp_name)) {
+			/*
+			 * We're at the toplevel dir, the final file name
+			 * must not contain ./, as this is filtered out
+			 * normally by srvstr_get_path and unix_convert
+			 * explicitly rejects paths containing ./.
+			 */
+			fname = talloc_strdup(ctx,"");
+			if (!fname) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
+		} else {
+			size_t dir_name_len = strlen(dir_fsp->fsp_name);
 
-		dir_name_len = strlen(dir_fsp->fsp_name);
-		fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
-		if (!fname) {
-			reply_nterror(
-				req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-		memcpy(fname, dir_fsp->fsp_name, dir_name_len+1);
+			/*
+			 * Copy in the base directory name.
+			 */
 
-		/*
-		 * Ensure it ends in a '/'.
-		 * We used TALLOC_SIZE +2 to add space for the '/'.
-		 */
+			fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
+			if (!fname) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
+			memcpy(fname, dir_fsp->fsp_name, dir_name_len+1);
 
-		if(dir_name_len && (fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
-			fname[dir_name_len] = '/';
-			fname[dir_name_len+1] = '\0';
-			dir_name_len++;
+			/*
+			 * Ensure it ends in a '/'.
+			 * We used TALLOC_SIZE +2 to add space for the '/'.
+			 */
+
+			if(dir_name_len &&
+					(fname[dir_name_len-1] != '\\') &&
+					(fname[dir_name_len-1] != '/')) {
+				fname[dir_name_len] = '/';
+				fname[dir_name_len+1] = '\0';
+			}
 		}
 
 		srvstr_get_path(ctx, params, req->flags2, &tmpname,
