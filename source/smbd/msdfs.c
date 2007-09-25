@@ -788,6 +788,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	 */
 
 	if (pdp->reqpath[0] == '\0') {
+		char *tmp;
 		struct referral *ref;
 
 		if (*lp_msdfs_proxy(snum) == '\0') {
@@ -810,7 +811,16 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		ref->alternate_path = talloc_strdup(ctx, lp_msdfs_proxy(snum));
+		if (!(tmp = talloc_strdup(ctx, lp_msdfs_proxy(snum)))) {
+			TALLOC_FREE(pdp);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		trim_string(tmp, "\\", 0);
+
+		ref->alternate_path = talloc_asprintf(ctx, "\\%s", tmp);
+		TALLOC_FREE(tmp);
+
 		if (!ref->alternate_path) {
 			TALLOC_FREE(pdp);
 			return NT_STATUS_NO_MEMORY;
