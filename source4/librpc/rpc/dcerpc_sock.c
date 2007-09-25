@@ -162,7 +162,7 @@ static NTSTATUS sock_send_read(struct dcerpc_connection *p)
    send an initial pdu in a multi-pdu sequence
 */
 static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, 
-				  BOOL trigger_read)
+				  bool trigger_read)
 {
 	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 	DATA_BLOB blob;
@@ -295,7 +295,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 	packet_set_initial_read(sock->packet, 16);
 
 	/* ensure we don't get SIGPIPE */
-	BlockSignals(True,SIGPIPE);
+	BlockSignals(true, SIGPIPE);
 
 	composite_done(c);
 }

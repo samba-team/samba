@@ -176,7 +176,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 	io->readx.in.maxcnt = io->readx.in.mincnt;
 	io->readx.in.offset = 0;
 	io->readx.in.remaining = 0;
-	io->readx.in.read_for_execute = False;
+	io->readx.in.read_for_execute = false;
 	io->readx.out.data = state->data.data + state->received;
 	req = smb_raw_read_send(smb->tree, io);
 	if (req == NULL) {
@@ -310,7 +310,8 @@ static void smb_write_callback(struct smbcli_request *req)
 /* 
    send a packet to the server
 */
-static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, BOOL trigger_read)
+static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, 
+				 bool trigger_read)
 {
 	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 	union smb_write io;

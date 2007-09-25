@@ -133,7 +133,7 @@ _PUBLIC_ struct GUID GUID_zero(void)
 	return guid;
 }
 
-_PUBLIC_ BOOL GUID_all_zero(const struct GUID *u)
+_PUBLIC_ bool GUID_all_zero(const struct GUID *u)
 {
 	if (u->time_low != 0 ||
 	    u->time_mid != 0 ||
@@ -141,12 +141,12 @@ _PUBLIC_ BOOL GUID_all_zero(const struct GUID *u)
 	    u->clock_seq[0] != 0 ||
 	    u->clock_seq[1] != 0 ||
 	    !all_zero(u->node, 6)) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
-_PUBLIC_ BOOL GUID_equal(const struct GUID *u1, const struct GUID *u2)
+_PUBLIC_ bool GUID_equal(const struct GUID *u1, const struct GUID *u2)
 {
 	if (u1->time_low != u2->time_low ||
 	    u1->time_mid != u2->time_mid ||
@@ -154,9 +154,9 @@ _PUBLIC_ BOOL GUID_equal(const struct GUID *u1, const struct GUID *u2)
 	    u1->clock_seq[0] != u2->clock_seq[0] ||
 	    u1->clock_seq[1] != u2->clock_seq[1] ||
 	    memcmp(u1->node, u2->node, 6) != 0) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 _PUBLIC_ int GUID_compare(const struct GUID *u1, const struct GUID *u2)
@@ -221,7 +221,7 @@ _PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 			       guid->node[4], guid->node[5]);
 }
 
-_PUBLIC_ BOOL policy_handle_empty(struct policy_handle *h) 
+_PUBLIC_ bool policy_handle_empty(struct policy_handle *h) 
 {
 	return (h->handle_type == 0 && GUID_all_zero(&h->uuid));
 }

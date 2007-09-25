@@ -294,7 +294,7 @@ static void smb2_write_callback(struct smb2_request *req)
    send a packet to the server
 */
 static NTSTATUS smb2_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, 
-				  BOOL trigger_read)
+				  bool trigger_read)
 {
 	struct smb2_private *smb = (struct smb2_private *)c->transport.private_data;
 	struct smb2_write io;
