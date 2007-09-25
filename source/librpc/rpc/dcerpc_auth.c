@@ -98,7 +98,7 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 struct bind_auth_state {
 	struct dcerpc_pipe *pipe;
 	DATA_BLOB credentials;
-	BOOL more_processing;	/* Is there anything more to do after the
+	bool more_processing;	/* Is there anything more to do after the
 				 * first bind itself received? */
 };
 
@@ -109,7 +109,7 @@ static void bind_auth_next_step(struct composite_context *c)
 	struct bind_auth_state *state;
 	struct dcerpc_security *sec;
 	struct composite_context *creq;
-	BOOL more_processing = False;
+	bool more_processing = false;
 
 	state = talloc_get_type(c->private_data, struct bind_auth_state);
 	sec = &state->pipe->conn->security_state;
@@ -129,7 +129,7 @@ static void bind_auth_next_step(struct composite_context *c)
 				  &state->credentials);
 
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		more_processing = True;
+		more_processing = true;
 		c->status = NT_STATUS_OK;
 	}
 

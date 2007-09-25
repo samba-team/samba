@@ -43,7 +43,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c);
 static int dcerpc_connection_destructor(struct dcerpc_connection *conn)
 {
 	if (conn->dead) {
-		conn->free_skipped = True;
+		conn->free_skipped = true;
 		return -1;
 	}
 	dcerpc_connection_dead(conn, NT_STATUS_LOCAL_DISCONNECT);
@@ -752,7 +752,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	talloc_set_destructor(req, dcerpc_req_dequeue);
 
 	c->status = p->conn->transport.send_request(p->conn, &blob,
-						    True);
+						    true);
 	if (!composite_is_ok(c)) return c;
 
 	event_add_timed(c->event_ctx, req,
@@ -798,7 +798,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 	}
 
 	/* send it on its way */
-	status = c->transport.send_request(c, &blob, False);
+	status = c->transport.send_request(c, &blob, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -933,7 +933,7 @@ req_done:
 static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
 					       const struct GUID *object,
 					       uint16_t opnum,
-					       BOOL async,
+					       bool async,
 					       DATA_BLOB *stub_data)
 {
 	struct rpc_request *req;
@@ -953,7 +953,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->flags = 0;
 	req->fault_code = 0;
 	req->async_call = async;
-	req->ignore_timeout = False;
+	req->ignore_timeout = false;
 	req->async.callback = NULL;
 	req->async.private_data = NULL;
 	req->recv_handler = NULL;
@@ -1001,7 +1001,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	struct ncacn_packet pkt;
 	DATA_BLOB blob;
 	uint32_t remaining, chunk_size;
-	BOOL first_packet = True;
+	bool first_packet = true;
 
 	req = c->request_queue;
 	if (req == NULL) {
@@ -1044,9 +1044,9 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	/* we send a series of pdus without waiting for a reply */
 	while (remaining > 0 || first_packet) {
 		uint32_t chunk = MIN(chunk_size, remaining);
-		BOOL last_frag = False;
+		bool last_frag = false;
 
-		first_packet = False;
+		first_packet = false;
 		pkt.pfc_flags &= ~(DCERPC_PFC_FLAG_FIRST |DCERPC_PFC_FLAG_LAST);
 
 		if (remaining == stub_data->length) {
@@ -1054,7 +1054,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 		}
 		if (chunk == remaining) {
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_LAST;
-			last_frag = True;
+			last_frag = true;
 		}
 
 		pkt.u.request.stub_and_verifier.data = stub_data->data + 
@@ -1123,7 +1123,7 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
 			struct GUID *object,
 			uint16_t opnum,
-			BOOL async,
+			bool async,
 			TALLOC_CTX *mem_ctx,
 			DATA_BLOB *stub_data_in,
 			DATA_BLOB *stub_data_out)
@@ -1622,7 +1622,7 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
 	talloc_set_destructor(req, dcerpc_req_dequeue);
 
-	c->status = p->conn->transport.send_request(p->conn, &blob, True);
+	c->status = p->conn->transport.send_request(p->conn, &blob, true);
 	if (!composite_is_ok(c)) return c;
 
 	event_add_timed(c->event_ctx, req,

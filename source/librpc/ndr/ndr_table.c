@@ -123,10 +123,10 @@ NTSTATUS ndr_table_register_builtin_tables(void);
 
 NTSTATUS ndr_table_init(void)
 {
-	static BOOL initialized = False;
+	static bool initialized = false;
 
 	if (initialized) return NT_STATUS_OK;
-	initialized = True;
+	initialized = true;
 
 	ndr_table_register_builtin_tables();
 

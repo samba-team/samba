@@ -572,7 +572,7 @@ _PUBLIC_ NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx,
   retrieve a token from a ndr context, using cmp_fn to match the tokens
 */
 _PUBLIC_ NTSTATUS ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v,
-				   comparison_fn_t _cmp_fn, BOOL _remove_tok)
+				   comparison_fn_t _cmp_fn, bool _remove_tok)
 {
 	struct ndr_token_list *tok;
 	for (tok=*list;tok;tok=tok->next) {
@@ -594,7 +594,7 @@ found:
 */
 _PUBLIC_ NTSTATUS ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v)
 {
-	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, True);
+	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, true);
 }
 
 /*
@@ -604,7 +604,7 @@ _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 {
 	NTSTATUS status;
 	uint32_t v;
-	status = ndr_token_retrieve_cmp_fn(list, key, &v, NULL, False);
+	status = ndr_token_retrieve_cmp_fn(list, key, &v, NULL, false);
 	if (NT_STATUS_IS_OK(status)) return v;
 	return 0;
 }

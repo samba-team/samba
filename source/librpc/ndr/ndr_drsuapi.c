@@ -64,17 +64,17 @@ void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const ch
 }
 
 #define _OID_PUSH_CHECK(call) do { \
-	BOOL _status; \
+	bool _status; \
 	_status = call; \
-	if (_status != True) { \
+	if (_status != true) { \
 		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "OID Conversion Error: %s\n", __location__); \
 	} \
 } while (0)
 
 #define _OID_PULL_CHECK(call) do { \
-	BOOL _status; \
+	bool _status; \
 	_status = call; \
-	if (_status != True) { \
+	if (_status != true) { \
 		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "OID Conversion Error: %s\n", __location__); \
 	} \
 } while (0)

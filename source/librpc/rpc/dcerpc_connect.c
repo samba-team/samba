@@ -127,9 +127,9 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	 */
 	s->conn.in.credentials = s->io.creds;
 	if (s->io.binding->flags & DCERPC_SCHANNEL) {
-		conn->in.fallback_to_anonymous  = True;
+		conn->in.fallback_to_anonymous  = true;
 	} else {
-		conn->in.fallback_to_anonymous  = False;
+		conn->in.fallback_to_anonymous  = false;
 	}
 
 	/* send smb connect request */
