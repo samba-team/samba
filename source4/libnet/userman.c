@@ -32,7 +32,12 @@
  * Composite USER ADD functionality
  */
 
+static void useradd_handler(struct rpc_request*);
+
+enum useradd_stage { USERADD_CREATE };
+
 struct useradd_state {
+	enum useradd_stage       stage;
 	struct dcerpc_pipe       *pipe;
 	struct rpc_request       *req;
 	struct policy_handle     domain_handle;
@@ -45,46 +50,64 @@ struct useradd_state {
 };
 
 
-static void continue_useradd_create(struct rpc_request *req);
-
-
 /**
  * Stage 1 (and the only one for now): Create user account.
  */
-static void continue_useradd_create(struct rpc_request *req)
+static NTSTATUS useradd_create(struct composite_context *c,
+			       struct useradd_state *s)
 {
-	struct composite_context *c;
-	struct useradd_state *s;
-
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct useradd_state);
-
-	/* check rpc layer status code */
 	c->status = dcerpc_ndr_request_recv(s->req);
-	if (!composite_is_ok(c)) return;
+	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	/* check create user call status code */
+	/* return the actual function call status */
 	c->status = s->createuser.out.result;
+	
+	c->state = COMPOSITE_STATE_DONE;
+	return c->status;
+}
 
-	/* get created user account data */
-	s->user_handle = *s->createuser.out.user_handle;
-	s->user_rid    = *s->createuser.out.rid;
 
-	/* issue a monitor message */
-	if (s->monitor_fn) {
-		struct monitor_msg msg;
-		struct msg_rpc_create_user rpc_create;
-
-		rpc_create.rid = *s->createuser.out.rid;
-
-		msg.type      = mon_SamrCreateUser;
-		msg.data      = (void*)&rpc_create;
-		msg.data_size = sizeof(rpc_create);
+/**
+ * Event handler for asynchronous request. Handles transition through
+ * intermediate stages of the call.
+ *
+ * @param req rpc call context
+ */
+static void useradd_handler(struct rpc_request *req)
+{
+	struct composite_context *c = req->async.private_data;
+	struct useradd_state *s = talloc_get_type(c->private_data, struct useradd_state);
+	struct monitor_msg msg;
+	struct msg_rpc_create_user *rpc_create;
+	
+	switch (s->stage) {
+	case USERADD_CREATE:
+		c->status = useradd_create(c, s);
 		
+		/* prepare a message to pass to monitor function */
+		msg.type = mon_SamrCreateUser;
+		rpc_create = talloc(s, struct msg_rpc_create_user);
+		rpc_create->rid = *s->createuser.out.rid;
+		msg.data = (void*)rpc_create;
+		msg.data_size = sizeof(*rpc_create);
+		break;
+	}
+
+	/* are we ok so far ? */
+	if (!NT_STATUS_IS_OK(c->status)) {
+		c->state = COMPOSITE_STATE_ERROR;
+	}
+
+	/* call monitor function provided the pointer has been passed */
+	if (s->monitor_fn) {
 		s->monitor_fn(&msg);
 	}
-	
-	composite_done(c);
+
+	/* are we done yet ? */
+	if (c->state >= COMPOSITE_STATE_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
+	}
 }
 
 
@@ -135,7 +158,11 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 	s->req = dcerpc_samr_CreateUser_send(p, c, &s->createuser);
 	if (composite_nomem(s->req, c)) return c;
 
-	composite_continue_rpc(c, s->req, continue_useradd_create, c);
+	/* callback handler for continuation */
+	s->req->async.callback = useradd_handler;
+	s->req->async.private_data  = c;
+	s->stage = USERADD_CREATE;
+
 	return c;
 }
 
@@ -191,9 +218,14 @@ NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *p,
  * Composite USER DELETE functionality
  */
 
+static void userdel_handler(struct rpc_request*);
+
+enum userdel_stage { USERDEL_LOOKUP, USERDEL_OPEN, USERDEL_DELETE };
 
 struct userdel_state {
+	enum userdel_stage        stage;
 	struct dcerpc_pipe        *pipe;
+	struct rpc_request        *req;
 	struct policy_handle      domain_handle;
 	struct policy_handle      user_handle;
 	struct samr_LookupNames   lookupname;
@@ -205,155 +237,166 @@ struct userdel_state {
 };
 
 
-static void continue_userdel_name_found(struct rpc_request *req);
-static void continue_userdel_user_opened(struct rpc_request* req);
-static void continue_userdel_deleted(struct rpc_request *req);
-
-
 /**
  * Stage 1: Lookup the user name and resolve it to rid
  */
-static void continue_userdel_name_found(struct rpc_request *req)
+static NTSTATUS userdel_lookup(struct composite_context *c,
+			       struct userdel_state *s)
 {
-	struct composite_context *c;
-	struct userdel_state *s;
-	struct rpc_request *openuser_req;
-	struct monitor_msg msg;
-
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct userdel_state);
-
 	/* receive samr_LookupNames result */
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
+	c->status = dcerpc_ndr_request_recv(s->req);
 
-	c->status = s->lookupname.out.result;
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	/* check rpc layer status */
+	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	/* check the call itself status */
+	NT_STATUS_NOT_OK_RETURN(s->lookupname.out.result);
 
 	/* what to do when there's no user account to delete
 	   and what if there's more than one rid resolved */
 	if (!s->lookupname.out.rids.count) {
 		c->status = NT_STATUS_NO_SUCH_USER;
 		composite_error(c, c->status);
-		return;
 
 	} else if (!s->lookupname.out.rids.count > 1) {
 		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
 		composite_error(c, c->status);
-		return;
 	}
 
-	/* issue a monitor message */
-	if (s->monitor_fn) {
-		struct msg_rpc_lookup_name msg_lookup;
-
-		msg_lookup.rid   = s->lookupname.out.rids.ids;
-		msg_lookup.count = s->lookupname.out.rids.count;
-
-		msg.type      = mon_SamrLookupName;
-		msg.data      = (void*)&msg_lookup;
-		msg.data_size = sizeof(msg_lookup);
-		s->monitor_fn(&msg);
-	}
-
-	/* prepare the arguments for rpc call */
+	/* prepare the next rpc call arguments */
 	s->openuser.in.domain_handle = &s->domain_handle;
 	s->openuser.in.rid           = s->lookupname.out.rids.ids[0];
 	s->openuser.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	s->openuser.out.user_handle  = &s->user_handle;
 
 	/* send rpc request */
-	openuser_req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
-	if (composite_nomem(openuser_req, c)) return;
+	s->req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
+	if (s->req == NULL) return NT_STATUS_NO_MEMORY;
 
-	composite_continue_rpc(c, openuser_req, continue_userdel_user_opened, c);
+	/* callback handler setup */
+	s->req->async.callback = userdel_handler;
+	s->req->async.private_data  = c;
+	s->stage = USERDEL_OPEN;
+	
+	return NT_STATUS_OK;
 }
 
 
 /**
  * Stage 2: Open user account.
  */
-static void continue_userdel_user_opened(struct rpc_request* req)
+static NTSTATUS userdel_open(struct composite_context *c,
+			     struct userdel_state *s)
 {
-	struct composite_context *c;
-	struct userdel_state *s;
-	struct rpc_request *deluser_req;
-	struct monitor_msg msg;
-
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct userdel_state);
-
 	/* receive samr_OpenUser result */
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
-
-	c->status = s->openuser.out.result;
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
-	
-	/* issue a monitor message */
-	if (s->monitor_fn) {
-		struct msg_rpc_open_user msg_open;
-
-		msg_open.rid         = s->openuser.in.rid;
-		msg_open.access_mask = s->openuser.in.access_mask;
-
-		msg.type      = mon_SamrOpenUser;
-		msg.data      = (void*)&msg_open;
-		msg.data_size = sizeof(msg_open);
-		s->monitor_fn(&msg);
-	}
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
 
 	/* prepare the final rpc call arguments */
 	s->deleteuser.in.user_handle   = &s->user_handle;
 	s->deleteuser.out.user_handle  = &s->user_handle;
 	
 	/* send rpc request */
-	deluser_req = dcerpc_samr_DeleteUser_send(s->pipe, c, &s->deleteuser);
-	if (composite_nomem(deluser_req, c)) return;
+	s->req = dcerpc_samr_DeleteUser_send(s->pipe, c, &s->deleteuser);
+	if (s->req == NULL) return NT_STATUS_NO_MEMORY;
 
 	/* callback handler setup */
-	composite_continue_rpc(c, deluser_req, continue_userdel_deleted, c);
+	s->req->async.callback = userdel_handler;
+	s->req->async.private_data  = c;
+	s->stage = USERDEL_DELETE;
+	
+	return NT_STATUS_OK;
 }
 
 
 /**
  * Stage 3: Delete user account
  */
-static void continue_userdel_deleted(struct rpc_request *req)
+static NTSTATUS userdel_delete(struct composite_context *c,
+			       struct userdel_state *s)
+{
+	/* receive samr_DeleteUser result */
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	/* return the actual function call status */
+	c->status = s->deleteuser.out.result;
+
+	c->state = COMPOSITE_STATE_DONE;
+
+	return c->status;
+}
+
+
+/**
+ * Event handler for asynchronous request. Handles transition through
+ * intermediate stages of the call.
+ *
+ * @param req rpc call context
+ */
+static void userdel_handler(struct rpc_request *req)
 {
 	struct composite_context *c;
 	struct userdel_state *s;
 	struct monitor_msg msg;
+	struct msg_rpc_lookup_name *msg_lookup;
+	struct msg_rpc_open_user *msg_open;
 
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userdel_state);
-
-	/* receive samr_DeleteUser result */
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
-
-	/* return the actual function call status */
-	c->status = s->deleteuser.out.result;
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
 	
-	/* issue a monitor message */
-	if (s->monitor_fn) {
-		msg.type      = mon_SamrDeleteUser;
-		msg.data      = NULL;
+	switch (s->stage) {
+	case USERDEL_LOOKUP:
+		c->status = userdel_lookup(c, s);
+
+		/* monitor message */
+		msg.type = mon_SamrLookupName;
+		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
+
+		msg_lookup->rid   = s->lookupname.out.rids.ids;
+		msg_lookup->count = s->lookupname.out.rids.count;
+		msg.data = (void*)msg_lookup;
+		msg.data_size = sizeof(*msg_lookup);
+		break;
+
+	case USERDEL_OPEN:
+		c->status = userdel_open(c, s);
+
+		/* monitor message */
+		msg.type = mon_SamrOpenUser;
+		msg_open = talloc(s, struct msg_rpc_open_user);
+
+		msg_open->rid         = s->openuser.in.rid;
+		msg_open->access_mask = s->openuser.in.rid;
+		msg.data = (void*)msg_open;
+		msg.data_size = sizeof(*msg_open);
+		break;
+
+	case USERDEL_DELETE:
+		c->status = userdel_delete(c, s);
+		
+		/* monitor message */
+		msg.type = mon_SamrDeleteUser;
+		msg.data = NULL;
 		msg.data_size = 0;
+		break;
+	}
+
+	/* are we ok, so far ? */
+	if (!NT_STATUS_IS_OK(c->status)) {
+		c->state = COMPOSITE_STATE_ERROR;
+	}
+
+	/* call monitor function provided the pointer has been passed */
+	if (s->monitor_fn) {
 		s->monitor_fn(&msg);
 	}
 
-	composite_done(c);
+	/* are we done yet */
+	if (c->state >= COMPOSITE_STATE_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
+	}
 }
 
 
@@ -371,16 +414,17 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 {
 	struct composite_context *c;
 	struct userdel_state *s;
-	struct rpc_request *lookup_req;
 
 	/* composite context allocation and setup */
-	c = composite_create(p, dcerpc_event_context(p));
+	c = talloc_zero(p, struct composite_context);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct userdel_state);
 	if (composite_nomem(s, c)) return c;
 
+	c->state         = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data  = s;
+	c->event_ctx     = dcerpc_event_context(p);
 
 	/* store function parameters in the state structure */
 	s->pipe          = p;
@@ -394,11 +438,13 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	s->lookupname.in.names->string = io->in.username;
 
 	/* send the request */
-	lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
-	if (composite_nomem(lookup_req, c)) return c;
+	s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
 
-	/* set the next stage */
-	composite_continue_rpc(c, lookup_req, continue_userdel_name_found, c);
+	/* callback handler setup */
+	s->req->async.callback = userdel_handler;
+	s->req->async.private_data  = c;
+	s->stage = USERDEL_LOOKUP;
+
 	return c;
 }
 
@@ -452,14 +498,14 @@ NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *p,
  * USER MODIFY functionality
  */
 
-static void continue_usermod_name_found(struct rpc_request *req);
-static void continue_usermod_user_opened(struct rpc_request *req);
-static void continue_usermod_user_queried(struct rpc_request *req);
-static void continue_usermod_user_changed(struct rpc_request *req);
+static void usermod_handler(struct rpc_request*);
 
+enum usermod_stage { USERMOD_LOOKUP, USERMOD_OPEN, USERMOD_QUERY, USERMOD_MODIFY };
 
 struct usermod_state {
+	enum usermod_stage         stage;
 	struct dcerpc_pipe         *pipe;
+	struct rpc_request         *req;
 	struct policy_handle       domain_handle;
 	struct policy_handle       user_handle;
 	struct usermod_change      change;
@@ -477,50 +523,24 @@ struct usermod_state {
 /**
  * Step 1: Lookup user name
  */
-static void continue_usermod_name_found(struct rpc_request *req)
+static NTSTATUS usermod_lookup(struct composite_context *c,
+			       struct usermod_state *s)
 {
-	struct composite_context *c;
-	struct usermod_state *s;
-	struct rpc_request *openuser_req;
-	struct monitor_msg msg;
-
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct usermod_state);
-
 	/* receive samr_LookupNames result */
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
-
-	c->status = s->lookupname.out.result;
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
 
 	/* what to do when there's no user account to delete
 	   and what if there's more than one rid resolved */
 	if (!s->lookupname.out.rids.count) {
 		c->status = NT_STATUS_NO_SUCH_USER;
-		composite_error(c, c->status);
-		return;
+		c->state  = COMPOSITE_STATE_ERROR;
+		return c->status;
 
 	} else if (!s->lookupname.out.rids.count > 1) {
 		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
-		composite_error(c, c->status);
-		return;
-	}
-
-	/* issue a monitor message */
-	if (s->monitor_fn) {
-		struct msg_rpc_lookup_name msg_lookup;
-
-		msg_lookup.rid   = s->lookupname.out.rids.ids;
-		msg_lookup.count = s->lookupname.out.rids.count;
-
-		msg.type      = mon_SamrLookupName;
-		msg.data      = (void*)&msg_lookup;
-		msg.data_size = sizeof(msg_lookup);
-		s->monitor_fn(&msg);
+		c->state  = COMPOSITE_STATE_ERROR;
+		return c->status;
 	}
 
 	/* prepare the next rpc call */
@@ -530,10 +550,14 @@ static void continue_usermod_name_found(struct rpc_request *req)
 	s->openuser.out.user_handle  = &s->user_handle;
 
 	/* send the rpc request */
-	openuser_req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
-	if (composite_nomem(openuser_req, c)) return;
+	s->req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
 
-	composite_continue_rpc(c, openuser_req, continue_usermod_user_opened, c);
+	/* callback handler setup */
+	s->req->async.callback = usermod_handler;
+	s->req->async.private_data  = c;
+	s->stage = USERMOD_OPEN;
+	
+	return NT_STATUS_OK;
 }
 
 
@@ -544,7 +568,7 @@ static void continue_usermod_name_found(struct rpc_request *req)
  * changes have been made.
  */
 static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
-				  union samr_UserInfo *i, bool queried)
+				  union samr_UserInfo *i)
 {
 	if (s->change.fields == 0) return s->change.fields;
 
@@ -578,13 +602,14 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 	    (*level == 0 || *level == 2)) {
 		*level = 2;
 		
-		if (queried) {
+		if (s->stage == USERMOD_QUERY) {
 			/* the user info is obtained, so now set the required field */
 			i->info2.comment.string = s->change.comment;
 			s->change.fields ^= USERMOD_FIELD_COMMENT;
 			
 		} else {
 			/* we need to query the user info before setting one field in it */
+			s->stage = USERMOD_QUERY;
 			return s->change.fields;
 		}
 	}
@@ -609,10 +634,11 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 	    (*level == 0 || *level == 10)) {
 		*level = 10;
 		
-		if (queried) {
+		if (s->stage == USERMOD_QUERY) {
 			i->info10.home_directory.string = s->change.home_directory;
 			s->change.fields ^= USERMOD_FIELD_HOME_DIRECTORY;
 		} else {
+			s->stage = USERMOD_QUERY;
 			return s->change.fields;
 		}
 	}
@@ -621,10 +647,11 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 	    (*level == 0 || *level == 10)) {
 		*level = 10;
 		
-		if (queried) {
+		if (s->stage == USERMOD_QUERY) {
 			i->info10.home_drive.string = s->change.home_drive;
 			s->change.fields ^= USERMOD_FIELD_HOME_DRIVE;
 		} else {
+			s->stage = USERMOD_QUERY;
 			return s->change.fields;
 		}
 	}
@@ -646,6 +673,12 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 	}
 
 	/* We're going to be here back again soon unless all fields have been set */
+	if (s->change.fields) {
+		s->stage = USERMOD_OPEN;
+	} else {
+		s->stage = USERMOD_MODIFY;
+	}
+
 	return s->change.fields;
 }
 
@@ -653,7 +686,6 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 static NTSTATUS usermod_change(struct composite_context *c,
 			       struct usermod_state *s)
 {
-	struct rpc_request *query_req, *setuser_req;
 	union samr_UserInfo *i = &s->info;
 
 	/* set the level to invalid value, so that unless setfields routine 
@@ -661,11 +693,12 @@ static NTSTATUS usermod_change(struct composite_context *c,
 	uint16_t level = 27;
 
 	/* prepare UserInfo level and data based on bitmask field */
-	s->change.fields = usermod_setfields(s, &level, i, False);
+	s->change.fields = usermod_setfields(s, &level, i);
 
 	if (level < 1 || level > 26) {
 		/* apparently there's a field that the setfields routine
 		   does not know how to set */
+		c->state = COMPOSITE_STATE_ERROR;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -674,14 +707,13 @@ static NTSTATUS usermod_change(struct composite_context *c,
 	   first, right before changing the data. Otherwise we could set required
 	   fields and accidentally reset the others.
 	*/
-	if (s->change.fields) {
+	if (s->stage == USERMOD_QUERY) {
 		s->queryuser.in.user_handle = &s->user_handle;
 		s->queryuser.in.level       = level;
 
 		/* send query user info request to retrieve complete data of
 		   a particular info level */
-		query_req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuser);
-		composite_continue_rpc(c, query_req, continue_usermod_user_queried, c);
+		s->req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuser);
 
 	} else {
 		s->setuser.in.user_handle  = &s->user_handle;
@@ -689,10 +721,13 @@ static NTSTATUS usermod_change(struct composite_context *c,
 		s->setuser.in.info         = i;
 
 		/* send set user info request after making required change */
-		setuser_req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
-		composite_continue_rpc(c, setuser_req, continue_usermod_user_changed, c);
+		s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
 	}
-	
+
+	/* callback handler setup */
+	s->req->async.callback = usermod_handler;
+	s->req->async.private_data  = c;
+
 	return NT_STATUS_OK;
 }
 
@@ -700,58 +735,34 @@ static NTSTATUS usermod_change(struct composite_context *c,
 /**
  * Stage 2: Open user account
  */
-static void continue_usermod_user_opened(struct rpc_request *req)
+static NTSTATUS usermod_open(struct composite_context *c,
+			     struct usermod_state *s)
 {
-	struct composite_context *c;
-	struct usermod_state *s;
-
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct usermod_state);
-
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
-
-	c->status = s->openuser.out.result;
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
-
-	c->status = usermod_change(c, s);
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	return usermod_change(c, s);
 }
 
 
 /**
  * Stage 2a (optional): Query the user information
  */
-static void continue_usermod_user_queried(struct rpc_request *req)
+static NTSTATUS usermod_query(struct composite_context *c,
+			      struct usermod_state *s)
 {
-	struct composite_context *c;
-	struct usermod_state *s;
-	union samr_UserInfo *i;
+	union samr_UserInfo *i = &s->info;
 	uint16_t level;
-	struct rpc_request *setuser_req;
-	
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct usermod_state);
-
-	i = &s->info;
 
 	/* receive samr_QueryUserInfo result */
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
-
-	c->status = s->queryuser.out.result;
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
 
 	/* get returned user data and make a change (potentially one
 	   of many) */
 	s->info = *s->queryuser.out.info;
 
-	s->change.fields = usermod_setfields(s, &level, i, True);
+	s->change.fields = usermod_setfields(s, &level, i);
 
 	/* prepare rpc call arguments */
 	s->setuser.in.user_handle  = &s->user_handle;
@@ -759,40 +770,127 @@ static void continue_usermod_user_queried(struct rpc_request *req)
 	s->setuser.in.info         = i;
 
 	/* send the rpc request */
-	setuser_req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
-	composite_continue_rpc(c, setuser_req, continue_usermod_user_changed, c);
+	s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
+
+	/* callback handler setup */
+	s->req->async.callback = usermod_handler;
+	s->req->async.private_data  = c;
+
+	return NT_STATUS_OK;
 }
 
 
 /**
  * Stage 3: Set new user account data
  */
-static void continue_usermod_user_changed(struct rpc_request *req)
+static NTSTATUS usermod_modify(struct composite_context *c,
+			       struct usermod_state *s)
 {
-	struct composite_context *c;
-	struct usermod_state *s;
-	
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct usermod_state);
-
 	/* receive samr_SetUserInfo result */
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
 
 	/* return the actual function call status */
 	c->status = s->setuser.out.result;
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
 
 	if (s->change.fields == 0) {
 		/* all fields have been set - we're done */
-		composite_done(c);
-
+		c->state = COMPOSITE_STATE_DONE;
 	} else {
 		/* something's still not changed - repeat the procedure */
-		c->status = usermod_change(c, s);
+		return usermod_change(c, s);
+	}
+
+	return c->status;
+}
+
+
+/**
+ * Event handler for asynchronous request. Handles transition through
+ * intermediate stages of the call.
+ *
+ * @param req rpc call context
+ */
+
+static void usermod_handler(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct usermod_state *s;
+	struct monitor_msg msg;
+	struct msg_rpc_lookup_name *msg_lookup;
+	struct msg_rpc_open_user *msg_open;
+
+	c = talloc_get_type(req->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct usermod_state);
+
+	switch (s->stage) {
+	case USERMOD_LOOKUP:
+		c->status = usermod_lookup(c, s);
+		
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = mon_SamrLookupName;
+			msg_lookup = talloc(s, struct msg_rpc_lookup_name);
+			
+			msg_lookup->rid   = s->lookupname.out.rids.ids;
+			msg_lookup->count = s->lookupname.out.rids.count;
+			msg.data = (void*)msg_lookup;
+			msg.data_size = sizeof(*msg_lookup);
+		}
+		break;
+
+	case USERMOD_OPEN:
+		c->status = usermod_open(c, s);
+
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = mon_SamrOpenUser;
+			msg_open = talloc(s, struct msg_rpc_open_user);
+			
+			msg_open->rid         = s->openuser.in.rid;
+			msg_open->access_mask = s->openuser.in.rid;
+			msg.data = (void*)msg_open;
+			msg.data_size = sizeof(*msg_open);
+		}
+		break;
+
+	case USERMOD_QUERY:
+		c->status = usermod_query(c, s);
+
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = mon_SamrQueryUser;
+			msg.data = NULL;
+			msg.data_size = 0;
+		}
+		break;
+
+	case USERMOD_MODIFY:
+		c->status = usermod_modify(c, s);
+		
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = mon_SamrSetUser;
+			msg.data = NULL;
+			msg.data_size = 0;
+		}
+		break;
+	}
+
+	/* are we ok, so far ? */
+	if (!NT_STATUS_IS_OK(c->status)) {
+		c->state = COMPOSITE_STATE_ERROR;
+	}
+
+	/* call monitor function provided the pointer has been passed */
+	if (s->monitor_fn) {
+		s->monitor_fn(&msg);
+	}
+
+	/* are we done yet ? */
+	if (c->state >= COMPOSITE_STATE_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
 	}
 }
 
@@ -811,16 +909,17 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 {
 	struct composite_context *c;
 	struct usermod_state *s;
-	struct rpc_request *lookup_req;
 
 	/* composite context allocation and setup */
-	c = composite_create(p, dcerpc_event_context(p));
+	c = talloc_zero(p, struct composite_context);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct usermod_state);
 	if (composite_nomem(s, c)) return c;
 
+	c->state        = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
+	c->event_ctx    = dcerpc_event_context(p);
 
 	/* store parameters in the call structure */
 	s->pipe          = p;
@@ -835,11 +934,13 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	s->lookupname.in.names->string = io->in.username;
 
 	/* send the rpc request */
-	lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
-	if (composite_nomem(lookup_req, c)) return c;
+	s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
 	
 	/* callback handler setup */
-	composite_continue_rpc(c, lookup_req, continue_usermod_name_found, c);
+	s->req->async.callback = usermod_handler;
+	s->req->async.private_data  = c;
+	s->stage = USERMOD_LOOKUP;
+
 	return c;
 }
 
