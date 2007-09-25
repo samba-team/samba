@@ -108,8 +108,11 @@ NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 
 	DEBUG(5, ("Probing module '%s'\n", module));
 
-	if (module[0] == '/')
-		return do_smb_load_module(module, True);
+	if (module[0] == '/') {
+		status = do_smb_load_module(module, True);
+		TALLOC_FREE(ctx);
+		return status;
+	}
 
 	full_path = talloc_asprintf(ctx,
 			"%s/%s.%s",
