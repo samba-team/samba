@@ -771,7 +771,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (!lp_msdfs_root(snum)) {
+	if (!lp_msdfs_root(snum) && (*lp_msdfs_proxy(snum) == '\0')) {
 		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not "
 			"a dfs root.\n",
 			pdp->servicename, dfs_path));
