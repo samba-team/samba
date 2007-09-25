@@ -45,6 +45,10 @@ NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return rpccli_winreg_OpenHKU( cli, mem_ctx, NULL, 
 			access_mask, reg_hnd );
 
+	case HKEY_CURRENT_USER:
+		return rpccli_winreg_OpenHKCU( cli, mem_ctx, NULL, 
+			access_mask, reg_hnd );
+
 	case HKEY_PERFORMANCE_DATA:
 		return rpccli_winreg_OpenHKPD( cli, mem_ctx, NULL, 
 			access_mask, reg_hnd );
