@@ -23,6 +23,7 @@ sub new($$$$) {
 			unexpected_success => [],
 			expected_failure => [],
 			unexpected_failure => [],
+			skip_testsuites => [],
 			error => []
 		}
 	};
@@ -325,6 +326,27 @@ sub summary($)
 	print_table("Unexpected failures", $summ->{unexpected_failure});
 	print_table("Skipped tests", $summ->{skip});
 	print_table("Expected failures", $summ->{expected_failure});
+
+	print SUMMARY "<h3>Skipped testsuites</h3>\n";
+	print SUMMARY "<table>\n";
+	print SUMMARY "<tr>\n";
+	print SUMMARY "  <td class=\"tableHead\">Testsuite</td>\n";
+	print SUMMARY "  <td class=\"tableHead\">Reason</td>\n";
+	print SUMMARY "</tr>\n";
+
+	foreach (@{$summ->{skip_testsuites}}) {
+		print SUMMARY "<tr>\n";
+		print SUMMARY "  <td>$$_[1]</td>\n";
+		if (defined($$_[2])) {
+			print SUMMARY "  <td>$$_[2]</td>\n";
+		} else {
+			print SUMMARY "  <td></td>\n";
+		}
+		print SUMMARY "</tr>\n";
+	}
+
+	print SUMMARY "</table>";
+
 	$self->print_html_footer(*SUMMARY);
 	close(SUMMARY);
 }
@@ -340,15 +362,8 @@ sub skip_testsuite($$$$)
 {
 	my ($self, $envname, $name, $reason) = @_;
 
-	print INDEX "<tr>\n";
-	print INDEX "  <td class=\"testSuite\">$name</td>\n";
-	print INDEX "  <td class=\"environment\">$envname</td>\n";
-	if ($reason) {
-		print INDEX "  <td class=\"resultSkipped\">SKIPPED - $reason</td>\n";
-	} else {
-		print INDEX "  <td class=\"resultSkipped\">SKIPPED</td>\n";
-	}
-	print INDEX "</tr>\n";
+	push (@{$self->{error_summary}->{skip_testsuites}}, 
+		  [$envname, $name, $reason]);
 }
 
 1;
