@@ -37,10 +37,6 @@
 
 #undef strcpy
 
-/* Loadparm parameters */
-
-static struct loadparm_context lp_ctx;
-
 %}
 
 %apply bool { BOOL };
@@ -132,11 +128,17 @@ struct nbt_name_query {
 %include "carrays.i"
 %array_functions(char *, char_ptr_array);
 
-%rename(do_nbt_name_query) nbt_name_query;
+NTSTATUS do_nbt_name_query(struct nbt_name_socket *nbtsock, 
+		  	   TALLOC_CTX *mem_ctx, struct nbt_name_query *io);
 
-NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
-			TALLOC_CTX *mem_ctx, struct nbt_name_query *io);
+%{
+NTSTATUS do_nbt_name_query(struct nbt_name_socket *nbtsock, 
+		  	   TALLOC_CTX *mem_ctx, struct nbt_name_query *io)
+{
+	return nbt_name_query(nbtsock, mem_ctx, io);
+}
+%}
 
 %init %{
-      loadparm_init(&lp_ctx);
+      lp_load();
 %}
