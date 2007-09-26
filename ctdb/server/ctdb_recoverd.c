@@ -130,7 +130,7 @@ struct freeze_node_data {
 
 static void freeze_node_callback(struct ctdb_client_control_state *state)
 {
-	struct freeze_node_data *fndata = talloc_get_type(state->async.private, struct freeze_node_data);
+	struct freeze_node_data *fndata = talloc_get_type(state->async.private_data, struct freeze_node_data);
 
 
 	/* one more node has responded to our freeze node*/
@@ -181,7 +181,7 @@ static enum monitor_result freeze_all_nodes(struct ctdb_context *ctdb, struct ct
 
 		/* set up the callback functions */
 		state->async.fn = freeze_node_callback;
-		state->async.private = fndata;
+		state->async.private_data = fndata;
 
 		/* one more control to wait for to complete */
 		fndata->count++;
@@ -1246,7 +1246,7 @@ struct verify_recmode_normal_data {
 
 static void verify_recmode_normal_callback(struct ctdb_client_control_state *state)
 {
-	struct verify_recmode_normal_data *rmdata = talloc_get_type(state->async.private, struct verify_recmode_normal_data);
+	struct verify_recmode_normal_data *rmdata = talloc_get_type(state->async.private_data, struct verify_recmode_normal_data);
 
 
 	/* one more node has responded with recmode data*/
@@ -1308,7 +1308,7 @@ static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb
 
 		/* set up the callback functions */
 		state->async.fn = verify_recmode_normal_callback;
-		state->async.private = rmdata;
+		state->async.private_data = rmdata;
 
 		/* one more control to wait for to complete */
 		rmdata->count++;
@@ -1336,7 +1336,7 @@ struct verify_recmaster_data {
 
 static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 {
-	struct verify_recmaster_data *rmdata = talloc_get_type(state->async.private, struct verify_recmaster_data);
+	struct verify_recmaster_data *rmdata = talloc_get_type(state->async.private_data, struct verify_recmaster_data);
 
 
 	/* one more node has responded with recmaster data*/
@@ -1399,7 +1399,7 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 
 		/* set up the callback functions */
 		state->async.fn = verify_recmaster_callback;
-		state->async.private = rmdata;
+		state->async.private_data = rmdata;
 
 		/* one more control to wait for to complete */
 		rmdata->count++;
