@@ -811,6 +811,11 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_krb5_bind(ads, &p);
+			if (!ADS_ERR_OK(status)) {
+				DEBUG(0,("kinit succeeded but "
+					"ads_sasl_spnego_krb5_bind failed: %s\n",
+					ads_errstr(status)));
+			}
 		}
 
 		ads_free_service_principal(&p);
