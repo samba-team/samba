@@ -633,7 +633,8 @@ int main(int argc,char *argv[])
 			return false;
 		}
 		lp_set_cmdline("torture:host", binding_struct->host);
-		lp_set_cmdline("torture:share", "IPC$");
+		if (lp_parm_string(NULL, "torture", "share") == NULL)
+			lp_set_cmdline("torture:share", "IPC$");
 		lp_set_cmdline("torture:binding", argv_new[1]);
 	} else {
 		lp_set_cmdline("torture:host", host);
