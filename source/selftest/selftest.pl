@@ -137,7 +137,7 @@ my $opt_socket_wrapper_keep_pcap = undef;
 my $opt_one = 0;
 my $opt_immediate = 0;
 my $opt_expected_failures = undef;
-my $opt_skip = undef;
+my @opt_skip = ();
 my $opt_verbose = 0;
 my $opt_testenv = 0;
 my $ldap = undef;
@@ -321,7 +321,7 @@ my $result = GetOptions (
 		'one' => \$opt_one,
 		'immediate' => \$opt_immediate,
 		'expected-failures=s' => \$opt_expected_failures,
-		'skip=s' => \$opt_skip,
+		'skip=s' => \@opt_skip,
 		'srcdir=s' => \$srcdir,
 		'builddir=s' => \$builddir,
 		'verbose' => \$opt_verbose,
@@ -458,8 +458,8 @@ if (defined($opt_expected_failures)) {
 	@expected_failures = read_test_regexes($opt_expected_failures);
 }
 
-if (defined($opt_skip)) {
-	@skips = read_test_regexes($opt_skip);
+foreach (@opt_skip) {
+	push (@skips, read_test_regexes($_));
 }
 
 my $interfaces = join(',', ("127.0.0.6/8", 
