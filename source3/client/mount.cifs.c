@@ -426,7 +426,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		} else if (strncmp(data, "ip", 2) == 0) {
 			if (!value || !*value) {
 				printf("target ip address argument missing");
-			} else if (strnlen(value, 35) < 35) {
+			} else if (strnlen(value, INET6_ADDRSTRLEN) < INET6_ADDRSTRLEN) {
 				if(verboseflag)
 					printf("ip address %s override specified\n",value);
 				got_ip = 1;
