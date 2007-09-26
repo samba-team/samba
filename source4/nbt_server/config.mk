@@ -54,11 +54,8 @@ PRIVATE_DEPENDENCIES = \
 
 #######################
 # Start SUBSYSTEM NBTD
-[MODULE::NBTD]
-INIT_FUNCTION = server_service_nbtd_init
-SUBSYSTEM = service
+[SUBSYSTEM::NBT_SERVER]
 OBJ_FILES = \
-		nbt_server.o \
 		interfaces.o \
 		register.o \
 		query.o \
@@ -68,6 +65,13 @@ OBJ_FILES = \
 		irpc.o
 PRIVATE_PROTO_HEADER = nbt_server_proto.h
 PRIVATE_DEPENDENCIES = \
-		LIBCLI_NBT NBTD_WINS NBTD_DGRAM process_model
+		LIBCLI_NBT NBTD_WINS NBTD_DGRAM 
 # End SUBSYSTEM NBTD
 #######################
+
+[MODULE::service_nbtd]
+INIT_FUNCTION = server_service_nbtd_init
+SUBSYSTEM = service
+OBJ_FILES = \
+		nbt_server.o
+PRIVATE_DEPENDENCIES = NBT_SERVER process_model

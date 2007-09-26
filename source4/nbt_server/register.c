@@ -31,7 +31,6 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 
-
 static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname);
 
 /*
@@ -227,9 +226,9 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 /*
   register one name on all our interfaces
 */
-static void nbtd_register_name(struct nbtd_server *nbtsrv, 
-			       const char *name, enum nbt_name_type type,
-			       uint16_t nb_flags)
+void nbtd_register_name(struct nbtd_server *nbtsrv, 
+			const char *name, enum nbt_name_type type,
+			uint16_t nb_flags)
 {
 	struct nbtd_interface *iface;
 	
