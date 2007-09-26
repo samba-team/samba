@@ -8,7 +8,6 @@ TMPFILE=$TMPDIR/gdb_run.$$
 cat << EOF  > $TMPFILE
 run
 bt
-quit
 EOF
 
 trap "/bin/rm -f $TMPFILE" EXIT
