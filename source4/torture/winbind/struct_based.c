@@ -570,6 +570,21 @@ static bool torture_winbind_struct_list_users(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_winbind_struct_list_groups(struct torture_context *torture)
+{
+	struct winbindd_request req;
+	struct winbindd_response rep;
+
+	torture_comment(torture, "Running WINBINDD_LIST_GROUPS (struct based)\n");
+
+	ZERO_STRUCT(req);
+	ZERO_STRUCT(rep);
+
+	DO_STRUCT_REQ_REP(WINBINDD_LIST_GROUPS, &req, &rep);
+
+	return true;
+}
+
 struct torture_suite *torture_winbind_struct_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "STRUCT");
@@ -586,6 +601,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 	torture_suite_add_simple_test(suite, "GETDCNAME", torture_winbind_struct_getdcname);
 	torture_suite_add_simple_test(suite, "DSGETDCNAME", torture_winbind_struct_dsgetdcname);
 	torture_suite_add_simple_test(suite, "LIST_USERS", torture_winbind_struct_list_users);
+	torture_suite_add_simple_test(suite, "LIST_GROUPS", torture_winbind_struct_list_groups);
 
 	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
 
