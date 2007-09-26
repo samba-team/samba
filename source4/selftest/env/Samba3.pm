@@ -96,7 +96,7 @@ sub setup_dc($$)
 {
 	my ($self, $path) = @_;
 
-	my $vars = $self->provision($path);
+	my $vars = $self->provision($path, "dc");
 
 	$self->check_or_start($vars, ($ENV{NMBD_MAXTIME} or 2700), ($ENV{SMBD_MAXTIME} or 2700));
 
@@ -205,9 +205,9 @@ sub create_clientconf($$$)
 	close(CONF);
 }
 
-sub provision($$)
+sub provision($$$)
 {
-	my ($self, $prefix) = @_;
+	my ($self, $prefix, $role) = @_;
 
 	##
 	## setup the various environment variables we need
@@ -273,6 +273,15 @@ sub provision($$)
 	syslog = no
 	printing = bsd
 	printcap name = /dev/null
+
+";
+
+	if ($role eq "dc") {
+		print CONF "\tdomain logons = yes\n";
+		print CONF "\tdomain master = yes\n";
+	}
+
+print CONF "
 
 [tmp]
 	path = $tmpdir
