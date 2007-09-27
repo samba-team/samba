@@ -31,6 +31,7 @@ NTSTATUS torture_net_init(void)
 	torture_suite_add_simple_test(suite, "USERMOD", torture_usermod);
 	torture_suite_add_simple_test(suite, "DOMOPEN", torture_domainopen);
 	torture_suite_add_simple_test(suite, "GROUPINFO", torture_groupinfo);
+	torture_suite_add_simple_test(suite, "GROUPADD", torture_groupadd);
 	torture_suite_add_simple_test(suite, "API-LOOKUP", torture_lookup);
 	torture_suite_add_simple_test(suite, "API-LOOKUPHOST", torture_lookup_host);
 	torture_suite_add_simple_test(suite, "API-LOOKUPPDC", torture_lookup_pdc);
