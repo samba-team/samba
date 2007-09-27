@@ -150,10 +150,10 @@ static int do_global_checks(void)
 
 	ret = do_global_checks();
 
-	for (s=0;s<lp_numservices();s++) {
-		struct loadparm_service *service = lp_servicebynum(s);
+	for (s=0;s<lp_numservices(global_loadparm);s++) {
+		struct loadparm_service *service = lp_servicebynum(global_loadparm, s);
 		if (service != NULL)
-			if (strlen(lp_servicename(lp_servicebynum(s))) > 12) {
+			if (strlen(lp_servicename(lp_servicebynum(global_loadparm, s))) > 12) {
 				fprintf(stderr, "WARNING: You have some share names that are longer than 12 characters.\n" );
 				fprintf(stderr, "These may not be accessible to some older clients.\n" );
 				fprintf(stderr, "(Eg. Windows9x, WindowsMe, and not listed in smbclient in Samba 3.0.)\n" );
@@ -161,8 +161,8 @@ static int do_global_checks(void)
 			}
 	}
 
-	for (s=0;s<lp_numservices();s++) {
-		struct loadparm_service *service = lp_servicebynum(s);
+	for (s=0;s<lp_numservices(global_loadparm);s++) {
+		struct loadparm_service *service = lp_servicebynum(global_loadparm, s);
 		if (service != NULL) {
 			const char **deny_list = lp_hostsdeny(service);
 			const char **allow_list = lp_hostsallow(service);
@@ -204,7 +204,7 @@ static int do_global_checks(void)
 				section_name = GLOBAL_NAME;
 				service = NULL;
 			} else if ((!strwicmp(section_name, GLOBAL_NAME)) == 0 &&
-				 (service=lp_service(section_name)) == NULL) {
+				 (service=lp_service(global_loadparm, section_name)) == NULL) {
 					fprintf(stderr,"Unknown section %s\n",
 						section_name);
 					return(1);
@@ -215,15 +215,15 @@ static int do_global_checks(void)
 				ret = !lp_dump_a_parameter(s, parameter_name, stdout, (service == NULL));
 			}
 		} else {
-			lp_dump(stdout, show_defaults, lp_numservices());
+			lp_dump(global_loadparm, stdout, show_defaults, lp_numservices(global_loadparm));
 		}
 		return(ret);
 	}
 
 	if(cname && caddr){
 		/* this is totally ugly, a real `quick' hack */
-		for (s=0;s<lp_numservices();s++) {
-			struct loadparm_service *service = lp_servicebynum(s);
+		for (s=0;s<lp_numservices(global_loadparm);s++) {
+			struct loadparm_service *service = lp_servicebynum(global_loadparm, s);
 			if (service != NULL) {
 				if (allow_access(NULL, lp_hostsdeny(NULL), lp_hostsallow(NULL), cname, caddr)
 				    && allow_access(NULL, lp_hostsdeny(service), lp_hostsallow(service), cname, caddr)) {

@@ -36,8 +36,8 @@ static int ejs_lpServices(MprVarHandle eid, int argc, char **argv)
 	const char **list = NULL;
 	if (argc != 0) return -1;
 	
-	for (i=0;i<lp_numservices();i++) {
-		list = str_list_add(list, lp_servicename(lp_servicebynum(i)));
+	for (i=0;i<lp_numservices(global_loadparm);i++) {
+		list = str_list_add(list, lp_servicename(lp_servicebynum(global_loadparm, i)));
 	}
 	talloc_steal(mprMemCtx(), list);
 	mpr_Return(eid, mprList("services", list));
@@ -89,7 +89,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 	if (argc == 2) {
 		struct loadparm_service *service;
 		/* its a share parameter */
-		service = lp_service(argv[0]);
+		service = lp_service(global_loadparm, argv[0]);
 		if (service == NULL) {
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;

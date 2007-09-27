@@ -66,6 +66,8 @@
 
 static bool bLoaded = false;
 
+struct loadparm_context *global_loadparm = NULL;
+
 #define standard_sub_basic talloc_strdup
 
 static bool do_parameter(const char *, const char *, void *);
@@ -2293,6 +2295,8 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 	int i;
 	char *myname;
 
+	lp_ctx->bInGlobalSection = true;
+
 	DEBUG(3, ("Initialising global parameters\n"));
 
 	for (i = 0; parm_table[i].label; i++) {
@@ -2458,6 +2462,8 @@ bool lp_load(void)
 	struct param_opt *data;
 	struct loadparm_context *lp_ctx = &loadparm;
 
+	global_loadparm = lp_ctx;
+
 	bRetval = false;
 
 	if (lp_ctx->Globals.param_opt != NULL) {
@@ -2509,21 +2515,19 @@ bool lp_load(void)
  Return the max number of services.
 ***************************************************************************/
 
-int lp_numservices(void)
+int lp_numservices(struct loadparm_context *lp_ctx)
 {
-	return loadparm.iNumServices;
+	return lp_ctx->iNumServices;
 }
 
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
 
-void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
+void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults, 
+	     int maxtoprint)
 {
-	struct loadparm_context *lp_ctx;
 	int iService;
-
-	lp_ctx = &loadparm;
 
 	if (show_defaults)
 		defaults_saved = false;
@@ -2549,28 +2553,30 @@ void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service)
 	}
 }
 
-struct loadparm_service *lp_servicebynum(int snum)
+struct loadparm_service *lp_servicebynum(struct loadparm_context *lp_ctx,
+					 int snum)
 {
-	return loadparm.ServicePtrs[snum];
+	return lp_ctx->ServicePtrs[snum];
 }
 
-struct loadparm_service *lp_service(const char *service_name)
+struct loadparm_service *lp_service(struct loadparm_context *lp_ctx, 
+				    const char *service_name)
 {
 	int iService;
         char *serviceName;
  
-	for (iService = loadparm.iNumServices - 1; iService >= 0; iService--) {
-		if (loadparm.ServicePtrs[iService] && 
-		    loadparm.ServicePtrs[iService]->szService) {
+	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--) {
+		if (lp_ctx->ServicePtrs[iService] && 
+		    lp_ctx->ServicePtrs[iService]->szService) {
 			/*
 			 * The substitution here is used to support %U is
 			 * service names
 			 */
 			serviceName = standard_sub_basic(
-					loadparm.ServicePtrs[iService],
-					loadparm.ServicePtrs[iService]->szService);
+					lp_ctx->ServicePtrs[iService],
+					lp_ctx->ServicePtrs[iService]->szService);
 			if (strequal(serviceName, service_name))
-				return loadparm.ServicePtrs[iService];
+				return lp_ctx->ServicePtrs[iService];
 		}
 	}
 
